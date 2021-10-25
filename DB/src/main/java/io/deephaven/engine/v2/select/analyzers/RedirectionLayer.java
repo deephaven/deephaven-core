@@ -4,10 +4,7 @@ import io.deephaven.engine.tables.ColumnDefinition;
 import io.deephaven.engine.v2.ModifiedColumnSet;
 import io.deephaven.engine.v2.ShiftAwareListener;
 import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.utils.RowSetBuilder;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
-import io.deephaven.engine.v2.utils.RowSet;
-import io.deephaven.engine.v2.utils.RedirectionIndex;
+import io.deephaven.engine.v2.utils.*;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.apache.commons.lang3.mutable.MutableObject;
 
@@ -22,7 +19,7 @@ final public class RedirectionLayer extends SelectAndViewAnalyzer {
     private final SelectAndViewAnalyzer inner;
     private final TrackingMutableRowSet resultRowSet;
     private final RedirectionIndex redirectionIndex;
-    private final TrackingMutableRowSet freeValues = TrackingMutableRowSet.CURRENT_FACTORY.getEmptyRowSet();
+    private final TrackingMutableRowSet freeValues = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
     private long maxInnerIndex;
 
     RedirectionLayer(SelectAndViewAnalyzer inner, TrackingMutableRowSet resultRowSet, RedirectionIndex redirectionIndex) {
@@ -48,14 +45,14 @@ final public class RedirectionLayer extends SelectAndViewAnalyzer {
 
         // we need to remove the removed values from our redirection rowSet, and add them to our free rowSet; so that
         // updating tables will not consume more space over the course of a day for abandoned rows
-        final RowSetBuilder innerToFreeBuilder = TrackingMutableRowSet.CURRENT_FACTORY.getRandomBuilder();
+        final RowSetBuilderRandom innerToFreeBuilder = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
         upstream.removed.forAllLongs(key -> innerToFreeBuilder.addKey(redirectionIndex.remove(key)));
         freeValues.insert(innerToFreeBuilder.build());
 
         // we have to shift things that have not been removed, this handles the unmodified rows; but also the
         // modified rows need to have their redirections updated for subsequent modified columns
         if (upstream.shifted.nonempty()) {
-            try (final TrackingMutableRowSet prevRowSet = resultRowSet.getPrevIndex();
+            try (final TrackingMutableRowSet prevRowSet = resultRowSet.getPrevRowSet();
                  final TrackingMutableRowSet prevNoRemovals = prevRowSet.minus(upstream.removed)) {
                 final MutableObject<TrackingMutableRowSet.SearchIterator> forwardIt = new MutableObject<>();
 

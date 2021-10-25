@@ -9,6 +9,7 @@ import gnu.trove.list.array.TLongArrayList;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.barrage.flatbuf.BarrageMessageType;
 import io.deephaven.barrage.flatbuf.BarrageSubscriptionRequest;
+import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
 import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.chunk.ChunkInputStreamGenerator;
@@ -152,7 +153,7 @@ public class ArrowFlightUtil {
                 }
                 final TLongIterator bufferInfoIter = bufferInfo.iterator();
 
-                msg.rowsRemoved = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
+                msg.rowsRemoved = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
                 msg.shifted = IndexShiftData.EMPTY;
 
                 // include all columns as add-columns
@@ -179,7 +180,7 @@ public class ArrowFlightUtil {
                 }
 
                 msg.rowsAdded =
-                        TrackingMutableRowSet.FACTORY.getRowSetByRange(resultTable.size(), resultTable.size() + numRowsAdded - 1);
+                        RowSetFactoryImpl.INSTANCE.getRowSetByRange(resultTable.size(), resultTable.size() + numRowsAdded - 1);
                 msg.rowsIncluded = msg.rowsAdded.clone();
                 msg.modColumnData = ZERO_MOD_COLUMNS;
 

@@ -59,7 +59,7 @@ public final class IterPerformanceTest {
         @Override
         public ValuesBuilder builder() {
             return new ValuesBuilder() {
-                private final RowSetBuilder b = TrackingMutableRowSet.FACTORY.getRandomBuilder();
+                private final RowSetBuilderRandom b = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
 
                 @Override
                 public void add(long v) {

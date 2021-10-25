@@ -211,7 +211,7 @@ public class SortHelpers {
 
     /**
      * Note that if usePrev is true, then indexToSort is the previous rowSet; not the current rowSet, and we should not
-     * need to call getPrevIndex.
+     * need to call getPrevRowSet.
      */
     static SortMapping getSortedKeys(SortingOrder[] order, ColumnSource<Comparable<?>>[] columnsToSortBy,
                                      RowSet indexToSort, boolean usePrev) {
@@ -220,7 +220,7 @@ public class SortHelpers {
 
     /**
      * Note that if usePrev is true, then indexToSort is the previous rowSet; not the current rowSet, and we should not
-     * need to call getPrevIndex.
+     * need to call getPrevRowSet.
      */
     static SortMapping getSortedKeys(SortingOrder[] order, ColumnSource<Comparable<?>>[] columnsToSortBy,
                                      RowSet indexToSort, boolean usePrev, boolean allowSymbolTable) {

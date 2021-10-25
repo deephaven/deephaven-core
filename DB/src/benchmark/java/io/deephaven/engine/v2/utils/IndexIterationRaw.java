@@ -83,7 +83,7 @@ public class IndexIterationRaw {
             indexPoints[j] = indexPoints[j - 1] + 1;
             j++;
         }
-        rspRowSet = TrackingMutableRowSet.FACTORY.getRowSetByValues(indexPoints);
+        rspRowSet = RowSetFactoryImpl.INSTANCE.getRowSetByValues(indexPoints);
 
         indexChunk = WritableLongChunk.makeWritableChunk(chunkSize);
         rangeChunk = WritableLongChunk.makeWritableChunk(2 * chunkSize);

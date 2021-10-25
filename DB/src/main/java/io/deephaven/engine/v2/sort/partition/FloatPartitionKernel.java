@@ -9,7 +9,8 @@ import io.deephaven.engine.v2.sort.LongSortKernel;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.sources.chunk.Attributes.*;
-import io.deephaven.engine.v2.utils.SequentialRowSetBuilder;
+import io.deephaven.engine.v2.utils.RowSetBuilderSequential;
+import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
 import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 
 import java.util.stream.IntStream;
@@ -19,7 +20,7 @@ public class FloatPartitionKernel {
         // during the actual partition operation, we stick the new keys in here; when we exceed chunksize afterwards,
         // we can pass the entire chunk value to the builder; which then makes the virtual call to build it all at once
         private final WritableLongChunk<RowKeys>[] accumulatedKeys;
-        private final SequentialRowSetBuilder[] builders;
+        private final RowSetBuilderSequential[] builders;
 
         private final int chunkSize;
         private final WritableFloatChunk<Any> pivotValues;
@@ -35,14 +36,14 @@ public class FloatPartitionKernel {
             if (preserveEquality) {
                 //noinspection unchecked
                 accumulatedKeys = new WritableLongChunk[numPartitions * 2 - 1];
-                builders = new SequentialRowSetBuilder[numPartitions * 2 - 1];
+                builders = new RowSetBuilderSequential[numPartitions * 2 - 1];
             } else {
                 //noinspection unchecked
                 accumulatedKeys = new WritableLongChunk[numPartitions];
-                builders = new SequentialRowSetBuilder[numPartitions];
+                builders = new RowSetBuilderSequential[numPartitions];
             }
             for (int ii = 0; ii < builders.length; ++ii) {
-                builders[ii] = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
+                builders[ii] = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
                 accumulatedKeys[ii] = WritableLongChunk.makeWritableChunk(chunkSize);
                 accumulatedKeys[ii].setSize(0);
             }
@@ -54,7 +55,7 @@ public class FloatPartitionKernel {
             for (int ii = 0; ii < builders.length; ++ii) {
                 partitions[ii] = builders[ii].build();
                 if (resetBuilders) {
-                    builders[ii] = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
+                    builders[ii] = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
                 } else {
                     builders[ii] = null;
                 }
@@ -105,7 +106,7 @@ public class FloatPartitionKernel {
         final int samplesRequired = pivotsRequired * 3;
         PartitionUtilities.sampleIndexKeys(0, rowSet, samplesRequired, pivotKeys);
 
-        final SequentialRowSetBuilder builder = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
+        final RowSetBuilderSequential builder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
         for (int ii = 0; ii < pivotKeys.size(); ++ii) {
             builder.appendKey(pivotKeys.get(ii));
         }
@@ -165,7 +166,7 @@ public class FloatPartitionKernel {
     }
 
     private static void flushToBuilder(PartitionKernelContext context, int partition) {
-        final SequentialRowSetBuilder builder = context.builders[partition];
+        final RowSetBuilderSequential builder = context.builders[partition];
         final WritableLongChunk<RowKeys> partitionKeys = context.accumulatedKeys[partition];
         final int chunkSize = partitionKeys.size();
         for (int ii = 0; ii < chunkSize; ++ii) {

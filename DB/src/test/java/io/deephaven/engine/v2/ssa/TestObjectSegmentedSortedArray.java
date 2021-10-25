@@ -92,8 +92,8 @@ public class TestObjectSegmentedSortedArray extends LiveTableTestCase {
             final ShiftAwareListener asObjectListener = new InstrumentedShiftAwareListenerAdapter((DynamicTable) asObject, false) {
                 @Override
                 public void onUpdate(Update upstream) {
-                    try (final ColumnSource.GetContext checkContext = valueSource.makeGetContext(asObject.getIndex().getPrevIndex().intSize())) {
-                        final TrackingMutableRowSet relevantIndices = asObject.getIndex().getPrevIndex();
+                    try (final ColumnSource.GetContext checkContext = valueSource.makeGetContext(asObject.getIndex().getPrevRowSet().intSize())) {
+                        final TrackingMutableRowSet relevantIndices = asObject.getIndex().getPrevRowSet();
                         checkSsa(ssa, valueSource.getPrevChunk(checkContext, relevantIndices).asObjectChunk(), relevantIndices.asRowKeyChunk(), desc);
                     }
 
@@ -109,8 +109,8 @@ public class TestObjectSegmentedSortedArray extends LiveTableTestCase {
 
                         ssa.validate();
 
-                        try (final ColumnSource.GetContext checkContext = valueSource.makeGetContext(asObject.getIndex().getPrevIndex().intSize())) {
-                            final TrackingMutableRowSet relevantIndices = asObject.getIndex().getPrevIndex().minus(takeout);
+                        try (final ColumnSource.GetContext checkContext = valueSource.makeGetContext(asObject.getIndex().getPrevRowSet().intSize())) {
+                            final TrackingMutableRowSet relevantIndices = asObject.getIndex().getPrevRowSet().minus(takeout);
                             checkSsa(ssa, valueSource.getPrevChunk(checkContext, relevantIndices).asObjectChunk(), relevantIndices.asRowKeyChunk(), desc);
                         }
 
@@ -118,7 +118,7 @@ public class TestObjectSegmentedSortedArray extends LiveTableTestCase {
                             final IndexShiftData.Iterator sit = upstream.shifted.applyIterator();
                             while (sit.hasNext()) {
                                 sit.next();
-                                final TrackingMutableRowSet rowSetToShift = table.getIndex().getPrevIndex().subSetByKeyRange(sit.beginRange(), sit.endRange()).minus(upstream.getModifiedPreShift()).minus(upstream.removed);
+                                final TrackingMutableRowSet rowSetToShift = table.getIndex().getPrevRowSet().subSetByKeyRange(sit.beginRange(), sit.endRange()).minus(upstream.getModifiedPreShift()).minus(upstream.removed);
                                 if (rowSetToShift.empty()) {
                                     continue;
                                 }

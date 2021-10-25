@@ -6,31 +6,31 @@ public class PreviousPlaypen {
     public static void main(String[] args) {
         // LogicalClock.DEFAULT.startUpdateCycle();
 
-        // final TrackingMutableRowSet i = TrackingMutableRowSet.FACTORY.getFlatIndex(100);
+        // final TrackingMutableRowSet i = TrackingMutableRowSet.FACTORY.getFlatRowSet(100);
         // System.out.println(i);
-        // System.out.println(i.getPrevIndex());
+        // System.out.println(i.getPrevRowSet());
         //
         // LogicalClock.DEFAULT.completeUpdateCycle();
         //
         // System.out.println(i);
-        // System.out.println(i.getPrevIndex());
+        // System.out.println(i.getPrevRowSet());
 
 
         LogicalClock.DEFAULT.startUpdateCycle();
 
-        final TrackingMutableRowSet i2 = TrackingMutableRowSet.FACTORY.getFlatIndex(200);
+        final TrackingMutableRowSet i2 = RowSetFactoryImpl.INSTANCE.getFlatRowSet(200);
         System.out.println(i2);
-        System.out.println(i2.getPrevIndex());
+        System.out.println(i2.getPrevRowSet());
 
         i2.insert(500);
 
         System.out.println(i2);
-        System.out.println(i2.getPrevIndex());
+        System.out.println(i2.getPrevRowSet());
 
         LogicalClock.DEFAULT.completeUpdateCycle();
 
         System.out.println(i2);
-        System.out.println(i2.getPrevIndex());
+        System.out.println(i2.getPrevRowSet());
 
     }
 }

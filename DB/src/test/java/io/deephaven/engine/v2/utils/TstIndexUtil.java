@@ -26,13 +26,13 @@ public class TstIndexUtil {
     }
 
     public static class BuilderToRangeConsumer implements LongRangeAbortableConsumer {
-        private RowSetBuilder builder;
+        private RowSetBuilderRandom builder;
 
-        private BuilderToRangeConsumer(final RowSetBuilder builder) {
+        private BuilderToRangeConsumer(final RowSetBuilderRandom builder) {
             this.builder = builder;
         }
 
-        public static BuilderToRangeConsumer adapt(final RowSetBuilder builder) {
+        public static BuilderToRangeConsumer adapt(final RowSetBuilderRandom builder) {
             return new BuilderToRangeConsumer(builder);
         }
 
@@ -43,21 +43,21 @@ public class TstIndexUtil {
         }
     }
 
-    public static TrackingMutableRowSet indexFromString(final String str, final RowSetBuilder builder) {
+    public static TrackingMutableRowSet indexFromString(final String str, final RowSetBuilderRandom builder) {
         final BuilderToRangeConsumer adaptor = BuilderToRangeConsumer.adapt(builder);
         stringToRanges(str, adaptor);
         return builder.build();
     }
 
     public static TrackingMutableRowSet indexFromString(String string) {
-        final RowSetBuilder builder = TrackingMutableRowSet.FACTORY.getBuilder();
+        final RowSetBuilderRandom builder = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
         return indexFromString(string, builder);
     }
 
-    public static final class RowSetToBuilderAdaptor implements RowSetBuilder {
+    public static final class RowSetToBuilderRandomAdaptor implements RowSetBuilderRandom {
         private final TrackingMutableRowSet ix;
 
-        public RowSetToBuilderAdaptor(final TrackingMutableRowSet ix) {
+        public RowSetToBuilderRandomAdaptor(final TrackingMutableRowSet ix) {
             this.ix = ix;
         }
 
@@ -67,22 +67,22 @@ public class TstIndexUtil {
         }
 
         @Override
-        public void addKey(final long key) {
-            ix.insert(key);
+        public void addKey(final long rowKey) {
+            ix.insert(rowKey);
         }
 
         @Override
-        public void addRange(final long firstKey, final long lastKey) {
-            ix.insertRange(firstKey, lastKey);
+        public void addRange(final long firstRowKey, final long lastRowKey) {
+            ix.insertRange(firstRowKey, lastRowKey);
         }
 
-        public static RowSetToBuilderAdaptor adapt(final TrackingMutableRowSet ix) {
-            return new RowSetToBuilderAdaptor(ix);
+        public static RowSetToBuilderRandomAdaptor adapt(final TrackingMutableRowSet ix) {
+            return new RowSetToBuilderRandomAdaptor(ix);
         }
     }
 
     public static TrackingMutableRowSet indexFromString(String string, final TrackingMutableRowSet ix) {
-        return indexFromString(string, RowSetToBuilderAdaptor.adapt(ix));
+        return indexFromString(string, RowSetToBuilderRandomAdaptor.adapt(ix));
     }
 
     public static SortedRanges sortedRangesFromString(final String str) {

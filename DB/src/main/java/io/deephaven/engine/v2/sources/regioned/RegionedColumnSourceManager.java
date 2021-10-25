@@ -7,7 +7,8 @@ package io.deephaven.engine.v2.sources.regioned;
 import io.deephaven.engine.v2.ColumnToCodecMappings;
 import io.deephaven.engine.v2.locations.impl.TableLocationUpdateSubscriptionBuffer;
 import io.deephaven.engine.v2.utils.RowSet;
-import io.deephaven.engine.v2.utils.SequentialRowSetBuilder;
+import io.deephaven.engine.v2.utils.RowSetBuilderSequential;
+import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
 import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.hash.KeyedObjectHashMap;
 import io.deephaven.hash.KeyedObjectKey;
@@ -126,7 +127,7 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
 
     @Override
     public synchronized TrackingMutableRowSet refresh() {
-        final SequentialRowSetBuilder addedIndexBuilder = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
+        final RowSetBuilderSequential addedIndexBuilder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
         for (final IncludedTableLocationEntry entry : orderedIncludedTableLocations) { // Ordering matters, since we're
                                                                                        // using a sequential builder.
             entry.pollUpdates(addedIndexBuilder);
@@ -270,7 +271,7 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
             this.subscriptionBuffer = nonexistentEntry.subscriptionBuffer;
         }
 
-        private void processInitial(final SequentialRowSetBuilder addedIndexBuilder, final RowSet initialIndex) {
+        private void processInitial(final RowSetBuilderSequential addedIndexBuilder, final RowSet initialIndex) {
             Assert.neqNull(initialIndex, "initialIndex");
             Assert.eqTrue(initialIndex.nonempty(), "initialIndex.nonempty()");
             Assert.eqNull(indexAtLastUpdate, "indexAtLastUpdate");
@@ -308,7 +309,7 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
             indexAtLastUpdate = initialIndex;
         }
 
-        private void pollUpdates(final SequentialRowSetBuilder addedIndexBuilder) {
+        private void pollUpdates(final RowSetBuilderSequential addedIndexBuilder) {
             Assert.neqNull(subscriptionBuffer, "subscriptionBuffer"); // Effectively, this is asserting "isRefreshing".
             if (!subscriptionBuffer.processPending()) {
                 return;

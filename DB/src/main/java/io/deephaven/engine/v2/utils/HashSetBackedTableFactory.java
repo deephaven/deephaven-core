@@ -74,8 +74,8 @@ public class HashSetBackedTableFactory {
             String... colNames) {
         HashSetBackedTableFactory factory = new HashSetBackedTableFactory(setGenerator, refreshIntervalMs, colNames);
 
-        RowSetBuilder addedBuilder = TrackingMutableRowSet.FACTORY.getRandomBuilder();
-        RowSetBuilder removedBuilder = TrackingMutableRowSet.FACTORY.getRandomBuilder();
+        RowSetBuilderRandom addedBuilder = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
+        RowSetBuilderRandom removedBuilder = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
 
         factory.updateValueSet(addedBuilder, removedBuilder);
 
@@ -92,7 +92,7 @@ public class HashSetBackedTableFactory {
         return new HashSetBackedTable(rowSet, columns);
     }
 
-    private void updateValueSet(RowSetBuilder addedBuilder, RowSetBuilder removedBuilder) {
+    private void updateValueSet(RowSetBuilderRandom addedBuilder, RowSetBuilderRandom removedBuilder) {
         HashSet<SmartKey> valueSet = setGenerator.call();
 
         synchronized (this) {
@@ -112,7 +112,7 @@ public class HashSetBackedTableFactory {
         }
     }
 
-    private void removeValue(TObjectLongIterator<SmartKey> vtiIt, RowSetBuilder removedBuilder) {
+    private void removeValue(TObjectLongIterator<SmartKey> vtiIt, RowSetBuilderRandom removedBuilder) {
         long index = vtiIt.value();
 
         // record the old value for get prev
@@ -126,7 +126,7 @@ public class HashSetBackedTableFactory {
         freeSet.add(index);
     }
 
-    private void addValue(SmartKey value, RowSetBuilder addedBuilder) {
+    private void addValue(SmartKey value, RowSetBuilderRandom addedBuilder) {
         long newIndex;
         if (freeSet.isEmpty()) {
             newIndex = lastIndex++;
@@ -160,8 +160,8 @@ public class HashSetBackedTableFactory {
             }
             nextRefresh = System.currentTimeMillis() + refreshIntervalMs;
 
-            RowSetBuilder addedBuilder = TrackingMutableRowSet.FACTORY.getRandomBuilder();
-            RowSetBuilder removedBuilder = TrackingMutableRowSet.FACTORY.getRandomBuilder();
+            RowSetBuilderRandom addedBuilder = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
+            RowSetBuilderRandom removedBuilder = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
 
             updateValueSet(addedBuilder, removedBuilder);
 

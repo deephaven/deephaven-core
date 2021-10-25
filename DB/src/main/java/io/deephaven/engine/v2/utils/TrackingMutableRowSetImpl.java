@@ -339,9 +339,9 @@ public class TrackingMutableRowSetImpl extends GroupingRowSetHelper implements I
     }
 
     @Override
-    public TrackingMutableRowSet getPrevIndex() {
+    public TrackingMutableRowSet getPrevRowSet() {
         if (trace)
-            pre("getPrevIndex");
+            pre("getPrevRowSet");
         final TreeIndexImpl r = checkAndGetPrev().ixCowRef();
         final TrackingMutableRowSet ans;
         ans = new TrackingMutableRowSetImpl(r);
@@ -381,19 +381,19 @@ public class TrackingMutableRowSetImpl extends GroupingRowSetHelper implements I
     }
 
     @Override
-    public long findPrev(long key) {
+    public long findPrev(long rowKey) {
         if (trace)
-            pre("findPrev(" + key + ")");
-        final long ans = checkAndGetPrev().ixFind(key);
+            pre("findPrev(" + rowKey + ")");
+        final long ans = checkAndGetPrev().ixFind(rowKey);
         if (trace)
             pos();
         return ans;
     }
 
     @Override
-    public long firstKeyPrev() {
+    public long firstRowKeyPrev() {
         if (trace)
-            pre("firstKeyPrev");
+            pre("firstRowKeyPrev");
         final long ans = checkAndGetPrev().ixFirstKey();
         if (trace)
             pos();
@@ -401,9 +401,9 @@ public class TrackingMutableRowSetImpl extends GroupingRowSetHelper implements I
     }
 
     @Override
-    public long lastKeyPrev() {
+    public long lastRowKeyPrev() {
         if (trace)
-            pre("firstKeyPrev");
+            pre("firstRowKeyPrev");
         final long ans = checkAndGetPrev().ixLastKey();
         if (trace)
             pos();
@@ -577,7 +577,7 @@ public class TrackingMutableRowSetImpl extends GroupingRowSetHelper implements I
         if (trace)
             pre("minus(set_" + ((ImplementedByTreeIndexImpl) set).strid());
         if (set == this) {
-            return FACTORY.getRowSetByValues();
+            return RowSetFactoryImpl.INSTANCE.getRowSetByValues();
         }
         final GroupingRowSetHelper ans = new TrackingMutableRowSetImpl(impl.ixMinusOnNew(getImpl(set)));
         if (trace)
@@ -590,7 +590,7 @@ public class TrackingMutableRowSetImpl extends GroupingRowSetHelper implements I
         if (trace)
             pre("union(set_" + ((ImplementedByTreeIndexImpl) set).strid());
         if (set == this) {
-            return FACTORY.getRowSetByValues();
+            return RowSetFactoryImpl.INSTANCE.getRowSetByValues();
         }
         final GroupingRowSetHelper ans = new TrackingMutableRowSetImpl(impl.ixUnionOnNew(getImpl(set)));
         if (trace)
@@ -598,68 +598,68 @@ public class TrackingMutableRowSetImpl extends GroupingRowSetHelper implements I
         return ans;
     }
 
-    private static class RowSetRandomBuilder extends TreeIndexImplRandomBuilder implements RowSetBuilder.RandomBuilder {
+    private static class RowSetRandomBuilder extends TreeIndexImplRandomBuilder implements RowSetBuilderRandom.RandomBuilder {
         @Override
         public MutableRowSet build() {
             return new TrackingMutableRowSetImpl(getTreeIndexImpl());
         }
     }
 
-    public static RowSetBuilder makeRandomBuilder() {
+    public static RowSetBuilderRandom makeRandomBuilder() {
         return new RowSetRandomBuilder();
     }
 
-    private abstract static class IndexSequentialBuilderBase extends TreeIndexImplSequentialBuilder
-            implements SequentialRowSetBuilder {
+    private abstract static class IndexBuilderSequentialBase extends TreeIndexImplSequentialBuilder
+            implements RowSetBuilderSequential {
         @Override
         public void appendRowSet(final RowSet rowSet) {
             appendRowSetWithOffset(rowSet, 0);
         }
 
         @Override
-        public void appendRowSetWithOffset(final RowSet ix, final long shiftAmount) {
-            if (ix instanceof ImplementedByTreeIndexImpl) {
-                appendTreeIndexImpl(shiftAmount, ((ImplementedByTreeIndexImpl) ix).getImpl(), false);
+        public void appendRowSetWithOffset(final RowSet rowSet, final long shiftAmount) {
+            if (rowSet instanceof ImplementedByTreeIndexImpl) {
+                appendTreeIndexImpl(shiftAmount, ((ImplementedByTreeIndexImpl) rowSet).getImpl(), false);
                 return;
             }
-            ix.forAllLongRanges((start, end) -> {
+            rowSet.forAllLongRanges((start, end) -> {
                 appendRange(start + shiftAmount, end + shiftAmount);
             });
         }
     }
 
-    private static class IndexSequentialBuilder extends IndexSequentialBuilderBase {
+    private static class IndexBuilderSequential extends IndexBuilderSequentialBase {
         @Override
         public TrackingMutableRowSet build() {
             return new TrackingMutableRowSetImpl(getTreeIndexImpl());
         }
     }
 
-    public static SequentialRowSetBuilder makeSequentialBuilder() {
-        return new IndexSequentialBuilder();
+    public static RowSetBuilderSequential makeSequentialBuilder() {
+        return new IndexBuilderSequential();
     }
 
     private static class CurrentOnlyRowSetRandomBuilder extends TreeIndexImplRandomBuilder
-            implements RowSetBuilder.RandomBuilder {
+            implements RowSetBuilderRandom.RandomBuilder {
         @Override
         public MutableRowSet build() {
             return new MutableRowSetImpl(getTreeIndexImpl());
         }
     }
 
-    public static RowSetBuilder makeCurrentRandomBuilder() {
+    public static RowSetBuilderRandom makeCurrentRandomBuilder() {
         return new CurrentOnlyRowSetRandomBuilder();
     }
 
-    private static class CurrentOnlyIndexSequentialBuilder extends IndexSequentialBuilderBase {
+    private static class CurrentOnlyIndexBuilderSequential extends IndexBuilderSequentialBase {
         @Override
         public TrackingMutableRowSet build() {
             return new MutableRowSetImpl(getTreeIndexImpl());
         }
     }
 
-    public static SequentialRowSetBuilder makeCurrentSequentialBuilder() {
-        return new CurrentOnlyIndexSequentialBuilder();
+    public static RowSetBuilderSequential makeCurrentSequentialBuilder() {
+        return new CurrentOnlyIndexBuilderSequential();
     }
 
     public static GroupingRowSetHelper getEmptyIndex() {

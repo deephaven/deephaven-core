@@ -453,7 +453,7 @@ public abstract class GroupingRowSetHelperTestBase extends TestCase {
     }
 
     public void testUnionIntoFullLeaf() {
-        final RowSetBuilder rowSetBuilder1 = getFactory().getBuilder();
+        final RowSetBuilderRandom rowSetBuilder1 = getFactory().getRandomBuilder();
         for (int ii = 0; ii < 4; ++ii) {
             rowSetBuilder1.addRange(ii * 128, ii * 128 + 64);
         }
@@ -484,7 +484,7 @@ public abstract class GroupingRowSetHelperTestBase extends TestCase {
         final TrackingMutableRowSet idx = rowSetBuilder1.build();
 
         // Now try to force an overflow.
-        final RowSetBuilder rowSetBuilder2 = getFactory().getBuilder();
+        final RowSetBuilderRandom rowSetBuilder2 = getFactory().getRandomBuilder();
         rowSetBuilder2.addRange(7900, 8265);
         final TrackingMutableRowSet idx2 = rowSetBuilder2.build();
 
@@ -505,7 +505,7 @@ public abstract class GroupingRowSetHelperTestBase extends TestCase {
     }
 
     private void doTestFunnyOverlap(@SuppressWarnings("SameParameterValue") String input) {
-        final RowSetBuilder rowSetBuilder1 = getFactory().getBuilder();
+        final RowSetBuilderRandom rowSetBuilder1 = getFactory().getRandomBuilder();
 
         final TLongArrayList keyList = new TLongArrayList();
 
@@ -528,7 +528,7 @@ public abstract class GroupingRowSetHelperTestBase extends TestCase {
         final TrackingMutableRowSet rowSet1 = rowSetBuilder1.build();
         rowSet1.validate();
 
-        final RowSetBuilder rowSetBuilder2 = getFactory().getBuilder();
+        final RowSetBuilderRandom rowSetBuilder2 = getFactory().getRandomBuilder();
 
         for (String range : splitInput) {
             final int dash = range.indexOf("-");
@@ -565,7 +565,7 @@ public abstract class GroupingRowSetHelperTestBase extends TestCase {
                 keyList.set(jj, oldKey);
                 keyList.set(ii, newKey);
             }
-            final RowSetBuilder rowSetBuilder3 = getFactory().getBuilder();
+            final RowSetBuilderRandom rowSetBuilder3 = getFactory().getRandomBuilder();
             for (int ii = 0; ii < keyList.size(); ++ii) {
                 rowSetBuilder3.addKey(keyList.get(ii));
             }
@@ -880,7 +880,7 @@ public abstract class GroupingRowSetHelperTestBase extends TestCase {
                 System.out.println(ii + ": " + (System.currentTimeMillis() - startTime) + "ms: " + check);
             }
 
-            final RowSetBuilder builder = getFactory().getRandomBuilder();
+            final RowSetBuilderRandom builder = getFactory().getRandomBuilder();
             for (int jj = 0; jj < 128; ++jj) {
                 final int start = random.nextInt(maxValue);
                 final int end = start + random.nextInt(maxRange);
@@ -901,7 +901,7 @@ public abstract class GroupingRowSetHelperTestBase extends TestCase {
                 check.validate(m);
             }
 
-            final SequentialRowSetBuilder builder2 = getFactory().getSequentialBuilder();
+            final RowSetBuilderSequential builder2 = getFactory().getSequentialBuilder();
             for (final TrackingMutableRowSet.Iterator it = check.iterator(); it.hasNext();) {
                 final long next = it.nextLong();
                 final boolean partA = random.nextBoolean();

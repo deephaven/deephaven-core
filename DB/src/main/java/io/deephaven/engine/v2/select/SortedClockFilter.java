@@ -7,7 +7,7 @@ package io.deephaven.engine.v2.select;
 import io.deephaven.base.clock.Clock;
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.v2.utils.RowSetBuilder;
+import io.deephaven.engine.v2.utils.RowSetBuilderRandom;
 import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -76,7 +76,7 @@ public class SortedClockFilter extends ClockFilter {
         if (range.isEmpty()) {
             return null;
         }
-        final RowSetBuilder addedBuilder =
+        final RowSetBuilderRandom addedBuilder =
                 range.consumeKeysAndAppendAdded(nanosColumnSource, clock.currentTimeMicros() * 1000L, null);
         return addedBuilder == null ? null : addedBuilder.build();
     }

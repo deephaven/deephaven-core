@@ -8,7 +8,8 @@ import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 import io.deephaven.engine.v2.sources.chunk.FloatChunk;
 import io.deephaven.engine.v2.sources.chunk.WritableFloatChunk;
-import io.deephaven.engine.v2.utils.SequentialRowSetBuilder;
+import io.deephaven.engine.v2.utils.RowSetBuilderSequential;
+import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
 import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.engine.structures.RowSequence;
 import org.junit.After;
@@ -55,7 +56,7 @@ public class TestFloatSparseArraySource {
         final ColumnSource.FillContext fillContext = source.makeFillContext(chunkSize);
         final WritableFloatChunk<Values> dest = WritableFloatChunk.makeWritableChunk(chunkSize);
 
-        source.fillChunk(fillContext, dest, TrackingMutableRowSet.FACTORY.getRowSetByRange(0, 1023));
+        source.fillChunk(fillContext, dest, RowSetFactoryImpl.INSTANCE.getRowSetByRange(0, 1023));
         for (int ii = 0; ii < 1024; ++ii) {
             checkFromSource("null check: " + ii, NULL_FLOAT, dest.get(ii));
         }
@@ -110,7 +111,7 @@ public class TestFloatSparseArraySource {
         final ColumnSource.GetContext getContext = source.makeGetContext(chunkSize);
 
         // the asChunk is not needed here, but it's needed when replicated to Boolean
-        final FloatChunk<Values> result = source.getChunk(getContext, TrackingMutableRowSet.FACTORY.getRowSetByRange(0, 1023)).asFloatChunk();
+        final FloatChunk<Values> result = source.getChunk(getContext, RowSetFactoryImpl.INSTANCE.getRowSetByRange(0, 1023)).asFloatChunk();
         for (int ii = 0; ii < 1024; ++ii) {
             checkFromSource("null check: " + ii, NULL_FLOAT, result.get(ii));
         }
@@ -150,7 +151,7 @@ public class TestFloatSparseArraySource {
     }
 
     private TrackingMutableRowSet generateIndex(Random random, int maxsize, int runLength) {
-        final SequentialRowSetBuilder builder = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
+        final RowSetBuilderSequential builder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
         int nextKey = random.nextInt(runLength);
         while (nextKey < maxsize) {
             int lastKey;
@@ -189,7 +190,7 @@ public class TestFloatSparseArraySource {
     private void checkRangeFill(int chunkSize, FloatSparseArraySource source, ColumnSource.FillContext fillContext,
                                 WritableFloatChunk<Values> dest, float[] expectations, int firstKey, int lastKey, boolean usePrev) {
         int offset;
-        final TrackingMutableRowSet rowSet = TrackingMutableRowSet.FACTORY.getRowSetByRange(firstKey, lastKey);
+        final TrackingMutableRowSet rowSet = RowSetFactoryImpl.INSTANCE.getRowSetByRange(firstKey, lastKey);
         offset = firstKey;
         for (final RowSequence.Iterator it = rowSet.getRowSequenceIterator(); it.hasMore(); ) {
             final RowSequence nextOk = it.getNextRowSequenceWithLength(chunkSize);
@@ -206,7 +207,7 @@ public class TestFloatSparseArraySource {
 
     private void checkRangeGet(int chunkSize, FloatSparseArraySource source, ColumnSource.GetContext getContext, float[] expectations, int firstKey, int lastKey, boolean usePrev) {
         int offset;
-        final TrackingMutableRowSet rowSet = TrackingMutableRowSet.FACTORY.getRowSetByRange(firstKey, lastKey);
+        final TrackingMutableRowSet rowSet = RowSetFactoryImpl.INSTANCE.getRowSetByRange(firstKey, lastKey);
         offset = firstKey;
         for (final RowSequence.Iterator it = rowSet.getRowSequenceIterator(); it.hasMore(); ) {
             final RowSequence nextOk = it.getNextRowSequenceWithLength(chunkSize);
@@ -272,8 +273,8 @@ public class TestFloatSparseArraySource {
         // super hack
         final float[] peekedBlock = source.ensureBlock(0, 0, 0);
 
-        try (TrackingMutableRowSet srcKeys = TrackingMutableRowSet.FACTORY.getRowSetByRange(rangeStart, rangeEnd)) {
-            try (TrackingMutableRowSet destKeys = TrackingMutableRowSet.FACTORY.getRowSetByRange(rangeStart + 1, rangeEnd + 1)) {
+        try (TrackingMutableRowSet srcKeys = RowSetFactoryImpl.INSTANCE.getRowSetByRange(rangeStart, rangeEnd)) {
+            try (TrackingMutableRowSet destKeys = RowSetFactoryImpl.INSTANCE.getRowSetByRange(rangeStart + 1, rangeEnd + 1)) {
                 try (ChunkSource.GetContext srcContext = source.makeGetContext(arraySize)) {
                     try (WritableChunkSink.FillFromContext destContext = source.makeFillFromContext(arraySize)) {
                         Chunk chunk = source.getChunk(srcContext, srcKeys);
@@ -304,7 +305,7 @@ public class TestFloatSparseArraySource {
         final FloatSparseArraySource src = new FloatSparseArraySource();
         src.startTrackingPrevValues();
         LiveTableMonitor.DEFAULT.startCycleForUnitTests();
-        try (final TrackingMutableRowSet keys = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
+        try (final TrackingMutableRowSet keys = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
              final WritableFloatChunk<Values> chunk = WritableFloatChunk.makeWritableChunk(0)) {
             // Fill from an empty chunk
             src.fillFromChunkByKeys(keys, chunk);

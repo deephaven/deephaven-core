@@ -52,7 +52,7 @@ public class UnionSourceManager {
         names = tableDefinition.getColumnList().stream().map(ColumnDefinition::getName).toArray(String[]::new);
         this.parentDependency = parentDependency;
 
-        rowSet = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
+        rowSet = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
         result = new QueryTable(rowSet, getColumnSources());
         modifiedColumnSet = result.newModifiedColumnSet(names);
 
@@ -151,7 +151,7 @@ public class UnionSourceManager {
             if (onNewTableMapKey) {
                 // synthetically invoke onUpdate lest our MergedUnionListener#process never fires.
                 final ShiftAwareListener.Update update = new ShiftAwareListener.Update(
-                        table.getIndex().clone(), TrackingMutableRowSet.FACTORY.getEmptyRowSet(), TrackingMutableRowSet.FACTORY.getEmptyRowSet(),
+                        table.getIndex().clone(), RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), RowSetFactoryImpl.INSTANCE.getEmptyRowSet(),
                         IndexShiftData.EMPTY, ModifiedColumnSet.ALL);
                 listener.onUpdate(update);
                 update.release();
@@ -237,7 +237,7 @@ public class UnionSourceManager {
             if (accumulatedShift > 0) {
                 final int maxTableId = tables.size() - 1;
 
-                final SequentialRowSetBuilder builder = TrackingMutableRowSet.CURRENT_FACTORY.getSequentialBuilder();
+                final RowSetBuilderSequential builder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
                 rowSet.removeRange(unionRedirection.prevStartOfIndices[firstShiftingTable], Long.MAX_VALUE);
 
                 for (int tableId = firstShiftingTable; tableId <= maxTableId; ++tableId) {
@@ -248,11 +248,11 @@ public class UnionSourceManager {
                 rowSet.insert(builder.build());
             }
 
-            final SequentialRowSetBuilder updateAddedBuilder = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
-            final SequentialRowSetBuilder shiftAddedBuilder = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
-            final SequentialRowSetBuilder shiftRemoveBuilder = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
-            final SequentialRowSetBuilder updateRemovedBuilder = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
-            final SequentialRowSetBuilder updateModifiedBuilder = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
+            final RowSetBuilderSequential updateAddedBuilder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
+            final RowSetBuilderSequential shiftAddedBuilder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
+            final RowSetBuilderSequential shiftRemoveBuilder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
+            final RowSetBuilderSequential updateRemovedBuilder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
+            final RowSetBuilderSequential updateModifiedBuilder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
 
             // listeners should be quiescent by the time we are processing this notification, because of the dependency
             // tracking

@@ -31,7 +31,7 @@ import java.util.stream.Collectors;
  */
 public final class ByExternalChunkedOperator implements IterativeChunkedAggregationOperator {
 
-    private static final TrackingMutableRowSet NONEXISTENT_TABLE_ROW_SET = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
+    private static final TrackingMutableRowSet NONEXISTENT_TABLE_ROW_SET = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
     private static final IndexShiftData.SmartCoalescingBuilder NONEXISTENT_TABLE_SHIFT_BUILDER =
             new IndexShiftData.SmartCoalescingBuilder(NONEXISTENT_TABLE_ROW_SET.clone());
     private static final QueryTable NONEXISTENT_TABLE = new QueryTable(NONEXISTENT_TABLE_ROW_SET, Collections.emptyMap());
@@ -314,7 +314,7 @@ public final class ByExternalChunkedOperator implements IterativeChunkedAggregat
             return false;
         }
         if (rowSet == null) {
-            final TrackingMutableRowSet currentRowSet = TrackingMutableRowSet.CURRENT_FACTORY.getEmptyRowSet();
+            final TrackingMutableRowSet currentRowSet = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
             currentRowSet.insert(indicesToAdd);
             indexColumn.set(destination, currentRowSet);
         } else {
@@ -478,7 +478,7 @@ public final class ByExternalChunkedOperator implements IterativeChunkedAggregat
 
     @Override
     public void resetForStep(@NotNull final ShiftAwareListener.Update upstream) {
-        stepShiftedDestinations = TrackingMutableRowSet.CURRENT_FACTORY.getEmptyRowSet();
+        stepShiftedDestinations = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
         final boolean upstreamModified = upstream.modified.nonempty() && upstream.modifiedColumnSet.nonempty();
         if (upstreamModified) {
             // We re-use this for all sub-tables that have modifies.
@@ -556,8 +556,8 @@ public final class ByExternalChunkedOperator implements IterativeChunkedAggregat
                     final ShiftAwareListener.Update downstream = new ShiftAwareListener.Update();
 
                     downstream.added = nullToEmpty(extractAndClearIndex(addedIndicesBackingChunk, backingChunkOffset));
-                    downstream.removed = TrackingMutableRowSet.CURRENT_FACTORY.getEmptyRowSet();
-                    downstream.modified = TrackingMutableRowSet.CURRENT_FACTORY.getEmptyRowSet();
+                    downstream.removed = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+                    downstream.modified = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
                     downstream.shifted = IndexShiftData.EMPTY;
                     downstream.modifiedColumnSet = ModifiedColumnSet.EMPTY;
 
@@ -672,8 +672,8 @@ public final class ByExternalChunkedOperator implements IterativeChunkedAggregat
 
                         downstream.added =
                                 nullToEmpty(extractAndClearIndex(addedIndicesBackingChunk, backingChunkOffset));
-                        downstream.removed = TrackingMutableRowSet.CURRENT_FACTORY.getEmptyRowSet();
-                        downstream.modified = TrackingMutableRowSet.CURRENT_FACTORY.getEmptyRowSet();
+                        downstream.removed = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+                        downstream.modified = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
                         downstream.shifted = IndexShiftData.EMPTY;
                         downstream.modifiedColumnSet = ModifiedColumnSet.EMPTY;
 
@@ -728,7 +728,7 @@ public final class ByExternalChunkedOperator implements IterativeChunkedAggregat
 
     private QueryTable makeSubTable(@Nullable final TrackingMutableRowSet initialRowSetToInsert) {
         // We don't start from initialRowSetToInsert because it is expected to be a MutableRowSetImpl.
-        final QueryTable subTable = parentTable.getSubTable(TrackingMutableRowSet.FACTORY.getEmptyRowSet(), resultModifiedColumnSet);
+        final QueryTable subTable = parentTable.getSubTable(RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), resultModifiedColumnSet);
         subTable.setRefreshing(parentTable.isRefreshing());
         if (aggregationUpdateListener != null) {
             subTable.addParentReference(aggregationUpdateListener);
@@ -781,10 +781,10 @@ public final class ByExternalChunkedOperator implements IterativeChunkedAggregat
 
                     final ShiftAwareListener.Update downstream = new ShiftAwareListener.Update();
 
-                    downstream.added = TrackingMutableRowSet.CURRENT_FACTORY.getEmptyRowSet();
+                    downstream.added = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
                     downstream.removed =
                             nullToEmpty(extractAndClearIndex(removedIndicesBackingChunk, backingChunkOffset));
-                    downstream.modified = TrackingMutableRowSet.CURRENT_FACTORY.getEmptyRowSet();
+                    downstream.modified = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
                     downstream.shifted = IndexShiftData.EMPTY;
                     downstream.modifiedColumnSet = ModifiedColumnSet.EMPTY;
 
@@ -862,7 +862,7 @@ public final class ByExternalChunkedOperator implements IterativeChunkedAggregat
                             nullToEmpty(extractAndClearIndex(removedIndicesBackingChunk, backingChunkOffset));
                     downstream.modified = stepValuesModified
                             ? nullToEmpty(extractAndClearIndex(modifiedIndicesBackingChunk, backingChunkOffset))
-                            : TrackingMutableRowSet.CURRENT_FACTORY.getEmptyRowSet();
+                            : RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
                     downstream.shifted =
                             extractAndClearShiftDataBuilder(shiftDataBuildersBackingChunk, backingChunkOffset);
                     downstream.modifiedColumnSet =
@@ -897,7 +897,7 @@ public final class ByExternalChunkedOperator implements IterativeChunkedAggregat
     }
 
     private static TrackingMutableRowSet nullToEmpty(@Nullable final TrackingMutableRowSet rowSet) {
-        return rowSet == null ? TrackingMutableRowSet.CURRENT_FACTORY.getEmptyRowSet() : rowSet;
+        return rowSet == null ? RowSetFactoryImpl.INSTANCE.getEmptyRowSet() : rowSet;
     }
 
     private static IndexShiftData extractAndClearShiftDataBuilder(

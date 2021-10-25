@@ -13,7 +13,8 @@ import io.deephaven.engine.tables.live.LiveTableMonitor;
 import io.deephaven.engine.tables.utils.DBDateTime;
 import io.deephaven.engine.tables.utils.DBTimeUtils;
 import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.utils.SequentialRowSetBuilder;
+import io.deephaven.engine.v2.utils.RowSetBuilderSequential;
+import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
 import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 
 import java.util.Collections;
@@ -73,7 +74,7 @@ public class TimeSeriesFilter extends SelectFilterLivenessArtifactImpl implement
 
         long nanoBoundary = getNow().getNanos() - nanos;
 
-        SequentialRowSetBuilder indexBuilder = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
+        RowSetBuilderSequential indexBuilder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
         for (TrackingMutableRowSet.Iterator it = selection.iterator(); it.hasNext();) {
             long row = it.nextLong();
             long nanoValue = dateColumn.get(row).getNanos();

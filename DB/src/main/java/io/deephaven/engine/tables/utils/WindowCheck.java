@@ -12,10 +12,7 @@ import io.deephaven.engine.v2.sources.AbstractColumnSource;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.LogicalClock;
 import io.deephaven.engine.v2.sources.MutableColumnSourceGetDefaults;
-import io.deephaven.engine.v2.utils.RowSetBuilder;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
-import io.deephaven.engine.v2.utils.IndexShiftData;
-import io.deephaven.engine.v2.utils.TimeProvider;
+import io.deephaven.engine.v2.utils.*;
 import io.deephaven.base.RAPriQueue;
 import gnu.trove.map.hash.TLongObjectHashMap;
 
@@ -113,7 +110,7 @@ public class WindowCheck {
         private final RAPriQueue<Entry> priorityQueue;
         /** a map from table indices to our entries. */
         private final TLongObjectHashMap<Entry> indexToEntry;
-        private final TrackingMutableRowSet EMPTY_ROW_SET = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
+        private final TrackingMutableRowSet EMPTY_ROW_SET = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
         private final ModifiedColumnSet.Transformer mcsTransformer;
         private final ModifiedColumnSet mcsNewColumns;
         private final ModifiedColumnSet reusableModifiedColumnSet;
@@ -193,7 +190,7 @@ public class WindowCheck {
                 removeIndex(upstream.removed);
 
                 // anything that was shifted needs to be placed in the proper slots
-                final TrackingMutableRowSet preShiftRowSet = source.getIndex().getPrevIndex();
+                final TrackingMutableRowSet preShiftRowSet = source.getIndex().getPrevRowSet();
                 upstream.shifted.apply((start, end, delta) -> {
                     final TrackingMutableRowSet subRowSet = preShiftRowSet.subSetByKeyRange(start, end);
 
@@ -325,7 +322,7 @@ public class WindowCheck {
         }
 
         private TrackingMutableRowSet recomputeModified() {
-            final RowSetBuilder builder = TrackingMutableRowSet.FACTORY.getRandomBuilder();
+            final RowSetBuilderRandom builder = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
 
             while (true) {
                 final Entry entry = priorityQueue.top();
@@ -349,7 +346,7 @@ public class WindowCheck {
 
         void validateQueue() {
             final TrackingMutableRowSet resultRowSet = result.getIndex();
-            final RowSetBuilder builder = TrackingMutableRowSet.FACTORY.getRandomBuilder();
+            final RowSetBuilderRandom builder = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
 
             final Entry[] entries = new Entry[priorityQueue.size()];
             priorityQueue.dump(entries, 0);

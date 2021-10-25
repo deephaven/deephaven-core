@@ -10,10 +10,7 @@ import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedRowKeys;
 import io.deephaven.engine.v2.sources.chunk.Attributes.RowKeys;
 import io.deephaven.engine.v2.sources.chunk.LongChunk;
 import io.deephaven.engine.v2.sources.chunk.WritableLongChunk;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
-import io.deephaven.engine.v2.utils.LongAbortableConsumer;
-import io.deephaven.engine.v2.utils.LongRangeAbortableConsumer;
-import io.deephaven.engine.v2.utils.LongRangeConsumer;
+import io.deephaven.engine.v2.utils.*;
 import io.deephaven.util.SafeCloseable;
 
 /**
@@ -350,7 +347,7 @@ public interface RowSequence extends SafeCloseable, LongSizedDataStructure {
 
         @Override
         public TrackingMutableRowSet asIndex() {
-            return TrackingMutableRowSet.FACTORY.getEmptyRowSet();
+            return RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
         }
 
         @Override

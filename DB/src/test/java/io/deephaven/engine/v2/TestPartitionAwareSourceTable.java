@@ -22,6 +22,7 @@ import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 import io.deephaven.engine.v2.sources.chunk.ChunkType;
 import io.deephaven.engine.v2.sources.chunk.WritableChunk;
 import io.deephaven.engine.v2.sources.chunk.WritableIntChunk;
+import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
 import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.v2.utils.UpdatePerformanceTracker;
@@ -144,7 +145,7 @@ public class TestPartitionAwareSourceTable extends LiveTableTestCase {
             }
         });
 
-        expectedRowSet = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
+        expectedRowSet = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
 
         SUT = new PartitionAwareSourceTable(TABLE_DEFINITION, "", componentFactory, locationProvider,
                 LiveTableMonitor.DEFAULT);
@@ -230,7 +231,7 @@ public class TestPartitionAwareSourceTable extends LiveTableTestCase {
         Assert.assertion(!(throwException && !coalesceAndListen), "!(throwException && !listen)");
         final TableDataException exception = new TableDataException("test");
         final TrackingMutableRowSet toAdd =
-                TrackingMutableRowSet.FACTORY.getRowSetByRange(expectedRowSet.lastRowKey() + 1,
+                RowSetFactoryImpl.INSTANCE.getRowSetByRange(expectedRowSet.lastRowKey() + 1,
                         expectedRowSet.lastRowKey() + INDEX_INCREMENT);
 
         checking(new Expectations() {
@@ -304,7 +305,7 @@ public class TestPartitionAwareSourceTable extends LiveTableTestCase {
 
     private void doRefreshChangedCheck() {
         final TrackingMutableRowSet toAdd =
-                TrackingMutableRowSet.FACTORY.getRowSetByRange(expectedRowSet.lastRowKey() + 1,
+                RowSetFactoryImpl.INSTANCE.getRowSetByRange(expectedRowSet.lastRowKey() + 1,
                         expectedRowSet.lastRowKey() + INDEX_INCREMENT);
         checking(new Expectations() {
             {
@@ -319,8 +320,8 @@ public class TestPartitionAwareSourceTable extends LiveTableTestCase {
                                 final ShiftAwareListener.Update update =
                                         (ShiftAwareListener.Update) invocation.getParameter(0);
                                 assertIndexEquals(toAdd, update.added);
-                                assertIndexEquals(TrackingMutableRowSet.FACTORY.getEmptyRowSet(), update.removed);
-                                assertIndexEquals(TrackingMutableRowSet.FACTORY.getEmptyRowSet(), update.modified);
+                                assertIndexEquals(RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), update.removed);
+                                assertIndexEquals(RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), update.modified);
                                 assertTrue(update.shifted.empty());
                                 return notification;
                             }
@@ -349,7 +350,7 @@ public class TestPartitionAwareSourceTable extends LiveTableTestCase {
         checking(new Expectations() {
             {
                 oneOf(columnSourceManager).refresh();
-                will(returnValue(TrackingMutableRowSet.FACTORY.getEmptyRowSet()));
+                will(returnValue(RowSetFactoryImpl.INSTANCE.getEmptyRowSet()));
             }
         });
 
@@ -455,7 +456,7 @@ public class TestPartitionAwareSourceTable extends LiveTableTestCase {
                     }
                 });
                 oneOf(columnSourceManager).refresh();
-                will(returnValue(TrackingMutableRowSet.FACTORY.getEmptyRowSet()));
+                will(returnValue(RowSetFactoryImpl.INSTANCE.getEmptyRowSet()));
                 oneOf(columnSourceManager).getColumnSources();
                 will(returnValue(
                         Arrays.stream(includedColumns1)
@@ -499,7 +500,7 @@ public class TestPartitionAwareSourceTable extends LiveTableTestCase {
                     }
                 });
                 oneOf(columnSourceManager).refresh();
-                will(returnValue(TrackingMutableRowSet.FACTORY.getEmptyRowSet()));
+                will(returnValue(RowSetFactoryImpl.INSTANCE.getEmptyRowSet()));
                 oneOf(columnSourceManager).getColumnSources();
                 will(returnValue(
                         Arrays.stream(includedColumns2)
@@ -552,7 +553,7 @@ public class TestPartitionAwareSourceTable extends LiveTableTestCase {
                     }
                 });
                 oneOf(columnSourceManager).refresh();
-                will(returnValue(TrackingMutableRowSet.FACTORY.getEmptyRowSet()));
+                will(returnValue(RowSetFactoryImpl.INSTANCE.getEmptyRowSet()));
                 oneOf(columnSourceManager).getColumnSources();
                 will(returnValue(
                         Arrays.stream(includedColumns3)

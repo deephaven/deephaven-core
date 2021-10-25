@@ -308,7 +308,7 @@ public class IndexShiftDataTest {
 
     @Test
     public void testSmartCoalescingBuilder6() {
-        testSmartCoalescingBuilder5and6(TrackingMutableRowSet.FACTORY.getEmptyRowSet());
+        testSmartCoalescingBuilder5and6(RowSetFactoryImpl.INSTANCE.getEmptyRowSet());
     }
 
     private void testSmartCoalescingBuilder5and6(TrackingMutableRowSet rowSet) {
@@ -336,7 +336,7 @@ public class IndexShiftDataTest {
 
     @Test
     public void testSmartCoalescingBuilder7() {
-        final TrackingMutableRowSet rowSet = TrackingMutableRowSet.FACTORY.getRowSetByValues(1, 10, 13);
+        final TrackingMutableRowSet rowSet = RowSetFactoryImpl.INSTANCE.getRowSetByValues(1, 10, 13);
 
         final IndexShiftData.Builder dumbBuilder = newBuilder();
         dumbBuilder.shiftRange(1, 2, 2);
@@ -360,7 +360,7 @@ public class IndexShiftDataTest {
 
     @Test
     public void testSmartCoalescingBuilder8() {
-        final TrackingMutableRowSet rowSet = TrackingMutableRowSet.FACTORY.getRowSetByValues(0, 2, 16, 17, 23, 30, 35, 40);
+        final TrackingMutableRowSet rowSet = RowSetFactoryImpl.INSTANCE.getRowSetByValues(0, 2, 16, 17, 23, 30, 35, 40);
 
         final IndexShiftData.Builder dumbBuilder = newBuilder();
         dumbBuilder.shiftRange(5, 6, 1);
@@ -394,7 +394,7 @@ public class IndexShiftDataTest {
 
     @Test
     public void testSmartCoalescingBuilder9() {
-        final TrackingMutableRowSet rowSet = TrackingMutableRowSet.FACTORY.getRowSetByValues(0, 1, 6, 13, 20);
+        final TrackingMutableRowSet rowSet = RowSetFactoryImpl.INSTANCE.getRowSetByValues(0, 1, 6, 13, 20);
 
         final IndexShiftData.Builder dumbBuilder = newBuilder();
         dumbBuilder.shiftRange(3, 7, 1);
@@ -420,7 +420,7 @@ public class IndexShiftDataTest {
 
 
     private TrackingMutableRowSet getScbTestIndex() {
-        final SequentialRowSetBuilder sequentialBuilder = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
+        final RowSetBuilderSequential sequentialBuilder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
         sequentialBuilder.appendKey(100);
         sequentialBuilder.appendKey(200);
         sequentialBuilder.appendKey(300);

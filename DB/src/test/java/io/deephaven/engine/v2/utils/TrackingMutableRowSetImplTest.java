@@ -43,7 +43,7 @@ public class TrackingMutableRowSetImplTest extends GroupingRowSetHelperTestBase 
     @NotNull
     @Override
     protected GroupingRowSetHelper getSortedIndex(long... keys) {
-        final RowSetBuilder treeIndexBuilder = TrackingMutableRowSetImpl.makeRandomBuilder();
+        final RowSetBuilderRandom treeIndexBuilder = TrackingMutableRowSetImpl.makeRandomBuilder();
         for (long key : keys) {
             treeIndexBuilder.addKey(key);
         }
@@ -60,18 +60,18 @@ public class TrackingMutableRowSetImplTest extends GroupingRowSetHelperTestBase 
     @NotNull
     @Override
     protected RowSetFactory getFactory() {
-        return TrackingMutableRowSet.FACTORY;
+        return RowSetFactoryImpl.INSTANCE;
     }
 
     public void testSimple() {
-        assertEquals(1, TrackingMutableRowSet.FACTORY.getRowSetByRange(2, 2).size());
-        final TrackingMutableRowSet.Iterator it = TrackingMutableRowSet.FACTORY.getRowSetByRange(2, 2).iterator();
+        assertEquals(1, RowSetFactoryImpl.INSTANCE.getRowSetByRange(2, 2).size());
+        final TrackingMutableRowSet.Iterator it = RowSetFactoryImpl.INSTANCE.getRowSetByRange(2, 2).iterator();
         assertEquals(2, it.nextLong());
         assertFalse(it.hasNext());
     }
 
     public void testSimpleRangeIterator() {
-        final TrackingMutableRowSet rowSet = TrackingMutableRowSet.FACTORY.getRowSetByRange(3, 100);
+        final TrackingMutableRowSet rowSet = RowSetFactoryImpl.INSTANCE.getRowSetByRange(3, 100);
         final TrackingMutableRowSet.RangeIterator rit = rowSet.rangeIterator();
         assertTrue(rit.hasNext());
         rit.next();
@@ -81,7 +81,7 @@ public class TrackingMutableRowSetImplTest extends GroupingRowSetHelperTestBase 
     }
 
     public void testSerialize() throws IOException, ClassNotFoundException {
-        TrackingMutableRowSet rowSet = TrackingMutableRowSet.FACTORY.getRowSetByRange(0, 100);
+        TrackingMutableRowSet rowSet = RowSetFactoryImpl.INSTANCE.getRowSetByRange(0, 100);
         TrackingMutableRowSet copy = (TrackingMutableRowSet) doSerDeser(rowSet);
         assertEquals(rowSet, copy);
         rowSet.insert(1000000);
@@ -273,7 +273,7 @@ public class TrackingMutableRowSetImplTest extends GroupingRowSetHelperTestBase 
 
     public void testSplitRangeIterator() {
         // insert merging two adjacent nodes
-        final RowSetBuilder builder = TrackingMutableRowSet.FACTORY.getBuilder();
+        final RowSetBuilderRandom builder = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
         for (int ii = 0; ii < 65; ++ii) {
             builder.addKey(ii * 2);
         }
@@ -283,7 +283,7 @@ public class TrackingMutableRowSetImplTest extends GroupingRowSetHelperTestBase 
         rowSet.validate();
 
         // insert range merging two adjacent nodes
-        final RowSetBuilder builder2 = TrackingMutableRowSet.FACTORY.getBuilder();
+        final RowSetBuilderRandom builder2 = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
         for (int ii = 0; ii < 65; ++ii) {
             builder2.addKey(ii * 4);
         }
@@ -293,7 +293,7 @@ public class TrackingMutableRowSetImplTest extends GroupingRowSetHelperTestBase 
         rowSet2.validate();
 
         // force two nodes into existence
-        final RowSetBuilder builder3 = TrackingMutableRowSet.FACTORY.getBuilder();
+        final RowSetBuilderRandom builder3 = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
         for (int ii = 0; ii < 65; ++ii) {
             builder3.addKey(ii * 4);
         }
@@ -309,7 +309,7 @@ public class TrackingMutableRowSetImplTest extends GroupingRowSetHelperTestBase 
     }
 
     public void testSequentialSplitRange() {
-        final SequentialRowSetBuilder builder = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
+        final RowSetBuilderSequential builder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
         for (int ii = 0; ii < 64; ++ii) {
             builder.appendKey(ii * 2);
         }
@@ -317,7 +317,7 @@ public class TrackingMutableRowSetImplTest extends GroupingRowSetHelperTestBase 
         final TrackingMutableRowSet checkRowSet = builder.build();
         checkRowSet.validate();
 
-        final SequentialRowSetBuilder builder2 = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
+        final RowSetBuilderSequential builder2 = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
         for (int ii = 0; ii < 63; ++ii) {
             builder2.appendKey(ii * 4);
         }
@@ -326,7 +326,7 @@ public class TrackingMutableRowSetImplTest extends GroupingRowSetHelperTestBase 
         final TrackingMutableRowSet checkRowSet = builder2.build();
         checkRowSet.validate();
 
-        final SequentialRowSetBuilder builder3 = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
+        final RowSetBuilderSequential builder3 = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
         for (int ii = 0; ii < 63; ++ii) {
             builder3.appendKey(ii * 4);
         }
@@ -381,21 +381,21 @@ public class TrackingMutableRowSetImplTest extends GroupingRowSetHelperTestBase 
     }
 
     public void testAddIndex3() {
-        final RowSetBuilder result = TrackingMutableRowSet.FACTORY.getRandomBuilder();
+        final RowSetBuilderRandom result = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
         for (int ii = 0; ii < 64; ++ii) {
             result.addKey(ii * 100);
         }
         for (int ii = 0; ii < 32; ++ii) {
             result.addKey(3101 + ii * 2);
         }
-        final TrackingMutableRowSet rowSetToAdd = TrackingMutableRowSet.FACTORY.getRowSetByValues(3164, 3166);
+        final TrackingMutableRowSet rowSetToAdd = RowSetFactoryImpl.INSTANCE.getRowSetByValues(3164, 3166);
         result.addRowSet(rowSetToAdd);
         final TrackingMutableRowSet checkRowSet = result.build();
         checkRowSet.validate();
     }
 
     public void testAddIndex() {
-        final RowSetBuilder result = TrackingMutableRowSet.FACTORY.getRandomBuilder();
+        final RowSetBuilderRandom result = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
         for (int ii = 0; ii < 64; ++ii) {
             result.addKey(ii * 100);
         }
@@ -422,15 +422,15 @@ public class TrackingMutableRowSetImplTest extends GroupingRowSetHelperTestBase 
 
         final TrackingMutableRowSet idx2 = idx.clone();
 
-        final TrackingMutableRowSet rowSetToAdd = TrackingMutableRowSet.FACTORY.getRowSetByValues(3164);
+        final TrackingMutableRowSet rowSetToAdd = RowSetFactoryImpl.INSTANCE.getRowSetByValues(3164);
         idx.insert(rowSetToAdd);
         idx.validate();
 
-        final TrackingMutableRowSet rowSetToAdd2 = TrackingMutableRowSet.FACTORY.getRowSetByRange(3164, 3199);
+        final TrackingMutableRowSet rowSetToAdd2 = RowSetFactoryImpl.INSTANCE.getRowSetByRange(3164, 3199);
         rowSetToAdd2.insert(idx2);
         rowSetToAdd2.validate();
 
-        final TrackingMutableRowSet rowSetToAdd3 = TrackingMutableRowSet.FACTORY.getRowSetByRange(3164, 3199);
+        final TrackingMutableRowSet rowSetToAdd3 = RowSetFactoryImpl.INSTANCE.getRowSetByRange(3164, 3199);
         idx2.insert(rowSetToAdd3);
         idx2.validate();
     }
@@ -594,7 +594,7 @@ public class TrackingMutableRowSetImplTest extends GroupingRowSetHelperTestBase 
     }
 
     private TrackingMutableRowSet getUnionIndexStrings(final String[] indexStrings) {
-        final RowSetBuilder result = TrackingMutableRowSet.FACTORY.getRandomBuilder();
+        final RowSetBuilderRandom result = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
         for (String indexString : indexStrings) {
             final TrackingMutableRowSet rowSetToAdd = indexFromString(indexString);
             rowSetToAdd.validate();
@@ -619,7 +619,7 @@ public class TrackingMutableRowSetImplTest extends GroupingRowSetHelperTestBase 
             final int size = random.nextInt(10);
 
             final RangePriorityQueueBuilder priorityQueueBuilder = new RangePriorityQueueBuilder(16);
-            final RowSetBuilder treeBuilder = TrackingMutableRowSetImpl.makeRandomBuilder();
+            final RowSetBuilderRandom treeBuilder = TrackingMutableRowSetImpl.makeRandomBuilder();
 
             values.clear();
 
@@ -889,7 +889,7 @@ public class TrackingMutableRowSetImplTest extends GroupingRowSetHelperTestBase 
 
     public void testRandomBuilderEmptyAdds() {
         // Make a perfect merge between two leaves, collapsing to a single range.
-        final RowSetBuilder b = TrackingMutableRowSetImpl.makeRandomBuilder();
+        final RowSetBuilderRandom b = TrackingMutableRowSetImpl.makeRandomBuilder();
         for (int i = 1; i <= 32; ++i) {
             b.addKey(2 * i);
         }
@@ -918,7 +918,7 @@ public class TrackingMutableRowSetImplTest extends GroupingRowSetHelperTestBase 
     }
 
     public void testIteratorBinarySearch() {
-        final RowSetBuilder b = TrackingMutableRowSet.FACTORY.getRandomBuilder();
+        final RowSetBuilderRandom b = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
         b.addRange(2, 3);
         b.addRange(5, 9);
         b.addRange(15, 19);
@@ -1018,7 +1018,7 @@ public class TrackingMutableRowSetImplTest extends GroupingRowSetHelperTestBase 
     }
 
     public void testIteratorBinarySearchForSingleRangeIndex() {
-        final TrackingMutableRowSet sr = TrackingMutableRowSet.FACTORY.getRowSetByRange(5, 9);
+        final TrackingMutableRowSet sr = RowSetFactoryImpl.INSTANCE.getRowSetByRange(5, 9);
         final TrackingMutableRowSet.SearchIterator it = sr.searchIterator();
         TrackingMutableRowSet.TargetComparator comp = makeCompFor(4);
         long v = it.binarySearchValue(comp, 1);
@@ -1041,7 +1041,7 @@ public class TrackingMutableRowSetImplTest extends GroupingRowSetHelperTestBase 
     }
 
     public void testRangeIteratorAdvance() {
-        final RowSetBuilder bl = TrackingMutableRowSet.FACTORY.getRandomBuilder();
+        final RowSetBuilderRandom bl = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
         bl.addRange(2, 3);
         bl.addRange(5, 9);
         bl.addRange(15, 19);
@@ -1093,14 +1093,14 @@ public class TrackingMutableRowSetImplTest extends GroupingRowSetHelperTestBase 
     }
 
     public void testRangeIteratorAdvanceEmptyIndex() {
-        final TrackingMutableRowSet ix = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
+        final TrackingMutableRowSet ix = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
         final TrackingMutableRowSet.RangeIterator rit = ix.rangeIterator();
         assertFalse(rit.advance(0));
         assertFalse(rit.hasNext());
     }
 
     public void testRangeIteratorAdvanceBack() {
-        final TrackingMutableRowSet ix = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
+        final TrackingMutableRowSet ix = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
         final long s = 300;
         final long e = 600;
         ix.insertRange(s, e);
@@ -1115,7 +1115,7 @@ public class TrackingMutableRowSetImplTest extends GroupingRowSetHelperTestBase 
     }
 
     private TrackingMutableRowSet singleRangeIndex(final long start, final long end) {
-        final RowSetBuilder b = TrackingMutableRowSet.FACTORY.getRandomBuilder();
+        final RowSetBuilderRandom b = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
         b.addRange(start, end);
         return b.build();
     }
@@ -1200,11 +1200,11 @@ public class TrackingMutableRowSetImplTest extends GroupingRowSetHelperTestBase 
     }
 
     public void testGetAverageRunLengthEstimate() {
-        final TrackingMutableRowSet e = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
+        final TrackingMutableRowSet e = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
         assertEquals(1, e.getAverageRunLengthEstimate());
         final TrackingMutableRowSet r1 = singleRangeIndex(0, 65535);
         assertEquals(BLOCK_SIZE, r1.getAverageRunLengthEstimate());
-        final TrackingMutableRowSet r2 = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
+        final TrackingMutableRowSet r2 = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
         r2.insert(1);
         r2.insert(3);
         r2.insert(5);
@@ -1219,7 +1219,7 @@ public class TrackingMutableRowSetImplTest extends GroupingRowSetHelperTestBase 
     }
 
     public void testGetRowSequenceByKeyRange() {
-        final SequentialRowSetBuilder b = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
+        final RowSetBuilderSequential b = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
         final long[] vs = new long[] {3, 4, 5, 8, 10, 12, 29, 31, 44, 45, 46, 59, 60, 61, 72, 65537, 65539, 65536 * 3,
                 65536 * 3 + 5};
         for (long v : vs) {
@@ -1253,7 +1253,7 @@ public class TrackingMutableRowSetImplTest extends GroupingRowSetHelperTestBase 
     }
 
     public void testGetRowSequenceByPosition() {
-        final SequentialRowSetBuilder b = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
+        final RowSetBuilderSequential b = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
         final long[] vs = new long[] {3, 4, 5, 8, 10, 12, 29, 31, 44, 45, 46, 59, 60, 61, 72, 65537, 65539, 65536 * 3,
                 65536 * 3 + 5};
         for (long v : vs) {
@@ -1289,7 +1289,7 @@ public class TrackingMutableRowSetImplTest extends GroupingRowSetHelperTestBase 
     }
 
     public void testFillChunk() {
-        final SequentialRowSetBuilder b = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
+        final RowSetBuilderSequential b = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
         final long[] vs = new long[] {3, 4, 5, 8, 10, 12, 29, 31, 44, 45, 46, 59, 60, 61, 72, 65537, 65539, 65536 * 3,
                 65536 * 3 + 5};
         for (long v : vs) {
@@ -1302,7 +1302,7 @@ public class TrackingMutableRowSetImplTest extends GroupingRowSetHelperTestBase 
     }
 
     public void testBuilderAddKeys() {
-        final RowSetBuilder b = TrackingMutableRowSet.FACTORY.getRandomBuilder();
+        final RowSetBuilderRandom b = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
         b.addKey(27);
         final long[] vs =
                 {3, 4, 5, 8, 10, 12, 29, 31, 44, 45, 46, 59, 60, 61, 72, 65537, 65539, 65536 * 3, 65536 * 3 + 5};
@@ -1328,7 +1328,7 @@ public class TrackingMutableRowSetImplTest extends GroupingRowSetHelperTestBase 
     }
 
     public void testBuilderAppendKeys() {
-        final SequentialRowSetBuilder b = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
+        final RowSetBuilderSequential b = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
         b.appendKey(1);
         final long[] vs =
                 {3, 4, 5, 8, 10, 12, 29, 31, 44, 45, 46, 59, 60, 61, 72, 65537, 65539, 65536 * 3, 65536 * 3 + 5};
@@ -1354,7 +1354,7 @@ public class TrackingMutableRowSetImplTest extends GroupingRowSetHelperTestBase 
     }
 
     public void testBuilderAddRanges() {
-        final RowSetBuilder b = TrackingMutableRowSet.FACTORY.getRandomBuilder();
+        final RowSetBuilderRandom b = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
         final long[] vs =
                 {3, 4, 5, 8, 10, 12, 29, 31, 44, 45, 46, 59, 60, 61, 72, 91, 65537, 65539, 65536 * 3, 65536 * 3 + 5};
         b.addRanges(new LongRangeIterator() {
@@ -1381,7 +1381,7 @@ public class TrackingMutableRowSetImplTest extends GroupingRowSetHelperTestBase 
             }
         });
         final TrackingMutableRowSet ix = b.build();
-        final RowSetBuilder b2 = TrackingMutableRowSet.FACTORY.getRandomBuilder();
+        final RowSetBuilderRandom b2 = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
         for (int i = 0; i < vs.length; i += 2) {
             b2.addRange(vs[i], vs[i + 1]);
         }
@@ -1391,7 +1391,7 @@ public class TrackingMutableRowSetImplTest extends GroupingRowSetHelperTestBase 
     }
 
     public void testBuilderAppendRanges() {
-        final SequentialRowSetBuilder b = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
+        final RowSetBuilderSequential b = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
         final long[] vs =
                 {3, 4, 5, 8, 10, 12, 29, 31, 44, 45, 46, 59, 60, 61, 72, 91, 65537, 65539, 65536 * 3, 65536 * 3 + 5};
         b.appendRanges(new LongRangeIterator() {
@@ -1418,7 +1418,7 @@ public class TrackingMutableRowSetImplTest extends GroupingRowSetHelperTestBase 
             }
         });
         final TrackingMutableRowSet ix = b.build();
-        final RowSetBuilder b2 = TrackingMutableRowSet.FACTORY.getRandomBuilder();
+        final RowSetBuilderRandom b2 = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
         for (int i = 0; i < vs.length; i += 2) {
             b2.addRange(vs[i], vs[i + 1]);
         }
@@ -1431,10 +1431,10 @@ public class TrackingMutableRowSetImplTest extends GroupingRowSetHelperTestBase 
         final int sz = 10;
         final TrackingMutableRowSet[] ixs = new TrackingMutableRowSet[sz];
         for (int i = 0; i < sz; ++i) {
-            ixs[i] = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
+            ixs[i] = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
             ixs[i].insert(i);
         }
-        final TrackingMutableRowSet r = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
+        final TrackingMutableRowSet r = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
         for (int i = 0; i < sz; ++i) {
             r.insert(ixs[i]);
         }
@@ -1444,7 +1444,7 @@ public class TrackingMutableRowSetImplTest extends GroupingRowSetHelperTestBase 
     }
 
     public void testSubindexByPosRegreesion0() {
-        final TrackingMutableRowSet ix = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
+        final TrackingMutableRowSet ix = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
         ix.insertRange(0, 95 * ((long) BLOCK_SIZE));
         final long s1 = 0x1000000 * ((long) BLOCK_SIZE);
         ix.insertRange(s1, s1 + 95 * 65536);
@@ -1466,7 +1466,7 @@ public class TrackingMutableRowSetImplTest extends GroupingRowSetHelperTestBase 
     }
 
     public void testContainsRange() {
-        final TrackingMutableRowSet ix = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
+        final TrackingMutableRowSet ix = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
         ix.insertRange(1, 3);
         ix.insertRange(BLOCK_LAST, BLOCK_SIZE);
         ix.insertRange(2 * BLOCK_SIZE, 2 * BLOCK_SIZE + 1);
@@ -1502,7 +1502,7 @@ public class TrackingMutableRowSetImplTest extends GroupingRowSetHelperTestBase 
     }
 
     public void testOverlapsRange() {
-        final TrackingMutableRowSet ix = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
+        final TrackingMutableRowSet ix = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
         ix.insertRange(3, 5);
         ix.insertRange(BLOCK_LAST, BLOCK_SIZE);
         ix.insertRange(2 * BLOCK_SIZE, 2 * BLOCK_SIZE + 1);
@@ -1551,8 +1551,8 @@ public class TrackingMutableRowSetImplTest extends GroupingRowSetHelperTestBase 
     }
 
     public void testOneRangeIndexMinus() {
-        final TrackingMutableRowSet ix = TrackingMutableRowSet.FACTORY.getRowSetByRange(1000, 5000);
-        final TrackingMutableRowSet r = ix.minus(TrackingMutableRowSet.FACTORY.getRowSetByRange(1001, 4999));
+        final TrackingMutableRowSet ix = RowSetFactoryImpl.INSTANCE.getRowSetByRange(1000, 5000);
+        final TrackingMutableRowSet r = ix.minus(RowSetFactoryImpl.INSTANCE.getRowSetByRange(1001, 4999));
         final TrackingMutableRowSet c = ix.clone();
         c.removeRange(1001, 4999);
     }
@@ -1601,7 +1601,7 @@ public class TrackingMutableRowSetImplTest extends GroupingRowSetHelperTestBase 
         final TrackingMutableRowSet ix2 = ix.clone();
         assertEquals(2, ix.refCount());
         assertEquals(2, ix2.refCount());
-        ix.update(TrackingMutableRowSet.FACTORY.getEmptyRowSet(), ix2);
+        ix.update(RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), ix2);
         assertEquals(0, ix.size());
         assertEquals(1, ix2.refCount());
     }
@@ -1615,7 +1615,7 @@ public class TrackingMutableRowSetImplTest extends GroupingRowSetHelperTestBase 
     }
 
     public void testSearchIteratorRegression0() {
-        final TrackingMutableRowSet ix0 = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
+        final TrackingMutableRowSet ix0 = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
         // force a bitmap container.
         for (int i = 0; i < 5000; ++i) {
             ix0.insert(2 * i);
@@ -1632,7 +1632,7 @@ public class TrackingMutableRowSetImplTest extends GroupingRowSetHelperTestBase 
     }
 
     public void testAsKeyRangesChunk() {
-        final TrackingMutableRowSet rowSet = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
+        final TrackingMutableRowSet rowSet = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
         rowSet.insertRange(130972, 131071);
         rowSet.insert(262144);
 
@@ -1645,7 +1645,7 @@ public class TrackingMutableRowSetImplTest extends GroupingRowSetHelperTestBase 
     }
 
     public void testReverseIteratorAdvanceRegression0() {
-        SequentialRowSetBuilder builder = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
+        RowSetBuilderSequential builder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
         final int key = 1073741822;
         builder.appendKey(key);
         builder.appendKey(1073741824);
@@ -1656,7 +1656,7 @@ public class TrackingMutableRowSetImplTest extends GroupingRowSetHelperTestBase 
     }
 
     public void testReverseIteratorAdvanceRegression1() {
-        SequentialRowSetBuilder builder = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
+        RowSetBuilderSequential builder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
         int key = 1073741822;
         builder.appendKey(1073741820);
         builder.appendKey(key);
@@ -1669,7 +1669,7 @@ public class TrackingMutableRowSetImplTest extends GroupingRowSetHelperTestBase 
 
     public void testReverseIteratorAdvanceRegression2() {
         long key = 1073741824;
-        RowSetBuilder builder = TrackingMutableRowSet.FACTORY.getRandomBuilder();
+        RowSetBuilderRandom builder = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
         builder.addKey(key);
         builder.addKey(key + 10);
         TrackingMutableRowSet rowSet = builder.build();
@@ -1680,7 +1680,7 @@ public class TrackingMutableRowSetImplTest extends GroupingRowSetHelperTestBase 
 
     public void testReverseIteratorAdvanceRegression3() {
         long key = 1073741824;
-        RowSetBuilder builder = TrackingMutableRowSet.FACTORY.getRandomBuilder();
+        RowSetBuilderRandom builder = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
         builder.addKey(key);
         builder.addKey(key + 10);
         TrackingMutableRowSet rowSet = builder.build();
@@ -1692,7 +1692,7 @@ public class TrackingMutableRowSetImplTest extends GroupingRowSetHelperTestBase 
 
     public void testReverseIteratorAdvanceRegression4() {
         long key = 1073741822;
-        SequentialRowSetBuilder builder = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
+        RowSetBuilderSequential builder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
         builder.appendKey(key);
         TrackingMutableRowSet rowSet = builder.build();
         TrackingMutableRowSet.SearchIterator iter = rowSet.reverseIterator();
@@ -1702,7 +1702,7 @@ public class TrackingMutableRowSetImplTest extends GroupingRowSetHelperTestBase 
 
     public void testReverseIteratorAdvanceRegression5() {
         long key = 1073741823;
-        SequentialRowSetBuilder builder = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
+        RowSetBuilderSequential builder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
         builder.appendKey(key - 1);
         builder.appendKey(key + 1);
         TrackingMutableRowSet rowSet = builder.build();
@@ -1714,7 +1714,7 @@ public class TrackingMutableRowSetImplTest extends GroupingRowSetHelperTestBase 
     }
 
     public void testReverseIteratorAdvanceRegression6() {
-        SequentialRowSetBuilder builder = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
+        RowSetBuilderSequential builder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
         final int key = BLOCK_SIZE;
         builder.appendKey(key - 1);
         builder.appendKey(key + 1);
@@ -1726,7 +1726,7 @@ public class TrackingMutableRowSetImplTest extends GroupingRowSetHelperTestBase 
     }
 
     public void testIteratorAdvanceRegression1() {
-        final TrackingMutableRowSet ix = TrackingMutableRowSet.FACTORY.getRowSetByValues(3, 5, 7, 9, 11, 21);
+        final TrackingMutableRowSet ix = RowSetFactoryImpl.INSTANCE.getRowSetByValues(3, 5, 7, 9, 11, 21);
         final TrackingMutableRowSet.RangeIterator rit = ix.rangeIterator();
         assertTrue(rit.advance(21));
         assertEquals(21, rit.currentRangeStart());
@@ -2020,8 +2020,8 @@ public class TrackingMutableRowSetImplTest extends GroupingRowSetHelperTestBase 
         ix2.retain(ix1);
         assertEquals(1, ix2.refCount());
         assertEquals(1, clone.refCount());
-        assertEquals(TrackingMutableRowSet.FACTORY.getRowSetByValues(20), ix2);
-        assertEquals(TrackingMutableRowSet.FACTORY.getRowSetByValues(18, 20), clone);
+        assertEquals(RowSetFactoryImpl.INSTANCE.getRowSetByValues(20), ix2);
+        assertEquals(RowSetFactoryImpl.INSTANCE.getRowSetByValues(18, 20), clone);
     }
 
 
@@ -2034,8 +2034,8 @@ public class TrackingMutableRowSetImplTest extends GroupingRowSetHelperTestBase 
         ix2.retainRange(20, 24);
         assertEquals(1, ix2.refCount());
         assertEquals(1, clone.refCount());
-        assertEquals(TrackingMutableRowSet.FACTORY.getRowSetByValues(20), ix2);
-        assertEquals(TrackingMutableRowSet.FACTORY.getRowSetByValues(18, 20), clone);
+        assertEquals(RowSetFactoryImpl.INSTANCE.getRowSetByValues(20), ix2);
+        assertEquals(RowSetFactoryImpl.INSTANCE.getRowSetByValues(18, 20), clone);
     }
 
     public void testRetainSrPrefix() {
@@ -2145,8 +2145,8 @@ public class TrackingMutableRowSetImplTest extends GroupingRowSetHelperTestBase 
 
     public void testRemoveTime() {
         final Random r = new Random();
-        final SequentialRowSetBuilder outer = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
-        final SequentialRowSetBuilder inner = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
+        final RowSetBuilderSequential outer = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
+        final RowSetBuilderSequential inner = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
         for (long i = 0; i < 1500000; ++i) {
             long ii = i << 16;
             outer.appendRange(ii, ii + 5);

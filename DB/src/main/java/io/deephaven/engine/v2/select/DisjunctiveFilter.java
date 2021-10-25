@@ -65,7 +65,7 @@ public class DisjunctiveFilter extends ComposedFilter {
         }
 
         final TrackingMutableRowSet result = matched == null ? selection.clone() : matched.clone();
-        Assert.eq(result.size(), "result.size()", result.getPrevIndex().size(), "result.getPrevIndex.size()");
+        Assert.eq(result.size(), "result.size()", result.getPrevRowSet().size(), "result.getPrevRowSet.size()");
         return result;
     }
 

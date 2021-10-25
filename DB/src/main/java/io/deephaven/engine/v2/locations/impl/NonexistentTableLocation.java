@@ -4,7 +4,7 @@ import io.deephaven.engine.v2.locations.ColumnLocation;
 import io.deephaven.engine.v2.locations.TableKey;
 import io.deephaven.engine.v2.locations.TableLocation;
 import io.deephaven.engine.v2.locations.TableLocationKey;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
+import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -17,7 +17,7 @@ public final class NonexistentTableLocation extends AbstractTableLocation {
     public NonexistentTableLocation(@NotNull final TableKey tableKey,
             @NotNull final TableLocationKey tableLocationKey) {
         super(tableKey, tableLocationKey, false);
-        handleUpdate(TrackingMutableRowSet.CURRENT_FACTORY.getEmptyRowSet(), NULL_TIME);
+        handleUpdate(RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), NULL_TIME);
     }
 
     @Override

@@ -96,7 +96,7 @@ public class FunctionGeneratedTableFactory {
         // enable prev tracking after columns are initialized
         columns.values().forEach(ColumnSource::startTrackingPrevValues);
 
-        rowSet = TrackingMutableRowSet.FACTORY.getFlatIndex(initialTable.size());
+        rowSet = RowSetFactoryImpl.INSTANCE.getFlatRowSet(initialTable.size());
     }
 
     private FunctionBackedTable getTable() {
@@ -157,23 +157,23 @@ public class FunctionGeneratedTableFactory {
             long newSize = updateTable();
 
             if (newSize < size) {
-                final TrackingMutableRowSet removed = TrackingMutableRowSet.FACTORY.getRowSetByRange(newSize, size - 1);
+                final TrackingMutableRowSet removed = RowSetFactoryImpl.INSTANCE.getRowSetByRange(newSize, size - 1);
                 rowSet.remove(removed);
                 final TrackingMutableRowSet modified = rowSet.clone();
-                notifyListeners(TrackingMutableRowSet.FACTORY.getEmptyRowSet(), removed, modified);
+                notifyListeners(RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), removed, modified);
                 return;
             }
             if (newSize > size) {
-                final TrackingMutableRowSet added = TrackingMutableRowSet.FACTORY.getRowSetByRange(size, newSize - 1);
+                final TrackingMutableRowSet added = RowSetFactoryImpl.INSTANCE.getRowSetByRange(size, newSize - 1);
                 final TrackingMutableRowSet modified = rowSet.clone();
                 rowSet.insert(added);
-                notifyListeners(added, TrackingMutableRowSet.FACTORY.getEmptyRowSet(), modified);
+                notifyListeners(added, RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), modified);
                 return;
             }
             if (size > 0) {
                 // no size change, just modified
                 final TrackingMutableRowSet modified = rowSet.clone();
-                notifyListeners(TrackingMutableRowSet.FACTORY.getEmptyRowSet(), TrackingMutableRowSet.FACTORY.getEmptyRowSet(), modified);
+                notifyListeners(RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), modified);
             }
         }
 

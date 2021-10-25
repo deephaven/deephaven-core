@@ -18,9 +18,9 @@ public class UpdateCoalescerTest {
         final ShiftAwareListener.Update[] ret = new ShiftAwareListener.Update[numUpdates];
         for (int i = 0; i < numUpdates; ++i) {
             ret[i] = new ShiftAwareListener.Update();
-            ret[i].added = TrackingMutableRowSet.CURRENT_FACTORY.getEmptyRowSet();
-            ret[i].removed = TrackingMutableRowSet.CURRENT_FACTORY.getEmptyRowSet();
-            ret[i].modified = TrackingMutableRowSet.CURRENT_FACTORY.getEmptyRowSet();
+            ret[i].added = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+            ret[i].removed = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+            ret[i].modified = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
             ret[i].modifiedColumnSet = ModifiedColumnSet.EMPTY;
             ret[i].shifted = IndexShiftData.EMPTY;
         }
@@ -37,7 +37,7 @@ public class UpdateCoalescerTest {
         up[0].removed = i(22, 24, 26);
         up[1].removed = i(23, 25, 27);
 
-        final TrackingMutableRowSet origRowSet = TrackingMutableRowSet.CURRENT_FACTORY.getRowSetByRange(10, 29);
+        final TrackingMutableRowSet origRowSet = RowSetFactoryImpl.INSTANCE.getRowSetByRange(10, 29);
         validateFinalIndex(origRowSet, up);
     }
 
@@ -58,7 +58,7 @@ public class UpdateCoalescerTest {
         up[1].modifiedColumnSet = newMCSForColumns("A", "B", "C");
         up[1].modifiedColumnSet.setAll("A");
 
-        final TrackingMutableRowSet origRowSet = TrackingMutableRowSet.CURRENT_FACTORY.getRowSetByRange(10, 29);
+        final TrackingMutableRowSet origRowSet = RowSetFactoryImpl.INSTANCE.getRowSetByRange(10, 29);
         final ShiftAwareListener.Update agg = validateFinalIndex(origRowSet, up);
         Assert.equals(agg.modifiedColumnSet, "agg.modifiedColumnSet", ModifiedColumnSet.ALL, "ModifiedColumnSet.ALL");
         Assert.equals(agg.modified, "agg.modified", i(4, 5, 6, 7));
@@ -73,7 +73,7 @@ public class UpdateCoalescerTest {
         up[1].modified = i(6, 7);
         up[1].modifiedColumnSet = ModifiedColumnSet.ALL;
 
-        final TrackingMutableRowSet origRowSet = TrackingMutableRowSet.CURRENT_FACTORY.getRowSetByRange(10, 29);
+        final TrackingMutableRowSet origRowSet = RowSetFactoryImpl.INSTANCE.getRowSetByRange(10, 29);
         final ShiftAwareListener.Update agg = validateFinalIndex(origRowSet, up);
         Assert.equals(agg.modifiedColumnSet, "agg.modifiedColumnSet", ModifiedColumnSet.ALL, "ModifiedColumnSet.ALL");
         Assert.equals(agg.modified, "agg.modified", i(4, 5, 6, 7));
@@ -90,7 +90,7 @@ public class UpdateCoalescerTest {
         up[1].modifiedColumnSet = new ModifiedColumnSet(up[0].modifiedColumnSet);
         up[1].modifiedColumnSet.setAll("B");
 
-        final TrackingMutableRowSet origRowSet = TrackingMutableRowSet.CURRENT_FACTORY.getRowSetByRange(10, 29);
+        final TrackingMutableRowSet origRowSet = RowSetFactoryImpl.INSTANCE.getRowSetByRange(10, 29);
         final ShiftAwareListener.Update agg = validateFinalIndex(origRowSet, up);
         final ModifiedColumnSet expected = new ModifiedColumnSet(up[0].modifiedColumnSet);
         expected.setAll("B", "C");
@@ -106,9 +106,9 @@ public class UpdateCoalescerTest {
 
         final TrackingMutableRowSet origRowSet = i();
         final ShiftAwareListener.Update agg = validateFinalIndex(origRowSet, up);
-        Assert.equals(agg.added, "agg.added", TrackingMutableRowSet.CURRENT_FACTORY.getRowSetByValues(10),
+        Assert.equals(agg.added, "agg.added", RowSetFactoryImpl.INSTANCE.getRowSetByValues(10),
                 "TrackingMutableRowSet.CURRENT_FACTORY.getRowSetByValues(10)");
-        Assert.equals(agg.modified, "agg.modified", TrackingMutableRowSet.CURRENT_FACTORY.getEmptyRowSet(),
+        Assert.equals(agg.modified, "agg.modified", RowSetFactoryImpl.INSTANCE.getEmptyRowSet(),
                 "TrackingMutableRowSet.CURRENT_FACTORY.getEmptyRowSet()");
     }
 
@@ -134,11 +134,11 @@ public class UpdateCoalescerTest {
 
         final TrackingMutableRowSet origRowSet = i(2);
         final ShiftAwareListener.Update agg = validateFinalIndex(origRowSet, up);
-        Assert.equals(agg.added, "agg.added", TrackingMutableRowSet.CURRENT_FACTORY.getRowSetByValues(2),
+        Assert.equals(agg.added, "agg.added", RowSetFactoryImpl.INSTANCE.getRowSetByValues(2),
                 "TrackingMutableRowSet.CURRENT_FACTORY.getRowSetByValues(2)");
-        Assert.equals(agg.removed, "agg.removed", TrackingMutableRowSet.CURRENT_FACTORY.getRowSetByValues(2),
+        Assert.equals(agg.removed, "agg.removed", RowSetFactoryImpl.INSTANCE.getRowSetByValues(2),
                 "TrackingMutableRowSet.CURRENT_FACTORY.getRowSetByValues(2)");
-        Assert.equals(agg.modified, "agg.modified", TrackingMutableRowSet.CURRENT_FACTORY.getEmptyRowSet(),
+        Assert.equals(agg.modified, "agg.modified", RowSetFactoryImpl.INSTANCE.getEmptyRowSet(),
                 "TrackingMutableRowSet.CURRENT_FACTORY.getEmptyRowSet()");
     }
 
@@ -152,11 +152,11 @@ public class UpdateCoalescerTest {
 
         final TrackingMutableRowSet origRowSet = i();
         final ShiftAwareListener.Update agg = validateFinalIndex(origRowSet, up);
-        Assert.equals(agg.added, "agg.added", TrackingMutableRowSet.CURRENT_FACTORY.getEmptyRowSet(),
+        Assert.equals(agg.added, "agg.added", RowSetFactoryImpl.INSTANCE.getEmptyRowSet(),
                 "TrackingMutableRowSet.CURRENT_FACTORY.getEmptyRowSet()");
-        Assert.equals(agg.removed, "agg.removed", TrackingMutableRowSet.CURRENT_FACTORY.getEmptyRowSet(),
+        Assert.equals(agg.removed, "agg.removed", RowSetFactoryImpl.INSTANCE.getEmptyRowSet(),
                 "TrackingMutableRowSet.CURRENT_FACTORY.getEmptyRowSet()");
-        Assert.equals(agg.modified, "agg.modified", TrackingMutableRowSet.CURRENT_FACTORY.getEmptyRowSet(),
+        Assert.equals(agg.modified, "agg.modified", RowSetFactoryImpl.INSTANCE.getEmptyRowSet(),
                 "TrackingMutableRowSet.CURRENT_FACTORY.getEmptyRowSet()");
     }
 
@@ -166,7 +166,7 @@ public class UpdateCoalescerTest {
         up[0].shifted = newShiftDataByTriplets(4, 5, -2);
         up[1].shifted = newShiftDataByTriplets(8, 10, +3, 11, 11, +4);
 
-        final TrackingMutableRowSet origRowSet = TrackingMutableRowSet.CURRENT_FACTORY.getRowSetByRange(4, 11);
+        final TrackingMutableRowSet origRowSet = RowSetFactoryImpl.INSTANCE.getRowSetByRange(4, 11);
         validateFinalIndex(origRowSet, up);
     }
 
@@ -304,7 +304,7 @@ public class UpdateCoalescerTest {
         up[1].modified = i(2);
         up[1].modifiedColumnSet = ModifiedColumnSet.ALL;
 
-        final TrackingMutableRowSet rowSet = TrackingMutableRowSet.CURRENT_FACTORY.getRowSetByRange(0, 6);
+        final TrackingMutableRowSet rowSet = RowSetFactoryImpl.INSTANCE.getRowSetByRange(0, 6);
         validateFinalIndex(rowSet, up);
     }
 
@@ -322,7 +322,7 @@ public class UpdateCoalescerTest {
         up[1].modifiedColumnSet = ModifiedColumnSet.ALL;
         up[1].shifted = newShiftDataByTriplets(0, 0, 3);
 
-        final TrackingMutableRowSet rowSet = TrackingMutableRowSet.CURRENT_FACTORY.getRowSetByRange(0, 3);
+        final TrackingMutableRowSet rowSet = RowSetFactoryImpl.INSTANCE.getRowSetByRange(0, 3);
         validateFinalIndex(rowSet, up);
     }
 
@@ -340,7 +340,7 @@ public class UpdateCoalescerTest {
         up[1].modifiedColumnSet = ModifiedColumnSet.ALL;
         up[1].shifted = newShiftDataByTriplets(2, 3, -1);
 
-        final TrackingMutableRowSet rowSet = TrackingMutableRowSet.CURRENT_FACTORY.getRowSetByRange(0, 2);
+        final TrackingMutableRowSet rowSet = RowSetFactoryImpl.INSTANCE.getRowSetByRange(0, 2);
         validateFinalIndex(rowSet, up);
     }
 
@@ -355,7 +355,7 @@ public class UpdateCoalescerTest {
         up[1].modifiedColumnSet = ModifiedColumnSet.ALL;
         up[1].shifted = newShiftDataByTriplets(1, 2, +2);
 
-        final TrackingMutableRowSet rowSet = TrackingMutableRowSet.CURRENT_FACTORY.getRowSetByRange(0, 1);
+        final TrackingMutableRowSet rowSet = RowSetFactoryImpl.INSTANCE.getRowSetByRange(0, 1);
         validateFinalIndex(rowSet, up);
     }
 
@@ -388,7 +388,7 @@ public class UpdateCoalescerTest {
         up[1].modifiedColumnSet = ModifiedColumnSet.ALL;
         up[1].shifted = newShiftDataByTriplets(2, 2, -1);
 
-        final TrackingMutableRowSet rowSet = TrackingMutableRowSet.CURRENT_FACTORY.getRowSetByRange(0, 3);
+        final TrackingMutableRowSet rowSet = RowSetFactoryImpl.INSTANCE.getRowSetByRange(0, 3);
         final ShiftAwareListener.Update agg = validateFinalIndex(rowSet, up);
         rowSet.remove(agg.removed);
         agg.shifted.apply(rowSet);
@@ -410,7 +410,7 @@ public class UpdateCoalescerTest {
         up[1].modifiedColumnSet = ModifiedColumnSet.ALL;
         up[1].shifted = newShiftDataByTriplets(1, 1, -1, 3, 4, -2);
 
-        final TrackingMutableRowSet rowSet = TrackingMutableRowSet.CURRENT_FACTORY.getRowSetByRange(0, 4);
+        final TrackingMutableRowSet rowSet = RowSetFactoryImpl.INSTANCE.getRowSetByRange(0, 4);
         final ShiftAwareListener.Update agg = validateFinalIndex(rowSet, up);
         rowSet.remove(agg.removed);
         agg.shifted.apply(rowSet);
@@ -431,7 +431,7 @@ public class UpdateCoalescerTest {
         up[1].modifiedColumnSet = ModifiedColumnSet.ALL;
         up[1].shifted = newShiftDataByTriplets(0, 2, +1, 3, 4, +2);
 
-        final TrackingMutableRowSet rowSet = TrackingMutableRowSet.CURRENT_FACTORY.getRowSetByRange(0, 4);
+        final TrackingMutableRowSet rowSet = RowSetFactoryImpl.INSTANCE.getRowSetByRange(0, 4);
         final ShiftAwareListener.Update agg = validateFinalIndex(rowSet, up);
         rowSet.remove(agg.removed);
         agg.shifted.apply(rowSet);
@@ -452,7 +452,7 @@ public class UpdateCoalescerTest {
         up[1].modifiedColumnSet = ModifiedColumnSet.ALL;
         up[1].shifted = newShiftDataByTriplets(3, 4, -2);
 
-        final TrackingMutableRowSet rowSet = TrackingMutableRowSet.CURRENT_FACTORY.getRowSetByRange(0, 2);
+        final TrackingMutableRowSet rowSet = RowSetFactoryImpl.INSTANCE.getRowSetByRange(0, 2);
         final ShiftAwareListener.Update agg = validateFinalIndex(rowSet, up);
         rowSet.remove(agg.removed);
         agg.shifted.apply(rowSet);
@@ -470,7 +470,7 @@ public class UpdateCoalescerTest {
         up[1].removed = i(0);
         up[1].shifted = newShiftDataByTriplets(1, 4, -1);
 
-        final TrackingMutableRowSet rowSet = TrackingMutableRowSet.CURRENT_FACTORY.getRowSetByRange(0, 2);
+        final TrackingMutableRowSet rowSet = RowSetFactoryImpl.INSTANCE.getRowSetByRange(0, 2);
         final ShiftAwareListener.Update agg = validateFinalIndex(rowSet, up);
         rowSet.remove(agg.removed);
         agg.shifted.apply(rowSet);
@@ -488,7 +488,7 @@ public class UpdateCoalescerTest {
         up[1].removed = i(1, 2, 3, 4);
         up[1].shifted = newShiftDataByTriplets(5, 6, -2);
 
-        final TrackingMutableRowSet rowSet = TrackingMutableRowSet.CURRENT_FACTORY.getRowSetByRange(0, 6);
+        final TrackingMutableRowSet rowSet = RowSetFactoryImpl.INSTANCE.getRowSetByRange(0, 6);
         final ShiftAwareListener.Update agg = validateFinalIndex(rowSet, up);
         rowSet.remove(agg.removed);
         agg.shifted.apply(rowSet);
@@ -506,7 +506,7 @@ public class UpdateCoalescerTest {
         up[1].removed = i(1, 2);
         up[1].shifted = newShiftDataByTriplets(0, 0, +1);
 
-        final TrackingMutableRowSet rowSet = TrackingMutableRowSet.CURRENT_FACTORY.getRowSetByRange(0, 6);
+        final TrackingMutableRowSet rowSet = RowSetFactoryImpl.INSTANCE.getRowSetByRange(0, 6);
         final ShiftAwareListener.Update agg = validateFinalIndex(rowSet, up);
         rowSet.remove(agg.removed);
         agg.shifted.apply(rowSet);
@@ -530,7 +530,7 @@ public class UpdateCoalescerTest {
         up[3].added = i(7);
         up[3].shifted = newShiftDataByTriplets(7, 10, +1);
 
-        final TrackingMutableRowSet rowSet = TrackingMutableRowSet.CURRENT_FACTORY.getRowSetByRange(0, 5);
+        final TrackingMutableRowSet rowSet = RowSetFactoryImpl.INSTANCE.getRowSetByRange(0, 5);
         final ShiftAwareListener.Update agg = validateFinalIndex(rowSet, up);
         rowSet.remove(agg.removed);
         agg.shifted.apply(rowSet);
@@ -566,7 +566,7 @@ public class UpdateCoalescerTest {
         up[3].removed = i(1073741823, 1073741827);
         up[3].shifted = newShiftDataByTriplets(1073741824, 1073741824, -5, 1073741825, 1073741826, -1);
 
-        final TrackingMutableRowSet rowSet = TrackingMutableRowSet.CURRENT_FACTORY.getRowSetByRange(1073741825, 1073741831);
+        final TrackingMutableRowSet rowSet = RowSetFactoryImpl.INSTANCE.getRowSetByRange(1073741825, 1073741831);
         validateFinalIndex(rowSet, up);
     }
 
@@ -590,8 +590,8 @@ public class UpdateCoalescerTest {
 
         try (final TrackingMutableRowSet perUpdate = rowSet.clone();
              final TrackingMutableRowSet aggUpdate = rowSet.clone();
-             final TrackingMutableRowSet perModify = TrackingMutableRowSet.CURRENT_FACTORY.getEmptyRowSet();
-             final TrackingMutableRowSet perAdded = TrackingMutableRowSet.CURRENT_FACTORY.getEmptyRowSet()) {
+             final TrackingMutableRowSet perModify = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+             final TrackingMutableRowSet perAdded = RowSetFactoryImpl.INSTANCE.getEmptyRowSet()) {
 
             for (ShiftAwareListener.Update up : updates) {
                 perAdded.remove(up.removed);
@@ -634,7 +634,7 @@ public class UpdateCoalescerTest {
                     }
                     Assert.eqTrue(iter.currentValue() <= endRange, "iter.currentValue() <= endRange");
                 }
-                try (final TrackingMutableRowSet sub = TrackingMutableRowSet.CURRENT_FACTORY.getRowSetByRange(beginRange, endRange);
+                try (final TrackingMutableRowSet sub = RowSetFactoryImpl.INSTANCE.getRowSetByRange(beginRange, endRange);
                      final TrackingMutableRowSet moving = myindex.extract(sub)) {
                     moving.shiftInPlace(shiftDelta);
                     myindex.insert(moving);

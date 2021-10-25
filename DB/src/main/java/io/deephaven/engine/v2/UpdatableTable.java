@@ -3,8 +3,9 @@ package io.deephaven.engine.v2;
 import io.deephaven.engine.tables.live.LiveTable;
 import io.deephaven.engine.tables.live.LiveTableMonitor;
 import io.deephaven.engine.v2.sources.ColumnSource;
+import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
 import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
-import io.deephaven.engine.v2.utils.RowSetBuilder;
+import io.deephaven.engine.v2.utils.RowSetBuilderRandom;
 import io.deephaven.engine.v2.utils.IndexShiftData;
 import gnu.trove.impl.Constants;
 import gnu.trove.set.TLongSet;
@@ -106,7 +107,7 @@ public class UpdatableTable extends QueryTable implements LiveTable {
     }
 
     private static TrackingMutableRowSet setToIndex(@NotNull final TLongSet set) {
-        final RowSetBuilder builder = TrackingMutableRowSet.FACTORY.getRandomBuilder();
+        final RowSetBuilderRandom builder = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
         set.forEach(key -> {
             builder.addKey(key);
             return true;

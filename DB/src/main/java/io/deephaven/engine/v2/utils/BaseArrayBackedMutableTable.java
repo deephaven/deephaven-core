@@ -58,7 +58,7 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
     }
 
     static void processInitial(Table initialTable, BaseArrayBackedMutableTable result) {
-        final SequentialRowSetBuilder builder = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
+        final RowSetBuilderSequential builder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
         result.processPendingTable(initialTable, true, new IndexChangeRecorder() {
             @Override
             public void addIndex(long key) {
@@ -316,7 +316,7 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
             }
 
             final QueryTable newData =
-                    new QueryTable(getTableDefinition(), TrackingMutableRowSet.FACTORY.getFlatIndex(valueArray.length), sources);
+                    new QueryTable(getTableDefinition(), RowSetFactoryImpl.INSTANCE.getFlatRowSet(valueArray.length), sources);
             add(newData, true, listener);
         }
 
@@ -335,7 +335,7 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
             }
 
             final QueryTable newData =
-                    new QueryTable(getTableDefinition(), TrackingMutableRowSet.FACTORY.getFlatIndex(valueArray.length), sources);
+                    new QueryTable(getTableDefinition(), RowSetFactoryImpl.INSTANCE.getFlatRowSet(valueArray.length), sources);
 
             add(newData, allowEdits, listener);
         }

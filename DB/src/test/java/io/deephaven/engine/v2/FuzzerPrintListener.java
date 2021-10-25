@@ -27,7 +27,7 @@ public class FuzzerPrintListener extends InstrumentedShiftAwareListener {
         System.out.println(upstream);
         if (rowCount > 0) {
             TableTools.showWithIndex(table, rowCount);
-            System.out.println("Previous: " + table.getIndex().getPrevIndex().size());
+            System.out.println("Previous: " + table.getIndex().getPrevRowSet().size());
             TableTools.showWithIndex(prevTable(table), rowCount);
         }
     }

@@ -4,7 +4,8 @@
 package io.deephaven.engine.v2.sort.timsort;
 
 import io.deephaven.engine.structures.rowsequence.RowSequenceUtil;
-import io.deephaven.engine.v2.utils.RowSetBuilder;
+import io.deephaven.engine.v2.utils.RowSetBuilderRandom;
+import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
 import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.util.tuples.generated.DoubleLongLongTuple;
@@ -334,7 +335,7 @@ public abstract class BaseTestDoubleTimSortKernel extends TestTimSortKernel {
 
         final TrackingMutableRowSet[] results = context.getPartitions(true);
 
-        final TrackingMutableRowSet reconstructed = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
+        final TrackingMutableRowSet reconstructed = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
 
         // make sure that each partition is a subset of the rowSet and is disjoint
         for (int ii = 0; ii < results.length; ii++) {
@@ -385,7 +386,7 @@ public abstract class BaseTestDoubleTimSortKernel extends TestTimSortKernel {
             lastSize += partition.intSize();
 //            System.out.println("Expected Partition Max: " + expectedPartition.get(expectedPartition.size() - 1));
 
-            final RowSetBuilder builder = TrackingMutableRowSet.FACTORY.getRandomBuilder();
+            final RowSetBuilderRandom builder = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
             expectedPartition.stream().mapToLong(DoubleLongTuple::getSecondElement).forEach(builder::addKey);
             final TrackingMutableRowSet expectedRowSet = builder.build();
 

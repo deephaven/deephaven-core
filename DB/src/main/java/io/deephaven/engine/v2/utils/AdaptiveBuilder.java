@@ -4,6 +4,7 @@ import io.deephaven.engine.v2.utils.rsp.RspBitmap;
 import io.deephaven.engine.v2.utils.sortedranges.SortedRanges;
 
 public class AdaptiveBuilder extends AbstractTreeIndexImplRandomBuilder {
+
     private MixedBuilder builder = null;
 
     @Override

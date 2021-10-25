@@ -5,6 +5,7 @@ import io.deephaven.engine.tables.live.LiveTableMonitor;
 import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.util.liveness.LivenessScopeStack;
 import io.deephaven.engine.util.liveness.SingletonLivenessManager;
+import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
 import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.engine.v2.utils.IndexShiftData;
 import io.deephaven.test.types.OutOfBandTest;
@@ -18,7 +19,7 @@ import static io.deephaven.engine.v2.TstUtils.*;
 @Category(OutOfBandTest.class)
 public class TestSelectOverheadLimiter extends LiveTableTestCase {
     public void testSelectOverheadLimiter() {
-        final QueryTable queryTable = TstUtils.testRefreshingTable(TrackingMutableRowSet.FACTORY.getRowSetByRange(0, 100));
+        final QueryTable queryTable = TstUtils.testRefreshingTable(RowSetFactoryImpl.INSTANCE.getRowSetByRange(0, 100));
         final Table sentinelTable = queryTable.updateView("Sentinel=k");
         final Table densified = LiveTableMonitor.DEFAULT.sharedLock()
                 .computeLocked(() -> SelectOverheadLimiter.clampSelectOverhead(sentinelTable, 3.0));
@@ -26,7 +27,7 @@ public class TestSelectOverheadLimiter extends LiveTableTestCase {
         assertTableEquals(sentinelTable, densified);
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-            final TrackingMutableRowSet added = TrackingMutableRowSet.FACTORY.getRowSetByRange(10000, 11000);
+            final TrackingMutableRowSet added = RowSetFactoryImpl.INSTANCE.getRowSetByRange(10000, 11000);
             queryTable.getIndex().insert(added);
             queryTable.notifyListeners(added, i(), i());
         });
@@ -35,7 +36,7 @@ public class TestSelectOverheadLimiter extends LiveTableTestCase {
         assertTableEquals(sentinelTable, densified);
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-            final TrackingMutableRowSet added = TrackingMutableRowSet.FACTORY.getRowSetByRange(11001, 11100);
+            final TrackingMutableRowSet added = RowSetFactoryImpl.INSTANCE.getRowSetByRange(11001, 11100);
             queryTable.getIndex().insert(added);
             queryTable.notifyListeners(added, i(), i());
         });
@@ -44,7 +45,7 @@ public class TestSelectOverheadLimiter extends LiveTableTestCase {
         assertTableEquals(sentinelTable, densified);
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-            final TrackingMutableRowSet added = TrackingMutableRowSet.FACTORY.getRowSetByRange(20000, 20100);
+            final TrackingMutableRowSet added = RowSetFactoryImpl.INSTANCE.getRowSetByRange(20000, 20100);
             queryTable.getIndex().insert(added);
             queryTable.notifyListeners(added, i(), i());
         });
@@ -53,7 +54,7 @@ public class TestSelectOverheadLimiter extends LiveTableTestCase {
         assertTableEquals(sentinelTable, densified);
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-            final TrackingMutableRowSet added = TrackingMutableRowSet.FACTORY.getRowSetByRange(30000, 30100);
+            final TrackingMutableRowSet added = RowSetFactoryImpl.INSTANCE.getRowSetByRange(30000, 30100);
             queryTable.getIndex().insert(added);
             queryTable.notifyListeners(added, i(), i());
         });
@@ -63,7 +64,7 @@ public class TestSelectOverheadLimiter extends LiveTableTestCase {
     }
 
     public void testShift() {
-        final QueryTable queryTable = TstUtils.testRefreshingTable(TrackingMutableRowSet.FACTORY.getRowSetByRange(0, 100));
+        final QueryTable queryTable = TstUtils.testRefreshingTable(RowSetFactoryImpl.INSTANCE.getRowSetByRange(0, 100));
         final Table sentinelTable = queryTable.updateView("Sentinel=ii");
         final Table densified = LiveTableMonitor.DEFAULT.sharedLock()
                 .computeLocked(() -> SelectOverheadLimiter.clampSelectOverhead(sentinelTable, 3.0));
@@ -71,8 +72,8 @@ public class TestSelectOverheadLimiter extends LiveTableTestCase {
         assertTableEquals(sentinelTable, densified);
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-            final TrackingMutableRowSet removed = TrackingMutableRowSet.FACTORY.getRowSetByRange(0, 100);
-            final TrackingMutableRowSet added = TrackingMutableRowSet.FACTORY.getRowSetByRange(10000, 10100);
+            final TrackingMutableRowSet removed = RowSetFactoryImpl.INSTANCE.getRowSetByRange(0, 100);
+            final TrackingMutableRowSet added = RowSetFactoryImpl.INSTANCE.getRowSetByRange(10000, 10100);
             queryTable.getIndex().update(added, removed);
             final ShiftAwareListener.Update update = new ShiftAwareListener.Update();
             final IndexShiftData.Builder builder = new IndexShiftData.Builder();
@@ -87,7 +88,7 @@ public class TestSelectOverheadLimiter extends LiveTableTestCase {
         assertTableEquals(sentinelTable, densified);
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-            final TrackingMutableRowSet removed = TrackingMutableRowSet.FACTORY.getRowSetByRange(10000, 10100);
+            final TrackingMutableRowSet removed = RowSetFactoryImpl.INSTANCE.getRowSetByRange(10000, 10100);
             queryTable.getIndex().remove(removed);
             queryTable.notifyListeners(i(), removed, i());
         });
@@ -170,7 +171,7 @@ public class TestSelectOverheadLimiter extends LiveTableTestCase {
     }
 
     public void testScope() {
-        final QueryTable queryTable = TstUtils.testRefreshingTable(TrackingMutableRowSet.FACTORY.getRowSetByRange(0, 100));
+        final QueryTable queryTable = TstUtils.testRefreshingTable(RowSetFactoryImpl.INSTANCE.getRowSetByRange(0, 100));
 
         final SafeCloseable scopeCloseable = LivenessScopeStack.open();
 
@@ -185,7 +186,7 @@ public class TestSelectOverheadLimiter extends LiveTableTestCase {
         LiveTableMonitor.DEFAULT.exclusiveLock().doLocked(scopeCloseable::close);
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-            final TrackingMutableRowSet added = TrackingMutableRowSet.FACTORY.getRowSetByRange(10000, 11000);
+            final TrackingMutableRowSet added = RowSetFactoryImpl.INSTANCE.getRowSetByRange(10000, 11000);
             queryTable.getIndex().insert(added);
             queryTable.notifyListeners(added, i(), i());
         });
@@ -194,7 +195,7 @@ public class TestSelectOverheadLimiter extends LiveTableTestCase {
         assertTableEquals(sentinelTable, densified);
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-            final TrackingMutableRowSet added = TrackingMutableRowSet.FACTORY.getRowSetByRange(11001, 11100);
+            final TrackingMutableRowSet added = RowSetFactoryImpl.INSTANCE.getRowSetByRange(11001, 11100);
             queryTable.getIndex().insert(added);
             queryTable.notifyListeners(added, i(), i());
         });

@@ -2,7 +2,8 @@ package io.deephaven.engine.v2;
 
 import io.deephaven.base.Function;
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.v2.utils.SequentialRowSetBuilder;
+import io.deephaven.engine.v2.utils.RowSetBuilderSequential;
+import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
 import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
@@ -14,7 +15,7 @@ import io.deephaven.engine.v2.remote.ConstructSnapshot;
 import io.deephaven.engine.v2.select.SelectFilter;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.LogicalClock;
-import io.deephaven.engine.v2.utils.RowSetBuilder;
+import io.deephaven.engine.v2.utils.RowSetBuilderRandom;
 import io.deephaven.util.annotations.ReferentialIntegrity;
 import gnu.trove.iterator.TLongIterator;
 import gnu.trove.list.array.TLongArrayList;
@@ -195,7 +196,7 @@ public class TreeTableFilter implements Function.Unary<Table, Table>, MemoizedOp
             TLongArrayList parentsToProcess = new TLongArrayList();
             expectedRowSet.forEach(parentsToProcess::add);
 
-            final TrackingMutableRowSet sourceRowSet = usePrev ? source.getIndex().getPrevIndex() : source.getIndex();
+            final TrackingMutableRowSet sourceRowSet = usePrev ? source.getIndex().getPrevRowSet() : source.getIndex();
             do {
                 final TLongArrayList newParentKeys = new TLongArrayList();
                 for (final TLongIterator it = parentsToProcess.iterator(); it.hasNext();) {
@@ -219,7 +220,7 @@ public class TreeTableFilter implements Function.Unary<Table, Table>, MemoizedOp
                 parentsToProcess = newParentKeys;
             } while (!parentsToProcess.isEmpty());
 
-            final RowSetBuilder builder = TrackingMutableRowSet.FACTORY.getRandomBuilder();
+            final RowSetBuilderRandom builder = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
 
             parentReferences.forEach((parentValue, set) -> {
                 final TLongSet actualSet = parentReferences.get(parentValue);
@@ -256,7 +257,7 @@ public class TreeTableFilter implements Function.Unary<Table, Table>, MemoizedOp
         private void removeParents(TrackingMutableRowSet rowsToRemove) {
             final Map<Object, TLongSet> parents = generateParentReferenceMap(rowsToRemove, parentSource::getPrev);
 
-            final RowSetBuilder builder = TrackingMutableRowSet.FACTORY.getRandomBuilder();
+            final RowSetBuilderRandom builder = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
             while (!parents.isEmpty()) {
                 final Iterator<Map.Entry<Object, TLongSet>> iterator = parents.entrySet().iterator();
                 final Map.Entry<Object, TLongSet> entry = iterator.next();
@@ -298,7 +299,7 @@ public class TreeTableFilter implements Function.Unary<Table, Table>, MemoizedOp
         }
 
         private TrackingMutableRowSet checkForResurrectedParent(TrackingMutableRowSet rowsToCheck) {
-            final SequentialRowSetBuilder builder = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
+            final RowSetBuilderSequential builder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
 
             for (final TrackingMutableRowSet.Iterator it = rowsToCheck.iterator(); it.hasNext();) {
                 final long key = it.nextLong();
@@ -316,7 +317,7 @@ public class TreeTableFilter implements Function.Unary<Table, Table>, MemoizedOp
             final Map<Object, TLongSet> parents =
                     generateParentReferenceMap(rowsToParent, usePrev ? parentSource::getPrev : parentSource::get);
 
-            final RowSetBuilder builder = TrackingMutableRowSet.FACTORY.getRandomBuilder();
+            final RowSetBuilderRandom builder = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
             while (!parents.isEmpty()) {
                 final Iterator<Map.Entry<Object, TLongSet>> iterator = parents.entrySet().iterator();
                 final Map.Entry<Object, TLongSet> entry = iterator.next();

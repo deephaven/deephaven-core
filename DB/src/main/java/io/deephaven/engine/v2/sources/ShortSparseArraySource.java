@@ -13,7 +13,8 @@ import io.deephaven.engine.v2.sources.chunk.Attributes.RowKeys;
 import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedRowKeyRanges;
 import io.deephaven.engine.v2.sources.sparse.ShortOneOrN;
 import io.deephaven.engine.v2.sources.sparse.LongOneOrN;
-import io.deephaven.engine.v2.utils.SequentialRowSetBuilder;
+import io.deephaven.engine.v2.utils.RowSetBuilderSequential;
+import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
 import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.v2.utils.UpdateCommitter;
@@ -79,7 +80,7 @@ public class ShortSparseArraySource extends SparseArrayColumnSource<Short> imple
 
     // region serialization
     private void writeObject(java.io.ObjectOutputStream out) throws IOException {
-        final SequentialRowSetBuilder sb = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
+        final RowSetBuilderSequential sb = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
         blocks.enumerate(NULL_SHORT, sb::appendKey);
         final TrackingMutableRowSet rowSet = sb.build();
 

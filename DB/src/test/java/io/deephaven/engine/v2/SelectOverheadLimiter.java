@@ -183,9 +183,9 @@ public class SelectOverheadLimiter {
                 rowSet.insert(flatResult.getIndex());
 
                 final ShiftAwareListener.Update downstream = new ShiftAwareListener.Update();
-                downstream.removed = rowSet.getPrevIndex();
+                downstream.removed = rowSet.getPrevRowSet();
                 downstream.added = rowSet.clone();
-                downstream.modified = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
+                downstream.modified = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
                 downstream.modifiedColumnSet = ModifiedColumnSet.EMPTY;
                 downstream.shifted = IndexShiftData.EMPTY;
 

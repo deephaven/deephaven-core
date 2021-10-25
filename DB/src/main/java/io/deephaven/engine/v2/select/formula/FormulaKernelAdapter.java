@@ -5,6 +5,7 @@ import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedRowKeys;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
+import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
 import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.util.type.TypeUtils;
@@ -205,7 +206,7 @@ public class FormulaKernelAdapter extends io.deephaven.engine.v2.select.Formula 
     }
 
     private void commonGetLogic(WritableChunk<Values> __dest, final long k, boolean usePrev) {
-        try (final TrackingMutableRowSet rs = TrackingMutableRowSet.FACTORY.getRowSetByValues(k)) {
+        try (final TrackingMutableRowSet rs = RowSetFactoryImpl.INSTANCE.getRowSetByValues(k)) {
             try (final AdapterContext context = makeFillContext(1)) {
                 fillChunkHelper(context, __dest, rs, usePrev, true);
             }
@@ -242,7 +243,7 @@ public class FormulaKernelAdapter extends io.deephaven.engine.v2.select.Formula 
         }
         final AdapterContext __typedContext = (AdapterContext) __context;
         final Chunk<? extends Attributes.Values>[] sourceChunks = new Chunk[sourceDescriptor.sources.length];
-        try (final RowSequence flat = TrackingMutableRowSet.FACTORY.getFlatIndex(__rowSequence.size())) {
+        try (final RowSequence flat = RowSetFactoryImpl.INSTANCE.getFlatRowSet(__rowSequence.size())) {
             for (int ii = 0; ii < sourceDescriptor.sources.length; ++ii) {
                 final String name = sourceDescriptor.sources[ii];
                 switch (name) {

@@ -237,7 +237,7 @@ public class ReverseLookupListener extends LivenessArtifact
         this.columns = Arrays.stream(columns).map(source::getColumnSource).toArray(ColumnSource[]::new);
 
         map = new TObjectLongHashMap<>(2 * source.intSize(), 0.75f, NO_ENTRY_VALUE);
-        try (final RowSet prevIndex = usePrev ? source.getIndex().getPrevIndex() : null) {
+        try (final RowSet prevIndex = usePrev ? source.getIndex().getPrevRowSet() : null) {
             addEntries(usePrev ? prevIndex : source.getIndex(), usePrev, () -> {
                 if (source.isRefreshing()) {
                     ConstructSnapshot.failIfConcurrentAttemptInconsistent();

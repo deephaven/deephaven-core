@@ -74,7 +74,7 @@ public class IndexIteration {
             indexPoints[j] = indexPoints[j - 1] + 1;
             j++;
         }
-        rowSet = TrackingMutableRowSet.FACTORY.getRowSetByValues(indexPoints);
+        rowSet = RowSetFactoryImpl.INSTANCE.getRowSetByValues(indexPoints);
 
         sets = new double[setsCount][];
 

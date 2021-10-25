@@ -563,7 +563,7 @@ public final class DeltaAwareColumnSource<T> extends AbstractColumnSource<T>
                 baseline.fillFromChunk(baselineCtx, data, baselineOk);
             }
         }
-        deltaRows = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
+        deltaRows = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
         maxKey = Long.MIN_VALUE;
     }
 
@@ -578,7 +578,7 @@ public final class DeltaAwareColumnSource<T> extends AbstractColumnSource<T>
         this.delta = delta;
         deltaCapacityEnsurer = delta::ensureCapacity;
 
-        deltaRows = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
+        deltaRows = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
         maxKey = Long.MIN_VALUE;
         /*
          * When 'delta' changes, we need a way to notify all the ChunkAdapters about its new value. We say "all the

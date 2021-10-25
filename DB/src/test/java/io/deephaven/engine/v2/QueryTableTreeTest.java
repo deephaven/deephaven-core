@@ -5,7 +5,8 @@ import io.deephaven.base.Function;
 import io.deephaven.base.verify.Require;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.datastructures.util.SmartKey;
-import io.deephaven.engine.v2.utils.SequentialRowSetBuilder;
+import io.deephaven.engine.v2.utils.RowSetBuilderSequential;
+import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
 import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.io.log.LogLevel;
 import io.deephaven.io.logger.Logger;
@@ -137,15 +138,15 @@ public class QueryTableTreeTest extends QueryTableTestBase {
 
         try {
 
-            final QueryTable source = TstUtils.testRefreshingTable(TrackingMutableRowSet.FACTORY.getFlatIndex(10),
+            final QueryTable source = TstUtils.testRefreshingTable(RowSetFactoryImpl.INSTANCE.getFlatRowSet(10),
                     col("Sentinel", 1, 2, 3, 4, 5, 6, 7, 8, 9, 10),
                     col("Parent", NULL_INT, NULL_INT, 1, 1, 2, 3, 5, 5, 3, 2),
                     col("Extra", "a", "b", "c", "d", "e", "f", "g", "h", "i", "j"));
-            final QueryTable source2 = TstUtils.testRefreshingTable(TrackingMutableRowSet.FACTORY.getFlatIndex(11),
+            final QueryTable source2 = TstUtils.testRefreshingTable(RowSetFactoryImpl.INSTANCE.getFlatRowSet(11),
                     col("Sentinel", 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11),
                     col("Parent", NULL_INT, NULL_INT, 1, 1, 2, 3, 5, 5, 3, 2, NULL_INT),
                     col("Extra", "aa", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k"));
-            final QueryTable source3 = TstUtils.testRefreshingTable(TrackingMutableRowSet.FACTORY.getFlatIndex(12),
+            final QueryTable source3 = TstUtils.testRefreshingTable(RowSetFactoryImpl.INSTANCE.getFlatRowSet(12),
                     col("Sentinel", 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12),
                     col("Parent", NULL_INT, NULL_INT, 1, 1, 2, 3, 5, 5, 3, 2, NULL_INT, 11),
                     col("Extra", "aa", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l"));
@@ -330,11 +331,11 @@ public class QueryTableTreeTest extends QueryTableTestBase {
 
         try {
 
-            final QueryTable source = TstUtils.testRefreshingTable(TrackingMutableRowSet.FACTORY.getFlatIndex(10),
+            final QueryTable source = TstUtils.testRefreshingTable(RowSetFactoryImpl.INSTANCE.getFlatRowSet(10),
                     col("Sentinel", 1, 2, 3, 4, 5, 6, 7, 8, 9, 10),
                     col("Parent", NULL_INT, NULL_INT, 1, 1, 2, 3, 5, 5, 3, 2),
                     col("Extra", "a", "b", "c", "d", "e", "f", "g", "h", "i", "j"));
-            final QueryTable source2 = TstUtils.testRefreshingTable(TrackingMutableRowSet.FACTORY.getFlatIndex(11),
+            final QueryTable source2 = TstUtils.testRefreshingTable(RowSetFactoryImpl.INSTANCE.getFlatRowSet(11),
                     col("Sentinel", 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12),
                     col("Parent", NULL_INT, 1, 1, 2, 3, 5, 5, 3, 2, NULL_INT, 11),
                     col("Extra", "bb", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l"));
@@ -480,7 +481,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
     }
 
     public void testTreeTableSimpleFilter() {
-        final QueryTable source = TstUtils.testRefreshingTable(TrackingMutableRowSet.FACTORY.getFlatIndex(10),
+        final QueryTable source = TstUtils.testRefreshingTable(RowSetFactoryImpl.INSTANCE.getFlatRowSet(10),
                 col("Sentinel", 1, 2, 3, 4, 5, 6, 7, 8, 9, 10),
                 col("Parent", NULL_INT, NULL_INT, 1, 1, 2, 3, 5, 5, 3, 6));
 
@@ -572,7 +573,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
     }
 
     public void testOrphanPromoterSimple() {
-        final QueryTable source = TstUtils.testRefreshingTable(TrackingMutableRowSet.FACTORY.getFlatIndex(4),
+        final QueryTable source = TstUtils.testRefreshingTable(RowSetFactoryImpl.INSTANCE.getFlatRowSet(4),
                 col("Sentinel", 1, 2, 3, 4), col("Parent", NULL_INT, NULL_INT, 1, 5));
 
         final Table treed = LiveTableMonitor.DEFAULT.exclusiveLock().computeLocked(() -> TreeTableOrphanPromoter
@@ -622,7 +623,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
     }
 
     public void testTreeTableEdgeCases() {
-        final QueryTable source = TstUtils.testRefreshingTable(TrackingMutableRowSet.FACTORY.getFlatIndex(4),
+        final QueryTable source = TstUtils.testRefreshingTable(RowSetFactoryImpl.INSTANCE.getFlatRowSet(4),
                 col("Sentinel", 0, 1, 2, 3),
                 col("Filter", 0, 0, 0, 0),
                 col("Parent", NULL_INT, NULL_INT, NULL_INT, NULL_INT));
@@ -976,7 +977,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
     }
 
     private static TrackingMutableRowSet indexOrPrev(Table table, boolean usePrev) {
-        return usePrev ? table.getIndex().getPrevIndex() : table.getIndex();
+        return usePrev ? table.getIndex().getPrevRowSet() : table.getIndex();
     }
 
     private void testTreeTableIncremental(final int size, final long seed, final MutableInt numSteps) {
@@ -1547,7 +1548,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
 
     private void testIncrementalSimple(ComboBy comboBy) {
         final QueryTable table =
-                TstUtils.testRefreshingTable(TrackingMutableRowSet.FACTORY.getFlatIndex(6), col("G1", "A", "A", "A", "B", "B", "B"),
+                TstUtils.testRefreshingTable(RowSetFactoryImpl.INSTANCE.getFlatRowSet(6), col("G1", "A", "A", "A", "B", "B", "B"),
                         col("G2", "C", "C", "D", "D", "E", "E"), col("IntCol", 1, 2, 3, 4, 5, 6));
 
         final Table rollup = LiveTableMonitor.DEFAULT.exclusiveLock()
@@ -1721,7 +1722,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
         int nextHid = 11;
         long index = 2;
 
-        final QueryTable source = TstUtils.testRefreshingTable(TrackingMutableRowSet.FACTORY.getFlatIndex(1), longCol("Sentinel", 1),
+        final QueryTable source = TstUtils.testRefreshingTable(RowSetFactoryImpl.INSTANCE.getFlatRowSet(1), longCol("Sentinel", 1),
                 stringCol("hid", "a"), stringCol("hpos", "1"), col("open", true), doubleCol("rand", 1.0));
 
         final List<String> openHid = new ArrayList<>();
@@ -1745,7 +1746,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
             LiveTableMonitor.DEFAULT.startCycleForUnitTests();
 
             final int numChanges = random.nextInt(100);
-            final SequentialRowSetBuilder builder = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
+            final RowSetBuilderSequential builder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
 
             for (int count = 0; count < numChanges; ++count) {
                 assertEquals(openHid.size(), hidToPos.size());

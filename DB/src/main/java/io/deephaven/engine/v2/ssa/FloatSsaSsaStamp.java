@@ -9,7 +9,7 @@ import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.sources.chunk.Attributes.RowKeys;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 import io.deephaven.engine.v2.sources.chunk.sized.SizedLongChunk;
-import io.deephaven.engine.v2.utils.RowSetBuilder;
+import io.deephaven.engine.v2.utils.RowSetBuilderRandom;
 import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.engine.v2.utils.RedirectionIndex;
 
@@ -82,11 +82,11 @@ public class FloatSsaSsaStamp implements SsaSsaStamp {
     }
 
     @Override
-    public void processRemovals(SegmentedSortedArray leftSsa, Chunk<? extends Values> rightStampChunk, LongChunk<RowKeys> rightKeys, WritableLongChunk<Attributes.RowKeys> priorRedirections, RedirectionIndex redirectionIndex, RowSetBuilder modifiedBuilder, boolean disallowExactMatch) {
+    public void processRemovals(SegmentedSortedArray leftSsa, Chunk<? extends Values> rightStampChunk, LongChunk<RowKeys> rightKeys, WritableLongChunk<Attributes.RowKeys> priorRedirections, RedirectionIndex redirectionIndex, RowSetBuilderRandom modifiedBuilder, boolean disallowExactMatch) {
         processRemovals((FloatSegmentedSortedArray)leftSsa, rightStampChunk.asFloatChunk(), rightKeys, priorRedirections, redirectionIndex, modifiedBuilder, disallowExactMatch);
     }
 
-    static private void processRemovals(FloatSegmentedSortedArray leftSsa, FloatChunk<? extends Values> rightStampChunk, LongChunk<RowKeys> rightKeys, WritableLongChunk<RowKeys> nextRedirections, RedirectionIndex redirectionIndex, RowSetBuilder modifiedBuilder, boolean disallowExactMatch) {
+    static private void processRemovals(FloatSegmentedSortedArray leftSsa, FloatChunk<? extends Values> rightStampChunk, LongChunk<RowKeys> rightKeys, WritableLongChunk<RowKeys> nextRedirections, RedirectionIndex redirectionIndex, RowSetBuilderRandom modifiedBuilder, boolean disallowExactMatch) {
         // When removing a row, record the stamp, redirection key, and prior redirection key.  Binary search
         // in the left for the removed key to find the smallest value geq the removed right.  Update all rows
         // with the removed redirection to the previous key.
@@ -129,17 +129,17 @@ public class FloatSsaSsaStamp implements SsaSsaStamp {
             if (mks > 0) {
                 modifiedKeys.get().setSize(mks);
                 modifiedKeys.get().sort();
-                modifiedBuilder.addOrderedKeyIndicesChunk(WritableLongChunk.downcast(modifiedKeys.get()));
+                modifiedBuilder.addOrderedRowKeysChunk(WritableLongChunk.downcast(modifiedKeys.get()));
             }
         }
     }
 
     @Override
-    public void processInsertion(SegmentedSortedArray leftSsa, Chunk<? extends Values> rightStampChunk, LongChunk<Attributes.RowKeys> rightKeys, Chunk<Values> nextRightValue, RedirectionIndex redirectionIndex, RowSetBuilder modifiedBuilder, boolean endsWithLastValue, boolean disallowExactMatch) {
+    public void processInsertion(SegmentedSortedArray leftSsa, Chunk<? extends Values> rightStampChunk, LongChunk<Attributes.RowKeys> rightKeys, Chunk<Values> nextRightValue, RedirectionIndex redirectionIndex, RowSetBuilderRandom modifiedBuilder, boolean endsWithLastValue, boolean disallowExactMatch) {
         processInsertion((FloatSegmentedSortedArray)leftSsa, rightStampChunk.asFloatChunk(), rightKeys, nextRightValue.asFloatChunk(), redirectionIndex, modifiedBuilder, endsWithLastValue, disallowExactMatch);
     }
 
-    static private void processInsertion(FloatSegmentedSortedArray leftSsa, FloatChunk<? extends Values> rightStampChunk, LongChunk<RowKeys> rightKeys, FloatChunk<Values> nextRightValue, RedirectionIndex redirectionIndex, RowSetBuilder modifiedBuilder, boolean endsWithLastValue, boolean disallowExactMatch) {
+    static private void processInsertion(FloatSegmentedSortedArray leftSsa, FloatChunk<? extends Values> rightStampChunk, LongChunk<RowKeys> rightKeys, FloatChunk<Values> nextRightValue, RedirectionIndex redirectionIndex, RowSetBuilderRandom modifiedBuilder, boolean endsWithLastValue, boolean disallowExactMatch) {
         // We've already filtered out duplicate right stamps by the time we get here, which means that the rightStampChunk
         // contains only values that are the last in any given run; and thus are possible matches.
 
@@ -193,17 +193,17 @@ public class FloatSsaSsaStamp implements SsaSsaStamp {
             if (mks > 0) {
                 modifiedKeys.get().setSize(mks);
                 modifiedKeys.get().sort();
-                modifiedBuilder.addOrderedKeyIndicesChunk(WritableLongChunk.downcast(modifiedKeys.get()));
+                modifiedBuilder.addOrderedRowKeysChunk(WritableLongChunk.downcast(modifiedKeys.get()));
             }
         }
     }
 
     @Override
-    public void findModified(SegmentedSortedArray leftSsa, RedirectionIndex redirectionIndex, Chunk<? extends Values> rightStampChunk, LongChunk<Attributes.RowKeys> rightStampIndices, RowSetBuilder modifiedBuilder, boolean disallowExactMatch) {
+    public void findModified(SegmentedSortedArray leftSsa, RedirectionIndex redirectionIndex, Chunk<? extends Values> rightStampChunk, LongChunk<Attributes.RowKeys> rightStampIndices, RowSetBuilderRandom modifiedBuilder, boolean disallowExactMatch) {
         findModified((FloatSegmentedSortedArray)leftSsa, redirectionIndex, rightStampChunk.asFloatChunk(), rightStampIndices, modifiedBuilder, disallowExactMatch);
     }
 
-    private static void findModified(FloatSegmentedSortedArray leftSsa, RedirectionIndex redirectionIndex, FloatChunk<? extends Values> rightStampChunk, LongChunk<RowKeys> rightStampIndices, RowSetBuilder modifiedBuilder, boolean disallowExactMatch) {
+    private static void findModified(FloatSegmentedSortedArray leftSsa, RedirectionIndex redirectionIndex, FloatChunk<? extends Values> rightStampChunk, LongChunk<RowKeys> rightStampIndices, RowSetBuilderRandom modifiedBuilder, boolean disallowExactMatch) {
         final FloatSegmentedSortedArray.Iterator leftIt = leftSsa.iterator(disallowExactMatch, false);
 
         try (final SizedLongChunk<RowKeys> modifiedKeys = new SizedLongChunk<>()) {
@@ -232,7 +232,7 @@ public class FloatSsaSsaStamp implements SsaSsaStamp {
             if (mks > 0) {
                 modifiedKeys.get().setSize(mks);
                 modifiedKeys.get().sort();
-                modifiedBuilder.addOrderedKeyIndicesChunk(WritableLongChunk.downcast(modifiedKeys.get()));
+                modifiedBuilder.addOrderedRowKeysChunk(WritableLongChunk.downcast(modifiedKeys.get()));
             }
         }
     }

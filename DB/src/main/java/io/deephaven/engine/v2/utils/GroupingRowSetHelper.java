@@ -22,12 +22,6 @@ import java.util.stream.Collectors;
 
 public abstract class GroupingRowSetHelper extends RowSequenceAsChunkImpl implements TrackingMutableRowSet {
 
-    @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneDoesntDeclareCloneNotSupportedException"})
-    @Override
-    public TrackingMutableRowSet clone() {
-        throw new UnsupportedOperationException();
-    }
-
     /**
      * These mappings last forever, and only include column sources that are immutable.
      *
@@ -73,13 +67,6 @@ public abstract class GroupingRowSetHelper extends RowSequenceAsChunkImpl implem
         clearMappings();
     }
 
-    /**
-     * @return Whether this rowSet is flat (that is, contiguous from 0 to size - 1)
-     */
-    public final boolean isFlat() {
-        return empty() || (lastRowKey() == size() - 1);
-    }
-
     @Override
     public void insert(final RowSet added) {
         for (final TrackingMutableRowSet.RangeIterator iterator = added.rangeIterator(); iterator.hasNext();) {
@@ -96,11 +83,6 @@ public abstract class GroupingRowSetHelper extends RowSequenceAsChunkImpl implem
         }
     }
 
-    @Override
-    public TrackingMutableRowSet invert(RowSet keys) {
-        return invert(keys, Long.MAX_VALUE);
-    }
-
     /**
      * The only used implementation of invert is in the TrackingMutableRowSetImpl, really the guts of it are in BspNodeIndex.
      *
@@ -113,7 +95,7 @@ public abstract class GroupingRowSetHelper extends RowSequenceAsChunkImpl implem
      */
     @Override
     public TrackingMutableRowSet invert(final RowSet keys, final long maximumPosition) {
-        final SequentialRowSetBuilder indexBuilder = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
+        final RowSetBuilderSequential indexBuilder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
         for (final TrackingMutableRowSet.Iterator iterator = keys.iterator(); iterator.hasNext();) {
             final long next = iterator.nextLong();
             final long position = find(next);
@@ -361,11 +343,11 @@ public abstract class GroupingRowSetHelper extends RowSequenceAsChunkImpl implem
                 generatePartialGrouping(thisRowSet, indexOp, mappings, ephemeralMappings, resultCollector, tupleSource,
                         keyColumns);
             } else {
-                final Map<Object, SequentialRowSetBuilder> resultBuilder = new LinkedHashMap<>();
+                final Map<Object, RowSetBuilderSequential> resultBuilder = new LinkedHashMap<>();
                 for (final TrackingMutableRowSet.Iterator iterator = thisRowSet.iterator(); iterator.hasNext();) {
                     final long next = iterator.nextLong();
                     final Object key = tupleSource.createTuple(next);
-                    resultBuilder.computeIfAbsent(key, k -> TrackingMutableRowSet.FACTORY.getSequentialBuilder()).appendKey(next);
+                    resultBuilder.computeIfAbsent(key, k -> RowSetFactoryImpl.INSTANCE.getSequentialBuilder()).appendKey(next);
                 }
                 resultBuilder.forEach((k, v) -> resultCollector.accept(k, v.build()));
             }
@@ -412,7 +394,7 @@ public abstract class GroupingRowSetHelper extends RowSequenceAsChunkImpl implem
             final TupleSource groupedTupleSource, final Map<Object, TrackingMutableRowSet> groupedColumnsGrouping,
             final BiConsumer<Object, TrackingMutableRowSet> resultCollector, final TupleSource tupleSource,
             final List<ColumnSource> keyColumns) {
-        final Map<Object, SequentialRowSetBuilder> resultBuilder = new LinkedHashMap<>();
+        final Map<Object, RowSetBuilderSequential> resultBuilder = new LinkedHashMap<>();
 
         final int[] groupedKeysIndices = new int[groupedKeyColumns.length];
         final int[] notGroupedKeysIndices = new int[notGroupedKeyColumns.length];
@@ -447,7 +429,7 @@ public abstract class GroupingRowSetHelper extends RowSequenceAsChunkImpl implem
                 }
 
                 resultBuilder.computeIfAbsent(tupleSource.createTupleFromReinterpretedValues(partialKeyValues),
-                        k -> TrackingMutableRowSet.FACTORY.getSequentialBuilder()).appendKey(next);
+                        k -> RowSetFactoryImpl.INSTANCE.getSequentialBuilder()).appendKey(next);
             }
         }
 
@@ -467,7 +449,7 @@ public abstract class GroupingRowSetHelper extends RowSequenceAsChunkImpl implem
 
         final TupleSource groupedTupleSource = TupleSourceFactory.makeTupleSource(groupedKeyColumns);
 
-        final Map<Object, SequentialRowSetBuilder> resultBuilder = new LinkedHashMap<>();
+        final Map<Object, RowSetBuilderSequential> resultBuilder = new LinkedHashMap<>();
 
         final int[] groupedKeysIndices = new int[groupedKeyColumns.length];
         final int[] notGroupedKeysIndices = new int[notGroupedKeyColumns.length];
@@ -527,8 +509,8 @@ public abstract class GroupingRowSetHelper extends RowSequenceAsChunkImpl implem
                     continue;
                 }
 
-                final SequentialRowSetBuilder indexForKey =
-                        resultBuilder.computeIfAbsent(key, k -> TrackingMutableRowSet.FACTORY.getSequentialBuilder());
+                final RowSetBuilderSequential indexForKey =
+                        resultBuilder.computeIfAbsent(key, k -> RowSetFactoryImpl.INSTANCE.getSequentialBuilder());
                 indexForKey.appendKey(next);
             }
         }
@@ -546,8 +528,8 @@ public abstract class GroupingRowSetHelper extends RowSequenceAsChunkImpl implem
     }
 
     @Override
-    public TrackingMutableRowSet getSubIndexForKeySet(Set<Object> keys, TupleSource tupleSource) {
-        final RowSetBuilder rowSetBuilder = TrackingMutableRowSet.FACTORY.getBuilder();
+    public TrackingMutableRowSet getSubSetForKeySet(Set<Object> keys, TupleSource tupleSource) {
+        final RowSetBuilderRandom rowSetBuilder = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
         final BiConsumer<Object, TrackingMutableRowSet> resultCollector = (key, index) -> rowSetBuilder.addRowSet(index);
 
         collectGroupingForKeySet(keys, tupleSource, resultCollector);
@@ -582,15 +564,15 @@ public abstract class GroupingRowSetHelper extends RowSequenceAsChunkImpl implem
             } else if (canUseAnyConstituents) {
                 generatePartialGroupingForKeySet(resultCollector, tupleSource, keyColumns, keys);
             } else {
-                final Map<Object, SequentialRowSetBuilder> resultBuilder = new LinkedHashMap<>();
+                final Map<Object, RowSetBuilderSequential> resultBuilder = new LinkedHashMap<>();
                 for (final TrackingMutableRowSet.Iterator iterator = this.iterator(); iterator.hasNext();) {
                     final long next = iterator.nextLong();
                     final Object key = tupleSource.createTuple(next);
                     if (keys.contains(key)) {
-                        resultBuilder.computeIfAbsent(key, k -> TrackingMutableRowSet.FACTORY.getSequentialBuilder()).appendKey(next);
+                        resultBuilder.computeIfAbsent(key, k -> RowSetFactoryImpl.INSTANCE.getSequentialBuilder()).appendKey(next);
                     }
                 }
-                for (Map.Entry<Object, SequentialRowSetBuilder> objectIndexBuilderEntry : resultBuilder.entrySet()) {
+                for (Map.Entry<Object, RowSetBuilderSequential> objectIndexBuilderEntry : resultBuilder.entrySet()) {
                     resultCollector.accept(objectIndexBuilderEntry.getKey(),
                             objectIndexBuilderEntry.getValue().build());
                 }
@@ -713,14 +695,14 @@ public abstract class GroupingRowSetHelper extends RowSequenceAsChunkImpl implem
         if (sourcesKey.isEmpty()) {
             result.put(EmptyTuple.INSTANCE, this.clone());
         } else {
-            final Map<Object, SequentialRowSetBuilder> resultBuilder = new LinkedHashMap<>();
+            final Map<Object, RowSetBuilderSequential> resultBuilder = new LinkedHashMap<>();
             for (final TrackingMutableRowSet.Iterator iterator = this.iterator(); iterator.hasNext();) {
                 final long next = iterator.nextLong();
                 final Object key = tupleSource.createPreviousTuple(next);
-                resultBuilder.computeIfAbsent(key, k -> TrackingMutableRowSet.FACTORY.getSequentialBuilder()).appendKey(next);
+                resultBuilder.computeIfAbsent(key, k -> RowSetFactoryImpl.INSTANCE.getSequentialBuilder()).appendKey(next);
             }
             result = new LinkedHashMap<>();
-            for (Map.Entry<Object, SequentialRowSetBuilder> objectIndexBuilderEntry : resultBuilder.entrySet()) {
+            for (Map.Entry<Object, RowSetBuilderSequential> objectIndexBuilderEntry : resultBuilder.entrySet()) {
                 result.put(objectIndexBuilderEntry.getKey(), objectIndexBuilderEntry.getValue().build());
             }
         }

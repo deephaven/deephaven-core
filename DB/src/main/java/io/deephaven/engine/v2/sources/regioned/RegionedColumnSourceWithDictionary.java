@@ -220,9 +220,9 @@ class RegionedColumnSourceWithDictionary<DATA_TYPE>
 
         final TrackingMutableRowSet symbolTableRowSet;
         if (sourceIndex.empty()) {
-            symbolTableRowSet = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
+            symbolTableRowSet = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
         } else {
-            final SequentialRowSetBuilder symbolTableIndexBuilder = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
+            final RowSetBuilderSequential symbolTableIndexBuilder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
             try (final TrackingMutableRowSet.SearchIterator keysToVisit = sourceIndex.searchIterator()) {
                 keysToVisit.nextLong(); // Safe, since sourceIndex must be non-empty
                 do {
@@ -257,7 +257,7 @@ class RegionedColumnSourceWithDictionary<DATA_TYPE>
                                 symbolTable = getStaticSymbolTable(sourceTable.getIndex(), useLookupCaching);
                             } else {
                                 symbolTable = getStaticSymbolTable(
-                                        usePrev ? sourceTable.getIndex().getPrevIndex() : sourceTable.getIndex(),
+                                        usePrev ? sourceTable.getIndex().getPrevRowSet() : sourceTable.getIndex(),
                                         useLookupCaching);
                                 swapListener.setListenerAndResult(
                                         new SymbolTableUpdateListener(description, sourceTable, symbolTable),
@@ -298,7 +298,7 @@ class RegionedColumnSourceWithDictionary<DATA_TYPE>
                 return;
             }
 
-            final SequentialRowSetBuilder symbolTableAddedBuilder = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
+            final RowSetBuilderSequential symbolTableAddedBuilder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
             // noinspection unchecked
             final RegionedColumnSourceBase<DATA_TYPE, Values, ColumnRegionObject<DATA_TYPE, Values>> dictionaryColumn =
                     (RegionedColumnSourceBase<DATA_TYPE, Values, ColumnRegionObject<DATA_TYPE, Values>>) symbolTable
@@ -316,8 +316,8 @@ class RegionedColumnSourceWithDictionary<DATA_TYPE>
             final TrackingMutableRowSet symbolTableAdded = symbolTableAddedBuilder.build();
             if (symbolTableAdded.nonempty()) {
                 symbolTable.getIndex().insert(symbolTableAdded);
-                symbolTable.notifyListeners(new Update(symbolTableAdded, TrackingMutableRowSet.FACTORY.getEmptyRowSet(),
-                        TrackingMutableRowSet.FACTORY.getEmptyRowSet(), IndexShiftData.EMPTY, emptyModifiedColumns));
+                symbolTable.notifyListeners(new Update(symbolTableAdded, RowSetFactoryImpl.INSTANCE.getEmptyRowSet(),
+                        RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), IndexShiftData.EMPTY, emptyModifiedColumns));
             }
         }
     }

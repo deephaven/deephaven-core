@@ -24,7 +24,7 @@ class ChunkedAjUtilities {
         final ChunkType stampChunkType = stampSource.getChunkType();
         final SortingOrder sortOrder = leftSsa.isReversed() ? SortingOrder.Descending : SortingOrder.Ascending;
 
-        try (final TrackingMutableRowSet fullPrevRowSet = table.getIndex().getPrevIndex();
+        try (final TrackingMutableRowSet fullPrevRowSet = table.getIndex().getPrevRowSet();
              final TrackingMutableRowSet previousToShift = fullPrevRowSet.minus(restampRemovals);
              final SizedSafeCloseable<ColumnSource.FillContext> shiftFillContext =
                         new SizedSafeCloseable<>(stampSource::makeFillContext);

@@ -195,7 +195,7 @@ class RightIncrementalChunkedNaturalJoinStateManager
     private void addLeftIndex(long tableLocation, long keyToAdd) {
         final TrackingMutableRowSet rowSet = leftIndexSource.get(tableLocation);
         if (rowSet == null) {
-            leftIndexSource.set(tableLocation, TrackingMutableRowSet.CURRENT_FACTORY.getRowSetByValues(keyToAdd));
+            leftIndexSource.set(tableLocation, RowSetFactoryImpl.INSTANCE.getRowSetByValues(keyToAdd));
         } else {
             rowSet.insert(keyToAdd);
         }
@@ -250,7 +250,7 @@ class RightIncrementalChunkedNaturalJoinStateManager
     private void addLeftIndexOverflow(long overflowLocation, long keyToAdd) {
         final TrackingMutableRowSet rowSet = overflowLeftIndexSource.get(overflowLocation);
         if (rowSet == null) {
-            overflowLeftIndexSource.set(overflowLocation, TrackingMutableRowSet.CURRENT_FACTORY.getRowSetByValues(keyToAdd));
+            overflowLeftIndexSource.set(overflowLocation, RowSetFactoryImpl.INSTANCE.getRowSetByValues(keyToAdd));
         } else {
             rowSet.insert(keyToAdd);
         }

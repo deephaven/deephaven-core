@@ -74,7 +74,7 @@ public interface IndexLike {
         @Override
         public IndexLike make() {
             return new ActualIndex() {
-                RowSetBuilder b = new TrackingMutableRowSet.AdaptiveRowSetBuilder();
+                RowSetBuilderRandom b = new AdaptiveRowSetBuilderRandom();
                 TrackingMutableRowSet idx;
 
                 @Override

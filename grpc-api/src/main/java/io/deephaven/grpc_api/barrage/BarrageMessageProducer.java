@@ -339,7 +339,7 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
         this.scheduler = scheduler;
         this.streamGeneratorFactory = streamGeneratorFactory;
 
-        this.propagationRowSet = TrackingMutableRowSet.CURRENT_FACTORY.getEmptyRowSet();
+        this.propagationRowSet = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
 
         this.parent = parent;
         this.updateIntervalMs = updateIntervalMs;
@@ -433,7 +433,7 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
             this.options = options;
             this.listener = listener;
             this.logPrefix = "Sub{" + Integer.toHexString(System.identityHashCode(listener)) + "}: ";
-            this.viewport = initialViewport != null ? TrackingMutableRowSet.CURRENT_FACTORY.getEmptyRowSet() : null;
+            this.viewport = initialViewport != null ? RowSetFactoryImpl.INSTANCE.getEmptyRowSet() : null;
             this.subscribedColumns = new BitSet();
             this.pendingColumns = subscribedColumns;
             this.pendingViewport = initialViewport;
@@ -589,7 +589,7 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
                 // mark when the last indices are from, so that terminal notifications can make use of them if required
                 lastIndexClockStep = LogicalClock.DEFAULT.currentStep();
                 if (DEBUG) {
-                    try (final TrackingMutableRowSet prevRowSet = parent.getIndex().getPrevIndex()) {
+                    try (final TrackingMutableRowSet prevRowSet = parent.getIndex().getPrevRowSet()) {
                         log.info().append(logPrefix)
                                 .append("lastIndexClockStep=").append(lastIndexClockStep)
                                 .append(", upstream=").append(upstream).append(", shouldEnqueueDelta=")
@@ -661,8 +661,8 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
         } else {
             // we have new viewport subscriptions and we are actively fetching snapshots so there is no data to record
             // however we must record the rowSet updates or else the propagationRowSet will be out of sync
-            addsToRecord = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
-            modsToRecord = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
+            addsToRecord = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+            modsToRecord = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
         }
 
         // Note: viewports are in position space, inserted and removed rows may cause the keyspace for a given viewport
@@ -670,9 +670,9 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
         // store. If prev rowSet is empty, all rows are new and are already in addsToRecord.
         if (activeViewport != null && (upstream.added.nonempty() || upstream.removed.nonempty()) && rowSet.nonempty()
                 && rowSet.sizePrev() > 0) {
-            final RowSetBuilder scopedViewBuilder = TrackingMutableRowSet.FACTORY.getRandomBuilder();
+            final RowSetBuilderRandom scopedViewBuilder = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
 
-            try (final TrackingMutableRowSet prevRowSet = rowSet.getPrevIndex()) {
+            try (final TrackingMutableRowSet prevRowSet = rowSet.getPrevRowSet()) {
                 for (final Subscription sub : activeSubscriptions) {
                     if (!sub.isViewport() || sub.pendingDelete) {
                         continue;
@@ -893,7 +893,7 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
         boolean needsFullSnapshot = false;
         boolean firstSubscription = false;
         BitSet snapshotColumns = null;
-        RowSetBuilder snapshotRows = null;
+        RowSetBuilderRandom snapshotRows = null;
         List<Subscription> updatedSubscriptions = null;
 
         // first, we take out any new subscriptions (under the lock)
@@ -917,7 +917,7 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
                     if (!needsSnapshot) {
                         needsSnapshot = true;
                         snapshotColumns = new BitSet();
-                        snapshotRows = TrackingMutableRowSet.FACTORY.getRandomBuilder();
+                        snapshotRows = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
                     }
 
                     subscription.hasPendingUpdate = false;
@@ -954,7 +954,7 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
 
                 boolean haveViewport = false;
                 postSnapshotColumns.clear();
-                final RowSetBuilder postSnapshotViewportBuilder = TrackingMutableRowSet.FACTORY.getRandomBuilder();
+                final RowSetBuilderRandom postSnapshotViewportBuilder = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
 
                 for (int i = 0; i < activeSubscriptions.size(); ++i) {
                     final Subscription sub = activeSubscriptions.get(i);
@@ -1206,17 +1206,17 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
             // We can use this update directly with minimal effort.
             final TrackingMutableRowSet localAdded;
             if (firstDelta.recordedAdds.empty()) {
-                localAdded = TrackingMutableRowSet.CURRENT_FACTORY.getEmptyRowSet();
+                localAdded = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
             } else {
-                localAdded = TrackingMutableRowSet.CURRENT_FACTORY.getRowSetByRange(
+                localAdded = RowSetFactoryImpl.INSTANCE.getRowSetByRange(
                         firstDelta.deltaColumnOffset,
                         firstDelta.deltaColumnOffset + firstDelta.recordedAdds.size() - 1);
             }
             final TrackingMutableRowSet localModified;
             if (firstDelta.recordedMods.empty()) {
-                localModified = TrackingMutableRowSet.CURRENT_FACTORY.getEmptyRowSet();
+                localModified = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
             } else {
-                localModified = TrackingMutableRowSet.CURRENT_FACTORY.getRowSetByRange(
+                localModified = RowSetFactoryImpl.INSTANCE.getRowSetByRange(
                         firstDelta.deltaColumnOffset + firstDelta.recordedAdds.size(),
                         firstDelta.deltaColumnOffset + firstDelta.recordedAdds.size() + firstDelta.recordedMods.size()
                                 - 1);
@@ -1269,7 +1269,7 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
                     }
                     modifications.data = chunk;
                 } else {
-                    modifications.rowsModified = TrackingMutableRowSet.CURRENT_FACTORY.getEmptyRowSet();
+                    modifications.rowsModified = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
                     modifications.data = deltaColumn.getChunkType().getEmptyChunk();
                 }
 
@@ -1288,7 +1288,7 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
             addColumnSet = new BitSet();
             modColumnSet = new BitSet();
 
-            final TrackingMutableRowSet localAdded = TrackingMutableRowSet.CURRENT_FACTORY.getEmptyRowSet();
+            final TrackingMutableRowSet localAdded = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
             for (int i = startDelta; i < endDelta; ++i) {
                 final Delta delta = pendingDeltas.get(i);
                 localAdded.remove(delta.update.removed);
@@ -1322,8 +1322,8 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
             // output rows to input data may be different per Column. We can re-use calculations where the set of deltas
             // that modify column A are the same as column B.
             final class ColumnInfo {
-                final TrackingMutableRowSet modified = TrackingMutableRowSet.CURRENT_FACTORY.getEmptyRowSet();
-                final TrackingMutableRowSet recordedMods = TrackingMutableRowSet.CURRENT_FACTORY.getEmptyRowSet();
+                final TrackingMutableRowSet modified = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+                final TrackingMutableRowSet recordedMods = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
                 long[] addedMapping;
                 long[] modifiedMapping;
             }
@@ -1363,10 +1363,10 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
                 Arrays.fill(retval.addedMapping, TrackingMutableRowSet.NULL_ROW_KEY);
                 Arrays.fill(retval.modifiedMapping, TrackingMutableRowSet.NULL_ROW_KEY);
 
-                final TrackingMutableRowSet unfilledAdds = localAdded.empty() ? TrackingMutableRowSet.CURRENT_FACTORY.getEmptyRowSet()
-                        : TrackingMutableRowSet.CURRENT_FACTORY.getRowSetByRange(0, retval.addedMapping.length - 1);
-                final TrackingMutableRowSet unfilledMods = retval.recordedMods.empty() ? TrackingMutableRowSet.CURRENT_FACTORY.getEmptyRowSet()
-                        : TrackingMutableRowSet.CURRENT_FACTORY.getRowSetByRange(0, retval.modifiedMapping.length - 1);
+                final TrackingMutableRowSet unfilledAdds = localAdded.empty() ? RowSetFactoryImpl.INSTANCE.getEmptyRowSet()
+                        : RowSetFactoryImpl.INSTANCE.getRowSetByRange(0, retval.addedMapping.length - 1);
+                final TrackingMutableRowSet unfilledMods = retval.recordedMods.empty() ? RowSetFactoryImpl.INSTANCE.getEmptyRowSet()
+                        : RowSetFactoryImpl.INSTANCE.getRowSetByRange(0, retval.modifiedMapping.length - 1);
 
                 final TrackingMutableRowSet addedRemaining = localAdded.clone();
                 final TrackingMutableRowSet modifiedRemaining = retval.recordedMods.clone();
@@ -1477,7 +1477,7 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
 
                     modifications.data = chunk;
                 } else {
-                    modifications.rowsModified = TrackingMutableRowSet.CURRENT_FACTORY.getEmptyRowSet();
+                    modifications.rowsModified = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
                     modifications.data = sourceColumn.getChunkType().getEmptyChunk();
                 }
 

@@ -19,10 +19,7 @@ import io.deephaven.engine.v2.select.DisjunctiveFilter;
 import io.deephaven.engine.v2.select.DynamicWhereFilter;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.LogicalClock;
-import io.deephaven.engine.v2.utils.ColumnHolder;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
-import io.deephaven.engine.v2.utils.IndexShiftData;
-import io.deephaven.engine.v2.utils.UpdatePerformanceTracker;
+import io.deephaven.engine.v2.utils.*;
 import io.deephaven.gui.table.QuickFilterMode;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.SafeCloseable;
@@ -55,7 +52,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
     private final ExecutorService dualPool = Executors.newFixedThreadPool(2);
 
     public void testTreeTableFilter() throws ExecutionException, InterruptedException {
-        final QueryTable source = TstUtils.testRefreshingTable(TrackingMutableRowSet.FACTORY.getFlatIndex(10),
+        final QueryTable source = TstUtils.testRefreshingTable(RowSetFactoryImpl.INSTANCE.getFlatRowSet(10),
                 col("Sentinel", 1, 2, 3, 4, 5, 6, 7, 8, 9, 10),
                 col("Parent", NULL_INT, NULL_INT, 1, 1, 2, 3, 5, 5, 3, 2));
         final Table treed =

@@ -12,7 +12,7 @@ import io.deephaven.engine.v2.sources.DateTimeTreeMapSource;
 
 public class TestTailInitializationFilter extends LiveTableTestCase {
     public void testSimple() {
-        final SequentialRowSetBuilder builder = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
+        final RowSetBuilderSequential builder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
         builder.appendRange(0, 99);
         builder.appendRange(1000, 1099);
         final long[] data = new long[200];
@@ -43,7 +43,7 @@ public class TestTailInitializationFilter extends LiveTableTestCase {
             data2[1] = DBTimeUtils.convertDateTime("2020-08-20T06:30:00 NY");
             data2[0] = DBTimeUtils.convertDateTime("2020-08-20T07:00:00 NY");
             data2[1] = DBTimeUtils.convertDateTime("2020-08-20T08:30:00 NY");
-            final TrackingMutableRowSet newRowSet = TrackingMutableRowSet.FACTORY.getRowSetByValues(100, 101, 1100, 1101);
+            final TrackingMutableRowSet newRowSet = RowSetFactoryImpl.INSTANCE.getRowSetByValues(100, 101, 1100, 1101);
             input.getIndex().insert(newRowSet);
             ((DateTimeTreeMapSource) input.<DBDateTime>getColumnSource("Timestamp")).add(newRowSet, data2);
             input.notifyListeners(newRowSet, TstUtils.i(), TstUtils.i());

@@ -4,7 +4,7 @@ import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.sources.chunk.Attributes.RowKeys;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 import io.deephaven.engine.v2.sources.chunk.sized.SizedLongChunk;
-import io.deephaven.engine.v2.utils.RowSetBuilder;
+import io.deephaven.engine.v2.utils.RowSetBuilderRandom;
 import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.engine.v2.utils.RedirectionIndex;
 
@@ -77,11 +77,11 @@ public class CharReverseSsaSsaStamp implements SsaSsaStamp {
     }
 
     @Override
-    public void processRemovals(SegmentedSortedArray leftSsa, Chunk<? extends Values> rightStampChunk, LongChunk<RowKeys> rightKeys, WritableLongChunk<RowKeys> priorRedirections, RedirectionIndex redirectionIndex, RowSetBuilder modifiedBuilder, boolean disallowExactMatch) {
+    public void processRemovals(SegmentedSortedArray leftSsa, Chunk<? extends Values> rightStampChunk, LongChunk<RowKeys> rightKeys, WritableLongChunk<RowKeys> priorRedirections, RedirectionIndex redirectionIndex, RowSetBuilderRandom modifiedBuilder, boolean disallowExactMatch) {
         processRemovals((CharReverseSegmentedSortedArray)leftSsa, rightStampChunk.asCharChunk(), rightKeys, priorRedirections, redirectionIndex, modifiedBuilder, disallowExactMatch);
     }
 
-    static private void processRemovals(CharReverseSegmentedSortedArray leftSsa, CharChunk<? extends Values> rightStampChunk, LongChunk<RowKeys> rightKeys, WritableLongChunk<RowKeys> nextRedirections, RedirectionIndex redirectionIndex, RowSetBuilder modifiedBuilder, boolean disallowExactMatch) {
+    static private void processRemovals(CharReverseSegmentedSortedArray leftSsa, CharChunk<? extends Values> rightStampChunk, LongChunk<RowKeys> rightKeys, WritableLongChunk<RowKeys> nextRedirections, RedirectionIndex redirectionIndex, RowSetBuilderRandom modifiedBuilder, boolean disallowExactMatch) {
         // When removing a row, record the stamp, redirection key, and prior redirection key.  Binary search
         // in the left for the removed key to find the smallest value geq the removed right.  Update all rows
         // with the removed redirection to the previous key.
@@ -124,17 +124,17 @@ public class CharReverseSsaSsaStamp implements SsaSsaStamp {
             if (mks > 0) {
                 modifiedKeys.get().setSize(mks);
                 modifiedKeys.get().sort();
-                modifiedBuilder.addOrderedKeyIndicesChunk(WritableLongChunk.downcast(modifiedKeys.get()));
+                modifiedBuilder.addOrderedRowKeysChunk(WritableLongChunk.downcast(modifiedKeys.get()));
             }
         }
     }
 
     @Override
-    public void processInsertion(SegmentedSortedArray leftSsa, Chunk<? extends Values> rightStampChunk, LongChunk<RowKeys> rightKeys, Chunk<Values> nextRightValue, RedirectionIndex redirectionIndex, RowSetBuilder modifiedBuilder, boolean endsWithLastValue, boolean disallowExactMatch) {
+    public void processInsertion(SegmentedSortedArray leftSsa, Chunk<? extends Values> rightStampChunk, LongChunk<RowKeys> rightKeys, Chunk<Values> nextRightValue, RedirectionIndex redirectionIndex, RowSetBuilderRandom modifiedBuilder, boolean endsWithLastValue, boolean disallowExactMatch) {
         processInsertion((CharReverseSegmentedSortedArray)leftSsa, rightStampChunk.asCharChunk(), rightKeys, nextRightValue.asCharChunk(), redirectionIndex, modifiedBuilder, endsWithLastValue, disallowExactMatch);
     }
 
-    static private void processInsertion(CharReverseSegmentedSortedArray leftSsa, CharChunk<? extends Values> rightStampChunk, LongChunk<Attributes.RowKeys> rightKeys, CharChunk<Values> nextRightValue, RedirectionIndex redirectionIndex, RowSetBuilder modifiedBuilder, boolean endsWithLastValue, boolean disallowExactMatch) {
+    static private void processInsertion(CharReverseSegmentedSortedArray leftSsa, CharChunk<? extends Values> rightStampChunk, LongChunk<Attributes.RowKeys> rightKeys, CharChunk<Values> nextRightValue, RedirectionIndex redirectionIndex, RowSetBuilderRandom modifiedBuilder, boolean endsWithLastValue, boolean disallowExactMatch) {
         // We've already filtered out duplicate right stamps by the time we get here, which means that the rightStampChunk
         // contains only values that are the last in any given run; and thus are possible matches.
 
@@ -188,17 +188,17 @@ public class CharReverseSsaSsaStamp implements SsaSsaStamp {
             if (mks > 0) {
                 modifiedKeys.get().setSize(mks);
                 modifiedKeys.get().sort();
-                modifiedBuilder.addOrderedKeyIndicesChunk(WritableLongChunk.downcast(modifiedKeys.get()));
+                modifiedBuilder.addOrderedRowKeysChunk(WritableLongChunk.downcast(modifiedKeys.get()));
             }
         }
     }
 
     @Override
-    public void findModified(SegmentedSortedArray leftSsa, RedirectionIndex redirectionIndex, Chunk<? extends Values> rightStampChunk, LongChunk<RowKeys> rightStampIndices, RowSetBuilder modifiedBuilder, boolean disallowExactMatch) {
+    public void findModified(SegmentedSortedArray leftSsa, RedirectionIndex redirectionIndex, Chunk<? extends Values> rightStampChunk, LongChunk<RowKeys> rightStampIndices, RowSetBuilderRandom modifiedBuilder, boolean disallowExactMatch) {
         findModified((CharReverseSegmentedSortedArray)leftSsa, redirectionIndex, rightStampChunk.asCharChunk(), rightStampIndices, modifiedBuilder, disallowExactMatch);
     }
 
-    private static void findModified(CharReverseSegmentedSortedArray leftSsa, RedirectionIndex redirectionIndex, CharChunk<? extends Values> rightStampChunk, LongChunk<RowKeys> rightStampIndices, RowSetBuilder modifiedBuilder, boolean disallowExactMatch) {
+    private static void findModified(CharReverseSegmentedSortedArray leftSsa, RedirectionIndex redirectionIndex, CharChunk<? extends Values> rightStampChunk, LongChunk<RowKeys> rightStampIndices, RowSetBuilderRandom modifiedBuilder, boolean disallowExactMatch) {
         final CharReverseSegmentedSortedArray.Iterator leftIt = leftSsa.iterator(disallowExactMatch, false);
 
         try (final SizedLongChunk<RowKeys> modifiedKeys = new SizedLongChunk<>()) {
@@ -227,7 +227,7 @@ public class CharReverseSsaSsaStamp implements SsaSsaStamp {
             if (mks > 0) {
                 modifiedKeys.get().setSize(mks);
                 modifiedKeys.get().sort();
-                modifiedBuilder.addOrderedKeyIndicesChunk(WritableLongChunk.downcast(modifiedKeys.get()));
+                modifiedBuilder.addOrderedRowKeysChunk(WritableLongChunk.downcast(modifiedKeys.get()));
             }
         }
     }

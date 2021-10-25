@@ -18,8 +18,9 @@ import io.deephaven.engine.tables.utils.QueryPerformanceRecorder;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedRowKeys;
+import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
 import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
-import io.deephaven.engine.v2.utils.SequentialRowSetBuilder;
+import io.deephaven.engine.v2.utils.RowSetBuilderSequential;
 import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.text.Indenter;
@@ -323,7 +324,7 @@ public class ConditionFilter extends AbstractConditionFilter {
                 final Context sourceContexts[] = new Context[columnNames.length];
                 final SharedContext sharedContext = populateChunkGettersAndContexts(selection, fullSet, table, usePrev,
                         chunkGetters, sourceContexts);
-                final SequentialRowSetBuilder resultBuilder = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
+                final RowSetBuilderSequential resultBuilder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
                 final Chunk inputChunks[] = new Chunk[columnNames.length];
                 while (rsIterator.hasMore()) {
                     final RowSequence currentChunkRowSequence = rsIterator.getNextRowSequenceWithLength(chunkSize);

@@ -20,47 +20,59 @@ public interface TrackingRowSet extends RowSet {
 
     long sizePrev();
 
-    TrackingMutableRowSet getPrevIndex();
+    MutableRowSet getPrevRowSet();
 
-    long firstKeyPrev();
+    long firstRowKeyPrev();
 
-    long lastKeyPrev();
+    long lastRowKeyPrev();
 
     /**
-     * Returns the position in [0..(size-1)] where the key is found in the previous rowSet. If not found, then return
-     * (-(position it would be) - 1), as in Array.binarySearch.
+     * Returns the position in [0..(size-1)] where the row key is found in the previous rowSet. If not found, then
+     * return {@code (-(position it would be) - 1)}, as in Array.binarySearch.
      *
-     * @param key the key to search for
-     * @return a position from [0..(size-1)] if the key was found. If the key was not found, then (-position - 1) as in
-     *         Array.binarySearch.
+     * @param rowKey The row key to search for
+     * @return A position from [0..(size-1)] if the row key was found. If the row key was not found, then
+     *         {@code (-position - 1)} as in Array.binarySearch
      */
-    long findPrev(long key);
+    long findPrev(long rowKey);
 
     boolean hasGrouping(ColumnSource... keyColumns);
 
-    Map<Object, TrackingRowSet> getGrouping(TupleSource tupleSource);
+    Map<Object, RowSet> getGrouping(TupleSource tupleSource);
 
-    Map<Object, TrackingRowSet> getPrevGrouping(TupleSource tupleSource);
+    Map<Object, RowSet> getPrevGrouping(TupleSource tupleSource);
 
     void copyImmutableGroupings(TupleSource source, TupleSource dest);
 
     /**
-     * Return a grouping that contains keys that match the values in keySet.
+     * Return a grouping that contains row keys that match the values in {@code keys}.
      *
-     * @param keys a set of values that keyColumns should match. For a single keyColumns, the values within the set are
-     *        the values that we would like to find. For multiple keyColumns, the values are SmartKeys.
-     * @param tupleSource the tuple factory for the keyColumns
-     * @return an Map from keys to Indices, for each of the keys in keySet and this TrackingMutableRowSet.
+     * @param keys A set of values that {@code TupleSource} should match. For a single {@link ColumnSource}, the values
+     *        within the set are the values that we would like to find. For compound {@link TupleSource} instances, the
+     *        values are SmartKeys.
+     * @param tupleSource The tuple factory for singular or compound keys
+     * @return A map from keys to {@link RowSet}, for each of the {@link keys} present in this {@link RowSet row set's}
+     *         view of {@code tupleSource}
      */
-    Map<Object, TrackingRowSet> getGroupingForKeySet(Set<Object> keys, TupleSource tupleSource);
+    Map<Object, RowSet> getGroupingForKeySet(Set<Object> keys, TupleSource tupleSource);
 
     /**
-     * Return a subIndex that contains indices that match the values in keySet.
+     * Return a subset that contains row keys that match the values in keySet.
      *
      * @param keySet a set of values that keyColumns should match. For a single keyColumns, the values within the set
      *        are the values that we would like to find. For multiple keyColumns, the values are SmartKeys.
      * @param tupleSource the tuple factory for the keyColumn
-     * @return an TrackingMutableRowSet containing only keys that match keySet.
+     * @return an MutableRowSet containing only keys that match keySet.
      */
-    TrackingRowSet getSubIndexForKeySet(Set<Object> keySet, TupleSource tupleSource);
+    /**
+     * Return a subset that contains row keys that match the values in {@code keys}.
+     *
+     * @param keys A set of values that {@code TupleSource} should match. For a single {@link ColumnSource}, the values
+     *        within the set are the values that we would like to find. For compound {@link TupleSource} instances, the
+     *        values are SmartKeys.
+     * @param tupleSource The tuple factory for singular or compound keys
+     * @return A {@link MutableRowSet} with all row keys from this RowSet whose value in {@code tupleSource} was present
+     *         in {@code keys}
+     */
+    RowSet getSubSetForKeySet(Set<Object> keys, TupleSource tupleSource);
 }

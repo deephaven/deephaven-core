@@ -8,8 +8,9 @@ import io.deephaven.base.clock.Clock;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.lang.DBLanguageFunctionUtil;
-import io.deephaven.engine.v2.utils.RowSetBuilder;
-import io.deephaven.engine.v2.utils.SequentialRowSetBuilder;
+import io.deephaven.engine.v2.utils.RowSetBuilderRandom;
+import io.deephaven.engine.v2.utils.RowSetBuilderSequential;
+import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
 import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -74,7 +75,7 @@ public class UnsortedClockFilter extends ClockFilter {
             return null;
         }
 
-        final SequentialRowSetBuilder addedBuilder = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
+        final RowSetBuilderSequential addedBuilder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
 
         final long nowNanos = clock.currentTimeMicros() * 1000L;
         final TrackingMutableRowSet.Iterator selectionIterator = selection.iterator();
@@ -126,9 +127,9 @@ public class UnsortedClockFilter extends ClockFilter {
             return null;
         }
         final long nowNanos = clock.currentTimeMicros() * 1000L;
-        RowSetBuilder addedBuilder = null;
+        RowSetBuilderRandom addedBuilder = null;
         Range nextRange;
-        RowSetBuilder resultBuilder;
+        RowSetBuilderRandom resultBuilder;
         while ((nextRange = rangesByNextTime.peek()) != null && (resultBuilder =
                 nextRange.consumeKeysAndAppendAdded(nanosColumnSource, nowNanos, addedBuilder)) != null) {
             addedBuilder = resultBuilder;

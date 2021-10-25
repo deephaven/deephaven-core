@@ -169,7 +169,7 @@ public class ChunkedOperatorAggregationHelper {
         }
         ac.getResultColumns(resultColumnSourceMap);
 
-        final TrackingMutableRowSet resultRowSet = TrackingMutableRowSet.FACTORY.getFlatIndex(outputPosition.intValue());
+        final TrackingMutableRowSet resultRowSet = RowSetFactoryImpl.INSTANCE.getFlatRowSet(outputPosition.intValue());
         if (withView.isRefreshing()) {
             copyKeyColumns(keyColumnsRaw, keyColumnsCopied, resultRowSet);
         }
@@ -245,7 +245,7 @@ public class ChunkedOperatorAggregationHelper {
         if (upstream.removed.empty()) {
             return upstream;
         }
-        return new Update(upstream.added, TrackingMutableRowSet.CURRENT_FACTORY.getEmptyRowSet(), upstream.modified, upstream.shifted,
+        return new Update(upstream.added, RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), upstream.modified, upstream.shifted,
                 upstream.modifiedColumnSet);
     }
 
@@ -304,9 +304,9 @@ public class ChunkedOperatorAggregationHelper {
         private final boolean processShifts;
         private final OperatorDivision od;
 
-        private final RowSetBuilder emptiedStatesBuilder;
-        private final RowSetBuilder modifiedStatesBuilder;
-        private final RowSetBuilder reincarnatedStatesBuilder;
+        private final RowSetBuilderRandom emptiedStatesBuilder;
+        private final RowSetBuilderRandom modifiedStatesBuilder;
+        private final RowSetBuilderRandom reincarnatedStatesBuilder;
         private final boolean[] modifiedOperators;
 
         private final SafeCloseableList toClose;
@@ -376,9 +376,9 @@ public class ChunkedOperatorAggregationHelper {
             final int probeChunkSize = chunkSize(probeSize);
             final int chunkSize = Math.max(buildChunkSize, probeChunkSize);
 
-            emptiedStatesBuilder = TrackingMutableRowSet.FACTORY.getRandomBuilder();
-            modifiedStatesBuilder = TrackingMutableRowSet.FACTORY.getRandomBuilder();
-            reincarnatedStatesBuilder = TrackingMutableRowSet.FACTORY.getRandomBuilder();
+            emptiedStatesBuilder = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
+            modifiedStatesBuilder = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
+            reincarnatedStatesBuilder = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
             modifiedOperators = new boolean[ac.size()];
 
             toClose = new SafeCloseableList();
@@ -591,7 +591,7 @@ public class ChunkedOperatorAggregationHelper {
         private void doRemovesForChunk(@NotNull final RowSequence keyIndicesToRemoveChunk) {
 
             incrementalStateManager.remove(pc, keyIndicesToRemoveChunk, reinterpretedKeySources, slots, emptiedSlots);
-            emptiedStatesBuilder.addKeyIndicesChunk(emptiedSlots);
+            emptiedStatesBuilder.addRowKeysChunk(emptiedSlots);
 
             propagateRemovesToOperators(keyIndicesToRemoveChunk, slots);
         }
@@ -651,7 +651,7 @@ public class ChunkedOperatorAggregationHelper {
             if (addToStateManager) {
                 incrementalStateManager.addForUpdate(bc, keyIndicesToInsertChunk, reinterpretedKeySources,
                         outputPosition, slots, reincarnatedSlots);
-                reincarnatedStatesBuilder.addKeyIndicesChunk(reincarnatedSlots);
+                reincarnatedStatesBuilder.addRowKeysChunk(reincarnatedSlots);
             } else {
                 incrementalStateManager.findModifications(pc, keyIndicesToInsertChunk, reinterpretedKeySources, slots);
             }
@@ -951,14 +951,14 @@ public class ChunkedOperatorAggregationHelper {
             final boolean needSameSlotIndicesPostShift = !processShifts && (od.anyOperatorHasModifiedInputColumns
                     || od.anyOperatorWithoutModifiedInputColumnsRequiresIndices || keysModified);
 
-            final SequentialRowSetBuilder unshiftedSameSlotIndicesBuilder =
-                    needUnshiftedSameSlotIndices ? TrackingMutableRowSet.CURRENT_FACTORY.getSequentialBuilder() : null;
-            final SequentialRowSetBuilder sameSlotIndicesPreShiftBuilder =
-                    needSameSlotIndicesPreShift ? TrackingMutableRowSet.CURRENT_FACTORY.getSequentialBuilder() : null;
-            final SequentialRowSetBuilder sameSlotIndicesPostShiftBuilder =
-                    needSameSlotIndicesPostShift ? TrackingMutableRowSet.CURRENT_FACTORY.getSequentialBuilder() : null;
-            final SequentialRowSetBuilder keyChangeIndicesPostShiftBuilder =
-                    TrackingMutableRowSet.CURRENT_FACTORY.getSequentialBuilder();
+            final RowSetBuilderSequential unshiftedSameSlotIndicesBuilder =
+                    needUnshiftedSameSlotIndices ? RowSetFactoryImpl.INSTANCE.getSequentialBuilder() : null;
+            final RowSetBuilderSequential sameSlotIndicesPreShiftBuilder =
+                    needSameSlotIndicesPreShift ? RowSetFactoryImpl.INSTANCE.getSequentialBuilder() : null;
+            final RowSetBuilderSequential sameSlotIndicesPostShiftBuilder =
+                    needSameSlotIndicesPostShift ? RowSetFactoryImpl.INSTANCE.getSequentialBuilder() : null;
+            final RowSetBuilderSequential keyChangeIndicesPostShiftBuilder =
+                    RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
 
             try (final RowSequence.Iterator modifiedPreShiftIterator =
                     upstream.getModifiedPreShift().getRowSequenceIterator();
@@ -980,10 +980,10 @@ public class ChunkedOperatorAggregationHelper {
 
                     incrementalStateManager.remove(pc, modifiedPreShiftChunk, reinterpretedKeySources, slots,
                             emptiedSlots);
-                    emptiedStatesBuilder.addKeyIndicesChunk(emptiedSlots);
+                    emptiedStatesBuilder.addRowKeysChunk(emptiedSlots);
                     incrementalStateManager.addForUpdate(bc, modifiedPostShiftChunk, reinterpretedKeySources,
                             outputPosition, postSlots, reincarnatedSlots);
-                    reincarnatedStatesBuilder.addKeyIndicesChunk(reincarnatedSlots);
+                    reincarnatedStatesBuilder.addRowKeysChunk(reincarnatedSlots);
 
                     final LongChunk<OrderedRowKeys> preShiftIndices = modifiedPreShiftChunk.asRowKeyChunk();
                     final LongChunk<OrderedRowKeys> postShiftIndices =
@@ -1053,7 +1053,7 @@ public class ChunkedOperatorAggregationHelper {
     }
 
     private static RowSet extractUnshiftedModifiesFromUpstream(@NotNull final Update upstream) {
-        final SequentialRowSetBuilder unshiftedModifiesBuilder = TrackingMutableRowSet.CURRENT_FACTORY.getSequentialBuilder();
+        final RowSetBuilderSequential unshiftedModifiesBuilder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
 
         try (final RowSequence.Iterator modifiedPreShiftIterator =
                 upstream.getModifiedPreShift().getRowSequenceIterator();
@@ -1101,7 +1101,7 @@ public class ChunkedOperatorAggregationHelper {
         }
         if (downstream.modifiedColumnSet.empty() && downstream.modified.nonempty()) {
             downstream.modified.close();
-            downstream.modified = TrackingMutableRowSet.CURRENT_FACTORY.getEmptyRowSet();
+            downstream.modified = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
         }
     }
 
@@ -1351,7 +1351,7 @@ public class ChunkedOperatorAggregationHelper {
         }
     }
 
-    private static void modifySlots(RowSetBuilder modifiedBuilder, IntChunk<ChunkPositions> runStarts,
+    private static void modifySlots(RowSetBuilderRandom modifiedBuilder, IntChunk<ChunkPositions> runStarts,
                                     WritableIntChunk<RowKeys> slots, BooleanChunk modified) {
         int outIndex = 0;
         for (int runIndex = 0; runIndex < runStarts.size(); ++runIndex) {
@@ -1362,7 +1362,7 @@ public class ChunkedOperatorAggregationHelper {
             }
         }
         slots.setSize(outIndex);
-        modifiedBuilder.addKeyIndicesChunk(slots);
+        modifiedBuilder.addRowKeysChunk(slots);
     }
 
     @NotNull
@@ -1380,7 +1380,7 @@ public class ChunkedOperatorAggregationHelper {
 
         doGroupedAddition(ac, groupKeyIndexTable, responsiveGroups);
 
-        final QueryTable result = new QueryTable(TrackingMutableRowSet.FACTORY.getFlatIndex(responsiveGroups), resultColumnSourceMap);
+        final QueryTable result = new QueryTable(RowSetFactoryImpl.INSTANCE.getFlatRowSet(responsiveGroups), resultColumnSourceMap);
         ac.propagateInitialStateToOperators(result);
 
         final ReverseLookupListener rll = ReverseLookupListener.makeReverseLookupListenerWithSnapshot(result, keyName);
@@ -1466,7 +1466,7 @@ public class ChunkedOperatorAggregationHelper {
             buildSources = reinterpretedKeySources;
         }
 
-        final TrackingMutableRowSet rowSet = usePrev ? withView.getIndex().getPrevIndex() : withView.getIndex();
+        final TrackingMutableRowSet rowSet = usePrev ? withView.getIndex().getPrevRowSet() : withView.getIndex();
 
         if (rowSet.isEmpty()) {
             return;
@@ -1568,8 +1568,8 @@ public class ChunkedOperatorAggregationHelper {
     }
 
     private static RowSet makeNewStatesIndex(final int first, final int last) {
-        return first > last ? TrackingMutableRowSet.CURRENT_FACTORY.getEmptyRowSet()
-                : TrackingMutableRowSet.CURRENT_FACTORY.getRowSetByRange(first, last);
+        return first > last ? RowSetFactoryImpl.INSTANCE.getEmptyRowSet()
+                : RowSetFactoryImpl.INSTANCE.getRowSetByRange(first, last);
     }
 
     private static void copyKeyColumns(ColumnSource<?>[] keyColumnsRaw, WritableSource<?>[] keyColumnsCopied,
@@ -1619,7 +1619,7 @@ public class ChunkedOperatorAggregationHelper {
         // to use allColumns as the modified columns parameter
         final IterativeChunkedAggregationOperator.SingletonContext[] opContexts =
                 new IterativeChunkedAggregationOperator.SingletonContext[ac.size()];
-        final TrackingMutableRowSet rowSet = usePrev ? table.getIndex().getPrevIndex() : table.getIndex();
+        final TrackingMutableRowSet rowSet = usePrev ? table.getIndex().getPrevRowSet() : table.getIndex();
         final int initialResultSize;
         try (final SafeCloseable ignored1 = new SafeCloseableArray<>(opContexts);
                 final SafeCloseable ignored2 = usePrev ? rowSet : null) {
@@ -1628,7 +1628,7 @@ public class ChunkedOperatorAggregationHelper {
             doNoKeyAddition(rowSet, ac, opContexts, allColumns, usePrev, allColumns);
         }
 
-        final QueryTable result = new QueryTable(TrackingMutableRowSet.FACTORY.getFlatIndex(initialResultSize), resultColumnSourceMap);
+        final QueryTable result = new QueryTable(RowSetFactoryImpl.INSTANCE.getFlatRowSet(initialResultSize), resultColumnSourceMap);
         ac.propagateInitialStateToOperators(result);
 
         if (table.isRefreshing()) {
@@ -1741,22 +1741,22 @@ public class ChunkedOperatorAggregationHelper {
                                 final Update downstream = new Update();
                                 downstream.shifted = IndexShiftData.EMPTY;
                                 if ((lastSize == 0 && newResultSize == 1)) {
-                                    downstream.added = TrackingMutableRowSet.FACTORY.getRowSetByValues(0);
-                                    downstream.removed = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
-                                    downstream.modified = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
+                                    downstream.added = RowSetFactoryImpl.INSTANCE.getRowSetByValues(0);
+                                    downstream.removed = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+                                    downstream.modified = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
                                     result.getIndex().insert(0);
                                 } else if (lastSize == 1 && newResultSize == 0) {
-                                    downstream.added = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
-                                    downstream.removed = TrackingMutableRowSet.FACTORY.getRowSetByValues(0);
-                                    downstream.modified = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
+                                    downstream.added = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+                                    downstream.removed = RowSetFactoryImpl.INSTANCE.getRowSetByValues(0);
+                                    downstream.modified = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
                                     result.getIndex().remove(0);
                                 } else {
                                     if (!anyTrue(BooleanChunk.chunkWrap(modifiedOperators))) {
                                         return;
                                     }
-                                    downstream.added = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
-                                    downstream.removed = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
-                                    downstream.modified = TrackingMutableRowSet.FACTORY.getRowSetByValues(0);
+                                    downstream.added = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+                                    downstream.removed = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+                                    downstream.modified = RowSetFactoryImpl.INSTANCE.getRowSetByValues(0);
                                 }
                                 lastSize = newResultSize;
 

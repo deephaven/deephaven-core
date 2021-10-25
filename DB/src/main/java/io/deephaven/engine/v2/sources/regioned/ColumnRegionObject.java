@@ -8,7 +8,7 @@ import io.deephaven.engine.v2.sources.chunk.WritableLongChunk;
 import io.deephaven.engine.v2.sources.chunk.page.Page;
 import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.v2.utils.RowSet;
-import io.deephaven.engine.v2.utils.SequentialRowSetBuilder;
+import io.deephaven.engine.v2.utils.RowSetBuilderSequential;
 import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
 
@@ -47,7 +47,7 @@ public interface ColumnRegionObject<DATA_TYPE, ATTR extends Any> extends ColumnR
      *
      * <p>Both alternate regions must use the same or smaller rowSet key space as this one. Indices fetched from the
      * keys region must represent valid element indices in the values region. Values regions must support
-     * {@link #gatherDictionaryValuesIndex(RowSet.SearchIterator, RowSequence.Iterator, SequentialRowSetBuilder)}.
+     * {@link #gatherDictionaryValuesIndex(RowSet.SearchIterator, RowSequence.Iterator, RowSetBuilderSequential)}.
      *
      * <p>Use {@link #getDictionaryKeysRegion()} to access the region of keys and {@link #getDictionaryValuesRegion()}
      * to access the region of values.
@@ -80,7 +80,7 @@ public interface ColumnRegionObject<DATA_TYPE, ATTR extends Any> extends ColumnR
      */
     default boolean gatherDictionaryValuesIndex(@NotNull final RowSet.SearchIterator keysToVisit,
                                                 @NotNull final RowSequence.Iterator knownKeys,
-                                                @NotNull final SequentialRowSetBuilder sequentialBuilder) {
+                                                @NotNull final RowSetBuilderSequential sequentialBuilder) {
         throw new UnsupportedOperationException();
     }
 
@@ -147,7 +147,7 @@ public interface ColumnRegionObject<DATA_TYPE, ATTR extends Any> extends ColumnR
         @Override
         public boolean gatherDictionaryValuesIndex(@NotNull final RowSet.SearchIterator keysToVisit,
                                                    @NotNull final RowSequence.Iterator knownKeys,
-                                                   @NotNull final SequentialRowSetBuilder sequentialBuilder) {
+                                                   @NotNull final RowSetBuilderSequential sequentialBuilder) {
             // Nothing to be gathered, we don't include null regions in dictionary values.
             advanceToNextPage(knownKeys);
             return advanceToNextPage(keysToVisit);
@@ -195,7 +195,7 @@ public interface ColumnRegionObject<DATA_TYPE, ATTR extends Any> extends ColumnR
         @Override
         public boolean gatherDictionaryValuesIndex(@NotNull final RowSet.SearchIterator keysToVisit,
                                                    @NotNull final RowSequence.Iterator knownKeys,
-                                                   @NotNull final SequentialRowSetBuilder sequentialBuilder) {
+                                                   @NotNull final RowSetBuilderSequential sequentialBuilder) {
             final long pageOnlyKey = firstRow(keysToVisit.currentValue());
             if (knownKeys.peekNextKey() != pageOnlyKey) {
                 sequentialBuilder.appendKey(pageOnlyKey);
@@ -244,7 +244,7 @@ public interface ColumnRegionObject<DATA_TYPE, ATTR extends Any> extends ColumnR
         @Override
         public boolean gatherDictionaryValuesIndex(@NotNull final RowSet.SearchIterator keysToVisit,
                                                    @NotNull final RowSequence.Iterator knownKeys,
-                                                   @NotNull final SequentialRowSetBuilder sequentialBuilder) {
+                                                   @NotNull final RowSetBuilderSequential sequentialBuilder) {
             final long pageMaxKey = maxRow(keysToVisit.currentValue());
             boolean moreKeysToVisit;
             do {

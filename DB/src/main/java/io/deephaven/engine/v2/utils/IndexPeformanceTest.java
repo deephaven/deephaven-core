@@ -11,7 +11,7 @@ public class IndexPeformanceTest {
     private static final int SIZE = (Integer.MAX_VALUE - 1);
 
     public static void main(String[] args) {
-        TrackingMutableRowSet rowSet = TrackingMutableRowSet.FACTORY.getRowSetByRange(0, SIZE);
+        TrackingMutableRowSet rowSet = RowSetFactoryImpl.INSTANCE.getRowSetByRange(0, SIZE);
         long sum = 0;
         long start = System.currentTimeMillis();
         for (TrackingMutableRowSet.Iterator it = rowSet.iterator(); it.hasNext();) {
@@ -20,7 +20,7 @@ public class IndexPeformanceTest {
         System.out.println("Range iteration per item time = " + (System.currentTimeMillis() - start) / (SIZE / 1000000)
                 + "ns " + sum);
         Random random = new Random(0);
-        RowSetBuilder indexBuilder = TrackingMutableRowSet.FACTORY.getRandomBuilder();
+        RowSetBuilderRandom indexBuilder = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
         long runningValue = 0;// Math.abs(random.nextLong());
         start = System.currentTimeMillis();
         long lastRangeStart = runningValue;

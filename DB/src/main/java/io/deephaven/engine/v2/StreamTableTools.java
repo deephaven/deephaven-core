@@ -6,6 +6,7 @@ import io.deephaven.engine.tables.utils.QueryPerformanceRecorder;
 import io.deephaven.engine.v2.remote.ConstructSnapshot;
 import io.deephaven.engine.v2.sources.*;
 import io.deephaven.engine.v2.utils.ChunkUtils;
+import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
 import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.engine.v2.utils.IndexShiftData;
 import org.apache.commons.lang3.mutable.Mutable;
@@ -67,12 +68,12 @@ public class StreamTableTools {
 
                         final TrackingMutableRowSet rowSet;
                         if (usePrev) {
-                            try (final TrackingMutableRowSet useRowSet = baseStreamTable.getIndex().getPrevIndex()) {
-                                rowSet = TrackingMutableRowSet.FACTORY.getFlatIndex(useRowSet.size());
+                            try (final TrackingMutableRowSet useRowSet = baseStreamTable.getIndex().getPrevRowSet()) {
+                                rowSet = RowSetFactoryImpl.INSTANCE.getFlatRowSet(useRowSet.size());
                                 ChunkUtils.copyData(sourceColumns, useRowSet, destColumns, rowSet, usePrev);
                             }
                         } else {
-                            rowSet = TrackingMutableRowSet.FACTORY.getFlatIndex(baseStreamTable.getIndex().size());
+                            rowSet = RowSetFactoryImpl.INSTANCE.getFlatRowSet(baseStreamTable.getIndex().size());
                             ChunkUtils.copyData(sourceColumns, baseStreamTable.getIndex(), destColumns, rowSet, usePrev);
                         }
 
@@ -98,15 +99,15 @@ public class StreamTableTools {
                                 columns.values().forEach(c -> c.ensureCapacity(currentSize + newRows));
 
                                 final TrackingMutableRowSet newRange =
-                                        TrackingMutableRowSet.CURRENT_FACTORY.getRowSetByRange(currentSize, currentSize + newRows - 1);
+                                        RowSetFactoryImpl.INSTANCE.getRowSetByRange(currentSize, currentSize + newRows - 1);
 
                                 ChunkUtils.copyData(sourceColumns, upstream.added, destColumns, newRange, false);
                                 rowSet.insertRange(currentSize, currentSize + newRows - 1);
 
                                 final Update downstream = new Update();
                                 downstream.added = newRange;
-                                downstream.modified = TrackingMutableRowSet.CURRENT_FACTORY.getEmptyRowSet();
-                                downstream.removed = TrackingMutableRowSet.CURRENT_FACTORY.getEmptyRowSet();
+                                downstream.modified = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+                                downstream.removed = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
                                 downstream.modifiedColumnSet = ModifiedColumnSet.EMPTY;
                                 downstream.shifted = IndexShiftData.EMPTY;
                                 result.notifyListeners(downstream);

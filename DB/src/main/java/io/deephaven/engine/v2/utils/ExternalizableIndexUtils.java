@@ -147,7 +147,7 @@ public class ExternalizableIndexUtils {
 
     public static MutableRowSet readExternalCompressedDelta(@NotNull final DataInput in) throws IOException {
         long offset = 0;
-        final SequentialRowSetBuilder builder = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
+        final RowSetBuilderSequential builder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
 
         final MutableLong pending = new MutableLong(-1);
         final LongConsumer consume = v -> {

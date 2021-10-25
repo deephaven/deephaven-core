@@ -203,7 +203,7 @@ public class SortListener extends BaseTable.ShiftAwareListenerImpl {
 
             // handle upstream shifts; note these never effect the sorted output keyspace
             final SortMappingAggregator mappingChanges = closer.add(new SortMappingAggregator());
-            try (final TrackingMutableRowSet prevRowSet = parent.getIndex().getPrevIndex()) {
+            try (final TrackingMutableRowSet prevRowSet = parent.getIndex().getPrevRowSet()) {
                 upstream.shifted.forAllInIndex(prevRowSet, (key, delta) -> {
                     final long dst = reverseLookup.remove(key);
                     if (dst != REVERSE_LOOKUP_NO_ENTRY_VALUE) {
@@ -292,7 +292,7 @@ public class SortListener extends BaseTable.ShiftAwareListenerImpl {
                     addedStart, numAddedKeys);
 
             final IndexShiftData.Builder shiftBuilder = new IndexShiftData.Builder();
-            final SequentialRowSetBuilder addedBuilder = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
+            final RowSetBuilderSequential addedBuilder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
 
             performUpdatesInDirection(addedBuilder, shiftBuilder, medianOutputKey - 1, rqs, mappingChanges);
             performUpdatesInDirection(addedBuilder, shiftBuilder, medianOutputKey, fqs, mappingChanges);
@@ -303,12 +303,12 @@ public class SortListener extends BaseTable.ShiftAwareListenerImpl {
             // Compute modified set in post-shift space.
             if (modifiedNeedsSorting && numPropagatedModdedKeys == 0 || upstream.modified.empty()
                     || upstream.modifiedColumnSet.empty()) {
-                downstream.modified = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
+                downstream.modified = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
             } else if (modifiedNeedsSorting) {
                 Arrays.sort(propagatedModOutputKeys, 0, numPropagatedModdedKeys);
 
                 int ii, si;
-                final SequentialRowSetBuilder modifiedBuilder = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
+                final RowSetBuilderSequential modifiedBuilder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
                 for (ii = 0, si = 0; ii < numPropagatedModdedKeys && si < downstream.shifted.size(); ++si) {
                     final long beginRange = downstream.shifted.getBeginRange(si);
                     final long endRange = downstream.shifted.getEndRange(si);
@@ -353,7 +353,7 @@ public class SortListener extends BaseTable.ShiftAwareListenerImpl {
     }
 
     private TrackingMutableRowSet sortedArrayToIndex(long[] arr, int offset, int length) {
-        final SequentialRowSetBuilder builder = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
+        final RowSetBuilderSequential builder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
         builder.appendKeys(LongIterators.wrap(arr, offset, length));
         return builder.build();
     }
@@ -364,7 +364,7 @@ public class SortListener extends BaseTable.ShiftAwareListenerImpl {
      * @param start Start position
      * @param qs Queue state -- containing the view on the various keys arrays, directions, etc.
      */
-    private void performUpdatesInDirection(final SequentialRowSetBuilder added, final IndexShiftData.Builder shifted,
+    private void performUpdatesInDirection(final RowSetBuilderSequential added, final IndexShiftData.Builder shifted,
                                            final long start,
                                            final QueueState qs, final SortMappingAggregator mappingChanges) {
         final long numRequestedAdds = (qs.addedEnd - qs.addedCurrent) * qs.direction;
@@ -374,15 +374,15 @@ public class SortListener extends BaseTable.ShiftAwareListenerImpl {
         }
 
         long numWrites = 0;
-        final DirectionalResettableSequentialBuilder resultAdded =
-                new DirectionalResettableSequentialBuilder(qs.direction);
+        final DirectionalResettableBuilderSequential resultAdded =
+                new DirectionalResettableBuilderSequential(qs.direction);
         final DirectionalResettableIndexShiftDataBuilder resultShifted =
                 new DirectionalResettableIndexShiftDataBuilder(qs.direction);
 
-        final DirectionalResettableSequentialBuilder modRemoved =
-                new DirectionalResettableSequentialBuilder(qs.direction);
-        final DirectionalResettableSequentialBuilder modAdded =
-                new DirectionalResettableSequentialBuilder(qs.direction);
+        final DirectionalResettableBuilderSequential modRemoved =
+                new DirectionalResettableBuilderSequential(qs.direction);
+        final DirectionalResettableBuilderSequential modAdded =
+                new DirectionalResettableBuilderSequential(qs.direction);
 
         // When we notice that there is a long run length of contiguous mapping, we enter into spread mode which leaves
         // gaps for future incremental updates to use.
@@ -534,7 +534,7 @@ public class SortListener extends BaseTable.ShiftAwareListenerImpl {
     }
 
     private long insertAGap(final long destinationSlot, final QueueState qs,
-            final DirectionalResettableSequentialBuilder modRemoved,
+            final DirectionalResettableBuilderSequential modRemoved,
             final SortMappingAggregator mappingChanges,
             final TrackingMutableRowSet.SearchIterator gapEvictionIter) {
         final long gapEnd = destinationSlot + REBALANCE_GAP_SIZE * qs.direction; // exclusive
@@ -721,17 +721,17 @@ public class SortListener extends BaseTable.ShiftAwareListenerImpl {
         }
     }
 
-    private static class DirectionalResettableSequentialBuilder implements SequentialRowSetBuilder {
+    private static class DirectionalResettableBuilderSequential implements RowSetBuilderSequential {
         private final int direction;
         private final TLongArrayList firsts;
         private final TLongArrayList lasts;
 
-        private DirectionalResettableSequentialBuilder(int direction, long[] initialItems) {
+        private DirectionalResettableBuilderSequential(int direction, long[] initialItems) {
             this(direction, initialItems, direction > 0 ? 0 : initialItems.length - 1,
                     direction > 0 ? initialItems.length : -1);
         }
 
-        private DirectionalResettableSequentialBuilder(int direction, long[] initialItems, int begin, int end) {
+        private DirectionalResettableBuilderSequential(int direction, long[] initialItems, int begin, int end) {
             this(direction);
             while (begin != end) {
                 appendKey(initialItems[begin]);
@@ -739,7 +739,7 @@ public class SortListener extends BaseTable.ShiftAwareListenerImpl {
             }
         }
 
-        private DirectionalResettableSequentialBuilder(int direction) {
+        private DirectionalResettableBuilderSequential(int direction) {
             Assert.assertion(direction == -1 || direction == 1, "invalid direction");
             this.direction = direction;
             this.firsts = new TLongArrayList();
@@ -784,12 +784,12 @@ public class SortListener extends BaseTable.ShiftAwareListenerImpl {
 
         @Override
         public TrackingMutableRowSet build() {
-            SequentialRowSetBuilder builder = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
+            RowSetBuilderSequential builder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
             appendToBuilder(builder);
             return builder.build();
         }
 
-        private void appendToBuilder(SequentialRowSetBuilder builder) {
+        private void appendToBuilder(RowSetBuilderSequential builder) {
             int nr = firsts.size();
             if (direction == -1) {
                 for (int ii = nr - 1; ii >= 0; --ii) {

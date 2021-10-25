@@ -7,6 +7,7 @@ package io.deephaven.integrations.python;
 import io.deephaven.engine.v2.DynamicTable;
 import io.deephaven.engine.v2.InstrumentedShiftAwareListenerAdapter;
 import io.deephaven.engine.v2.ModifiedColumnSet;
+import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
 import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.engine.v2.utils.IndexShiftData;
 import io.deephaven.util.annotations.ScriptApi;
@@ -72,7 +73,7 @@ public class PythonShiftAwareReplayListenerAdapter extends InstrumentedShiftAwar
 
     @Override
     public void replay() {
-        final TrackingMutableRowSet emptyRowSet = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
+        final TrackingMutableRowSet emptyRowSet = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
         final IndexShiftData emptyShift = IndexShiftData.EMPTY;
         final ModifiedColumnSet emptyColumnSet = ModifiedColumnSet.EMPTY;
         final Update update = new Update(source.getIndex(), emptyRowSet, emptyRowSet, emptyShift, emptyColumnSet);

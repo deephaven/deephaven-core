@@ -3,7 +3,8 @@ package io.deephaven.engine.v2;
 import io.deephaven.base.FileUtils;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.datastructures.util.SmartKey;
-import io.deephaven.engine.v2.utils.SequentialRowSetBuilder;
+import io.deephaven.engine.v2.utils.RowSetBuilderSequential;
+import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
 import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.io.logger.StreamLoggerImpl;
@@ -79,13 +80,13 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
 
             final int foffset = offset;
             LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-                final TrackingMutableRowSet addRowSet = TrackingMutableRowSet.FACTORY.getRowSetByRange(foffset, foffset + leftJoinKey.length - 1);
+                final TrackingMutableRowSet addRowSet = RowSetFactoryImpl.INSTANCE.getRowSetByRange(foffset, foffset + leftJoinKey.length - 1);
                 addToTable(leftTable, addRowSet, stringCol("JoinKey", leftJoinKey),
                         intCol("LeftSentinel", leftSentinel));
                 leftTable.notifyListeners(addRowSet, i(), i());
 
 
-                final SequentialRowSetBuilder modIndexBuilder = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
+                final RowSetBuilderSequential modIndexBuilder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
 
                 int slot = random.nextInt(foffset / 100);
                 for (int ii = 0; ii < 100; ++ii) {
@@ -1137,7 +1138,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
             sb.append(value).append("=").append(new SmartKey(keyValues)).append("\n");
         }
 
-        final TrackingMutableRowSet prevRowSet = rowSet.getPrevIndex();
+        final TrackingMutableRowSet prevRowSet = rowSet.getPrevRowSet();
         sb.append("Complete Previous Table has ").append(prevRowSet.size()).append(" rows:\n");
         sb.append("TrackingMutableRowSet=").append(rowSet).append("\n");
         for (final TrackingMutableRowSet.Iterator it = prevRowSet.iterator(); it.hasNext();) {

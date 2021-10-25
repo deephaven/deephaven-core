@@ -52,7 +52,9 @@ public interface RowSet extends RowSequence, LongSizedDataStructure, SafeCloseab
      * @param keys The keys to find positions for
      * @return A new {@link MutableRowSet} containing the positions of the keys in this RowSet
      */
-    MutableRowSet invert(RowSet keys);
+    default MutableRowSet invert(RowSet keys) {
+        return invert(keys, Long.MAX_VALUE);
+    }
 
     /**
      * <p>Returns the row positions of <i>row keys</i> in the current set as a {@link MutableRowSet}, stopping at
@@ -401,7 +403,7 @@ public interface RowSet extends RowSequence, LongSizedDataStructure, SafeCloseab
     default MutableRowSet subSetForPositions(RowSet posRowSet) {
         final MutableLong currentOffset = new MutableLong();
         final RowSequence.Iterator iter = getRowSequenceIterator();
-        final SequentialRowSetBuilder builder = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
+        final RowSetBuilderSequential builder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
         posRowSet.forEachLongRange((start, end) -> {
             if (currentOffset.longValue() < start) {
                 // skip items until the beginning of this range
@@ -470,7 +472,9 @@ public interface RowSet extends RowSequence, LongSizedDataStructure, SafeCloseab
      * 
      * @return true if the RowSet keys are contiguous and start at zero.
      */
-    boolean isFlat();
+    default boolean isFlat() {
+        return empty() || (lastRowKey() == size() - 1);
+    }
 
     /**
      * Queries whether this RowSet is empty (i.e. has no keys).

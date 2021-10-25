@@ -6,6 +6,7 @@ package io.deephaven.integrations.python;
 
 import io.deephaven.engine.v2.DynamicTable;
 import io.deephaven.engine.v2.InstrumentedListenerAdapter;
+import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
 import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.util.annotations.ScriptApi;
 import org.jpy.PyObject;
@@ -67,7 +68,7 @@ public class PythonReplayListenerAdapter extends InstrumentedListenerAdapter imp
 
     @Override
     public void replay() {
-        final TrackingMutableRowSet emptyRowSet = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
+        final TrackingMutableRowSet emptyRowSet = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
         final boolean isReplay = true;
         pyCallable.call("__call__", isReplay, source.getIndex(), emptyRowSet, emptyRowSet);
     }

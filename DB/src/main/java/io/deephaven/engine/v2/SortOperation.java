@@ -108,7 +108,7 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
         }
 
         final RedirectionIndex sortMapping = sortedKeys.makeHistoricalRedirectionIndex();
-        final TrackingMutableRowSet resultRowSet = TrackingMutableRowSet.FACTORY.getFlatIndex(sortedKeys.size());
+        final TrackingMutableRowSet resultRowSet = RowSetFactoryImpl.INSTANCE.getFlatRowSet(sortedKeys.size());
 
         final Map<String, ColumnSource<?>> resultMap = new LinkedHashMap<>();
         for (Map.Entry<String, ColumnSource<?>> stringColumnSourceEntry : this.parent.getColumnSourceMap().entrySet()) {
@@ -139,7 +139,7 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
                 });
 
         sortMapping = new ReadOnlyLongColumnSourceRedirectionIndex<>(redirectionSource);
-        final TrackingMutableRowSet resultRowSet = TrackingMutableRowSet.FACTORY.getFlatIndex(initialSortedKeys.size());
+        final TrackingMutableRowSet resultRowSet = RowSetFactoryImpl.INSTANCE.getFlatRowSet(initialSortedKeys.size());
 
         final Map<String, ColumnSource<?>> resultMap = new LinkedHashMap<>();
         for (Map.Entry<String, ColumnSource<?>> stringColumnSourceEntry : parent.getColumnSourceMap().entrySet()) {
@@ -176,14 +176,14 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
                         }
                         redirectionSource.setNewCurrent(updateInnerRedirectSource);
 
-                        final TrackingMutableRowSet added = TrackingMutableRowSet.CURRENT_FACTORY.getFlatIndex(upstream.added.size());
-                        final TrackingMutableRowSet removed = TrackingMutableRowSet.CURRENT_FACTORY.getFlatIndex(upstream.removed.size());
+                        final TrackingMutableRowSet added = RowSetFactoryImpl.INSTANCE.getFlatRowSet(upstream.added.size());
+                        final TrackingMutableRowSet removed = RowSetFactoryImpl.INSTANCE.getFlatRowSet(upstream.removed.size());
                         if (added.size() > removed.size()) {
                             resultRowSet.insertRange(removed.size(), added.size() - 1);
                         } else if (removed.size() > added.size()) {
                             resultRowSet.removeRange(added.size(), removed.size() - 1);
                         }
-                        resultTable.notifyListeners(new Update(added, removed, TrackingMutableRowSet.CURRENT_FACTORY.getEmptyRowSet(),
+                        resultTable.notifyListeners(new Update(added, removed, RowSetFactoryImpl.INSTANCE.getEmptyRowSet(),
                                 IndexShiftData.EMPTY, ModifiedColumnSet.EMPTY));
                     }
                 };
@@ -204,7 +204,7 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
             return new Result<>(historicalSort(sortedKeys));
         }
         if (parent.isStream()) {
-            try (final RowSet prevIndex = usePrev ? parent.getIndex().getPrevIndex() : null) {
+            try (final RowSet prevIndex = usePrev ? parent.getIndex().getPrevRowSet() : null) {
                 final RowSet indexToUse = usePrev ? prevIndex : parent.getIndex();
                 final SortHelpers.SortMapping sortedKeys =
                         SortHelpers.getSortedKeys(sortOrder, sortColumns, indexToUse, usePrev);
@@ -216,7 +216,7 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
             // reset the sort data structures that we share between invocations
             final Map<String, ColumnSource<?>> resultMap = new LinkedHashMap<>();
 
-            final TrackingMutableRowSet rowSetToSort = usePrev ? closer.add(parent.getIndex().getPrevIndex()) : parent.getIndex();
+            final TrackingMutableRowSet rowSetToSort = usePrev ? closer.add(parent.getIndex().getPrevRowSet()) : parent.getIndex();
 
             if (rowSetToSort.size() >= Integer.MAX_VALUE) {
                 throw new UnsupportedOperationException("Can not perform ticking sort for table larger than "
@@ -231,8 +231,8 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
 
             // Center the keys around middleKeyToUse
             final long offset = SortListener.REBALANCE_MIDPOINT - sortedKeys.length / 2;
-            final TrackingMutableRowSet resultRowSet = sortedKeys.length == 0 ? TrackingMutableRowSet.FACTORY.getEmptyRowSet()
-                    : TrackingMutableRowSet.FACTORY.getRowSetByRange(offset, offset + sortedKeys.length - 1);
+            final TrackingMutableRowSet resultRowSet = sortedKeys.length == 0 ? RowSetFactoryImpl.INSTANCE.getEmptyRowSet()
+                    : RowSetFactoryImpl.INSTANCE.getRowSetByRange(offset, offset + sortedKeys.length - 1);
 
             for (int i = 0; i < sortedKeys.length; i++) {
                 reverseLookup.put(sortedKeys[i], i + offset);

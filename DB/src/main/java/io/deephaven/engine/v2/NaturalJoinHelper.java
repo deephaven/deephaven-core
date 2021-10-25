@@ -140,7 +140,7 @@ class NaturalJoinHelper {
                         indexSource = flatResultColumnSources.getSecond();
 
                         final Table leftTableGrouped =
-                                new QueryTable(TrackingMutableRowSet.FACTORY.getFlatIndex(groupingSize.intValue()),
+                                new QueryTable(RowSetFactoryImpl.INSTANCE.getFlatRowSet(groupingSize.intValue()),
                                         Collections.singletonMap(columnsToMatch[0].left(), groupSource));
 
                         final ColumnSource<?>[] groupedSourceArray = {groupSource};
@@ -188,7 +188,7 @@ class NaturalJoinHelper {
                     final ArrayBackedColumnSource<?> groupSource = flatResultColumnSources.getFirst();
                     final ObjectArraySource<TrackingMutableRowSet> indexSource = flatResultColumnSources.getSecond();
 
-                    final Table leftTableGrouped = new QueryTable(TrackingMutableRowSet.FACTORY.getFlatIndex(groupingSize.intValue()),
+                    final Table leftTableGrouped = new QueryTable(RowSetFactoryImpl.INSTANCE.getFlatRowSet(groupingSize.intValue()),
                             Collections.singletonMap(columnsToMatch[0].left(), groupSource));
 
                     final ColumnSource<?>[] groupedSourceArray = {groupSource};
@@ -303,7 +303,7 @@ class NaturalJoinHelper {
                                     leftRecorder.getShifted(), result.modifiedColumnSet));
                         } else if (rightChanged) {
                             result.notifyListeners(new ShiftAwareListener.Update(
-                                    TrackingMutableRowSet.FACTORY.getEmptyRowSet(), TrackingMutableRowSet.FACTORY.getEmptyRowSet(),
+                                    RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), RowSetFactoryImpl.INSTANCE.getEmptyRowSet(),
                                     result.getIndex().clone(), IndexShiftData.EMPTY, result.modifiedColumnSet));
                         }
                     }
@@ -342,7 +342,7 @@ class NaturalJoinHelper {
                                             result.modifiedColumnSet);
                                 }
                                 result.notifyListeners(
-                                        new Update(TrackingMutableRowSet.FACTORY.getEmptyRowSet(), TrackingMutableRowSet.FACTORY.getEmptyRowSet(),
+                                        new Update(RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), RowSetFactoryImpl.INSTANCE.getEmptyRowSet(),
                                                 result.getIndex().clone(), IndexShiftData.EMPTY,
                                                 changed ? allRightColumns : result.modifiedColumnSet));
                             }
@@ -500,7 +500,7 @@ class NaturalJoinHelper {
             final Update downstream = upstream.copy();
             upstream.removed.forAllLongs(redirectionIndex::removeVoid);
 
-            try (final TrackingMutableRowSet prevRowSet = leftTable.getIndex().getPrevIndex()) {
+            try (final TrackingMutableRowSet prevRowSet = leftTable.getIndex().getPrevRowSet()) {
                 redirectionIndex.applyShift(prevRowSet, upstream.shifted);
             }
 
@@ -605,9 +605,9 @@ class NaturalJoinHelper {
 
                     if (rightKeysChanged) {
                         previousToShift =
-                                getParent().getIndex().getPrevIndex().minus(modifiedPreShift).minus(upstream.removed);
+                                getParent().getIndex().getPrevRowSet().minus(modifiedPreShift).minus(upstream.removed);
                     } else {
-                        previousToShift = getParent().getIndex().getPrevIndex().minus(upstream.removed);
+                        previousToShift = getParent().getIndex().getPrevRowSet().minus(upstream.removed);
                     }
 
                     final IndexShiftData.Iterator sit = upstream.shifted.applyIterator();
@@ -640,7 +640,7 @@ class NaturalJoinHelper {
                 jsm.addRightSide(pc, upstream.added, rightSources, modifiedSlotTracker);
             }
 
-            final RowSetBuilder modifiedLeftBuilder = TrackingMutableRowSet.FACTORY.getRandomBuilder();
+            final RowSetBuilderRandom modifiedLeftBuilder = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
             final ModifiedSlotUpdater slotUpdater = new ModifiedSlotUpdater(jsm, modifiedLeftBuilder, redirectionIndex,
                     exactMatch, addedRightColumnsChanged);
             modifiedSlotTracker.forAllModifiedSlots(slotUpdater);
@@ -651,7 +651,7 @@ class NaturalJoinHelper {
             // left is static, so the only thing that can happen is modifications
             final TrackingMutableRowSet modifiedLeft = modifiedLeftBuilder.build();
 
-            result.notifyListeners(new Update(TrackingMutableRowSet.FACTORY.getEmptyRowSet(), TrackingMutableRowSet.FACTORY.getEmptyRowSet(),
+            result.notifyListeners(new Update(RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), RowSetFactoryImpl.INSTANCE.getEmptyRowSet(),
                     modifiedLeft, IndexShiftData.EMPTY,
                     modifiedLeft.nonempty() ? result.modifiedColumnSet : ModifiedColumnSet.EMPTY));
         }
@@ -660,13 +660,13 @@ class NaturalJoinHelper {
     private static class ModifiedSlotUpdater implements NaturalJoinModifiedSlotTracker.ModifiedSlotConsumer {
 
         private final IncrementalNaturalJoinStateManager jsm;
-        private final RowSetBuilder modifiedLeftBuilder;
+        private final RowSetBuilderRandom modifiedLeftBuilder;
         private final RedirectionIndex redirectionIndex;
         private final boolean exactMatch;
         private final boolean rightAddedColumnsChanged;
         boolean changedRedirection = false;
 
-        private ModifiedSlotUpdater(IncrementalNaturalJoinStateManager jsm, RowSetBuilder modifiedLeftBuilder,
+        private ModifiedSlotUpdater(IncrementalNaturalJoinStateManager jsm, RowSetBuilderRandom modifiedLeftBuilder,
                 RedirectionIndex redirectionIndex, boolean exactMatch, boolean rightAddedColumnsChanged) {
             this.jsm = jsm;
             this.modifiedLeftBuilder = modifiedLeftBuilder;
@@ -771,7 +771,7 @@ class NaturalJoinHelper {
 
         @Override
         protected void process() {
-            final RowSetBuilder modifiedLeftBuilder = TrackingMutableRowSet.FACTORY.getRandomBuilder();
+            final RowSetBuilderRandom modifiedLeftBuilder = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
             result.modifiedColumnSet.clear();
             modifiedSlotTracker.clear();
 
@@ -822,7 +822,7 @@ class NaturalJoinHelper {
 
                     if (rightShifted.nonempty()) {
                         final TrackingMutableRowSet previousToShift =
-                                rightRecorder.getParent().getIndex().getPrevIndex().minus(rightRemoved);
+                                rightRecorder.getParent().getIndex().getPrevRowSet().minus(rightRemoved);
 
                         if (rightKeysModified) {
                             previousToShift.remove(modifiedPreShift);
@@ -896,7 +896,7 @@ class NaturalJoinHelper {
                     }
 
                     if (leftShifted.nonempty()) {
-                        try (final TrackingMutableRowSet prevRowSet = leftRecorder.getParent().getIndex().getPrevIndex()) {
+                        try (final TrackingMutableRowSet prevRowSet = leftRecorder.getParent().getIndex().getPrevRowSet()) {
                             prevRowSet.remove(leftRemoved);
 
                             if (leftKeyModifications) {

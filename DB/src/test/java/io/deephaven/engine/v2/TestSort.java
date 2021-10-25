@@ -12,13 +12,13 @@ import io.deephaven.engine.tables.DataColumn;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.live.LiveTableMonitor;
 import io.deephaven.engine.tables.utils.DBDateTime;
+import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.v2.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.utils.ColumnHolder;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 
 import java.util.Arrays;
 import java.util.LinkedHashMap;
@@ -618,7 +618,7 @@ public class TestSort extends BaseArrayTestCase {
         }
         columns.put("Sentinel", ArrayBackedColumnSource.getMemoryColumnSourceUntyped(sentinels));
 
-        return new QueryTable(TrackingMutableRowSet.FACTORY.getRowSetByRange(0, size - 1), columns);
+        return new QueryTable(RowSetFactoryImpl.INSTANCE.getRowSetByRange(0, size - 1), columns);
     }
 
     private Comparable[][] createBoxedData(Table source, int ncols, int size) {

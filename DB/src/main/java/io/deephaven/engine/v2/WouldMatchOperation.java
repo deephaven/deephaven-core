@@ -13,6 +13,7 @@ import io.deephaven.engine.v2.sources.MutableColumnSourceGetDefaults;
 import io.deephaven.engine.v2.sources.chunk.Attributes;
 import io.deephaven.engine.v2.sources.chunk.WritableChunk;
 import io.deephaven.engine.v2.sources.chunk.WritableObjectChunk;
+import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
 import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.engine.v2.utils.IndexShiftData;
 import io.deephaven.engine.structures.RowSequence;
@@ -31,7 +32,7 @@ import java.util.stream.Collectors;
  * the table. It will re-evaluate cell values if any of the underlying filters are dynamic, and change.
  */
 public class WouldMatchOperation implements QueryTable.MemoizableOperation<QueryTable> {
-    private static final RowSet EMPTY_INDEX = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
+    private static final RowSet EMPTY_INDEX = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
     private final List<ColumnHolder> matchColumns;
     private final QueryTable parent;
     private QueryTable resultTable;
@@ -89,7 +90,7 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
         MutableBoolean anyRefreshing = new MutableBoolean(false);
 
         try (final SafeCloseableList closer = new SafeCloseableList()) {
-            final TrackingMutableRowSet fullRowSet = usePrev ? closer.add(parent.getIndex().getPrevIndex()) : parent.getIndex();
+            final TrackingMutableRowSet fullRowSet = usePrev ? closer.add(parent.getIndex().getPrevRowSet()) : parent.getIndex();
             final TrackingMutableRowSet rowSetToUpdate = closer.add(fullRowSet.clone());
 
             final List<NotificationQueue.Dependency> dependencies = new ArrayList<>();
@@ -230,9 +231,9 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
             for (final ColumnHolder holder : matchColumns) {
                 if (holder.column.recomputeRequested()) {
                     if (downstream == null) {
-                        downstream = new ShiftAwareListener.Update(TrackingMutableRowSet.FACTORY.getEmptyRowSet(),
-                                TrackingMutableRowSet.FACTORY.getEmptyRowSet(),
-                                TrackingMutableRowSet.FACTORY.getEmptyRowSet(),
+                        downstream = new ShiftAwareListener.Update(RowSetFactoryImpl.INSTANCE.getEmptyRowSet(),
+                                RowSetFactoryImpl.INSTANCE.getEmptyRowSet(),
+                                RowSetFactoryImpl.INSTANCE.getEmptyRowSet(),
                                 IndexShiftData.EMPTY,
                                 resultTable.modifiedColumnSet);
                     }
@@ -304,7 +305,7 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
                 @NotNull WritableChunk<? super Attributes.Values> destination, @NotNull RowSequence rowSequence) {
             try (final SafeCloseableList closer = new SafeCloseableList()) {
                 final TrackingMutableRowSet keysToCheck = closer.add(rowSequence.asIndex());
-                final TrackingMutableRowSet intersection = closer.add(keysToCheck.getPrevIndex().intersect(source.getPrevIndex()));
+                final TrackingMutableRowSet intersection = closer.add(keysToCheck.getPrevRowSet().intersect(source.getPrevRowSet()));
                 fillChunkInternal(keysToCheck, intersection, rowSequence.intSize(), destination);
             }
         }

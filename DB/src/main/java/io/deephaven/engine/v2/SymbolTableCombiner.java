@@ -1002,7 +1002,7 @@ class SymbolTableCombiner
              final WritableIntChunk stateChunk = WritableIntChunk.makeWritableChunk(maxSize);
              final ChunkSource.FillContext fillContext = uniqueIdentifierSource.makeFillContext(maxSize)) {
 
-            uniqueIdentifierSource.fillChunk(fillContext, stateChunk, TrackingMutableRowSet.FACTORY.getFlatIndex(tableHashPivot));
+            uniqueIdentifierSource.fillChunk(fillContext, stateChunk, RowSetFactoryImpl.INSTANCE.getFlatRowSet(tableHashPivot));
 
             ChunkUtils.fillInOrder(positions);
 
@@ -1615,8 +1615,8 @@ class SymbolTableCombiner
         final WritableIntChunk<HashCode> overflowHashChunk = WritableIntChunk.makeWritableChunk(nextOverflowLocation);
 
 
-        final RowSequence tableLocations = TrackingMutableRowSet.FACTORY.getRowSetByRange(0, tableSize - 1);
-        final RowSequence overflowLocations = nextOverflowLocation > 0 ? TrackingMutableRowSet.FACTORY.getRowSetByRange(0, nextOverflowLocation - 1) : RowSequence.EMPTY;
+        final RowSequence tableLocations = RowSetFactoryImpl.INSTANCE.getRowSetByRange(0, tableSize - 1);
+        final RowSequence overflowLocations = nextOverflowLocation > 0 ? RowSetFactoryImpl.INSTANCE.getRowSetByRange(0, nextOverflowLocation - 1) : RowSequence.EMPTY;
 
         for (int ii = 0; ii < keyColumnCount; ++ii) {
             dumpChunks[ii] = keyChunkTypes[ii].makeWritableChunk(tableSize);

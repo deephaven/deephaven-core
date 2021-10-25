@@ -98,7 +98,7 @@ public class TableBuilder {
             }
             col++;
         }
-        return new QueryTable(def, TrackingMutableRowSet.FACTORY.getFlatIndex(rows.size()), map);
+        return new QueryTable(def, RowSetFactoryImpl.INSTANCE.getFlatRowSet(rows.size()), map);
     }
 
     /**

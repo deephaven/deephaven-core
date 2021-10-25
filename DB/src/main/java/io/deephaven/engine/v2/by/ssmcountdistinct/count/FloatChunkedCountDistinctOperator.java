@@ -7,6 +7,7 @@
 
 package io.deephaven.engine.v2.by.ssmcountdistinct.count;
 
+import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
 import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.v2.ShiftAwareListener;
@@ -276,7 +277,7 @@ public class FloatChunkedCountDistinctOperator implements IterativeChunkedAggreg
 
             ssms.startTrackingPrevValues();
             prevFlusher = new UpdateCommitter<>(this, FloatChunkedCountDistinctOperator::flushPrevious);
-            touchedStates = TrackingMutableRowSet.CURRENT_FACTORY.getEmptyRowSet();
+            touchedStates = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
         }
     }
 

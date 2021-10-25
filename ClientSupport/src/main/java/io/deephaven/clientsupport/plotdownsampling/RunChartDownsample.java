@@ -2,6 +2,7 @@ package io.deephaven.clientsupport.plotdownsampling;
 
 import io.deephaven.base.Function;
 import io.deephaven.engine.structures.RowSequence;
+import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
 import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.hash.KeyedLongObjectHash;
 import io.deephaven.hash.KeyedLongObjectHashMap;
@@ -110,7 +111,7 @@ public class RunChartDownsample implements Function.Unary<Table, Table> {
         //
         // baseTable.initializeWithSnapshot("downsample", swapListener, (prevRequested, beforeClock) -> {
         // final boolean usePrev = prevRequested && baseTable.isRefreshing();
-        // final TrackingMutableRowSet indexToUse = usePrev ? baseTable.build().getPrevIndex() : baseTable.build();
+        // final TrackingMutableRowSet indexToUse = usePrev ? baseTable.build().getPrevRowSet() : baseTable.build();
         //
         // // process existing rows
         // handleAdded(indexToUse, columnSourceToBin, getNanosPerPx(minBins, usePrev, indexToUse, columnSourceToBin),
@@ -223,7 +224,7 @@ public class RunChartDownsample implements Function.Unary<Table, Table> {
         }
 
         public static DownsamplerListener of(final QueryTable sourceTable, final DownsampleKey key) {
-            final TrackingMutableRowSet rowSet = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
+            final TrackingMutableRowSet rowSet = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
             final QueryTable resultTable = sourceTable.getSubTable(rowSet);
             return new DownsamplerListener(sourceTable, resultTable, key);
         }
@@ -244,7 +245,7 @@ public class RunChartDownsample implements Function.Unary<Table, Table> {
         private final ColumnSource<Long> xColumnSource;
 
         private final ValueTracker[] values;
-        private final TrackingMutableRowSet availableSlots = TrackingMutableRowSet.FACTORY.getSequentialBuilder().build();
+        private final TrackingMutableRowSet availableSlots = RowSetFactoryImpl.INSTANCE.getSequentialBuilder().build();
         private int nextSlot;
 
         private final int[] allYColumnIndexes;
@@ -515,7 +516,7 @@ public class RunChartDownsample implements Function.Unary<Table, Table> {
                 first = key.zoomRange[0];
                 last = key.zoomRange[1];
             } else {
-                final TrackingMutableRowSet rowSet = usePrev ? sourceTable.getIndex().getPrevIndex() : sourceTable.getIndex();
+                final TrackingMutableRowSet rowSet = usePrev ? sourceTable.getIndex().getPrevRowSet() : sourceTable.getIndex();
                 first = xColumnSource.getLong(rowSet.firstRowKey());
                 last = xColumnSource.getLong(rowSet.lastRowKey());
             }
@@ -526,7 +527,7 @@ public class RunChartDownsample implements Function.Unary<Table, Table> {
         }
 
         private void handleAdded(final DownsampleChunkContext context, final boolean usePrev, final TrackingMutableRowSet addedRowSet) {
-            final TrackingMutableRowSet rowSet = usePrev ? addedRowSet.getPrevIndex() : addedRowSet;
+            final TrackingMutableRowSet rowSet = usePrev ? addedRowSet.getPrevRowSet() : addedRowSet;
             if (rowSet.empty()) {
                 return;
             }
@@ -721,7 +722,7 @@ public class RunChartDownsample implements Function.Unary<Table, Table> {
                                                                                   // since states shouldn't contain
                                                                                   // empty indexes anyway
                         states.values().stream())
-                        .reduce(TrackingMutableRowSet.FACTORY.getRandomBuilder(), (builder, state) -> {
+                        .reduce(RowSetFactoryImpl.INSTANCE.getRandomBuilder(), (builder, state) -> {
                             builder.addRowSet(state.makeIndex());
                             return builder;
                         }, (b1, b2) -> {
@@ -729,7 +730,7 @@ public class RunChartDownsample implements Function.Unary<Table, Table> {
                             return b1;
                         }).build();
             }
-            return states.values().stream().reduce(TrackingMutableRowSet.FACTORY.getRandomBuilder(), (builder, state) -> {
+            return states.values().stream().reduce(RowSetFactoryImpl.INSTANCE.getRandomBuilder(), (builder, state) -> {
                 builder.addRowSet(state.makeIndex());
                 return builder;
             }, (b1, b2) -> {

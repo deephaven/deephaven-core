@@ -135,7 +135,7 @@ public class MergeSortedHelper {
             }
         }
 
-        return new QueryTable(TrackingMutableRowSet.FACTORY.getFlatIndex(tableList.size()), columnSources);
+        return new QueryTable(RowSetFactoryImpl.INSTANCE.getFlatRowSet(tableList.size()), columnSources);
     }
 
     static public class SortedMergeColumnSource<T> extends AbstractColumnSource<T> {

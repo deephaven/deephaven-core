@@ -5,7 +5,8 @@ import io.deephaven.engine.v2.sources.ArrayGenerator;
 import io.deephaven.engine.v2.sources.chunk.ChunkSource;
 import io.deephaven.engine.v2.sources.chunk.CharChunk;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
-import io.deephaven.engine.v2.utils.SequentialRowSetBuilder;
+import io.deephaven.engine.v2.utils.RowSetBuilderSequential;
+import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
 import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 
 import org.junit.After;
@@ -199,7 +200,7 @@ public class TestCharacterDeltaAwareColumnSource {
     }
 
     private static TrackingMutableRowSet rangesToIndex(long[] ranges) {
-        SequentialRowSetBuilder builder = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
+        RowSetBuilderSequential builder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
         for (int ii = 0; ii < ranges.length; ii += 2) {
             builder.appendRange(ranges[ii], ranges[ii + 1] - 1);
         }

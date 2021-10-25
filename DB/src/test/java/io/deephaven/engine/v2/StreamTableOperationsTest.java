@@ -6,10 +6,7 @@ import io.deephaven.engine.tables.live.LiveTableMonitor;
 import io.deephaven.engine.v2.ShiftAwareListener.Update;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.ReadOnlyRedirectedColumnSource;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
-import io.deephaven.engine.v2.utils.IndexShiftData;
-import io.deephaven.engine.v2.utils.RedirectionIndex;
-import io.deephaven.engine.v2.utils.WrappedIndexRedirectionIndexImpl;
+import io.deephaven.engine.v2.utils.*;
 import io.deephaven.qst.table.EmptyTable;
 import io.deephaven.test.junit4.EngineCleanup;
 import junit.framework.ComparisonFailure;
@@ -52,7 +49,7 @@ public class StreamTableOperationsTest {
      */
     private void doOperatorTest(@NotNull final UnaryOperator<Table> operator, final boolean windowed,
             final boolean expectStreamResult) {
-        final QueryTable normal = new QueryTable(TrackingMutableRowSet.FACTORY.getEmptyRowSet(), source.getColumnSourceMap());
+        final QueryTable normal = new QueryTable(RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), source.getColumnSourceMap());
         normal.setRefreshing(true);
 
         final TrackingMutableRowSet streamInternalRowSet;
@@ -62,7 +59,7 @@ public class StreamTableOperationsTest {
             streamSources = source.getColumnSourceMap();
         } else {
             // Redirecting so we can present a zero-based TrackingMutableRowSet from the stream table
-            streamInternalRowSet = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
+            streamInternalRowSet = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
             final RedirectionIndex streamRedirections = new WrappedIndexRedirectionIndexImpl(streamInternalRowSet);
             streamSources = source.getColumnSourceMap().entrySet().stream().collect(Collectors.toMap(
                     Map.Entry::getKey,
@@ -70,7 +67,7 @@ public class StreamTableOperationsTest {
                     Assert::neverInvoked,
                     LinkedHashMap::new));
         }
-        final QueryTable stream = new QueryTable(TrackingMutableRowSet.FACTORY.getEmptyRowSet(), streamSources);
+        final QueryTable stream = new QueryTable(RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), streamSources);
         stream.setRefreshing(true);
         stream.setAttribute(Table.STREAM_TABLE_ATTRIBUTE, true);
 
@@ -87,17 +84,17 @@ public class StreamTableOperationsTest {
 
         int step = 0;
         long usedSize = 0;
-        TrackingMutableRowSet normalLastInserted = TrackingMutableRowSet.CURRENT_FACTORY.getEmptyRowSet();
-        TrackingMutableRowSet streamLastInserted = TrackingMutableRowSet.CURRENT_FACTORY.getEmptyRowSet();
+        TrackingMutableRowSet normalLastInserted = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+        TrackingMutableRowSet streamLastInserted = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
         while (usedSize < INPUT_SIZE) {
             final long refreshSize = Math.min(INPUT_SIZE - usedSize, refreshSizes.nextLong());
             final TrackingMutableRowSet normalStepInserted = refreshSize == 0
-                    ? TrackingMutableRowSet.CURRENT_FACTORY.getEmptyRowSet()
-                    : TrackingMutableRowSet.CURRENT_FACTORY.getRowSetByRange(usedSize, usedSize + refreshSize - 1);
+                    ? RowSetFactoryImpl.INSTANCE.getEmptyRowSet()
+                    : RowSetFactoryImpl.INSTANCE.getRowSetByRange(usedSize, usedSize + refreshSize - 1);
             final TrackingMutableRowSet streamStepInserted = streamInternalRowSet == null ? normalStepInserted
                     : refreshSize == 0
-                            ? TrackingMutableRowSet.CURRENT_FACTORY.getEmptyRowSet()
-                            : TrackingMutableRowSet.CURRENT_FACTORY.getRowSetByRange(0, refreshSize - 1);
+                            ? RowSetFactoryImpl.INSTANCE.getEmptyRowSet()
+                            : RowSetFactoryImpl.INSTANCE.getRowSetByRange(0, refreshSize - 1);
 
             LiveTableMonitor.DEFAULT.startCycleForUnitTests();
             try {
@@ -106,7 +103,7 @@ public class StreamTableOperationsTest {
                     if (normalStepInserted.nonempty() || finalNormalLastInserted.nonempty()) {
                         normal.getIndex().update(normalStepInserted, finalNormalLastInserted);
                         normal.notifyListeners(new Update(normalStepInserted, finalNormalLastInserted,
-                                TrackingMutableRowSet.CURRENT_FACTORY.getEmptyRowSet(), IndexShiftData.EMPTY, ModifiedColumnSet.EMPTY));
+                                RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), IndexShiftData.EMPTY, ModifiedColumnSet.EMPTY));
                     }
                 });
                 final TrackingMutableRowSet finalStreamLastInserted = streamLastInserted;
@@ -119,7 +116,7 @@ public class StreamTableOperationsTest {
                         stream.getIndex().clear();
                         stream.getIndex().insert(streamStepInserted);
                         stream.notifyListeners(new Update(streamStepInserted, finalStreamLastInserted,
-                                TrackingMutableRowSet.CURRENT_FACTORY.getEmptyRowSet(), IndexShiftData.EMPTY, ModifiedColumnSet.EMPTY));
+                                RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), IndexShiftData.EMPTY, ModifiedColumnSet.EMPTY));
                     }
                 });
             } finally {

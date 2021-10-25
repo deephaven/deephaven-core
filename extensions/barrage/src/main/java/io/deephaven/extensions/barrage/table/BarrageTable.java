@@ -64,7 +64,7 @@ public class BarrageTable extends QueryTable implements LiveTable, BarrageMessag
     /** we compact the parent table's key-space and instead redirect; ideal for viewport */
     private final RedirectionIndex redirectionIndex;
     /** represents which rows in writable source exist but are not mapped to any parent rows */
-    private TrackingMutableRowSet freeset = TrackingMutableRowSet.CURRENT_FACTORY.getEmptyRowSet();
+    private TrackingMutableRowSet freeset = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
 
 
     /** unsubscribed must never be reset to false once it has been set to true */
@@ -116,7 +116,7 @@ public class BarrageTable extends QueryTable implements LiveTable, BarrageMessag
             final WritableSource<?>[] writableSources,
             final RedirectionIndex redirectionIndex,
             final boolean isViewPort) {
-        super(TrackingMutableRowSet.FACTORY.getEmptyRowSet(), columns);
+        super(RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), columns);
         this.registrar = registrar;
         this.notificationQueue = notificationQueue;
 
@@ -125,7 +125,7 @@ public class BarrageTable extends QueryTable implements LiveTable, BarrageMessag
                 .getEntry("BarrageTable refresh " + System.identityHashCode(this));
 
         if (isViewPort) {
-            serverViewport = TrackingMutableRowSet.CURRENT_FACTORY.getEmptyRowSet();
+            serverViewport = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
         } else {
             serverViewport = null;
         }
@@ -205,7 +205,7 @@ public class BarrageTable extends QueryTable implements LiveTable, BarrageMessag
             saveForDebugging(update);
 
             modifiedColumnSet.clear();
-            final TrackingMutableRowSet mods = TrackingMutableRowSet.CURRENT_FACTORY.getEmptyRowSet();
+            final TrackingMutableRowSet mods = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
             for (int ci = 0; ci < update.modColumnData.length; ++ci) {
                 final TrackingMutableRowSet rowsModified = update.modColumnData[ci].rowsModified;
                 if (rowsModified.nonempty()) {
@@ -252,7 +252,7 @@ public class BarrageTable extends QueryTable implements LiveTable, BarrageMessag
             }
             currentRowSet.insert(update.rowsAdded);
 
-            final TrackingMutableRowSet totalMods = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
+            final TrackingMutableRowSet totalMods = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
             for (int i = 0; i < update.modColumnData.length; ++i) {
                 final BarrageMessage.ModColumnData column = update.modColumnData[i];
                 totalMods.insert(column.rowsModified);
@@ -334,13 +334,13 @@ public class BarrageTable extends QueryTable implements LiveTable, BarrageMessag
 
     private TrackingMutableRowSet getFreeRows(long size) {
         if (size <= 0) {
-            return TrackingMutableRowSet.CURRENT_FACTORY.getEmptyRowSet();
+            return RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
         }
 
         boolean needsResizing = false;
         if (capacity == 0) {
             capacity = Integer.highestOneBit((int) Math.max(size * 2, 8));
-            freeset = TrackingMutableRowSet.CURRENT_FACTORY.getFlatIndex(capacity);
+            freeset = RowSetFactoryImpl.INSTANCE.getFlatRowSet(capacity);
             needsResizing = true;
         } else if (freeset.size() < size) {
             int usedSlots = (int) (capacity - freeset.size());
@@ -410,7 +410,7 @@ public class BarrageTable extends QueryTable implements LiveTable, BarrageMessag
                 // publish one last clear downstream; this data would be stale
                 final TrackingMutableRowSet allRows = getIndex().clone();
                 getIndex().remove(allRows);
-                notifyListeners(TrackingMutableRowSet.FACTORY.getEmptyRowSet(), allRows, TrackingMutableRowSet.FACTORY.getEmptyRowSet());
+                notifyListeners(RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), allRows, RowSetFactoryImpl.INSTANCE.getEmptyRowSet());
             }
             cleanup();
             return;

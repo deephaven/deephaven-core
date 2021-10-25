@@ -3,7 +3,7 @@ package io.deephaven.engine.v2.ssa;
 import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.sources.chunk.Attributes.RowKeys;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
-import io.deephaven.engine.v2.utils.RowSetBuilder;
+import io.deephaven.engine.v2.utils.RowSetBuilderRandom;
 import io.deephaven.engine.v2.utils.RedirectionIndex;
 
 public interface ChunkSsaStamp {
@@ -61,16 +61,16 @@ public interface ChunkSsaStamp {
     void processRemovals(Chunk<Values> leftStampValues, LongChunk<RowKeys> leftStampKeys,
                          Chunk<? extends Values> rightStampChunk, LongChunk<Attributes.RowKeys> rightKeys,
                          WritableLongChunk<Attributes.RowKeys> priorRedirections, RedirectionIndex redirectionIndex,
-                         RowSetBuilder modifiedBuilder, boolean disallowExactMatch);
+                         RowSetBuilderRandom modifiedBuilder, boolean disallowExactMatch);
 
     void processInsertion(Chunk<Values> leftStampValues, LongChunk<Attributes.RowKeys> leftStampKeys,
                           Chunk<? extends Values> rightStampChunk, LongChunk<RowKeys> rightKeys, Chunk<Values> nextRightValue,
-                          RedirectionIndex redirectionIndex, RowSetBuilder modifiedBuilder, boolean endsWithLastValue,
+                          RedirectionIndex redirectionIndex, RowSetBuilderRandom modifiedBuilder, boolean endsWithLastValue,
                           boolean disallowExactMatch);
 
     int findModified(int first, Chunk<Values> leftStampValues, LongChunk<Attributes.RowKeys> leftStampKeys,
                      RedirectionIndex redirectionIndex, Chunk<? extends Values> rightStampChunk,
-                     LongChunk<RowKeys> rightStampIndices, RowSetBuilder modifiedBuilder, boolean disallowExactMatch);
+                     LongChunk<RowKeys> rightStampIndices, RowSetBuilderRandom modifiedBuilder, boolean disallowExactMatch);
 
     void applyShift(Chunk<Values> leftStampValues, LongChunk<Attributes.RowKeys> leftStampKeys,
             Chunk<? extends Values> rightStampChunk, LongChunk<RowKeys> rightStampKeys, long shiftDelta,

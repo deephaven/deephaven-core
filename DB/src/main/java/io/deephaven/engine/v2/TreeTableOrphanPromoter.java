@@ -7,7 +7,8 @@ import io.deephaven.engine.tables.live.LiveTableMonitor;
 import io.deephaven.engine.v2.remote.WrappedDelegatingTable;
 import io.deephaven.engine.v2.sources.AbstractColumnSource;
 import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.utils.SequentialRowSetBuilder;
+import io.deephaven.engine.v2.utils.RowSetBuilderSequential;
+import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
 import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.util.QueryConstants;
 import gnu.trove.list.TLongList;
@@ -328,7 +329,7 @@ public class TreeTableOrphanPromoter implements Function.Unary<Table, Table> {
                                     removeChildren(upstream.getModifiedPreShift());
                                 }
 
-                                try (final TrackingMutableRowSet prevIndex = source.getIndex().getPrevIndex()) {
+                                try (final TrackingMutableRowSet prevIndex = source.getIndex().getPrevRowSet()) {
                                     prevIndex.remove(upstream.removed);
                                     if (modifiedInputColumns) {
                                         prevIndex.remove(upstream.getModifiedPreShift());
@@ -366,7 +367,7 @@ public class TreeTableOrphanPromoter implements Function.Unary<Table, Table> {
                                         }));
                                 modifiedKeys.sort();
 
-                                final SequentialRowSetBuilder builder = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
+                                final RowSetBuilderSequential builder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
                                 // TODO: Modify this such that we don't actually ever add the keys to the builder if
                                 // they exist
                                 // within added; this would be made easier/more efficient if TrackingMutableRowSet.Iterator exposed the

@@ -284,7 +284,7 @@ class IncrementalChunkedByAggregationStateManager
 
     void buildInitialTableFromPrevious(@NotNull final Table sourceTable, @NotNull final ColumnSource<?>[] keySources, @NotNull final IncrementalByAggregationUpdateTracker aggregationUpdateTracker) {
         final ColumnSource<?>[] prevKeySources;
-        try (final TrackingMutableRowSet prevRowSet = sourceTable.getIndex().getPrevIndex()) {
+        try (final TrackingMutableRowSet prevRowSet = sourceTable.getIndex().getPrevRowSet()) {
             if (prevRowSet.isEmpty()) {
                 return;
             }
@@ -616,7 +616,7 @@ class IncrementalChunkedByAggregationStateManager
                     final long currentHashLocation = bc.insertTableLocations.get(ii);
 
                     // region main insert
-                    indexSource.set(currentHashLocation, TrackingMutableRowSet.FACTORY.getEmptyRowSet());
+                    indexSource.set(currentHashLocation, RowSetFactoryImpl.INSTANCE.getEmptyRowSet());
                     cookieSource.set(currentHashLocation, trackingCallback.invoke(NULL_COOKIE, (int) currentHashLocation, sourceChunkIndexKeys.get(firstChunkPositionForHashLocation)));
                     // endregion main insert
                     // mixin rehash
@@ -759,7 +759,7 @@ class IncrementalChunkedByAggregationStateManager
                             overflowLocationSource.set(tableLocation, allocatedOverflowLocation);
 
                             // region build overflow insert
-                            overflowIndexSource.set(allocatedOverflowLocation, TrackingMutableRowSet.FACTORY.getEmptyRowSet());
+                            overflowIndexSource.set(allocatedOverflowLocation, RowSetFactoryImpl.INSTANCE.getEmptyRowSet());
                             overflowCookieSource.set(allocatedOverflowLocation, trackingCallback.invoke(NULL_COOKIE, overflowLocationToHashLocation(allocatedOverflowLocation), sourceChunkIndexKeys.get(chunkPosition)));
                             // endregion build overflow insert
 
@@ -1040,7 +1040,7 @@ class IncrementalChunkedByAggregationStateManager
              final WritableObjectChunk stateChunk = WritableObjectChunk.makeWritableChunk(maxSize);
              final ChunkSource.FillContext fillContext = indexSource.makeFillContext(maxSize)) {
 
-            indexSource.fillChunk(fillContext, stateChunk, TrackingMutableRowSet.FACTORY.getFlatIndex(tableHashPivot));
+            indexSource.fillChunk(fillContext, stateChunk, RowSetFactoryImpl.INSTANCE.getFlatRowSet(tableHashPivot));
 
             ChunkUtils.fillInOrder(positions);
 

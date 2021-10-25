@@ -345,11 +345,11 @@ public class QueryTableSelectUpdateTest {
                 }
             } else {
                 TrackingMutableRowSet sourceAddedPositions = sourceTable.getIndex().invert(listener1.added);
-                TrackingMutableRowSet sourceRemovedPositions = sourceTable.getIndex().getPrevIndex().invert(listener1.removed);
+                TrackingMutableRowSet sourceRemovedPositions = sourceTable.getIndex().getPrevRowSet().invert(listener1.removed);
                 TrackingMutableRowSet sourceModifiedPositions = sourceTable.getIndex().invert(listener1.modified);
 
                 TrackingMutableRowSet resultAddedPositions = originalValue.getIndex().invert(listener2.added);
-                TrackingMutableRowSet resultRemovedPositions = originalValue.getIndex().getPrevIndex().invert(listener2.removed);
+                TrackingMutableRowSet resultRemovedPositions = originalValue.getIndex().getPrevRowSet().invert(listener2.removed);
                 TrackingMutableRowSet resultModifiedPositions = originalValue.getIndex().invert(listener2.modified);
 
                 if (!sourceAddedPositions.equals(resultAddedPositions)) {
@@ -373,8 +373,8 @@ public class QueryTableSelectUpdateTest {
             if (LiveTableTestCase.printTableUpdates) {
                 System.out.println("Positions to validate: " + checkInvert);
 
-                final SequentialRowSetBuilder originalBuilder = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
-                final SequentialRowSetBuilder recomputedBuilder = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
+                final RowSetBuilderSequential originalBuilder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
+                final RowSetBuilderSequential recomputedBuilder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
                 checkInvert.forEach(x -> originalBuilder.appendKey(originalValue.getIndex().get(x)));
                 checkInvert.forEach(x -> recomputedBuilder.appendKey(recomputedValue.getIndex().get(x)));
 
@@ -447,9 +447,9 @@ public class QueryTableSelectUpdateTest {
     private void doTestSparseRedirectedUpdate() {
         System.gc();
 
-        final QueryTable leftTable = new QueryTable(TrackingMutableRowSet.FACTORY.getFlatIndex(99), Collections.emptyMap());
+        final QueryTable leftTable = new QueryTable(RowSetFactoryImpl.INSTANCE.getFlatRowSet(99), Collections.emptyMap());
         leftTable.setRefreshing(true);
-        final QueryTable rightTable = new QueryTable(TrackingMutableRowSet.FACTORY.getFlatIndex(1), Collections.emptyMap());
+        final QueryTable rightTable = new QueryTable(RowSetFactoryImpl.INSTANCE.getFlatRowSet(1), Collections.emptyMap());
         rightTable.setRefreshing(true);
 
         final Table leftWithKey = leftTable.updateView("Key=`a`", "LI=ii");
@@ -952,7 +952,7 @@ public class QueryTableSelectUpdateTest {
 
     @Test
     public void testSparseSelectWideIndex() {
-        final SequentialRowSetBuilder builder = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
+        final RowSetBuilderSequential builder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
         final int[] intVals = new int[63];
         for (int ii = 0; ii < 63; ii++) {
             builder.appendKey(1L << ii);
@@ -967,7 +967,7 @@ public class QueryTableSelectUpdateTest {
     @Test
     public void testSparseSelectSkipMemoryColumns() {
         final int[] intVals = {1, 2, 3, 4, 5};
-        final Table table = TstUtils.testRefreshingTable(TrackingMutableRowSet.FACTORY.getFlatIndex(5), intCol("Value", intVals))
+        final Table table = TstUtils.testRefreshingTable(RowSetFactoryImpl.INSTANCE.getFlatRowSet(5), intCol("Value", intVals))
                 .update("V2=Value*2");
         final Table selected = SparseSelect.sparseSelect(table);
         assertTableEquals(table, selected);

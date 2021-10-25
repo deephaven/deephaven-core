@@ -8,6 +8,7 @@ import io.deephaven.engine.v2.locations.*;
 import io.deephaven.engine.v2.locations.impl.SimpleTableLocationKey;
 import io.deephaven.engine.v2.locations.impl.TableLocationUpdateSubscriptionBuffer;
 import io.deephaven.engine.v2.sources.ColumnSource;
+import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
 import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import gnu.trove.map.TIntIntMap;
 import gnu.trove.map.hash.TIntIntHashMap;
@@ -139,8 +140,8 @@ public class TestRegionedColumnSourceManager extends LiveTableTestCase {
         Arrays.fill(lastSizes, -1); // Not null size
         regionCount = 0;
         locationIndexToRegionIndex = new TIntIntHashMap(4, 0.5f, -1, -1);
-        expectedRowSet = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
-        expectedAddedRowSet = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
+        expectedRowSet = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+        expectedAddedRowSet = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
         expectedPartitioningColumnGrouping = new LinkedHashMap<>();
     }
 
@@ -174,7 +175,7 @@ public class TestRegionedColumnSourceManager extends LiveTableTestCase {
                 will(new CustomAction("Return last size") {
                     @Override
                     public Object invoke(Invocation invocation) {
-                        return TrackingMutableRowSet.CURRENT_FACTORY.getFlatIndex(lastSizes[li]);
+                        return RowSetFactoryImpl.INSTANCE.getFlatRowSet(lastSizes[li]);
                     }
                 });
             }
@@ -247,7 +248,7 @@ public class TestRegionedColumnSourceManager extends LiveTableTestCase {
     }
 
     private void setSizeExpectations(final boolean refreshing, final long... sizes) {
-        final TrackingMutableRowSet newExpectedRowSet = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
+        final TrackingMutableRowSet newExpectedRowSet = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
         expectedPartitioningColumnGrouping = new LinkedHashMap<>();
         IntStream.range(0, sizes.length).forEachOrdered(li -> {
             final long size = sizes[li];
@@ -323,7 +324,7 @@ public class TestRegionedColumnSourceManager extends LiveTableTestCase {
                 newExpectedRowSet.insertRange(
                         RegionedColumnSource.getFirstElementIndex(regionIndex),
                         RegionedColumnSource.getFirstElementIndex(regionIndex) + size - 1);
-                expectedPartitioningColumnGrouping.computeIfAbsent(cp, cpk -> TrackingMutableRowSet.FACTORY.getEmptyRowSet())
+                expectedPartitioningColumnGrouping.computeIfAbsent(cp, cpk -> RowSetFactoryImpl.INSTANCE.getEmptyRowSet())
                         .insertRange(
                                 RegionedColumnSource.getFirstElementIndex(regionIndex),
                                 RegionedColumnSource.getFirstElementIndex(regionIndex) + size - 1);

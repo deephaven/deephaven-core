@@ -264,7 +264,7 @@ class StaticChunkedCrossJoinStateManager
         // how many bits we need for the right indexes.
         validateKeySpaceSize(leftTable);
 
-        final RowSetBuilder resultIndex = TrackingMutableRowSet.FACTORY.getRandomBuilder();
+        final RowSetBuilderRandom resultIndex = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
         if (!leftTable.isEmpty()) {
             try (final ProbeContext pc = makeProbeContext(leftKeys, leftTable.size())) {
                 decorationProbe(pc, leftTable.getIndex(), leftKeys, (slot, index) -> {
@@ -299,7 +299,7 @@ class StaticChunkedCrossJoinStateManager
                     }
 
                     if (source.getUnsafe(slot) == EMPTY_RIGHT_VALUE) {
-                        source.set(slot, TrackingMutableRowSet.FACTORY.getEmptyRowSet());
+                        source.set(slot, RowSetFactoryImpl.INSTANCE.getEmptyRowSet());
                     }
                 });
             }
@@ -322,7 +322,7 @@ class StaticChunkedCrossJoinStateManager
         // how many bits we need for the right indexes.
         validateKeySpaceSize(leftTable);
 
-        final SequentialRowSetBuilder resultIndex = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
+        final RowSetBuilderSequential resultIndex = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
         leftTable.getIndex().forAllLongs(ii -> {
             final long regionStart = ii << getNumShiftBits();
             final TrackingMutableRowSet rightRowSet = getRightIndexFromLeftIndex(ii);
@@ -342,7 +342,7 @@ class StaticChunkedCrossJoinStateManager
                 return;
             }
 
-            source.set(location, TrackingMutableRowSet.CURRENT_FACTORY.getRowSetByValues(keyToAdd));
+            source.set(location, RowSetFactoryImpl.INSTANCE.getRowSetByValues(keyToAdd));
             size = 1;
         } else {
             rowSet.insert(keyToAdd);
@@ -1105,7 +1105,7 @@ class StaticChunkedCrossJoinStateManager
              final WritableObjectChunk stateChunk = WritableObjectChunk.makeWritableChunk(maxSize);
              final ChunkSource.FillContext fillContext = rightIndexSource.makeFillContext(maxSize)) {
 
-            rightIndexSource.fillChunk(fillContext, stateChunk, TrackingMutableRowSet.FACTORY.getFlatIndex(tableHashPivot));
+            rightIndexSource.fillChunk(fillContext, stateChunk, RowSetFactoryImpl.INSTANCE.getFlatRowSet(tableHashPivot));
 
             ChunkUtils.fillInOrder(positions);
 
@@ -1629,7 +1629,7 @@ class StaticChunkedCrossJoinStateManager
             retVal = rightIndexSource.get(slot);
         }
         if (retVal == null) {
-            retVal = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
+            retVal = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
         }
         return retVal;
     }
@@ -1638,7 +1638,7 @@ class StaticChunkedCrossJoinStateManager
     public TrackingMutableRowSet getRightIndexFromLeftIndex(long leftIndex) {
         long slot = leftIndexToSlot.get(leftIndex);
         if (slot == TrackingMutableRowSet.NULL_ROW_KEY) {
-            return TrackingMutableRowSet.FACTORY.getEmptyRowSet();
+            return RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
         }
         return getRightIndex(slot);
     }

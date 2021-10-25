@@ -4,8 +4,9 @@ import io.deephaven.api.Selectable;
 import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
-import io.deephaven.engine.v2.utils.RowSetBuilder;
-import io.deephaven.engine.v2.utils.SequentialRowSetBuilder;
+import io.deephaven.engine.v2.utils.RowSetBuilderRandom;
+import io.deephaven.engine.v2.utils.RowSetBuilderSequential;
+import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
 import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
@@ -33,7 +34,7 @@ import static io.deephaven.treetable.TreeTableConstants.ROOT_TABLE_KEY;
  * expanded rows at each level.
  */
 public abstract class AbstractTreeSnapshotImpl<INFO_TYPE extends HierarchicalTableInfo, CLIENT_TYPE extends TreeTableClientTableManager.Client<CLIENT_TYPE>> {
-    private static final TrackingMutableRowSet EMPTY_ROW_SET = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
+    private static final TrackingMutableRowSet EMPTY_ROW_SET = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
     private static final boolean DEBUG =
             Configuration.getInstance().getBooleanWithDefault("AbstractTreeSnapshotImpl.debug", false);
 
@@ -492,7 +493,7 @@ public abstract class AbstractTreeSnapshotImpl<INFO_TYPE extends HierarchicalTab
         // rows skipped.
         long vkUpper;
 
-        final TrackingMutableRowSet currentRowSet = usePrev ? curTable.getIndex().getPrevIndex() : curTable.getIndex();
+        final TrackingMutableRowSet currentRowSet = usePrev ? curTable.getIndex().getPrevRowSet() : curTable.getIndex();
 
         // If the first row of the viewport is beyond the current table, we'll use an upper that's
         // guaranteed to be beyond the table. One of two things will happen:
@@ -603,7 +604,7 @@ public abstract class AbstractTreeSnapshotImpl<INFO_TYPE extends HierarchicalTab
             return;
         }
 
-        SequentialRowSetBuilder sequentialBuilder = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
+        RowSetBuilderSequential sequentialBuilder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
         long currentIndexKey = currentIt.currentValue();
 
         while (state.consumed < state.actualViewportSize) {
@@ -613,7 +614,7 @@ public abstract class AbstractTreeSnapshotImpl<INFO_TYPE extends HierarchicalTab
             if (nextExpansion == currentIndexKey) {
                 // Copy everything so far, and start a new rowSet.
                 state.addToSnapshot(usePrev, curTable, current.getKey(), curTableMap, sequentialBuilder.build());
-                sequentialBuilder = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
+                sequentialBuilder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
 
                 final Object tableKey = usePrev ? columnSource.getPrev(nextExpansion) : columnSource.get(nextExpansion);
                 final TableDetails child = tablesByKey.get(tableKey);
@@ -661,7 +662,7 @@ public abstract class AbstractTreeSnapshotImpl<INFO_TYPE extends HierarchicalTab
             return EMPTY_ROW_SET;
         }
 
-        final RowSetBuilder builder = TrackingMutableRowSet.FACTORY.getRandomBuilder();
+        final RowSetBuilderRandom builder = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
         childKeys.stream().filter(k -> {
             final TableDetails td = tablesByKey.get(k);
             return td != null && !td.isRemoved();

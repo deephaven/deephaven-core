@@ -3,6 +3,7 @@ package io.deephaven.engine.v2.sources.deltaaware;
 import io.deephaven.engine.v2.sources.chunk.Attributes;
 import io.deephaven.engine.v2.sources.chunk.LongChunk;
 import io.deephaven.engine.v2.sources.chunk.WritableLongChunk;
+import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
 import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.engine.v2.utils.LongAbortableConsumer;
 import io.deephaven.engine.v2.utils.LongRangeAbortableConsumer;
@@ -49,7 +50,7 @@ class SoleKey implements RowSequence {
 
     @Override
     public TrackingMutableRowSet asIndex() {
-        return TrackingMutableRowSet.FACTORY.getRowSetByValues(key);
+        return RowSetFactoryImpl.INSTANCE.getRowSetByValues(key);
     }
 
     @Override

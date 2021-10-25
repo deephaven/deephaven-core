@@ -320,7 +320,7 @@ final class UngroupedAggregateColumnSource<DATA_TYPE> extends UngroupedColumnSou
                     final TrackingMutableRowSet currRowSet = indexes.get(ii);
                     Assert.neqNull(currRowSet, "currRowSet");
                     final boolean usePrevIndex = usePrev && !(currRowSet instanceof MutableRowSetImpl);
-                    final TrackingMutableRowSet rowSet = usePrevIndex ? currRowSet.getPrevIndex() : currRowSet;
+                    final TrackingMutableRowSet rowSet = usePrevIndex ? currRowSet.getPrevRowSet() : currRowSet;
                     try {
                         final int lengthFromThisIndex = sameIndexRunLengths.get(ii);
 

@@ -313,10 +313,10 @@ public class RowSequenceKeyRangesChunkImpl implements RowSequence {
     @Override
     public TrackingMutableRowSet asIndex() {
         if (backingChunk.size() == 0) {
-            return TrackingMutableRowSet.FACTORY.getEmptyRowSet();
+            return RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
         }
 
-        final SequentialRowSetBuilder builder = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
+        final RowSetBuilderSequential builder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
         final long chunkFirst = backingChunk.get(0);
         final long chunkLast = backingChunk.get(backingChunk.size() - 1);
         final boolean specialStart = minKeyValue > chunkFirst;

@@ -9,7 +9,8 @@ import io.deephaven.engine.tables.live.LiveTable;
 import io.deephaven.engine.tables.utils.DBDateTime;
 import io.deephaven.engine.v2.QueryTable;
 import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.utils.RowSetBuilder;
+import io.deephaven.engine.v2.utils.RowSetBuilderRandom;
+import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
 import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 
 import java.util.Map;
@@ -25,7 +26,7 @@ public class ReplayTable extends QueryTable implements LiveTable {
 
     public ReplayTable(TrackingMutableRowSet rowSet, Map<String, ? extends ColumnSource<?>> result, String timeColumn,
                        Replayer replayer) {
-        super(TrackingMutableRowSet.FACTORY.getRowSetByValues(), result);
+        super(RowSetFactoryImpl.INSTANCE.getRowSetByValues(), result);
         Require.requirement(replayer != null, "replayer != null");
         // noinspection unchecked
         replayer.registerTimeSource(rowSet, (ColumnSource<DBDateTime>) result.get(timeColumn));
@@ -54,7 +55,7 @@ public class ReplayTable extends QueryTable implements LiveTable {
         if (done || nextTime >= replayer.currentTimeNanos()) {
             return;
         }
-        RowSetBuilder indexBuilder = TrackingMutableRowSet.FACTORY.getRandomBuilder();
+        RowSetBuilderRandom indexBuilder = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
         while (!done && nextTime < replayer.currentTimeNanos()) {
             indexBuilder.addKey(curr);
             if (indexIterator.hasNext()) {
@@ -67,7 +68,7 @@ public class ReplayTable extends QueryTable implements LiveTable {
         final TrackingMutableRowSet added = indexBuilder.build();
         if (added.size() > 0) {
             getIndex().insert(added);
-            notifyListeners(added, TrackingMutableRowSet.FACTORY.getEmptyRowSet(), TrackingMutableRowSet.FACTORY.getEmptyRowSet());
+            notifyListeners(added, RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), RowSetFactoryImpl.INSTANCE.getEmptyRowSet());
         }
     }
 }

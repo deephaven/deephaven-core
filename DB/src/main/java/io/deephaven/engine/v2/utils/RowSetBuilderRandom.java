@@ -4,8 +4,6 @@
 
 package io.deephaven.engine.v2.utils;
 
-import gnu.trove.procedure.TLongProcedure;
-import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.v2.sources.chunk.Attributes;
 import io.deephaven.engine.v2.sources.chunk.IntChunk;
 import io.deephaven.engine.v2.sources.chunk.LongChunk;
@@ -17,13 +15,13 @@ import java.util.PrimitiveIterator;
 /**
  * Builder interface for {@link RowSet} construction in arbitrary order.
  */
-public interface RowSetBuilder {
+public interface RowSetBuilderRandom {
 
     MutableRowSet build();
 
-    void addKey(long key);
+    void addKey(long rowKey);
 
-    void addRange(long firstKey, long lastKey);
+    void addRange(long firstRowKey, long lastRowKey);
 
     default void addKeys(final PrimitiveIterator.OfLong it) {
         while (it.hasNext()) {
@@ -39,30 +37,28 @@ public interface RowSetBuilder {
         }
     }
 
-    default void addKeyIndicesChunk(final LongChunk<Attributes.RowKeys> chunk) {
+    default void addRowKeysChunk(final LongChunk<? extends Attributes.RowKeys> chunk) {
         addKeys(new LongChunkIterator(chunk));
     }
 
-    default void addKeyIndicesChunk(final IntChunk<Attributes.RowKeys> chunk) {
+    default void addRowKeysChunk(final IntChunk<? extends Attributes.RowKeys> chunk) {
         addKeys(new IntChunkLongIterator(chunk));
     }
 
-    default void addOrderedKeyIndicesChunk(final LongChunk<Attributes.OrderedRowKeys> chunk) {
-        addKeys(new LongChunkIterator(chunk));
+    default void addOrderedRowKeysChunk(final LongChunk<? extends Attributes.OrderedRowKeys> chunk) {
+        addRowKeysChunk(chunk);
+    }
+
+    default void addOrderedRowKeysChunk(final IntChunk<? extends Attributes.OrderedRowKeys> chunk) {
+        addRowKeysChunk(chunk);
     }
 
     default void addRowSet(final RowSet rowSet) {
         Helper.add(this, rowSet);
     }
 
-    /**
-     * {@link RowSetBuilder} suitable for inserting ranges in no particular order.
-     */
-    interface RandomBuilder extends RowSetBuilder {
-    }
-
     class Helper {
-        public static void add(final RowSetBuilder builder, final RowSet rowSet) {
+        private static void add(final RowSetBuilderRandom builder, final RowSet rowSet) {
             final TrackingMutableRowSet.RangeIterator it = rowSet.rangeIterator();
             while (it.hasNext()) {
                 final long start = it.next();

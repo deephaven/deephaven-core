@@ -300,11 +300,6 @@ public class MutableRowSetImpl extends RowSequenceAsChunkImpl
     }
 
     @Override
-    public final boolean isFlat() {
-        return empty() || (lastRowKey() == size() - 1);
-    }
-
-    @Override
     public boolean empty() {
         return impl.ixIsEmpty();
     }

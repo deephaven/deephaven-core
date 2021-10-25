@@ -6,9 +6,7 @@ package io.deephaven.engine.v2.sources;
 
 import io.deephaven.base.Pair;
 import io.deephaven.engine.structures.RowSequence;
-import io.deephaven.engine.v2.utils.GroupingRowSetHelper;
-import io.deephaven.engine.v2.utils.SequentialRowSetBuilder;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
+import io.deephaven.engine.v2.utils.*;
 import io.deephaven.hash.KeyedObjectHashSet;
 import io.deephaven.hash.KeyedObjectKey;
 import io.deephaven.base.string.cache.CharSequenceUtils;
@@ -20,7 +18,6 @@ import io.deephaven.engine.v2.select.chunkfilters.ChunkMatchFilterFactory;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 import io.deephaven.engine.v2.sources.chunk.WritableChunk;
 import io.deephaven.engine.v2.sources.chunk.util.chunkfillers.ChunkFiller;
-import io.deephaven.engine.v2.utils.RowSetBuilder;
 import io.deephaven.util.annotations.VisibleForTesting;
 import io.deephaven.util.type.TypeUtils;
 import org.apache.commons.lang3.mutable.MutableInt;
@@ -121,7 +118,7 @@ public abstract class AbstractColumnSource<T> implements ColumnSource<T>, Serial
                                        final Object... keys) {
         final Map<T, TrackingMutableRowSet> groupToRange = (isImmutable() || !usePrev) ? getGroupToRange(mapper) : null;
         if (groupToRange != null) {
-            RowSetBuilder allInMatchingGroups = TrackingMutableRowSet.FACTORY.getRandomBuilder();
+            RowSetBuilderRandom allInMatchingGroups = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
 
             if (caseInsensitive && (type == String.class)) {
                 KeyedObjectHashSet keySet = new KeyedObjectHashSet<>(new CIStringKey());
@@ -190,19 +187,19 @@ public abstract class AbstractColumnSource<T> implements ColumnSource<T>, Serial
                 }
             }
         } else {
-            Map<T, SequentialRowSetBuilder> valueToIndexSet = new LinkedHashMap<>();
+            Map<T, RowSetBuilderSequential> valueToIndexSet = new LinkedHashMap<>();
 
             for (TrackingMutableRowSet.Iterator it = subRange.iterator(); it.hasNext();) {
                 long key = it.nextLong();
                 T value = get(key);
-                SequentialRowSetBuilder indexes = valueToIndexSet.get(value);
+                RowSetBuilderSequential indexes = valueToIndexSet.get(value);
                 if (indexes == null) {
-                    indexes = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
+                    indexes = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
                 }
                 indexes.appendKey(key);
                 valueToIndexSet.put(value, indexes);
             }
-            for (Map.Entry<T, SequentialRowSetBuilder> entry : valueToIndexSet.entrySet()) {
+            for (Map.Entry<T, RowSetBuilderSequential> entry : valueToIndexSet.entrySet()) {
                 result.put(entry.getKey(), entry.getValue().build());
             }
         }

@@ -13,14 +13,11 @@ import io.deephaven.barrage.flatbuf.BarrageMessageType;
 import io.deephaven.barrage.flatbuf.BarrageMessageWrapper;
 import io.deephaven.barrage.flatbuf.BarrageModColumnMetadata;
 import io.deephaven.barrage.flatbuf.BarrageUpdateMetadata;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
+import io.deephaven.engine.v2.utils.*;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.chunk.ChunkInputStreamGenerator;
 import io.deephaven.engine.util.LongSizedDataStructure;
 import io.deephaven.engine.v2.sources.chunk.ChunkType;
-import io.deephaven.engine.v2.utils.BarrageMessage;
-import io.deephaven.engine.v2.utils.ExternalizableIndexUtils;
-import io.deephaven.engine.v2.utils.IndexShiftData;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import org.apache.arrow.flatbuf.Message;
@@ -229,7 +226,7 @@ public class BarrageStreamReader implements BarrageMessageConsumer.StreamReader<
 
     private static TrackingMutableRowSet extractIndex(final ByteBuffer bb) throws IOException {
         if (bb == null) {
-            return TrackingMutableRowSet.FACTORY.getEmptyRowSet();
+            return RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
         }
         // noinspection UnstableApiUsage
         try (final LittleEndianDataInputStream is =

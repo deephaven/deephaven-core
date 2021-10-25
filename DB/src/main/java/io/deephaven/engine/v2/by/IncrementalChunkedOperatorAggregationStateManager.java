@@ -1070,7 +1070,7 @@ class IncrementalChunkedOperatorAggregationStateManager
              final WritableIntChunk stateChunk = WritableIntChunk.makeWritableChunk(maxSize);
              final ChunkSource.FillContext fillContext = stateSource.makeFillContext(maxSize)) {
 
-            stateSource.fillChunk(fillContext, stateChunk, TrackingMutableRowSet.FACTORY.getFlatIndex(tableHashPivot));
+            stateSource.fillChunk(fillContext, stateChunk, RowSetFactoryImpl.INSTANCE.getFlatRowSet(tableHashPivot));
 
             ChunkUtils.fillInOrder(positions);
 

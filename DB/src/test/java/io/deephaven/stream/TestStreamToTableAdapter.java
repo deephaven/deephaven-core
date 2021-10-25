@@ -85,9 +85,9 @@ public class TestStreamToTableAdapter {
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(adapter::refresh);
         TestCase.assertEquals(1, listener.getCount());
-        TestCase.assertEquals(TrackingMutableRowSet.FACTORY.getFlatIndex(2), listener.getUpdate().added);
-        TestCase.assertEquals(TrackingMutableRowSet.FACTORY.getEmptyRowSet(), listener.getUpdate().removed);
-        TestCase.assertEquals(TrackingMutableRowSet.FACTORY.getEmptyRowSet(), listener.getUpdate().modified);
+        TestCase.assertEquals(RowSetFactoryImpl.INSTANCE.getFlatRowSet(2), listener.getUpdate().added);
+        TestCase.assertEquals(RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), listener.getUpdate().removed);
+        TestCase.assertEquals(RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), listener.getUpdate().modified);
         TestCase.assertEquals(IndexShiftData.EMPTY, listener.getUpdate().shifted);
         TestCase.assertEquals(ModifiedColumnSet.EMPTY, listener.getUpdate().modifiedColumnSet);
 
@@ -100,9 +100,9 @@ public class TestStreamToTableAdapter {
 
         TstUtils.assertTableEquals(empty, result);
         TestCase.assertEquals(1, listener.getCount());
-        TestCase.assertEquals(TrackingMutableRowSet.FACTORY.getFlatIndex(2), listener.getUpdate().removed);
-        TestCase.assertEquals(TrackingMutableRowSet.FACTORY.getEmptyRowSet(), listener.getUpdate().added);
-        TestCase.assertEquals(TrackingMutableRowSet.FACTORY.getEmptyRowSet(), listener.getUpdate().modified);
+        TestCase.assertEquals(RowSetFactoryImpl.INSTANCE.getFlatRowSet(2), listener.getUpdate().removed);
+        TestCase.assertEquals(RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), listener.getUpdate().added);
+        TestCase.assertEquals(RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), listener.getUpdate().modified);
         TestCase.assertEquals(IndexShiftData.EMPTY, listener.getUpdate().shifted);
         TestCase.assertEquals(ModifiedColumnSet.EMPTY, listener.getUpdate().modifiedColumnSet);
 
@@ -156,9 +156,9 @@ public class TestStreamToTableAdapter {
         listener.reset();
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(adapter::refresh);
         TestCase.assertEquals(1, listener.getCount());
-        TestCase.assertEquals(TrackingMutableRowSet.FACTORY.getFlatIndex(4), listener.getUpdate().added);
-        TestCase.assertEquals(TrackingMutableRowSet.FACTORY.getEmptyRowSet(), listener.getUpdate().removed);
-        TestCase.assertEquals(TrackingMutableRowSet.FACTORY.getEmptyRowSet(), listener.getUpdate().modified);
+        TestCase.assertEquals(RowSetFactoryImpl.INSTANCE.getFlatRowSet(4), listener.getUpdate().added);
+        TestCase.assertEquals(RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), listener.getUpdate().removed);
+        TestCase.assertEquals(RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), listener.getUpdate().modified);
         TestCase.assertEquals(IndexShiftData.EMPTY, listener.getUpdate().shifted);
         TestCase.assertEquals(ModifiedColumnSet.EMPTY, listener.getUpdate().modifiedColumnSet);
 
@@ -187,9 +187,9 @@ public class TestStreamToTableAdapter {
         listener.reset();
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(adapter::refresh);
         TestCase.assertEquals(1, listener.getCount());
-        TestCase.assertEquals(TrackingMutableRowSet.FACTORY.getFlatIndex(2), listener.getUpdate().added);
-        TestCase.assertEquals(TrackingMutableRowSet.FACTORY.getFlatIndex(4), listener.getUpdate().removed);
-        TestCase.assertEquals(TrackingMutableRowSet.FACTORY.getEmptyRowSet(), listener.getUpdate().modified);
+        TestCase.assertEquals(RowSetFactoryImpl.INSTANCE.getFlatRowSet(2), listener.getUpdate().added);
+        TestCase.assertEquals(RowSetFactoryImpl.INSTANCE.getFlatRowSet(4), listener.getUpdate().removed);
+        TestCase.assertEquals(RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), listener.getUpdate().modified);
         TestCase.assertEquals(IndexShiftData.EMPTY, listener.getUpdate().shifted);
         TestCase.assertEquals(ModifiedColumnSet.EMPTY, listener.getUpdate().modifiedColumnSet);
 
@@ -201,9 +201,9 @@ public class TestStreamToTableAdapter {
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(adapter::refresh);
         TstUtils.assertTableEquals(empty, result);
         TestCase.assertEquals(1, listener.getCount());
-        TestCase.assertEquals(TrackingMutableRowSet.FACTORY.getEmptyRowSet(), listener.getUpdate().added);
-        TestCase.assertEquals(TrackingMutableRowSet.FACTORY.getFlatIndex(2), listener.getUpdate().removed);
-        TestCase.assertEquals(TrackingMutableRowSet.FACTORY.getEmptyRowSet(), listener.getUpdate().modified);
+        TestCase.assertEquals(RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), listener.getUpdate().added);
+        TestCase.assertEquals(RowSetFactoryImpl.INSTANCE.getFlatRowSet(2), listener.getUpdate().removed);
+        TestCase.assertEquals(RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), listener.getUpdate().modified);
         TestCase.assertEquals(IndexShiftData.EMPTY, listener.getUpdate().shifted);
         TestCase.assertEquals(ModifiedColumnSet.EMPTY, listener.getUpdate().modifiedColumnSet);
 
@@ -260,9 +260,9 @@ public class TestStreamToTableAdapter {
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(adapter::refresh);
         TestCase.assertEquals(1, listener.getCount());
-        TestCase.assertEquals(TrackingMutableRowSet.FACTORY.getFlatIndex(3), listener.getUpdate().added);
-        TestCase.assertEquals(TrackingMutableRowSet.FACTORY.getEmptyRowSet(), listener.getUpdate().removed);
-        TestCase.assertEquals(TrackingMutableRowSet.FACTORY.getEmptyRowSet(), listener.getUpdate().modified);
+        TestCase.assertEquals(RowSetFactoryImpl.INSTANCE.getFlatRowSet(3), listener.getUpdate().added);
+        TestCase.assertEquals(RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), listener.getUpdate().removed);
+        TestCase.assertEquals(RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), listener.getUpdate().modified);
         TestCase.assertEquals(IndexShiftData.EMPTY, listener.getUpdate().shifted);
         TestCase.assertEquals(ModifiedColumnSet.EMPTY, listener.getUpdate().modifiedColumnSet);
 
@@ -275,9 +275,9 @@ public class TestStreamToTableAdapter {
 
         TstUtils.assertTableEquals(empty, result);
         TestCase.assertEquals(1, listener.getCount());
-        TestCase.assertEquals(TrackingMutableRowSet.FACTORY.getFlatIndex(3), listener.getUpdate().removed);
-        TestCase.assertEquals(TrackingMutableRowSet.FACTORY.getEmptyRowSet(), listener.getUpdate().added);
-        TestCase.assertEquals(TrackingMutableRowSet.FACTORY.getEmptyRowSet(), listener.getUpdate().modified);
+        TestCase.assertEquals(RowSetFactoryImpl.INSTANCE.getFlatRowSet(3), listener.getUpdate().removed);
+        TestCase.assertEquals(RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), listener.getUpdate().added);
+        TestCase.assertEquals(RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), listener.getUpdate().modified);
         TestCase.assertEquals(IndexShiftData.EMPTY, listener.getUpdate().shifted);
         TestCase.assertEquals(ModifiedColumnSet.EMPTY, listener.getUpdate().modifiedColumnSet);
     }
@@ -319,9 +319,9 @@ public class TestStreamToTableAdapter {
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(adapter::refresh);
         TestCase.assertEquals(1, listener.getCount());
-        TestCase.assertEquals(TrackingMutableRowSet.FACTORY.getFlatIndex(2), listener.getUpdate().added);
-        TestCase.assertEquals(TrackingMutableRowSet.FACTORY.getEmptyRowSet(), listener.getUpdate().removed);
-        TestCase.assertEquals(TrackingMutableRowSet.FACTORY.getEmptyRowSet(), listener.getUpdate().modified);
+        TestCase.assertEquals(RowSetFactoryImpl.INSTANCE.getFlatRowSet(2), listener.getUpdate().added);
+        TestCase.assertEquals(RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), listener.getUpdate().removed);
+        TestCase.assertEquals(RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), listener.getUpdate().modified);
         TestCase.assertEquals(IndexShiftData.EMPTY, listener.getUpdate().shifted);
         TestCase.assertEquals(ModifiedColumnSet.EMPTY, listener.getUpdate().modifiedColumnSet);
 
@@ -335,9 +335,9 @@ public class TestStreamToTableAdapter {
 
         TstUtils.assertTableEquals(empty, result);
         TestCase.assertEquals(1, listener.getCount());
-        TestCase.assertEquals(TrackingMutableRowSet.FACTORY.getFlatIndex(2), listener.getUpdate().removed);
-        TestCase.assertEquals(TrackingMutableRowSet.FACTORY.getEmptyRowSet(), listener.getUpdate().added);
-        TestCase.assertEquals(TrackingMutableRowSet.FACTORY.getEmptyRowSet(), listener.getUpdate().modified);
+        TestCase.assertEquals(RowSetFactoryImpl.INSTANCE.getFlatRowSet(2), listener.getUpdate().removed);
+        TestCase.assertEquals(RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), listener.getUpdate().added);
+        TestCase.assertEquals(RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), listener.getUpdate().modified);
         TestCase.assertEquals(IndexShiftData.EMPTY, listener.getUpdate().shifted);
         TestCase.assertEquals(ModifiedColumnSet.EMPTY, listener.getUpdate().modifiedColumnSet);
     }
@@ -388,9 +388,9 @@ public class TestStreamToTableAdapter {
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(adapter::refresh);
         TestCase.assertEquals(1, listener.getCount());
-        TestCase.assertEquals(TrackingMutableRowSet.FACTORY.getFlatIndex(4048), listener.getUpdate().added);
-        TestCase.assertEquals(TrackingMutableRowSet.FACTORY.getEmptyRowSet(), listener.getUpdate().removed);
-        TestCase.assertEquals(TrackingMutableRowSet.FACTORY.getEmptyRowSet(), listener.getUpdate().modified);
+        TestCase.assertEquals(RowSetFactoryImpl.INSTANCE.getFlatRowSet(4048), listener.getUpdate().added);
+        TestCase.assertEquals(RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), listener.getUpdate().removed);
+        TestCase.assertEquals(RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), listener.getUpdate().modified);
         TestCase.assertEquals(IndexShiftData.EMPTY, listener.getUpdate().shifted);
         TestCase.assertEquals(ModifiedColumnSet.EMPTY, listener.getUpdate().modifiedColumnSet);
 
@@ -402,9 +402,9 @@ public class TestStreamToTableAdapter {
 
         TstUtils.assertTableEquals(empty, result);
         TestCase.assertEquals(1, listener.getCount());
-        TestCase.assertEquals(TrackingMutableRowSet.FACTORY.getFlatIndex(4048), listener.getUpdate().removed);
-        TestCase.assertEquals(TrackingMutableRowSet.FACTORY.getEmptyRowSet(), listener.getUpdate().added);
-        TestCase.assertEquals(TrackingMutableRowSet.FACTORY.getEmptyRowSet(), listener.getUpdate().modified);
+        TestCase.assertEquals(RowSetFactoryImpl.INSTANCE.getFlatRowSet(4048), listener.getUpdate().removed);
+        TestCase.assertEquals(RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), listener.getUpdate().added);
+        TestCase.assertEquals(RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), listener.getUpdate().modified);
         TestCase.assertEquals(IndexShiftData.EMPTY, listener.getUpdate().shifted);
         TestCase.assertEquals(ModifiedColumnSet.EMPTY, listener.getUpdate().modifiedColumnSet);
 

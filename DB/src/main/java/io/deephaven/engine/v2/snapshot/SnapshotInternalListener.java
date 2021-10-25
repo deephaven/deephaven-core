@@ -7,6 +7,7 @@ import io.deephaven.engine.v2.LazySnapshotTable;
 import io.deephaven.engine.v2.QueryTable;
 import io.deephaven.engine.v2.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.v2.sources.SingleValueColumnSource;
+import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
 import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 
 import java.util.Map;
@@ -57,11 +58,11 @@ public class SnapshotInternalListener extends BaseTable.ShiftAwareListenerImpl {
         }
         final TrackingMutableRowSet currentRowSet = snapshotTable.getIndex();
         final long snapshotSize;
-        try (final TrackingMutableRowSet prevRowSet = usePrev ? currentRowSet.getPrevIndex() : null) {
+        try (final TrackingMutableRowSet prevRowSet = usePrev ? currentRowSet.getPrevRowSet() : null) {
             final TrackingMutableRowSet snapshotRowSet = prevRowSet != null ? prevRowSet : currentRowSet;
             snapshotSize = snapshotRowSet.size();
             if (!snapshotRowSet.empty()) {
-                try (final TrackingMutableRowSet destRowSet = TrackingMutableRowSet.FACTORY.getRowSetByRange(0, snapshotRowSet.size() - 1)) {
+                try (final TrackingMutableRowSet destRowSet = RowSetFactoryImpl.INSTANCE.getRowSetByRange(0, snapshotRowSet.size() - 1)) {
                     SnapshotUtils.copyDataColumns(snapshotTable.getColumnSourceMap(),
                             snapshotRowSet, resultRightColumns, destRowSet, usePrev);
                 }
@@ -73,24 +74,24 @@ public class SnapshotInternalListener extends BaseTable.ShiftAwareListenerImpl {
             // - modified is (the old rowSet)
             // resultRowSet updated (by including added) for next time
             final TrackingMutableRowSet modifiedRange = resultRowSet.clone();
-            final TrackingMutableRowSet addedRange = TrackingMutableRowSet.FACTORY.getRowSetByRange(snapshotPrevLength, snapshotSize - 1);
+            final TrackingMutableRowSet addedRange = RowSetFactoryImpl.INSTANCE.getRowSetByRange(snapshotPrevLength, snapshotSize - 1);
             resultRowSet.insert(addedRange);
             if (notifyListeners) {
-                result.notifyListeners(addedRange, TrackingMutableRowSet.FACTORY.getEmptyRowSet(), modifiedRange);
+                result.notifyListeners(addedRange, RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), modifiedRange);
             }
         } else if (snapshotPrevLength > snapshotSize) {
             // If the table got smaller, then:
             // - removed is (the suffix)
             // - resultRowSet updated (by removing 'removed') for next time
             // modified is (just use the new rowSet)
-            final TrackingMutableRowSet removedRange = TrackingMutableRowSet.FACTORY.getRowSetByRange(snapshotSize, snapshotPrevLength - 1);
+            final TrackingMutableRowSet removedRange = RowSetFactoryImpl.INSTANCE.getRowSetByRange(snapshotSize, snapshotPrevLength - 1);
             resultRowSet.remove(removedRange);
             if (notifyListeners) {
-                result.notifyListeners(TrackingMutableRowSet.FACTORY.getEmptyRowSet(), removedRange, resultRowSet);
+                result.notifyListeners(RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), removedRange, resultRowSet);
             }
         } else if (notifyListeners) {
             // If the table stayed the same size, then modified = the rowSet
-            result.notifyListeners(TrackingMutableRowSet.FACTORY.getEmptyRowSet(), TrackingMutableRowSet.FACTORY.getEmptyRowSet(), resultRowSet.clone());
+            result.notifyListeners(RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), resultRowSet.clone());
         }
         snapshotPrevLength = snapshotTable.size();
     }

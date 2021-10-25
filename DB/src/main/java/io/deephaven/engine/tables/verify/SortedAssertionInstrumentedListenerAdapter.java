@@ -83,7 +83,7 @@ public class SortedAssertionInstrumentedListenerAdapter extends BaseTable.ShiftA
 
     private TrackingMutableRowSet makeAdjacentIndex(TrackingMutableRowSet rowsOfInterest) {
         try (final TrackingMutableRowSet inverted = parentRowSet.invert(rowsOfInterest)) {
-            final SequentialRowSetBuilder processBuilder = TrackingMutableRowSet.CURRENT_FACTORY.getSequentialBuilder();
+            final RowSetBuilderSequential processBuilder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
             long lastPosition = parentRowSet.size() - 1;
             long lastUsedPosition = 0;
             for (RowSet.RangeIterator rangeIterator = inverted.rangeIterator(); rangeIterator.hasNext();) {

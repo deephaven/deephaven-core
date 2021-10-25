@@ -20,6 +20,7 @@ import io.deephaven.engine.v2.select.chunkfilters.IntRangeComparator;
 import io.deephaven.engine.v2.sources.LogicalClock;
 import io.deephaven.engine.v2.sources.UnionRedirection;
 import io.deephaven.engine.v2.sources.chunk.*;
+import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
 import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.engine.v2.utils.IndexShiftData;
 import io.deephaven.test.junit4.EngineCleanup;
@@ -839,7 +840,7 @@ public class QueryTableWhereTest {
         final long end = System.currentTimeMillis();
         System.out.println("Duration: " + (end - start));
 
-        assertEquals(TrackingMutableRowSet.FACTORY.getRowSetByRange(0, 999_999), result);
+        assertEquals(RowSetFactoryImpl.INSTANCE.getRowSetByRange(0, 999_999), result);
 
         assertEquals(2_000_000, slowCounter.invokedValues);
         slowCounter.reset();

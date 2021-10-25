@@ -5,7 +5,8 @@
 package io.deephaven.engine.v2.locations.impl;
 
 import io.deephaven.base.verify.Require;
-import io.deephaven.engine.v2.utils.RowSetBuilder;
+import io.deephaven.engine.v2.utils.RowSetBuilderRandom;
+import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
 import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import org.jetbrains.annotations.Nullable;
 
@@ -18,7 +19,7 @@ import java.util.Map;
  */
 public class RandomGroupingBuilder<DATA_TYPE> {
 
-    private Map<DATA_TYPE, RowSetBuilder> groupToIndexBuilder = new LinkedHashMap<>();
+    private Map<DATA_TYPE, RowSetBuilderRandom> groupToIndexBuilder = new LinkedHashMap<>();
 
     private Map<DATA_TYPE, TrackingMutableRowSet> groupToIndex;
 
@@ -34,8 +35,8 @@ public class RandomGroupingBuilder<DATA_TYPE> {
         Require.eqNull(groupToIndex, "groupToIndex");
         Require.neqNull(groupToIndexBuilder, "groupToIndexBuilder");
 
-        final RowSetBuilder indexBuilder =
-                groupToIndexBuilder.computeIfAbsent(value, (k) -> TrackingMutableRowSet.FACTORY.getRandomBuilder());
+        final RowSetBuilderRandom indexBuilder =
+                groupToIndexBuilder.computeIfAbsent(value, (k) -> RowSetFactoryImpl.INSTANCE.getRandomBuilder());
         indexBuilder.addRange(firstKey, lastKey);
     }
 
@@ -49,7 +50,7 @@ public class RandomGroupingBuilder<DATA_TYPE> {
             return groupToIndex;
         }
         groupToIndex = new LinkedHashMap<>(groupToIndexBuilder.size() * 4 / 3 + 1);
-        for (Map.Entry<DATA_TYPE, RowSetBuilder> entry : groupToIndexBuilder.entrySet()) {
+        for (Map.Entry<DATA_TYPE, RowSetBuilderRandom> entry : groupToIndexBuilder.entrySet()) {
             groupToIndex.put(entry.getKey(), entry.getValue().build());
         }
         groupToIndexBuilder = null;

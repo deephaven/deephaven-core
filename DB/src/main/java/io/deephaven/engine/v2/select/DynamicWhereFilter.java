@@ -8,7 +8,8 @@ import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.structures.RowSequence;
-import io.deephaven.engine.v2.utils.SequentialRowSetBuilder;
+import io.deephaven.engine.v2.utils.RowSetBuilderSequential;
+import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
 import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.io.log.impl.LogOutputStringImpl;
 import io.deephaven.engine.tables.Table;
@@ -242,7 +243,7 @@ public class DynamicWhereFilter extends SelectFilterLivenessArtifactImpl impleme
     }
 
     private TrackingMutableRowSet filterGrouping(TrackingMutableRowSet selection, TupleSource tupleSource) {
-        final TrackingMutableRowSet matchingKeys = selection.getSubIndexForKeySet(liveValues, tupleSource);
+        final TrackingMutableRowSet matchingKeys = selection.getSubSetForKeySet(liveValues, tupleSource);
         return inclusion ? matchingKeys : selection.minus(matchingKeys);
     }
 
@@ -263,7 +264,7 @@ public class DynamicWhereFilter extends SelectFilterLivenessArtifactImpl impleme
 
     private TrackingMutableRowSet filterLinearOne(TrackingMutableRowSet selection, ColumnSource keyColumn) {
         if (selection.empty()) {
-            return TrackingMutableRowSet.FACTORY.getEmptyRowSet();
+            return RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
         }
 
         if (!kernelValid) {
@@ -271,7 +272,7 @@ public class DynamicWhereFilter extends SelectFilterLivenessArtifactImpl impleme
             kernelValid = true;
         }
 
-        final SequentialRowSetBuilder indexBuilder = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
+        final RowSetBuilderSequential indexBuilder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
 
         try (final ColumnSource.GetContext getContext = keyColumn.makeGetContext(CHUNK_SIZE);
                 final RowSequence.Iterator rsIt = selection.getRowSequenceIterator()) {
@@ -301,7 +302,7 @@ public class DynamicWhereFilter extends SelectFilterLivenessArtifactImpl impleme
     }
 
     private TrackingMutableRowSet filterLinearTuple(TrackingMutableRowSet selection, TupleSource tupleSource) {
-        final SequentialRowSetBuilder indexBuilder = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
+        final RowSetBuilderSequential indexBuilder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
 
         for (final TrackingMutableRowSet.Iterator it = selection.iterator(); it.hasNext();) {
             final long row = it.nextLong();

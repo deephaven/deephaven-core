@@ -219,7 +219,7 @@ public class ShiftDataTest extends TestCase {
             Long next = iterator.nextLong();
             finalKeys.add(next);
         }
-        RowSetBuilder builder = TrackingMutableRowSet.FACTORY.getRandomBuilder();
+        RowSetBuilderRandom builder = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
         for (Long finalKey : finalKeys) {
             builder.addKey(finalKey);
         }
@@ -227,7 +227,7 @@ public class ShiftDataTest extends TestCase {
     }
 
     private TrackingMutableRowSet getRandomRemoves(TrackingMutableRowSet rowSet, int prob) {
-        RowSetBuilder builder = TrackingMutableRowSet.FACTORY.getRandomBuilder();
+        RowSetBuilderRandom builder = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
         for (TrackingMutableRowSet.Iterator iterator = rowSet.iterator(); iterator.hasNext();) {
             long next = iterator.nextLong();
             if (random.nextInt(prob) == 0) {
@@ -239,7 +239,7 @@ public class ShiftDataTest extends TestCase {
 
 
     private TrackingMutableRowSet getBaseIndex(int base, int size) {
-        SequentialRowSetBuilder builder = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
+        RowSetBuilderSequential builder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
         for (int i = 0; i < size; i++) {
             builder.appendKey(i * size);
         }
@@ -247,7 +247,7 @@ public class ShiftDataTest extends TestCase {
     }
 
     private TrackingMutableRowSet getRandomIndex(int base, int offset, int size) {
-        RowSetBuilder builder = TrackingMutableRowSet.FACTORY.getRandomBuilder();
+        RowSetBuilderRandom builder = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
         for (int i = 0; i < size; i++) {
             if (random.nextInt(2) == 0) {
                 builder.addKey(i * base + offset);
@@ -258,7 +258,7 @@ public class ShiftDataTest extends TestCase {
 
 
     protected GroupingRowSetHelper getSortedIndex(long... keys) {
-        RowSetBuilder builder = TrackingMutableRowSet.FACTORY.getRandomBuilder();
+        RowSetBuilderRandom builder = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
         for (long key : keys) {
             builder.addKey(key);
         }

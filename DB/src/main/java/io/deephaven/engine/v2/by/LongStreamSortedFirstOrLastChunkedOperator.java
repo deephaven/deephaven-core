@@ -15,8 +15,8 @@ import io.deephaven.engine.v2.sources.chunk.Attributes.ChunkPositions;
 import io.deephaven.engine.v2.sources.chunk.Attributes.RowKeys;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 import io.deephaven.engine.v2.sources.chunk.*;
-import io.deephaven.engine.v2.utils.RowSetBuilder;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
+import io.deephaven.engine.v2.utils.RowSetBuilderRandom;
+import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
 import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.v2.utils.RowSet;
 import org.jetbrains.annotations.NotNull;
@@ -35,7 +35,7 @@ public class LongStreamSortedFirstOrLastChunkedOperator extends CopyingPermutedS
      * <p>Any destination at or after this one has an undefined value in {@link #sortColumnValues}.
      */
     private long nextDestination;
-    private RowSetBuilder changedDestinationsBuilder;
+    private RowSetBuilderRandom changedDestinationsBuilder;
 
     LongStreamSortedFirstOrLastChunkedOperator(
             final boolean isFirst,
@@ -60,7 +60,7 @@ public class LongStreamSortedFirstOrLastChunkedOperator extends CopyingPermutedS
     public void resetForStep(@NotNull final ShiftAwareListener.Update upstream) {
         super.resetForStep(upstream);
         if (isCombo) {
-            changedDestinationsBuilder = TrackingMutableRowSet.CURRENT_FACTORY.getRandomBuilder();
+            changedDestinationsBuilder = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
         }
     }
 

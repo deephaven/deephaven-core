@@ -213,8 +213,8 @@ public class ParallelDeferredGroupingProvider<DATA_TYPE> implements KeyRangeGrou
             this.lastKey = lastKey;
         }
 
-        private void updateBuilder(@NotNull final Map<DATA_TYPE, SequentialRowSetBuilder> valueToBuilder) {
-            valueToBuilder.computeIfAbsent(value, v -> TrackingMutableRowSet.FACTORY.getSequentialBuilder()).appendRange(firstKey,
+        private void updateBuilder(@NotNull final Map<DATA_TYPE, RowSetBuilderSequential> valueToBuilder) {
+            valueToBuilder.computeIfAbsent(value, v -> RowSetFactoryImpl.INSTANCE.getSequentialBuilder()).appendRange(firstKey,
                     lastKey);
         }
     }
@@ -246,9 +246,9 @@ public class ParallelDeferredGroupingProvider<DATA_TYPE> implements KeyRangeGrou
                                     .map(source -> source.getTransformedMetadata(columnDefinition))
                                     .toArray(List[]::new));
 
-            final Map<DATA_TYPE, SequentialRowSetBuilder> valueToBuilder =
+            final Map<DATA_TYPE, RowSetBuilderSequential> valueToBuilder =
                     QueryPerformanceRecorder.withNugget("Integrate grouping metadata", () -> {
-                        final Map<DATA_TYPE, SequentialRowSetBuilder> result = new LinkedHashMap<>();
+                        final Map<DATA_TYPE, RowSetBuilderSequential> result = new LinkedHashMap<>();
                         for (final List<GroupingItem<DATA_TYPE>> groupingList : perSourceGroupingLists) {
                             if (groupingList == null) {
                                 return null;

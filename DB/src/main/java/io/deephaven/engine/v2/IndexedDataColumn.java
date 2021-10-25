@@ -61,7 +61,7 @@ public class IndexedDataColumn<TYPE> implements DataColumn<TYPE> {
      */
     public static <TYPE> IndexedDataColumn<TYPE> makePreviousColumn(@NotNull final TrackingMutableRowSet rowSet,
             @NotNull final ColumnSource<TYPE> columnSource) {
-        return new IndexedDataColumn<>(null, null, rowSet.getPrevIndex(), new PrevColumnSource<>(columnSource));
+        return new IndexedDataColumn<>(null, null, rowSet.getPrevRowSet(), new PrevColumnSource<>(columnSource));
     }
 
     @Override

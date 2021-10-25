@@ -10,6 +10,7 @@ import io.deephaven.engine.v2.sources.SparseArrayColumnSource;
 import io.deephaven.engine.v2.sources.WritableChunkSink;
 import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.utils.ChunkUtils;
+import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
 import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.engine.v2.utils.IndexShiftData;
 import io.deephaven.engine.structures.RowSequence;
@@ -95,9 +96,9 @@ public class TableUpdateValidator implements QueryTable.Operation {
 
     @Override
     public Result initialize(boolean usePrev, long beforeClock) {
-        trackingRowSet = usePrev ? tableToValidate.getIndex().getPrevIndex() : tableToValidate.getIndex().clone();
+        trackingRowSet = usePrev ? tableToValidate.getIndex().getPrevRowSet() : tableToValidate.getIndex().clone();
 
-        resultTable = new QueryTable(TrackingMutableRowSet.FACTORY.getEmptyRowSet(), Collections.emptyMap());
+        resultTable = new QueryTable(RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), Collections.emptyMap());
         resultTable.setFlat();
 
         final ShiftAwareListener listener;
@@ -164,7 +165,7 @@ public class TableUpdateValidator implements QueryTable.Operation {
                         false);
             }
 
-            validateIndexesEqual("pre-update rowSet", trackingRowSet, tableToValidate.getIndex().getPrevIndex());
+            validateIndexesEqual("pre-update rowSet", trackingRowSet, tableToValidate.getIndex().getPrevRowSet());
             trackingRowSet.remove(upstream.removed);
             Arrays.stream(columnInfos).forEach((ci) -> ci.remove(upstream.removed));
 

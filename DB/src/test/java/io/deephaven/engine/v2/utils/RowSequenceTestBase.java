@@ -597,7 +597,7 @@ public abstract class RowSequenceTestBase {
                 (final String ctxt, final RowSequence rs, final TrackingMutableRowSet ix, final long s, final long e) -> {
                     final TrackingMutableRowSet expected = ix.subSetByKeyRange(s, e);
                     try (final RowSequence rs1 = rs.getRowSequenceByKeyRange(s, e)) {
-                        final SequentialRowSetBuilder b = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
+                        final RowSetBuilderSequential b = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
                         rs1.forEachLong((final long v) -> {
                             b.appendKey(v);
                             return true;
@@ -616,7 +616,7 @@ public abstract class RowSequenceTestBase {
                 (final String ctxt, final RowSequence rs, final TrackingMutableRowSet ix, final long s, final long e) -> {
                     final TrackingMutableRowSet expected = ix.subSetByKeyRange(s, e);
                     try (final RowSequence rs1 = rs.getRowSequenceByKeyRange(s, e)) {
-                        final SequentialRowSetBuilder b = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
+                        final RowSetBuilderSequential b = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
                         rs1.forAllLongs(b::appendKey);
                         final TrackingMutableRowSet result = b.build();
                         assertEquals(ctxt, expected.size(), result.size());
@@ -632,7 +632,7 @@ public abstract class RowSequenceTestBase {
                 (final String ctxt, final RowSequence rs, final TrackingMutableRowSet ix, final long s, final long e) -> {
                     final TrackingMutableRowSet expected = ix.subSetByKeyRange(s, e);
                     try (final RowSequence rs1 = rs.getRowSequenceByKeyRange(s, e)) {
-                        final SequentialRowSetBuilder b = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
+                        final RowSetBuilderSequential b = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
                         rs1.forEachLongRange((final long start, final long end) -> {
                             b.appendRange(start, end);
                             return true;
@@ -651,7 +651,7 @@ public abstract class RowSequenceTestBase {
                 (final String ctxt, final RowSequence rs, final TrackingMutableRowSet ix, final long s, final long e) -> {
                     final TrackingMutableRowSet expected = ix.subSetByKeyRange(s, e);
                     try (final RowSequence rs1 = rs.getRowSequenceByKeyRange(s, e)) {
-                        final SequentialRowSetBuilder b = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
+                        final RowSetBuilderSequential b = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
                         rs1.forAllLongRanges(b::appendRange);
                         final TrackingMutableRowSet result = b.build();
                         assertEquals(ctxt, expected.size(), result.size());

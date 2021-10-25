@@ -5,6 +5,7 @@ import io.deephaven.engine.v2.MergedListener;
 import io.deephaven.engine.v2.QueryTable;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.SparseArrayColumnSource;
+import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
 import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.engine.v2.utils.IndexShiftDataExpander;
 import io.deephaven.engine.v2.utils.UpdateCoalescer;
@@ -38,7 +39,7 @@ public class SnapshotIncrementalListener extends MergedListener {
         this.leftListener = leftListener;
         this.rightTable = rightTable;
         this.leftColumns = leftColumns;
-        this.lastRightRowSet = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
+        this.lastRightRowSet = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
     }
 
     @Override
@@ -65,8 +66,8 @@ public class SnapshotIncrementalListener extends MergedListener {
         doRowCopy(rightTable.getIndex());
         resultTable.getIndex().insert(rightTable.getIndex());
         if (!initial) {
-            resultTable.notifyListeners(resultTable.getIndex(), TrackingMutableRowSet.FACTORY.getEmptyRowSet(),
-                    TrackingMutableRowSet.FACTORY.getEmptyRowSet());
+            resultTable.notifyListeners(resultTable.getIndex(), RowSetFactoryImpl.INSTANCE.getEmptyRowSet(),
+                    RowSetFactoryImpl.INSTANCE.getEmptyRowSet());
         }
         firstSnapshot = false;
     }

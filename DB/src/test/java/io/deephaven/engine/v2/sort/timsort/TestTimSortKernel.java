@@ -2,7 +2,8 @@ package io.deephaven.engine.v2.sort.timsort;
 
 import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.sources.chunk.Attributes.*;
-import io.deephaven.engine.v2.utils.SequentialRowSetBuilder;
+import io.deephaven.engine.v2.utils.RowSetBuilderSequential;
+import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
 import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.engine.v2.utils.PerfStats;
 
@@ -175,7 +176,7 @@ public abstract class TestTimSortKernel {
 
             final List<T> javaTuples = tupleListGenerator.generate(random, dataSize);
 
-            final SequentialRowSetBuilder builder = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
+            final RowSetBuilderSequential builder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
             for (int ii = 0; ii < javaTuples.size(); ++ii) {
                 builder.appendKey(ii * 10);
             }

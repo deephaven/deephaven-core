@@ -22,6 +22,7 @@ import io.deephaven.engine.v2.sources.chunk.Attributes.RowKeys;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 import io.deephaven.engine.v2.ssms.ObjectSegmentedSortedMultiset;
 import io.deephaven.engine.v2.ssms.SegmentedSortedMultiSet;
+import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
 import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.engine.v2.utils.UpdateCommitter;
@@ -278,7 +279,7 @@ public class ObjectChunkedDistinctOperator implements IterativeChunkedAggregatio
             }
 
             prevFlusher = new UpdateCommitter<>(this, ObjectChunkedDistinctOperator::flushPrevious);
-            touchedStates = TrackingMutableRowSet.CURRENT_FACTORY.getEmptyRowSet();
+            touchedStates = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
         }
     }
 

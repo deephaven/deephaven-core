@@ -145,8 +145,8 @@ class StaticChunkedAsOfJoinStateManager
     private static final byte ENTRY_EXISTS = 1;
 
 
-    private final ObjectArraySource<SequentialRowSetBuilder> leftIndexSource;
-    private final ObjectArraySource<SequentialRowSetBuilder> overflowLeftIndexSource;
+    private final ObjectArraySource<RowSetBuilderSequential> leftIndexSource;
+    private final ObjectArraySource<RowSetBuilderSequential> overflowLeftIndexSource;
 
     /**
      * For the ticking case we need to reuse our right indices for more than one update.  We convert the
@@ -203,8 +203,8 @@ class StaticChunkedAsOfJoinStateManager
         // endmixin rehash
 
         // region constructor
-        leftIndexSource = new ObjectArraySource<>(SequentialRowSetBuilder.class);
-        overflowLeftIndexSource = new ObjectArraySource<>(SequentialRowSetBuilder.class);
+        leftIndexSource = new ObjectArraySource<>(RowSetBuilderSequential.class);
+        overflowLeftIndexSource = new ObjectArraySource<>(RowSetBuilderSequential.class);
         rightIndexSource = new ObjectArraySource<>(Object.class);
         overflowRightIndexSource = new ObjectArraySource<>(Object.class);
         // endregion constructor
@@ -268,11 +268,11 @@ class StaticChunkedAsOfJoinStateManager
         }
     }
 
-    private static boolean addIndex(ObjectArraySource<SequentialRowSetBuilder> source, long location, long keyToAdd) {
+    private static boolean addIndex(ObjectArraySource<RowSetBuilderSequential> source, long location, long keyToAdd) {
         boolean addedSlot = false;
-        SequentialRowSetBuilder builder = source.getUnsafe(location);
+        RowSetBuilderSequential builder = source.getUnsafe(location);
         if (builder == null) {
-            source.set(location, builder = TrackingMutableRowSet.CURRENT_FACTORY.getSequentialBuilder());
+            source.set(location, builder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder());
             addedSlot = true;
         }
         builder.appendKey(keyToAdd);
@@ -1122,7 +1122,7 @@ class StaticChunkedAsOfJoinStateManager
              final WritableByteChunk stateChunk = WritableByteChunk.makeWritableChunk(maxSize);
              final ChunkSource.FillContext fillContext = stateSource.makeFillContext(maxSize)) {
 
-            stateSource.fillChunk(fillContext, stateChunk, TrackingMutableRowSet.FACTORY.getFlatIndex(tableHashPivot));
+            stateSource.fillChunk(fillContext, stateChunk, RowSetFactoryImpl.INSTANCE.getFlatRowSet(tableHashPivot));
 
             ChunkUtils.fillInOrder(positions);
 
@@ -1333,7 +1333,7 @@ class StaticChunkedAsOfJoinStateManager
         }
     }
 
-    int probeLeft(RowSequence leftIndex, ColumnSource<?>[] leftSources, LongArraySource slots, RowSetBuilder foundBuilder)  {
+    int probeLeft(RowSequence leftIndex, ColumnSource<?>[] leftSources, LongArraySource slots, RowSetBuilderRandom foundBuilder)  {
         if (leftIndex.isEmpty()) {
             return 0;
         }
@@ -1500,7 +1500,7 @@ class StaticChunkedAsOfJoinStateManager
                                 , final boolean isLeftSide
                                 , final LongArraySource slots
                                 , final MutableInt slotCount
-                                , final RowSetBuilder foundBuilder
+                                , final RowSetBuilderRandom foundBuilder
                                  // endregion additional probe arguments
     )  {
         // region probe start
@@ -1712,7 +1712,7 @@ class StaticChunkedAsOfJoinStateManager
      * @return the TrackingMutableRowSet for this slot
      */
     TrackingMutableRowSet getLeftIndex(long slot) {
-        final SequentialRowSetBuilder builder;
+        final RowSetBuilderSequential builder;
         if (isOverflowLocation(slot)) {
             final long overflowLocation = hashLocationToOverflowLocation(slot);
             builder = overflowLeftIndexSource.getUnsafe(overflowLocation);
@@ -1732,12 +1732,12 @@ class StaticChunkedAsOfJoinStateManager
             final long slot = slots.getLong(slotIndex);
             if (isOverflowLocation(slot)) {
                 final long overflowLocation = hashLocationToOverflowLocation(slot);
-                final SequentialRowSetBuilder sequentialBuilder = (SequentialRowSetBuilder)overflowRightIndexSource.getUnsafe(overflowLocation);
+                final RowSetBuilderSequential sequentialBuilder = (RowSetBuilderSequential)overflowRightIndexSource.getUnsafe(overflowLocation);
                 if (sequentialBuilder != null) {
                     overflowRightIndexSource.set(overflowLocation, sequentialBuilder.build());
                 }
             } else {
-                final SequentialRowSetBuilder sequentialBuilder = (SequentialRowSetBuilder)rightIndexSource.getUnsafe(slot);
+                final RowSetBuilderSequential sequentialBuilder = (RowSetBuilderSequential)rightIndexSource.getUnsafe(slot);
                 if (sequentialBuilder != null) {
                     rightIndexSource.set(slot, sequentialBuilder.build());
                 }
@@ -1751,12 +1751,12 @@ class StaticChunkedAsOfJoinStateManager
             final long slot = slots.getLong(slotIndex);
             if (isOverflowLocation(slot)) {
                 final long overflowLocation = hashLocationToOverflowLocation(slot);
-                final SequentialRowSetBuilder sequentialBuilder = (SequentialRowSetBuilder)overflowRightIndexSource.getUnsafe(overflowLocation);
+                final RowSetBuilderSequential sequentialBuilder = (RowSetBuilderSequential)overflowRightIndexSource.getUnsafe(overflowLocation);
                 if (sequentialBuilder != null) {
                     overflowRightIndexSource.set(overflowLocation, getGroupedIndex(indexSource, sequentialBuilder));
                 }
             } else {
-                final SequentialRowSetBuilder sequentialBuilder = (SequentialRowSetBuilder)rightIndexSource.getUnsafe(slot);
+                final RowSetBuilderSequential sequentialBuilder = (RowSetBuilderSequential)rightIndexSource.getUnsafe(slot);
                 if (sequentialBuilder != null) {
                     rightIndexSource.set(slot, getGroupedIndex(indexSource, sequentialBuilder));
                 }
@@ -1765,7 +1765,7 @@ class StaticChunkedAsOfJoinStateManager
         rightBuildersConverted = true;
     }
 
-    private TrackingMutableRowSet getGroupedIndex(ObjectArraySource<TrackingMutableRowSet> indexSource, SequentialRowSetBuilder sequentialBuilder) {
+    private TrackingMutableRowSet getGroupedIndex(ObjectArraySource<TrackingMutableRowSet> indexSource, RowSetBuilderSequential sequentialBuilder) {
         final TrackingMutableRowSet groupedRowSet = sequentialBuilder.build();
         if (groupedRowSet.size() != 1) {
             throw new IllegalStateException("Grouped rowSet should have exactly one value: " + groupedRowSet);
@@ -1783,13 +1783,13 @@ class StaticChunkedAsOfJoinStateManager
             }
         }
 
-        final SequentialRowSetBuilder builder;
+        final RowSetBuilderSequential builder;
         if (isOverflowLocation(slot)) {
             final long overflowLocation = hashLocationToOverflowLocation(slot);
-            builder = (SequentialRowSetBuilder)overflowRightIndexSource.getUnsafe(overflowLocation);
+            builder = (RowSetBuilderSequential)overflowRightIndexSource.getUnsafe(overflowLocation);
             overflowRightIndexSource.set(overflowLocation, null);
         } else {
-            builder = (SequentialRowSetBuilder)rightIndexSource.getUnsafe(slot);
+            builder = (RowSetBuilderSequential)rightIndexSource.getUnsafe(slot);
             rightIndexSource.set(slot, null);
         }
         if (builder == null) {

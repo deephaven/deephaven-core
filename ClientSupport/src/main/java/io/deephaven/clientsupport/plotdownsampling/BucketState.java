@@ -2,14 +2,11 @@ package io.deephaven.clientsupport.plotdownsampling;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.structures.RowSequence;
-import io.deephaven.engine.v2.utils.RowSetBuilder;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
+import io.deephaven.engine.v2.utils.*;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.v2.sources.chunk.Attributes;
 import io.deephaven.engine.v2.sources.chunk.Chunk;
 import io.deephaven.engine.v2.sources.chunk.LongChunk;
-import io.deephaven.engine.v2.utils.IndexShiftData;
-import io.deephaven.engine.v2.utils.IndexUtilities;
 import org.apache.commons.lang3.mutable.MutableLong;
 
 import java.util.Arrays;
@@ -24,7 +21,7 @@ import java.util.stream.IntStream;
  * its own offset in those arrays.
  */
 public class BucketState {
-    private final TrackingMutableRowSet rowSet = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
+    private final TrackingMutableRowSet rowSet = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
 
     private TrackingMutableRowSet cachedRowSet;
 
@@ -46,7 +43,7 @@ public class BucketState {
         this.values = valueTrackers;
         this.trackNulls = trackNulls;
         if (trackNulls) {
-            this.nulls = IntStream.range(0, valueTrackers.length).mapToObj(ignore -> TrackingMutableRowSet.FACTORY.getEmptyRowSet())
+            this.nulls = IntStream.range(0, valueTrackers.length).mapToObj(ignore -> RowSetFactoryImpl.INSTANCE.getEmptyRowSet())
                     .toArray(TrackingMutableRowSet[]::new);
         } else {
             this.nulls = null;
@@ -193,7 +190,7 @@ public class BucketState {
         if (cachedRowSet != null) {
             return cachedRowSet;
         }
-        final RowSetBuilder build = TrackingMutableRowSet.FACTORY.getRandomBuilder();
+        final RowSetBuilderRandom build = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
         Assert.eqFalse(rowSet.empty(), "rowSet.empty()");
         build.addKey(rowSet.firstRowKey());
         build.addKey(rowSet.lastRowKey());

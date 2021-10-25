@@ -65,8 +65,8 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
 
     private final ModifiedColumnSet resultModifiedColumnSet;
 
-    private final ObjectArraySource<SequentialRowSetBuilder> sequentialBuilders =
-            new ObjectArraySource<>(SequentialRowSetBuilder.class);
+    private final ObjectArraySource<RowSetBuilderSequential> sequentialBuilders =
+            new ObjectArraySource<>(RowSetBuilderSequential.class);
     private final LongArraySource slots = new LongArraySource();
 
     public BucketedChunkedAjMergedListener(JoinListenerRecorder leftRecorder,
@@ -153,7 +153,7 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
         final LongSortKernel<Values, RowKeys> sortKernel =
                 LongSortKernel.makeContext(stampChunkType, order, Math.max(leftChunkSize, rightChunkSize), true);
 
-        final RowSetBuilder modifiedBuilder = TrackingMutableRowSet.FACTORY.getRandomBuilder();
+        final RowSetBuilderRandom modifiedBuilder = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
 
 
         // first we remove anything that is not of interest from the left hand side, because we don't want to
@@ -218,7 +218,7 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
             final IndexShiftData leftShifted = leftRecorder.getShifted();
             if (leftShifted.nonempty()) {
 
-                try (final TrackingMutableRowSet fullPrevRowSet = leftTable.getIndex().getPrevIndex();
+                try (final TrackingMutableRowSet fullPrevRowSet = leftTable.getIndex().getPrevRowSet();
                      final TrackingMutableRowSet previousToShift = fullPrevRowSet.minus(leftRestampRemovals);
                      final TrackingMutableRowSet relevantShift = getRelevantShifts(leftShifted, previousToShift)) {
                     // now we apply the left shifts, so that anything in our SSA is a relevant thing to stamp
@@ -275,8 +275,8 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
                 }
             }
         } else {
-            downstream.added = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
-            downstream.removed = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
+            downstream.added = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+            downstream.removed = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
             downstream.shifted = IndexShiftData.EMPTY;
         }
 
@@ -349,7 +349,7 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
             final IndexShiftData rightShifted = rightRecorder.getShifted();
 
             if (rightShifted.nonempty()) {
-                try (final TrackingMutableRowSet fullPrevRowSet = rightTable.getIndex().getPrevIndex();
+                try (final TrackingMutableRowSet fullPrevRowSet = rightTable.getIndex().getPrevRowSet();
                      final TrackingMutableRowSet previousToShift = fullPrevRowSet.minus(rightRestampRemovals);
                      final TrackingMutableRowSet relevantShift = getRelevantShifts(rightShifted, previousToShift)) {
 
@@ -739,7 +739,7 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
     }
 
     private TrackingMutableRowSet getRelevantShifts(IndexShiftData shifted, TrackingMutableRowSet previousToShift) {
-        final RowSetBuilder relevantShiftKeys = TrackingMutableRowSet.CURRENT_FACTORY.getRandomBuilder();
+        final RowSetBuilderRandom relevantShiftKeys = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
         final IndexShiftData.Iterator sit = shifted.applyIterator();
         while (sit.hasNext()) {
             sit.next();

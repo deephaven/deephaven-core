@@ -6,10 +6,7 @@ package io.deephaven.engine.v2;
 
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.ReadOnlyRedirectedColumnSource;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
-import io.deephaven.engine.v2.utils.IndexShiftData;
-import io.deephaven.engine.v2.utils.RedirectionIndex;
-import io.deephaven.engine.v2.utils.WrappedIndexRedirectionIndexImpl;
+import io.deephaven.engine.v2.utils.*;
 import org.apache.commons.lang3.mutable.MutableObject;
 
 import java.util.LinkedHashMap;
@@ -45,7 +42,7 @@ public class FlattenOperation implements QueryTable.MemoizableOperation<QueryTab
             resultColumns.put(entry.getKey(), new ReadOnlyRedirectedColumnSource<>(redirectionIndex, entry.getValue()));
         }
 
-        resultTable = new QueryTable(TrackingMutableRowSet.FACTORY.getFlatIndex(size), resultColumns);
+        resultTable = new QueryTable(RowSetFactoryImpl.INSTANCE.getFlatRowSet(size), resultColumns);
         resultTable.setFlat();
         parent.copyAttributes(resultTable, BaseTable.CopyAttributeOperation.Flatten);
 
@@ -86,15 +83,15 @@ public class FlattenOperation implements QueryTable.MemoizableOperation<QueryTab
         // Check to see if we can simply invert and pass-down.
         downstream.modified = rowSet.invert(upstream.modified);
         if (upstream.added.empty() && upstream.removed.empty()) {
-            downstream.added = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
-            downstream.removed = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
+            downstream.added = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+            downstream.removed = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
             downstream.shifted = IndexShiftData.EMPTY;
             resultTable.notifyListeners(downstream);
             return;
         }
 
         downstream.added = rowSet.invert(upstream.added);
-        try (final TrackingMutableRowSet prevRowSet = rowSet.getPrevIndex()) {
+        try (final TrackingMutableRowSet prevRowSet = rowSet.getPrevRowSet()) {
             downstream.removed = prevRowSet.invert(upstream.removed);
         }
         final IndexShiftData.Builder outShifted = new IndexShiftData.Builder();

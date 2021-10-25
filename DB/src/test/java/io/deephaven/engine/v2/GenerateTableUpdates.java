@@ -11,6 +11,7 @@ import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.DateTimeTreeMapSource;
 import io.deephaven.engine.v2.sources.TreeMapSource;
 import io.deephaven.engine.v2.utils.ColumnHolder;
+import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
 import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.engine.v2.utils.IndexShiftData;
 import org.apache.commons.lang3.mutable.MutableLong;
@@ -33,7 +34,7 @@ public class GenerateTableUpdates {
             TstUtils.ColumnInfo[] columnInfos) {
         final long firstKey = table.getIndex().lastRowKey() + 1;
         final int randomSize = 1 + random.nextInt(size);
-        final TrackingMutableRowSet keysToAdd = TrackingMutableRowSet.FACTORY.getRowSetByRange(firstKey, firstKey + randomSize - 1);
+        final TrackingMutableRowSet keysToAdd = RowSetFactoryImpl.INSTANCE.getRowSetByRange(firstKey, firstKey + randomSize - 1);
         final ColumnHolder[] columnAdditions = new ColumnHolder[columnInfos.length];
         for (int i = 0; i < columnAdditions.length; i++) {
             columnAdditions[i] = columnInfos[i].populateMapAndC(keysToAdd, random);
@@ -51,7 +52,7 @@ public class GenerateTableUpdates {
                 throw new RuntimeException(e);
             }
         }
-        table.notifyListeners(keysToAdd, TrackingMutableRowSet.FACTORY.getEmptyRowSet(), TrackingMutableRowSet.FACTORY.getEmptyRowSet());
+        table.notifyListeners(keysToAdd, RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), RowSetFactoryImpl.INSTANCE.getEmptyRowSet());
     }
 
     static public TrackingMutableRowSet[] computeTableUpdates(int size, Random random, QueryTable table,
@@ -232,7 +233,7 @@ public class GenerateTableUpdates {
                 final long blatStart = delta < 0 ? start + delta : end;
                 final long blatEnd = delta < 0 ? start - 1 : end + delta;
                 try (final TrackingMutableRowSet blattedRows =
-                        rowSet.extract(TrackingMutableRowSet.CURRENT_FACTORY.getRowSetByRange(blatStart, blatEnd))) {
+                        rowSet.extract(RowSetFactoryImpl.INSTANCE.getRowSetByRange(blatStart, blatEnd))) {
                     update.removed.insert(blattedRows);
                 }
             });

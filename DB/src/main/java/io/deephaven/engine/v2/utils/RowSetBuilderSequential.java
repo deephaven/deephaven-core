@@ -12,19 +12,18 @@ import java.util.PrimitiveIterator;
 /**
  * Builder interface for {@link RowSet} construction in strict sequential order.
  */
-public interface SequentialRowSetBuilder extends TLongProcedure, LongRangeConsumer {
+public interface RowSetBuilderSequential extends TLongProcedure, LongRangeConsumer {
 
     /**
-     * Hint  to call, but if called, (a) should be called before providing any values, and (b) no value
-     * should be provided outside of the domain. Implementations may be able to use this information to improve
-     * memory utilization. Either of the arguments may be given as RowSet.NULL_KEY, indicating that the respective
-     * value is not known.
+     * Hint to call, but if called, (a) should be called before providing any values, and (b) no value should be
+     * provided outside of the domain. Implementations may be able to use this information to improve memory
+     * utilization. Either of the arguments may be given as RowSet.NULL_KEY, indicating that the respective value is not
+     * known.
      *
      * @param minRowKey The minimum row key to be provided, or {@link RowSet#NULL_ROW_KEY} if not known
      * @param maxRowKey The maximum row key to be provided, or {@link RowSet#NULL_ROW_KEY} if not known
      */
-    default void setDomain(long minRowKey, long maxRowKey) {
-    }
+    default void setDomain(long minRowKey, long maxRowKey) {}
 
     MutableRowSet build();
 
@@ -59,21 +58,22 @@ public interface SequentialRowSetBuilder extends TLongProcedure, LongRangeConsum
         return true;
     }
 
-    default void appendRowSet(final RowSet rowSet) {
-        rowSet.forAllLongRanges(this::appendRange);
+    /**
+     * Appends a {@link RowSequence} to this builder.
+     *
+     * @param rowSequence The {@link RowSequence} to append
+     */
+    default void appendRowSet(final RowSequence rowSequence) {
+        rowSequence.forAllLongRanges(this::appendRange);
     }
 
     /**
-     * Appends the RowSet shifted by the provided offset to this builder.
+     * Appends a {@link RowSequence} shifted by the provided offset to this builder.
      *
-     * @param idx    The RowSet to append.
-     * @param offset An offset to apply to every range in the RowSet.
+     * @param rowSequence The {@link RowSequence} to append
+     * @param offset An offset to apply to every range in the RowSet
      */
-    default void appendRowSetWithOffset(final RowSet idx, long offset) {
-        idx.forAllLongRanges((s, e) -> appendRange(s + offset, e + offset));
-    }
-
-    default void appendRowSequence(final RowSequence rowSequence) {
-        rowSequence.forAllLongRanges(this::appendRange);
+    default void appendRowSetWithOffset(final RowSequence rowSequence, final long offset) {
+        rowSequence.forAllLongRanges((s, e) -> appendRange(s + offset, e + offset));
     }
 }

@@ -381,10 +381,7 @@ public class RspBitmap extends RspArray<RspBitmap> implements TreeIndexImpl {
     // any operation depending on the cardinality cache being up to date.
     public RspBitmap appendRangeUnsafe(final long start, final long end) {
         if (start > end) {
-            if (TrackingMutableRowSet.BAD_RANGES_AS_ERROR) {
-                throw new IllegalArgumentException("bad range start=" + start + " > end=" + end + ".");
-            }
-            return this;
+            throw new IllegalArgumentException("bad range start=" + start + " > end=" + end + ".");
         }
         final long sHigh = highBits(start);
         final RspBitmap rb = writeCheck();
@@ -645,10 +642,7 @@ public class RspBitmap extends RspArray<RspBitmap> implements TreeIndexImpl {
     // any operation depending on the cardinality cache being up to date are called.
     public RspBitmap addRangeUnsafe(final long start, final long end) {
         if (start > end) {
-            if (TrackingMutableRowSet.BAD_RANGES_AS_ERROR) {
-                throw new IllegalArgumentException("bad range start=" + start + " > end=" + end + ".");
-            }
-            return this;
+            throw new IllegalArgumentException("bad range start=" + start + " > end=" + end + ".");
         }
         final RspBitmap rb = writeCheck();
         rb.addRangeUnsafeNoWriteCheck(0, start, end);
@@ -661,10 +655,7 @@ public class RspBitmap extends RspArray<RspBitmap> implements TreeIndexImpl {
 
     public int addRangeUnsafeNoWriteCheck(final int fromIdx, final long start, final long end) {
         if (start > end) {
-            if (TrackingMutableRowSet.BAD_RANGES_AS_ERROR) {
-                throw new IllegalArgumentException("bad range start=" + start + " > end=" + end + ".");
-            }
-            return -1;
+            throw new IllegalArgumentException("bad range start=" + start + " > end=" + end + ".");
         }
         final long sHigh = highBits(start);
         final boolean kvsIsEmpty = isEmpty();

@@ -298,7 +298,7 @@ class RightIncrementalChunkedAsOfJoinStateManager
         }
     }
 
-    public int buildAdditions(boolean isLeftSide, TrackingMutableRowSet additions, ColumnSource<?>[] sources, LongArraySource slots, ObjectArraySource<SequentialRowSetBuilder> sequentialBuilders) {
+    public int buildAdditions(boolean isLeftSide, TrackingMutableRowSet additions, ColumnSource<?>[] sources, LongArraySource slots, ObjectArraySource<RowSetBuilderSequential> sequentialBuilders) {
         final MutableInt slotCount = new MutableInt(0);
 
         resetCookie();
@@ -313,13 +313,13 @@ class RightIncrementalChunkedAsOfJoinStateManager
         }
     }
 
-    private static void createBuilder(ObjectArraySource<SequentialRowSetBuilder> source, long location, long keyToAdd) {
-        final SequentialRowSetBuilder builder;
-        source.set(location, builder = TrackingMutableRowSet.CURRENT_FACTORY.getSequentialBuilder());
+    private static void createBuilder(ObjectArraySource<RowSetBuilderSequential> source, long location, long keyToAdd) {
+        final RowSetBuilderSequential builder;
+        source.set(location, builder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder());
         builder.appendKey(keyToAdd);
     }
 
-    private static void addToBuilder(ObjectArraySource<SequentialRowSetBuilder> source, long location, long keyToAdd) {
+    private static void addToBuilder(ObjectArraySource<RowSetBuilderSequential> source, long location, long keyToAdd) {
         source.getUnsafe(location).appendKey(keyToAdd);
     }
 
@@ -610,7 +610,7 @@ class RightIncrementalChunkedAsOfJoinStateManager
                             , boolean isLeftSide
                             , @NotNull final LongArraySource addedSlots
                             , final MutableInt slotCount
-                            , final ObjectArraySource<SequentialRowSetBuilder> sequentialBuilders
+                            , final ObjectArraySource<RowSetBuilderSequential> sequentialBuilders
                             // endregion extra build arguments
     ) {
         long hashSlotOffset = 0;
@@ -1224,7 +1224,7 @@ class RightIncrementalChunkedAsOfJoinStateManager
              final WritableByteChunk stateChunk = WritableByteChunk.makeWritableChunk(maxSize);
              final ChunkSource.FillContext fillContext = stateSource.makeFillContext(maxSize)) {
 
-            stateSource.fillChunk(fillContext, stateChunk, TrackingMutableRowSet.FACTORY.getFlatIndex(tableHashPivot));
+            stateSource.fillChunk(fillContext, stateChunk, RowSetFactoryImpl.INSTANCE.getFlatRowSet(tableHashPivot));
 
             ChunkUtils.fillInOrder(positions);
 
@@ -1457,23 +1457,23 @@ class RightIncrementalChunkedAsOfJoinStateManager
         return cookie - cookieGeneration;
     }
 
-    public int markForRemoval(TrackingMutableRowSet restampRemovals, ColumnSource<?>[] sources, LongArraySource slots, ObjectArraySource<SequentialRowSetBuilder> sequentialBuilders) {
+    public int markForRemoval(TrackingMutableRowSet restampRemovals, ColumnSource<?>[] sources, LongArraySource slots, ObjectArraySource<RowSetBuilderSequential> sequentialBuilders) {
         return accumulateIndices(restampRemovals, sources, slots, sequentialBuilders, true);
     }
 
-    public int probeAdditions(TrackingMutableRowSet restampAdditions, ColumnSource<?>[] sources, LongArraySource slots, ObjectArraySource<SequentialRowSetBuilder> sequentialBuilders) {
+    public int probeAdditions(TrackingMutableRowSet restampAdditions, ColumnSource<?>[] sources, LongArraySource slots, ObjectArraySource<RowSetBuilderSequential> sequentialBuilders) {
         return accumulateIndices(restampAdditions, sources, slots, sequentialBuilders, false);
     }
 
-    public int gatherShiftIndex(TrackingMutableRowSet restampAdditions, ColumnSource<?>[] sources, LongArraySource slots, ObjectArraySource<SequentialRowSetBuilder> sequentialBuilders) {
+    public int gatherShiftIndex(TrackingMutableRowSet restampAdditions, ColumnSource<?>[] sources, LongArraySource slots, ObjectArraySource<RowSetBuilderSequential> sequentialBuilders) {
         return accumulateIndices(restampAdditions, sources, slots, sequentialBuilders, true);
     }
 
-    public int gatherModifications(TrackingMutableRowSet restampAdditions, ColumnSource<?>[] sources, LongArraySource slots, ObjectArraySource<SequentialRowSetBuilder> sequentialBuilders) {
+    public int gatherModifications(TrackingMutableRowSet restampAdditions, ColumnSource<?>[] sources, LongArraySource slots, ObjectArraySource<RowSetBuilderSequential> sequentialBuilders) {
         return accumulateIndices(restampAdditions, sources, slots, sequentialBuilders, false);
     }
 
-    private int accumulateIndices(TrackingMutableRowSet restampAdditions, ColumnSource<?>[] rightSources, LongArraySource slots, ObjectArraySource<SequentialRowSetBuilder> sequentialBuilders, boolean usePrev) {
+    private int accumulateIndices(TrackingMutableRowSet restampAdditions, ColumnSource<?>[] rightSources, LongArraySource slots, ObjectArraySource<RowSetBuilderSequential> sequentialBuilders, boolean usePrev) {
         final MutableInt slotCount = new MutableInt(0);
 
         resetCookie();
@@ -1496,10 +1496,10 @@ class RightIncrementalChunkedAsOfJoinStateManager
         }
     }
 
-    private void addToSequentialBuilder(long slot, @NotNull ObjectArraySource<SequentialRowSetBuilder> sequentialBuilders, long indexKey) {
-        SequentialRowSetBuilder builder = sequentialBuilders.getUnsafe(slot);
+    private void addToSequentialBuilder(long slot, @NotNull ObjectArraySource<RowSetBuilderSequential> sequentialBuilders, long indexKey) {
+        RowSetBuilderSequential builder = sequentialBuilders.getUnsafe(slot);
         if (builder == null) {
-            builder = TrackingMutableRowSet.CURRENT_FACTORY.getSequentialBuilder();
+            builder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
             sequentialBuilders.set(slot, builder);
         }
         builder.appendKey(indexKey);
@@ -1655,7 +1655,7 @@ class RightIncrementalChunkedAsOfJoinStateManager
                                  // region additional probe arguments
                                 , final MutableInt slotCount
                                 , final LongArraySource slots
-                                , final ObjectArraySource<SequentialRowSetBuilder> sequentialBuilders // if sequential builders is null, then we are assumed to be adding an initial right hand side (for the left static case)
+                                , final ObjectArraySource<RowSetBuilderSequential> sequentialBuilders // if sequential builders is null, then we are assumed to be adding an initial right hand side (for the left static case)
                                  // endregion additional probe arguments
     )  {
         // region probe start
@@ -1876,13 +1876,13 @@ class RightIncrementalChunkedAsOfJoinStateManager
      * @return the TrackingMutableRowSet for this slot
      */
     TrackingMutableRowSet getAndClearLeftIndex(long slot) {
-        final SequentialRowSetBuilder builder;
+        final RowSetBuilderSequential builder;
         if (isOverflowLocation(slot)) {
             final long overflowLocation = hashLocationToOverflowLocation(slot);
-            builder = (SequentialRowSetBuilder)overflowLeftSideSource.getUnsafe(overflowLocation);
+            builder = (RowSetBuilderSequential)overflowLeftSideSource.getUnsafe(overflowLocation);
             overflowLeftSideSource.set(overflowLocation, null);
         } else {
-            builder = (SequentialRowSetBuilder)leftSideSource.getUnsafe(slot);
+            builder = (RowSetBuilderSequential)leftSideSource.getUnsafe(slot);
             leftSideSource.set(slot, null);
         }
         if (builder == null) {
@@ -1954,7 +1954,7 @@ class RightIncrementalChunkedAsOfJoinStateManager
                 return (TrackingMutableRowSet) overflowRightSideSource.getUnsafe(overflowLocation);
             }
             else if ((entryType & ENTRY_RIGHT_MASK) == ENTRY_RIGHT_IS_BUILDER) {
-                final TrackingMutableRowSet rowSet = ((SequentialRowSetBuilder)overflowRightSideSource.getUnsafe(overflowLocation)).build();
+                final TrackingMutableRowSet rowSet = ((RowSetBuilderSequential)overflowRightSideSource.getUnsafe(overflowLocation)).build();
                 overflowRightSideSource.set(overflowLocation, rowSet);
                 overflowStateSource.set(overflowLocation, (byte)((entryType & ENTRY_LEFT_MASK) | ENTRY_RIGHT_IS_INDEX));
                 return rowSet;
@@ -1965,7 +1965,7 @@ class RightIncrementalChunkedAsOfJoinStateManager
                 return (TrackingMutableRowSet) rightSideSource.getUnsafe(slot);
             }
             else if ((entryType & ENTRY_RIGHT_MASK) == ENTRY_RIGHT_IS_BUILDER) {
-                final TrackingMutableRowSet rowSet = ((SequentialRowSetBuilder)rightSideSource.getUnsafe(slot)).build();
+                final TrackingMutableRowSet rowSet = ((RowSetBuilderSequential)rightSideSource.getUnsafe(slot)).build();
                 rightSideSource.set(slot, rowSet);
                 stateSource.set(slot, (byte)((entryType & ENTRY_LEFT_MASK) | ENTRY_RIGHT_IS_INDEX));
                 return rowSet;
@@ -1982,7 +1982,7 @@ class RightIncrementalChunkedAsOfJoinStateManager
                 return (TrackingMutableRowSet) overflowLeftSideSource.getUnsafe(overflowLocation);
             }
             else if ((entryType & ENTRY_LEFT_MASK) == ENTRY_LEFT_IS_BUILDER) {
-                final TrackingMutableRowSet rowSet = ((SequentialRowSetBuilder)overflowLeftSideSource.getUnsafe(overflowLocation)).build();
+                final TrackingMutableRowSet rowSet = ((RowSetBuilderSequential)overflowLeftSideSource.getUnsafe(overflowLocation)).build();
                 overflowLeftSideSource.set(overflowLocation, rowSet);
                 overflowStateSource.set(overflowLocation, (byte)((entryType & ENTRY_RIGHT_MASK) | ENTRY_LEFT_IS_INDEX));
                 return rowSet;
@@ -1993,7 +1993,7 @@ class RightIncrementalChunkedAsOfJoinStateManager
                 return (TrackingMutableRowSet) leftSideSource.getUnsafe(slot);
             }
             else if ((entryType & ENTRY_LEFT_MASK) == ENTRY_LEFT_IS_BUILDER) {
-                final TrackingMutableRowSet rowSet = ((SequentialRowSetBuilder)leftSideSource.getUnsafe(slot)).build();
+                final TrackingMutableRowSet rowSet = ((RowSetBuilderSequential)leftSideSource.getUnsafe(slot)).build();
                 leftSideSource.set(slot, rowSet);
                 stateSource.set(slot, (byte)((entryType & ENTRY_RIGHT_MASK) | ENTRY_LEFT_IS_INDEX));
                 return rowSet;
@@ -2131,14 +2131,14 @@ class RightIncrementalChunkedAsOfJoinStateManager
                 indexOutput.setValue((TrackingMutableRowSet) sideSource.getUnsafe(location));
                 return null;
             case ENTRY_RIGHT_IS_EMPTY: {
-                final TrackingMutableRowSet emptyRowSet = TrackingMutableRowSet.CURRENT_FACTORY.getEmptyRowSet();
+                final TrackingMutableRowSet emptyRowSet = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
                 sideSource.set(location, emptyRowSet);
                 stateSource.set(location, stateValueForIndex);
                 indexOutput.setValue(emptyRowSet);
                 return null;
             }
             case  ENTRY_RIGHT_IS_BUILDER: {
-                final TrackingMutableRowSet rowSet = ((SequentialRowSetBuilder) sideSource.getUnsafe(location)).build();
+                final TrackingMutableRowSet rowSet = ((RowSetBuilderSequential) sideSource.getUnsafe(location)).build();
                 sideSource.set(location, rowSet);
                 stateSource.set(location, stateValueForIndex);
                 indexOutput.setValue(rowSet);
@@ -2151,10 +2151,10 @@ class RightIncrementalChunkedAsOfJoinStateManager
 
     @Nullable
     private SegmentedSortedArray makeSsaFromBuilder(long slot, Function<TrackingMutableRowSet, SegmentedSortedArray> ssaFactory, ObjectArraySource<Object> ssaSource, ByteArraySource stateSource, byte newState) {
-        final SequentialRowSetBuilder builder = (SequentialRowSetBuilder) ssaSource.getUnsafe(slot);
+        final RowSetBuilderSequential builder = (RowSetBuilderSequential) ssaSource.getUnsafe(slot);
         final TrackingMutableRowSet rowSet;
         if (builder == null) {
-            rowSet = TrackingMutableRowSet.CURRENT_FACTORY.getEmptyRowSet();
+            rowSet = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
         } else {
             rowSet = builder.build();
         }
@@ -2163,7 +2163,7 @@ class RightIncrementalChunkedAsOfJoinStateManager
 
     @Nullable
     private SegmentedSortedArray makeSsaFromEmpty(long slot, Function<TrackingMutableRowSet, SegmentedSortedArray> ssaFactory, ObjectArraySource<Object> ssaSource, ByteArraySource stateSource, byte newState) {
-        return makeSsaFromIndex(slot, ssaFactory, ssaSource, stateSource, newState, TrackingMutableRowSet.CURRENT_FACTORY.getEmptyRowSet());
+        return makeSsaFromIndex(slot, ssaFactory, ssaSource, stateSource, newState, RowSetFactoryImpl.INSTANCE.getEmptyRowSet());
     }
 
     @Nullable

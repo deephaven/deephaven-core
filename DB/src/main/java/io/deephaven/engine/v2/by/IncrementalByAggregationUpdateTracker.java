@@ -75,8 +75,8 @@ class IncrementalByAggregationUpdateTracker {
     /**
      * Builders (used in remove processing and add processing), parallel to {@code updatedStateSlotAndFlags}.
      */
-    private final ObjectArraySource<SequentialRowSetBuilder> builders =
-            new ObjectArraySource<>(SequentialRowSetBuilder.class);
+    private final ObjectArraySource<RowSetBuilderSequential> builders =
+            new ObjectArraySource<>(RowSetBuilderSequential.class);
 
     /**
      * Each time we clear, we add an offset to our cookies, this prevents us from reading old values.
@@ -292,7 +292,7 @@ class IncrementalByAggregationUpdateTracker {
             resultCookie = positionToCookie(position);
             currentSlotAndFlags = 0L;
         }
-        final SequentialRowSetBuilder builder;
+        final RowSetBuilderSequential builder;
         final long resultSlotAndFlags = ((long) stateSlot << FLAG_SHIFT) | (currentSlotAndFlags & FLAG_MASK | flags);
         if (currentSlotAndFlags != resultSlotAndFlags) {
             updatedStateSlotAndFlags.set(position, resultSlotAndFlags);
@@ -300,7 +300,7 @@ class IncrementalByAggregationUpdateTracker {
                 checkCurrentPassCapacity();
                 currentPassPositions.set(currentPassSize++, position);
             }
-            builders.set(position, builder = TrackingMutableRowSet.FACTORY.getSequentialBuilder());
+            builders.set(position, builder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder());
         } else {
             builder = builders.get(position);
         }
@@ -361,11 +361,11 @@ class IncrementalByAggregationUpdateTracker {
     final TrackingMutableRowSet applyAddsAndMakeInitialIndex(@NotNull final ObjectArraySource<TrackingMutableRowSet> indexSource,
                                                              @NotNull final ObjectArraySource<TrackingMutableRowSet> overflowIndexSource,
                                                              @NotNull final RedirectionIndex redirectionIndex) {
-        final RowSetBuilder resultBuilder = TrackingMutableRowSet.FACTORY.getRandomBuilder();
+        final RowSetBuilderRandom resultBuilder = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
         for (long trackerIndex = 0; trackerIndex < size; ++trackerIndex) {
             final long slotAndFlags = updatedStateSlotAndFlags.getLong(trackerIndex);
             final int slot = (int) (slotAndFlags >> FLAG_SHIFT);
-            final SequentialRowSetBuilder stateBuilder = builders.get(trackerIndex);
+            final RowSetBuilderSequential stateBuilder = builders.get(trackerIndex);
             builders.set(trackerIndex, null);
 
             final long stateFirstKey;
@@ -396,7 +396,7 @@ class IncrementalByAggregationUpdateTracker {
             final long slotAndFlags = updatedStateSlotAndFlags.getLong(trackerIndex);
             // Since removes are always done first, we need not check the flags here.
             final int slot = (int) (slotAndFlags >> FLAG_SHIFT);
-            final SequentialRowSetBuilder builder = builders.get(trackerIndex);
+            final RowSetBuilderSequential builder = builders.get(trackerIndex);
             builders.set(trackerIndex, null);
 
             // noinspection ConstantConditions
@@ -448,7 +448,7 @@ class IncrementalByAggregationUpdateTracker {
             // Since the current pass is only states with adds, we need not check the flags here.
             final int slot = (int) (slotAndFlags >> FLAG_SHIFT);
 
-            final SequentialRowSetBuilder builder = builders.get(trackerIndex);
+            final RowSetBuilderSequential builder = builders.get(trackerIndex);
             builders.set(trackerIndex, null);
 
             // noinspection ConstantConditions
@@ -485,14 +485,14 @@ class IncrementalByAggregationUpdateTracker {
             @NotNull final RedirectionIndex redirectionIndex,
             @NotNull final ModifiedColumnSetProducer modifiedColumnSetProducer) {
         // First pass: Removes are handled on their own, because if the key moved to a new state we may reinsert it
-        final RowSetBuilder removedBuilder = TrackingMutableRowSet.FACTORY.getRandomBuilder();
+        final RowSetBuilderRandom removedBuilder = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
         int numStatesWithShifts = 0;
         for (long ti = 0; ti < size; ++ti) {
             final long slotAndFlags = updatedStateSlotAndFlags.getLong(ti);
             final byte flags = (byte) (slotAndFlags & FLAG_MASK);
             final int slot = (int) (slotAndFlags >> FLAG_SHIFT);
             final TrackingMutableRowSet current = slotToIndex(indexSource, overflowIndexSource, slot);
-            final long previousFirstKey = current.firstKeyPrev();
+            final long previousFirstKey = current.firstRowKeyPrev();
             if (previousFirstKey == TrackingMutableRowSet.NULL_ROW_KEY) {
                 // Nothing to remove
                 continue;
@@ -517,8 +517,8 @@ class IncrementalByAggregationUpdateTracker {
         }
 
         // Second pass: Everything else
-        final RowSetBuilder addedBuilder = TrackingMutableRowSet.FACTORY.getRandomBuilder();
-        final RowSetBuilder modifiedBuilder = TrackingMutableRowSet.FACTORY.getRandomBuilder();
+        final RowSetBuilderRandom addedBuilder = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
+        final RowSetBuilderRandom modifiedBuilder = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
         boolean someKeyHasAddsOrRemoves = false;
         boolean someKeyHasModifies = false;
         final IndexShiftData shiftData;
@@ -536,7 +536,7 @@ class IncrementalByAggregationUpdateTracker {
                     // Removes are already handled
                     continue;
                 }
-                final long previousFirstKey = current.firstKeyPrev();
+                final long previousFirstKey = current.firstRowKeyPrev();
                 final long currentFirstKey = current.firstRowKey();
                 if (previousFirstKey == TrackingMutableRowSet.NULL_ROW_KEY) {
                     // We must have added something

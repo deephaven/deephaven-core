@@ -6,6 +6,7 @@ package io.deephaven.engine.v2;
 
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.live.LiveTableMonitor;
+import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
 import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.engine.v2.utils.IndexShiftData;
 import io.deephaven.engine.v2.utils.UpdatePerformanceTracker;
@@ -273,7 +274,7 @@ public class QueryTableFlattenTest extends QueryTableTestBase {
     }
 
     private static TrackingMutableRowSet indexByRange(long firstKey, long lastKey) {
-        return TrackingMutableRowSet.FACTORY.getRowSetByRange(firstKey, lastKey);
+        return RowSetFactoryImpl.INSTANCE.getRowSetByRange(firstKey, lastKey);
     }
 
     private static IndexShiftData shiftDataByValues(long... values) {

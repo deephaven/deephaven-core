@@ -3,6 +3,7 @@ package io.deephaven.engine.v2;
 import io.deephaven.engine.tables.live.LiveTableMonitor;
 import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.v2.sources.ColumnSource;
+import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
 import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import gnu.trove.iterator.TObjectLongIterator;
 import junit.framework.TestCase;
@@ -32,7 +33,7 @@ public class TestReverseLookupListener extends LiveTableTestCase {
         assertEquals(reverseLookupListener.getNoEntryValue(), reverseLookupListener.get("E"));
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-            final TrackingMutableRowSet keysToModify = TrackingMutableRowSet.FACTORY.getRowSetByValues(4);
+            final TrackingMutableRowSet keysToModify = RowSetFactoryImpl.INSTANCE.getRowSetByValues(4);
             TstUtils.addToTable(source, keysToModify, TstUtils.c("Sentinel", "E"), TstUtils.c("Sentinel2", "L"));
             source.notifyListeners(i(), i(), keysToModify);
         });
@@ -44,7 +45,7 @@ public class TestReverseLookupListener extends LiveTableTestCase {
         assertEquals(reverseLookupListener.getNoEntryValue(), reverseLookupListener.get("B"));
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-            final TrackingMutableRowSet keysToSwap = TrackingMutableRowSet.FACTORY.getRowSetByValues(4, 6);
+            final TrackingMutableRowSet keysToSwap = RowSetFactoryImpl.INSTANCE.getRowSetByValues(4, 6);
             TstUtils.addToTable(source, keysToSwap, TstUtils.c("Sentinel", "C", "E"),
                     TstUtils.c("Sentinel2", "M", "N"));
             source.notifyListeners(i(), i(), keysToSwap);
@@ -91,7 +92,7 @@ public class TestReverseLookupListener extends LiveTableTestCase {
                 currentMap.put(expectedKey, row);
             }
 
-            for (final TrackingMutableRowSet.Iterator it = source.getIndex().getPrevIndex().iterator(); it.hasNext();) {
+            for (final TrackingMutableRowSet.Iterator it = source.getIndex().getPrevRowSet().iterator(); it.hasNext();) {
                 final long row = it.nextLong();
                 final Object expectedKey = TableTools.getPrevKey(columnSources, row);
                 final long checkRow = listener.getPrev(expectedKey);
@@ -100,7 +101,7 @@ public class TestReverseLookupListener extends LiveTableTestCase {
             }
 
 
-            final TrackingMutableRowSet removedRows = source.getIndex().getPrevIndex().minus(source.getIndex());
+            final TrackingMutableRowSet removedRows = source.getIndex().getPrevRowSet().minus(source.getIndex());
             for (final TrackingMutableRowSet.Iterator it = removedRows.iterator(); it.hasNext();) {
                 final long row = it.nextLong();
                 final Object expectedKey = TableTools.getPrevKey(columnSources, row);
@@ -113,7 +114,7 @@ public class TestReverseLookupListener extends LiveTableTestCase {
                     assertEquals(listener.getNoEntryValue(), checkRow);
                 }
             }
-            final TrackingMutableRowSet addedRows = source.getIndex().minus(source.getIndex().getPrevIndex());
+            final TrackingMutableRowSet addedRows = source.getIndex().minus(source.getIndex().getPrevRowSet());
             for (final TrackingMutableRowSet.Iterator it = addedRows.iterator(); it.hasNext();) {
                 final long row = it.nextLong();
                 final Object expectedKey = TableTools.getKey(columnSources, row);

@@ -22,7 +22,7 @@ public class IndexSequentialBuilderPerfTest {
     }
 
     private static final int sz = 10 * 1000 * 1000;
-    private static final SequentialRowSetBuilder[] sbs = new SequentialRowSetBuilder[sz];
+    private static final RowSetBuilderSequential[] sbs = new RowSetBuilderSequential[sz];
 
     private static void clear() {
         for (int i = 0; i < sz; ++i) {

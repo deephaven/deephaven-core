@@ -271,7 +271,7 @@ public class ColumnsToRowsTransform {
                             }
                         }
                     } else {
-                        downstream.modified = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
+                        downstream.modified = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
                     }
 
                     resultRowSet.remove(downstream.removed);
@@ -306,14 +306,14 @@ public class ColumnsToRowsTransform {
     }
 
     private static TrackingMutableRowSet transformIndex(final TrackingMutableRowSet rowSet, final int fanout, final int fanoutPow2) {
-        final SequentialRowSetBuilder sequentialBuilder = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
+        final RowSetBuilderSequential sequentialBuilder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
         rowSet.forAllLongs(idx -> sequentialBuilder.appendRange(idx * fanoutPow2, idx * fanoutPow2 + fanout - 1));
         return sequentialBuilder.build();
     }
 
     private static TrackingMutableRowSet transformIndex(final TrackingMutableRowSet rowSet, final int fanoutPow2, final boolean[] rowModified,
                                                         final int maxModified) {
-        final SequentialRowSetBuilder sequentialBuilder = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
+        final RowSetBuilderSequential sequentialBuilder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
         rowSet.forAllLongs(idx -> {
             for (int ii = 0; ii <= maxModified; ++ii) {
                 if (rowModified[ii]) {

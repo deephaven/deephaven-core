@@ -9,7 +9,7 @@ public class MutableRowSetImplTest extends GroupingRowSetHelperTestBase {
     @NotNull
     @Override
     protected TrackingMutableRowSet getSortedIndex(long... keys) {
-        final RowSetBuilder treeIndexBuilder = TrackingMutableRowSetImpl.makeCurrentRandomBuilder();
+        final RowSetBuilderRandom treeIndexBuilder = TrackingMutableRowSetImpl.makeCurrentRandomBuilder();
         for (long key : keys) {
             treeIndexBuilder.addKey(key);
         }
@@ -26,7 +26,7 @@ public class MutableRowSetImplTest extends GroupingRowSetHelperTestBase {
     @NotNull
     @Override
     protected RowSetFactory getFactory() {
-        return TrackingMutableRowSet.CURRENT_FACTORY;
+        return RowSetFactoryImpl.INSTANCE;
     }
 
     @Override

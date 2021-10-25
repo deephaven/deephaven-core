@@ -7,7 +7,7 @@ import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.sources.chunk.page.Page;
 import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.v2.utils.RowSet;
-import io.deephaven.engine.v2.utils.SequentialRowSetBuilder;
+import io.deephaven.engine.v2.utils.RowSetBuilderSequential;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.function.Function;
@@ -79,7 +79,7 @@ public class ColumnRegionChunkDictionary<DICT_TYPE, DATA_TYPE, ATTR extends Any>
     public boolean gatherDictionaryValuesIndex(
             @NotNull final RowSet.SearchIterator keysToVisit,
             @NotNull final RowSequence.Iterator knownKeys,
-            @NotNull final SequentialRowSetBuilder sequentialBuilder) {
+            @NotNull final RowSetBuilderSequential sequentialBuilder) {
         final long dictSize = getDictionaryChunk().size();
 
         final long pageFirstKey = firstRow(keysToVisit.currentValue());

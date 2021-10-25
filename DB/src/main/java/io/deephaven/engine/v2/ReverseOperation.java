@@ -9,8 +9,9 @@ import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.LogicalClock;
 import io.deephaven.engine.v2.sources.ReversedColumnSource;
 import io.deephaven.engine.v2.sources.UnionRedirection;
+import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
 import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
-import io.deephaven.engine.v2.utils.RowSetBuilder;
+import io.deephaven.engine.v2.utils.RowSetBuilderRandom;
 import io.deephaven.engine.v2.utils.IndexShiftData;
 
 import java.util.LinkedHashMap;
@@ -67,7 +68,7 @@ public class ReverseOperation implements QueryTable.MemoizableOperation<QueryTab
 
     @Override
     public Result<QueryTable> initialize(boolean usePrev, long beforeClock) {
-        final TrackingMutableRowSet rowSetToReverse = usePrev ? parent.getIndex().getPrevIndex() : parent.getIndex();
+        final TrackingMutableRowSet rowSetToReverse = usePrev ? parent.getIndex().getPrevRowSet() : parent.getIndex();
         prevPivot = pivotPoint = computePivot(rowSetToReverse.lastRowKey());
         lastPivotChange = usePrev ? beforeClock - 1 : beforeClock;
 
@@ -242,7 +243,7 @@ public class ReverseOperation implements QueryTable.MemoizableOperation<QueryTab
 
     private TrackingMutableRowSet transform(final TrackingMutableRowSet outerRowSet, final boolean usePrev) {
         final long pivot = usePrev ? getPivotPrev() : pivotPoint;
-        final RowSetBuilder reversedBuilder = TrackingMutableRowSet.FACTORY.getRandomBuilder();
+        final RowSetBuilderRandom reversedBuilder = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
 
         for (final TrackingMutableRowSet.RangeIterator rangeIterator = outerRowSet.rangeIterator(); rangeIterator.hasNext();) {
             rangeIterator.next();

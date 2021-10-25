@@ -574,7 +574,7 @@ public abstract class BaseTable extends LivenessArtifact
         }
         if (replayInitialImage && getIndex().nonempty()) {
             listener.setInitialImage(getIndex());
-            listener.onUpdate(getIndex(), TrackingMutableRowSet.FACTORY.getEmptyRowSet(), TrackingMutableRowSet.FACTORY.getEmptyRowSet());
+            listener.onUpdate(getIndex(), RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), RowSetFactoryImpl.INSTANCE.getEmptyRowSet());
         }
     }
 
@@ -754,7 +754,7 @@ public abstract class BaseTable extends LivenessArtifact
         final boolean currentMissingAdds = !update.added.subsetOf(getIndex());
         final boolean currentMissingModifications = !update.modified.subsetOf(getIndex());
         final boolean previousMissingRemovals;
-        try (final RowSet prevIndex = getIndex().getPrevIndex()) {
+        try (final RowSet prevIndex = getIndex().getPrevRowSet()) {
             previousMissingRemovals = !update.removed.subsetOf(prevIndex);
         }
         final boolean currentContainsRemovals;
@@ -791,8 +791,8 @@ public abstract class BaseTable extends LivenessArtifact
                     }
                 };
 
-                append.accept("build().getPrevIndex=", getIndex().getPrevIndex());
-                append.accept("build()=", getIndex().getPrevIndex());
+                append.accept("build().getPrevRowSet=", getIndex().getPrevRowSet());
+                append.accept("build()=", getIndex().getPrevRowSet());
                 append.accept("added=", update.added);
                 append.accept("removed=", update.removed);
                 append.accept("modified=", update.modified);
@@ -804,7 +804,7 @@ public abstract class BaseTable extends LivenessArtifact
         }
 
         // If we're still here, we know that things are off the rails, and we want to fire the assertion
-        final TrackingMutableRowSet removalsMinusPrevious = update.removed.minus(getIndex().getPrevIndex());
+        final TrackingMutableRowSet removalsMinusPrevious = update.removed.minus(getIndex().getPrevRowSet());
         final TrackingMutableRowSet addedMinusCurrent = update.added.minus(getIndex());
         final TrackingMutableRowSet removedIntersectCurrent = update.removed.intersect(getIndex());
         final TrackingMutableRowSet modifiedMinusCurrent = update.modified.minus(getIndex());
@@ -812,7 +812,7 @@ public abstract class BaseTable extends LivenessArtifact
         // Everything is messed up for this table, print out the indices in an easy to understand way
         final LogOutput logOutput = new LogOutputStringImpl()
                 .append("TrackingMutableRowSet update error detected: ")
-                .append(LogOutput::nl).append("\t          previousIndex=").append(getIndex().getPrevIndex())
+                .append(LogOutput::nl).append("\t          previousIndex=").append(getIndex().getPrevRowSet())
                 .append(LogOutput::nl).append("\t           currentIndex=").append(getIndex())
                 .append(LogOutput::nl).append("\t                  added=").append(update.added)
                 .append(LogOutput::nl).append("\t                removed=").append(update.removed)

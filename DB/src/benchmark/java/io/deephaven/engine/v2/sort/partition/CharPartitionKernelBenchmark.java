@@ -3,7 +3,8 @@ package io.deephaven.engine.v2.sort.partition;
 import io.deephaven.engine.util.tuples.generated.CharLongTuple;
 import io.deephaven.engine.v2.sort.timsort.BaseTestCharTimSortKernel;
 import io.deephaven.engine.v2.sort.timsort.TestTimSortKernel;
-import io.deephaven.engine.v2.utils.SequentialRowSetBuilder;
+import io.deephaven.engine.v2.utils.RowSetBuilderSequential;
+import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
 import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import org.openjdk.jmh.annotations.*;
 
@@ -65,7 +66,7 @@ public class CharPartitionKernelBenchmark {
         final Random random = new Random(0);
         final List<CharLongTuple> stuffToSort = generate.generate(random, dataSize);
 
-        final SequentialRowSetBuilder sequentialBuilder = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
+        final RowSetBuilderSequential sequentialBuilder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
         stuffToSort.stream().mapToLong(CharLongTuple::getSecondElement).forEach(sequentialBuilder::appendKey);
         final TrackingMutableRowSet rowSet = sequentialBuilder.build();
         final int numPartitionsValue;

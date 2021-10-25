@@ -154,7 +154,7 @@ class TreeTableSnapshotImpl<CLIENT_TYPE extends TreeTableClientTableManager.Clie
     @Override
     boolean verifyChild(TableDetails parentDetail, TableDetails childDetail, long childKeyPos, boolean usePrev) {
         final TrackingMutableRowSet parentRowSet = parentDetail.getTable().getIndex();
-        return usePrev ? parentRowSet.getPrevIndex().find(childKeyPos) >= 0
+        return usePrev ? parentRowSet.getPrevRowSet().find(childKeyPos) >= 0
                 : parentRowSet.find(childKeyPos) >= 0;
     }
 }

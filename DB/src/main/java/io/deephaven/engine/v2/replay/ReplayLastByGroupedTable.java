@@ -6,8 +6,9 @@ package io.deephaven.engine.v2.replay;
 
 import io.deephaven.engine.tables.utils.DBDateTime;
 import io.deephaven.engine.v2.sources.ColumnSource;
+import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
 import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
-import io.deephaven.engine.v2.utils.RowSetBuilder;
+import io.deephaven.engine.v2.utils.RowSetBuilderRandom;
 import io.deephaven.engine.v2.utils.RedirectionIndex;
 
 import java.util.Map;
@@ -27,8 +28,8 @@ public class ReplayLastByGroupedTable extends QueryReplayGroupedTable {
         if (allIterators.isEmpty()) {
             return;
         }
-        RowSetBuilder addedBuilder = TrackingMutableRowSet.FACTORY.getBuilder();
-        RowSetBuilder modifiedBuilder = TrackingMutableRowSet.FACTORY.getBuilder();
+        RowSetBuilderRandom addedBuilder = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
+        RowSetBuilderRandom modifiedBuilder = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
         // List<IteratorsAndNextTime> iteratorsToAddBack = new ArrayList<>(allIterators.size());
         while (!allIterators.isEmpty() && allIterators.peek().lastTime.getNanos() < replayer.currentTimeNanos()) {
             IteratorsAndNextTime currentIt = allIterators.poll();
@@ -49,7 +50,7 @@ public class ReplayLastByGroupedTable extends QueryReplayGroupedTable {
         final TrackingMutableRowSet modified = modifiedBuilder.build();
         if (added.size() > 0 || modified.size() > 0) {
             getIndex().insert(added);
-            notifyListeners(added, TrackingMutableRowSet.FACTORY.getEmptyRowSet(), modified);
+            notifyListeners(added, RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), modified);
         }
     }
 }

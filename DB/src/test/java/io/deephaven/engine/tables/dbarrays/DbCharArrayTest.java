@@ -6,7 +6,7 @@ package io.deephaven.engine.tables.dbarrays;
 
 import io.deephaven.engine.v2.dbarrays.DbCharArrayColumnWrapper;
 import io.deephaven.engine.v2.sources.ArrayBackedColumnSource;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
+import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
 import junit.framework.TestCase;
 
 import static io.deephaven.util.QueryConstants.NULL_CHAR;
@@ -17,7 +17,7 @@ public class DbCharArrayTest extends TestCase {
         //noinspection unchecked
         DbCharArray dbArray = new DbCharArrayColumnWrapper(
                 ArrayBackedColumnSource.getMemoryColumnSource(new char[]{(char)10, (char)20, (char)30}),
-                TrackingMutableRowSet.FACTORY.getRowSetByRange(0, 2));
+                RowSetFactoryImpl.INSTANCE.getRowSetByRange(0, 2));
         assertEquals(3, dbArray.size());
         assertEquals((char)10, dbArray.get(0));
         assertEquals((char)20, dbArray.get(1));
@@ -105,7 +105,7 @@ public class DbCharArrayTest extends TestCase {
         //noinspection unchecked
         DbCharArray dbArray = new DbCharArrayColumnWrapper(
                 ArrayBackedColumnSource.getMemoryColumnSource(new char[]{(char)10, (char)20, (char)30}),
-                TrackingMutableRowSet.FACTORY.getRowSetByRange(0, 2));
+                RowSetFactoryImpl.INSTANCE.getRowSetByRange(0, 2));
 
         for (int start=-4; start<=4; start++){
             for (int end=-1; end<=7; end++){

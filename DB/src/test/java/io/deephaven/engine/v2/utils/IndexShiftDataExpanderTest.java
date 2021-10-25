@@ -493,15 +493,15 @@ public class IndexShiftDataExpanderTest {
      * Profit by letting @Before / @After clear context and run validate automagically.
      */
     private static class Context {
-        public final TrackingMutableRowSet sourceRowSet = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
-        public final TrackingMutableRowSet added = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
-        public final TrackingMutableRowSet removed = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
-        public final TrackingMutableRowSet modified = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
+        public final TrackingMutableRowSet sourceRowSet = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+        public final TrackingMutableRowSet added = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+        public final TrackingMutableRowSet removed = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+        public final TrackingMutableRowSet modified = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
         public final IndexShiftData.Builder shifted = new IndexShiftData.Builder();
 
-        public final TrackingMutableRowSet expectAdded = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
-        public final TrackingMutableRowSet expectRemoved = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
-        public final TrackingMutableRowSet expectModified = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
+        public final TrackingMutableRowSet expectAdded = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+        public final TrackingMutableRowSet expectRemoved = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+        public final TrackingMutableRowSet expectModified = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
 
         public Context() {
             LogicalClock.DEFAULT.resetForUnitTests();

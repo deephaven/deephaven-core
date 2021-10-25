@@ -132,9 +132,9 @@ public class RowSequenceRowKeysChunkImpl implements RowSequence {
     public final TrackingMutableRowSet asIndex() {
         final int size = backingChunk.size();
         if (size == 0) {
-            return TrackingMutableRowSet.FACTORY.getEmptyRowSet();
+            return RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
         }
-        final SequentialRowSetBuilder builder = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
+        final RowSetBuilderSequential builder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
         builder.setDomain(backingChunk.get(0), backingChunk.get(size - 1));
         builder.appendOrderedRowKeysChunk(backingChunk);
         return builder.build();

@@ -10,8 +10,8 @@ import io.deephaven.engine.v2.*;
 import io.deephaven.engine.v2.hashing.ChunkEquals;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.chunk.*;
-import io.deephaven.engine.v2.utils.SequentialRowSetBuilder;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
+import io.deephaven.engine.v2.utils.RowSetBuilderSequential;
+import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
 import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.util.SafeCloseableArray;
 import org.apache.commons.lang3.mutable.MutableInt;
@@ -59,7 +59,7 @@ public class TickSuppressor {
                 final Update downstream = upstream.copy();
                 downstream.added = upstream.added.union(upstream.modified);
                 downstream.removed = upstream.removed.union(upstream.getModifiedPreShift());
-                downstream.modified = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
+                downstream.modified = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
                 downstream.modifiedColumnSet = ModifiedColumnSet.EMPTY;
                 resultTable.notifyListeners(downstream);
             }
@@ -138,7 +138,7 @@ public class TickSuppressor {
                         final WritableBooleanChunk[] changedCellsArray = new WritableBooleanChunk[columnCount];
                         final boolean[] changedColumns = new boolean[columnCount];
 
-                        final SequentialRowSetBuilder builder = TrackingMutableRowSet.CURRENT_FACTORY.getSequentialBuilder();
+                        final RowSetBuilderSequential builder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
 
                         try (final SafeCloseableArray<ChunkSource.GetContext> ignored =
                                 new SafeCloseableArray<>(getContextArray);

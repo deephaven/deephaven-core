@@ -15,7 +15,8 @@ import io.deephaven.engine.tables.utils.DBDateTime;
 import io.deephaven.engine.v2.DynamicNode;
 import io.deephaven.engine.v2.QueryTable;
 import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.utils.RowSetBuilder;
+import io.deephaven.engine.v2.utils.RowSetBuilderRandom;
+import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
 import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -79,7 +80,7 @@ public abstract class ClockFilter extends SelectFilterLivenessArtifactImpl imple
                         .getColumnSource(columnName);
 
         final TrackingMutableRowSet initial = initializeAndGetInitialIndex(selection, fullSet, table);
-        return initial == null ? TrackingMutableRowSet.FACTORY.getEmptyRowSet() : initial;
+        return initial == null ? RowSetFactoryImpl.INSTANCE.getEmptyRowSet() : initial;
     }
 
     protected abstract @Nullable
@@ -118,7 +119,7 @@ public abstract class ClockFilter extends SelectFilterLivenessArtifactImpl imple
         final TrackingMutableRowSet added = updateAndGetAddedIndex();
         if (added != null && !added.empty()) {
             resultTable.getIndex().insert(added);
-            resultTable.notifyListeners(added, TrackingMutableRowSet.FACTORY.getEmptyRowSet(), TrackingMutableRowSet.FACTORY.getEmptyRowSet());
+            resultTable.notifyListeners(added, RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), RowSetFactoryImpl.INSTANCE.getEmptyRowSet());
         }
     }
 
@@ -147,9 +148,9 @@ public abstract class ClockFilter extends SelectFilterLivenessArtifactImpl imple
         }
 
         @Nullable
-        RowSetBuilder consumeKeysAndAppendAdded(final ColumnSource<Long> nanosColumnSource,
-                                                final long nowNanos,
-                                                @Nullable RowSetBuilder addedBuilder) {
+        RowSetBuilderRandom consumeKeysAndAppendAdded(final ColumnSource<Long> nanosColumnSource,
+                                                      final long nowNanos,
+                                                      @Nullable RowSetBuilderRandom addedBuilder) {
             final long firstKeyAdded = nextKey;
             long lastKeyAdded = -1L;
             while (nextKey <= lastKey
@@ -160,7 +161,7 @@ public abstract class ClockFilter extends SelectFilterLivenessArtifactImpl imple
                 return null;
             }
             if (addedBuilder == null) {
-                addedBuilder = TrackingMutableRowSet.FACTORY.getRandomBuilder();
+                addedBuilder = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
             }
             addedBuilder.addRange(firstKeyAdded, lastKeyAdded);
             return addedBuilder;

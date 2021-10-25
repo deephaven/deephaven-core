@@ -42,7 +42,7 @@ public interface RowSetFactory {
      * Get a {@link MutableRowSet} containing the specified row keys. Row keys must be nonnegative numbers.
      * 
      * @apiNote The provided list is sorted in-place and then passed to a
-     *          {@link SequentialRowSetBuilder}.
+     *          {@link RowSetBuilderSequential}.
      *
      * @param rowKeys The row keys to include; note that this list is mutated to ensure sorted order
      * @return A new {@link MutableRowSet} containing the specified row keys
@@ -66,22 +66,15 @@ public interface RowSetFactory {
      * @return A flat {@link MutableRowSet} containing the keys [0, size) or an empty {@link MutableRowSet} if the size
      *         is <= 0
      */
-    MutableRowSet getFlatIndex(long size);
+    MutableRowSet getFlatRowSet(long size);
 
     /**
-     * @return A {@link RowSetBuilder} suitable for inserting ranges in no particular order
+     * @return A {@link RowSetBuilderRandom} suitable for inserting ranges in no particular order
      */
-    RowSetBuilder getBuilder();
+    RowSetBuilderRandom getRandomBuilder();
 
     /**
-     * @return A {@link RowSetBuilder} suitable for inserting ranges in no particular order
+     * @return A {@link RowSetBuilderRandom} optimized for inserting ranges sequentially in order
      */
-    default RowSetBuilder getRandomBuilder() {
-        return getBuilder();
-    }
-
-    /**
-     * @return A {@link RowSetBuilder} optimized for inserting ranges sequentially in order
-     */
-    SequentialRowSetBuilder getSequentialBuilder();
+    RowSetBuilderSequential getSequentialBuilder();
 }

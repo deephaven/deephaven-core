@@ -12,6 +12,7 @@ import io.deephaven.engine.v2.sources.ObjectArraySource;
 import io.deephaven.engine.v2.sources.aggregate.AggregateColumnSource;
 import io.deephaven.engine.v2.sources.chunk.Attributes.*;
 import io.deephaven.engine.v2.sources.chunk.*;
+import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
 import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.v2.utils.RowSet;
@@ -234,7 +235,7 @@ public final class ByChunkedOperator implements IterativeChunkedAggregationOpera
     private TrackingMutableRowSet indexForSlot(final long destination) {
         TrackingMutableRowSet rowSet = indices.getUnsafe(destination);
         if (rowSet == null) {
-            indices.set(destination, rowSet = (live ? TrackingMutableRowSet.FACTORY : TrackingMutableRowSet.CURRENT_FACTORY).getEmptyRowSet());
+            indices.set(destination, rowSet = (live ? RowSetFactoryImpl.INSTANCE : RowSetFactoryImpl.INSTANCE).getEmptyRowSet());
         }
         return rowSet;
     }

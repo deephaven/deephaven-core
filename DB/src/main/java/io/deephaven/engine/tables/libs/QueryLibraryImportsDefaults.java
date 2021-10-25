@@ -1,8 +1,8 @@
 package io.deephaven.engine.tables.libs;
 
 import io.deephaven.engine.structures.RowSequence;
-import io.deephaven.engine.v2.utils.RowSetBuilder;
-import io.deephaven.engine.v2.utils.SequentialRowSetBuilder;
+import io.deephaven.engine.v2.utils.RowSetBuilderRandom;
+import io.deephaven.engine.v2.utils.RowSetBuilderSequential;
 import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 
 import java.util.Arrays;
@@ -36,8 +36,8 @@ public class QueryLibraryImportsDefaults implements QueryLibraryImports {
                 io.deephaven.engine.tables.select.Param.class,
                 io.deephaven.engine.v2.sources.ColumnSource.class,
                 TrackingMutableRowSet.class,
-                RowSetBuilder.class,
-                SequentialRowSetBuilder.class,
+                RowSetBuilderRandom.class,
+                RowSetBuilderSequential.class,
                 io.deephaven.engine.util.LongSizedDataStructure.class,
                 java.util.concurrent.ConcurrentHashMap.class,
                 io.deephaven.engine.v2.sources.chunk.Attributes.class,

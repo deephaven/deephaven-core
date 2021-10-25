@@ -9,7 +9,8 @@ import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.sources.chunk.Attributes.RowKeys;
 import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedRowKeyRanges;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
-import io.deephaven.engine.v2.utils.SequentialRowSetBuilder;
+import io.deephaven.engine.v2.utils.RowSetBuilderSequential;
+import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
 import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.util.Shuffle;
@@ -133,20 +134,20 @@ public class TestByteArraySource {
     @Test
     public void testGetChunk() {
         final Random random = new Random(0);
-        testGetChunkGeneric(new byte[0], new byte[0], 1, TrackingMutableRowSet.FACTORY.getRowSetByValues());
-        testGetChunkGeneric(new byte[0], new byte[0], 16, TrackingMutableRowSet.FACTORY.getRowSetByValues());
+        testGetChunkGeneric(new byte[0], new byte[0], 1, RowSetFactoryImpl.INSTANCE.getRowSetByValues());
+        testGetChunkGeneric(new byte[0], new byte[0], 16, RowSetFactoryImpl.INSTANCE.getRowSetByValues());
 
-        testGetChunkGeneric(ArrayGenerator.randomBytes(random, 16), ArrayGenerator.randomBytes(random, 16), 1, TrackingMutableRowSet.FACTORY.getRowSetByValues(0));
-        testGetChunkGeneric(ArrayGenerator.randomBytes(random, 16), ArrayGenerator.randomBytes(random, 16), 1, TrackingMutableRowSet.FACTORY.getRowSetByValues(0, 1));
-        testGetChunkGeneric(ArrayGenerator.randomBytes(random, 16), ArrayGenerator.randomBytes(random, 16), 1, TrackingMutableRowSet.FACTORY.getRowSetByValues(4));
-        testGetChunkGeneric(ArrayGenerator.randomBytes(random, 16), ArrayGenerator.randomBytes(random, 16), 1, TrackingMutableRowSet.FACTORY.getRowSetByValues(4, 5, 6));
-        testGetChunkGeneric(ArrayGenerator.randomBytes(random, 16), ArrayGenerator.randomBytes(random, 16), 1, TrackingMutableRowSet.FACTORY.getRowSetByValues(4,  6));
-        testGetChunkGeneric(ArrayGenerator.randomBytes(random, 16), ArrayGenerator.randomBytes(random, 16), 1, TrackingMutableRowSet.FACTORY.getRowSetByValues(4, 5, 6, 7, 8));
-        testGetChunkGeneric(ArrayGenerator.randomBytes(random, 16), ArrayGenerator.randomBytes(random, 16), 3, TrackingMutableRowSet.FACTORY.getRowSetByValues(5, 6, 7));
-        testGetChunkGeneric(ArrayGenerator.randomBytes(random, 16), ArrayGenerator.randomBytes(random, 16), 4, TrackingMutableRowSet.FACTORY.getRowSetByValues(4, 5, 6, 7));
-        testGetChunkGeneric(ArrayGenerator.randomBytes(random, 16), ArrayGenerator.randomBytes(random, 16), 5, TrackingMutableRowSet.FACTORY.getRowSetByValues(4, 5, 6, 7, 8));
-        testGetChunkGeneric(ArrayGenerator.randomBytes(random, 512), ArrayGenerator.randomBytes(random, 512), 4, TrackingMutableRowSet.FACTORY.getRowSetByValues(254, 255, 256, 257));
-        testGetChunkGeneric(ArrayGenerator.randomBytes(random, 512), ArrayGenerator.randomBytes(random, 512), 5, TrackingMutableRowSet.FACTORY.getRowSetByValues(254, 255, 256, 257, 258));
+        testGetChunkGeneric(ArrayGenerator.randomBytes(random, 16), ArrayGenerator.randomBytes(random, 16), 1, RowSetFactoryImpl.INSTANCE.getRowSetByValues(0));
+        testGetChunkGeneric(ArrayGenerator.randomBytes(random, 16), ArrayGenerator.randomBytes(random, 16), 1, RowSetFactoryImpl.INSTANCE.getRowSetByValues(0, 1));
+        testGetChunkGeneric(ArrayGenerator.randomBytes(random, 16), ArrayGenerator.randomBytes(random, 16), 1, RowSetFactoryImpl.INSTANCE.getRowSetByValues(4));
+        testGetChunkGeneric(ArrayGenerator.randomBytes(random, 16), ArrayGenerator.randomBytes(random, 16), 1, RowSetFactoryImpl.INSTANCE.getRowSetByValues(4, 5, 6));
+        testGetChunkGeneric(ArrayGenerator.randomBytes(random, 16), ArrayGenerator.randomBytes(random, 16), 1, RowSetFactoryImpl.INSTANCE.getRowSetByValues(4,  6));
+        testGetChunkGeneric(ArrayGenerator.randomBytes(random, 16), ArrayGenerator.randomBytes(random, 16), 1, RowSetFactoryImpl.INSTANCE.getRowSetByValues(4, 5, 6, 7, 8));
+        testGetChunkGeneric(ArrayGenerator.randomBytes(random, 16), ArrayGenerator.randomBytes(random, 16), 3, RowSetFactoryImpl.INSTANCE.getRowSetByValues(5, 6, 7));
+        testGetChunkGeneric(ArrayGenerator.randomBytes(random, 16), ArrayGenerator.randomBytes(random, 16), 4, RowSetFactoryImpl.INSTANCE.getRowSetByValues(4, 5, 6, 7));
+        testGetChunkGeneric(ArrayGenerator.randomBytes(random, 16), ArrayGenerator.randomBytes(random, 16), 5, RowSetFactoryImpl.INSTANCE.getRowSetByValues(4, 5, 6, 7, 8));
+        testGetChunkGeneric(ArrayGenerator.randomBytes(random, 512), ArrayGenerator.randomBytes(random, 512), 4, RowSetFactoryImpl.INSTANCE.getRowSetByValues(254, 255, 256, 257));
+        testGetChunkGeneric(ArrayGenerator.randomBytes(random, 512), ArrayGenerator.randomBytes(random, 512), 5, RowSetFactoryImpl.INSTANCE.getRowSetByValues(254, 255, 256, 257, 258));
 
         for (int sourceSize = 32; sourceSize < 4096; sourceSize *= 4) {
             for (int v = -4; v < 5; v++) {
@@ -161,7 +162,7 @@ public class TestByteArraySource {
     private void testGetChunkGenericLazy(byte[] values, int chunkSize, TrackingMutableRowSet rowSet) {
         final ByteArraySource sourceOrigin = forArray(values);
         final FormulaColumn formulaColumn = FormulaColumn.createFormulaColumn("Foo", "origin");
-        final SequentialRowSetBuilder sequentialBuilder = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
+        final RowSetBuilderSequential sequentialBuilder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
         if (values.length > 0) {
             sequentialBuilder.appendRange(0, values.length - 1);
         }
@@ -191,20 +192,20 @@ public class TestByteArraySource {
     @Test
     public void testGetChunkLazy() {
         final Random random = new Random(0);
-        testGetChunkGenericLazy(new byte[0], 1, TrackingMutableRowSet.FACTORY.getRowSetByValues());
-        testGetChunkGenericLazy(new byte[0], 16, TrackingMutableRowSet.FACTORY.getRowSetByValues());
+        testGetChunkGenericLazy(new byte[0], 1, RowSetFactoryImpl.INSTANCE.getRowSetByValues());
+        testGetChunkGenericLazy(new byte[0], 16, RowSetFactoryImpl.INSTANCE.getRowSetByValues());
 
-        testGetChunkGenericLazy(ArrayGenerator.randomBytes(random, 16), 1, TrackingMutableRowSet.FACTORY.getRowSetByValues(0));
-        testGetChunkGenericLazy(ArrayGenerator.randomBytes(random, 16), 1, TrackingMutableRowSet.FACTORY.getRowSetByValues(0, 1));
-        testGetChunkGenericLazy(ArrayGenerator.randomBytes(random, 16), 1, TrackingMutableRowSet.FACTORY.getRowSetByValues(4));
-        testGetChunkGenericLazy(ArrayGenerator.randomBytes(random, 16), 1, TrackingMutableRowSet.FACTORY.getRowSetByValues(4, 5, 6));
-        testGetChunkGenericLazy(ArrayGenerator.randomBytes(random, 16), 1, TrackingMutableRowSet.FACTORY.getRowSetByValues(4,  6));
-        testGetChunkGenericLazy(ArrayGenerator.randomBytes(random, 16), 1, TrackingMutableRowSet.FACTORY.getRowSetByValues(4, 5, 6, 7, 8));
-        testGetChunkGenericLazy(ArrayGenerator.randomBytes(random, 16), 3, TrackingMutableRowSet.FACTORY.getRowSetByValues(5, 6, 7));
-        testGetChunkGenericLazy(ArrayGenerator.randomBytes(random, 16), 4, TrackingMutableRowSet.FACTORY.getRowSetByValues(4, 5, 6, 7));
-        testGetChunkGenericLazy(ArrayGenerator.randomBytes(random, 16), 5, TrackingMutableRowSet.FACTORY.getRowSetByValues(4, 5, 6, 7, 8));
-        testGetChunkGenericLazy(ArrayGenerator.randomBytes(random, 512), 4, TrackingMutableRowSet.FACTORY.getRowSetByValues(254, 255, 256, 257));
-        testGetChunkGenericLazy(ArrayGenerator.randomBytes(random, 512), 5, TrackingMutableRowSet.FACTORY.getRowSetByValues(254, 255, 256, 257, 258));
+        testGetChunkGenericLazy(ArrayGenerator.randomBytes(random, 16), 1, RowSetFactoryImpl.INSTANCE.getRowSetByValues(0));
+        testGetChunkGenericLazy(ArrayGenerator.randomBytes(random, 16), 1, RowSetFactoryImpl.INSTANCE.getRowSetByValues(0, 1));
+        testGetChunkGenericLazy(ArrayGenerator.randomBytes(random, 16), 1, RowSetFactoryImpl.INSTANCE.getRowSetByValues(4));
+        testGetChunkGenericLazy(ArrayGenerator.randomBytes(random, 16), 1, RowSetFactoryImpl.INSTANCE.getRowSetByValues(4, 5, 6));
+        testGetChunkGenericLazy(ArrayGenerator.randomBytes(random, 16), 1, RowSetFactoryImpl.INSTANCE.getRowSetByValues(4,  6));
+        testGetChunkGenericLazy(ArrayGenerator.randomBytes(random, 16), 1, RowSetFactoryImpl.INSTANCE.getRowSetByValues(4, 5, 6, 7, 8));
+        testGetChunkGenericLazy(ArrayGenerator.randomBytes(random, 16), 3, RowSetFactoryImpl.INSTANCE.getRowSetByValues(5, 6, 7));
+        testGetChunkGenericLazy(ArrayGenerator.randomBytes(random, 16), 4, RowSetFactoryImpl.INSTANCE.getRowSetByValues(4, 5, 6, 7));
+        testGetChunkGenericLazy(ArrayGenerator.randomBytes(random, 16), 5, RowSetFactoryImpl.INSTANCE.getRowSetByValues(4, 5, 6, 7, 8));
+        testGetChunkGenericLazy(ArrayGenerator.randomBytes(random, 512), 4, RowSetFactoryImpl.INSTANCE.getRowSetByValues(254, 255, 256, 257));
+        testGetChunkGenericLazy(ArrayGenerator.randomBytes(random, 512), 5, RowSetFactoryImpl.INSTANCE.getRowSetByValues(254, 255, 256, 257, 258));
 
         for (int sourceSize = 512; sourceSize < 4096; sourceSize *= 4) {
             for (int v = -2; v < 3; v += 2) {
@@ -228,7 +229,7 @@ public class TestByteArraySource {
     }
 
     private void testParameterChunkAndIndexLazy(Random random, int sourceSize, byte[] values, int indexSize) {
-        final TrackingMutableRowSet rowSet = TrackingMutableRowSet.FACTORY.getRowSetByValues(indexDataGenerator(random, indexSize, .1, sourceSize / indexSize, sourceSize));
+        final TrackingMutableRowSet rowSet = RowSetFactoryImpl.INSTANCE.getRowSetByValues(indexDataGenerator(random, indexSize, .1, sourceSize / indexSize, sourceSize));
         for (int chunkSize = 2; chunkSize < sourceSize; chunkSize *= 4) {
             testGetChunkGenericLazy(values, chunkSize, rowSet);
             testGetChunkGenericLazy(values, chunkSize + 1, rowSet);
@@ -252,7 +253,7 @@ public class TestByteArraySource {
     }
 
     private void testParameterChunkAndIndex(Random random, int sourceSize, byte[] values, byte[] newvalues, int indexSize) {
-        final TrackingMutableRowSet rowSet = TrackingMutableRowSet.FACTORY.getRowSetByValues(indexDataGenerator(random, indexSize, .1, sourceSize / indexSize, sourceSize));
+        final TrackingMutableRowSet rowSet = RowSetFactoryImpl.INSTANCE.getRowSetByValues(indexDataGenerator(random, indexSize, .1, sourceSize / indexSize, sourceSize));
         for (int chunkSize = 2; chunkSize < sourceSize; chunkSize *= 2) {
             testGetChunkGeneric(values, newvalues, chunkSize, rowSet);
             testGetChunkGeneric(values, newvalues, chunkSize + 1, rowSet);
@@ -324,20 +325,20 @@ public class TestByteArraySource {
     @Test
     public void testFillChunk() {
         final Random random = new Random(0);
-        testFillChunkGeneric(new byte[0], new byte[0], 1, TrackingMutableRowSet.FACTORY.getRowSetByValues());
-        testFillChunkGeneric(new byte[0], new byte[0], 16, TrackingMutableRowSet.FACTORY.getRowSetByValues());
+        testFillChunkGeneric(new byte[0], new byte[0], 1, RowSetFactoryImpl.INSTANCE.getRowSetByValues());
+        testFillChunkGeneric(new byte[0], new byte[0], 16, RowSetFactoryImpl.INSTANCE.getRowSetByValues());
 
-        testFillChunkGeneric(ArrayGenerator.randomBytes(random, 16), ArrayGenerator.randomBytes(random, 16), 1, TrackingMutableRowSet.FACTORY.getRowSetByValues(0));
-        testFillChunkGeneric(ArrayGenerator.randomBytes(random, 16), ArrayGenerator.randomBytes(random, 16), 1, TrackingMutableRowSet.FACTORY.getRowSetByValues(0, 1));
-        testFillChunkGeneric(ArrayGenerator.randomBytes(random, 16), ArrayGenerator.randomBytes(random, 16), 1, TrackingMutableRowSet.FACTORY.getRowSetByValues(4));
-        testFillChunkGeneric(ArrayGenerator.randomBytes(random, 16), ArrayGenerator.randomBytes(random, 16), 1, TrackingMutableRowSet.FACTORY.getRowSetByValues(4, 5, 6));
-        testFillChunkGeneric(ArrayGenerator.randomBytes(random, 16), ArrayGenerator.randomBytes(random, 16), 1, TrackingMutableRowSet.FACTORY.getRowSetByValues(4,  6));
-        testFillChunkGeneric(ArrayGenerator.randomBytes(random, 16), ArrayGenerator.randomBytes(random, 16), 1, TrackingMutableRowSet.FACTORY.getRowSetByValues(4, 5, 6, 7, 8));
-        testFillChunkGeneric(ArrayGenerator.randomBytes(random, 16), ArrayGenerator.randomBytes(random, 16), 3, TrackingMutableRowSet.FACTORY.getRowSetByValues(5, 6, 7));
-        testFillChunkGeneric(ArrayGenerator.randomBytes(random, 16), ArrayGenerator.randomBytes(random, 16), 4, TrackingMutableRowSet.FACTORY.getRowSetByValues(4, 5, 6, 7));
-        testFillChunkGeneric(ArrayGenerator.randomBytes(random, 16), ArrayGenerator.randomBytes(random, 16), 5, TrackingMutableRowSet.FACTORY.getRowSetByValues(4, 5, 6, 7, 8));
-        testFillChunkGeneric(ArrayGenerator.randomBytes(random, 512), ArrayGenerator.randomBytes(random, 512), 4, TrackingMutableRowSet.FACTORY.getRowSetByValues(254, 255, 256, 257));
-        testFillChunkGeneric(ArrayGenerator.randomBytes(random, 512), ArrayGenerator.randomBytes(random, 512), 5, TrackingMutableRowSet.FACTORY.getRowSetByValues(254, 255, 256, 257, 258));
+        testFillChunkGeneric(ArrayGenerator.randomBytes(random, 16), ArrayGenerator.randomBytes(random, 16), 1, RowSetFactoryImpl.INSTANCE.getRowSetByValues(0));
+        testFillChunkGeneric(ArrayGenerator.randomBytes(random, 16), ArrayGenerator.randomBytes(random, 16), 1, RowSetFactoryImpl.INSTANCE.getRowSetByValues(0, 1));
+        testFillChunkGeneric(ArrayGenerator.randomBytes(random, 16), ArrayGenerator.randomBytes(random, 16), 1, RowSetFactoryImpl.INSTANCE.getRowSetByValues(4));
+        testFillChunkGeneric(ArrayGenerator.randomBytes(random, 16), ArrayGenerator.randomBytes(random, 16), 1, RowSetFactoryImpl.INSTANCE.getRowSetByValues(4, 5, 6));
+        testFillChunkGeneric(ArrayGenerator.randomBytes(random, 16), ArrayGenerator.randomBytes(random, 16), 1, RowSetFactoryImpl.INSTANCE.getRowSetByValues(4,  6));
+        testFillChunkGeneric(ArrayGenerator.randomBytes(random, 16), ArrayGenerator.randomBytes(random, 16), 1, RowSetFactoryImpl.INSTANCE.getRowSetByValues(4, 5, 6, 7, 8));
+        testFillChunkGeneric(ArrayGenerator.randomBytes(random, 16), ArrayGenerator.randomBytes(random, 16), 3, RowSetFactoryImpl.INSTANCE.getRowSetByValues(5, 6, 7));
+        testFillChunkGeneric(ArrayGenerator.randomBytes(random, 16), ArrayGenerator.randomBytes(random, 16), 4, RowSetFactoryImpl.INSTANCE.getRowSetByValues(4, 5, 6, 7));
+        testFillChunkGeneric(ArrayGenerator.randomBytes(random, 16), ArrayGenerator.randomBytes(random, 16), 5, RowSetFactoryImpl.INSTANCE.getRowSetByValues(4, 5, 6, 7, 8));
+        testFillChunkGeneric(ArrayGenerator.randomBytes(random, 512), ArrayGenerator.randomBytes(random, 512), 4, RowSetFactoryImpl.INSTANCE.getRowSetByValues(254, 255, 256, 257));
+        testFillChunkGeneric(ArrayGenerator.randomBytes(random, 512), ArrayGenerator.randomBytes(random, 512), 5, RowSetFactoryImpl.INSTANCE.getRowSetByValues(254, 255, 256, 257, 258));
 
         for (int sourceSize = 32; sourceSize < 8192; sourceSize *= 4) {
             for (int v = -4; v < 5; v += 2) {
@@ -361,7 +362,7 @@ public class TestByteArraySource {
     }
 
     private void testParameterFillChunkAndIndex(Random random, int sourceSize, byte[] values, byte[] newValues, int indexSize) {
-        final TrackingMutableRowSet rowSet = TrackingMutableRowSet.FACTORY.getRowSetByValues(indexDataGenerator(random, indexSize, .1, sourceSize / indexSize, sourceSize));
+        final TrackingMutableRowSet rowSet = RowSetFactoryImpl.INSTANCE.getRowSetByValues(indexDataGenerator(random, indexSize, .1, sourceSize / indexSize, sourceSize));
         for (int chunkSize = 2; chunkSize < sourceSize; chunkSize *= 2) {
             testFillChunkGeneric(values, newValues, chunkSize, rowSet);
             testFillChunkGeneric(values, newValues, chunkSize + 1, rowSet);
@@ -373,7 +374,7 @@ public class TestByteArraySource {
     private void testFillChunkLazyGeneric(byte[] values, int chunkSize, TrackingMutableRowSet rowSet) {
         final ByteArraySource sourceOrigin = forArray(values);
         final FormulaColumn formulaColumn = FormulaColumn.createFormulaColumn("Foo", "origin");
-        final SequentialRowSetBuilder sequentialBuilder = TrackingMutableRowSet.FACTORY.getSequentialBuilder();
+        final RowSetBuilderSequential sequentialBuilder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
         if (values.length > 0) {
             sequentialBuilder.appendRange(0, values.length - 1);
         }
@@ -406,20 +407,20 @@ public class TestByteArraySource {
     @Test
     public void testFillChunkLazy() {
         final Random random = new Random(0);
-        testFillChunkLazyGeneric(new byte[0], 1, TrackingMutableRowSet.FACTORY.getRowSetByValues());
-        testFillChunkLazyGeneric(new byte[0], 16, TrackingMutableRowSet.FACTORY.getRowSetByValues());
+        testFillChunkLazyGeneric(new byte[0], 1, RowSetFactoryImpl.INSTANCE.getRowSetByValues());
+        testFillChunkLazyGeneric(new byte[0], 16, RowSetFactoryImpl.INSTANCE.getRowSetByValues());
 
-        testFillChunkLazyGeneric(ArrayGenerator.randomBytes(random, 16), 1, TrackingMutableRowSet.FACTORY.getRowSetByValues(0));
-        testFillChunkLazyGeneric(ArrayGenerator.randomBytes(random, 16), 1, TrackingMutableRowSet.FACTORY.getRowSetByValues(0, 1));
-        testFillChunkLazyGeneric(ArrayGenerator.randomBytes(random, 16), 1, TrackingMutableRowSet.FACTORY.getRowSetByValues(4));
-        testFillChunkLazyGeneric(ArrayGenerator.randomBytes(random, 16), 1, TrackingMutableRowSet.FACTORY.getRowSetByValues(4, 5, 6));
-        testFillChunkLazyGeneric(ArrayGenerator.randomBytes(random, 16), 1, TrackingMutableRowSet.FACTORY.getRowSetByValues(4,  6));
-        testFillChunkLazyGeneric(ArrayGenerator.randomBytes(random, 16), 1, TrackingMutableRowSet.FACTORY.getRowSetByValues(4, 5, 6, 7, 8));
-        testFillChunkLazyGeneric(ArrayGenerator.randomBytes(random, 16), 3, TrackingMutableRowSet.FACTORY.getRowSetByValues(5, 6, 7));
-        testFillChunkLazyGeneric(ArrayGenerator.randomBytes(random, 16), 4, TrackingMutableRowSet.FACTORY.getRowSetByValues(4, 5, 6, 7));
-        testFillChunkLazyGeneric(ArrayGenerator.randomBytes(random, 16), 5, TrackingMutableRowSet.FACTORY.getRowSetByValues(4, 5, 6, 7, 8));
-        testFillChunkLazyGeneric(ArrayGenerator.randomBytes(random, 512), 4, TrackingMutableRowSet.FACTORY.getRowSetByValues(254, 255, 256, 257));
-        testFillChunkLazyGeneric(ArrayGenerator.randomBytes(random, 512), 5, TrackingMutableRowSet.FACTORY.getRowSetByValues(254, 255, 256, 257, 258));
+        testFillChunkLazyGeneric(ArrayGenerator.randomBytes(random, 16), 1, RowSetFactoryImpl.INSTANCE.getRowSetByValues(0));
+        testFillChunkLazyGeneric(ArrayGenerator.randomBytes(random, 16), 1, RowSetFactoryImpl.INSTANCE.getRowSetByValues(0, 1));
+        testFillChunkLazyGeneric(ArrayGenerator.randomBytes(random, 16), 1, RowSetFactoryImpl.INSTANCE.getRowSetByValues(4));
+        testFillChunkLazyGeneric(ArrayGenerator.randomBytes(random, 16), 1, RowSetFactoryImpl.INSTANCE.getRowSetByValues(4, 5, 6));
+        testFillChunkLazyGeneric(ArrayGenerator.randomBytes(random, 16), 1, RowSetFactoryImpl.INSTANCE.getRowSetByValues(4,  6));
+        testFillChunkLazyGeneric(ArrayGenerator.randomBytes(random, 16), 1, RowSetFactoryImpl.INSTANCE.getRowSetByValues(4, 5, 6, 7, 8));
+        testFillChunkLazyGeneric(ArrayGenerator.randomBytes(random, 16), 3, RowSetFactoryImpl.INSTANCE.getRowSetByValues(5, 6, 7));
+        testFillChunkLazyGeneric(ArrayGenerator.randomBytes(random, 16), 4, RowSetFactoryImpl.INSTANCE.getRowSetByValues(4, 5, 6, 7));
+        testFillChunkLazyGeneric(ArrayGenerator.randomBytes(random, 16), 5, RowSetFactoryImpl.INSTANCE.getRowSetByValues(4, 5, 6, 7, 8));
+        testFillChunkLazyGeneric(ArrayGenerator.randomBytes(random, 512), 4, RowSetFactoryImpl.INSTANCE.getRowSetByValues(254, 255, 256, 257));
+        testFillChunkLazyGeneric(ArrayGenerator.randomBytes(random, 512), 5, RowSetFactoryImpl.INSTANCE.getRowSetByValues(254, 255, 256, 257, 258));
 
         for (int sourceSize = 512; sourceSize < 4096; sourceSize *= 4) {
             for (int v = -2; v < 3; v++) {
@@ -442,7 +443,7 @@ public class TestByteArraySource {
     }
 
     private void testParameterFillChunkAndIndexLazy(Random random, int sourceSize, byte[] values, int indexSize) {
-        final TrackingMutableRowSet rowSet = TrackingMutableRowSet.FACTORY.getRowSetByValues(indexDataGenerator(random, indexSize, .1, sourceSize / indexSize, sourceSize));
+        final TrackingMutableRowSet rowSet = RowSetFactoryImpl.INSTANCE.getRowSetByValues(indexDataGenerator(random, indexSize, .1, sourceSize / indexSize, sourceSize));
         for (int chunkSize = 2; chunkSize < sourceSize; chunkSize *= 4) {
             testFillChunkLazyGeneric(values, chunkSize, rowSet);
             testFillChunkLazyGeneric(values, chunkSize + 1, rowSet);
@@ -496,8 +497,8 @@ public class TestByteArraySource {
         // super hack
         final byte[] peekedBlock = (byte[])source.getBlock(0);
 
-        try (TrackingMutableRowSet srcKeys = TrackingMutableRowSet.FACTORY.getRowSetByRange(rangeStart, rangeEnd)) {
-            try (TrackingMutableRowSet destKeys = TrackingMutableRowSet.FACTORY.getRowSetByRange(rangeStart + 1, rangeEnd + 1)) {
+        try (TrackingMutableRowSet srcKeys = RowSetFactoryImpl.INSTANCE.getRowSetByRange(rangeStart, rangeEnd)) {
+            try (TrackingMutableRowSet destKeys = RowSetFactoryImpl.INSTANCE.getRowSetByRange(rangeStart + 1, rangeEnd + 1)) {
                 try (ChunkSource.GetContext srcContext = source.makeGetContext(arraySize)) {
                     try (WritableChunkSink.FillFromContext destContext = source.makeFillFromContext(arraySize)) {
                         Chunk chunk = source.getChunk(srcContext, srcKeys);
@@ -525,7 +526,7 @@ public class TestByteArraySource {
         final ByteArraySource src = new ByteArraySource();
         src.startTrackingPrevValues();
         LiveTableMonitor.DEFAULT.startCycleForUnitTests();
-        try (final TrackingMutableRowSet keys = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
+        try (final TrackingMutableRowSet keys = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
              final WritableByteChunk<Values> chunk = WritableByteChunk.makeWritableChunk(0)) {
             // Fill from an empty chunk
             src.fillFromChunkByKeys(keys, chunk);

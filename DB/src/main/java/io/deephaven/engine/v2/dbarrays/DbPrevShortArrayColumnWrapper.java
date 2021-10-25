@@ -12,8 +12,9 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.util.LongSizedDataStructure;
 import io.deephaven.engine.tables.dbarrays.*;
 import io.deephaven.engine.v2.sources.ColumnSource;
+import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
 import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
-import io.deephaven.engine.v2.utils.RowSetBuilder;
+import io.deephaven.engine.v2.utils.RowSetBuilderRandom;
 import org.jetbrains.annotations.NotNull;
 
 import static io.deephaven.util.QueryConstants.NULL_SHORT;
@@ -40,7 +41,7 @@ public class DbPrevShortArrayColumnWrapper extends DbShortArray.Indirect {
                                          final long startPadding, final long endPadding, final boolean alreadyPrevIndex) {
         Assert.neqNull(rowSet, "rowSet");
         this.columnSource = columnSource;
-        this.rowSet = alreadyPrevIndex ? rowSet : rowSet.getPrevIndex();
+        this.rowSet = alreadyPrevIndex ? rowSet : rowSet.getPrevRowSet();
         this.startPadding = startPadding;
         this.endPadding = endPadding;
     }
@@ -77,7 +78,7 @@ public class DbPrevShortArrayColumnWrapper extends DbShortArray.Indirect {
 
     @Override
     public DbShortArray subArrayByPositions(long[] positions) {
-        RowSetBuilder builder = TrackingMutableRowSet.FACTORY.getRandomBuilder();
+        RowSetBuilderRandom builder = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
 
         for (long position : positions) {
             final long realPos = position - startPadding;

@@ -8,7 +8,8 @@ import com.google.common.io.LittleEndianDataInputStream;
 import gnu.trove.list.array.TLongArrayList;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.structures.RowSequence;
-import io.deephaven.engine.v2.utils.SequentialRowSetBuilder;
+import io.deephaven.engine.v2.utils.RowSetBuilderSequential;
+import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
 import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.engine.v2.LiveTableTestCase;
@@ -345,7 +346,7 @@ public class BarrageColumnRoundTripTest extends LiveTableTestCase {
             final WritableObjectChunk<T, Attributes.Values> computed = unTypedComputed.asWritableObjectChunk();
 
             if (subset == null) {
-                subset = TrackingMutableRowSet.CURRENT_FACTORY.getFlatIndex(untypedOriginal.size());
+                subset = RowSetFactoryImpl.INSTANCE.getFlatRowSet(untypedOriginal.size());
             }
             final MutableInt off = new MutableInt();
             subset.forAllLongs(key -> {
@@ -376,7 +377,7 @@ public class BarrageColumnRoundTripTest extends LiveTableTestCase {
             final WritableObjectChunk<T, Attributes.Values> original = untypedOriginal.asWritableObjectChunk();
             final WritableObjectChunk<String, Attributes.Values> computed = untypedComputed.asWritableObjectChunk();
             if (subset == null) {
-                subset = TrackingMutableRowSet.CURRENT_FACTORY.getFlatIndex(original.size());
+                subset = RowSetFactoryImpl.INSTANCE.getFlatRowSet(original.size());
             }
             final MutableInt off = new MutableInt();
             subset.forAllLongs(key -> {
@@ -398,7 +399,7 @@ public class BarrageColumnRoundTripTest extends LiveTableTestCase {
             final WritableObjectChunk<long[], Attributes.Values> original = untypedOriginal.asWritableObjectChunk();
             final WritableObjectChunk<long[], Attributes.Values> computed = unTypedComputed.asWritableObjectChunk();
             if (subset == null) {
-                subset = TrackingMutableRowSet.CURRENT_FACTORY.getFlatIndex(original.size());
+                subset = RowSetFactoryImpl.INSTANCE.getFlatRowSet(original.size());
             }
             final MutableInt off = new MutableInt();
             subset.forAllLongs(i -> {
@@ -457,7 +458,7 @@ public class BarrageColumnRoundTripTest extends LiveTableTestCase {
             try (final BarrageProtoUtil.ExposedByteArrayOutputStream baos =
                     new BarrageProtoUtil.ExposedByteArrayOutputStream();
                     final ChunkInputStreamGenerator.DrainableColumn column =
-                            generator.getInputStream(options, TrackingMutableRowSet.CURRENT_FACTORY.getEmptyRowSet());) {
+                            generator.getInputStream(options, RowSetFactoryImpl.INSTANCE.getEmptyRowSet());) {
 
                 final ArrayList<ChunkInputStreamGenerator.FieldNodeInfo> fieldNodes = new ArrayList<>();
                 column.visitFieldNodes((numElements, nullCount) -> fieldNodes
@@ -477,7 +478,7 @@ public class BarrageColumnRoundTripTest extends LiveTableTestCase {
 
             // swiss cheese subset
             final Random random = new Random();
-            final SequentialRowSetBuilder builder = TrackingMutableRowSet.CURRENT_FACTORY.getSequentialBuilder();
+            final RowSetBuilderSequential builder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
             for (int i = 0; i < data.size(); ++i) {
                 if (random.nextBoolean()) {
                     builder.appendKey(i);

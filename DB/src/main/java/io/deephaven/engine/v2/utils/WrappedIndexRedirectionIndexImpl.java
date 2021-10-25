@@ -97,7 +97,7 @@ public class WrappedIndexRedirectionIndexImpl implements RedirectionIndex {
             @NotNull final RowSequence keysToMap) {
         final WritableLongChunk<RowKeys> indexPositions = ((FillContext) fillContext).indexPositions;
         keysToMap.fillRowKeyChunk(indexPositions);
-        try (final RowSet prevWrappedIndex = wrappedRowSet.getPrevIndex()) {
+        try (final RowSet prevWrappedIndex = wrappedRowSet.getPrevRowSet()) {
             prevWrappedIndex.getKeysForPositions(new LongChunkIterator(indexPositions),
                     new LongChunkAppender(mappedKeysOut));
         }

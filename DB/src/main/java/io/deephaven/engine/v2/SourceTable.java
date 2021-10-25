@@ -8,6 +8,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.v2.locations.*;
 import io.deephaven.engine.v2.locations.impl.TableLocationSubscriptionBuffer;
+import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
 import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.process.ProcessEnvironment;
@@ -222,7 +223,7 @@ public abstract class SourceTable extends RedefinableTable {
                     setAttribute(EMPTY_SOURCE_TABLE_ATTRIBUTE, false);
                 }
                 rowSet.insert(added);
-                notifyListeners(added, TrackingMutableRowSet.FACTORY.getEmptyRowSet(), TrackingMutableRowSet.FACTORY.getEmptyRowSet());
+                notifyListeners(added, RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), RowSetFactoryImpl.INSTANCE.getEmptyRowSet());
             } catch (Exception e) {
                 // Notify listeners to the SourceTable when we had an issue refreshing available locations.
                 notifyListenersOnError(e, null);

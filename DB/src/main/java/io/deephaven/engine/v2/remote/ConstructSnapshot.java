@@ -11,6 +11,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.v2.sources.ReinterpretUtilities;
+import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
 import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.io.log.LogEntry;
 import io.deephaven.engine.tables.ColumnDefinition;
@@ -496,7 +497,7 @@ public class ConstructSnapshot {
             if (positionsToSnapshot == null) {
                 keysToSnapshot = null;
             } else if (usePrev) {
-                try (final TrackingMutableRowSet prevIndex = table.getIndex().getPrevIndex()) {
+                try (final TrackingMutableRowSet prevIndex = table.getIndex().getPrevRowSet()) {
                     keysToSnapshot = prevIndex.subSetForPositions(positionsToSnapshot);
                 }
             } else {
@@ -567,7 +568,7 @@ public class ConstructSnapshot {
             if (positionsToSnapshot == null) {
                 keysToSnapshot = null;
             } else if (usePrev) {
-                try (final TrackingMutableRowSet prevIndex = table.getIndex().getPrevIndex()) {
+                try (final TrackingMutableRowSet prevIndex = table.getIndex().getPrevRowSet()) {
                     keysToSnapshot = prevIndex.subSetForPositions(positionsToSnapshot);
                 }
             } else {
@@ -1211,7 +1212,7 @@ public class ConstructSnapshot {
             Object logIdentityObject,
             BitSet columnsToSerialize,
             TrackingMutableRowSet keysToSnapshot) {
-        snapshot.rowSet = (usePrev ? table.getIndex().getPrevIndex() : table.getIndex()).clone();
+        snapshot.rowSet = (usePrev ? table.getIndex().getPrevRowSet() : table.getIndex()).clone();
 
         if (keysToSnapshot != null) {
             snapshot.rowsIncluded = snapshot.rowSet.intersect(keysToSnapshot);
@@ -1279,8 +1280,8 @@ public class ConstructSnapshot {
             final Object logIdentityObject,
             final BitSet columnsToSerialize,
             final TrackingMutableRowSet positionsToSnapshot) {
-        snapshot.rowsAdded = (usePrev ? table.getIndex().getPrevIndex() : table.getIndex()).clone();
-        snapshot.rowsRemoved = TrackingMutableRowSet.CURRENT_FACTORY.getEmptyRowSet();
+        snapshot.rowsAdded = (usePrev ? table.getIndex().getPrevRowSet() : table.getIndex()).clone();
+        snapshot.rowsRemoved = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
         snapshot.addColumnData = new BarrageMessage.AddColumnData[table.getColumnSources().size()];
 
         // TODO (core#412): when sending app metadata; this can be reduced to a zero-len array
@@ -1313,7 +1314,7 @@ public class ConstructSnapshot {
                 final BarrageMessage.AddColumnData acd = new BarrageMessage.AddColumnData();
                 snapshot.addColumnData[ii] = acd;
                 final boolean columnIsEmpty = columnsToSerialize != null && !columnsToSerialize.get(ii);
-                final TrackingMutableRowSet rows = columnIsEmpty ? TrackingMutableRowSet.FACTORY.getEmptyRowSet() : snapshot.rowsIncluded;
+                final TrackingMutableRowSet rows = columnIsEmpty ? RowSetFactoryImpl.INSTANCE.getEmptyRowSet() : snapshot.rowsIncluded;
                 // Note: cannot use shared context across several calls of differing lengths and no sharing necessary
                 // when empty
                 acd.data = getSnapshotDataAsChunk(columnSource, columnIsEmpty ? null : sharedContext, rows, usePrev);
@@ -1322,8 +1323,8 @@ public class ConstructSnapshot {
 
                 final BarrageMessage.ModColumnData mcd = new BarrageMessage.ModColumnData();
                 snapshot.modColumnData[ii] = mcd;
-                mcd.rowsModified = TrackingMutableRowSet.CURRENT_FACTORY.getEmptyRowSet();
-                mcd.data = getSnapshotDataAsChunk(columnSource, null, TrackingMutableRowSet.FACTORY.getEmptyRowSet(), usePrev);
+                mcd.rowsModified = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+                mcd.data = getSnapshotDataAsChunk(columnSource, null, RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), usePrev);
                 mcd.type = acd.type;
                 mcd.componentType = acd.componentType;
             }

@@ -24,10 +24,7 @@ import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.TreeMapSource;
 import io.deephaven.engine.v2.sources.UnionRedirection;
 import io.deephaven.engine.v2.sources.chunk.util.pools.ChunkPoolReleaseTracking;
-import io.deephaven.engine.v2.utils.ColumnHolder;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
-import io.deephaven.engine.v2.utils.IndexShiftData;
-import io.deephaven.engine.v2.utils.UpdatePerformanceTracker;
+import io.deephaven.engine.v2.utils.*;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
@@ -451,7 +448,7 @@ public class QueryTableAggregationTest {
         TestCase.assertEquals(1, table.by("j=i").getColumns().length);
         TestCase.assertEquals(int.class, table.by("j=i").getColumn("j").getType());
 
-        table = TstUtils.testRefreshingTable(TrackingMutableRowSet.FACTORY.getRowSetByRange(0, 2), c("S", "c", "e", "g"),
+        table = TstUtils.testRefreshingTable(RowSetFactoryImpl.INSTANCE.getRowSetByRange(0, 2), c("S", "c", "e", "g"),
                 c("I", 2, 4, 6));
 
         TestCase.assertEquals(3, table.by("S").size());
@@ -468,7 +465,7 @@ public class QueryTableAggregationTest {
         TestCase.assertEquals(4, intGroups[1].get(0));
         TestCase.assertEquals(6, intGroups[2].get(0));
 
-        table = TstUtils.testRefreshingTable(TrackingMutableRowSet.FACTORY.getRowSetByRange(0, 2),
+        table = TstUtils.testRefreshingTable(RowSetFactoryImpl.INSTANCE.getRowSetByRange(0, 2),
                 c("S", "e", "c", "g"),
                 c("I", 4, 2, 6));
 
@@ -486,7 +483,7 @@ public class QueryTableAggregationTest {
         TestCase.assertEquals(2, intGroups[1].get(0));
         TestCase.assertEquals(6, intGroups[2].get(0));
 
-        table = TstUtils.testRefreshingTable(TrackingMutableRowSet.FACTORY.getRowSetByRange(0, 2),
+        table = TstUtils.testRefreshingTable(RowSetFactoryImpl.INSTANCE.getRowSetByRange(0, 2),
                 c("S", "e", "c", "g"),
                 c("X", 4, 2, 6),
                 c("Y", 1, 2, 3));
@@ -2704,7 +2701,7 @@ public class QueryTableAggregationTest {
             System.out.println("Step = " + step);
 
             LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-                final TrackingMutableRowSet added = TrackingMutableRowSet.FACTORY.getRowSetByRange(size * (fstep + 1), size * (fstep + 2) - 1);
+                final TrackingMutableRowSet added = RowSetFactoryImpl.INSTANCE.getRowSetByRange(size * (fstep + 1), size * (fstep + 2) - 1);
                 queryTable.getIndex().insert(added);
 
                 // Modifies and Adds in post-shift keyspace.
@@ -3221,7 +3218,7 @@ public class QueryTableAggregationTest {
             for (int idx = 3; idx < 4097; ++idx) {
                 TstUtils.addToTable(table, i(idx), intCol("Sentinel", idx), col("Bucket", "C"));
             }
-            table.notifyListeners(TrackingMutableRowSet.FACTORY.getRowSetByRange(3, 4096), i(), i());
+            table.notifyListeners(RowSetFactoryImpl.INSTANCE.getRowSetByRange(3, 4096), i(), i());
         });
 
         System.out.println("Fill in with C");
@@ -3311,7 +3308,7 @@ public class QueryTableAggregationTest {
 
     @Test
     public void testIds6220() {
-        final QueryTable table = TstUtils.testRefreshingTable(TrackingMutableRowSet.FACTORY.getRowSetByRange(0, 2),
+        final QueryTable table = TstUtils.testRefreshingTable(RowSetFactoryImpl.INSTANCE.getRowSetByRange(0, 2),
                 cG("Key", "a", "b", "c"), c("I", 2, 4, 6));
         final IncrementalReleaseFilter filter = new IncrementalReleaseFilter(0, 10);
         final Table byTable = table.where(filter).by("Key");
@@ -3333,7 +3330,7 @@ public class QueryTableAggregationTest {
             sentinels[ii] = ii;
         }
         final QueryTable table =
-                TstUtils.testRefreshingTable(TrackingMutableRowSet.FACTORY.getRowSetByRange(100, 100 + keyValues.length - 1),
+                TstUtils.testRefreshingTable(RowSetFactoryImpl.INSTANCE.getRowSetByRange(100, 100 + keyValues.length - 1),
                         stringCol("Key", keyValues), intCol("IntCol", sentinels));
 
         final Table flat = table.flatten();
@@ -3357,7 +3354,7 @@ public class QueryTableAggregationTest {
         Arrays.fill(keys2, "Key");
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-            final TrackingMutableRowSet additions = TrackingMutableRowSet.FACTORY.getRowSetByRange(0, newSize - 1);
+            final TrackingMutableRowSet additions = RowSetFactoryImpl.INSTANCE.getRowSetByRange(0, newSize - 1);
             TstUtils.addToTable(table, additions, col("Key", keys2), intCol("IntCol", sentinel2));
             table.notifyListeners(additions, i(), i());
         });
@@ -3366,7 +3363,7 @@ public class QueryTableAggregationTest {
         assertTableEquals(table, subTable);
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-            final TrackingMutableRowSet removals = TrackingMutableRowSet.FACTORY.getRowSetByRange(100, 100 + newSize - 1);
+            final TrackingMutableRowSet removals = RowSetFactoryImpl.INSTANCE.getRowSetByRange(100, 100 + newSize - 1);
             TstUtils.removeRows(table, removals);
             table.notifyListeners(i(), removals, i());
         });
@@ -3379,8 +3376,8 @@ public class QueryTableAggregationTest {
 
         // changed delta
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-            final TrackingMutableRowSet additions = TrackingMutableRowSet.FACTORY.getRowSetByRange(newSize, newSize + newSize - 1);
-            final TrackingMutableRowSet removals = TrackingMutableRowSet.FACTORY.getRowSetByRange(6000, 6000 + newSize - 3);
+            final TrackingMutableRowSet additions = RowSetFactoryImpl.INSTANCE.getRowSetByRange(newSize, newSize + newSize - 1);
+            final TrackingMutableRowSet removals = RowSetFactoryImpl.INSTANCE.getRowSetByRange(6000, 6000 + newSize - 3);
             TstUtils.addToTable(table, additions, col("Key", keys2), intCol("IntCol", sentinel2));
             TstUtils.removeRows(table, removals);
             table.notifyListeners(additions, removals, i());
@@ -3390,8 +3387,8 @@ public class QueryTableAggregationTest {
 
         // polarity reversal
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-            final TrackingMutableRowSet additions = TrackingMutableRowSet.FACTORY.getRowSetByRange(newSize * 2, newSize * 3 - 1);
-            final TrackingMutableRowSet removals = TrackingMutableRowSet.FACTORY.getRowSetByRange(6000 + newSize, 6000 + newSize * 3);
+            final TrackingMutableRowSet additions = RowSetFactoryImpl.INSTANCE.getRowSetByRange(newSize * 2, newSize * 3 - 1);
+            final TrackingMutableRowSet removals = RowSetFactoryImpl.INSTANCE.getRowSetByRange(6000 + newSize, 6000 + newSize * 3);
             TstUtils.addToTable(table, additions, col("Key", keys2), intCol("IntCol", sentinel2));
             TstUtils.removeRows(table, removals);
             table.notifyListeners(additions, removals, i());
@@ -3401,7 +3398,7 @@ public class QueryTableAggregationTest {
 
         // prepare a hole
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-            final TrackingMutableRowSet removals = TrackingMutableRowSet.FACTORY.getRowSetByRange(7000, 7100);
+            final TrackingMutableRowSet removals = RowSetFactoryImpl.INSTANCE.getRowSetByRange(7000, 7100);
             TstUtils.removeRows(table, removals);
             table.notifyListeners(i(), removals, i());
         });
@@ -3414,9 +3411,9 @@ public class QueryTableAggregationTest {
 
         // intervening keys
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-            final TrackingMutableRowSet additions1 = TrackingMutableRowSet.FACTORY.getRowSetByRange(newSize * 3, newSize * 4 - 1);
-            final TrackingMutableRowSet additions2 = TrackingMutableRowSet.FACTORY.getRowSetByRange(7000, 7000 + newSize - 1);
-            final TrackingMutableRowSet removals = TrackingMutableRowSet.FACTORY.getRowSetByRange(6000 + newSize * 4, 6000 + newSize * 5 - 1);
+            final TrackingMutableRowSet additions1 = RowSetFactoryImpl.INSTANCE.getRowSetByRange(newSize * 3, newSize * 4 - 1);
+            final TrackingMutableRowSet additions2 = RowSetFactoryImpl.INSTANCE.getRowSetByRange(7000, 7000 + newSize - 1);
+            final TrackingMutableRowSet removals = RowSetFactoryImpl.INSTANCE.getRowSetByRange(6000 + newSize * 4, 6000 + newSize * 5 - 1);
             TstUtils.addToTable(table, additions1, col("Key", keys2), intCol("IntCol", sentinel2));
             TstUtils.addToTable(table, additions2, col("Key", keys2), intCol("IntCol", sentinel2));
             TstUtils.removeRows(table, removals);
@@ -3431,11 +3428,11 @@ public class QueryTableAggregationTest {
 
         // intervening keys without reversed polarity
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-            final TrackingMutableRowSet removals1 = TrackingMutableRowSet.FACTORY.getRowSetByRange(0, newSize - 1);
-            final TrackingMutableRowSet removals2 = TrackingMutableRowSet.FACTORY.getRowSetByRange(7000, 7000 + newSize - 1);
+            final TrackingMutableRowSet removals1 = RowSetFactoryImpl.INSTANCE.getRowSetByRange(0, newSize - 1);
+            final TrackingMutableRowSet removals2 = RowSetFactoryImpl.INSTANCE.getRowSetByRange(7000, 7000 + newSize - 1);
             final TrackingMutableRowSet allRemovals = removals1.union(removals2);
 
-            final TrackingMutableRowSet additions = TrackingMutableRowSet.FACTORY.getRowSetByRange(6000 + newSize * 4, 6000 + newSize * 5 - 1);
+            final TrackingMutableRowSet additions = RowSetFactoryImpl.INSTANCE.getRowSetByRange(6000 + newSize * 4, 6000 + newSize * 5 - 1);
             TstUtils.addToTable(table, additions, col("Key", keys2), intCol("IntCol", sentinel2));
             TstUtils.removeRows(table, allRemovals);
             table.notifyListeners(additions, allRemovals, i());
@@ -3494,7 +3491,7 @@ public class QueryTableAggregationTest {
 
     @Test
     public void testIds6332() {
-        final QueryTable source = TstUtils.testRefreshingTable(TrackingMutableRowSet.FACTORY.getFlatIndex(10),
+        final QueryTable source = TstUtils.testRefreshingTable(RowSetFactoryImpl.INSTANCE.getFlatRowSet(10),
                 col("Value", BigInteger.valueOf(0), new BigInteger("100"), BigInteger.valueOf(100),
                         new BigInteger("100"), new BigInteger("100"), new BigInteger("100"), new BigInteger("100"),
                         new BigInteger("100"), new BigInteger("100"), BigInteger.valueOf(200)));
@@ -3503,7 +3500,7 @@ public class QueryTableAggregationTest {
         TestCase.assertEquals(BigInteger.valueOf(100), percentile.getColumn("Value").get(0));
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-            final TrackingMutableRowSet removeRowSet = TrackingMutableRowSet.FACTORY.getRowSetByRange(2, 6);
+            final TrackingMutableRowSet removeRowSet = RowSetFactoryImpl.INSTANCE.getRowSetByRange(2, 6);
             removeRows(source, removeRowSet);
             source.notifyListeners(i(), removeRowSet, i());
         });

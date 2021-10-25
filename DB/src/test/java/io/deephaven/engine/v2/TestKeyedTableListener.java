@@ -7,6 +7,7 @@ package io.deephaven.engine.v2;
 import io.deephaven.datastructures.util.SmartKey;
 import io.deephaven.base.testing.BaseCachedJMockTestCase;
 import io.deephaven.engine.tables.live.LiveTableMonitor;
+import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
 import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 
 public class TestKeyedTableListener extends BaseCachedJMockTestCase {
@@ -15,9 +16,9 @@ public class TestKeyedTableListener extends BaseCachedJMockTestCase {
     private KeyedTableListener keyedTableListener;
     private KeyedTableListener.KeyUpdateListener mockListener;
 
-    private final TrackingMutableRowSet noAdded = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
-    private final TrackingMutableRowSet noRemoved = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
-    private final TrackingMutableRowSet noModified = TrackingMutableRowSet.FACTORY.getEmptyRowSet();
+    private final TrackingMutableRowSet noAdded = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+    private final TrackingMutableRowSet noRemoved = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+    private final TrackingMutableRowSet noModified = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
 
     private SmartKey aKey;
     private SmartKey bKey;

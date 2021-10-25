@@ -12,6 +12,7 @@ import io.deephaven.engine.tables.utils.ParquetTools;
 import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.v2.select.IncrementalReleaseFilter;
 import io.deephaven.engine.v2.utils.ColumnHolder;
+import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
 import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
@@ -190,7 +191,7 @@ public class QueryTableSortTest extends QueryTableTestBase {
     }
 
     public void testGroupedSortRefreshing() {
-        final Table table = testRefreshingTable(TrackingMutableRowSet.FACTORY.getFlatIndex(9),
+        final Table table = testRefreshingTable(RowSetFactoryImpl.INSTANCE.getFlatRowSet(9),
                 cG("A", "Apple", "Apple", "Apple", "Banana", "Banana", "Banana", "Canteloupe", "Canteloupe",
                         "Canteloupe"),
                 c("Secondary", "C", "A", "B", "C", "A", "B", "C", "A", "B")).update("Sentinel=i");
@@ -225,9 +226,9 @@ public class QueryTableSortTest extends QueryTableTestBase {
         }
 
         final Table grouped =
-                testTable(TrackingMutableRowSet.FACTORY.getFlatIndex(values.length), cG("Captain", values)).update("Sentinel=i");
+                testTable(RowSetFactoryImpl.INSTANCE.getFlatRowSet(values.length), cG("Captain", values)).update("Sentinel=i");
         final Table nogroups =
-                testTable(TrackingMutableRowSet.FACTORY.getFlatIndex(values.length), c("Captain", values)).update("Sentinel=i");
+                testTable(RowSetFactoryImpl.INSTANCE.getFlatRowSet(values.length), c("Captain", values)).update("Sentinel=i");
 
         final Table sortedGrouped = grouped.sortDescending("Captain");
         final Table sortedNoGroups = nogroups.sortDescending("Captain");

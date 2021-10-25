@@ -5,6 +5,7 @@ import io.deephaven.base.SleepUtil;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.datastructures.util.CollectionUtil;
+import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
 import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.io.logger.StreamLoggerImpl;
 import io.deephaven.test.types.OutOfBandTest;
@@ -260,7 +261,7 @@ public class TableMapTest extends LiveTableTestCase {
             final int iteration = ii + 1;
             LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
                 final long baseLocation = iteration * 10;
-                final TrackingMutableRowSet addRowSet = TrackingMutableRowSet.FACTORY.getRowSetByRange(baseLocation, baseLocation + 4);
+                final TrackingMutableRowSet addRowSet = RowSetFactoryImpl.INSTANCE.getRowSetByRange(baseLocation, baseLocation + 4);
                 final int[] sentinels =
                         {iteration * 5, iteration * 5 + 1, iteration * 5 + 2, iteration * 5 + 3, iteration * 5 + 4};
                 addToTable(sourceTable, addRowSet, intCol("Key", 1, 3, iteration, iteration - 1, iteration * 2),

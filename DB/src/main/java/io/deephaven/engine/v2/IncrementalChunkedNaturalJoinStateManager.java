@@ -150,7 +150,7 @@ class IncrementalChunkedNaturalJoinStateManager
     // into this table
     private final ObjectArraySource<TrackingMutableRowSet> rightIndexStorage;
     private int nextRightIndexLocation;
-    private final TrackingMutableRowSet freeRightRowSetLocations = TrackingMutableRowSet.CURRENT_FACTORY.getEmptyRowSet();
+    private final TrackingMutableRowSet freeRightRowSetLocations = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
 
     // we always store left rowSet values parallel to the keys; we may want to optimize for single left indices to avoid
     // object allocation, but we do have fairly efficient single range indices at this point
@@ -304,7 +304,7 @@ class IncrementalChunkedNaturalJoinStateManager
     private void addLeftIndex(long tableLocation, long keyToAdd) {
         final TrackingMutableRowSet rowSet = leftIndexSource.get(tableLocation);
         if (rowSet == null) {
-            leftIndexSource.set(tableLocation, TrackingMutableRowSet.CURRENT_FACTORY.getRowSetByValues(keyToAdd));
+            leftIndexSource.set(tableLocation, RowSetFactoryImpl.INSTANCE.getRowSetByValues(keyToAdd));
         } else {
             rowSet.insert(keyToAdd);
         }
@@ -353,7 +353,7 @@ class IncrementalChunkedNaturalJoinStateManager
         } else {
             final long rightIndexSlot = allocateRightIndexSlot();
             rightIndexSource.set(tableLocation, rightIndexSlotToStorage(rightIndexSlot));
-            rightIndexStorage.set(rightIndexSlot, TrackingMutableRowSet.CURRENT_FACTORY.getRowSetByValues(existingRightIndex, keyToAdd));
+            rightIndexStorage.set(rightIndexSlot, RowSetFactoryImpl.INSTANCE.getRowSetByValues(existingRightIndex, keyToAdd));
         }
     }
 
@@ -444,7 +444,7 @@ class IncrementalChunkedNaturalJoinStateManager
     private void addLeftIndexOverflow(long overflowLocation, long keyToAdd) {
         final TrackingMutableRowSet rowSet = overflowLeftIndexSource.get(overflowLocation);
         if (rowSet == null) {
-            overflowLeftIndexSource.set(overflowLocation, TrackingMutableRowSet.CURRENT_FACTORY.getRowSetByValues(keyToAdd));
+            overflowLeftIndexSource.set(overflowLocation, RowSetFactoryImpl.INSTANCE.getRowSetByValues(keyToAdd));
         } else {
             rowSet.insert(keyToAdd);
         }
@@ -462,7 +462,7 @@ class IncrementalChunkedNaturalJoinStateManager
         } else {
             final long rightIndexSlot = allocateRightIndexSlot();
             overflowRightIndexSource.set(overflowLocation, rightIndexSlotToStorage(rightIndexSlot));
-            rightIndexStorage.set(rightIndexSlot, TrackingMutableRowSet.CURRENT_FACTORY.getRowSetByValues(existingRightIndex, keyToAdd));
+            rightIndexStorage.set(rightIndexSlot, RowSetFactoryImpl.INSTANCE.getRowSetByValues(existingRightIndex, keyToAdd));
         }
     }
 
@@ -1330,7 +1330,7 @@ class IncrementalChunkedNaturalJoinStateManager
              final WritableLongChunk stateChunk = WritableLongChunk.makeWritableChunk(maxSize);
              final ChunkSource.FillContext fillContext = rightIndexSource.makeFillContext(maxSize)) {
 
-            rightIndexSource.fillChunk(fillContext, stateChunk, TrackingMutableRowSet.FACTORY.getFlatIndex(tableHashPivot));
+            rightIndexSource.fillChunk(fillContext, stateChunk, RowSetFactoryImpl.INSTANCE.getFlatRowSet(tableHashPivot));
 
             ChunkUtils.fillInOrder(positions);
 
@@ -2163,8 +2163,8 @@ class IncrementalChunkedNaturalJoinStateManager
         final WritableIntChunk<HashCode> overflowHashChunk = WritableIntChunk.makeWritableChunk(nextOverflowLocation);
 
 
-        final RowSequence tableLocations = TrackingMutableRowSet.FACTORY.getRowSetByRange(0, tableSize - 1);
-        final RowSequence overflowLocations = nextOverflowLocation > 0 ? TrackingMutableRowSet.FACTORY.getRowSetByRange(0, nextOverflowLocation - 1) : RowSequence.EMPTY;
+        final RowSequence tableLocations = RowSetFactoryImpl.INSTANCE.getRowSetByRange(0, tableSize - 1);
+        final RowSequence overflowLocations = nextOverflowLocation > 0 ? RowSetFactoryImpl.INSTANCE.getRowSetByRange(0, nextOverflowLocation - 1) : RowSequence.EMPTY;
 
         for (int ii = 0; ii < keyColumnCount; ++ii) {
             dumpChunks[ii] = keyChunkTypes[ii].makeWritableChunk(tableSize);

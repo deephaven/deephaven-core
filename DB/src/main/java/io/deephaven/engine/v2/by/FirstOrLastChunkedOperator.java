@@ -9,6 +9,7 @@ import io.deephaven.engine.v2.sources.ObjectArraySource;
 import io.deephaven.engine.v2.sources.ReadOnlyRedirectedColumnSource;
 import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.sources.chunk.Attributes.*;
+import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
 import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.engine.v2.utils.LongColumnSourceRedirectionIndex;
 
@@ -213,7 +214,7 @@ public class FirstOrLastChunkedOperator implements IterativeChunkedAggregationOp
     private TrackingMutableRowSet indexForSlot(long destination) {
         TrackingMutableRowSet rowSet = indices.getUnsafe(destination);
         if (rowSet == null) {
-            indices.set(destination, rowSet = TrackingMutableRowSet.CURRENT_FACTORY.getEmptyRowSet());
+            indices.set(destination, rowSet = RowSetFactoryImpl.INSTANCE.getEmptyRowSet());
         }
         return rowSet;
     }

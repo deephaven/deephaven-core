@@ -85,11 +85,7 @@ public abstract class AbstractTreeIndexImplRandomBuilder implements TreeIndexImp
 
     private void newRange(final long firstKey, final long lastKey) {
         if (firstKey > lastKey) {
-            if (TrackingMutableRowSet.BAD_RANGES_AS_ERROR) {
-                throw new IllegalArgumentException("Illegal range start=" + firstKey + " > end=" + lastKey + ".");
-            }
-            // Ignore.
-            return;
+            throw new IllegalArgumentException("Illegal range start=" + firstKey + " > end=" + lastKey + ".");
         }
         newRangeSafe(firstKey, lastKey);
     }
@@ -133,8 +129,8 @@ public abstract class AbstractTreeIndexImplRandomBuilder implements TreeIndexImp
     }
 
     @Override
-    public void addKey(final long key) {
-        newKey(key);
+    public void addKey(final long rowKey) {
+        newKey(rowKey);
     }
 
     public void addKeys(final PrimitiveIterator.OfLong it) {
@@ -143,8 +139,8 @@ public abstract class AbstractTreeIndexImplRandomBuilder implements TreeIndexImp
     }
 
     @Override
-    public void addRange(long firstKey, long lastKey) {
-        newRange(firstKey, lastKey);
+    public void addRange(long firstRowKey, long lastRowKey) {
+        newRange(firstRowKey, lastRowKey);
     }
 
     public void addRanges(final LongRangeIterator it) {
