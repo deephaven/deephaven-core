@@ -892,8 +892,7 @@ public class KafkaTools {
     /**
      * Consume from Kafka to a Deephaven table.
      *
-     * @param kafkaProperties Properties to configure this table and also to be passed to create the
-     *        KafkaConsumer
+     * @param kafkaProperties Properties to configure this table and also to be passed to create the KafkaConsumer
      * @param topic Kafka topic name
      * @param partitionFilter A predicate returning true for the partitions to consume
      * @param partitionToInitialOffset A function specifying the desired initial offset for each partition consumed
@@ -1091,10 +1090,10 @@ public class KafkaTools {
      * @param topic Kafka topic name
      * @param keySpec Conversion specification for Kafka record keys from table column data.
      * @param valueSpec Conversion specification for Kafka record values from table column data.
-     * @param lastByKeyColumns Whether to publish only the last record for each unique key. Ignored when
-     *        {@code keySpec} is {@code IGNORE}. If {@code keySpec != null && !lastByKeyColumns}, it is expected that
-     *        {@code table} will not produce any row shifts; that is, the publisher expects keyed tables to be streams,
-     *        add-only, or aggregated.
+     * @param lastByKeyColumns Whether to publish only the last record for each unique key. Ignored when {@code keySpec}
+     *        is {@code IGNORE}. If {@code keySpec != null && !lastByKeyColumns}, it is expected that {@code table} will
+     *        not produce any row shifts; that is, the publisher expects keyed tables to be streams, add-only, or
+     *        aggregated.
      * @return a callback to stop producing and shut down the associated table listener; note a caller should keep a
      *         reference to this return value to ensure liveliness.
      */
