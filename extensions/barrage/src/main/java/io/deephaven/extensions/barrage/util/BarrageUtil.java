@@ -459,7 +459,9 @@ public class BarrageUtil {
                     return Types.MinorType.VARBINARY.getType();
                 }
                 if (type == DBDateTime.class) {
-                    return Types.MinorType.TIMESTAMPNANO.getType();
+                    // Note that arrow's wire format states that Timestamps without timezones are not UTC -- that they
+                    // are no timezone at all. It's very important that we mark these times as UTC.
+                    return new ArrowType.Timestamp(TimeUnit.NANOSECOND, "UTC");
                 }
 
                 // everything gets converted to a string
