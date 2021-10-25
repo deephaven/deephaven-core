@@ -459,7 +459,7 @@ public class BarrageUtil {
                     return Types.MinorType.VARBINARY.getType();
                 }
                 if (type == DBDateTime.class) {
-                    return Types.MinorType.BIGINT.getType();
+                    return Types.MinorType.TIMESTAMPNANO.getType();
                 }
 
                 // everything gets converted to a string
