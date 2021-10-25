@@ -49,3 +49,24 @@ class TestProduceKafka(unittest.TestCase):
 
         self.assertIsNotNone(c)
         c.call()
+
+    def testJson(self):
+        t = dh.table_of( {
+            'Price'  : (dh.double, [ 210.0, 310.5, 411.0, 411.5 ]),
+            'Side'   : (dh.string, [ 'B', 'B', 'S', 'B' ]),
+            'Symbol' : (dh.string, [ 'MSFT', 'GOOG', 'AAPL', 'AAPL' ]),
+            'Qty'    : (dh.int_,   [ 200, 100, 300, 50 ])
+        } )
+
+        c = pk.produceFromTable(
+            t,
+            {'bootstrap.servers' : 'redpanda:29092'},
+            'orders',
+            key = pk.IGNORE,
+            value = pk.json(['Symbol', 'Price']),
+            last_by_key_columns = False
+        )
+        
+        self.assertIsNotNone(c)
+        c.call()
+            
