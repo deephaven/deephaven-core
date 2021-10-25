@@ -55,6 +55,13 @@ public class BarrageUtil {
     // hour, minute, second are each one byte, nano is 4 bytes
     public static final ArrowType.FixedSizeBinary LOCAL_TIME_TYPE = new ArrowType.FixedSizeBinary(7);
 
+    /**
+     * Note that arrow's wire format states that Timestamps without timezones are not UTC -- that they
+     * are no timezone at all. It's very important that we mark these times as UTC.
+     */
+    public static final ArrowType.Timestamp NANO_SINCE_EPOCH_TYPE =
+            new ArrowType.Timestamp(TimeUnit.NANOSECOND, "UTC");
+
     private static final int ATTR_STRING_LEN_CUTOFF = 1024;
 
     /**
@@ -459,9 +466,7 @@ public class BarrageUtil {
                     return Types.MinorType.VARBINARY.getType();
                 }
                 if (type == DBDateTime.class) {
-                    // Note that arrow's wire format states that Timestamps without timezones are not UTC -- that they
-                    // are no timezone at all. It's very important that we mark these times as UTC.
-                    return new ArrowType.Timestamp(TimeUnit.NANOSECOND, "UTC");
+                    return NANO_SINCE_EPOCH_TYPE;
                 }
 
                 // everything gets converted to a string
