@@ -6,14 +6,14 @@ import org.immutables.value.Value.Immutable;
 import org.immutables.value.Value.Parameter;
 
 import java.net.URI;
-import java.util.Arrays;
-import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * A Deephaven field URI.
  *
  * <p>
- * For example, {@code field:///my_table}.
+ * For example, {@code dh:///field/my_table}.
  *
  * <p>
  * Note: unlike other URIs, this URI can't be resolved by itself - it must be embedded inside of a {@link RemoteUri},
@@ -21,37 +21,30 @@ import java.util.List;
  */
 @Immutable
 @SimpleStyle
-public abstract class FieldUri extends ResolvableUriBase {
+public abstract class FieldUri extends StructuredUriBase implements DeephavenUri {
 
-    /**
-     * The field scheme, {@code field}.
-     */
-    public static final String SCHEME = "field";
+    public static final Pattern PATH_PATTERN = Pattern.compile("^/field/(.+)$");
 
     public static FieldUri of(String fieldName) {
         return ImmutableFieldUri.of(fieldName);
     }
 
     public static boolean isValidScheme(String scheme) {
-        return SCHEME.equals(scheme);
+        return DeephavenUri.LOCAL_SCHEME.equals(scheme);
     }
 
     public static boolean isWellFormed(URI uri) {
         return isValidScheme(uri.getScheme())
                 && uri.getHost() == null
                 && !uri.isOpaque()
-                && uri.getPath().charAt(0) == '/'
+                && PATH_PATTERN.matcher(uri.getPath()).matches()
                 && uri.getQuery() == null
                 && uri.getUserInfo() == null
                 && uri.getFragment() == null;
     }
 
-    public static FieldUri fromPath(String scheme, String rest) {
-        return of(URI.create(String.format("%s:///%s", scheme, rest)));
-    }
-
     /**
-     * Parses the {@code URI} into a field URI. The format looks like {@code field:///${fieldName}}.
+     * Parses the {@code URI} into a field URI. The format looks like {@code dh:///field/${fieldName}}.
      *
      * @param uri the uri
      * @return the application uri
@@ -60,7 +53,11 @@ public abstract class FieldUri extends ResolvableUriBase {
         if (!isWellFormed(uri)) {
             throw new IllegalArgumentException(String.format("Invalid field URI '%s'", uri));
         }
-        return of(uri.getPath().substring(1));
+        final Matcher matcher = PATH_PATTERN.matcher(uri.getPath());
+        if (!matcher.matches()) {
+            throw new IllegalStateException();
+        }
+        return of(matcher.group(1));
     }
 
     /**
@@ -84,17 +81,12 @@ public abstract class FieldUri extends ResolvableUriBase {
 
     @Override
     public final String scheme() {
-        return SCHEME;
+        return DeephavenUri.LOCAL_SCHEME;
     }
 
     @Override
     public final String toString() {
-        return String.format("%s:///%s", SCHEME, fieldName());
-    }
-
-    @Override
-    public final List<String> toParts() {
-        return Arrays.asList(SCHEME, fieldName());
+        return String.format("%s:///%s/%s", DeephavenUri.LOCAL_SCHEME, ApplicationUri.FIELD, fieldName());
     }
 
     @Check

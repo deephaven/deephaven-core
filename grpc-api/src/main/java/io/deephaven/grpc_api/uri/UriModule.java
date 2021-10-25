@@ -8,8 +8,6 @@ import io.deephaven.db.tables.utils.CsvTableResolver;
 import io.deephaven.db.tables.utils.ParquetTableResolver;
 import io.deephaven.grpc_api.barrage.BarrageClientModule;
 import io.deephaven.uri.TableResolver;
-import io.deephaven.uri.TableResolvers;
-import io.deephaven.uri.UriCreator;
 
 /**
  * Installs the {@link TableResolver table resolvers}. See each specific resolver for more information.
@@ -22,9 +20,6 @@ import io.deephaven.uri.UriCreator;
  */
 @Module(includes = {BarrageClientModule.class, BarrageUriModule.class})
 public interface UriModule {
-
-    @Binds
-    UriCreator bindsResolvers(TableResolvers resolvers);
 
     @Binds
     @IntoSet

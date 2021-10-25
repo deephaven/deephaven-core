@@ -6,25 +6,29 @@ import org.immutables.value.Value.Immutable;
 import org.immutables.value.Value.Parameter;
 
 import java.net.URI;
-import java.util.Arrays;
-import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * A Deephaven query scope URI.
  *
  * <p>
- * For example, {@code scope:///my_table}.
+ * For example, {@code dh:///scope/my_table}.
  *
  * @see #of(URI) parsing logic
  */
 @Immutable
 @SimpleStyle
-public abstract class QueryScopeUri extends ResolvableUriBase {
+public abstract class QueryScopeUri extends StructuredUriBase implements DeephavenUri {
 
     /**
-     * The query scope scheme, {@code scope}.
+     * The query scope scheme, equal to {@link DeephavenUri#LOCAL_SCHEME}.
      */
-    public static final String SCHEME = "scope";
+    public static final String SCHEME = DeephavenUri.LOCAL_SCHEME;
+
+    public static final String SCOPE = "scope";
+
+    public static final Pattern PATH_PATTERN = Pattern.compile("^/scope/(.+)$");
 
     public static QueryScopeUri of(String variableName) {
         return ImmutableQueryScopeUri.of(variableName);
@@ -38,18 +42,14 @@ public abstract class QueryScopeUri extends ResolvableUriBase {
         return isValidScheme(uri.getScheme())
                 && uri.getHost() == null
                 && !uri.isOpaque()
-                && uri.getPath().charAt(0) == '/'
+                && PATH_PATTERN.matcher(uri.getPath()).matches()
                 && uri.getQuery() == null
                 && uri.getUserInfo() == null
                 && uri.getFragment() == null;
     }
 
-    public static QueryScopeUri fromPath(String scheme, String rest) {
-        return of(URI.create(String.format("%s:///%s", scheme, rest)));
-    }
-
     /**
-     * Parses the {@code URI} into a query scope URI. The format looks like {@code scope:///${variableName}}.
+     * Parses the {@code URI} into a query scope URI. The format looks like {@code dh:///scope/${variableName}}.
      *
      * @param uri the uri
      * @return the query scope uri
@@ -58,7 +58,11 @@ public abstract class QueryScopeUri extends ResolvableUriBase {
         if (!isWellFormed(uri)) {
             throw new IllegalArgumentException(String.format("Invalid query scope URI '%s'", uri));
         }
-        return of(uri.getPath().substring(1));
+        final Matcher matcher = PATH_PATTERN.matcher(uri.getPath());
+        if (!matcher.matches()) {
+            throw new IllegalStateException();
+        }
+        return of(matcher.group(1));
     }
 
     /**
@@ -86,13 +90,8 @@ public abstract class QueryScopeUri extends ResolvableUriBase {
     }
 
     @Override
-    public final List<String> toParts() {
-        return Arrays.asList(SCHEME, variableName());
-    }
-
-    @Override
     public final String toString() {
-        return String.format("%s:///%s", SCHEME, variableName());
+        return String.format("%s:///%s/%s", SCHEME, SCOPE, variableName());
     }
 
     @Check

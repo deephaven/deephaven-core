@@ -37,6 +37,11 @@ public final class CsvTableResolver extends AdHocTableResolverBase {
     }
 
     @Override
+    public boolean isResolvable(URI uri) {
+        return SCHEMES.contains(uri.getScheme());
+    }
+
+    @Override
     public Table resolve(URI uri) {
         try {
             return CsvHelpers.readCsv(csvString(uri));

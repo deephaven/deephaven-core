@@ -5,17 +5,21 @@ import io.deephaven.db.tables.Table;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.net.URI;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Singleton
-public final class TableResolvers implements UriCreator {
+public final class TableResolvers {
 
     private final Set<TableResolver> resolvers;
-    private final Map<String, TableResolver> map;
+    private final Map<String, Set<TableResolver>> map;
 
     @Inject
     public TableResolvers(Set<TableResolver> resolvers) {
@@ -23,11 +27,8 @@ public final class TableResolvers implements UriCreator {
         map = new HashMap<>();
         for (TableResolver resolver : resolvers) {
             for (String scheme : resolver.schemes()) {
-                final TableResolver existing = map.put(scheme, resolver);
-                if (existing != null) {
-                    throw new IllegalArgumentException(String.format("Overlapping resolvers: '%s' and '%s'",
-                            existing.getClass(), resolver.getClass()));
-                }
+                final Set<TableResolver> set = map.computeIfAbsent(scheme, s -> new HashSet<>());
+                set.add(resolver);
             }
         }
     }
@@ -44,21 +45,32 @@ public final class TableResolvers implements UriCreator {
                 .findFirst();
     }
 
-    public TableResolver resolver(String scheme) {
-        final TableResolver resolver = map.get(scheme);
-        if (resolver == null) {
+    public Set<TableResolver> resolvers(String scheme) {
+        final Set<TableResolver> resolvers = map.get(scheme);
+        if (resolvers == null) {
             throw new UnsupportedOperationException(
-                    String.format("Unable to find table resolver for scheme '%s'", scheme));
+                    String.format("Unable to find table resolver(s) for scheme '%s'", scheme));
         }
-        return resolver;
+        return resolvers;
+    }
+
+    public TableResolver resolver(URI uri) {
+        final List<TableResolver> resolvers = map.getOrDefault(uri.getScheme(), Collections.emptySet())
+                .stream()
+                .filter(t -> t.isResolvable(uri))
+                .limit(2)
+                .collect(Collectors.toList());
+        if (resolvers.isEmpty()) {
+            throw new UnsupportedOperationException(
+                    String.format("Unable to find resolver for uri '%s'", uri));
+        } else if (resolvers.size() > 1) {
+            throw new UnsupportedOperationException(
+                    String.format("Found multiple resolvers for uri '%s'", uri));
+        }
+        return resolvers.get(0);
     }
 
     public Table resolve(URI uri) throws InterruptedException {
-        return resolver(uri.getScheme()).resolve(uri);
-    }
-
-    @Override
-    public ResolvableUri create(String scheme, String rest) {
-        return resolver(scheme).create(scheme, rest);
+        return resolver(uri).resolve(uri);
     }
 }

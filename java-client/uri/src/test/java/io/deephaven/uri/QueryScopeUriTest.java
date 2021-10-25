@@ -10,7 +10,7 @@ public class QueryScopeUriTest {
 
     @Test
     void check1() {
-        check("scope:///my_table", QueryScopeUri.of("my_table"));
+        check("dh:///scope/my_table", QueryScopeUri.of("my_table"));
     }
 
     private static void check(String uriStr, QueryScopeUri uri) {

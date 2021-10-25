@@ -7,18 +7,17 @@ import io.deephaven.qst.table.TableSpec;
 import io.deephaven.qst.table.TicketTable;
 import io.deephaven.uri.ApplicationUri;
 import io.deephaven.uri.DeephavenTarget;
+import io.deephaven.uri.DeephavenUri;
 import io.deephaven.uri.FieldUri;
+import io.deephaven.uri.StructuredUri;
 import io.deephaven.uri.QueryScopeUri;
 import io.deephaven.uri.RemoteUri;
-import io.deephaven.uri.ResolvableUri;
 import io.deephaven.uri.TableResolver;
 import io.deephaven.uri.TableResolversInstance;
-import io.deephaven.uri.UriCreator;
 import io.grpc.ManagedChannel;
 import org.apache.arrow.memory.BufferAllocator;
 
 import javax.inject.Inject;
-import javax.inject.Provider;
 import javax.inject.Singleton;
 import java.net.URI;
 import java.util.Arrays;
@@ -49,14 +48,11 @@ public final class BarrageTableResolver implements TableResolver {
             .build();
 
     private static final Set<String> SCHEMES = Collections.unmodifiableSet(
-            new HashSet<>(Arrays.asList(DeephavenTarget.TLS_SCHEME, DeephavenTarget.PLAINTEXT_SCHEME)));
+            new HashSet<>(Arrays.asList(DeephavenUri.TLS_SCHEME, DeephavenUri.PLAINTEXT_SCHEME)));
 
     public static BarrageTableResolver get() {
         return TableResolversInstance.get().find(BarrageTableResolver.class).get();
     }
-
-    // Must be initialized afterwards, since the creator likely contains reference to BarrageTableResolver
-    private final Provider<UriCreator> resolver;
 
     private final BarrageSessionFactoryBuilder builder;
 
@@ -67,9 +63,8 @@ public final class BarrageTableResolver implements TableResolver {
     private final Map<DeephavenTarget, BarrageSession> sessions;
 
     @Inject
-    public BarrageTableResolver(Provider<UriCreator> resolver, BarrageSessionFactoryBuilder builder,
-            ScheduledExecutorService executor, BufferAllocator allocator) {
-        this.resolver = Objects.requireNonNull(resolver);
+    public BarrageTableResolver(
+            BarrageSessionFactoryBuilder builder, ScheduledExecutorService executor, BufferAllocator allocator) {
         this.builder = Objects.requireNonNull(builder);
         this.executor = Objects.requireNonNull(executor);
         this.allocator = Objects.requireNonNull(allocator);
@@ -82,17 +77,19 @@ public final class BarrageTableResolver implements TableResolver {
     }
 
     @Override
-    public Table resolve(URI uri) throws InterruptedException {
-        try {
-            return resolve(RemoteUri.of(resolver.get(), uri));
-        } catch (TableHandleException e) {
-            throw e.asUnchecked();
-        }
+    public boolean isResolvable(URI uri) {
+        // Note: we are lying right now when we say this supports remote proxied uri - but we are doing that so callers
+        // can get a more specific exception with a link to the issue number.
+        return RemoteUri.isWellFormed(uri);
     }
 
     @Override
-    public RemoteUri create(String scheme, String rest) {
-        return RemoteUri.of(resolver.get(), URI.create(String.format("%s://%s", scheme, rest)));
+    public Table resolve(URI uri) throws InterruptedException {
+        try {
+            return resolve(RemoteUri.of(uri));
+        } catch (TableHandleException e) {
+            throw e.asUnchecked();
+        }
     }
 
     public Table resolve(RemoteUri remoteUri) throws InterruptedException, TableHandleException {
@@ -108,7 +105,7 @@ public final class BarrageTableResolver implements TableResolver {
      * @return the subscribed table
      */
     public Table subscribe(String remoteUri) throws TableHandleException, InterruptedException {
-        final RemoteUri uri = RemoteUri.of(resolver.get(), URI.create(remoteUri));
+        final RemoteUri uri = RemoteUri.of(URI.create(remoteUri));
         final DeephavenTarget target = uri.target();
         final TableSpec table = RemoteResolver.of(uri);
         return subscribe(target, table, OPTIONS);
@@ -141,7 +138,7 @@ public final class BarrageTableResolver implements TableResolver {
     }
 
     private BarrageSession session(DeephavenTarget target) {
-        // TODO: cleanup sessions after all tables are gone
+        // TODO (deephaven-core#1482): BarrageTableResolver cleanup
         return sessions.computeIfAbsent(target, this::newSession);
     }
 
@@ -158,7 +155,7 @@ public final class BarrageTableResolver implements TableResolver {
                 .newBarrageSession();
     }
 
-    static class RemoteResolver implements ResolvableUri.Visitor {
+    static class RemoteResolver implements StructuredUri.Visitor {
 
         public static TableSpec of(RemoteUri remoteUri) {
             return remoteUri.uri().walk(new RemoteResolver(remoteUri.target())).out();
@@ -192,12 +189,16 @@ public final class BarrageTableResolver implements TableResolver {
 
         @Override
         public void visit(RemoteUri remoteUri) {
-            throw new UnsupportedOperationException("Proxying not supported yet");
+            // TODO(deephaven-core#1483): Support resolve URI via gRPC / QST
+            throw new UnsupportedOperationException(
+                    "Proxying not supported yet, see https://github.com/deephaven/deephaven-core/issues/1483");
         }
 
         @Override
         public void visit(URI uri) {
-            throw new UnsupportedOperationException("Remote generic URIs not supported yet");
+            // TODO(deephaven-core#xyz): Support resolve URI via gRPC / QST
+            throw new UnsupportedOperationException(
+                    "Remote generic URIs not supported yet, see https://github.com/deephaven/deephaven-core/issues/1483");
         }
     }
 }

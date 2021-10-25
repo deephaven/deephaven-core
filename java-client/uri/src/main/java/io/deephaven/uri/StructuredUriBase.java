@@ -1,6 +1,6 @@
 package io.deephaven.uri;
 
-public abstract class ResolvableUriBase implements ResolvableUri {
+public abstract class StructuredUriBase implements StructuredUri {
 
     @Override
     public final RemoteUri target(DeephavenTarget target) {

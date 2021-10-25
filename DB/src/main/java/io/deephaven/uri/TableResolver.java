@@ -8,7 +8,7 @@ import java.util.Set;
 /**
  * A table resolver resolves {@link URI URIs} into {@link Table tables}.
  */
-public interface TableResolver extends UriCreator {
+public interface TableResolver {
 
     /**
      * The supported schemes.
@@ -16,6 +16,14 @@ public interface TableResolver extends UriCreator {
      * @return the schemes
      */
     Set<String> schemes();
+
+    /**
+     * Returns true if the resolver can {@link #resolve(URI) resolve} the {@code uri}.
+     *
+     * @param uri the uri
+     * @return true if this resolver can resolve uri
+     */
+    boolean isResolvable(URI uri);
 
     /**
      * Resolve {@code uri} into a table.

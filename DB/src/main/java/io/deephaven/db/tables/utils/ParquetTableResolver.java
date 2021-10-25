@@ -45,6 +45,11 @@ public final class ParquetTableResolver extends AdHocTableResolverBase {
     }
 
     @Override
+    public boolean isResolvable(URI uri) {
+        return isWellFormed(uri);
+    }
+
+    @Override
     public Table resolve(URI uri) throws InterruptedException {
         if (!isWellFormed(uri)) {
             throw new IllegalArgumentException(String.format("Invalid parquet URI '%s'", uri));

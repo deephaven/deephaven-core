@@ -4,15 +4,13 @@ import java.net.URI;
 import java.util.List;
 
 /**
- * A resolvable URI is a structured URI that may be resolvable to Deephaven resources.
+ * A structured URI is an object which can be represented in serialized form as a {@link URI}; and subsequently, can be
+ * deserialized back into the same object.
  *
- * @see QueryScopeUri
- * @see ApplicationUri
- * @see FieldUri
- * @see RemoteUri
+ * @see DeephavenUri
  * @see RawUri
  */
-public interface ResolvableUri {
+public interface StructuredUri {
 
     /**
      * The URI.
@@ -27,13 +25,6 @@ public interface ResolvableUri {
      * @return the scheme
      */
     String scheme();
-
-    /**
-     * Relative path of the different parts, which includes the {@link #scheme() scheme} as the first part.
-     *
-     * @return the relative path of the parts
-     */
-    List<String> toParts();
 
     /**
      * Wraps up {@code this} URI as a {@link RemoteUri remote URI}.

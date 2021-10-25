@@ -10,7 +10,7 @@ public class ApplicationUriTest {
 
     @Test
     void check1() {
-        check("app:///appId/field/fieldName", ApplicationUri.of("appId", "fieldName"));
+        check("dh:///app/appId/field/fieldName", ApplicationUri.of("appId", "fieldName"));
     }
 
     private static void check(String uriStr, ApplicationUri uri) {

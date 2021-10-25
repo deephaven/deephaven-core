@@ -10,7 +10,7 @@ public class FieldUriTest {
 
     @Test
     void check1() {
-        check("field:///fieldName", FieldUri.of("fieldName"));
+        check("dh:///field/fieldName", FieldUri.of("fieldName"));
     }
 
     private static void check(String uriStr, FieldUri uri) {

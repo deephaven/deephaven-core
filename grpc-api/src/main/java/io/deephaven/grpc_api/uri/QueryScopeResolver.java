@@ -2,11 +2,7 @@ package io.deephaven.grpc_api.uri;
 
 import io.deephaven.db.tables.Table;
 import io.deephaven.grpc_api.console.GlobalSessionProvider;
-import io.deephaven.uri.ApplicationUri;
-import io.deephaven.uri.FieldUri;
 import io.deephaven.uri.QueryScopeUri;
-import io.deephaven.uri.RemoteUri;
-import io.deephaven.uri.ResolvableUri;
 import io.deephaven.uri.TableResolver;
 import io.deephaven.uri.TableResolversInstance;
 
@@ -20,7 +16,7 @@ import java.util.Set;
  * The query scope table resolver is able to resolve {@link QueryScopeUri query scope URIs}.
  *
  * <p>
- * For example, {@code scope:///my_table}.
+ * For example, {@code dh:///scope/my_table}.
  *
  * @see QueryScopeUri query scope URI format
  */
@@ -43,13 +39,13 @@ public final class QueryScopeResolver implements TableResolver {
     }
 
     @Override
-    public Table resolve(URI uri) {
-        return resolve(QueryScopeUri.of(uri));
+    public boolean isResolvable(URI uri) {
+        return QueryScopeUri.isWellFormed(uri);
     }
 
     @Override
-    public QueryScopeUri create(String scheme, String rest) {
-        return QueryScopeUri.fromPath(scheme, rest);
+    public Table resolve(URI uri) {
+        return resolve(QueryScopeUri.of(uri));
     }
 
     public Table resolve(QueryScopeUri uri) {
@@ -68,26 +64,4 @@ public final class QueryScopeResolver implements TableResolver {
         }
         return (Table) value;
     }
-
-    /*
-     * private class Resolver implements ResolvableUri.Visitor {
-     * 
-     * private Table out;
-     * 
-     * public Table out() { return Objects.requireNonNull(out); }
-     * 
-     * @Override public void visit(RemoteUri remoteUri) { throw new
-     * UnsupportedOperationException(String.format("Unable to resolve '%s'", remoteUri)); }
-     * 
-     * @Override public void visit(URI uri) { throw new
-     * UnsupportedOperationException(String.format("Unable to resolve '%s'", uri)); }
-     * 
-     * @Override public void visit(FieldUri fieldUri) { throw new
-     * UnsupportedOperationException(String.format("Unable to resolve '%s'", fieldUri)); }
-     * 
-     * @Override public void visit(ApplicationUri applicationField) { throw new
-     * UnsupportedOperationException(String.format("Unable to resolve '%s'", applicationField)); }
-     * 
-     * @Override public void visit(QueryScopeUri queryScope) { out = resolve(queryScope); } }
-     */
 }

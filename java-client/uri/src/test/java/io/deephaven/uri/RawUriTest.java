@@ -24,9 +24,9 @@ public class RawUriTest {
     }
 
     @Test
-    void localField() {
+    void dhField() {
         try {
-            RawUri.of(URI.create("field:///bad"));
+            RawUri.of(URI.create("dh:///scope/my_table"));
             failBecauseExceptionWasNotThrown(IllegalArgumentException.class);
         } catch (IllegalArgumentException e) {
             // expected

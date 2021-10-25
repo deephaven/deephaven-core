@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 import java.net.URI;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
 
 public class RemoteUriTest {
 
@@ -78,69 +79,70 @@ public class RemoteUriTest {
 
     @Test
     void proxyApplicationField() {
-        check("dh://gateway/dh/host/app/appId/field/fieldName", LOCAL_APP.target(TARGET).target(GATEWAY));
+        check("dh://gateway?uri=dh://host/app/appId/field/fieldName", LOCAL_APP.target(TARGET).target(GATEWAY));
     }
 
     @Test
     void proxyField() {
-        check("dh://gateway/dh/host/field/fieldName", FIELD.target(TARGET).target(GATEWAY));
+        check("dh://gateway?uri=dh://host/field/fieldName", FIELD.target(TARGET).target(GATEWAY));
     }
 
     @Test
     void proxyQueryScope() {
-        check("dh://gateway/dh/host/scope/variable", QUERY.target(TARGET).target(GATEWAY));
+        check("dh://gateway?uri=dh://host/scope/variable", QUERY.target(TARGET).target(GATEWAY));
     }
 
     @Test
     void proxyApplicationFieldPort() {
-        check("dh://gateway/dh/host:31337/app/appId/field/fieldName", LOCAL_APP.target(TARGET_PORT).target(GATEWAY));
+        check("dh://gateway?uri=dh://host:31337/app/appId/field/fieldName",
+                LOCAL_APP.target(TARGET_PORT).target(GATEWAY));
     }
 
     @Test
     void proxyFieldPort() {
-        check("dh://gateway/dh/host:31337/field/fieldName", FIELD.target(TARGET_PORT).target(GATEWAY));
+        check("dh://gateway?uri=dh://host:31337/field/fieldName", FIELD.target(TARGET_PORT).target(GATEWAY));
     }
 
     @Test
     void proxyQueryScopePort() {
-        check("dh://gateway/dh/host:31337/scope/variable", QUERY.target(TARGET_PORT).target(GATEWAY));
+        check("dh://gateway?uri=dh://host:31337/scope/variable", QUERY.target(TARGET_PORT).target(GATEWAY));
     }
 
     @Test
     void proxyPortApplicationField() {
-        check("dh://gateway:42/dh/host/app/appId/field/fieldName", LOCAL_APP.target(TARGET).target(GATEWAY_PORT));
+        check("dh://gateway:42?uri=dh://host/app/appId/field/fieldName", LOCAL_APP.target(TARGET).target(GATEWAY_PORT));
     }
 
     @Test
     void proxyPortField() {
-        check("dh://gateway:42/dh/host/field/fieldName", FIELD.target(TARGET).target(GATEWAY_PORT));
+        check("dh://gateway:42?uri=dh://host/field/fieldName", FIELD.target(TARGET).target(GATEWAY_PORT));
     }
 
     @Test
     void proxyPortQueryScope() {
-        check("dh://gateway:42/dh/host/scope/variable", QUERY.target(TARGET).target(GATEWAY_PORT));
+        check("dh://gateway:42?uri=dh://host/scope/variable", QUERY.target(TARGET).target(GATEWAY_PORT));
     }
 
     @Test
     void proxyPortApplicationFieldPort() {
-        check("dh://gateway:42/dh/host:31337/app/appId/field/fieldName",
+        check("dh://gateway:42?uri=dh://host:31337/app/appId/field/fieldName",
                 LOCAL_APP.target(TARGET_PORT).target(GATEWAY_PORT));
     }
 
     @Test
     void proxyPortFieldPort() {
-        check("dh://gateway:42/dh/host:31337/field/fieldName", FIELD.target(TARGET_PORT).target(GATEWAY_PORT));
+        check("dh://gateway:42?uri=dh://host:31337/field/fieldName", FIELD.target(TARGET_PORT).target(GATEWAY_PORT));
     }
 
     @Test
     void proxyPortQueryScopePort() {
-        check("dh://gateway:42/dh/host:31337/scope/variable",
+        check("dh://gateway:42?uri=dh://host:31337/scope/variable",
                 QUERY.target(TARGET_PORT).target(GATEWAY_PORT));
     }
 
     @Test
     void doubleProxy() {
-        check("dh://gateway-1/dh+plain/gateway-2/dh/host/field/fieldName",
+        check("dh://gateway-1?uri=dh+plain://gateway-2?uri=dh://host/field/fieldName",
                 FIELD.target(TARGET).target(GATEWAY_2).target(GATEWAY_1));
     }
 
@@ -148,13 +150,30 @@ public class RemoteUriTest {
     void remoteRaw() {
         final RawUri uri = RawUri.of(URI.create("some-protocol://user@some-host:15/some-path?someQuery=ok#myfragment"));
         final RemoteUri remoteUri = uri.target(TARGET);
-        check("dh://host/some-protocol/%2F%2Fuser%40some-host%3A15%2Fsome-path%3FsomeQuery%3Dok%23myfragment",
+        check("dh://host?uri=some-protocol%3A%2F%2Fuser%40some-host%3A15%2Fsome-path%3FsomeQuery%3Dok%23myfragment",
                 remoteUri);
+    }
+
+    @Test
+    void remoteRawDeephaven() {
+        try {
+            // Can't have inner raw DH uri, should be strong URI
+            RemoteUri.of(URI.create(
+                    "dh://host?uri=dh%3A%2F%2Fuser%40some-host%3A15%2Fsome-path%3FsomeQuery%3Dok%23myfragment"));
+            failBecauseExceptionWasNotThrown(IllegalArgumentException.class);
+        } catch (IllegalArgumentException e) {
+            // expected
+        }
+    }
+
+    @Test
+    void proxyParquet() {
+        check("dh://gateway?uri=parquet%3A%2F%2F%2Fdata%2Ftest.parquet",
+                RawUri.of(URI.create("parquet:///data/test.parquet")).target(GATEWAY));
     }
 
     static void check(String uriString, RemoteUri uri) {
         assertThat(uri.toString()).isEqualTo(uriString);
-        final RemoteUri remoteUri = RemoteUri.of(StandardCreator.INSTANCE, URI.create(uriString));
-        assertThat(remoteUri).isEqualTo(uri);
+        assertThat(RemoteUri.of(URI.create(uriString))).isEqualTo(uri);
     }
 }

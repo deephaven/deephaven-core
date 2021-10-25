@@ -5,9 +5,7 @@ import org.immutables.value.Value.Immutable;
 import org.immutables.value.Value.Parameter;
 
 import java.net.URI;
-import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import java.util.Objects;
 
 /**
  * A remote Deephaven URI represents a structured link for resolving remote Deephaven resources. Is composed of a
@@ -16,13 +14,13 @@ import java.util.stream.Stream;
  * <p>
  * For example, {@code dh://host/scope/my_table}.
  *
- * @see #of(UriCreator, URI) parsing logic
+ * @see #of(URI) parsing logic
  */
 @Immutable
 @SimpleStyle
-public abstract class RemoteUri extends ResolvableUriBase {
+public abstract class RemoteUri extends StructuredUriBase implements DeephavenUri {
 
-    public static RemoteUri of(DeephavenTarget target, ResolvableUri uri) {
+    public static RemoteUri of(DeephavenTarget target, StructuredUri uri) {
         return ImmutableRemoteUri.of(target, uri);
     }
 
@@ -31,59 +29,42 @@ public abstract class RemoteUri extends ResolvableUriBase {
     }
 
     public static boolean isWellFormed(URI uri) {
-        return isValidScheme(uri.getScheme())
-                && uri.getHost() != null
-                && !uri.isOpaque()
-                && uri.getPath().charAt(0) == '/'
-                && uri.getQuery() == null
-                && uri.getUserInfo() == null
-                && uri.getFragment() == null;
-    }
-
-    public static RemoteUri fromPath(UriCreator resolver, String scheme, String rest) {
-        return of(resolver, URI.create(String.format("%s://%s", scheme, rest)));
+        return RemoteApplicationUri.isWellFormed(uri)
+                || RemoteFieldUri.isWellFormed(uri)
+                || RemoteQueryScopeUri.isWellFormed(uri)
+                || RemoteProxiedUri.isWellFormed(uri);
     }
 
     /**
      * Parses the {@code uri} into a remote URI.
      *
      * <p>
-     * The format looks like {@code dh://host:port/${scheme}/${rest}}. The exact format of {@code rest} depends on the
-     * {@code scheme}.
+     * For Deephaven scheme formats, the format looks the same as the local versions, except with a host specified. For
+     * example, {@code dh://host/scope/my_table}.
      *
-     * @param creator the creator
+     * <p>
+     * The proxy format is of the form {@code dh://host?uri=${innerUri}}; where {@code innerUri} is the URI to be
+     * proxied. When {@code innerUri} is a Deephaven scheme, is does not need to be URL encoded; for example,
+     * {@code dh://gateway?uri=dh://host/scope/my_table}. Inner URIs that aren't a Deephaven scheme need to be URL
+     * encoded; for example, {@code dh://gateway?uri=parquet%3A%2F%2F%2Fdata%2Ftest.parquet}.
+     *
      * @param uri the uri
      * @return the remote URI
      */
-    public static RemoteUri of(UriCreator creator, URI uri) {
-        if (!isWellFormed(uri)) {
-            throw new IllegalArgumentException(String.format("Invalid remote Deephaven URI '%s'", uri));
+    public static RemoteUri of(URI uri) {
+        if (RemoteApplicationUri.isWellFormed(uri)) {
+            return RemoteApplicationUri.of(uri);
         }
-        final int port = uri.getPort();
-        final DeephavenTarget target;
-        if (port == -1) {
-            target = DeephavenTarget.of(uri.getScheme(), uri.getHost());
-        } else {
-            target = DeephavenTarget.of(uri.getScheme(), uri.getHost(), port);
+        if (RemoteFieldUri.isWellFormed(uri)) {
+            return RemoteFieldUri.of(uri);
         }
-
-        // Strip absolute path '/' from URI
-        final String rawPath = uri.getRawPath().substring(1);
-        final int sep = rawPath.indexOf('/');
-        if (sep == -1) {
-            throw new IllegalArgumentException("Unable to find scheme / path separator");
+        if (RemoteQueryScopeUri.isWellFormed(uri)) {
+            return RemoteQueryScopeUri.of(uri);
         }
-        final String scheme = rawPath.substring(0, sep);
-        final String rest = rawPath.substring(sep + 1);
-        return of(creator, target, scheme, rest);
-    }
-
-    public static RemoteUri of(
-            UriCreator creator,
-            DeephavenTarget target,
-            String scheme,
-            String rest) {
-        return creator.create(scheme, rest).target(target);
+        if (RemoteProxiedUri.isWellFormed(uri)) {
+            return RemoteProxiedUri.of(uri);
+        }
+        throw new IllegalArgumentException(String.format("Invalid remote Deephaven URI '%s'", uri));
     }
 
     /**
@@ -95,21 +76,16 @@ public abstract class RemoteUri extends ResolvableUriBase {
     public abstract DeephavenTarget target();
 
     /**
-     * The <em>remote</em> URI. As opposed to {@link #toUri()}, which represents {@code this} as a URI.
+     * The <em>inner</em> URI. As opposed to {@link #toUri()}, which represents {@code this} as a URI.
      *
-     * @return the remote URI
+     * @return the inner URI
      */
     @Parameter
-    public abstract ResolvableUri uri();
+    public abstract StructuredUri uri();
 
     @Override
     public final URI toUri() {
         return URI.create(toString());
-    }
-
-    @Override
-    public final List<String> toParts() {
-        return Stream.concat(target().toParts().stream(), uri().toParts().stream()).collect(Collectors.toList());
     }
 
     @Override
@@ -125,8 +101,39 @@ public abstract class RemoteUri extends ResolvableUriBase {
 
     @Override
     public final String toString() {
-        final List<String> parts = uri().toParts();
-        final String remotePath = String.join("/", parts);
-        return String.format("%s://%s/%s", target().scheme(), target().authority(), remotePath);
+        return uri().walk(new ToString()).out();
+    }
+
+    private class ToString implements Visitor {
+        private String out;
+
+        public String out() {
+            return Objects.requireNonNull(out);
+        }
+
+        @Override
+        public void visit(QueryScopeUri queryScopeUri) {
+            out = RemoteQueryScopeUri.toString(target(), queryScopeUri);
+        }
+
+        @Override
+        public void visit(ApplicationUri applicationUri) {
+            out = RemoteApplicationUri.toString(target(), applicationUri);
+        }
+
+        @Override
+        public void visit(FieldUri fieldUri) {
+            out = RemoteFieldUri.toString(target(), fieldUri);
+        }
+
+        @Override
+        public void visit(RemoteUri remoteUri) {
+            out = RemoteProxiedUri.toString(target(), remoteUri);
+        }
+
+        @Override
+        public void visit(URI uri) {
+            out = RemoteProxiedUri.toString(target(), uri);
+        }
     }
 }

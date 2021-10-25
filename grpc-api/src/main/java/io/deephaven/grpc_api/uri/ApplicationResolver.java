@@ -5,6 +5,7 @@ import io.deephaven.appmode.Field;
 import io.deephaven.db.tables.Table;
 import io.deephaven.grpc_api.appmode.ApplicationStates;
 import io.deephaven.uri.ApplicationUri;
+import io.deephaven.uri.DeephavenUri;
 import io.deephaven.uri.TableResolver;
 import io.deephaven.uri.TableResolversInstance;
 
@@ -18,7 +19,7 @@ import java.util.Set;
  * The application table resolver is able to resolve {@link ApplicationUri application URIs}.
  *
  * <p>
- * For example, {@code app:///my_app/field/my_field}.
+ * For example, {@code dh:///app/my_app/field/my_field}.
  *
  * @see ApplicationUri application URI format
  */
@@ -37,17 +38,17 @@ public final class ApplicationResolver implements TableResolver {
 
     @Override
     public Set<String> schemes() {
-        return Collections.singleton(ApplicationUri.SCHEME);
+        return Collections.singleton(DeephavenUri.LOCAL_SCHEME);
+    }
+
+    @Override
+    public boolean isResolvable(URI uri) {
+        return ApplicationUri.isWellFormed(uri);
     }
 
     @Override
     public Table resolve(URI uri) {
         return resolve(ApplicationUri.of(uri));
-    }
-
-    @Override
-    public ApplicationUri create(String scheme, String rest) {
-        return ApplicationUri.fromPath(scheme, rest);
     }
 
     public Table resolve(ApplicationUri uri) {
