@@ -21,9 +21,9 @@ else:
     import unittest
 
 
-class TestTableTools(unittest.TestCase):
+class TestConsumeKafka(unittest.TestCase):
     """
-    Test cases for the deephaven.KafkaTools module (performed locally) -
+    Test cases for the deephaven.ConsumeKafka  module (performed locally) -
     """
 
     def _assertCommonCols(self, cols):

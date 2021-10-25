@@ -86,10 +86,11 @@ def produceFromTable(
            Ignored if key is IGNORE.  If key is not IGNORE and last_by_key_columns is false,
            it is expected that table updates will not produce any row shifts; that is, the publisher
            expects keyed tables to be streams, add-only, or aggregated.
-    :return: A callback object that, when invoked, stops publishing.
+    :return: A callback object with a 'call' method that, when invoked, stops publishing and cleans up
+             subscriptions and resources.
              Users should hold to this object to ensure liveleness for publishing
              for as long as this publishing is desired, and once not desired anymore they should
-             invoke the callback.
+             invoke call() on it.
     :raises: ValueError or TypeError if arguments provided can't be processed.
     """
 
