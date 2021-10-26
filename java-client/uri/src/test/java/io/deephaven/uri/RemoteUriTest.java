@@ -155,25 +155,42 @@ public class RemoteUriTest {
     }
 
     @Test
-    void remoteRawDeephaven() {
-        try {
-            // Can't have inner raw DH uri, should be strong URI
-            RemoteUri.of(URI.create(
-                    "dh://host?uri=dh%3A%2F%2Fuser%40some-host%3A15%2Fsome-path%3FsomeQuery%3Dok%23myfragment"));
-            failBecauseExceptionWasNotThrown(IllegalArgumentException.class);
-        } catch (IllegalArgumentException e) {
-            // expected
-        }
-    }
-
-    @Test
     void proxyParquet() {
         check("dh://gateway?uri=parquet%3A%2F%2F%2Fdata%2Ftest.parquet",
                 RawUri.of(URI.create("parquet:///data/test.parquet")).target(GATEWAY));
     }
 
+    @Test
+    void remoteRawDeephaven() {
+        invalid("dh://host?uri=dh%3A%2F%2Fuser%40some-host%3A15%2Fsome-path%3FsomeQuery%3Dok%23myfragment");
+    }
+
+    @Test
+    void innerUriScope() {
+        invalid("dh://gateway?uri=dh:///scope/my_table");
+    }
+
+    @Test
+    void innerUriField() {
+        invalid("dh://gateway?uri=dh:///field/my_table");
+    }
+
+    @Test
+    void innerUriApp() {
+        invalid("dh://gateway?uri=dh:///app/my_app/field/my_table");
+    }
+
     static void check(String uriString, RemoteUri uri) {
         assertThat(uri.toString()).isEqualTo(uriString);
         assertThat(RemoteUri.of(URI.create(uriString))).isEqualTo(uri);
+    }
+
+    static void invalid(String uriString) {
+        try {
+            RemoteUri.of(URI.create(uriString));
+            failBecauseExceptionWasNotThrown(IllegalArgumentException.class);
+        } catch (IllegalArgumentException e) {
+            // expected
+        }
     }
 }
