@@ -1903,7 +1903,7 @@ public class LongNumericPrimitives {
             return NULL_LONG;
         }
 
-        long val = NEG_INF_LONG;
+        long val = MIN_LONG;
         long count = 0;
         for (int i = 0; i < values.size(); i++) {
             long c = values.get(i);
@@ -1927,7 +1927,7 @@ public class LongNumericPrimitives {
             return NULL_LONG;
         }
 
-        long val = NEG_INF_LONG;
+        long val = MIN_LONG;
         long count = 0;
         for (long c : values) {
             if (!LongPrimitives.isNull(c)) {
@@ -1950,7 +1950,7 @@ public class LongNumericPrimitives {
             return NULL_LONG;
         }
 
-        long val = NEG_INF_LONG;
+        long val = MIN_LONG;
         long count = 0;
         for (Long c : values) {
             if (!(c == null || LongPrimitives.isNull(c))) {
@@ -1973,7 +1973,7 @@ public class LongNumericPrimitives {
             return NULL_LONG;
         }
 
-        long val = POS_INF_LONG;
+        long val = MAX_LONG;
         long count = 0;
         for (int i = 0; i < values.size(); i++) {
             long c = values.get(i);
@@ -1997,7 +1997,7 @@ public class LongNumericPrimitives {
             return NULL_LONG;
         }
 
-        long val = POS_INF_LONG;
+        long val = MAX_LONG;
         long count = 0;
         for (long c : values) {
             if (!LongPrimitives.isNull(c)) {
@@ -2020,7 +2020,7 @@ public class LongNumericPrimitives {
             return NULL_LONG;
         }
 
-        long val = POS_INF_LONG;
+        long val = MAX_LONG;
         long count = 0;
         for (Long c : values) {
             if (!(c == null || LongPrimitives.isNull(c))) {
@@ -2192,7 +2192,7 @@ public class LongNumericPrimitives {
             return NULL_INT;
         }
 
-        long val = NEG_INF_LONG;
+        long val = MIN_LONG;
         int index = -1;
         long count = 0;
         for (int i = 0; i < values.length; i++) {
@@ -2232,7 +2232,7 @@ public class LongNumericPrimitives {
             return NULL_INT;
         }
 
-        long val = NEG_INF_LONG;
+        long val = MIN_LONG;
         int index = -1;
         long count = 0;
         for (int i = 0; i < values.size(); i++) {
@@ -2258,7 +2258,7 @@ public class LongNumericPrimitives {
             return NULL_INT;
         }
 
-        long val = POS_INF_LONG;
+        long val = MAX_LONG;
         int index = -1;
         long count = 0;
         for (int i = 0; i < values.length; i++) {
@@ -2298,7 +2298,7 @@ public class LongNumericPrimitives {
             return NULL_INT;
         }
 
-        long val = POS_INF_LONG;
+        long val = MAX_LONG;
         int index = -1;
         long count = 0;
         for (int i = 0; i < values.size(); i++) {
