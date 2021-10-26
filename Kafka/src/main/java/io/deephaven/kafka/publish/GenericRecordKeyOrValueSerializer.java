@@ -62,7 +62,7 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
     private class ByteFieldProcessor extends GenericRecordFieldProcessor {
         private final ColumnSource chunkSource;
 
-        public ByteFieldProcessor(String fieldName, ColumnSource chunkSource) {
+        public ByteFieldProcessor(final String fieldName, final ColumnSource chunkSource) {
             super(fieldName);
             this.chunkSource = chunkSource;
         }
@@ -71,7 +71,7 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
             ChunkSource.GetContext getContext;
             ByteChunk inputChunk;
 
-            ByteContext(int size) {
+            ByteContext(final int size) {
                 getContext = chunkSource.makeGetContext(size);
             }
 
@@ -87,8 +87,11 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
         }
 
         @Override
-        void processField(FieldContext fieldContext, WritableObjectChunk<GenericRecord, Attributes.Values> avroChunk,
-                OrderedKeys keys, boolean previous) {
+        void processField(
+                final FieldContext fieldContext,
+                final WritableObjectChunk<GenericRecord, Attributes.Values> avroChunk,
+                final OrderedKeys keys,
+                final boolean previous) {
             final ByteContext byteContext = (ByteContext) fieldContext;
             if (previous) {
                 byteContext.inputChunk = chunkSource.getPrevChunk(byteContext.getContext, keys).asByteChunk();
@@ -110,7 +113,7 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
     private class CharFieldProcessor extends GenericRecordFieldProcessor {
         private final ColumnSource chunkSource;
 
-        public CharFieldProcessor(String fieldName, ColumnSource chunkSource) {
+        public CharFieldProcessor(final String fieldName, final ColumnSource chunkSource) {
             super(fieldName);
             this.chunkSource = chunkSource;
         }
@@ -119,7 +122,7 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
             ChunkSource.GetContext getContext;
             CharChunk inputChunk;
 
-            CharContext(int size) {
+            CharContext(final int size) {
                 getContext = chunkSource.makeGetContext(size);
             }
 
@@ -135,8 +138,11 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
         }
 
         @Override
-        void processField(FieldContext fieldContext, WritableObjectChunk<GenericRecord, Attributes.Values> avroChunk,
-                OrderedKeys keys, boolean previous) {
+        void processField(
+                final FieldContext fieldContext,
+                final WritableObjectChunk<GenericRecord, Attributes.Values> avroChunk,
+                final OrderedKeys keys,
+                final boolean previous) {
             final CharContext charContext = (CharContext) fieldContext;
             if (previous) {
                 charContext.inputChunk = chunkSource.getPrevChunk(charContext.getContext, keys).asCharChunk();
@@ -158,7 +164,7 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
     private class ShortFieldProcessor extends GenericRecordFieldProcessor {
         private final ColumnSource chunkSource;
 
-        public ShortFieldProcessor(String fieldName, ColumnSource chunkSource) {
+        public ShortFieldProcessor(final String fieldName, final ColumnSource chunkSource) {
             super(fieldName);
             this.chunkSource = chunkSource;
         }
@@ -167,7 +173,7 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
             ChunkSource.GetContext getContext;
             ShortChunk inputChunk;
 
-            ShortContext(int size) {
+            ShortContext(final int size) {
                 getContext = chunkSource.makeGetContext(size);
             }
 
@@ -183,8 +189,11 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
         }
 
         @Override
-        void processField(FieldContext fieldContext, WritableObjectChunk<GenericRecord, Attributes.Values> avroChunk,
-                OrderedKeys keys, boolean previous) {
+        void processField(
+                final FieldContext fieldContext,
+                final WritableObjectChunk<GenericRecord, Attributes.Values> avroChunk,
+                final OrderedKeys keys,
+                final boolean previous) {
             final ShortContext shortContext = (ShortContext) fieldContext;
             if (previous) {
                 shortContext.inputChunk = chunkSource.getPrevChunk(shortContext.getContext, keys).asShortChunk();
@@ -206,7 +215,7 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
     private class IntFieldProcessor extends GenericRecordFieldProcessor {
         private final ColumnSource chunkSource;
 
-        public IntFieldProcessor(String fieldName, ColumnSource chunkSource) {
+        public IntFieldProcessor(final String fieldName, final ColumnSource chunkSource) {
             super(fieldName);
             this.chunkSource = chunkSource;
         }
@@ -215,7 +224,7 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
             ChunkSource.GetContext getContext;
             IntChunk inputChunk;
 
-            IntContext(int size) {
+            IntContext(final int size) {
                 getContext = chunkSource.makeGetContext(size);
             }
 
@@ -226,13 +235,16 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
         }
 
         @Override
-        FieldContext makeContext(int size) {
+        FieldContext makeContext(final int size) {
             return new IntContext(size);
         }
 
         @Override
-        void processField(FieldContext fieldContext, WritableObjectChunk<GenericRecord, Attributes.Values> avroChunk,
-                OrderedKeys keys, boolean previous) {
+        void processField(
+                final FieldContext fieldContext,
+                final WritableObjectChunk<GenericRecord, Attributes.Values> avroChunk,
+                final OrderedKeys keys,
+                final boolean previous) {
             final IntContext intContext = (IntContext) fieldContext;
             if (previous) {
                 intContext.inputChunk = chunkSource.getPrevChunk(intContext.getContext, keys).asIntChunk();
@@ -254,7 +266,7 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
     private class LongFieldProcessor extends GenericRecordFieldProcessor {
         private final ColumnSource chunkSource;
 
-        public LongFieldProcessor(String fieldName, ColumnSource chunkSource) {
+        public LongFieldProcessor(final String fieldName, final ColumnSource chunkSource) {
             super(fieldName);
             this.chunkSource = chunkSource;
         }
@@ -263,7 +275,7 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
             ChunkSource.GetContext getContext;
             LongChunk inputChunk;
 
-            LongContext(int size) {
+            LongContext(final int size) {
                 getContext = chunkSource.makeGetContext(size);
             }
 
@@ -274,13 +286,16 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
         }
 
         @Override
-        FieldContext makeContext(int size) {
+        FieldContext makeContext(final int size) {
             return new LongContext(size);
         }
 
         @Override
-        void processField(FieldContext fieldContext, WritableObjectChunk<GenericRecord, Attributes.Values> avroChunk,
-                OrderedKeys keys, boolean previous) {
+        void processField(
+                final FieldContext fieldContext,
+                final WritableObjectChunk<GenericRecord, Attributes.Values> avroChunk,
+                final OrderedKeys keys,
+                final boolean previous) {
             final LongContext longContext = (LongContext) fieldContext;
             if (previous) {
                 longContext.inputChunk = chunkSource.getPrevChunk(longContext.getContext, keys).asLongChunk();
@@ -302,7 +317,7 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
     private class FloatFieldProcessor extends GenericRecordFieldProcessor {
         private final ColumnSource chunkSource;
 
-        public FloatFieldProcessor(String fieldName, ColumnSource chunkSource) {
+        public FloatFieldProcessor(final String fieldName, final ColumnSource chunkSource) {
             super(fieldName);
             this.chunkSource = chunkSource;
         }
@@ -311,7 +326,7 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
             ChunkSource.GetContext getContext;
             FloatChunk inputChunk;
 
-            FloatContext(int size) {
+            FloatContext(final int size) {
                 getContext = chunkSource.makeGetContext(size);
             }
 
@@ -327,8 +342,11 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
         }
 
         @Override
-        void processField(FieldContext fieldContext, WritableObjectChunk<GenericRecord, Attributes.Values> avroChunk,
-                OrderedKeys keys, boolean previous) {
+        void processField(
+                final FieldContext fieldContext,
+                final WritableObjectChunk<GenericRecord, Attributes.Values> avroChunk,
+                final OrderedKeys keys,
+                final boolean previous) {
             final FloatContext floatContext = (FloatContext) fieldContext;
             if (previous) {
                 floatContext.inputChunk = chunkSource.getPrevChunk(floatContext.getContext, keys).asFloatChunk();
@@ -350,7 +368,7 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
     private class DoubleFieldProcessor extends GenericRecordFieldProcessor {
         private final ColumnSource chunkSource;
 
-        public DoubleFieldProcessor(String fieldName, ColumnSource chunkSource) {
+        public DoubleFieldProcessor(final String fieldName, final ColumnSource chunkSource) {
             super(fieldName);
             this.chunkSource = chunkSource;
         }
@@ -359,7 +377,7 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
             ChunkSource.GetContext getContext;
             DoubleChunk inputChunk;
 
-            DoubleContext(int size) {
+            DoubleContext(final int size) {
                 getContext = chunkSource.makeGetContext(size);
             }
 
@@ -370,7 +388,7 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
         }
 
         @Override
-        FieldContext makeContext(int size) {
+        FieldContext makeContext(final int size) {
             return new DoubleContext(size);
         }
 
@@ -471,20 +489,20 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
         // getColumn should throw a ColumnNotFoundException if it can't find the column, which will blow us up here.
         @SuppressWarnings("rawtypes")
         final ColumnSource src = source.getColumnSource(columnName);
-
-        if (byte.class.equals(src.getType())) {
+        final Class<?> type = src.getType();
+        if (byte.class.equals(type)) {
             fieldProcessors.add(new ByteFieldProcessor(fieldName, src));
-        } else if (short.class.equals(src.getType())) {
+        } else if (short.class.equals(type)) {
             fieldProcessors.add(new ShortFieldProcessor(fieldName, src));
-        } else if (int.class.equals(src.getType())) {
+        } else if (int.class.equals(type)) {
             fieldProcessors.add(new IntFieldProcessor(fieldName, src));
-        } else if (double.class.equals(src.getType())) {
+        } else if (double.class.equals(type)) {
             fieldProcessors.add(new DoubleFieldProcessor(fieldName, src));
-        } else if (float.class.equals(src.getType())) {
+        } else if (float.class.equals(type)) {
             fieldProcessors.add(new FloatFieldProcessor(fieldName, src));
-        } else if (long.class.equals(src.getType())) {
+        } else if (long.class.equals(type)) {
             fieldProcessors.add(new LongFieldProcessor(fieldName, src));
-        } else if (char.class.equals(src.getType())) {
+        } else if (char.class.equals(type)) {
             fieldProcessors.add(new CharFieldProcessor(fieldName, src));
         } else {
             fieldProcessors.add(new ObjectFieldProcessor<>(fieldName, src));
