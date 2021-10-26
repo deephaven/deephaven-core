@@ -106,6 +106,12 @@ public class FetchTableRequest {
         FetchTableRequest.ToObjectReturnType.SourceIdFieldType getSourceId();
 
         @JsProperty
+        boolean isApplyPreviewColumns();
+
+        @JsProperty
+        void setApplyPreviewColumns(boolean applyPreviewColumns);
+
+        @JsProperty
         void setResultId(Object resultId);
 
         @JsProperty
@@ -205,6 +211,12 @@ public class FetchTableRequest {
         FetchTableRequest.ToObjectReturnType0.SourceIdFieldType getSourceId();
 
         @JsProperty
+        boolean isApplyPreviewColumns();
+
+        @JsProperty
+        void setApplyPreviewColumns(boolean applyPreviewColumns);
+
+        @JsProperty
         void setResultId(Object resultId);
 
         @JsProperty
@@ -225,6 +237,8 @@ public class FetchTableRequest {
 
     public native void clearSourceId();
 
+    public native boolean getApplyPreviewColumns();
+
     public native Ticket getResultId();
 
     public native TableReference getSourceId();
@@ -234,6 +248,8 @@ public class FetchTableRequest {
     public native boolean hasSourceId();
 
     public native Uint8Array serializeBinary();
+
+    public native void setApplyPreviewColumns(boolean value);
 
     public native void setResultId();
 

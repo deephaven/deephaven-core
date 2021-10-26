@@ -435,6 +435,12 @@ public class BatchTableRequest {
                 Object getSourceId();
 
                 @JsProperty
+                boolean isApplyPreviewColumns();
+
+                @JsProperty
+                void setApplyPreviewColumns(boolean applyPreviewColumns);
+
+                @JsProperty
                 void setResultId(Object resultId);
 
                 @JsProperty
@@ -2058,6 +2064,12 @@ public class BatchTableRequest {
 
                 @JsProperty
                 Object getSourceId();
+
+                @JsProperty
+                boolean isApplyPreviewColumns();
+
+                @JsProperty
+                void setApplyPreviewColumns(boolean applyPreviewColumns);
 
                 @JsProperty
                 void setResultId(Object resultId);
