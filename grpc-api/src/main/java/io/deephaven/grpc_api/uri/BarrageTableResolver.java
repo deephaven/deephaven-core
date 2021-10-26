@@ -32,7 +32,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledExecutorService;
 
 /**
- * The barrage table resolver is able to resolve {@link RemoteUri remote URIs} into tables.
+ * The barrage table resolver is able to resolve {@link RemoteUri remote URIs} into {@link Table tables}.
  *
  * <p>
  * For more advanced use cases, see {@link BarrageSession}.
@@ -40,7 +40,7 @@ import java.util.concurrent.ScheduledExecutorService;
  * @see RemoteUri remote URI format
  */
 @Singleton
-public final class BarrageTableResolver implements TableResolver {
+public final class BarrageTableResolver implements UriResolver {
 
     /**
      * The default options, which uses {@link BarrageSubscriptionOptions#useDeephavenNulls()}.
@@ -53,7 +53,7 @@ public final class BarrageTableResolver implements TableResolver {
             new HashSet<>(Arrays.asList(DeephavenUri.TLS_SCHEME, DeephavenUri.PLAINTEXT_SCHEME)));
 
     public static BarrageTableResolver get() {
-        return TableResolversInstance.get().find(BarrageTableResolver.class).get();
+        return UriResolversInstance.get().find(BarrageTableResolver.class).get();
     }
 
     private final BarrageSessionFactoryBuilder builder;

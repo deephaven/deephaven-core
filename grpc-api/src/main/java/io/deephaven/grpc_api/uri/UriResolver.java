@@ -1,14 +1,12 @@
 package io.deephaven.grpc_api.uri;
 
-import io.deephaven.db.tables.Table;
-
 import java.net.URI;
 import java.util.Set;
 
 /**
- * A table resolver resolves {@link URI URIs} into {@link Table tables}.
+ * A URI resolver resolves {@link URI URIs} into {@link Object objects}.
  */
-public interface TableResolver {
+public interface UriResolver {
 
     /**
      * The supported schemes.
@@ -26,11 +24,11 @@ public interface TableResolver {
     boolean isResolvable(URI uri);
 
     /**
-     * Resolve {@code uri} into a table.
+     * Resolve {@code uri} into an object.
      *
      * @param uri the URI
-     * @return the table
+     * @return the object
      * @throws InterruptedException if the current thread is interrupted
      */
-    Table resolve(URI uri) throws InterruptedException;
+    Object resolve(URI uri) throws InterruptedException;
 }

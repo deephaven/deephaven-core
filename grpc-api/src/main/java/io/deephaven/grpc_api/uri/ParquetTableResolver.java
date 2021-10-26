@@ -10,7 +10,7 @@ import java.util.Collections;
 import java.util.Set;
 
 /**
- * The parquet table resolver is able to resolve local parquet files or directories for the scheme {@value #SCHEME}.
+ * The parquet table resolver is able to resolve local parquet files, or directories for the scheme {@value #SCHEME}, into {@link Table tables}.
  *
  * <p>
  * For example, {@code parquet:///data/my-file.parquet} or {@code parquet:///data/my-dir}.
@@ -18,7 +18,7 @@ import java.util.Set;
  * <p>
  * For more advanced use cases, see {@link ParquetTools}.
  */
-public final class ParquetTableResolver implements TableResolver {
+public final class ParquetTableResolver implements UriResolver {
 
     /**
      * The parquet scheme, {@code parquet}.
@@ -29,6 +29,10 @@ public final class ParquetTableResolver implements TableResolver {
 
     public static boolean isWellFormed(URI uri) {
         return SCHEME.equals(uri.getScheme()) && UriHelper.isLocalPath(uri);
+    }
+
+    public static ParquetTableResolver get() {
+        return UriResolversInstance.get().find(ParquetTableResolver.class).get();
     }
 
     @Inject

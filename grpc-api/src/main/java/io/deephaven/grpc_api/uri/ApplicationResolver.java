@@ -2,7 +2,6 @@ package io.deephaven.grpc_api.uri;
 
 import io.deephaven.appmode.ApplicationState;
 import io.deephaven.appmode.Field;
-import io.deephaven.db.tables.Table;
 import io.deephaven.grpc_api.appmode.ApplicationStates;
 import io.deephaven.uri.ApplicationUri;
 import io.deephaven.uri.DeephavenUri;
@@ -21,10 +20,10 @@ import java.util.Set;
  *
  * @see ApplicationUri application URI format
  */
-public final class ApplicationResolver implements TableResolver {
+public final class ApplicationResolver implements UriResolver {
 
     public static ApplicationResolver get() {
-        return TableResolversInstance.get().find(ApplicationResolver.class).get();
+        return UriResolversInstance.get().find(ApplicationResolver.class).get();
     }
 
     private final ApplicationStates states;
@@ -45,31 +44,17 @@ public final class ApplicationResolver implements TableResolver {
     }
 
     @Override
-    public Table resolve(URI uri) {
-        return resolve(ApplicationUri.of(uri));
+    public Object resolve(URI uri) {
+        final Field<Object> field = resolve(ApplicationUri.of(uri));
+        return field == null ? null : field.value();
     }
 
-    public Table resolve(ApplicationUri uri) {
+    public Field<Object> resolve(ApplicationUri uri) {
         return resolve(uri.applicationId(), uri.fieldName());
     }
 
-    public Table resolve(String applicationId, String fieldName) {
+    public Field<Object> resolve(String applicationId, String fieldName) {
         final ApplicationState app = states.getApplicationState(applicationId).orElse(null);
-        if (app == null) {
-            return null;
-        }
-        final Field<Object> field = app.getField(fieldName);
-        if (field == null) {
-            return null;
-        }
-        return asTable(field.value(), applicationId, fieldName);
-    }
-
-    private Table asTable(Object value, String context, String fieldName) {
-        if (value == null || value instanceof Table) {
-            return (Table) value;
-        }
-        throw new IllegalArgumentException(
-                String.format("Field '%s' in '%s' is not a Table, is %s", fieldName, context, value.getClass()));
+        return app == null ? null : app.getField(fieldName);
     }
 }

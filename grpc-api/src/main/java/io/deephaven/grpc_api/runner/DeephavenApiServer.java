@@ -10,11 +10,11 @@ import io.deephaven.grpc_api.appmode.ApplicationServiceGrpcImpl;
 import io.deephaven.grpc_api.console.ConsoleServiceGrpcImpl;
 import io.deephaven.grpc_api.log.LogInit;
 import io.deephaven.grpc_api.session.SessionService;
+import io.deephaven.grpc_api.uri.UriResolver;
+import io.deephaven.grpc_api.uri.UriResolvers;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
-import io.deephaven.grpc_api.uri.TableResolver;
-import io.deephaven.grpc_api.uri.TableResolversInstance;
-import io.deephaven.grpc_api.uri.TableResolvers;
+import io.deephaven.grpc_api.uri.UriResolversInstance;
 import io.deephaven.util.process.ProcessEnvironment;
 import io.deephaven.util.process.ShutdownManager;
 import io.grpc.Server;
@@ -60,7 +60,7 @@ public class DeephavenApiServer {
     private final ConsoleServiceGrpcImpl consoleService;
     private final ApplicationInjector applicationInjector;
     private final ApplicationServiceGrpcImpl applicationService;
-    private final TableResolvers tableResolvers;
+    private final UriResolvers tableResolvers;
 
     @Inject
     public DeephavenApiServer(
@@ -70,7 +70,7 @@ public class DeephavenApiServer {
             final ConsoleServiceGrpcImpl consoleService,
             final ApplicationInjector applicationInjector,
             final ApplicationServiceGrpcImpl applicationService,
-            final TableResolvers tableResolvers) {
+            final UriResolvers tableResolvers) {
         this.server = server;
         this.ltm = ltm;
         this.logInit = logInit;
@@ -107,10 +107,10 @@ public class DeephavenApiServer {
         applicationInjector.run();
 
         {
-            for (TableResolver resolver : tableResolvers.resolvers()) {
+            for (UriResolver resolver : tableResolvers.resolvers()) {
                 log.info().append("Found table resolver ").append(resolver.getClass().toString()).endl();
             }
-            TableResolversInstance.init(tableResolvers);
+            UriResolversInstance.init(tableResolvers);
         }
 
         log.info().append("Starting server...").endl();

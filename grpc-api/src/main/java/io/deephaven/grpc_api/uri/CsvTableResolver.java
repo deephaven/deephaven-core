@@ -15,7 +15,7 @@ import java.util.Set;
 
 /**
  * The csv table resolver is able to resolve CSV for schemes {@code csv+http}, {@code http+csv}, {@code csv+https},
- * {@code https+csv}, {@code csv+file}, {@code file+csv}, and {@code csv}.
+ * {@code https+csv}, {@code csv+file}, {@code file+csv}, and {@code csv} into {@link Table tables}.
  *
  * <p>
  * For example, {@code csv+https://media.githubusercontent.com/media/deephaven/examples/main/Iris/csv/iris.csv}.
@@ -23,10 +23,14 @@ import java.util.Set;
  * <p>
  * For more advanced use cases, see {@link CsvHelpers}.
  */
-public final class CsvTableResolver implements TableResolver {
+public final class CsvTableResolver implements UriResolver {
 
     private static final Set<String> SCHEMES = Collections.unmodifiableSet(new HashSet<>(
             Arrays.asList("csv+http", "http+csv", "csv+https", "https+csv", "csv+file", "file+csv", "csv")));
+
+    public static CsvTableResolver get() {
+        return UriResolversInstance.get().find(CsvTableResolver.class).get();
+    }
 
     @Inject
     public CsvTableResolver() {}
@@ -44,10 +48,14 @@ public final class CsvTableResolver implements TableResolver {
     @Override
     public Table resolve(URI uri) {
         try {
-            return CsvHelpers.readCsv(csvString(uri));
+            return read(uri);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
+    }
+
+    public Table read(URI uri) throws IOException {
+        return CsvHelpers.readCsv(csvString(uri));
     }
 
     private static String csvString(URI uri) {

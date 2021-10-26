@@ -1,7 +1,5 @@
 package io.deephaven.grpc_api.uri;
 
-import io.deephaven.db.tables.Table;
-
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.net.URI;
@@ -16,28 +14,28 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 @Singleton
-public final class TableResolvers {
+public final class UriResolvers {
 
-    private final Set<TableResolver> resolvers;
-    private final Map<String, Set<TableResolver>> map;
+    private final Set<UriResolver> resolvers;
+    private final Map<String, Set<UriResolver>> map;
 
     @Inject
-    public TableResolvers(Set<TableResolver> resolvers) {
+    public UriResolvers(Set<UriResolver> resolvers) {
         this.resolvers = Objects.requireNonNull(resolvers);
         map = new HashMap<>();
-        for (TableResolver resolver : resolvers) {
+        for (UriResolver resolver : resolvers) {
             for (String scheme : resolver.schemes()) {
-                final Set<TableResolver> set = map.computeIfAbsent(scheme, s -> new HashSet<>());
+                final Set<UriResolver> set = map.computeIfAbsent(scheme, s -> new HashSet<>());
                 set.add(resolver);
             }
         }
     }
 
-    public Set<TableResolver> resolvers() {
+    public Set<UriResolver> resolvers() {
         return resolvers;
     }
 
-    public <T extends TableResolver> Optional<T> find(Class<T> clazz) {
+    public <T extends UriResolver> Optional<T> find(Class<T> clazz) {
         return resolvers()
                 .stream()
                 .filter(t -> clazz.equals(t.getClass()))
@@ -45,8 +43,8 @@ public final class TableResolvers {
                 .findFirst();
     }
 
-    public TableResolver resolver(URI uri) {
-        final List<TableResolver> resolvers = map.getOrDefault(uri.getScheme(), Collections.emptySet())
+    public UriResolver resolver(URI uri) {
+        final List<UriResolver> resolvers = map.getOrDefault(uri.getScheme(), Collections.emptySet())
                 .stream()
                 .filter(t -> t.isResolvable(uri))
                 .collect(Collectors.toList());
@@ -55,7 +53,7 @@ public final class TableResolvers {
                     String.format("Unable to find resolver for uri '%s'", uri));
         } else if (resolvers.size() > 1) {
             final String classes = resolvers.stream()
-                    .map(TableResolver::getClass)
+                    .map(UriResolver::getClass)
                     .map(Class::toString)
                     .collect(Collectors.joining(",", "[", "]"));
             throw new UnsupportedOperationException(
@@ -64,7 +62,7 @@ public final class TableResolvers {
         return resolvers.get(0);
     }
 
-    public Table resolve(URI uri) throws InterruptedException {
+    public Object resolve(URI uri) throws InterruptedException {
         return resolver(uri).resolve(uri);
     }
 }

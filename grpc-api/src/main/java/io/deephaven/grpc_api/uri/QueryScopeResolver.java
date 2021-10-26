@@ -1,6 +1,5 @@
 package io.deephaven.grpc_api.uri;
 
-import io.deephaven.db.tables.Table;
 import io.deephaven.grpc_api.console.GlobalSessionProvider;
 import io.deephaven.uri.DeephavenUri;
 import io.deephaven.uri.QueryScopeUri;
@@ -19,10 +18,10 @@ import java.util.Set;
  *
  * @see QueryScopeUri query scope URI format
  */
-public final class QueryScopeResolver implements TableResolver {
+public final class QueryScopeResolver implements UriResolver {
 
     public static QueryScopeResolver get() {
-        return TableResolversInstance.get().find(QueryScopeResolver.class).get();
+        return UriResolversInstance.get().find(QueryScopeResolver.class).get();
     }
 
     private final GlobalSessionProvider globalSessionProvider;
@@ -43,24 +42,15 @@ public final class QueryScopeResolver implements TableResolver {
     }
 
     @Override
-    public Table resolve(URI uri) {
+    public Object resolve(URI uri) {
         return resolve(QueryScopeUri.of(uri));
     }
 
-    public Table resolve(QueryScopeUri uri) {
+    public Object resolve(QueryScopeUri uri) {
         return resolve(uri.variableName());
     }
 
-    public Table resolve(String variableName) {
-        final Object variable = globalSessionProvider.getGlobalSession().getVariable(variableName, null);
-        return asTable(variable, "global query scope", variableName);
-    }
-
-    private Table asTable(Object value, String context, String fieldName) {
-        if (value == null || value instanceof Table) {
-            return (Table) value;
-        }
-        throw new IllegalArgumentException(
-                String.format("Field '%s' in '%s' is not a Table, is %s", fieldName, context, value.getClass()));
+    public Object resolve(String variableName) {
+        return globalSessionProvider.getGlobalSession().getVariable(variableName, null);
     }
 }
