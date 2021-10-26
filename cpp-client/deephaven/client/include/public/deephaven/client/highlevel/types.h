@@ -13,12 +13,24 @@ public:
   static constexpr const char16_t NULL_CHAR = std::numeric_limits<char16_t>::max() - 1;
 
   static constexpr const float NULL_FLOAT = -std::numeric_limits<float>::max();
-  static constexpr const float MIN_FLOAT = std::nextafter(-std::numeric_limits<float>::max(), 0.0f);
-  static constexpr const float MAX_FLOAT = std::numeric_limits<float>::max();
+  static constexpr const float NAN_FLOAT = std::numeric_limits<float>::quiet_NaN();
+  static constexpr const float NEG_INFINITY_FLOAT = -std::numeric_limits<float>::infinity();
+  static constexpr const float POS_INFINITY_FLOAT = std::numeric_limits<float>::infinity();
+  static constexpr const float MIN_FLOAT = -std::numeric_limits<float>::infinity();
+  static constexpr const float MAX_FLOAT = std::numeric_limits<float>::infinity();
+  static constexpr const float MIN_FINITE_FLOAT = std::nextafter(-std::numeric_limits<float>::max(), 0.0f);
+  static constexpr const float MAX_FINITE_FLOAT = std::numeric_limits<float>::max();
+  static constexpr const float MIN_POS_FLOAT = std::numeric_limits<float>::min();
 
   static constexpr const double NULL_DOUBLE = -std::numeric_limits<double>::max();
-  static constexpr const double MIN_DOUBLE = std::nextafter(-std::numeric_limits<double>::max(), 0.0);
-  static constexpr const double MAX_DOUBLE = std::numeric_limits<double>::max(); 
+  static constexpr const double NAN_DOUBLE = std::numeric_limits<double>::quiet_NaN();
+  static constexpr const double NEG_INFINITY_DOUBLE = -std::numeric_limits<double>::infinity();
+  static constexpr const double POS_INFINITY_DOUBLE = std::numeric_limits<double>::infinity();
+  static constexpr const double MIN_DOUBLE = -std::numeric_limits<double>::infinity();
+  static constexpr const double MAX_DOUBLE = std::numeric_limits<double>::infinity();
+  static constexpr const double MIN_FINITE_DOUBLE = std::nextafter(-std::numeric_limits<double>::max(), 0.0f);
+  static constexpr const double MAX_FINITE_DOUBLE = std::numeric_limits<double>::max();
+  static constexpr const double MIN_POS_DOUBLE = std::numeric_limits<double>::min();
 
   static constexpr const int8_t NULL_BYTE = std::numeric_limits<int8_t>::min();
   static constexpr const int8_t MIN_BYTE = std::numeric_limits<int8_t>::min() + 1;

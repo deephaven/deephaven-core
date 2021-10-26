@@ -51,14 +51,14 @@ public class QueryConstants {
     public static final Byte NULL_BYTE_BOXED = NULL_BYTE;
 
     /**
-     * Maximum value of type byte.
-     */
-    public static final byte MAX_BYTE = Byte.MAX_VALUE;
-
-    /**
      * Minimum value of type byte.
      */
     public static final byte MIN_BYTE = Byte.MIN_VALUE + 1;
+
+    /**
+     * Maximum value of type byte.
+     */
+    public static final byte MAX_BYTE = Byte.MAX_VALUE;
 
 
     /////////////////////////////////////////////////////////////////
@@ -75,14 +75,14 @@ public class QueryConstants {
     public static final Short NULL_SHORT_BOXED = NULL_SHORT;
 
     /**
-     * Maximum value of type short.
-     */
-    public static final short MAX_SHORT = Short.MAX_VALUE;
-
-    /**
      * Minimum value of type short.
      */
     public static final short MIN_SHORT = Short.MIN_VALUE + 1;
+
+    /**
+     * Maximum value of type short.
+     */
+    public static final short MAX_SHORT = Short.MAX_VALUE;
 
 
     /////////////////////////////////////////////////////////////////
@@ -99,14 +99,14 @@ public class QueryConstants {
     public static final Integer NULL_INT_BOXED = NULL_INT;
 
     /**
-     * Maximum value of type int.
-     */
-    public static final int MAX_INT = Integer.MAX_VALUE;
-
-    /**
      * Minimum value of type int.
      */
     public static final int MIN_INT = Integer.MIN_VALUE + 1;
+
+    /**
+     * Maximum value of type int.
+     */
+    public static final int MAX_INT = Integer.MAX_VALUE;
 
 
     /////////////////////////////////////////////////////////////////
@@ -123,14 +123,14 @@ public class QueryConstants {
     public static final Long NULL_LONG_BOXED = NULL_LONG;
 
     /**
-     * Maximum value of type long.
-     */
-    public static final long MAX_LONG = Long.MAX_VALUE;
-
-    /**
      * Minimum value of type long.
      */
     public static final long MIN_LONG = Long.MIN_VALUE + 1;
+
+    /**
+     * Maximum value of type long.
+     */
+    public static final long MAX_LONG = Long.MAX_VALUE;
 
 
     /////////////////////////////////////////////////////////////////
@@ -147,29 +147,45 @@ public class QueryConstants {
     public static final Float NULL_FLOAT_BOXED = NULL_FLOAT;
 
     /**
-     * Maximum finite value of type float.
+     * Not-a-Number (NaN) of type float.
      */
-    public static final float MAX_FLOAT = Float.MAX_VALUE;
-
-    /**
-     * Minimum finite value of type float.
-     */
-    public static final float MIN_FLOAT = Math.nextUp(-Float.MAX_VALUE);
-
-    /**
-     * Positive infinity of type float.
-     */
-    public static final float POSITIVE_INFINITY_FLOAT = Float.POSITIVE_INFINITY;
+    public static final float NAN_FLOAT = Float.NaN;
 
     /**
      * Negative infinity of type float.
      */
-    public static final float NEGATIVE_INFINITY_FLOAT = Float.NEGATIVE_INFINITY;
+    public static final float NEG_INFINITY_FLOAT = Float.NEGATIVE_INFINITY;
 
     /**
-     * Not-a-Number (NaN) of type float.
+     * Positive infinity of type float.
      */
-    public static final float NAN_FLOAT = Float.NaN;
+    public static final float POS_INFINITY_FLOAT = Float.POSITIVE_INFINITY;
+
+    /**
+     * Minimum value of type float.
+     */
+    public static final float MIN_FLOAT = NEG_INFINITY_FLOAT;
+
+    /**
+     * Maximum value of type float.
+     */
+    public static final float MAX_FLOAT = POS_INFINITY_FLOAT;
+
+    /**
+     * Minimum finite value of type float.
+     */
+    public static final float MIN_FINITE_FLOAT = Math.nextUp(-Float.MAX_VALUE);
+
+    /**
+     * Maximum finite value of type float.
+     */
+    public static final float MAX_FINITE_FLOAT = Float.MAX_VALUE;
+
+    /**
+     * Minimum positive value of type float.
+     */
+    public static final float MIN_POS_FLOAT = Float.MIN_VALUE;
+
 
     /////////////////////////////////////////////////////////////////
 
@@ -185,27 +201,42 @@ public class QueryConstants {
     public static final Double NULL_DOUBLE_BOXED = NULL_DOUBLE;
 
     /**
-     * Maximum finite value of type double.
+     * Not-a-Number (NaN) of type double.
      */
-    public static final double MAX_DOUBLE = Double.MAX_VALUE;
-
-    /**
-     * Minimum finite value of type double.
-     */
-    public static final double MIN_DOUBLE = Math.nextUp(-Double.MAX_VALUE);
-
-    /**
-     * Positive infinity of type double.
-     */
-    public static final double POSITIVE_INFINITY_DOUBLE = Double.POSITIVE_INFINITY;
+    public static final double NAN_DOUBLE = Double.NaN;
 
     /**
      * Negative infinity of type double.
      */
-    public static final double NEGATIVE_INFINITY_DOUBLE = Double.NEGATIVE_INFINITY;
+    public static final double NEG_INFINITY_DOUBLE = Double.NEGATIVE_INFINITY;
 
     /**
-     * Not-a-Number (NaN) of type double.
+     * Positive infinity of type double.
      */
-    public static final double NAN_DOUBLE = Double.NaN;
+    public static final double POS_INFINITY_DOUBLE = Double.POSITIVE_INFINITY;
+
+    /**
+     * Minimum value of type double.
+     */
+    public static final double MIN_DOUBLE = NEG_INFINITY_DOUBLE;
+
+    /**
+     * Maximum value of type double.
+     */
+    public static final double MAX_DOUBLE = POS_INFINITY_DOUBLE;
+
+    /**
+     * Minimum finite value of type double.
+     */
+    public static final double MIN_FINITE_DOUBLE = Math.nextUp(-Double.MAX_VALUE);
+
+    /**
+     * Maximum finite value of type double.
+     */
+    public static final double MAX_FINITE_DOUBLE = Double.MAX_VALUE;
+
+    /**
+     * Minimum positive value of type double.
+     */
+    public static final double MIN_POS_DOUBLE = Double.MIN_VALUE;
 }
