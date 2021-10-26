@@ -199,7 +199,7 @@ public final class BarrageTableResolver implements TableResolver {
 
         @Override
         public void visit(URI uri) {
-            // TODO(deephaven-core#xyz): Support resolve URI via gRPC / QST
+            // TODO(deephaven-core#1483): Support resolve URI via gRPC / QST
             throw new UnsupportedOperationException(
                     "Remote generic URIs not supported yet, see https://github.com/deephaven/deephaven-core/issues/1483");
         }
