@@ -43,7 +43,7 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
         }
     }
 
-    private interface FieldContext extends SafeCloseable {
+    interface FieldContext extends SafeCloseable {
     }
 
     private abstract static class GenericRecordFieldProcessor {
