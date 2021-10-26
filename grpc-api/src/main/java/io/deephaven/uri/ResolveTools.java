@@ -1,7 +1,7 @@
-package io.deephaven.grpc_api.uri;
+package io.deephaven.uri;
 
 import io.deephaven.db.tables.Table;
-import io.deephaven.uri.StructuredUri;
+import io.deephaven.grpc_api.uri.TableResolversInstance;
 
 import java.net.URI;
 
