@@ -15,6 +15,7 @@ import io.deephaven.grpc_api.util.ExportTicketHelper;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
+import io.deephaven.proto.backplane.grpc.ApplyPreviewColumnsRequest;
 import io.deephaven.proto.backplane.grpc.AsOfJoinTablesRequest;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
 import io.deephaven.proto.backplane.grpc.ComboAggregateRequest;
@@ -250,6 +251,11 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
     @Override
     public void fetchTable(FetchTableRequest request, StreamObserver<ExportedTableCreationResponse> responseObserver) {
         oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.FETCH_TABLE, request, responseObserver);
+    }
+
+    @Override
+    public void applyPreviewColumns(ApplyPreviewColumnsRequest request, StreamObserver<ExportedTableCreationResponse> responseObserver) {
+        oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.APPLY_PREVIEW_COLUMNS, request, responseObserver);
     }
 
     @Override
