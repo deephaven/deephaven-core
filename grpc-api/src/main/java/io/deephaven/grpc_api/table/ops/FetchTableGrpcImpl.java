@@ -20,7 +20,11 @@ public class FetchTableGrpcImpl extends GrpcTableOperation<FetchTableRequest> {
     @Override
     public Table create(FetchTableRequest request, List<SessionState.ExportObject<Table>> sourceTables) {
         Assert.eq(sourceTables.size(), "sourceTables.size()", 1);
-        // TODO (core#107): apply preview columns should be a separate call from fetchTable
-        return ColumnPreviewManager.applyPreview(sourceTables.get(0).get());
+
+        Table retval = sourceTables.get(0).get();
+        if (request.getApplyPreviewColumns()) {
+            retval = ColumnPreviewManager.applyPreview(retval);
+        }
+        return retval;
     }
 }

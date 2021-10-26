@@ -223,6 +223,7 @@ message ExportedTableCreationResponse {
 message FetchTableRequest {
   TableReference source_id = 1;
   Ticket result_id = 2;
+  bool apply_preview_columns = 3;
 }
 
 message FetchPandasTableRequest {
