@@ -6,7 +6,7 @@ import dagger.multibindings.IntoSet;
 import io.deephaven.grpc_api.barrage.BarrageClientModule;
 
 /**
- * Installs the {@link UriResolver table resolvers}. See each specific resolver for more information.
+ * Installs the {@link UriResolver URI resolvers}. See each specific resolver for more information.
  *
  * @see BarrageTableResolver
  * @see QueryScopeResolver

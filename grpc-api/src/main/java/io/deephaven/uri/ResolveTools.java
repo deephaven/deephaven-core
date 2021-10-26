@@ -10,7 +10,7 @@ import java.net.URI;
  * instance from {@link UriResolversInstance#get()}.
  *
  * <p>
- * The exact logic will depend on which {@link UriResolver table resolvers} are installed.
+ * The exact logic will depend on which {@link UriResolver URI resolvers} are installed.
  *
  * @see StructuredUri structured URI
  */

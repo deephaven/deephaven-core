@@ -60,7 +60,7 @@ public class DeephavenApiServer {
     private final ConsoleServiceGrpcImpl consoleService;
     private final ApplicationInjector applicationInjector;
     private final ApplicationServiceGrpcImpl applicationService;
-    private final UriResolvers tableResolvers;
+    private final UriResolvers uriResolvers;
 
     @Inject
     public DeephavenApiServer(
@@ -70,14 +70,14 @@ public class DeephavenApiServer {
             final ConsoleServiceGrpcImpl consoleService,
             final ApplicationInjector applicationInjector,
             final ApplicationServiceGrpcImpl applicationService,
-            final UriResolvers tableResolvers) {
+            final UriResolvers uriResolvers) {
         this.server = server;
         this.ltm = ltm;
         this.logInit = logInit;
         this.consoleService = consoleService;
         this.applicationInjector = applicationInjector;
         this.applicationService = applicationService;
-        this.tableResolvers = tableResolvers;
+        this.uriResolvers = uriResolvers;
     }
 
     public Server server() {
@@ -107,10 +107,10 @@ public class DeephavenApiServer {
         applicationInjector.run();
 
         {
-            for (UriResolver resolver : tableResolvers.resolvers()) {
+            for (UriResolver resolver : uriResolvers.resolvers()) {
                 log.info().append("Found table resolver ").append(resolver.getClass().toString()).endl();
             }
-            UriResolversInstance.init(tableResolvers);
+            UriResolversInstance.init(uriResolvers);
         }
 
         log.info().append("Starting server...").endl();
