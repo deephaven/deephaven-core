@@ -2,7 +2,7 @@ package io.deephaven.grpc_api.uri;
 
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.utils.ParquetTools;
-import io.deephaven.uri.TableResolver;
+import io.deephaven.uri.UriHelper;
 
 import javax.inject.Inject;
 import java.net.URI;
@@ -10,10 +10,10 @@ import java.util.Collections;
 import java.util.Set;
 
 /**
- * The parquet table resolver is able to resolve local parquet files for the scheme {@link #SCHEME parquet}.
+ * The parquet table resolver is able to resolve local parquet files or directories for the scheme {@value #SCHEME}.
  *
  * <p>
- * For example, {@code parquet:///data/my-file.parquet}.
+ * For example, {@code parquet:///data/my-file.parquet} or {@code parquet:///data/my-dir}.
  *
  * <p>
  * For more advanced use cases, see {@link ParquetTools}.
@@ -28,13 +28,7 @@ public final class ParquetTableResolver implements TableResolver {
     private static final Set<String> SCHEMES = Collections.singleton(SCHEME);
 
     public static boolean isWellFormed(URI uri) {
-        return SCHEME.equals(uri.getScheme())
-                && uri.getHost() == null
-                && !uri.isOpaque()
-                && uri.getPath().charAt(0) == '/'
-                && uri.getQuery() == null
-                && uri.getUserInfo() == null
-                && uri.getFragment() == null;
+        return SCHEME.equals(uri.getScheme()) && UriHelper.isLocalPath(uri);
     }
 
     @Inject

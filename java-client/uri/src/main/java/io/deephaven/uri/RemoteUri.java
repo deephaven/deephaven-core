@@ -18,7 +18,7 @@ import java.util.Objects;
  */
 @Immutable
 @SimpleStyle
-public abstract class RemoteUri extends StructuredUriBase implements DeephavenUri {
+public abstract class RemoteUri extends DeephavenUriBase {
 
     public static RemoteUri of(DeephavenTarget target, StructuredUri uri) {
         return ImmutableRemoteUri.of(target, uri);
@@ -76,22 +76,12 @@ public abstract class RemoteUri extends StructuredUriBase implements DeephavenUr
     public abstract DeephavenTarget target();
 
     /**
-     * The <em>inner</em> URI. As opposed to {@link #toUri()}, which represents {@code this} as a URI.
+     * The <em>inner</em> URI. As opposed to {@link #toURI()}, which represents {@code this} as a URI.
      *
      * @return the inner URI
      */
     @Parameter
     public abstract StructuredUri uri();
-
-    @Override
-    public final URI toUri() {
-        return URI.create(toString());
-    }
-
-    @Override
-    public final String scheme() {
-        return target().scheme();
-    }
 
     @Override
     public final <V extends Visitor> V walk(V visitor) {

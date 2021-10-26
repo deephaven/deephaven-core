@@ -12,7 +12,7 @@ import io.deephaven.grpc_api.log.LogInit;
 import io.deephaven.grpc_api.session.SessionService;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
-import io.deephaven.uri.TableResolver;
+import io.deephaven.grpc_api.uri.TableResolver;
 import io.deephaven.grpc_api.uri.TableResolversInstance;
 import io.deephaven.grpc_api.uri.TableResolvers;
 import io.deephaven.util.process.ProcessEnvironment;

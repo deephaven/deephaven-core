@@ -23,13 +23,8 @@ public abstract class RawUri extends StructuredUriBase {
     public abstract URI uri();
 
     @Override
-    public final URI toUri() {
+    public final URI toURI() {
         return uri();
-    }
-
-    @Override
-    public final String scheme() {
-        return uri().getScheme();
     }
 
     @Override

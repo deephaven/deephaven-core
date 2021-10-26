@@ -1,4 +1,4 @@
-package io.deephaven.uri;
+package io.deephaven.grpc_api.uri;
 
 import io.deephaven.db.tables.Table;
 

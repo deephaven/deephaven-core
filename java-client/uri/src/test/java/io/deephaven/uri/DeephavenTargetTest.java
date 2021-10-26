@@ -3,6 +3,7 @@ package io.deephaven.uri;
 import org.junit.jupiter.api.Test;
 
 import java.net.URI;
+import java.util.function.Supplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
@@ -29,88 +30,96 @@ public class DeephavenTargetTest {
     }
 
     @Test
+    void badPort() {
+        invalid("dh://host:-1");
+        invalid(() -> DeephavenTarget.builder().isTLS(true).host("host").port(-1).build());
+    }
+
+    @Test
+    void badPort2() {
+        invalid("dh://host:-2");
+        invalid(() -> DeephavenTarget.builder().isTLS(true).host("host").port(-2).build());
+    }
+
+    @Test
+    void badPort3() {
+        invalid("dh://host:1111111111111");
+    }
+
+    @Test
+    void multiport() {
+        invalid("dh://host:80:80");
+        invalid(() -> DeephavenTarget.builder().isTLS(true).host("host:80").build());
+        invalid(() -> DeephavenTarget.builder().isTLS(true).host("host:80").port(80).build());
+    }
+
+    @Test
     void noScheme() {
-        try {
-            target("host");
-            failBecauseExceptionWasNotThrown(IllegalArgumentException.class);
-        } catch (IllegalArgumentException e) {
-            // expected
-        }
+        invalid("host");
     }
 
     @Test
     void queryParams() {
-        try {
-            target("dh://host?bad=1");
-            failBecauseExceptionWasNotThrown(IllegalArgumentException.class);
-        } catch (IllegalArgumentException e) {
-            // expected
-        }
+        invalid("dh://host?bad=1");
+        invalid(() -> DeephavenTarget.builder().isTLS(true).host("host?bad=1").build());
     }
 
     @Test
     void fragment() {
-        try {
-            target("dh://host#bad");
-            failBecauseExceptionWasNotThrown(IllegalArgumentException.class);
-        } catch (IllegalArgumentException e) {
-            // expected
-        }
+        invalid("dh://host#bad");
+        invalid(() -> DeephavenTarget.builder().isTLS(true).host("host#bad").build());
     }
 
     @Test
     void noHost() {
-        try {
-            target("dh://");
-            failBecauseExceptionWasNotThrown(IllegalArgumentException.class);
-        } catch (IllegalArgumentException e) {
-            // expected
-        }
+        invalid("dh://");
     }
 
     @Test
     void noHost2() {
-        try {
-            target("dh:///");
-            failBecauseExceptionWasNotThrown(IllegalArgumentException.class);
-        } catch (IllegalArgumentException e) {
-            // expected
-        }
+        invalid("dh:///");
+        invalid(() -> DeephavenTarget.builder().isTLS(true).host("").build());
     }
 
     @Test
     void hasSlash() {
-        try {
-            target("dh://host/");
-            failBecauseExceptionWasNotThrown(IllegalArgumentException.class);
-        } catch (IllegalArgumentException e) {
-            // expected
-        }
+        invalid("dh://host/");
+        invalid(() -> DeephavenTarget.builder().isTLS(true).host("host/").build());
     }
 
     @Test
     void hasPath() {
-        try {
-            target("dh://host/s/table");
-            failBecauseExceptionWasNotThrown(IllegalArgumentException.class);
-        } catch (IllegalArgumentException e) {
-            // expected
-        }
+        invalid("dh://host/s/table");
+        invalid(() -> DeephavenTarget.builder().isTLS(true).host("host/s/table").build());
     }
 
     @Test
     void hasUserInfo() {
-        try {
-            target("dh://user@host");
-            failBecauseExceptionWasNotThrown(IllegalArgumentException.class);
-        } catch (IllegalArgumentException e) {
-            // expected
-        }
+        invalid("dh://user@host");
+        invalid(() -> DeephavenTarget.builder().isTLS(true).host("user@host").build());
     }
 
     private static void check(String uri, DeephavenTarget target) {
         assertThat(target.toString()).isEqualTo(uri);
         assertThat(target(uri)).isEqualTo(target);
+    }
+
+    private static void invalid(String uri) {
+        try {
+            target(uri);
+            failBecauseExceptionWasNotThrown(IllegalArgumentException.class);
+        } catch (IllegalArgumentException e) {
+            // expected
+        }
+    }
+
+    private static void invalid(Supplier<DeephavenTarget> supplier) {
+        try {
+            supplier.get();
+            failBecauseExceptionWasNotThrown(IllegalArgumentException.class);
+        } catch (IllegalArgumentException e) {
+            // expected
+        }
     }
 
     private static DeephavenTarget target(String uri) {

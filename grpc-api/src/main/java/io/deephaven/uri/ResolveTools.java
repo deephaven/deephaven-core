@@ -1,6 +1,7 @@
 package io.deephaven.uri;
 
 import io.deephaven.db.tables.Table;
+import io.deephaven.grpc_api.uri.TableResolver;
 import io.deephaven.grpc_api.uri.TableResolversInstance;
 
 import java.net.URI;
@@ -10,7 +11,7 @@ import java.net.URI;
  * instance from {@link TableResolversInstance#get()}.
  *
  * <p>
- * The exact parsing logic will depend on which {@link io.deephaven.uri.TableResolver table resolvers} are installed.
+ * The exact parsing logic will depend on which {@link TableResolver table resolvers} are installed.
  *
  * @see StructuredUri structured URI
  */

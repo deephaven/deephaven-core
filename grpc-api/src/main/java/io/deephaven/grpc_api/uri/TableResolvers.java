@@ -1,7 +1,6 @@
 package io.deephaven.grpc_api.uri;
 
 import io.deephaven.db.tables.Table;
-import io.deephaven.uri.TableResolver;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -50,14 +49,17 @@ public final class TableResolvers {
         final List<TableResolver> resolvers = map.getOrDefault(uri.getScheme(), Collections.emptySet())
                 .stream()
                 .filter(t -> t.isResolvable(uri))
-                .limit(2)
                 .collect(Collectors.toList());
         if (resolvers.isEmpty()) {
             throw new UnsupportedOperationException(
                     String.format("Unable to find resolver for uri '%s'", uri));
         } else if (resolvers.size() > 1) {
+            final String classes = resolvers.stream()
+                    .map(TableResolver::getClass)
+                    .map(Class::toString)
+                    .collect(Collectors.joining(",", "[", "]"));
             throw new UnsupportedOperationException(
-                    String.format("Found multiple resolvers for uri '%s'", uri));
+                    String.format("Found multiple resolvers for uri '%s': %s", uri, classes));
         }
         return resolvers.get(0);
     }

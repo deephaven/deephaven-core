@@ -6,7 +6,5 @@ import java.util.Optional;
 
 public interface ApplicationStates {
 
-    ApplicationState getQueryScopeState();
-
     Optional<ApplicationState> getApplicationState(String applicationId);
 }

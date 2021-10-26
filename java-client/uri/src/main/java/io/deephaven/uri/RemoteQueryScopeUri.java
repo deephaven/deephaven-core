@@ -7,12 +7,8 @@ class RemoteQueryScopeUri {
 
     static boolean isWellFormed(URI uri) {
         return RemoteUri.isValidScheme(uri.getScheme())
-                && uri.getHost() != null
-                && !uri.isOpaque()
-                && QueryScopeUri.PATH_PATTERN.matcher(uri.getPath()).matches()
-                && uri.getQuery() == null
-                && uri.getUserInfo() == null
-                && uri.getFragment() == null;
+                && UriHelper.isRemotePath(uri)
+                && QueryScopeUri.PATH_PATTERN.matcher(uri.getPath()).matches();
     }
 
     static RemoteUri of(URI uri) {

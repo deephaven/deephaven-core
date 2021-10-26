@@ -17,14 +17,7 @@ public interface StructuredUri {
      *
      * @return the URI.
      */
-    URI toUri();
-
-    /**
-     * The scheme.
-     *
-     * @return the scheme
-     */
-    String scheme();
+    URI toURI();
 
     /**
      * Wraps up {@code this} URI as a {@link RemoteUri remote URI}.

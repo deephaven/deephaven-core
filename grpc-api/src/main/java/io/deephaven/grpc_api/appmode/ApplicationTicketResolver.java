@@ -2,15 +2,15 @@ package io.deephaven.grpc_api.appmode;
 
 import com.google.protobuf.ByteStringAccess;
 import com.google.rpc.Code;
-import io.deephaven.base.string.EncodingInfo;
 import io.deephaven.appmode.ApplicationState;
 import io.deephaven.appmode.Field;
+import io.deephaven.base.string.EncodingInfo;
 import io.deephaven.db.tables.Table;
+import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.grpc_api.session.SessionState;
 import io.deephaven.grpc_api.session.TicketResolverBase;
 import io.deephaven.grpc_api.session.TicketRouter;
 import io.deephaven.grpc_api.util.Exceptions;
-import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.grpc_api.util.TicketRouterHelper;
 import io.deephaven.proto.backplane.grpc.Ticket;
 import org.apache.arrow.flight.impl.Flight;
@@ -23,7 +23,6 @@ import java.nio.charset.CharacterCodingException;
 import java.nio.charset.CharsetDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
-import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
@@ -39,15 +38,6 @@ public class ApplicationTicketResolver extends TicketResolverBase implements App
     @Inject
     public ApplicationTicketResolver() {
         super((byte) TICKET_PREFIX, FLIGHT_DESCRIPTOR_ROUTE);
-    }
-
-    @Override
-    public ApplicationState getQueryScopeState() {
-        final ApplicationState state = applicationMap.get(AppFieldId.SCOPE_ID);
-        if (state == null) {
-            throw new NoSuchElementException("Query scope application state does not exist");
-        }
-        return state;
     }
 
     @Override

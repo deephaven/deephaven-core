@@ -16,7 +16,6 @@ import io.deephaven.uri.FieldUri;
 import io.deephaven.uri.QueryScopeUri;
 import io.deephaven.uri.RemoteUri;
 import io.deephaven.uri.StructuredUri.Visitor;
-import io.deephaven.uri.TableResolver;
 import io.grpc.ManagedChannel;
 import org.apache.arrow.memory.BufferAllocator;
 
@@ -89,35 +88,28 @@ public final class BarrageTableResolver implements TableResolver {
     @Override
     public Table resolve(URI uri) throws InterruptedException {
         try {
-            return resolve(RemoteUri.of(uri));
+            return subscribe(RemoteUri.of(uri));
         } catch (TableHandleException e) {
             throw e.asUnchecked();
         }
     }
 
-    public Table resolve(RemoteUri remoteUri) throws InterruptedException, TableHandleException {
+    /**
+     * Create a full-subscription to the remote URI. Uses {@link #OPTIONS}.
+     *
+     * @param remoteUri the remote URI
+     * @return the subscribed table
+     */
+    public Table subscribe(RemoteUri remoteUri) throws InterruptedException, TableHandleException {
         final DeephavenTarget target = remoteUri.target();
         final TableSpec table = RemoteResolver.of(remoteUri);
         return subscribe(target, table, OPTIONS);
     }
 
     /**
-     * Create a full-subscription to the remote URI. Uses {@link #OPTIONS}.
+     * Create a full-subscription to the {@code table} via the {@code targetUri}. Uses {@link #OPTIONS}.
      *
-     * @param remoteUri the remote URI, {@link RemoteUri}.
-     * @return the subscribed table
-     */
-    public Table subscribe(String remoteUri) throws TableHandleException, InterruptedException {
-        final RemoteUri uri = RemoteUri.of(URI.create(remoteUri));
-        final DeephavenTarget target = uri.target();
-        final TableSpec table = RemoteResolver.of(uri);
-        return subscribe(target, table, OPTIONS);
-    }
-
-    /**
-     * Create a full-subscription to the {@code table}. Uses {@link #OPTIONS}.
-     *
-     * @param targetUri the {@link DeephavenTarget} URI
+     * @param targetUri the target URI
      * @param table the table spec
      * @return the subscribed table
      */

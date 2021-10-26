@@ -6,7 +6,6 @@ import io.deephaven.db.tables.Table;
 import io.deephaven.grpc_api.appmode.ApplicationStates;
 import io.deephaven.uri.ApplicationUri;
 import io.deephaven.uri.DeephavenUri;
-import io.deephaven.uri.TableResolver;
 
 import javax.inject.Inject;
 import java.net.URI;
@@ -67,10 +66,10 @@ public final class ApplicationResolver implements TableResolver {
     }
 
     private Table asTable(Object value, String context, String fieldName) {
-        if (!(value instanceof Table)) {
-            throw new IllegalArgumentException(
-                    String.format("Field '%s' in '%s' is not a Table, is %s", fieldName, context, value.getClass()));
+        if (value == null || value instanceof Table) {
+            return (Table) value;
         }
-        return (Table) value;
+        throw new IllegalArgumentException(
+                String.format("Field '%s' in '%s' is not a Table, is %s", fieldName, context, value.getClass()));
     }
 }

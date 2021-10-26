@@ -12,12 +12,8 @@ class RemoteProxiedUri {
 
     static boolean isWellFormed(URI uri) {
         return RemoteUri.isValidScheme(uri.getScheme())
-                && uri.getHost() != null
-                && !uri.isOpaque()
-                && uri.getPath().isEmpty()
-                && QUERY_PATTERN.matcher(uri.getQuery()).matches()
-                && uri.getUserInfo() == null
-                && uri.getFragment() == null;
+                && UriHelper.isRemoteQuery(uri)
+                && QUERY_PATTERN.matcher(uri.getQuery()).matches();
     }
 
     static RemoteUri of(URI uri) {

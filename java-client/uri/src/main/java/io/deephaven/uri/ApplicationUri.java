@@ -17,7 +17,7 @@ import java.util.regex.Pattern;
  */
 @Immutable
 @SimpleStyle
-public abstract class ApplicationUri extends StructuredUriBase implements DeephavenUri {
+public abstract class ApplicationUri extends DeephavenUriBase {
 
     public static final String APPLICATION = "app";
 
@@ -35,12 +35,8 @@ public abstract class ApplicationUri extends StructuredUriBase implements Deepha
 
     public static boolean isWellFormed(URI uri) {
         return isValidScheme(uri.getScheme())
-                && uri.getHost() == null
-                && !uri.isOpaque()
-                && PATH_PATTERN.matcher(uri.getPath()).matches()
-                && uri.getQuery() == null
-                && uri.getUserInfo() == null
-                && uri.getFragment() == null;
+                && UriHelper.isLocalPath(uri)
+                && PATH_PATTERN.matcher(uri.getPath()).matches();
     }
 
     /**
@@ -84,16 +80,6 @@ public abstract class ApplicationUri extends StructuredUriBase implements Deepha
     public final <V extends Visitor> V walk(V visitor) {
         visitor.visit(this);
         return visitor;
-    }
-
-    @Override
-    public final URI toUri() {
-        return URI.create(toString());
-    }
-
-    @Override
-    public final String scheme() {
-        return DeephavenUri.LOCAL_SCHEME;
     }
 
     @Override

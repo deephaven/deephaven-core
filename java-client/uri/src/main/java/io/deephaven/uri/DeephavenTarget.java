@@ -11,13 +11,9 @@ import java.util.OptionalInt;
  * A Deephaven target represents the information necessary to establish a connection to a remote Deephaven service.
  *
  * <p>
- * A Deephaven target has a {@link #scheme() scheme}, {@link #host() host}, and optional {@link #port() port}. When the
+ * A Deephaven target has a {@link #isTLS() TLS flag}, {@link #host() host}, and optional {@link #port() port}. When the
  * port is not specified, it's up to the client to determine the appropriate port (possibly by using a default port or
  * discovering the appropriate port to use).
- *
- * <p>
- * The scheme must be {@link DeephavenUri#TLS_SCHEME dh}, for TLS; or {@link DeephavenUri#PLAINTEXT_SCHEME dh+plain},
- * for plaintext.
  *
  * @see #of(URI) parsing logic
  */
@@ -33,7 +29,7 @@ public abstract class DeephavenTarget {
      * Returns true if the scheme is valid for a Deephaven target.
      *
      * <p>
-     * The valid schemes are {@link DeephavenUri#TLS_SCHEME dh} and {@link DeephavenUri#PLAINTEXT_SCHEME dh+plain}.
+     * The valid schemes are {@value DeephavenUri#TLS_SCHEME} and {@value DeephavenUri#PLAINTEXT_SCHEME}.
      *
      * @param scheme the scheme
      * @return true iff scheme is valid for Deephaven target
@@ -44,13 +40,7 @@ public abstract class DeephavenTarget {
     }
 
     public static boolean isWellFormed(URI uri) {
-        return isValidScheme(uri.getScheme())
-                && uri.getHost() != null
-                && !uri.isOpaque()
-                && uri.getPath().isEmpty()
-                && uri.getQuery() == null
-                && uri.getUserInfo() == null
-                && uri.getFragment() == null;
+        return isValidScheme(uri.getScheme()) && UriHelper.isRemoteTarget(uri);
     }
 
     /**
@@ -78,43 +68,23 @@ public abstract class DeephavenTarget {
      * @return the Deephaven target
      */
     public static DeephavenTarget from(URI uri) {
+        final String scheme = uri.getScheme();
         final int port = uri.getPort();
-        if (port == -1) {
-            return of(uri.getScheme(), uri.getHost());
-        } else {
-            return of(uri.getScheme(), uri.getHost(), port);
-        }
-    }
-
-    public static DeephavenTarget of(String scheme, String host) {
+        Builder builder = builder().host(uri.getHost());
         switch (scheme) {
             case DeephavenUri.TLS_SCHEME:
-                return builder().isTLS(true).host(host).build();
+                builder.isTLS(true);
+                break;
             case DeephavenUri.PLAINTEXT_SCHEME:
-                return builder().isTLS(false).host(host).build();
+                builder.isTLS(false);
+                break;
             default:
                 throw new IllegalArgumentException(String.format("Invalid Deephaven target scheme '%s'", scheme));
         }
-    }
-
-    public static DeephavenTarget of(String scheme, String host, int port) {
-        switch (scheme) {
-            case DeephavenUri.TLS_SCHEME:
-                return builder().isTLS(true).host(host).port(port).build();
-            case DeephavenUri.PLAINTEXT_SCHEME:
-                return builder().isTLS(false).host(host).port(port).build();
-            default:
-                throw new IllegalArgumentException(String.format("Invalid Deephaven target scheme '%s'", scheme));
+        if (port != -1) {
+            builder.port(port);
         }
-    }
-
-    /**
-     * The scheme. {@code dh} when {@link #isTLS() TLS} is enabled, {@code dh+plain} otherwise.
-     *
-     * @return the scheme
-     */
-    public final String scheme() {
-        return isTLS() ? DeephavenUri.TLS_SCHEME : DeephavenUri.PLAINTEXT_SCHEME;
+        return builder.build();
     }
 
     /**
@@ -147,10 +117,6 @@ public abstract class DeephavenTarget {
         return URI.create(toString());
     }
 
-    public final String authority() {
-        return port().isPresent() ? String.format("%s:%d", host(), port().getAsInt()) : host();
-    }
-
     @Check
     final void checkHostPort() {
         // Will cause URI exception if port is invalid too
@@ -161,7 +127,9 @@ public abstract class DeephavenTarget {
 
     @Override
     public final String toString() {
-        return String.format("%s://%s", scheme(), authority());
+        final String scheme = isTLS() ? DeephavenUri.TLS_SCHEME : DeephavenUri.PLAINTEXT_SCHEME;
+        return port().isPresent() ? String.format("%s://%s:%d", scheme, host(), port().getAsInt())
+                : String.format("%s://%s", scheme, host());
     }
 
     public interface Builder {
@@ -170,7 +138,7 @@ public abstract class DeephavenTarget {
 
         Builder port(int port);
 
-        Builder isTLS(boolean useTLS);
+        Builder isTLS(boolean isTLS);
 
         DeephavenTarget build();
     }

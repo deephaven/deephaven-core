@@ -21,7 +21,7 @@ import java.util.regex.Pattern;
  */
 @Immutable
 @SimpleStyle
-public abstract class FieldUri extends StructuredUriBase implements DeephavenUri {
+public abstract class FieldUri extends DeephavenUriBase {
 
     public static final Pattern PATH_PATTERN = Pattern.compile("^/field/(.+)$");
 
@@ -35,12 +35,8 @@ public abstract class FieldUri extends StructuredUriBase implements DeephavenUri
 
     public static boolean isWellFormed(URI uri) {
         return isValidScheme(uri.getScheme())
-                && uri.getHost() == null
-                && !uri.isOpaque()
-                && PATH_PATTERN.matcher(uri.getPath()).matches()
-                && uri.getQuery() == null
-                && uri.getUserInfo() == null
-                && uri.getFragment() == null;
+                && UriHelper.isLocalPath(uri)
+                && PATH_PATTERN.matcher(uri.getPath()).matches();
     }
 
     /**
@@ -72,16 +68,6 @@ public abstract class FieldUri extends StructuredUriBase implements DeephavenUri
     public final <V extends Visitor> V walk(V visitor) {
         visitor.visit(this);
         return visitor;
-    }
-
-    @Override
-    public final URI toUri() {
-        return URI.create(toString());
-    }
-
-    @Override
-    public final String scheme() {
-        return DeephavenUri.LOCAL_SCHEME;
     }
 
     @Override

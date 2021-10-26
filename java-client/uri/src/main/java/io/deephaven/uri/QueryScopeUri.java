@@ -19,12 +19,7 @@ import java.util.regex.Pattern;
  */
 @Immutable
 @SimpleStyle
-public abstract class QueryScopeUri extends StructuredUriBase implements DeephavenUri {
-
-    /**
-     * The query scope scheme, equal to {@link DeephavenUri#LOCAL_SCHEME}.
-     */
-    public static final String SCHEME = DeephavenUri.LOCAL_SCHEME;
+public abstract class QueryScopeUri extends DeephavenUriBase {
 
     public static final String SCOPE = "scope";
 
@@ -35,17 +30,13 @@ public abstract class QueryScopeUri extends StructuredUriBase implements Deephav
     }
 
     public static boolean isValidScheme(String scheme) {
-        return SCHEME.equals(scheme);
+        return DeephavenUri.LOCAL_SCHEME.equals(scheme);
     }
 
     public static boolean isWellFormed(URI uri) {
         return isValidScheme(uri.getScheme())
-                && uri.getHost() == null
-                && !uri.isOpaque()
-                && PATH_PATTERN.matcher(uri.getPath()).matches()
-                && uri.getQuery() == null
-                && uri.getUserInfo() == null
-                && uri.getFragment() == null;
+                && UriHelper.isLocalPath(uri)
+                && PATH_PATTERN.matcher(uri.getPath()).matches();
     }
 
     /**
@@ -80,18 +71,8 @@ public abstract class QueryScopeUri extends StructuredUriBase implements Deephav
     }
 
     @Override
-    public final URI toUri() {
-        return URI.create(toString());
-    }
-
-    @Override
-    public final String scheme() {
-        return SCHEME;
-    }
-
-    @Override
     public final String toString() {
-        return String.format("%s:///%s/%s", SCHEME, SCOPE, variableName());
+        return String.format("%s:///%s/%s", DeephavenUri.LOCAL_SCHEME, SCOPE, variableName());
     }
 
     @Check

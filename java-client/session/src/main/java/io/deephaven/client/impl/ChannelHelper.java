@@ -28,8 +28,7 @@ public class ChannelHelper {
         if (target.port().isPresent()) {
             return target.port().getAsInt();
         }
-        // TODO: NameResolver / target
-        // TODO: DNS SRV
+        // TODO(deephaven-core#1489): Support service discovery for DeephavenTarget
         if (target.isTLS()) {
             return Integer.getInteger("deephaven.target.port", DEFAULT_TLS_PORT);
         }

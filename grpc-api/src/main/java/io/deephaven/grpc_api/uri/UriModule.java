@@ -4,7 +4,6 @@ import dagger.Binds;
 import dagger.Module;
 import dagger.multibindings.IntoSet;
 import io.deephaven.grpc_api.barrage.BarrageClientModule;
-import io.deephaven.uri.TableResolver;
 
 /**
  * Installs the {@link TableResolver table resolvers}. See each specific resolver for more information.
