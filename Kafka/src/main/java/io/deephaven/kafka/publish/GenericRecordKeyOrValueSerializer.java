@@ -90,10 +90,7 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
             return new ContextImpl(size);
         }
 
-        abstract void processFieldElement(
-                final int i,
-                final ContextImpl contextImpl,
-                final WritableObjectChunk<GenericRecord, Attributes.Values> avroChunk);
+        abstract Object getFieldElement(int i, ContextImpl contextImpl);
 
         @Override
         void processField(
@@ -109,7 +106,7 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
             }
 
             for (int ii = 0; ii < contextImpl.inputChunk.size(); ++ii) {
-                processFieldElement(ii, contextImpl, avroChunk);
+                avroChunk.get(ii).put(fieldName, getFieldElement(ii, contextImpl));
             }
         }
     }
@@ -120,16 +117,10 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
         return new GenericRecordFieldProcessorImpl<ByteChunk<Attributes.Values>>(
                 fieldName, chunkSource) {
             @Override
-            void processFieldElement(
+            Object getFieldElement(
                     final int ii,
-                    final ContextImpl contextImpl,
-                    final WritableObjectChunk<GenericRecord, Attributes.Values> avroChunk) {
-                final byte raw = contextImpl.inputChunk.get(ii);
-                if (raw == QueryConstants.NULL_BYTE) {
-                    avroChunk.get(ii).put(fieldName, null);
-                } else {
-                    avroChunk.get(ii).put(fieldName, raw);
-                }
+                    final ContextImpl contextImpl) {
+                return QueryConstants.asObjectOrNull(contextImpl.inputChunk.get(ii));
             }
         };
     }
@@ -140,16 +131,10 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
         return new GenericRecordFieldProcessorImpl<CharChunk<Attributes.Values>>(
                 fieldName, chunkSource) {
             @Override
-            void processFieldElement(
+            Object getFieldElement(
                     final int ii,
-                    final ContextImpl contextImpl,
-                    final WritableObjectChunk<GenericRecord, Attributes.Values> avroChunk) {
-                final char raw = contextImpl.inputChunk.get(ii);
-                if (raw == QueryConstants.NULL_CHAR) {
-                    avroChunk.get(ii).put(fieldName, null);
-                } else {
-                    avroChunk.get(ii).put(fieldName, raw);
-                }
+                    final ContextImpl contextImpl) {
+                return QueryConstants.asObjectOrNull(contextImpl.inputChunk.get(ii));
             }
         };
     }
@@ -160,16 +145,10 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
         return new GenericRecordFieldProcessorImpl<ShortChunk<Attributes.Values>>(
                 fieldName, chunkSource) {
             @Override
-            void processFieldElement(
+            Object getFieldElement(
                     final int ii,
-                    final ContextImpl contextImpl,
-                    final WritableObjectChunk<GenericRecord, Attributes.Values> avroChunk) {
-                final short raw = contextImpl.inputChunk.get(ii);
-                if (raw == QueryConstants.NULL_SHORT) {
-                    avroChunk.get(ii).put(fieldName, null);
-                } else {
-                    avroChunk.get(ii).put(fieldName, raw);
-                }
+                    final ContextImpl contextImpl) {
+                return QueryConstants.asObjectOrNull(contextImpl.inputChunk.get(ii));
             }
         };
     }
@@ -180,16 +159,10 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
         return new GenericRecordFieldProcessorImpl<IntChunk<Attributes.Values>>(
                 fieldName, chunkSource) {
             @Override
-            void processFieldElement(
+            Object getFieldElement(
                     final int ii,
-                    final ContextImpl contextImpl,
-                    final WritableObjectChunk<GenericRecord, Attributes.Values> avroChunk) {
-                final int raw = contextImpl.inputChunk.get(ii);
-                if (raw == QueryConstants.NULL_INT) {
-                    avroChunk.get(ii).put(fieldName, null);
-                } else {
-                    avroChunk.get(ii).put(fieldName, raw);
-                }
+                    final ContextImpl contextImpl) {
+                return QueryConstants.asObjectOrNull(contextImpl.inputChunk.get(ii));
             }
         };
     }
@@ -200,16 +173,10 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
         return new GenericRecordFieldProcessorImpl<LongChunk<Attributes.Values>>(
                 fieldName, chunkSource) {
             @Override
-            void processFieldElement(
+            Object getFieldElement(
                     final int ii,
-                    final ContextImpl contextImpl,
-                    final WritableObjectChunk<GenericRecord, Attributes.Values> avroChunk) {
-                final long raw = contextImpl.inputChunk.get(ii);
-                if (raw == QueryConstants.NULL_LONG) {
-                    avroChunk.get(ii).put(fieldName, null);
-                } else {
-                    avroChunk.get(ii).put(fieldName, raw);
-                }
+                    final ContextImpl contextImpl) {
+                return QueryConstants.asObjectOrNull(contextImpl.inputChunk.get(ii));
             }
         };
     }
@@ -220,16 +187,10 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
         return new GenericRecordFieldProcessorImpl<FloatChunk<Attributes.Values>>(
                 fieldName, chunkSource) {
             @Override
-            void processFieldElement(
+            Object getFieldElement(
                     final int ii,
-                    final ContextImpl contextImpl,
-                    final WritableObjectChunk<GenericRecord, Attributes.Values> avroChunk) {
-                final float raw = contextImpl.inputChunk.get(ii);
-                if (raw == QueryConstants.NULL_FLOAT) {
-                    avroChunk.get(ii).put(fieldName, null);
-                } else {
-                    avroChunk.get(ii).put(fieldName, raw);
-                }
+                    final ContextImpl contextImpl) {
+                return QueryConstants.asObjectOrNull(contextImpl.inputChunk.get(ii));
             }
         };
     }
@@ -240,16 +201,10 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
         return new GenericRecordFieldProcessorImpl<DoubleChunk<Attributes.Values>>(
                 fieldName, chunkSource) {
             @Override
-            void processFieldElement(
+            Object getFieldElement(
                     final int ii,
-                    final ContextImpl contextImpl,
-                    final WritableObjectChunk<GenericRecord, Attributes.Values> avroChunk) {
-                final double raw = contextImpl.inputChunk.get(ii);
-                if (raw == QueryConstants.NULL_DOUBLE) {
-                    avroChunk.get(ii).put(fieldName, null);
-                } else {
-                    avroChunk.get(ii).put(fieldName, raw);
-                }
+                    final ContextImpl contextImpl) {
+                return QueryConstants.asObjectOrNull(contextImpl.inputChunk.get(ii));
             }
         };
     }
@@ -260,12 +215,10 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
         return new GenericRecordFieldProcessorImpl<ObjectChunk<?, Attributes.Values>>(
                 fieldName, chunkSource) {
             @Override
-            void processFieldElement(
+            Object getFieldElement(
                     final int ii,
-                    final ContextImpl contextImpl,
-                    final WritableObjectChunk<GenericRecord, Attributes.Values> avroChunk) {
-                final Object raw = contextImpl.inputChunk.get(ii);
-                avroChunk.get(ii).put(fieldName, raw);
+                    final ContextImpl contextImpl) {
+                return contextImpl.inputChunk.get(ii);
             }
         };
     }
