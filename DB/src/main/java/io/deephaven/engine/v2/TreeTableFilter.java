@@ -2,9 +2,7 @@ package io.deephaven.engine.v2;
 
 import io.deephaven.base.Function;
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.v2.utils.RowSetBuilderSequential;
-import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
+import io.deephaven.engine.v2.utils.*;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.engine.tables.Table;
@@ -15,7 +13,6 @@ import io.deephaven.engine.v2.remote.ConstructSnapshot;
 import io.deephaven.engine.v2.select.SelectFilter;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.LogicalClock;
-import io.deephaven.engine.v2.utils.RowSetBuilderRandom;
 import io.deephaven.util.annotations.ReferentialIntegrity;
 import gnu.trove.iterator.TLongIterator;
 import gnu.trove.list.array.TLongArrayList;
@@ -83,7 +80,7 @@ public class TreeTableFilter implements Function.Unary<Table, Table>, MemoizedOp
         /**
          * The rowSet of ancestors of matching values.
          */
-        private TrackingMutableRowSet parentRowSet;
+        private MutableRowSet parentRowSet;
         /**
          * For each parent key, a set of rows which directly descend from the parent.
          */
@@ -172,13 +169,13 @@ public class TreeTableFilter implements Function.Unary<Table, Table>, MemoizedOp
                 return;
             }
 
-            final TrackingMutableRowSet union = valuesRowSet.union(parentRowSet);
+            final RowSet union = valuesRowSet.union(parentRowSet);
 
             if (!union.equals(resultRowSet)) {
                 throw new IllegalStateException();
             }
 
-            final TrackingMutableRowSet expectedRowSet = doValueFilter(usePrev, source.getRowSet());
+            final RowSet expectedRowSet = doValueFilter(usePrev, source.getRowSet());
 
             final Map<Object, TLongSet> expectedParents = new HashMap<>();
 
@@ -187,8 +184,8 @@ public class TreeTableFilter implements Function.Unary<Table, Table>, MemoizedOp
             }
 
             if (!expectedRowSet.equals(valuesRowSet)) {
-                final TrackingMutableRowSet missing = expectedRowSet.minus(valuesRowSet);
-                final TrackingMutableRowSet extraValues = valuesRowSet.minus(expectedRowSet);
+                final RowSet missing = expectedRowSet.minus(valuesRowSet);
+                final RowSet extraValues = valuesRowSet.minus(expectedRowSet);
                 throw new IllegalStateException("Inconsistent included Values: missing=" + missing + ", extra="
                         + extraValues + ", expected=" + expectedRowSet + ", valuesRowSet=" + valuesRowSet);
             }
@@ -196,7 +193,7 @@ public class TreeTableFilter implements Function.Unary<Table, Table>, MemoizedOp
             TLongArrayList parentsToProcess = new TLongArrayList();
             expectedRowSet.forEach(parentsToProcess::add);
 
-            final TrackingMutableRowSet sourceRowSet = usePrev ? source.getRowSet().getPrevRowSet() : source.getRowSet();
+            final RowSet sourceRowSet = usePrev ? source.getRowSet().getPrevRowSet() : source.getRowSet();
             do {
                 final TLongArrayList newParentKeys = new TLongArrayList();
                 for (final TLongIterator it = parentsToProcess.iterator(); it.hasNext();) {
@@ -243,18 +240,18 @@ public class TreeTableFilter implements Function.Unary<Table, Table>, MemoizedOp
                 }
             });
 
-            final TrackingMutableRowSet expectedParentRowSet = builder.build();
+            final RowSet expectedParentRowSet = builder.build();
             if (!expectedParentRowSet.equals(parentRowSet)) {
                 throw new IllegalStateException();
             }
         }
 
-        private void removeValues(TrackingMutableRowSet rowsToRemove) {
+        private void removeValues(RowSet rowsToRemove) {
             valuesRowSet.remove(rowsToRemove);
             removeParents(rowsToRemove);
         }
 
-        private void removeParents(TrackingMutableRowSet rowsToRemove) {
+        private void removeParents(RowSet rowsToRemove) {
             final Map<Object, TLongSet> parents = generateParentReferenceMap(rowsToRemove, parentSource::getPrev);
 
             final RowSetBuilderRandom builder = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
@@ -298,10 +295,10 @@ public class TreeTableFilter implements Function.Unary<Table, Table>, MemoizedOp
             return rowsToFilter;
         }
 
-        private TrackingMutableRowSet checkForResurrectedParent(TrackingMutableRowSet rowsToCheck) {
+        private RowSet checkForResurrectedParent(RowSet rowsToCheck) {
             final RowSetBuilderSequential builder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
 
-            for (final TrackingMutableRowSet.Iterator it = rowsToCheck.iterator(); it.hasNext();) {
+            for (final RowSet.Iterator it = rowsToCheck.iterator(); it.hasNext();) {
                 final long key = it.nextLong();
                 final Object id = idSource.get(key);
 
@@ -313,7 +310,7 @@ public class TreeTableFilter implements Function.Unary<Table, Table>, MemoizedOp
             return builder.build();
         }
 
-        private TrackingMutableRowSet computeParents(final boolean usePrev, @NotNull final TrackingMutableRowSet rowsToParent) {
+        private MutableRowSet computeParents(final boolean usePrev, @NotNull final RowSet rowsToParent) {
             final Map<Object, TLongSet> parents =
                     generateParentReferenceMap(rowsToParent, usePrev ? parentSource::getPrev : parentSource::get);
 
@@ -343,9 +340,9 @@ public class TreeTableFilter implements Function.Unary<Table, Table>, MemoizedOp
         }
 
         @NotNull
-        private Map<Object, TLongSet> generateParentReferenceMap(TrackingMutableRowSet rowsToParent, LongFunction<Object> getValue) {
+        private Map<Object, TLongSet> generateParentReferenceMap(RowSet rowsToParent, LongFunction<Object> getValue) {
             final Map<Object, TLongSet> parents = new LinkedHashMap<>(rowsToParent.intSize());
-            for (final TrackingMutableRowSet.Iterator it = rowsToParent.iterator(); it.hasNext();) {
+            for (final RowSet.Iterator it = rowsToParent.iterator(); it.hasNext();) {
                 final long row = it.nextLong();
                 final Object parentId = getValue.apply(row);
                 if (parentId != null) {
@@ -388,11 +385,11 @@ public class TreeTableFilter implements Function.Unary<Table, Table>, MemoizedOp
                 // Must take care of removed here, because these rows are not valid in post shift space.
                 downstream.removed = resultRowSet.extract(upstream.removed);
 
-                try (final TrackingMutableRowSet allRemoved =
+                try (final RowSet allRemoved =
                         useModified ? upstream.removed.union(upstream.getModifiedPreShift()) : null;
-                     final TrackingMutableRowSet valuesToRemove =
+                     final RowSet valuesToRemove =
                                 (useModified ? allRemoved : upstream.removed).intersect(valuesRowSet);
-                     final TrackingMutableRowSet removedParents =
+                     final RowSet removedParents =
                                 (useModified ? allRemoved : upstream.removed).intersect(parentRowSet)) {
 
                     removeValues(valuesToRemove);
@@ -420,10 +417,10 @@ public class TreeTableFilter implements Function.Unary<Table, Table>, MemoizedOp
 
                 // Finally handle added sets.
                 try (final TrackingMutableRowSet addedAndModified = upstream.added.union(upstream.modified);
-                     final TrackingMutableRowSet newFiltered = doValueFilter(false, addedAndModified);
-                     final TrackingMutableRowSet resurrectedParents = checkForResurrectedParent(addedAndModified);
-                     final TrackingMutableRowSet newParents = computeParents(false, newFiltered);
-                     final TrackingMutableRowSet newResurrectedParents = computeParents(false, resurrectedParents)) {
+                     final RowSet newFiltered = doValueFilter(false, addedAndModified);
+                     final RowSet resurrectedParents = checkForResurrectedParent(addedAndModified);
+                     final RowSet newParents = computeParents(false, newFiltered);
+                     final RowSet newResurrectedParents = computeParents(false, resurrectedParents)) {
 
 
                     valuesRowSet.insert(newFiltered);
@@ -433,8 +430,8 @@ public class TreeTableFilter implements Function.Unary<Table, Table>, MemoizedOp
                 }
 
                 // Compute expected results and the sets we will propagate to child listeners.
-                try (final TrackingMutableRowSet result = valuesRowSet.union(parentRowSet);
-                     final TrackingMutableRowSet resultRemovals = resultRowSet.minus(result)) {
+                try (final RowSet result = valuesRowSet.union(parentRowSet);
+                     final MutableRowSet resultRemovals = resultRowSet.minus(result)) {
                     downstream.added = result.minus(resultRowSet);
                     resultRowSet.update(downstream.added, resultRemovals);
 

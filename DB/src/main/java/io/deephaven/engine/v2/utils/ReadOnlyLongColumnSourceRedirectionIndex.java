@@ -28,7 +28,7 @@ public class ReadOnlyLongColumnSourceRedirectionIndex<CST extends ColumnSource<L
     public final long get(final long key) {
         final long innerIndex = columnSource.getLong(key);
         if (innerIndex == QueryConstants.NULL_LONG) {
-            return TrackingMutableRowSet.NULL_ROW_KEY;
+            return RowSet.NULL_ROW_KEY;
         }
         return innerIndex;
     }
@@ -37,7 +37,7 @@ public class ReadOnlyLongColumnSourceRedirectionIndex<CST extends ColumnSource<L
     public final long getPrev(final long key) {
         final long innerIndex = columnSource.getPrevLong(key);
         if (innerIndex == QueryConstants.NULL_LONG) {
-            return TrackingMutableRowSet.NULL_ROW_KEY;
+            return RowSet.NULL_ROW_KEY;
         }
         return innerIndex;
     }
@@ -66,7 +66,7 @@ public class ReadOnlyLongColumnSourceRedirectionIndex<CST extends ColumnSource<L
         columnSource.fillChunk(effectiveContext.colSrcCtx, asValuesChunk, keysToMap);
         for (int ii = 0; ii < mappedKeysOut.size(); ++ii) {
             if (mappedKeysOut.get(ii) == QueryConstants.NULL_LONG) {
-                mappedKeysOut.set(ii, TrackingMutableRowSet.NULL_ROW_KEY);
+                mappedKeysOut.set(ii, RowSet.NULL_ROW_KEY);
             }
         }
     }
@@ -81,7 +81,7 @@ public class ReadOnlyLongColumnSourceRedirectionIndex<CST extends ColumnSource<L
         columnSource.fillPrevChunk(effectiveContext.colSrcCtx, asValuesChunk, keysToMap);
         for (int ii = 0; ii < mappedKeysOut.size(); ++ii) {
             if (mappedKeysOut.get(ii) == QueryConstants.NULL_LONG) {
-                mappedKeysOut.set(ii, TrackingMutableRowSet.NULL_ROW_KEY);
+                mappedKeysOut.set(ii, RowSet.NULL_ROW_KEY);
             }
         }
     }

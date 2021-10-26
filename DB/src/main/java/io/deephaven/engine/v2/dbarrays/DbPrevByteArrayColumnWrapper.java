@@ -12,9 +12,10 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.util.LongSizedDataStructure;
 import io.deephaven.engine.tables.dbarrays.*;
 import io.deephaven.engine.v2.sources.ColumnSource;
+import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.engine.v2.utils.RowSetBuilderRandom;
+import io.deephaven.engine.v2.utils.TrackingRowSet;
 import org.jetbrains.annotations.NotNull;
 
 import static io.deephaven.util.QueryConstants.NULL_BYTE;
@@ -24,20 +25,20 @@ public class DbPrevByteArrayColumnWrapper extends DbByteArray.Indirect {
     private static final long serialVersionUID = -2715269662143763674L;
 
     private final ColumnSource<Byte> columnSource;
-    private final TrackingMutableRowSet rowSet;
+    private final RowSet rowSet;
     private final long startPadding;
     private final long endPadding;
 
-    public DbPrevByteArrayColumnWrapper(@NotNull final ColumnSource<Byte> columnSource, @NotNull final TrackingMutableRowSet rowSet) {
+    public DbPrevByteArrayColumnWrapper(@NotNull final ColumnSource<Byte> columnSource, @NotNull final TrackingRowSet rowSet) {
         this(columnSource, rowSet, 0, 0);
     }
 
-    public DbPrevByteArrayColumnWrapper(@NotNull final ColumnSource<Byte> columnSource, @NotNull final TrackingMutableRowSet rowSet,
+    public DbPrevByteArrayColumnWrapper(@NotNull final ColumnSource<Byte> columnSource, @NotNull final TrackingRowSet rowSet,
                                         final long startPadding, final long endPadding) {
         this(columnSource, rowSet, startPadding, endPadding, false);
     }
 
-    private DbPrevByteArrayColumnWrapper(@NotNull final ColumnSource<Byte> columnSource, @NotNull final TrackingMutableRowSet rowSet,
+    private DbPrevByteArrayColumnWrapper(@NotNull final ColumnSource<Byte> columnSource, @NotNull final TrackingRowSet rowSet,
                                          final long startPadding, final long endPadding, final boolean alreadyPrevIndex) {
         Assert.neqNull(rowSet, "rowSet");
         this.columnSource = columnSource;

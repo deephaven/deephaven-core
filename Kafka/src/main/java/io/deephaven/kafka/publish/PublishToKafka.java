@@ -9,7 +9,6 @@ import io.deephaven.engine.util.liveness.LivenessScope;
 import io.deephaven.engine.v2.*;
 import io.deephaven.engine.v2.sources.chunk.Attributes;
 import io.deephaven.engine.v2.sources.chunk.ObjectChunk;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.util.SafeCloseable;
@@ -248,7 +247,7 @@ public class PublishToKafka<K, V> extends LivenessArtifact {
                 publishMessages(upstream.removed, true, false, guard);
                 if (keysModified.containsAny(upstream.modifiedColumnSet)
                         || valuesModified.containsAny(upstream.modifiedColumnSet)) {
-                    try (final TrackingMutableRowSet addedAndModified = upstream.added.union(upstream.modified)) {
+                    try (final RowSet addedAndModified = upstream.added.union(upstream.modified)) {
                         publishMessages(addedAndModified, false, true, guard);
                     }
                 } else {

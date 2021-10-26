@@ -5,7 +5,7 @@ import io.deephaven.engine.v2.sort.timsort.TimsortUtilities;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Any;
 import io.deephaven.engine.v2.sources.chunk.Attributes.RowKeys;
 import io.deephaven.engine.v2.sources.chunk.*;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
+import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.util.annotations.VisibleForTesting;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
@@ -862,14 +862,14 @@ public final class CharSegmentedSortedArray implements SegmentedSortedArray {
         }
         if (removeSize == size) {
             if (priorRedirections != null) {
-                priorRedirections.fillWithValue(0, valuesToRemove.size(), TrackingMutableRowSet.NULL_ROW_KEY);
+                priorRedirections.fillWithValue(0, valuesToRemove.size(), RowSet.NULL_ROW_KEY);
             }
             clear();
             return;
         }
         Assert.gtZero(leafCount, "leafCount");
         if (leafCount == 1) {
-            removeFromLeaf(size, directoryValues, valuesToRemove, directoryIndex, indicesToRemove, priorRedirections, TrackingMutableRowSet.NULL_ROW_KEY);
+            removeFromLeaf(size, directoryValues, valuesToRemove, directoryIndex, indicesToRemove, priorRedirections, RowSet.NULL_ROW_KEY);
         } else {
             try (final ResettableCharChunk<Any> leafValuesRemoveChunk = ResettableCharChunk.makeResettableChunk();
                  final ResettableLongChunk<RowKeys> leafKeysRemoveChunk = ResettableLongChunk.makeResettableChunk();
@@ -897,7 +897,7 @@ public final class CharSegmentedSortedArray implements SegmentedSortedArray {
 
                     if (count == leafSizes[firstLeaf]) {
                         // we are going to remove the whole leaf
-                        final long firstPrior = priorRedirections == null ? TrackingMutableRowSet.NULL_ROW_KEY : getFirstPrior(firstLeaf);
+                        final long firstPrior = priorRedirections == null ? RowSet.NULL_ROW_KEY : getFirstPrior(firstLeaf);
                         leavesToRemove.add(firstLeaf);
                         leafSizes[firstLeaf] = 0;
                         if (priorRedirections != null) {
@@ -911,7 +911,7 @@ public final class CharSegmentedSortedArray implements SegmentedSortedArray {
                             priorRedirectionsSlice.resetFromTypedChunk(priorRedirections, firstValuesPosition, count);
                         }
 
-                        final long firstPrior = priorRedirections == null ? TrackingMutableRowSet.NULL_ROW_KEY : getFirstPrior(firstLeaf);
+                        final long firstPrior = priorRedirections == null ? RowSet.NULL_ROW_KEY : getFirstPrior(firstLeaf);
                         removeFromLeaf(leafSizes[firstLeaf], leafValues[firstLeaf], leafValuesRemoveChunk, leafIndices[firstLeaf], leafKeysRemoveChunk, priorRedirectionsSlice, firstPrior);
                         leafSizes[firstLeaf] -= count;
 
@@ -954,7 +954,7 @@ public final class CharSegmentedSortedArray implements SegmentedSortedArray {
                             priorRedirectionsSlice.resetFromTypedChunk(priorRedirections, firstValuesPosition, remainingRemovals);
                         }
 
-                        removeFromLeaf(size - totalCount, directoryValues, leafValuesRemoveChunk, directoryIndex, leafKeysRemoveChunk, priorRedirectionsSlice, TrackingMutableRowSet.NULL_ROW_KEY);
+                        removeFromLeaf(size - totalCount, directoryValues, leafValuesRemoveChunk, directoryIndex, leafKeysRemoveChunk, priorRedirectionsSlice, RowSet.NULL_ROW_KEY);
                         totalCount += remainingRemovals;
                         firstValuesPosition += remainingRemovals + 1;
                     }
@@ -1008,7 +1008,7 @@ public final class CharSegmentedSortedArray implements SegmentedSortedArray {
             priorLeaf--;
         }
         if (priorLeaf < 0) {
-            return TrackingMutableRowSet.NULL_ROW_KEY;
+            return RowSet.NULL_ROW_KEY;
         } else {
             return leafIndices[priorLeaf][leafSizes[priorLeaf] - 1];
         }
@@ -1730,7 +1730,7 @@ public final class CharSegmentedSortedArray implements SegmentedSortedArray {
     @Override
     public long getFirst() {
         if (size == 0) {
-            return TrackingMutableRowSet.NULL_ROW_KEY;
+            return RowSet.NULL_ROW_KEY;
         }
         if (leafCount == 1) {
             return directoryIndex[0];
@@ -1740,7 +1740,7 @@ public final class CharSegmentedSortedArray implements SegmentedSortedArray {
 
     public long getLast() {
         if (size == 0) {
-            return TrackingMutableRowSet.NULL_ROW_KEY;
+            return RowSet.NULL_ROW_KEY;
         }
         if (leafCount == 1) {
             return directoryIndex[size - 1];

@@ -8,9 +8,9 @@ import io.deephaven.engine.v2.select.FormulaColumn;
 import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.sources.chunk.Attributes.RowKeys;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
+import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.engine.v2.utils.RowSetBuilderSequential;
 import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.util.Shuffle;
 import junit.framework.TestCase;
@@ -56,7 +56,7 @@ public class TestShortArraySource {
         LiveTableMonitor.DEFAULT.resetForUnitTests(true);
     }
 
-    private void testGetChunkGeneric(short[] values, short[] newValues, int chunkSize, TrackingMutableRowSet rowSet) {
+    private void testGetChunkGeneric(short[] values, short[] newValues, int chunkSize, RowSet rowSet) {
         final ShortArraySource source;
         LiveTableMonitor.DEFAULT.startCycleForUnitTests();
         try {
@@ -75,9 +75,9 @@ public class TestShortArraySource {
         }
     }
 
-    private void validateValues(int chunkSize, short[] values, TrackingMutableRowSet rowSet, ShortArraySource source) {
+    private void validateValues(int chunkSize, short[] values, RowSet rowSet, ShortArraySource source) {
         final RowSequence.Iterator rsIterator = rowSet.getRowSequenceIterator();
-        final TrackingMutableRowSet.Iterator it = rowSet.iterator();
+        final RowSet.Iterator it = rowSet.iterator();
         final ChunkSource.GetContext context = source.makeGetContext(chunkSize);
         long pos = 0;
         while (it.hasNext()) {
@@ -109,9 +109,9 @@ public class TestShortArraySource {
     }
 
 
-    private void validatePrevValues(int chunkSize, short[] values, TrackingMutableRowSet rowSet, ShortArraySource source) {
+    private void validatePrevValues(int chunkSize, short[] values, RowSet rowSet, ShortArraySource source) {
         final RowSequence.Iterator rsIterator = rowSet.getRowSequenceIterator();
-        final TrackingMutableRowSet.Iterator it = rowSet.iterator();
+        final RowSet.Iterator it = rowSet.iterator();
         final ChunkSource.GetContext context = source.makeGetContext(chunkSize);
         long pos = 0;
         while (it.hasNext()) {
@@ -158,20 +158,20 @@ public class TestShortArraySource {
     }
 
     // region lazy
-    private void testGetChunkGenericLazy(short[] values, int chunkSize, TrackingMutableRowSet rowSet) {
+    private void testGetChunkGenericLazy(short[] values, int chunkSize, RowSet rowSet) {
         final ShortArraySource sourceOrigin = forArray(values);
         final FormulaColumn formulaColumn = FormulaColumn.createFormulaColumn("Foo", "origin");
         final RowSetBuilderSequential sequentialBuilder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
         if (values.length > 0) {
             sequentialBuilder.appendRange(0, values.length - 1);
         }
-        final TrackingMutableRowSet fullRange = sequentialBuilder.build();
+        final RowSet fullRange = sequentialBuilder.build();
         final Map<String, ShortArraySource> oneAndOnly = new HashMap<>();
         oneAndOnly.put("origin", sourceOrigin);
         formulaColumn.initInputs(fullRange, oneAndOnly);
         final ColumnSource<?> source = formulaColumn.getDataView();
         final RowSequence.Iterator rsIterator = rowSet.getRowSequenceIterator();
-        final TrackingMutableRowSet.Iterator it = rowSet.iterator();
+        final RowSet.Iterator it = rowSet.iterator();
         final ChunkSource.GetContext context = source.makeGetContext(chunkSize);
         long pos = 0;
         while (it.hasNext()) {
@@ -228,7 +228,7 @@ public class TestShortArraySource {
     }
 
     private void testParameterChunkAndIndexLazy(Random random, int sourceSize, short[] values, int indexSize) {
-        final TrackingMutableRowSet rowSet = RowSetFactoryImpl.INSTANCE.getRowSetByValues(indexDataGenerator(random, indexSize, .1, sourceSize / indexSize, sourceSize));
+        final RowSet rowSet = RowSetFactoryImpl.INSTANCE.getRowSetByValues(indexDataGenerator(random, indexSize, .1, sourceSize / indexSize, sourceSize));
         for (int chunkSize = 2; chunkSize < sourceSize; chunkSize *= 4) {
             testGetChunkGenericLazy(values, chunkSize, rowSet);
             testGetChunkGenericLazy(values, chunkSize + 1, rowSet);
@@ -252,7 +252,7 @@ public class TestShortArraySource {
     }
 
     private void testParameterChunkAndIndex(Random random, int sourceSize, short[] values, short[] newvalues, int indexSize) {
-        final TrackingMutableRowSet rowSet = RowSetFactoryImpl.INSTANCE.getRowSetByValues(indexDataGenerator(random, indexSize, .1, sourceSize / indexSize, sourceSize));
+        final RowSet rowSet = RowSetFactoryImpl.INSTANCE.getRowSetByValues(indexDataGenerator(random, indexSize, .1, sourceSize / indexSize, sourceSize));
         for (int chunkSize = 2; chunkSize < sourceSize; chunkSize *= 2) {
             testGetChunkGeneric(values, newvalues, chunkSize, rowSet);
             testGetChunkGeneric(values, newvalues, chunkSize + 1, rowSet);
@@ -260,7 +260,7 @@ public class TestShortArraySource {
         }
     }
 
-    private void testFillChunkGeneric(short[] values, short[] newValues, int chunkSize, TrackingMutableRowSet rowSet) {
+    private void testFillChunkGeneric(short[] values, short[] newValues, int chunkSize, RowSet rowSet) {
         final ShortArraySource source;
         LiveTableMonitor.DEFAULT.startCycleForUnitTests();
         try {
@@ -279,9 +279,9 @@ public class TestShortArraySource {
         }
     }
 
-    private void validateValuesWithFill(int chunkSize, short[] values, TrackingMutableRowSet rowSet, ShortArraySource source) {
+    private void validateValuesWithFill(int chunkSize, short[] values, RowSet rowSet, ShortArraySource source) {
         final RowSequence.Iterator rsIterator = rowSet.getRowSequenceIterator();
-        final TrackingMutableRowSet.Iterator it = rowSet.iterator();
+        final RowSet.Iterator it = rowSet.iterator();
         final ColumnSource.FillContext context = source.makeFillContext(chunkSize);
         final WritableShortChunk<Values> chunk = WritableShortChunk.makeWritableChunk(chunkSize);
         long pos = 0;
@@ -300,9 +300,9 @@ public class TestShortArraySource {
         assertEquals(pos, rowSet.size());
     }
 
-    private void validatePrevValuesWithFill(int chunkSize, short[] values, TrackingMutableRowSet rowSet, ShortArraySource source) {
+    private void validatePrevValuesWithFill(int chunkSize, short[] values, RowSet rowSet, ShortArraySource source) {
         final RowSequence.Iterator rsIterator = rowSet.getRowSequenceIterator();
-        final TrackingMutableRowSet.Iterator it = rowSet.iterator();
+        final RowSet.Iterator it = rowSet.iterator();
         final ColumnSource.FillContext context = source.makeFillContext(chunkSize);
         final WritableShortChunk<Values> chunk = WritableShortChunk.makeWritableChunk(chunkSize);
         long pos = 0;
@@ -361,7 +361,7 @@ public class TestShortArraySource {
     }
 
     private void testParameterFillChunkAndIndex(Random random, int sourceSize, short[] values, short[] newValues, int indexSize) {
-        final TrackingMutableRowSet rowSet = RowSetFactoryImpl.INSTANCE.getRowSetByValues(indexDataGenerator(random, indexSize, .1, sourceSize / indexSize, sourceSize));
+        final RowSet rowSet = RowSetFactoryImpl.INSTANCE.getRowSetByValues(indexDataGenerator(random, indexSize, .1, sourceSize / indexSize, sourceSize));
         for (int chunkSize = 2; chunkSize < sourceSize; chunkSize *= 2) {
             testFillChunkGeneric(values, newValues, chunkSize, rowSet);
             testFillChunkGeneric(values, newValues, chunkSize + 1, rowSet);
@@ -370,20 +370,20 @@ public class TestShortArraySource {
     }
 
     // region lazygeneric
-    private void testFillChunkLazyGeneric(short[] values, int chunkSize, TrackingMutableRowSet rowSet) {
+    private void testFillChunkLazyGeneric(short[] values, int chunkSize, RowSet rowSet) {
         final ShortArraySource sourceOrigin = forArray(values);
         final FormulaColumn formulaColumn = FormulaColumn.createFormulaColumn("Foo", "origin");
         final RowSetBuilderSequential sequentialBuilder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
         if (values.length > 0) {
             sequentialBuilder.appendRange(0, values.length - 1);
         }
-        final TrackingMutableRowSet fullRange = sequentialBuilder.build();
+        final RowSet fullRange = sequentialBuilder.build();
         final Map<String, ShortArraySource> oneAndOnly = new HashMap<>();
         oneAndOnly.put("origin", sourceOrigin);
         formulaColumn.initInputs(fullRange, oneAndOnly);
         final ColumnSource source = formulaColumn.getDataView();
         final RowSequence.Iterator rsIterator = rowSet.getRowSequenceIterator();
-        final TrackingMutableRowSet.Iterator it = rowSet.iterator();
+        final RowSet.Iterator it = rowSet.iterator();
         final ColumnSource.FillContext context = source.makeFillContext(chunkSize);
         final WritableShortChunk<Values> chunk = WritableShortChunk.makeWritableChunk(chunkSize);
         long pos = 0;
@@ -442,7 +442,7 @@ public class TestShortArraySource {
     }
 
     private void testParameterFillChunkAndIndexLazy(Random random, int sourceSize, short[] values, int indexSize) {
-        final TrackingMutableRowSet rowSet = RowSetFactoryImpl.INSTANCE.getRowSetByValues(indexDataGenerator(random, indexSize, .1, sourceSize / indexSize, sourceSize));
+        final RowSet rowSet = RowSetFactoryImpl.INSTANCE.getRowSetByValues(indexDataGenerator(random, indexSize, .1, sourceSize / indexSize, sourceSize));
         for (int chunkSize = 2; chunkSize < sourceSize; chunkSize *= 4) {
             testFillChunkLazyGeneric(values, chunkSize, rowSet);
             testFillChunkLazyGeneric(values, chunkSize + 1, rowSet);
@@ -496,8 +496,8 @@ public class TestShortArraySource {
         // super hack
         final short[] peekedBlock = (short[])source.getBlock(0);
 
-        try (TrackingMutableRowSet srcKeys = RowSetFactoryImpl.INSTANCE.getRowSetByRange(rangeStart, rangeEnd)) {
-            try (TrackingMutableRowSet destKeys = RowSetFactoryImpl.INSTANCE.getRowSetByRange(rangeStart + 1, rangeEnd + 1)) {
+        try (RowSet srcKeys = RowSetFactoryImpl.INSTANCE.getRowSetByRange(rangeStart, rangeEnd)) {
+            try (RowSet destKeys = RowSetFactoryImpl.INSTANCE.getRowSetByRange(rangeStart + 1, rangeEnd + 1)) {
                 try (ChunkSource.GetContext srcContext = source.makeGetContext(arraySize)) {
                     try (WritableChunkSink.FillFromContext destContext = source.makeFillFromContext(arraySize)) {
                         Chunk chunk = source.getChunk(srcContext, srcKeys);
@@ -525,7 +525,7 @@ public class TestShortArraySource {
         final ShortArraySource src = new ShortArraySource();
         src.startTrackingPrevValues();
         LiveTableMonitor.DEFAULT.startCycleForUnitTests();
-        try (final TrackingMutableRowSet keys = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+        try (final RowSet keys = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
              final WritableShortChunk<Values> chunk = WritableShortChunk.makeWritableChunk(0)) {
             // Fill from an empty chunk
             src.fillFromChunkByKeys(keys, chunk);
@@ -547,7 +547,7 @@ public class TestShortArraySource {
             source.set(ii, data[ii]);
         }
 
-        final long [] keys = LongStream.concat(LongStream.of(TrackingMutableRowSet.NULL_ROW_KEY), LongStream.range(0, data.length - 1)).toArray();
+        final long [] keys = LongStream.concat(LongStream.of(RowSet.NULL_ROW_KEY), LongStream.range(0, data.length - 1)).toArray();
         Shuffle.shuffleArray(rng, keys);
 
         try (final ChunkSource.FillContext ctx = source.makeFillContext(keys.length);
@@ -557,7 +557,7 @@ public class TestShortArraySource {
             source.fillChunkUnordered(ctx, dest, rlc);
             assertEquals(keys.length, dest.size());
             for (int ii = 0; ii < keys.length; ++ii) {
-                if (keys[ii] == TrackingMutableRowSet.NULL_ROW_KEY) {
+                if (keys[ii] == RowSet.NULL_ROW_KEY) {
                     assertEquals(NULL_SHORT, dest.get(ii));
                 } else {
                     checkFromValues(data[(int)keys[ii]], dest.get(ii));

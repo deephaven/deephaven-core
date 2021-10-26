@@ -15,16 +15,16 @@ public class UpdateCoalescer {
 
     public final TrackingMutableRowSet added;
     public final TrackingMutableRowSet removed;
-    public final TrackingMutableRowSet modified;
+    public final MutableRowSet modified;
 
     public RowSetShiftData shifted;
     public ModifiedColumnSet modifiedColumnSet;
 
     // This is an rowSet that represents which keys still exist in prevSpace for the agg update. It is necessary to
     // keep to ensure we make the correct selections when shift destinations overlap.
-    private final TrackingMutableRowSet rowSet;
+    private final MutableRowSet rowSet;
 
-    public UpdateCoalescer(final TrackingMutableRowSet rowSet, final Listener.Update update) {
+    public UpdateCoalescer(final RowSet rowSet, final Listener.Update update) {
         this.rowSet = rowSet.clone();
         this.rowSet.remove(update.removed);
 
@@ -48,14 +48,14 @@ public class UpdateCoalescer {
     public UpdateCoalescer update(final Listener.Update update) {
         // Remove update.remove from our coalesced post-shift added/modified.
         try (final SafeCloseableList closer = new SafeCloseableList()) {
-            final TrackingMutableRowSet addedAndRemoved = closer.add(added.extract(update.removed));
+            final RowSet addedAndRemoved = closer.add(added.extract(update.removed));
 
             if (update.removed.isNonempty()) {
                 modified.remove(update.removed);
             }
 
             // Aggregate update.remove in coalesced pre-shift removed.
-            try (final TrackingMutableRowSet myRemoved = update.removed.minus(addedAndRemoved)) {
+            try (final MutableRowSet myRemoved = update.removed.minus(addedAndRemoved)) {
                 shifted.unapply(myRemoved);
                 removed.insert(myRemoved);
                 rowSet.remove(myRemoved);
@@ -70,7 +70,7 @@ public class UpdateCoalescer {
             }
 
             // We can't modify rows that did not exist previously.
-            try (final TrackingMutableRowSet myModified = update.modified.minus(added)) {
+            try (final RowSet myModified = update.modified.minus(added)) {
                 updateModified(update.modifiedColumnSet, myModified);
             }
 
@@ -81,7 +81,7 @@ public class UpdateCoalescer {
         return this;
     }
 
-    private void updateModified(final ModifiedColumnSet myMCS, final TrackingMutableRowSet myModified) {
+    private void updateModified(final ModifiedColumnSet myMCS, final RowSet myModified) {
         if (myModified.isEmpty()) {
             return;
         }
@@ -100,7 +100,7 @@ public class UpdateCoalescer {
             return;
         }
 
-        final TrackingMutableRowSet.SearchIterator indexIter = rowSet.searchIterator();
+        final RowSet.SearchIterator indexIter = rowSet.searchIterator();
         final RowSetShiftData.Builder newShifts = new RowSetShiftData.Builder();
 
         // Appends shifts to our builder from watermarkKey to supplied key adding extra delta if needed.
@@ -109,7 +109,7 @@ public class UpdateCoalescer {
         final BiConsumer<Long, Long> fixShiftIfOverlap = (end, ttlDelta) -> {
             long minBegin = newShifts.getMinimumValidBeginForNextDelta(ttlDelta);
             if (ttlDelta < 0) {
-                final TrackingMutableRowSet.SearchIterator revIter = rowSet.reverseIterator();
+                final RowSet.SearchIterator revIter = rowSet.reverseIterator();
                 if (revIter.advance(watermarkKey.longValue() - 1)
                         && revIter.currentValue() > newShifts.lastShiftEnd()) {
                     minBegin = Math.max(minBegin, revIter.currentValue() + 1 - ttlDelta);

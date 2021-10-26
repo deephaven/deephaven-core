@@ -8,8 +8,8 @@ import io.deephaven.engine.util.BooleanUtils;
 import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.sources.chunk.Attributes.RowKeys;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.engine.structures.RowSequence;
+import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.util.SoftRecycler;
 import org.jetbrains.annotations.NotNull;
 
@@ -236,7 +236,7 @@ public class BooleanArraySource extends ArraySourceHelper<Boolean, byte[]> imple
         final int sz = indices.size();
         for (int ii = 0; ii < sz; ++ii) {
             final long fromIndex = indices.get(ii);
-            if (fromIndex == TrackingMutableRowSet.NULL_ROW_KEY) {
+            if (fromIndex == RowSet.NULL_ROW_KEY) {
                 dest.set(ii, null);
                 continue;
             }
@@ -257,7 +257,7 @@ public class BooleanArraySource extends ArraySourceHelper<Boolean, byte[]> imple
         final int sz = indices.size();
         for (int ii = 0; ii < sz; ++ii) {
             final long fromIndex = indices.get(ii);
-            if (fromIndex == TrackingMutableRowSet.NULL_ROW_KEY) {
+            if (fromIndex == RowSet.NULL_ROW_KEY) {
                 dest.set(ii, null);
                 continue;
             }
@@ -544,7 +544,7 @@ public class BooleanArraySource extends ArraySourceHelper<Boolean, byte[]> imple
             final int sz = indices.size();
             for (int ii = 0; ii < sz; ++ii) {
                 final long fromIndex = indices.get(ii);
-                if (fromIndex == TrackingMutableRowSet.NULL_ROW_KEY) {
+                if (fromIndex == RowSet.NULL_ROW_KEY) {
                     dest.set(ii, NULL_BOOLEAN_AS_BYTE);
                     continue;
                 }
@@ -564,7 +564,7 @@ public class BooleanArraySource extends ArraySourceHelper<Boolean, byte[]> imple
             final int sz = indices.size();
             for (int ii = 0; ii < sz; ++ii) {
                 final long fromIndex = indices.get(ii);
-                if (fromIndex == TrackingMutableRowSet.NULL_ROW_KEY) {
+                if (fromIndex == RowSet.NULL_ROW_KEY) {
                     dest.set(ii, NULL_BOOLEAN_AS_BYTE);
                     continue;
                 }

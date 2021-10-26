@@ -1122,14 +1122,14 @@ public class TableTools {
      */
     public static DynamicTable newTable(ColumnHolder... columnHolders) {
         checkSizes(columnHolders);
-        TrackingMutableRowSet rowSet = getIndex(columnHolders);
+        RowSet rowSet = getIndex(columnHolders);
         Map<String, ColumnSource<?>> columns = Stream.of(columnHolders).collect(COLUMN_HOLDER_LINKEDMAP_COLLECTOR);
         return new QueryTable(rowSet, columns);
     }
 
     public static DynamicTable newTable(TableDefinition definition, ColumnHolder... columnHolders) {
         checkSizes(columnHolders);
-        TrackingMutableRowSet rowSet = getIndex(columnHolders);
+        RowSet rowSet = getIndex(columnHolders);
         Map<String, ColumnSource<?>> columns = Stream.of(columnHolders).collect(COLUMN_HOLDER_LINKEDMAP_COLLECTOR);
         return new QueryTable(definition, rowSet, columns);
     }
@@ -1144,7 +1144,7 @@ public class TableTools {
         }
     }
 
-    private static TrackingMutableRowSet getIndex(ColumnHolder[] columnHolders) {
+    private static RowSet getIndex(ColumnHolder[] columnHolders) {
         return columnHolders.length == 0 ? RowSetFactoryImpl.INSTANCE.getEmptyRowSet()
                 : RowSetFactoryImpl.INSTANCE.getFlatRowSet(Array.getLength(columnHolders[0].data));
     }

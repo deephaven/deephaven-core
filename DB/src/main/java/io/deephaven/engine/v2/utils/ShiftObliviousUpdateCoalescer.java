@@ -22,25 +22,25 @@ public class ShiftObliviousUpdateCoalescer {
      * The class assumes ownership of one reference to the indices passed; the caller should ensure to
      * TrackingMutableRowSet.clone() them before passing them if they are shared.
      */
-    public ShiftObliviousUpdateCoalescer(final TrackingMutableRowSet added, final TrackingMutableRowSet removed,
-            final TrackingMutableRowSet modified) {
+    public ShiftObliviousUpdateCoalescer(final TrackingMutableRowSet added, final TrackingRowSet removed,
+            final TrackingRowSet modified) {
         this.added = added;
         this.removed = removed;
         this.modified = modified;
     }
 
-    public void update(final TrackingMutableRowSet addedOnUpdate, final TrackingMutableRowSet removedOnUpdate,
-            final TrackingMutableRowSet modifiedOnUpdate) {
+    public void update(final RowSet addedOnUpdate, final RowSet removedOnUpdate,
+                       final RowSet modifiedOnUpdate) {
         // Note: extract removes matching ranges from the source rowSet
-        try (final TrackingMutableRowSet addedBack = this.removed.extract(addedOnUpdate);
-                final TrackingMutableRowSet actuallyAdded = addedOnUpdate.minus(addedBack)) {
+        try (final RowSet addedBack = this.removed.extract(addedOnUpdate);
+             final RowSet actuallyAdded = addedOnUpdate.minus(addedBack)) {
             this.added.insert(actuallyAdded);
             this.modified.insert(addedBack);
         }
 
         // Things we've added, but are now removing. Do not aggregate these as removed since client never saw them.
-        try (final TrackingMutableRowSet additionsRemoved = this.added.extract(removedOnUpdate);
-                final TrackingMutableRowSet actuallyRemoved = removedOnUpdate.minus(additionsRemoved)) {
+        try (final RowSet additionsRemoved = this.added.extract(removedOnUpdate);
+             final RowSet actuallyRemoved = removedOnUpdate.minus(additionsRemoved)) {
             this.removed.insert(actuallyRemoved);
         }
 
@@ -48,7 +48,7 @@ public class ShiftObliviousUpdateCoalescer {
         this.modified.remove(removedOnUpdate);
 
         // And anything modified, should be added to the modified set; unless we've previously added it.
-        try (final TrackingMutableRowSet actuallyModified = modifiedOnUpdate.minus(this.added)) {
+        try (final RowSet actuallyModified = modifiedOnUpdate.minus(this.added)) {
             this.modified.insert(actuallyModified);
         }
 
@@ -69,20 +69,20 @@ public class ShiftObliviousUpdateCoalescer {
         }
     }
 
-    public TrackingMutableRowSet takeAdded() {
-        final TrackingMutableRowSet r = added;
+    public RowSet takeAdded() {
+        final RowSet r = added;
         added = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
         return r;
     }
 
-    public TrackingMutableRowSet takeRemoved() {
-        final TrackingMutableRowSet r = removed;
+    public RowSet takeRemoved() {
+        final RowSet r = removed;
         removed = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
         return r;
     }
 
-    public TrackingMutableRowSet takeModified() {
-        final TrackingMutableRowSet r = modified;
+    public RowSet takeModified() {
+        final RowSet r = modified;
         modified = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
         return r;
     }

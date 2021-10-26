@@ -8,7 +8,7 @@ import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.datastructures.util.SmartKey;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
+import io.deephaven.engine.v2.utils.RowSet;
 
 import java.io.PrintStream;
 import java.lang.annotation.Annotation;
@@ -33,7 +33,7 @@ class TableShowTools {
             final ColumnSource[] columnSources =
                     Arrays.stream(columns).map(source::getColumnSource).toArray(ColumnSource[]::new);
 
-            final TrackingMutableRowSet rowSet = source.getRowSet();
+            final RowSet rowSet = source.getRowSet();
             int lineLen = 0;
             final Set<Integer> columnLimits = new HashSet<>();
             if (showIndex) {
@@ -80,7 +80,7 @@ class TableShowTools {
             final ColumnPrinter positionPrinter = new DefaultPrinter(10);
             final ColumnPrinter indexPrinter = new DefaultPrinter(10);
             long ri = 0;
-            for (final TrackingMutableRowSet.Iterator indexIterator = rowSet.iterator(); ri < lastRowExclusive
+            for (final RowSet.Iterator indexIterator = rowSet.iterator(); ri < lastRowExclusive
                     && indexIterator.hasNext(); ++ri) {
                 final long key = indexIterator.nextLong();
                 if (ri < firstRow) {
@@ -108,7 +108,7 @@ class TableShowTools {
         }
     }
 
-    private static int getColumnLen(String name, ColumnSource columnSource, TrackingMutableRowSet rowSet) {
+    private static int getColumnLen(String name, ColumnSource columnSource, RowSet rowSet) {
         int len = name.length();
         if (columnSource.getType().isArray()) {
             len = Math.max(len, 40);
@@ -132,7 +132,7 @@ class TableShowTools {
         }
         if (columnSource.getType() == String.class) {
             int ri = 0;
-            for (final TrackingMutableRowSet.Iterator ii = rowSet.iterator(); ri < 100 && ii.hasNext(); ++ri) {
+            for (final RowSet.Iterator ii = rowSet.iterator(); ri < 100 && ii.hasNext(); ++ri) {
                 String s = (String) columnSource.get(ii.nextLong());
                 if (s != null) {
                     len = Math.min(Math.max(s.length(), len), 100);

@@ -94,7 +94,7 @@ public class StreamFirstChunkedOperator extends BaseStreamFirstOrLastChunkedOper
 
     @Override
     public boolean addIndex(final SingletonContext context,
-            @NotNull final TrackingMutableRowSet rowSet,
+            @NotNull final RowSet rowSet,
             final long destination) {
         if (rowSet.isEmpty()) {
             return false;

@@ -9,10 +9,10 @@ import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 import io.deephaven.engine.v2.sources.chunk.ChunkType;
 import io.deephaven.engine.v2.sources.chunk.WritableChunk;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.benchmarking.*;
 import io.deephaven.benchmarking.runner.TableBenchmarkState;
+import io.deephaven.engine.v2.utils.RowSet;
 import org.jetbrains.annotations.NotNull;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.infra.BenchmarkParams;
@@ -196,7 +196,7 @@ public class RegionedColumnSourceBenchmark {
                 }
                 break;
             case "Legacy":
-                for (final TrackingMutableRowSet.Iterator ii = inputTable.getRowSet().iterator(); ii.hasNext();) {
+                for (final RowSet.Iterator ii = inputTable.getRowSet().iterator(); ii.hasNext();) {
                     destination.setSize(0);
                     ii.forEachLong(k -> {
                         copier.copy(inputSource, destination, k);

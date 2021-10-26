@@ -8,6 +8,7 @@ import io.deephaven.engine.tables.TableDefinition;
 import io.deephaven.engine.util.DhIntComparisons;
 import io.deephaven.engine.v2.select.chunkfilters.IntRangeComparator;
 import io.deephaven.engine.v2.sources.ColumnSource;
+import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.gui.table.filters.Condition;
 import io.deephaven.util.QueryConstants;
@@ -100,7 +101,7 @@ public class IntRangeFilter extends AbstractRangeFilter {
         return selection.subSetByPositionRange(lowerBoundMin, upperBoundMin);
     }
 
-    private long bound(TrackingMutableRowSet selection, boolean usePrev, ColumnSource<Integer> longColumnSource, long minPosition, long maxPosition, int targetValue, boolean inclusive, int compareSign, boolean end) {
+    private long bound(RowSet selection, boolean usePrev, ColumnSource<Integer> longColumnSource, long minPosition, long maxPosition, int targetValue, boolean inclusive, int compareSign, boolean end) {
         while (minPosition < maxPosition) {
             final long midPos = (minPosition + maxPosition) / 2;
             final long midIdx = selection.get(midPos);

@@ -494,14 +494,14 @@ public class RowSetShiftDataExpanderTest {
      */
     private static class Context {
         public final TrackingMutableRowSet sourceRowSet = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
-        public final TrackingMutableRowSet added = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
-        public final TrackingMutableRowSet removed = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
-        public final TrackingMutableRowSet modified = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+        public final MutableRowSet added = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+        public final MutableRowSet removed = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+        public final MutableRowSet modified = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
         public final RowSetShiftData.Builder shifted = new RowSetShiftData.Builder();
 
-        public final TrackingMutableRowSet expectAdded = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
-        public final TrackingMutableRowSet expectRemoved = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
-        public final TrackingMutableRowSet expectModified = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+        public final MutableRowSet expectAdded = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+        public final MutableRowSet expectRemoved = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+        public final MutableRowSet expectModified = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
 
         public Context() {
             LogicalClock.DEFAULT.resetForUnitTests();

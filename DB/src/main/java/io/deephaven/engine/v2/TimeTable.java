@@ -4,8 +4,7 @@
 
 package io.deephaven.engine.v2;
 
-import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
+import io.deephaven.engine.v2.utils.*;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.live.LiveTableMonitor;
@@ -15,8 +14,6 @@ import io.deephaven.engine.tables.utils.DBDateTime;
 import io.deephaven.engine.tables.utils.DBTimeUtils;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.DateTimeArraySource;
-import io.deephaven.engine.v2.utils.TimeProvider;
-import io.deephaven.engine.v2.utils.UpdatePerformanceTracker;
 
 import io.deephaven.internal.log.LoggerFactory;
 import java.util.Collections;
@@ -98,7 +95,7 @@ public class TimeTable extends QueryTable implements LiveTable {
                 if (dbPeriod >= 5_000_000_000L) {
                     log.info().append("TimeTable updated to ").append(lastTime.toString()).endl();
                 }
-                final TrackingMutableRowSet range = RowSetFactoryImpl.INSTANCE.getRowSetByRange(rangeStart, lastIndex);
+                final RowSet range = RowSetFactoryImpl.INSTANCE.getRowSetByRange(rangeStart, lastIndex);
                 getRowSet().insert(range);
                 if (notifyListeners) {
                     notifyListeners(range, RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), RowSetFactoryImpl.INSTANCE.getEmptyRowSet());

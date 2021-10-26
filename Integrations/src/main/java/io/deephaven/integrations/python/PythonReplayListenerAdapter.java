@@ -7,9 +7,9 @@ package io.deephaven.integrations.python;
 import io.deephaven.engine.v2.DynamicTable;
 import io.deephaven.engine.v2.InstrumentedListenerAdapter;
 import io.deephaven.engine.v2.ModifiedColumnSet;
+import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
 import io.deephaven.engine.v2.utils.RowSetShiftData;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.util.annotations.ScriptApi;
 import org.jpy.PyObject;
 
@@ -73,7 +73,7 @@ public class PythonReplayListenerAdapter extends InstrumentedListenerAdapter
 
     @Override
     public void replay() {
-        final TrackingMutableRowSet emptyRowSet = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+        final RowSet emptyRowSet = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
         final RowSetShiftData emptyShift = RowSetShiftData.EMPTY;
         final ModifiedColumnSet emptyColumnSet = ModifiedColumnSet.EMPTY;
         final Update update = new Update(source.getRowSet(), emptyRowSet, emptyRowSet, emptyShift, emptyColumnSet);

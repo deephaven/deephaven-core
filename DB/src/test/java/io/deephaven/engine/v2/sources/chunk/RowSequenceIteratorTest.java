@@ -2,8 +2,8 @@ package io.deephaven.engine.v2.sources.chunk;
 
 
 import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedRowKeyRanges;
+import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.engine.structures.RowSequence;
 import org.junit.Test;
 
@@ -32,16 +32,16 @@ public class RowSequenceIteratorTest {
         return result;
     }
 
-    private long[] valuesForIndex(TrackingMutableRowSet rowSet) {
+    private long[] valuesForIndex(RowSet rowSet) {
         long result[] = new long[(int) rowSet.size()];
-        TrackingMutableRowSet.Iterator it = rowSet.iterator();
+        RowSet.Iterator it = rowSet.iterator();
         for (int i = 0; i < result.length; i++) {
             result[i] = it.nextLong();
         }
         return result;
     }
 
-    private void genericTest(TrackingMutableRowSet rowSet, int chunkSize) {
+    private void genericTest(RowSet rowSet, int chunkSize) {
         final long[] values = valuesForIndex(rowSet);
         int vPos = 0;
         final RowSequence.Iterator wrapper = rowSet.getRowSequenceIterator();
@@ -96,7 +96,7 @@ public class RowSequenceIteratorTest {
         for (int i = 1; i < 25; i++) {
             for (double p = 0; p <= 1.1; p += .1) {
                 long[] d = indexDataGenerator(random, i, p);
-                TrackingMutableRowSet rowSet = RowSetFactoryImpl.INSTANCE.getRowSetByValues(d);
+                RowSet rowSet = RowSetFactoryImpl.INSTANCE.getRowSetByValues(d);
                 for (int chunkSize = 1; chunkSize < 17; chunkSize++) {
                     genericTest(rowSet, chunkSize);
                 }
@@ -142,7 +142,7 @@ public class RowSequenceIteratorTest {
         for (int i = 16; i < 6536; i *= 2) {
             for (double p = 0; p <= 1.1; p += .1) {
                 long[] d = indexDataGenerator(random, i, p);
-                TrackingMutableRowSet rowSet = RowSetFactoryImpl.INSTANCE.getRowSetByValues(d);
+                RowSet rowSet = RowSetFactoryImpl.INSTANCE.getRowSetByValues(d);
                 for (int chunkSize = 1; chunkSize < 17; chunkSize++) {
                     genericTest(rowSet, chunkSize);
                 }
@@ -154,7 +154,7 @@ public class RowSequenceIteratorTest {
             }
             for (double p = 0; p <= 1.1; p += .1) {
                 long[] d = indexDataGenerator(random, i + 1, p);
-                TrackingMutableRowSet rowSet = RowSetFactoryImpl.INSTANCE.getRowSetByValues(d);
+                RowSet rowSet = RowSetFactoryImpl.INSTANCE.getRowSetByValues(d);
                 for (int chunkSize = 1; chunkSize < 17; chunkSize++) {
                     genericTest(rowSet, chunkSize);
                 }
@@ -166,7 +166,7 @@ public class RowSequenceIteratorTest {
             }
             for (double p = 0; p <= 1.1; p += .1) {
                 long[] d = indexDataGenerator(random, i + 1, p);
-                TrackingMutableRowSet rowSet = RowSetFactoryImpl.INSTANCE.getRowSetByValues(d);
+                RowSet rowSet = RowSetFactoryImpl.INSTANCE.getRowSetByValues(d);
                 for (int chunkSize = 1; chunkSize < 17; chunkSize++) {
                     genericTest(rowSet, chunkSize);
                 }

@@ -9,9 +9,9 @@ import io.deephaven.engine.v2.select.SelectColumn;
 import io.deephaven.engine.v2.select.SourceColumn;
 import io.deephaven.engine.v2.select.SwitchColumn;
 import io.deephaven.engine.v2.sources.*;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.engine.v2.utils.RedirectionIndex;
+import io.deephaven.engine.v2.utils.TrackingRowSet;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.SafeCloseablePair;
 
@@ -24,7 +24,7 @@ public abstract class SelectAndViewAnalyzer {
     }
 
     public static SelectAndViewAnalyzer create(Mode mode, Map<String, ColumnSource<?>> columnSources,
-                                               TrackingMutableRowSet rowSet, ModifiedColumnSet parentMcs, boolean publishTheseSources, SelectColumn... selectColumns) {
+                                               TrackingRowSet rowSet, ModifiedColumnSet parentMcs, boolean publishTheseSources, SelectColumn... selectColumns) {
         SelectAndViewAnalyzer analyzer = createBaseLayer(columnSources, publishTheseSources);
         final Map<String, ColumnDefinition<?>> columnDefinitions = new LinkedHashMap<>();
         final RedirectionIndex redirectionIndex;
@@ -103,7 +103,7 @@ public abstract class SelectAndViewAnalyzer {
         return new BaseLayer(sources, publishTheseSources);
     }
 
-    private RedirectionLayer createRedirectionLayer(TrackingMutableRowSet resultRowSet, RedirectionIndex redirectionIndex) {
+    private RedirectionLayer createRedirectionLayer(TrackingRowSet resultRowSet, RedirectionIndex redirectionIndex) {
         return new RedirectionLayer(this, resultRowSet, redirectionIndex);
     }
 
@@ -145,19 +145,19 @@ public abstract class SelectAndViewAnalyzer {
     abstract Map<String, ColumnSource<?>> getColumnSourcesRecurse(GetMode mode);
 
     public static class UpdateHelper implements SafeCloseable {
-        private TrackingMutableRowSet existingRows;
+        private RowSet existingRows;
         private SafeCloseablePair<RowSet, RowSet> shiftedWithModifies;
         private SafeCloseablePair<RowSet, RowSet> shiftedWithoutModifies;
 
-        private final TrackingMutableRowSet parentRowSet;
+        private final RowSet parentRowSet;
         private final Listener.Update upstream;
 
-        public UpdateHelper(TrackingMutableRowSet parentRowSet, Listener.Update upstream) {
+        public UpdateHelper(RowSet parentRowSet, Listener.Update upstream) {
             this.parentRowSet = parentRowSet;
             this.upstream = upstream;
         }
 
-        private TrackingMutableRowSet getExisting() {
+        private RowSet getExisting() {
             if (existingRows == null) {
                 existingRows = parentRowSet.minus(upstream.added);
             }
@@ -169,7 +169,7 @@ public abstract class SelectAndViewAnalyzer {
                 shiftedWithModifies = SafeCloseablePair
                         .downcast(upstream.shifted.extractParallelShiftedRowsFromPostShiftIndex(getExisting()));
             } else if (!withModifies && shiftedWithoutModifies == null) {
-                try (final TrackingMutableRowSet candidates = getExisting().minus(upstream.modified)) {
+                try (final RowSet candidates = getExisting().minus(upstream.modified)) {
                     shiftedWithoutModifies = SafeCloseablePair
                             .downcast(upstream.shifted.extractParallelShiftedRowsFromPostShiftIndex(candidates));
                 }

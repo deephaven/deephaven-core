@@ -25,7 +25,7 @@ public class IndexIterationBench {
     private static int sz;
     private long[] values;
     private RspBitmap rb;
-    private TrackingMutableRowSet ix;
+    private RowSet ix;
     private TLongHashSet tset;
 
     @Param({"10"})
@@ -77,7 +77,7 @@ public class IndexIterationBench {
 
     @Benchmark
     public void b03_iterateIndex(final Blackhole bh) {
-        final TrackingMutableRowSet.Iterator it = ix.iterator();
+        final RowSet.Iterator it = ix.iterator();
         while (it.hasNext()) {
             final long v = it.nextLong();
             bh.consume(v);

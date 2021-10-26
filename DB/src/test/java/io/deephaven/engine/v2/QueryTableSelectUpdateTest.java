@@ -262,7 +262,7 @@ public class QueryTableSelectUpdateTest {
                 super("Update RefreshProcedure");
             }
 
-            TrackingMutableRowSet added, removed, modified;
+            RowSet added, removed, modified;
             Throwable exception = null;
 
             @Override
@@ -344,13 +344,13 @@ public class QueryTableSelectUpdateTest {
                             + resultSizeChange);
                 }
             } else {
-                TrackingMutableRowSet sourceAddedPositions = sourceTable.getRowSet().invert(listener1.added);
-                TrackingMutableRowSet sourceRemovedPositions = sourceTable.getRowSet().getPrevRowSet().invert(listener1.removed);
-                TrackingMutableRowSet sourceModifiedPositions = sourceTable.getRowSet().invert(listener1.modified);
+                RowSet sourceAddedPositions = sourceTable.getRowSet().invert(listener1.added);
+                RowSet sourceRemovedPositions = sourceTable.getRowSet().getPrevRowSet().invert(listener1.removed);
+                RowSet sourceModifiedPositions = sourceTable.getRowSet().invert(listener1.modified);
 
-                TrackingMutableRowSet resultAddedPositions = originalValue.getRowSet().invert(listener2.added);
-                TrackingMutableRowSet resultRemovedPositions = originalValue.getRowSet().getPrevRowSet().invert(listener2.removed);
-                TrackingMutableRowSet resultModifiedPositions = originalValue.getRowSet().invert(listener2.modified);
+                RowSet resultAddedPositions = originalValue.getRowSet().invert(listener2.added);
+                RowSet resultRemovedPositions = originalValue.getRowSet().getPrevRowSet().invert(listener2.removed);
+                RowSet resultModifiedPositions = originalValue.getRowSet().invert(listener2.modified);
 
                 if (!sourceAddedPositions.equals(resultAddedPositions)) {
                     issues.add("Source Positions Added, " + sourceAddedPositions
@@ -366,9 +366,9 @@ public class QueryTableSelectUpdateTest {
                 }
             }
 
-            TrackingMutableRowSet rowSetToCheck = listener1.added.clone();
+            MutableRowSet rowSetToCheck = listener1.added.clone();
             rowSetToCheck.insert(listener1.modified);
-            TrackingMutableRowSet checkInvert = sourceTable.getRowSet().invert(rowSetToCheck);
+            RowSet checkInvert = sourceTable.getRowSet().invert(rowSetToCheck);
 
             if (LiveTableTestCase.printTableUpdates) {
                 System.out.println("Positions to validate: " + checkInvert);
@@ -392,7 +392,7 @@ public class QueryTableSelectUpdateTest {
                 ColumnSource<?> originalColumnSource = originalColumns.get(columnName);
                 ColumnSource<?> recomputedColumn = stringColumnSourceEntry.getValue();
 
-                for (TrackingMutableRowSet.Iterator iterator = checkInvert.iterator(); iterator.hasNext();) {
+                for (RowSet.Iterator iterator = checkInvert.iterator(); iterator.hasNext();) {
                     int position = (int) iterator.nextLong();
                     long originalKey = originalValue.getRowSet().get(position);
                     long recomputedKey = recomputedValue.getRowSet().get(position);
@@ -471,8 +471,8 @@ public class QueryTableSelectUpdateTest {
 
             LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
                 final long keyToAdd = fstep + 1;
-                final TrackingMutableRowSet addedRowSet = i(keyToAdd);
-                final TrackingMutableRowSet removedRowSet = (fstep % 2 == 0) ? i(fstep) : i();
+                final RowSet addedRowSet = i(keyToAdd);
+                final RowSet removedRowSet = (fstep % 2 == 0) ? i(fstep) : i();
                 addToTable(rightTable, addedRowSet);
                 removeRows(rightTable, removedRowSet);
                 rightTable.notifyListeners(addedRowSet, removedRowSet, i());

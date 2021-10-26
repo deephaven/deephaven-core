@@ -6,16 +6,13 @@ package io.deephaven.engine.v2.replay;
 
 import io.deephaven.engine.tables.utils.DBDateTime;
 import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
-import io.deephaven.engine.v2.utils.RowSetBuilderRandom;
-import io.deephaven.engine.v2.utils.RedirectionIndex;
+import io.deephaven.engine.v2.utils.*;
 
 import java.util.Map;
 
 public class ReplayLastByGroupedTable extends QueryReplayGroupedTable {
 
-    public ReplayLastByGroupedTable(TrackingMutableRowSet rowSet, Map<String, ? extends ColumnSource<?>> input, String timeColumn,
+    public ReplayLastByGroupedTable(TrackingRowSet rowSet, Map<String, ? extends ColumnSource<?>> input, String timeColumn,
                                     Replayer replayer, String[] groupingColumns) {
         super(rowSet, input, timeColumn, replayer, RedirectionIndex.FACTORY.createRedirectionIndex(100),
                 groupingColumns);
@@ -46,8 +43,8 @@ public class ReplayLastByGroupedTable extends QueryReplayGroupedTable {
                 allIterators.add(currentIt);
             }
         }
-        final TrackingMutableRowSet added = addedBuilder.build();
-        final TrackingMutableRowSet modified = modifiedBuilder.build();
+        final RowSet added = addedBuilder.build();
+        final RowSet modified = modifiedBuilder.build();
         if (added.size() > 0 || modified.size() > 0) {
             getRowSet().insert(added);
             notifyListeners(added, RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), modified);

@@ -192,7 +192,7 @@ public class ColumnsToRowsTransform {
             }
         }
 
-        final TrackingMutableRowSet resultRowSet = transformIndex(source.getRowSet(), fanout, fanoutPow2);
+        final MutableRowSet resultRowSet = transformIndex(source.getRowSet(), fanout, fanoutPow2);
 
         final QueryTable result = new QueryTable(resultRowSet, resultMap);
 
@@ -305,14 +305,14 @@ public class ColumnsToRowsTransform {
         return result;
     }
 
-    private static TrackingMutableRowSet transformIndex(final TrackingMutableRowSet rowSet, final int fanout, final int fanoutPow2) {
+    private static MutableRowSet transformIndex(final RowSet rowSet, final int fanout, final int fanoutPow2) {
         final RowSetBuilderSequential sequentialBuilder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
         rowSet.forAllLongs(idx -> sequentialBuilder.appendRange(idx * fanoutPow2, idx * fanoutPow2 + fanout - 1));
         return sequentialBuilder.build();
     }
 
-    private static TrackingMutableRowSet transformIndex(final TrackingMutableRowSet rowSet, final int fanoutPow2, final boolean[] rowModified,
-                                                        final int maxModified) {
+    private static RowSet transformIndex(final RowSet rowSet, final int fanoutPow2, final boolean[] rowModified,
+                                         final int maxModified) {
         final RowSetBuilderSequential sequentialBuilder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
         rowSet.forAllLongs(idx -> {
             for (int ii = 0; ii <= maxModified; ++ii) {

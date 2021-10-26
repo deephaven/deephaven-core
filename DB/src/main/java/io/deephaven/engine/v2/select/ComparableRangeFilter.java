@@ -8,6 +8,7 @@ import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedRowKeys;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
+import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.util.annotations.TestUseOnly;
 
@@ -240,7 +241,7 @@ public class ComparableRangeFilter extends AbstractRangeFilter {
     }
 
 
-    static long bound(TrackingMutableRowSet selection, boolean usePrev, ColumnSource<Comparable> comparableColumnSource,
+    static long bound(RowSet selection, boolean usePrev, ColumnSource<Comparable> comparableColumnSource,
                       long minPosition, long maxPosition, Comparable targetValue, boolean inclusive, int compareSign,
                       boolean end) {
         while (minPosition < maxPosition) {

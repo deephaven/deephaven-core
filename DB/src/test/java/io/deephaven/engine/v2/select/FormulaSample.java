@@ -11,8 +11,9 @@ import io.deephaven.engine.v2.sources.chunk.LongChunk;
 import io.deephaven.engine.v2.sources.chunk.WritableChunk;
 import io.deephaven.engine.v2.sources.chunk.WritableIntChunk;
 import io.deephaven.engine.v2.sources.chunk.WritableLongChunk;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.engine.structures.RowSequence;
+import io.deephaven.engine.v2.utils.RowSet;
+import io.deephaven.engine.v2.utils.TrackingRowSet;
 import io.deephaven.util.type.TypeUtils;
 
 import java.util.concurrent.ConcurrentHashMap;
@@ -29,7 +30,7 @@ public class FormulaSample extends io.deephaven.engine.v2.select.Formula {
     private final Map<Object, Object> __lazyResultCache;
 
 
-    public FormulaSample(final TrackingMutableRowSet rowSet,
+    public FormulaSample(final TrackingRowSet rowSet,
             final boolean __lazy,
             final java.util.Map<String, ? extends io.deephaven.engine.v2.sources.ColumnSource> __columnsToData,
             final io.deephaven.engine.tables.select.Param... __params) {
@@ -58,7 +59,7 @@ public class FormulaSample extends io.deephaven.engine.v2.select.Formula {
     @Override
     public long getPrevLong(final long k) {
         final long findResult;
-        try (final TrackingMutableRowSet prev = __rowSet.getPrevRowSet()) {
+        try (final RowSet prev = __rowSet.getPrevRowSet()) {
             findResult = prev.find(k);
         }
         final int i = __intSize(findResult);
@@ -107,8 +108,8 @@ public class FormulaSample extends io.deephaven.engine.v2.select.Formula {
                                  final WritableChunk<? super Attributes.Values> __destination,
                                  final RowSequence __rowSequence, LongChunk<? extends Attributes.Values> __chunk__col__II, IntChunk<? extends Attributes.Values> __chunk__col__I) {
         final WritableLongChunk<? super Attributes.Values> __typedDestination = __destination.asWritableLongChunk();
-        try (final TrackingMutableRowSet prev = __usePrev ? __rowSet.getPrevRowSet() : null;
-             final TrackingMutableRowSet inverted = ((prev != null) ? prev : __rowSet).invert(__rowSequence.asRowSet())) {
+        try (final RowSet prev = __usePrev ? __rowSet.getPrevRowSet() : null;
+             final RowSet inverted = ((prev != null) ? prev : __rowSet).invert(__rowSequence.asRowSet())) {
             __context.__iChunk.setSize(0);
             inverted.forAllLongs(l -> __context.__iChunk.add(__intSize(l)));
             inverted.fillRowKeyChunk(__context.__iiChunk);

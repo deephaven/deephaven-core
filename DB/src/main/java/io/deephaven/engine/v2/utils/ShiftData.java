@@ -16,13 +16,13 @@ public class ShiftData {
     private int runningSize = 0;
     private long runningOffset = 0;
 
-    public TrackingMutableRowSet getAddedPos() {
+    public RowSet getAddedPos() {
         return addedPos;
     }
 
-    private TrackingMutableRowSet addedPos;
+    private RowSet addedPos;
 
-    public ShiftData(TrackingMutableRowSet rowSet, TrackingMutableRowSet removed, TrackingMutableRowSet added) {
+    public ShiftData(RowSet rowSet, RowSet removed, RowSet added) {
         TLongList[] removedKeys = rowSet.findMissing(removed);
         addedPos = rowSet.invert(added);
         endIndex = new TLongArrayList();
@@ -31,7 +31,7 @@ public class ShiftData {
         int removedIndex = 0;
         TLongList removedPositions = removedKeys[0];
         TLongList removedCount = removedKeys[1];
-        for (TrackingMutableRowSet.RangeIterator addedIt = addedPos.rangeIterator(); addedIt.hasNext();) {
+        for (RowSet.RangeIterator addedIt = addedPos.rangeIterator(); addedIt.hasNext();) {
             addedIt.next();
             int startOffset = (int) addedIt.currentRangeStart();
             int endOffset = (int) addedIt.currentRangeEnd();

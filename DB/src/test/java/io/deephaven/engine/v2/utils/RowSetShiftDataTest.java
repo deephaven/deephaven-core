@@ -188,7 +188,7 @@ public class RowSetShiftDataTest {
 
     @Test
     public void testSmartCoalescingBuilder1() {
-        final TrackingMutableRowSet rowSet = getScbTestIndex();
+        final RowSet rowSet = getScbTestIndex();
 
         final RowSetShiftData.Builder dumbBuilder = newBuilder();
 
@@ -205,9 +205,9 @@ public class RowSetShiftDataTest {
         scb.shiftRange(3950, 4050, 10);
         final RowSetShiftData sisd = scb.build();
 
-        final TrackingMutableRowSet didx = rowSet.clone();
+        final MutableRowSet didx = rowSet.clone();
         disd.apply(didx);
-        final TrackingMutableRowSet sidx = rowSet.clone();
+        final MutableRowSet sidx = rowSet.clone();
         sisd.apply(sidx);
 
         assertEquals(didx, sidx);
@@ -215,7 +215,7 @@ public class RowSetShiftDataTest {
 
     @Test
     public void testSmartCoalescingBuilder2() {
-        final TrackingMutableRowSet rowSet = getScbTestIndex();
+        final RowSet rowSet = getScbTestIndex();
 
         final RowSetShiftData.Builder dumbBuilder = newBuilder();
 
@@ -236,9 +236,9 @@ public class RowSetShiftDataTest {
         scb.shiftRange(3950, 4050, 10);
         final RowSetShiftData sisd = scb.build();
 
-        final TrackingMutableRowSet didx = rowSet.clone();
+        final MutableRowSet didx = rowSet.clone();
         disd.apply(didx);
-        final TrackingMutableRowSet sidx = rowSet.clone();
+        final MutableRowSet sidx = rowSet.clone();
         sisd.apply(sidx);
 
         assertEquals(2, sisd.size());
@@ -249,7 +249,7 @@ public class RowSetShiftDataTest {
 
     @Test
     public void testSmartCoalescingBuilder3() {
-        final TrackingMutableRowSet rowSet = getScbTestIndex();
+        final RowSet rowSet = getScbTestIndex();
 
         final RowSetShiftData.Builder dumbBuilder = newBuilder();
 
@@ -260,9 +260,9 @@ public class RowSetShiftDataTest {
         scb.shiftRange(1000, 4000, 10);
         final RowSetShiftData sisd = scb.build();
 
-        final TrackingMutableRowSet didx = rowSet.clone();
+        final MutableRowSet didx = rowSet.clone();
         disd.apply(didx);
-        final TrackingMutableRowSet sidx = rowSet.clone();
+        final MutableRowSet sidx = rowSet.clone();
         sisd.apply(sidx);
 
         assertEquals(didx, sidx);
@@ -271,7 +271,7 @@ public class RowSetShiftDataTest {
 
     @Test
     public void testSmartCoalescingBuilder4() {
-        final TrackingMutableRowSet rowSet = getScbTestIndex();
+        final RowSet rowSet = getScbTestIndex();
 
         final RowSetShiftData.Builder dumbBuilder = newBuilder();
         dumbBuilder.shiftRange(20, 30, 10);
@@ -293,9 +293,9 @@ public class RowSetShiftDataTest {
         scb.shiftRange(3950, 4050, 10);
         final RowSetShiftData sisd = scb.build();
 
-        final TrackingMutableRowSet didx = rowSet.clone();
+        final MutableRowSet didx = rowSet.clone();
         disd.apply(didx);
-        final TrackingMutableRowSet sidx = rowSet.clone();
+        final MutableRowSet sidx = rowSet.clone();
         sisd.apply(sidx);
 
         assertEquals(didx, sidx);
@@ -311,7 +311,7 @@ public class RowSetShiftDataTest {
         testSmartCoalescingBuilder5and6(RowSetFactoryImpl.INSTANCE.getEmptyRowSet());
     }
 
-    private void testSmartCoalescingBuilder5and6(TrackingMutableRowSet rowSet) {
+    private void testSmartCoalescingBuilder5and6(RowSet rowSet) {
         final RowSetShiftData.Builder dumbBuilder = newBuilder();
         dumbBuilder.shiftRange(30, 40, 10);
         dumbBuilder.shiftRange(50, 150, 10);
@@ -326,9 +326,9 @@ public class RowSetShiftDataTest {
         scb.shiftRange(4300, 4301, -1);
         final RowSetShiftData sisd = scb.build();
 
-        final TrackingMutableRowSet didx = rowSet.clone();
+        final MutableRowSet didx = rowSet.clone();
         disd.apply(didx);
-        final TrackingMutableRowSet sidx = rowSet.clone();
+        final MutableRowSet sidx = rowSet.clone();
         sisd.apply(sidx);
 
         assertEquals(didx, sidx);
@@ -336,7 +336,7 @@ public class RowSetShiftDataTest {
 
     @Test
     public void testSmartCoalescingBuilder7() {
-        final TrackingMutableRowSet rowSet = RowSetFactoryImpl.INSTANCE.getRowSetByValues(1, 10, 13);
+        final RowSet rowSet = RowSetFactoryImpl.INSTANCE.getRowSetByValues(1, 10, 13);
 
         final RowSetShiftData.Builder dumbBuilder = newBuilder();
         dumbBuilder.shiftRange(1, 2, 2);
@@ -350,9 +350,9 @@ public class RowSetShiftDataTest {
         scb.shiftRange(10, 12, 1);
         final RowSetShiftData sisd = scb.build();
 
-        final TrackingMutableRowSet didx = rowSet.clone();
+        final MutableRowSet didx = rowSet.clone();
         disd.apply(didx);
-        final TrackingMutableRowSet sidx = rowSet.clone();
+        final MutableRowSet sidx = rowSet.clone();
         sisd.apply(sidx);
 
         assertEquals(didx, sidx);
@@ -360,7 +360,7 @@ public class RowSetShiftDataTest {
 
     @Test
     public void testSmartCoalescingBuilder8() {
-        final TrackingMutableRowSet rowSet = RowSetFactoryImpl.INSTANCE.getRowSetByValues(0, 2, 16, 17, 23, 30, 35, 40);
+        final RowSet rowSet = RowSetFactoryImpl.INSTANCE.getRowSetByValues(0, 2, 16, 17, 23, 30, 35, 40);
 
         final RowSetShiftData.Builder dumbBuilder = newBuilder();
         dumbBuilder.shiftRange(5, 6, 1);
@@ -384,9 +384,9 @@ public class RowSetShiftDataTest {
         scb.shiftRange(38, 40, -3);
         final RowSetShiftData sisd = scb.build();
 
-        final TrackingMutableRowSet didx = rowSet.clone();
+        final MutableRowSet didx = rowSet.clone();
         disd.apply(didx);
-        final TrackingMutableRowSet sidx = rowSet.clone();
+        final MutableRowSet sidx = rowSet.clone();
         sisd.apply(sidx);
 
         assertEquals(didx, sidx);
@@ -394,7 +394,7 @@ public class RowSetShiftDataTest {
 
     @Test
     public void testSmartCoalescingBuilder9() {
-        final TrackingMutableRowSet rowSet = RowSetFactoryImpl.INSTANCE.getRowSetByValues(0, 1, 6, 13, 20);
+        final RowSet rowSet = RowSetFactoryImpl.INSTANCE.getRowSetByValues(0, 1, 6, 13, 20);
 
         final RowSetShiftData.Builder dumbBuilder = newBuilder();
         dumbBuilder.shiftRange(3, 7, 1);
@@ -408,9 +408,9 @@ public class RowSetShiftDataTest {
         scb.shiftRange(20, 27, -1);
         final RowSetShiftData sisd = scb.build();
 
-        final TrackingMutableRowSet didx = rowSet.clone();
+        final MutableRowSet didx = rowSet.clone();
         disd.apply(didx);
-        final TrackingMutableRowSet sidx = rowSet.clone();
+        final MutableRowSet sidx = rowSet.clone();
         sisd.apply(sidx);
 
         System.out.println(sisd);
@@ -419,7 +419,7 @@ public class RowSetShiftDataTest {
     }
 
 
-    private TrackingMutableRowSet getScbTestIndex() {
+    private RowSet getScbTestIndex() {
         final RowSetBuilderSequential sequentialBuilder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
         sequentialBuilder.appendKey(100);
         sequentialBuilder.appendKey(200);

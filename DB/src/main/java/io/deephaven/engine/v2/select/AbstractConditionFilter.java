@@ -2,6 +2,7 @@ package io.deephaven.engine.v2.select;
 
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.engine.v2.select.python.DeephavenCompatibleFunction;
+import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.process.ProcessEnvironment;
@@ -208,7 +209,7 @@ public abstract class AbstractConditionFilter extends SelectFilterImpl {
             DBLanguageParser.Result result) throws MalformedURLException, ClassNotFoundException;
 
     @Override
-    public TrackingMutableRowSet filter(TrackingMutableRowSet selection, TrackingMutableRowSet fullSet, Table table, boolean usePrev) {
+    public TrackingMutableRowSet filter(TrackingMutableRowSet selection, RowSet fullSet, Table table, boolean usePrev) {
         if (usePrev && params.length > 0) {
             throw new PreviousFilteringNotSupported("Previous filter with parameters not supported.");
         }
@@ -222,7 +223,7 @@ public abstract class AbstractConditionFilter extends SelectFilterImpl {
         return filter.filter(selection, fullSet, table, usePrev, formula, params);
     }
 
-    protected abstract Filter getFilter(Table table, TrackingMutableRowSet fullSet)
+    protected abstract Filter getFilter(Table table, RowSet fullSet)
             throws InstantiationException, IllegalAccessException, NoSuchMethodException, InvocationTargetException;
 
     /**
@@ -254,8 +255,8 @@ public abstract class AbstractConditionFilter extends SelectFilterImpl {
 
     public interface Filter {
         TrackingMutableRowSet filter(
-                TrackingMutableRowSet selection,
-                TrackingMutableRowSet fullSet,
+                RowSet selection,
+                RowSet fullSet,
                 Table table,
                 boolean usePrev,
                 String formula,

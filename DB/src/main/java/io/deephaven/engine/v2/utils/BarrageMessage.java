@@ -23,7 +23,7 @@ public class BarrageMessage implements SafeCloseable {
     }
 
     public static class ModColumnData {
-        public TrackingMutableRowSet rowsModified;
+        public RowSet rowsModified;
         public Class<?> type;
         public Class<?> componentType;
         public Chunk<Attributes.Values> data;
@@ -40,12 +40,12 @@ public class BarrageMessage implements SafeCloseable {
     public long step = -1;
 
     public boolean isSnapshot;
-    public TrackingMutableRowSet snapshotRowSet;
+    public RowSet snapshotRowSet;
     public BitSet snapshotColumns;
 
-    public TrackingMutableRowSet rowsAdded;
-    public TrackingMutableRowSet rowsIncluded;
-    public TrackingMutableRowSet rowsRemoved;
+    public RowSet rowsAdded;
+    public RowSet rowsIncluded;
+    public RowSet rowsRemoved;
     public RowSetShiftData shifted;
 
     public AddColumnData[] addColumnData;

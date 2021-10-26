@@ -23,7 +23,7 @@ public class GenerateTableUpdates {
 
     static public void generateTableUpdates(int size, Random random, QueryTable table,
             TstUtils.ColumnInfo[] columnInfo) {
-        final TrackingMutableRowSet[] result = computeTableUpdates(size, random, table, columnInfo);
+        final RowSet[] result = computeTableUpdates(size, random, table, columnInfo);
         table.notifyListeners(result[0], result[1], result[2]);
     }
 
@@ -31,7 +31,7 @@ public class GenerateTableUpdates {
             TstUtils.ColumnInfo[] columnInfos) {
         final long firstKey = table.getRowSet().lastRowKey() + 1;
         final int randomSize = 1 + random.nextInt(size);
-        final TrackingMutableRowSet keysToAdd = RowSetFactoryImpl.INSTANCE.getRowSetByRange(firstKey, firstKey + randomSize - 1);
+        final RowSet keysToAdd = RowSetFactoryImpl.INSTANCE.getRowSetByRange(firstKey, firstKey + randomSize - 1);
         final ColumnHolder[] columnAdditions = new ColumnHolder[columnInfos.length];
         for (int i = 0; i < columnAdditions.length; i++) {
             columnAdditions[i] = columnInfos[i].populateMapAndC(keysToAdd, random);
@@ -52,14 +52,14 @@ public class GenerateTableUpdates {
         table.notifyListeners(keysToAdd, RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), RowSetFactoryImpl.INSTANCE.getEmptyRowSet());
     }
 
-    static public TrackingMutableRowSet[] computeTableUpdates(int size, Random random, QueryTable table,
-                                                              TstUtils.ColumnInfo[] columnInfo) {
+    static public RowSet[] computeTableUpdates(int size, Random random, QueryTable table,
+                                               TstUtils.ColumnInfo[] columnInfo) {
         return computeTableUpdates(size, random, table, columnInfo, true, true, true);
     }
 
-    static public TrackingMutableRowSet[] computeTableUpdates(int size, Random random, QueryTable table,
-                                                              TstUtils.ColumnInfo[] columnInfo, boolean add, boolean remove, boolean modify) {
-        final TrackingMutableRowSet keysToRemove;
+    static public RowSet[] computeTableUpdates(int size, Random random, QueryTable table,
+                                               TstUtils.ColumnInfo[] columnInfo, boolean add, boolean remove, boolean modify) {
+        final RowSet keysToRemove;
         if (remove && table.getRowSet().size() > 0) {
             keysToRemove = TstUtils.selectSubIndexSet(random.nextInt(table.getRowSet().intSize() + 1), table.getRowSet(),
                     random);
@@ -67,17 +67,17 @@ public class GenerateTableUpdates {
             keysToRemove = TstUtils.i();
         }
 
-        final TrackingMutableRowSet keysToAdd =
+        final RowSet keysToAdd =
                 add ? TstUtils.newIndex(random.nextInt(size / 2 + 1), table.getRowSet(), random) : TstUtils.i();
         TstUtils.removeRows(table, keysToRemove);
-        for (final TrackingMutableRowSet.Iterator iterator = keysToRemove.iterator(); iterator.hasNext();) {
+        for (final RowSet.Iterator iterator = keysToRemove.iterator(); iterator.hasNext();) {
             final long next = iterator.nextLong();
             for (final TstUtils.ColumnInfo info : columnInfo) {
                 info.remove(next);
             }
         }
 
-        final TrackingMutableRowSet keysToModify;
+        final RowSet keysToModify;
         if (modify && table.getRowSet().size() > 0) {
             keysToModify =
                     TstUtils.selectSubIndexSet(random.nextInt((int) table.getRowSet().size()), table.getRowSet(), random);
@@ -108,7 +108,7 @@ public class GenerateTableUpdates {
             }
         }
 
-        return new TrackingMutableRowSet[] {keysToAdd, keysToRemove, keysToModify};
+        return new RowSet[] {keysToAdd, keysToRemove, keysToModify};
     }
 
     public static class SimulationProfile {
@@ -229,7 +229,7 @@ public class GenerateTableUpdates {
                 // Remove any keys that are going to be splatted all over thanks to a shift.
                 final long blatStart = delta < 0 ? start + delta : end;
                 final long blatEnd = delta < 0 ? start - 1 : end + delta;
-                try (final TrackingMutableRowSet blattedRows =
+                try (final RowSet blattedRows =
                         rowSet.extract(RowSetFactoryImpl.INSTANCE.getRowSetByRange(blatStart, blatEnd))) {
                     update.removed.insert(blattedRows);
                 }
@@ -273,7 +273,7 @@ public class GenerateTableUpdates {
     static public void generateTableUpdates(final Listener.Update update,
             final Random random, final QueryTable table,
             final TstUtils.ColumnInfo<?, ?>[] columnInfo) {
-        final TrackingMutableRowSet rowSet = table.getRowSet();
+        final MutableRowSet rowSet = table.getRowSet();
 
         if (LiveTableTestCase.printTableUpdates) {
             System.out.println();
@@ -282,7 +282,7 @@ public class GenerateTableUpdates {
 
         // Remove data:
         TstUtils.removeRows(table, update.removed);
-        for (final TrackingMutableRowSet.Iterator iterator = update.removed.iterator(); iterator.hasNext();) {
+        for (final RowSet.Iterator iterator = update.removed.iterator(); iterator.hasNext();) {
             final long next = iterator.nextLong();
             for (final TstUtils.ColumnInfo<?, ?> info : columnInfo) {
                 info.remove(next);
@@ -293,7 +293,7 @@ public class GenerateTableUpdates {
         // Shift data:
         update.shifted.apply((start, end, delta) -> {
             // Move data!
-            final TrackingMutableRowSet.SearchIterator iter = (delta < 0) ? rowSet.searchIterator() : rowSet.reverseIterator();
+            final RowSet.SearchIterator iter = (delta < 0) ? rowSet.searchIterator() : rowSet.reverseIterator();
             if (iter.advance((delta < 0) ? start : end)) {
                 long idx = iter.currentValue();
                 do {
@@ -303,8 +303,8 @@ public class GenerateTableUpdates {
                     for (final TstUtils.ColumnInfo<?, ?> info : columnInfo) {
                         info.move(idx, idx + delta);
                     }
-                    idx = iter.hasNext() ? iter.nextLong() : TrackingMutableRowSet.NULL_ROW_KEY;
-                } while (idx != TrackingMutableRowSet.NULL_ROW_KEY);
+                    idx = iter.hasNext() ? iter.nextLong() : RowSet.NULL_ROW_KEY;
+                } while (idx != RowSet.NULL_ROW_KEY);
             }
             for (final ColumnSource<?> column : table.getColumnSources()) {
                 if (column instanceof TreeMapSource) {
@@ -325,7 +325,7 @@ public class GenerateTableUpdates {
         final BitSet dirtyColumns = update.modifiedColumnSet.extractAsBitSet();
         for (int i = 0; i < columnInfo.length; i++) {
             final TstUtils.ColumnInfo<?, ?> ci = columnInfo[i];
-            final TrackingMutableRowSet keys = dirtyColumns.get(i) ? update.modified : TstUtils.i();
+            final RowSet keys = dirtyColumns.get(i) ? update.modified : TstUtils.i();
             cModsOnly[i] = ci.populateMapAndC(keys, random);
             cAddsOnly[i] = ci.populateMapAndC(update.added, random);
         }

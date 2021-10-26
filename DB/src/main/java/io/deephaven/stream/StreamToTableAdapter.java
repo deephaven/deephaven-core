@@ -18,9 +18,9 @@ import io.deephaven.engine.v2.sources.chunk.Attributes;
 import io.deephaven.engine.v2.sources.chunk.ChunkType;
 import io.deephaven.engine.v2.sources.chunk.WritableChunk;
 import io.deephaven.engine.v2.sources.chunkcolumnsource.ChunkColumnSource;
+import io.deephaven.engine.v2.utils.MutableRowSet;
 import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
 import io.deephaven.engine.v2.utils.RowSetShiftData;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.MultiException;
@@ -45,7 +45,7 @@ public class StreamToTableAdapter implements SafeCloseable, LiveTable, StreamCon
     private final String name;
 
     private final QueryTable table;
-    private final TrackingMutableRowSet rowSet;
+    private final MutableRowSet rowSet;
     private final SwitchColumnSource<?>[] switchSources;
 
     /** To start out when we have no data, we use null value column sources which are cheap and singletons. */

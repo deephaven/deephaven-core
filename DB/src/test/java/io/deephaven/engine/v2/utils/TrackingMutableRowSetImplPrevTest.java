@@ -22,7 +22,7 @@ public class TrackingMutableRowSetImplPrevTest {
 
     @Test
     public void testPrevWithEmptyConstruction() {
-        final TrackingMutableRowSet ix = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+        final TrackingRowSet ix = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
         assertTrue(ix.isEmpty());
         assertTrue(ix.getPrevRowSet().isEmpty());
     }

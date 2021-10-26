@@ -3046,7 +3046,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
 
         // Do the actual merging of container to container.
         startPos = 0;
-        final TrackingMutableRowSet.Iterator skipsIter = secondPassSkips.getIterator();
+        final RowSet.Iterator skipsIter = secondPassSkips.getIterator();
         int nextSkip;
         if (!skipsIter.hasNext()) {
             nextSkip = -1;
@@ -3312,7 +3312,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             compactRemovedUnsafeNoWriteCheck();
             return;
         }
-        final TrackingMutableRowSet.RangeIterator it = madeNullSpans.getRangeIterator();
+        final RowSet.RangeIterator it = madeNullSpans.getRangeIterator();
         if (!it.hasNext()) {
             return;
         }
@@ -4229,7 +4229,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
         return last;
     }
 
-    public void removeRangesUnsafeNoWriteCheck(final TrackingMutableRowSet.RangeIterator rit) {
+    public void removeRangesUnsafeNoWriteCheck(final RowSet.RangeIterator rit) {
         try {
             final WorkData wd = workDataPerThread.get();
             final MutableObject<SortedRanges> madeNullSpansMu = getWorkSortedRangesMutableObject(wd);

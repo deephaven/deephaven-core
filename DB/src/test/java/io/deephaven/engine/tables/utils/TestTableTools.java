@@ -1062,7 +1062,7 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
     private void addRows(Random random, QueryTable table1) {
         int size;
         size = random.nextInt(10);
-        final TrackingMutableRowSet newRowSet = TstUtils.getRandomIndex(table1.getRowSet().lastRowKey(), size, random);
+        final RowSet newRowSet = TstUtils.getRandomIndex(table1.getRowSet().lastRowKey(), size, random);
         TstUtils.addToTable(table1, newRowSet, TstUtils.getRandomStringCol("Sym", size, random),
                 TstUtils.getRandomIntCol("intCol", size, random),
                 TstUtils.getRandomDoubleCol("doubleCol", size, random));
@@ -1134,8 +1134,8 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
         Assert.assertTrue(2 * PRIME > UnionRedirection.CHUNK_MULTIPLE);
 
         final Consumer<Boolean> validate = (usePrev) -> {
-            final TrackingMutableRowSet origRowSet = usePrev ? table.getRowSet().getPrevRowSet() : table.getRowSet();
-            final TrackingMutableRowSet resRowSet = usePrev ? result.getRowSet().getPrevRowSet() : result.getRowSet();
+            final RowSet origRowSet = usePrev ? table.getRowSet().getPrevRowSet() : table.getRowSet();
+            final RowSet resRowSet = usePrev ? result.getRowSet().getPrevRowSet() : result.getRowSet();
             final int numElements = origRowSet.intSize();
 
             // noinspection unchecked
@@ -1190,7 +1190,7 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
         final QueryTable result = (QueryTable) TableTools.merge(table, m2);
 
         final Consumer<Boolean> validate = (usePrev) -> {
-            final TrackingMutableRowSet rowSet = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+            final RowSet rowSet = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
             final int numElements = 1024;
 
             // noinspection unchecked
@@ -1256,7 +1256,7 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
             final int firstNextIdx = (step * stepSize) + 1;
             final int lastNextIdx = ((step + 1) * stepSize);
             LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-                final TrackingMutableRowSet addRowSet = RowSetFactoryImpl.INSTANCE.getRowSetByRange(firstNextIdx, lastNextIdx);
+                final RowSet addRowSet = RowSetFactoryImpl.INSTANCE.getRowSetByRange(firstNextIdx, lastNextIdx);
 
                 final int[] addInts = new int[stepSize];
                 final char[] addChars = new char[stepSize];

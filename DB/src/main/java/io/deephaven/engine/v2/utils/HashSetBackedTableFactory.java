@@ -47,7 +47,7 @@ public class HashSetBackedTableFactory {
     private final TLongLongMap indexToPreviousClock = new TLongLongHashMap();
     private long lastIndex = 0;
     private final TLongArrayList freeSet = new TLongArrayList();
-    TrackingMutableRowSet rowSet;
+    MutableRowSet rowSet;
 
     private HashSetBackedTableFactory(Function.Nullary<HashSet<SmartKey>> setGenerator, int refreshIntervalMs,
             String... colNames) {
@@ -79,8 +79,8 @@ public class HashSetBackedTableFactory {
 
         factory.updateValueSet(addedBuilder, removedBuilder);
 
-        TrackingMutableRowSet added = addedBuilder.build();
-        TrackingMutableRowSet removed = removedBuilder.build();
+        MutableRowSet added = addedBuilder.build();
+        RowSet removed = removedBuilder.build();
 
         factory.rowSet = added;
         Assert.assertion(removed.size() == 0, "removed.size() == 0");
@@ -145,7 +145,7 @@ public class HashSetBackedTableFactory {
     }
 
     private class HashSetBackedTable extends QueryTable implements LiveTable {
-        HashSetBackedTable(TrackingMutableRowSet rowSet, Map<String, ColumnSource<?>> columns) {
+        HashSetBackedTable(RowSet rowSet, Map<String, ColumnSource<?>> columns) {
             super(rowSet, columns);
             if (refreshIntervalMs >= 0) {
                 setRefreshing(true);
@@ -169,7 +169,7 @@ public class HashSetBackedTableFactory {
             final TrackingMutableRowSet removed = removedBuilder.build();
 
             if (added.size() > 0 || removed.size() > 0) {
-                final TrackingMutableRowSet modified = added.intersect(removed);
+                final RowSet modified = added.intersect(removed);
                 added.remove(modified);
                 removed.remove(modified);
 

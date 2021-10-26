@@ -76,7 +76,7 @@ class RightIncrementalChunkedCrossJoinStateManager
 
     @ReplicateHashTable.EmptyStateValue
     // @NullStateValue@ from \Qnull\E, @StateValueType@ from \QIndex\E
-    private static final TrackingMutableRowSet EMPTY_RIGHT_VALUE = null;
+    private static final RowSet EMPTY_RIGHT_VALUE = null;
 
     // mixin getStateValue
     // region overflow pivot
@@ -127,7 +127,7 @@ class RightIncrementalChunkedCrossJoinStateManager
     // we are going to also reuse this for our state entry, so that we do not need additional storage
     @ReplicateHashTable.StateColumnSource
     // @StateColumnSourceType@ from \QObjectArraySource<TrackingMutableRowSet>\E
-    private final ObjectArraySource<TrackingMutableRowSet> rightIndexSource
+    private final ObjectArraySource<RowSet> rightIndexSource
             // @StateColumnSourceConstructor@ from \QObjectArraySource<>(TrackingMutableRowSet.class)\E
             = new ObjectArraySource<>(TrackingMutableRowSet.class);
 
@@ -139,7 +139,7 @@ class RightIncrementalChunkedCrossJoinStateManager
     // the overflow buckets for the right TrackingMutableRowSet
     @ReplicateHashTable.OverflowStateColumnSource
     // @StateColumnSourceType@ from \QObjectArraySource<TrackingMutableRowSet>\E
-    private final ObjectArraySource<TrackingMutableRowSet> overflowRightIndexSource
+    private final ObjectArraySource<RowSet> overflowRightIndexSource
             // @StateColumnSourceConstructor@ from \QObjectArraySource<>(TrackingMutableRowSet.class)\E
             = new ObjectArraySource<>(TrackingMutableRowSet.class);
 
@@ -164,20 +164,20 @@ class RightIncrementalChunkedCrossJoinStateManager
     private final RedirectionIndex rightIndexToSlot;
     private final ColumnSource<?>[] leftKeySources;
     private final ColumnSource<?>[] rightKeySources;
-    private final ObjectArraySource<TrackingMutableRowSet> leftIndexSource
+    private final ObjectArraySource<RowSet> leftIndexSource
             = new ObjectArraySource<>(TrackingMutableRowSet.class);
-    private final ObjectArraySource<TrackingMutableRowSet> overflowLeftIndexSource
+    private final ObjectArraySource<RowSet> overflowLeftIndexSource
             = new ObjectArraySource<>(TrackingMutableRowSet.class);
     private final boolean isLeftTicking;
 
     // we must maintain our cookie for modified state tracking
     private final LongArraySource modifiedTrackerCookieSource;
     private final LongArraySource overflowModifiedTrackerCookieSource;
-    private final long EMPTY_RIGHT_SLOT = TrackingMutableRowSet.NULL_ROW_KEY;
+    private final long EMPTY_RIGHT_SLOT = RowSet.NULL_ROW_KEY;
     private final QueryTable leftTable;
     private long maxRightGroupSize = 0;
 
-    public static final long LEFT_MAPPING_MISSING = TrackingMutableRowSet.NULL_ROW_KEY;
+    public static final long LEFT_MAPPING_MISSING = RowSet.NULL_ROW_KEY;
     // endregion extra variables
 
     RightIncrementalChunkedCrossJoinStateManager(ColumnSource<?>[] tableKeySources
@@ -274,8 +274,8 @@ class RightIncrementalChunkedCrossJoinStateManager
 
     // region build wrappers
     @NotNull
-    TrackingMutableRowSet build(@NotNull final QueryTable leftTable,
-                                @NotNull final QueryTable rightTable) {
+    MutableRowSet build(@NotNull final QueryTable leftTable,
+                        @NotNull final QueryTable rightTable) {
         // This state manager assumes right side is ticking.
         Assert.eqTrue(rightTable.isLive(), "rightTable.isLive()");
         if (!leftTable.isEmpty()) {
@@ -311,7 +311,7 @@ class RightIncrementalChunkedCrossJoinStateManager
         final RowSetBuilderSequential resultIndex = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
         leftTable.getRowSet().forAllLongs(index -> {
             final long regionStart = index << getNumShiftBits();
-            final TrackingMutableRowSet rightRowSet = getRightIndexFromLeftIndex(index);
+            final RowSet rightRowSet = getRightIndexFromLeftIndex(index);
             if (rightRowSet.isNonempty()) {
                 resultIndex.appendRange(regionStart, regionStart + rightRowSet.size() - 1);
             }
@@ -346,7 +346,7 @@ class RightIncrementalChunkedCrossJoinStateManager
     void rightShift(final RowSet filterIndex, final RowSetShiftData shifted, final CrossJoinModifiedSlotTracker tracker) {
         shifted.forAllInIndex(filterIndex, (ii, delta) -> {
             final long slot = rightIndexToSlot.get(ii);
-            if (slot == TrackingMutableRowSet.NULL_ROW_KEY) {
+            if (slot == RowSet.NULL_ROW_KEY) {
                 // right-ticking w/static-left does not maintain group states that will never be used
                 return;
             }
@@ -367,7 +367,7 @@ class RightIncrementalChunkedCrossJoinStateManager
         });
     }
 
-    void rightAdd(final TrackingMutableRowSet added, final CrossJoinModifiedSlotTracker tracker) {
+    void rightAdd(final RowSet added, final CrossJoinModifiedSlotTracker tracker) {
         if (added.isEmpty()) {
             return;
         }
@@ -551,7 +551,7 @@ class RightIncrementalChunkedCrossJoinStateManager
     void leftShift(final RowSet filterIndex, final RowSetShiftData shifted, final CrossJoinModifiedSlotTracker tracker) {
         shifted.forAllInIndex(filterIndex, (ii, delta) -> {
             final long slot = leftIndexToSlot.get(ii);
-            if (slot == TrackingMutableRowSet.NULL_ROW_KEY) {
+            if (slot == RowSet.NULL_ROW_KEY) {
                 // This might happen if an rowSet is moving from one slot to another; we shift after removes but before
                 // the adds. We don't need to shift the slot that was related to this rowSet.
                 return;
@@ -579,9 +579,9 @@ class RightIncrementalChunkedCrossJoinStateManager
     private void ensureSlotExists(final long slot) {
         final boolean isOverflowLocation = isOverflowLocation(slot);
         final long location = isOverflowLocation ? overflowLocationToHashLocation(slot) : slot;
-        final ObjectArraySource<TrackingMutableRowSet> source = isOverflowLocation ? overflowRightIndexSource : rightIndexSource;
+        final ObjectArraySource<RowSet> source = isOverflowLocation ? overflowRightIndexSource : rightIndexSource;
 
-        final TrackingMutableRowSet rowSet = source.getUnsafe(location);
+        final RowSet rowSet = source.getUnsafe(location);
         if (rowSet == null) {
             source.set(location, RowSetFactoryImpl.INSTANCE.getEmptyRowSet());
         }
@@ -590,7 +590,7 @@ class RightIncrementalChunkedCrossJoinStateManager
     private long addToIndex(final boolean isLeft, final long slot, final long keyToAdd) {
         final boolean isOverflowLocation = isOverflowLocation(slot);
         final long location = isOverflowLocation ? overflowLocationToHashLocation(slot) : slot;
-        final ObjectArraySource<TrackingMutableRowSet> source;
+        final ObjectArraySource<RowSet> source;
         if (isOverflowLocation) {
             source = isLeft ? overflowLeftIndexSource : overflowRightIndexSource;
         } else {
@@ -598,7 +598,7 @@ class RightIncrementalChunkedCrossJoinStateManager
         }
 
         final long size;
-        final TrackingMutableRowSet rowSet = source.get(location);
+        final MutableRowSet rowSet = source.get(location);
         if (rowSet == null) {
             if (!isLeft && !isLeftTicking) {
                 // when left table is static and this grouping does not exist then ignore
@@ -655,15 +655,15 @@ class RightIncrementalChunkedCrossJoinStateManager
         this.overflowRightIndexSource.startTrackingPrevValues();
     }
 
-    public void updateLeftRedirectionIndex(TrackingMutableRowSet leftAdded, long slotLocation) {
-        if (slotLocation == TrackingMutableRowSet.NULL_ROW_KEY) {
+    public void updateLeftRedirectionIndex(RowSet leftAdded, long slotLocation) {
+        if (slotLocation == RowSet.NULL_ROW_KEY) {
             leftAdded.forAllLongs(leftIndexToSlot::removeVoid);
         } else {
             leftAdded.forAllLongs(ii -> leftIndexToSlot.putVoid(ii, slotLocation));
         }
     }
 
-    public void onRightGroupInsertion(TrackingMutableRowSet rightRowSet, TrackingMutableRowSet rightAdded, long slotLocation) {
+    public void onRightGroupInsertion(RowSet rightRowSet, RowSet rightAdded, long slotLocation) {
         // only right side insertions can cause shifts
         final long size = rightRowSet.size();
         final int numBitsNeeded = CrossJoinShiftState.getMinBits(size - 1);
@@ -718,7 +718,7 @@ class RightIncrementalChunkedCrossJoinStateManager
 
         // the chunk of state values that we read from the hash table
         // @WritableStateChunkType@ from \QWritableObjectChunk<TrackingMutableRowSet,Values>\E
-        final WritableObjectChunk<TrackingMutableRowSet,Values> workingStateEntries;
+        final WritableObjectChunk<RowSet,Values> workingStateEntries;
 
         // the chunks for getting key values from the hash table
         final WritableChunk<Values>[] workingKeyChunks;
@@ -971,7 +971,7 @@ class RightIncrementalChunkedCrossJoinStateManager
                     if (bc.equalValues.get(ii)) {
                         // region build found main
                         final long keyToAdd = bc.sourceIndexKeys.get(ii);
-                        final long prevKey = prevIndex == null ? TrackingMutableRowSet.NULL_ROW_KEY : bc.sourcePrevIndexKeys.get(ii);
+                        final long prevKey = prevIndex == null ? RowSet.NULL_ROW_KEY : bc.sourcePrevIndexKeys.get(ii);
                         final long oldCookie = modifiedTrackerCookieSource.getUnsafe(tableLocation);
                         final long newCookie = trackingCallback.invoke(oldCookie, (int) tableLocation, keyToAdd, prevKey);
                         if (oldCookie != newCookie) {
@@ -1007,7 +1007,7 @@ class RightIncrementalChunkedCrossJoinStateManager
 
                     // region main insert
                     final long keyToAdd = bc.sourceIndexKeys.get(firstChunkPositionForHashLocation);
-                    final long prevKey = prevIndex == null ? TrackingMutableRowSet.NULL_ROW_KEY : bc.sourcePrevIndexKeys.get(firstChunkPositionForHashLocation);
+                    final long prevKey = prevIndex == null ? RowSet.NULL_ROW_KEY : bc.sourcePrevIndexKeys.get(firstChunkPositionForHashLocation);
                     ensureSlotExists(currentHashLocation);
                     final long cookie = trackingCallback.invoke(CrossJoinModifiedSlotTracker.NULL_COOKIE, currentHashLocation, keyToAdd, prevKey);
                     modifiedTrackerCookieSource.set(currentHashLocation, cookie);
@@ -1055,7 +1055,7 @@ class RightIncrementalChunkedCrossJoinStateManager
                     if (bc.equalValues.get(ii)) {
                         // region build main duplicate
                         final long keyToAdd = bc.sourceIndexKeys.get(chunkPosition);
-                        final long prevKey = prevIndex == null ? TrackingMutableRowSet.NULL_ROW_KEY : bc.sourcePrevIndexKeys.get(chunkPosition);
+                        final long prevKey = prevIndex == null ? RowSet.NULL_ROW_KEY : bc.sourcePrevIndexKeys.get(chunkPosition);
                         // NB: We just inserted this slot, so there's no way that its cookie can have changed.
                         trackingCallback.invoke(modifiedTrackerCookieSource.getUnsafe(tableLocation), (int) tableLocation, keyToAdd, prevKey);
                         // endregion build main duplicate
@@ -1110,7 +1110,7 @@ class RightIncrementalChunkedCrossJoinStateManager
                             if (bc.equalValues.get(ii)) {
                                 // region build overflow found
                                 final long keyToAdd = bc.sourceIndexKeys.get(chunkPosition);
-                                final long prevKey = prevIndex == null ? TrackingMutableRowSet.NULL_ROW_KEY : bc.sourcePrevIndexKeys.get(chunkPosition);
+                                final long prevKey = prevIndex == null ? RowSet.NULL_ROW_KEY : bc.sourcePrevIndexKeys.get(chunkPosition);
                                 final long hashLocation = overflowLocationToHashLocation(overflowLocation);
                                 final long oldCookie = overflowModifiedTrackerCookieSource.getUnsafe(overflowLocation);
                                 final long newCookie = trackingCallback.invoke(oldCookie, hashLocation, keyToAdd, prevKey);
@@ -1162,7 +1162,7 @@ class RightIncrementalChunkedCrossJoinStateManager
 
                             // region build overflow insert
                             final long keyToAdd = bc.sourceIndexKeys.get(chunkPosition);
-                            final long prevKey = prevIndex == null ? TrackingMutableRowSet.NULL_ROW_KEY : bc.sourcePrevIndexKeys.get(chunkPosition);
+                            final long prevKey = prevIndex == null ? RowSet.NULL_ROW_KEY : bc.sourcePrevIndexKeys.get(chunkPosition);
                             final long hashLocation = overflowLocationToHashLocation(allocatedOverflowLocation);
                             ensureSlotExists(hashLocation);
                             final long cookie = trackingCallback.invoke(CrossJoinModifiedSlotTracker.NULL_COOKIE, hashLocation, keyToAdd, prevKey);
@@ -1203,7 +1203,7 @@ class RightIncrementalChunkedCrossJoinStateManager
                                 final long insertedOverflowLocation = bc.overflowLocationForEqualityCheck.get(ii);
                                 // region build overflow duplicate
                                 final long keyToAdd = bc.sourceIndexKeys.get(chunkPosition);
-                                final long prevKey = prevIndex == null ? TrackingMutableRowSet.NULL_ROW_KEY : bc.sourcePrevIndexKeys.get(chunkPosition);
+                                final long prevKey = prevIndex == null ? RowSet.NULL_ROW_KEY : bc.sourcePrevIndexKeys.get(chunkPosition);
                                 final long hashLocation = overflowLocationToHashLocation(insertedOverflowLocation);
                                 // we match the first element, so should use the overflow slow we allocated for it (note expect cookie does not change)
                                 trackingCallback.invoke(overflowModifiedTrackerCookieSource.getUnsafe(insertedOverflowLocation), hashLocation, keyToAdd, prevKey);
@@ -1321,11 +1321,11 @@ class RightIncrementalChunkedCrossJoinStateManager
                     }
 
                     // @StateValueType@ from \QIndex\E
-                    final TrackingMutableRowSet stateValueToMove = rightIndexSource.getUnsafe(oldHashLocation);
+                    final RowSet stateValueToMove = rightIndexSource.getUnsafe(oldHashLocation);
                     rightIndexSource.set(newHashLocation, stateValueToMove);
                     rightIndexSource.set(oldHashLocation, EMPTY_RIGHT_VALUE);
                     // region rehash move values
-                    final TrackingMutableRowSet leftRowSetValue = leftIndexSource.getUnsafe(oldHashLocation);
+                    final RowSet leftRowSetValue = leftIndexSource.getUnsafe(oldHashLocation);
                     leftIndexSource.set(newHashLocation, leftRowSetValue);
                     leftIndexSource.set(oldHashLocation, null);
                     if (leftRowSetValue != null) {
@@ -1409,7 +1409,7 @@ class RightIncrementalChunkedCrossJoinStateManager
                         final long overflowLocation = bc.overflowLocationsAsKeyIndices.get(ii);
                         final long overflowHashLocation = overflowLocationToHashLocation(overflowLocation);
                         // Right rowSet source move
-                        final TrackingMutableRowSet stateValueToMove = overflowRightIndexSource.getUnsafe(overflowLocation);
+                        final RowSet stateValueToMove = overflowRightIndexSource.getUnsafe(overflowLocation);
                         rightIndexSource.set(tableLocation, stateValueToMove);
                         stateValueToMove.forAllLongs(right -> {
                             // stateValueToMove may not yet be up to date and may include modifications
@@ -1421,7 +1421,7 @@ class RightIncrementalChunkedCrossJoinStateManager
                         overflowRightIndexSource.set(overflowLocation, EMPTY_RIGHT_VALUE);
 
                         // Left rowSet source move
-                        final TrackingMutableRowSet leftRowSetValue = overflowLeftIndexSource.getUnsafe(overflowLocation);
+                        final RowSet leftRowSetValue = overflowLeftIndexSource.getUnsafe(overflowLocation);
                         leftIndexSource.set(tableLocation, leftRowSetValue);
                         overflowLeftIndexSource.set(overflowLocation, null);
                         if (leftRowSetValue != null) {
@@ -1701,7 +1701,7 @@ class RightIncrementalChunkedCrossJoinStateManager
         // the chunk of right indices that we read from the hash table, the empty right rowSet is used as a sentinel that the
         // state exists; otherwise when building from the left it is always null
         // @WritableStateChunkType@ from \QWritableObjectChunk<TrackingMutableRowSet,Values>\E
-        final WritableObjectChunk<TrackingMutableRowSet,Values> workingStateEntries;
+        final WritableObjectChunk<RowSet,Values> workingStateEntries;
 
         // the overflow locations that we need to get from the overflowLocationSource (or overflowOverflowLocationSource)
         final WritableLongChunk<RowKeys> overflowLocationsToFetch;
@@ -1898,7 +1898,7 @@ class RightIncrementalChunkedCrossJoinStateManager
                     if (pc.equalValues.get(ii)) {
                         // region probe main found
                         final long tableLocation = pc.tableLocationsChunk.get(ii);
-                        final long prevKey = probePrevIndex == null ? TrackingMutableRowSet.NULL_ROW_KEY : pc.prevKeyIndices.get(ii);
+                        final long prevKey = probePrevIndex == null ? RowSet.NULL_ROW_KEY : pc.prevKeyIndices.get(ii);
                         final long oldCookie = modifiedTrackerCookieSource.getUnsafe(tableLocation);
                         final long newCookie = trackingCallback.invoke(oldCookie, tableLocation, pc.keyIndices.get(ii), prevKey);
                         if (oldCookie != newCookie) {
@@ -1960,7 +1960,7 @@ class RightIncrementalChunkedCrossJoinStateManager
                         if (pc.equalValues.get(ii)) {
                             // region probe overflow found
                             final long indexKey = pc.keyIndices.get(chunkPosition);
-                            final long prevKey = probePrevIndex == null ? TrackingMutableRowSet.NULL_ROW_KEY : pc.prevKeyIndices.get(chunkPosition);
+                            final long prevKey = probePrevIndex == null ? RowSet.NULL_ROW_KEY : pc.prevKeyIndices.get(chunkPosition);
                             final long hashLocation = overflowLocationToHashLocation(overflowLocation);
                             final long oldCookie = overflowModifiedTrackerCookieSource.getUnsafe(overflowLocation);
                             final long newCookie = trackingCallback.invoke(oldCookie, hashLocation, indexKey, prevKey);
@@ -2044,8 +2044,8 @@ class RightIncrementalChunkedCrossJoinStateManager
         return retVal;
     }
 
-    public TrackingMutableRowSet getPrevRightIndex(long prevSlot) {
-        TrackingMutableRowSet retVal;
+    public TrackingRowSet getPrevRightIndex(long prevSlot) {
+        TrackingRowSet retVal;
         if (isOverflowLocation(prevSlot)) {
             retVal = overflowRightIndexSource.getPrev(hashLocationToOverflowLocation(prevSlot));
         } else {
@@ -2058,29 +2058,29 @@ class RightIncrementalChunkedCrossJoinStateManager
     }
 
     @Override
-    public TrackingMutableRowSet getRightIndexFromLeftIndex(long leftIndex) {
+    public TrackingRowSet getRightIndexFromLeftIndex(long leftIndex) {
         long slot = leftIndexToSlot.get(leftIndex);
-        if (slot == TrackingMutableRowSet.NULL_ROW_KEY) {
+        if (slot == RowSet.NULL_ROW_KEY) {
             return RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
         }
         return getRightIndex(slot);
     }
 
     @Override
-    public TrackingMutableRowSet getRightIndexFromPrevLeftIndex(long leftIndex) {
+    public TrackingRowSet getRightIndexFromPrevLeftIndex(long leftIndex) {
         long slot = leftIndexToSlot.getPrev(leftIndex);
-        if (slot == TrackingMutableRowSet.NULL_ROW_KEY) {
+        if (slot == RowSet.NULL_ROW_KEY) {
             return RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
         }
         return getPrevRightIndex(slot);
     }
 
-    public TrackingMutableRowSet getLeftIndex(long slot) {
-        TrackingMutableRowSet retVal;
+    public MutableRowSet getLeftIndex(long slot) {
+        MutableRowSet retVal;
         final boolean isOverflow = isOverflowLocation(slot);
 
         slot = isOverflow ? hashLocationToOverflowLocation(slot) : slot;
-        final ObjectArraySource<TrackingMutableRowSet> leftSource = isOverflow ? overflowLeftIndexSource : leftIndexSource;
+        final ObjectArraySource<RowSet> leftSource = isOverflow ? overflowLeftIndexSource : leftIndexSource;
 
         retVal = leftSource.get(slot);
         if (retVal == null) {

@@ -23,7 +23,7 @@ import java.util.stream.IntStream;
 public class BucketState {
     private final TrackingMutableRowSet rowSet = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
 
-    private TrackingMutableRowSet cachedRowSet;
+    private RowSet cachedRowSet;
 
     /** the key used in the map */
     private final long key;
@@ -34,7 +34,7 @@ public class BucketState {
     private final ValueTracker[] values;
 
     private final boolean trackNulls;
-    private final TrackingMutableRowSet[] nulls;
+    private final MutableRowSet[] nulls;
 
     public BucketState(final long key, final int offset, final ValueTracker[] valueTrackers, boolean trackNulls) {
         Assert.eqTrue(trackNulls || offset == 0 || offset == 1, "trackNulls || offset == 0 || offset == 1");
@@ -44,13 +44,13 @@ public class BucketState {
         this.trackNulls = trackNulls;
         if (trackNulls) {
             this.nulls = IntStream.range(0, valueTrackers.length).mapToObj(ignore -> RowSetFactoryImpl.INSTANCE.getEmptyRowSet())
-                    .toArray(TrackingMutableRowSet[]::new);
+                    .toArray(RowSet[]::new);
         } else {
             this.nulls = null;
         }
     }
 
-    public TrackingMutableRowSet getIndex() {
+    public RowSet getIndex() {
         return rowSet;
     }
 
@@ -109,7 +109,7 @@ public class BucketState {
 
         if (trackNulls) {
             // if we're tracking nulls, update those arrays
-            for (final TrackingMutableRowSet nullValues : nulls) {
+            for (final MutableRowSet nullValues : nulls) {
                 shiftData.apply(nullValues);
             }
         }
@@ -186,7 +186,7 @@ public class BucketState {
         }
     }
 
-    public TrackingMutableRowSet makeIndex() {
+    public RowSet makeIndex() {
         if (cachedRowSet != null) {
             return cachedRowSet;
         }
@@ -206,7 +206,7 @@ public class BucketState {
                 } // Else nothing to do, entire bucket is null, and we already included first+last, more than needed
             }
 
-            for (TrackingMutableRowSet nullsForCol : nulls) {
+            for (RowSet nullsForCol : nulls) {
                 if (nullsForCol.isEmpty()) {
                     continue;
                 }

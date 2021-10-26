@@ -14,7 +14,7 @@ public class RowSetUtilities {
         int count = 0;
         final StringBuilder result = new StringBuilder("{");
         boolean isFirst = true;
-        try (final TrackingMutableRowSet.RangeIterator it = rowSet.rangeIterator()) {
+        try (final RowSet.RangeIterator it = rowSet.rangeIterator()) {
             while (it.hasNext()) {
                 it.next();
                 result.append(isFirst ? "" : ",").append(it.currentRangeStart())
@@ -56,7 +56,7 @@ public class RowSetUtilities {
         long currentCount = 0;
         long lastPos = -2;
 
-        for (final TrackingMutableRowSet.RangeIterator iterator = keys.rangeIterator(); iterator.hasNext();) {
+        for (final RowSet.RangeIterator iterator = keys.rangeIterator(); iterator.hasNext();) {
             iterator.next();
             final long currentRangeStart = iterator.currentRangeStart();
 
@@ -76,7 +76,7 @@ public class RowSetUtilities {
         return new TLongArrayList[] {indices, counts};
     }
 
-    public static LogOutput append(final LogOutput logOutput, final TrackingMutableRowSet.RangeIterator it) {
+    public static LogOutput append(final LogOutput logOutput, final RowSet.RangeIterator it) {
         int count = 0;
         logOutput.append("{");
         boolean isFirst = true;
@@ -104,8 +104,8 @@ public class RowSetUtilities {
     }
 
     static boolean equalsDeepImpl(final RowSet index, final RowSet other) {
-        final TrackingMutableRowSet.RangeIterator it1 = other.rangeIterator();
-        final TrackingMutableRowSet.RangeIterator it2 = index.rangeIterator();
+        final RowSet.RangeIterator it1 = other.rangeIterator();
+        final RowSet.RangeIterator it2 = index.rangeIterator();
         while (it1.hasNext() && it2.hasNext()) {
             it1.next();
             it2.next();
@@ -184,11 +184,11 @@ public class RowSetUtilities {
      * @param destRowSet rowSet values to look for within sourceRowSet
      * @param lrc consumer to handle each inverted range that is encountered
      */
-    public static void forAllInvertedLongRanges(final TrackingMutableRowSet sourceRowSet, final TrackingMutableRowSet destRowSet,
+    public static void forAllInvertedLongRanges(final RowSet sourceRowSet, final RowSet destRowSet,
                                                 final LongRangeConsumer lrc) {
         final MutableBoolean hasPending = new MutableBoolean();
-        final MutableLong pendingStart = new MutableLong(TrackingMutableRowSet.NULL_ROW_KEY);
-        final MutableLong pendingEnd = new MutableLong(TrackingMutableRowSet.NULL_ROW_KEY);
+        final MutableLong pendingStart = new MutableLong(RowSet.NULL_ROW_KEY);
+        final MutableLong pendingEnd = new MutableLong(RowSet.NULL_ROW_KEY);
         final RowSequence.Iterator sourceProbe = sourceRowSet.getRowSequenceIterator();
         final MutableLong sourceOffset = new MutableLong();
         destRowSet.forAllLongRanges((start, end) -> {

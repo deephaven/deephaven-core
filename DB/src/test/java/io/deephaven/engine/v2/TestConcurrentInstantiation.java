@@ -730,7 +730,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
                     beforeUpdateFirstHalf.add(pool.submit(splitCallable.first).get());
                 }
 
-                final TrackingMutableRowSet[] updates = GenerateTableUpdates.computeTableUpdates(size, random, table, columnInfos);
+                final RowSet[] updates = GenerateTableUpdates.computeTableUpdates(size, random, table, columnInfos);
 
                 if (beforeNotify) {
                     // after we update the underlying data, but before we notify
@@ -1498,7 +1498,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
                         final ColumnSource<String> cs = table.getColumnSource("y");
 
                         int ii = 0;
-                        for (final TrackingMutableRowSet.Iterator it = table.getRowSet().iterator(); it.hasNext();) {
+                        for (final RowSet.Iterator it = table.getRowSet().iterator(); it.hasNext();) {
                             final long key = it.nextLong();
                             result1[ii++] = cs.get(key);
                         }

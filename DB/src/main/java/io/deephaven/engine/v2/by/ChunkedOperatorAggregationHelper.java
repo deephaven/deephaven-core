@@ -169,7 +169,7 @@ public class ChunkedOperatorAggregationHelper {
         }
         ac.getResultColumns(resultColumnSourceMap);
 
-        final TrackingMutableRowSet resultRowSet = RowSetFactoryImpl.INSTANCE.getFlatRowSet(outputPosition.intValue());
+        final RowSet resultRowSet = RowSetFactoryImpl.INSTANCE.getFlatRowSet(outputPosition.intValue());
         if (withView.isRefreshing()) {
             copyKeyColumns(keyColumnsRaw, keyColumnsCopied, resultRowSet);
         }
@@ -464,7 +464,7 @@ public class ChunkedOperatorAggregationHelper {
                 try (final ModifySplitResult split =
                         keysModified ? splitKeyModificationsAndDoKeyChangeRemoves() : null) {
                     if (processShifts) {
-                        try (final TrackingMutableRowSet postShiftRowSet = upstreamIndex.minus(upstream.added)) {
+                        try (final MutableRowSet postShiftRowSet = upstreamIndex.minus(upstream.added)) {
                             if (keysModified) {
                                 postShiftRowSet.remove(split.keyChangeIndicesPostShift);
                             }
@@ -497,7 +497,7 @@ public class ChunkedOperatorAggregationHelper {
                                                 : null;
                                         final RowSet shiftedSameSlotModifiesPost = upstream.modified
                                                 .minus(removeIndex == null ? unshiftedSameSlotModifies : removeIndex);
-                                        final TrackingMutableRowSet shiftedSameSlotModifiesPre = shiftedSameSlotModifiesPost.clone()) {
+                                        final MutableRowSet shiftedSameSlotModifiesPre = shiftedSameSlotModifiesPost.clone()) {
                                     upstream.shifted.unapply(shiftedSameSlotModifiesPre);
                                     doSameSlotModifies(shiftedSameSlotModifiesPre, shiftedSameSlotModifiesPost, true,
                                             od.operatorsWithModifiedInputColumnsThatIgnoreIndices,
@@ -505,7 +505,7 @@ public class ChunkedOperatorAggregationHelper {
                                 }
                             } else if (ac.requiresIndices()) {
                                 // Do shifted same-key modifies for rowSet-only operators
-                                try (final TrackingMutableRowSet shiftedSameSlotModifiesPost =
+                                try (final MutableRowSet shiftedSameSlotModifiesPost =
                                         upstream.modified.minus(unshiftedSameSlotModifies)) {
                                     if (keysModified) {
                                         shiftedSameSlotModifiesPost.remove(split.keyChangeIndicesPostShift);
@@ -536,7 +536,7 @@ public class ChunkedOperatorAggregationHelper {
                     }
                 }
             } else if (processShifts) {
-                try (final TrackingMutableRowSet postShiftRowSet = upstreamIndex.minus(upstream.added)) {
+                try (final RowSet postShiftRowSet = upstreamIndex.minus(upstream.added)) {
                     doShifts(postShiftRowSet);
                 }
             }
@@ -551,7 +551,7 @@ public class ChunkedOperatorAggregationHelper {
                 downstream.added = reincarnatedStatesBuilder.build();
                 downstream.removed = emptiedStatesBuilder.build();
 
-                try (final TrackingMutableRowSet addedBack = downstream.added.intersect(downstream.removed)) {
+                try (final RowSet addedBack = downstream.added.intersect(downstream.removed)) {
                     downstream.added.remove(addedBack);
                     downstream.removed.remove(addedBack);
 
@@ -1160,8 +1160,8 @@ public class ChunkedOperatorAggregationHelper {
     private static void processUpstreamShifts(Update upstream, RowSet useIndex,
             WritableLongChunk<OrderedRowKeys> preKeyIndices, WritableLongChunk<OrderedRowKeys> postKeyIndices,
             Runnable applyChunkedShift) {
-        TrackingMutableRowSet.SearchIterator postOkForward = null;
-        TrackingMutableRowSet.SearchIterator postOkReverse = null;
+        RowSet.SearchIterator postOkForward = null;
+        RowSet.SearchIterator postOkReverse = null;
 
         boolean lastPolarityReversed = false; // the initial value doesn't matter, because we'll just have a noop apply
                                               // in the worst case
@@ -1368,8 +1368,8 @@ public class ChunkedOperatorAggregationHelper {
     @NotNull
     private static QueryTable staticGroupedAggregation(QueryTable withView, String keyName, ColumnSource<?> keySource,
             AggregationContext ac) {
-        final Pair<ArrayBackedColumnSource, ObjectArraySource<TrackingMutableRowSet>> groupKeyIndexTable;
-        final Map<Object, TrackingMutableRowSet> grouping = withView.getRowSet().getGrouping(keySource);
+        final Pair<ArrayBackedColumnSource, ObjectArraySource<RowSet>> groupKeyIndexTable;
+        final Map<Object, RowSet> grouping = withView.getRowSet().getGrouping(keySource);
         // noinspection unchecked
         groupKeyIndexTable = AbstractColumnSource.groupingToFlatSources((ColumnSource) keySource, grouping);
         final int responsiveGroups = grouping.size();
@@ -1390,7 +1390,7 @@ public class ChunkedOperatorAggregationHelper {
     }
 
     private static void doGroupedAddition(AggregationContext ac,
-                                          Pair<ArrayBackedColumnSource, ObjectArraySource<TrackingMutableRowSet>> groupKeyIndexTable, int responsiveGroups) {
+                                          Pair<ArrayBackedColumnSource, ObjectArraySource<RowSet>> groupKeyIndexTable, int responsiveGroups) {
         final boolean indicesRequired = ac.requiresIndices();
 
         final ColumnSource.GetContext[] getContexts = new ColumnSource.GetContext[ac.size()];
@@ -1407,14 +1407,14 @@ public class ChunkedOperatorAggregationHelper {
             final boolean unchunked = !ac.requiresInputs() && ac.unchunkedIndices();
             if (unchunked) {
                 for (int ii = 0; ii < responsiveGroups; ++ii) {
-                    final TrackingMutableRowSet rowSet = groupKeyIndexTable.second.get(ii);
+                    final RowSet rowSet = groupKeyIndexTable.second.get(ii);
                     for (int oi = 0; oi < ac.size(); ++oi) {
                         ac.operators[oi].addIndex(operatorContexts[oi], rowSet, ii);
                     }
                 }
             } else {
                 for (int ii = 0; ii < responsiveGroups; ++ii) {
-                    final TrackingMutableRowSet rowSet = groupKeyIndexTable.second.get(ii);
+                    final RowSet rowSet = groupKeyIndexTable.second.get(ii);
                     // noinspection ConstantConditions
                     try (final RowSequence.Iterator rsIt = rowSet.getRowSequenceIterator()) {
                         // noinspection unchecked
@@ -1466,7 +1466,7 @@ public class ChunkedOperatorAggregationHelper {
             buildSources = reinterpretedKeySources;
         }
 
-        final TrackingMutableRowSet rowSet = usePrev ? withView.getRowSet().getPrevRowSet() : withView.getRowSet();
+        final RowSet rowSet = usePrev ? withView.getRowSet().getPrevRowSet() : withView.getRowSet();
 
         if (rowSet.isEmpty()) {
             return;
@@ -1529,8 +1529,8 @@ public class ChunkedOperatorAggregationHelper {
             IncrementalChunkedOperatorAggregationStateManager stateManager,
             MutableInt outputPosition,
             boolean usePrev) {
-        final Pair<ArrayBackedColumnSource, ObjectArraySource<TrackingMutableRowSet>> groupKeyIndexTable;
-        final Map<Object, TrackingMutableRowSet> grouping = usePrev ? withView.getRowSet().getPrevGrouping(reinterpretedKeySources[0])
+        final Pair<ArrayBackedColumnSource, ObjectArraySource<RowSet>> groupKeyIndexTable;
+        final Map<Object, RowSet> grouping = usePrev ? withView.getRowSet().getPrevGrouping(reinterpretedKeySources[0])
                 : withView.getRowSet().getGrouping(reinterpretedKeySources[0]);
         // noinspection unchecked
         groupKeyIndexTable =
@@ -1619,7 +1619,7 @@ public class ChunkedOperatorAggregationHelper {
         // to use allColumns as the modified columns parameter
         final IterativeChunkedAggregationOperator.SingletonContext[] opContexts =
                 new IterativeChunkedAggregationOperator.SingletonContext[ac.size()];
-        final TrackingMutableRowSet rowSet = usePrev ? table.getRowSet().getPrevRowSet() : table.getRowSet();
+        final RowSet rowSet = usePrev ? table.getRowSet().getPrevRowSet() : table.getRowSet();
         final int initialResultSize;
         try (final SafeCloseable ignored1 = new SafeCloseableArray<>(opContexts);
                 final SafeCloseable ignored2 = usePrev ? rowSet : null) {
@@ -1698,7 +1698,7 @@ public class ChunkedOperatorAggregationHelper {
                                                 // don't require indices
                                                 try (final RowSet shiftedModifiesPost =
                                                         upstream.modified.minus(unshiftedModifies);
-                                                        final TrackingMutableRowSet shiftedModifiesPre = shiftedModifiesPost.clone()) {
+                                                        final MutableRowSet shiftedModifiesPre = shiftedModifiesPost.clone()) {
                                                     upstream.shifted.unapply(shiftedModifiesPre);
                                                     doNoKeyModifications(shiftedModifiesPre, shiftedModifiesPost, ac,
                                                             opContexts, true,
@@ -1932,7 +1932,7 @@ public class ChunkedOperatorAggregationHelper {
         final ColumnSource.GetContext[] getContexts = new ColumnSource.GetContext[ac.size()];
         final ColumnSource.GetContext[] postGetContexts = new ColumnSource.GetContext[ac.size()];
 
-        try (final TrackingMutableRowSet useRowSet = source.getRowSet().minus(upstream.added)) {
+        try (final RowSet useRowSet = source.getRowSet().minus(upstream.added)) {
             if (useRowSet.isEmpty()) {
                 return;
             }

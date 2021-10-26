@@ -109,7 +109,7 @@ public class SingleRangeRowSequence extends RowSequenceAsChunkImpl implements Si
         @Override
         public long peekNextKey() {
             if (sizeLeft <= 0) {
-                return TrackingMutableRowSet.NULL_ROW_KEY;
+                return RowSet.NULL_ROW_KEY;
             }
             if (currEnd == -1) {
                 return currStart;

@@ -23,7 +23,7 @@ import java.util.zip.CRC32;
 @Measurement(iterations = 3, time = 12)
 @Fork(value = 1)
 public class RowSequenceBench {
-    private TrackingMutableRowSet ix = null;
+    private RowSet ix = null;
     private static final int chunkSz = 1024;
     private WritableLongChunk<Attributes.OrderedRowKeys> indicesChunk = null;
     private WritableLongChunk<OrderedRowKeyRanges> rangesChunk = null;
@@ -89,7 +89,7 @@ public class RowSequenceBench {
     @Benchmark
     public void b01_IndexIterator(final Blackhole bh) {
         final CRC32 crc32 = new CRC32();
-        final TrackingMutableRowSet.Iterator it = ix.iterator();
+        final RowSet.Iterator it = ix.iterator();
         while (it.hasNext()) {
             updateCrc32(crc32, it.nextLong());
         }
@@ -143,7 +143,7 @@ public class RowSequenceBench {
     @Benchmark
     public void b05_IndexRangeIterator(final Blackhole bh) {
         final CRC32 crc32 = new CRC32();
-        final TrackingMutableRowSet.RangeIterator it = ix.rangeIterator();
+        final RowSet.RangeIterator it = ix.rangeIterator();
         while (it.hasNext()) {
             it.next();
             final long s = it.currentRangeStart();

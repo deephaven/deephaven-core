@@ -12,8 +12,8 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.util.LongSizedDataStructure;
 import io.deephaven.engine.tables.dbarrays.*;
 import io.deephaven.engine.v2.sources.ColumnSource;
+import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.engine.v2.utils.RowSetBuilderRandom;
 import org.jetbrains.annotations.NotNull;
 
@@ -24,15 +24,15 @@ public class DbDoubleArrayColumnWrapper extends DbDoubleArray.Indirect {
     private static final long serialVersionUID = -2715269662143763674L;
 
     private final ColumnSource<Double> columnSource;
-    private final TrackingMutableRowSet rowSet;
+    private final RowSet rowSet;
     private final long startPadding;
     private final long endPadding;
 
-    public DbDoubleArrayColumnWrapper(@NotNull final ColumnSource<Double> columnSource, @NotNull final TrackingMutableRowSet rowSet){
+    public DbDoubleArrayColumnWrapper(@NotNull final ColumnSource<Double> columnSource, @NotNull final RowSet rowSet){
         this(columnSource, rowSet, 0, 0);
     }
 
-    public DbDoubleArrayColumnWrapper(@NotNull final ColumnSource<Double> columnSource, @NotNull final TrackingMutableRowSet rowSet,
+    public DbDoubleArrayColumnWrapper(@NotNull final ColumnSource<Double> columnSource, @NotNull final RowSet rowSet,
                                     final long startPadding, final long endPadding){
         Assert.neqNull(rowSet, "rowSet");
         this.columnSource = columnSource;

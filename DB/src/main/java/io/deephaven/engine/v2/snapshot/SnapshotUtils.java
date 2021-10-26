@@ -4,7 +4,7 @@ import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.WritableSource;
 import io.deephaven.engine.v2.sources.chunk.util.chunkfillers.ChunkFiller;
 import io.deephaven.engine.v2.utils.ChunkUtils;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
+import io.deephaven.engine.v2.utils.RowSet;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.LinkedHashMap;
@@ -39,7 +39,7 @@ public class SnapshotUtils {
      * @param destRowSet The keys in destColumns we want to write to
      */
     public static void copyStampColumns(@NotNull Map<String, ? extends ColumnSource<?>> stampColumns, long stampKey,
-            @NotNull Map<String, ? extends WritableSource<?>> destColumns, @NotNull TrackingMutableRowSet destRowSet) {
+            @NotNull Map<String, ? extends WritableSource<?>> destColumns, @NotNull RowSet destRowSet) {
         for (Map.Entry<String, ? extends ColumnSource<?>> entry : stampColumns.entrySet()) {
             final String name = entry.getKey();
             final ColumnSource<?> src = entry.getValue();
@@ -85,8 +85,8 @@ public class SnapshotUtils {
      * @param destRowSet The keys in destColumns we want to write to
      */
     public static void copyDataColumns(@NotNull Map<String, ? extends ColumnSource<?>> srcColumns,
-                                       @NotNull TrackingMutableRowSet srcRowSet, @NotNull Map<String, ? extends WritableSource<?>> destColumns,
-                                       @NotNull TrackingMutableRowSet destRowSet,
+                                       @NotNull RowSet srcRowSet, @NotNull Map<String, ? extends WritableSource<?>> destColumns,
+                                       @NotNull RowSet destRowSet,
                                        boolean usePrev) {
         assert srcRowSet.size() == destRowSet.size();
         if (srcRowSet.isEmpty()) {

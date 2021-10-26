@@ -1,10 +1,7 @@
 package io.deephaven.engine.v2;
 
 import io.deephaven.engine.v2.sources.LogicalClock;
-import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
-import io.deephaven.engine.v2.utils.RowSetShiftData;
-import io.deephaven.engine.v2.utils.RowSetShiftDataExpander;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
+import io.deephaven.engine.v2.utils.*;
 
 /**
  * A listener recorder stores references to added, removed, modified, and shifted indices; and then notifies a
@@ -67,7 +64,7 @@ public class ListenerRecorder extends BaseTable.ListenerImpl {
         return recordedVariablesAreValid() ? update.added : RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
     }
 
-    public TrackingMutableRowSet getRemoved() {
+    public RowSet getRemoved() {
         return recordedVariablesAreValid() ? update.removed : RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
     }
 
@@ -75,7 +72,7 @@ public class ListenerRecorder extends BaseTable.ListenerImpl {
         return recordedVariablesAreValid() ? update.modified : RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
     }
 
-    public TrackingMutableRowSet getModifiedPreShift() {
+    public RowSet getModifiedPreShift() {
         return recordedVariablesAreValid() ? update.getModifiedPreShift() : RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
     }
 

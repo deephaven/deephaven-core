@@ -15,9 +15,7 @@ import io.deephaven.engine.tables.utils.DBDateTime;
 import io.deephaven.engine.v2.DynamicNode;
 import io.deephaven.engine.v2.QueryTable;
 import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.utils.RowSetBuilderRandom;
-import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
+import io.deephaven.engine.v2.utils.*;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -57,7 +55,7 @@ public abstract class ClockFilter extends SelectFilterLivenessArtifactImpl imple
     }
 
     @Override
-    public final TrackingMutableRowSet filter(@NotNull final TrackingMutableRowSet selection, @NotNull final TrackingMutableRowSet fullSet, @NotNull final Table table,
+    public final TrackingMutableRowSet filter(@NotNull final TrackingMutableRowSet selection, @NotNull final RowSet fullSet, @NotNull final Table table,
                                               boolean usePrev) {
         if (usePrev) {
             throw new PreviousFilteringNotSupported();
@@ -79,13 +77,13 @@ public abstract class ClockFilter extends SelectFilterLivenessArtifactImpl imple
                 : table.view(columnName + " = isNull(" + columnName + ") ? NULL_LONG : " + columnName + ".getNanos()")
                         .getColumnSource(columnName);
 
-        final TrackingMutableRowSet initial = initializeAndGetInitialIndex(selection, fullSet, table);
+        final RowSet initial = initializeAndGetInitialIndex(selection, fullSet, table);
         return initial == null ? RowSetFactoryImpl.INSTANCE.getEmptyRowSet() : initial;
     }
 
     protected abstract @Nullable
-    TrackingMutableRowSet initializeAndGetInitialIndex(@NotNull final TrackingMutableRowSet selection,
-                                                       @NotNull final TrackingMutableRowSet fullSet, @NotNull final Table table);
+    RowSet initializeAndGetInitialIndex(@NotNull final RowSet selection,
+                                        @NotNull final RowSet fullSet, @NotNull final Table table);
 
     @Override
     public final boolean isSimpleFilter() {
@@ -116,7 +114,7 @@ public abstract class ClockFilter extends SelectFilterLivenessArtifactImpl imple
 
     @Override
     public final void refresh() {
-        final TrackingMutableRowSet added = updateAndGetAddedIndex();
+        final RowSet added = updateAndGetAddedIndex();
         if (added != null && !added.isEmpty()) {
             resultTable.getRowSet().insert(added);
             resultTable.notifyListeners(added, RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), RowSetFactoryImpl.INSTANCE.getEmptyRowSet());
@@ -124,7 +122,7 @@ public abstract class ClockFilter extends SelectFilterLivenessArtifactImpl imple
     }
 
     protected abstract @Nullable
-    TrackingMutableRowSet updateAndGetAddedIndex();
+    RowSet updateAndGetAddedIndex();
 
     boolean isLive() {
         return live;

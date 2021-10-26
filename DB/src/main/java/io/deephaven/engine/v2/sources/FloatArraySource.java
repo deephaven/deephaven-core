@@ -15,8 +15,8 @@ import io.deephaven.engine.v2.sources.chunk.ResettableWritableChunk;
 import io.deephaven.engine.v2.sources.chunk.WritableFloatChunk;
 import io.deephaven.engine.v2.sources.chunk.WritableChunk;
 import io.deephaven.engine.v2.sources.chunk.LongChunk;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.engine.structures.RowSequence;
+import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.util.SoftRecycler;
 import org.jetbrains.annotations.NotNull;
 
@@ -298,7 +298,7 @@ public class FloatArraySource extends ArraySourceHelper<Float, float[]> implemen
         final int sz = indices.size();
         for (int ii = 0; ii < sz; ++ii) {
             final long fromIndex = indices.get(ii);
-            if (fromIndex == TrackingMutableRowSet.NULL_ROW_KEY) {
+            if (fromIndex == RowSet.NULL_ROW_KEY) {
                 dest.set(ii, NULL_FLOAT);
                 continue;
             }
@@ -319,7 +319,7 @@ public class FloatArraySource extends ArraySourceHelper<Float, float[]> implemen
         final int sz = indices.size();
         for (int ii = 0; ii < sz; ++ii) {
             final long fromIndex = indices.get(ii);
-            if (fromIndex == TrackingMutableRowSet.NULL_ROW_KEY) {
+            if (fromIndex == RowSet.NULL_ROW_KEY) {
                 dest.set(ii, NULL_FLOAT);
                 continue;
             }

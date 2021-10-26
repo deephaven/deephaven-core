@@ -1,5 +1,7 @@
 package io.deephaven.clientsupport.plotdownsampling;
 
+import io.deephaven.engine.v2.utils.MutableRowSet;
+import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.engine.v2.utils.RowSetShiftData;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.v2.sources.BooleanArraySource;
@@ -7,7 +9,6 @@ import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.LongArraySource;
 import io.deephaven.engine.v2.sources.chunk.Attributes;
 import io.deephaven.engine.v2.sources.chunk.Chunk;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
@@ -107,7 +108,7 @@ public abstract class ValueTracker {
      * @param valuesChunk the chunk that we're currently examining
      * @param indexInChunk the rowSet in the chunk that we're currently examining
      */
-    public abstract void append(int offset, long rowIndex, Chunk<? extends Attributes.Values> valuesChunk, int indexInChunk, @Nullable TrackingMutableRowSet nulls);
+    public abstract void append(int offset, long rowIndex, Chunk<? extends Attributes.Values> valuesChunk, int indexInChunk, @Nullable MutableRowSet nulls);
 
     /**
      * Indicates that a row was removed from the original table being downsampled. If that rowSet was previously
@@ -150,7 +151,7 @@ public abstract class ValueTracker {
      * @param valuesChunk the chunk that we're currently examining
      * @param chunkIndex the rowSet in the chunk that we're currently examining
      */
-    public abstract void update(int offset, long rowIndex, Chunk<? extends Attributes.Values> valuesChunk, int chunkIndex, @Nullable TrackingMutableRowSet nulls);
+    public abstract void update(int offset, long rowIndex, Chunk<? extends Attributes.Values> valuesChunk, int chunkIndex, @Nullable MutableRowSet nulls);
 
     /**
      * Transforms the given BucketState.offset into the position in the array sources that represents the min value
@@ -205,7 +206,7 @@ public abstract class ValueTracker {
      * Scan the given chunk and confirm that whichever values are currently selected as max and min are correct, and
      * that the current data is now valid.
      */
-    public abstract void validate(int offset, long rowIndex, Chunk<? extends Attributes.Values> valuesChunk, int indexInChunk, @Nullable TrackingMutableRowSet nulls);
+    public abstract void validate(int offset, long rowIndex, Chunk<? extends Attributes.Values> valuesChunk, int indexInChunk, @Nullable RowSet nulls);
 
     public final void shiftMaxIndex(final int offset, final RowSetShiftData shiftData) {
         final long maxIndex = maxIndex(offset);

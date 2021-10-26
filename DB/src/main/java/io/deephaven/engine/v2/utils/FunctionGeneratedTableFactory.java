@@ -38,7 +38,7 @@ public class FunctionGeneratedTableFactory {
     private final Map<String, WritableSource<?>> writableSources = new LinkedHashMap<>();
     private final Map<String, ColumnSource<?>> columns = new LinkedHashMap<>();
 
-    TrackingMutableRowSet rowSet;
+    MutableRowSet rowSet;
 
     /**
      * Create a table that refreshes based on the value of your function, automatically called every refreshIntervalMs.
@@ -114,14 +114,14 @@ public class FunctionGeneratedTableFactory {
     private void copyTable(Table source) {
         Map<String, ? extends ColumnSource<?>> sourceColumns = source.getColumnSourceMap();
 
-        TrackingMutableRowSet sourceRowSet = source.getRowSet();
+        RowSet sourceRowSet = source.getRowSet();
 
         for (Map.Entry<String, ? extends ColumnSource<?>> entry : sourceColumns.entrySet()) {
             WritableSource<?> destColumn = writableSources.get(entry.getKey());
             destColumn.ensureCapacity(sourceRowSet.size());
 
             long position = 0;
-            for (TrackingMutableRowSet.Iterator sourceIt = sourceRowSet.iterator(); sourceIt.hasNext();) {
+            for (RowSet.Iterator sourceIt = sourceRowSet.iterator(); sourceIt.hasNext();) {
                 long current = sourceIt.nextLong();
                 // noinspection unchecked
                 destColumn.copy((ColumnSource) entry.getValue(), current, position++);
@@ -131,7 +131,7 @@ public class FunctionGeneratedTableFactory {
     }
 
     private class FunctionBackedTable extends QueryTable implements LiveTable {
-        FunctionBackedTable(TrackingMutableRowSet rowSet, Map<String, ColumnSource<?>> columns) {
+        FunctionBackedTable(RowSet rowSet, Map<String, ColumnSource<?>> columns) {
             super(rowSet, columns);
             if (refreshIntervalMs >= 0) {
                 setRefreshing(true);
@@ -157,22 +157,22 @@ public class FunctionGeneratedTableFactory {
             long newSize = updateTable();
 
             if (newSize < size) {
-                final TrackingMutableRowSet removed = RowSetFactoryImpl.INSTANCE.getRowSetByRange(newSize, size - 1);
+                final RowSet removed = RowSetFactoryImpl.INSTANCE.getRowSetByRange(newSize, size - 1);
                 rowSet.remove(removed);
-                final TrackingMutableRowSet modified = rowSet.clone();
+                final RowSet modified = rowSet.clone();
                 notifyListeners(RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), removed, modified);
                 return;
             }
             if (newSize > size) {
-                final TrackingMutableRowSet added = RowSetFactoryImpl.INSTANCE.getRowSetByRange(size, newSize - 1);
-                final TrackingMutableRowSet modified = rowSet.clone();
+                final RowSet added = RowSetFactoryImpl.INSTANCE.getRowSetByRange(size, newSize - 1);
+                final RowSet modified = rowSet.clone();
                 rowSet.insert(added);
                 notifyListeners(added, RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), modified);
                 return;
             }
             if (size > 0) {
                 // no size change, just modified
-                final TrackingMutableRowSet modified = rowSet.clone();
+                final RowSet modified = rowSet.clone();
                 notifyListeners(RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), modified);
             }
         }

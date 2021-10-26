@@ -144,8 +144,8 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
          * @param subscribedColumns are the columns subscribed for this view
          * @return a MessageView filtered by the subscription properties that can be sent to that subscriber
          */
-        MessageView getSubView(Options options, boolean isInitialSnapshot, @Nullable TrackingMutableRowSet viewport,
-                               @Nullable TrackingMutableRowSet keyspaceViewport, BitSet subscribedColumns);
+        MessageView getSubView(Options options, boolean isInitialSnapshot, @Nullable RowSet viewport,
+                               @Nullable RowSet keyspaceViewport, BitSet subscribedColumns);
     }
 
     /**
@@ -279,14 +279,14 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
         private final long step;
         private final long deltaColumnOffset;
         private final Listener.Update update;
-        private final TrackingMutableRowSet recordedAdds;
-        private final TrackingMutableRowSet recordedMods;
+        private final RowSet recordedAdds;
+        private final RowSet recordedMods;
         private final BitSet subscribedColumns;
         private final BitSet modifiedColumns;
 
         private Delta(final long step, final long deltaColumnOffset,
                       final Listener.Update update,
-                      final TrackingMutableRowSet recordedAdds, final TrackingMutableRowSet recordedMods,
+                      final RowSet recordedAdds, final RowSet recordedMods,
                       final BitSet subscribedColumns, final BitSet modifiedColumns) {
             this.step = step;
             this.deltaColumnOffset = deltaColumnOffset;
@@ -311,8 +311,8 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
      * Subscription updates accumulate in pendingSubscriptions until the next time our update propagation job runs. See
      * notes on {@link Subscription} for details of the subscription life cycle.
      */
-    private TrackingMutableRowSet activeViewport = null;
-    private TrackingMutableRowSet postSnapshotViewport = null;
+    private RowSet activeViewport = null;
+    private RowSet postSnapshotViewport = null;
     private final BitSet activeColumns = new BitSet();
     private final BitSet postSnapshotColumns = new BitSet();
     private final BitSet objectColumnsToClear = new BitSet();
@@ -364,7 +364,7 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
     }
 
     @VisibleForTesting
-    public TrackingMutableRowSet getIndex() {
+    public RowSet getIndex() {
         return parent.getRowSet();
     }
 
@@ -408,22 +408,22 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
         final StreamObserver<MessageView> listener;
         final String logPrefix;
 
-        TrackingMutableRowSet viewport; // active viewport
+        RowSet viewport; // active viewport
         BitSet subscribedColumns; // active subscription columns
 
         boolean isActive = false; // is this subscription in our active list?
         boolean pendingDelete = false; // is this subscription deleted as far as the client is concerned?
         boolean hasPendingUpdate = false; // is this subscription in our pending list?
         boolean pendingInitialSnapshot = true; // do we need to send the initial snapshot?
-        TrackingMutableRowSet pendingViewport; // if an update is pending this is our new viewport
+        RowSet pendingViewport; // if an update is pending this is our new viewport
         BitSet pendingColumns; // if an update is pending this is our new column subscription set
-        TrackingMutableRowSet snapshotViewport = null; // captured viewport during snapshot portion of propagation job
+        RowSet snapshotViewport = null; // captured viewport during snapshot portion of propagation job
         BitSet snapshotColumns = null; // captured column during snapshot portion of propagation job
 
         private Subscription(final StreamObserver<MessageView> listener,
                 final Options options,
                 final BitSet subscribedColumns,
-                final @Nullable TrackingMutableRowSet initialViewport) {
+                final @Nullable RowSet initialViewport) {
             this.options = options;
             this.listener = listener;
             this.logPrefix = "Sub{" + Integer.toHexString(System.identityHashCode(listener)) + "}: ";
@@ -441,7 +441,7 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
     public boolean addSubscription(final StreamObserver<MessageView> listener,
             final Options options,
             final @Nullable BitSet columnsToSubscribe,
-            final @Nullable TrackingMutableRowSet initialViewport) {
+            final @Nullable RowSet initialViewport) {
         synchronized (this) {
             final boolean hasSubscription = activeSubscriptions.stream().anyMatch(item -> item.listener == listener)
                     || pendingSubscriptions.stream().anyMatch(item -> item.listener == listener);
@@ -513,7 +513,7 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
     }
 
     public boolean updateViewport(final StreamObserver<MessageView> listener,
-            final TrackingMutableRowSet newViewport) {
+            final RowSet newViewport) {
         return findAndUpdateSubscription(listener, sub -> {
             if (sub.pendingViewport != null) {
                 sub.pendingViewport.close();
@@ -528,7 +528,7 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
     }
 
     public boolean updateViewportAndColumns(final StreamObserver<MessageView> listener,
-                                            final TrackingMutableRowSet newViewport, final BitSet columnsToSubscribe) {
+                                            final RowSet newViewport, final BitSet columnsToSubscribe) {
         return findAndUpdateSubscription(listener, sub -> {
             if (sub.pendingViewport != null) {
                 sub.pendingViewport.close();
@@ -583,7 +583,7 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
                 // mark when the last indices are from, so that terminal notifications can make use of them if required
                 lastIndexClockStep = LogicalClock.DEFAULT.currentStep();
                 if (DEBUG) {
-                    try (final TrackingMutableRowSet prevRowSet = parent.getRowSet().getPrevRowSet()) {
+                    try (final RowSet prevRowSet = parent.getRowSet().getPrevRowSet()) {
                         log.info().append(logPrefix)
                                 .append("lastIndexClockStep=").append(lastIndexClockStep)
                                 .append(", upstream=").append(upstream).append(", shouldEnqueueDelta=")
@@ -641,14 +641,14 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
         Assert.holdsLock(this, "enqueueUpdate must hold lock!");
 
         final TrackingMutableRowSet addsToRecord;
-        final TrackingMutableRowSet modsToRecord;
-        final TrackingMutableRowSet rowSet = parent.getRowSet();
+        final RowSet modsToRecord;
+        final TrackingRowSet rowSet = parent.getRowSet();
 
         if (numFullSubscriptions > 0) {
             addsToRecord = upstream.added.clone();
             modsToRecord = upstream.modified.clone();
         } else if (activeViewport != null) {
-            try (final TrackingMutableRowSet deltaViewport = rowSet.subSetForPositions(activeViewport)) {
+            try (final RowSet deltaViewport = rowSet.subSetForPositions(activeViewport)) {
                 addsToRecord = deltaViewport.intersect(upstream.added);
                 modsToRecord = deltaViewport.intersect(upstream.modified);
             }
@@ -666,7 +666,7 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
                 && rowSet.sizePrev() > 0) {
             final RowSetBuilderRandom scopedViewBuilder = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
 
-            try (final TrackingMutableRowSet prevRowSet = rowSet.getPrevRowSet()) {
+            try (final RowSet prevRowSet = rowSet.getPrevRowSet()) {
                 for (final Subscription sub : activeSubscriptions) {
                     if (!sub.isViewport() || sub.pendingDelete) {
                         continue;
@@ -701,7 +701,7 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
                 }
             }
 
-            try (final TrackingMutableRowSet scoped = scopedViewBuilder.build()) {
+            try (final MutableRowSet scoped = scopedViewBuilder.build()) {
                 upstream.shifted.apply(scoped); // we built scoped rows in prev-keyspace
                 scoped.retain(rowSet); // we only record valid rows
                 addsToRecord.insert(scoped);
@@ -749,7 +749,7 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
                             deltaColumns[columnIndex], sharedContext, deltaChunkSize);
                 }
 
-                final BiConsumer<TrackingMutableRowSet, BitSet> recordRows = (keysToAdd, columnsToRecord) -> {
+                final BiConsumer<RowSet, BitSet> recordRows = (keysToAdd, columnsToRecord) -> {
                     try (final RowSequence.Iterator rsIt = keysToAdd.getRowSequenceIterator()) {
                         while (rsIt.hasMore()) {
                             final RowSequence srcKeys = rsIt.getNextRowSequenceWithLength(DELTA_CHUNK_SIZE); // NB: This
@@ -981,13 +981,13 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
         }
 
         BarrageMessage preSnapshot = null;
-        TrackingMutableRowSet preSnapRowSet = null;
+        RowSet preSnapRowSet = null;
         BarrageMessage snapshot = null;
         BarrageMessage postSnapshot = null;
 
         // then we spend the effort to take a snapshot
         if (needsSnapshot) {
-            try (final TrackingMutableRowSet snapshotRowSet = snapshotRows.build()) {
+            try (final RowSet snapshotRowSet = snapshotRows.build()) {
                 snapshot = getSnapshot(updatedSubscriptions, snapshotColumns, needsFullSnapshot ? null : snapshotRowSet);
             }
         }
@@ -1086,7 +1086,7 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
         }
     }
 
-    private void propagateToSubscribers(final BarrageMessage message, final TrackingMutableRowSet propRowSetForMessage) {
+    private void propagateToSubscribers(final BarrageMessage message, final RowSet propRowSetForMessage) {
         // message is released via transfer to stream generator (as it must live until all view's are closed)
         try (final StreamGenerator<Options, MessageView> generator = streamGeneratorFactory.newGenerator(message)) {
             for (final Subscription subscription : activeSubscriptions) {
@@ -1100,12 +1100,12 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
                 // recognize the subscription change
                 // - post-snapshot: now we use the viewport/subscribedColumn values (these are the values the LTM
                 // listener uses)
-                final TrackingMutableRowSet vp =
+                final RowSet vp =
                         subscription.snapshotViewport != null ? subscription.snapshotViewport : subscription.viewport;
                 final BitSet cols = subscription.snapshotColumns != null ? subscription.snapshotColumns
                         : subscription.subscribedColumns;
 
-                try (final TrackingMutableRowSet clientView =
+                try (final RowSet clientView =
                         subscription.isViewport() ? propRowSetForMessage.subSetForPositions(vp) : null) {
                     subscription.listener
                             .onNext(generator.getSubView(subscription.options, false, vp, clientView, cols));
@@ -1145,7 +1145,7 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
 
         if (subscription.snapshotViewport != null) {
             needsSnapshot = true;
-            try (final TrackingMutableRowSet ignored = subscription.snapshotViewport) {
+            try (final RowSet ignored = subscription.snapshotViewport) {
                 subscription.snapshotViewport = null;
             }
         }
@@ -1162,7 +1162,7 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
             }
 
             final boolean isViewport = subscription.viewport != null;
-            try (final TrackingMutableRowSet keySpaceViewport =
+            try (final RowSet keySpaceViewport =
                     isViewport ? snapshotGenerator.getMessage().rowsAdded.subSetForPositions(subscription.viewport) : null) {
                 if (subscription.pendingInitialSnapshot) {
                     // Send schema metadata to this new client.
@@ -1198,7 +1198,7 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
 
         if (singleDelta) {
             // We can use this update directly with minimal effort.
-            final TrackingMutableRowSet localAdded;
+            final RowSet localAdded;
             if (firstDelta.recordedAdds.isEmpty()) {
                 localAdded = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
             } else {
@@ -1206,7 +1206,7 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
                         firstDelta.deltaColumnOffset,
                         firstDelta.deltaColumnOffset + firstDelta.recordedAdds.size() - 1);
             }
-            final TrackingMutableRowSet localModified;
+            final RowSet localModified;
             if (firstDelta.recordedMods.isEmpty()) {
                 localModified = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
             } else {
@@ -1316,8 +1316,8 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
             // output rows to input data may be different per Column. We can re-use calculations where the set of deltas
             // that modify column A are the same as column B.
             final class ColumnInfo {
-                final TrackingMutableRowSet modified = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
-                final TrackingMutableRowSet recordedMods = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+                final MutableRowSet modified = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+                final MutableRowSet recordedMods = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
                 long[] addedMapping;
                 long[] modifiedMapping;
             }
@@ -1354,16 +1354,16 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
 
                 retval.addedMapping = new long[localAdded.intSize()];
                 retval.modifiedMapping = new long[retval.recordedMods.intSize()];
-                Arrays.fill(retval.addedMapping, TrackingMutableRowSet.NULL_ROW_KEY);
-                Arrays.fill(retval.modifiedMapping, TrackingMutableRowSet.NULL_ROW_KEY);
+                Arrays.fill(retval.addedMapping, RowSet.NULL_ROW_KEY);
+                Arrays.fill(retval.modifiedMapping, RowSet.NULL_ROW_KEY);
 
-                final TrackingMutableRowSet unfilledAdds = localAdded.isEmpty() ? RowSetFactoryImpl.INSTANCE.getEmptyRowSet()
+                final MutableRowSet unfilledAdds = localAdded.isEmpty() ? RowSetFactoryImpl.INSTANCE.getEmptyRowSet()
                         : RowSetFactoryImpl.INSTANCE.getRowSetByRange(0, retval.addedMapping.length - 1);
-                final TrackingMutableRowSet unfilledMods = retval.recordedMods.isEmpty() ? RowSetFactoryImpl.INSTANCE.getEmptyRowSet()
+                final MutableRowSet unfilledMods = retval.recordedMods.isEmpty() ? RowSetFactoryImpl.INSTANCE.getEmptyRowSet()
                         : RowSetFactoryImpl.INSTANCE.getRowSetByRange(0, retval.modifiedMapping.length - 1);
 
-                final TrackingMutableRowSet addedRemaining = localAdded.clone();
-                final TrackingMutableRowSet modifiedRemaining = retval.recordedMods.clone();
+                final MutableRowSet addedRemaining = localAdded.clone();
+                final MutableRowSet modifiedRemaining = retval.recordedMods.clone();
                 for (int i = endDelta - 1; i >= startDelta; --i) {
                     if (addedRemaining.isEmpty() && modifiedRemaining.isEmpty()) {
                         break;
@@ -1372,12 +1372,12 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
                     final Delta delta = pendingDeltas.get(i);
 
                     final BiConsumer<Boolean, Boolean> applyMapping = (addedMapping, recordedAdds) -> {
-                        final TrackingMutableRowSet remaining = addedMapping ? addedRemaining : modifiedRemaining;
-                        final TrackingMutableRowSet deltaRecorded = recordedAdds ? delta.recordedAdds : delta.recordedMods;
-                        try (final TrackingMutableRowSet recorded = remaining.intersect(deltaRecorded);
+                        final MutableRowSet remaining = addedMapping ? addedRemaining : modifiedRemaining;
+                        final RowSet deltaRecorded = recordedAdds ? delta.recordedAdds : delta.recordedMods;
+                        try (final RowSet recorded = remaining.intersect(deltaRecorded);
                              final TrackingMutableRowSet sourceRows = deltaRecorded.invert(recorded);
-                             final TrackingMutableRowSet destinationsInPosSpace = remaining.invert(recorded);
-                             final TrackingMutableRowSet rowsToFill = (addedMapping ? unfilledAdds : unfilledMods)
+                             final RowSet destinationsInPosSpace = remaining.invert(recorded);
+                             final RowSet rowsToFill = (addedMapping ? unfilledAdds : unfilledMods)
                                         .subSetForPositions(destinationsInPosSpace)) {
                             sourceRows.shiftInPlace(
                                     delta.deltaColumnOffset + (recordedAdds ? 0 : delta.recordedAdds.size()));
@@ -1490,13 +1490,13 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
     }
 
     // Updates provided mapping so that mapping[i] returns values.get(i) for all i in keys.
-    private static void applyRedirMapping(final TrackingMutableRowSet keys, final TrackingMutableRowSet values, final long[] mapping) {
+    private static void applyRedirMapping(final RowSet keys, final RowSet values, final long[] mapping) {
         Assert.eq(keys.size(), "keys.size()", values.size(), "values.size()");
         Assert.leq(keys.size(), "keys.size()", mapping.length, "mapping.length");
-        final TrackingMutableRowSet.Iterator vit = values.iterator();
+        final RowSet.Iterator vit = values.iterator();
         keys.forAllLongs(lkey -> {
             final int key = LongSizedDataStructure.intSize("applyRedirMapping", lkey);
-            Assert.eq(mapping[key], "mapping[key]", TrackingMutableRowSet.NULL_ROW_KEY, "TrackingMutableRowSet.NULL_KEY");
+            Assert.eq(mapping[key], "mapping[key]", RowSet.NULL_ROW_KEY, "TrackingMutableRowSet.NULL_KEY");
             mapping[key] = vit.nextLong();
         });
     }
@@ -1504,7 +1504,7 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
     private void flipSnapshotStateForSubscriptions(final List<Subscription> subscriptions) {
         for (final Subscription subscription : subscriptions) {
             if (subscription.snapshotViewport != null) {
-                final TrackingMutableRowSet tmp = subscription.viewport;
+                final RowSet tmp = subscription.viewport;
                 subscription.viewport = subscription.snapshotViewport;
                 subscription.snapshotViewport = tmp;
             }
@@ -1603,7 +1603,7 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
     @VisibleForTesting
     BarrageMessage getSnapshot(final List<Subscription> snapshotSubscriptions,
             final BitSet columnsToSnapshot,
-            final TrackingMutableRowSet positionsToSnapshot) {
+            final RowSet positionsToSnapshot) {
         if (onGetSnapshot != null) {
             onGetSnapshot.run();
         }

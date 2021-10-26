@@ -6,8 +6,8 @@ package io.deephaven.engine.v2.ssa;
 import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 import io.deephaven.engine.v2.sources.chunk.sized.SizedLongChunk;
+import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.engine.v2.utils.RowSetBuilderRandom;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.engine.v2.utils.RedirectionIndex;
 
 /**
@@ -111,7 +111,7 @@ public class IntSsaSsaStamp implements SsaSsaStamp {
                             modifiedKeys.ensureCapacityPreserve(capacity).setSize(capacity);
                         }
                         modifiedKeys.get().set(mks++, leftKey);
-                        if (newRightStampKey == TrackingMutableRowSet.NULL_ROW_KEY) {
+                        if (newRightStampKey == RowSet.NULL_ROW_KEY) {
                             redirectionIndex.removeVoid(leftKey);
                         } else {
                             redirectionIndex.putVoid(leftKey, newRightStampKey);

@@ -6,9 +6,9 @@ import io.deephaven.engine.v2.sources.chunk.SharedContext;
 import io.deephaven.engine.v2.sources.chunk.WritableChunk;
 import io.deephaven.engine.v2.sources.chunk.WritableIntChunk;
 import io.deephaven.engine.v2.sources.chunk.WritableLongChunk;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.structures.rowsequence.RowSequenceUtil;
+import io.deephaven.engine.v2.utils.RowSet;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.jetbrains.annotations.NotNull;
@@ -402,14 +402,14 @@ public class BitShiftingColumnSource<T> extends AbstractColumnSource<T> implemen
 
                 currentRunLength.setValue(0);
                 currentRunPosition.setValue(0);
-                currentRunInnerIndexKey.setValue(TrackingMutableRowSet.NULL_ROW_KEY);
+                currentRunInnerIndexKey.setValue(RowSet.NULL_ROW_KEY);
 
                 rowSequence.forAllLongs((final long indexKey) -> {
                     final long lastInnerIndexKey = currentRunInnerIndexKey.longValue();
                     final long innerIndexKey =
                             usePrev ? shiftState.getPrevShifted(indexKey) : shiftState.getShifted(indexKey);
                     if (innerIndexKey != lastInnerIndexKey) {
-                        if (lastInnerIndexKey != TrackingMutableRowSet.NULL_ROW_KEY) {
+                        if (lastInnerIndexKey != RowSet.NULL_ROW_KEY) {
                             uniqueIndices.set(currentRunPosition.intValue(), lastInnerIndexKey);
                             runLengths.set(currentRunPosition.intValue(), currentRunLength.intValue());
                             currentRunPosition.increment();

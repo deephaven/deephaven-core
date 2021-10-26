@@ -8,10 +8,10 @@ import io.deephaven.engine.v2.sort.timsort.LongIntTimsortKernel;
 import io.deephaven.engine.v2.sources.chunk.Attributes.ChunkLengths;
 import io.deephaven.engine.v2.sources.chunk.Attributes.ChunkPositions;
 import io.deephaven.engine.v2.sources.chunk.*;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.v2.utils.RedirectionIndex;
 import io.deephaven.engine.structures.rowsequence.RowSequenceUtil;
+import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.util.type.TypeUtils;
 import org.jetbrains.annotations.NotNull;
 
@@ -567,7 +567,7 @@ public class ReadOnlyRedirectedColumnSource<T> extends AbstractColumnSource<T> i
                 compactedMappedKeys.setSize(uniqueKeyCount);
                 runLengths.setSize(uniqueKeyCount);
 
-                hasNulls = compactedMappedKeys.get(0) == TrackingMutableRowSet.NULL_ROW_KEY;
+                hasNulls = compactedMappedKeys.get(0) == RowSet.NULL_ROW_KEY;
                 final int keysToSkip = hasNulls ? 1 : 0;
                 innerRowSequence = RowSequenceUtil.wrapRowKeysChunkAsRowSequence(
                         LongChunk.downcast(nonNullCompactedMappedKeys.resetFromTypedChunk(compactedMappedKeys,

@@ -6,7 +6,7 @@ package io.deephaven.engine.v2.remote;
 
 import io.deephaven.engine.v2.Listener;
 import io.deephaven.engine.v2.ModifiedColumnSet;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
+import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.engine.v2.utils.RowSetShiftData;
 
 import java.io.Serializable;
@@ -19,18 +19,18 @@ public class DeltaUpdates implements Serializable, Cloneable {
     }
     public static class ColumnModifications implements Serializable {
         public int columnIndex;
-        public TrackingMutableRowSet modified;
-        public TrackingMutableRowSet rowsIncluded;
+        public RowSet modified;
+        public RowSet rowsIncluded;
         public Object serializedRows;
     }
 
     public long deltaSequence;
     public long firstStep;
     public long lastStep;
-    public TrackingMutableRowSet added;
-    public TrackingMutableRowSet removed;
+    public RowSet added;
+    public RowSet removed;
     public RowSetShiftData shifted;
-    public TrackingMutableRowSet includedAdditions;
+    public RowSet includedAdditions;
     public ColumnAdditions[] serializedAdditions;
     public ColumnModifications[] serializedModifications;
 
@@ -42,7 +42,7 @@ public class DeltaUpdates implements Serializable, Cloneable {
         }
     }
 
-    public Listener.Update asUpdate(TrackingMutableRowSet modified, ModifiedColumnSet mcs) {
+    public Listener.Update asUpdate(RowSet modified, ModifiedColumnSet mcs) {
         return new Listener.Update(added, removed, modified, shifted, mcs);
     }
 

@@ -74,10 +74,10 @@ public class SnapshotIncrementalListener extends MergedListener {
         lastRightRowSet.insert(rightTable.getRowSet());
         try (final RowSetShiftDataExpander expander =
                 new RowSetShiftDataExpander(rightUpdates.coalesce(), lastRightRowSet)) {
-            final TrackingMutableRowSet rightAdded = expander.getAdded();
-            final TrackingMutableRowSet rightModified = expander.getModified();
-            final TrackingMutableRowSet rightRemoved = expander.getRemoved();
-            final TrackingMutableRowSet rowsToCopy = rightAdded.union(rightModified);
+            final RowSet rightAdded = expander.getAdded();
+            final RowSet rightModified = expander.getModified();
+            final RowSet rightRemoved = expander.getRemoved();
+            final RowSet rowsToCopy = rightAdded.union(rightModified);
 
             doRowCopy(rowsToCopy);
 
@@ -86,13 +86,13 @@ public class SnapshotIncrementalListener extends MergedListener {
         }
     }
 
-    private void doRowCopy(TrackingMutableRowSet rowSet) {
+    private void doRowCopy(RowSet rowSet) {
         copyRowsToResult(rowSet, triggerTable, rightTable, leftColumns, resultColumns);
     }
 
-    public static void copyRowsToResult(TrackingMutableRowSet rowsToCopy, QueryTable triggerTable, QueryTable rightTable,
+    public static void copyRowsToResult(RowSet rowsToCopy, QueryTable triggerTable, QueryTable rightTable,
                                         Map<String, ? extends ColumnSource<?>> leftColumns, Map<String, SparseArrayColumnSource<?>> resultColumns) {
-        final TrackingMutableRowSet qtRowSet = triggerTable.getRowSet();
+        final RowSet qtRowSet = triggerTable.getRowSet();
         if (!qtRowSet.isEmpty()) {
             SnapshotUtils.copyStampColumns(leftColumns, qtRowSet.lastRowKey(), resultColumns, rowsToCopy);
         }

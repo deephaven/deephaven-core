@@ -8,7 +8,7 @@ import io.deephaven.base.testing.BaseCachedJMockTestCase;
 import io.deephaven.base.verify.RequirementFailure;
 import io.deephaven.engine.v2.locations.GroupingProvider;
 import io.deephaven.engine.v2.sources.chunk.Attributes;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
+import io.deephaven.engine.v2.utils.RowSet;
 import junit.framework.TestCase;
 import org.junit.After;
 import org.junit.Before;
@@ -133,7 +133,7 @@ public abstract class TstRegionedColumnSourcePrimitive<DATA_TYPE, ATTR extends A
     public void testDeferredGrouping() {
         TestCase.assertNull(SUT.getGroupToRange());
 
-        final Map<DATA_TYPE, TrackingMutableRowSet> dummyGrouping = Collections.emptyMap();
+        final Map<DATA_TYPE, RowSet> dummyGrouping = Collections.emptyMap();
         SUT.setGroupToRange(dummyGrouping);
         TestCase.assertEquals(dummyGrouping, SUT.getGroupToRange());
         SUT.setGroupToRange(null);

@@ -11,6 +11,7 @@ import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.TableDefinition;
 import io.deephaven.engine.tables.select.MatchPair;
 import io.deephaven.engine.tables.utils.DBDateTime;
+import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.util.BooleanUtils;
 import io.deephaven.engine.util.ColumnFormattingValues;
@@ -19,7 +20,6 @@ import io.deephaven.engine.v2.HierarchicalTableInfo;
 import io.deephaven.engine.v2.RollupInfo;
 import io.deephaven.engine.v2.TableMap;
 import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 
 import java.lang.reflect.Array;
 import java.util.*;
@@ -89,7 +89,7 @@ class SnapshotState {
     // endregion
 
     interface Copier {
-        void copy(boolean usePrev, ColumnSource columnSource, TrackingMutableRowSet.Iterator it, Object target, int offset, Table table,
+        void copy(boolean usePrev, ColumnSource columnSource, RowSet.Iterator it, Object target, int offset, Table table,
                   TableMap tableMap, BitSet childPresenceColumn);
     }
 
@@ -181,7 +181,7 @@ class SnapshotState {
      * @param usePrev if the snapshot should use previous values.
      * @param snapshotRowSet An rowSet containing the rows to copy from the source table.
      */
-    void addToSnapshot(boolean usePrev, Table table, Object tableKey, TableMap tableMap, TrackingMutableRowSet snapshotRowSet) {
+    void addToSnapshot(boolean usePrev, Table table, Object tableKey, TableMap tableMap, RowSet snapshotRowSet) {
         Assert.leq(copied + snapshotRowSet.size(), "dataOffset + snapshotRowSet.size()", actualViewportSize,
                 "viewport size");
 
@@ -200,7 +200,7 @@ class SnapshotState {
     /**
      * Copy data directly from the table in question.
      */
-    private void addToSnapshotNormal(boolean usePrev, Table table, TableMap tableMap, TrackingMutableRowSet snapshotRowSet) {
+    private void addToSnapshotNormal(boolean usePrev, Table table, TableMap tableMap, RowSet snapshotRowSet) {
         for (int ii = 0; ii < data.size(); ii++) {
             if (!columns.get(ii)) {
                 continue;
@@ -216,7 +216,7 @@ class SnapshotState {
      * Copy the data from the table in question, assuming that the table is a constituent table. This means that we need
      * to copy the data to the alternate data set because column types may be reused or changed.
      */
-    private void addToSnapshotConstituent(boolean usePrev, Table table, TableMap tableMap, TrackingMutableRowSet snapshotRowSet) {
+    private void addToSnapshotConstituent(boolean usePrev, Table table, TableMap tableMap, RowSet snapshotRowSet) {
         includesLeafData = true;
         includedConstituentColumns.forEach(cn -> {
             final ColumnSource<?> cs = table.getColumnSource(cn);

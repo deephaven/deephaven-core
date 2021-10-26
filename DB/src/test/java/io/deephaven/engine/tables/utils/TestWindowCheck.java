@@ -5,7 +5,7 @@ import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.live.LiveTableMonitor;
 import io.deephaven.engine.v2.*;
 import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
+import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.engine.v2.utils.TimeProvider;
 import io.deephaven.engine.v2.utils.UpdatePerformanceTracker;
 import io.deephaven.test.junit4.EngineCleanup;
@@ -197,7 +197,7 @@ public class TestWindowCheck {
 
             final long now = timeProvider.now;
 
-            for (final TrackingMutableRowSet.Iterator it = windowed.first.getRowSet().iterator(); it.hasNext();) {
+            for (final RowSet.Iterator it = windowed.first.getRowSet().iterator(); it.hasNext();) {
                 final long key = it.nextLong();
                 final DBDateTime tableTime = timestamp.get(key);
 

@@ -15,7 +15,6 @@ import io.deephaven.engine.v2.sources.chunk.Attributes.ChunkLengths;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 import io.deephaven.engine.v2.ssa.SsaTestHelpers;
 import io.deephaven.engine.v2.utils.RowSet;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.engine.v2.utils.compact.CharCompactKernel;
 import io.deephaven.test.types.ParallelTest;
 import io.deephaven.util.SafeCloseable;
@@ -169,7 +168,7 @@ public class TestCharSegmentedSortedMultiset extends LiveTableTestCase {
 
             while (desc.advance(50)) {
                 LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-                    final TrackingMutableRowSet[] notify = GenerateTableUpdates.computeTableUpdates(desc.tableSize(), random, table, columnInfo, allowAddition, allowRemoval, false);
+                    final RowSet[] notify = GenerateTableUpdates.computeTableUpdates(desc.tableSize(), random, table, columnInfo, allowAddition, allowRemoval, false);
                     assertTrue(notify[2].isEmpty());
                     table.notifyListeners(notify[0], notify[1], notify[2]);
                 });

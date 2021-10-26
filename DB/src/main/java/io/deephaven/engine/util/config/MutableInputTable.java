@@ -4,7 +4,7 @@ import io.deephaven.engine.exceptions.ArgumentException;
 import io.deephaven.engine.tables.ColumnDefinition;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.TableDefinition;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
+import io.deephaven.engine.v2.utils.RowSet;
 
 import java.io.IOException;
 import java.util.List;
@@ -117,7 +117,7 @@ public interface MutableInputTable extends InputTableRowSetter, InputTableEnumGe
      * @throws IOException if a problem occurred while deleting the rows
      * @throws UnsupportedOperationException if this table does not support deletes
      */
-    default void delete(Table table, TrackingMutableRowSet rowSet) throws IOException {
+    default void delete(Table table, RowSet rowSet) throws IOException {
         throw new UnsupportedOperationException("Table does not support deletes");
     }
 

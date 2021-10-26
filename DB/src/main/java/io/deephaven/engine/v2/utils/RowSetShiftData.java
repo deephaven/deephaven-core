@@ -305,8 +305,8 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
             }
         }
 
-        try (final MutableRowSet remove = toRemove.build();
-                final MutableRowSet insert = toInsert.build()) {
+        try (final RowSet remove = toRemove.build();
+             final RowSet insert = toInsert.build()) {
             rowSet.remove(remove);
             rowSet.insert(insert);
         }
@@ -358,8 +358,8 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
             }
         }
 
-        try (final MutableRowSet remove = toRemove.build();
-                final MutableRowSet insert = toInsert.build()) {
+        try (final RowSet remove = toRemove.build();
+             final RowSet insert = toInsert.build()) {
             rowSet.remove(remove);
             rowSet.insert(insert);
         }
@@ -576,7 +576,7 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
      * @param rowSet the rowSet to test for intersections (pre-shift keyspace)
      * @return an RowSetShiftData containing only non-empty shifts
      */
-    public RowSetShiftData intersect(final TrackingMutableRowSet rowSet) {
+    public RowSetShiftData intersect(final RowSet rowSet) {
         final Builder builder = new Builder();
 
         for (int idx = 0; idx < size(); ++idx) {
@@ -1106,7 +1106,7 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
      * @return A SafeCloseablePair of preShiftedKeys and postShiftedKeys that intersect this RowSetShiftData with
      *         postShiftIndex.
      */
-    public SafeCloseablePair<MutableRowSet, MutableRowSet> extractParallelShiftedRowsFromPostShiftIndex(
+    public SafeCloseablePair<RowSet, RowSet> extractParallelShiftedRowsFromPostShiftIndex(
             final RowSet postShiftIndex) {
         if (empty()) {
             return SafeCloseablePair.of(RowSetFactoryImpl.INSTANCE.getEmptyRowSet(),
@@ -1133,7 +1133,7 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
             }
         }
 
-        final SafeCloseablePair<MutableRowSet, MutableRowSet> retVal =
+        final SafeCloseablePair<RowSet, RowSet> retVal =
                 SafeCloseablePair.of(preShiftBuilder.build(), postShiftBuilder.build());
         Assert.eq(retVal.first.size(), "retVal.first.size()", retVal.second.size(), "retVal.second.size()");
         return retVal;

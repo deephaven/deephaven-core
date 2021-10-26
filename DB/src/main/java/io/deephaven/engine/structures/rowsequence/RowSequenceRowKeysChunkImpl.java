@@ -61,7 +61,7 @@ public class RowSequenceRowKeysChunkImpl implements RowSequence {
 
         @Override
         public long peekNextKey() {
-            return hasMore() ? backingChunk.get(iteratorOffset) : TrackingMutableRowSet.NULL_ROW_KEY;
+            return hasMore() ? backingChunk.get(iteratorOffset) : RowSet.NULL_ROW_KEY;
         }
 
         @Override
@@ -176,13 +176,13 @@ public class RowSequenceRowKeysChunkImpl implements RowSequence {
 
     @Override
     public long firstRowKey() {
-        return backingChunk.size() > 0 ? backingChunk.get(0) : TrackingMutableRowSet.NULL_ROW_KEY;
+        return backingChunk.size() > 0 ? backingChunk.get(0) : RowSet.NULL_ROW_KEY;
     }
 
     @Override
     public long lastRowKey() {
         final int sz = backingChunk.size();
-        return sz > 0 ? backingChunk.get(sz - 1) : TrackingMutableRowSet.NULL_ROW_KEY;
+        return sz > 0 ? backingChunk.get(sz - 1) : RowSet.NULL_ROW_KEY;
     }
 
     @Override

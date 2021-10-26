@@ -142,7 +142,7 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
     }
 
     private class RemoteClient {
-        private TrackingMutableRowSet viewport;
+        private RowSet viewport;
         private BitSet subscribedColumns;
 
         private final String name;
@@ -162,13 +162,13 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
 
         // The replicated table's TableUpdateValidator will be confused if the table is a viewport. Instead we rely on
         // comparing the producer table to the consumer table to validate contents are correct.
-        RemoteClient(final TrackingMutableRowSet viewport, final BitSet subscribedColumns,
+        RemoteClient(final RowSet viewport, final BitSet subscribedColumns,
                      final BarrageMessageProducer<BarrageSubscriptionOptions, BarrageStreamGenerator.View> barrageMessageProducer,
                      final String name) {
             this(viewport, subscribedColumns, barrageMessageProducer, name, false);
         }
 
-        RemoteClient(final TrackingMutableRowSet viewport, final BitSet subscribedColumns,
+        RemoteClient(final RowSet viewport, final BitSet subscribedColumns,
                      final BarrageMessageProducer<BarrageSubscriptionOptions, BarrageStreamGenerator.View> barrageMessageProducer,
                      final String name, final boolean deferSubscription) {
             this.viewport = viewport;
@@ -221,10 +221,10 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
 
             QueryTable toCheck = barrageTable;
             if (viewport != null) {
-                try (final TrackingMutableRowSet view = expected.getRowSet().subSetForPositions(viewport)) {
+                try (final RowSet view = expected.getRowSet().subSetForPositions(viewport)) {
                     expected = expected.getSubTable(view);
                 }
-                try (final TrackingMutableRowSet view = toCheck.getRowSet().subSetForPositions(viewport)) {
+                try (final RowSet view = toCheck.getRowSet().subSetForPositions(viewport)) {
                     toCheck = toCheck.getSubTable(view);
                 }
             }
@@ -254,10 +254,10 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
         public void show(QueryTable expected) {
             QueryTable toCheck = barrageTable;
             if (viewport != null) {
-                try (final TrackingMutableRowSet view = expected.getRowSet().subSetForPositions(viewport)) {
+                try (final RowSet view = expected.getRowSet().subSetForPositions(viewport)) {
                     expected = expected.getSubTable(view);
                 }
-                try (final TrackingMutableRowSet view = toCheck.getRowSet().subSetForPositions(viewport)) {
+                try (final RowSet view = toCheck.getRowSet().subSetForPositions(viewport)) {
                     toCheck = toCheck.getSubTable(view);
                 }
             }
@@ -298,7 +298,7 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
             commandQueue.clear();
         }
 
-        public void setViewport(final TrackingMutableRowSet newViewport) {
+        public void setViewport(final RowSet newViewport) {
             viewport = newViewport;
             barrageMessageProducer.updateViewport(dummyObserver, viewport);
         }
@@ -308,7 +308,7 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
             barrageMessageProducer.updateSubscription(dummyObserver, newColumns);
         }
 
-        public void setViewportAndColumns(final TrackingMutableRowSet newViewport, final BitSet newColumns) {
+        public void setViewportAndColumns(final RowSet newViewport, final BitSet newColumns) {
             viewport = newViewport;
             subscribedColumns = newColumns;
             barrageMessageProducer.updateViewportAndColumns(dummyObserver, viewport, subscribedColumns);
@@ -363,7 +363,7 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
             }
         }
 
-        public RemoteClient newClient(final TrackingMutableRowSet viewport, final BitSet subscribedColumns, final String name) {
+        public RemoteClient newClient(final RowSet viewport, final BitSet subscribedColumns, final String name) {
             clients.add(new RemoteClient(viewport, subscribedColumns, barrageMessageProducer, name));
             return clients.get(clients.size() - 1);
         }
@@ -473,7 +473,7 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
             for (long nr = 1; nr < 20; nr += 2) {
                 swissIndexBuilder.appendRange(nr * rangeSize, (nr + 1) * rangeSize - 1);
             }
-            try (final TrackingMutableRowSet swissRowSet = swissIndexBuilder.build()) {
+            try (final RowSet swissRowSet = swissIndexBuilder.build()) {
                 final RemoteNugget nugget = new RemoteNugget(makeTable);
                 nugget.newClient(swissRowSet, subscribedColumns, "swiss viewport");
                 nuggets.add(nugget);
@@ -503,7 +503,7 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
             for (long nr = 1; nr < 20; nr += 2) {
                 swissIndexBuilder.appendRange(nr * rangeSize, (nr + 1) * rangeSize - 1);
             }
-            try (final TrackingMutableRowSet swissRowSet = swissIndexBuilder.build()) {
+            try (final RowSet swissRowSet = swissIndexBuilder.build()) {
                 nugget.newClient(swissRowSet, subscribedColumns, "swiss viewport");
             }
         }

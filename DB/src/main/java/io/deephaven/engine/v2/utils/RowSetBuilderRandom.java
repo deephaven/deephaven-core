@@ -59,7 +59,7 @@ public interface RowSetBuilderRandom {
 
     class Helper {
         private static void add(final RowSetBuilderRandom builder, final RowSet rowSet) {
-            final TrackingMutableRowSet.RangeIterator it = rowSet.rangeIterator();
+            final RowSet.RangeIterator it = rowSet.rangeIterator();
             while (it.hasNext()) {
                 final long start = it.next();
                 final long end = it.currentRangeEnd();

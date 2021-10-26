@@ -10,7 +10,7 @@ import io.deephaven.engine.v2.sources.ColumnSourceGetDefaults;
 import io.deephaven.engine.v2.sources.MutableColumnSourceGetDefaults;
 import io.deephaven.engine.v2.sources.ObjectArraySource;
 import io.deephaven.engine.v2.ssms.ObjectSegmentedSortedMultiset;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
+import io.deephaven.engine.v2.utils.RowSet;
 
 /**
  * A {@link SsmBackedColumnSource} for Objects.
@@ -86,7 +86,7 @@ public class ObjectSsmBackedSource extends AbstractColumnSource<DbArray>
     }
 
     @Override
-    public void clearDeltas(TrackingMutableRowSet indices) {
+    public void clearDeltas(RowSet indices) {
         indices.iterator().forEachLong(key -> {
             final ObjectSegmentedSortedMultiset ssm = getCurrentSsm(key);
             if(ssm != null) {

@@ -6,9 +6,7 @@ import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedRowKeys;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
-import io.deephaven.engine.v2.utils.RowSetBuilderSequential;
-import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
+import io.deephaven.engine.v2.utils.*;
 import io.deephaven.engine.structures.RowSequence;
 
 public interface ChunkFilter {
@@ -142,7 +140,7 @@ public interface ChunkFilter {
      *
      * @return a new TrackingMutableRowSet representing the filtered values
      */
-    static TrackingMutableRowSet applyChunkFilter(TrackingMutableRowSet selection, ColumnSource<?> columnSource, boolean usePrev,
+    static TrackingMutableRowSet applyChunkFilter(RowSet selection, ColumnSource<?> columnSource, boolean usePrev,
                                                   ChunkFilter chunkFilter) {
         final RowSetBuilderSequential builder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
 

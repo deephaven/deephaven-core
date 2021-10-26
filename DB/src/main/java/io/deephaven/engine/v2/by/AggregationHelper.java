@@ -82,7 +82,7 @@ public class AggregationHelper {
         }
 
         // If we can use an existing static grouping, convert that to a table
-        final Map<Object, TrackingMutableRowSet> groupingForAggregation =
+        final Map<Object, RowSet> groupingForAggregation =
                 maybeGetGroupingForAggregation(aggregationControl, inputTable, keyColumnSources);
         if (groupingForAggregation != null) {
             // noinspection unchecked
@@ -106,10 +106,10 @@ public class AggregationHelper {
                 inputTable.createSwapListenerIfRefreshing(SwapListener::new);
         inputTable.initializeWithSnapshot("by()-Snapshot", swapListener,
                 (final boolean usePrev, final long beforeClockValue) -> {
-                    final ColumnSource<TrackingMutableRowSet> resultIndexColumnSource =
+                    final ColumnSource<RowSet> resultIndexColumnSource =
                             new SingleValueObjectColumnSource<>(inputTable.getRowSet());
                     final boolean empty =
-                            usePrev ? inputTable.getRowSet().firstRowKeyPrev() == TrackingMutableRowSet.NULL_ROW_KEY : inputTable.isEmpty();
+                            usePrev ? inputTable.getRowSet().firstRowKeyPrev() == RowSet.NULL_ROW_KEY : inputTable.isEmpty();
                     final QueryTable resultTable = new QueryTable(
                             RowSetFactoryImpl.INSTANCE.getFlatRowSet(empty ? 0 : 1),
                             inputTable.getColumnSourceMap().entrySet().stream().collect(Collectors.toMap(
@@ -131,11 +131,11 @@ public class AggregationHelper {
                                 new BaseTable.ListenerImpl("by()", inputTable, resultTable) {
                                     @Override
                                     public void onUpdate(@NotNull final Update upstream) {
-                                        final boolean wasEmpty = inputTable.getRowSet().firstRowKeyPrev() == TrackingMutableRowSet.NULL_ROW_KEY;
+                                        final boolean wasEmpty = inputTable.getRowSet().firstRowKeyPrev() == RowSet.NULL_ROW_KEY;
                                         final boolean isEmpty = inputTable.getRowSet().isEmpty();
-                                        final TrackingMutableRowSet added;
-                                        final TrackingMutableRowSet removed;
-                                        final TrackingMutableRowSet modified;
+                                        final RowSet added;
+                                        final RowSet removed;
+                                        final RowSet modified;
                                         final ModifiedColumnSet modifiedColumnSet;
                                         if (wasEmpty) {
                                             if (isEmpty) {
@@ -189,13 +189,13 @@ public class AggregationHelper {
     private static <T> QueryTable staticGroupedBy(@NotNull final Map<String, ColumnSource<?>> existingColumnSourceMap,
             @NotNull final String keyColumnName,
             @NotNull final ColumnSource<T> keyColumnSource,
-            @NotNull final Map<T, TrackingMutableRowSet> groupToIndex) {
-        final Pair<ArrayBackedColumnSource<T>, ObjectArraySource<TrackingMutableRowSet>> flatResultColumnSources =
+            @NotNull final Map<T, RowSet> groupToIndex) {
+        final Pair<ArrayBackedColumnSource<T>, ObjectArraySource<RowSet>> flatResultColumnSources =
                 AbstractColumnSource.groupingToFlatSources(keyColumnSource, groupToIndex);
         final ArrayBackedColumnSource<?> resultKeyColumnSource = flatResultColumnSources.getFirst();
-        final ObjectArraySource<TrackingMutableRowSet> resultIndexColumnSource = flatResultColumnSources.getSecond();
+        final ObjectArraySource<RowSet> resultIndexColumnSource = flatResultColumnSources.getSecond();
 
-        final TrackingMutableRowSet resultRowSet = RowSetFactoryImpl.INSTANCE.getFlatRowSet(groupToIndex.size());
+        final RowSet resultRowSet = RowSetFactoryImpl.INSTANCE.getFlatRowSet(groupToIndex.size());
         final Map<String, ColumnSource<?>> resultColumnSourceMap = new LinkedHashMap<>();
         resultColumnSourceMap.put(keyColumnName, resultKeyColumnSource);
         existingColumnSourceMap.entrySet().stream()
@@ -234,7 +234,7 @@ public class AggregationHelper {
         // TODO: Consider selecting the hash inputTable sources, in order to truncate them to size and improve density
 
         // Compute result rowSet and redirection to hash slots
-        final TrackingMutableRowSet resultRowSet = RowSetFactoryImpl.INSTANCE.getFlatRowSet(numGroups);
+        final RowSet resultRowSet = RowSetFactoryImpl.INSTANCE.getFlatRowSet(numGroups);
         final RedirectionIndex resultIndexToHashSlot = new IntColumnSourceRedirectionIndex(groupIndexToHashSlot);
 
         // Construct result column sources
@@ -253,7 +253,7 @@ public class AggregationHelper {
         }
 
         // Gather the result aggregate columns
-        final ColumnSource<TrackingMutableRowSet> resultIndexColumnSource =
+        final ColumnSource<RowSet> resultIndexColumnSource =
                 new ReadOnlyRedirectedColumnSource<>(resultIndexToHashSlot, stateManager.getIndexHashTableSource());
         Arrays.stream(aggregatedColumnNames)
                 .forEachOrdered((final String aggregatedColumnName) -> resultColumnSourceMap.put(aggregatedColumnName,
@@ -305,7 +305,7 @@ public class AggregationHelper {
                     // Compute result rowSet and redirection to hash slots
                     final RedirectionIndex resultIndexToHashSlot =
                             RedirectionIndexLockFreeImpl.FACTORY.createRedirectionIndex(updateTracker.size());
-                    final TrackingMutableRowSet resultRowSet = updateTracker.applyAddsAndMakeInitialIndex(stateManager.getIndexSource(),
+                    final MutableRowSet resultRowSet = updateTracker.applyAddsAndMakeInitialIndex(stateManager.getIndexSource(),
                             stateManager.getOverflowIndexSource(), resultIndexToHashSlot);
 
                     // Construct result column sources
@@ -317,7 +317,7 @@ public class AggregationHelper {
                     }
 
                     // Gather the result aggregate columns
-                    final ColumnSource<TrackingMutableRowSet> resultIndexColumnSource = new ReadOnlyRedirectedColumnSource<>(
+                    final ColumnSource<RowSet> resultIndexColumnSource = new ReadOnlyRedirectedColumnSource<>(
                             resultIndexToHashSlot, stateManager.getIndexHashTableSource());
                     Arrays.stream(aggregatedColumnNames)
                             .forEachOrdered((final String aggregatedColumnName) -> {
@@ -355,7 +355,7 @@ public class AggregationHelper {
                                     upstream.modifiedColumnSet.containsAny(upstreamKeyColumnInputs);
 
                             if (keyColumnsModified) {
-                                try (final TrackingMutableRowSet toRemove = upstream.removed.union(upstream.getModifiedPreShift())) {
+                                try (final RowSet toRemove = upstream.removed.union(upstream.getModifiedPreShift())) {
                                     stateManager.processRemoves(maybeReinterpretedKeyColumnSources, toRemove,
                                             updateTracker);
                                 }
@@ -369,8 +369,8 @@ public class AggregationHelper {
                             if (upstream.shifted.nonempty()) {
                                 upstream.shifted
                                         .apply((final long beginRange, final long endRange, final long shiftDelta) -> {
-                                            final TrackingMutableRowSet shiftedPreviousRowSet;
-                                            try (final TrackingMutableRowSet previousIndex = inputTable.getRowSet().getPrevRowSet()) {
+                                            final RowSet shiftedPreviousRowSet;
+                                            try (final RowSet previousIndex = inputTable.getRowSet().getPrevRowSet()) {
                                                 shiftedPreviousRowSet =
                                                         previousIndex.subSetByKeyRange(beginRange, endRange);
                                             }
@@ -396,7 +396,7 @@ public class AggregationHelper {
                             }
 
                             if (keyColumnsModified) {
-                                try (final TrackingMutableRowSet toAdd = upstream.added.union(upstream.modified)) {
+                                try (final RowSet toAdd = upstream.added.union(upstream.modified)) {
                                     stateManager.processAdds(maybeReinterpretedKeyColumnSources, toAdd, updateTracker);
                                 }
                             } else {
@@ -459,12 +459,12 @@ public class AggregationHelper {
                 dropKeyColumns ? (QueryTable) inputTable.dropColumns(keyColumnNames) : inputTable;
 
         // If we can use an existing static grouping, trivially convert that to a table map
-        final Map<Object, TrackingMutableRowSet> groupingForAggregation =
+        final Map<Object, RowSet> groupingForAggregation =
                 maybeGetGroupingForAggregation(aggregationControl, inputTable, keyColumnSources);
         if (groupingForAggregation != null) {
             final LocalTableMap staticGroupedResult = new LocalTableMap(null, inputTable.getDefinition());
             AbstractColumnSource.forEachResponsiveGroup(groupingForAggregation, inputTable.getRowSet(),
-                    (final Object key, final TrackingMutableRowSet rowSet) -> staticGroupedResult.put(key,
+                    (final Object key, final RowSet rowSet) -> staticGroupedResult.put(key,
                             subTableSource.getSubTable(rowSet)));
             return staticGroupedResult;
         }
@@ -501,13 +501,13 @@ public class AggregationHelper {
 
         final TupleSource<?> inputKeyIndexToMapKeySource =
                 keyColumnSources.length == 1 ? keyColumnSources[0] : new SmartKeySource(keyColumnSources);
-        final ColumnSource<TrackingMutableRowSet> hashSlotToIndexSource = stateManager.getIndexHashTableSource();
+        final ColumnSource<RowSet> hashSlotToIndexSource = stateManager.getIndexHashTableSource();
         final int chunkSize = Math.min(numGroups, IncrementalChunkedByAggregationStateManager.CHUNK_SIZE);
 
         try (final RowSequence groupIndices = MutableRowSetImpl.FACTORY.getFlatIndex(numGroups);
              final RowSequence.Iterator groupIndicesIterator = groupIndices.getRowSequenceIterator();
              final ChunkSource.GetContext hashSlotGetContext = groupIndexToHashSlot.makeGetContext(chunkSize);
-             final WritableObjectChunk<TrackingMutableRowSet, Values> aggregatedIndexes =
+             final WritableObjectChunk<RowSet, Values> aggregatedIndexes =
                         WritableObjectChunk.makeWritableChunk(chunkSize);
              final WritableLongChunk<OrderedRowKeys> mapKeySourceIndices =
                         WritableLongChunk.makeWritableChunk(chunkSize);
@@ -519,7 +519,7 @@ public class AggregationHelper {
                 final LongChunk<Values> hashSlots =
                         groupIndexToHashSlot.getChunk(hashSlotGetContext, groupIndexesForThisChunk).asLongChunk();
                 for (int gi = 0; gi < groupsInThisChunk; ++gi) {
-                    final TrackingMutableRowSet rowSet = hashSlotToIndexSource.get(hashSlots.get(gi));
+                    final RowSet rowSet = hashSlotToIndexSource.get(hashSlots.get(gi));
                     aggregatedIndexes.set(gi, rowSet);
                     mapKeySourceIndices.set(gi, rowSet.firstRowKey());
                 }
@@ -547,7 +547,7 @@ public class AggregationHelper {
     }
 
     @Nullable
-    private static Map<Object, TrackingMutableRowSet> maybeGetGroupingForAggregation(
+    private static Map<Object, RowSet> maybeGetGroupingForAggregation(
             @NotNull final AggregationControl aggregationControl,
             @NotNull final QueryTable inputTable,
             @NotNull final ColumnSource<?>[] keyColumnSources) {

@@ -38,7 +38,7 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
     long nextRow = 0;
     private long pendingProcessed = NULL_NOTIFICATION_STEP;
 
-    public BaseArrayBackedMutableTable(TrackingMutableRowSet rowSet, Map<String, ? extends ColumnSource<?>> nameToColumnSource,
+    public BaseArrayBackedMutableTable(RowSet rowSet, Map<String, ? extends ColumnSource<?>> nameToColumnSource,
                                        Map<String, Object[]> enumValues, ProcessPendingUpdater processPendingUpdater) {
         super(rowSet, nameToColumnSource, processPendingUpdater);
         this.enumValues = enumValues;
@@ -209,7 +209,7 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
             return pendingChange;
         }
 
-        private Table doSnap(Table newData, TrackingMutableRowSet rowSet) {
+        private Table doSnap(Table newData, RowSet rowSet) {
             return doSnap(newData.getSubTable(rowSet));
         }
 
@@ -224,7 +224,7 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
         }
 
         @Override
-        public void delete(Table table, TrackingMutableRowSet rowSet) throws IOException {
+        public void delete(Table table, RowSet rowSet) throws IOException {
             validateDelete(table);
             final PendingChange pendingChange = new PendingChange(doSnap(table, rowSet), true, false);
             pendingChanges.add(pendingChange);
@@ -293,7 +293,7 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
                 final ArrayBackedColumnSource<Object> dest =
                         Require.neqNull(sources.get(colName), "destination column source: " + colName);
 
-                final TrackingMutableRowSet defaultValuesRowSet = defaultValues.getRowSet();
+                final RowSet defaultValuesRowSet = defaultValues.getRowSet();
                 for (int rr = 0; rr < rowArray.length; ++rr) {
                     final long key = defaultValuesRowSet.get(rowArray[rr]);
                     dest.set(rr, cs.get(key));

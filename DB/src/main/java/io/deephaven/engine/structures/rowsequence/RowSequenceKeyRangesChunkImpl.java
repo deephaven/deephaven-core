@@ -397,13 +397,13 @@ public class RowSequenceKeyRangesChunkImpl implements RowSequence {
 
     @Override
     public long firstRowKey() {
-        return backingChunk.size() == 0 ? TrackingMutableRowSet.NULL_ROW_KEY : Math.max(minKeyValue, backingChunk.get(0));
+        return backingChunk.size() == 0 ? RowSet.NULL_ROW_KEY : Math.max(minKeyValue, backingChunk.get(0));
     }
 
     @Override
     public long lastRowKey() {
         final int sz = backingChunk.size();
-        return sz == 0 ? TrackingMutableRowSet.NULL_ROW_KEY : Math.min(maxKeyValue, backingChunk.get(sz - 1));
+        return sz == 0 ? RowSet.NULL_ROW_KEY : Math.min(maxKeyValue, backingChunk.get(sz - 1));
     }
 
     @Override

@@ -84,21 +84,21 @@ public class StreamTableOperationsTest {
 
         int step = 0;
         long usedSize = 0;
-        TrackingMutableRowSet normalLastInserted = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
-        TrackingMutableRowSet streamLastInserted = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+        RowSet normalLastInserted = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+        RowSet streamLastInserted = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
         while (usedSize < INPUT_SIZE) {
             final long refreshSize = Math.min(INPUT_SIZE - usedSize, refreshSizes.nextLong());
-            final TrackingMutableRowSet normalStepInserted = refreshSize == 0
+            final RowSet normalStepInserted = refreshSize == 0
                     ? RowSetFactoryImpl.INSTANCE.getEmptyRowSet()
                     : RowSetFactoryImpl.INSTANCE.getRowSetByRange(usedSize, usedSize + refreshSize - 1);
-            final TrackingMutableRowSet streamStepInserted = streamInternalRowSet == null ? normalStepInserted
+            final RowSet streamStepInserted = streamInternalRowSet == null ? normalStepInserted
                     : refreshSize == 0
                             ? RowSetFactoryImpl.INSTANCE.getEmptyRowSet()
                             : RowSetFactoryImpl.INSTANCE.getRowSetByRange(0, refreshSize - 1);
 
             LiveTableMonitor.DEFAULT.startCycleForUnitTests();
             try {
-                final TrackingMutableRowSet finalNormalLastInserted = normalLastInserted;
+                final RowSet finalNormalLastInserted = normalLastInserted;
                 LiveTableMonitor.DEFAULT.refreshLiveTableForUnitTests(() -> {
                     if (normalStepInserted.isNonempty() || finalNormalLastInserted.isNonempty()) {
                         normal.getRowSet().update(normalStepInserted, finalNormalLastInserted);
@@ -106,7 +106,7 @@ public class StreamTableOperationsTest {
                                 RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY));
                     }
                 });
-                final TrackingMutableRowSet finalStreamLastInserted = streamLastInserted;
+                final RowSet finalStreamLastInserted = streamLastInserted;
                 LiveTableMonitor.DEFAULT.refreshLiveTableForUnitTests(() -> {
                     if (streamStepInserted.isNonempty() || finalStreamLastInserted.isNonempty()) {
                         if (streamInternalRowSet != null) {

@@ -17,12 +17,12 @@ import java.util.*;
  */
 final public class RedirectionLayer extends SelectAndViewAnalyzer {
     private final SelectAndViewAnalyzer inner;
-    private final TrackingMutableRowSet resultRowSet;
+    private final TrackingRowSet resultRowSet;
     private final RedirectionIndex redirectionIndex;
-    private final TrackingMutableRowSet freeValues = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+    private final MutableRowSet freeValues = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
     private long maxInnerIndex;
 
-    RedirectionLayer(SelectAndViewAnalyzer inner, TrackingMutableRowSet resultRowSet, RedirectionIndex redirectionIndex) {
+    RedirectionLayer(SelectAndViewAnalyzer inner, TrackingRowSet resultRowSet, RedirectionIndex redirectionIndex) {
         this.inner = inner;
         this.resultRowSet = resultRowSet;
         this.redirectionIndex = redirectionIndex;
@@ -52,21 +52,21 @@ final public class RedirectionLayer extends SelectAndViewAnalyzer {
         // we have to shift things that have not been removed, this handles the unmodified rows; but also the
         // modified rows need to have their redirections updated for subsequent modified columns
         if (upstream.shifted.nonempty()) {
-            try (final TrackingMutableRowSet prevRowSet = resultRowSet.getPrevRowSet();
-                 final TrackingMutableRowSet prevNoRemovals = prevRowSet.minus(upstream.removed)) {
-                final MutableObject<TrackingMutableRowSet.SearchIterator> forwardIt = new MutableObject<>();
+            try (final RowSet prevRowSet = resultRowSet.getPrevRowSet();
+                 final RowSet prevNoRemovals = prevRowSet.minus(upstream.removed)) {
+                final MutableObject<RowSet.SearchIterator> forwardIt = new MutableObject<>();
 
                 upstream.shifted.intersect(prevNoRemovals).apply((begin, end, delta) -> {
                     if (delta < 0) {
                         if (forwardIt.getValue() == null) {
                             forwardIt.setValue(prevNoRemovals.searchIterator());
                         }
-                        final TrackingMutableRowSet.SearchIterator localForwardIt = forwardIt.getValue();
+                        final RowSet.SearchIterator localForwardIt = forwardIt.getValue();
                         if (localForwardIt.advance(begin)) {
                             for (long key = localForwardIt.currentValue(); localForwardIt.currentValue() <= end; key =
                                     localForwardIt.nextLong()) {
                                 final long inner = redirectionIndex.remove(key);
-                                if (inner != TrackingMutableRowSet.NULL_ROW_KEY) {
+                                if (inner != RowSet.NULL_ROW_KEY) {
                                     redirectionIndex.put(key + delta, inner);
                                 }
                                 if (!localForwardIt.hasNext()) {
@@ -75,12 +75,12 @@ final public class RedirectionLayer extends SelectAndViewAnalyzer {
                             }
                         }
                     } else {
-                        try (final TrackingMutableRowSet.SearchIterator reverseIt = prevNoRemovals.reverseIterator()) {
+                        try (final RowSet.SearchIterator reverseIt = prevNoRemovals.reverseIterator()) {
                             if (reverseIt.advance(end)) {
                                 for (long key = reverseIt.currentValue(); reverseIt.currentValue() >= begin; key =
                                         reverseIt.nextLong()) {
                                     final long inner = redirectionIndex.remove(key);
-                                    if (inner != TrackingMutableRowSet.NULL_ROW_KEY) {
+                                    if (inner != RowSet.NULL_ROW_KEY) {
                                         redirectionIndex.put(key + delta, inner);
                                     }
                                     if (!reverseIt.hasNext()) {
@@ -104,7 +104,7 @@ final public class RedirectionLayer extends SelectAndViewAnalyzer {
             // if there is a freeValue, we'll remove up to that
             // if there are not enough free values, we'll remove all the free values then beyond
             final MutableLong lastAllocated = new MutableLong(0);
-            final TrackingMutableRowSet.Iterator freeIt = freeValues.iterator();
+            final RowSet.Iterator freeIt = freeValues.iterator();
             upstream.added.forAllLongs(outerKey -> {
                 final long innerKey = freeIt.hasNext() ? freeIt.nextLong() : ++maxInnerIndex;
                 lastAllocated.setValue(innerKey);

@@ -90,13 +90,13 @@ public class StreamTableAggregationTest {
 
         int step = 0;
         long usedSize = 0;
-        TrackingMutableRowSet streamLastInserted = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+        RowSet streamLastInserted = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
         while (usedSize < INPUT_SIZE) {
             final long refreshSize = Math.min(INPUT_SIZE - usedSize, refreshSizes.nextLong());
-            final TrackingMutableRowSet normalStepInserted = refreshSize == 0
+            final RowSet normalStepInserted = refreshSize == 0
                     ? RowSetFactoryImpl.INSTANCE.getEmptyRowSet()
                     : RowSetFactoryImpl.INSTANCE.getRowSetByRange(usedSize, usedSize + refreshSize - 1);
-            final TrackingMutableRowSet streamStepInserted = streamInternalRowSet == null ? normalStepInserted
+            final RowSet streamStepInserted = streamInternalRowSet == null ? normalStepInserted
                     : refreshSize == 0
                             ? RowSetFactoryImpl.INSTANCE.getEmptyRowSet()
                             : RowSetFactoryImpl.INSTANCE.getRowSetByRange(0, refreshSize - 1);
@@ -110,7 +110,7 @@ public class StreamTableAggregationTest {
                                 RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY));
                     }
                 });
-                final TrackingMutableRowSet finalStreamLastInserted = streamLastInserted;
+                final RowSet finalStreamLastInserted = streamLastInserted;
                 LiveTableMonitor.DEFAULT.refreshLiveTableForUnitTests(() -> {
                     if (streamStepInserted.isNonempty() || finalStreamLastInserted.isNonempty()) {
                         if (streamInternalRowSet != null) {

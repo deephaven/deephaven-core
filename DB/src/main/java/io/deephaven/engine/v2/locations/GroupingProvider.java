@@ -8,7 +8,7 @@ import io.deephaven.base.Pair;
 import io.deephaven.engine.tables.ColumnDefinition;
 import io.deephaven.engine.v2.locations.impl.ParallelDeferredGroupingProvider;
 import io.deephaven.engine.v2.sources.DeferredGroupingColumnSource;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
+import io.deephaven.engine.v2.utils.RowSet;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Map;
@@ -35,7 +35,7 @@ public interface GroupingProvider<DATA_TYPE> {
      *
      * @return a Map from grouping keys to Indices, or null if the group could not be constructed
      */
-    Map<DATA_TYPE, TrackingMutableRowSet> getGroupToRange();
+    Map<DATA_TYPE, RowSet> getGroupToRange();
 
     /**
      * Returns a grouping structure, possibly constructed on-demand; the grouping is only required to include groupings
@@ -49,5 +49,5 @@ public interface GroupingProvider<DATA_TYPE> {
      * @return a Pair containing a Map from grouping keys to Indices, which includes at least the hint indices; and a
      *         Boolean which indicates that the grouping is complete
      */
-    Pair<Map<DATA_TYPE, TrackingMutableRowSet>, Boolean> getGroupToRange(TrackingMutableRowSet hint);
+    Pair<Map<DATA_TYPE, RowSet>, Boolean> getGroupToRange(RowSet hint);
 }

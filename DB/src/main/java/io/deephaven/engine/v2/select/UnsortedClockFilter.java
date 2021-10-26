@@ -64,8 +64,8 @@ public class UnsortedClockFilter extends ClockFilter {
 
     @Override
     protected @Nullable
-    TrackingMutableRowSet initializeAndGetInitialIndex(@NotNull final TrackingMutableRowSet selection, @NotNull final TrackingMutableRowSet fullSet,
-                                                       @NotNull final Table table) {
+    RowSet initializeAndGetInitialIndex(@NotNull final RowSet selection, @NotNull final RowSet fullSet,
+                                        @NotNull final Table table) {
         rangesByNextTime = new PriorityQueue<>(INITIAL_RANGE_QUEUE_CAPACITY, new RangeComparator());
 
         if (selection.isEmpty()) {
@@ -75,7 +75,7 @@ public class UnsortedClockFilter extends ClockFilter {
         final RowSetBuilderSequential addedBuilder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
 
         final long nowNanos = clock.currentTimeMicros() * 1000L;
-        final TrackingMutableRowSet.Iterator selectionIterator = selection.iterator();
+        final RowSet.Iterator selectionIterator = selection.iterator();
 
         // Initial current range begins and ends at the first key in the selection (which must exist because we've
         // already tested non-emptiness).
@@ -119,7 +119,7 @@ public class UnsortedClockFilter extends ClockFilter {
     }
 
     @Override
-    protected TrackingMutableRowSet updateAndGetAddedIndex() {
+    protected RowSet updateAndGetAddedIndex() {
         if (rangesByNextTime.isEmpty()) {
             return null;
         }

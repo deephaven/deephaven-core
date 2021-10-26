@@ -218,12 +218,12 @@ class RegionedColumnSourceWithDictionary<DATA_TYPE>
         final RegionedColumnSourceBase<DATA_TYPE, Values, ColumnRegionObject<DATA_TYPE, Values>> dictionaryColumn =
                 new AsDictionary();
 
-        final TrackingMutableRowSet symbolTableRowSet;
+        final RowSet symbolTableRowSet;
         if (sourceIndex.isEmpty()) {
             symbolTableRowSet = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
         } else {
             final RowSetBuilderSequential symbolTableIndexBuilder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
-            try (final TrackingMutableRowSet.SearchIterator keysToVisit = sourceIndex.searchIterator()) {
+            try (final RowSet.SearchIterator keysToVisit = sourceIndex.searchIterator()) {
                 keysToVisit.nextLong(); // Safe, since sourceIndex must be non-empty
                 do {
                     dictionaryColumn.lookupRegion(keysToVisit.currentValue()).gatherDictionaryValuesIndex(keysToVisit,
@@ -304,7 +304,7 @@ class RegionedColumnSourceWithDictionary<DATA_TYPE>
                     (RegionedColumnSourceBase<DATA_TYPE, Values, ColumnRegionObject<DATA_TYPE, Values>>) symbolTable
                             .getColumnSource(SymbolTableSource.SYMBOL_COLUMN_NAME);
 
-            try (final TrackingMutableRowSet.SearchIterator keysToVisit = upstream.added.searchIterator();
+            try (final RowSet.SearchIterator keysToVisit = upstream.added.searchIterator();
                  final RowSequence.Iterator knownKeys = symbolTable.getRowSet().getRowSequenceIterator()) {
                 keysToVisit.nextLong(); // Safe, since sourceIndex must be non-empty
                 do {
@@ -313,7 +313,7 @@ class RegionedColumnSourceWithDictionary<DATA_TYPE>
                 } while (keysToVisit.hasNext());
             }
 
-            final TrackingMutableRowSet symbolTableAdded = symbolTableAddedBuilder.build();
+            final RowSet symbolTableAdded = symbolTableAddedBuilder.build();
             if (symbolTableAdded.isNonempty()) {
                 symbolTable.getRowSet().insert(symbolTableAdded);
                 symbolTable.notifyListeners(new Update(symbolTableAdded, RowSetFactoryImpl.INSTANCE.getEmptyRowSet(),

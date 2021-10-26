@@ -7,9 +7,9 @@ import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.LongArraySource;
 import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.v2.utils.RedirectionIndex;
+import io.deephaven.engine.v2.utils.RowSet;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 
@@ -33,11 +33,11 @@ class SimpleUniqueStaticNaturalJoinStateManager extends StaticNaturalJoinStateMa
         this.transform = transform;
         rightIndexSource.ensureCapacity(tableSize);
         for (int ii = 0; ii < tableSize; ++ii) {
-            rightIndexSource.set(ii, TrackingMutableRowSet.NULL_ROW_KEY);
+            rightIndexSource.set(ii, RowSet.NULL_ROW_KEY);
         }
     }
 
-    void setRightSide(TrackingMutableRowSet rightRowSet, ColumnSource<?> valueSource) {
+    void setRightSide(RowSet rightRowSet, ColumnSource<?> valueSource) {
         try (final RowSequence.Iterator rsIt = rightRowSet.getRowSequenceIterator();
              final ColumnSource.GetContext getContext = valueSource.makeGetContext((int)Math.min(CHUNK_SIZE, rightRowSet.size()))
         ) {
@@ -55,7 +55,7 @@ class SimpleUniqueStaticNaturalJoinStateManager extends StaticNaturalJoinStateMa
                         return true;
                     }
                     final long existingRight = rightIndexSource.getLong(tableLocation);
-                    if (existingRight == TrackingMutableRowSet.NULL_ROW_KEY) {
+                    if (existingRight == RowSet.NULL_ROW_KEY) {
                         rightIndexSource.set(tableLocation, keyIndex);
                     } else {
                         rightIndexSource.set(tableLocation, DUPLICATE_RIGHT_VALUE);
@@ -67,7 +67,7 @@ class SimpleUniqueStaticNaturalJoinStateManager extends StaticNaturalJoinStateMa
     }
 
     @Override
-    void decorateLeftSide(TrackingMutableRowSet leftRowSet, ColumnSource<?> [] valueSources, LongArraySource leftRedirections) {
+    void decorateLeftSide(RowSet leftRowSet, ColumnSource<?> [] valueSources, LongArraySource leftRedirections) {
         if (leftRowSet.isEmpty()) {
             return;
         }

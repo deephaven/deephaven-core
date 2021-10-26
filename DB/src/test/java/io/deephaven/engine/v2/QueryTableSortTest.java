@@ -11,9 +11,7 @@ import io.deephaven.engine.tables.utils.DBTimeUtils;
 import io.deephaven.engine.tables.utils.ParquetTools;
 import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.v2.select.IncrementalReleaseFilter;
-import io.deephaven.engine.v2.utils.ColumnHolder;
-import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
+import io.deephaven.engine.v2.utils.*;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
 import io.deephaven.test.types.OutOfBandTest;
@@ -704,7 +702,7 @@ public class QueryTableSortTest extends QueryTableTestBase {
         setExpectError(false);
         assertEquals(10, table.size());
 
-        final TrackingMutableRowSet rowSet = table.getRowSet().subSetByPositionRange(0, 4);
+        final MutableRowSet rowSet = table.getRowSet().subSetByPositionRange(0, 4);
         final QueryTable refreshing = new QueryTable(rowSet, table.getColumnSourceMap());
         refreshing.setRefreshing(true);
 
@@ -712,7 +710,7 @@ public class QueryTableSortTest extends QueryTableTestBase {
         TableTools.showWithIndex(symbolSorted);
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-            final TrackingMutableRowSet added = table.getRowSet().subSetByPositionRange(4, 10);
+            final RowSet added = table.getRowSet().subSetByPositionRange(4, 10);
             rowSet.insert(added);
             refreshing.notifyListeners(added, i(), i());
         });

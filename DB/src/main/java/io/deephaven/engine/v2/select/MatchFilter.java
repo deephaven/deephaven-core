@@ -14,6 +14,7 @@ import io.deephaven.engine.tables.utils.ArrayUtils;
 import io.deephaven.engine.tables.utils.DBDateTime;
 import io.deephaven.engine.tables.utils.DBTimeUtils;
 import io.deephaven.engine.v2.sources.ColumnSource;
+import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import org.jetbrains.annotations.NotNull;
 import org.jpy.PyObject;
@@ -149,7 +150,7 @@ public class MatchFilter extends SelectFilterImpl {
     }
 
     @Override
-    public TrackingMutableRowSet filter(TrackingMutableRowSet selection, TrackingMutableRowSet fullSet, Table table, boolean usePrev) {
+    public TrackingMutableRowSet filter(TrackingMutableRowSet selection, RowSet fullSet, Table table, boolean usePrev) {
         final ColumnSource columnSource = table.getColumnSource(columnName);
         return columnSource.match(invertMatch, usePrev, caseInsensitive, selection, values);
     }

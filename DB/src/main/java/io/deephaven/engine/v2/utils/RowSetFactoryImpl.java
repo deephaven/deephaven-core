@@ -42,7 +42,7 @@ public class RowSetFactoryImpl implements RowSetFactory {
     }
 
     @Override
-    public MutableRowSet getRowSetByValues(final TLongArrayList list) {
+    public RowSet getRowSetByValues(final TLongArrayList list) {
         list.sort();
         final RowSetBuilderSequential builder = getSequentialBuilder();
         list.forEach(builder);

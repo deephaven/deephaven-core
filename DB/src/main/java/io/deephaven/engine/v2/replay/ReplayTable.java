@@ -9,22 +9,22 @@ import io.deephaven.engine.tables.live.LiveTable;
 import io.deephaven.engine.tables.utils.DBDateTime;
 import io.deephaven.engine.v2.QueryTable;
 import io.deephaven.engine.v2.sources.ColumnSource;
+import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.engine.v2.utils.RowSetBuilderRandom;
 import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 
 import java.util.Map;
 
 public class ReplayTable extends QueryTable implements LiveTable {
 
 
-    private final TrackingMutableRowSet.Iterator indexIterator;
+    private final RowSet.Iterator indexIterator;
     private long curr;
     private final ColumnSource<DBDateTime> timeSource;
     private boolean done;
     private final Replayer replayer;
 
-    public ReplayTable(TrackingMutableRowSet rowSet, Map<String, ? extends ColumnSource<?>> result, String timeColumn,
+    public ReplayTable(RowSet rowSet, Map<String, ? extends ColumnSource<?>> result, String timeColumn,
                        Replayer replayer) {
         super(RowSetFactoryImpl.INSTANCE.getRowSetByValues(), result);
         Require.requirement(replayer != null, "replayer != null");
@@ -65,7 +65,7 @@ public class ReplayTable extends QueryTable implements LiveTable {
                 done = true;
             }
         }
-        final TrackingMutableRowSet added = indexBuilder.build();
+        final RowSet added = indexBuilder.build();
         if (added.size() > 0) {
             getRowSet().insert(added);
             notifyListeners(added, RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), RowSetFactoryImpl.INSTANCE.getEmptyRowSet());

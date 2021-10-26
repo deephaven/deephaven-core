@@ -11,8 +11,8 @@ import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 import io.deephaven.engine.v2.sources.chunk.ObjectChunk;
 import io.deephaven.engine.v2.sources.chunk.WritableChunk;
 import io.deephaven.engine.v2.sources.chunk.WritableObjectChunk;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.engine.structures.RowSequence;
+import io.deephaven.engine.v2.utils.RowSet;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -21,13 +21,13 @@ import org.jetbrains.annotations.NotNull;
 public final class ByteAggregateColumnSource extends BaseAggregateColumnSource<DbByteArray, Byte> {
 
     ByteAggregateColumnSource(@NotNull final ColumnSource<Byte> aggregatedSource,
-                              @NotNull final ColumnSource<TrackingMutableRowSet> indexSource) {
+                              @NotNull final ColumnSource<RowSet> indexSource) {
         super(DbByteArray.class, aggregatedSource, indexSource);
     }
 
     @Override
     public final DbByteArray get(final long index) {
-        if (index == TrackingMutableRowSet.NULL_ROW_KEY) {
+        if (index == RowSet.NULL_ROW_KEY) {
             return null;
         }
         return new DbByteArrayColumnWrapper(aggregatedSource, indexSource.get(index));
@@ -35,7 +35,7 @@ public final class ByteAggregateColumnSource extends BaseAggregateColumnSource<D
 
     @Override
     public final DbByteArray getPrev(final long index) {
-        if (index == TrackingMutableRowSet.NULL_ROW_KEY) {
+        if (index == RowSet.NULL_ROW_KEY) {
             return null;
         }
         return new DbPrevByteArrayColumnWrapper(aggregatedSource, indexSource.getPrev(index));
@@ -43,7 +43,7 @@ public final class ByteAggregateColumnSource extends BaseAggregateColumnSource<D
 
     @Override
     public final void fillChunk(@NotNull final FillContext context, @NotNull final WritableChunk<? super Values> destination, @NotNull final RowSequence rowSequence) {
-        final ObjectChunk<TrackingMutableRowSet, ? extends Values> indexChunk = indexSource.getChunk(((AggregateFillContext) context).indexGetContext, rowSequence).asObjectChunk();
+        final ObjectChunk<RowSet, ? extends Values> indexChunk = indexSource.getChunk(((AggregateFillContext) context).indexGetContext, rowSequence).asObjectChunk();
         final WritableObjectChunk<DbByteArray, ? super Values> typedDestination = destination.asWritableObjectChunk();
         final int size = rowSequence.intSize();
         for (int di = 0; di < size; ++di) {
@@ -54,7 +54,7 @@ public final class ByteAggregateColumnSource extends BaseAggregateColumnSource<D
 
     @Override
     public final void fillPrevChunk(@NotNull final FillContext context, @NotNull final WritableChunk<? super Values> destination, @NotNull final RowSequence rowSequence) {
-        final ObjectChunk<TrackingMutableRowSet, ? extends Values> indexChunk = indexSource.getPrevChunk(((AggregateFillContext) context).indexGetContext, rowSequence).asObjectChunk();
+        final ObjectChunk<RowSet, ? extends Values> indexChunk = indexSource.getPrevChunk(((AggregateFillContext) context).indexGetContext, rowSequence).asObjectChunk();
         final WritableObjectChunk<DbByteArray, ? super Values> typedDestination = destination.asWritableObjectChunk();
         final int size = rowSequence.intSize();
         for (int di = 0; di < size; ++di) {

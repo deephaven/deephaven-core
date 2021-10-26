@@ -11,6 +11,7 @@ import io.deephaven.barrage.flatbuf.BarrageMessageType;
 import io.deephaven.barrage.flatbuf.BarrageMessageWrapper;
 import io.deephaven.barrage.flatbuf.BarrageSubscriptionRequest;
 import io.deephaven.base.log.LogOutput;
+import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.table.BarrageTable;
 import io.deephaven.extensions.barrage.util.BarrageMessageConsumer;
@@ -21,7 +22,6 @@ import io.deephaven.engine.tables.TableDefinition;
 import io.deephaven.engine.util.liveness.ReferenceCountedLivenessNode;
 import io.deephaven.engine.v2.sources.chunk.ChunkType;
 import io.deephaven.engine.v2.utils.BarrageMessage;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.grpc_api.util.ExportTicketHelper;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
@@ -180,7 +180,7 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
     }
 
     private ByteBuffer makeRequestInternal(
-            @Nullable final TrackingMutableRowSet viewport,
+            @Nullable final RowSet viewport,
             @Nullable final BitSet columns,
             @Nullable BarrageSubscriptionOptions options) {
         final FlatBufferBuilder metadata = new FlatBufferBuilder();

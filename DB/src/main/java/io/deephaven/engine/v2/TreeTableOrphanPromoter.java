@@ -7,9 +7,7 @@ import io.deephaven.engine.tables.live.LiveTableMonitor;
 import io.deephaven.engine.v2.remote.WrappedDelegatingTable;
 import io.deephaven.engine.v2.sources.AbstractColumnSource;
 import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.utils.RowSetBuilderSequential;
-import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
+import io.deephaven.engine.v2.utils.*;
 import io.deephaven.util.QueryConstants;
 import gnu.trove.list.TLongList;
 import gnu.trove.list.array.TLongArrayList;
@@ -246,8 +244,8 @@ public class TreeTableOrphanPromoter implements Function.Unary<Table, Table> {
                                 addChildren(source.getRowSet());
                             }
 
-                            private void addChildren(TrackingMutableRowSet index) {
-                                for (final TrackingMutableRowSet.Iterator it = index.iterator(); it.hasNext();) {
+                            private void addChildren(RowSet index) {
+                                for (final RowSet.Iterator it = index.iterator(); it.hasNext();) {
                                     final long key = it.nextLong();
                                     final Object parent = parentSource.get(key);
                                     if (parent != null) {
@@ -256,8 +254,8 @@ public class TreeTableOrphanPromoter implements Function.Unary<Table, Table> {
                                 }
                             }
 
-                            private void removeChildren(TrackingMutableRowSet index) {
-                                for (final TrackingMutableRowSet.Iterator it = index.iterator(); it.hasNext();) {
+                            private void removeChildren(RowSet index) {
+                                for (final RowSet.Iterator it = index.iterator(); it.hasNext();) {
                                     final long key = it.nextLong();
                                     final Object oldParent = parentSource.getPrev(key);
                                     if (oldParent != null) {
@@ -329,7 +327,7 @@ public class TreeTableOrphanPromoter implements Function.Unary<Table, Table> {
                                     removeChildren(upstream.getModifiedPreShift());
                                 }
 
-                                try (final TrackingMutableRowSet prevIndex = source.getRowSet().getPrevRowSet()) {
+                                try (final MutableRowSet prevIndex = source.getRowSet().getPrevRowSet()) {
                                     prevIndex.remove(upstream.removed);
                                     if (modifiedInputColumns) {
                                         prevIndex.remove(upstream.getModifiedPreShift());

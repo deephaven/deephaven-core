@@ -4,14 +4,14 @@
 
 package io.deephaven.engine.v2.sources;
 
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
+import io.deephaven.engine.v2.utils.RowSet;
 
 /**
  * A simple extension to the TreeMapSource that will not actually change any map values, and is thus immutable. We need
  * to have an immutable source available for use with the TrackingRowSetGroupingTest, and this fits the bill.
  */
 public class ImmutableTreeMapSource<T> extends TreeMapSource<T> {
-    public ImmutableTreeMapSource(Class<T> type, TrackingMutableRowSet rowSet, T[] data) {
+    public ImmutableTreeMapSource(Class<T> type, RowSet rowSet, T[] data) {
         super(type, rowSet, data);
     }
 
@@ -21,9 +21,9 @@ public class ImmutableTreeMapSource<T> extends TreeMapSource<T> {
     }
 
     @Override
-    public void add(TrackingMutableRowSet rowSet, T[] data) {
+    public void add(RowSet rowSet, T[] data) {
         int i = 0;
-        for (final TrackingMutableRowSet.Iterator iterator = rowSet.iterator(); iterator.hasNext();) {
+        for (final RowSet.Iterator iterator = rowSet.iterator(); iterator.hasNext();) {
             final long next = iterator.nextLong();
             if (this.data.containsKey(next))
                 continue;
@@ -32,7 +32,7 @@ public class ImmutableTreeMapSource<T> extends TreeMapSource<T> {
     }
 
     @Override
-    public void remove(TrackingMutableRowSet rowSet) {}
+    public void remove(RowSet rowSet) {}
 
     @Override
     public T getPrev(long index) {

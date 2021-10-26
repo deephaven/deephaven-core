@@ -4,7 +4,6 @@ import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.live.LiveTableMonitor;
 import io.deephaven.engine.tables.utils.TableDiff;
 import io.deephaven.engine.v2.utils.RowSet;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import org.apache.commons.lang3.mutable.MutableInt;
 
 import java.text.SimpleDateFormat;
@@ -128,9 +127,9 @@ public abstract class QueryTableTestBase extends LiveTableTestCase {
     final JoinIncrement[] joinIncrementorsShift = new JoinIncrement[] {leftStep, rightStep, leftRightStep,
             leftStepShift, rightStepShift, leftRightStepShift, leftRightConcurrentStepShift};
 
-    protected TrackingMutableRowSet added;
-    protected TrackingMutableRowSet removed;
-    protected TrackingMutableRowSet modified;
+    protected RowSet added;
+    protected RowSet removed;
+    protected RowSet modified;
 
     protected interface JoinIncrement {
         void step(int leftSize, int rightSize, QueryTable leftTable, QueryTable rightTable,
@@ -180,7 +179,7 @@ public abstract class QueryTableTestBase extends LiveTableTestCase {
         }
 
         int count;
-        TrackingMutableRowSet added, removed, modified;
+        RowSet added, removed, modified;
 
         void reset() {
             freeResources();
@@ -234,7 +233,7 @@ public abstract class QueryTableTestBase extends LiveTableTestCase {
     }
 
     protected static class CoalescingListener extends ShiftObliviousInstrumentedListenerAdapter {
-        TrackingMutableRowSet lastAdded, lastModified, lastRemoved;
+        RowSet lastAdded, lastModified, lastRemoved;
         ShiftObliviousUpdateCoalescer indexUpdateCoalescer = new ShiftObliviousUpdateCoalescer();
 
         protected CoalescingListener(DynamicTable source) {

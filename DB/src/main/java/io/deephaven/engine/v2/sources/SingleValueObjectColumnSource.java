@@ -4,7 +4,7 @@
 
 package io.deephaven.engine.v2.sources;
 
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
+import io.deephaven.engine.v2.utils.RowSet;
 
 /**
  * ColumnSource implementation for columns of a single unique value.
@@ -22,7 +22,7 @@ public class SingleValueObjectColumnSource<DATA_TYPE> extends AbstractColumnSour
 
     @Override
     public DATA_TYPE get(long index) {
-        if(index == TrackingMutableRowSet.NULL_ROW_KEY) {
+        if(index == RowSet.NULL_ROW_KEY) {
             return null;
         }
         return value;

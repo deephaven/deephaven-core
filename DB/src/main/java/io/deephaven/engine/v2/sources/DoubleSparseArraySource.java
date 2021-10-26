@@ -12,11 +12,8 @@ import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedRowKeyRanges;
 import io.deephaven.engine.v2.sources.sparse.DoubleOneOrN;
 import io.deephaven.engine.v2.sources.sparse.LongOneOrN;
-import io.deephaven.engine.v2.utils.RowSetBuilderSequential;
-import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
+import io.deephaven.engine.v2.utils.*;
 import io.deephaven.engine.structures.RowSequence;
-import io.deephaven.engine.v2.utils.UpdateCommitter;
 import io.deephaven.util.SoftRecycler;
 import gnu.trove.list.array.TLongArrayList;
 import org.jetbrains.annotations.NotNull;
@@ -81,7 +78,7 @@ public class DoubleSparseArraySource extends SparseArrayColumnSource<Double> imp
     private void writeObject(java.io.ObjectOutputStream out) throws IOException {
         final RowSetBuilderSequential sb = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
         blocks.enumerate(NULL_DOUBLE, sb::appendKey);
-        final TrackingMutableRowSet rowSet = sb.build();
+        final RowSet rowSet = sb.build();
 
         final int size = rowSet.intSize();
         final double[] data = (double[])new double[size];
@@ -100,7 +97,7 @@ public class DoubleSparseArraySource extends SparseArrayColumnSource<Double> imp
     private void readObject(java.io.ObjectInputStream in) throws IOException, ClassNotFoundException {
         blocks = new DoubleOneOrN.Block0();
 
-        final TrackingMutableRowSet rowSet = (TrackingMutableRowSet)in.readObject();
+        final RowSet rowSet = (RowSet)in.readObject();
         final double[] data = (double[])in.readObject();
         final DoubleChunk<Values> srcChunk = DoubleChunk.chunkWrap(data);
         // noinspection unchecked
@@ -136,8 +133,8 @@ public class DoubleSparseArraySource extends SparseArrayColumnSource<Double> imp
     }
 
     @Override
-    public void shift(final TrackingMutableRowSet keysToShift, final long shiftDelta) {
-        final TrackingMutableRowSet.SearchIterator it = (shiftDelta > 0) ? keysToShift.reverseIterator() : keysToShift.searchIterator();
+    public void shift(final RowSet keysToShift, final long shiftDelta) {
+        final RowSet.SearchIterator it = (shiftDelta > 0) ? keysToShift.reverseIterator() : keysToShift.searchIterator();
         it.forEachLong((i) -> {
             set(i + shiftDelta, getDouble(i));
             set(i, NULL_DOUBLE);
@@ -146,7 +143,7 @@ public class DoubleSparseArraySource extends SparseArrayColumnSource<Double> imp
     }
 
     @Override
-    public void remove(TrackingMutableRowSet toRemove) {
+    public void remove(RowSet toRemove) {
         toRemove.forEachLong((i) -> { set(i, NULL_DOUBLE); return true; });
     }
 
@@ -515,7 +512,7 @@ public class DoubleSparseArraySource extends SparseArrayColumnSource<Double> imp
         final WritableDoubleChunk<? super Values> doubleChunk = dest.asWritableDoubleChunk();
         for (int ii = 0; ii < keys.size(); ) {
             final long firstKey = keys.get(ii);
-            if (firstKey == TrackingMutableRowSet.NULL_ROW_KEY) {
+            if (firstKey == RowSet.NULL_ROW_KEY) {
                 doubleChunk.set(ii++, NULL_DOUBLE);
                 continue;
             }
@@ -549,7 +546,7 @@ public class DoubleSparseArraySource extends SparseArrayColumnSource<Double> imp
         final WritableDoubleChunk<? super Values> doubleChunk = dest.asWritableDoubleChunk();
         for (int ii = 0; ii < keys.size(); ) {
             final long firstKey = keys.get(ii);
-            if (firstKey == TrackingMutableRowSet.NULL_ROW_KEY) {
+            if (firstKey == RowSet.NULL_ROW_KEY) {
                 doubleChunk.set(ii++, NULL_DOUBLE);
                 continue;
             }

@@ -3,8 +3,8 @@ package io.deephaven.engine.v2;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.live.LiveTableMonitor;
 import io.deephaven.engine.tables.utils.TableTools;
+import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 
 import static io.deephaven.engine.v2.TstUtils.i;
 
@@ -28,7 +28,7 @@ public class TestEvenlyDividedTableMap extends LiveTableTestCase {
         TstUtils.assertTableEquals(tk2, t2);
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-            final TrackingMutableRowSet addedRows = RowSetFactoryImpl.INSTANCE.getRowSetByRange(1000000, 1250000);
+            final RowSet addedRows = RowSetFactoryImpl.INSTANCE.getRowSetByRange(1000000, 1250000);
             TstUtils.addToTable(t, addedRows);
             t.notifyListeners(addedRows, i(), i());
         });

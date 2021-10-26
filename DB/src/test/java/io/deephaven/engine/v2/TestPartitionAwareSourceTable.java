@@ -22,10 +22,8 @@ import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 import io.deephaven.engine.v2.sources.chunk.ChunkType;
 import io.deephaven.engine.v2.sources.chunk.WritableChunk;
 import io.deephaven.engine.v2.sources.chunk.WritableIntChunk;
-import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
+import io.deephaven.engine.v2.utils.*;
 import io.deephaven.engine.structures.RowSequence;
-import io.deephaven.engine.v2.utils.UpdatePerformanceTracker;
 import org.jetbrains.annotations.NotNull;
 import org.jmock.api.Invocation;
 import org.jmock.lib.action.CustomAction;
@@ -230,7 +228,7 @@ public class TestPartitionAwareSourceTable extends LiveTableTestCase {
             @NotNull final ConcurrentInstantiationType ciType) {
         Assert.assertion(!(throwException && !coalesceAndListen), "!(throwException && !listen)");
         final TableDataException exception = new TableDataException("test");
-        final TrackingMutableRowSet toAdd =
+        final RowSet toAdd =
                 RowSetFactoryImpl.INSTANCE.getRowSetByRange(expectedRowSet.lastRowKey() + 1,
                         expectedRowSet.lastRowKey() + INDEX_INCREMENT);
 
@@ -304,7 +302,7 @@ public class TestPartitionAwareSourceTable extends LiveTableTestCase {
     }
 
     private void doRefreshChangedCheck() {
-        final TrackingMutableRowSet toAdd =
+        final RowSet toAdd =
                 RowSetFactoryImpl.INSTANCE.getRowSetByRange(expectedRowSet.lastRowKey() + 1,
                         expectedRowSet.lastRowKey() + INDEX_INCREMENT);
         checking(new Expectations() {

@@ -39,7 +39,7 @@ public class ExternalizableRowSetUtils {
         long offset = 0;
         final TShortArrayList shorts = new TShortArrayList();
 
-        for (final TrackingMutableRowSet.RangeIterator it = rowSet.rangeIterator(); it.hasNext();) {
+        for (final RowSet.RangeIterator it = rowSet.rangeIterator(); it.hasNext();) {
             it.next();
             if (it.currentRangeEnd() == it.currentRangeStart()) {
                 offset = appendWithOffsetDelta(out, shorts, offset, it.currentRangeStart(), false);
@@ -145,7 +145,7 @@ public class ExternalizableRowSetUtils {
         }
     }
 
-    public static MutableRowSet readExternalCompressedDelta(@NotNull final DataInput in) throws IOException {
+    public static RowSet readExternalCompressedDelta(@NotNull final DataInput in) throws IOException {
         long offset = 0;
         final RowSetBuilderSequential builder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
 

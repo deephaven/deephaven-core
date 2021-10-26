@@ -6,7 +6,7 @@ package io.deephaven.modelfarm;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
+import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 
@@ -70,16 +70,16 @@ public class ModelFarmTick<KEYTYPE, DATATYPE, ROWDATAMANAGERTYPE extends RowData
     }
 
     @Override
-    protected void onDataUpdate(TrackingMutableRowSet added, TrackingMutableRowSet removed, TrackingMutableRowSet modified) {
+    protected void onDataUpdate(RowSet added, RowSet removed, RowSet modified) {
         final Set<KEYTYPE> keys = new HashSet<>();
 
-        for (TrackingMutableRowSet.Iterator it = added.iterator(); it.hasNext();) {
+        for (RowSet.Iterator it = added.iterator(); it.hasNext();) {
             final long i = it.nextLong();
             final KEYTYPE key = dataManager.uniqueIdCurrent(i);
             keys.add(key);
         }
 
-        for (TrackingMutableRowSet.Iterator it = modified.iterator(); it.hasNext();) {
+        for (RowSet.Iterator it = modified.iterator(); it.hasNext();) {
             final long i = it.nextLong();
             final KEYTYPE key = dataManager.uniqueIdCurrent(i);
             keys.add(key);

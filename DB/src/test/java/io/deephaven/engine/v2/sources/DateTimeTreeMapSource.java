@@ -2,7 +2,7 @@ package io.deephaven.engine.v2.sources;
 
 import io.deephaven.engine.tables.utils.ArrayUtils;
 import io.deephaven.engine.tables.utils.DBDateTime;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
+import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.util.QueryConstants;
 import org.jetbrains.annotations.NotNull;
 
@@ -33,7 +33,7 @@ public class DateTimeTreeMapSource extends AbstractColumnSource<DBDateTime>
      * @param rowSet The row indexes for the initial data
      * @param data The initial data
      */
-    public DateTimeTreeMapSource(TrackingMutableRowSet rowSet, DBDateTime[] data) {
+    public DateTimeTreeMapSource(RowSet rowSet, DBDateTime[] data) {
         super(DBDateTime.class);
         this.treeMapSource = new TreeMapSource<>(Long.class, rowSet, mapData(data));
         this.alternateColumnSource = new UnboxedDateTimeTreeMapSource(this, treeMapSource);
@@ -45,7 +45,7 @@ public class DateTimeTreeMapSource extends AbstractColumnSource<DBDateTime>
      * @param rowSet The row indexes for the initial data
      * @param data The initial data
      */
-    public DateTimeTreeMapSource(TrackingMutableRowSet rowSet, long[] data) {
+    public DateTimeTreeMapSource(RowSet rowSet, long[] data) {
         super(DBDateTime.class);
         final Long[] boxedData = ArrayUtils.getBoxedArray(data);
         this.treeMapSource = new TreeMapSource<>(Long.class, rowSet, boxedData);
@@ -61,15 +61,15 @@ public class DateTimeTreeMapSource extends AbstractColumnSource<DBDateTime>
         }).toArray(Long[]::new);
     }
 
-    public void add(TrackingMutableRowSet rowSet, DBDateTime[] data) {
+    public void add(RowSet rowSet, DBDateTime[] data) {
         treeMapSource.add(rowSet, mapData(data));
     }
 
-    public void add(TrackingMutableRowSet rowSet, Long[] data) {
+    public void add(RowSet rowSet, Long[] data) {
         treeMapSource.add(rowSet, data);
     }
 
-    public void remove(TrackingMutableRowSet rowSet) {
+    public void remove(RowSet rowSet) {
         treeMapSource.remove(rowSet);
     }
 

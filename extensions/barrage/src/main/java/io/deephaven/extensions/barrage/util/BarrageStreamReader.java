@@ -224,7 +224,7 @@ public class BarrageStreamReader implements BarrageMessageConsumer.StreamReader<
         }
     }
 
-    private static TrackingMutableRowSet extractIndex(final ByteBuffer bb) throws IOException {
+    private static RowSet extractIndex(final ByteBuffer bb) throws IOException {
         if (bb == null) {
             return RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
         }
@@ -242,7 +242,7 @@ public class BarrageStreamReader implements BarrageMessageConsumer.StreamReader<
     private static RowSetShiftData extractIndexShiftData(final ByteBuffer bb) throws IOException {
         final RowSetShiftData.Builder builder = new RowSetShiftData.Builder();
 
-        final TrackingMutableRowSet sRowSet, eRowSet, dRowSet;
+        final RowSet sRowSet, eRowSet, dRowSet;
         // noinspection UnstableApiUsage
         try (final LittleEndianDataInputStream is =
                 new LittleEndianDataInputStream(new ByteBufferBackedInputStream(bb))) {
@@ -251,9 +251,9 @@ public class BarrageStreamReader implements BarrageMessageConsumer.StreamReader<
             dRowSet = ExternalizableRowSetUtils.readExternalCompressedDelta(is);
         }
 
-        try (final TrackingMutableRowSet.Iterator sit = sRowSet.iterator();
-             final TrackingMutableRowSet.Iterator eit = eRowSet.iterator();
-             final TrackingMutableRowSet.Iterator dit = dRowSet.iterator()) {
+        try (final RowSet.Iterator sit = sRowSet.iterator();
+             final RowSet.Iterator eit = eRowSet.iterator();
+             final RowSet.Iterator dit = dRowSet.iterator()) {
             while (sit.hasNext()) {
                 if (!eit.hasNext() || !dit.hasNext()) {
                     throw new IllegalStateException("RowSetShiftData is inconsistent");

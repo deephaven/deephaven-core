@@ -31,7 +31,7 @@ import static io.deephaven.treetable.TreeTableConstants.ROOT_TABLE_KEY;
  * expanded rows at each level.
  */
 public abstract class AbstractTreeSnapshotImpl<INFO_TYPE extends HierarchicalTableInfo, CLIENT_TYPE extends TreeTableClientTableManager.Client<CLIENT_TYPE>> {
-    private static final TrackingMutableRowSet EMPTY_ROW_SET = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+    private static final RowSet EMPTY_ROW_SET = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
     private static final boolean DEBUG =
             Configuration.getInstance().getBooleanWithDefault("AbstractTreeSnapshotImpl.debug", false);
 
@@ -483,14 +483,14 @@ public abstract class AbstractTreeSnapshotImpl<INFO_TYPE extends HierarchicalTab
         final Table curTable = current.getTable();
         final TableMap curTableMap = getTableMap(curTable);
         final Set<Object> curChildren = current.getChildren();
-        final TrackingMutableRowSet expanded = getExpandedIndex(usePrev, curTable, curChildren);
-        final TrackingMutableRowSet.Iterator exIter = expanded.iterator();
+        final RowSet expanded = getExpandedIndex(usePrev, curTable, curChildren);
+        final RowSet.Iterator exIter = expanded.iterator();
 
         // Keep track of the position of the first viewported row after taking into account
         // rows skipped.
         long vkUpper;
 
-        final TrackingMutableRowSet currentRowSet = usePrev ? curTable.getRowSet().getPrevRowSet() : curTable.getRowSet();
+        final RowSet currentRowSet = usePrev ? curTable.getRowSet().getPrevRowSet() : curTable.getRowSet();
 
         // If the first row of the viewport is beyond the current table, we'll use an upper that's
         // guaranteed to be beyond the table. One of two things will happen:
@@ -596,7 +596,7 @@ public abstract class AbstractTreeSnapshotImpl<INFO_TYPE extends HierarchicalTab
             return;
         }
 
-        final TrackingMutableRowSet.SearchIterator currentIt = currentRowSet.searchIterator();
+        final RowSet.SearchIterator currentIt = currentRowSet.searchIterator();
         if (!currentIt.advance(currentRowSet.get(currentPosition))) {
             return;
         }
@@ -636,7 +636,7 @@ public abstract class AbstractTreeSnapshotImpl<INFO_TYPE extends HierarchicalTab
             currentIndexKey = currentIt.nextLong();
         }
 
-        final TrackingMutableRowSet remainingToCopy = sequentialBuilder.build();
+        final RowSet remainingToCopy = sequentialBuilder.build();
         if (!remainingToCopy.isEmpty()) {
             state.addToSnapshot(usePrev, curTable, current.getKey(), curTableMap, remainingToCopy);
         }
@@ -652,7 +652,7 @@ public abstract class AbstractTreeSnapshotImpl<INFO_TYPE extends HierarchicalTab
      * @return An rowSet containing the rows that represent the indices of the tables indicated in childKeys, if they
      *         still exist.
      */
-    private TrackingMutableRowSet getExpandedIndex(boolean usePrev, Table t, Set<Object> childKeys) {
+    private RowSet getExpandedIndex(boolean usePrev, Table t, Set<Object> childKeys) {
         final ReverseLookup lookup = getReverseLookup(t);
 
         if (lookup == null) {

@@ -1711,7 +1711,7 @@ class StaticChunkedAsOfJoinStateManager
      * @param slot the slot in the table (either positive for a main slot, or negative for overflow)
      * @return the TrackingMutableRowSet for this slot
      */
-    TrackingMutableRowSet getLeftIndex(long slot) {
+    RowSet getLeftIndex(long slot) {
         final RowSetBuilderSequential builder;
         if (isOverflowLocation(slot)) {
             final long overflowLocation = hashLocationToOverflowLocation(slot);
@@ -1746,7 +1746,7 @@ class StaticChunkedAsOfJoinStateManager
         rightBuildersConverted = true;
     }
 
-    void convertRightGrouping(LongArraySource slots, int slotCount, ObjectArraySource<TrackingMutableRowSet> indexSource) {
+    void convertRightGrouping(LongArraySource slots, int slotCount, ObjectArraySource<RowSet> indexSource) {
         for (int slotIndex = 0; slotIndex < slotCount; ++slotIndex) {
             final long slot = slots.getLong(slotIndex);
             if (isOverflowLocation(slot)) {
@@ -1765,21 +1765,21 @@ class StaticChunkedAsOfJoinStateManager
         rightBuildersConverted = true;
     }
 
-    private TrackingMutableRowSet getGroupedIndex(ObjectArraySource<TrackingMutableRowSet> indexSource, RowSetBuilderSequential sequentialBuilder) {
-        final TrackingMutableRowSet groupedRowSet = sequentialBuilder.build();
+    private RowSet getGroupedIndex(ObjectArraySource<RowSet> indexSource, RowSetBuilderSequential sequentialBuilder) {
+        final RowSet groupedRowSet = sequentialBuilder.build();
         if (groupedRowSet.size() != 1) {
             throw new IllegalStateException("Grouped rowSet should have exactly one value: " + groupedRowSet);
         }
         return indexSource.getUnsafe(groupedRowSet.get(0));
     }
 
-    TrackingMutableRowSet getRightIndex(long slot) {
+    RowSet getRightIndex(long slot) {
         if (rightBuildersConverted) {
             if (isOverflowLocation(slot)) {
                 final long overflowLocation = hashLocationToOverflowLocation(slot);
-                return (TrackingMutableRowSet)overflowRightIndexSource.getUnsafe(overflowLocation);
+                return (RowSet)overflowRightIndexSource.getUnsafe(overflowLocation);
             } else {
-                return (TrackingMutableRowSet)rightIndexSource.getUnsafe(slot);
+                return (RowSet)rightIndexSource.getUnsafe(slot);
             }
         }
 

@@ -16,7 +16,7 @@ import io.deephaven.engine.v2.sources.chunk.WritableIntChunk;
 import io.deephaven.engine.v2.sources.chunk.WritableLongChunk;
 import io.deephaven.engine.v2.sources.chunk.WritableObjectChunk;
 import io.deephaven.engine.v2.sources.chunk.util.pools.PoolableChunk;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
+import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.util.BarrageProtoUtil;
 import org.apache.commons.lang3.mutable.MutableInt;
@@ -110,7 +110,7 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
     }
 
     @Override
-    public DrainableColumn getInputStream(final BarrageSubscriptionOptions options, final @Nullable TrackingMutableRowSet subset) throws IOException {
+    public DrainableColumn getInputStream(final BarrageSubscriptionOptions options, final @Nullable RowSet subset) throws IOException {
         if (type == String.class) {
             computePayload();
             return new ObjectChunkInputStream(options, offsets, bytes, subset);
@@ -128,7 +128,7 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
         private ObjectChunkInputStream(
                 final BarrageSubscriptionOptions options,
                 final IntChunk<Attributes.ChunkPositions> myOffsets,
-                final byte[] myBytes, final TrackingMutableRowSet subset) {
+                final byte[] myBytes, final RowSet subset) {
             super(chunk, options, subset);
             this.myBytes = myBytes;
             this.myOffsets = myOffsets;

@@ -6,7 +6,7 @@ package io.deephaven.engine.v2.remote;
 
 import io.deephaven.base.formatters.FormatBitSet;
 import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
+import io.deephaven.engine.v2.utils.RowSet;
 
 import java.io.Serializable;
 
@@ -18,12 +18,12 @@ public class InitialSnapshot implements Serializable, Cloneable {
     static final long serialVersionUID = 4380513367437361741L;
 
     public Object type;
-    public TrackingMutableRowSet rowSet;
+    public RowSet rowSet;
     public Object[] dataColumns;
     public long deltaSequence;
     public long step;
-    public TrackingMutableRowSet rowsIncluded;
-    public TrackingMutableRowSet viewport;
+    public RowSet rowsIncluded;
+    public RowSet viewport;
 
     public InitialSnapshot clone() {
         try {
@@ -38,7 +38,7 @@ public class InitialSnapshot implements Serializable, Cloneable {
         return this;
     }
 
-    public InitialSnapshot setViewport(TrackingMutableRowSet viewport) {
+    public InitialSnapshot setViewport(RowSet viewport) {
         this.viewport = viewport;
         return this;
     }

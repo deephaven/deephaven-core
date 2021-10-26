@@ -12,8 +12,8 @@ import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.v2.LiveTableTestCase;
 import io.deephaven.engine.v2.TstUtils;
 import io.deephaven.engine.v2.select.*;
+import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -77,7 +77,7 @@ public class SelectFilterFactoryTest extends LiveTableTestCase {
         SelectFilter f = SelectFilterFactory.getExpression("Opra in `opra1`, `opra2`, `opra3`,`opra4`");
         f.init(t.getDefinition());
         assertEquals(MatchFilter.class, f.getClass());
-        TrackingMutableRowSet idx = f.filter(t.getRowSet().clone(), t.getRowSet(), t, false);
+        RowSet idx = f.filter(t.getRowSet().clone(), t.getRowSet(), t, false);
         assertEquals(3, idx.size());
 
         f = SelectFilterFactory.getExpression("Opra in `opra1`, `Opra4`");
@@ -164,7 +164,7 @@ public class SelectFilterFactoryTest extends LiveTableTestCase {
         SelectFilter f = SelectFilterFactory.getExpression("Timestamp in '" + mon + "'");
         f.init(t.getDefinition());
         assertEquals(MatchFilter.class, f.getClass());
-        TrackingMutableRowSet idx = f.filter(t.getRowSet().clone(), t.getRowSet(), t, false);
+        RowSet idx = f.filter(t.getRowSet().clone(), t.getRowSet(), t, false);
         assertEquals(1, idx.size());
         assertEquals(mon, t.getColumn(0).get(idx.firstRowKey()));
         // match one of two items
@@ -342,7 +342,7 @@ public class SelectFilterFactoryTest extends LiveTableTestCase {
         SelectFilter f = SelectFilterFactory.getExpression("Phrase icase includes any `T1`, `T2`, `T3`");
         assertTrue("f instanceof StringContainsFilter", f instanceof StringContainsFilter);
         f.init(t.getDefinition());
-        TrackingMutableRowSet result = f.filter(t.getRowSet().clone(), t.getRowSet(), t, false);
+        RowSet result = f.filter(t.getRowSet().clone(), t.getRowSet(), t, false);
         assertEquals(12, result.size());
         assertEquals(RowSetFactoryImpl.INSTANCE.getRowSetByValues(0, 1, 2, 3, 4, 6, 7, 8, 9, 10, 11, 13), result);
 

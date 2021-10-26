@@ -8,7 +8,7 @@ import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.live.NotificationQueue;
 import io.deephaven.engine.tables.select.MatchPair;
 import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
+import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.engine.v2.utils.RowSetShiftData;
 import io.deephaven.engine.v2.utils.UpdatePerformanceTracker;
 import org.jetbrains.annotations.Nullable;
@@ -111,7 +111,7 @@ public interface DynamicTable extends Table, NotificationQueue.Dependency, Dynam
      * @param removed rowSet values removed from the table
      * @param modified rowSet values modified in the table.
      */
-    default void notifyListeners(TrackingMutableRowSet added, TrackingMutableRowSet removed, TrackingMutableRowSet modified) {
+    default void notifyListeners(RowSet added, RowSet removed, RowSet modified) {
         notifyListeners(new Listener.Update(added, removed, modified, RowSetShiftData.EMPTY,
                 modified.isEmpty() ? ModifiedColumnSet.EMPTY : ModifiedColumnSet.ALL));
     }

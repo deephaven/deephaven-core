@@ -14,9 +14,7 @@ import io.deephaven.engine.v2.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.RedirectedColumnSource;
 import io.deephaven.engine.v2.sources.WritableSource;
-import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
-import io.deephaven.engine.v2.utils.RedirectionIndex;
+import io.deephaven.engine.v2.utils.*;
 
 import java.util.BitSet;
 import java.util.LinkedHashMap;
@@ -25,9 +23,9 @@ import java.util.Map;
 public class InitialSnapshotTable extends QueryTable {
     protected final Setter<?>[] setters;
     protected int capacity;
-    protected TrackingMutableRowSet freeset = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
-    protected final TrackingMutableRowSet populatedRows;
-    protected final TrackingMutableRowSet[] populatedCells;
+    protected MutableRowSet freeset = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+    protected final MutableRowSet populatedRows;
+    protected final MutableRowSet[] populatedCells;
     protected WritableSource<?>[] writableSources;
     protected RedirectionIndex redirectionIndex;
 
@@ -39,7 +37,7 @@ public class InitialSnapshotTable extends QueryTable {
         this.subscribedColumns = subscribedColumns;
         this.writableSources = writableSources;
         this.setters = new Setter[writableSources.length];
-        this.populatedCells = new TrackingMutableRowSet[writableSources.length];
+        this.populatedCells = new MutableRowSet[writableSources.length];
         for (int ii = 0; ii < writableSources.length; ++ii) {
             setters[ii] = getSetter(writableSources[ii]);
             this.populatedCells[ii] = RowSetFactoryImpl.INSTANCE.getRowSetByValues();
@@ -83,20 +81,20 @@ public class InitialSnapshotTable extends QueryTable {
     }
 
     protected void processInitialSnapshot(InitialSnapshot snapshot) {
-        final TrackingMutableRowSet viewPort = snapshot.viewport;
-        final TrackingMutableRowSet addedRowSet = snapshot.rowsIncluded;
-        final TrackingMutableRowSet newlyPopulated = viewPort == null ? addedRowSet : snapshot.rowSet.subSetForPositions(viewPort);
+        final RowSet viewPort = snapshot.viewport;
+        final RowSet addedRowSet = snapshot.rowsIncluded;
+        final MutableRowSet newlyPopulated = viewPort == null ? addedRowSet : snapshot.rowSet.subSetForPositions(viewPort);
         if (viewPort != null) {
             newlyPopulated.retain(addedRowSet);
         }
 
-        final TrackingMutableRowSet destinationRowSet = getFreeRows(newlyPopulated.size());
+        final RowSet destinationRowSet = getFreeRows(newlyPopulated.size());
 
-        final TrackingMutableRowSet.Iterator addedIt = addedRowSet.iterator();
-        final TrackingMutableRowSet.Iterator destIt = destinationRowSet.iterator();
+        final RowSet.Iterator addedIt = addedRowSet.iterator();
+        final RowSet.Iterator destIt = destinationRowSet.iterator();
 
         long nextInViewport = -1;
-        final TrackingMutableRowSet.Iterator populationIt;
+        final RowSet.Iterator populationIt;
         if (viewPort == null) {
             populationIt = null;
         } else {
@@ -130,7 +128,7 @@ public class InitialSnapshotTable extends QueryTable {
 
         for (int ii = 0; ii < setters.length; ii++) {
             if (subscribedColumns.get(ii) && snapshot.dataColumns[ii] != null) {
-                final TrackingMutableRowSet ix = populatedCells[ii];
+                final MutableRowSet ix = populatedCells[ii];
                 ix.insert(newlyPopulated);
             }
         }
@@ -139,7 +137,7 @@ public class InitialSnapshotTable extends QueryTable {
         getRowSet().insert(snapshot.rowSet);
     }
 
-    protected TrackingMutableRowSet getFreeRows(long size) {
+    protected RowSet getFreeRows(long size) {
         boolean needsResizing = false;
         if (capacity == 0) {
             capacity = Integer.highestOneBit((int) Math.max(size * 2, 8));
@@ -159,7 +157,7 @@ public class InitialSnapshotTable extends QueryTable {
                 ((WritableSource<?>) source).ensureCapacity(capacity);
             }
         }
-        TrackingMutableRowSet result = freeset.subSetByPositionRange(0, (int) size);
+        RowSet result = freeset.subSetByPositionRange(0, (int) size);
         Assert.assertion(result.size() == size, "result.size() == size");
         freeset = freeset.subSetByPositionRange((int) size, (int) freeset.size());
         return result;

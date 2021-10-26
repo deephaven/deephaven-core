@@ -13,7 +13,6 @@ import io.deephaven.engine.v2.sources.chunk.Attributes.ChunkLengths;
 import io.deephaven.engine.v2.sources.chunk.Attributes.ChunkPositions;
 import io.deephaven.engine.v2.sources.chunk.Attributes.RowKeys;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.engine.v2.utils.UpdatePerformanceTracker;
 import io.deephaven.util.SafeCloseable;
@@ -244,7 +243,7 @@ public interface IterativeChunkedAggregationOperator {
         return false;
     }
 
-    default boolean addIndex(SingletonContext context, TrackingMutableRowSet rowSet, long destination) {
+    default boolean addIndex(SingletonContext context, RowSet rowSet, long destination) {
         throw new UnsupportedOperationException();
     }
 

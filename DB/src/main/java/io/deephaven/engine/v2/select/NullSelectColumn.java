@@ -4,7 +4,7 @@ import io.deephaven.engine.tables.ColumnDefinition;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.select.MatchPair;
 import io.deephaven.engine.v2.sources.*;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
+import io.deephaven.engine.v2.utils.RowSet;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collections;
@@ -29,7 +29,7 @@ public class NullSelectColumn<T> implements SelectColumn {
     }
 
     @Override
-    public List<String> initInputs(final TrackingMutableRowSet rowSet, final Map<String, ? extends ColumnSource<?>> columnsOfInterest) {
+    public List<String> initInputs(final RowSet rowSet, final Map<String, ? extends ColumnSource<?>> columnsOfInterest) {
         return Collections.emptyList();
     }
 

@@ -8,8 +8,8 @@ import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.tables.TableDefinition;
 import io.deephaven.engine.v2.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.v2.sources.ColumnSource;
+import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.qst.column.Column;
 import io.deephaven.qst.table.NewTable;
 
@@ -51,7 +51,7 @@ public class InMemoryTable extends QueryTable {
                                 x -> Array.newInstance(x.getDataType(), size)).toArray(Object[]::new)));
     }
 
-    private InMemoryTable(TableDefinition definition, TrackingMutableRowSet rowSet, Map<String, ? extends ColumnSource<?>> columns) {
+    private InMemoryTable(TableDefinition definition, RowSet rowSet, Map<String, ? extends ColumnSource<?>> columns) {
         super(definition, rowSet, columns);
     }
 

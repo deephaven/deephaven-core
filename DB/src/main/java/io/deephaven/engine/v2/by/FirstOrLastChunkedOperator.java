@@ -9,9 +9,7 @@ import io.deephaven.engine.v2.sources.ObjectArraySource;
 import io.deephaven.engine.v2.sources.ReadOnlyRedirectedColumnSource;
 import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.sources.chunk.Attributes.*;
-import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
-import io.deephaven.engine.v2.utils.LongColumnSourceRedirectionIndex;
+import io.deephaven.engine.v2.utils.*;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -19,7 +17,7 @@ import java.util.Map;
 public class FirstOrLastChunkedOperator implements IterativeChunkedAggregationOperator {
     private final boolean isFirst;
     private final LongArraySource redirections;
-    private final ObjectArraySource<TrackingMutableRowSet> indices;
+    private final ObjectArraySource<RowSet> indices;
     private final LongColumnSourceRedirectionIndex redirectionIndex;
     private final Map<String, ColumnSource<?>> resultColumns;
     private final boolean exposeRedirections;
@@ -115,7 +113,7 @@ public class FirstOrLastChunkedOperator implements IterativeChunkedAggregationOp
 
     private long doShift(LongChunk<OrderedRowKeys> preShiftIndices, LongChunk<OrderedRowKeys> postShiftIndices,
             int startPosition, int runLength, long destination) {
-        final TrackingMutableRowSet rowSet = indexForSlot(destination);
+        final MutableRowSet rowSet = indexForSlot(destination);
         rowSet.remove(preShiftIndices, startPosition, runLength);
         rowSet.insert(postShiftIndices, startPosition, runLength);
         return isFirst ? rowSet.firstRowKey() : rowSet.lastRowKey();
@@ -200,7 +198,7 @@ public class FirstOrLastChunkedOperator implements IterativeChunkedAggregationOp
     }
 
     @Override
-    public boolean addIndex(SingletonContext context, TrackingMutableRowSet addRowSet, long destination) {
+    public boolean addIndex(SingletonContext context, RowSet addRowSet, long destination) {
         if (addRowSet.isEmpty()) {
             return false;
         }
@@ -226,7 +224,7 @@ public class FirstOrLastChunkedOperator implements IterativeChunkedAggregationOp
         return updateRedirections(destination, rowSet);
     }
 
-    private boolean updateRedirections(long destination, TrackingMutableRowSet rowSet) {
+    private boolean updateRedirections(long destination, RowSet rowSet) {
         final long newValue = isFirst ? rowSet.firstRowKey() : rowSet.lastRowKey();
         final long oldValue = redirections.getAndSetUnsafe(destination, newValue);
         return oldValue != newValue;
@@ -395,7 +393,7 @@ public class FirstOrLastChunkedOperator implements IterativeChunkedAggregationOp
         }
 
         @Override
-        public boolean addIndex(SingletonContext context, TrackingMutableRowSet rowSet, long destination) {
+        public boolean addIndex(SingletonContext context, RowSet rowSet, long destination) {
             return redirections.getUnsafe(destination) == (isFirst ? rowSet.firstRowKey() : rowSet.lastRowKey());
         }
 
@@ -481,8 +479,8 @@ public class FirstOrLastChunkedOperator implements IterativeChunkedAggregationOp
             for (int ii = 0; ii < startPositions.size(); ++ii) {
                 final int startPosition = startPositions.get(ii);
                 final int destination = destinations.get(startPosition);
-                final TrackingMutableRowSet trackingRowSet = indices.getUnsafe(destination);
-                final long trackingKey = isFirst ? trackingRowSet.firstRowKey() : trackingRowSet.lastRowKey();
+                final RowSet rowSet = indices.getUnsafe(destination);
+                final long trackingKey = isFirst ? rowSet.firstRowKey() : rowSet.lastRowKey();
                 if (redirections.getUnsafe(destination) != trackingKey) {
                     redirections.set(destination, trackingKey);
                     stateModified.set(ii, true);
@@ -539,12 +537,12 @@ public class FirstOrLastChunkedOperator implements IterativeChunkedAggregationOp
         }
 
         @Override
-        public boolean addIndex(SingletonContext context, TrackingMutableRowSet rowSet, long destination) {
+        public boolean addIndex(SingletonContext context, RowSet rowSet, long destination) {
             return updateSingleton(destination);
         }
 
         private boolean updateSingleton(long destination) {
-            final TrackingMutableRowSet trackedRowSet = Require.neqNull(indices.getUnsafe(destination), "indices.get(destination)");
+            final RowSet trackedRowSet = Require.neqNull(indices.getUnsafe(destination), "indices.get(destination)");
             final long trackedKey = isFirst ? trackedRowSet.firstRowKey() : trackedRowSet.lastRowKey();
             return trackedKey != redirections.getAndSetUnsafe(destination, trackedKey);
         }

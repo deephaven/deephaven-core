@@ -19,8 +19,8 @@ public class MixedBuilderTest extends TestCase {
         final TreeIndexImpl mbi = mb.getTreeIndexImpl();
         final TreeIndexImpl pqbi = pqb.getTreeIndexImpl();
         assertEquals(pqbi.ixCardinality(), mbi.ixCardinality());
-        final TrackingMutableRowSet.Iterator mbit = mbi.ixIterator();
-        final TrackingMutableRowSet.Iterator pqbit = pqbi.ixIterator();
+        final RowSet.Iterator mbit = mbi.ixIterator();
+        final RowSet.Iterator pqbit = pqbi.ixIterator();
         while (mbit.hasNext()) {
             final long mv = mbit.nextLong();
             final long mp = pqbit.nextLong();

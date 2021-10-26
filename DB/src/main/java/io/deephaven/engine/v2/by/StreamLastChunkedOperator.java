@@ -10,7 +10,6 @@ import io.deephaven.engine.v2.sources.chunk.Attributes.ChunkLengths;
 import io.deephaven.engine.v2.sources.chunk.Attributes.ChunkPositions;
 import io.deephaven.engine.v2.sources.chunk.Attributes.RowKeys;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.v2.utils.RowSet;
 import org.jetbrains.annotations.NotNull;
@@ -63,7 +62,7 @@ public class StreamLastChunkedOperator extends CopyingPermutedStreamFirstOrLastC
 
     @Override
     public boolean addIndex(final SingletonContext context,
-            @NotNull final TrackingMutableRowSet rowSet,
+            @NotNull final RowSet rowSet,
             final long destination) {
         if (rowSet.isEmpty()) {
             return false;

@@ -9,8 +9,8 @@ import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.chunk.Attributes.RowKeys;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 import io.deephaven.engine.v2.sources.chunk.*;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.engine.v2.utils.RedirectionIndex;
+import io.deephaven.engine.v2.utils.RowSet;
 
 class AsOfStampContext implements Context {
     private final ChunkType stampType;
@@ -166,7 +166,7 @@ class AsOfStampContext implements Context {
      * @param rightRowSet the indices of the right values in this state
      * @param redirectionIndex the redirection rowSet to update
      */
-    void processEntry(TrackingMutableRowSet leftRowSet, TrackingMutableRowSet rightRowSet, RedirectionIndex redirectionIndex) {
+    void processEntry(RowSet leftRowSet, RowSet rightRowSet, RedirectionIndex redirectionIndex) {
         ensureRightCapacity(rightRowSet.intSize());
         getAndCompactStamps(rightRowSet, rightKeyIndicesChunk, rightStampChunk);
         processEntry(leftRowSet, rightStampChunk, rightKeyIndicesChunk, redirectionIndex);
@@ -179,7 +179,7 @@ class AsOfStampContext implements Context {
      * @param rightKeyIndicesChunk the output chunk of rightKeyIndices
      * @param rightStampChunk the output chunk of right stamp values
      */
-    void getAndCompactStamps(TrackingMutableRowSet rightRowSet, WritableLongChunk<RowKeys> rightKeyIndicesChunk,
+    void getAndCompactStamps(RowSet rightRowSet, WritableLongChunk<RowKeys> rightKeyIndicesChunk,
                              WritableChunk<Values> rightStampChunk) {
         ensureRightFillCapacity(rightRowSet.intSize());
         // read the right stamp column
@@ -200,7 +200,7 @@ class AsOfStampContext implements Context {
      * @param rightKeyIndicesChunk the right key indices (already compacted)
      * @param redirectionIndex the redirection rowSet to update
      */
-    void processEntry(TrackingMutableRowSet leftRowSet, Chunk<Values> rightStampChunk, LongChunk<RowKeys> rightKeyIndicesChunk,
+    void processEntry(RowSet leftRowSet, Chunk<Values> rightStampChunk, LongChunk<RowKeys> rightKeyIndicesChunk,
                       RedirectionIndex redirectionIndex) {
         ensureLeftCapacity(leftRowSet.intSize());
 
@@ -222,7 +222,7 @@ class AsOfStampContext implements Context {
         for (int ii = 0; ii < leftKeyIndicesChunk.size(); ++ii) {
             final long rightKey = leftRedirections.get(ii);
             // the redirection rowSet defaults to NULL_KEY so we do not need to put it in there
-            if (rightKey != TrackingMutableRowSet.NULL_ROW_KEY) {
+            if (rightKey != RowSet.NULL_ROW_KEY) {
                 redirectionIndex.putVoid(leftKeyIndicesChunk.get(ii), rightKey);
             }
         }

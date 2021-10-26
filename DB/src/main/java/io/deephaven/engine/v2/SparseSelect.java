@@ -12,8 +12,8 @@ import io.deephaven.engine.v2.sources.chunk.Chunk;
 import io.deephaven.engine.v2.sources.chunk.ChunkSource;
 import io.deephaven.engine.v2.sources.chunk.SharedContext;
 import io.deephaven.engine.v2.sources.chunk.WritableChunk;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.engine.structures.RowSequence;
+import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.util.SafeCloseableArray;
 import io.deephaven.util.SafeCloseablePair;
 import io.deephaven.util.thread.NamingThreadFactory;
@@ -192,7 +192,7 @@ public class SparseSelect {
                                 final Update downstream = upstream.copy();
                                 downstream.modifiedColumnSet = modifiedColumnSetForUpdates;
                                 if (sparseObjectSources.length > 0) {
-                                    try (final TrackingMutableRowSet removedOnly = upstream.removed.minus(upstream.added)) {
+                                    try (final RowSet removedOnly = upstream.removed.minus(upstream.added)) {
                                         for (final ObjectSparseArraySource<?> objectSparseArraySource : sparseObjectSources) {
                                             objectSparseArraySource.remove(removedOnly);
                                         }
@@ -213,11 +213,11 @@ public class SparseSelect {
                                 }
 
                                 if (anyModified) {
-                                    try (final TrackingMutableRowSet addedAndModified = upstream.added.union(upstream.modified)) {
+                                    try (final RowSet addedAndModified = upstream.added.union(upstream.modified)) {
                                         if (upstream.shifted.nonempty()) {
-                                            try (final TrackingMutableRowSet currentWithoutAddsOrModifies =
+                                            try (final RowSet currentWithoutAddsOrModifies =
                                                     source.getRowSet().minus(addedAndModified);
-                                                 final SafeCloseablePair<TrackingMutableRowSet, TrackingMutableRowSet> shifts = upstream.shifted
+                                                 final SafeCloseablePair<RowSet, RowSet> shifts = upstream.shifted
                                                             .extractParallelShiftedRowsFromPostShiftIndex(
                                                                     currentWithoutAddsOrModifies)) {
                                                 doShift(shifts, outputSources, modifiedColumns);
@@ -232,8 +232,8 @@ public class SparseSelect {
                                     invert(modifiedColumns);
 
                                     if (upstream.shifted.nonempty()) {
-                                        try (final TrackingMutableRowSet currentWithoutAdds = source.getRowSet().minus(upstream.added);
-                                             final SafeCloseablePair<TrackingMutableRowSet, TrackingMutableRowSet> shifts =
+                                        try (final RowSet currentWithoutAdds = source.getRowSet().minus(upstream.added);
+                                             final SafeCloseablePair<RowSet, RowSet> shifts =
                                                         upstream.shifted.extractParallelShiftedRowsFromPostShiftIndex(
                                                                 currentWithoutAdds)) {
                                             doShift(shifts, outputSources, modifiedColumns);
@@ -260,7 +260,7 @@ public class SparseSelect {
                 });
     }
 
-    private static void doShift(SafeCloseablePair<TrackingMutableRowSet, TrackingMutableRowSet> shifts, SparseArrayColumnSource<?>[] outputSources,
+    private static void doShift(SafeCloseablePair<RowSet, RowSet> shifts, SparseArrayColumnSource<?>[] outputSources,
                                 boolean[] toShift) {
         if (executor == null) {
             doShiftSingle(shifts, outputSources, toShift);
@@ -269,7 +269,7 @@ public class SparseSelect {
         }
     }
 
-    private static void doCopy(TrackingMutableRowSet addedAndModified, ColumnSource<?>[] inputSources,
+    private static void doCopy(RowSet addedAndModified, ColumnSource<?>[] inputSources,
                                WritableSource<?>[] outputSources,
                                boolean[] toCopy) {
         if (executor == null) {
@@ -279,7 +279,7 @@ public class SparseSelect {
         }
     }
 
-    private static void doCopySingle(TrackingMutableRowSet addedAndModified, ColumnSource<?>[] inputSources,
+    private static void doCopySingle(RowSet addedAndModified, ColumnSource<?>[] inputSources,
                                      WritableSource<?>[] outputSources, boolean[] toCopy) {
         final ChunkSource.GetContext[] gcs = new ChunkSource.GetContext[inputSources.length];
         final WritableChunkSink.FillFromContext[] ffcs = new WritableChunkSink.FillFromContext[inputSources.length];
@@ -306,7 +306,7 @@ public class SparseSelect {
         }
     }
 
-    private static void doCopyThreads(TrackingMutableRowSet addedAndModified, ColumnSource<?>[] inputSources,
+    private static void doCopyThreads(RowSet addedAndModified, ColumnSource<?>[] inputSources,
                                       WritableSource<?>[] outputSources, boolean[] toCopy) {
         final Future<?>[] futures = new Future[inputSources.length];
         for (int columnIndex = 0; columnIndex < inputSources.length; columnIndex++) {
@@ -329,7 +329,7 @@ public class SparseSelect {
         }
     }
 
-    private static void doCopySource(TrackingMutableRowSet addedAndModified, WritableSource<?> outputSource,
+    private static void doCopySource(RowSet addedAndModified, WritableSource<?> outputSource,
                                      ColumnSource<?> inputSource) {
         try (final RowSequence.Iterator rsIt = addedAndModified.getRowSequenceIterator();
                 final WritableChunkSink.FillFromContext ffc =
@@ -343,7 +343,7 @@ public class SparseSelect {
         }
     }
 
-    private static void doShiftSingle(SafeCloseablePair<TrackingMutableRowSet, TrackingMutableRowSet> shifts,
+    private static void doShiftSingle(SafeCloseablePair<RowSet, RowSet> shifts,
             SparseArrayColumnSource<?>[] outputSources,
             boolean[] toShift) {
         // noinspection unchecked
@@ -379,7 +379,7 @@ public class SparseSelect {
         }
     }
 
-    private static void doShiftThreads(SafeCloseablePair<TrackingMutableRowSet, TrackingMutableRowSet> shifts,
+    private static void doShiftThreads(SafeCloseablePair<RowSet, RowSet> shifts,
             SparseArrayColumnSource<?>[] outputSources,
             boolean[] toShift) {
         final Future<?>[] futures = new Future[outputSources.length];
@@ -402,7 +402,7 @@ public class SparseSelect {
         }
     }
 
-    private static void doShiftSource(SafeCloseablePair<TrackingMutableRowSet, TrackingMutableRowSet> shifts, SparseArrayColumnSource<?> outputSource) {
+    private static void doShiftSource(SafeCloseablePair<RowSet, RowSet> shifts, SparseArrayColumnSource<?> outputSource) {
         try (final RowSequence.Iterator preIt = shifts.first.getRowSequenceIterator();
                 final RowSequence.Iterator postIt = shifts.second.getRowSequenceIterator();
                 final WritableChunkSink.FillFromContext ffc =

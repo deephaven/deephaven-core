@@ -8,6 +8,7 @@ import io.deephaven.engine.v2.locations.*;
 import io.deephaven.engine.v2.locations.impl.SimpleTableLocationKey;
 import io.deephaven.engine.v2.locations.impl.TableLocationUpdateSubscriptionBuffer;
 import io.deephaven.engine.v2.sources.ColumnSource;
+import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
 import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import gnu.trove.map.TIntIntMap;
@@ -68,16 +69,16 @@ public class TestRegionedColumnSourceManager extends LiveTableTestCase {
 
     private TableLocation duplicateTableLocation0A;
 
-    private Map<String, TrackingMutableRowSet> partitioningColumnGrouping;
+    private Map<String, RowSet> partitioningColumnGrouping;
     private KeyRangeGroupingProvider groupingColumnGroupingProvider;
 
     private TableLocationUpdateSubscriptionBuffer[] subscriptionBuffers;
     private long[] lastSizes;
     private int regionCount;
     private TIntIntMap locationIndexToRegionIndex;
-    private TrackingMutableRowSet expectedRowSet;
-    private TrackingMutableRowSet expectedAddedRowSet;
-    private Map<String, TrackingMutableRowSet> expectedPartitioningColumnGrouping;
+    private RowSet expectedRowSet;
+    private RowSet expectedAddedRowSet;
+    private Map<String, RowSet> expectedPartitioningColumnGrouping;
 
     private RegionedColumnSourceManager SUT;
 
@@ -334,15 +335,15 @@ public class TestRegionedColumnSourceManager extends LiveTableTestCase {
         expectedRowSet = newExpectedRowSet;
     }
 
-    private void checkIndexes(@NotNull final TrackingMutableRowSet addedRowSet) {
+    private void checkIndexes(@NotNull final RowSet addedRowSet) {
         assertIsSatisfied();
         assertIndexEquals(expectedAddedRowSet, addedRowSet);
         if (partitioningColumnGrouping == null) {
             assertTrue(expectedPartitioningColumnGrouping.isEmpty());
         } else {
             assertEquals(expectedPartitioningColumnGrouping.keySet(), partitioningColumnGrouping.keySet());
-            expectedPartitioningColumnGrouping.forEach((final String columnPartition, final TrackingMutableRowSet expectedGrouping) -> {
-                final TrackingMutableRowSet grouping = partitioningColumnGrouping.get(columnPartition);
+            expectedPartitioningColumnGrouping.forEach((final String columnPartition, final RowSet expectedGrouping) -> {
+                final RowSet grouping = partitioningColumnGrouping.get(columnPartition);
                 assertIndexEquals(expectedGrouping, grouping);
             });
         }

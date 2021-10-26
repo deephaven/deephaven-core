@@ -9,10 +9,7 @@ import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.SparseArrayColumnSource;
 import io.deephaven.engine.v2.sources.WritableChunkSink;
 import io.deephaven.engine.v2.sources.chunk.*;
-import io.deephaven.engine.v2.utils.ChunkUtils;
-import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
-import io.deephaven.engine.v2.utils.RowSetShiftData;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
+import io.deephaven.engine.v2.utils.*;
 import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.SafeCloseableList;
@@ -174,7 +171,7 @@ public class TableUpdateValidator implements QueryTable.Operation {
             upstream.shifted.apply(trackingRowSet);
 
             if (aggressiveUpdateValidation) {
-                final TrackingMutableRowSet unmodified = trackingRowSet.minus(upstream.modified);
+                final RowSet unmodified = trackingRowSet.minus(upstream.modified);
                 validateValues("post-shift unmodified", ModifiedColumnSet.ALL, unmodified, false, false);
                 validateValues("post-shift unmodified columns", upstream.modifiedColumnSet, upstream.modified, false,
                         true);
@@ -204,13 +201,13 @@ public class TableUpdateValidator implements QueryTable.Operation {
         }
     }
 
-    private void validateIndexesEqual(final String what, final TrackingMutableRowSet expected, final TrackingMutableRowSet actual) {
+    private void validateIndexesEqual(final String what, final RowSet expected, final RowSet actual) {
         if (expected.equals(actual)) {
             return;
         }
 
-        final TrackingMutableRowSet missing = expected.minus(actual);
-        final TrackingMutableRowSet excess = actual.minus(expected);
+        final RowSet missing = expected.minus(actual);
+        final RowSet excess = actual.minus(expected);
         if (missing.isNonempty()) {
             noteIssue(() -> what + " expected.minus(actual)=" + missing);
         }
@@ -230,7 +227,7 @@ public class TableUpdateValidator implements QueryTable.Operation {
         }
     }
 
-    private void validateValues(final String what, final ModifiedColumnSet columnsToCheck, final TrackingMutableRowSet toValidate,
+    private void validateValues(final String what, final ModifiedColumnSet columnsToCheck, final RowSet toValidate,
             final boolean usePrev, final boolean invertMCS) {
         try (final RowSequence.Iterator it = toValidate.getRowSequenceIterator()) {
             while (it.hasMore()) {
@@ -245,7 +242,7 @@ public class TableUpdateValidator implements QueryTable.Operation {
         }
     }
 
-    private void updateValues(final ModifiedColumnSet columnsToUpdate, final TrackingMutableRowSet toUpdate, final boolean usePrev) {
+    private void updateValues(final ModifiedColumnSet columnsToUpdate, final RowSet toUpdate, final boolean usePrev) {
         try (final RowSequence.Iterator it = toUpdate.getRowSequenceIterator()) {
             while (it.hasMore()) {
                 final RowSequence subKeys = it.getNextRowSequenceWithLength(CHUNK_SIZE);
@@ -375,7 +372,7 @@ public class TableUpdateValidator implements QueryTable.Operation {
             expectedSource.shift(trackingRowSet.subSetByKeyRange(beginRange, endRange), shiftDelta);
         }
 
-        public void remove(final TrackingMutableRowSet toRemove) {
+        public void remove(final RowSet toRemove) {
             expectedSource.remove(toRemove);
         }
 

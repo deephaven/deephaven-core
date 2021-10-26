@@ -36,7 +36,7 @@ public class IndexIteration {
 
     long indexPoints[];
     long indexRanges[];
-    TrackingMutableRowSet rowSet;
+    RowSet rowSet;
 
     double sets[][];
     WritableDoubleChunk chunks[];
@@ -178,14 +178,14 @@ public class IndexIteration {
         }
     }
 
-    private void fillChunkByIndexIterator(TrackingMutableRowSet.Iterator it, int size, WritableDoubleChunk doubleChunk, int sourceId) {
+    private void fillChunkByIndexIterator(RowSet.Iterator it, int size, WritableDoubleChunk doubleChunk, int sourceId) {
         doubleChunk.setSize(0);
         for (int i = 0; i < size; i++) {
             doubleChunk.add(sets[sourceId][(int) it.nextLong()]);
         }
     }
 
-    private int fillChunkByIndexRangeIterator(TrackingMutableRowSet.RangeIterator it, int rangeStart, int size,
+    private int fillChunkByIndexRangeIterator(RowSet.RangeIterator it, int rangeStart, int size,
                                               WritableDoubleChunk doubleChunk, int sourceId) {
         int pos = 0;
         int rangeEnd = (int) it.currentRangeEnd() + 1;
@@ -351,7 +351,7 @@ public class IndexIteration {
     public void indexByIndexIterator(Blackhole bh) {
         double sum = 0;
         int stepCount = indexCount / chunkSize;
-        TrackingMutableRowSet.Iterator its[] = new TrackingMutableRowSet.Iterator[sets.length];
+        RowSet.Iterator its[] = new RowSet.Iterator[sets.length];
         for (int i = 0; i < its.length; i++) {
             its[i] = rowSet.iterator();
 
@@ -377,7 +377,7 @@ public class IndexIteration {
     public void indexByIndexRangeIterator(Blackhole bh) {
         double sum = 0;
         int stepCount = indexCount / chunkSize;
-        TrackingMutableRowSet.RangeIterator its[] = new TrackingMutableRowSet.RangeIterator[sets.length];
+        RowSet.RangeIterator its[] = new RowSet.RangeIterator[sets.length];
 
         for (int i = 0; i < its.length; i++) {
             its[i] = rowSet.rangeIterator();

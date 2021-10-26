@@ -6,13 +6,13 @@ package io.deephaven.extensions.barrage.chunk;
 
 import com.google.common.base.Charsets;
 import gnu.trove.iterator.TLongIterator;
+import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.util.DefensiveDrainable;
 import io.deephaven.engine.util.LongSizedDataStructure;
 import io.deephaven.engine.v2.sources.chunk.Attributes;
 import io.deephaven.engine.v2.sources.chunk.Chunk;
 import io.deephaven.engine.v2.sources.chunk.ChunkType;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.Nullable;
 
@@ -130,7 +130,7 @@ public interface ChunkInputStreamGenerator extends SafeCloseable {
      * @param subset if provided, is a position-space filter of source data
      * @return a single-use DrainableColumn ready to be drained via grpc
      */
-    DrainableColumn getInputStream(final BarrageSubscriptionOptions options, @Nullable final TrackingMutableRowSet subset) throws IOException;
+    DrainableColumn getInputStream(final BarrageSubscriptionOptions options, @Nullable final RowSet subset) throws IOException;
 
     final class FieldNodeInfo {
         public final int numElements;

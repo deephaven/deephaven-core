@@ -13,11 +13,8 @@ import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedRowKeys;
 import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedRowKeyRanges;
 import io.deephaven.engine.v2.sources.sparse.ByteOneOrN;
 import io.deephaven.engine.v2.sources.sparse.LongOneOrN;
-import io.deephaven.engine.v2.utils.RowSetBuilderSequential;
-import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
+import io.deephaven.engine.v2.utils.*;
 import io.deephaven.engine.structures.RowSequence;
-import io.deephaven.engine.v2.utils.UpdateCommitter;
 import io.deephaven.util.SoftRecycler;
 import gnu.trove.list.array.TLongArrayList;
 import org.jetbrains.annotations.NotNull;
@@ -82,7 +79,7 @@ public class ByteSparseArraySource extends SparseArrayColumnSource<Byte> impleme
     private void writeObject(java.io.ObjectOutputStream out) throws IOException {
         final RowSetBuilderSequential sb = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
         blocks.enumerate(NULL_BYTE, sb::appendKey);
-        final TrackingMutableRowSet rowSet = sb.build();
+        final RowSet rowSet = sb.build();
 
         final int size = rowSet.intSize();
         final byte[] data = (byte[])new byte[size];
@@ -101,7 +98,7 @@ public class ByteSparseArraySource extends SparseArrayColumnSource<Byte> impleme
     private void readObject(java.io.ObjectInputStream in) throws IOException, ClassNotFoundException {
         blocks = new ByteOneOrN.Block0();
 
-        final TrackingMutableRowSet rowSet = (TrackingMutableRowSet)in.readObject();
+        final RowSet rowSet = (RowSet)in.readObject();
         final byte[] data = (byte[])in.readObject();
         final ByteChunk<Values> srcChunk = ByteChunk.chunkWrap(data);
         // noinspection unchecked
@@ -137,8 +134,8 @@ public class ByteSparseArraySource extends SparseArrayColumnSource<Byte> impleme
     }
 
     @Override
-    public void shift(final TrackingMutableRowSet keysToShift, final long shiftDelta) {
-        final TrackingMutableRowSet.SearchIterator it = (shiftDelta > 0) ? keysToShift.reverseIterator() : keysToShift.searchIterator();
+    public void shift(final RowSet keysToShift, final long shiftDelta) {
+        final RowSet.SearchIterator it = (shiftDelta > 0) ? keysToShift.reverseIterator() : keysToShift.searchIterator();
         it.forEachLong((i) -> {
             set(i + shiftDelta, getByte(i));
             set(i, NULL_BYTE);
@@ -147,7 +144,7 @@ public class ByteSparseArraySource extends SparseArrayColumnSource<Byte> impleme
     }
 
     @Override
-    public void remove(TrackingMutableRowSet toRemove) {
+    public void remove(RowSet toRemove) {
         toRemove.forEachLong((i) -> { set(i, NULL_BYTE); return true; });
     }
 
@@ -516,7 +513,7 @@ public class ByteSparseArraySource extends SparseArrayColumnSource<Byte> impleme
         final WritableByteChunk<? super Values> byteChunk = dest.asWritableByteChunk();
         for (int ii = 0; ii < keys.size(); ) {
             final long firstKey = keys.get(ii);
-            if (firstKey == TrackingMutableRowSet.NULL_ROW_KEY) {
+            if (firstKey == RowSet.NULL_ROW_KEY) {
                 byteChunk.set(ii++, NULL_BYTE);
                 continue;
             }
@@ -550,7 +547,7 @@ public class ByteSparseArraySource extends SparseArrayColumnSource<Byte> impleme
         final WritableByteChunk<? super Values> byteChunk = dest.asWritableByteChunk();
         for (int ii = 0; ii < keys.size(); ) {
             final long firstKey = keys.get(ii);
-            if (firstKey == TrackingMutableRowSet.NULL_ROW_KEY) {
+            if (firstKey == RowSet.NULL_ROW_KEY) {
                 byteChunk.set(ii++, NULL_BYTE);
                 continue;
             }

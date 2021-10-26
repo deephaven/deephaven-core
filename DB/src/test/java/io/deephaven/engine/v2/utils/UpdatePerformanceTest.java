@@ -66,7 +66,7 @@ public class UpdatePerformanceTest {
     }
 
     static class IndexUpdateStrategy implements UpdateStrategy {
-        private TrackingMutableRowSet ix[] = new TrackingMutableRowSet[4];
+        private MutableRowSet ix[] = new MutableRowSet[4];
         private final Runnable[] runners = new Runnable[] {
                 getParallelRunner(), getSequentialRunner()
         };
@@ -174,7 +174,7 @@ public class UpdatePerformanceTest {
         @Override
         public long getBaseCrc32() {
             final CRC32 crc32 = new CRC32();
-            TrackingMutableRowSet.RangeIterator it = ix[0].rangeIterator();
+            RowSet.RangeIterator it = ix[0].rangeIterator();
             while (it.hasNext()) {
                 it.next();
                 for (long v = it.currentRangeStart(); v <= it.currentRangeEnd(); ++v) {

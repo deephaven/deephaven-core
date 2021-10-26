@@ -11,12 +11,13 @@ import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.sources.chunk.util.LongChunkAppender;
 import io.deephaven.engine.v2.sources.chunk.util.LongChunkIterator;
 import io.deephaven.engine.v2.utils.MutableRowSetImpl;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.structures.rowsequence.RowSequenceUtil;
+import io.deephaven.engine.v2.utils.RowSet;
+import io.deephaven.engine.v2.utils.TrackingRowSet;
 import org.jetbrains.annotations.NotNull;
 
-import static io.deephaven.engine.v2.utils.TrackingMutableRowSet.NULL_ROW_KEY;
+import static io.deephaven.engine.v2.utils.RowSet.NULL_ROW_KEY;
 import static io.deephaven.util.QueryConstants.*;
 
 /**
@@ -232,7 +233,7 @@ final class UngroupedAggregateColumnSource<DATA_TYPE> extends UngroupedColumnSou
         private UngroupedFillContext(@NotNull final BaseAggregateColumnSource<?, ?> aggregateColumnSource,
                 final int chunkCapacity,
                 final SharedContext sharedContext) {
-            final ColumnSource<TrackingMutableRowSet> indexSource = aggregateColumnSource.indexSource;
+            final ColumnSource<RowSet> indexSource = aggregateColumnSource.indexSource;
             final ColumnSource<?> aggregatedSource = aggregateColumnSource.aggregatedSource;
 
             shareable = sharedContext == null ? new Shareable(false, indexSource, chunkCapacity)
@@ -267,7 +268,7 @@ final class UngroupedAggregateColumnSource<DATA_TYPE> extends UngroupedColumnSou
             private int currentIndexPosition;
 
             private Shareable(final boolean shared,
-                    @NotNull final ColumnSource<TrackingMutableRowSet> indexSource,
+                    @NotNull final ColumnSource<RowSet> indexSource,
                     final int chunkCapacity) {
                 this.shared = shared;
 
@@ -278,7 +279,7 @@ final class UngroupedAggregateColumnSource<DATA_TYPE> extends UngroupedColumnSou
                 componentKeyIndicesSlice = ResettableWritableLongChunk.makeResettableChunk();
             }
 
-            private void extractFillChunkInformation(@NotNull final ColumnSource<? extends TrackingMutableRowSet> indexSource,
+            private void extractFillChunkInformation(@NotNull final ColumnSource<? extends RowSet> indexSource,
                     final long base, final boolean usePrev, @NotNull final RowSequence rowSequence) {
                 if (stateReusable) {
                     return;
@@ -305,7 +306,7 @@ final class UngroupedAggregateColumnSource<DATA_TYPE> extends UngroupedColumnSou
                 indexKeyIndices.setSize(currentIndexPosition + 1);
                 sameIndexRunLengths.setSize(currentIndexPosition + 1);
 
-                final ObjectChunk<TrackingMutableRowSet, ? extends Values> indexes;
+                final ObjectChunk<RowSet, ? extends Values> indexes;
                 try (final RowSequence indexRowSequence =
                         RowSequenceUtil.wrapRowKeysChunkAsRowSequence(indexKeyIndices)) {
                     if (usePrev) {
@@ -317,10 +318,10 @@ final class UngroupedAggregateColumnSource<DATA_TYPE> extends UngroupedColumnSou
 
                 int componentKeyIndicesPosition = 0;
                 for (int ii = 0; ii < indexes.size(); ++ii) {
-                    final TrackingMutableRowSet currRowSet = indexes.get(ii);
+                    final TrackingRowSet currRowSet = indexes.get(ii);
                     Assert.neqNull(currRowSet, "currRowSet");
                     final boolean usePrevIndex = usePrev && !(currRowSet instanceof MutableRowSetImpl);
-                    final TrackingMutableRowSet rowSet = usePrevIndex ? currRowSet.getPrevRowSet() : currRowSet;
+                    final RowSet rowSet = usePrevIndex ? currRowSet.getPrevRowSet() : currRowSet;
                     try {
                         final int lengthFromThisIndex = sameIndexRunLengths.get(ii);
 

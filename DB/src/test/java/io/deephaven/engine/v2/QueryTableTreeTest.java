@@ -5,9 +5,9 @@ import io.deephaven.base.Function;
 import io.deephaven.base.verify.Require;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.datastructures.util.SmartKey;
+import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.engine.v2.utils.RowSetBuilderSequential;
 import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.io.log.LogLevel;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.io.logger.StreamLoggerImpl;
@@ -720,10 +720,10 @@ public class QueryTableTreeTest extends QueryTableTestBase {
         }
 
         @Override
-        public TreeMap<Long, IdParentPair> populateMap(TreeMap<Long, IdParentPair> values, TrackingMutableRowSet toAdd, Random random) {
+        public TreeMap<Long, IdParentPair> populateMap(TreeMap<Long, IdParentPair> values, RowSet toAdd, Random random) {
             final TreeMap<Long, IdParentPair> result = new TreeMap<>();
 
-            for (final TrackingMutableRowSet.Iterator it = toAdd.iterator(); it.hasNext();) {
+            for (final RowSet.Iterator it = toAdd.iterator(); it.hasNext();) {
                 add(random, values, result, it.nextLong());
             }
 
@@ -933,12 +933,12 @@ public class QueryTableTreeTest extends QueryTableTestBase {
         final TableMap actualMap = actualMapSource.call(actualValue);
         final TableMap expectedMap = expectedMapSource.call(expectedValue);
 
-        final TrackingMutableRowSet actualRowSet = indexOrPrev(actualValue, actualPrev);
-        final TrackingMutableRowSet expectedRowSet = indexOrPrev(expectedValue, expectedPrev);
+        final RowSet actualRowSet = indexOrPrev(actualValue, actualPrev);
+        final RowSet expectedRowSet = indexOrPrev(expectedValue, expectedPrev);
         assertEquals(expectedRowSet.size(), actualRowSet.size());
 
-        final TrackingMutableRowSet.Iterator oit = actualRowSet.iterator();
-        final TrackingMutableRowSet.Iterator rit = expectedRowSet.iterator();
+        final RowSet.Iterator oit = actualRowSet.iterator();
+        final RowSet.Iterator rit = expectedRowSet.iterator();
 
         for (; oit.hasNext();) {
             assertTrue(rit.hasNext());
@@ -976,7 +976,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
         return usePrev ? new PrevColumnSource(table.getColumnSource(columnName)) : table.getColumnSource(columnName);
     }
 
-    private static TrackingMutableRowSet indexOrPrev(Table table, boolean usePrev) {
+    private static RowSet indexOrPrev(Table table, boolean usePrev) {
         return usePrev ? table.getRowSet().getPrevRowSet() : table.getRowSet();
     }
 
@@ -1152,7 +1152,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
             return;
         }
 
-        for (final TrackingMutableRowSet.Iterator it = indexOrPrev(root, usePrev).iterator(); it.hasNext();) {
+        for (final RowSet.Iterator it = indexOrPrev(root, usePrev).iterator(); it.hasNext();) {
             final long key = it.nextLong();
             Object childKey = children.get(key);
             if (childKey == null) {
@@ -1817,7 +1817,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
                 assertEquals(openHid.size(), hidToPos.size());
             }
 
-            final TrackingMutableRowSet newRowSet = builder.build();
+            final RowSet newRowSet = builder.build();
             source.notifyListeners(newRowSet, i(), i());
 
             // TableTools.showWithIndex(source.getSubTable(newRowSet));

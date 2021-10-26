@@ -32,7 +32,7 @@ public class GroupedRedirectionIndex implements RedirectionIndex {
     /**
      * The actual TrackingMutableRowSet for each group; parallel with groupSizes.
      */
-    private final TrackingMutableRowSet[] groups;
+    private final RowSet[] groups;
 
     /**
      * If you are doing repeated get calls, then we must redo the binary search from scratch each time. To avoid this
@@ -41,7 +41,7 @@ public class GroupedRedirectionIndex implements RedirectionIndex {
      */
     private final ThreadLocal<SavedContext> threadContext = ThreadLocal.withInitial(SavedContext::new);
 
-    public GroupedRedirectionIndex(long size, long[] groupSizes, TrackingMutableRowSet[] groups) {
+    public GroupedRedirectionIndex(long size, long[] groupSizes, RowSet[] groups) {
         this.size = size;
         this.groupSizes = groupSizes;
         this.groups = groups;
@@ -50,7 +50,7 @@ public class GroupedRedirectionIndex implements RedirectionIndex {
     @Override
     public long get(long key) {
         if (key < 0 || key >= size) {
-            return TrackingMutableRowSet.NULL_ROW_KEY;
+            return RowSet.NULL_ROW_KEY;
         }
 
         int slot;

@@ -82,7 +82,7 @@ public interface RowSet extends RowSequence, LongSizedDataStructure, SafeCloseab
      * @param keys The keys to find positions for
      * @return A new {@link MutableRowSet} containing the positions of the keys in this RowSet
      */
-    default MutableRowSet invert(RowSet keys) {
+    default RowSet invert(RowSet keys) {
         return invert(keys, Long.MAX_VALUE);
     }
 
@@ -97,7 +97,7 @@ public interface RowSet extends RowSequence, LongSizedDataStructure, SafeCloseab
      * @param maximumPosition The largest position for which we will find a key
      * @return A new {@link MutableRowSet} containing the positions of the keys in this RowSet
      */
-    MutableRowSet invert(RowSet keys, long maximumPosition);
+    RowSet invert(RowSet keys, long maximumPosition);
 
     /**
      * For the given keys RowSet, under the assertion that none of them are present in the current RowSet, return the
@@ -151,7 +151,7 @@ public interface RowSet extends RowSequence, LongSizedDataStructure, SafeCloseab
      */
     MutableRowSet union(RowSet rowSetToAdd);
 
-    MutableRowSet shift(long shiftAmount);
+    RowSet shift(long shiftAmount);
 
     interface RangeIterator extends SafeCloseable {
         void close();
@@ -430,7 +430,7 @@ public interface RowSet extends RowSequence, LongSizedDataStructure, SafeCloseab
      * @param posRowSet The RowSet of position-based ranges to extract.
      * @return A new RowSet, containing values at the locations in the provided RowSet.
      */
-    default MutableRowSet subSetForPositions(RowSet posRowSet) {
+    default RowSet subSetForPositions(RowSet posRowSet) {
         final MutableLong currentOffset = new MutableLong();
         final RowSequence.Iterator iter = getRowSequenceIterator();
         final RowSetBuilderSequential builder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();

@@ -691,7 +691,7 @@ public class RspBitmap extends RspArray<RspBitmap> implements TreeIndexImpl {
 
     }
 
-    public void addRangesUnsafeNoWriteCheck(final TrackingMutableRowSet.RangeIterator rit) {
+    public void addRangesUnsafeNoWriteCheck(final RowSet.RangeIterator rit) {
         try {
             int i = 0;
             while (rit.hasNext()) {
@@ -1167,7 +1167,7 @@ public class RspBitmap extends RspArray<RspBitmap> implements TreeIndexImpl {
         return subrangeByValue(start, end, false);
     }
 
-    public void invert(final LongRangeConsumer builder, final TrackingMutableRowSet.RangeIterator it, final long maxPos) {
+    public void invert(final LongRangeConsumer builder, final RowSet.RangeIterator it, final long maxPos) {
         if (!it.hasNext()) {
             return;
         }
@@ -1375,18 +1375,18 @@ public class RspBitmap extends RspArray<RspBitmap> implements TreeIndexImpl {
 
     @Override
     public long ixLastKey() {
-        return isEmpty() ? TrackingMutableRowSet.NULL_ROW_KEY : last();
+        return isEmpty() ? RowSet.NULL_ROW_KEY : last();
     }
 
     @Override
     public long ixFirstKey() {
-        return isEmpty() ? TrackingMutableRowSet.NULL_ROW_KEY : first();
+        return isEmpty() ? RowSet.NULL_ROW_KEY : first();
     }
 
     @Override
     public long ixGet(final long pos) {
         if (pos < 0) {
-            return TrackingMutableRowSet.NULL_ROW_KEY;
+            return RowSet.NULL_ROW_KEY;
         }
         return get(pos);
     }
@@ -1426,7 +1426,7 @@ public class RspBitmap extends RspArray<RspBitmap> implements TreeIndexImpl {
             }
             return SingleRange.make(pos, Math.min(pos + keys.ixCardinality() - 1, maximumPosition));
         }
-        try (final TrackingMutableRowSet.RangeIterator rit = keys.ixRangeIterator()) {
+        try (final RowSet.RangeIterator rit = keys.ixRangeIterator()) {
             final BuilderSequential builder = new TreeIndexImplBuilderSequential();
             invert(builder, rit, maximumPosition);
             return builder.getTreeIndexImpl();
@@ -1734,7 +1734,7 @@ public class RspBitmap extends RspArray<RspBitmap> implements TreeIndexImpl {
             return false;
         }
         long pendingLast = -1;
-        final TrackingMutableRowSet.RangeIterator it = sr.getRangeIterator();
+        final RowSet.RangeIterator it = sr.getRangeIterator();
         int i = 0;
         while (it.hasNext()) {
             it.next();
@@ -1865,7 +1865,7 @@ public class RspBitmap extends RspArray<RspBitmap> implements TreeIndexImpl {
         return orEqualsShifted(shiftAmount, (RspBitmap) other);
     }
 
-    private static class SearchIteratorImpl implements TrackingMutableRowSet.SearchIterator {
+    private static class SearchIteratorImpl implements RowSet.SearchIterator {
         private final RspRangeIterator it;
         private long curr = 0;
         private long next = 0;
@@ -1941,7 +1941,7 @@ public class RspBitmap extends RspArray<RspBitmap> implements TreeIndexImpl {
         }
 
         @Override
-        public long binarySearchValue(final TrackingMutableRowSet.TargetComparator tc, final int dir) {
+        public long binarySearchValue(final RowSet.TargetComparator tc, final int dir) {
             if (currRangeEnd == -1) { // not-started-yet iterator
                 if (!it.hasNext()) {
                     return -1;
@@ -1964,11 +1964,11 @@ public class RspBitmap extends RspArray<RspBitmap> implements TreeIndexImpl {
     }
 
     @Override
-    public TrackingMutableRowSet.SearchIterator ixSearchIterator() {
+    public RowSet.SearchIterator ixSearchIterator() {
         return new SearchIteratorImpl(this);
     }
 
-    private static class IteratorImpl implements TrackingMutableRowSet.Iterator {
+    private static class IteratorImpl implements RowSet.Iterator {
         private final RspIterator it;
 
         public IteratorImpl(final RspBitmap rb) {
@@ -1997,13 +1997,13 @@ public class RspBitmap extends RspArray<RspBitmap> implements TreeIndexImpl {
     }
 
     @Override
-    public TrackingMutableRowSet.Iterator ixIterator() {
+    public RowSet.Iterator ixIterator() {
         return new IteratorImpl(this);
     }
 
     @Override
-    public TrackingMutableRowSet.SearchIterator ixReverseIterator() {
-        return new TrackingMutableRowSet.SearchIterator() {
+    public RowSet.SearchIterator ixReverseIterator() {
+        return new RowSet.SearchIterator() {
             final RspReverseIterator it = getReverseIterator();
 
             @Override
@@ -2033,15 +2033,15 @@ public class RspBitmap extends RspArray<RspBitmap> implements TreeIndexImpl {
             }
 
             @Override
-            public long binarySearchValue(TrackingMutableRowSet.TargetComparator targetComparator, int direction) {
+            public long binarySearchValue(RowSet.TargetComparator targetComparator, int direction) {
                 throw new UnsupportedOperationException("Reverse iterator does not support binary search.");
             }
         };
     }
 
     @Override
-    public TrackingMutableRowSet.RangeIterator ixRangeIterator() {
-        return new TrackingMutableRowSet.RangeIterator() {
+    public RowSet.RangeIterator ixRangeIterator() {
+        return new RowSet.RangeIterator() {
             final RspRangeIterator it = getRangeIterator();
 
             @Override

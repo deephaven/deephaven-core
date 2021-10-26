@@ -4,7 +4,7 @@
 
 package io.deephaven.engine.v2.sources;
 
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
+import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.util.type.TypeUtils;
 import org.apache.commons.lang3.mutable.MutableInt;
 
@@ -27,7 +27,7 @@ public class TreeMapSource<T> extends AbstractColumnSource<T> {
         super(type);
     }
 
-    public TreeMapSource(Class<T> type, TrackingMutableRowSet rowSet, T[] data) {
+    public TreeMapSource(Class<T> type, RowSet rowSet, T[] data) {
         // noinspection unchecked
         super(convertType(type));
         add(rowSet, data);
@@ -45,7 +45,7 @@ public class TreeMapSource<T> extends AbstractColumnSource<T> {
         }
     }
 
-    public synchronized void add(final TrackingMutableRowSet rowSet, T[] vs) {
+    public synchronized void add(final RowSet rowSet, T[] vs) {
         if (groupToRange != null) {
             setGroupToRange(null);
         }
@@ -70,7 +70,7 @@ public class TreeMapSource<T> extends AbstractColumnSource<T> {
         });
     }
 
-    public synchronized void remove(TrackingMutableRowSet rowSet) {
+    public synchronized void remove(RowSet rowSet) {
         if (groupToRange != null) {
             setGroupToRange(null);
         }
@@ -80,7 +80,7 @@ public class TreeMapSource<T> extends AbstractColumnSource<T> {
             prevData = new TreeMap<>(this.data);
             lastAdditionTime = currentStep;
         }
-        for (final TrackingMutableRowSet.Iterator iterator = rowSet.iterator(); iterator.hasNext();) {
+        for (final RowSet.Iterator iterator = rowSet.iterator(); iterator.hasNext();) {
             this.data.remove(iterator.nextLong());
         }
     }

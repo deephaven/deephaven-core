@@ -670,7 +670,7 @@ public class SortedRangesTest {
     @Test
     public void testIterator() {
         final SortedRanges sar = makeSortedArray0();
-        final TrackingMutableRowSet.Iterator it = sar.getIterator();
+        final RowSet.Iterator it = sar.getIterator();
         for (int i = 0; i < segments0.length; ++i) {
             final long[] segment = segments0[i];
             final long s = segment[0];
@@ -692,7 +692,7 @@ public class SortedRangesTest {
         for (long v : values) {
             sar = sar.add(v);
         }
-        final TrackingMutableRowSet.Iterator rit = sar.getIterator();
+        final RowSet.Iterator rit = sar.getIterator();
         for (long v : values) {
             assertTrue(rit.hasNext());
             assertEquals(v, rit.nextLong());
@@ -703,7 +703,7 @@ public class SortedRangesTest {
     @Test
     public void testRangeIterator() {
         final SortedRanges sar = makeSortedArray0();
-        final TrackingMutableRowSet.RangeIterator rit = sar.getRangeIterator();
+        final RowSet.RangeIterator rit = sar.getRangeIterator();
         for (int i = 0; i < segments0.length; ++i) {
             final long[] segment = segments0[i];
             assertTrue(rit.hasNext());
@@ -720,7 +720,7 @@ public class SortedRangesTest {
     public void testRangeIteratorSingle() {
         SortedRanges sar2 = new SortedRangesLong(2);
         sar2 = sar2.add(10);
-        final TrackingMutableRowSet.RangeIterator rit2 = sar2.getRangeIterator();
+        final RowSet.RangeIterator rit2 = sar2.getRangeIterator();
         assertTrue(rit2.hasNext());
         rit2.next();
         assertEquals(10, rit2.currentRangeStart());
@@ -732,13 +732,13 @@ public class SortedRangesTest {
     public void testRangeIteratorAdvance() {
         // on an empty one first.
         final SortedRanges emptySar = new SortedRangesLong(2);
-        final TrackingMutableRowSet.RangeIterator itOnEmpty = emptySar.getRangeIterator();
+        final RowSet.RangeIterator itOnEmpty = emptySar.getRangeIterator();
         assertFalse(itOnEmpty.advance(1));
         assertFalse(itOnEmpty.hasNext());
 
         final SortedRanges sar = makeSortedArray0();
-        final TrackingMutableRowSet.RangeIterator rit = sar.getRangeIterator();
-        final TrackingMutableRowSet.Iterator it = sar.getIterator();
+        final RowSet.RangeIterator rit = sar.getRangeIterator();
+        final RowSet.Iterator it = sar.getIterator();
         final long first = sar.first();
         assertEquals(2, first);
         final long last = sar.last();
@@ -765,11 +765,11 @@ public class SortedRangesTest {
     public void testRangeIteratorAdvanceCases() {
         SortedRanges sar = SortedRanges.makeSingleRange(1, 2);
         sar.addRange(4, 5);
-        try (TrackingMutableRowSet.RangeIterator rit = sar.getRangeIterator()) {
+        try (RowSet.RangeIterator rit = sar.getRangeIterator()) {
             assertFalse(rit.advance(6));
             assertFalse(rit.hasNext());
         }
-        try (TrackingMutableRowSet.RangeIterator rit = sar.getRangeIterator()) {
+        try (RowSet.RangeIterator rit = sar.getRangeIterator()) {
             assertTrue(rit.hasNext());
             rit.next();
             assertTrue(rit.hasNext());
@@ -778,7 +778,7 @@ public class SortedRangesTest {
             assertFalse(rit.hasNext());
         }
         sar = sar.add(7);
-        try (TrackingMutableRowSet.RangeIterator rit = sar.getRangeIterator()) {
+        try (RowSet.RangeIterator rit = sar.getRangeIterator()) {
             assertTrue(rit.advance(7));
             assertFalse(rit.hasNext());
         }
@@ -787,7 +787,7 @@ public class SortedRangesTest {
     @Test
     public void testSearchIterator() {
         final SortedRanges sar = makeSortedArray0();
-        final TrackingMutableRowSet.SearchIterator sit = sar.getSearchIterator();
+        final RowSet.SearchIterator sit = sar.getSearchIterator();
         sar.forEachLong((final long v) -> {
             final String m = "v==" + v;
             assertTrue(m, sit.hasNext());
@@ -926,7 +926,7 @@ public class SortedRangesTest {
             System.out.println("set.size() = " + set.size() + ", arr.size() = " + arr.getCardinality());
             long lastv = -2;
             int iti = 0;
-            final TrackingMutableRowSet.RangeIterator it = arr.getRangeIterator();
+            final RowSet.RangeIterator it = arr.getRangeIterator();
             while (it.hasNext()) {
                 it.next();
                 ++iti;
@@ -1043,7 +1043,7 @@ public class SortedRangesTest {
     @Test
     public void testSearchIteratorBinarySearch() {
         SortedRanges sar = makeSortedArray0();
-        final TrackingMutableRowSet.SearchIterator sit = sar.getSearchIterator();
+        final RowSet.SearchIterator sit = sar.getSearchIterator();
         long prev = -1L;
         final MutableLong mutVal = new MutableLong(-1L);
         final RowSet.TargetComparator comp =
@@ -1057,7 +1057,7 @@ public class SortedRangesTest {
                 mutVal.setValue(v);
                 long result = sit.binarySearchValue(comp, 1);
                 searchRangeCheck(m2, start, end, v, prev, result);
-                final TrackingMutableRowSet.SearchIterator brandNewIter = sar.getSearchIterator();
+                final RowSet.SearchIterator brandNewIter = sar.getSearchIterator();
                 result = brandNewIter.binarySearchValue(comp, 1);
                 searchRangeCheck(m2, start, end, v, prev, result);
                 final boolean expectedHasNext = v < sar.last();
@@ -1074,7 +1074,7 @@ public class SortedRangesTest {
         sar.appendRange(4, 10);
         sar.append(25);
         sar.append(32);
-        final TrackingMutableRowSet.SearchIterator sit = sar.getSearchIterator();
+        final RowSet.SearchIterator sit = sar.getSearchIterator();
         final long v = sar.last();
         final RowSet.TargetComparator comp =
                 (final long key, final int dir) -> Long.signum(dir * (v - key));
@@ -1087,13 +1087,13 @@ public class SortedRangesTest {
         SortedRanges sar = makeSortedArray0();
         final long[] values = new long[(int) sar.getCardinality()];
         int i = 0;
-        try (final TrackingMutableRowSet.Iterator it = sar.getIterator()) {
+        try (final RowSet.Iterator it = sar.getIterator()) {
             while (it.hasNext()) {
                 final long v = it.nextLong();
                 values[i++] = v;
             }
         }
-        try (final TrackingMutableRowSet.SearchIterator rit = sar.getReverseIterator()) {
+        try (final RowSet.SearchIterator rit = sar.getReverseIterator()) {
             while (--i >= 0) {
                 final String m = "i==" + i;
                 assertTrue(m, rit.hasNext());
@@ -1107,16 +1107,16 @@ public class SortedRangesTest {
     @Test
     public void testEmptyIteratorCases() {
         SortedRanges sar = new SortedRangesLong(2);
-        try (final TrackingMutableRowSet.Iterator it = sar.getIterator()) {
+        try (final RowSet.Iterator it = sar.getIterator()) {
             assertFalse(it.hasNext());
         }
-        try (final TrackingMutableRowSet.RangeIterator it = sar.getRangeIterator()) {
+        try (final RowSet.RangeIterator it = sar.getRangeIterator()) {
             assertFalse(it.hasNext());
         }
-        try (final TrackingMutableRowSet.SearchIterator it = sar.getSearchIterator()) {
+        try (final RowSet.SearchIterator it = sar.getSearchIterator()) {
             assertFalse(it.hasNext());
         }
-        try (final TrackingMutableRowSet.SearchIterator it = sar.getReverseIterator()) {
+        try (final RowSet.SearchIterator it = sar.getReverseIterator()) {
             assertFalse(it.hasNext());
         }
     }
@@ -1124,7 +1124,7 @@ public class SortedRangesTest {
     @Test
     public void testForEachLong() {
         SortedRanges sar = makeSortedArray0();
-        try (final TrackingMutableRowSet.Iterator it = sar.getIterator()) {
+        try (final RowSet.Iterator it = sar.getIterator()) {
             sar.forEachLong((final long v) -> {
                 assertTrue(it.hasNext());
                 assertEquals(it.nextLong(), v);
@@ -1137,7 +1137,7 @@ public class SortedRangesTest {
     @Test
     public void testForEachLongRange() {
         SortedRanges sar = makeSortedArray0();
-        try (final TrackingMutableRowSet.RangeIterator it = sar.getRangeIterator()) {
+        try (final RowSet.RangeIterator it = sar.getRangeIterator()) {
             sar.forEachLongRange((final long start, final long end) -> {
                 assertTrue(it.hasNext());
                 it.next();
@@ -1313,7 +1313,7 @@ public class SortedRangesTest {
     private static TLongArrayList subRangeByPos(final SortedRanges sar, final long startPos, final long endPos) {
         TLongArrayList a = new TLongArrayList();
         long pos = -1;
-        try (final TrackingMutableRowSet.Iterator it = sar.getIterator()) {
+        try (final RowSet.Iterator it = sar.getIterator()) {
             while (it.hasNext()) {
                 final long v = it.nextLong();
                 ++pos;
@@ -1344,7 +1344,7 @@ public class SortedRangesTest {
                 }
                 assertEquals(m, sarList.size(), subSar.getCardinality());
                 int i = 0;
-                try (final TrackingMutableRowSet.Iterator itSubSar = subSar.getIterator()) {
+                try (final RowSet.Iterator itSubSar = subSar.getIterator()) {
                     while (itSubSar.hasNext()) {
                         final long sarValue = sarList.get(i);
                         final long subSarValue = itSubSar.nextLong();
@@ -1427,14 +1427,14 @@ public class SortedRangesTest {
         assertTrue(tix instanceof SortedRanges);
         assertTrue(sar == tix);
         sar = (SortedRanges) tix;
-        try (final TrackingMutableRowSet.Iterator retainedIter = sar.getIterator()) {
+        try (final RowSet.Iterator retainedIter = sar.getIterator()) {
             while (retainedIter.hasNext()) {
                 final long v = retainedIter.nextLong();
                 assertTrue(sar.contains(v));
                 assertTrue(other.contains(v));
             }
         }
-        try (final TrackingMutableRowSet.Iterator sarIter = sar.getIterator()) {
+        try (final RowSet.Iterator sarIter = sar.getIterator()) {
             while (sarIter.hasNext()) {
                 final long v = sarIter.nextLong();
                 assertEquals(other.contains(v), sar.contains(v));
@@ -1445,7 +1445,7 @@ public class SortedRangesTest {
     @Test
     public void testReverseIteratorAdvance() {
         final SortedRanges sar = makeSortedArray0();
-        final TrackingMutableRowSet.RangeIterator forwardRangeIter = sar.getRangeIterator();
+        final RowSet.RangeIterator forwardRangeIter = sar.getRangeIterator();
         long prevLast = -1;
         while (forwardRangeIter.hasNext()) {
             forwardRangeIter.next();
@@ -1456,7 +1456,7 @@ public class SortedRangesTest {
                     continue;
                 }
                 final String m = " && v==" + v;
-                final TrackingMutableRowSet.SearchIterator reverseIter = sar.getReverseIterator();
+                final RowSet.SearchIterator reverseIter = sar.getReverseIterator();
                 final boolean valid = reverseIter.advance(v);
                 if (start <= v && v <= end) {
                     assertTrue(m, valid);
@@ -1480,7 +1480,7 @@ public class SortedRangesTest {
     @Test
     public void testReverseIteratorAdvanceCases() {
         SortedRanges sar = new SortedRangesLong(2);
-        TrackingMutableRowSet.SearchIterator reverseIter = sar.getReverseIterator();
+        RowSet.SearchIterator reverseIter = sar.getReverseIterator();
         assertFalse(reverseIter.advance(1));
         assertFalse(reverseIter.hasNext());
         sar.addRange(3, 4);
@@ -1534,15 +1534,15 @@ public class SortedRangesTest {
         final TreeIndexImpl intersect = sarCopy.intersectOnNew(other);
         // Ensure sarCopy wasn't modified.
         assertEquals(sar.getCardinality(), sarCopy.getCardinality());
-        try (final TrackingMutableRowSet.Iterator sarIter = sar.getIterator();
-             final TrackingMutableRowSet.Iterator sarCopyIter = sarCopy.getIterator()) {
+        try (final RowSet.Iterator sarIter = sar.getIterator();
+             final RowSet.Iterator sarCopyIter = sarCopy.getIterator()) {
             while (sarIter.hasNext()) {
                 assertTrue(sarCopyIter.hasNext());
                 assertEquals(sarIter.nextLong(), sarCopyIter.nextLong());
             }
             assertFalse(sarCopyIter.hasNext());
         }
-        try (final TrackingMutableRowSet.Iterator intersectIter = intersect.ixIterator()) {
+        try (final RowSet.Iterator intersectIter = intersect.ixIterator()) {
             while (intersectIter.hasNext()) {
                 final long v = intersectIter.nextLong();
                 assertTrue(sar.contains(v));
@@ -1550,7 +1550,7 @@ public class SortedRangesTest {
             }
         }
         long card = 0;
-        try (final TrackingMutableRowSet.Iterator sarIter = sar.getIterator()) {
+        try (final RowSet.Iterator sarIter = sar.getIterator()) {
             while (sarIter.hasNext()) {
                 final long v = sarIter.nextLong();
                 final boolean inOther = other.contains(v);
@@ -1598,7 +1598,7 @@ public class SortedRangesTest {
         for (int vsi = 0; vsi < vss.length; ++vsi) {
             final String m = "vsi==" + vsi;
             final SortedRanges sar = vs2sar(vss[vsi]);
-            final TrackingMutableRowSet.RangeIterator rit = sar.getRangeIterator();
+            final RowSet.RangeIterator rit = sar.getRangeIterator();
             long pos = 0;
             while (rit.hasNext()) {
                 rit.next();
@@ -1639,14 +1639,14 @@ public class SortedRangesTest {
     private static final long[][] vss = new long[][] {sar0vs, vs0, vs1, vs2, vs3};
 
     private static void checkInvert(
-            final String prefixMsg, final SortedRanges sar, final TrackingMutableRowSet.RangeIterator ixrit, final TrackingMutableRowSet.Iterator ixit,
+            final String prefixMsg, final SortedRanges sar, final RowSet.RangeIterator ixrit, final RowSet.Iterator ixit,
             final long maxPosition) {
         final TreeIndexImplBuilderSequential b = new TreeIndexImplBuilderSequential();
         final boolean r = sar.invertOnNew(ixrit, b, maxPosition);
         final String m = "maxPosition==" + maxPosition;
         assertTrue(m, r);
-        final TrackingMutableRowSet rix = new TrackingMutableRowSetImpl(b.getTreeIndexImpl());
-        final TrackingMutableRowSet.Iterator rit = rix.iterator();
+        final RowSet rix = new TrackingMutableRowSetImpl(b.getTreeIndexImpl());
+        final RowSet.Iterator rit = rix.iterator();
         while (ixit.hasNext()) {
             final long ixv = ixit.nextLong();
             final long findResult = sar.find(ixv);
@@ -1664,9 +1664,9 @@ public class SortedRangesTest {
     public void testInvert0() {
         final SortedRanges sar = makeSortedArray0();
         final long[] vs = vs0;
-        final TrackingMutableRowSet ix = RowSetFactoryImpl.INSTANCE.getRowSetByValues(vs);
+        final RowSet ix = RowSetFactoryImpl.INSTANCE.getRowSetByValues(vs);
         for (long maxPosition = 0; maxPosition <= ix.size(); ++maxPosition) { // go one over the last position.
-            final TrackingMutableRowSet.RangeIterator ixit = ix.rangeIterator();
+            final RowSet.RangeIterator ixit = ix.rangeIterator();
             checkInvert("", sar, ixit, ix.iterator(), maxPosition);
         }
     }
@@ -1745,7 +1745,7 @@ public class SortedRangesTest {
         } else {
             result = SortedRanges.unionOnNew(op1, op2);
         }
-        for (TrackingMutableRowSet.RangeIterator rit = result.ixRangeIterator(); rit.hasNext();) {
+        for (RowSet.RangeIterator rit = result.ixRangeIterator(); rit.hasNext();) {
             rit.next();
             final long s = rit.currentRangeStart();
             final long e = rit.currentRangeEnd();
@@ -1763,7 +1763,7 @@ public class SortedRangesTest {
         for (int i = 0; i < srs.length; ++i) {
             final String m3 = m2 + " && i==" + i;
             final SortedRanges sr = srs[i];
-            for (TrackingMutableRowSet.RangeIterator rit = sr.getRangeIterator(); rit.hasNext();) {
+            for (RowSet.RangeIterator rit = sr.getRangeIterator(); rit.hasNext();) {
                 rit.next();
                 final long s = rit.currentRangeStart();
                 final long e = rit.currentRangeEnd();
@@ -1803,7 +1803,7 @@ public class SortedRangesTest {
                 } else {
                     result = op1.intersectOnNew(op2);
                 }
-                try (final TrackingMutableRowSet.RangeIterator rit = result.ixRangeIterator()) {
+                try (final RowSet.RangeIterator rit = result.ixRangeIterator()) {
                     while (rit.hasNext()) {
                         rit.next();
                         final long s = rit.currentRangeStart();
@@ -1818,7 +1818,7 @@ public class SortedRangesTest {
                     }
                 }
                 long intersectCount = 0;
-                try (final TrackingMutableRowSet.RangeIterator rit = orig.getRangeIterator()) {
+                try (final RowSet.RangeIterator rit = orig.getRangeIterator()) {
                     while (rit.hasNext()) {
                         rit.next();
                         final long s = rit.currentRangeStart();
@@ -1870,7 +1870,7 @@ public class SortedRangesTest {
                     assertTrue(r instanceof SortedRanges);
                     result = (SortedRanges) r;
                 }
-                for (TrackingMutableRowSet.RangeIterator rit = result.getRangeIterator(); rit.hasNext();) {
+                for (RowSet.RangeIterator rit = result.getRangeIterator(); rit.hasNext();) {
                     rit.next();
                     final long s = rit.currentRangeStart();
                     final long e = rit.currentRangeEnd();
@@ -1882,7 +1882,7 @@ public class SortedRangesTest {
                     }
                 }
                 long card = 0;
-                for (TrackingMutableRowSet.RangeIterator rit = orig.getRangeIterator(); rit.hasNext();) {
+                for (RowSet.RangeIterator rit = orig.getRangeIterator(); rit.hasNext();) {
                     rit.next();
                     final long s = rit.currentRangeStart();
                     final long e = rit.currentRangeEnd();
@@ -1923,7 +1923,7 @@ public class SortedRangesTest {
 
     private static TLongSet sar2set(final SortedRanges sar) {
         final TLongSet s = new TLongHashSet((int) sar.getCardinality());
-        for (TrackingMutableRowSet.Iterator it = sar.getIterator(); it.hasNext();) {
+        for (RowSet.Iterator it = sar.getIterator(); it.hasNext();) {
             final long v = it.nextLong();
             s.add(v);
         }
@@ -2420,7 +2420,7 @@ public class SortedRangesTest {
                     sr2 = sr2.tryCompact(4);
                 }
                 final TreeIndexImpl result = SortedRanges.unionOnNew(sr1, sr2);
-                for (TrackingMutableRowSet.RangeIterator rit = result.ixRangeIterator(); rit.hasNext();) {
+                for (RowSet.RangeIterator rit = result.ixRangeIterator(); rit.hasNext();) {
                     rit.next();
                     final long s = rit.currentRangeStart();
                     final long e = rit.currentRangeEnd();
@@ -2438,7 +2438,7 @@ public class SortedRangesTest {
                 for (int i = 0; i < srs.length; ++i) {
                     final String m2 = m + " && i==" + i;
                     final SortedRanges sr = srs[i];
-                    for (TrackingMutableRowSet.RangeIterator rit = sr.getRangeIterator(); rit.hasNext();) {
+                    for (RowSet.RangeIterator rit = sr.getRangeIterator(); rit.hasNext();) {
                         rit.next();
                         final long s = rit.currentRangeStart();
                         final long e = rit.currentRangeEnd();
@@ -2470,8 +2470,8 @@ public class SortedRangesTest {
                     sr = sr.tryCompact(4);
                 }
                 final RspBitmap rb = sr.toRsp();
-                final TrackingMutableRowSet.Iterator srIter = sr.getIterator();
-                final TrackingMutableRowSet.Iterator rbIter = rb.ixIterator();
+                final RowSet.Iterator srIter = sr.getIterator();
+                final RowSet.Iterator rbIter = rb.ixIterator();
                 int i = 0;
                 while (srIter.hasNext()) {
                     final String m3 = m2 + " && i==" + i;
@@ -2500,8 +2500,8 @@ public class SortedRangesTest {
                     sr = sr.tryCompact(4);
                 }
                 final RspBitmap rb = sr.toRsp();
-                final TrackingMutableRowSet.Iterator srIter = sr.getSearchIterator();
-                final TrackingMutableRowSet.Iterator rbIter = rb.ixSearchIterator();
+                final RowSet.Iterator srIter = sr.getSearchIterator();
+                final RowSet.Iterator rbIter = rb.ixSearchIterator();
                 int i = 0;
                 while (srIter.hasNext()) {
                     final String m3 = m2 + " && i==" + i;
@@ -2530,8 +2530,8 @@ public class SortedRangesTest {
                     sr = sr.tryCompact(4);
                 }
                 final RspBitmap rb = sr.toRsp();
-                final TrackingMutableRowSet.RangeIterator srIter = sr.getRangeIterator();
-                final TrackingMutableRowSet.RangeIterator rbIter = rb.ixRangeIterator();
+                final RowSet.RangeIterator srIter = sr.getRangeIterator();
+                final RowSet.RangeIterator rbIter = rb.ixRangeIterator();
                 int i = 0;
                 while (srIter.hasNext()) {
                     final String m3 = m2 + " && i==" + i;
@@ -2546,12 +2546,12 @@ public class SortedRangesTest {
         }
     }
 
-    private void checkOkAgainstIndex(final String m, final RowSequence rs, final TrackingMutableRowSet ix) {
+    private void checkOkAgainstIndex(final String m, final RowSequence rs, final RowSet ix) {
         assertEquals(m, ix.size(), rs.size());
-        final TrackingMutableRowSet rsIx = rs.asRowSet();
+        final RowSet rsIx = rs.asRowSet();
         assertEquals(m, ix.size(), rsIx.size());
         assertTrue(m, rsIx.subsetOf(ix));
-        try (final TrackingMutableRowSet.RangeIterator rit = ix.rangeIterator()) {
+        try (final RowSet.RangeIterator rit = ix.rangeIterator()) {
             rs.forEachLongRange((final long start, final long end) -> {
                 final String m2 = m + " && start==" + start + " && end==" + end;
                 assertTrue(m2, rit.hasNext());
@@ -2561,7 +2561,7 @@ public class SortedRangesTest {
                 return true;
             });
         }
-        try (final TrackingMutableRowSet.Iterator it = ix.iterator()) {
+        try (final RowSet.Iterator it = ix.iterator()) {
             rs.forEachLong((final long v) -> {
                 final String m2 = m + " && v==" + v;
                 assertTrue(m2, it.hasNext());
@@ -2596,7 +2596,7 @@ public class SortedRangesTest {
                     for (long end = start; end <= last + 1; ++end) {
                         final String m4 = m3 + " && end==" + end;
                         try (final RowSequence rs = sr.getRowSequenceByKeyRange(start, end);
-                                final TrackingMutableRowSet ix = new TrackingMutableRowSetImpl(sr.ixSubindexByKeyOnNew(start, end))) {
+                                final RowSet ix = new TrackingMutableRowSetImpl(sr.ixSubindexByKeyOnNew(start, end))) {
                             assertEquals(m4, ix.firstRowKey(), rs.firstRowKey());
                             assertEquals(m4, ix.lastRowKey(), rs.lastRowKey());
                             assertEquals(m4, ix.size(), rs.size());
@@ -2616,7 +2616,7 @@ public class SortedRangesTest {
                                     }
                                     final long rStart = Math.min(rs.lastRowKey(), Math.max(rs2Start, rs.firstRowKey()));
                                     final long rEnd = Math.max(rs.firstRowKey(), Math.min(rs2End, rs.lastRowKey()));
-                                    final TrackingMutableRowSet ix2 = new TrackingMutableRowSetImpl(sr.ixSubindexByKeyOnNew(rStart, rEnd));
+                                    final RowSet ix2 = new TrackingMutableRowSetImpl(sr.ixSubindexByKeyOnNew(rStart, rEnd));
                                     checkOkAgainstIndex(m5, rs2, ix2);
                                 }
                             }
@@ -2668,7 +2668,7 @@ public class SortedRangesTest {
                             final RowSequence rs = rsIt.getNextRowSequenceWithLength(step);
                             final long rsCard = Math.min(step, rsSrCard - accum);
                             assertEquals(m3, rsCard, rs.size());
-                            final TrackingMutableRowSet subSr = new TrackingMutableRowSetImpl(
+                            final RowSet subSr = new TrackingMutableRowSetImpl(
                                     sr.ixSubindexByPosOnNew(dStart + accum, dStart + accum + rsCard /* exclusive */));
                             assertEquals(m3, rsCard, subSr.size());
                             checkOkAgainstIndex(m3, rs, subSr);
@@ -2714,7 +2714,7 @@ public class SortedRangesTest {
                                 break;
                             }
                             final long rsCard = Math.min(1 + rand.nextInt(step), rsSrCard - accum);
-                            final TrackingMutableRowSet subSr = new TrackingMutableRowSetImpl(
+                            final RowSet subSr = new TrackingMutableRowSetImpl(
                                     sr.ixSubindexByPosOnNew(dStart + accum, dStart + accum + rsCard /* exclusive */));
                             final long last = subSr.lastRowKey();
                             final long target;
@@ -3114,7 +3114,7 @@ public class SortedRangesTest {
                     }
                     final TreeIndexImpl complement =
                             SortedRanges.makeSingleRange(sr.first(), sr.last()).ixMinusOnNew(sr);
-                    final TrackingMutableRowSet.RangeIterator riter = complement.ixRangeIterator();
+                    final RowSet.RangeIterator riter = complement.ixRangeIterator();
                     while (riter.hasNext()) {
                         riter.next();
                         final long start = riter.currentRangeStart();

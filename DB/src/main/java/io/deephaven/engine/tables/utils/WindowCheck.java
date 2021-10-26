@@ -110,7 +110,7 @@ public class WindowCheck {
         private final RAPriQueue<Entry> priorityQueue;
         /** a map from table indices to our entries. */
         private final TLongObjectHashMap<Entry> indexToEntry;
-        private final TrackingMutableRowSet EMPTY_ROW_SET = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+        private final RowSet EMPTY_ROW_SET = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
         private final ModifiedColumnSet.Transformer mcsTransformer;
         private final ModifiedColumnSet mcsNewColumns;
         private final ModifiedColumnSet reusableModifiedColumnSet;
@@ -190,11 +190,11 @@ public class WindowCheck {
                 removeIndex(upstream.removed);
 
                 // anything that was shifted needs to be placed in the proper slots
-                final TrackingMutableRowSet preShiftRowSet = source.getRowSet().getPrevRowSet();
+                final RowSet preShiftRowSet = source.getRowSet().getPrevRowSet();
                 upstream.shifted.apply((start, end, delta) -> {
-                    final TrackingMutableRowSet subRowSet = preShiftRowSet.subSetByKeyRange(start, end);
+                    final RowSet subRowSet = preShiftRowSet.subSetByKeyRange(start, end);
 
-                    final TrackingMutableRowSet.SearchIterator it = delta < 0 ? subRowSet.searchIterator() : subRowSet.reverseIterator();
+                    final RowSet.SearchIterator it = delta < 0 ? subRowSet.searchIterator() : subRowSet.reverseIterator();
                     while (it.hasNext()) {
                         final long idx = it.nextLong();
                         final Entry entry = indexToEntry.remove(idx);
@@ -222,7 +222,7 @@ public class WindowCheck {
 
                 final Listener.Update downstream = upstream.copy();
 
-                try (final TrackingMutableRowSet modifiedByTime = recomputeModified()) {
+                try (final RowSet modifiedByTime = recomputeModified()) {
                     if (modifiedByTime.isNonempty()) {
                         downstream.modified.insert(modifiedByTime);
                     }
@@ -238,7 +238,7 @@ public class WindowCheck {
                 }
                 result.notifyListeners(downstream);
             } else {
-                final TrackingMutableRowSet modifiedByTime = recomputeModified();
+                final RowSet modifiedByTime = recomputeModified();
                 if (modifiedByTime.isNonempty()) {
                     final Listener.Update downstream = new Listener.Update();
                     downstream.modified = modifiedByTime;
@@ -301,7 +301,7 @@ public class WindowCheck {
          *
          * @param rowSet the indices to remove
          */
-        private void removeIndex(final TrackingMutableRowSet rowSet) {
+        private void removeIndex(final RowSet rowSet) {
             rowSet.forAllLongs((final long key) -> {
                 final Entry e = indexToEntry.remove(key);
                 if (e != null) {
@@ -321,7 +321,7 @@ public class WindowCheck {
             notifyChanges();
         }
 
-        private TrackingMutableRowSet recomputeModified() {
+        private RowSet recomputeModified() {
             final RowSetBuilderRandom builder = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
 
             while (true) {
@@ -345,14 +345,14 @@ public class WindowCheck {
         }
 
         void validateQueue() {
-            final TrackingMutableRowSet resultRowSet = result.getRowSet();
+            final RowSet resultRowSet = result.getRowSet();
             final RowSetBuilderRandom builder = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
 
             final Entry[] entries = new Entry[priorityQueue.size()];
             priorityQueue.dump(entries, 0);
             Arrays.stream(entries).mapToLong(entry -> entry.index).forEach(builder::addKey);
 
-            final TrackingMutableRowSet inQueue = builder.build();
+            final RowSet inQueue = builder.build();
             Assert.eq(inQueue.size(), "inQueue.size()", priorityQueue.size(), "priorityQueue.size()");
             final boolean condition = inQueue.subsetOf(resultRowSet);
             if (!condition) {

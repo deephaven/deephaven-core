@@ -17,7 +17,7 @@ import java.util.concurrent.TimeUnit;
 @Measurement(iterations = 10, time = 1)
 @Fork(value = 1)
 public class IndexBuilderChunkedBench {
-    private TrackingMutableRowSet ix = null;
+    private RowSet ix = null;
     private static final int chunkSz = 1024;
     private WritableLongChunk<Attributes.OrderedRowKeys> indicesChunk = null;
     private WritableLongChunk<Attributes.OrderedRowKeyRanges> rangesChunk = null;
@@ -36,7 +36,7 @@ public class IndexBuilderChunkedBench {
         for (long v = 1; v <= maxOddValue; v += 2) {
             b.appendKey(v);
         }
-        final TrackingMutableRowSet ix = b.build();
+        final RowSet ix = b.build();
         bh.consume(ix);
     }
 
@@ -56,7 +56,7 @@ public class IndexBuilderChunkedBench {
             indicesChunk.setSize(ci);
             b.appendOrderedRowKeysChunk(indicesChunk);
         }
-        final TrackingMutableRowSet ix = b.build();
+        final RowSet ix = b.build();
         bh.consume(ix);
     }
 
@@ -78,7 +78,7 @@ public class IndexBuilderChunkedBench {
                 return r;
             }
         });
-        final TrackingMutableRowSet ix = b.build();
+        final RowSet ix = b.build();
         bh.consume(ix);
     }
 
@@ -88,7 +88,7 @@ public class IndexBuilderChunkedBench {
         for (long v = 1; v < maxOddValue; v += 4) {
             b.appendRange(v, v + 2);
         }
-        final TrackingMutableRowSet ix = b.build();
+        final RowSet ix = b.build();
         bh.consume(ix);
     }
 
@@ -109,7 +109,7 @@ public class IndexBuilderChunkedBench {
             rangesChunk.setSize(ci);
             b.appendOrderedRowKeyRangesChunk(rangesChunk);
         }
-        final TrackingMutableRowSet ix = b.build();
+        final RowSet ix = b.build();
         bh.consume(ix);
     }
 
@@ -139,7 +139,7 @@ public class IndexBuilderChunkedBench {
                 return v + 2;
             }
         });
-        final TrackingMutableRowSet ix = b.build();
+        final RowSet ix = b.build();
         bh.consume(ix);
     }
 

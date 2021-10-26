@@ -300,7 +300,7 @@ public interface RowSequence extends SafeCloseable, LongSizedDataStructure {
 
             @Override
             public long peekNextKey() {
-                return TrackingMutableRowSet.NULL_ROW_KEY;
+                return RowSet.NULL_ROW_KEY;
             }
 
             @Override
@@ -377,12 +377,12 @@ public interface RowSequence extends SafeCloseable, LongSizedDataStructure {
 
         @Override
         public long firstRowKey() {
-            return TrackingMutableRowSet.NULL_ROW_KEY;
+            return RowSet.NULL_ROW_KEY;
         }
 
         @Override
         public long lastRowKey() {
-            return TrackingMutableRowSet.NULL_ROW_KEY;
+            return RowSet.NULL_ROW_KEY;
         }
 
         @Override

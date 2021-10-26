@@ -7,7 +7,7 @@ package io.deephaven.engine.v2.iterators;
 import io.deephaven.base.Procedure;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
+import io.deephaven.engine.v2.utils.RowSet;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.PrimitiveIterator;
@@ -17,7 +17,7 @@ import java.util.PrimitiveIterator;
  */
 public class CharacterColumnIterator extends ColumnIterator<Character> implements PrimitiveIterator<Character, Procedure.UnaryChar> {
 
-    public CharacterColumnIterator(@NotNull final TrackingMutableRowSet rowSet, @NotNull final ColumnSource<Character> columnSource) {
+    public CharacterColumnIterator(@NotNull final RowSet rowSet, @NotNull final ColumnSource<Character> columnSource) {
         super(rowSet, columnSource);
     }
 

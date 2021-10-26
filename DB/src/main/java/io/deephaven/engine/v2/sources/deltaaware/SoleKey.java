@@ -34,7 +34,7 @@ class SoleKey implements RowSequence {
         if (startPositionInclusive == 0 && length > 0) {
             return this;
         }
-        return TrackingMutableRowSet.EMPTY;
+        return RowSet.EMPTY;
     }
 
     @Override
@@ -42,7 +42,7 @@ class SoleKey implements RowSequence {
         if (startRowKeyInclusive <= key && endRowKeyInclusive >= key) {
             return this;
         }
-        return TrackingMutableRowSet.EMPTY;
+        return RowSet.EMPTY;
     }
 
     @Override
@@ -126,7 +126,7 @@ class SoleKey implements RowSequence {
 
         @Override
         public long peekNextKey() {
-            return hasMore ? key : TrackingMutableRowSet.NULL_ROW_KEY;
+            return hasMore ? key : RowSet.NULL_ROW_KEY;
         }
 
         @Override

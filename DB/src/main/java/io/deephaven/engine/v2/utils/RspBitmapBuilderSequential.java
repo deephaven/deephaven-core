@@ -28,7 +28,7 @@ public class RspBitmapBuilderSequential implements BuilderSequential {
 
     @Override
     public void setDomain(final long minRowKey, final long maxRowKey) {
-        maxKeyHint = (maxRowKey == TrackingMutableRowSet.NULL_ROW_KEY) ? -1 : maxRowKey;
+        maxKeyHint = (maxRowKey == RowSet.NULL_ROW_KEY) ? -1 : maxRowKey;
     }
 
     @Override

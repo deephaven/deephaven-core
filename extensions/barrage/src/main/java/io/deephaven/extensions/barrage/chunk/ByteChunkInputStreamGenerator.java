@@ -8,7 +8,7 @@
 package io.deephaven.extensions.barrage.chunk;
 
 import gnu.trove.iterator.TLongIterator;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
+import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import com.google.common.io.LittleEndianDataOutputStream;
 import io.deephaven.UncheckedDeephavenException;
@@ -35,12 +35,12 @@ public class ByteChunkInputStreamGenerator extends BaseChunkInputStreamGenerator
     }
 
     @Override
-    public DrainableColumn getInputStream(final BarrageSubscriptionOptions options, final @Nullable TrackingMutableRowSet subset) {
+    public DrainableColumn getInputStream(final BarrageSubscriptionOptions options, final @Nullable RowSet subset) {
         return new ByteChunkInputStream(options, subset);
     }
 
     private class ByteChunkInputStream extends BaseChunkInputStream {
-        private ByteChunkInputStream(final BarrageSubscriptionOptions options, final TrackingMutableRowSet subset) {
+        private ByteChunkInputStream(final BarrageSubscriptionOptions options, final RowSet subset) {
             super(chunk, options, subset);
         }
 

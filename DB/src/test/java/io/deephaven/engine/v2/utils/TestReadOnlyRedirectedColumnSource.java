@@ -79,7 +79,7 @@ public class TestReadOnlyRedirectedColumnSource {
             final WritableObjectChunk<String, Values> chunk,
             final int sz) {
         final ColumnSource cs = t.getColumnSource(col);
-        final TrackingMutableRowSet ix = t.getRowSet();
+        final RowSet ix = t.getRowSet();
         try (final ColumnSource.FillContext fc = cs.makeFillContext(sz);
                 final RowSequence.Iterator it = ix.getRowSequenceIterator()) {
             long offset = 0;

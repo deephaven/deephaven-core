@@ -1,11 +1,11 @@
 package io.deephaven.engine.v2;
 
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
+import io.deephaven.engine.v2.utils.TrackingRowSet;
 
 public interface CrossJoinStateManager {
-    TrackingMutableRowSet getRightIndexFromLeftIndex(long leftIndex);
+    TrackingRowSet getRightIndexFromLeftIndex(long leftIndex);
 
-    TrackingMutableRowSet getRightIndexFromPrevLeftIndex(long leftIndex);
+    TrackingRowSet getRightIndexFromPrevLeftIndex(long leftIndex);
 
     long getShifted(long index);
     long getPrevShifted(long index);

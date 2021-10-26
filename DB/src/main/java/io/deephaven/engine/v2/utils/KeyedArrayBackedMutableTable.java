@@ -133,7 +133,7 @@ public class KeyedArrayBackedMutableTable extends BaseArrayBackedMutableTable {
         long rowToInsert = nextRow;
         final StringBuilder errorBuilder = new StringBuilder();
 
-        try (final TrackingMutableRowSet addRowSet = table.getRowSet().clone();
+        try (final RowSet addRowSet = table.getRowSet().clone();
                 final WritableLongChunk<Attributes.RowKeys> destinations =
                         WritableLongChunk.makeWritableChunk(chunkCapacity)) {
             try (final ChunkSource.GetContext getContext = keySource.makeGetContext(chunkCapacity, sharedContext);

@@ -10,9 +10,10 @@ import io.deephaven.engine.util.LongSizedDataStructure;
 import io.deephaven.engine.tables.dbarrays.DbArray;
 import io.deephaven.engine.tables.dbarrays.DbArrayDirect;
 import io.deephaven.engine.v2.sources.ColumnSource;
+import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.engine.v2.utils.RowSetBuilderRandom;
+import io.deephaven.engine.v2.utils.TrackingRowSet;
 import io.deephaven.util.type.TypeUtils;
 import org.jetbrains.annotations.NotNull;
 
@@ -23,20 +24,20 @@ public class DbPrevArrayColumnWrapper<T> extends DbArray.Indirect<T> {
     private static final long serialVersionUID = -5944424618636079377L;
 
     private final ColumnSource<T> columnSource;
-    private final TrackingMutableRowSet rowSet;
+    private final RowSet rowSet;
     private final long startPadding;
     private final long endPadding;
 
-    public DbPrevArrayColumnWrapper(@NotNull final ColumnSource<T> columnSource, @NotNull final TrackingMutableRowSet rowSet) {
+    public DbPrevArrayColumnWrapper(@NotNull final ColumnSource<T> columnSource, @NotNull final TrackingRowSet rowSet) {
         this(columnSource, rowSet, 0, 0);
     }
 
-    public DbPrevArrayColumnWrapper(@NotNull final ColumnSource<T> columnSource, @NotNull final TrackingMutableRowSet rowSet,
+    public DbPrevArrayColumnWrapper(@NotNull final ColumnSource<T> columnSource, @NotNull final TrackingRowSet rowSet,
             final long startPadding, final long endPadding) {
         this(columnSource, rowSet, startPadding, endPadding, false);
     }
 
-    private DbPrevArrayColumnWrapper(@NotNull final ColumnSource<T> columnSource, @NotNull final TrackingMutableRowSet rowSet,
+    private DbPrevArrayColumnWrapper(@NotNull final ColumnSource<T> columnSource, @NotNull final TrackingRowSet rowSet,
             final long startPadding, final long endPadding, final boolean alreadyPrevIndex) {
         Assert.neqNull(rowSet, "rowSet");
         this.columnSource = columnSource;

@@ -9,7 +9,7 @@ import io.deephaven.engine.v2.sources.ColumnSourceGetDefaults;
 import io.deephaven.engine.v2.sources.MutableColumnSourceGetDefaults;
 import io.deephaven.engine.v2.sources.ObjectArraySource;
 import io.deephaven.engine.v2.ssms.DoubleSegmentedSortedMultiset;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
+import io.deephaven.engine.v2.utils.RowSet;
 
 /**
  * A {@link SsmBackedColumnSource} for Doubles.
@@ -85,7 +85,7 @@ public class DoubleSsmBackedSource extends AbstractColumnSource<DbDoubleArray>
     }
 
     @Override
-    public void clearDeltas(TrackingMutableRowSet indices) {
+    public void clearDeltas(RowSet indices) {
         indices.iterator().forEachLong(key -> {
             final DoubleSegmentedSortedMultiset ssm = getCurrentSsm(key);
             if(ssm != null) {

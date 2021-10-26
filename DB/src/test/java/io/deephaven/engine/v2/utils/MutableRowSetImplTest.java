@@ -344,7 +344,7 @@ public class MutableRowSetImplTest extends TestCase {
             final long[] fullKeys = generateFullKeys(maxSize, generator);
             final RowSet fullRowSet = getSortedIndex(fullKeys);
 
-            final Pair<MutableRowSet, TLongList> pp =
+            final Pair<RowSet, TLongList> pp =
                     generateSubset(fullKeys, fullRowSet, Integer.MAX_VALUE, generator);
             final RowSet subsetRowSet = pp.first;
             final TLongList expected = pp.second;
@@ -378,7 +378,7 @@ public class MutableRowSetImplTest extends TestCase {
             final long[] fullKeys = generateFullKeys(maxSize, generator);
             final RowSet fullRowSet = getSortedIndex(fullKeys);
             final int maxPosition = generator.nextInt(fullRowSet.intSize());
-            final Pair<MutableRowSet, TLongList> pp = generateSubset(fullKeys, fullRowSet, maxPosition, generator);
+            final Pair<RowSet, TLongList> pp = generateSubset(fullKeys, fullRowSet, maxPosition, generator);
             final RowSet subsetRowSet = pp.first;
             final TLongList expected = pp.second;
 
@@ -453,8 +453,8 @@ public class MutableRowSetImplTest extends TestCase {
      * Generate a subset of the keys in fullKeys up to maxPosition positions in using generator. Returns a pair
      * containing the subset of fullKeys as an RowSet and the expected positions as a TLongList.
      */
-    private Pair<MutableRowSet, TLongList> generateSubset(long[] fullKeys, RowSet fullRowSet, int maxPosition,
-            Random generator) {
+    private Pair<RowSet, TLongList> generateSubset(long[] fullKeys, RowSet fullRowSet, int maxPosition,
+                                                   Random generator) {
         switch (generator.nextInt(2)) {
             case 0:
                 return generateSubsetMethod1(fullKeys, fullRowSet, maxPosition, generator);
@@ -468,9 +468,9 @@ public class MutableRowSetImplTest extends TestCase {
     /**
      * For each key, randomly flip a count as to whether it belongs in the output.
      */
-    private Pair<MutableRowSet, TLongList> generateSubsetMethod1(long[] fullKeys,
-            @SuppressWarnings("unused") RowSet fullRowSet,
-            int maxPosition, Random generator) {
+    private Pair<RowSet, TLongList> generateSubsetMethod1(long[] fullKeys,
+                                                          @SuppressWarnings("unused") RowSet fullRowSet,
+                                                          int maxPosition, Random generator) {
         final boolean subset[] = new boolean[(int) fullRowSet.lastRowKey() + 1];
 
         final double density = generator.nextDouble();
@@ -493,7 +493,7 @@ public class MutableRowSetImplTest extends TestCase {
         final long[] subsetKeys = booleanSetToKeys(subset);
         assertEquals(included2, subsetKeys.length);
 
-        final MutableRowSet subsetRowSet = getSortedIndex(subsetKeys);
+        final RowSet subsetRowSet = getSortedIndex(subsetKeys);
 
         assertEquals(subsetKeys.length, subsetRowSet.size());
         assertEquals(included, expected.size());
@@ -509,9 +509,9 @@ public class MutableRowSetImplTest extends TestCase {
      * For each run of the rowSet, flip a coin to determine if it is included; then randomly select a start and end
      * within each range.
      */
-    private Pair<MutableRowSet, TLongList> generateSubsetMethod2(@SuppressWarnings("unused") long[] fullKeys,
-            RowSet fullRowSet,
-            int maxPosition, Random generator) {
+    private Pair<RowSet, TLongList> generateSubsetMethod2(@SuppressWarnings("unused") long[] fullKeys,
+                                                          RowSet fullRowSet,
+                                                          int maxPosition, Random generator) {
         final boolean subset[] = new boolean[(int) fullKeys[fullKeys.length - 1] + 1];
 
         final TLongList expected = new TLongArrayList();
@@ -545,7 +545,7 @@ public class MutableRowSetImplTest extends TestCase {
 
         final long[] subsetKeys = booleanSetToKeys(subset);
 
-        final MutableRowSet subsetRowSet = getSortedIndex(subsetKeys);
+        final RowSet subsetRowSet = getSortedIndex(subsetKeys);
 
         System.out.println(subsetRowSet);
 
@@ -1046,7 +1046,7 @@ public class MutableRowSetImplTest extends TestCase {
     private void compareIndexAndKeyValues(final String pfx, final RowSet rowSet, final long[] keys) {
         final String m =
                 ((pfx != null && pfx.length() > 0) ? pfx + " " : "") + "rowSet=" + rowSet + ", keys=" + a2s(keys);
-        final GroupingRowSetHelper.SearchIterator iterator = rowSet.searchIterator();
+        final RowSet.SearchIterator iterator = rowSet.searchIterator();
         for (int i = 0; i < keys.length; i++) {
             assertTrue(m + " iterator shouldbn't be empty", iterator.hasNext());
             final long next = iterator.nextLong();
@@ -1058,7 +1058,7 @@ public class MutableRowSetImplTest extends TestCase {
         assertFalse(m + " iterator should be empty", iterator.hasNext());
         assertEquals(m + " length mismatch", keys.length, rowSet.size());
 
-        final GroupingRowSetHelper.SearchIterator reverse = rowSet.reverseIterator();
+        final RowSet.SearchIterator reverse = rowSet.reverseIterator();
         for (int i = 0; i < keys.length; i++) {
             assertTrue(m + ", i=" + i, reverse.hasNext());
             final long next = reverse.nextLong();
@@ -2133,7 +2133,7 @@ public class MutableRowSetImplTest extends TestCase {
         assertEquals(e, it.currentRangeEnd());
     }
 
-    private MutableRowSet singleRangeIndex(final long start, final long end) {
+    private RowSet singleRangeIndex(final long start, final long end) {
         final RowSetBuilderRandom b = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
         b.addRange(start, end);
         return b.build();

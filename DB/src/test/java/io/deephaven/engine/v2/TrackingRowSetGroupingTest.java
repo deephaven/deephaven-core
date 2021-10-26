@@ -12,7 +12,7 @@ import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.tuples.TupleSource;
 import io.deephaven.engine.v2.tuples.TupleSourceFactory;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
+import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.test.types.OutOfBandTest;
 import org.apache.commons.lang3.mutable.MutableInt;
 
@@ -210,14 +210,14 @@ public class TrackingRowSetGroupingTest extends LiveTableTestCase {
         assertFalse(countingTable.getRowSet().hasGrouping(intColumnSource, symColumnSource, sym2ColumnSource));
         assertFalse(countingTable.getRowSet().hasGrouping(intColumnSource, symColumnSource, doubleColumnSource));
 
-        Map<Object, TrackingMutableRowSet> symGrouping = countingTable.getRowSet().getGrouping(symColumnSource);
+        Map<Object, RowSet> symGrouping = countingTable.getRowSet().getGrouping(symColumnSource);
         assertEquals(0, ((CountingTable.MethodCounter) symColumnSource).getMethodCount("get"));
 
         GroupingValidator.validateGrouping(new String[] {"Sym"}, countingTable.getRowSet(), countingTable, "sym",
                 symGrouping);
         countingTable.getColumnSources().forEach(x -> ((CountingTable.MethodCounter) x).clear());
 
-        Map<Object, TrackingMutableRowSet> intGrouping = countingTable.getRowSet().getGrouping(intColumnSource);
+        Map<Object, RowSet> intGrouping = countingTable.getRowSet().getGrouping(intColumnSource);
         assertEquals(0, ((CountingTable.MethodCounter) intColumnSource).getMethodCount("get"));
         assertEquals(0, ((CountingTable.MethodCounter) intColumnSource).getMethodCount("getInt"));
         GroupingValidator.validateGrouping(new String[] {"intCol"}, countingTable.getRowSet(), countingTable, "intCol",
@@ -226,7 +226,7 @@ public class TrackingRowSetGroupingTest extends LiveTableTestCase {
 
         final TupleSource intSymTupleSource = TupleSourceFactory.makeTupleSource(intColumnSource, symColumnSource);
 
-        Map<Object, TrackingMutableRowSet> intSymGrouping = countingTable.getRowSet().getGrouping(intSymTupleSource);
+        Map<Object, RowSet> intSymGrouping = countingTable.getRowSet().getGrouping(intSymTupleSource);
         assertEquals(0, ((CountingTable.MethodCounter) symColumnSource).getMethodCount("get"));
         assertEquals(0, ((CountingTable.MethodCounter) intColumnSource).getMethodCount("get"));
         assertEquals(0, ((CountingTable.MethodCounter) intColumnSource).getMethodCount("getInt"));
@@ -236,7 +236,7 @@ public class TrackingRowSetGroupingTest extends LiveTableTestCase {
 
         final TupleSource intSymSym2TupleSource =
                 TupleSourceFactory.makeTupleSource(intColumnSource, symColumnSource, sym2ColumnSource);
-        Map<Object, TrackingMutableRowSet> intSymSym2Grouping = countingTable.getRowSet().getGrouping(intSymSym2TupleSource);
+        Map<Object, RowSet> intSymSym2Grouping = countingTable.getRowSet().getGrouping(intSymSym2TupleSource);
         assertEquals(0, ((CountingTable.MethodCounter) symColumnSource).getMethodCount("get"));
         assertEquals(0, ((CountingTable.MethodCounter) sym2ColumnSource).getMethodCount("get"));
         assertEquals(0, ((CountingTable.MethodCounter) intColumnSource).getMethodCount("get"));
@@ -247,7 +247,7 @@ public class TrackingRowSetGroupingTest extends LiveTableTestCase {
 
         final TupleSource intSymDoubleTupleSource =
                 TupleSourceFactory.makeTupleSource(intColumnSource, symColumnSource, doubleColumnSource);
-        Map<Object, TrackingMutableRowSet> intSymDoubleGrouping = countingTable.getRowSet().getGrouping(intSymDoubleTupleSource);
+        Map<Object, RowSet> intSymDoubleGrouping = countingTable.getRowSet().getGrouping(intSymDoubleTupleSource);
         assertEquals(0, ((CountingTable.MethodCounter) symColumnSource).getMethodCount("get"));
         assertEquals(0, ((CountingTable.MethodCounter) intColumnSource).getMethodCount("get"));
         assertEquals(0, ((CountingTable.MethodCounter) intColumnSource).getMethodCount("getInt"));
@@ -259,7 +259,7 @@ public class TrackingRowSetGroupingTest extends LiveTableTestCase {
 
         final TupleSource intSymSym2DoubleTupleSource = TupleSourceFactory.makeTupleSource(intColumnSource,
                 symColumnSource, sym2ColumnSource, doubleColumnSource);
-        Map<Object, TrackingMutableRowSet> intSymSym2DoubleGrouping = countingTable.getRowSet().getGrouping(intSymSym2DoubleTupleSource);
+        Map<Object, RowSet> intSymSym2DoubleGrouping = countingTable.getRowSet().getGrouping(intSymSym2DoubleTupleSource);
         assertEquals(0, ((CountingTable.MethodCounter) symColumnSource).getMethodCount("get"));
         assertEquals(0, ((CountingTable.MethodCounter) sym2ColumnSource).getMethodCount("get"));
         assertEquals(0, ((CountingTable.MethodCounter) intColumnSource).getMethodCount("get"));
@@ -309,7 +309,7 @@ public class TrackingRowSetGroupingTest extends LiveTableTestCase {
         assertFalse(countingTable.getRowSet().hasGrouping(intColumnSource, symColumnSource, doubleColumnSource));
 
         final TreeSet<Object> keySet = new TreeSet<>(Arrays.asList("a", "b"));
-        final Map<Object, TrackingMutableRowSet> symGrouping = countingTable.getRowSet().getGroupingForKeySet(keySet, symColumnSource);
+        final Map<Object, RowSet> symGrouping = countingTable.getRowSet().getGroupingForKeySet(keySet, symColumnSource);
         assertEquals(0, ((CountingTable.MethodCounter) symColumnSource).getMethodCount("get"));
 
         GroupingValidator.validateRestrictedGrouping(new String[] {"Sym"}, countingTable.getRowSet(), countingTable,
@@ -319,7 +319,7 @@ public class TrackingRowSetGroupingTest extends LiveTableTestCase {
 
         keySet.clear();
         keySet.addAll(Arrays.asList(10, 20, 30, 40, 50, 60, 70, 80, 90));
-        final Map<Object, TrackingMutableRowSet> intGrouping = countingTable.getRowSet().getGroupingForKeySet(keySet, intColumnSource);
+        final Map<Object, RowSet> intGrouping = countingTable.getRowSet().getGroupingForKeySet(keySet, intColumnSource);
         assertEquals(0, ((CountingTable.MethodCounter) intColumnSource).getMethodCount("get"));
         assertEquals(0, ((CountingTable.MethodCounter) intColumnSource).getMethodCount("getInt"));
         GroupingValidator.validateRestrictedGrouping(new String[] {"intCol"}, countingTable.getRowSet(), countingTable,
@@ -332,7 +332,7 @@ public class TrackingRowSetGroupingTest extends LiveTableTestCase {
                 .forEach(row -> keySet.add(intSymFactory.createTuple(row)));
         countingTable.getColumnSources().forEach(x -> ((CountingTable.MethodCounter) x).clear());
 
-        final Map<Object, TrackingMutableRowSet> intSymGrouping = countingTable.getRowSet().getGroupingForKeySet(keySet,
+        final Map<Object, RowSet> intSymGrouping = countingTable.getRowSet().getGroupingForKeySet(keySet,
                 TupleSourceFactory.makeTupleSource(intColumnSource, symColumnSource));
         assertEquals(0, ((CountingTable.MethodCounter) symColumnSource).getMethodCount("get"));
         assertEquals(0, ((CountingTable.MethodCounter) intColumnSource).getMethodCount("get"));
@@ -348,12 +348,12 @@ public class TrackingRowSetGroupingTest extends LiveTableTestCase {
                 .forEach(row -> keySet.add(intSymDoubleFactory.createTuple(row)));
         countingTable.getColumnSources().forEach(x -> ((CountingTable.MethodCounter) x).clear());
 
-        final Map<Object, TrackingMutableRowSet> intSymDoubleGrouping = countingTable.getRowSet().getGroupingForKeySet(keySet,
+        final Map<Object, RowSet> intSymDoubleGrouping = countingTable.getRowSet().getGroupingForKeySet(keySet,
                 TupleSourceFactory.makeTupleSource(intColumnSource, symColumnSource, doubleColumnSource));
         assertEquals(0, ((CountingTable.MethodCounter) symColumnSource).getMethodCount("get"));
         assertEquals(0, ((CountingTable.MethodCounter) intColumnSource).getMethodCount("get"));
         assertEquals(0, ((CountingTable.MethodCounter) intColumnSource).getMethodCount("getInt"));
-        long groupingSize = intSymDoubleGrouping.values().stream().mapToLong(TrackingMutableRowSet::size).sum();
+        long groupingSize = intSymDoubleGrouping.values().stream().mapToLong(RowSet::size).sum();
         assertEquals(groupingSize, ((CountingTable.MethodCounter) doubleColumnSource).getMethodCount("get"));
         assertEquals(0, ((CountingTable.MethodCounter) doubleColumnSource).getMethodCount("getDouble"));
         countingTable.getColumnSources().forEach(x -> ((CountingTable.MethodCounter) x).clear());
@@ -368,14 +368,14 @@ public class TrackingRowSetGroupingTest extends LiveTableTestCase {
                 .forEach(row -> keySet.add(intSymSym2DoubleFactory.createTuple(row)));
         countingTable.getColumnSources().forEach(x -> ((CountingTable.MethodCounter) x).clear());
 
-        final Map<Object, TrackingMutableRowSet> intSymSym2DoubleGrouping =
+        final Map<Object, RowSet> intSymSym2DoubleGrouping =
                 countingTable.getRowSet().getGroupingForKeySet(keySet, TupleSourceFactory
                         .makeTupleSource(intColumnSource, symColumnSource, sym2ColumnSource, doubleColumnSource));
         assertEquals(0, ((CountingTable.MethodCounter) symColumnSource).getMethodCount("get"));
         assertEquals(0, ((CountingTable.MethodCounter) sym2ColumnSource).getMethodCount("get"));
         assertEquals(0, ((CountingTable.MethodCounter) intColumnSource).getMethodCount("get"));
         assertEquals(0, ((CountingTable.MethodCounter) intColumnSource).getMethodCount("getInt"));
-        groupingSize = intSymSym2DoubleGrouping.values().stream().mapToLong(TrackingMutableRowSet::size).sum();
+        groupingSize = intSymSym2DoubleGrouping.values().stream().mapToLong(RowSet::size).sum();
         assertEquals(groupingSize, ((CountingTable.MethodCounter) doubleColumnSource).getMethodCount("get"));
         assertEquals(0, ((CountingTable.MethodCounter) doubleColumnSource).getMethodCount("getDouble"));
         countingTable.getColumnSources().forEach(x -> ((CountingTable.MethodCounter) x).clear());

@@ -11,6 +11,7 @@ import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 import io.deephaven.engine.v2.sources.regioned.RegionedColumnSource;
 import io.deephaven.engine.v2.sources.regioned.RegionedPageStore;
 import io.deephaven.engine.v2.utils.MutableRowSetImpl;
+import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
 import io.deephaven.parquet.ColumnChunkReader;
 import io.deephaven.parquet.ParquetFileReader;
@@ -147,7 +148,7 @@ class ParquetTableLocation extends AbstractTableLocation {
                 exists && groupingColumns.containsKey(parquetColumnName));
     }
 
-    private MutableRowSetImpl computeIndex() {
+    private RowSet computeIndex() {
         final MutableRowSetImpl.SequentialBuilder sequentialBuilder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
 
         for (int rgi = 0; rgi < rowGroups.length; ++rgi) {
@@ -156,6 +157,6 @@ class ParquetTableLocation extends AbstractTableLocation {
             final long subRegionLastKey = subRegionFirstKey + subRegionSize - 1;
             sequentialBuilder.appendRange(subRegionFirstKey, subRegionLastKey);
         }
-        return (MutableRowSetImpl) sequentialBuilder.getIndex();
+        return (RowSet) sequentialBuilder.getIndex();
     }
 }

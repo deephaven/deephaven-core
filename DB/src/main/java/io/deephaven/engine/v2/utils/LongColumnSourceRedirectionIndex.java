@@ -24,7 +24,7 @@ public final class LongColumnSourceRedirectionIndex extends ReadOnlyLongColumnSo
 
         columnSource.set(key, index);
 
-        return previous == QueryConstants.NULL_LONG ? TrackingMutableRowSet.NULL_ROW_KEY : previous;
+        return previous == QueryConstants.NULL_LONG ? RowSet.NULL_ROW_KEY : previous;
     }
 
     @Override
@@ -36,7 +36,7 @@ public final class LongColumnSourceRedirectionIndex extends ReadOnlyLongColumnSo
     public final long remove(long key) {
         final long previous = columnSource.getLong(key);
         if (previous == QueryConstants.NULL_LONG) {
-            return TrackingMutableRowSet.NULL_ROW_KEY;
+            return RowSet.NULL_ROW_KEY;
         }
         columnSource.set(key, QueryConstants.NULL_LONG);
         return previous;

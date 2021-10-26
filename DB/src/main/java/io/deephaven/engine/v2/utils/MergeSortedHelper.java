@@ -28,7 +28,7 @@ import java.util.*;
 public class MergeSortedHelper {
     private static class TableCursor implements Comparable<TableCursor> {
         private final ColumnSource<? extends Comparable> keyColumnSource;
-        private final TrackingMutableRowSet.Iterator iterator;
+        private final RowSet.Iterator iterator;
         private final int tableIndex;
         Comparable currentKey;
         private boolean done = false;

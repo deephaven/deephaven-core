@@ -47,7 +47,7 @@ public interface RowSetFactory {
      * @param rowKeys The row keys to include; note that this list is mutated to ensure sorted order
      * @return A new {@link MutableRowSet} containing the specified row keys
      */
-    MutableRowSet getRowSetByValues(TLongArrayList rowKeys);
+    RowSet getRowSetByValues(TLongArrayList rowKeys);
 
     /**
      * Create a {@link RowSet} containing the continuous range [firstRowKey, lastRowKey]

@@ -8,7 +8,7 @@ public class RedirectionIndexUtilities {
 
         final RowSetShiftData.SingleElementShiftCallback applyOneShift = (key, delta) -> {
             final long oldKey = redirectionIndex.remove(key);
-            if (oldKey != TrackingMutableRowSet.NULL_ROW_KEY) {
+            if (oldKey != RowSet.NULL_ROW_KEY) {
                 redirectionIndex.putVoid(key + delta, oldKey);
             }
         };

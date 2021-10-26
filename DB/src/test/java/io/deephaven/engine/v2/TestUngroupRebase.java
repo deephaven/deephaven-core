@@ -8,8 +8,8 @@ import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.live.LiveTableMonitor;
 import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.v2.utils.ColumnHolder;
+import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 
 import java.io.IOException;
 import java.util.Random;
@@ -36,9 +36,9 @@ public class TestUngroupRebase extends LiveTableTestCase {
 
             // don't remove or add anything, let's just do one step
             LiveTableMonitor.DEFAULT.startCycleForUnitTests();
-            TrackingMutableRowSet keysToRemove = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
-            TrackingMutableRowSet keysToAdd = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
-            TrackingMutableRowSet keysToModify = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+            RowSet keysToRemove = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+            RowSet keysToAdd = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+            RowSet keysToModify = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
             table.notifyListeners(keysToAdd, keysToRemove, keysToModify);
             LiveTableMonitor.DEFAULT.completeCycleForUnitTests();
             TableTools.show(table);

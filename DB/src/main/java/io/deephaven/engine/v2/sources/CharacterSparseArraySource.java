@@ -9,11 +9,8 @@ import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedRowKeys;
 import io.deephaven.engine.v2.sources.sparse.CharOneOrN;
 import io.deephaven.engine.v2.sources.sparse.LongOneOrN;
-import io.deephaven.engine.v2.utils.RowSetBuilderSequential;
-import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
+import io.deephaven.engine.v2.utils.*;
 import io.deephaven.engine.structures.RowSequence;
-import io.deephaven.engine.v2.utils.UpdateCommitter;
 import io.deephaven.util.SoftRecycler;
 import gnu.trove.list.array.TLongArrayList;
 import org.jetbrains.annotations.NotNull;
@@ -78,7 +75,7 @@ public class CharacterSparseArraySource extends SparseArrayColumnSource<Characte
     private void writeObject(java.io.ObjectOutputStream out) throws IOException {
         final RowSetBuilderSequential sb = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
         blocks.enumerate(NULL_CHAR, sb::appendKey);
-        final TrackingMutableRowSet rowSet = sb.build();
+        final RowSet rowSet = sb.build();
 
         final int size = rowSet.intSize();
         final char[] data = (char[])new char[size];
@@ -97,7 +94,7 @@ public class CharacterSparseArraySource extends SparseArrayColumnSource<Characte
     private void readObject(java.io.ObjectInputStream in) throws IOException, ClassNotFoundException {
         blocks = new CharOneOrN.Block0();
 
-        final TrackingMutableRowSet rowSet = (TrackingMutableRowSet)in.readObject();
+        final RowSet rowSet = (RowSet)in.readObject();
         final char[] data = (char[])in.readObject();
         final CharChunk<Values> srcChunk = CharChunk.chunkWrap(data);
         // noinspection unchecked
@@ -133,8 +130,8 @@ public class CharacterSparseArraySource extends SparseArrayColumnSource<Characte
     }
 
     @Override
-    public void shift(final TrackingMutableRowSet keysToShift, final long shiftDelta) {
-        final TrackingMutableRowSet.SearchIterator it = (shiftDelta > 0) ? keysToShift.reverseIterator() : keysToShift.searchIterator();
+    public void shift(final RowSet keysToShift, final long shiftDelta) {
+        final RowSet.SearchIterator it = (shiftDelta > 0) ? keysToShift.reverseIterator() : keysToShift.searchIterator();
         it.forEachLong((i) -> {
             set(i + shiftDelta, getChar(i));
             set(i, NULL_CHAR);
@@ -143,7 +140,7 @@ public class CharacterSparseArraySource extends SparseArrayColumnSource<Characte
     }
 
     @Override
-    public void remove(TrackingMutableRowSet toRemove) {
+    public void remove(RowSet toRemove) {
         toRemove.forEachLong((i) -> { set(i, NULL_CHAR); return true; });
     }
 
@@ -512,7 +509,7 @@ public class CharacterSparseArraySource extends SparseArrayColumnSource<Characte
         final WritableCharChunk<? super Values> charChunk = dest.asWritableCharChunk();
         for (int ii = 0; ii < keys.size(); ) {
             final long firstKey = keys.get(ii);
-            if (firstKey == TrackingMutableRowSet.NULL_ROW_KEY) {
+            if (firstKey == RowSet.NULL_ROW_KEY) {
                 charChunk.set(ii++, NULL_CHAR);
                 continue;
             }
@@ -546,7 +543,7 @@ public class CharacterSparseArraySource extends SparseArrayColumnSource<Characte
         final WritableCharChunk<? super Values> charChunk = dest.asWritableCharChunk();
         for (int ii = 0; ii < keys.size(); ) {
             final long firstKey = keys.get(ii);
-            if (firstKey == TrackingMutableRowSet.NULL_ROW_KEY) {
+            if (firstKey == RowSet.NULL_ROW_KEY) {
                 charChunk.set(ii++, NULL_CHAR);
                 continue;
             }

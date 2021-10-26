@@ -14,7 +14,7 @@ import io.deephaven.engine.tables.utils.DBTimeUtils;
 import io.deephaven.engine.v2.DynamicTable;
 import io.deephaven.engine.v2.ShiftObliviousInstrumentedListener;
 import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
+import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.engine.v2.utils.TerminalNotification;
 import io.deephaven.engine.v2.utils.TimeProvider;
 import io.deephaven.internal.log.LoggerFactory;
@@ -289,7 +289,7 @@ public class Replayer implements ReplayerInterface, LiveTable {
      * @param rowSet table rowSet
      * @param timestampSource column source containing time information.
      */
-    public void registerTimeSource(TrackingMutableRowSet rowSet, ColumnSource<DBDateTime> timestampSource) {
+    public void registerTimeSource(RowSet rowSet, ColumnSource<DBDateTime> timestampSource) {
         // Does nothing
     }
 

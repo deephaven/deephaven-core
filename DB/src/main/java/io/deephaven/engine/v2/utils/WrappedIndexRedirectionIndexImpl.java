@@ -16,9 +16,9 @@ public class WrappedIndexRedirectionIndexImpl implements RedirectionIndex {
     /**
      * {@link TrackingMutableRowSet} used to map from outer key (position in the rowSet) to inner key.
      */
-    private final TrackingMutableRowSet wrappedRowSet;
+    private final TrackingRowSet wrappedRowSet;
 
-    public WrappedIndexRedirectionIndexImpl(final TrackingMutableRowSet wrappedRowSet) {
+    public WrappedIndexRedirectionIndexImpl(final TrackingRowSet wrappedRowSet) {
         this.wrappedRowSet = wrappedRowSet;
     }
 
@@ -146,7 +146,7 @@ public class WrappedIndexRedirectionIndexImpl implements RedirectionIndex {
 
         long positionStart = 0;
 
-        for (final TrackingMutableRowSet.RangeIterator rangeIterator = wrappedRowSet.rangeIterator(); rangeIterator.hasNext();) {
+        for (final RowSet.RangeIterator rangeIterator = wrappedRowSet.rangeIterator(); rangeIterator.hasNext();) {
             if (positionStart > 0) {
                 builder.append(", ");
             }

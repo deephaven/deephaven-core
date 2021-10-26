@@ -8,9 +8,9 @@ import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 import io.deephaven.engine.v2.sources.chunk.ObjectChunk;
 import io.deephaven.engine.v2.sources.chunk.WritableObjectChunk;
+import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.engine.v2.utils.RowSetBuilderSequential;
 import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.engine.structures.RowSequence;
 import org.junit.After;
 import org.junit.Before;
@@ -87,7 +87,7 @@ public class TestObjectSparseArraySource {
 
             // lets make a few random indices
             for (int seed = 0; seed < 100; ++seed) {
-                final TrackingMutableRowSet rowSet = generateIndex(random, expectations.length, 1 + random.nextInt(31));
+                final RowSet rowSet = generateIndex(random, expectations.length, 1 + random.nextInt(31));
                 checkRandomFill(chunkSize, source, fillContext, dest, expectations, rowSet, usePrev);
             }
         }
@@ -149,7 +149,7 @@ public class TestObjectSparseArraySource {
         getContext.close();
     }
 
-    private TrackingMutableRowSet generateIndex(Random random, int maxsize, int runLength) {
+    private RowSet generateIndex(Random random, int maxsize, int runLength) {
         final RowSetBuilderSequential builder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
         int nextKey = random.nextInt(runLength);
         while (nextKey < maxsize) {
@@ -168,7 +168,7 @@ public class TestObjectSparseArraySource {
     }
 
     private void checkRandomFill(int chunkSize, ObjectSparseArraySource source, ColumnSource.FillContext fillContext,
-                                 WritableObjectChunk<?, ? extends Values> dest, Object[] expectations, TrackingMutableRowSet rowSet, boolean usePrev) {
+                                 WritableObjectChunk<?, ? extends Values> dest, Object[] expectations, RowSet rowSet, boolean usePrev) {
         for (final RowSequence.Iterator rsIt = rowSet.getRowSequenceIterator(); rsIt.hasMore(); ) {
             final RowSequence nextOk = rsIt.getNextRowSequenceWithLength(chunkSize);
 
@@ -179,7 +179,7 @@ public class TestObjectSparseArraySource {
             }
 
             int ii = 0;
-            for (final TrackingMutableRowSet.Iterator indexIt = nextOk.asRowSet().iterator(); indexIt.hasNext(); ii++) {
+            for (final RowSet.Iterator indexIt = nextOk.asRowSet().iterator(); indexIt.hasNext(); ii++) {
                 final long next = indexIt.nextLong();
                 checkFromValues("expectations[" + next + "] vs. dest[" + ii + "]", expectations[(int)next], dest.get(ii));
             }
@@ -189,7 +189,7 @@ public class TestObjectSparseArraySource {
     private void checkRangeFill(int chunkSize, ObjectSparseArraySource source, ColumnSource.FillContext fillContext,
                                 WritableObjectChunk<?, ? extends Values> dest, Object[] expectations, int firstKey, int lastKey, boolean usePrev) {
         int offset;
-        final TrackingMutableRowSet rowSet = RowSetFactoryImpl.INSTANCE.getRowSetByRange(firstKey, lastKey);
+        final RowSet rowSet = RowSetFactoryImpl.INSTANCE.getRowSetByRange(firstKey, lastKey);
         offset = firstKey;
         for (final RowSequence.Iterator it = rowSet.getRowSequenceIterator(); it.hasMore(); ) {
             final RowSequence nextOk = it.getNextRowSequenceWithLength(chunkSize);
@@ -206,7 +206,7 @@ public class TestObjectSparseArraySource {
 
     private void checkRangeGet(int chunkSize, ObjectSparseArraySource source, ColumnSource.GetContext getContext, Object[] expectations, int firstKey, int lastKey, boolean usePrev) {
         int offset;
-        final TrackingMutableRowSet rowSet = RowSetFactoryImpl.INSTANCE.getRowSetByRange(firstKey, lastKey);
+        final RowSet rowSet = RowSetFactoryImpl.INSTANCE.getRowSetByRange(firstKey, lastKey);
         offset = firstKey;
         for (final RowSequence.Iterator it = rowSet.getRowSequenceIterator(); it.hasMore(); ) {
             final RowSequence nextOk = it.getNextRowSequenceWithLength(chunkSize);
@@ -272,8 +272,8 @@ public class TestObjectSparseArraySource {
         // super hack
         final Object[] peekedBlock = source.ensureBlock(0, 0, 0);
 
-        try (TrackingMutableRowSet srcKeys = RowSetFactoryImpl.INSTANCE.getRowSetByRange(rangeStart, rangeEnd)) {
-            try (TrackingMutableRowSet destKeys = RowSetFactoryImpl.INSTANCE.getRowSetByRange(rangeStart + 1, rangeEnd + 1)) {
+        try (RowSet srcKeys = RowSetFactoryImpl.INSTANCE.getRowSetByRange(rangeStart, rangeEnd)) {
+            try (RowSet destKeys = RowSetFactoryImpl.INSTANCE.getRowSetByRange(rangeStart + 1, rangeEnd + 1)) {
                 try (ChunkSource.GetContext srcContext = source.makeGetContext(arraySize)) {
                     try (WritableChunkSink.FillFromContext destContext = source.makeFillFromContext(arraySize)) {
                         Chunk chunk = source.getChunk(srcContext, srcKeys);
@@ -304,7 +304,7 @@ public class TestObjectSparseArraySource {
         final ObjectSparseArraySource src = new ObjectSparseArraySource<>(String.class);
         src.startTrackingPrevValues();
         LiveTableMonitor.DEFAULT.startCycleForUnitTests();
-        try (final TrackingMutableRowSet keys = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+        try (final RowSet keys = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
              final WritableObjectChunk<?, ? extends Values> chunk = WritableObjectChunk.makeWritableChunk(0)) {
             // Fill from an empty chunk
             src.fillFromChunkByKeys(keys, chunk);

@@ -19,7 +19,7 @@ public class SortedAssertionInstrumentedListenerAdapter extends BaseTable.Listen
     private final String column;
     private final SortingOrder order;
     private final ModifiedColumnSet parentColumnSet;
-    private final TrackingMutableRowSet parentRowSet;
+    private final RowSet parentRowSet;
     private final ColumnSource<?> parentColumnSource;
     private final SortCheck sortCheck;
 
@@ -45,9 +45,9 @@ public class SortedAssertionInstrumentedListenerAdapter extends BaseTable.Listen
         final boolean modifiedRows =
                 upstream.modified.isNonempty() && upstream.modifiedColumnSet.containsAny(parentColumnSet);
         if (upstream.added.isNonempty() || modifiedRows) {
-            final TrackingMutableRowSet rowsOfInterest = modifiedRows ? upstream.added.union(upstream.modified) : upstream.added;
-            try (final TrackingMutableRowSet ignored = modifiedRows ? rowsOfInterest : null;
-                 final TrackingMutableRowSet toProcess = makeAdjacentIndex(rowsOfInterest)) {
+            final RowSet rowsOfInterest = modifiedRows ? upstream.added.union(upstream.modified) : upstream.added;
+            try (final RowSet ignored = modifiedRows ? rowsOfInterest : null;
+                 final RowSet toProcess = makeAdjacentIndex(rowsOfInterest)) {
                 Assert.assertion(toProcess.subsetOf(parentRowSet), "toProcess.subsetOf(parentRowSet)",
                         makeAdjacentIndex(rowsOfInterest), "toProcess", parentRowSet, "parentRowSet");
                 doCheck(toProcess);
@@ -56,11 +56,11 @@ public class SortedAssertionInstrumentedListenerAdapter extends BaseTable.Listen
         super.onUpdate(upstream);
     }
 
-    private void doCheck(TrackingMutableRowSet toProcess) {
+    private void doCheck(RowSet toProcess) {
         doCheckStatic(toProcess, parentColumnSource, sortCheck, description, column, order);
     }
 
-    public static void doCheckStatic(TrackingMutableRowSet toProcess, ColumnSource<?> parentColumnSource, SortCheck sortCheck,
+    public static void doCheckStatic(RowSet toProcess, ColumnSource<?> parentColumnSource, SortCheck sortCheck,
                                      String description, String column, SortingOrder order) {
         final int contextSize = (int) Math.min(CHUNK_SIZE, toProcess.size());
 
@@ -81,8 +81,8 @@ public class SortedAssertionInstrumentedListenerAdapter extends BaseTable.Listen
         }
     }
 
-    private TrackingMutableRowSet makeAdjacentIndex(TrackingMutableRowSet rowsOfInterest) {
-        try (final TrackingMutableRowSet inverted = parentRowSet.invert(rowsOfInterest)) {
+    private RowSet makeAdjacentIndex(RowSet rowsOfInterest) {
+        try (final RowSet inverted = parentRowSet.invert(rowsOfInterest)) {
             final RowSetBuilderSequential processBuilder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
             long lastPosition = parentRowSet.size() - 1;
             long lastUsedPosition = 0;
@@ -101,7 +101,7 @@ public class SortedAssertionInstrumentedListenerAdapter extends BaseTable.Listen
                 processBuilder.appendRange(start, end);
                 lastUsedPosition = end;
             }
-            try (final TrackingMutableRowSet positions = processBuilder.build()) {
+            try (final RowSet positions = processBuilder.build()) {
                 return parentRowSet.subSetForPositions(positions);
             }
         }

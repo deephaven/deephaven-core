@@ -10,7 +10,7 @@ import com.google.protobuf.CodedInputStream;
 import com.google.protobuf.WireFormat;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.barrage.flatbuf.BarrageMessageWrapper;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
+import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.v2.utils.ExternalizableRowSetUtils;
@@ -44,7 +44,7 @@ public class BarrageProtoUtil {
 
     private static final Logger log = LoggerFactory.getLogger(BarrageProtoUtil.class);
 
-    public static ByteBuffer toByteBuffer(final TrackingMutableRowSet rowSet) {
+    public static ByteBuffer toByteBuffer(final RowSet rowSet) {
         // noinspection UnstableApiUsage
         try (final ExposedByteArrayOutputStream baos = new ExposedByteArrayOutputStream();
                 final LittleEndianDataOutputStream oos = new LittleEndianDataOutputStream(baos)) {
@@ -56,7 +56,7 @@ public class BarrageProtoUtil {
         }
     }
 
-    public static TrackingMutableRowSet toIndex(final ByteBuffer string) {
+    public static RowSet toIndex(final ByteBuffer string) {
         // noinspection UnstableApiUsage
         try (final InputStream bais = new ByteBufferInputStream(string);
                 final LittleEndianDataInputStream ois = new LittleEndianDataInputStream(bais)) {

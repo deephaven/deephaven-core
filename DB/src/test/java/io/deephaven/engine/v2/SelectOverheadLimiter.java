@@ -33,7 +33,7 @@ public class SelectOverheadLimiter {
         TLongIntHashMap blockReferences = new TLongIntHashMap();
         long size;
 
-        void addIndex(TrackingMutableRowSet rowSet) {
+        void addIndex(RowSet rowSet) {
             size += rowSet.size();
             rowSet.forAllLongs(key -> {
                 final long block = key >> SparseConstants.LOG_BLOCK_SIZE;
@@ -41,7 +41,7 @@ public class SelectOverheadLimiter {
             });
         }
 
-        void removeIndex(TrackingMutableRowSet rowSet) {
+        void removeIndex(RowSet rowSet) {
             size -= rowSet.size();
             rowSet.forAllLongs(key -> {
                 final long block = key >> SparseConstants.LOG_BLOCK_SIZE;

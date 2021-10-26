@@ -6,7 +6,7 @@ package io.deephaven.engine.v2.sources;
 
 import io.deephaven.base.Pair;
 import io.deephaven.engine.v2.locations.GroupingProvider;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
+import io.deephaven.engine.v2.utils.RowSet;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Map;
@@ -43,7 +43,7 @@ public abstract class AbstractDeferredGroupingColumnSource<T> extends AbstractCo
     }
 
     @Override
-    public final Map<T, TrackingMutableRowSet> getGroupToRange() {
+    public final Map<T, RowSet> getGroupToRange() {
         if (groupToRange == null && groupingProvider != null) {
             groupToRange = groupingProvider.getGroupToRange();
             groupingProvider = null;
@@ -52,9 +52,9 @@ public abstract class AbstractDeferredGroupingColumnSource<T> extends AbstractCo
     }
 
     @Override
-    public final Map<T, TrackingMutableRowSet> getGroupToRange(TrackingMutableRowSet rowSet) {
+    public final Map<T, RowSet> getGroupToRange(RowSet rowSet) {
         if (groupToRange == null && groupingProvider != null) {
-            Pair<Map<T, TrackingMutableRowSet>, Boolean> result = groupingProvider.getGroupToRange(rowSet);
+            Pair<Map<T, RowSet>, Boolean> result = groupingProvider.getGroupToRange(rowSet);
             if (result == null) {
                 return null;
             }

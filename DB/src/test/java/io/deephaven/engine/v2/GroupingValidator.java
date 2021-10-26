@@ -8,7 +8,8 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.tuples.TupleSource;
 import io.deephaven.engine.v2.tuples.TupleSourceFactory;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
+import io.deephaven.engine.v2.utils.RowSet;
+import io.deephaven.engine.v2.utils.TrackingRowSet;
 import io.deephaven.engine.v2.utils.UpdatePerformanceTracker;
 import junit.framework.TestCase;
 
@@ -49,38 +50,38 @@ public class GroupingValidator extends InstrumentedListenerAdapter {
         source.listenForUpdates(this);
     }
 
-    private void validateGroupings(Collection<String[]> groupingColumns, TrackingMutableRowSet rowSet) {
+    private void validateGroupings(Collection<String[]> groupingColumns, TrackingRowSet rowSet) {
         for (String[] groupingToCheck : groupingColumns) {
             validateGrouping(groupingToCheck, rowSet, source, context);
         }
     }
 
-    private void validatePrevGroupings(Collection<String[]> groupingColumns, TrackingMutableRowSet rowSet) {
+    private void validatePrevGroupings(Collection<String[]> groupingColumns, TrackingRowSet rowSet) {
         for (String[] groupingToCheck : groupingColumns) {
             validatePrevGrouping(groupingToCheck, rowSet);
         }
     }
 
-    public static void validateGrouping(String[] groupingToCheck, TrackingMutableRowSet rowSet, DynamicTable source, String context) {
+    public static void validateGrouping(String[] groupingToCheck, TrackingRowSet rowSet, DynamicTable source, String context) {
         final ColumnSource[] groupColumns = getColumnSources(groupingToCheck, source);
         final TupleSource tupleSource = TupleSourceFactory.makeTupleSource(groupColumns);
         validateGrouping(groupingToCheck, rowSet, source, context, rowSet.getGrouping(tupleSource));
     }
 
-    public static void validateGrouping(String[] groupingToCheck, TrackingMutableRowSet rowSet, DynamicTable source, String context,
-                                        Map<Object, TrackingMutableRowSet> grouping) {
+    public static void validateGrouping(String[] groupingToCheck, RowSet rowSet, DynamicTable source, String context,
+                                        Map<Object, RowSet> grouping) {
         final ColumnSource[] groupColumns = getColumnSources(groupingToCheck, source);
-        for (Map.Entry<Object, TrackingMutableRowSet> objectIndexEntry : grouping.entrySet()) {
-            for (TrackingMutableRowSet.Iterator it = objectIndexEntry.getValue().iterator(); it.hasNext();) {
+        for (Map.Entry<Object, RowSet> objectIndexEntry : grouping.entrySet()) {
+            for (RowSet.Iterator it = objectIndexEntry.getValue().iterator(); it.hasNext();) {
                 long next = it.nextLong();
                 checkGroupKey(groupColumns, next, objectIndexEntry.getKey(), context);
             }
         }
 
-        for (TrackingMutableRowSet.Iterator it = rowSet.iterator(); it.hasNext();) {
+        for (RowSet.Iterator it = rowSet.iterator(); it.hasNext();) {
             long next = it.nextLong();
             Object key = getValue(groupColumns, next);
-            TrackingMutableRowSet keyRowSet = grouping.get(key);
+            RowSet keyRowSet = grouping.get(key);
             Assert.assertion(keyRowSet != null, "keyRowSet != null", next, "next", key, "key", context, "context");
             if (keyRowSet != null) {
                 Assert.assertion(keyRowSet.find(next) >= 0, "keyRowSet.find(next) >= 0", next, "next", key, "key",
@@ -89,23 +90,23 @@ public class GroupingValidator extends InstrumentedListenerAdapter {
         }
     }
 
-    public static void validateRestrictedGrouping(String[] groupingToCheck, TrackingMutableRowSet rowSet, DynamicTable source,
-                                                  String context, Map<Object, TrackingMutableRowSet> grouping, Set<Object> validKeys) {
+    public static void validateRestrictedGrouping(String[] groupingToCheck, RowSet rowSet, DynamicTable source,
+                                                  String context, Map<Object, RowSet> grouping, Set<Object> validKeys) {
         ColumnSource[] groupColumns = getColumnSources(groupingToCheck, source);
-        for (Map.Entry<Object, TrackingMutableRowSet> objectIndexEntry : grouping.entrySet()) {
+        for (Map.Entry<Object, RowSet> objectIndexEntry : grouping.entrySet()) {
             final Object groupKey = objectIndexEntry.getKey();
             Assert.assertion(validKeys.contains(groupKey), "validKeys.contains(objectIndexEntry.getKey())", groupKey,
                     "groupKey", validKeys, "validKeys");
-            for (TrackingMutableRowSet.Iterator it = objectIndexEntry.getValue().iterator(); it.hasNext();) {
+            for (RowSet.Iterator it = objectIndexEntry.getValue().iterator(); it.hasNext();) {
                 long next = it.nextLong();
                 checkGroupKey(groupColumns, next, groupKey, context);
             }
         }
 
-        for (TrackingMutableRowSet.Iterator it = rowSet.iterator(); it.hasNext();) {
+        for (RowSet.Iterator it = rowSet.iterator(); it.hasNext();) {
             long next = it.nextLong();
             Object key = getValue(groupColumns, next);
-            TrackingMutableRowSet keyRowSet = grouping.get(key);
+            RowSet keyRowSet = grouping.get(key);
 
             if (validKeys.contains(key)) {
                 Assert.assertion(keyRowSet != null, "keyRowSet != null", next, "next", key, "key", context, "context");
@@ -119,21 +120,21 @@ public class GroupingValidator extends InstrumentedListenerAdapter {
         }
     }
 
-    private void validatePrevGrouping(String[] groupingToCheck, TrackingMutableRowSet rowSet) {
+    private void validatePrevGrouping(String[] groupingToCheck, TrackingRowSet rowSet) {
         final ColumnSource[] groupColumns = getColumnSources(groupingToCheck, source);
         final TupleSource tupleSource = TupleSourceFactory.makeTupleSource(groupColumns);
-        final Map<Object, TrackingMutableRowSet> grouping = rowSet.getPrevGrouping(tupleSource);
-        for (Map.Entry<Object, TrackingMutableRowSet> objectIndexEntry : grouping.entrySet()) {
-            for (TrackingMutableRowSet.Iterator it = objectIndexEntry.getValue().iterator(); it.hasNext();) {
+        final Map<Object, RowSet> grouping = rowSet.getPrevGrouping(tupleSource);
+        for (Map.Entry<Object, RowSet> objectIndexEntry : grouping.entrySet()) {
+            for (RowSet.Iterator it = objectIndexEntry.getValue().iterator(); it.hasNext();) {
                 long next = it.nextLong();
                 checkGroupPrevKey(groupColumns, next, objectIndexEntry.getKey(), context);
             }
         }
 
-        for (TrackingMutableRowSet.Iterator it = rowSet.iterator(); it.hasNext();) {
+        for (RowSet.Iterator it = rowSet.iterator(); it.hasNext();) {
             long next = it.nextLong();
             Object key = getPrevValue(groupColumns, next);
-            TrackingMutableRowSet keyRowSet = grouping.get(key);
+            RowSet keyRowSet = grouping.get(key);
             Assert.assertion(keyRowSet != null, "keyRowSet != null", next, "next", key, "key", context, "context");
             if (keyRowSet != null) {
                 Assert.assertion(keyRowSet.find(next) >= 0, "keyRowSet.find(next) >= 0", next, "next", key, "key",

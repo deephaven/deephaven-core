@@ -6,8 +6,8 @@ package io.deephaven.engine.v2.ssa;
 import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.sources.chunk.Attributes.RowKeys;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
+import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.engine.v2.utils.RowSetBuilderRandom;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.engine.v2.utils.RedirectionIndex;
 
 /**
@@ -27,7 +27,7 @@ public class ShortChunkSsaStamp implements ChunkSsaStamp {
         final int leftSize = leftStampKeys.size();
         final long rightSize = ssa.size();
         if (rightSize == 0) {
-            rightKeysForLeft.fillWithValue(0, leftSize, TrackingMutableRowSet.NULL_ROW_KEY);
+            rightKeysForLeft.fillWithValue(0, leftSize, RowSet.NULL_ROW_KEY);
             rightKeysForLeft.setSize(leftSize);
             return;
         }
@@ -38,7 +38,7 @@ public class ShortChunkSsaStamp implements ChunkSsaStamp {
             final short leftValue = leftStampValues.get(li);
             final int comparison = doComparison(leftValue, ssaIt.getValue());
             if (disallowExactMatch ? comparison <= 0 : comparison < 0) {
-                rightKeysForLeft.set(li++, TrackingMutableRowSet.NULL_ROW_KEY);
+                rightKeysForLeft.set(li++, RowSet.NULL_ROW_KEY);
                 continue;
             }
             else if (comparison == 0) {
@@ -86,7 +86,7 @@ public class ShortChunkSsaStamp implements ChunkSsaStamp {
                 final long leftRedirectionKey = redirectionIndex.get(leftKey);
                 if (leftRedirectionKey == rightStampKey) {
                     modifiedBuilder.addKey(leftKey);
-                    if (newRightStampKey == TrackingMutableRowSet.NULL_ROW_KEY) {
+                    if (newRightStampKey == RowSet.NULL_ROW_KEY) {
                         redirectionIndex.removeVoid(leftKey);
                     } else {
                         redirectionIndex.putVoid(leftKey, newRightStampKey);

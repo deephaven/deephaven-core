@@ -8,6 +8,7 @@ import io.deephaven.engine.tables.ColumnDefinition;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.TableDefinition;
 import io.deephaven.engine.v2.sources.ColumnSource;
+import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import org.jetbrains.annotations.NotNull;
 
@@ -93,7 +94,7 @@ public abstract class PatternFilter extends SelectFilterImpl {
     protected abstract Pattern compile(String value, int flags);
 
     @Override
-    public TrackingMutableRowSet filter(TrackingMutableRowSet selection, TrackingMutableRowSet fullSet, Table table, boolean usePrev) {
+    public TrackingMutableRowSet filter(TrackingMutableRowSet selection, RowSet fullSet, Table table, boolean usePrev) {
         // noinspection unchecked
         final ColumnSource<String> columnSource = table.getColumnSource(columnName);
 

@@ -54,7 +54,7 @@ public final class IterPerformanceTest {
     }
 
     static abstract class IndexIterStrategy implements IterStrategy {
-        protected TrackingMutableRowSet ix;
+        protected RowSet ix;
 
         @Override
         public ValuesBuilder builder() {
@@ -83,7 +83,7 @@ public final class IterPerformanceTest {
         @Override
         public long getBaseCrc32(final long x) {
             final CRC32 crc32 = new CRC32();
-            final TrackingMutableRowSet.RangeIterator it = ix.rangeIterator();
+            final RowSet.RangeIterator it = ix.rangeIterator();
             while (it.hasNext()) {
                 it.next();
                 for (long v = it.currentRangeStart(); v <= it.currentRangeEnd(); ++v) {
@@ -108,7 +108,7 @@ public final class IterPerformanceTest {
         @Override
         public long getBaseCrc32(final long x) {
             final CRC32 crc32 = new CRC32();
-            final TrackingMutableRowSet.Iterator it = ix.iterator();
+            final RowSet.Iterator it = ix.iterator();
             while (it.hasNext()) {
                 final long v = it.nextLong();
                 updateCrc32(crc32, v | x);

@@ -5,10 +5,7 @@ import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.utils.QueryPerformanceRecorder;
 import io.deephaven.engine.v2.remote.ConstructSnapshot;
 import io.deephaven.engine.v2.sources.*;
-import io.deephaven.engine.v2.utils.ChunkUtils;
-import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
-import io.deephaven.engine.v2.utils.RowSetShiftData;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
+import io.deephaven.engine.v2.utils.*;
 import org.apache.commons.lang3.mutable.Mutable;
 import org.apache.commons.lang3.mutable.MutableObject;
 
@@ -66,9 +63,9 @@ public class StreamTableTools {
                         }
 
 
-                        final TrackingMutableRowSet rowSet;
+                        final MutableRowSet rowSet;
                         if (usePrev) {
-                            try (final TrackingMutableRowSet useRowSet = baseStreamTable.getRowSet().getPrevRowSet()) {
+                            try (final RowSet useRowSet = baseStreamTable.getRowSet().getPrevRowSet()) {
                                 rowSet = RowSetFactoryImpl.INSTANCE.getFlatRowSet(useRowSet.size());
                                 ChunkUtils.copyData(sourceColumns, useRowSet, destColumns, rowSet, usePrev);
                             }
@@ -98,7 +95,7 @@ public class StreamTableTools {
                                 final long currentSize = rowSet.size();
                                 columns.values().forEach(c -> c.ensureCapacity(currentSize + newRows));
 
-                                final TrackingMutableRowSet newRange =
+                                final RowSet newRange =
                                         RowSetFactoryImpl.INSTANCE.getRowSetByRange(currentSize, currentSize + newRows - 1);
 
                                 ChunkUtils.copyData(sourceColumns, upstream.added, destColumns, newRange, false);

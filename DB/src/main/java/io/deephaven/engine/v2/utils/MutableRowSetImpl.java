@@ -45,7 +45,7 @@ public class MutableRowSetImpl extends RowSequenceAsChunkImpl implements Mutable
 
     @SuppressWarnings("MethodDoesntCallSuperMethod")
     @Override
-    public final MutableRowSetImpl clone() {
+    public final MutableRowSet clone() {
         return new MutableRowSetImpl(impl.ixCowRef());
     }
 
@@ -235,7 +235,7 @@ public class MutableRowSetImpl extends RowSequenceAsChunkImpl implements Mutable
     }
 
     @Override
-    public final MutableRowSet invert(final RowSet keys, final long maximumPosition) {
+    public final RowSet invert(final RowSet keys, final long maximumPosition) {
         return new MutableRowSetImpl(impl.ixInvertOnNew(getImpl(keys), maximumPosition));
     }
 
@@ -282,7 +282,7 @@ public class MutableRowSetImpl extends RowSequenceAsChunkImpl implements Mutable
     }
 
     @Override
-    public final MutableRowSet shift(final long shiftAmount) {
+    public final RowSet shift(final long shiftAmount) {
         return new MutableRowSetImpl(impl.ixShiftOnNew(shiftAmount));
     }
 
@@ -348,7 +348,7 @@ public class MutableRowSetImpl extends RowSequenceAsChunkImpl implements Mutable
 
     @NotNull
     @Override
-    public final TrackingMutableRowSet.Iterator iterator() {
+    public final RowSet.Iterator iterator() {
         return impl.ixIterator();
     }
 
@@ -413,7 +413,7 @@ public class MutableRowSetImpl extends RowSequenceAsChunkImpl implements Mutable
 
     @Override
     public void readExternal(@NotNull final ObjectInput in) throws IOException {
-        try (final MutableRowSet readRowSet = ExternalizableRowSetUtils.readExternalCompressedDelta(in)) {
+        try (final RowSet readRowSet = ExternalizableRowSetUtils.readExternalCompressedDelta(in)) {
             assign(getImpl(readRowSet).ixCowRef());
         }
     }

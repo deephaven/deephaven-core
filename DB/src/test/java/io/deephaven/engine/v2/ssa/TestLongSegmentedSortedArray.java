@@ -16,7 +16,6 @@ import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 import io.deephaven.engine.v2.sources.chunk.LongChunk;
 import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.engine.v2.utils.RowSetShiftData;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.test.types.ParallelTest;
 import io.deephaven.util.SafeCloseable;
 import junit.framework.TestCase;
@@ -94,7 +93,7 @@ public class TestLongSegmentedSortedArray extends LiveTableTestCase {
                 @Override
                 public void onUpdate(Update upstream) {
                     try (final ColumnSource.GetContext checkContext = valueSource.makeGetContext(asLong.getRowSet().getPrevRowSet().intSize())) {
-                        final TrackingMutableRowSet relevantIndices = asLong.getRowSet().getPrevRowSet();
+                        final RowSet relevantIndices = asLong.getRowSet().getPrevRowSet();
                         checkSsa(ssa, valueSource.getPrevChunk(checkContext, relevantIndices).asLongChunk(), relevantIndices.asRowKeyChunk(), desc);
                     }
 
@@ -102,7 +101,7 @@ public class TestLongSegmentedSortedArray extends LiveTableTestCase {
                     try (final ColumnSource.GetContext getContext = valueSource.makeGetContext(size)) {
                         ssa.validate();
 
-                        final TrackingMutableRowSet takeout = upstream.removed.union(upstream.getModifiedPreShift());
+                        final RowSet takeout = upstream.removed.union(upstream.getModifiedPreShift());
                         if (takeout.isNonempty()) {
                             final LongChunk<? extends Values> valuesToRemove = valueSource.getPrevChunk(getContext, takeout).asLongChunk();
                             ssa.remove(valuesToRemove, takeout.asRowKeyChunk());
@@ -111,7 +110,7 @@ public class TestLongSegmentedSortedArray extends LiveTableTestCase {
                         ssa.validate();
 
                         try (final ColumnSource.GetContext checkContext = valueSource.makeGetContext(asLong.getRowSet().getPrevRowSet().intSize())) {
-                            final TrackingMutableRowSet relevantIndices = asLong.getRowSet().getPrevRowSet().minus(takeout);
+                            final RowSet relevantIndices = asLong.getRowSet().getPrevRowSet().minus(takeout);
                             checkSsa(ssa, valueSource.getPrevChunk(checkContext, relevantIndices).asLongChunk(), relevantIndices.asRowKeyChunk(), desc);
                         }
 
@@ -119,7 +118,7 @@ public class TestLongSegmentedSortedArray extends LiveTableTestCase {
                             final RowSetShiftData.Iterator sit = upstream.shifted.applyIterator();
                             while (sit.hasNext()) {
                                 sit.next();
-                                final TrackingMutableRowSet rowSetToShift = table.getRowSet().getPrevRowSet().subSetByKeyRange(sit.beginRange(), sit.endRange()).minus(upstream.getModifiedPreShift()).minus(upstream.removed);
+                                final RowSet rowSetToShift = table.getRowSet().getPrevRowSet().subSetByKeyRange(sit.beginRange(), sit.endRange()).minus(upstream.getModifiedPreShift()).minus(upstream.removed);
                                 if (rowSetToShift.isEmpty()) {
                                     continue;
                                 }
@@ -136,10 +135,10 @@ public class TestLongSegmentedSortedArray extends LiveTableTestCase {
 
                         ssa.validate();
 
-                        final TrackingMutableRowSet putin = upstream.added.union(upstream.modified);
+                        final RowSet putin = upstream.added.union(upstream.modified);
 
                         try (final ColumnSource.GetContext checkContext = valueSource.makeGetContext(asLong.intSize())) {
-                            final TrackingMutableRowSet relevantIndices = asLong.getRowSet().minus(putin);
+                            final RowSet relevantIndices = asLong.getRowSet().minus(putin);
                             checkSsa(ssa, valueSource.getChunk(checkContext, relevantIndices).asLongChunk(), relevantIndices.asRowKeyChunk(), desc);
                         }
 
@@ -200,7 +199,7 @@ public class TestLongSegmentedSortedArray extends LiveTableTestCase {
 
             while (desc.advance(50)) {
                 LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-                    final TrackingMutableRowSet[] notify = GenerateTableUpdates.computeTableUpdates(desc.tableSize(), random, table, columnInfo, allowAddition, allowRemoval, false);
+                    final RowSet[] notify = GenerateTableUpdates.computeTableUpdates(desc.tableSize(), random, table, columnInfo, allowAddition, allowRemoval, false);
                     assertTrue(notify[2].isEmpty());
                     table.notifyListeners(notify[0], notify[1], notify[2]);
                 });

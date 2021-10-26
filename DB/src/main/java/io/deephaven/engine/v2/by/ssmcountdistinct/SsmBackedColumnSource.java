@@ -4,7 +4,7 @@ import io.deephaven.engine.tables.dbarrays.DbArrayBase;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.ObjectArraySource;
 import io.deephaven.engine.v2.ssms.SegmentedSortedMultiSet;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
+import io.deephaven.engine.v2.utils.RowSet;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -76,5 +76,5 @@ public interface SsmBackedColumnSource<K extends SegmentedSortedMultiSet, T exte
      *
      * @param indices the set of indices to clear deltas for.
      */
-    void clearDeltas(TrackingMutableRowSet indices);
+    void clearDeltas(RowSet indices);
 }

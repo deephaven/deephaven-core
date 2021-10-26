@@ -6,7 +6,7 @@ package io.deephaven.engine.v2.iterators;
 
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
+import io.deephaven.engine.v2.utils.RowSet;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Iterator;
@@ -18,7 +18,7 @@ public class ColumnIterator<TYPE> implements Iterator<TYPE> {
 
     protected final ColumnSource<TYPE> columnSource;
 
-    protected final TrackingMutableRowSet.Iterator indexIterator;
+    protected final RowSet.Iterator indexIterator;
 
     /**
      * Create a new iterator.
@@ -26,7 +26,7 @@ public class ColumnIterator<TYPE> implements Iterator<TYPE> {
      * @param rowSet rowSet for the column source
      * @param columnSource column source
      */
-    public ColumnIterator(@NotNull final TrackingMutableRowSet rowSet, @NotNull final ColumnSource<TYPE> columnSource) {
+    public ColumnIterator(@NotNull final RowSet rowSet, @NotNull final ColumnSource<TYPE> columnSource) {
         this.columnSource = columnSource;
         indexIterator = rowSet.iterator();
     }

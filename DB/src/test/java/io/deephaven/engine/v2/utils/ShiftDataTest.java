@@ -11,9 +11,9 @@ import java.util.*;
 public class ShiftDataTest extends TestCase {
 
     public void testSystematic() {
-        TrackingMutableRowSet rowSet = getSortedIndex();
-        TrackingMutableRowSet removed = getSortedIndex();
-        TrackingMutableRowSet added = getSortedIndex();
+        RowSet rowSet = getSortedIndex();
+        RowSet removed = getSortedIndex();
+        RowSet added = getSortedIndex();
         ShiftData shiftData = new ShiftData(rowSet, removed, added);
         shiftData.applyDataShift(new ShiftData.ShiftCallback() {
             @Override
@@ -124,7 +124,7 @@ public class ShiftDataTest extends TestCase {
         checkExpectations(rowSet, removed, added, new long[][] {{6, 6, 3}, {4, 4, 3}});
     }
 
-    private void checkExpectations(TrackingMutableRowSet rowSet, TrackingMutableRowSet removed, TrackingMutableRowSet added, long[][] expected) {
+    private void checkExpectations(RowSet rowSet, RowSet removed, RowSet added, long[][] expected) {
         ShiftData shiftData;
         class Expectations implements ShiftData.ShiftCallback {
 
@@ -153,7 +153,7 @@ public class ShiftDataTest extends TestCase {
         expectations.allMet();
     }
 
-    private void testNoNotification(TrackingMutableRowSet rowSet, TrackingMutableRowSet removed, TrackingMutableRowSet added) {
+    private void testNoNotification(RowSet rowSet, RowSet removed, RowSet added) {
         ShiftData shiftData;
         shiftData = new ShiftData(rowSet, removed, added);
         shiftData.applyDataShift(new ShiftData.ShiftCallback() {
@@ -168,13 +168,13 @@ public class ShiftDataTest extends TestCase {
 
     public void testRandom() {
         for (int k = 0; k < 100; k++) {
-            TrackingMutableRowSet initialRowSet = getBaseIndex(100, 10);
-            TrackingMutableRowSet added = getRandomIndex(20, 1, 10);
-            TrackingMutableRowSet removed = getRandomRemoves(initialRowSet, 2);
-            TrackingMutableRowSet finalRowSet = getFinalIndex(initialRowSet, added, removed);
+            RowSet initialRowSet = getBaseIndex(100, 10);
+            RowSet added = getRandomIndex(20, 1, 10);
+            RowSet removed = getRandomRemoves(initialRowSet, 2);
+            RowSet finalRowSet = getFinalIndex(initialRowSet, added, removed);
             final long resultKeys[] = new long[(int) Math.max(initialRowSet.size(), finalRowSet.size())];
             int pos = 0;
-            for (TrackingMutableRowSet.Iterator it = initialRowSet.iterator(); it.hasNext();) {
+            for (RowSet.Iterator it = initialRowSet.iterator(); it.hasNext();) {
                 resultKeys[pos++] = it.nextLong();
             }
             ShiftData shiftData = new ShiftData(finalRowSet, removed, added);
@@ -192,30 +192,30 @@ public class ShiftDataTest extends TestCase {
                     }
                 }
             });
-            TrackingMutableRowSet addedPos = shiftData.getAddedPos();
+            RowSet addedPos = shiftData.getAddedPos();
 
-            for (TrackingMutableRowSet.Iterator iterator = addedPos.iterator(), valueIt = added.iterator(); iterator.hasNext();) {
+            for (RowSet.Iterator iterator = addedPos.iterator(), valueIt = added.iterator(); iterator.hasNext();) {
                 resultKeys[((int) iterator.nextLong())] = valueIt.nextLong();
             }
 
             pos = 0;
-            for (TrackingMutableRowSet.Iterator iterator = finalRowSet.iterator(); iterator.hasNext();) {
+            for (RowSet.Iterator iterator = finalRowSet.iterator(); iterator.hasNext();) {
                 assertEquals(iterator.nextLong(), resultKeys[pos++]);
             }
         }
     }
 
-    private TrackingMutableRowSet getFinalIndex(TrackingMutableRowSet initialRowSet, TrackingMutableRowSet added, TrackingMutableRowSet removed) {
+    private RowSet getFinalIndex(RowSet initialRowSet, RowSet added, RowSet removed) {
         TreeSet<Long> finalKeys = new TreeSet<Long>();
-        for (TrackingMutableRowSet.Iterator iterator = initialRowSet.iterator(); iterator.hasNext();) {
+        for (RowSet.Iterator iterator = initialRowSet.iterator(); iterator.hasNext();) {
             Long next = iterator.nextLong();
             finalKeys.add(next);
         }
-        for (TrackingMutableRowSet.Iterator iterator = removed.iterator(); iterator.hasNext();) {
+        for (RowSet.Iterator iterator = removed.iterator(); iterator.hasNext();) {
             Long next = iterator.nextLong();
             finalKeys.remove(next);
         }
-        for (TrackingMutableRowSet.Iterator iterator = added.iterator(); iterator.hasNext();) {
+        for (RowSet.Iterator iterator = added.iterator(); iterator.hasNext();) {
             Long next = iterator.nextLong();
             finalKeys.add(next);
         }
@@ -226,9 +226,9 @@ public class ShiftDataTest extends TestCase {
         return builder.build();
     }
 
-    private TrackingMutableRowSet getRandomRemoves(TrackingMutableRowSet rowSet, int prob) {
+    private RowSet getRandomRemoves(RowSet rowSet, int prob) {
         RowSetBuilderRandom builder = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
-        for (TrackingMutableRowSet.Iterator iterator = rowSet.iterator(); iterator.hasNext();) {
+        for (RowSet.Iterator iterator = rowSet.iterator(); iterator.hasNext();) {
             long next = iterator.nextLong();
             if (random.nextInt(prob) == 0) {
                 builder.addKey(next);
@@ -238,7 +238,7 @@ public class ShiftDataTest extends TestCase {
     }
 
 
-    private TrackingMutableRowSet getBaseIndex(int base, int size) {
+    private RowSet getBaseIndex(int base, int size) {
         RowSetBuilderSequential builder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
         for (int i = 0; i < size; i++) {
             builder.appendKey(i * size);
@@ -246,7 +246,7 @@ public class ShiftDataTest extends TestCase {
         return builder.build();
     }
 
-    private TrackingMutableRowSet getRandomIndex(int base, int offset, int size) {
+    private RowSet getRandomIndex(int base, int offset, int size) {
         RowSetBuilderRandom builder = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
         for (int i = 0; i < size; i++) {
             if (random.nextInt(2) == 0) {
@@ -257,12 +257,12 @@ public class ShiftDataTest extends TestCase {
     }
 
 
-    protected GroupingRowSetHelper getSortedIndex(long... keys) {
+    protected RowSet getSortedIndex(long... keys) {
         RowSetBuilderRandom builder = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
         for (long key : keys) {
             builder.addKey(key);
         }
-        return (GroupingRowSetHelper) builder.build();
+        return builder.build();
     }
 
 }

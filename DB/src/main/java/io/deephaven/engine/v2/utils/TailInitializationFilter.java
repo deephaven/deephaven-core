@@ -101,7 +101,7 @@ public class TailInitializationFilter {
             }
             return true;
         });
-        final TrackingMutableRowSet resultRowSet = builder.build();
+        final MutableRowSet resultRowSet = builder.build();
         final QueryTable result = new QueryTable(table.getDefinition(), resultRowSet, table.getColumnSourceMap());
         if (table.isLive()) {
             // TODO: Assert AddOnly in T+, propagate AddOnly in Treasure

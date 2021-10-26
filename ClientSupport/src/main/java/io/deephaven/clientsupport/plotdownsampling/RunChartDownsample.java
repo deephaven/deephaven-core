@@ -2,8 +2,7 @@ package io.deephaven.clientsupport.plotdownsampling;
 
 import io.deephaven.base.Function;
 import io.deephaven.engine.structures.RowSequence;
-import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
+import io.deephaven.engine.v2.utils.*;
 import io.deephaven.hash.KeyedLongObjectHash;
 import io.deephaven.hash.KeyedLongObjectHashMap;
 import io.deephaven.hash.KeyedLongObjectKey;
@@ -20,7 +19,6 @@ import io.deephaven.engine.v2.sources.ReinterpretUtilities;
 import io.deephaven.engine.v2.sources.chunk.Attributes;
 import io.deephaven.engine.v2.sources.chunk.Chunk;
 import io.deephaven.engine.v2.sources.chunk.LongChunk;
-import io.deephaven.engine.v2.utils.RowSetShiftData;
 import io.deephaven.libs.primitives.LongNumericPrimitives;
 import org.apache.commons.lang3.mutable.Mutable;
 import org.apache.commons.lang3.mutable.MutableObject;
@@ -224,7 +222,7 @@ public class RunChartDownsample implements Function.Unary<Table, Table> {
         }
 
         public static DownsamplerListener of(final QueryTable sourceTable, final DownsampleKey key) {
-            final TrackingMutableRowSet rowSet = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+            final RowSet rowSet = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
             final QueryTable resultTable = sourceTable.getSubTable(rowSet);
             return new DownsamplerListener(sourceTable, resultTable, key);
         }
@@ -245,7 +243,7 @@ public class RunChartDownsample implements Function.Unary<Table, Table> {
         private final ColumnSource<Long> xColumnSource;
 
         private final ValueTracker[] values;
-        private final TrackingMutableRowSet availableSlots = RowSetFactoryImpl.INSTANCE.getSequentialBuilder().build();
+        private final MutableRowSet availableSlots = RowSetFactoryImpl.INSTANCE.getSequentialBuilder().build();
         private int nextSlot;
 
         private final int[] allYColumnIndexes;
@@ -381,9 +379,9 @@ public class RunChartDownsample implements Function.Unary<Table, Table> {
 
                 states.clear();
 
-                final TrackingMutableRowSet addToResultTable = sourceTable.getRowSet().minus(rowSet);
-                final TrackingMutableRowSet removed = rowSet.union(upstream.removed);
-                final TrackingMutableRowSet modified = rowSet.union(upstream.modified);
+                final RowSet addToResultTable = sourceTable.getRowSet().minus(rowSet);
+                final RowSet removed = rowSet.union(upstream.removed);
+                final RowSet modified = rowSet.union(upstream.modified);
                 rowSet.clear();
 
                 availableSlots.clear();// TODO optionally, clear out value trackers?
@@ -480,7 +478,7 @@ public class RunChartDownsample implements Function.Unary<Table, Table> {
             }
 
             Assert.assertion(rowSet.isEmpty(), "this.rowSet.empty()");
-            final TrackingMutableRowSet initialRowSet = indexFromStates();
+            final RowSet initialRowSet = indexFromStates();
             // log.info().append("initial downsample rowSet.size()=").append(initialRowSet.size()).append(",
             // rowSet=").append(initialRowSet).endl();
 
@@ -516,7 +514,7 @@ public class RunChartDownsample implements Function.Unary<Table, Table> {
                 first = key.zoomRange[0];
                 last = key.zoomRange[1];
             } else {
-                final TrackingMutableRowSet rowSet = usePrev ? sourceTable.getRowSet().getPrevRowSet() : sourceTable.getRowSet();
+                final RowSet rowSet = usePrev ? sourceTable.getRowSet().getPrevRowSet() : sourceTable.getRowSet();
                 first = xColumnSource.getLong(rowSet.firstRowKey());
                 last = xColumnSource.getLong(rowSet.lastRowKey());
             }
@@ -526,8 +524,8 @@ public class RunChartDownsample implements Function.Unary<Table, Table> {
             nanosPerPx = (long) (1.1 * (last - first) / key.bins);
         }
 
-        private void handleAdded(final DownsampleChunkContext context, final boolean usePrev, final TrackingMutableRowSet addedRowSet) {
-            final TrackingMutableRowSet rowSet = usePrev ? addedRowSet.getPrevRowSet() : addedRowSet;
+        private void handleAdded(final DownsampleChunkContext context, final boolean usePrev, final TrackingRowSet addedRowSet) {
+            final RowSet rowSet = usePrev ? addedRowSet.getPrevRowSet() : addedRowSet;
             if (rowSet.isEmpty()) {
                 return;
             }
@@ -558,11 +556,11 @@ public class RunChartDownsample implements Function.Unary<Table, Table> {
             }
         }
 
-        private void handleAdded(final DownsampleChunkContext context, final TrackingMutableRowSet addedRowSet) {
+        private void handleAdded(final DownsampleChunkContext context, final TrackingRowSet addedRowSet) {
             handleAdded(context, false, addedRowSet);
         }
 
-        private void handleRemoved(final DownsampleChunkContext context, final TrackingMutableRowSet removed) {
+        private void handleRemoved(final DownsampleChunkContext context, final RowSet removed) {
             if (removed.isEmpty()) {
                 return;
             }
@@ -588,7 +586,7 @@ public class RunChartDownsample implements Function.Unary<Table, Table> {
 
         }
 
-        private void handleModified(final DownsampleChunkContext context, final TrackingMutableRowSet modified,
+        private void handleModified(final DownsampleChunkContext context, final RowSet modified,
                 final ModifiedColumnSet modifiedColumnSet) {
             // TODO use MCS here
             if (modified.isEmpty()/* || !modifiedColumnSet.containsAny(interestedColumns) */) {
@@ -692,12 +690,12 @@ public class RunChartDownsample implements Function.Unary<Table, Table> {
          *        this.rowSet, then update it normally, otherwise this.rowSet must be empty and this.rowSet should be
          *        populated.
          */
-        private void notifyResultTable(final Update upstream, final TrackingMutableRowSet lastRowSet) {
-            final TrackingMutableRowSet resultRowSet = indexFromStates();
+        private void notifyResultTable(final Update upstream, final RowSet lastRowSet) {
+            final RowSet resultRowSet = indexFromStates();
 
-            final TrackingMutableRowSet removed = lastRowSet.minus(resultRowSet);
-            final TrackingMutableRowSet added = resultRowSet.minus(lastRowSet);
-            final TrackingMutableRowSet modified = resultRowSet.intersect(lastRowSet).intersect(upstream.modified);
+            final RowSet removed = lastRowSet.minus(resultRowSet);
+            final RowSet added = resultRowSet.minus(lastRowSet);
+            final RowSet modified = resultRowSet.intersect(lastRowSet).intersect(upstream.modified);
 
             if (lastRowSet == this.rowSet) {
                 this.rowSet.update(added, removed);
@@ -714,7 +712,7 @@ public class RunChartDownsample implements Function.Unary<Table, Table> {
             resultTable.notifyListeners(update);
         }
 
-        private TrackingMutableRowSet indexFromStates() {
+        private RowSet indexFromStates() {
             // TODO this couldnt be uglier if i tried
             if (rangeMode == RangeMode.ZOOM) {
                 return Stream.concat(

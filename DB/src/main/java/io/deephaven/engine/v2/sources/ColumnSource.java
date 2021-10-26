@@ -8,6 +8,7 @@ import io.deephaven.base.verify.Require;
 import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 import io.deephaven.engine.v2.tuples.TupleSource;
+import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
@@ -42,9 +43,9 @@ public interface ColumnSource<T>
         return ChunkType.fromElementType(dataType);
     }
 
-    TrackingMutableRowSet match(boolean invertMatch, boolean usePrev, boolean caseInsensitive, TrackingMutableRowSet mapper, final Object... keys);
+    TrackingMutableRowSet match(boolean invertMatch, boolean usePrev, boolean caseInsensitive, RowSet mapper, final Object... keys);
 
-    Map<T, TrackingMutableRowSet> getValuesMapping(TrackingMutableRowSet subRange);
+    Map<T, RowSet> getValuesMapping(RowSet subRange);
 
     /**
      * ColumnSource implementations that track previous values have the option to not actually start tracking previous
@@ -65,7 +66,7 @@ public interface ColumnSource<T>
      *
      * @return A map from distinct data values to an rowSet that contains those values
      */
-    Map<T, TrackingMutableRowSet> getGroupToRange();
+    Map<T, RowSet> getGroupToRange();
 
     /**
      * Compute grouping information for (at least) all keys present in rowSet.
@@ -73,7 +74,7 @@ public interface ColumnSource<T>
      * @param rowSet The rowSet to consider
      * @return A map from distinct data values to an rowSet that contains those values
      */
-    Map<T, TrackingMutableRowSet> getGroupToRange(TrackingMutableRowSet rowSet);
+    Map<T, RowSet> getGroupToRange(RowSet rowSet);
 
     /**
      * Determine if this column source is immutable, meaning that the values at a given rowSet key never change.

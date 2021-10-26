@@ -335,7 +335,7 @@ public class UpdatePerformanceTracker {
             RuntimeMemory.getInstance().read(startSample);
         }
 
-        public final void onUpdateStart(final TrackingMutableRowSet added, final TrackingMutableRowSet removed, final TrackingMutableRowSet modified,
+        public final void onUpdateStart(final RowSet added, final RowSet removed, final RowSet modified,
                                         final RowSetShiftData shifted) {
             intervalAdded += added.size();
             intervalRemoved += removed.size();

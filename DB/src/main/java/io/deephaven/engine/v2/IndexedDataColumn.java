@@ -7,7 +7,8 @@ package io.deephaven.engine.v2;
 import io.deephaven.engine.tables.DataColumn;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.v2.sources.chunk.*;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
+import io.deephaven.engine.v2.utils.RowSet;
+import io.deephaven.engine.v2.utils.TrackingRowSet;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.v2.iterators.*;
 import io.deephaven.engine.v2.sources.*;
@@ -30,7 +31,7 @@ public class IndexedDataColumn<TYPE> implements DataColumn<TYPE> {
     @SuppressWarnings({"UnusedDeclaration", "FieldCanBeLocal"})
     private final Object parent; // DO NOT DELETE - This reference preserves strong-reachability of the owning table and
                                  // its listeners.
-    private final TrackingMutableRowSet rowSet;
+    private final RowSet rowSet;
     private final ColumnSource<TYPE> columnSource;
 
     public IndexedDataColumn(@NotNull final String name, @NotNull final Table table) {
@@ -38,12 +39,12 @@ public class IndexedDataColumn<TYPE> implements DataColumn<TYPE> {
         this(name, table, table.getRowSet(), table.getColumnSource(name));
     }
 
-    public IndexedDataColumn(@NotNull final String name, @NotNull final TrackingMutableRowSet rowSet,
+    public IndexedDataColumn(@NotNull final String name, @NotNull final RowSet rowSet,
             @NotNull final ColumnSource<TYPE> columnSource) {
         this(name, null, rowSet, columnSource);
     }
 
-    private IndexedDataColumn(@Nullable final String name, @Nullable final Object parent, @NotNull final TrackingMutableRowSet rowSet,
+    private IndexedDataColumn(@Nullable final String name, @Nullable final Object parent, @NotNull final RowSet rowSet,
             @NotNull final ColumnSource<TYPE> columnSource) {
         this.name = name;
         this.parent = parent;
@@ -59,7 +60,7 @@ public class IndexedDataColumn<TYPE> implements DataColumn<TYPE> {
      * @return A data column with previous values for the supplied column source, according to the previous version of
      *         the rowSet
      */
-    public static <TYPE> IndexedDataColumn<TYPE> makePreviousColumn(@NotNull final TrackingMutableRowSet rowSet,
+    public static <TYPE> IndexedDataColumn<TYPE> makePreviousColumn(@NotNull final TrackingRowSet rowSet,
             @NotNull final ColumnSource<TYPE> columnSource) {
         return new IndexedDataColumn<>(null, null, rowSet.getPrevRowSet(), new PrevColumnSource<>(columnSource));
     }
@@ -88,7 +89,7 @@ public class IndexedDataColumn<TYPE> implements DataColumn<TYPE> {
     // Helpers
     // ------------------------------------------------------------------------------------------------------------------
 
-    private TrackingMutableRowSet getSubIndexByPos(final long startPosInclusive, final long endPosExclusive) {
+    private RowSet getSubIndexByPos(final long startPosInclusive, final long endPosExclusive) {
         return startPosInclusive == 0 && endPosExclusive == rowSet.size() ? rowSet.clone()
                 : rowSet.subSetByPositionRange(startPosInclusive, endPosExclusive);
     }
@@ -163,7 +164,7 @@ public class IndexedDataColumn<TYPE> implements DataColumn<TYPE> {
 
     @Override
     public byte[] getBytes(final long startPosInclusive, final long endPosExclusive) {
-        try (final TrackingMutableRowSet rangeRowSet = getSubIndexByPos(startPosInclusive, endPosExclusive);
+        try (final RowSet rangeRowSet = getSubIndexByPos(startPosInclusive, endPosExclusive);
              final ChunkSource.FillContext context =
                         columnSource.makeFillContext(rangeRowSet.intSize("getBytes"), null)) {
             final byte[] result = new byte[rangeRowSet.intSize("getBytes")];
@@ -201,7 +202,7 @@ public class IndexedDataColumn<TYPE> implements DataColumn<TYPE> {
 
     @Override
     public char[] getChars(final long startPosInclusive, final long endPosExclusive) {
-        try (final TrackingMutableRowSet rangeRowSet = getSubIndexByPos(startPosInclusive, endPosExclusive);
+        try (final RowSet rangeRowSet = getSubIndexByPos(startPosInclusive, endPosExclusive);
              final ChunkSource.FillContext context =
                         columnSource.makeFillContext(rangeRowSet.intSize("getChars"), null)) {
             final char[] result = new char[rangeRowSet.intSize("getChars")];
@@ -239,7 +240,7 @@ public class IndexedDataColumn<TYPE> implements DataColumn<TYPE> {
 
     @Override
     public double[] getDoubles(final long startPosInclusive, final long endPosExclusive) {
-        try (final TrackingMutableRowSet rangeRowSet = getSubIndexByPos(startPosInclusive, endPosExclusive);
+        try (final RowSet rangeRowSet = getSubIndexByPos(startPosInclusive, endPosExclusive);
              final ChunkSource.FillContext context =
                         columnSource.makeFillContext(rangeRowSet.intSize("getDoubles"), null)) {
             final double[] result = new double[rangeRowSet.intSize("getDoubles")];
@@ -277,7 +278,7 @@ public class IndexedDataColumn<TYPE> implements DataColumn<TYPE> {
 
     @Override
     public float[] getFloats(final long startPosInclusive, final long endPosExclusive) {
-        try (final TrackingMutableRowSet rangeRowSet = getSubIndexByPos(startPosInclusive, endPosExclusive);
+        try (final RowSet rangeRowSet = getSubIndexByPos(startPosInclusive, endPosExclusive);
              final ChunkSource.FillContext context =
                         columnSource.makeFillContext(rangeRowSet.intSize("getFloats"), null)) {
             final float[] result = new float[rangeRowSet.intSize("getFloats")];
@@ -315,7 +316,7 @@ public class IndexedDataColumn<TYPE> implements DataColumn<TYPE> {
 
     @Override
     public int[] getInts(final long startPosInclusive, final long endPosExclusive) {
-        try (final TrackingMutableRowSet rangeRowSet = getSubIndexByPos(startPosInclusive, endPosExclusive);
+        try (final RowSet rangeRowSet = getSubIndexByPos(startPosInclusive, endPosExclusive);
              final ChunkSource.FillContext context =
                         columnSource.makeFillContext(rangeRowSet.intSize("getInts"), null)) {
             final int[] result = new int[rangeRowSet.intSize("getInts")];
@@ -353,7 +354,7 @@ public class IndexedDataColumn<TYPE> implements DataColumn<TYPE> {
 
     @Override
     public long[] getLongs(final long startPosInclusive, final long endPosExclusive) {
-        try (final TrackingMutableRowSet rangeRowSet = getSubIndexByPos(startPosInclusive, endPosExclusive);
+        try (final RowSet rangeRowSet = getSubIndexByPos(startPosInclusive, endPosExclusive);
              final ChunkSource.FillContext context =
                         columnSource.makeFillContext(rangeRowSet.intSize("getLongs"), null)) {
             final long[] result = new long[rangeRowSet.intSize("getLongs")];
@@ -391,7 +392,7 @@ public class IndexedDataColumn<TYPE> implements DataColumn<TYPE> {
 
     @Override
     public short[] getShorts(final long startPosInclusive, final long endPosExclusive) {
-        try (final TrackingMutableRowSet rangeRowSet = getSubIndexByPos(startPosInclusive, endPosExclusive);
+        try (final RowSet rangeRowSet = getSubIndexByPos(startPosInclusive, endPosExclusive);
              final ChunkSource.FillContext context =
                         columnSource.makeFillContext(rangeRowSet.intSize("getShorts"), null)) {
             final short[] result = new short[rangeRowSet.intSize("getShorts")];

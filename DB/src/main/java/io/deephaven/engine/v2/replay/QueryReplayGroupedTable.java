@@ -13,9 +13,10 @@ import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.ReadOnlyRedirectedColumnSource;
 import io.deephaven.engine.v2.tuples.TupleSource;
 import io.deephaven.engine.v2.tuples.TupleSourceFactory;
+import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.engine.v2.utils.RedirectionIndex;
+import io.deephaven.engine.v2.utils.TrackingRowSet;
 
 import java.util.Arrays;
 import java.util.LinkedHashMap;
@@ -41,13 +42,13 @@ public abstract class QueryReplayGroupedTable extends QueryTable implements Live
 
     static class IteratorsAndNextTime implements Comparable<IteratorsAndNextTime> {
 
-        private final TrackingMutableRowSet.Iterator iterator;
+        private final RowSet.Iterator iterator;
         private final ColumnSource<DBDateTime> columnSource;
         DBDateTime lastTime;
         long lastIndex;
         public final long pos;
 
-        private IteratorsAndNextTime(TrackingMutableRowSet.Iterator iterator, ColumnSource<DBDateTime> columnSource, long pos) {
+        private IteratorsAndNextTime(RowSet.Iterator iterator, ColumnSource<DBDateTime> columnSource, long pos) {
             this.iterator = iterator;
             this.columnSource = columnSource;
             this.pos = pos;
@@ -74,12 +75,12 @@ public abstract class QueryReplayGroupedTable extends QueryTable implements Live
         }
     }
 
-    protected QueryReplayGroupedTable(TrackingMutableRowSet rowSet, Map<String, ? extends ColumnSource<?>> input,
+    protected QueryReplayGroupedTable(TrackingRowSet rowSet, Map<String, ? extends ColumnSource<?>> input,
                                       String timeColumn, Replayer replayer, RedirectionIndex redirectionIndex, String[] groupingColumns) {
 
         super(RowSetFactoryImpl.INSTANCE.getRowSetByValues(), getResultSources(input, redirectionIndex));
         this.redirectionIndex = redirectionIndex;
-        Map<Object, TrackingMutableRowSet> grouping;
+        Map<Object, RowSet> grouping;
 
         final ColumnSource<?>[] columnSources =
                 Arrays.stream(groupingColumns).map(input::get).toArray(ColumnSource[]::new);
@@ -89,8 +90,8 @@ public abstract class QueryReplayGroupedTable extends QueryTable implements Live
         // noinspection unchecked
         ColumnSource<DBDateTime> timeSource = (ColumnSource<DBDateTime>) input.get(timeColumn);
         int pos = 0;
-        for (TrackingMutableRowSet groupRowSet : grouping.values()) {
-            TrackingMutableRowSet.Iterator iterator = groupRowSet.iterator();
+        for (RowSet groupRowSet : grouping.values()) {
+            RowSet.Iterator iterator = groupRowSet.iterator();
             if (iterator.hasNext()) {
                 allIterators.add(new IteratorsAndNextTime(iterator, timeSource, pos++));
             }

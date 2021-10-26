@@ -7,6 +7,8 @@ package io.deephaven.engine.v2.select;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.exceptions.QueryCancellationException;
 import io.deephaven.engine.tables.Table;
+import io.deephaven.engine.v2.utils.MutableRowSet;
+import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 
 import java.util.*;
@@ -34,8 +36,8 @@ public class DisjunctiveFilter extends ComposedFilter {
     }
 
     @Override
-    public TrackingMutableRowSet filter(TrackingMutableRowSet selection, TrackingMutableRowSet fullSet, Table table, boolean usePrev) {
-        TrackingMutableRowSet matched = null;
+    public TrackingMutableRowSet filter(TrackingMutableRowSet selection, RowSet fullSet, Table table, boolean usePrev) {
+        MutableRowSet matched = null;
 
         for (SelectFilter filter : componentFilters) {
             if (Thread.interrupted()) {

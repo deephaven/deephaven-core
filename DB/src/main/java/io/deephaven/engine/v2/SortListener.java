@@ -49,7 +49,7 @@ public class SortListener extends BaseTable.ListenerImpl {
     private final QueryTable result;
     private final HashMapK4V4 reverseLookup;
     private final ColumnSource<Comparable<?>>[] columnsToSortBy;
-    private final TrackingMutableRowSet resultRowSet;
+    private final MutableRowSet resultRowSet;
     private final SortingOrder[] order;
     private final RedirectionIndex sortMapping;
     private final ColumnSource<Comparable<?>>[] sortedColumnsToSortBy;
@@ -196,14 +196,14 @@ public class SortListener extends BaseTable.ListenerImpl {
                 try (final RowSequence wrappedKeyChunk = RowSequenceUtil.wrapRowKeysChunkAsRowSequence(keyChunk)) {
                     sortMapping.removeAll(wrappedKeyChunk);
                 }
-                try (final TrackingMutableRowSet rmKeyRowSet = sortedArrayToIndex(removedOutputKeys, 0, numRemovedKeys)) {
+                try (final RowSet rmKeyRowSet = sortedArrayToIndex(removedOutputKeys, 0, numRemovedKeys)) {
                     resultRowSet.remove(rmKeyRowSet);
                 }
             }
 
             // handle upstream shifts; note these never effect the sorted output keyspace
             final SortMappingAggregator mappingChanges = closer.add(new SortMappingAggregator());
-            try (final TrackingMutableRowSet prevRowSet = parent.getRowSet().getPrevRowSet()) {
+            try (final RowSet prevRowSet = parent.getRowSet().getPrevRowSet()) {
                 upstream.shifted.forAllInIndex(prevRowSet, (key, delta) -> {
                     final long dst = reverseLookup.remove(key);
                     if (dst != REVERSE_LOOKUP_NO_ENTRY_VALUE) {
@@ -223,7 +223,7 @@ public class SortListener extends BaseTable.ListenerImpl {
             // Identify the location where each key needs to be inserted.
             int numAddedKeys = 0;
             int numPropagatedModdedKeys = 0;
-            final TrackingMutableRowSet addedAndModified =
+            final RowSet addedAndModified =
                     modifiedNeedsSorting ? closer.add(upstream.added.union(upstream.modified)) : upstream.added;
             final long[] addedInputKeys =
                     SortHelpers.getSortedKeys(order, columnsToSortBy, addedAndModified, false, false).getArrayMapping();
@@ -231,7 +231,7 @@ public class SortListener extends BaseTable.ListenerImpl {
             final long[] propagatedModOutputKeys = modifiedNeedsSorting ? new long[upstream.modified.intSize()]
                     : CollectionUtil.ZERO_LENGTH_LONG_ARRAY;
 
-            final TrackingMutableRowSet.SearchIterator ait = resultRowSet.searchIterator();
+            final RowSet.SearchIterator ait = resultRowSet.searchIterator();
             for (int ii = 0; ii < addedInputKeys.length; ++ii) {
                 targetComparator.setTarget(addedInputKeys[ii]);
                 final long after = ait.binarySearchValue(targetComparator, SortingOrder.Ascending.direction);
@@ -266,7 +266,7 @@ public class SortListener extends BaseTable.ListenerImpl {
                 try (final RowSequence wrappedKeyChunk = RowSequenceUtil.wrapRowKeysChunkAsRowSequence(keyChunk)) {
                     sortMapping.removeAll(wrappedKeyChunk);
                 }
-                try (final TrackingMutableRowSet rmKeyRowSet =
+                try (final RowSet rmKeyRowSet =
                         sortedArrayToIndex(removedOutputKeys, removedSize, numRemovedKeys - removedSize)) {
                     resultRowSet.remove(rmKeyRowSet);
                 }
@@ -352,7 +352,7 @@ public class SortListener extends BaseTable.ListenerImpl {
         }
     }
 
-    private TrackingMutableRowSet sortedArrayToIndex(long[] arr, int offset, int length) {
+    private RowSet sortedArrayToIndex(long[] arr, int offset, int length) {
         final RowSetBuilderSequential builder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
         builder.appendKeys(LongIterators.wrap(arr, offset, length));
         return builder.build();
@@ -394,9 +394,9 @@ public class SortListener extends BaseTable.ListenerImpl {
         final int minimumRunLength = REBALANCE_RANGE_SIZE + REBALANCE_GAP_SIZE;
         final int maximumRunLength = Math.max(minimumRunLength, (int) Math.sqrt(resultRowSet.size()));
 
-        final TrackingMutableRowSet.SearchIterator gapEvictionIter =
+        final RowSet.SearchIterator gapEvictionIter =
                 (qs.direction == -1) ? resultRowSet.reverseIterator() : resultRowSet.searchIterator();
-        final TrackingMutableRowSet.SearchIterator backlogIter =
+        final RowSet.SearchIterator backlogIter =
                 (qs.direction == -1) ? resultRowSet.reverseIterator() : resultRowSet.searchIterator();
 
         long destKey = qs.addedOutputKeys[qs.addedCurrent];
@@ -536,7 +536,7 @@ public class SortListener extends BaseTable.ListenerImpl {
     private long insertAGap(final long destinationSlot, final QueueState qs,
             final DirectionalResettableBuilderSequential modRemoved,
             final SortMappingAggregator mappingChanges,
-            final TrackingMutableRowSet.SearchIterator gapEvictionIter) {
+            final RowSet.SearchIterator gapEvictionIter) {
         final long gapEnd = destinationSlot + REBALANCE_GAP_SIZE * qs.direction; // exclusive
 
         checkDestinationSlotOk(gapEnd);
@@ -545,7 +545,7 @@ public class SortListener extends BaseTable.ListenerImpl {
         // evict any existing rows in the gap
         if (gapEvictionIter != null && gapEvictionIter.advance(destinationSlot)) {
             while (qs.isBefore(gapEvictionIter.currentValue(), gapEnd)) {
-                mappingChanges.append(gapEvictionIter.currentValue(), TrackingMutableRowSet.NULL_ROW_KEY);
+                mappingChanges.append(gapEvictionIter.currentValue(), RowSet.NULL_ROW_KEY);
                 if (gapEvictionIter.hasNext()) {
                     gapEvictionIter.nextLong();
                 } else {
@@ -561,7 +561,7 @@ public class SortListener extends BaseTable.ListenerImpl {
      * The following may clarify what we are doing: lKey (the "target") is in input coordinates rKey (the "probe") is in
      * output coordinates
      */
-    private class TargetComparator implements TrackingMutableRowSet.TargetComparator {
+    private class TargetComparator implements RowSet.TargetComparator {
         private long lKey;
         private final ColumnComparatorFactory.IComparator[] comparators;
 
@@ -651,7 +651,7 @@ public class SortListener extends BaseTable.ListenerImpl {
 
                 for (int jj = 0; jj < thisSize; ++jj) {
                     final long index = valuesChunk.get(jj);
-                    if (index != TrackingMutableRowSet.NULL_ROW_KEY) {
+                    if (index != RowSet.NULL_ROW_KEY) {
                         reverseLookup.put(index, keysChunk.get(jj));
                     } else {
                         reverseLookup.remove(index);
@@ -783,7 +783,7 @@ public class SortListener extends BaseTable.ListenerImpl {
         }
 
         @Override
-        public TrackingMutableRowSet build() {
+        public RowSet build() {
             RowSetBuilderSequential builder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
             appendToBuilder(builder);
             return builder.build();
@@ -907,7 +907,7 @@ public class SortListener extends BaseTable.ListenerImpl {
         }
     }
 
-    private static void fillArray(final long[] dest, final TrackingMutableRowSet src, final int destIndex,
+    private static void fillArray(final long[] dest, final RowSet src, final int destIndex,
                                   final LongUnaryOperator transformer) {
         final MutableInt pos = new MutableInt(destIndex);
         src.forAllLongs((final long v) -> {
@@ -916,9 +916,9 @@ public class SortListener extends BaseTable.ListenerImpl {
         });
     }
 
-    private static void showGaps(TrackingMutableRowSet rowSet) {
+    private static void showGaps(RowSet rowSet) {
         long freeStart = 0;
-        for (TrackingMutableRowSet.RangeIterator i = rowSet.rangeIterator(); i.hasNext();) {
+        for (RowSet.RangeIterator i = rowSet.rangeIterator(); i.hasNext();) {
             i.next();
             long freeEnd = i.currentRangeStart() - 1;
             long freeSize = freeEnd - freeStart + 1;

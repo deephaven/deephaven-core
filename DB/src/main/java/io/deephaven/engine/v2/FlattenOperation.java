@@ -32,7 +32,7 @@ public class FlattenOperation implements QueryTable.MemoizableOperation<QueryTab
 
     @Override
     public Result<QueryTable> initialize(boolean usePrev, long beforeClock) {
-        final TrackingMutableRowSet rowSet = parent.getRowSet();
+        final TrackingRowSet rowSet = parent.getRowSet();
         final Map<String, ColumnSource<?>> resultColumns = new LinkedHashMap<>();
         final RedirectionIndex redirectionIndex = new WrappedIndexRedirectionIndexImpl(rowSet);
 
@@ -73,7 +73,7 @@ public class FlattenOperation implements QueryTable.MemoizableOperation<QueryTab
 
     private void onUpdate(final Listener.Update upstream) {
         // Note: we can safely ignore shifted since shifts do not change data AND shifts are not allowed to reorder.
-        final TrackingMutableRowSet rowSet = parent.getRowSet();
+        final TrackingRowSet rowSet = parent.getRowSet();
         final long newSize = rowSet.size();
 
         final Listener.Update downstream = new Listener.Update();
@@ -91,13 +91,13 @@ public class FlattenOperation implements QueryTable.MemoizableOperation<QueryTab
         }
 
         downstream.added = rowSet.invert(upstream.added);
-        try (final TrackingMutableRowSet prevRowSet = rowSet.getPrevRowSet()) {
+        try (final RowSet prevRowSet = rowSet.getPrevRowSet()) {
             downstream.removed = prevRowSet.invert(upstream.removed);
         }
         final RowSetShiftData.Builder outShifted = new RowSetShiftData.Builder();
 
         // Helper to ensure that we can prime iterators and still detect the end.
-        final Consumer<MutableObject<TrackingMutableRowSet.RangeIterator>> updateIt = (it) -> {
+        final Consumer<MutableObject<RowSet.RangeIterator>> updateIt = (it) -> {
             if (it.getValue().hasNext()) {
                 it.getValue().next();
             } else {
@@ -106,8 +106,8 @@ public class FlattenOperation implements QueryTable.MemoizableOperation<QueryTab
         };
 
         // Create our range iterators and prime them.
-        final MutableObject<TrackingMutableRowSet.RangeIterator> rmIt = new MutableObject<>(downstream.removed.rangeIterator());
-        final MutableObject<TrackingMutableRowSet.RangeIterator> addIt = new MutableObject<>(downstream.added.rangeIterator());
+        final MutableObject<RowSet.RangeIterator> rmIt = new MutableObject<>(downstream.removed.rangeIterator());
+        final MutableObject<RowSet.RangeIterator> addIt = new MutableObject<>(downstream.added.rangeIterator());
         updateIt.accept(rmIt);
         updateIt.accept(addIt);
 
@@ -116,9 +116,9 @@ public class FlattenOperation implements QueryTable.MemoizableOperation<QueryTab
         long currMarker = 0; // everything less than this marker is accounted for
 
         while (rmIt.getValue() != null || addIt.getValue() != null) {
-            final long nextRm = rmIt.getValue() == null ? TrackingMutableRowSet.NULL_ROW_KEY
+            final long nextRm = rmIt.getValue() == null ? RowSet.NULL_ROW_KEY
                     : rmIt.getValue().currentRangeStart();
-            final long nextAdd = addIt.getValue() == null ? TrackingMutableRowSet.NULL_ROW_KEY
+            final long nextAdd = addIt.getValue() == null ? RowSet.NULL_ROW_KEY
                     : addIt.getValue().currentRangeStart() - currDelta;
 
             if (nextRm == nextAdd) { // note neither can be null in this case
@@ -134,7 +134,7 @@ public class FlattenOperation implements QueryTable.MemoizableOperation<QueryTab
 
                 updateIt.accept(rmIt);
                 updateIt.accept(addIt);
-            } else if (nextAdd == TrackingMutableRowSet.NULL_ROW_KEY || (nextRm != TrackingMutableRowSet.NULL_ROW_KEY && nextRm < nextAdd)) {
+            } else if (nextAdd == RowSet.NULL_ROW_KEY || (nextRm != RowSet.NULL_ROW_KEY && nextRm < nextAdd)) {
                 // rmIt cannot be null
                 final long dtRm = rmIt.getValue().currentRangeEnd() - rmIt.getValue().currentRangeStart() + 1;
 

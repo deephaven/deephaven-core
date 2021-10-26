@@ -6,10 +6,7 @@ package io.deephaven.engine.v2.sources.regioned;
 
 import io.deephaven.engine.v2.ColumnToCodecMappings;
 import io.deephaven.engine.v2.locations.impl.TableLocationUpdateSubscriptionBuffer;
-import io.deephaven.engine.v2.utils.RowSet;
-import io.deephaven.engine.v2.utils.RowSetBuilderSequential;
-import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
+import io.deephaven.engine.v2.utils.*;
 import io.deephaven.hash.KeyedObjectHashMap;
 import io.deephaven.hash.KeyedObjectKey;
 import io.deephaven.base.verify.Assert;
@@ -434,14 +431,14 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
                 }
             } else if (definition.isPartitioning()) {
                 final DeferredGroupingColumnSource<T> partitioningColumnSource = source;
-                Map<T, TrackingMutableRowSet> columnPartitionToIndex = partitioningColumnSource.getGroupToRange();
+                Map<T, RowSet> columnPartitionToIndex = partitioningColumnSource.getGroupToRange();
                 if (columnPartitionToIndex == null) {
                     columnPartitionToIndex = new LinkedHashMap<>();
                     partitioningColumnSource.setGroupToRange(columnPartitionToIndex);
                 }
                 final T columnPartitionValue =
                         location.getTableLocation().getKey().getPartitionValue(definition.getName());
-                final TrackingMutableRowSet current = columnPartitionToIndex.get(columnPartitionValue);
+                final MutableRowSet current = columnPartitionToIndex.get(columnPartitionValue);
                 if (current == null) {
                     columnPartitionToIndex.put(columnPartitionValue, locationAddedIndexInTable.clone());
                 } else {

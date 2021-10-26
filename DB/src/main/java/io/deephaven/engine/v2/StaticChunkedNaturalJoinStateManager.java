@@ -819,7 +819,7 @@ class StaticChunkedNaturalJoinStateManager
     }
 
     @Override
-    void decorateLeftSide(TrackingMutableRowSet leftRowSet, ColumnSource<?> [] leftSources, final LongArraySource leftRedirections)  {
+    void decorateLeftSide(RowSet leftRowSet, ColumnSource<?> [] leftSources, final LongArraySource leftRedirections)  {
         if (leftRowSet.isEmpty()) {
             return;
         }
@@ -1022,7 +1022,7 @@ class StaticChunkedNaturalJoinStateManager
 
                 // region probe loop initialization
                 if (isLeftSide) {
-                    workingLeftRedirections.fillWithValue(0, chunkSize, TrackingMutableRowSet.NULL_ROW_KEY);
+                    workingLeftRedirections.fillWithValue(0, chunkSize, RowSet.NULL_ROW_KEY);
                     workingLeftRedirections.setSize(chunkSize);
                 } else {
                     chunkOk.fillRowKeyChunk(rightKeyIndices);
@@ -1195,7 +1195,7 @@ class StaticChunkedNaturalJoinStateManager
         return buildRedirectionIndex(leftTable, exactMatch, leftRedirections::getLong, redirectionType);
     }
 
-    RedirectionIndex buildGroupedRedirectionIndex(QueryTable leftTable, boolean exactMatch, long groupingSize, LongArraySource leftHashSlots, ArrayBackedColumnSource<TrackingMutableRowSet> leftIndices, JoinControl.RedirectionType redirectionType) {
+    RedirectionIndex buildGroupedRedirectionIndex(QueryTable leftTable, boolean exactMatch, long groupingSize, LongArraySource leftHashSlots, ArrayBackedColumnSource<RowSet> leftIndices, JoinControl.RedirectionType redirectionType) {
         switch (redirectionType) {
             case Contiguous: {
                 if (!leftTable.isFlat()) {
@@ -1206,7 +1206,7 @@ class StaticChunkedNaturalJoinStateManager
                 for (int ii = 0; ii < groupingSize; ++ii) {
                     final long rightSide = getStateValue(leftHashSlots, ii);
                     checkExactMatch(exactMatch, ii, rightSide);
-                    final TrackingMutableRowSet leftRowSetForKey = leftIndices.get(ii);
+                    final RowSet leftRowSetForKey = leftIndices.get(ii);
                     leftRowSetForKey.forAllLongs((long ll) -> innerIndex[(int) ll] = rightSide);
                 }
                 return new ContiguousRedirectionIndexImpl(innerIndex);
@@ -1219,7 +1219,7 @@ class StaticChunkedNaturalJoinStateManager
 
                     checkExactMatch(exactMatch, ii, rightSide);
                     if (rightSide != NO_RIGHT_ENTRY_VALUE) {
-                        final TrackingMutableRowSet leftRowSetForKey = leftIndices.get(ii);
+                        final RowSet leftRowSetForKey = leftIndices.get(ii);
                         leftRowSetForKey.forAllLongs((long ll) -> sparseRedirections.set(ll, rightSide));
                     }
                 }
@@ -1233,7 +1233,7 @@ class StaticChunkedNaturalJoinStateManager
 
                     checkExactMatch(exactMatch, ii, rightSide);
                     if (rightSide != NO_RIGHT_ENTRY_VALUE) {
-                        final TrackingMutableRowSet leftRowSetForKey = leftIndices.get(ii);
+                        final RowSet leftRowSetForKey = leftIndices.get(ii);
                         leftRowSetForKey.forAllLongs((long ll) -> redirectionIndex.put(ll, rightSide));
                     }
                 }

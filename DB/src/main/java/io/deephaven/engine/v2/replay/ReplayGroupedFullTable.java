@@ -5,17 +5,14 @@
 package io.deephaven.engine.v2.replay;
 
 import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
-import io.deephaven.engine.v2.utils.RowSetBuilderRandom;
-import io.deephaven.engine.v2.utils.RedirectionIndex;
+import io.deephaven.engine.v2.utils.*;
 
 import java.util.Map;
 
 public class ReplayGroupedFullTable extends QueryReplayGroupedTable {
     private int redirIndexSize;
 
-    public ReplayGroupedFullTable(TrackingMutableRowSet rowSet, Map<String, ? extends ColumnSource<?>> input, String timeColumn,
+    public ReplayGroupedFullTable(TrackingRowSet rowSet, Map<String, ? extends ColumnSource<?>> input, String timeColumn,
                                   Replayer replayer, String groupingColumn) {
         super(rowSet, input, timeColumn, replayer, RedirectionIndex.FACTORY.createRedirectionIndex((int) rowSet.size()),
                 new String[] {groupingColumn});
@@ -40,7 +37,7 @@ public class ReplayGroupedFullTable extends QueryReplayGroupedTable {
                 allIterators.add(currentIt);
             }
         }
-        final TrackingMutableRowSet added = rowSetBuilder.build();
+        final RowSet added = rowSetBuilder.build();
         if (added.size() > 0) {
             getRowSet().insert(added);
             notifyListeners(added, RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), RowSetFactoryImpl.INSTANCE.getEmptyRowSet());

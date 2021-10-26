@@ -6,7 +6,7 @@ import io.deephaven.engine.v2.DynamicTable;
 import io.deephaven.engine.v2.InstrumentedListenerAdapter;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.LogicalClock;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
+import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.engine.v2.utils.TerminalNotification;
 import gnu.trove.map.hash.TObjectLongHashMap;
 import org.jetbrains.annotations.NotNull;
@@ -79,7 +79,7 @@ public class ToMapListener<K, V> extends InstrumentedListenerAdapter implements 
         this.valueProducer = valueProducer;
         this.prevValueProducer = prevValueProducer;
 
-        for (final TrackingMutableRowSet.Iterator it = source.getRowSet().iterator(); it.hasNext();) {
+        for (final RowSet.Iterator it = source.getRowSet().iterator(); it.hasNext();) {
             final long key = it.nextLong();
             baselineMap.put(keyProducer.apply(key), key);
         }

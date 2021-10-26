@@ -1270,7 +1270,7 @@ public class QueryTableTest extends QueryTableTestBase {
                 c("B", "c", "a", "b", "c", "a", "b", "c", "aa", "a", "b", "bc", "A", "bc", "A", "bc")), 10));
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-            final TrackingMutableRowSet rowsToRemove = right.getRowSet().clone();
+            final RowSet rowsToRemove = right.getRowSet().clone();
             removeRows(right, rowsToRemove);
             right.notifyListeners(i(), rowsToRemove, i());
         });
@@ -1926,7 +1926,7 @@ public class QueryTableTest extends QueryTableTestBase {
         rightTable.listenForUpdates(coalescingListener, true);
 
         Table lastSnapshot = snapshot.silent().select();
-        TrackingMutableRowSet lastRowSet = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+        RowSet lastRowSet = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
 
         try {
             for (int step = 0; step < 200; step++) {
@@ -1947,7 +1947,7 @@ public class QueryTableTest extends QueryTableTestBase {
                     if (modStamp) {
                         final long lastStamp = stampTable.getRowSet().lastRowKey();
                         final int numAdditions = 1 + random.nextInt(stampSize);
-                        final TrackingMutableRowSet stampsToAdd =
+                        final RowSet stampsToAdd =
                                 RowSetFactoryImpl.INSTANCE.getRowSetByRange(lastStamp + 1, lastStamp + numAdditions);
 
                         final ColumnHolder[] columnAdditions = new ColumnHolder[stampInfo.length];
@@ -1972,15 +1972,15 @@ public class QueryTableTest extends QueryTableTestBase {
                         System.out.println("Snapshot Added: " + simpleListener.added);
                         System.out.println("Snapshot Removed: " + simpleListener.removed);
                         System.out.println("Snapshot Modified: " + simpleListener.modified);
-                        final TrackingMutableRowSet coalAdded = coalescingListener.indexUpdateCoalescer.takeAdded();
+                        final RowSet coalAdded = coalescingListener.indexUpdateCoalescer.takeAdded();
                         System.out.println("Right Coalesced Added: " + coalAdded);
-                        final TrackingMutableRowSet coalRemoved = coalescingListener.indexUpdateCoalescer.takeRemoved();
+                        final RowSet coalRemoved = coalescingListener.indexUpdateCoalescer.takeRemoved();
                         System.out.println("Right Coalesced Removed: " + coalRemoved);
-                        final TrackingMutableRowSet coalModified = coalescingListener.indexUpdateCoalescer.takeModified();
+                        final RowSet coalModified = coalescingListener.indexUpdateCoalescer.takeModified();
                         System.out.println("Right Coalesced Modified: " + coalModified);
 
-                        final TrackingMutableRowSet modified = simpleListener.added.union(simpleListener.modified);
-                        final TrackingMutableRowSet unmodified = snapshot.getRowSet().minus(modified);
+                        final RowSet modified = simpleListener.added.union(simpleListener.modified);
+                        final RowSet unmodified = snapshot.getRowSet().minus(modified);
                         System.out.println("Modified: " + modified);
                         System.out.println("Unmodified: " + unmodified);
 
@@ -1989,7 +1989,7 @@ public class QueryTableTest extends QueryTableTestBase {
                                 stampTable.getColumnSource("Stamp").getInt(stampTable.getRowSet().lastRowKey());
                         @SuppressWarnings("unchecked")
                         final ColumnSource<Integer> stamps = snapshot.getColumnSource("Stamp");
-                        for (final TrackingMutableRowSet.Iterator it = modified.iterator(); it.hasNext();) {
+                        for (final RowSet.Iterator it = modified.iterator(); it.hasNext();) {
                             final long next = it.nextLong();
                             final int stamp = stamps.getInt(next);
                             assertEquals(lastStamp, stamp);
@@ -1998,7 +1998,7 @@ public class QueryTableTest extends QueryTableTestBase {
                         // and anything unmodified should be the same as last time
                         @SuppressWarnings("unchecked")
                         final DataColumn<Integer> lastStamps = lastSnapshot.getColumn("Stamp");
-                        for (final TrackingMutableRowSet.Iterator it = unmodified.iterator(); it.hasNext();) {
+                        for (final RowSet.Iterator it = unmodified.iterator(); it.hasNext();) {
                             final long next = it.nextLong();
                             final long lastPos = lastRowSet.find(next);
                             assertTrue(lastPos >= 0);
@@ -2881,7 +2881,7 @@ public class QueryTableTest extends QueryTableTestBase {
             // noinspection unchecked
             final ColumnSource<String> symbol = t.getColumnSource("Symbol");
             // noinspection unchecked
-            final Map<String, TrackingMutableRowSet> gtr = (Map) t.getRowSet().getGrouping(symbol);
+            final Map<String, RowSet> gtr = (Map) t.getRowSet().getGrouping(symbol);
             ((AbstractColumnSource<String>) symbol).setGroupToRange(gtr);
             final Table result =
                     t.whereIn(Table.GroupStrategy.CREATE_GROUPS, t.where("Truthiness=true"), "Symbol", "Timestamp");
@@ -2932,7 +2932,7 @@ public class QueryTableTest extends QueryTableTestBase {
         final MutableObject<QueryTable> ft = new MutableObject<>();
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-            final TrackingMutableRowSet newRows = i(2, 4, 18, 20);
+            final RowSet newRows = i(2, 4, 18, 20);
             addToTable(lTable, newRows, c("X", "e", "f", "g", "h"));
             final Listener.Update update = new Listener.Update();
             update.added = newRows;
@@ -3128,7 +3128,7 @@ public class QueryTableTest extends QueryTableTestBase {
         for (int step = 0; step < 2; ++step) {
             final int key = i++;
             LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-                final TrackingMutableRowSet addRowSet = i(key);
+                final RowSet addRowSet = i(key);
                 addToTable(t1, addRowSet, intCol("T", key));
                 t1.notifyListeners(addRowSet, i(), i());
                 TableTools.show(result);

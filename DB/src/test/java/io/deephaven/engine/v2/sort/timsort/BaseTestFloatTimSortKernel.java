@@ -4,9 +4,7 @@
 package io.deephaven.engine.v2.sort.timsort;
 
 import io.deephaven.engine.structures.rowsequence.RowSequenceUtil;
-import io.deephaven.engine.v2.utils.RowSetBuilderRandom;
-import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
+import io.deephaven.engine.v2.utils.*;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.util.tuples.generated.FloatLongLongTuple;
 import io.deephaven.engine.util.tuples.generated.FloatLongTuple;
@@ -66,10 +64,10 @@ public abstract class BaseTestFloatTimSortKernel extends TestTimSortKernel {
     public static class FloatPartitionKernelStuff extends PartitionKernelStuff<FloatLongTuple> {
         final WritableFloatChunk valuesChunk;
         private final FloatPartitionKernel.PartitionKernelContext context;
-        private final TrackingMutableRowSet rowSet;
+        private final RowSet rowSet;
         private final ColumnSource<Float> columnSource;
 
-        public FloatPartitionKernelStuff(List<FloatLongTuple> javaTuples, TrackingMutableRowSet rowSet, int chunkSize, int nPartitions, boolean preserveEquality) {
+        public FloatPartitionKernelStuff(List<FloatLongTuple> javaTuples, RowSet rowSet, int chunkSize, int nPartitions, boolean preserveEquality) {
             super(javaTuples.size());
             this.rowSet = rowSet;
             final int size = javaTuples.size();
@@ -329,17 +327,17 @@ public abstract class BaseTestFloatTimSortKernel extends TestTimSortKernel {
         }
     }
 
-    static private void verifyPartition(FloatPartitionKernel.PartitionKernelContext context, TrackingMutableRowSet source, int size, List<FloatLongTuple> javaTuples, FloatChunk floatChunk, LongChunk indexKeys, ColumnSource<Float> columnSource) {
+    static private void verifyPartition(FloatPartitionKernel.PartitionKernelContext context, RowSet source, int size, List<FloatLongTuple> javaTuples, FloatChunk floatChunk, LongChunk indexKeys, ColumnSource<Float> columnSource) {
 
         final FloatLongTuple [] pivots = context.getPivots();
 
-        final TrackingMutableRowSet[] results = context.getPartitions(true);
+        final RowSet[] results = context.getPartitions(true);
 
-        final TrackingMutableRowSet reconstructed = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+        final MutableRowSet reconstructed = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
 
         // make sure that each partition is a subset of the rowSet and is disjoint
         for (int ii = 0; ii < results.length; ii++) {
-            final TrackingMutableRowSet partition = results[ii];
+            final RowSet partition = results[ii];
             TestCase.assertTrue("partition[" + ii + "].subsetOf(source)", partition.subsetOf(source));
             TestCase.assertFalse("reconstructed[\" + ii + \"]..overlaps(partition)", reconstructed.overlaps(partition));
             reconstructed.insert(partition);
@@ -355,7 +353,7 @@ public abstract class BaseTestFloatTimSortKernel extends TestTimSortKernel {
 //        System.out.println(javaTuples);
 
         for (int ii = 0; ii < results.length - 1; ii++) {
-            final TrackingMutableRowSet partition = results[ii];
+            final RowSet partition = results[ii];
 
             final float expectedPivotValue = pivots[ii].getFirstElement();
             final long expectedPivotKey = pivots[ii].getSecondElement();
@@ -377,7 +375,7 @@ public abstract class BaseTestFloatTimSortKernel extends TestTimSortKernel {
         int lastSize = 0;
 
         for (int ii = 0; ii < results.length; ii++) {
-            final TrackingMutableRowSet partition = results[ii];
+            final RowSet partition = results[ii];
 
 //            System.out.println("Partition[" + ii + "] " + partition.size());
 
@@ -388,7 +386,7 @@ public abstract class BaseTestFloatTimSortKernel extends TestTimSortKernel {
 
             final RowSetBuilderRandom builder = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
             expectedPartition.stream().mapToLong(FloatLongTuple::getSecondElement).forEach(builder::addKey);
-            final TrackingMutableRowSet expectedRowSet = builder.build();
+            final RowSet expectedRowSet = builder.build();
 
             if (!expectedRowSet.equals(partition)) {
                 System.out.println("partition.minus(expected): " + partition.minus(expectedRowSet));

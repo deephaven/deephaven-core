@@ -5,7 +5,7 @@
 package io.deephaven.modelfarm;
 
 import io.deephaven.configuration.Configuration;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
+import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.modelfarm.util.KeyedPriorityBlockingQueue;
@@ -60,13 +60,13 @@ public class ModelFarmRealTime<KEYTYPE, DATATYPE, ROWDATAMANAGERTYPE extends Row
     }
 
     @Override
-    protected void onDataUpdate(TrackingMutableRowSet added, TrackingMutableRowSet removed, TrackingMutableRowSet modified) {
+    protected void onDataUpdate(RowSet added, RowSet removed, RowSet modified) {
         updateQueue(added);
         updateQueue(modified);
     }
 
-    private void updateQueue(final TrackingMutableRowSet rowSet) {
-        for (TrackingMutableRowSet.Iterator it = rowSet.iterator(); it.hasNext();) {
+    private void updateQueue(final RowSet rowSet) {
+        for (RowSet.Iterator it = rowSet.iterator(); it.hasNext();) {
             final long i = it.nextLong();
             final KEYTYPE key = dataManager.uniqueIdCurrent(i);
             final int priority = prioritizer == null ? 0 : prioritizer.priority(dataManager, i);

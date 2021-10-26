@@ -16,9 +16,9 @@ import io.deephaven.engine.v2.sources.chunk.WritableIntChunk;
 import io.deephaven.engine.v2.sources.chunk.WritableLongChunk;
 import io.deephaven.engine.v2.sources.chunk.WritableObjectChunk;
 import io.deephaven.engine.v2.sources.chunk.util.pools.PoolableChunk;
+import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.engine.v2.utils.RowSetBuilderSequential;
 import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.chunk.array.ArrayExpansionKernel;
 import org.apache.commons.lang3.mutable.MutableInt;
@@ -73,7 +73,7 @@ public class VarListChunkInputStreamGenerator<T> extends BaseChunkInputStreamGen
 
     @Override
     public DrainableColumn getInputStream(final BarrageSubscriptionOptions options,
-                                          final @Nullable TrackingMutableRowSet subset) throws IOException {
+                                          final @Nullable RowSet subset) throws IOException {
         computePayload();
         return new VarListInputStream(options, subset);
     }
@@ -84,7 +84,7 @@ public class VarListChunkInputStreamGenerator<T> extends BaseChunkInputStreamGen
         private final DrainableColumn innerStream;
 
         private VarListInputStream(
-                final BarrageSubscriptionOptions options, final TrackingMutableRowSet subsetIn) throws IOException {
+                final BarrageSubscriptionOptions options, final RowSet subsetIn) throws IOException {
             super(chunk, options, subsetIn);
             if (subset.size() != offsets.size() - 1) {
                 myOffsets = WritableIntChunk.makeWritableChunk(subset.intSize(DEBUG_NAME) + 1);
@@ -100,7 +100,7 @@ public class VarListChunkInputStreamGenerator<T> extends BaseChunkInputStreamGen
                         myOffsetBuilder.appendRange(startOffset, endOffset - 1);
                     }
                 });
-                try (final TrackingMutableRowSet mySubset = myOffsetBuilder.build()) {
+                try (final RowSet mySubset = myOffsetBuilder.build()) {
                     innerStream = innerGenerator.getInputStream(options, mySubset);
                 }
             } else {

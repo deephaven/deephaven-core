@@ -6,10 +6,7 @@ package io.deephaven.engine.v2;
 
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.live.LiveTableMonitor;
-import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
-import io.deephaven.engine.v2.utils.RowSetShiftData;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
-import io.deephaven.engine.v2.utils.UpdatePerformanceTracker;
+import io.deephaven.engine.v2.utils.*;
 import junit.framework.TestCase;
 import org.junit.Assert;
 import org.junit.Test;
@@ -253,11 +250,11 @@ public class QueryTableFlattenTest extends QueryTableTestBase {
             showWithIndex(sourceTable);
         }
 
-        void modAndValidate(final Runnable modTable, final TrackingMutableRowSet added, final TrackingMutableRowSet removed, final TrackingMutableRowSet modified) {
+        void modAndValidate(final Runnable modTable, final RowSet added, final RowSet removed, final RowSet modified) {
             modAndValidate(modTable, added, removed, modified, RowSetShiftData.EMPTY);
         }
 
-        void modAndValidate(final Runnable modTable, final TrackingMutableRowSet added, final TrackingMutableRowSet removed, final TrackingMutableRowSet modified,
+        void modAndValidate(final Runnable modTable, final RowSet added, final RowSet removed, final RowSet modified,
                             final RowSetShiftData shifted) {
             ++updateCount;
 
@@ -288,16 +285,16 @@ public class QueryTableFlattenTest extends QueryTableTestBase {
         return builder.build();
     }
 
-    private static void validate(final SimpleListener listener, final long count, final TrackingMutableRowSet added,
-                                 final TrackingMutableRowSet removed, final TrackingMutableRowSet modified) {
+    private static void validate(final SimpleListener listener, final long count, final RowSet added,
+                                 final RowSet removed, final RowSet modified) {
         Assert.assertEquals("simpleListener.getCount()", count, listener.getCount());
         Assert.assertEquals("simpleListener.added", added, listener.added);
         Assert.assertEquals("simpleListener.removed", removed, listener.removed);
         Assert.assertEquals("simpleListener.modified", modified, listener.modified);
     }
 
-    private static void validate(final io.deephaven.engine.v2.SimpleListener listener, final long count, final TrackingMutableRowSet added,
-                                 final TrackingMutableRowSet removed, final TrackingMutableRowSet modified, final RowSetShiftData shifted) {
+    private static void validate(final io.deephaven.engine.v2.SimpleListener listener, final long count, final RowSet added,
+                                 final RowSet removed, final RowSet modified, final RowSetShiftData shifted) {
         Assert.assertEquals("simpleListener.getCount()", count, listener.getCount());
         Assert.assertEquals("simpleListener.added", added, listener.update.added);
         Assert.assertEquals("simpleListener.removed", removed, listener.update.removed);

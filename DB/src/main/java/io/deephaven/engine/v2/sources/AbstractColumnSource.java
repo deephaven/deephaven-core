@@ -43,7 +43,7 @@ public abstract class AbstractColumnSource<T> implements ColumnSource<T>, Serial
     protected final Class<T> type;
     protected final Class<?> componentType;
 
-    protected volatile Map<T, TrackingMutableRowSet> groupToRange;
+    protected volatile Map<T, RowSet> groupToRange;
 
     protected AbstractColumnSource(@NotNull final Class<T> type) {
         this(type, Object.class);
@@ -100,23 +100,23 @@ public abstract class AbstractColumnSource<T> implements ColumnSource<T>, Serial
     }
 
     @Override
-    public Map<T, TrackingMutableRowSet> getGroupToRange() {
+    public Map<T, RowSet> getGroupToRange() {
         return groupToRange;
     }
 
     @Override
-    public Map<T, TrackingMutableRowSet> getGroupToRange(TrackingMutableRowSet rowSet) {
+    public Map<T, RowSet> getGroupToRange(RowSet rowSet) {
         return groupToRange;
     }
 
-    public final void setGroupToRange(@Nullable Map<T, TrackingMutableRowSet> groupToRange) {
+    public final void setGroupToRange(@Nullable Map<T, RowSet> groupToRange) {
         this.groupToRange = groupToRange;
     }
 
     @Override
-    public TrackingMutableRowSet match(boolean invertMatch, boolean usePrev, boolean caseInsensitive, TrackingMutableRowSet mapper,
+    public TrackingMutableRowSet match(boolean invertMatch, boolean usePrev, boolean caseInsensitive, RowSet mapper,
                                        final Object... keys) {
-        final Map<T, TrackingMutableRowSet> groupToRange = (isImmutable() || !usePrev) ? getGroupToRange(mapper) : null;
+        final Map<T, RowSet> groupToRange = (isImmutable() || !usePrev) ? getGroupToRange(mapper) : null;
         if (groupToRange != null) {
             RowSetBuilderRandom allInMatchingGroups = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
 
@@ -124,14 +124,14 @@ public abstract class AbstractColumnSource<T> implements ColumnSource<T>, Serial
                 KeyedObjectHashSet keySet = new KeyedObjectHashSet<>(new CIStringKey());
                 Collections.addAll(keySet, keys);
 
-                for (Map.Entry<T, TrackingMutableRowSet> ent : groupToRange.entrySet()) {
+                for (Map.Entry<T, RowSet> ent : groupToRange.entrySet()) {
                     if (keySet.containsKey(ent.getKey())) {
                         allInMatchingGroups.addRowSet(ent.getValue());
                     }
                 }
             } else {
                 for (Object key : keys) {
-                    TrackingMutableRowSet range = groupToRange.get(key);
+                    RowSet range = groupToRange.get(key);
                     if (range != null) {
                         allInMatchingGroups.addRowSet(range);
                     }
@@ -169,9 +169,9 @@ public abstract class AbstractColumnSource<T> implements ColumnSource<T>, Serial
     }
 
     @Override
-    public Map<T, TrackingMutableRowSet> getValuesMapping(TrackingMutableRowSet subRange) {
-        Map<T, TrackingMutableRowSet> result = new LinkedHashMap<>();
-        final Map<T, TrackingMutableRowSet> groupToRange = getGroupToRange();
+    public Map<T, RowSet> getValuesMapping(RowSet subRange) {
+        Map<T, RowSet> result = new LinkedHashMap<>();
+        final Map<T, RowSet> groupToRange = getGroupToRange();
 
         // if we have a grouping we can use it to avoid iterating the entire subRange. The issue is that our grouping
         // could be bigger than the rowSet we care about, by a very large margin. In this case we could be spinning
@@ -180,8 +180,8 @@ public abstract class AbstractColumnSource<T> implements ColumnSource<T>, Serial
         // from scratch.
         boolean useGroupToRange = (groupToRange != null) && (groupToRange.size() < subRange.size());
         if (useGroupToRange) {
-            for (Map.Entry<T, TrackingMutableRowSet> typeEntry : groupToRange.entrySet()) {
-                TrackingMutableRowSet mapping = subRange.intersect(typeEntry.getValue());
+            for (Map.Entry<T, RowSet> typeEntry : groupToRange.entrySet()) {
+                RowSet mapping = subRange.intersect(typeEntry.getValue());
                 if (mapping.size() > 0) {
                     result.put(typeEntry.getKey(), mapping);
                 }
@@ -189,7 +189,7 @@ public abstract class AbstractColumnSource<T> implements ColumnSource<T>, Serial
         } else {
             Map<T, RowSetBuilderSequential> valueToIndexSet = new LinkedHashMap<>();
 
-            for (TrackingMutableRowSet.Iterator it = subRange.iterator(); it.hasNext();) {
+            for (RowSet.Iterator it = subRange.iterator(); it.hasNext();) {
                 long key = it.nextLong();
                 T value = get(key);
                 RowSetBuilderSequential indexes = valueToIndexSet.get(value);
@@ -245,23 +245,23 @@ public abstract class AbstractColumnSource<T> implements ColumnSource<T>, Serial
      * @param columnSource The column source that defines the column along with the rowSet
      * @return A new value to range map (i.e. grouping metadata)
      */
-    public static <TYPE> Map<TYPE, long[]> getValueToRangeMap(@NotNull final TrackingMutableRowSet rowSet,
+    public static <TYPE> Map<TYPE, long[]> getValueToRangeMap(@NotNull final TrackingRowSet rowSet,
             @Nullable final ColumnSource<TYPE> columnSource) {
         final long size = rowSet.size();
         if (columnSource == null) {
             return Collections.singletonMap(null, new long[] {0, size});
         }
         // noinspection unchecked
-        return ((Map<TYPE, TrackingMutableRowSet>) rowSet.getGrouping(columnSource)).entrySet().stream()
+        return ((Map<TYPE, RowSet>) rowSet.getGrouping(columnSource)).entrySet().stream()
                 .sorted(java.util.Comparator.comparingLong(e -> e.getValue().firstRowKey())).collect(Collectors.toMap(
                         Map.Entry::getKey,
-                        new Function<Map.Entry<TYPE, TrackingMutableRowSet>, long[]>() {
+                        new Function<Map.Entry<TYPE, RowSet>, long[]>() {
                             private long prevLastKey = -1L;
                             private long currentSize = 0;
 
                             @Override
-                            public long[] apply(@NotNull final Map.Entry<TYPE, TrackingMutableRowSet> entry) {
-                                final TrackingMutableRowSet rowSet = entry.getValue();
+                            public long[] apply(@NotNull final Map.Entry<TYPE, RowSet> entry) {
+                                final RowSet rowSet = entry.getValue();
                                 Assert.instanceOf(rowSet, "rowSet", GroupingRowSetHelper.class);
                                 Assert.gt(rowSet.firstRowKey(), "rowSet.firstRowKey()", prevLastKey, "prevLastKey");
                                 prevLastKey = rowSet.lastRowKey();
@@ -278,8 +278,8 @@ public abstract class AbstractColumnSource<T> implements ColumnSource<T>, Serial
      * @param groupToIndex The group-to-rowSet map to consume
      * @param groupConsumer Consumer for responsive groups
      */
-    public static <TYPE> void forEachGroup(@NotNull final Map<TYPE, TrackingMutableRowSet> groupToIndex,
-            @NotNull final BiConsumer<TYPE, TrackingMutableRowSet> groupConsumer) {
+    public static <TYPE> void forEachGroup(@NotNull final Map<TYPE, RowSet> groupToIndex,
+            @NotNull final BiConsumer<TYPE, RowSet> groupConsumer) {
         groupToIndex.entrySet().stream()
                 .filter(kie -> kie.getValue().isNonempty())
                 .sorted(java.util.Comparator.comparingLong(kie -> kie.getValue().firstRowKey()))
@@ -296,16 +296,16 @@ public abstract class AbstractColumnSource<T> implements ColumnSource<T>, Serial
      * @return A pair of a flat key column source and a flat rowSet column source
      */
     @SuppressWarnings("unused")
-    public static <TYPE> Pair<ArrayBackedColumnSource<TYPE>, ObjectArraySource<TrackingMutableRowSet>> groupingToFlatSources(
-            @NotNull final ColumnSource<TYPE> originalKeyColumnSource, @NotNull final Map<TYPE, TrackingMutableRowSet> groupToIndex) {
+    public static <TYPE> Pair<ArrayBackedColumnSource<TYPE>, ObjectArraySource<RowSet>> groupingToFlatSources(
+            @NotNull final ColumnSource<TYPE> originalKeyColumnSource, @NotNull final Map<TYPE, RowSet> groupToIndex) {
         final int numGroups = groupToIndex.size();
         final ArrayBackedColumnSource<TYPE> resultKeyColumnSource = ArrayBackedColumnSource.getMemoryColumnSource(
                 numGroups, originalKeyColumnSource.getType(), originalKeyColumnSource.getComponentType());
-        final ObjectArraySource<TrackingMutableRowSet> resultIndexColumnSource = new ObjectArraySource<>(TrackingMutableRowSet.class);
+        final ObjectArraySource<RowSet> resultIndexColumnSource = new ObjectArraySource<>(TrackingMutableRowSet.class);
         resultIndexColumnSource.ensureCapacity(numGroups);
 
         final MutableInt processedGroupCount = new MutableInt(0);
-        forEachGroup(groupToIndex, (final TYPE key, final TrackingMutableRowSet rowSet) -> {
+        forEachGroup(groupToIndex, (final TYPE key, final RowSet rowSet) -> {
             final long groupIndex = processedGroupCount.longValue();
             resultKeyColumnSource.set(groupIndex, key);
             resultIndexColumnSource.set(groupIndex, rowSet);
@@ -322,9 +322,9 @@ public abstract class AbstractColumnSource<T> implements ColumnSource<T>, Serial
      * @param intersect Limit indices to values contained within intersect, eliminating empty result groups
      * @param groupConsumer Consumer for responsive groups
      */
-    public static <TYPE> void forEachResponsiveGroup(@NotNull final Map<TYPE, TrackingMutableRowSet> groupToIndex,
-            @NotNull final TrackingMutableRowSet intersect,
-            @NotNull final BiConsumer<TYPE, TrackingMutableRowSet> groupConsumer) {
+    public static <TYPE> void forEachResponsiveGroup(@NotNull final Map<TYPE, RowSet> groupToIndex,
+            @NotNull final RowSet intersect,
+            @NotNull final BiConsumer<TYPE, RowSet> groupConsumer) {
         groupToIndex.entrySet().stream()
                 .map(kie -> new Pair<>(kie.getKey(), kie.getValue().intersect(intersect)))
                 .filter(kip -> kip.getSecond().isNonempty())
@@ -343,19 +343,19 @@ public abstract class AbstractColumnSource<T> implements ColumnSource<T>, Serial
      * @param responsiveGroups Set to the number of responsive groups on exit
      * @return A pair of a flat key column source and a flat rowSet column source
      */
-    public static <TYPE> Pair<ArrayBackedColumnSource<TYPE>, ObjectArraySource<TrackingMutableRowSet>> groupingToFlatSources(
+    public static <TYPE> Pair<ArrayBackedColumnSource<TYPE>, ObjectArraySource<RowSet>> groupingToFlatSources(
             @NotNull final ColumnSource<TYPE> originalKeyColumnSource,
-            @NotNull final Map<TYPE, TrackingMutableRowSet> groupToIndex,
-            @NotNull final TrackingMutableRowSet intersect,
+            @NotNull final Map<TYPE, RowSet> groupToIndex,
+            @NotNull final RowSet intersect,
             @NotNull final MutableInt responsiveGroups) {
         final int numGroups = groupToIndex.size();
         final ArrayBackedColumnSource<TYPE> resultKeyColumnSource = ArrayBackedColumnSource.getMemoryColumnSource(
                 numGroups, originalKeyColumnSource.getType(), originalKeyColumnSource.getComponentType());
-        final ObjectArraySource<TrackingMutableRowSet> resultIndexColumnSource = new ObjectArraySource<>(TrackingMutableRowSet.class);
+        final ObjectArraySource<RowSet> resultIndexColumnSource = new ObjectArraySource<>(TrackingMutableRowSet.class);
         resultIndexColumnSource.ensureCapacity(numGroups);
 
         responsiveGroups.setValue(0);
-        forEachResponsiveGroup(groupToIndex, intersect, (final TYPE key, final TrackingMutableRowSet rowSet) -> {
+        forEachResponsiveGroup(groupToIndex, intersect, (final TYPE key, final RowSet rowSet) -> {
             final long groupIndex = responsiveGroups.longValue();
             resultKeyColumnSource.set(groupIndex, key);
             resultIndexColumnSource.set(groupIndex, rowSet);

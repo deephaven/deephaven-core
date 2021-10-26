@@ -486,7 +486,7 @@ class StaticChunkedOperatorAggregationStateManager
         outputPositions.setSize(buildIndex.intSize());
         int maxAddedPosition = -1;
         bc.addedSlotsByPosition.setSize(outputPositions.size());
-        bc.addedSlotsByPosition.fillWithValue(0, bc.addedSlotsByPosition.size(), TrackingMutableRowSet.NULL_ROW_KEY);
+        bc.addedSlotsByPosition.fillWithValue(0, bc.addedSlotsByPosition.size(), RowSet.NULL_ROW_KEY);
         bc.duplicatePositions.setSize(0);
         // endregion build start
 
@@ -780,7 +780,7 @@ class StaticChunkedOperatorAggregationStateManager
                 outputPositionToHashSlot.ensureCapacity(outputPosition.intValue() + maxAddedPosition + 1);
                 for (int ii = 0; ii <= maxAddedPosition; ++ii) {
                     final long longSlot = bc.addedSlotsByPosition.get(ii);
-                    if (longSlot != TrackingMutableRowSet.NULL_ROW_KEY) {
+                    if (longSlot != RowSet.NULL_ROW_KEY) {
                         final int intSlot = (int) longSlot;
 
                         outputPositions.set(ii, outputPosition.intValue());

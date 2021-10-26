@@ -3,10 +3,7 @@ package io.deephaven.engine.v2;
 import io.deephaven.engine.tables.live.LiveTable;
 import io.deephaven.engine.tables.live.LiveTableMonitor;
 import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
-import io.deephaven.engine.v2.utils.RowSetBuilderRandom;
-import io.deephaven.engine.v2.utils.RowSetShiftData;
+import io.deephaven.engine.v2.utils.*;
 import gnu.trove.impl.Constants;
 import gnu.trove.set.TLongSet;
 import gnu.trove.set.hash.TLongHashSet;
@@ -68,7 +65,7 @@ public class UpdatableTable extends QueryTable implements LiveTable {
     private final TLongSet modifiedSet =
             new TLongHashSet(Constants.DEFAULT_CAPACITY, Constants.DEFAULT_LOAD_FACTOR, NULL_LONG);
 
-    public UpdatableTable(@NotNull final TrackingMutableRowSet rowSet,
+    public UpdatableTable(@NotNull final RowSet rowSet,
             @NotNull final Map<String, ? extends ColumnSource<?>> nameToColumnSource,
             @NotNull final Updater updater) {
         super(rowSet, nameToColumnSource);
@@ -106,7 +103,7 @@ public class UpdatableTable extends QueryTable implements LiveTable {
         }
     }
 
-    private static TrackingMutableRowSet setToIndex(@NotNull final TLongSet set) {
+    private static RowSet setToIndex(@NotNull final TLongSet set) {
         final RowSetBuilderRandom builder = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
         set.forEach(key -> {
             builder.addKey(key);
@@ -120,9 +117,9 @@ public class UpdatableTable extends QueryTable implements LiveTable {
     public void refresh() {
         updater.accept(indexChangeRecorder);
 
-        final TrackingMutableRowSet added = setToIndex(addedSet);
-        final TrackingMutableRowSet removed = setToIndex(removedSet);
-        final TrackingMutableRowSet modified = setToIndex(modifiedSet);
+        final RowSet added = setToIndex(addedSet);
+        final RowSet removed = setToIndex(removedSet);
+        final RowSet modified = setToIndex(modifiedSet);
         getRowSet().update(added, removed);
         if (added.isNonempty() || removed.isNonempty() || modified.isNonempty()) {
             final Listener.Update update = new Listener.Update();

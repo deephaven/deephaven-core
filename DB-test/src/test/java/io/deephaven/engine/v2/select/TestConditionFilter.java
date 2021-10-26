@@ -2,9 +2,9 @@ package io.deephaven.engine.v2.select;
 
 import io.deephaven.base.verify.Require;
 import io.deephaven.configuration.Configuration;
+import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.engine.v2.utils.RowSetBuilderSequential;
 import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.io.log.LogLevel;
 import io.deephaven.io.logger.StreamLoggerImpl;
 import io.deephaven.util.process.ProcessEnvironment;
@@ -345,7 +345,7 @@ public class TestConditionFilter extends PythonTest {
         final Map<String, ? extends ColumnSource> sourcesMap =
                 testDataTable.updateView("actualI = i", "actualII = ii", "actualK = k").getColumnSourceMap();
 
-        for (final TrackingMutableRowSet.Iterator it = testDataTable.getRowSet().iterator(); it.hasNext();) {
+        for (final RowSet.Iterator it = testDataTable.getRowSet().iterator(); it.hasNext();) {
             final long idx = it.nextLong();
             final Map<String, Object> rowMap = new HashMap<>(sourcesMap.size());
             for (Map.Entry<String, ? extends ColumnSource> entry : sourcesMap.entrySet()) {
@@ -360,8 +360,8 @@ public class TestConditionFilter extends PythonTest {
             }
         }
 
-        final TrackingMutableRowSet keepRowSet = keepBuilder.build();
-        final TrackingMutableRowSet dropRowSet = dropBuilder.build();
+        final RowSet keepRowSet = keepBuilder.build();
+        final RowSet dropRowSet = dropBuilder.build();
 
         if (testNative) {
             validate(expression, keepRowSet, dropRowSet, FormulaParserConfiguration.Deephaven);
@@ -386,8 +386,8 @@ public class TestConditionFilter extends PythonTest {
 
     }
 
-    private void validate(String expression, TrackingMutableRowSet keepRowSet, TrackingMutableRowSet dropRowSet, FormulaParserConfiguration parser) {
-        final TrackingMutableRowSet filteredRowSet = initCheck(expression, parser);
+    private void validate(String expression, RowSet keepRowSet, RowSet dropRowSet, FormulaParserConfiguration parser) {
+        final RowSet filteredRowSet = initCheck(expression, parser);
 
         Require.eq(keepRowSet.size(), "keepRowSet.size()", filteredRowSet.size(), "filteredRowSet.size()");
         Require.eq(keepRowSet.intersect(filteredRowSet).size(), "keepRowSet.intersect(filteredRowSet).size()",
@@ -428,7 +428,7 @@ public class TestConditionFilter extends PythonTest {
     }
 
 
-    private TrackingMutableRowSet initCheck(String expression, FormulaParserConfiguration parser) {
+    private RowSet initCheck(String expression, FormulaParserConfiguration parser) {
         final SelectFilter conditionFilter = ConditionFilter.createConditionFilter(expression, parser);
         conditionFilter.init(testDataTable.getDefinition());
         return conditionFilter.filter(testDataTable.getRowSet().clone(), testDataTable.getRowSet(), testDataTable, false);

@@ -237,7 +237,7 @@ public class ParallelDeferredGroupingProvider<DATA_TYPE> implements KeyRangeGrou
         sources.add(new Source<>(columnLocation, firstKey, lastKey));
     }
 
-    private Map<DATA_TYPE, TrackingMutableRowSet> buildGrouping(@NotNull final List<Source<DATA_TYPE, ?>> includedSources) {
+    private Map<DATA_TYPE, RowSet> buildGrouping(@NotNull final List<Source<DATA_TYPE, ?>> includedSources) {
         return QueryPerformanceRecorder.withNugget("Build deferred grouping", () -> {
             // noinspection unchecked
             final List<GroupingItem<DATA_TYPE>>[] perSourceGroupingLists =
@@ -272,12 +272,12 @@ public class ParallelDeferredGroupingProvider<DATA_TYPE> implements KeyRangeGrou
     }
 
     @Override
-    public Map<DATA_TYPE, TrackingMutableRowSet> getGroupToRange() {
+    public Map<DATA_TYPE, RowSet> getGroupToRange() {
         return buildGrouping(sources);
     }
 
     @Override
-    public Pair<Map<DATA_TYPE, TrackingMutableRowSet>, Boolean> getGroupToRange(@NotNull final TrackingMutableRowSet hint) {
+    public Pair<Map<DATA_TYPE, RowSet>, Boolean> getGroupToRange(@NotNull final RowSet hint) {
         final List<Source<DATA_TYPE, ?>> includedSources = sources.stream()
                 .filter(source -> MutableRowSetImpl.FACTORY.getIndexByRange(source.firstKey, source.lastKey)
                         .overlaps(hint))

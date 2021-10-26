@@ -186,8 +186,8 @@ public class BarrageStreamGenerator implements
     @Override
     public SubView getSubView(final BarrageSubscriptionOptions options,
             final boolean isInitialSnapshot,
-            @Nullable final TrackingMutableRowSet viewport,
-            @Nullable final TrackingMutableRowSet keyspaceViewport,
+            @Nullable final RowSet viewport,
+            @Nullable final RowSet keyspaceViewport,
             @Nullable final BitSet subscribedColumns) {
         return new SubView(this, options, isInitialSnapshot, viewport, keyspaceViewport, subscribedColumns);
     }
@@ -208,8 +208,8 @@ public class BarrageStreamGenerator implements
         public final BarrageStreamGenerator generator;
         public final BarrageSubscriptionOptions options;
         public final boolean isInitialSnapshot;
-        public final TrackingMutableRowSet viewport;
-        public final TrackingMutableRowSet keyspaceViewport;
+        public final RowSet viewport;
+        public final RowSet keyspaceViewport;
         public final BitSet subscribedColumns;
         public final boolean hasAddBatch;
         public final boolean hasModBatch;
@@ -217,8 +217,8 @@ public class BarrageStreamGenerator implements
         public SubView(final BarrageStreamGenerator generator,
                 final BarrageSubscriptionOptions options,
                 final boolean isInitialSnapshot,
-                @Nullable final TrackingMutableRowSet viewport,
-                @Nullable final TrackingMutableRowSet keyspaceViewport,
+                @Nullable final RowSet viewport,
+                @Nullable final RowSet keyspaceViewport,
                 @Nullable final BitSet subscribedColumns) {
             this.generator = generator;
             this.options = options;
@@ -405,7 +405,7 @@ public class BarrageStreamGenerator implements
             final ChunkInputStreamGenerator.FieldNodeListener fieldNodeListener,
             final ChunkInputStreamGenerator.BufferListener bufferListener) throws IOException {
         // Added Chunk Data:
-        final TrackingMutableRowSet myAddedOffsets;
+        final RowSet myAddedOffsets;
         if (view.isViewport()) {
             // only include added rows that are within the viewport
             myAddedOffsets = rowsIncluded.original.invert(view.keyspaceViewport.intersect(rowsIncluded.original));
@@ -435,7 +435,7 @@ public class BarrageStreamGenerator implements
         // now add mod-column streams, and write the mod column indexes
         long numRows = 0;
         for (final ModColumnData mcd : modColumnData) {
-            TrackingMutableRowSet myModOffsets = null;
+            RowSet myModOffsets = null;
             if (view.isViewport()) {
                 // only include added rows that are within the viewport
                 myModOffsets =
@@ -457,7 +457,7 @@ public class BarrageStreamGenerator implements
 
     private boolean doesSubViewHaveMods(final SubView view) {
         for (final ModColumnData mcd : modColumnData) {
-            TrackingMutableRowSet myModOffsets = null;
+            RowSet myModOffsets = null;
             if (view.isViewport()) {
                 // only include added rows that are within the viewport
                 if (view.keyspaceViewport.overlaps(mcd.rowsModified.original)) {
@@ -559,9 +559,9 @@ public class BarrageStreamGenerator implements
     }
 
     public static class IndexGenerator extends ByteArrayGenerator implements SafeCloseable {
-        public final TrackingMutableRowSet original;
+        public final RowSet original;
 
-        public IndexGenerator(final TrackingMutableRowSet rowSet) throws IOException {
+        public IndexGenerator(final RowSet rowSet) throws IOException {
             this.original = rowSet.clone();
             // noinspection UnstableApiUsage
             try (final ExposedByteArrayOutputStream baos = new ExposedByteArrayOutputStream();
@@ -589,7 +589,7 @@ public class BarrageStreamGenerator implements
          * @param builder the flatbuffer builder
          * @return offset of the item in the flatbuffer
          */
-        protected int addToFlatBuffer(final TrackingMutableRowSet viewport, final FlatBufferBuilder builder) throws IOException {
+        protected int addToFlatBuffer(final RowSet viewport, final FlatBufferBuilder builder) throws IOException {
             if (original.subsetOf(viewport)) {
                 return addToFlatBuffer(builder);
             }
@@ -599,7 +599,7 @@ public class BarrageStreamGenerator implements
             // noinspection UnstableApiUsage
             try (final ExposedByteArrayOutputStream baos = new ExposedByteArrayOutputStream();
                     final LittleEndianDataOutputStream oos = new LittleEndianDataOutputStream(baos);
-                    final TrackingMutableRowSet viewOfOriginal = original.intersect(viewport)) {
+                    final RowSet viewOfOriginal = original.intersect(viewport)) {
                 ExternalizableRowSetUtils.writeExternalCompressedDeltas(oos, viewOfOriginal);
                 oos.flush();
                 nraw = baos.peekBuffer();
@@ -658,9 +658,9 @@ public class BarrageStreamGenerator implements
             }
 
             // noinspection UnstableApiUsage
-            try (final TrackingMutableRowSet sRange = sRangeBuilder.build();
-                 final TrackingMutableRowSet eRange = eRangeBuilder.build();
-                 final TrackingMutableRowSet dest = destBuilder.build();
+            try (final RowSet sRange = sRangeBuilder.build();
+                 final RowSet eRange = eRangeBuilder.build();
+                 final RowSet dest = destBuilder.build();
                  final ExposedByteArrayOutputStream baos = new ExposedByteArrayOutputStream();
                  final LittleEndianDataOutputStream oos = new LittleEndianDataOutputStream(baos)) {
                 ExternalizableRowSetUtils.writeExternalCompressedDeltas(oos, sRange);

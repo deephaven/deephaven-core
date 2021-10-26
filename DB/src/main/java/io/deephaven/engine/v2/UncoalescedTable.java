@@ -8,7 +8,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.tables.*;
 import io.deephaven.engine.tables.select.MatchPair;
 import io.deephaven.engine.tables.select.WouldMatchPair;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
+import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.engine.v2.utils.TrackingRowSet;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.util.liveness.Liveness;
@@ -175,7 +175,7 @@ public abstract class UncoalescedTable extends BaseTable implements Table {
     }
 
     @Override
-    public Table getSubTable(TrackingMutableRowSet rowSet) {
+    public Table getSubTable(RowSet rowSet) {
         return coalesce().getSubTable(rowSet);
     }
 

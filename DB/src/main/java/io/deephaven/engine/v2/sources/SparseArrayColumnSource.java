@@ -14,8 +14,8 @@ import io.deephaven.engine.v2.sources.chunk.LongChunk;
 import io.deephaven.engine.v2.sources.chunk.Chunk;
 import io.deephaven.engine.v2.sources.chunk.WritableChunk;
 import io.deephaven.engine.v2.sources.sparse.LongOneOrN;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.engine.structures.RowSequence;
+import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.util.SoftRecycler;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -196,11 +196,11 @@ public abstract class SparseArrayColumnSource<T>
         throw new UnsupportedOperationException();
     }
 
-    public void shift(TrackingMutableRowSet keysToShift, long shiftDelta) {
+    public void shift(RowSet keysToShift, long shiftDelta) {
         throw new UnsupportedOperationException();
     }
 
-    public void remove(TrackingMutableRowSet toRemove) {
+    public void remove(RowSet toRemove) {
         throw new UnsupportedOperationException();
     }
 

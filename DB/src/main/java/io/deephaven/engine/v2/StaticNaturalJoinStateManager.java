@@ -13,7 +13,7 @@ import java.util.stream.Collectors;
 abstract class StaticNaturalJoinStateManager {
     static final int CHUNK_SIZE = 4096;
     static final long DUPLICATE_RIGHT_VALUE = -2;
-    static final long NO_RIGHT_ENTRY_VALUE = TrackingMutableRowSet.NULL_ROW_KEY;
+    static final long NO_RIGHT_ENTRY_VALUE = RowSet.NULL_ROW_KEY;
 
     final ColumnSource<?>[] keySourcesForErrorMessages;
 
@@ -55,7 +55,7 @@ abstract class StaticNaturalJoinStateManager {
                 final LongSparseArraySource sparseRedirections = new LongSparseArraySource();
 
                 long leftPosition = 0;
-                for (final TrackingMutableRowSet.Iterator it = leftTable.getRowSet().iterator(); it.hasNext(); ) {
+                for (final RowSet.Iterator it = leftTable.getRowSet().iterator(); it.hasNext(); ) {
                     final long next = it.nextLong();
                     final long rightSide = rightSideFromSlot.applyAsLong(leftPosition++);
                     checkExactMatch(exactMatch, leftTable.getRowSet().get(next), rightSide);
@@ -69,7 +69,7 @@ abstract class StaticNaturalJoinStateManager {
                 final RedirectionIndex redirectionIndex = RedirectionIndexLockFreeImpl.FACTORY.createRedirectionIndex(leftTable.intSize());
 
                 long leftPosition = 0;
-                for (final TrackingMutableRowSet.Iterator it = leftTable.getRowSet().iterator(); it.hasNext(); ) {
+                for (final RowSet.Iterator it = leftTable.getRowSet().iterator(); it.hasNext(); ) {
                     final long next = it.nextLong();
                     final long rightSide = rightSideFromSlot.applyAsLong(leftPosition++);
                     checkExactMatch(exactMatch, leftTable.getRowSet().get(next), rightSide);
@@ -84,5 +84,5 @@ abstract class StaticNaturalJoinStateManager {
         throw new IllegalStateException("Bad redirectionType: " + redirectionType);
     }
 
-    abstract void decorateLeftSide(TrackingMutableRowSet leftRowSet, ColumnSource<?> [] leftSources, final LongArraySource leftRedirections);
+    abstract void decorateLeftSide(RowSet leftRowSet, ColumnSource<?> [] leftSources, final LongArraySource leftRedirections);
 }

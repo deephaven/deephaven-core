@@ -6,8 +6,9 @@ import io.deephaven.engine.v2.sources.chunk.Chunk;
 import io.deephaven.engine.v2.sources.chunk.ChunkType;
 import io.deephaven.engine.v2.sources.chunk.Context;
 import io.deephaven.engine.v2.sources.chunk.WritableChunk;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.engine.structures.RowSequence;
+import io.deephaven.engine.v2.utils.RowSet;
+import io.deephaven.engine.v2.utils.TrackingRowSet;
 import org.jetbrains.annotations.NotNull;
 
 import static io.deephaven.util.QueryConstants.*;
@@ -16,13 +17,13 @@ import static io.deephaven.util.QueryConstants.*;
  * The Formula class is used within a FormulaColumn to compute individual table cell values.
  */
 public abstract class Formula implements ElementSource {
-    public TrackingMutableRowSet getIndex() {
+    public RowSet getIndex() {
         return __rowSet;
     }
 
-    protected final TrackingMutableRowSet __rowSet;
+    protected final TrackingRowSet __rowSet;
 
-    protected Formula(TrackingMutableRowSet __rowSet) {
+    protected Formula(TrackingRowSet __rowSet) {
         this.__rowSet = __rowSet;
     }
 

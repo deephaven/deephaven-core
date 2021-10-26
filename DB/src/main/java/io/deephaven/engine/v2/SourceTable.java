@@ -8,6 +8,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.v2.locations.*;
 import io.deephaven.engine.v2.locations.impl.TableLocationSubscriptionBuffer;
+import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
 import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.io.logger.Logger;
@@ -215,7 +216,7 @@ public abstract class SourceTable extends RedefinableTable {
                     return;
                 }
                 final boolean wasEmpty = rowSet.isEmpty();
-                final TrackingMutableRowSet added = refreshLocationSizes();
+                final RowSet added = refreshLocationSizes();
                 if (added.size() == 0) {
                     return;
                 }

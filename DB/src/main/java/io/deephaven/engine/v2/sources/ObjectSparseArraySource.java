@@ -15,11 +15,8 @@ import io.deephaven.engine.v2.sources.chunk.Attributes.RowKeys;
 import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedRowKeyRanges;
 import io.deephaven.engine.v2.sources.sparse.ObjectOneOrN;
 import io.deephaven.engine.v2.sources.sparse.LongOneOrN;
-import io.deephaven.engine.v2.utils.RowSetBuilderSequential;
-import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
+import io.deephaven.engine.v2.utils.*;
 import io.deephaven.engine.structures.RowSequence;
-import io.deephaven.engine.v2.utils.UpdateCommitter;
 import io.deephaven.util.SoftRecycler;
 import gnu.trove.list.array.TLongArrayList;
 import org.jetbrains.annotations.NotNull;
@@ -90,7 +87,7 @@ public class ObjectSparseArraySource<T> extends SparseArrayColumnSource<T> imple
     private void writeObject(java.io.ObjectOutputStream out) throws IOException {
         final RowSetBuilderSequential sb = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
         blocks.enumerate(null, sb::appendKey);
-        final TrackingMutableRowSet rowSet = sb.build();
+        final RowSet rowSet = sb.build();
 
         final int size = rowSet.intSize();
         final T [] data = (T [])new Object[size];
@@ -109,7 +106,7 @@ public class ObjectSparseArraySource<T> extends SparseArrayColumnSource<T> imple
     private void readObject(java.io.ObjectInputStream in) throws IOException, ClassNotFoundException {
         blocks = new ObjectOneOrN.Block0<T>();
 
-        final TrackingMutableRowSet rowSet = (TrackingMutableRowSet)in.readObject();
+        final RowSet rowSet = (RowSet)in.readObject();
         final T [] data = (T [])in.readObject();
         final ObjectChunk<T, Values> srcChunk = ObjectChunk.chunkWrap(data);
         // noinspection unchecked
@@ -145,8 +142,8 @@ public class ObjectSparseArraySource<T> extends SparseArrayColumnSource<T> imple
     }
 
     @Override
-    public void shift(final TrackingMutableRowSet keysToShift, final long shiftDelta) {
-        final TrackingMutableRowSet.SearchIterator it = (shiftDelta > 0) ? keysToShift.reverseIterator() : keysToShift.searchIterator();
+    public void shift(final RowSet keysToShift, final long shiftDelta) {
+        final RowSet.SearchIterator it = (shiftDelta > 0) ? keysToShift.reverseIterator() : keysToShift.searchIterator();
         it.forEachLong((i) -> {
             set(i + shiftDelta, get(i));
             set(i, null);
@@ -155,7 +152,7 @@ public class ObjectSparseArraySource<T> extends SparseArrayColumnSource<T> imple
     }
 
     @Override
-    public void remove(TrackingMutableRowSet toRemove) {
+    public void remove(RowSet toRemove) {
         toRemove.forEachLong((i) -> { set(i, null); return true; });
     }
 
@@ -516,7 +513,7 @@ public class ObjectSparseArraySource<T> extends SparseArrayColumnSource<T> imple
         final WritableObjectChunk<T, ? super Values> ObjectChunk = dest.asWritableObjectChunk();
         for (int ii = 0; ii < keys.size(); ) {
             final long firstKey = keys.get(ii);
-            if (firstKey == TrackingMutableRowSet.NULL_ROW_KEY) {
+            if (firstKey == RowSet.NULL_ROW_KEY) {
                 ObjectChunk.set(ii++, null);
                 continue;
             }
@@ -550,7 +547,7 @@ public class ObjectSparseArraySource<T> extends SparseArrayColumnSource<T> imple
         final WritableObjectChunk<T, ? super Values> ObjectChunk = dest.asWritableObjectChunk();
         for (int ii = 0; ii < keys.size(); ) {
             final long firstKey = keys.get(ii);
-            if (firstKey == TrackingMutableRowSet.NULL_ROW_KEY) {
+            if (firstKey == RowSet.NULL_ROW_KEY) {
                 ObjectChunk.set(ii++, null);
                 continue;
             }

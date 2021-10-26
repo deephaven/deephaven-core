@@ -17,7 +17,8 @@ import io.deephaven.engine.tables.utils.*;
 import io.deephaven.engine.v2.dbarrays.*;
 import io.deephaven.engine.v2.select.formula.*;
 import io.deephaven.engine.v2.sources.*;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
+import io.deephaven.engine.v2.utils.RowSet;
+import io.deephaven.engine.v2.utils.TrackingRowSet;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import org.jetbrains.annotations.NotNull;
@@ -50,7 +51,7 @@ public abstract class AbstractFormulaColumn implements FormulaColumn {
     protected List<String> userParams;
     protected Param<?>[] params;
     protected Map<String, ? extends ColumnSource<?>> columnSources;
-    private TrackingMutableRowSet rowSet;
+    private RowSet rowSet;
     protected Class<?> returnedType;
     public static final String COLUMN_SUFFIX = "_";
     protected List<String> usedColumnArrays;
@@ -84,7 +85,7 @@ public abstract class AbstractFormulaColumn implements FormulaColumn {
     }
 
     @Override
-    public List<String> initInputs(TrackingMutableRowSet rowSet, Map<String, ? extends ColumnSource<?>> columnsOfInterest) {
+    public List<String> initInputs(RowSet rowSet, Map<String, ? extends ColumnSource<?>> columnsOfInterest) {
         if (this.rowSet != null) {
             Assert.eq(this.rowSet, "this.rowSet", rowSet, "rowSet");
         }
@@ -239,7 +240,7 @@ public abstract class AbstractFormulaColumn implements FormulaColumn {
     }
 
     @SuppressWarnings("unchecked")
-    private static DbArrayBase<?> makeAppropriateDbArrayWrapper(ColumnSource<?> cs, TrackingMutableRowSet rowSet) {
+    private static DbArrayBase<?> makeAppropriateDbArrayWrapper(ColumnSource<?> cs, TrackingRowSet rowSet) {
         final Class<?> type = cs.getType();
         if (type == Boolean.class) {
             return new DbArrayColumnWrapper<>((ColumnSource<Boolean>) cs, rowSet);

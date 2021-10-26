@@ -22,7 +22,7 @@ import java.util.*;
 public class UnionSourceManager {
 
     private final UnionColumnSource<?>[] sources;
-    private final TrackingMutableRowSet rowSet;
+    private final MutableRowSet rowSet;
     private final List<ModifiedColumnSet.Transformer> modColumnTransformers = new ArrayList<>();
     private final ModifiedColumnSet modifiedColumnSet;
 
@@ -154,7 +154,7 @@ public class UnionSourceManager {
             }
         }
 
-        try (final TrackingMutableRowSet shifted = getShiftedIndex(table.getRowSet(), tableId)) {
+        try (final RowSet shifted = getShiftedIndex(table.getRowSet(), tableId)) {
             rowSet.insert(shifted);
         }
     }
@@ -167,11 +167,11 @@ public class UnionSourceManager {
         return result;
     }
 
-    private TrackingMutableRowSet getShiftedIndex(final TrackingMutableRowSet rowSet, final int tableId) {
+    private RowSet getShiftedIndex(final RowSet rowSet, final int tableId) {
         return rowSet.shift(unionRedirection.startOfIndices[tableId]);
     }
 
-    private TrackingMutableRowSet getShiftedPrevIndex(final TrackingMutableRowSet rowSet, final int tableId) {
+    private RowSet getShiftedPrevIndex(final RowSet rowSet, final int tableId) {
         return rowSet.shift(unionRedirection.prevStartOfIndices[tableId]);
     }
 
@@ -283,7 +283,7 @@ public class UnionSourceManager {
                         unionRedirection.startOfIndices[tableId]);
 
                 if (shiftDelta == 0) {
-                    try (final TrackingMutableRowSet newRemoved = getShiftedPrevIndex(listener.getRemoved(), tableId)) {
+                    try (final RowSet newRemoved = getShiftedPrevIndex(listener.getRemoved(), tableId)) {
                         updateRemovedBuilder.appendRowSequence(newRemoved);
                         rowSet.remove(newRemoved);
                     }
@@ -346,8 +346,8 @@ public class UnionSourceManager {
             update.shifted = shiftedBuilder.build();
 
             // Finally add the new keys to the rowSet in post-shift key-space.
-            try (TrackingMutableRowSet shiftRemoveRowSet = shiftRemoveBuilder.build();
-                 TrackingMutableRowSet shiftAddedRowSet = shiftAddedBuilder.build()) {
+            try (RowSet shiftRemoveRowSet = shiftRemoveBuilder.build();
+                 RowSet shiftAddedRowSet = shiftAddedBuilder.build()) {
                 rowSet.remove(shiftRemoveRowSet);
                 rowSet.insert(shiftAddedRowSet);
             }

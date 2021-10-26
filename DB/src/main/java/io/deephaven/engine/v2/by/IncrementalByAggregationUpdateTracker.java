@@ -54,7 +54,7 @@ import org.jetbrains.annotations.NotNull;
  * To process results after steps 1, 4, and 5, the caller uses
  * {@link #applyRemovesToStates(ObjectArraySource, ObjectArraySource)},
  * {@link #applyAddsToStates(ObjectArraySource, ObjectArraySource)}, and
- * {@link #makeUpdateFromStates(ObjectArraySource, ObjectArraySource, TrackingMutableRowSet, RedirectionIndex, ModifiedColumnSetProducer)},
+ * {@link #makeUpdateFromStates(ObjectArraySource, ObjectArraySource, RowSet, RedirectionIndex, ModifiedColumnSetProducer)},
  * respectively.
  */
 class IncrementalByAggregationUpdateTracker {
@@ -358,9 +358,9 @@ class IncrementalByAggregationUpdateTracker {
      * @param redirectionIndex The result {@link RedirectionIndex} (from state first keys to state slots) to populate
      * @return The result {@link TrackingMutableRowSet}
      */
-    final TrackingMutableRowSet applyAddsAndMakeInitialIndex(@NotNull final ObjectArraySource<TrackingMutableRowSet> indexSource,
-                                                             @NotNull final ObjectArraySource<TrackingMutableRowSet> overflowIndexSource,
-                                                             @NotNull final RedirectionIndex redirectionIndex) {
+    final MutableRowSet applyAddsAndMakeInitialIndex(@NotNull final ObjectArraySource<RowSet> indexSource,
+                                                     @NotNull final ObjectArraySource<RowSet> overflowIndexSource,
+                                                     @NotNull final RedirectionIndex redirectionIndex) {
         final RowSetBuilderRandom resultBuilder = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
         for (long trackerIndex = 0; trackerIndex < size; ++trackerIndex) {
             final long slotAndFlags = updatedStateSlotAndFlags.getLong(trackerIndex);
@@ -370,7 +370,7 @@ class IncrementalByAggregationUpdateTracker {
 
             final long stateFirstKey;
             // noinspection ConstantConditions
-            try (final TrackingMutableRowSet stateAddedRowSet = stateBuilder.build()) {
+            try (final RowSet stateAddedRowSet = stateBuilder.build()) {
                 final TrackingMutableRowSet stateRowSet = slotToIndex(indexSource, overflowIndexSource, slot);
                 stateRowSet.insert(stateAddedRowSet);
                 stateRowSet.initializePreviousValue();
@@ -390,8 +390,8 @@ class IncrementalByAggregationUpdateTracker {
      * @param indexSource The {@link TrackingMutableRowSet} column source for the main table
      * @param overflowIndexSource The {@link TrackingMutableRowSet} column source for the overflow table
      */
-    final void applyRemovesToStates(@NotNull final ObjectArraySource<TrackingMutableRowSet> indexSource,
-            @NotNull final ObjectArraySource<TrackingMutableRowSet> overflowIndexSource) {
+    final void applyRemovesToStates(@NotNull final ObjectArraySource<RowSet> indexSource,
+            @NotNull final ObjectArraySource<RowSet> overflowIndexSource) {
         for (long trackerIndex = 0; trackerIndex < size; ++trackerIndex) {
             final long slotAndFlags = updatedStateSlotAndFlags.getLong(trackerIndex);
             // Since removes are always done first, we need not check the flags here.
@@ -400,7 +400,7 @@ class IncrementalByAggregationUpdateTracker {
             builders.set(trackerIndex, null);
 
             // noinspection ConstantConditions
-            try (final TrackingMutableRowSet stateRemovedRowSet = builder.build()) {
+            try (final RowSet stateRemovedRowSet = builder.build()) {
                 slotToIndex(indexSource, overflowIndexSource, slot).remove(stateRemovedRowSet);
             }
         }
@@ -411,12 +411,12 @@ class IncrementalByAggregationUpdateTracker {
      *
      * @param indexSource The {@link TrackingMutableRowSet} column source for the main table
      * @param overflowIndexSource The {@link TrackingMutableRowSet} column source for the overflow table
-     * @param beginRange See {@link RowSetShiftData#applyShift(TrackingMutableRowSet, long, long, long)}
-     * @param endRange See {@link RowSetShiftData#applyShift(TrackingMutableRowSet, long, long, long)}
-     * @param shiftDelta See {@link RowSetShiftData#applyShift(TrackingMutableRowSet, long, long, long)}
+     * @param beginRange See {@link RowSetShiftData#applyShift(RowSet, long, long, long)}
+     * @param endRange See {@link RowSetShiftData#applyShift(RowSet, long, long, long)}
+     * @param shiftDelta See {@link RowSetShiftData#applyShift(RowSet, long, long, long)}
      */
-    final void applyShiftToStates(@NotNull final ObjectArraySource<TrackingMutableRowSet> indexSource,
-            @NotNull final ObjectArraySource<TrackingMutableRowSet> overflowIndexSource,
+    final void applyShiftToStates(@NotNull final ObjectArraySource<RowSet> indexSource,
+            @NotNull final ObjectArraySource<RowSet> overflowIndexSource,
             final long beginRange,
             final long endRange,
             final long shiftDelta) {
@@ -440,8 +440,8 @@ class IncrementalByAggregationUpdateTracker {
      * @param indexSource The {@link TrackingMutableRowSet} column source for the main table
      * @param overflowIndexSource The {@link TrackingMutableRowSet} column source for the overflow table
      */
-    final void applyAddsToStates(@NotNull final ObjectArraySource<TrackingMutableRowSet> indexSource,
-            @NotNull final ObjectArraySource<TrackingMutableRowSet> overflowIndexSource) {
+    final void applyAddsToStates(@NotNull final ObjectArraySource<RowSet> indexSource,
+            @NotNull final ObjectArraySource<RowSet> overflowIndexSource) {
         for (int currentPositionIndex = 0; currentPositionIndex < currentPassSize; ++currentPositionIndex) {
             final int trackerIndex = currentPassPositions.getInt(currentPositionIndex);
             final long slotAndFlags = updatedStateSlotAndFlags.getLong(trackerIndex);
@@ -452,7 +452,7 @@ class IncrementalByAggregationUpdateTracker {
             builders.set(trackerIndex, null);
 
             // noinspection ConstantConditions
-            try (final TrackingMutableRowSet stateAddedRowSet = builder.build()) {
+            try (final RowSet stateAddedRowSet = builder.build()) {
                 slotToIndex(indexSource, overflowIndexSource, slot).insert(stateAddedRowSet);
             }
 
@@ -479,9 +479,9 @@ class IncrementalByAggregationUpdateTracker {
      *        {@link ModifiedColumnSet}
      * @return The result {@link Listener.Update}
      */
-    final Listener.Update makeUpdateFromStates(@NotNull final ObjectArraySource<TrackingMutableRowSet> indexSource,
-                                               @NotNull final ObjectArraySource<TrackingMutableRowSet> overflowIndexSource,
-                                               @NotNull final TrackingMutableRowSet rowSet,
+    final Listener.Update makeUpdateFromStates(@NotNull final ObjectArraySource<RowSet> indexSource,
+                                               @NotNull final ObjectArraySource<RowSet> overflowIndexSource,
+                                               @NotNull final MutableRowSet rowSet,
                                                @NotNull final RedirectionIndex redirectionIndex,
                                                @NotNull final ModifiedColumnSetProducer modifiedColumnSetProducer) {
         // First pass: Removes are handled on their own, because if the key moved to a new state we may reinsert it
@@ -491,9 +491,9 @@ class IncrementalByAggregationUpdateTracker {
             final long slotAndFlags = updatedStateSlotAndFlags.getLong(ti);
             final byte flags = (byte) (slotAndFlags & FLAG_MASK);
             final int slot = (int) (slotAndFlags >> FLAG_SHIFT);
-            final TrackingMutableRowSet current = slotToIndex(indexSource, overflowIndexSource, slot);
+            final TrackingRowSet current = slotToIndex(indexSource, overflowIndexSource, slot);
             final long previousFirstKey = current.firstRowKeyPrev();
-            if (previousFirstKey == TrackingMutableRowSet.NULL_ROW_KEY) {
+            if (previousFirstKey == RowSet.NULL_ROW_KEY) {
                 // Nothing to remove
                 continue;
             }
@@ -531,14 +531,14 @@ class IncrementalByAggregationUpdateTracker {
                 final long slotAndFlags = updatedStateSlotAndFlags.getLong(ti);
                 final byte flags = (byte) (slotAndFlags & FLAG_MASK);
                 final int slot = (int) (slotAndFlags >> FLAG_SHIFT);
-                final TrackingMutableRowSet current = slotToIndex(indexSource, overflowIndexSource, slot);
+                final TrackingRowSet current = slotToIndex(indexSource, overflowIndexSource, slot);
                 if (current.isEmpty()) {
                     // Removes are already handled
                     continue;
                 }
                 final long previousFirstKey = current.firstRowKeyPrev();
                 final long currentFirstKey = current.firstRowKey();
-                if (previousFirstKey == TrackingMutableRowSet.NULL_ROW_KEY) {
+                if (previousFirstKey == RowSet.NULL_ROW_KEY) {
                     // We must have added something
                     redirectionIndex.putVoid(currentFirstKey, slot);
                     addedBuilder.addKey(currentFirstKey);
@@ -586,9 +586,9 @@ class IncrementalByAggregationUpdateTracker {
         }
 
         // Build the notification indexes
-        final TrackingMutableRowSet added = addedBuilder.build();
-        final TrackingMutableRowSet removed = removedBuilder.build();
-        final TrackingMutableRowSet modified = modifiedBuilder.build();
+        final RowSet added = addedBuilder.build();
+        final RowSet removed = removedBuilder.build();
+        final RowSet modified = modifiedBuilder.build();
 
         // Update the result TrackingMutableRowSet
         rowSet.remove(removed);
@@ -600,8 +600,8 @@ class IncrementalByAggregationUpdateTracker {
                 modifiedColumnSetProducer.produce(someKeyHasAddsOrRemoves, someKeyHasModifies));
     }
 
-    private static TrackingMutableRowSet slotToIndex(@NotNull final ObjectArraySource<TrackingMutableRowSet> indexSource,
-                                                     @NotNull final ObjectArraySource<TrackingMutableRowSet> overflowIndexSource,
+    private static TrackingMutableRowSet slotToIndex(@NotNull final ObjectArraySource<RowSet> indexSource,
+                                                     @NotNull final ObjectArraySource<RowSet> overflowIndexSource,
                                                      final int slot) {
         return IncrementalChunkedByAggregationStateManager.isOverflowLocation(slot)
                 ? overflowIndexSource

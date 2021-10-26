@@ -9,9 +9,9 @@ import io.deephaven.engine.v2.Listener;
 import io.deephaven.engine.v2.SortHelpers;
 import io.deephaven.engine.v2.select.IncrementalReleaseFilter;
 import io.deephaven.engine.v2.select.RollingReleaseFilter;
+import io.deephaven.engine.v2.utils.MutableRowSet;
 import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
 import io.deephaven.engine.v2.utils.RowSetShiftData;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.benchmarking.*;
 import io.deephaven.benchmarking.generator.EnumStringColumnGenerator;
 import org.apache.commons.lang3.mutable.MutableInt;
@@ -177,7 +177,7 @@ public class SortBenchmark {
         return rollingSortTable;
     }
 
-    private TrackingMutableRowSet rollingInputRowSet;
+    private MutableRowSet rollingInputRowSet;
     private QueryTable rollingInputTable;
     private Table rollingOutputTable;
 

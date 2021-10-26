@@ -18,9 +18,7 @@ import io.deephaven.engine.tables.utils.QueryPerformanceRecorder;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedRowKeys;
-import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
-import io.deephaven.engine.v2.utils.RowSetBuilderSequential;
+import io.deephaven.engine.v2.utils.*;
 import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.text.Indenter;
@@ -113,10 +111,10 @@ public class ConditionFilter extends AbstractConditionFilter {
 
     public static class IndexLookup implements ChunkGetterWithContext {
 
-        protected final TrackingMutableRowSet inverted;
+        protected final RowSet inverted;
         private final RowSequence.Iterator invertedIterator;
 
-        IndexLookup(TrackingMutableRowSet fullSet, TrackingMutableRowSet selection) {
+        IndexLookup(RowSet fullSet, RowSet selection) {
             this.inverted = fullSet.invert(selection);
             this.invertedIterator = inverted.getRowSequenceIterator();
         }
@@ -149,7 +147,7 @@ public class ConditionFilter extends AbstractConditionFilter {
     }
 
     public static final class ColumnILookup extends IndexLookup {
-        ColumnILookup(TrackingMutableRowSet fullSet, TrackingMutableRowSet selection) {
+        ColumnILookup(RowSet fullSet, RowSet selection) {
             super(fullSet, selection);
         }
 
@@ -277,7 +275,7 @@ public class ConditionFilter extends AbstractConditionFilter {
         }
 
         private SharedContext populateChunkGettersAndContexts(
-                final TrackingMutableRowSet selection, final TrackingMutableRowSet fullSet, final Table table, final boolean usePrev,
+                final RowSet selection, final RowSet fullSet, final Table table, final boolean usePrev,
                 final ChunkGetter[] chunkGetters, final Context[] sourceContexts) {
             final SharedContext sharedContext = (columnNames.length > 1) ? SharedContext.makeSharedContext() : null;
             for (int i = 0; i < columnNames.length; i++) {
@@ -316,7 +314,7 @@ public class ConditionFilter extends AbstractConditionFilter {
         }
 
         @Override
-        public TrackingMutableRowSet filter(final TrackingMutableRowSet selection, final TrackingMutableRowSet fullSet, final Table table, final boolean usePrev,
+        public TrackingMutableRowSet filter(final RowSet selection, final RowSet fullSet, final Table table, final boolean usePrev,
                                             String formula, final Param... params) {
             try (final FilterKernel.Context context = filterKernel.getContext(chunkSize);
                     final RowSequence.Iterator rsIterator = selection.getRowSequenceIterator()) {
@@ -537,7 +535,7 @@ public class ConditionFilter extends AbstractConditionFilter {
     }
 
     @Override
-    protected Filter getFilter(Table table, TrackingMutableRowSet fullSet)
+    protected Filter getFilter(Table table, RowSet fullSet)
             throws InstantiationException, IllegalAccessException, NoSuchMethodException, InvocationTargetException {
         if (filter != null) {
             return filter;

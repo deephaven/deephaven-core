@@ -5,9 +5,9 @@
 package io.deephaven.engine.v2.locations.impl;
 
 import io.deephaven.base.verify.Require;
+import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.engine.v2.utils.RowSetBuilderRandom;
 import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.LinkedHashMap;
@@ -21,7 +21,7 @@ public class RandomGroupingBuilder<DATA_TYPE> {
 
     private Map<DATA_TYPE, RowSetBuilderRandom> groupToIndexBuilder = new LinkedHashMap<>();
 
-    private Map<DATA_TYPE, TrackingMutableRowSet> groupToIndex;
+    private Map<DATA_TYPE, RowSet> groupToIndex;
 
     /**
      * Add a mapping from value [firstRowKey, lastRowKey] to the groupings under construction.
@@ -45,7 +45,7 @@ public class RandomGroupingBuilder<DATA_TYPE> {
      *
      * @return A mapping from grouping value to its matching TrackingMutableRowSet
      */
-    public Map<DATA_TYPE, TrackingMutableRowSet> getGroupToIndex() {
+    public Map<DATA_TYPE, RowSet> getGroupToIndex() {
         if (groupToIndex != null) {
             return groupToIndex;
         }

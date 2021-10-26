@@ -225,7 +225,7 @@ class SymbolTableCombiner
         addSymbols(symbolTable, symbolTable.getRowSet(), symbolMapper);
     }
 
-    void addSymbols(final Table symbolTable, TrackingMutableRowSet rowSet, IntegerSparseArraySource symbolMapper) {
+    void addSymbols(final Table symbolTable, RowSet rowSet, IntegerSparseArraySource symbolMapper) {
         if (symbolTable.isEmpty()) {
             return;
         }
@@ -235,7 +235,7 @@ class SymbolTableCombiner
         addSymbols(rowSet, symbolSource, idSource, symbolMapper);
     }
 
-    private void addSymbols(final TrackingMutableRowSet rowSet, ColumnSource<String> symbolSource, ColumnSource<Long> idSource, IntegerSparseArraySource symbolMapper) {
+    private void addSymbols(final RowSet rowSet, ColumnSource<String> symbolSource, ColumnSource<Long> idSource, IntegerSparseArraySource symbolMapper) {
         final IntegerArraySource resultIdentifiers = new IntegerArraySource();
         resultIdentifiers.ensureCapacity(rowSet.size());
 

@@ -99,8 +99,8 @@ class RightIncrementalChunkedNaturalJoinStateManager
     // region extra variables
     // we always store left rowSet values parallel to the keys; we may want to optimize for single left indices to avoid
     // object allocation, but we do have fairly efficient single range indices at this point
-    private final ObjectArraySource<TrackingMutableRowSet> leftIndexSource;
-    private final ObjectArraySource<TrackingMutableRowSet> overflowLeftIndexSource;
+    private final ObjectArraySource<RowSet> leftIndexSource;
+    private final ObjectArraySource<RowSet> overflowLeftIndexSource;
 
     // we must maintain our cookie for modified state tracking
     private final LongArraySource modifiedTrackerCookieSource;
@@ -193,7 +193,7 @@ class RightIncrementalChunkedNaturalJoinStateManager
     }
 
     private void addLeftIndex(long tableLocation, long keyToAdd) {
-        final TrackingMutableRowSet rowSet = leftIndexSource.get(tableLocation);
+        final MutableRowSet rowSet = leftIndexSource.get(tableLocation);
         if (rowSet == null) {
             leftIndexSource.set(tableLocation, RowSetFactoryImpl.INSTANCE.getRowSetByValues(keyToAdd));
         } else {
@@ -248,7 +248,7 @@ class RightIncrementalChunkedNaturalJoinStateManager
     }
 
     private void addLeftIndexOverflow(long overflowLocation, long keyToAdd) {
-        final TrackingMutableRowSet rowSet = overflowLeftIndexSource.get(overflowLocation);
+        final MutableRowSet rowSet = overflowLeftIndexSource.get(overflowLocation);
         if (rowSet == null) {
             overflowLeftIndexSource.set(overflowLocation, RowSetFactoryImpl.INSTANCE.getRowSetByValues(keyToAdd));
         } else {
@@ -776,13 +776,13 @@ class RightIncrementalChunkedNaturalJoinStateManager
 
             // compact indices that were possibly built piecemeal
             for (int ii = 0; ii < tableSize; ++ii) {
-                final TrackingMutableRowSet rowSet = leftIndexSource.get(ii);
+                final MutableRowSet rowSet = leftIndexSource.get(ii);
                 if (rowSet != null) {
                     rowSet.compact();
                 }
             }
             for (int ii = 0; ii < nextOverflowLocation; ++ii) {
-                final TrackingMutableRowSet rowSet = overflowLeftIndexSource.get(ii);
+                final MutableRowSet rowSet = overflowLeftIndexSource.get(ii);
                 if (rowSet != null) {
                     rowSet.compact();
                 }
@@ -878,7 +878,7 @@ class RightIncrementalChunkedNaturalJoinStateManager
 
     // region probe wrappers
     @Override
-    void decorateLeftSide(TrackingMutableRowSet leftRowSet, ColumnSource<?>[] leftSources, LongArraySource leftRedirections) {
+    void decorateLeftSide(RowSet leftRowSet, ColumnSource<?>[] leftSources, LongArraySource leftRedirections) {
         // TODO: FIGURE OUT THE RIGHT INTERFACE HERE
         throw new UnsupportedOperationException();
     }
@@ -906,14 +906,14 @@ class RightIncrementalChunkedNaturalJoinStateManager
         decorationProbe(pc, rightIndex, rightSources, true, false, false, true, false, 0, modifiedSlotTracker);
     }
 
-    void modifyByRight(final ProbeContext pc, TrackingMutableRowSet modified, ColumnSource<?>[] rightSources, @NotNull final NaturalJoinModifiedSlotTracker modifiedSlotTracker) {
+    void modifyByRight(final ProbeContext pc, RowSet modified, ColumnSource<?>[] rightSources, @NotNull final NaturalJoinModifiedSlotTracker modifiedSlotTracker) {
         if (modified.isEmpty()) {
             return;
         }
         decorationProbe(pc, modified, rightSources, false, true, false, false, false, 0, modifiedSlotTracker);
     }
 
-    void applyRightShift(ProbeContext pc, ColumnSource<?> [] rightSources, TrackingMutableRowSet shiftedRowSet, long shiftDelta, @NotNull final NaturalJoinModifiedSlotTracker modifiedSlotTracker) {
+    void applyRightShift(ProbeContext pc, ColumnSource<?> [] rightSources, RowSet shiftedRowSet, long shiftDelta, @NotNull final NaturalJoinModifiedSlotTracker modifiedSlotTracker) {
         if (shiftedRowSet.isEmpty()) {
             return;
         }
@@ -1265,7 +1265,7 @@ class RightIncrementalChunkedNaturalJoinStateManager
     }
 
     @Override
-    public TrackingMutableRowSet getLeftIndex(long slot) {
+    public RowSet getLeftIndex(long slot) {
         if (isOverflowLocation(slot)) {
             return overflowLeftIndexSource.get(hashLocationToOverflowLocation(slot));
         } else {
@@ -1331,7 +1331,7 @@ class RightIncrementalChunkedNaturalJoinStateManager
         return stateValue;
     }
 
-    RedirectionIndex buildRedirectionIndexFromHashSlotGrouped(QueryTable leftTable, ObjectArraySource<TrackingMutableRowSet> indexSource, int groupingSize, boolean exactMatch, LongArraySource leftHashSlots, JoinControl.RedirectionType redirectionType) {
+    RedirectionIndex buildRedirectionIndexFromHashSlotGrouped(QueryTable leftTable, ObjectArraySource<RowSet> indexSource, int groupingSize, boolean exactMatch, LongArraySource leftHashSlots, JoinControl.RedirectionType redirectionType) {
         switch (redirectionType) {
             case Contiguous: {
                 if (!leftTable.isFlat()) {
@@ -1341,7 +1341,7 @@ class RightIncrementalChunkedNaturalJoinStateManager
                 final long[] innerIndex = new long[leftTable.intSize("contiguous redirection build")];
                 for (int ii = 0; ii < groupingSize; ++ii) {
                     final long rightSide = getStateValue(leftHashSlots, ii);
-                    final TrackingMutableRowSet leftRowSet = indexSource.get(ii);
+                    final RowSet leftRowSet = indexSource.get(ii);
                     assert leftRowSet != null;
                     if (leftRowSet.isNonempty()) {
                         checkExactMatch(exactMatch, leftRowSet.firstRowKey(), rightSide);
@@ -1357,7 +1357,7 @@ class RightIncrementalChunkedNaturalJoinStateManager
 
                 for (int ii = 0; ii < groupingSize; ++ii) {
                     final long rightSide = getStateValue(leftHashSlots, ii);
-                    final TrackingMutableRowSet leftRowSet = indexSource.get(ii);
+                    final RowSet leftRowSet = indexSource.get(ii);
                     assert leftRowSet != null;
                     if (leftRowSet.isNonempty()) {
                         checkExactMatch(exactMatch, leftRowSet.firstRowKey(), rightSide);
@@ -1375,7 +1375,7 @@ class RightIncrementalChunkedNaturalJoinStateManager
 
                 for (int ii = 0; ii < groupingSize; ++ii) {
                     final long rightSide = getStateValue(leftHashSlots, ii);
-                    final TrackingMutableRowSet leftRowSet = indexSource.get(ii);
+                    final RowSet leftRowSet = indexSource.get(ii);
                     assert leftRowSet != null;
                     if (leftRowSet.isNonempty()) {
                         checkExactMatch(exactMatch, leftRowSet.firstRowKey(), rightSide);
@@ -1393,10 +1393,10 @@ class RightIncrementalChunkedNaturalJoinStateManager
         throw new IllegalStateException("Bad redirectionType: " + redirectionType);
     }
 
-    void convertLeftGroups(int groupingSize, LongArraySource leftHashSlots, ObjectArraySource<TrackingMutableRowSet> indexSource) {
+    void convertLeftGroups(int groupingSize, LongArraySource leftHashSlots, ObjectArraySource<RowSet> indexSource) {
         for (int ii = 0; ii < groupingSize; ++ii) {
             final long slot = leftHashSlots.getUnsafe(ii);
-            final TrackingMutableRowSet oldRowSet;
+            final RowSet oldRowSet;
             if (isOverflowLocation(slot)) {
                 oldRowSet = overflowLeftIndexSource.getAndSetUnsafe(hashLocationToOverflowLocation(slot), indexSource.get(ii));
             } else {

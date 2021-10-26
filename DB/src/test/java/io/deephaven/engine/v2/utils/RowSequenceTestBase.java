@@ -467,7 +467,7 @@ public abstract class RowSequenceTestBase {
 
     @Test
     public void testGetAverageRunLengthEstimate() {
-        final TrackingMutableRowSet ix = TstRowSetUtil.makeEmptyRsp();
+        final MutableRowSet ix = TstRowSetUtil.makeEmptyRsp();
         final long k0 = 1 << 14;
         final long rlen = 16;
         final long nRanges = 256;
@@ -517,7 +517,7 @@ public abstract class RowSequenceTestBase {
             assertChunksEqual(expectedRanges, rowSequence.asRowKeyRangesChunk());
             // Check TrackingMutableRowSet
             final MutableInt idx = new MutableInt(0);
-            final TrackingMutableRowSet ix = rowSequence.asRowSet();
+            final RowSet ix = rowSequence.asRowSet();
             assertTrue(msg, ix.forEachLong((value) -> {
                 assertEquals(msg + " && value==" + value, expectedIndices.get(idx.intValue()), value);
                 idx.add(1);
@@ -568,14 +568,14 @@ public abstract class RowSequenceTestBase {
             8 * k2 - 1, 10 * k2, 12 * k2 + 3};
 
     private interface IndexBoundaryTest {
-        void run(final String ctxt, final RowSequence rs, final TrackingMutableRowSet ix, final long s, final long e);
+        void run(final String ctxt, final RowSequence rs, final RowSet ix, final long s, final long e);
     }
 
     private void testIndexBoundaries(final long[] ranges, final IndexBoundaryTest test) {
         final long[] r = ranges;
         final long[] indices = indicesFromRanges(r);
         try (final RowSequence rs = create(indices)) {
-            final TrackingMutableRowSet ix = rs.asRowSet();
+            final RowSet ix = rs.asRowSet();
             for (int ri = 0; ri < r.length / 2; ri += 2) {
                 final long si = r[ri];
                 final long ei = r[ri + 1];
@@ -594,17 +594,17 @@ public abstract class RowSequenceTestBase {
     @Test
     public void testForEachLong() {
         testIndexBoundaries(ranges2,
-                (final String ctxt, final RowSequence rs, final TrackingMutableRowSet ix, final long s, final long e) -> {
-                    final TrackingMutableRowSet expected = ix.subSetByKeyRange(s, e);
+                (final String ctxt, final RowSequence rs, final RowSet ix, final long s, final long e) -> {
+                    final RowSet expected = ix.subSetByKeyRange(s, e);
                     try (final RowSequence rs1 = rs.getRowSequenceByKeyRange(s, e)) {
                         final RowSetBuilderSequential b = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
                         rs1.forEachLong((final long v) -> {
                             b.appendKey(v);
                             return true;
                         });
-                        final TrackingMutableRowSet result = b.build();
+                        final RowSet result = b.build();
                         assertEquals(ctxt, expected.size(), result.size());
-                        final TrackingMutableRowSet d = expected.minus(result);
+                        final RowSet d = expected.minus(result);
                         assertEquals(ctxt, 0, d.size());
                     }
                 });
@@ -613,14 +613,14 @@ public abstract class RowSequenceTestBase {
     @Test
     public void testForAllLongs() {
         testIndexBoundaries(ranges2,
-                (final String ctxt, final RowSequence rs, final TrackingMutableRowSet ix, final long s, final long e) -> {
-                    final TrackingMutableRowSet expected = ix.subSetByKeyRange(s, e);
+                (final String ctxt, final RowSequence rs, final RowSet ix, final long s, final long e) -> {
+                    final RowSet expected = ix.subSetByKeyRange(s, e);
                     try (final RowSequence rs1 = rs.getRowSequenceByKeyRange(s, e)) {
                         final RowSetBuilderSequential b = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
                         rs1.forAllLongs(b::appendKey);
-                        final TrackingMutableRowSet result = b.build();
+                        final RowSet result = b.build();
                         assertEquals(ctxt, expected.size(), result.size());
-                        final TrackingMutableRowSet d = expected.minus(result);
+                        final RowSet d = expected.minus(result);
                         assertEquals(ctxt, 0, d.size());
                     }
                 });
@@ -629,17 +629,17 @@ public abstract class RowSequenceTestBase {
     @Test
     public void testForEachLongRange() {
         testIndexBoundaries(ranges2,
-                (final String ctxt, final RowSequence rs, final TrackingMutableRowSet ix, final long s, final long e) -> {
-                    final TrackingMutableRowSet expected = ix.subSetByKeyRange(s, e);
+                (final String ctxt, final RowSequence rs, final RowSet ix, final long s, final long e) -> {
+                    final RowSet expected = ix.subSetByKeyRange(s, e);
                     try (final RowSequence rs1 = rs.getRowSequenceByKeyRange(s, e)) {
                         final RowSetBuilderSequential b = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
                         rs1.forEachLongRange((final long start, final long end) -> {
                             b.appendRange(start, end);
                             return true;
                         });
-                        final TrackingMutableRowSet result = b.build();
+                        final RowSet result = b.build();
                         assertEquals(ctxt, expected.size(), result.size());
-                        final TrackingMutableRowSet d = expected.minus(result);
+                        final RowSet d = expected.minus(result);
                         assertEquals(ctxt, 0, d.size());
                     }
                 });
@@ -648,21 +648,21 @@ public abstract class RowSequenceTestBase {
     @Test
     public void testForAllLongRanges() {
         testIndexBoundaries(ranges2,
-                (final String ctxt, final RowSequence rs, final TrackingMutableRowSet ix, final long s, final long e) -> {
-                    final TrackingMutableRowSet expected = ix.subSetByKeyRange(s, e);
+                (final String ctxt, final RowSequence rs, final RowSet ix, final long s, final long e) -> {
+                    final RowSet expected = ix.subSetByKeyRange(s, e);
                     try (final RowSequence rs1 = rs.getRowSequenceByKeyRange(s, e)) {
                         final RowSetBuilderSequential b = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
                         rs1.forAllLongRanges(b::appendRange);
-                        final TrackingMutableRowSet result = b.build();
+                        final RowSet result = b.build();
                         assertEquals(ctxt, expected.size(), result.size());
-                        final TrackingMutableRowSet d = expected.minus(result);
+                        final RowSet d = expected.minus(result);
                         assertEquals(ctxt, 0, d.size());
                     }
                 });
     }
 
 
-    protected void advanceBug(final TrackingMutableRowSet rowSet) {
+    protected void advanceBug(final MutableRowSet rowSet) {
         final long regionBits = 40;
         final long regionSize = 1L << regionBits;
         final long subRegionBitMask = regionSize - 1;

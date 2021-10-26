@@ -235,7 +235,7 @@ public final class DeltaAwareColumnSource<T> extends AbstractColumnSource<T>
     private Chunk<? super Values> getOrFillChunk(@NotNull DAContext context, WritableChunk<? super Values> optionalDest,
             @NotNull RowSequence rowSequence) {
         // Do the volatile read once
-        final TrackingMutableRowSet dRows = deltaRows;
+        final RowSet dRows = deltaRows;
         // Optimization if we're not tracking prev or if there are no deltas.
         if (dRows == null || dRows.isEmpty()) {
             return getOrFillSimple(baseline, context.baseline, optionalDest, rowSequence);
@@ -244,10 +244,10 @@ public final class DeltaAwareColumnSource<T> extends AbstractColumnSource<T>
         // baselineKeysBS: (rowSequence - deltaRows): baseline keys in the baseline coordinate space
         // deltaKeysBS: (rowSequence intersect deltaRows) delta keys, also in the baseline coordinate space
         // deltaKeysDS: the above, translated to the delta coordinate space
-        final TrackingMutableRowSet[] splitResult = new TrackingMutableRowSet[2];
+        final RowSet[] splitResult = new RowSet[2];
         splitKeys(rowSequence, dRows, splitResult);
-        final TrackingMutableRowSet baselineKeysBS = splitResult[1];
-        final TrackingMutableRowSet deltaKeysBS = splitResult[0];
+        final RowSet baselineKeysBS = splitResult[1];
+        final RowSet deltaKeysBS = splitResult[0];
 
         // If one or the other is empty, shortcut here
         if (deltaKeysBS.isEmpty()) {
@@ -255,7 +255,7 @@ public final class DeltaAwareColumnSource<T> extends AbstractColumnSource<T>
             return getOrFillSimple(baseline, context.baseline, optionalDest, baselineKeysBS);
         }
 
-        final TrackingMutableRowSet deltaKeysDS = dRows.invert(deltaKeysBS);
+        final RowSet deltaKeysDS = dRows.invert(deltaKeysBS);
         if (baselineKeysBS.isEmpty()) {
             return getOrFillSimple(delta, context.delta, optionalDest, deltaKeysDS);
         }
@@ -510,7 +510,7 @@ public final class DeltaAwareColumnSource<T> extends AbstractColumnSource<T>
         }
 
         // Do the volatile read once.
-        final TrackingMutableRowSet dRows = deltaRows;
+        final MutableRowSet dRows = deltaRows;
 
         // Otherwise, we need to either update a key or append a key
         final long existing = dRows.find(index);
@@ -616,8 +616,8 @@ public final class DeltaAwareColumnSource<T> extends AbstractColumnSource<T>
      * @param results Allocated by the caller. {@code results[0]} will be set to (lhs intersect rhs). {@code results[1]}
      *        will be set to (lhs minus rhs).
      */
-    private static void splitKeys(RowSequence lhs, TrackingMutableRowSet rhs, TrackingMutableRowSet[] results) {
-        final TrackingMutableRowSet lhsRowSet = lhs.asRowSet();
+    private static void splitKeys(RowSequence lhs, RowSet rhs, RowSet[] results) {
+        final RowSet lhsRowSet = lhs.asRowSet();
         results[0] = lhsRowSet.intersect(rhs);
         results[1] = lhsRowSet.minus(rhs);
     }

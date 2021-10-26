@@ -7,8 +7,8 @@ package io.deephaven.engine.v2;
 import io.deephaven.datastructures.util.SmartKey;
 import io.deephaven.base.testing.BaseCachedJMockTestCase;
 import io.deephaven.engine.tables.live.LiveTableMonitor;
+import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 
 public class TestKeyedTableListener extends BaseCachedJMockTestCase {
 
@@ -16,9 +16,9 @@ public class TestKeyedTableListener extends BaseCachedJMockTestCase {
     private KeyedTableListener keyedTableListener;
     private KeyedTableListener.KeyUpdateListener mockListener;
 
-    private final TrackingMutableRowSet noAdded = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
-    private final TrackingMutableRowSet noRemoved = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
-    private final TrackingMutableRowSet noModified = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+    private final RowSet noAdded = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+    private final RowSet noRemoved = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+    private final RowSet noModified = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
 
     private SmartKey aKey;
     private SmartKey bKey;
@@ -93,7 +93,7 @@ public class TestKeyedTableListener extends BaseCachedJMockTestCase {
         keyedTableListener.subscribe(newKey, mockListener);
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-            final TrackingMutableRowSet newAdd = TstUtils.i(3);
+            final RowSet newAdd = TstUtils.i(3);
             TstUtils.addToTable(table, newAdd, TstUtils.c("Key1", "D"), TstUtils.c("Key2", 4), TstUtils.c("Data", 4.0));
             table.notifyListeners(newAdd, noRemoved.clone(), noModified.clone());
         });
@@ -115,7 +115,7 @@ public class TestKeyedTableListener extends BaseCachedJMockTestCase {
         keyedTableListener.subscribe(cKey, mockListener);
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-            final TrackingMutableRowSet newRemove = TstUtils.i(2);
+            final RowSet newRemove = TstUtils.i(2);
             TstUtils.removeRows(table, newRemove);
             table.notifyListeners(noAdded.clone(), newRemove, noModified.clone());
         });
@@ -141,7 +141,7 @@ public class TestKeyedTableListener extends BaseCachedJMockTestCase {
 
         keyedTableListener.subscribe(cKey, mockListener);
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-            final TrackingMutableRowSet newModified = TstUtils.i(2);
+            final RowSet newModified = TstUtils.i(2);
             TstUtils.addToTable(table, newModified, TstUtils.c("Key1", "C"), TstUtils.c("Key2", 3),
                     TstUtils.c("Data", 6.0));
             table.notifyListeners(noAdded.clone(), noRemoved.clone(), newModified);
@@ -170,7 +170,7 @@ public class TestKeyedTableListener extends BaseCachedJMockTestCase {
         keyedTableListener.subscribe(newKey, mockListener);
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-            final TrackingMutableRowSet newModified = TstUtils.i(2);
+            final RowSet newModified = TstUtils.i(2);
             // Add to table on an existing rowSet is a modify
             TstUtils.addToTable(table, newModified, TstUtils.c("Key1", "C"), TstUtils.c("Key2", 4),
                     TstUtils.c("Data", 6.0));
@@ -211,7 +211,7 @@ public class TestKeyedTableListener extends BaseCachedJMockTestCase {
         keyedTableListener.subscribe(newKey, mockListener);
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-            final TrackingMutableRowSet newModified = TstUtils.i(1, 2);
+            final RowSet newModified = TstUtils.i(1, 2);
             // Add to table on an existing rowSet is a modify
             TstUtils.addToTable(table, newModified, TstUtils.c("Key1", "C", "D"), TstUtils.c("Key2", 3, 4),
                     TstUtils.c("Data", 3.0, 4.0));
@@ -252,7 +252,7 @@ public class TestKeyedTableListener extends BaseCachedJMockTestCase {
         keyedTableListener.subscribe(cKey, mockListener);
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-            final TrackingMutableRowSet newModified = TstUtils.i(1, 2);
+            final RowSet newModified = TstUtils.i(1, 2);
             TstUtils.addToTable(table, newModified, TstUtils.c("Key1", "C", "B"), TstUtils.c("Key2", 3, 2),
                     TstUtils.c("Data", 3.0, 2.0));
             table.notifyListeners(noAdded.clone(), noRemoved.clone(), newModified);
@@ -292,14 +292,14 @@ public class TestKeyedTableListener extends BaseCachedJMockTestCase {
         keyedTableListener.subscribe(newKey, mockListener);
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-            final TrackingMutableRowSet newRemoved = TstUtils.i(2);
+            final RowSet newRemoved = TstUtils.i(2);
             TstUtils.removeRows(table, newRemoved);
 
-            final TrackingMutableRowSet newModified = TstUtils.i(0);
+            final RowSet newModified = TstUtils.i(0);
             TstUtils.addToTable(table, newModified, TstUtils.c("Key1", "A"), TstUtils.c("Key2", 1),
                     TstUtils.c("Data", 1.5));
 
-            final TrackingMutableRowSet newAdd = TstUtils.i(4);
+            final RowSet newAdd = TstUtils.i(4);
             TstUtils.addToTable(table, newAdd, TstUtils.c("Key1", "D"), TstUtils.c("Key2", 4), TstUtils.c("Data", 4.0));
 
             table.notifyListeners(newAdd, newRemoved, newModified);
@@ -344,14 +344,14 @@ public class TestKeyedTableListener extends BaseCachedJMockTestCase {
 
         // Two cycles -- first remove
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-            final TrackingMutableRowSet newRemoved = TstUtils.i(2);
+            final RowSet newRemoved = TstUtils.i(2);
             TstUtils.removeRows(table, newRemoved);
             table.notifyListeners(noAdded, newRemoved, noModified);
         });
 
         // Now add
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-            final TrackingMutableRowSet newAdded = TstUtils.i(2);
+            final RowSet newAdded = TstUtils.i(2);
             TstUtils.addToTable(table, newAdded, TstUtils.c("Key1", "D"), TstUtils.c("Key2", 4),
                     TstUtils.c("Data", 4.0));
             table.notifyListeners(newAdded, noRemoved, noModified);

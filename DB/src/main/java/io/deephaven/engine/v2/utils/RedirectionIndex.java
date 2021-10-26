@@ -137,7 +137,7 @@ public interface RedirectionIndex {
         final LongChunk<? extends Values> valuesLongChunk = src.asLongChunk();
         rowSequence.forAllLongs(key -> {
             final long index = valuesLongChunk.get(offset.intValue());
-            if (index == TrackingMutableRowSet.NULL_ROW_KEY) {
+            if (index == RowSet.NULL_ROW_KEY) {
                 removeVoid(key);
             } else {
                 putVoid(key, index);

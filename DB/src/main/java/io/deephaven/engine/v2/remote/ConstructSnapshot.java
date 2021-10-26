@@ -12,9 +12,7 @@ import io.deephaven.configuration.Configuration;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.v2.ShiftObliviousInstrumentedListener;
 import io.deephaven.engine.v2.sources.ReinterpretUtilities;
-import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
-import io.deephaven.engine.v2.utils.RowSetShiftData;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
+import io.deephaven.engine.v2.utils.*;
 import io.deephaven.io.log.LogEntry;
 import io.deephaven.engine.tables.ColumnDefinition;
 import io.deephaven.engine.exceptions.QueryCancellationException;
@@ -33,7 +31,6 @@ import io.deephaven.engine.v2.NotificationStepSource;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.LogicalClock;
 import io.deephaven.engine.v2.sources.chunk.*;
-import io.deephaven.engine.v2.utils.BarrageMessage;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.internal.log.LoggerFactory;
@@ -446,7 +443,7 @@ public class ConstructSnapshot {
     public static InitialSnapshot constructInitialSnapshot(final Object logIdentityObject,
             @NotNull final BaseTable table,
             @Nullable final BitSet columnsToSerialize,
-            @Nullable final TrackingMutableRowSet keysToSnapshot) {
+            @Nullable final RowSet keysToSnapshot) {
         return constructInitialSnapshot(logIdentityObject, table, columnsToSerialize, keysToSnapshot,
                 makeSnapshotControl(false, table));
     }
@@ -454,7 +451,7 @@ public class ConstructSnapshot {
     static InitialSnapshot constructInitialSnapshot(final Object logIdentityObject,
             @NotNull final BaseTable table,
             @Nullable final BitSet columnsToSerialize,
-            @Nullable final TrackingMutableRowSet keysToSnapshot,
+            @Nullable final RowSet keysToSnapshot,
             @NotNull final SnapshotControl control) {
         final InitialSnapshot snapshot = new InitialSnapshot();
 
@@ -480,7 +477,7 @@ public class ConstructSnapshot {
     public static InitialSnapshot constructInitialSnapshotInPositionSpace(final Object logIdentityObject,
             @NotNull final BaseTable table,
             @Nullable final BitSet columnsToSerialize,
-            @Nullable final TrackingMutableRowSet positionsToSnapshot) {
+            @Nullable final RowSet positionsToSnapshot) {
         return constructInitialSnapshotInPositionSpace(logIdentityObject, table, columnsToSerialize,
                 positionsToSnapshot, makeSnapshotControl(false, table));
     }
@@ -488,16 +485,16 @@ public class ConstructSnapshot {
     static InitialSnapshot constructInitialSnapshotInPositionSpace(final Object logIdentityObject,
             @NotNull final BaseTable table,
             @Nullable final BitSet columnsToSerialize,
-            @Nullable final TrackingMutableRowSet positionsToSnapshot,
+            @Nullable final RowSet positionsToSnapshot,
             @NotNull final SnapshotControl control) {
         final InitialSnapshot snapshot = new InitialSnapshot();
 
         final SnapshotFunction doSnapshot = (usePrev, beforeClockValue) -> {
-            final TrackingMutableRowSet keysToSnapshot;
+            final RowSet keysToSnapshot;
             if (positionsToSnapshot == null) {
                 keysToSnapshot = null;
             } else if (usePrev) {
-                try (final TrackingMutableRowSet prevIndex = table.getRowSet().getPrevRowSet()) {
+                try (final RowSet prevIndex = table.getRowSet().getPrevRowSet()) {
                     keysToSnapshot = prevIndex.subSetForPositions(positionsToSnapshot);
                 }
             } else {
@@ -537,7 +534,7 @@ public class ConstructSnapshot {
     public static BarrageMessage constructBackplaneSnapshotInPositionSpace(final Object logIdentityObject,
             final BaseTable table,
             @Nullable final BitSet columnsToSerialize,
-            @Nullable final TrackingMutableRowSet positionsToSnapshot) {
+            @Nullable final RowSet positionsToSnapshot) {
         return constructBackplaneSnapshotInPositionSpace(logIdentityObject, table, columnsToSerialize,
                 positionsToSnapshot, makeSnapshotControl(false, table));
     }
@@ -556,7 +553,7 @@ public class ConstructSnapshot {
     public static BarrageMessage constructBackplaneSnapshotInPositionSpace(final Object logIdentityObject,
             @NotNull final BaseTable table,
             @Nullable final BitSet columnsToSerialize,
-            @Nullable final TrackingMutableRowSet positionsToSnapshot,
+            @Nullable final RowSet positionsToSnapshot,
             @NotNull final SnapshotControl control) {
 
         final BarrageMessage snapshot = new BarrageMessage();
@@ -564,11 +561,11 @@ public class ConstructSnapshot {
         snapshot.shifted = RowSetShiftData.EMPTY;
 
         final SnapshotFunction doSnapshot = (usePrev, beforeClockValue) -> {
-            final TrackingMutableRowSet keysToSnapshot;
+            final RowSet keysToSnapshot;
             if (positionsToSnapshot == null) {
                 keysToSnapshot = null;
             } else if (usePrev) {
-                try (final TrackingMutableRowSet prevIndex = table.getRowSet().getPrevRowSet()) {
+                try (final RowSet prevIndex = table.getRowSet().getPrevRowSet()) {
                     keysToSnapshot = prevIndex.subSetForPositions(positionsToSnapshot);
                 }
             } else {
@@ -1211,7 +1208,7 @@ public class ConstructSnapshot {
             BaseTable table,
             Object logIdentityObject,
             BitSet columnsToSerialize,
-            TrackingMutableRowSet keysToSnapshot) {
+            RowSet keysToSnapshot) {
         snapshot.rowSet = (usePrev ? table.getRowSet().getPrevRowSet() : table.getRowSet()).clone();
 
         if (keysToSnapshot != null) {
@@ -1279,7 +1276,7 @@ public class ConstructSnapshot {
             final BaseTable table,
             final Object logIdentityObject,
             final BitSet columnsToSerialize,
-            final TrackingMutableRowSet positionsToSnapshot) {
+            final RowSet positionsToSnapshot) {
         snapshot.rowsAdded = (usePrev ? table.getRowSet().getPrevRowSet() : table.getRowSet()).clone();
         snapshot.rowsRemoved = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
         snapshot.addColumnData = new BarrageMessage.AddColumnData[table.getColumnSources().size()];
@@ -1314,7 +1311,7 @@ public class ConstructSnapshot {
                 final BarrageMessage.AddColumnData acd = new BarrageMessage.AddColumnData();
                 snapshot.addColumnData[ii] = acd;
                 final boolean columnIsEmpty = columnsToSerialize != null && !columnsToSerialize.get(ii);
-                final TrackingMutableRowSet rows = columnIsEmpty ? RowSetFactoryImpl.INSTANCE.getEmptyRowSet() : snapshot.rowsIncluded;
+                final RowSet rows = columnIsEmpty ? RowSetFactoryImpl.INSTANCE.getEmptyRowSet() : snapshot.rowsIncluded;
                 // Note: cannot use shared context across several calls of differing lengths and no sharing necessary
                 // when empty
                 acd.data = getSnapshotDataAsChunk(columnSource, columnIsEmpty ? null : sharedContext, rows, usePrev);
@@ -1362,7 +1359,7 @@ public class ConstructSnapshot {
     }
 
     private static <T> Object getSnapshotData(final ColumnSource<T> columnSource, final SharedContext sharedContext,
-                                              final TrackingMutableRowSet rowSet, final boolean usePrev) {
+                                              final RowSet rowSet, final boolean usePrev) {
         final ColumnSource<?> sourceToUse = ReinterpretUtilities.maybeConvertToPrimitive(columnSource);
         final Class<?> type = sourceToUse.getType();
         final int size = rowSet.intSize();
@@ -1390,7 +1387,7 @@ public class ConstructSnapshot {
     }
 
     private static <T> WritableChunk<Values> getSnapshotDataAsChunk(final ColumnSource<T> columnSource,
-                                                                    final SharedContext sharedContext, final TrackingMutableRowSet rowSet, final boolean usePrev) {
+                                                                    final SharedContext sharedContext, final RowSet rowSet, final boolean usePrev) {
         final ColumnSource<?> sourceToUse = ReinterpretUtilities.maybeConvertToPrimitive(columnSource);
         final int size = rowSet.intSize();
         try (final ColumnSource.FillContext context = sharedContext != null

@@ -23,8 +23,8 @@ import java.util.function.BiConsumer;
  */
 public class RowSetShiftDataExpander implements SafeCloseable {
 
-    private final MutableRowSet added;
-    private final MutableRowSet removed;
+    private final RowSet added;
+    private final RowSet removed;
     private final MutableRowSet modified;
 
     /**
@@ -43,7 +43,7 @@ public class RowSetShiftDataExpander implements SafeCloseable {
 
         try {
             // Compute added and removed using the old definitions explicitly.
-            try (final MutableRowSet prevRowSet = sourceRowSet.getPrevRowSet()) {
+            try (final RowSet prevRowSet = sourceRowSet.getPrevRowSet()) {
                 added = sourceRowSet.minus(prevRowSet);
                 removed = prevRowSet.minus(sourceRowSet);
             }
@@ -71,7 +71,7 @@ public class RowSetShiftDataExpander implements SafeCloseable {
 
             // consider all rows that are in a shift region as modified (if they still exist)
             try (final MutableRowSet addedByShift = addedByShiftB.build();
-                    final MutableRowSet rmByShift = removedByShiftB.build()) {
+                    final RowSet rmByShift = removedByShiftB.build()) {
                 addedByShift.insert(rmByShift);
                 addedByShift.retain(sourceRowSet);
                 modified.insert(addedByShift);

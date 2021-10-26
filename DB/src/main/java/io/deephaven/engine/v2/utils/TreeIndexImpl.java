@@ -106,13 +106,13 @@ public interface TreeIndexImpl {
 
     long ixFind(long key);
 
-    TrackingMutableRowSet.Iterator ixIterator();
+    RowSet.Iterator ixIterator();
 
-    TrackingMutableRowSet.SearchIterator ixSearchIterator();
+    RowSet.SearchIterator ixSearchIterator();
 
-    TrackingMutableRowSet.SearchIterator ixReverseIterator();
+    RowSet.SearchIterator ixReverseIterator();
 
-    TrackingMutableRowSet.RangeIterator ixRangeIterator();
+    RowSet.RangeIterator ixRangeIterator();
 
     long ixCardinality();
 
@@ -282,40 +282,40 @@ public interface TreeIndexImpl {
 
         @Override
         public long ixGet(long pos) {
-            return TrackingMutableRowSet.NULL_ROW_KEY;
+            return RowSet.NULL_ROW_KEY;
         }
 
         @Override
         public long ixFind(long key) {
-            return TrackingMutableRowSet.NULL_ROW_KEY;
+            return RowSet.NULL_ROW_KEY;
         }
 
         @Override
         public void ixGetKeysForPositions(PrimitiveIterator.OfLong inputPositions, LongConsumer outputKeys) {
             while (inputPositions.hasNext()) {
                 inputPositions.nextLong();
-                outputKeys.accept(TrackingMutableRowSet.NULL_ROW_KEY);
+                outputKeys.accept(RowSet.NULL_ROW_KEY);
             }
         }
 
         @Override
-        public TrackingMutableRowSet.Iterator ixIterator() {
-            return TrackingMutableRowSet.EMPTY_ITERATOR;
+        public RowSet.Iterator ixIterator() {
+            return RowSet.EMPTY_ITERATOR;
         }
 
         @Override
-        public TrackingMutableRowSet.SearchIterator ixSearchIterator() {
-            return TrackingMutableRowSet.EMPTY_ITERATOR;
+        public RowSet.SearchIterator ixSearchIterator() {
+            return RowSet.EMPTY_ITERATOR;
         }
 
         @Override
-        public TrackingMutableRowSet.SearchIterator ixReverseIterator() {
-            return TrackingMutableRowSet.EMPTY_ITERATOR;
+        public RowSet.SearchIterator ixReverseIterator() {
+            return RowSet.EMPTY_ITERATOR;
         }
 
         @Override
-        public TrackingMutableRowSet.RangeIterator ixRangeIterator() {
-            return TrackingMutableRowSet.RangeIterator.empty;
+        public RowSet.RangeIterator ixRangeIterator() {
+            return RowSet.RangeIterator.empty;
         }
 
         @Override

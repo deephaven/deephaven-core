@@ -8,7 +8,6 @@ import io.deephaven.engine.util.liveness.LivenessArtifact;
 import io.deephaven.engine.v2.remote.ConstructSnapshot;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.LogicalClock;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.util.annotations.ReferentialIntegrity;
 import io.deephaven.util.annotations.ScriptApi;
@@ -72,8 +71,8 @@ public class ReverseLookupListener extends LivenessArtifact
             }
         }
 
-        private void removeEntries(TrackingMutableRowSet rowSet) {
-            for (final TrackingMutableRowSet.Iterator it = rowSet.iterator(); it.hasNext();) {
+        private void removeEntries(RowSet rowSet) {
+            for (final RowSet.Iterator it = rowSet.iterator(); it.hasNext();) {
                 final long row = it.nextLong();
                 final Object keyToReverse = getPrevKey(row);
                 if (ignoreNull && keyToReverse == null) {
@@ -89,8 +88,8 @@ public class ReverseLookupListener extends LivenessArtifact
             }
         }
 
-        private void modifyEntries(TrackingMutableRowSet rowSet) {
-            for (final TrackingMutableRowSet.Iterator it = rowSet.iterator(); it.hasNext();) {
+        private void modifyEntries(RowSet rowSet) {
+            for (final RowSet.Iterator it = rowSet.iterator(); it.hasNext();) {
                 final long row = it.nextLong();
                 final Object keyToReverse = getPrevKey(row);
                 final Object newKey = getKey(row);

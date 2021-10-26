@@ -183,7 +183,7 @@ public class QueryTable extends BaseTable {
     // Cached results
     transient Map<MemoizedOperationKey, MemoizedResult<?>> cachedOperations;
 
-    public QueryTable(MutableRowSet rowSet, Map<String, ? extends ColumnSource<?>> columns) {
+    public QueryTable(RowSet rowSet, Map<String, ? extends ColumnSource<?>> columns) {
         this(TableDefinition.inferFrom(columns), rowSet, columns);
     }
 
@@ -194,7 +194,7 @@ public class QueryTable extends BaseTable {
      * @param rowSet the rowSet of the new table
      * @param columns the column source map for the table, which will be copied into a new column source map
      */
-    public QueryTable(TableDefinition definition, MutableRowSet rowSet, Map<String, ? extends ColumnSource<?>> columns) {
+    public QueryTable(TableDefinition definition, RowSet rowSet, Map<String, ? extends ColumnSource<?>> columns) {
         this(definition, Require.neqNull(rowSet, "rowSet"), new LinkedHashMap<>(columns), null);
     }
 
@@ -832,7 +832,7 @@ public class QueryTable extends BaseTable {
         private boolean refilterUnmatchedRequested = false;
         private MergedListener whereListener;
 
-        public FilteredTable(final TrackingMutableRowSet currentMapping, final QueryTable source, final SelectFilter[] filters) {
+        public FilteredTable(final MutableRowSet currentMapping, final QueryTable source, final SelectFilter[] filters) {
             super(source.getDefinition(), currentMapping, source.columns, null);
             this.source = source;
             this.filters = filters;
@@ -889,7 +889,7 @@ public class QueryTable extends BaseTable {
          * @param shiftData sequence of shifts that apply to keyspace
          * @param modifiedColumnSet the set of columns that have any changes to indices in {@code modified}
          */
-        private void doRefilter(final TrackingMutableRowSet upstreamAdded, final TrackingMutableRowSet upstreamRemoved, final TrackingMutableRowSet upstreamModified,
+        private void doRefilter(final RowSet upstreamAdded, final RowSet upstreamRemoved, final RowSet upstreamModified,
                                 final RowSetShiftData shiftData, final ModifiedColumnSet modifiedColumnSet) {
             final Listener.Update update = new Listener.Update();
             update.modifiedColumnSet = modifiedColumnSet;
@@ -903,9 +903,9 @@ public class QueryTable extends BaseTable {
 
             // Update our rowSet and compute removals due to splatting.
             if (shiftData != null) {
-                final TrackingMutableRowSet rowSet = getRowSet();
+                final MutableRowSet rowSet = getRowSet();
                 shiftData.apply((beginRange, endRange, shiftDelta) -> {
-                    final TrackingMutableRowSet toShift = rowSet.subSetByKeyRange(beginRange, endRange);
+                    final RowSet toShift = rowSet.subSetByKeyRange(beginRange, endRange);
                     rowSet.removeRange(beginRange, endRange);
                     update.removed.insert(rowSet.subSetByKeyRange(beginRange + shiftDelta, endRange + shiftDelta));
                     rowSet.removeRange(beginRange + shiftDelta, endRange + shiftDelta);
@@ -913,7 +913,7 @@ public class QueryTable extends BaseTable {
                 });
             }
 
-            final TrackingMutableRowSet newMapping;
+            final MutableRowSet newMapping;
             if (refilterMatchedRequested && refilterUnmatchedRequested) {
                 newMapping = whereInternal(source.getRowSet().clone(), source.getRowSet(), false, filters);
                 refilterMatchedRequested = refilterUnmatchedRequested = false;
@@ -928,7 +928,7 @@ public class QueryTable extends BaseTable {
                 newMapping = whereInternal(unmatchedClone, unmatchedRows, false, filters);
 
                 // add back what we previously matched, but for modifications and removals
-                try (final TrackingMutableRowSet previouslyMatched = getRowSet().clone()) {
+                try (final MutableRowSet previouslyMatched = getRowSet().clone()) {
                     if (upstreamAdded != null) {
                         previouslyMatched.remove(upstreamAdded);
                     }
@@ -958,7 +958,7 @@ public class QueryTable extends BaseTable {
 
             // Compute added/removed in post-shift keyspace.
             update.added = newMapping.minus(getRowSet());
-            final TrackingMutableRowSet postShiftRemovals = getRowSet().minus(newMapping);
+            final MutableRowSet postShiftRemovals = getRowSet().minus(newMapping);
 
             // Update our rowSet in post-shift keyspace.
             getRowSet().update(update.added, postShiftRemovals);
@@ -1029,7 +1029,7 @@ public class QueryTable extends BaseTable {
                         initializeWithSnapshot("where", swapListener,
                                 (prevRequested, beforeClock) -> {
                                     final boolean usePrev = prevRequested && isRefreshing();
-                                    final TrackingMutableRowSet rowSetToUpdate = usePrev ? rowSet.getPrevRowSet() : rowSet;
+                                    final RowSet rowSetToUpdate = usePrev ? rowSet.getPrevRowSet() : rowSet;
                                     final TrackingMutableRowSet currentMapping;
 
                                     currentMapping = whereInternal(rowSetToUpdate.clone(), rowSetToUpdate, usePrev, filters);
@@ -1086,7 +1086,7 @@ public class QueryTable extends BaseTable {
     }
 
     @SuppressWarnings("WeakerAccess")
-    protected TrackingMutableRowSet whereInternal(TrackingMutableRowSet currentMapping, TrackingMutableRowSet fullSet, boolean usePrev, SelectFilter... filters) {
+    protected MutableRowSet whereInternal(TrackingMutableRowSet currentMapping, RowSet fullSet, boolean usePrev, SelectFilter... filters) {
         for (SelectFilter filter : filters) {
             if (Thread.interrupted()) {
                 throw new QueryCancellationException("interrupted while filtering");
@@ -1237,7 +1237,7 @@ public class QueryTable extends BaseTable {
                                     publishTheseSources, selectColumns);
 
                     // Init all the rows by cooking up a fake Update
-                    final TrackingMutableRowSet emptyRowSet = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+                    final RowSet emptyRowSet = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
                     final Listener.Update fakeUpdate =
                             new Listener.Update(rowSet, emptyRowSet, emptyRowSet,
                                     RowSetShiftData.EMPTY, ModifiedColumnSet.ALL);
@@ -1465,7 +1465,7 @@ public class QueryTable extends BaseTable {
             // - clear only the keys that no longer exist
             // - create parallel arrays of pre-shift-keys and post-shift-keys so we can move them in chunks
 
-            try (final TrackingMutableRowSet toClear = dependent.rowSet.getPrevRowSet();
+            try (final MutableRowSet toClear = dependent.rowSet.getPrevRowSet();
                  final SelectAndViewAnalyzer.UpdateHelper updateHelper =
                             new SelectAndViewAnalyzer.UpdateHelper(dependent.rowSet, upstream)) {
                 toClear.remove(dependent.rowSet);
@@ -1870,8 +1870,8 @@ public class QueryTable extends BaseTable {
      * @return The new dest ColumnSource size, calculated as {@code destOffset + leftRowSet.size() * rightRowSet.size()}
      */
     private static long snapshotHistoryInternal(
-            @NotNull Map<String, ? extends ColumnSource<?>> leftColumns, @NotNull TrackingMutableRowSet leftRowSet,
-            @NotNull Map<String, ? extends ColumnSource<?>> rightColumns, @NotNull TrackingMutableRowSet rightRowSet,
+            @NotNull Map<String, ? extends ColumnSource<?>> leftColumns, @NotNull RowSet leftRowSet,
+            @NotNull Map<String, ? extends ColumnSource<?>> rightColumns, @NotNull RowSet rightRowSet,
             @NotNull Map<String, ? extends WritableSource<?>> dest, long destOffset) {
         assert leftColumns.size() + rightColumns.size() == dest.size();
         if (leftRowSet.isEmpty() || rightRowSet.isEmpty()) {
@@ -1891,7 +1891,7 @@ public class QueryTable extends BaseTable {
         leftRowSet.forAllLongs(snapshotKey -> {
             final long doff = destOffsetHolder[0];
             destOffsetHolder[0] += rightSize;
-            try (final TrackingMutableRowSet destRowSet = RowSetFactoryImpl.INSTANCE.getRowSetByRange(doff, doff + rightSize - 1)) {
+            try (final RowSet destRowSet = RowSetFactoryImpl.INSTANCE.getRowSetByRange(doff, doff + rightSize - 1)) {
                 SnapshotUtils.copyStampColumns(leftColumns, snapshotKey, dest, destRowSet);
                 SnapshotUtils.copyDataColumns(rightColumns, rightRowSet, dest, destRowSet, false);
             }
@@ -1917,7 +1917,7 @@ public class QueryTable extends BaseTable {
             final long initialSize = snapshotHistoryInternal(leftTable.getColumnSourceMap(), leftTable.getRowSet(),
                     rightTable.getColumnSourceMap(), rightTable.getRowSet(),
                     resultColumns, 0);
-            final TrackingMutableRowSet resultRowSet = RowSetFactoryImpl.INSTANCE.getFlatRowSet(initialSize);
+            final MutableRowSet resultRowSet = RowSetFactoryImpl.INSTANCE.getFlatRowSet(initialSize);
             final QueryTable result = new QueryTable(resultRowSet, resultColumns);
             if (isRefreshing()) {
                 listenForUpdates(new ShiftObliviousListenerImpl("snapshotHistory" + resultColumns.keySet().toString(), this, result) {
@@ -1938,7 +1938,7 @@ public class QueryTable extends BaseTable {
                         final long newSize = snapshotHistoryInternal(leftTable.getColumnSourceMap(), added,
                                 rightTable.getColumnSourceMap(), rightTable.getRowSet(),
                                 resultColumns, oldSize);
-                        final TrackingMutableRowSet addedSnapshots = RowSetFactoryImpl.INSTANCE.getRowSetByRange(oldSize, newSize - 1);
+                        final RowSet addedSnapshots = RowSetFactoryImpl.INSTANCE.getRowSetByRange(oldSize, newSize - 1);
                         resultRowSet.insert(addedSnapshots);
                         lastKey = rowSet.lastRowKey();
                         result.notifyListeners(addedSnapshots, RowSetFactoryImpl.INSTANCE.getEmptyRowSet(),
@@ -2106,7 +2106,7 @@ public class QueryTable extends BaseTable {
                         throwColumnConflictMessage(resultLeftColumns.keySet(), resultRightColumns.keySet());
                     }
 
-                    final TrackingMutableRowSet resultRowSet = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+                    final RowSet resultRowSet = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
 
                     final QueryTable resultTable = new QueryTable(resultRowSet, resultColumns);
 
@@ -2328,13 +2328,13 @@ public class QueryTable extends BaseTable {
                                     rebase(newBase + 1);
                                 } else {
                                     evaluateRemovedIndex(removed, ungroupRemoved);
-                                    final TrackingMutableRowSet removedRowSet = ungroupRemoved.build();
-                                    final TrackingMutableRowSet addedRowSet = ungroupAdded.build();
+                                    final RowSet removedRowSet = ungroupRemoved.build();
+                                    final RowSet addedRowSet = ungroupAdded.build();
                                     result.getRowSet().update(addedRowSet, removedRowSet);
-                                    final TrackingMutableRowSet modifiedRowSet = ungroupModified.build();
+                                    final RowSet modifiedRowSet = ungroupModified.build();
 
                                     if (!modifiedRowSet.subsetOf(result.getRowSet())) {
-                                        final TrackingMutableRowSet missingModifications = modifiedRowSet.minus(result.getRowSet());
+                                        final RowSet missingModifications = modifiedRowSet.minus(result.getRowSet());
                                         log.error().append("Result TrackingMutableRowSet: ").append(result.getRowSet().toString())
                                                 .endl();
                                         log.error().append("Missing modifications: ")
@@ -2347,7 +2347,7 @@ public class QueryTable extends BaseTable {
                                             ColumnSource<?> arrayColumn = es.getValue();
                                             String name = es.getKey();
 
-                                            TrackingMutableRowSet.Iterator iterator = rowSet.iterator();
+                                            RowSet.Iterator iterator = rowSet.iterator();
                                             for (int i = 0; i < rowSet.size(); i++) {
                                                 final long next = iterator.nextLong();
                                                 int size = (arrayColumn.get(next) == null ? 0
@@ -2362,7 +2362,7 @@ public class QueryTable extends BaseTable {
                                         for (Map.Entry<String, ColumnSource<?>> es : dbArrayColumns.entrySet()) {
                                             ColumnSource<?> arrayColumn = es.getValue();
                                             String name = es.getKey();
-                                            TrackingMutableRowSet.Iterator iterator = rowSet.iterator();
+                                            RowSet.Iterator iterator = rowSet.iterator();
 
                                             for (int i = 0; i < rowSet.size(); i++) {
                                                 final long next = iterator.nextLong();
@@ -2396,9 +2396,9 @@ public class QueryTable extends BaseTable {
                                         computeSize(getRowSet(), arrayColumns, dbArrayColumns, nullFill),
                                         RowSetFactoryImpl.INSTANCE.getRandomBuilder(), newBase, getRowSet())
                                                 .build();
-                                final TrackingMutableRowSet rowSet = result.getRowSet();
-                                final TrackingMutableRowSet added = newRowSet.minus(rowSet);
-                                final TrackingMutableRowSet removed = rowSet.minus(newRowSet);
+                                final MutableRowSet rowSet = result.getRowSet();
+                                final RowSet added = newRowSet.minus(rowSet);
+                                final RowSet removed = rowSet.minus(newRowSet);
                                 final TrackingMutableRowSet modified = newRowSet;
                                 modified.retain(rowSet);
                                 rowSet.update(added, removed);
@@ -2411,7 +2411,7 @@ public class QueryTable extends BaseTable {
                                 result.notifyListeners(added, removed, modified);
                             }
 
-                            private int evaluateIndex(final TrackingMutableRowSet rowSet, final RowSetBuilderRandom ungroupBuilder,
+                            private int evaluateIndex(final RowSet rowSet, final RowSetBuilderRandom ungroupBuilder,
                                                       final int newBase) {
                                 if (rowSet.size() > 0) {
                                     final long[] modifiedSizes = new long[rowSet.intSize("ungroup")];
@@ -2424,7 +2424,7 @@ public class QueryTable extends BaseTable {
                                 return newBase;
                             }
 
-                            private void evaluateRemovedIndex(final TrackingMutableRowSet rowSet,
+                            private void evaluateRemovedIndex(final RowSet rowSet,
                                     final RowSetBuilderRandom ungroupBuilder) {
                                 if (rowSet.size() > 0) {
                                     final long[] modifiedSizes = new long[rowSet.intSize("ungroup")];
@@ -2433,7 +2433,7 @@ public class QueryTable extends BaseTable {
                                 }
                             }
 
-                            private int evaluateModified(final TrackingMutableRowSet rowSet,
+                            private int evaluateModified(final RowSet rowSet,
                                     final RowSetBuilderRandom modifyBuilder,
                                     final RowSetBuilderRandom addedBuilded,
                                     final RowSetBuilderRandom removedBuilder,
@@ -2453,7 +2453,7 @@ public class QueryTable extends BaseTable {
                 });
     }
 
-    private long computeModifiedIndicesAndMaxSize(TrackingMutableRowSet rowSet, Map<String, ColumnSource<?>> arrayColumns,
+    private long computeModifiedIndicesAndMaxSize(RowSet rowSet, Map<String, ColumnSource<?>> arrayColumns,
                                                   Map<String, ColumnSource<?>> dbArrayColumns, String referenceColumn, RowSetBuilderRandom modifyBuilder,
                                                   RowSetBuilderRandom addedBuilded, RowSetBuilderRandom removedBuilder, long base, boolean nullFill) {
         if (nullFill) {
@@ -2464,11 +2464,11 @@ public class QueryTable extends BaseTable {
                 modifyBuilder, addedBuilded, removedBuilder, base);
     }
 
-    private long computeModifiedIndicesAndMaxSizeNullFill(TrackingMutableRowSet rowSet, Map<String, ColumnSource<?>> arrayColumns,
+    private long computeModifiedIndicesAndMaxSizeNullFill(RowSet rowSet, Map<String, ColumnSource<?>> arrayColumns,
                                                           Map<String, ColumnSource<?>> dbArrayColumns, String referenceColumn, RowSetBuilderRandom modifyBuilder,
                                                           RowSetBuilderRandom addedBuilded, RowSetBuilderRandom removedBuilder, long base) {
         long maxSize = 0;
-        final TrackingMutableRowSet.Iterator iterator = rowSet.iterator();
+        final RowSet.Iterator iterator = rowSet.iterator();
         for (int i = 0; i < rowSet.size(); i++) {
             long maxCur = 0;
             long maxPrev = 0;
@@ -2497,7 +2497,7 @@ public class QueryTable extends BaseTable {
         return maxSize;
     }
 
-    private long computeModifiedIndicesAndMaxSizeNormal(TrackingMutableRowSet rowSet, Map<String, ColumnSource<?>> arrayColumns,
+    private long computeModifiedIndicesAndMaxSizeNormal(RowSet rowSet, Map<String, ColumnSource<?>> arrayColumns,
                                                         Map<String, ColumnSource<?>> dbArrayColumns, String referenceColumn, RowSetBuilderRandom modifyBuilder,
                                                         RowSetBuilderRandom addedBuilded, RowSetBuilderRandom removedBuilder, long base) {
         long maxSize = 0;
@@ -2509,7 +2509,7 @@ public class QueryTable extends BaseTable {
             if (!sizeIsInitialized) {
                 sizeIsInitialized = true;
                 referenceColumn = name;
-                TrackingMutableRowSet.Iterator iterator = rowSet.iterator();
+                RowSet.Iterator iterator = rowSet.iterator();
                 for (int i = 0; i < rowSet.size(); i++) {
                     final long next = iterator.nextLong();
                     Object array = arrayColumn.get(next);
@@ -2520,7 +2520,7 @@ public class QueryTable extends BaseTable {
                             next, prevSize, base);
                 }
             } else {
-                TrackingMutableRowSet.Iterator iterator = rowSet.iterator();
+                RowSet.Iterator iterator = rowSet.iterator();
                 for (int i = 0; i < rowSet.size(); i++) {
                     long k = iterator.nextLong();
                     Assert.assertion(sizes[i] == Array.getLength(arrayColumn.get(k)),
@@ -2536,7 +2536,7 @@ public class QueryTable extends BaseTable {
             if (!sizeIsInitialized) {
                 sizeIsInitialized = true;
                 referenceColumn = name;
-                TrackingMutableRowSet.Iterator iterator = rowSet.iterator();
+                RowSet.Iterator iterator = rowSet.iterator();
                 for (int i = 0; i < rowSet.size(); i++) {
                     final long next = iterator.nextLong();
                     DbArrayBase<?> array = (DbArrayBase<?>) arrayColumn.get(next);
@@ -2547,7 +2547,7 @@ public class QueryTable extends BaseTable {
                             next, prevSize, base);
                 }
             } else {
-                TrackingMutableRowSet.Iterator iterator = rowSet.iterator();
+                RowSet.Iterator iterator = rowSet.iterator();
                 for (int i = 0; i < rowSet.size(); i++) {
                     final long next = iterator.nextLong();
                     Assert.assertion(sizes[i] == 0 && arrayColumn.get(next) == null ||
@@ -2585,7 +2585,7 @@ public class QueryTable extends BaseTable {
     }
 
     @SuppressWarnings("SameParameterValue")
-    private static long computeMaxSize(TrackingMutableRowSet rowSet, Map<String, ColumnSource<?>> arrayColumns,
+    private static long computeMaxSize(RowSet rowSet, Map<String, ColumnSource<?>> arrayColumns,
                                        Map<String, ColumnSource<?>> dbArrayColumns, String referenceColumn, long[] sizes, boolean nullFill) {
         if (nullFill) {
             return computeMaxSizeNullFill(rowSet, arrayColumns, dbArrayColumns, sizes);
@@ -2594,10 +2594,10 @@ public class QueryTable extends BaseTable {
         return computeMaxSizeNormal(rowSet, arrayColumns, dbArrayColumns, referenceColumn, sizes);
     }
 
-    private static long computeMaxSizeNullFill(TrackingMutableRowSet rowSet, Map<String, ColumnSource<?>> arrayColumns,
+    private static long computeMaxSizeNullFill(RowSet rowSet, Map<String, ColumnSource<?>> arrayColumns,
                                                Map<String, ColumnSource<?>> dbArrayColumns, long[] sizes) {
         long maxSize = 0;
-        final TrackingMutableRowSet.Iterator iterator = rowSet.iterator();
+        final RowSet.Iterator iterator = rowSet.iterator();
         for (int i = 0; i < rowSet.size(); i++) {
             long localMax = 0;
             final long nextIndex = iterator.nextLong();
@@ -2629,7 +2629,7 @@ public class QueryTable extends BaseTable {
     }
 
 
-    private static long computeMaxSizeNormal(TrackingMutableRowSet rowSet, Map<String, ColumnSource<?>> arrayColumns,
+    private static long computeMaxSizeNormal(RowSet rowSet, Map<String, ColumnSource<?>> arrayColumns,
                                              Map<String, ColumnSource<?>> dbArrayColumns, String referenceColumn, long[] sizes) {
         long maxSize = 0;
         boolean sizeIsInitialized = false;
@@ -2639,14 +2639,14 @@ public class QueryTable extends BaseTable {
             if (!sizeIsInitialized) {
                 sizeIsInitialized = true;
                 referenceColumn = name;
-                TrackingMutableRowSet.Iterator iterator = rowSet.iterator();
+                RowSet.Iterator iterator = rowSet.iterator();
                 for (int i = 0; i < rowSet.size(); i++) {
                     Object array = arrayColumn.get(iterator.nextLong());
                     sizes[i] = (array == null ? 0 : Array.getLength(array));
                     maxSize = Math.max(maxSize, sizes[i]);
                 }
             } else {
-                TrackingMutableRowSet.Iterator iterator = rowSet.iterator();
+                RowSet.Iterator iterator = rowSet.iterator();
                 for (int i = 0; i < rowSet.size(); i++) {
                     Assert.assertion(sizes[i] == Array.getLength(arrayColumn.get(iterator.nextLong())),
                             "sizes[i] == Array.getLength(arrayColumn.get(i))",
@@ -2664,7 +2664,7 @@ public class QueryTable extends BaseTable {
             if (!sizeIsInitialized) {
                 sizeIsInitialized = true;
                 referenceColumn = name;
-                TrackingMutableRowSet.Iterator iterator = rowSet.iterator();
+                RowSet.Iterator iterator = rowSet.iterator();
                 for (int ii = 0; ii < rowSet.size(); ii++) {
                     if (isUngroupable) {
                         sizes[ii] = ((UngroupableColumnSource) arrayColumn).getUngroupedSize(iterator.nextLong());
@@ -2675,7 +2675,7 @@ public class QueryTable extends BaseTable {
                     maxSize = Math.max(maxSize, sizes[ii]);
                 }
             } else {
-                TrackingMutableRowSet.Iterator iterator = rowSet.iterator();
+                RowSet.Iterator iterator = rowSet.iterator();
                 for (int i = 0; i < rowSet.size(); i++) {
                     final long expectedSize;
                     if (isUngroupable) {
@@ -2692,7 +2692,7 @@ public class QueryTable extends BaseTable {
         return maxSize;
     }
 
-    private static void computePrevSize(TrackingMutableRowSet rowSet, Map<String, ColumnSource<?>> arrayColumns,
+    private static void computePrevSize(RowSet rowSet, Map<String, ColumnSource<?>> arrayColumns,
                                         Map<String, ColumnSource<?>> dbArrayColumns, long[] sizes, boolean nullFill) {
         if (nullFill) {
             computePrevSizeNullFill(rowSet, arrayColumns, dbArrayColumns, sizes);
@@ -2701,9 +2701,9 @@ public class QueryTable extends BaseTable {
         }
     }
 
-    private static void computePrevSizeNullFill(TrackingMutableRowSet rowSet, Map<String, ColumnSource<?>> arrayColumns,
+    private static void computePrevSizeNullFill(RowSet rowSet, Map<String, ColumnSource<?>> arrayColumns,
                                                 Map<String, ColumnSource<?>> dbArrayColumns, long[] sizes) {
-        final TrackingMutableRowSet.Iterator iterator = rowSet.iterator();
+        final RowSet.Iterator iterator = rowSet.iterator();
         for (int i = 0; i < rowSet.size(); i++) {
             long localMax = 0;
             final long nextIndex = iterator.nextLong();
@@ -2731,10 +2731,10 @@ public class QueryTable extends BaseTable {
         }
     }
 
-    private static void computePrevSizeNormal(TrackingMutableRowSet rowSet, Map<String, ColumnSource<?>> arrayColumns,
+    private static void computePrevSizeNormal(RowSet rowSet, Map<String, ColumnSource<?>> arrayColumns,
                                               Map<String, ColumnSource<?>> dbArrayColumns, long[] sizes) {
         for (ColumnSource<?> arrayColumn : arrayColumns.values()) {
-            TrackingMutableRowSet.Iterator iterator = rowSet.iterator();
+            RowSet.Iterator iterator = rowSet.iterator();
             for (int i = 0; i < rowSet.size(); i++) {
                 Object array = arrayColumn.getPrev(iterator.nextLong());
                 sizes[i] = (array == null ? 0 : Array.getLength(array));
@@ -2745,7 +2745,7 @@ public class QueryTable extends BaseTable {
             final boolean isUngroupable = arrayColumn instanceof UngroupableColumnSource
                     && ((UngroupableColumnSource) arrayColumn).isUngroupable();
 
-            TrackingMutableRowSet.Iterator iterator = rowSet.iterator();
+            RowSet.Iterator iterator = rowSet.iterator();
             for (int i = 0; i < rowSet.size(); i++) {
                 if (isUngroupable) {
                     sizes[i] = ((UngroupableColumnSource) arrayColumn).getUngroupedPrevSize(iterator.nextLong());
@@ -2758,7 +2758,7 @@ public class QueryTable extends BaseTable {
         }
     }
 
-    private static long[] computeSize(TrackingMutableRowSet rowSet, Map<String, ColumnSource<?>> arrayColumns,
+    private static long[] computeSize(RowSet rowSet, Map<String, ColumnSource<?>> arrayColumns,
                                       Map<String, ColumnSource<?>> dbArrayColumns, boolean nullFill) {
         if (nullFill) {
             return computeSizeNullFill(rowSet, arrayColumns, dbArrayColumns);
@@ -2767,10 +2767,10 @@ public class QueryTable extends BaseTable {
         return computeSizeNormal(rowSet, arrayColumns, dbArrayColumns);
     }
 
-    private static long[] computeSizeNullFill(TrackingMutableRowSet rowSet, Map<String, ColumnSource<?>> arrayColumns,
+    private static long[] computeSizeNullFill(RowSet rowSet, Map<String, ColumnSource<?>> arrayColumns,
                                               Map<String, ColumnSource<?>> dbArrayColumns) {
         final long[] sizes = new long[rowSet.intSize("ungroup")];
-        final TrackingMutableRowSet.Iterator iterator = rowSet.iterator();
+        final RowSet.Iterator iterator = rowSet.iterator();
         for (int i = 0; i < rowSet.size(); i++) {
             long localMax = 0;
             final long nextIndex = iterator.nextLong();
@@ -2799,11 +2799,11 @@ public class QueryTable extends BaseTable {
         return sizes;
     }
 
-    private static long[] computeSizeNormal(TrackingMutableRowSet rowSet, Map<String, ColumnSource<?>> arrayColumns,
+    private static long[] computeSizeNormal(RowSet rowSet, Map<String, ColumnSource<?>> arrayColumns,
                                             Map<String, ColumnSource<?>> dbArrayColumns) {
         final long[] sizes = new long[rowSet.intSize("ungroup")];
         for (ColumnSource<?> arrayColumn : arrayColumns.values()) {
-            TrackingMutableRowSet.Iterator iterator = rowSet.iterator();
+            RowSet.Iterator iterator = rowSet.iterator();
             for (int i = 0; i < rowSet.size(); i++) {
                 Object array = arrayColumn.get(iterator.nextLong());
                 sizes[i] = (array == null ? 0 : Array.getLength(array));
@@ -2814,7 +2814,7 @@ public class QueryTable extends BaseTable {
             final boolean isUngroupable = arrayColumn instanceof UngroupableColumnSource
                     && ((UngroupableColumnSource) arrayColumn).isUngroupable();
 
-            TrackingMutableRowSet.Iterator iterator = rowSet.iterator();
+            RowSet.Iterator iterator = rowSet.iterator();
             for (int i = 0; i < rowSet.size(); i++) {
                 if (isUngroupable) {
                     sizes[i] = ((UngroupableColumnSource) arrayColumn).getUngroupedSize(iterator.nextLong());
@@ -2829,7 +2829,7 @@ public class QueryTable extends BaseTable {
     }
 
     private RowSetBuilderRandom getUngroupIndex(
-            final long[] sizes, final RowSetBuilderRandom indexBuilder, final long base, final TrackingMutableRowSet rowSet) {
+            final long[] sizes, final RowSetBuilderRandom indexBuilder, final long base, final RowSet rowSet) {
         Assert.assertion(base >= 0 && base <= 63, "base >= 0 && base <= 63", base, "base");
         long mask = ((1L << base) - 1) << (64 - base);
         long lastKey = rowSet.lastRowKey();
@@ -2840,7 +2840,7 @@ public class QueryTable extends BaseTable {
         }
 
         int pos = 0;
-        for (TrackingMutableRowSet.Iterator iterator = rowSet.iterator(); iterator.hasNext();) {
+        for (RowSet.Iterator iterator = rowSet.iterator(); iterator.hasNext();) {
             long next = iterator.nextLong();
             long nextShift = next << base;
             if (sizes[pos] != 0) {
@@ -3092,7 +3092,7 @@ public class QueryTable extends BaseTable {
 
     private class WhereListener extends MergedListener {
         private final FilteredTable result;
-        private final TrackingMutableRowSet currentMapping;
+        private final MutableRowSet currentMapping;
         private final SelectFilter[] filters;
         private final ModifiedColumnSet filterColumns;
         private final ListenerRecorder recorder;
@@ -3145,7 +3145,7 @@ public class QueryTable extends BaseTable {
 
             // check which modified keys match filters (Note: filterColumns will be null if we must always check)
             final boolean runFilters = filterColumns == null || sourceModColumns.containsAny(filterColumns);
-            final TrackingMutableRowSet matchingModifies = !runFilters ? RowSetFactoryImpl.INSTANCE.getEmptyRowSet()
+            final RowSet matchingModifies = !runFilters ? RowSetFactoryImpl.INSTANCE.getEmptyRowSet()
                     : whereInternal(recorder.getModified(), rowSet, false, filters);
 
             // which propagate as mods?
@@ -3154,7 +3154,7 @@ public class QueryTable extends BaseTable {
             // remaining matchingModifies are adds
             update.added.insert(matchingModifies.minus(update.modified));
 
-            final TrackingMutableRowSet modsToRemove;
+            final MutableRowSet modsToRemove;
             if (!runFilters) {
                 modsToRemove = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
             } else {

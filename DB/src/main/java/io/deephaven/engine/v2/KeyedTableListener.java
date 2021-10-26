@@ -9,7 +9,6 @@ import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.datastructures.util.SmartKey;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.utils.RowSet;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import gnu.trove.map.hash.TLongObjectHashMap;
 import gnu.trove.map.hash.TObjectLongHashMap;
 
@@ -70,9 +69,9 @@ public class KeyedTableListener {
         this.table.removeUpdateListener(tableListener);
     }
 
-    private void handleUpdateFromTable(final TrackingMutableRowSet added, final TrackingMutableRowSet removed, final TrackingMutableRowSet modified) {
+    private void handleUpdateFromTable(final RowSet added, final RowSet removed, final RowSet modified) {
         // Add all the new rows to the hashmap
-        for (TrackingMutableRowSet.Iterator iterator = added.iterator(); iterator.hasNext();) {
+        for (RowSet.Iterator iterator = added.iterator(); iterator.hasNext();) {
             long next = iterator.nextLong();
             SmartKey key = constructSmartKey(next);
             keyToIndexHashMap.put(key, next);
@@ -81,7 +80,7 @@ public class KeyedTableListener {
         }
 
         // Remove all the removed rows from the hashmap
-        for (TrackingMutableRowSet.Iterator iterator = removed.iterator(); iterator.hasNext();) {
+        for (RowSet.Iterator iterator = removed.iterator(); iterator.hasNext();) {
             long next = iterator.nextLong();
             SmartKey oldKey = indexToKeyHashMap.remove(next);
             Assert.assertion(oldKey != null, "oldKey != null");
@@ -91,7 +90,7 @@ public class KeyedTableListener {
         }
 
         // Modifies are a special case -- need to look for keys being removed / added
-        for (TrackingMutableRowSet.Iterator iterator = modified.iterator(); iterator.hasNext();) {
+        for (RowSet.Iterator iterator = modified.iterator(); iterator.hasNext();) {
             long next = iterator.nextLong();
             SmartKey currentKey = constructSmartKey(next);
             SmartKey prevKey = indexToKeyHashMap.get(next);

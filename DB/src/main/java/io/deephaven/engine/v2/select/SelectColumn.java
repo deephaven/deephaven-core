@@ -15,7 +15,7 @@ import io.deephaven.engine.tables.select.MatchPair;
 import io.deephaven.engine.tables.select.SelectColumnFactory;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.WritableSource;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
+import io.deephaven.engine.v2.utils.RowSet;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collection;
@@ -58,7 +58,7 @@ public interface SelectColumn {
      *
      * @return a list of columns on which the result of this is dependent
      */
-    List<String> initInputs(TrackingMutableRowSet rowSet, Map<String, ? extends ColumnSource<?>> columnsOfInterest);
+    List<String> initInputs(RowSet rowSet, Map<String, ? extends ColumnSource<?>> columnsOfInterest);
 
     /**
      * Initialize any internal column definitions from the provided initial.

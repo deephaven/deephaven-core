@@ -148,14 +148,14 @@ class IncrementalChunkedNaturalJoinStateManager
     // however, for inactive states, we must store the complete rowSet value, so that we can remove values from it in
     // case it does become active at some point.  If we have duplicate right hand side values, we store a reference
     // into this table
-    private final ObjectArraySource<TrackingMutableRowSet> rightIndexStorage;
+    private final ObjectArraySource<RowSet> rightIndexStorage;
     private int nextRightIndexLocation;
-    private final TrackingMutableRowSet freeRightRowSetLocations = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+    private final MutableRowSet freeRightRowSetLocations = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
 
     // we always store left rowSet values parallel to the keys; we may want to optimize for single left indices to avoid
     // object allocation, but we do have fairly efficient single range indices at this point
-    private final ObjectArraySource<TrackingMutableRowSet> leftIndexSource;
-    private final ObjectArraySource<TrackingMutableRowSet> overflowLeftIndexSource;
+    private final ObjectArraySource<RowSet> leftIndexSource;
+    private final ObjectArraySource<RowSet> overflowLeftIndexSource;
 
     // we must maintain our cookie for modified state tracking
     private final LongArraySource modifiedTrackerCookieSource;
@@ -265,7 +265,7 @@ class IncrementalChunkedNaturalJoinStateManager
     }
 
     @Override
-    void decorateLeftSide(TrackingMutableRowSet leftRowSet, ColumnSource<?>[] leftSources, LongArraySource leftRedirections) {
+    void decorateLeftSide(RowSet leftRowSet, ColumnSource<?>[] leftSources, LongArraySource leftRedirections) {
         if (leftRowSet.isEmpty()) {
             return;
         }
@@ -302,7 +302,7 @@ class IncrementalChunkedNaturalJoinStateManager
     }
 
     private void addLeftIndex(long tableLocation, long keyToAdd) {
-        final TrackingMutableRowSet rowSet = leftIndexSource.get(tableLocation);
+        final MutableRowSet rowSet = leftIndexSource.get(tableLocation);
         if (rowSet == null) {
             leftIndexSource.set(tableLocation, RowSetFactoryImpl.INSTANCE.getRowSetByValues(keyToAdd));
         } else {
@@ -348,7 +348,7 @@ class IncrementalChunkedNaturalJoinStateManager
         }
         else if (isDuplicateRightIndex(existingRightIndex)) {
             final long rightIndexSlot = getRightIndexSlot(existingRightIndex);
-            final TrackingMutableRowSet rowSetToUpdate = rightIndexStorage.getUnsafe(rightIndexSlot);
+            final MutableRowSet rowSetToUpdate = rightIndexStorage.getUnsafe(rightIndexSlot);
             rowSetToUpdate.insert(keyToAdd);
         } else {
             final long rightIndexSlot = allocateRightIndexSlot();
@@ -380,7 +380,7 @@ class IncrementalChunkedNaturalJoinStateManager
     }
 
     private void shiftLeftIndex(long tableLocation, long shiftedKey, long shiftDelta) {
-        final TrackingMutableRowSet existingLeftRowSet = leftIndexSource.get(tableLocation);
+        final MutableRowSet existingLeftRowSet = leftIndexSource.get(tableLocation);
         final long sizeBefore = existingLeftRowSet.size();
         existingLeftRowSet.remove(shiftedKey - shiftDelta);
         existingLeftRowSet.insert(shiftedKey);
@@ -388,7 +388,7 @@ class IncrementalChunkedNaturalJoinStateManager
     }
 
     private void shiftLeftIndexOverflow(long overflowLocation, long shiftedKey, long shiftDelta) {
-        final TrackingMutableRowSet existingLeftRowSet = overflowLeftIndexSource.get(overflowLocation);
+        final MutableRowSet existingLeftRowSet = overflowLeftIndexSource.get(overflowLocation);
         final long sizeBefore = existingLeftRowSet.size();
         existingLeftRowSet.remove(shiftedKey - shiftDelta);
         existingLeftRowSet.insert(shiftedKey);
@@ -419,7 +419,7 @@ class IncrementalChunkedNaturalJoinStateManager
         }
 
         final long rightIndexSlot = getRightIndexSlot(existingRightIndex);
-        final TrackingMutableRowSet rowSetToUpdate = rightIndexStorage.get(rightIndexSlot);
+        final MutableRowSet rowSetToUpdate = rightIndexStorage.get(rightIndexSlot);
         rowSetToUpdate.remove(shiftedKey - shiftDelta);
         rowSetToUpdate.insert(shiftedKey);
     }
@@ -430,7 +430,7 @@ class IncrementalChunkedNaturalJoinStateManager
         }
 
         final long rightIndexSlot = getRightIndexSlot(existingRightIndex);
-        final TrackingMutableRowSet rowSetToUpdate = rightIndexStorage.get(rightIndexSlot);
+        final MutableRowSet rowSetToUpdate = rightIndexStorage.get(rightIndexSlot);
         rowSetToUpdate.remove(keyToRemove);
         if (rowSetToUpdate.isEmpty()) {
             throw Assert.statementNeverExecuted();
@@ -442,7 +442,7 @@ class IncrementalChunkedNaturalJoinStateManager
     }
 
     private void addLeftIndexOverflow(long overflowLocation, long keyToAdd) {
-        final TrackingMutableRowSet rowSet = overflowLeftIndexSource.get(overflowLocation);
+        final MutableRowSet rowSet = overflowLeftIndexSource.get(overflowLocation);
         if (rowSet == null) {
             overflowLeftIndexSource.set(overflowLocation, RowSetFactoryImpl.INSTANCE.getRowSetByValues(keyToAdd));
         } else {
@@ -457,7 +457,7 @@ class IncrementalChunkedNaturalJoinStateManager
         }
         else if (isDuplicateRightIndex(existingRightIndex)) {
             final long rightIndexSlot = getRightIndexSlot(existingRightIndex);
-            final TrackingMutableRowSet rowSetToUpdate = rightIndexStorage.get(rightIndexSlot);
+            final MutableRowSet rowSetToUpdate = rightIndexStorage.get(rightIndexSlot);
             rowSetToUpdate.insert(keyToAdd);
         } else {
             final long rightIndexSlot = allocateRightIndexSlot();
@@ -500,13 +500,13 @@ class IncrementalChunkedNaturalJoinStateManager
 
     void compactAll() {
         for (int ii = 0; ii < tableSize; ++ii) {
-            final TrackingMutableRowSet rowSet = leftIndexSource.get(ii);
+            final MutableRowSet rowSet = leftIndexSource.get(ii);
             if (rowSet != null) {
                 rowSet.compact();
             }
         }
         for (int ii = 0; ii < nextOverflowLocation; ++ii) {
-            final TrackingMutableRowSet rowSet = overflowLeftIndexSource.get(ii);
+            final MutableRowSet rowSet = overflowLeftIndexSource.get(ii);
             if (rowSet != null) {
                 rowSet.compact();
             }
@@ -1193,7 +1193,7 @@ class IncrementalChunkedNaturalJoinStateManager
                     rightIndexSource.set(newHashLocation, stateValueToMove);
                     rightIndexSource.set(oldHashLocation, EMPTY_RIGHT_VALUE);
                     // region rehash move values
-                    final TrackingMutableRowSet oldLeftRowSetValue = leftIndexSource.get(oldHashLocation);
+                    final RowSet oldLeftRowSetValue = leftIndexSource.get(oldHashLocation);
                     leftIndexSource.set(newHashLocation, oldLeftRowSetValue);
                     leftIndexSource.set(oldHashLocation, null);
                     moveModifiedSlot(modifiedSlotTracker, oldHashLocation, newHashLocation);
@@ -1554,21 +1554,21 @@ class IncrementalChunkedNaturalJoinStateManager
     }
 
 
-    void modifyByRight(final ProbeContext pc, TrackingMutableRowSet modified, ColumnSource<?>[] rightSources, @NotNull final NaturalJoinModifiedSlotTracker modifiedSlotTracker) {
+    void modifyByRight(final ProbeContext pc, RowSet modified, ColumnSource<?>[] rightSources, @NotNull final NaturalJoinModifiedSlotTracker modifiedSlotTracker) {
         if (modified.isEmpty()) {
             return;
         }
         decorationProbe(pc, modified, rightSources, false, true, false, false, false, false, 0, modifiedSlotTracker);
     }
 
-    void applyLeftShift(ProbeContext pc, ColumnSource<?>[] leftSources, TrackingMutableRowSet shiftedRowSet, long shiftDelta) {
+    void applyLeftShift(ProbeContext pc, ColumnSource<?>[] leftSources, RowSet shiftedRowSet, long shiftDelta) {
         if (shiftedRowSet.isEmpty()) {
             return;
         }
         decorationProbe(pc, shiftedRowSet, leftSources, false, false, false, false, true, false, shiftDelta, null);
     }
 
-    void applyRightShift(ProbeContext pc, ColumnSource<?> [] rightSources, TrackingMutableRowSet shiftedRowSet, long shiftDelta, @NotNull final NaturalJoinModifiedSlotTracker modifiedSlotTracker) {
+    void applyRightShift(ProbeContext pc, ColumnSource<?> [] rightSources, RowSet shiftedRowSet, long shiftDelta, @NotNull final NaturalJoinModifiedSlotTracker modifiedSlotTracker) {
         if (shiftedRowSet.isEmpty()) {
             return;
         }
@@ -2010,7 +2010,7 @@ class IncrementalChunkedNaturalJoinStateManager
     }
 
     @Override
-    public TrackingMutableRowSet getLeftIndex(long slot) {
+    public RowSet getLeftIndex(long slot) {
         if (isOverflowLocation(slot)) {
             return overflowLeftIndexSource.get(hashLocationToOverflowLocation(slot));
         } else {

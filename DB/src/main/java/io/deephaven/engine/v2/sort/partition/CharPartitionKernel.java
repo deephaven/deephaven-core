@@ -6,9 +6,9 @@ import io.deephaven.engine.v2.sort.LongSortKernel;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.sources.chunk.Attributes.*;
+import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.engine.v2.utils.RowSetBuilderSequential;
 import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 
 import java.util.stream.IntStream;
 
@@ -46,8 +46,8 @@ public class CharPartitionKernel {
             }
         }
 
-        public TrackingMutableRowSet[] getPartitions(boolean resetBuilders) {
-            final TrackingMutableRowSet[] partitions = new TrackingMutableRowSet[builders.length];
+        public RowSet[] getPartitions(boolean resetBuilders) {
+            final RowSet[] partitions = new RowSet[builders.length];
             flushAllToBuilders(this);
             for (int ii = 0; ii < builders.length; ++ii) {
                 partitions[ii] = builders[ii].build();
@@ -77,7 +77,7 @@ public class CharPartitionKernel {
 //        return String.format("0x%04x", (int) last);
 //    }
 
-    public static PartitionKernelContext createContext(TrackingMutableRowSet rowSet, ColumnSource<Character> columnSource, int chunkSize, int nPartitions, boolean preserveEquality) {
+    public static PartitionKernelContext createContext(RowSet rowSet, ColumnSource<Character> columnSource, int chunkSize, int nPartitions, boolean preserveEquality) {
         final PartitionKernelContext context = new PartitionKernelContext(chunkSize, nPartitions, preserveEquality);
 
         final WritableLongChunk<RowKeys> tempPivotKeys = WritableLongChunk.makeWritableChunk(nPartitions * 3);
@@ -97,7 +97,7 @@ public class CharPartitionKernel {
     // the sample pivots function could be smarter; in that if we are reading a block, there is a strong argument to
     // sample the entirety of the relevant values within the block from disk.  We might also want to do a complete
     // linear pass so that we can determine ideal pivots (or maybe if a radix based approach is better).
-    private static void samplePivots(TrackingMutableRowSet rowSet, int nPartitions, WritableLongChunk<RowKeys> pivotKeys, WritableCharChunk<Any> pivotValues, ColumnSource<Character> columnSource) {
+    private static void samplePivots(RowSet rowSet, int nPartitions, WritableLongChunk<RowKeys> pivotKeys, WritableCharChunk<Any> pivotValues, ColumnSource<Character> columnSource) {
         pivotKeys.setSize(0);
         final int pivotsRequired = nPartitions - 1;
         final int samplesRequired = pivotsRequired * 3;
@@ -107,7 +107,7 @@ public class CharPartitionKernel {
         for (int ii = 0; ii < pivotKeys.size(); ++ii) {
             builder.appendKey(pivotKeys.get(ii));
         }
-        final TrackingMutableRowSet rowSetOfPivots = builder.build();
+        final RowSet rowSetOfPivots = builder.build();
         try (final ColumnSource.FillContext context = columnSource.makeFillContext(samplesRequired)) {
             columnSource.fillChunk(context, pivotValues, rowSetOfPivots);
         }

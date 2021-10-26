@@ -2,9 +2,9 @@ package io.deephaven.engine.v2.sort.partition;
 
 import io.deephaven.engine.v2.sources.chunk.Attributes;
 import io.deephaven.engine.v2.sources.chunk.WritableLongChunk;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import gnu.trove.list.array.TLongArrayList;
 import gnu.trove.set.hash.TLongHashSet;
+import io.deephaven.engine.v2.utils.RowSet;
 
 import java.util.Random;
 
@@ -14,7 +14,7 @@ class PartitionUtilities {
      * http://www.nowherenearithaca.com/2013/05/robert-floyds-tiny-and-beautiful.html
      */
     static void sampleIndexKeys(
-            final long seed, final TrackingMutableRowSet rowSet, final int sampleSize,
+            final long seed, final RowSet rowSet, final int sampleSize,
             final WritableLongChunk<Attributes.RowKeys> sampledKeys) {
         final Random random = new Random(seed);
         final TLongHashSet sample = new TLongHashSet(sampleSize);

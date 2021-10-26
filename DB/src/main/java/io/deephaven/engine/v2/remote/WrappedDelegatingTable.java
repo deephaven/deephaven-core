@@ -13,7 +13,7 @@ import io.deephaven.engine.v2.by.ComboAggregateFactory;
 import io.deephaven.engine.v2.select.SelectColumn;
 import io.deephaven.engine.v2.select.SelectFilter;
 import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
+import io.deephaven.engine.v2.utils.RowSet;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -107,7 +107,7 @@ public abstract class WrappedDelegatingTable extends BaseTable {
     }
 
     @Override
-    public Table getSubTable(TrackingMutableRowSet rowSet) {
+    public Table getSubTable(RowSet rowSet) {
         return wrapTable.apply(parent.getSubTable(rowSet));
     }
 

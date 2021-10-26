@@ -22,6 +22,7 @@ import io.deephaven.engine.tables.select.SelectFilterFactory;
 import io.deephaven.engine.v2.QueryTable;
 import io.deephaven.engine.v2.remote.ConstructSnapshot;
 import io.deephaven.engine.v2.select.MatchFilter.MatchType;
+import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import org.jetbrains.annotations.NotNull;
 
@@ -124,7 +125,7 @@ public interface SelectFilter {
      *
      * @return the subset of selection accepted by this filter
      */
-    TrackingMutableRowSet filter(TrackingMutableRowSet selection, TrackingMutableRowSet fullSet, Table table, boolean usePrev);
+    TrackingMutableRowSet filter(TrackingMutableRowSet selection, RowSet fullSet, Table table, boolean usePrev);
 
     /**
      * @return true if this is a filter that does not require any code execution, but rather is handled entirely within

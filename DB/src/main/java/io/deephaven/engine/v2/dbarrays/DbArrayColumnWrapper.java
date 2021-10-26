@@ -12,8 +12,8 @@ import io.deephaven.engine.tables.dbarrays.DbArrayBase;
 import io.deephaven.engine.tables.dbarrays.DbArrayDirect;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.engine.v2.utils.RowSetBuilderRandom;
+import io.deephaven.engine.v2.utils.TrackingRowSet;
 import io.deephaven.util.type.TypeUtils;
 import org.jetbrains.annotations.NotNull;
 
@@ -24,15 +24,15 @@ public class DbArrayColumnWrapper<T> extends DbArray.Indirect<T> {
     private static final long serialVersionUID = -5944424618636079377L;
 
     private final ColumnSource<T> columnSource;
-    private final TrackingMutableRowSet rowSet;
+    private final TrackingRowSet rowSet;
     private final long startPadding;
     private final long endPadding;
 
-    public DbArrayColumnWrapper(@NotNull final ColumnSource<T> columnSource, @NotNull final TrackingMutableRowSet rowSet) {
+    public DbArrayColumnWrapper(@NotNull final ColumnSource<T> columnSource, @NotNull final TrackingRowSet rowSet) {
         this(columnSource, rowSet, 0, 0);
     }
 
-    public DbArrayColumnWrapper(@NotNull final ColumnSource<T> columnSource, @NotNull final TrackingMutableRowSet rowSet,
+    public DbArrayColumnWrapper(@NotNull final ColumnSource<T> columnSource, @NotNull final TrackingRowSet rowSet,
             final long startPadding, final long endPadding) {
         Assert.neqNull(rowSet, "rowSet");
         this.columnSource = columnSource;

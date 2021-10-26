@@ -298,7 +298,7 @@ class RightIncrementalChunkedAsOfJoinStateManager
         }
     }
 
-    public int buildAdditions(boolean isLeftSide, TrackingMutableRowSet additions, ColumnSource<?>[] sources, LongArraySource slots, ObjectArraySource<RowSetBuilderSequential> sequentialBuilders) {
+    public int buildAdditions(boolean isLeftSide, RowSet additions, ColumnSource<?>[] sources, LongArraySource slots, ObjectArraySource<RowSetBuilderSequential> sequentialBuilders) {
         final MutableInt slotCount = new MutableInt(0);
 
         resetCookie();
@@ -1457,23 +1457,23 @@ class RightIncrementalChunkedAsOfJoinStateManager
         return cookie - cookieGeneration;
     }
 
-    public int markForRemoval(TrackingMutableRowSet restampRemovals, ColumnSource<?>[] sources, LongArraySource slots, ObjectArraySource<RowSetBuilderSequential> sequentialBuilders) {
+    public int markForRemoval(RowSet restampRemovals, ColumnSource<?>[] sources, LongArraySource slots, ObjectArraySource<RowSetBuilderSequential> sequentialBuilders) {
         return accumulateIndices(restampRemovals, sources, slots, sequentialBuilders, true);
     }
 
-    public int probeAdditions(TrackingMutableRowSet restampAdditions, ColumnSource<?>[] sources, LongArraySource slots, ObjectArraySource<RowSetBuilderSequential> sequentialBuilders) {
+    public int probeAdditions(RowSet restampAdditions, ColumnSource<?>[] sources, LongArraySource slots, ObjectArraySource<RowSetBuilderSequential> sequentialBuilders) {
         return accumulateIndices(restampAdditions, sources, slots, sequentialBuilders, false);
     }
 
-    public int gatherShiftIndex(TrackingMutableRowSet restampAdditions, ColumnSource<?>[] sources, LongArraySource slots, ObjectArraySource<RowSetBuilderSequential> sequentialBuilders) {
+    public int gatherShiftIndex(RowSet restampAdditions, ColumnSource<?>[] sources, LongArraySource slots, ObjectArraySource<RowSetBuilderSequential> sequentialBuilders) {
         return accumulateIndices(restampAdditions, sources, slots, sequentialBuilders, true);
     }
 
-    public int gatherModifications(TrackingMutableRowSet restampAdditions, ColumnSource<?>[] sources, LongArraySource slots, ObjectArraySource<RowSetBuilderSequential> sequentialBuilders) {
+    public int gatherModifications(RowSet restampAdditions, ColumnSource<?>[] sources, LongArraySource slots, ObjectArraySource<RowSetBuilderSequential> sequentialBuilders) {
         return accumulateIndices(restampAdditions, sources, slots, sequentialBuilders, false);
     }
 
-    private int accumulateIndices(TrackingMutableRowSet restampAdditions, ColumnSource<?>[] rightSources, LongArraySource slots, ObjectArraySource<RowSetBuilderSequential> sequentialBuilders, boolean usePrev) {
+    private int accumulateIndices(RowSet restampAdditions, ColumnSource<?>[] rightSources, LongArraySource slots, ObjectArraySource<RowSetBuilderSequential> sequentialBuilders, boolean usePrev) {
         final MutableInt slotCount = new MutableInt(0);
 
         resetCookie();
@@ -1875,7 +1875,7 @@ class RightIncrementalChunkedAsOfJoinStateManager
      * @param slot the slot in the table (either positive for a main slot, or negative for overflow)
      * @return the TrackingMutableRowSet for this slot
      */
-    TrackingMutableRowSet getAndClearLeftIndex(long slot) {
+    RowSet getAndClearLeftIndex(long slot) {
         final RowSetBuilderSequential builder;
         if (isOverflowLocation(slot)) {
             final long overflowLocation = hashLocationToOverflowLocation(slot);
@@ -1900,7 +1900,7 @@ class RightIncrementalChunkedAsOfJoinStateManager
         }
     }
 
-    public SegmentedSortedArray getRightSsa(long slot, Function<TrackingMutableRowSet, SegmentedSortedArray> ssaFactory) {
+    public SegmentedSortedArray getRightSsa(long slot, Function<RowSet, SegmentedSortedArray> ssaFactory) {
         if (isOverflowLocation(slot)) {
             final long overflowLocation = hashLocationToOverflowLocation(slot);
             final byte entryType = overflowStateSource.getUnsafe(overflowLocation);
@@ -1946,15 +1946,15 @@ class RightIncrementalChunkedAsOfJoinStateManager
         throw new IllegalStateException();
     }
 
-    public TrackingMutableRowSet getRightIndex(long slot) {
+    public MutableRowSet getRightIndex(long slot) {
         if (isOverflowLocation(slot)) {
             final long overflowLocation = hashLocationToOverflowLocation(slot);
             final byte entryType = overflowStateSource.getUnsafe(overflowLocation);
             if ((entryType & ENTRY_RIGHT_MASK) == ENTRY_RIGHT_IS_INDEX) {
-                return (TrackingMutableRowSet) overflowRightSideSource.getUnsafe(overflowLocation);
+                return (MutableRowSet) overflowRightSideSource.getUnsafe(overflowLocation);
             }
             else if ((entryType & ENTRY_RIGHT_MASK) == ENTRY_RIGHT_IS_BUILDER) {
-                final TrackingMutableRowSet rowSet = ((RowSetBuilderSequential)overflowRightSideSource.getUnsafe(overflowLocation)).build();
+                final MutableRowSet rowSet = ((RowSetBuilderSequential)overflowRightSideSource.getUnsafe(overflowLocation)).build();
                 overflowRightSideSource.set(overflowLocation, rowSet);
                 overflowStateSource.set(overflowLocation, (byte)((entryType & ENTRY_LEFT_MASK) | ENTRY_RIGHT_IS_INDEX));
                 return rowSet;
@@ -1962,10 +1962,10 @@ class RightIncrementalChunkedAsOfJoinStateManager
         } else {
             final byte entryType = stateSource.getUnsafe(slot);
             if ((entryType & ENTRY_RIGHT_MASK) == ENTRY_RIGHT_IS_INDEX) {
-                return (TrackingMutableRowSet) rightSideSource.getUnsafe(slot);
+                return (MutableRowSet) rightSideSource.getUnsafe(slot);
             }
             else if ((entryType & ENTRY_RIGHT_MASK) == ENTRY_RIGHT_IS_BUILDER) {
-                final TrackingMutableRowSet rowSet = ((RowSetBuilderSequential)rightSideSource.getUnsafe(slot)).build();
+                final MutableRowSet rowSet = ((RowSetBuilderSequential)rightSideSource.getUnsafe(slot)).build();
                 rightSideSource.set(slot, rowSet);
                 stateSource.set(slot, (byte)((entryType & ENTRY_LEFT_MASK) | ENTRY_RIGHT_IS_INDEX));
                 return rowSet;
@@ -1974,15 +1974,15 @@ class RightIncrementalChunkedAsOfJoinStateManager
         throw new IllegalStateException();
     }
 
-    public TrackingMutableRowSet getLeftIndex(long slot) {
+    public MutableRowSet getLeftIndex(long slot) {
         if (isOverflowLocation(slot)) {
             final long overflowLocation = hashLocationToOverflowLocation(slot);
             final byte entryType = overflowStateSource.getUnsafe(overflowLocation);
             if ((entryType & ENTRY_LEFT_MASK) == ENTRY_LEFT_IS_INDEX) {
-                return (TrackingMutableRowSet) overflowLeftSideSource.getUnsafe(overflowLocation);
+                return (MutableRowSet) overflowLeftSideSource.getUnsafe(overflowLocation);
             }
             else if ((entryType & ENTRY_LEFT_MASK) == ENTRY_LEFT_IS_BUILDER) {
-                final TrackingMutableRowSet rowSet = ((RowSetBuilderSequential)overflowLeftSideSource.getUnsafe(overflowLocation)).build();
+                final MutableRowSet rowSet = ((RowSetBuilderSequential)overflowLeftSideSource.getUnsafe(overflowLocation)).build();
                 overflowLeftSideSource.set(overflowLocation, rowSet);
                 overflowStateSource.set(overflowLocation, (byte)((entryType & ENTRY_RIGHT_MASK) | ENTRY_LEFT_IS_INDEX));
                 return rowSet;
@@ -1990,10 +1990,10 @@ class RightIncrementalChunkedAsOfJoinStateManager
         } else {
             final byte entryType = stateSource.getUnsafe(slot);
             if ((entryType & ENTRY_LEFT_MASK) == ENTRY_LEFT_IS_INDEX) {
-                return (TrackingMutableRowSet) leftSideSource.getUnsafe(slot);
+                return (MutableRowSet) leftSideSource.getUnsafe(slot);
             }
             else if ((entryType & ENTRY_LEFT_MASK) == ENTRY_LEFT_IS_BUILDER) {
-                final TrackingMutableRowSet rowSet = ((RowSetBuilderSequential)leftSideSource.getUnsafe(slot)).build();
+                final MutableRowSet rowSet = ((RowSetBuilderSequential)leftSideSource.getUnsafe(slot)).build();
                 leftSideSource.set(slot, rowSet);
                 stateSource.set(slot, (byte)((entryType & ENTRY_RIGHT_MASK) | ENTRY_LEFT_IS_INDEX));
                 return rowSet;
@@ -2002,7 +2002,7 @@ class RightIncrementalChunkedAsOfJoinStateManager
         throw new IllegalStateException();
     }
 
-    public void setLeftIndex(long slot, TrackingMutableRowSet rowSet) {
+    public void setLeftIndex(long slot, RowSet rowSet) {
         if (isOverflowLocation(slot)) {
             final long overflowLocation = hashLocationToOverflowLocation(slot);
             final byte entryType = overflowStateSource.getUnsafe(overflowLocation);
@@ -2022,7 +2022,7 @@ class RightIncrementalChunkedAsOfJoinStateManager
         throw new IllegalStateException();
     }
 
-    public void setRightIndex(long slot, TrackingMutableRowSet rowSet) {
+    public void setRightIndex(long slot, RowSet rowSet) {
         if (isOverflowLocation(slot)) {
             final long overflowLocation = hashLocationToOverflowLocation(slot);
             final byte entryType = overflowStateSource.getUnsafe(overflowLocation);
@@ -2058,7 +2058,7 @@ class RightIncrementalChunkedAsOfJoinStateManager
         throw new IllegalStateException();
     }
 
-    public SegmentedSortedArray getLeftSsa(long slot, Function<TrackingMutableRowSet, SegmentedSortedArray> ssaFactory) {
+    public SegmentedSortedArray getLeftSsa(long slot, Function<RowSet, SegmentedSortedArray> ssaFactory) {
         if (isOverflowLocation(slot)) {
             final long overflowLocation = hashLocationToOverflowLocation(slot);
             final byte entryType = overflowStateSource.getUnsafe(overflowLocation);
@@ -2088,7 +2088,7 @@ class RightIncrementalChunkedAsOfJoinStateManager
         throw new IllegalStateException();
     }
 
-    public SegmentedSortedArray getLeftSsaOrIndex(long slot, MutableObject<TrackingMutableRowSet> indexOutput) {
+    public SegmentedSortedArray getLeftSsaOrIndex(long slot, MutableObject<RowSet> indexOutput) {
         if (isOverflowLocation(slot)) {
             final long overflowLocation = hashLocationToOverflowLocation(slot);
             final byte entryType = overflowStateSource.getUnsafe(overflowLocation);
@@ -2105,7 +2105,7 @@ class RightIncrementalChunkedAsOfJoinStateManager
         return (byte)((entryType & ENTRY_LEFT_MASK) >> 4);
     }
 
-    public SegmentedSortedArray getRightSsaOrIndex(long slot, MutableObject<TrackingMutableRowSet> indexOutput) {
+    public SegmentedSortedArray getRightSsaOrIndex(long slot, MutableObject<RowSet> indexOutput) {
         if (isOverflowLocation(slot)) {
             final long overflowLocation = hashLocationToOverflowLocation(slot);
             final byte entryType = overflowStateSource.getUnsafe(overflowLocation);
@@ -2123,22 +2123,22 @@ class RightIncrementalChunkedAsOfJoinStateManager
     }
 
     @Nullable
-    private static SegmentedSortedArray getSsaOrIndex(MutableObject<TrackingMutableRowSet> indexOutput, long location, byte entryType, ObjectArraySource<Object> sideSource, ByteArraySource stateSource, byte stateValueForIndex) {
+    private static SegmentedSortedArray getSsaOrIndex(MutableObject<RowSet> indexOutput, long location, byte entryType, ObjectArraySource<Object> sideSource, ByteArraySource stateSource, byte stateValueForIndex) {
         switch (entryType) {
             case  ENTRY_RIGHT_IS_SSA:
                 return (SegmentedSortedArray) sideSource.getUnsafe(location);
             case  ENTRY_RIGHT_IS_INDEX:
-                indexOutput.setValue((TrackingMutableRowSet) sideSource.getUnsafe(location));
+                indexOutput.setValue((RowSet) sideSource.getUnsafe(location));
                 return null;
             case ENTRY_RIGHT_IS_EMPTY: {
-                final TrackingMutableRowSet emptyRowSet = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+                final RowSet emptyRowSet = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
                 sideSource.set(location, emptyRowSet);
                 stateSource.set(location, stateValueForIndex);
                 indexOutput.setValue(emptyRowSet);
                 return null;
             }
             case  ENTRY_RIGHT_IS_BUILDER: {
-                final TrackingMutableRowSet rowSet = ((RowSetBuilderSequential) sideSource.getUnsafe(location)).build();
+                final RowSet rowSet = ((RowSetBuilderSequential) sideSource.getUnsafe(location)).build();
                 sideSource.set(location, rowSet);
                 stateSource.set(location, stateValueForIndex);
                 indexOutput.setValue(rowSet);
@@ -2150,9 +2150,9 @@ class RightIncrementalChunkedAsOfJoinStateManager
     }
 
     @Nullable
-    private SegmentedSortedArray makeSsaFromBuilder(long slot, Function<TrackingMutableRowSet, SegmentedSortedArray> ssaFactory, ObjectArraySource<Object> ssaSource, ByteArraySource stateSource, byte newState) {
+    private SegmentedSortedArray makeSsaFromBuilder(long slot, Function<RowSet, SegmentedSortedArray> ssaFactory, ObjectArraySource<Object> ssaSource, ByteArraySource stateSource, byte newState) {
         final RowSetBuilderSequential builder = (RowSetBuilderSequential) ssaSource.getUnsafe(slot);
-        final TrackingMutableRowSet rowSet;
+        final RowSet rowSet;
         if (builder == null) {
             rowSet = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
         } else {
@@ -2162,16 +2162,16 @@ class RightIncrementalChunkedAsOfJoinStateManager
     }
 
     @Nullable
-    private SegmentedSortedArray makeSsaFromEmpty(long slot, Function<TrackingMutableRowSet, SegmentedSortedArray> ssaFactory, ObjectArraySource<Object> ssaSource, ByteArraySource stateSource, byte newState) {
+    private SegmentedSortedArray makeSsaFromEmpty(long slot, Function<RowSet, SegmentedSortedArray> ssaFactory, ObjectArraySource<Object> ssaSource, ByteArraySource stateSource, byte newState) {
         return makeSsaFromIndex(slot, ssaFactory, ssaSource, stateSource, newState, RowSetFactoryImpl.INSTANCE.getEmptyRowSet());
     }
 
     @Nullable
-    private SegmentedSortedArray makeSsaFromIndex(long slot, Function<TrackingMutableRowSet, SegmentedSortedArray> ssaFactory, ObjectArraySource<Object> ssaSource, ByteArraySource stateSource, byte newState) {
-        return makeSsaFromIndex(slot, ssaFactory, ssaSource, stateSource, newState, (TrackingMutableRowSet) ssaSource.getUnsafe(slot));
+    private SegmentedSortedArray makeSsaFromIndex(long slot, Function<RowSet, SegmentedSortedArray> ssaFactory, ObjectArraySource<Object> ssaSource, ByteArraySource stateSource, byte newState) {
+        return makeSsaFromIndex(slot, ssaFactory, ssaSource, stateSource, newState, (RowSet) ssaSource.getUnsafe(slot));
     }
 
-    private SegmentedSortedArray makeSsaFromIndex(long slot, Function<TrackingMutableRowSet, SegmentedSortedArray> ssaFactory, ObjectArraySource<Object> ssaSource, ByteArraySource stateSource, byte newState, TrackingMutableRowSet rowSet) {
+    private SegmentedSortedArray makeSsaFromIndex(long slot, Function<RowSet, SegmentedSortedArray> ssaFactory, ObjectArraySource<Object> ssaSource, ByteArraySource stateSource, byte newState, RowSet rowSet) {
         stateSource.set(slot, newState);
         final SegmentedSortedArray ssa = ssaFactory.apply(rowSet);
         rowSet.close();

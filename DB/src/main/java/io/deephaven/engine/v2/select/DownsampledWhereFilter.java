@@ -10,9 +10,7 @@ import io.deephaven.engine.tables.utils.DBDateTime;
 import io.deephaven.engine.tables.utils.DBTimeUtils;
 import io.deephaven.engine.v2.DynamicNode;
 import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.utils.RowSetBuilderSequential;
-import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
+import io.deephaven.engine.v2.utils.*;
 
 import java.util.Collections;
 import java.util.List;
@@ -87,7 +85,7 @@ public class DownsampledWhereFilter extends SelectFilterImpl {
     public void init(TableDefinition tableDefinition) {}
 
     @Override
-    public TrackingMutableRowSet filter(TrackingMutableRowSet selection, TrackingMutableRowSet fullSet, Table table, boolean usePrev) {
+    public TrackingMutableRowSet filter(TrackingMutableRowSet selection, RowSet fullSet, Table table, boolean usePrev) {
         if (DynamicNode.isDynamicAndIsRefreshing(table)) {
             throw new UnsupportedOperationException("Can not do a DownsampledWhereFilter on a refreshing table!");
         }
@@ -100,7 +98,7 @@ public class DownsampledWhereFilter extends SelectFilterImpl {
         RowSetBuilderSequential builder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
 
 
-        TrackingMutableRowSet.Iterator it = selection.iterator();
+        RowSet.Iterator it = selection.iterator();
         boolean hasNext = it.hasNext();
 
         long lastKey = -1;

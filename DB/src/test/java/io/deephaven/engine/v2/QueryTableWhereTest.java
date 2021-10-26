@@ -20,9 +20,9 @@ import io.deephaven.engine.v2.select.chunkfilters.IntRangeComparator;
 import io.deephaven.engine.v2.sources.LogicalClock;
 import io.deephaven.engine.v2.sources.UnionRedirection;
 import io.deephaven.engine.v2.sources.chunk.*;
+import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
 import io.deephaven.engine.v2.utils.RowSetShiftData;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.test.junit4.EngineCleanup;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.QueryConstants;
@@ -835,7 +835,7 @@ public class QueryTableWhereTest {
         QueryScope.addParam("slowCounter", slowCounter);
 
         final long start = System.currentTimeMillis();
-        final TrackingMutableRowSet result = ChunkFilter.applyChunkFilter(tableToFilter.getRowSet(), tableToFilter.getColumnSource("X"),
+        final RowSet result = ChunkFilter.applyChunkFilter(tableToFilter.getRowSet(), tableToFilter.getColumnSource("X"),
                 false, slowCounter);
         final long end = System.currentTimeMillis();
         System.out.println("Duration: " + (end - start));

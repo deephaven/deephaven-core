@@ -2,10 +2,7 @@ package io.deephaven.engine.v2.sort.timsort;
 
 import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.sources.chunk.Attributes.*;
-import io.deephaven.engine.v2.utils.RowSetBuilderSequential;
-import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
-import io.deephaven.engine.v2.utils.PerfStats;
+import io.deephaven.engine.v2.utils.*;
 
 import org.jetbrains.annotations.Nullable;
 
@@ -163,7 +160,7 @@ public abstract class TestTimSortKernel {
 
     @FunctionalInterface
     interface PartitionKernelStuffFactory<T> {
-        PartitionKernelStuff<T> apply(List<T> javaTuples, TrackingMutableRowSet rowSet, int chunkSize, int nPartitions,
+        PartitionKernelStuff<T> apply(List<T> javaTuples, RowSet rowSet, int chunkSize, int nPartitions,
                                       boolean preserveEquality);
     }
 
@@ -180,7 +177,7 @@ public abstract class TestTimSortKernel {
             for (int ii = 0; ii < javaTuples.size(); ++ii) {
                 builder.appendKey(ii * 10);
             }
-            final TrackingMutableRowSet rowSet = builder.build();
+            final RowSet rowSet = builder.build();
 
             final PartitionKernelStuff<T> partitionStuff =
                     prepareFunction.apply(javaTuples, rowSet, chunkSize, nPartitions, false);

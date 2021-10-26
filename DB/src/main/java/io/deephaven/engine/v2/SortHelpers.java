@@ -163,9 +163,9 @@ public class SortHelpers {
     final static class GroupedSortMapping implements SortMapping {
         private final long size;
         private final long[] groupSize;
-        private final TrackingMutableRowSet[] groups;
+        private final RowSet[] groups;
 
-        private GroupedSortMapping(long size, long[] groupSize, TrackingMutableRowSet[] groups) {
+        private GroupedSortMapping(long size, long[] groupSize, RowSet[] groups) {
             this.size = size;
             this.groupSize = groupSize;
             this.groups = groups;
@@ -498,7 +498,7 @@ public class SortHelpers {
 
     private static SortMapping getSortMappingGrouped(SortingOrder order, ColumnSource<Comparable<?>> columnSource,
             RowSet index) {
-        final Map<Object, TrackingMutableRowSet> groupToRange = index.getGrouping(columnSource);
+        final Map<Object, RowSet> groupToRange = index.getGrouping(columnSource);
         final Object[] keys = groupToRange.keySet().toArray((Object[]) Array.newInstance(
                 io.deephaven.util.type.TypeUtils.getBoxedType(columnSource.getType()), groupToRange.size()));
 
@@ -511,7 +511,7 @@ public class SortHelpers {
             final long[] indexKeysArray = new long[index.intSize()];
             final MutableInt outputIdx = new MutableInt(0);
             for (final Object key : keys) {
-                final TrackingMutableRowSet group = groupToRange.get(key).intersect(index);
+                final RowSet group = groupToRange.get(key).intersect(index);
                 group.forAllLongs(indexKey -> {
                     indexKeysArray[outputIdx.intValue()] = indexKey;
                     outputIdx.increment();
@@ -522,12 +522,12 @@ public class SortHelpers {
         } else {
             // create a grouped redirection rowSet
             final long[] groupSize = new long[groupToRange.size()];
-            final TrackingMutableRowSet[] groupRowSet = new TrackingMutableRowSet[groupToRange.size()];
+            final RowSet[] groupRowSet = new RowSet[groupToRange.size()];
 
             long outputSize = 0;
             int ii = 0;
             for (final Object key : keys) {
-                final TrackingMutableRowSet group = groupToRange.get(key).intersect(index);
+                final RowSet group = groupToRange.get(key).intersect(index);
                 outputSize += group.size();
                 groupSize[ii] = outputSize;
                 groupRowSet[ii++] = group;
@@ -551,7 +551,7 @@ public class SortHelpers {
         ColumnSource<Comparable<?>> columnSource = columnSources[0];
 
         if (index.hasGrouping(columnSources[0])) {
-            final Map<Comparable<?>, TrackingMutableRowSet> groupToRange = columnSource.getGroupToRange();
+            final Map<Comparable<?>, RowSet> groupToRange = columnSource.getGroupToRange();
             final Object[] keys = groupToRange.keySet().toArray(
                     (Object[]) Array.newInstance(TypeUtils.getBoxedType(columnSource.getType()), groupToRange.size()));
 
@@ -563,7 +563,7 @@ public class SortHelpers {
             final MutableInt outputIdx = new MutableInt(0);
             for (final Object key : keys) {
                 // noinspection SuspiciousMethodCalls
-                final TrackingMutableRowSet group = groupToRange.get(key).intersect(index);
+                final RowSet group = groupToRange.get(key).intersect(index);
                 if (group.size() > 1) {
                     offsetsOut.add(outputIdx.intValue());
                     lengthsOut.add(group.intSize());

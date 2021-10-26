@@ -9,10 +9,7 @@ import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.LogicalClock;
 import io.deephaven.engine.v2.sources.ReversedColumnSource;
 import io.deephaven.engine.v2.sources.UnionRedirection;
-import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
-import io.deephaven.engine.v2.utils.RowSetShiftData;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
-import io.deephaven.engine.v2.utils.RowSetBuilderRandom;
+import io.deephaven.engine.v2.utils.*;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -68,7 +65,7 @@ public class ReverseOperation implements QueryTable.MemoizableOperation<QueryTab
 
     @Override
     public Result<QueryTable> initialize(boolean usePrev, long beforeClock) {
-        final TrackingMutableRowSet rowSetToReverse = usePrev ? parent.getRowSet().getPrevRowSet() : parent.getRowSet();
+        final RowSet rowSetToReverse = usePrev ? parent.getRowSet().getPrevRowSet() : parent.getRowSet();
         prevPivot = pivotPoint = computePivot(rowSetToReverse.lastRowKey());
         lastPivotChange = usePrev ? beforeClock - 1 : beforeClock;
 
@@ -77,7 +74,7 @@ public class ReverseOperation implements QueryTable.MemoizableOperation<QueryTab
             resultMap.put(entry.getKey(), new ReversedColumnSource<>(entry.getValue(), this));
         }
 
-        final TrackingMutableRowSet rowSet = transform(rowSetToReverse);
+        final RowSet rowSet = transform(rowSetToReverse);
         resultSize = rowSet.size();
         Assert.eq(resultSize, "resultSize", rowSetToReverse.size(), "rowSetToReverse.size()");
 
@@ -101,8 +98,8 @@ public class ReverseOperation implements QueryTable.MemoizableOperation<QueryTab
     }
 
     private void onUpdate(final Listener.Update upstream) {
-        final TrackingMutableRowSet rowSet = resultTable.getRowSet();
-        final TrackingMutableRowSet parentRowSet = parent.getRowSet();
+        final MutableRowSet rowSet = resultTable.getRowSet();
+        final RowSet parentRowSet = parent.getRowSet();
         Assert.eq(resultSize, "resultSize", rowSet.size(), "rowSet.size()");
 
         if (parentRowSet.size() != (rowSet.size() + upstream.added.size() - upstream.removed.size())) {
@@ -227,7 +224,7 @@ public class ReverseOperation implements QueryTable.MemoizableOperation<QueryTab
      * @param rowSetToTransform the outer rowSet
      * @return the corresponding inner rowSet
      */
-    public TrackingMutableRowSet transform(final TrackingMutableRowSet rowSetToTransform) {
+    public RowSet transform(final RowSet rowSetToTransform) {
         return transform(rowSetToTransform, false);
     }
 
@@ -237,15 +234,15 @@ public class ReverseOperation implements QueryTable.MemoizableOperation<QueryTab
      * @param outerRowSet the outer rowSet
      * @return the corresponding inner rowSet
      */
-    public TrackingMutableRowSet transformPrev(final TrackingMutableRowSet outerRowSet) {
+    public RowSet transformPrev(final RowSet outerRowSet) {
         return transform(outerRowSet, true);
     }
 
-    private TrackingMutableRowSet transform(final TrackingMutableRowSet outerRowSet, final boolean usePrev) {
+    private RowSet transform(final RowSet outerRowSet, final boolean usePrev) {
         final long pivot = usePrev ? getPivotPrev() : pivotPoint;
         final RowSetBuilderRandom reversedBuilder = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
 
-        for (final TrackingMutableRowSet.RangeIterator rangeIterator = outerRowSet.rangeIterator(); rangeIterator.hasNext();) {
+        for (final RowSet.RangeIterator rangeIterator = outerRowSet.rangeIterator(); rangeIterator.hasNext();) {
             rangeIterator.next();
             final long startValue = rangeIterator.currentRangeStart();
             final long endValue = rangeIterator.currentRangeEnd();

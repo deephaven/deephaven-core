@@ -233,7 +233,7 @@ public abstract class SingleRange implements TreeIndexImpl {
     @Override
     public final long ixGet(final long pos) {
         if (pos < 0 || pos >= ixCardinality()) {
-            return TrackingMutableRowSet.NULL_ROW_KEY;
+            return RowSet.NULL_ROW_KEY;
         }
         return rangeStart() + pos;
     }
@@ -245,7 +245,7 @@ public abstract class SingleRange implements TreeIndexImpl {
         while (inputPositions.hasNext()) {
             final long pos = inputPositions.nextLong();
             if (pos < 0 || pos >= sz) {
-                outputKeys.accept(TrackingMutableRowSet.NULL_ROW_KEY);
+                outputKeys.accept(RowSet.NULL_ROW_KEY);
                 continue;
             }
             outputKeys.accept(rangeStart() + pos);
@@ -263,7 +263,7 @@ public abstract class SingleRange implements TreeIndexImpl {
         return key - rangeStart();
     }
 
-    private static class Iterator implements TrackingMutableRowSet.Iterator {
+    private static class Iterator implements RowSet.Iterator {
         protected long curr;
         protected final long last;
 
@@ -287,11 +287,11 @@ public abstract class SingleRange implements TreeIndexImpl {
     }
 
     @Override
-    public TrackingMutableRowSet.Iterator ixIterator() {
+    public RowSet.Iterator ixIterator() {
         return new Iterator(this);
     }
 
-    private static final class SearchIterator extends Iterator implements TrackingMutableRowSet.SearchIterator {
+    private static final class SearchIterator extends Iterator implements RowSet.SearchIterator {
         private final long rangeStart;
 
         public SearchIterator(final SingleRange ix) {
@@ -320,7 +320,7 @@ public abstract class SingleRange implements TreeIndexImpl {
         }
 
         @Override
-        public long binarySearchValue(TrackingMutableRowSet.TargetComparator tc, final int dir) {
+        public long binarySearchValue(RowSet.TargetComparator tc, final int dir) {
             if (curr < rangeStart) {
                 if (tc.compareTargetTo(rangeStart, dir) < 0) {
                     return -1;
@@ -335,11 +335,11 @@ public abstract class SingleRange implements TreeIndexImpl {
     }
 
     @Override
-    public final TrackingMutableRowSet.SearchIterator ixSearchIterator() {
+    public final RowSet.SearchIterator ixSearchIterator() {
         return new SearchIterator(this);
     }
 
-    private static final class ReverseIter implements TrackingMutableRowSet.SearchIterator {
+    private static final class ReverseIter implements RowSet.SearchIterator {
         private final long start;
         private final long end;
         private long curr;
@@ -379,17 +379,17 @@ public abstract class SingleRange implements TreeIndexImpl {
         }
 
         @Override
-        public long binarySearchValue(TrackingMutableRowSet.TargetComparator targetComparator, int direction) {
+        public long binarySearchValue(RowSet.TargetComparator targetComparator, int direction) {
             throw new UnsupportedOperationException("Reverse iterator does not support binary search.");
         }
     }
 
     @Override
-    public final TrackingMutableRowSet.SearchIterator ixReverseIterator() {
+    public final RowSet.SearchIterator ixReverseIterator() {
         return new ReverseIter(rangeStart(), rangeEnd());
     }
 
-    private static final class RangeIter implements TrackingMutableRowSet.RangeIterator {
+    private static final class RangeIter implements RowSet.RangeIterator {
         private long start;
         private final long end;
         private boolean hasNext;
@@ -444,7 +444,7 @@ public abstract class SingleRange implements TreeIndexImpl {
     }
 
     @Override
-    public final TrackingMutableRowSet.RangeIterator ixRangeIterator() {
+    public final RowSet.RangeIterator ixRangeIterator() {
         return new RangeIter(rangeStart(), rangeEnd());
     }
 
@@ -727,7 +727,7 @@ public abstract class SingleRange implements TreeIndexImpl {
     @Override
     public final TreeIndexImpl ixInvertOnNew(final TreeIndexImpl keys, final long maximumPosition) {
         final BuilderSequential b = new TreeIndexImplBuilderSequential();
-        final TrackingMutableRowSetImpl.RangeIterator it = keys.ixRangeIterator();
+        final RowSet.RangeIterator it = keys.ixRangeIterator();
         final String exStr = "invert for non-existing key:";
         while (it.hasNext()) {
             it.next();

@@ -4,7 +4,8 @@
 package io.deephaven.clientsupport.plotdownsampling;
 
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
+import io.deephaven.engine.v2.utils.MutableRowSet;
+import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.v2.sources.ByteArraySource;
 import io.deephaven.engine.v2.sources.chunk.Attributes;
@@ -40,7 +41,7 @@ public final class ByteValueTracker extends ValueTracker {
     }
 
     @Override
-    public void append(int offset, long rowIndex, Chunk<? extends Attributes.Values> valuesChunk, int indexInChunk, @Nullable TrackingMutableRowSet nulls) {
+    public void append(int offset, long rowIndex, Chunk<? extends Attributes.Values> valuesChunk, int indexInChunk, @Nullable MutableRowSet nulls) {
         final byte val = valuesChunk.asByteChunk().get(indexInChunk);
         if (val == NULL_BYTE) {
             if (nulls != null) {
@@ -66,7 +67,7 @@ public final class ByteValueTracker extends ValueTracker {
     }
 
     @Override
-    public void update(int offset, long rowIndex, Chunk<? extends Attributes.Values> valuesChunk, int indexInChunk, @Nullable TrackingMutableRowSet nulls) {
+    public void update(int offset, long rowIndex, Chunk<? extends Attributes.Values> valuesChunk, int indexInChunk, @Nullable MutableRowSet nulls) {
         byte val = valuesChunk.asByteChunk().get(indexInChunk);
         if (val == NULL_BYTE) {
             if (nulls != null) {
@@ -124,7 +125,7 @@ public final class ByteValueTracker extends ValueTracker {
     }
 
     @Override
-    public void validate(int offset, long rowIndex, Chunk<? extends Attributes.Values> valuesChunk, int indexInChunk, @Nullable TrackingMutableRowSet nulls) {
+    public void validate(int offset, long rowIndex, Chunk<? extends Attributes.Values> valuesChunk, int indexInChunk, @Nullable RowSet nulls) {
         byte val = valuesChunk.asByteChunk().get(indexInChunk);
         if (val == NULL_BYTE) {
             // can't check if our min/max is valid, or anything about positions, only can confirm that this rowSet is in nulls

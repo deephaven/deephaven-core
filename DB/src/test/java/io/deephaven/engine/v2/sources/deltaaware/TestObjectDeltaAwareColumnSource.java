@@ -8,9 +8,9 @@ import io.deephaven.engine.v2.sources.ArrayGenerator;
 import io.deephaven.engine.v2.sources.chunk.ChunkSource;
 import io.deephaven.engine.v2.sources.chunk.ObjectChunk;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
+import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.engine.v2.utils.RowSetBuilderSequential;
 import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 
 import org.junit.After;
 import org.junit.Before;
@@ -165,15 +165,15 @@ public class TestObjectDeltaAwareColumnSource {
 
     private static void checkUsingChunk(DeltaAwareColumnSource<Object> dacs, Map<Long, Object> expectedCurrent,
                                         Map<Long, Object> expectedPrev, long[] ranges) {
-        final TrackingMutableRowSet rowSet = rangesToIndex(ranges);
+        final RowSet rowSet = rangesToIndex(ranges);
         assertEquals(rowSet.size() % 2, 0);
 
         // We're going to get creative and pull down the data as two slices
         final int chunkSize = (int) (rowSet.size() / 2);
 
         // So we'll also split the rowSet in half
-        final TrackingMutableRowSet rowSet0 = rowSet.subSetByPositionRange(0, chunkSize);
-        final TrackingMutableRowSet rowSet1 = rowSet.subSetByPositionRange(chunkSize, rowSet.size());
+        final RowSet rowSet0 = rowSet.subSetByPositionRange(0, chunkSize);
+        final RowSet rowSet1 = rowSet.subSetByPositionRange(chunkSize, rowSet.size());
 
         // Current...
         try (ChunkSource.GetContext context = dacs.makeGetContext(chunkSize)) {
@@ -191,9 +191,9 @@ public class TestObjectDeltaAwareColumnSource {
         }
     }
 
-    private static void checkChunk(ObjectChunk<?, ? extends Values> values, Map<Long, Object> expected, TrackingMutableRowSet keys) {
+    private static void checkChunk(ObjectChunk<?, ? extends Values> values, Map<Long, Object> expected, RowSet keys) {
         int sliceOffset = 0;
-        for (final TrackingMutableRowSet.Iterator it = keys.iterator(); it.hasNext(); ) {
+        for (final RowSet.Iterator it = keys.iterator(); it.hasNext(); ) {
             final long key = it.nextLong();
             final Object expectedValue = expected.get(key);
             final Object actualValue = values.get(sliceOffset++);
@@ -201,7 +201,7 @@ public class TestObjectDeltaAwareColumnSource {
         }
     }
 
-    private static TrackingMutableRowSet rangesToIndex(long[] ranges) {
+    private static RowSet rangesToIndex(long[] ranges) {
         RowSetBuilderSequential builder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
         for (int ii = 0; ii < ranges.length; ii += 2) {
             builder.appendRange(ranges[ii], ranges[ii + 1] - 1);

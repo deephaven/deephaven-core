@@ -9,7 +9,6 @@ import io.deephaven.base.verify.Require;
 import io.deephaven.engine.v2.ShiftObliviousInstrumentedListenerAdapter;
 import io.deephaven.engine.v2.NotificationStepSource;
 import io.deephaven.engine.v2.utils.RowSet;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.FunctionalInterfaces;
@@ -99,14 +98,14 @@ public abstract class RDMModelFarm<KEYTYPE, DATATYPE, ROWDATAMANAGERTYPE extends
         dataManager.table().listenForUpdates(listener, true);
     }
 
-    private void removeKeyIndex(final TrackingMutableRowSet rowSet) {
+    private void removeKeyIndex(final RowSet rowSet) {
         rowSet.forAllLongs((final long i) -> {
             final KEYTYPE key = dataManager.uniqueIdPrev(i);
             keyIndexDelta.put(key, REMOVED_ENTRY_VALUE);
         });
     }
 
-    private void addKeyIndex(final TrackingMutableRowSet rowSet) {
+    private void addKeyIndex(final RowSet rowSet) {
         rowSet.forAllLongs((final long i) -> {
             final KEYTYPE key = dataManager.uniqueIdCurrent(i);
             keyIndexDelta.put(key, i);
@@ -120,7 +119,7 @@ public abstract class RDMModelFarm<KEYTYPE, DATATYPE, ROWDATAMANAGERTYPE extends
      * @param removed indexes removed from the data table
      * @param modified indexes modified in the data table.
      */
-    protected abstract void onDataUpdate(TrackingMutableRowSet added, TrackingMutableRowSet removed, TrackingMutableRowSet modified);
+    protected abstract void onDataUpdate(RowSet added, RowSet removed, RowSet modified);
 
     /**
      * Populates a data object with data from the most recent row with the provided unique identifier.

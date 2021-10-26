@@ -8,9 +8,9 @@ import com.google.common.io.LittleEndianDataInputStream;
 import gnu.trove.list.array.TLongArrayList;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.structures.RowSequence;
+import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.engine.v2.utils.RowSetBuilderSequential;
 import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.engine.v2.LiveTableTestCase;
 import io.deephaven.engine.v2.sources.chunk.Attributes;
@@ -486,7 +486,7 @@ public class BarrageColumnRoundTripTest extends LiveTableTestCase {
             }
             try (final BarrageProtoUtil.ExposedByteArrayOutputStream baos =
                     new BarrageProtoUtil.ExposedByteArrayOutputStream();
-                    final TrackingMutableRowSet subset = builder.build();
+                    final RowSet subset = builder.build();
                     final ChunkInputStreamGenerator.DrainableColumn column =
                             generator.getInputStream(options, subset);) {
 

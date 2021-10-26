@@ -8,7 +8,7 @@ import java.util.Objects;
 import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.sources.chunk.Attributes.RowKeys;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
+import io.deephaven.engine.v2.utils.RowSet;
 
 
 public class ObjectStampKernel implements StampKernel {
@@ -24,7 +24,7 @@ public class ObjectStampKernel implements StampKernel {
         final int leftSize = leftStamps.size();
         final int rightSize = rightStamps.size();
         if (rightSize == 0) {
-            leftRedirections.fillWithValue(0, leftSize, TrackingMutableRowSet.NULL_ROW_KEY);
+            leftRedirections.fillWithValue(0, leftSize, RowSet.NULL_ROW_KEY);
             leftRedirections.setSize(leftSize);
             return;
         }
@@ -37,7 +37,7 @@ public class ObjectStampKernel implements StampKernel {
         for (int li = 0; li < leftSize; ) {
             final Object leftValue = leftStamps.get(li);
             if (lt(leftValue, rightLowValue)) {
-                leftRedirections.set(li++, TrackingMutableRowSet.NULL_ROW_KEY);
+                leftRedirections.set(li++, RowSet.NULL_ROW_KEY);
                 continue;
             }
             else if (eq(leftValue, rightLowValue)) {

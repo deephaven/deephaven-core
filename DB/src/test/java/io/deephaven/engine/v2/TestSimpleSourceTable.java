@@ -13,6 +13,7 @@ import io.deephaven.engine.tables.live.LiveTableMonitor;
 import io.deephaven.engine.v2.locations.*;
 import io.deephaven.engine.v2.locations.impl.StandaloneTableLocationKey;
 import io.deephaven.engine.v2.sources.DeferredGroupingColumnSource;
+import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
 import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import org.junit.After;
@@ -152,7 +153,7 @@ public class TestSimpleSourceTable extends LiveTableTestCase {
             @SuppressWarnings("SameParameterValue") final boolean coalesce) {
         Assert.assertion(!(throwException && !coalesce), "!(throwException && !listen)");
         final TableDataException exception = new TableDataException("test");
-        final TrackingMutableRowSet toAdd =
+        final RowSet toAdd =
                 RowSetFactoryImpl.INSTANCE.getRowSetByRange(expectedRowSet.lastRowKey() + 1,
                         expectedRowSet.lastRowKey() + INDEX_INCREMENT);
 
@@ -172,7 +173,7 @@ public class TestSimpleSourceTable extends LiveTableTestCase {
         });
         expectedRowSet.insert(toAdd);
         if (coalesce) {
-            final TrackingMutableRowSet rowSet;
+            final RowSet rowSet;
             try {
                 rowSet = SUT.getRowSet();
                 if (throwException) {

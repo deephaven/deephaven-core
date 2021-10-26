@@ -9,7 +9,7 @@ public interface IndexLike {
         IndexLike make();
     }
     interface ActualIndex extends IndexLike {
-        TrackingMutableRowSet getIndex();
+        RowSet getIndex();
     }
 
     String name();
@@ -29,7 +29,7 @@ public interface IndexLike {
         public IndexLike make() {
             return new IndexLike.ActualIndex() {
                 RangePriorityQueueBuilder b = new RangePriorityQueueBuilder(initialCapacity);
-                TrackingMutableRowSet idx;
+                RowSet idx;
 
                 @Override
                 public void addKey(final long key) {
@@ -58,7 +58,7 @@ public interface IndexLike {
                 }
 
                 @Override
-                public TrackingMutableRowSet getIndex() {
+                public RowSet getIndex() {
                     return idx;
                 }
             };
@@ -75,7 +75,7 @@ public interface IndexLike {
         public IndexLike make() {
             return new ActualIndex() {
                 RowSetBuilderRandom b = new AdaptiveRowSetBuilderRandom();
-                TrackingMutableRowSet idx;
+                RowSet idx;
 
                 @Override
                 public void addKey(final long key) {
@@ -104,7 +104,7 @@ public interface IndexLike {
                 }
 
                 @Override
-                public TrackingMutableRowSet getIndex() {
+                public RowSet getIndex() {
                     return idx;
                 }
             };
