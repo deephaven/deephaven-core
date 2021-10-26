@@ -46,7 +46,7 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
     private interface FieldContext extends SafeCloseable {
     }
 
-    abstract class GenericRecordFieldProcessor {
+    abstract static class GenericRecordFieldProcessor {
         final String fieldName;
 
         public GenericRecordFieldProcessor(final String fieldName) {
@@ -59,7 +59,7 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
                 WritableObjectChunk<GenericRecord, Attributes.Values> avroChunk, OrderedKeys keys, boolean isRemoval);
     }
 
-    private class ByteFieldProcessor extends GenericRecordFieldProcessor {
+    private static class ByteFieldProcessor extends GenericRecordFieldProcessor {
         private final ColumnSource chunkSource;
 
         public ByteFieldProcessor(final String fieldName, final ColumnSource chunkSource) {
@@ -110,7 +110,7 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
         }
     }
 
-    private class CharFieldProcessor extends GenericRecordFieldProcessor {
+    private static class CharFieldProcessor extends GenericRecordFieldProcessor {
         private final ColumnSource chunkSource;
 
         public CharFieldProcessor(final String fieldName, final ColumnSource chunkSource) {
@@ -161,7 +161,7 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
         }
     }
 
-    private class ShortFieldProcessor extends GenericRecordFieldProcessor {
+    private static class ShortFieldProcessor extends GenericRecordFieldProcessor {
         private final ColumnSource chunkSource;
 
         public ShortFieldProcessor(final String fieldName, final ColumnSource chunkSource) {
@@ -212,7 +212,7 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
         }
     }
 
-    private class IntFieldProcessor extends GenericRecordFieldProcessor {
+    private static class IntFieldProcessor extends GenericRecordFieldProcessor {
         private final ColumnSource chunkSource;
 
         public IntFieldProcessor(final String fieldName, final ColumnSource chunkSource) {
@@ -263,7 +263,7 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
         }
     }
 
-    private class LongFieldProcessor extends GenericRecordFieldProcessor {
+    private static class LongFieldProcessor extends GenericRecordFieldProcessor {
         private final ColumnSource chunkSource;
 
         public LongFieldProcessor(final String fieldName, final ColumnSource chunkSource) {
@@ -314,7 +314,7 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
         }
     }
 
-    private class FloatFieldProcessor extends GenericRecordFieldProcessor {
+    private static class FloatFieldProcessor extends GenericRecordFieldProcessor {
         private final ColumnSource chunkSource;
 
         public FloatFieldProcessor(final String fieldName, final ColumnSource chunkSource) {
@@ -365,7 +365,7 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
         }
     }
 
-    private class DoubleFieldProcessor extends GenericRecordFieldProcessor {
+    private static class DoubleFieldProcessor extends GenericRecordFieldProcessor {
         private final ColumnSource chunkSource;
 
         public DoubleFieldProcessor(final String fieldName, final ColumnSource chunkSource) {
@@ -413,7 +413,7 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
         }
     }
 
-    private class ObjectFieldProcessor<T> extends GenericRecordFieldProcessor {
+    private static class ObjectFieldProcessor<T> extends GenericRecordFieldProcessor {
         private final ColumnSource chunkSource;
 
         public ObjectFieldProcessor(String fieldName, ColumnSource chunkSource) {
@@ -457,7 +457,7 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
         }
     }
 
-    private class TimestampFieldProcessor extends GenericRecordFieldProcessor {
+    private static class TimestampFieldProcessor extends GenericRecordFieldProcessor {
         public TimestampFieldProcessor(String fieldName) {
             super(fieldName);
         }
