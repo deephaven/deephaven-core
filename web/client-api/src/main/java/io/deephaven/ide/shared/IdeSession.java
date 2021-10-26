@@ -91,6 +91,7 @@ public class IdeSession extends HasEventHandling {
         };
     }
 
+    // TODO (deephaven-core#188): improve usage of subscriptions (w.r.t. this optional param)
     public Promise<JsTable> getTable(String name, @JsOptional Boolean applyPreviewColumns) {
         return getVariableDefinition(name, JsVariableChanges.TABLE).then(varDef -> {
             final Promise<JsTable> table = connection.getTable(varDef, applyPreviewColumns);

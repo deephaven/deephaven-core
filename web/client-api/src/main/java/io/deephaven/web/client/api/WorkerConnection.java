@@ -38,6 +38,7 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.Re
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.TerminationNotificationRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.terminationnotificationresponse.StackTrace;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb_service.SessionServiceClient;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.ApplyPreviewColumnsRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.EmptyTableRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.ExportedTableCreationResponse;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.ExportedTableUpdateMessage;
@@ -641,13 +642,17 @@ public class WorkerConnection {
                     (c, cts, metadata) -> {
                         JsLog.debug("performing fetch for ", varDef.getTitle(), " / ", cts,
                                 " (" + LazyString.of(cts::getHandle), ")");
-                        FetchTableRequest fetch = new FetchTableRequest();
-                        fetch.setSourceId(TableTicket.createTableRef(varDef));
-                        fetch.setResultId(cts.getHandle().makeTicket());
                         if (applyPreviewColumns == null || applyPreviewColumns) {
-                            fetch.setApplyPreviewColumns(true);
+                            ApplyPreviewColumnsRequest req = new ApplyPreviewColumnsRequest();
+                            req.setSourceId(TableTicket.createTableRef(varDef));
+                            req.setResultId(cts.getHandle().makeTicket());
+                            tableServiceClient.applyPreviewColumns(req, metadata, c::apply);
+                        } else {
+                            FetchTableRequest req = new FetchTableRequest();
+                            req.setSourceId(TableTicket.createTableRef(varDef));
+                            req.setResultId(cts.getHandle().makeTicket());
+                            tableServiceClient.fetchTable(req, metadata, c::apply);
                         }
-                        tableServiceClient.fetchTable(fetch, metadata, c::apply);
                     }, "fetch table " + varDef.getTitle()).then(cts -> {
                         JsLog.debug("innerGetTable", varDef.getTitle(), " succeeded ", cts);
                         JsTable table = new JsTable(this, cts);
