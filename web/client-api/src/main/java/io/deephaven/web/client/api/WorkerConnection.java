@@ -80,6 +80,7 @@ import jsinterop.annotations.JsOptional;
 import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
+import javax.annotation.Nullable;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.util.List;
@@ -633,7 +634,7 @@ public class WorkerConnection {
         info.failureHandled(throwable.toString());
     }
 
-    public Promise<JsTable> getTable(JsVariableDefinition varDef) {
+    public Promise<JsTable> getTable(JsVariableDefinition varDef, @Nullable Boolean applyPreviewColumns) {
         return whenServerReady("get a table").then(serve -> {
             JsLog.debug("innerGetTable", varDef.getTitle(), " started");
             return newState(info,
@@ -643,6 +644,9 @@ public class WorkerConnection {
                         FetchTableRequest fetch = new FetchTableRequest();
                         fetch.setSourceId(TableTicket.createTableRef(varDef));
                         fetch.setResultId(cts.getHandle().makeTicket());
+                        if (applyPreviewColumns == null || applyPreviewColumns) {
+                            fetch.setApplyPreviewColumns(true);
+                        }
                         tableServiceClient.fetchTable(fetch, metadata, c::apply);
                     }, "fetch table " + varDef.getTitle()).then(cts -> {
                         JsLog.debug("innerGetTable", varDef.getTitle(), " succeeded ", cts);
@@ -673,7 +677,7 @@ public class WorkerConnection {
     public Promise<Object> getObject(JsVariableDefinition definition) {
         switch (VariableType.valueOf(definition.getType())) {
             case Table:
-                return (Promise) getTable(definition);
+                return (Promise) getTable(definition, null);
             case TreeTable:
                 return (Promise) getTreeTable(definition);
             case Figure:
@@ -786,7 +790,7 @@ public class WorkerConnection {
     }
 
     public Promise<JsTreeTable> getTreeTable(JsVariableDefinition varDef) {
-        return getTable(varDef).then(t -> {
+        return getTable(varDef, null).then(t -> {
             Promise<JsTreeTable> result = Promise.resolve(new JsTreeTable(t.state(), this).finishFetch());
             t.close();
             return result;
