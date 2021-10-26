@@ -62,11 +62,11 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
                 boolean isRemoval);
     }
 
-    private abstract static class GenericRecordFieldProcessorImpl<ChunkType extends Chunk>
+    private abstract static class GenericRecordFieldProcessorImpl<ChunkType extends Chunk<Attributes.Values>>
             extends GenericRecordFieldProcessor {
-        private final ColumnSource chunkSource;
+        private final ColumnSource<?> chunkSource;
 
-        public GenericRecordFieldProcessorImpl(final String fieldName, final ColumnSource chunkSource) {
+        public GenericRecordFieldProcessorImpl(final String fieldName, final ColumnSource<?> chunkSource) {
             super(fieldName);
             this.chunkSource = chunkSource;
         }
@@ -116,8 +116,8 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
 
     private static GenericRecordFieldProcessor makeByteFieldProcessor(
             final String fieldName,
-            final ColumnSource chunkSource) {
-        return new GenericRecordFieldProcessorImpl<ByteChunk>(
+            final ColumnSource<?> chunkSource) {
+        return new GenericRecordFieldProcessorImpl<ByteChunk<Attributes.Values>>(
                 fieldName, chunkSource) {
             @Override
             void processFieldElement(
@@ -136,8 +136,8 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
 
     private static GenericRecordFieldProcessor makeCharFieldProcessor(
             final String fieldName,
-            final ColumnSource chunkSource) {
-        return new GenericRecordFieldProcessorImpl<CharChunk>(
+            final ColumnSource<?> chunkSource) {
+        return new GenericRecordFieldProcessorImpl<CharChunk<Attributes.Values>>(
                 fieldName, chunkSource) {
             @Override
             void processFieldElement(
@@ -156,8 +156,8 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
 
     private static GenericRecordFieldProcessor makeShortFieldProcessor(
             final String fieldName,
-            final ColumnSource chunkSource) {
-        return new GenericRecordFieldProcessorImpl<ShortChunk>(
+            final ColumnSource<?> chunkSource) {
+        return new GenericRecordFieldProcessorImpl<ShortChunk<Attributes.Values>>(
                 fieldName, chunkSource) {
             @Override
             void processFieldElement(
@@ -176,8 +176,8 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
 
     private static GenericRecordFieldProcessor makeIntFieldProcessor(
             final String fieldName,
-            final ColumnSource chunkSource) {
-        return new GenericRecordFieldProcessorImpl<IntChunk>(
+            final ColumnSource<?> chunkSource) {
+        return new GenericRecordFieldProcessorImpl<IntChunk<Attributes.Values>>(
                 fieldName, chunkSource) {
             @Override
             void processFieldElement(
@@ -196,8 +196,8 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
 
     private static GenericRecordFieldProcessor makeLongFieldProcessor(
             final String fieldName,
-            final ColumnSource chunkSource) {
-        return new GenericRecordFieldProcessorImpl<LongChunk>(
+            final ColumnSource<?> chunkSource) {
+        return new GenericRecordFieldProcessorImpl<LongChunk<Attributes.Values>>(
                 fieldName, chunkSource) {
             @Override
             void processFieldElement(
@@ -216,8 +216,8 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
 
     private static GenericRecordFieldProcessor makeFloatFieldProcessor(
             final String fieldName,
-            final ColumnSource chunkSource) {
-        return new GenericRecordFieldProcessorImpl<FloatChunk>(
+            final ColumnSource<?> chunkSource) {
+        return new GenericRecordFieldProcessorImpl<FloatChunk<Attributes.Values>>(
                 fieldName, chunkSource) {
             @Override
             void processFieldElement(
@@ -236,8 +236,8 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
 
     private static GenericRecordFieldProcessor makeDoubleFieldProcessor(
             final String fieldName,
-            final ColumnSource chunkSource) {
-        return new GenericRecordFieldProcessorImpl<DoubleChunk>(
+            final ColumnSource<?> chunkSource) {
+        return new GenericRecordFieldProcessorImpl<DoubleChunk<Attributes.Values>>(
                 fieldName, chunkSource) {
             @Override
             void processFieldElement(
@@ -256,8 +256,8 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
 
     private static GenericRecordFieldProcessor makeObjectFieldProcessor(
             final String fieldName,
-            final ColumnSource chunkSource) {
-        return new GenericRecordFieldProcessorImpl<ObjectChunk>(
+            final ColumnSource<?> chunkSource) {
+        return new GenericRecordFieldProcessorImpl<ObjectChunk<?, Attributes.Values>>(
                 fieldName, chunkSource) {
             @Override
             void processFieldElement(
