@@ -46,7 +46,7 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
     private interface FieldContext extends SafeCloseable {
     }
 
-    abstract static class GenericRecordFieldProcessor {
+    private abstract static class GenericRecordFieldProcessor {
         final String fieldName;
 
         public GenericRecordFieldProcessor(final String fieldName) {
@@ -55,23 +55,27 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
 
         abstract FieldContext makeContext(int size);
 
-        abstract void processField(FieldContext fieldContext,
-                WritableObjectChunk<GenericRecord, Attributes.Values> avroChunk, OrderedKeys keys, boolean isRemoval);
+        abstract void processField(
+                FieldContext fieldContext,
+                WritableObjectChunk<GenericRecord, Attributes.Values> avroChunk,
+                OrderedKeys keys,
+                boolean isRemoval);
     }
 
-    private static class ByteFieldProcessor extends GenericRecordFieldProcessor {
+    private abstract static class GenericRecordFieldProcessorImpl<ChunkType extends Chunk>
+            extends GenericRecordFieldProcessor {
         private final ColumnSource chunkSource;
 
-        public ByteFieldProcessor(final String fieldName, final ColumnSource chunkSource) {
+        public GenericRecordFieldProcessorImpl(final String fieldName, final ColumnSource chunkSource) {
             super(fieldName);
             this.chunkSource = chunkSource;
         }
 
-        private class ByteContext implements FieldContext {
+        class ContextImpl implements FieldContext {
             ChunkSource.GetContext getContext;
-            ByteChunk inputChunk;
+            ChunkType inputChunk;
 
-            ByteContext(final int size) {
+            ContextImpl(final int size) {
                 getContext = chunkSource.makeGetContext(size);
             }
 
@@ -82,9 +86,14 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
         }
 
         @Override
-        FieldContext makeContext(int size) {
-            return new ByteContext(size);
+        FieldContext makeContext(final int size) {
+            return new ContextImpl(size);
         }
+
+        abstract void processFieldElement(
+                final int i,
+                final ContextImpl contextImpl,
+                final WritableObjectChunk<GenericRecord, Attributes.Values> avroChunk);
 
         @Override
         void processField(
@@ -92,369 +101,173 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
                 final WritableObjectChunk<GenericRecord, Attributes.Values> avroChunk,
                 final OrderedKeys keys,
                 final boolean previous) {
-            final ByteContext byteContext = (ByteContext) fieldContext;
+            final ContextImpl contextImpl = (ContextImpl) fieldContext;
             if (previous) {
-                byteContext.inputChunk = chunkSource.getPrevChunk(byteContext.getContext, keys).asByteChunk();
+                contextImpl.inputChunk = (ChunkType) chunkSource.getPrevChunk(contextImpl.getContext, keys);
             } else {
-                byteContext.inputChunk = chunkSource.getChunk(byteContext.getContext, keys).asByteChunk();
+                contextImpl.inputChunk = (ChunkType) chunkSource.getChunk(contextImpl.getContext, keys);
             }
 
-            for (int ii = 0; ii < byteContext.inputChunk.size(); ++ii) {
-                final byte raw = byteContext.inputChunk.get(ii);
+            for (int ii = 0; ii < contextImpl.inputChunk.size(); ++ii) {
+                processFieldElement(ii, contextImpl, avroChunk);
+            }
+        }
+    }
+
+    private static GenericRecordFieldProcessor makeByteFieldProcessor(
+            final String fieldName,
+            final ColumnSource chunkSource) {
+        return new GenericRecordFieldProcessorImpl<ByteChunk>(
+                fieldName, chunkSource) {
+            @Override
+            void processFieldElement(
+                    final int ii,
+                    final ContextImpl contextImpl,
+                    final WritableObjectChunk<GenericRecord, Attributes.Values> avroChunk) {
+                final byte raw = contextImpl.inputChunk.get(ii);
                 if (raw == QueryConstants.NULL_BYTE) {
                     avroChunk.get(ii).put(fieldName, null);
                 } else {
                     avroChunk.get(ii).put(fieldName, raw);
                 }
             }
-        }
+        };
     }
 
-    private static class CharFieldProcessor extends GenericRecordFieldProcessor {
-        private final ColumnSource chunkSource;
-
-        public CharFieldProcessor(final String fieldName, final ColumnSource chunkSource) {
-            super(fieldName);
-            this.chunkSource = chunkSource;
-        }
-
-        private class CharContext implements FieldContext {
-            ChunkSource.GetContext getContext;
-            CharChunk inputChunk;
-
-            CharContext(final int size) {
-                getContext = chunkSource.makeGetContext(size);
-            }
-
+    private static GenericRecordFieldProcessor makeCharFieldProcessor(
+            final String fieldName,
+            final ColumnSource chunkSource) {
+        return new GenericRecordFieldProcessorImpl<CharChunk>(
+                fieldName, chunkSource) {
             @Override
-            public void close() {
-                getContext.close();
-            }
-        }
-
-        @Override
-        FieldContext makeContext(int size) {
-            return new CharContext(size);
-        }
-
-        @Override
-        void processField(
-                final FieldContext fieldContext,
-                final WritableObjectChunk<GenericRecord, Attributes.Values> avroChunk,
-                final OrderedKeys keys,
-                final boolean previous) {
-            final CharContext charContext = (CharContext) fieldContext;
-            if (previous) {
-                charContext.inputChunk = chunkSource.getPrevChunk(charContext.getContext, keys).asCharChunk();
-            } else {
-                charContext.inputChunk = chunkSource.getChunk(charContext.getContext, keys).asCharChunk();
-            }
-
-            for (int ii = 0; ii < charContext.inputChunk.size(); ++ii) {
-                final char raw = charContext.inputChunk.get(ii);
+            void processFieldElement(
+                    final int ii,
+                    final ContextImpl contextImpl,
+                    final WritableObjectChunk<GenericRecord, Attributes.Values> avroChunk) {
+                final char raw = contextImpl.inputChunk.get(ii);
                 if (raw == QueryConstants.NULL_CHAR) {
                     avroChunk.get(ii).put(fieldName, null);
                 } else {
                     avroChunk.get(ii).put(fieldName, raw);
                 }
             }
-        }
+        };
     }
 
-    private static class ShortFieldProcessor extends GenericRecordFieldProcessor {
-        private final ColumnSource chunkSource;
-
-        public ShortFieldProcessor(final String fieldName, final ColumnSource chunkSource) {
-            super(fieldName);
-            this.chunkSource = chunkSource;
-        }
-
-        private class ShortContext implements FieldContext {
-            ChunkSource.GetContext getContext;
-            ShortChunk inputChunk;
-
-            ShortContext(final int size) {
-                getContext = chunkSource.makeGetContext(size);
-            }
-
+    private static GenericRecordFieldProcessor makeShortFieldProcessor(
+            final String fieldName,
+            final ColumnSource chunkSource) {
+        return new GenericRecordFieldProcessorImpl<ShortChunk>(
+                fieldName, chunkSource) {
             @Override
-            public void close() {
-                getContext.close();
-            }
-        }
-
-        @Override
-        FieldContext makeContext(int size) {
-            return new ShortContext(size);
-        }
-
-        @Override
-        void processField(
-                final FieldContext fieldContext,
-                final WritableObjectChunk<GenericRecord, Attributes.Values> avroChunk,
-                final OrderedKeys keys,
-                final boolean previous) {
-            final ShortContext shortContext = (ShortContext) fieldContext;
-            if (previous) {
-                shortContext.inputChunk = chunkSource.getPrevChunk(shortContext.getContext, keys).asShortChunk();
-            } else {
-                shortContext.inputChunk = chunkSource.getChunk(shortContext.getContext, keys).asShortChunk();
-            }
-
-            for (int ii = 0; ii < shortContext.inputChunk.size(); ++ii) {
-                final short raw = shortContext.inputChunk.get(ii);
+            void processFieldElement(
+                    final int ii,
+                    final ContextImpl contextImpl,
+                    final WritableObjectChunk<GenericRecord, Attributes.Values> avroChunk) {
+                final short raw = contextImpl.inputChunk.get(ii);
                 if (raw == QueryConstants.NULL_SHORT) {
                     avroChunk.get(ii).put(fieldName, null);
                 } else {
                     avroChunk.get(ii).put(fieldName, raw);
                 }
             }
-        }
+        };
     }
 
-    private static class IntFieldProcessor extends GenericRecordFieldProcessor {
-        private final ColumnSource chunkSource;
-
-        public IntFieldProcessor(final String fieldName, final ColumnSource chunkSource) {
-            super(fieldName);
-            this.chunkSource = chunkSource;
-        }
-
-        private class IntContext implements FieldContext {
-            ChunkSource.GetContext getContext;
-            IntChunk inputChunk;
-
-            IntContext(final int size) {
-                getContext = chunkSource.makeGetContext(size);
-            }
-
+    private static GenericRecordFieldProcessor makeIntFieldProcessor(
+            final String fieldName,
+            final ColumnSource chunkSource) {
+        return new GenericRecordFieldProcessorImpl<IntChunk>(
+                fieldName, chunkSource) {
             @Override
-            public void close() {
-                getContext.close();
-            }
-        }
-
-        @Override
-        FieldContext makeContext(final int size) {
-            return new IntContext(size);
-        }
-
-        @Override
-        void processField(
-                final FieldContext fieldContext,
-                final WritableObjectChunk<GenericRecord, Attributes.Values> avroChunk,
-                final OrderedKeys keys,
-                final boolean previous) {
-            final IntContext intContext = (IntContext) fieldContext;
-            if (previous) {
-                intContext.inputChunk = chunkSource.getPrevChunk(intContext.getContext, keys).asIntChunk();
-            } else {
-                intContext.inputChunk = chunkSource.getChunk(intContext.getContext, keys).asIntChunk();
-            }
-
-            for (int ii = 0; ii < intContext.inputChunk.size(); ++ii) {
-                final int raw = intContext.inputChunk.get(ii);
+            void processFieldElement(
+                    final int ii,
+                    final ContextImpl contextImpl,
+                    final WritableObjectChunk<GenericRecord, Attributes.Values> avroChunk) {
+                final int raw = contextImpl.inputChunk.get(ii);
                 if (raw == QueryConstants.NULL_INT) {
                     avroChunk.get(ii).put(fieldName, null);
                 } else {
                     avroChunk.get(ii).put(fieldName, raw);
                 }
             }
-        }
+        };
     }
 
-    private static class LongFieldProcessor extends GenericRecordFieldProcessor {
-        private final ColumnSource chunkSource;
-
-        public LongFieldProcessor(final String fieldName, final ColumnSource chunkSource) {
-            super(fieldName);
-            this.chunkSource = chunkSource;
-        }
-
-        private class LongContext implements FieldContext {
-            ChunkSource.GetContext getContext;
-            LongChunk inputChunk;
-
-            LongContext(final int size) {
-                getContext = chunkSource.makeGetContext(size);
-            }
-
+    private static GenericRecordFieldProcessor makeLongFieldProcessor(
+            final String fieldName,
+            final ColumnSource chunkSource) {
+        return new GenericRecordFieldProcessorImpl<LongChunk>(
+                fieldName, chunkSource) {
             @Override
-            public void close() {
-                getContext.close();
-            }
-        }
-
-        @Override
-        FieldContext makeContext(final int size) {
-            return new LongContext(size);
-        }
-
-        @Override
-        void processField(
-                final FieldContext fieldContext,
-                final WritableObjectChunk<GenericRecord, Attributes.Values> avroChunk,
-                final OrderedKeys keys,
-                final boolean previous) {
-            final LongContext longContext = (LongContext) fieldContext;
-            if (previous) {
-                longContext.inputChunk = chunkSource.getPrevChunk(longContext.getContext, keys).asLongChunk();
-            } else {
-                longContext.inputChunk = chunkSource.getChunk(longContext.getContext, keys).asLongChunk();
-            }
-
-            for (int ii = 0; ii < longContext.inputChunk.size(); ++ii) {
-                final long raw = longContext.inputChunk.get(ii);
+            void processFieldElement(
+                    final int ii,
+                    final ContextImpl contextImpl,
+                    final WritableObjectChunk<GenericRecord, Attributes.Values> avroChunk) {
+                final long raw = contextImpl.inputChunk.get(ii);
                 if (raw == QueryConstants.NULL_LONG) {
                     avroChunk.get(ii).put(fieldName, null);
                 } else {
                     avroChunk.get(ii).put(fieldName, raw);
                 }
             }
-        }
+        };
     }
 
-    private static class FloatFieldProcessor extends GenericRecordFieldProcessor {
-        private final ColumnSource chunkSource;
-
-        public FloatFieldProcessor(final String fieldName, final ColumnSource chunkSource) {
-            super(fieldName);
-            this.chunkSource = chunkSource;
-        }
-
-        private class FloatContext implements FieldContext {
-            ChunkSource.GetContext getContext;
-            FloatChunk inputChunk;
-
-            FloatContext(final int size) {
-                getContext = chunkSource.makeGetContext(size);
-            }
-
+    private static GenericRecordFieldProcessor makeFloatFieldProcessor(
+            final String fieldName,
+            final ColumnSource chunkSource) {
+        return new GenericRecordFieldProcessorImpl<FloatChunk>(
+                fieldName, chunkSource) {
             @Override
-            public void close() {
-                getContext.close();
-            }
-        }
-
-        @Override
-        FieldContext makeContext(int size) {
-            return new FloatContext(size);
-        }
-
-        @Override
-        void processField(
-                final FieldContext fieldContext,
-                final WritableObjectChunk<GenericRecord, Attributes.Values> avroChunk,
-                final OrderedKeys keys,
-                final boolean previous) {
-            final FloatContext floatContext = (FloatContext) fieldContext;
-            if (previous) {
-                floatContext.inputChunk = chunkSource.getPrevChunk(floatContext.getContext, keys).asFloatChunk();
-            } else {
-                floatContext.inputChunk = chunkSource.getChunk(floatContext.getContext, keys).asFloatChunk();
-            }
-
-            for (int ii = 0; ii < floatContext.inputChunk.size(); ++ii) {
-                final float raw = floatContext.inputChunk.get(ii);
+            void processFieldElement(
+                    final int ii,
+                    final ContextImpl contextImpl,
+                    final WritableObjectChunk<GenericRecord, Attributes.Values> avroChunk) {
+                final float raw = contextImpl.inputChunk.get(ii);
                 if (raw == QueryConstants.NULL_FLOAT) {
                     avroChunk.get(ii).put(fieldName, null);
                 } else {
                     avroChunk.get(ii).put(fieldName, raw);
                 }
             }
-        }
+        };
     }
 
-    private static class DoubleFieldProcessor extends GenericRecordFieldProcessor {
-        private final ColumnSource chunkSource;
-
-        public DoubleFieldProcessor(final String fieldName, final ColumnSource chunkSource) {
-            super(fieldName);
-            this.chunkSource = chunkSource;
-        }
-
-        private class DoubleContext implements FieldContext {
-            ChunkSource.GetContext getContext;
-            DoubleChunk inputChunk;
-
-            DoubleContext(final int size) {
-                getContext = chunkSource.makeGetContext(size);
-            }
-
+    private static GenericRecordFieldProcessor makeDoubleFieldProcessor(
+            final String fieldName,
+            final ColumnSource chunkSource) {
+        return new GenericRecordFieldProcessorImpl<DoubleChunk>(
+                fieldName, chunkSource) {
             @Override
-            public void close() {
-                getContext.close();
-            }
-        }
-
-        @Override
-        FieldContext makeContext(final int size) {
-            return new DoubleContext(size);
-        }
-
-        @Override
-        void processField(FieldContext fieldContext, WritableObjectChunk<GenericRecord, Attributes.Values> avroChunk,
-                OrderedKeys keys, boolean previous) {
-            final DoubleContext doubleContext = (DoubleContext) fieldContext;
-            if (previous) {
-                doubleContext.inputChunk = chunkSource.getPrevChunk(doubleContext.getContext, keys).asDoubleChunk();
-            } else {
-                doubleContext.inputChunk = chunkSource.getChunk(doubleContext.getContext, keys).asDoubleChunk();
-            }
-
-            for (int ii = 0; ii < doubleContext.inputChunk.size(); ++ii) {
-                final double raw = doubleContext.inputChunk.get(ii);
+            void processFieldElement(
+                    final int ii,
+                    final ContextImpl contextImpl,
+                    final WritableObjectChunk<GenericRecord, Attributes.Values> avroChunk) {
+                final double raw = contextImpl.inputChunk.get(ii);
                 if (raw == QueryConstants.NULL_DOUBLE) {
                     avroChunk.get(ii).put(fieldName, null);
                 } else {
                     avroChunk.get(ii).put(fieldName, raw);
                 }
             }
-        }
+        };
     }
 
-    private static class ObjectFieldProcessor<T> extends GenericRecordFieldProcessor {
-        private final ColumnSource chunkSource;
-
-        public ObjectFieldProcessor(String fieldName, ColumnSource chunkSource) {
-            super(fieldName);
-            this.chunkSource = chunkSource;
-        }
-
-        private class ObjectContext implements FieldContext {
-            ChunkSource.GetContext getContext;
-            ObjectChunk inputChunk;
-
-            ObjectContext(int size) {
-                getContext = chunkSource.makeGetContext(size);
-            }
-
+    private static GenericRecordFieldProcessor makeObjectFieldProcessor(
+            final String fieldName,
+            final ColumnSource chunkSource) {
+        return new GenericRecordFieldProcessorImpl<ObjectChunk>(
+                fieldName, chunkSource) {
             @Override
-            public void close() {
-                getContext.close();
-            }
-        }
-
-        @Override
-        FieldContext makeContext(int size) {
-            return new ObjectContext(size);
-        }
-
-        @Override
-        void processField(FieldContext fieldContext, WritableObjectChunk<GenericRecord, Attributes.Values> avroChunk,
-                OrderedKeys keys, boolean previous) {
-            final ObjectContext objectContext = (ObjectContext) fieldContext;
-            if (previous) {
-                objectContext.inputChunk = chunkSource.getPrevChunk(objectContext.getContext, keys).asObjectChunk();
-            } else {
-                objectContext.inputChunk = chunkSource.getChunk(objectContext.getContext, keys).asObjectChunk();
-            }
-
-            for (int ii = 0; ii < objectContext.inputChunk.size(); ++ii) {
-                final Object raw = objectContext.inputChunk.get(ii);
+            void processFieldElement(
+                    final int ii,
+                    final ContextImpl contextImpl,
+                    final WritableObjectChunk<GenericRecord, Attributes.Values> avroChunk) {
+                final Object raw = contextImpl.inputChunk.get(ii);
                 avroChunk.get(ii).put(fieldName, raw);
             }
-        }
+        };
     }
 
     private static class TimestampFieldProcessor extends GenericRecordFieldProcessor {
@@ -491,21 +304,21 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
         final ColumnSource src = source.getColumnSource(columnName);
         final Class<?> type = src.getType();
         if (byte.class.equals(type)) {
-            fieldProcessors.add(new ByteFieldProcessor(fieldName, src));
+            fieldProcessors.add(makeByteFieldProcessor(fieldName, src));
         } else if (short.class.equals(type)) {
-            fieldProcessors.add(new ShortFieldProcessor(fieldName, src));
+            fieldProcessors.add(makeShortFieldProcessor(fieldName, src));
         } else if (int.class.equals(type)) {
-            fieldProcessors.add(new IntFieldProcessor(fieldName, src));
+            fieldProcessors.add(makeIntFieldProcessor(fieldName, src));
         } else if (double.class.equals(type)) {
-            fieldProcessors.add(new DoubleFieldProcessor(fieldName, src));
+            fieldProcessors.add(makeDoubleFieldProcessor(fieldName, src));
         } else if (float.class.equals(type)) {
-            fieldProcessors.add(new FloatFieldProcessor(fieldName, src));
+            fieldProcessors.add(makeFloatFieldProcessor(fieldName, src));
         } else if (long.class.equals(type)) {
-            fieldProcessors.add(new LongFieldProcessor(fieldName, src));
+            fieldProcessors.add(makeLongFieldProcessor(fieldName, src));
         } else if (char.class.equals(type)) {
-            fieldProcessors.add(new CharFieldProcessor(fieldName, src));
+            fieldProcessors.add(makeCharFieldProcessor(fieldName, src));
         } else {
-            fieldProcessors.add(new ObjectFieldProcessor<>(fieldName, src));
+            fieldProcessors.add(makeObjectFieldProcessor(fieldName, src));
         }
     }
 
