@@ -256,6 +256,13 @@ public class RequestBatcher {
                     ClientTableState state = allStates().filter(
                             cts -> cts.getHandle().makeTicket().getTicket_asB64().equals(ticket.getTicket_asB64()))
                             .first();
+
+                    if (state.isEmpty()) {
+                        // nobody cares about this state anymore
+                        JsLog.debug("Ignoring empty state", state);
+                        return;
+                    }
+
                     state.getHandle().setState(TableTicket.State.FAILED);
                     for (JsTable table : allInterestedTables().filter(t -> t.state() == state)) {
                         // fire the failed event
