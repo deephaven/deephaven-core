@@ -46,15 +46,6 @@ public final class TableResolvers {
                 .findFirst();
     }
 
-    public Set<TableResolver> resolvers(String scheme) {
-        final Set<TableResolver> resolvers = map.get(scheme);
-        if (resolvers == null) {
-            throw new UnsupportedOperationException(
-                    String.format("Unable to find table resolver(s) for scheme '%s'", scheme));
-        }
-        return resolvers;
-    }
-
     public TableResolver resolver(URI uri) {
         final List<TableResolver> resolvers = map.getOrDefault(uri.getScheme(), Collections.emptySet())
                 .stream()
