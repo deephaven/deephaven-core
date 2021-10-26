@@ -11,9 +11,9 @@ import jsinterop.base.JsPropertyMap;
 
 @JsType(
         isNative = true,
-        name = "dhinternal.io.deephaven.proto.table_pb.FetchTableRequest",
+        name = "dhinternal.io.deephaven.proto.table_pb.ApplyPreviewColumnsRequest",
         namespace = JsPackage.GLOBAL)
-public class FetchTableRequest {
+public class ApplyPreviewColumnsRequest {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ToObjectReturnType {
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -23,7 +23,7 @@ public class FetchTableRequest {
                 @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
                 public interface GetTicketUnionType {
                     @JsOverlay
-                    static FetchTableRequest.ToObjectReturnType.SourceIdFieldType.TicketFieldType.GetTicketUnionType of(
+                    static ApplyPreviewColumnsRequest.ToObjectReturnType.SourceIdFieldType.TicketFieldType.GetTicketUnionType of(
                             Object o) {
                         return Js.cast(o);
                     }
@@ -50,34 +50,34 @@ public class FetchTableRequest {
                 }
 
                 @JsOverlay
-                static FetchTableRequest.ToObjectReturnType.SourceIdFieldType.TicketFieldType create() {
+                static ApplyPreviewColumnsRequest.ToObjectReturnType.SourceIdFieldType.TicketFieldType create() {
                     return Js.uncheckedCast(JsPropertyMap.of());
                 }
 
                 @JsProperty
-                FetchTableRequest.ToObjectReturnType.SourceIdFieldType.TicketFieldType.GetTicketUnionType getTicket();
+                ApplyPreviewColumnsRequest.ToObjectReturnType.SourceIdFieldType.TicketFieldType.GetTicketUnionType getTicket();
 
                 @JsProperty
                 void setTicket(
-                        FetchTableRequest.ToObjectReturnType.SourceIdFieldType.TicketFieldType.GetTicketUnionType ticket);
+                        ApplyPreviewColumnsRequest.ToObjectReturnType.SourceIdFieldType.TicketFieldType.GetTicketUnionType ticket);
 
                 @JsOverlay
                 default void setTicket(String ticket) {
                     setTicket(
-                            Js.<FetchTableRequest.ToObjectReturnType.SourceIdFieldType.TicketFieldType.GetTicketUnionType>uncheckedCast(
+                            Js.<ApplyPreviewColumnsRequest.ToObjectReturnType.SourceIdFieldType.TicketFieldType.GetTicketUnionType>uncheckedCast(
                                     ticket));
                 }
 
                 @JsOverlay
                 default void setTicket(Uint8Array ticket) {
                     setTicket(
-                            Js.<FetchTableRequest.ToObjectReturnType.SourceIdFieldType.TicketFieldType.GetTicketUnionType>uncheckedCast(
+                            Js.<ApplyPreviewColumnsRequest.ToObjectReturnType.SourceIdFieldType.TicketFieldType.GetTicketUnionType>uncheckedCast(
                                     ticket));
                 }
             }
 
             @JsOverlay
-            static FetchTableRequest.ToObjectReturnType.SourceIdFieldType create() {
+            static ApplyPreviewColumnsRequest.ToObjectReturnType.SourceIdFieldType create() {
                 return Js.uncheckedCast(JsPropertyMap.of());
             }
 
@@ -85,17 +85,18 @@ public class FetchTableRequest {
             double getBatchOffset();
 
             @JsProperty
-            FetchTableRequest.ToObjectReturnType.SourceIdFieldType.TicketFieldType getTicket();
+            ApplyPreviewColumnsRequest.ToObjectReturnType.SourceIdFieldType.TicketFieldType getTicket();
 
             @JsProperty
             void setBatchOffset(double batchOffset);
 
             @JsProperty
-            void setTicket(FetchTableRequest.ToObjectReturnType.SourceIdFieldType.TicketFieldType ticket);
+            void setTicket(
+                    ApplyPreviewColumnsRequest.ToObjectReturnType.SourceIdFieldType.TicketFieldType ticket);
         }
 
         @JsOverlay
-        static FetchTableRequest.ToObjectReturnType create() {
+        static ApplyPreviewColumnsRequest.ToObjectReturnType create() {
             return Js.uncheckedCast(JsPropertyMap.of());
         }
 
@@ -103,13 +104,13 @@ public class FetchTableRequest {
         Object getResultId();
 
         @JsProperty
-        FetchTableRequest.ToObjectReturnType.SourceIdFieldType getSourceId();
+        ApplyPreviewColumnsRequest.ToObjectReturnType.SourceIdFieldType getSourceId();
 
         @JsProperty
         void setResultId(Object resultId);
 
         @JsProperty
-        void setSourceId(FetchTableRequest.ToObjectReturnType.SourceIdFieldType sourceId);
+        void setSourceId(ApplyPreviewColumnsRequest.ToObjectReturnType.SourceIdFieldType sourceId);
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -121,7 +122,7 @@ public class FetchTableRequest {
                 @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
                 public interface GetTicketUnionType {
                     @JsOverlay
-                    static FetchTableRequest.ToObjectReturnType0.SourceIdFieldType.TicketFieldType.GetTicketUnionType of(
+                    static ApplyPreviewColumnsRequest.ToObjectReturnType0.SourceIdFieldType.TicketFieldType.GetTicketUnionType of(
                             Object o) {
                         return Js.cast(o);
                     }
@@ -148,34 +149,34 @@ public class FetchTableRequest {
                 }
 
                 @JsOverlay
-                static FetchTableRequest.ToObjectReturnType0.SourceIdFieldType.TicketFieldType create() {
+                static ApplyPreviewColumnsRequest.ToObjectReturnType0.SourceIdFieldType.TicketFieldType create() {
                     return Js.uncheckedCast(JsPropertyMap.of());
                 }
 
                 @JsProperty
-                FetchTableRequest.ToObjectReturnType0.SourceIdFieldType.TicketFieldType.GetTicketUnionType getTicket();
+                ApplyPreviewColumnsRequest.ToObjectReturnType0.SourceIdFieldType.TicketFieldType.GetTicketUnionType getTicket();
 
                 @JsProperty
                 void setTicket(
-                        FetchTableRequest.ToObjectReturnType0.SourceIdFieldType.TicketFieldType.GetTicketUnionType ticket);
+                        ApplyPreviewColumnsRequest.ToObjectReturnType0.SourceIdFieldType.TicketFieldType.GetTicketUnionType ticket);
 
                 @JsOverlay
                 default void setTicket(String ticket) {
                     setTicket(
-                            Js.<FetchTableRequest.ToObjectReturnType0.SourceIdFieldType.TicketFieldType.GetTicketUnionType>uncheckedCast(
+                            Js.<ApplyPreviewColumnsRequest.ToObjectReturnType0.SourceIdFieldType.TicketFieldType.GetTicketUnionType>uncheckedCast(
                                     ticket));
                 }
 
                 @JsOverlay
                 default void setTicket(Uint8Array ticket) {
                     setTicket(
-                            Js.<FetchTableRequest.ToObjectReturnType0.SourceIdFieldType.TicketFieldType.GetTicketUnionType>uncheckedCast(
+                            Js.<ApplyPreviewColumnsRequest.ToObjectReturnType0.SourceIdFieldType.TicketFieldType.GetTicketUnionType>uncheckedCast(
                                     ticket));
                 }
             }
 
             @JsOverlay
-            static FetchTableRequest.ToObjectReturnType0.SourceIdFieldType create() {
+            static ApplyPreviewColumnsRequest.ToObjectReturnType0.SourceIdFieldType create() {
                 return Js.uncheckedCast(JsPropertyMap.of());
             }
 
@@ -183,18 +184,18 @@ public class FetchTableRequest {
             double getBatchOffset();
 
             @JsProperty
-            FetchTableRequest.ToObjectReturnType0.SourceIdFieldType.TicketFieldType getTicket();
+            ApplyPreviewColumnsRequest.ToObjectReturnType0.SourceIdFieldType.TicketFieldType getTicket();
 
             @JsProperty
             void setBatchOffset(double batchOffset);
 
             @JsProperty
             void setTicket(
-                    FetchTableRequest.ToObjectReturnType0.SourceIdFieldType.TicketFieldType ticket);
+                    ApplyPreviewColumnsRequest.ToObjectReturnType0.SourceIdFieldType.TicketFieldType ticket);
         }
 
         @JsOverlay
-        static FetchTableRequest.ToObjectReturnType0 create() {
+        static ApplyPreviewColumnsRequest.ToObjectReturnType0 create() {
             return Js.uncheckedCast(JsPropertyMap.of());
         }
 
@@ -202,24 +203,25 @@ public class FetchTableRequest {
         Object getResultId();
 
         @JsProperty
-        FetchTableRequest.ToObjectReturnType0.SourceIdFieldType getSourceId();
+        ApplyPreviewColumnsRequest.ToObjectReturnType0.SourceIdFieldType getSourceId();
 
         @JsProperty
         void setResultId(Object resultId);
 
         @JsProperty
-        void setSourceId(FetchTableRequest.ToObjectReturnType0.SourceIdFieldType sourceId);
+        void setSourceId(ApplyPreviewColumnsRequest.ToObjectReturnType0.SourceIdFieldType sourceId);
     }
 
-    public static native FetchTableRequest deserializeBinary(Uint8Array bytes);
+    public static native ApplyPreviewColumnsRequest deserializeBinary(Uint8Array bytes);
 
-    public static native FetchTableRequest deserializeBinaryFromReader(
-            FetchTableRequest message, Object reader);
+    public static native ApplyPreviewColumnsRequest deserializeBinaryFromReader(
+            ApplyPreviewColumnsRequest message, Object reader);
 
-    public static native void serializeBinaryToWriter(FetchTableRequest message, Object writer);
+    public static native void serializeBinaryToWriter(
+            ApplyPreviewColumnsRequest message, Object writer);
 
-    public static native FetchTableRequest.ToObjectReturnType toObject(
-            boolean includeInstance, FetchTableRequest msg);
+    public static native ApplyPreviewColumnsRequest.ToObjectReturnType toObject(
+            boolean includeInstance, ApplyPreviewColumnsRequest msg);
 
     public native void clearResultId();
 
@@ -243,7 +245,7 @@ public class FetchTableRequest {
 
     public native void setSourceId(TableReference value);
 
-    public native FetchTableRequest.ToObjectReturnType0 toObject();
+    public native ApplyPreviewColumnsRequest.ToObjectReturnType0 toObject();
 
-    public native FetchTableRequest.ToObjectReturnType0 toObject(boolean includeInstance);
+    public native ApplyPreviewColumnsRequest.ToObjectReturnType0 toObject(boolean includeInstance);
 }
