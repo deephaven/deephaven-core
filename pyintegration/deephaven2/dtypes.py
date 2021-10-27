@@ -87,7 +87,7 @@ class DType(Enum):
             raise DHError("failed to create a Java array.") from e
 
     def array_from(self, values: Iterable):
-        """ Create a Java array of the same data type populated with values from the Python iterable.
+        """ Create a Java array of the same data type populated with values from a Python iterable.
 
         Args:
             values: a Python iterable of compatible data type
