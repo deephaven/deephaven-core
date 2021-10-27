@@ -1503,6 +1503,8 @@ public final class DBLanguageParser extends GenericVisitorAdapter<Class<?>, DBLa
                 // The to-be-cast expr is a Python object field accessor
                 final String clsName = printer.pythonCastContext.getSimpleName();
                 printer.append(", " + clsName + ".class");
+                // Let's advertise to the caller our the casted type
+                ret = printer.pythonCastContext;
             }
             printer.append(')');
         } else {
