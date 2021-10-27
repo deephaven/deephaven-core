@@ -219,16 +219,53 @@ public class BatchTableRequest {
                     }
                 }
 
+                @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                public interface KindFieldType {
+                    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                    public interface InMemoryKeyBackedFieldType {
+                        @JsOverlay
+                        static BatchTableRequest.ToObjectReturnType.OpsListFieldType.CreateInputTableFieldType.KindFieldType.InMemoryKeyBackedFieldType create() {
+                            return Js.uncheckedCast(JsPropertyMap.of());
+                        }
+
+                        @JsProperty
+                        JsArray<String> getKeyColumnsList();
+
+                        @JsProperty
+                        void setKeyColumnsList(JsArray<String> keyColumnsList);
+
+                        @JsOverlay
+                        default void setKeyColumnsList(String[] keyColumnsList) {
+                            setKeyColumnsList(Js.<JsArray<String>>uncheckedCast(keyColumnsList));
+                        }
+                    }
+
+                    @JsOverlay
+                    static BatchTableRequest.ToObjectReturnType.OpsListFieldType.CreateInputTableFieldType.KindFieldType create() {
+                        return Js.uncheckedCast(JsPropertyMap.of());
+                    }
+
+                    @JsProperty
+                    Object getInMemoryAppendOnly();
+
+                    @JsProperty
+                    BatchTableRequest.ToObjectReturnType.OpsListFieldType.CreateInputTableFieldType.KindFieldType.InMemoryKeyBackedFieldType getInMemoryKeyBacked();
+
+                    @JsProperty
+                    void setInMemoryAppendOnly(Object inMemoryAppendOnly);
+
+                    @JsProperty
+                    void setInMemoryKeyBacked(
+                            BatchTableRequest.ToObjectReturnType.OpsListFieldType.CreateInputTableFieldType.KindFieldType.InMemoryKeyBackedFieldType inMemoryKeyBacked);
+                }
+
                 @JsOverlay
                 static BatchTableRequest.ToObjectReturnType.OpsListFieldType.CreateInputTableFieldType create() {
                     return Js.uncheckedCast(JsPropertyMap.of());
                 }
 
                 @JsProperty
-                JsArray<String> getKeyColumnsList();
-
-                @JsProperty
-                double getKind();
+                BatchTableRequest.ToObjectReturnType.OpsListFieldType.CreateInputTableFieldType.KindFieldType getKind();
 
                 @JsProperty
                 Object getResultId();
@@ -240,15 +277,8 @@ public class BatchTableRequest {
                 Object getSourceTableId();
 
                 @JsProperty
-                void setKeyColumnsList(JsArray<String> keyColumnsList);
-
-                @JsOverlay
-                default void setKeyColumnsList(String[] keyColumnsList) {
-                    setKeyColumnsList(Js.<JsArray<String>>uncheckedCast(keyColumnsList));
-                }
-
-                @JsProperty
-                void setKind(double kind);
+                void setKind(
+                        BatchTableRequest.ToObjectReturnType.OpsListFieldType.CreateInputTableFieldType.KindFieldType kind);
 
                 @JsProperty
                 void setResultId(Object resultId);
@@ -1965,16 +1995,53 @@ public class BatchTableRequest {
                     }
                 }
 
+                @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                public interface KindFieldType {
+                    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                    public interface InMemoryKeyBackedFieldType {
+                        @JsOverlay
+                        static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.CreateInputTableFieldType.KindFieldType.InMemoryKeyBackedFieldType create() {
+                            return Js.uncheckedCast(JsPropertyMap.of());
+                        }
+
+                        @JsProperty
+                        JsArray<String> getKeyColumnsList();
+
+                        @JsProperty
+                        void setKeyColumnsList(JsArray<String> keyColumnsList);
+
+                        @JsOverlay
+                        default void setKeyColumnsList(String[] keyColumnsList) {
+                            setKeyColumnsList(Js.<JsArray<String>>uncheckedCast(keyColumnsList));
+                        }
+                    }
+
+                    @JsOverlay
+                    static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.CreateInputTableFieldType.KindFieldType create() {
+                        return Js.uncheckedCast(JsPropertyMap.of());
+                    }
+
+                    @JsProperty
+                    Object getInMemoryAppendOnly();
+
+                    @JsProperty
+                    BatchTableRequest.ToObjectReturnType0.OpsListFieldType.CreateInputTableFieldType.KindFieldType.InMemoryKeyBackedFieldType getInMemoryKeyBacked();
+
+                    @JsProperty
+                    void setInMemoryAppendOnly(Object inMemoryAppendOnly);
+
+                    @JsProperty
+                    void setInMemoryKeyBacked(
+                            BatchTableRequest.ToObjectReturnType0.OpsListFieldType.CreateInputTableFieldType.KindFieldType.InMemoryKeyBackedFieldType inMemoryKeyBacked);
+                }
+
                 @JsOverlay
                 static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.CreateInputTableFieldType create() {
                     return Js.uncheckedCast(JsPropertyMap.of());
                 }
 
                 @JsProperty
-                JsArray<String> getKeyColumnsList();
-
-                @JsProperty
-                double getKind();
+                BatchTableRequest.ToObjectReturnType0.OpsListFieldType.CreateInputTableFieldType.KindFieldType getKind();
 
                 @JsProperty
                 Object getResultId();
@@ -1986,15 +2053,8 @@ public class BatchTableRequest {
                 Object getSourceTableId();
 
                 @JsProperty
-                void setKeyColumnsList(JsArray<String> keyColumnsList);
-
-                @JsOverlay
-                default void setKeyColumnsList(String[] keyColumnsList) {
-                    setKeyColumnsList(Js.<JsArray<String>>uncheckedCast(keyColumnsList));
-                }
-
-                @JsProperty
-                void setKind(double kind);
+                void setKind(
+                        BatchTableRequest.ToObjectReturnType0.OpsListFieldType.CreateInputTableFieldType.KindFieldType kind);
 
                 @JsProperty
                 void setResultId(Object resultId);

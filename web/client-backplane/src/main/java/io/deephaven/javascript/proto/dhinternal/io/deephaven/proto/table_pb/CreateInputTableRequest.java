@@ -2,7 +2,8 @@ package io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb;
 
 import elemental2.core.JsArray;
 import elemental2.core.Uint8Array;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.createinputtablerequest.InputTableKindMap;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.createinputtablerequest.DefinitionCase;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.createinputtablerequest.InputTableKind;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.Ticket;
 import jsinterop.annotations.JsOverlay;
 import jsinterop.annotations.JsPackage;
@@ -103,6 +104,46 @@ public class CreateInputTableRequest {
         }
 
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+        public interface KindFieldType {
+            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+            public interface InMemoryKeyBackedFieldType {
+                @JsOverlay
+                static CreateInputTableRequest.ToObjectReturnType.KindFieldType.InMemoryKeyBackedFieldType create() {
+                    return Js.uncheckedCast(JsPropertyMap.of());
+                }
+
+                @JsProperty
+                JsArray<String> getKeyColumnsList();
+
+                @JsProperty
+                void setKeyColumnsList(JsArray<String> keyColumnsList);
+
+                @JsOverlay
+                default void setKeyColumnsList(String[] keyColumnsList) {
+                    setKeyColumnsList(Js.<JsArray<String>>uncheckedCast(keyColumnsList));
+                }
+            }
+
+            @JsOverlay
+            static CreateInputTableRequest.ToObjectReturnType.KindFieldType create() {
+                return Js.uncheckedCast(JsPropertyMap.of());
+            }
+
+            @JsProperty
+            Object getInMemoryAppendOnly();
+
+            @JsProperty
+            CreateInputTableRequest.ToObjectReturnType.KindFieldType.InMemoryKeyBackedFieldType getInMemoryKeyBacked();
+
+            @JsProperty
+            void setInMemoryAppendOnly(Object inMemoryAppendOnly);
+
+            @JsProperty
+            void setInMemoryKeyBacked(
+                    CreateInputTableRequest.ToObjectReturnType.KindFieldType.InMemoryKeyBackedFieldType inMemoryKeyBacked);
+        }
+
+        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
         public interface ResultIdFieldType {
             @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
             public interface GetTicketUnionType {
@@ -186,10 +227,7 @@ public class CreateInputTableRequest {
         }
 
         @JsProperty
-        JsArray<String> getKeyColumnsList();
-
-        @JsProperty
-        double getKind();
+        CreateInputTableRequest.ToObjectReturnType.KindFieldType getKind();
 
         @JsProperty
         CreateInputTableRequest.ToObjectReturnType.ResultIdFieldType getResultId();
@@ -201,15 +239,7 @@ public class CreateInputTableRequest {
         CreateInputTableRequest.ToObjectReturnType.SourceTableIdFieldType getSourceTableId();
 
         @JsProperty
-        void setKeyColumnsList(JsArray<String> keyColumnsList);
-
-        @JsOverlay
-        default void setKeyColumnsList(String[] keyColumnsList) {
-            setKeyColumnsList(Js.<JsArray<String>>uncheckedCast(keyColumnsList));
-        }
-
-        @JsProperty
-        void setKind(double kind);
+        void setKind(CreateInputTableRequest.ToObjectReturnType.KindFieldType kind);
 
         @JsProperty
         void setResultId(CreateInputTableRequest.ToObjectReturnType.ResultIdFieldType resultId);
@@ -262,6 +292,46 @@ public class CreateInputTableRequest {
             default boolean isUint8Array() {
                 return (Object) this instanceof Uint8Array;
             }
+        }
+
+        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+        public interface KindFieldType {
+            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+            public interface InMemoryKeyBackedFieldType {
+                @JsOverlay
+                static CreateInputTableRequest.ToObjectReturnType0.KindFieldType.InMemoryKeyBackedFieldType create() {
+                    return Js.uncheckedCast(JsPropertyMap.of());
+                }
+
+                @JsProperty
+                JsArray<String> getKeyColumnsList();
+
+                @JsProperty
+                void setKeyColumnsList(JsArray<String> keyColumnsList);
+
+                @JsOverlay
+                default void setKeyColumnsList(String[] keyColumnsList) {
+                    setKeyColumnsList(Js.<JsArray<String>>uncheckedCast(keyColumnsList));
+                }
+            }
+
+            @JsOverlay
+            static CreateInputTableRequest.ToObjectReturnType0.KindFieldType create() {
+                return Js.uncheckedCast(JsPropertyMap.of());
+            }
+
+            @JsProperty
+            Object getInMemoryAppendOnly();
+
+            @JsProperty
+            CreateInputTableRequest.ToObjectReturnType0.KindFieldType.InMemoryKeyBackedFieldType getInMemoryKeyBacked();
+
+            @JsProperty
+            void setInMemoryAppendOnly(Object inMemoryAppendOnly);
+
+            @JsProperty
+            void setInMemoryKeyBacked(
+                    CreateInputTableRequest.ToObjectReturnType0.KindFieldType.InMemoryKeyBackedFieldType inMemoryKeyBacked);
         }
 
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -348,10 +418,7 @@ public class CreateInputTableRequest {
         }
 
         @JsProperty
-        JsArray<String> getKeyColumnsList();
-
-        @JsProperty
-        double getKind();
+        CreateInputTableRequest.ToObjectReturnType0.KindFieldType getKind();
 
         @JsProperty
         CreateInputTableRequest.ToObjectReturnType0.ResultIdFieldType getResultId();
@@ -363,15 +430,7 @@ public class CreateInputTableRequest {
         CreateInputTableRequest.ToObjectReturnType0.SourceTableIdFieldType getSourceTableId();
 
         @JsProperty
-        void setKeyColumnsList(JsArray<String> keyColumnsList);
-
-        @JsOverlay
-        default void setKeyColumnsList(String[] keyColumnsList) {
-            setKeyColumnsList(Js.<JsArray<String>>uncheckedCast(keyColumnsList));
-        }
-
-        @JsProperty
-        void setKind(double kind);
+        void setKind(CreateInputTableRequest.ToObjectReturnType0.KindFieldType kind);
 
         @JsProperty
         void setResultId(CreateInputTableRequest.ToObjectReturnType0.ResultIdFieldType resultId);
@@ -396,8 +455,6 @@ public class CreateInputTableRequest {
                 CreateInputTableRequest.ToObjectReturnType0.SourceTableIdFieldType sourceTableId);
     }
 
-    public static InputTableKindMap InputTableKind;
-
     public static native CreateInputTableRequest deserializeBinary(Uint8Array bytes);
 
     public static native CreateInputTableRequest deserializeBinaryFromReader(
@@ -408,11 +465,7 @@ public class CreateInputTableRequest {
     public static native CreateInputTableRequest.ToObjectReturnType toObject(
             boolean includeInstance, CreateInputTableRequest msg);
 
-    public native String addKeyColumns(String value, double index);
-
-    public native String addKeyColumns(String value);
-
-    public native void clearKeyColumnsList();
+    public native void clearKind();
 
     public native void clearResultId();
 
@@ -420,11 +473,9 @@ public class CreateInputTableRequest {
 
     public native void clearSourceTableId();
 
-    public native int getDefinitionCase();
+    public native DefinitionCase getDefinitionCase();
 
-    public native JsArray<String> getKeyColumnsList();
-
-    public native double getKind();
+    public native InputTableKind getKind();
 
     public native Ticket getResultId();
 
@@ -436,6 +487,8 @@ public class CreateInputTableRequest {
 
     public native TableReference getSourceTableId();
 
+    public native boolean hasKind();
+
     public native boolean hasResultId();
 
     public native boolean hasSchema();
@@ -444,14 +497,9 @@ public class CreateInputTableRequest {
 
     public native Uint8Array serializeBinary();
 
-    public native void setKeyColumnsList(JsArray<String> value);
+    public native void setKind();
 
-    @JsOverlay
-    public final void setKeyColumnsList(String[] value) {
-        setKeyColumnsList(Js.<JsArray<String>>uncheckedCast(value));
-    }
-
-    public native void setKind(double value);
+    public native void setKind(InputTableKind value);
 
     public native void setResultId();
 

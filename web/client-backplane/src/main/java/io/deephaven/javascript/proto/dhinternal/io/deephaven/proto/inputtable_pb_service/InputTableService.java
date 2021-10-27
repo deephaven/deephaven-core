@@ -13,9 +13,9 @@ import jsinterop.base.JsPropertyMap;
         namespace = JsPackage.GLOBAL)
 public class InputTableService {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface AddTablesToInputTableType {
+    public interface AddTableToInputTableType {
         @JsOverlay
-        static InputTableService.AddTablesToInputTableType create() {
+        static InputTableService.AddTableToInputTableType create() {
             return Js.uncheckedCast(JsPropertyMap.of());
         }
 
@@ -57,9 +57,9 @@ public class InputTableService {
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface DeleteTablesFromInputTableType {
+    public interface DeleteTableFromInputTableType {
         @JsOverlay
-        static InputTableService.DeleteTablesFromInputTableType create() {
+        static InputTableService.DeleteTableFromInputTableType create() {
             return Js.uncheckedCast(JsPropertyMap.of());
         }
 
@@ -100,7 +100,7 @@ public class InputTableService {
         void setService(Object service);
     }
 
-    public static InputTableService.AddTablesToInputTableType AddTablesToInputTable;
-    public static InputTableService.DeleteTablesFromInputTableType DeleteTablesFromInputTable;
+    public static InputTableService.AddTableToInputTableType AddTableToInputTable;
+    public static InputTableService.DeleteTableFromInputTableType DeleteTableFromInputTable;
     public static String serviceName;
 }

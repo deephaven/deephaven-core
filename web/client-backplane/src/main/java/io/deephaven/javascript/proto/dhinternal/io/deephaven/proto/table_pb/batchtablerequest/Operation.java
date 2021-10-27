@@ -241,16 +241,53 @@ public class Operation {
                 }
             }
 
+            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+            public interface KindFieldType {
+                @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                public interface InMemoryKeyBackedFieldType {
+                    @JsOverlay
+                    static Operation.ToObjectReturnType.CreateInputTableFieldType.KindFieldType.InMemoryKeyBackedFieldType create() {
+                        return Js.uncheckedCast(JsPropertyMap.of());
+                    }
+
+                    @JsProperty
+                    JsArray<String> getKeyColumnsList();
+
+                    @JsProperty
+                    void setKeyColumnsList(JsArray<String> keyColumnsList);
+
+                    @JsOverlay
+                    default void setKeyColumnsList(String[] keyColumnsList) {
+                        setKeyColumnsList(Js.<JsArray<String>>uncheckedCast(keyColumnsList));
+                    }
+                }
+
+                @JsOverlay
+                static Operation.ToObjectReturnType.CreateInputTableFieldType.KindFieldType create() {
+                    return Js.uncheckedCast(JsPropertyMap.of());
+                }
+
+                @JsProperty
+                Object getInMemoryAppendOnly();
+
+                @JsProperty
+                Operation.ToObjectReturnType.CreateInputTableFieldType.KindFieldType.InMemoryKeyBackedFieldType getInMemoryKeyBacked();
+
+                @JsProperty
+                void setInMemoryAppendOnly(Object inMemoryAppendOnly);
+
+                @JsProperty
+                void setInMemoryKeyBacked(
+                        Operation.ToObjectReturnType.CreateInputTableFieldType.KindFieldType.InMemoryKeyBackedFieldType inMemoryKeyBacked);
+            }
+
             @JsOverlay
             static Operation.ToObjectReturnType.CreateInputTableFieldType create() {
                 return Js.uncheckedCast(JsPropertyMap.of());
             }
 
             @JsProperty
-            JsArray<String> getKeyColumnsList();
-
-            @JsProperty
-            double getKind();
+            Operation.ToObjectReturnType.CreateInputTableFieldType.KindFieldType getKind();
 
             @JsProperty
             Object getResultId();
@@ -262,15 +299,7 @@ public class Operation {
             Object getSourceTableId();
 
             @JsProperty
-            void setKeyColumnsList(JsArray<String> keyColumnsList);
-
-            @JsOverlay
-            default void setKeyColumnsList(String[] keyColumnsList) {
-                setKeyColumnsList(Js.<JsArray<String>>uncheckedCast(keyColumnsList));
-            }
-
-            @JsProperty
-            void setKind(double kind);
+            void setKind(Operation.ToObjectReturnType.CreateInputTableFieldType.KindFieldType kind);
 
             @JsProperty
             void setResultId(Object resultId);
@@ -1951,16 +1980,53 @@ public class Operation {
                 }
             }
 
+            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+            public interface KindFieldType {
+                @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                public interface InMemoryKeyBackedFieldType {
+                    @JsOverlay
+                    static Operation.ToObjectReturnType0.CreateInputTableFieldType.KindFieldType.InMemoryKeyBackedFieldType create() {
+                        return Js.uncheckedCast(JsPropertyMap.of());
+                    }
+
+                    @JsProperty
+                    JsArray<String> getKeyColumnsList();
+
+                    @JsProperty
+                    void setKeyColumnsList(JsArray<String> keyColumnsList);
+
+                    @JsOverlay
+                    default void setKeyColumnsList(String[] keyColumnsList) {
+                        setKeyColumnsList(Js.<JsArray<String>>uncheckedCast(keyColumnsList));
+                    }
+                }
+
+                @JsOverlay
+                static Operation.ToObjectReturnType0.CreateInputTableFieldType.KindFieldType create() {
+                    return Js.uncheckedCast(JsPropertyMap.of());
+                }
+
+                @JsProperty
+                Object getInMemoryAppendOnly();
+
+                @JsProperty
+                Operation.ToObjectReturnType0.CreateInputTableFieldType.KindFieldType.InMemoryKeyBackedFieldType getInMemoryKeyBacked();
+
+                @JsProperty
+                void setInMemoryAppendOnly(Object inMemoryAppendOnly);
+
+                @JsProperty
+                void setInMemoryKeyBacked(
+                        Operation.ToObjectReturnType0.CreateInputTableFieldType.KindFieldType.InMemoryKeyBackedFieldType inMemoryKeyBacked);
+            }
+
             @JsOverlay
             static Operation.ToObjectReturnType0.CreateInputTableFieldType create() {
                 return Js.uncheckedCast(JsPropertyMap.of());
             }
 
             @JsProperty
-            JsArray<String> getKeyColumnsList();
-
-            @JsProperty
-            double getKind();
+            Operation.ToObjectReturnType0.CreateInputTableFieldType.KindFieldType getKind();
 
             @JsProperty
             Object getResultId();
@@ -1972,15 +2038,7 @@ public class Operation {
             Object getSourceTableId();
 
             @JsProperty
-            void setKeyColumnsList(JsArray<String> keyColumnsList);
-
-            @JsOverlay
-            default void setKeyColumnsList(String[] keyColumnsList) {
-                setKeyColumnsList(Js.<JsArray<String>>uncheckedCast(keyColumnsList));
-            }
-
-            @JsProperty
-            void setKind(double kind);
+            void setKind(Operation.ToObjectReturnType0.CreateInputTableFieldType.KindFieldType kind);
 
             @JsProperty
             void setResultId(Object resultId);

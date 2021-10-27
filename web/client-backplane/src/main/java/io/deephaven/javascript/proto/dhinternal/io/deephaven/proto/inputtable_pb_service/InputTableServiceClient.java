@@ -19,11 +19,11 @@ import jsinterop.base.JsPropertyMap;
         namespace = JsPackage.GLOBAL)
 public class InputTableServiceClient {
     @JsFunction
-    public interface AddTablesToInputTableCallbackFn {
+    public interface AddTableToInputTableCallbackFn {
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
         public interface P0Type {
             @JsOverlay
-            static InputTableServiceClient.AddTablesToInputTableCallbackFn.P0Type create() {
+            static InputTableServiceClient.AddTableToInputTableCallbackFn.P0Type create() {
                 return Js.uncheckedCast(JsPropertyMap.of());
             }
 
@@ -47,15 +47,15 @@ public class InputTableServiceClient {
         }
 
         void onInvoke(
-                InputTableServiceClient.AddTablesToInputTableCallbackFn.P0Type p0, AddTableResponse p1);
+                InputTableServiceClient.AddTableToInputTableCallbackFn.P0Type p0, AddTableResponse p1);
     }
 
     @JsFunction
-    public interface AddTablesToInputTableMetadata_or_callbackFn {
+    public interface AddTableToInputTableMetadata_or_callbackFn {
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
         public interface P0Type {
             @JsOverlay
-            static InputTableServiceClient.AddTablesToInputTableMetadata_or_callbackFn.P0Type create() {
+            static InputTableServiceClient.AddTableToInputTableMetadata_or_callbackFn.P0Type create() {
                 return Js.uncheckedCast(JsPropertyMap.of());
             }
 
@@ -79,19 +79,19 @@ public class InputTableServiceClient {
         }
 
         void onInvoke(
-                InputTableServiceClient.AddTablesToInputTableMetadata_or_callbackFn.P0Type p0,
+                InputTableServiceClient.AddTableToInputTableMetadata_or_callbackFn.P0Type p0,
                 AddTableResponse p1);
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface AddTablesToInputTableMetadata_or_callbackUnionType {
+    public interface AddTableToInputTableMetadata_or_callbackUnionType {
         @JsOverlay
-        static InputTableServiceClient.AddTablesToInputTableMetadata_or_callbackUnionType of(Object o) {
+        static InputTableServiceClient.AddTableToInputTableMetadata_or_callbackUnionType of(Object o) {
             return Js.cast(o);
         }
 
         @JsOverlay
-        default InputTableServiceClient.AddTablesToInputTableMetadata_or_callbackFn asAddTablesToInputTableMetadata_or_callbackFn() {
+        default InputTableServiceClient.AddTableToInputTableMetadata_or_callbackFn asAddTableToInputTableMetadata_or_callbackFn() {
             return Js.cast(this);
         }
 
@@ -101,8 +101,8 @@ public class InputTableServiceClient {
         }
 
         @JsOverlay
-        default boolean isAddTablesToInputTableMetadata_or_callbackFn() {
-            return (Object) this instanceof InputTableServiceClient.AddTablesToInputTableMetadata_or_callbackFn;
+        default boolean isAddTableToInputTableMetadata_or_callbackFn() {
+            return (Object) this instanceof InputTableServiceClient.AddTableToInputTableMetadata_or_callbackFn;
         }
 
         @JsOverlay
@@ -112,11 +112,11 @@ public class InputTableServiceClient {
     }
 
     @JsFunction
-    public interface DeleteTablesFromInputTableCallbackFn {
+    public interface DeleteTableFromInputTableCallbackFn {
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
         public interface P0Type {
             @JsOverlay
-            static InputTableServiceClient.DeleteTablesFromInputTableCallbackFn.P0Type create() {
+            static InputTableServiceClient.DeleteTableFromInputTableCallbackFn.P0Type create() {
                 return Js.uncheckedCast(JsPropertyMap.of());
             }
 
@@ -140,16 +140,16 @@ public class InputTableServiceClient {
         }
 
         void onInvoke(
-                InputTableServiceClient.DeleteTablesFromInputTableCallbackFn.P0Type p0,
+                InputTableServiceClient.DeleteTableFromInputTableCallbackFn.P0Type p0,
                 DeleteTableResponse p1);
     }
 
     @JsFunction
-    public interface DeleteTablesFromInputTableMetadata_or_callbackFn {
+    public interface DeleteTableFromInputTableMetadata_or_callbackFn {
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
         public interface P0Type {
             @JsOverlay
-            static InputTableServiceClient.DeleteTablesFromInputTableMetadata_or_callbackFn.P0Type create() {
+            static InputTableServiceClient.DeleteTableFromInputTableMetadata_or_callbackFn.P0Type create() {
                 return Js.uncheckedCast(JsPropertyMap.of());
             }
 
@@ -173,14 +173,14 @@ public class InputTableServiceClient {
         }
 
         void onInvoke(
-                InputTableServiceClient.DeleteTablesFromInputTableMetadata_or_callbackFn.P0Type p0,
+                InputTableServiceClient.DeleteTableFromInputTableMetadata_or_callbackFn.P0Type p0,
                 DeleteTableResponse p1);
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface DeleteTablesFromInputTableMetadata_or_callbackUnionType {
+    public interface DeleteTableFromInputTableMetadata_or_callbackUnionType {
         @JsOverlay
-        static InputTableServiceClient.DeleteTablesFromInputTableMetadata_or_callbackUnionType of(
+        static InputTableServiceClient.DeleteTableFromInputTableMetadata_or_callbackUnionType of(
                 Object o) {
             return Js.cast(o);
         }
@@ -191,7 +191,7 @@ public class InputTableServiceClient {
         }
 
         @JsOverlay
-        default InputTableServiceClient.DeleteTablesFromInputTableMetadata_or_callbackFn asDeleteTablesFromInputTableMetadata_or_callbackFn() {
+        default InputTableServiceClient.DeleteTableFromInputTableMetadata_or_callbackFn asDeleteTableFromInputTableMetadata_or_callbackFn() {
             return Js.cast(this);
         }
 
@@ -201,8 +201,8 @@ public class InputTableServiceClient {
         }
 
         @JsOverlay
-        default boolean isDeleteTablesFromInputTableMetadata_or_callbackFn() {
-            return (Object) this instanceof InputTableServiceClient.DeleteTablesFromInputTableMetadata_or_callbackFn;
+        default boolean isDeleteTableFromInputTableMetadata_or_callbackFn() {
+            return (Object) this instanceof InputTableServiceClient.DeleteTableFromInputTableMetadata_or_callbackFn;
         }
     }
 
@@ -213,106 +213,106 @@ public class InputTableServiceClient {
     public InputTableServiceClient(String serviceHost) {}
 
     @JsOverlay
-    public final UnaryResponse addTablesToInputTable(
+    public final UnaryResponse addTableToInputTable(
             AddTableRequest requestMessage,
-            InputTableServiceClient.AddTablesToInputTableMetadata_or_callbackFn metadata_or_callback,
-            InputTableServiceClient.AddTablesToInputTableCallbackFn callback) {
-        return addTablesToInputTable(
+            InputTableServiceClient.AddTableToInputTableMetadata_or_callbackFn metadata_or_callback,
+            InputTableServiceClient.AddTableToInputTableCallbackFn callback) {
+        return addTableToInputTable(
                 requestMessage,
-                Js.<InputTableServiceClient.AddTablesToInputTableMetadata_or_callbackUnionType>uncheckedCast(
+                Js.<InputTableServiceClient.AddTableToInputTableMetadata_or_callbackUnionType>uncheckedCast(
                         metadata_or_callback),
                 callback);
     }
 
     @JsOverlay
-    public final UnaryResponse addTablesToInputTable(
+    public final UnaryResponse addTableToInputTable(
             AddTableRequest requestMessage,
-            InputTableServiceClient.AddTablesToInputTableMetadata_or_callbackFn metadata_or_callback) {
-        return addTablesToInputTable(
+            InputTableServiceClient.AddTableToInputTableMetadata_or_callbackFn metadata_or_callback) {
+        return addTableToInputTable(
                 requestMessage,
-                Js.<InputTableServiceClient.AddTablesToInputTableMetadata_or_callbackUnionType>uncheckedCast(
+                Js.<InputTableServiceClient.AddTableToInputTableMetadata_or_callbackUnionType>uncheckedCast(
                         metadata_or_callback));
     }
 
-    public native UnaryResponse addTablesToInputTable(
+    public native UnaryResponse addTableToInputTable(
             AddTableRequest requestMessage,
-            InputTableServiceClient.AddTablesToInputTableMetadata_or_callbackUnionType metadata_or_callback,
-            InputTableServiceClient.AddTablesToInputTableCallbackFn callback);
+            InputTableServiceClient.AddTableToInputTableMetadata_or_callbackUnionType metadata_or_callback,
+            InputTableServiceClient.AddTableToInputTableCallbackFn callback);
 
-    public native UnaryResponse addTablesToInputTable(
+    public native UnaryResponse addTableToInputTable(
             AddTableRequest requestMessage,
-            InputTableServiceClient.AddTablesToInputTableMetadata_or_callbackUnionType metadata_or_callback);
+            InputTableServiceClient.AddTableToInputTableMetadata_or_callbackUnionType metadata_or_callback);
 
     @JsOverlay
-    public final UnaryResponse addTablesToInputTable(
+    public final UnaryResponse addTableToInputTable(
             AddTableRequest requestMessage,
             BrowserHeaders metadata_or_callback,
-            InputTableServiceClient.AddTablesToInputTableCallbackFn callback) {
-        return addTablesToInputTable(
+            InputTableServiceClient.AddTableToInputTableCallbackFn callback) {
+        return addTableToInputTable(
                 requestMessage,
-                Js.<InputTableServiceClient.AddTablesToInputTableMetadata_or_callbackUnionType>uncheckedCast(
+                Js.<InputTableServiceClient.AddTableToInputTableMetadata_or_callbackUnionType>uncheckedCast(
                         metadata_or_callback),
                 callback);
     }
 
     @JsOverlay
-    public final UnaryResponse addTablesToInputTable(
+    public final UnaryResponse addTableToInputTable(
             AddTableRequest requestMessage, BrowserHeaders metadata_or_callback) {
-        return addTablesToInputTable(
+        return addTableToInputTable(
                 requestMessage,
-                Js.<InputTableServiceClient.AddTablesToInputTableMetadata_or_callbackUnionType>uncheckedCast(
+                Js.<InputTableServiceClient.AddTableToInputTableMetadata_or_callbackUnionType>uncheckedCast(
                         metadata_or_callback));
     }
 
     @JsOverlay
-    public final UnaryResponse deleteTablesFromInputTable(
+    public final UnaryResponse deleteTableFromInputTable(
             DeleteTableRequest requestMessage,
             BrowserHeaders metadata_or_callback,
-            InputTableServiceClient.DeleteTablesFromInputTableCallbackFn callback) {
-        return deleteTablesFromInputTable(
+            InputTableServiceClient.DeleteTableFromInputTableCallbackFn callback) {
+        return deleteTableFromInputTable(
                 requestMessage,
-                Js.<InputTableServiceClient.DeleteTablesFromInputTableMetadata_or_callbackUnionType>uncheckedCast(
+                Js.<InputTableServiceClient.DeleteTableFromInputTableMetadata_or_callbackUnionType>uncheckedCast(
                         metadata_or_callback),
                 callback);
     }
 
     @JsOverlay
-    public final UnaryResponse deleteTablesFromInputTable(
+    public final UnaryResponse deleteTableFromInputTable(
             DeleteTableRequest requestMessage, BrowserHeaders metadata_or_callback) {
-        return deleteTablesFromInputTable(
+        return deleteTableFromInputTable(
                 requestMessage,
-                Js.<InputTableServiceClient.DeleteTablesFromInputTableMetadata_or_callbackUnionType>uncheckedCast(
+                Js.<InputTableServiceClient.DeleteTableFromInputTableMetadata_or_callbackUnionType>uncheckedCast(
                         metadata_or_callback));
     }
 
     @JsOverlay
-    public final UnaryResponse deleteTablesFromInputTable(
+    public final UnaryResponse deleteTableFromInputTable(
             DeleteTableRequest requestMessage,
-            InputTableServiceClient.DeleteTablesFromInputTableMetadata_or_callbackFn metadata_or_callback,
-            InputTableServiceClient.DeleteTablesFromInputTableCallbackFn callback) {
-        return deleteTablesFromInputTable(
+            InputTableServiceClient.DeleteTableFromInputTableMetadata_or_callbackFn metadata_or_callback,
+            InputTableServiceClient.DeleteTableFromInputTableCallbackFn callback) {
+        return deleteTableFromInputTable(
                 requestMessage,
-                Js.<InputTableServiceClient.DeleteTablesFromInputTableMetadata_or_callbackUnionType>uncheckedCast(
+                Js.<InputTableServiceClient.DeleteTableFromInputTableMetadata_or_callbackUnionType>uncheckedCast(
                         metadata_or_callback),
                 callback);
     }
 
     @JsOverlay
-    public final UnaryResponse deleteTablesFromInputTable(
+    public final UnaryResponse deleteTableFromInputTable(
             DeleteTableRequest requestMessage,
-            InputTableServiceClient.DeleteTablesFromInputTableMetadata_or_callbackFn metadata_or_callback) {
-        return deleteTablesFromInputTable(
+            InputTableServiceClient.DeleteTableFromInputTableMetadata_or_callbackFn metadata_or_callback) {
+        return deleteTableFromInputTable(
                 requestMessage,
-                Js.<InputTableServiceClient.DeleteTablesFromInputTableMetadata_or_callbackUnionType>uncheckedCast(
+                Js.<InputTableServiceClient.DeleteTableFromInputTableMetadata_or_callbackUnionType>uncheckedCast(
                         metadata_or_callback));
     }
 
-    public native UnaryResponse deleteTablesFromInputTable(
+    public native UnaryResponse deleteTableFromInputTable(
             DeleteTableRequest requestMessage,
-            InputTableServiceClient.DeleteTablesFromInputTableMetadata_or_callbackUnionType metadata_or_callback,
-            InputTableServiceClient.DeleteTablesFromInputTableCallbackFn callback);
+            InputTableServiceClient.DeleteTableFromInputTableMetadata_or_callbackUnionType metadata_or_callback,
+            InputTableServiceClient.DeleteTableFromInputTableCallbackFn callback);
 
-    public native UnaryResponse deleteTablesFromInputTable(
+    public native UnaryResponse deleteTableFromInputTable(
             DeleteTableRequest requestMessage,
-            InputTableServiceClient.DeleteTablesFromInputTableMetadata_or_callbackUnionType metadata_or_callback);
+            InputTableServiceClient.DeleteTableFromInputTableMetadata_or_callbackUnionType metadata_or_callback);
 }
