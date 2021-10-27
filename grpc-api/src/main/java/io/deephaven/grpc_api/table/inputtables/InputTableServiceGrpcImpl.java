@@ -30,12 +30,14 @@ public class InputTableServiceGrpcImpl extends InputTableServiceGrpc.InputTableS
     }
 
     @Override
-    public void addTablesToInputTable(AddTableRequest request, StreamObserver<AddTableResponse> responseObserver) {
+    public void addTableToInputTable(AddTableRequest request, StreamObserver<AddTableResponse> responseObserver) {
         GrpcUtil.rpcWrapper(log, responseObserver, () -> {
             final SessionState session = sessionService.getCurrentSession();
 
-            SessionState.ExportObject<Table> targetTable = ticketRouter.resolve(session, request.getInputTable(), "inputTable");
-            SessionState.ExportObject<Table> tableToAdd = ticketRouter.resolve(session, request.getTableToAdd(), "tableToAdd");
+            SessionState.ExportObject<Table> targetTable =
+                    ticketRouter.resolve(session, request.getInputTable(), "inputTable");
+            SessionState.ExportObject<Table> tableToAdd =
+                    ticketRouter.resolve(session, request.getTableToAdd(), "tableToAdd");
 
             session.nonExport()
                     .requiresSerialQueue()
@@ -44,7 +46,8 @@ public class InputTableServiceGrpcImpl extends InputTableServiceGrpc.InputTableS
                     .submit(() -> {
                         Object inputTable = targetTable.get().getAttribute(Table.INPUT_TABLE_ATTRIBUTE);
                         if (!(inputTable instanceof MutableInputTable)) {
-                            throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Table can't be used as an input table");
+                            throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
+                                    "Table can't be used as an input table");
                         }
 
                         MutableInputTable mutableInputTable = (MutableInputTable) inputTable;
@@ -54,7 +57,8 @@ public class InputTableServiceGrpcImpl extends InputTableServiceGrpc.InputTableS
                         try {
                             mutableInputTable.validateAddOrModify(table);
                         } catch (TableDefinition.IncompatibleTableDefinitionException exception) {
-                            throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Provided tables's columns are not compatible: " + exception.getMessage());
+                            throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
+                                    "Provided tables's columns are not compatible: " + exception.getMessage());
                         }
 
                         // actually add the tables contents
@@ -68,12 +72,15 @@ public class InputTableServiceGrpcImpl extends InputTableServiceGrpc.InputTableS
     }
 
     @Override
-    public void deleteTablesFromInputTable(DeleteTableRequest request, StreamObserver<DeleteTableResponse> responseObserver) {
+    public void deleteTableFromInputTable(DeleteTableRequest request,
+            StreamObserver<DeleteTableResponse> responseObserver) {
         GrpcUtil.rpcWrapper(log, responseObserver, () -> {
             final SessionState session = sessionService.getCurrentSession();
 
-            SessionState.ExportObject<Table> targetTable = ticketRouter.resolve(session, request.getInputTable(), "inputTable");
-            SessionState.ExportObject<Table> tableToDeleteExport = ticketRouter.resolve(session, request.getTableToRemove(), "tableToDelete");
+            SessionState.ExportObject<Table> targetTable =
+                    ticketRouter.resolve(session, request.getInputTable(), "inputTable");
+            SessionState.ExportObject<Table> tableToDeleteExport =
+                    ticketRouter.resolve(session, request.getTableToRemove(), "tableToDelete");
 
             session.nonExport()
                     .requiresSerialQueue()
@@ -82,7 +89,8 @@ public class InputTableServiceGrpcImpl extends InputTableServiceGrpc.InputTableS
                     .submit(() -> {
                         Object inputTable = targetTable.get().getAttribute(Table.INPUT_TABLE_ATTRIBUTE);
                         if (!(inputTable instanceof MutableInputTable)) {
-                            throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Table can't be used as an input table");
+                            throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
+                                    "Table can't be used as an input table");
                         }
 
                         MutableInputTable mutableInputTable = (MutableInputTable) inputTable;
@@ -93,16 +101,18 @@ public class InputTableServiceGrpcImpl extends InputTableServiceGrpc.InputTableS
                         try {
                             mutableInputTable.validateDelete(tableToDelete);
                         } catch (TableDefinition.IncompatibleTableDefinitionException exception) {
-                            throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Provided tables's columns are not compatible: " + exception.getMessage());
+                            throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
+                                    "Provided tables's columns are not compatible: " + exception.getMessage());
                         } catch (UnsupportedOperationException exception) {
-                            throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Provided input table does not support delete.");
+                            throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
+                                    "Provided input table does not support delete.");
                         }
 
                         // actually delete the table's contents
                         try {
                             mutableInputTable.delete(tableToDelete);
                         } catch (IOException ioException) {
-                            throw GrpcUtil.statusRuntimeException(Code.DATA_LOSS, "Error adding table to inputtable");
+                            throw GrpcUtil.statusRuntimeException(Code.DATA_LOSS, "Error deleting table from inputtable");
                         }
                     });
         });

@@ -11,12 +11,11 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * A minimal interface for mutable shared tables, providing the ability to write to
- * the table instance this is attached to. MutableInputTable instances are set on the
- * table as an attribute.
+ * A minimal interface for mutable shared tables, providing the ability to write to the table instance this is attached
+ * to. MutableInputTable instances are set on the table as an attribute.
  *
- * Implementations of this interface will make their own guarantees about how atomically
- * changes will be applied and what operations they support.
+ * Implementations of this interface will make their own guarantees about how atomically changes will be applied and
+ * what operations they support.
  */
 public interface MutableInputTable extends InputTableRowSetter, InputTableEnumGetter {
 
@@ -28,8 +27,7 @@ public interface MutableInputTable extends InputTableRowSetter, InputTableEnumGe
     List<String> getKeyNames();
 
     /**
-     * Gets the names of the value columns. By default, any column not marked as a key column
-     * is a value column.
+     * Gets the names of the value columns. By default, any column not marked as a key column is a value column.
      *
      * @return a list with the names of the value columns of this input table
      */
@@ -62,13 +60,15 @@ public interface MutableInputTable extends InputTableRowSetter, InputTableEnumGe
      *
      * @param tableToDelete the definition of the table to delete
      * @throws UnsupportedOperationException if this table does not support deletes
-     * @throws io.deephaven.db.exceptions.ArgumentException if the given definition isn't compatible to be used to delete
+     * @throws io.deephaven.db.exceptions.ArgumentException if the given definition isn't compatible to be used to
+     *         delete
      */
     default void validateDelete(Table tableToDelete) {
         final TableDefinition keyDefinition = tableToDelete.getDefinition();
         final TableDefinition thisDefinition = getTableDefinition();
         final StringBuilder error = new StringBuilder();
-        for (String keyColumn : getKeyNames()) {
+        final List<String> keyNames = getKeyNames();
+        for (String keyColumn : keyNames) {
             final ColumnDefinition<?> colDef = keyDefinition.getColumn(keyColumn);
             final ColumnDefinition<?> thisColDef = thisDefinition.getColumn(keyColumn);
             if (colDef == null) {
@@ -77,7 +77,7 @@ public interface MutableInputTable extends InputTableRowSetter, InputTableEnumGe
                 error.append("Key Column \"").append(keyColumn).append("\" is not compatible.\n");
             }
         }
-        final List<String> extraKeys = keyDefinition.getColumnNames().stream().filter(kd -> !getKeyNames().contains(kd))
+        final List<String> extraKeys = keyDefinition.getColumnNames().stream().filter(kd -> !keyNames.contains(kd))
                 .collect(Collectors.toList());
         if (!extraKeys.isEmpty()) {
             error.append("Unknown key columns: ").append(extraKeys);

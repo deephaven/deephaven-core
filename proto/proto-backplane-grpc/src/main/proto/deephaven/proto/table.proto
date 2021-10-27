@@ -585,11 +585,19 @@ message RunChartDownsampleRequest {
 }
 
 message CreateInputTableRequest {
-  enum InputTableKind {
+  message InputTableKind {
     // Creates an in-memory append-only table - rows cannot be modified or deleted.
-    APPEND_ONLY = 0;
+    message InMemoryAppendOnly {
+
+    }
     // Creates an in-memory table that supports updates and deletes by keys.
-    KEYED_ARRAY_BACKED = 1;
+    message InMemoryKeyBacked {
+      repeated string key_columns = 1;
+    }
+    oneof kind {
+      InMemoryAppendOnly in_memory_append_only = 1;
+      InMemoryKeyBacked in_memory_key_backed = 2;
+    }
   }
 
   Ticket result_id = 1;
@@ -601,12 +609,7 @@ message CreateInputTableRequest {
   }
 
   // Specifies what type of input table to create.
-  // TODO consider replacing with string type, or oneof?
   InputTableKind kind = 4;
-
-  repeated string key_columns = 5;
-
-  //TODO support enum columns using some arrow format?
 }
 
 message BatchTableRequest {

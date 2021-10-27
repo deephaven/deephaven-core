@@ -4,7 +4,6 @@ import io.deephaven.db.tables.ColumnDefinition;
 import io.deephaven.db.exceptions.ArgumentException;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.TableDefinition;
-import io.deephaven.db.tables.utils.TableTools;
 import io.deephaven.db.v2.QueryTable;
 import io.deephaven.db.v2.sources.*;
 import io.deephaven.db.v2.sources.chunk.*;
@@ -16,8 +15,6 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * An in-memory table that has keys for each row, which can be updated on the LTM.
@@ -112,9 +109,12 @@ public class KeyedArrayBackedMutableTable extends BaseArrayBackedMutableTable {
         this.keyColumnNames = Collections.unmodifiableList(new ArrayList<>(Arrays.asList(keyColumnNames)));
         this.keyColumnSet = new HashSet<>(Arrays.asList(keyColumnNames));
         this.arrayValueSources =
-                definition.getColumnNames().stream()
-                        .filter(n -> !keyColumnSet.contains(n)).map(this::getColumnSource)
-                        .filter(cs -> cs instanceof ObjectArraySource).map(cs -> (ObjectArraySource<?>) cs)
+                definition.getColumnStream()
+                        .map(ColumnDefinition::getName)
+                        .filter(n -> !keyColumnSet.contains(n))
+                        .map(this::getColumnSource)
+                        .filter(cs -> cs instanceof ObjectArraySource)
+                        .map(cs -> (ObjectArraySource<?>) cs)
                         .toArray(ObjectArraySource[]::new);
     }
 

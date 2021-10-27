@@ -12,21 +12,20 @@ option optimize_for = SPEED;
 import "deephaven/proto/ticket.proto";
 
 /*
- * Allows clients to list fields that are accessible to them.
+ * This service offers methods to manipulate the contents of input tables.
  */
 service InputTableService {
-
     /*
-     * Adds the provided tables to the specified input table. These tables must only have columns
-     * (name, types, and order) which match the given input table's columns.
+     * Adds the provided table to the specified input table. The new data to add must only have
+     * columns (name, types, and order) which match the given input table's columns.
      */
-    rpc AddTablesToInputTable(AddTableRequest) returns (AddTableResponse) {}
+    rpc AddTableToInputTable(AddTableRequest) returns (AddTableResponse) {}
 
     /*
-    * Removes the provided tables from the specified input tables. The tables indicating which rows
+    * Removes the provided table from the specified input tables. The tables indicating which rows
     * to remove are expected to only have columns that match the key columns of the input table.
     */
-    rpc DeleteTablesFromInputTable(DeleteTableRequest) returns (DeleteTableResponse) {}
+    rpc DeleteTableFromInputTable(DeleteTableRequest) returns (DeleteTableResponse) {}
 
 }
 

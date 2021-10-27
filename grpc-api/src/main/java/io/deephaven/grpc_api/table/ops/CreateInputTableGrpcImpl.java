@@ -21,6 +21,8 @@ import javax.inject.Singleton;
 import java.util.Collections;
 import java.util.List;
 
+import static io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.KindCase.KIND_NOT_SET;
+
 @Singleton
 public class CreateInputTableGrpcImpl extends GrpcTableOperation<CreateInputTableRequest> {
 
@@ -31,18 +33,22 @@ public class CreateInputTableGrpcImpl extends GrpcTableOperation<CreateInputTabl
 
     @Inject
     public CreateInputTableGrpcImpl() {
-        super(BatchTableRequest.Operation::getCreateInputTable, CreateInputTableRequest::getResultId, optionalSourceTable);
+        super(BatchTableRequest.Operation::getCreateInputTable, CreateInputTableRequest::getResultId,
+                optionalSourceTable);
     }
 
     @Override
     public void validateRequest(CreateInputTableRequest request) throws StatusRuntimeException {
         // ensure we have one of either schema or source table (protobuf will ensure we don't have both)
         if (!request.hasSchema() && !request.hasSourceTableId()) {
-            throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Must specify one of schema and source_table_id");
+            throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
+                    "Must specify one of schema and source_table_id");
         }
 
-        if (request.getKind() == CreateInputTableRequest.InputTableKind.UNRECOGNIZED) {
-            throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Unrecognized InputTableKind");
+        if (request.getKind().getKindCase() == null ||
+                request.getKind().getKindCase() == KIND_NOT_SET) {
+            throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
+                    "Unrecognized InputTableKind");
         }
     }
 
@@ -53,7 +59,8 @@ public class CreateInputTableGrpcImpl extends GrpcTableOperation<CreateInputTabl
         if (request.hasSchema()) {
             Message message = Message.getRootAsMessage(request.getSchema().asReadOnlyByteBuffer());
             if (message.headerType() != MessageHeader.Schema) {
-                throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Must specify schema header in schema message");
+                throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
+                        "Must specify schema header in schema message");
             }
             tableDefinitionFromSchema = BarrageUtil.convertArrowSchema((Schema) message.header(new Schema())).tableDef;
         } else if (request.hasSourceTableId()) {
@@ -62,12 +69,13 @@ public class CreateInputTableGrpcImpl extends GrpcTableOperation<CreateInputTabl
         } else {
             throw new IllegalStateException("missing schema and source_table_id");
         }
-
-        switch (request.getKind()) {
-            case APPEND_ONLY:
+        switch (request.getKind().getKindCase()) {
+            case IN_MEMORY_APPEND_ONLY:
                 return AppendOnlyArrayBackedMutableTable.make(tableDefinitionFromSchema);
-            case KEYED_ARRAY_BACKED:
-                return KeyedArrayBackedMutableTable.make(tableDefinitionFromSchema, request.getKeyColumnsList().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
+            case IN_MEMORY_KEY_BACKED:
+                return KeyedArrayBackedMutableTable.make(tableDefinitionFromSchema,
+                        request.getKind().getInMemoryKeyBacked().getKeyColumnsList().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
+            case KIND_NOT_SET:
             default:
                 throw new IllegalStateException("Unsupported input table kind");
         }
