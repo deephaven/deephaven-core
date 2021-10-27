@@ -192,8 +192,7 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
         return makeGenericFieldProcessor(
                 fieldName,
                 chunkSource,
-                (final int ii, final ByteChunk<Attributes.Values> inputChunk) ->
-                    TypeUtils.box(inputChunk.get(ii)));
+                (final int ii, final ByteChunk<Attributes.Values> inputChunk) -> TypeUtils.box(inputChunk.get(ii)));
     }
 
     private static GenericRecordFieldProcessor makeCharFieldProcessor(
@@ -202,8 +201,7 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
         return makeGenericFieldProcessor(
                 fieldName,
                 chunkSource,
-                (final int ii, final CharChunk<Attributes.Values> inputChunk) ->
-                        TypeUtils.box(inputChunk.get(ii)));
+                (final int ii, final CharChunk<Attributes.Values> inputChunk) -> TypeUtils.box(inputChunk.get(ii)));
     }
 
     private static GenericRecordFieldProcessor makeShortFieldProcessor(
@@ -212,8 +210,7 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
         return makeGenericFieldProcessor(
                 fieldName,
                 chunkSource,
-                (final int ii, final ShortChunk<Attributes.Values> inputChunk) ->
-                        TypeUtils.box(inputChunk.get(ii)));
+                (final int ii, final ShortChunk<Attributes.Values> inputChunk) -> TypeUtils.box(inputChunk.get(ii)));
     }
 
     private static GenericRecordFieldProcessor makeIntFieldProcessor(
@@ -222,8 +219,7 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
         return makeGenericFieldProcessor(
                 fieldName,
                 chunkSource,
-                (final int ii, final IntChunk<Attributes.Values> inputChunk) ->
-                        TypeUtils.box(inputChunk.get(ii)));
+                (final int ii, final IntChunk<Attributes.Values> inputChunk) -> TypeUtils.box(inputChunk.get(ii)));
     }
 
     private static GenericRecordFieldProcessor makeLongFieldProcessor(
@@ -232,8 +228,7 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
         return makeGenericFieldProcessor(
                 fieldName,
                 chunkSource,
-                (final int ii, final LongChunk<Attributes.Values> inputChunk) ->
-                        TypeUtils.box(inputChunk.get(ii)));
+                (final int ii, final LongChunk<Attributes.Values> inputChunk) -> TypeUtils.box(inputChunk.get(ii)));
     }
 
     private static GenericRecordFieldProcessor makeLongFieldProcessorWithInverseFactor(
@@ -261,8 +256,7 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
         return makeGenericFieldProcessor(
                 fieldName,
                 chunkSource,
-                (final int ii, final FloatChunk<Attributes.Values> inputChunk) ->
-                        TypeUtils.box(inputChunk.get(ii)));
+                (final int ii, final FloatChunk<Attributes.Values> inputChunk) -> TypeUtils.box(inputChunk.get(ii)));
     }
 
     private static GenericRecordFieldProcessor makeDoubleFieldProcessor(
@@ -271,8 +265,7 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
         return makeGenericFieldProcessor(
                 fieldName,
                 chunkSource,
-                (final int ii, final DoubleChunk<Attributes.Values> inputChunk) ->
-                        TypeUtils.box(inputChunk.get(ii)));
+                (final int ii, final DoubleChunk<Attributes.Values> inputChunk) -> TypeUtils.box(inputChunk.get(ii)));
     }
 
     private static GenericRecordFieldProcessor makeObjectFieldProcessor(
@@ -281,8 +274,7 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
         return makeGenericFieldProcessor(
                 fieldName,
                 chunkSource,
-                (final int ii, final ObjectChunk<?, Attributes.Values> inputChunk) ->
-                        inputChunk.get(ii));
+                (final int ii, final ObjectChunk<?, Attributes.Values> inputChunk) -> inputChunk.get(ii));
     }
 
     private static class TimestampFieldProcessor extends GenericRecordFieldProcessor {

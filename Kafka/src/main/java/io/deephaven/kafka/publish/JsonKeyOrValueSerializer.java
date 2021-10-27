@@ -104,19 +104,18 @@ public class JsonKeyOrValueSerializer implements KeyOrValueSerializer<String> {
                 WritableObjectChunk<ObjectNode, Attributes.Values> jsonChunk, OrderedKeys keys, boolean isRemoval);
     }
 
-    private class ByteFieldProcessor extends JSONFieldProcessor {
+    abstract class JSONFieldProcessorImpl<ChunkType extends Chunk<Attributes.Values>> extends JSONFieldProcessor {
         private final ColumnSource chunkSource;
 
-        public ByteFieldProcessor(String fieldName, ColumnSource chunkSource) {
+        public JSONFieldProcessorImpl(final String fieldName, final ColumnSource chunkSource) {
             super(fieldName);
             this.chunkSource = chunkSource;
         }
 
-        private class ByteContext implements FieldContext {
+        private class ContextImpl implements FieldContext {
             ChunkSource.GetContext getContext;
-            ByteChunk inputChunk;
 
-            ByteContext(int size) {
+            ContextImpl(final int size) {
                 getContext = chunkSource.makeGetContext(size);
             }
 
@@ -128,22 +127,37 @@ public class JsonKeyOrValueSerializer implements KeyOrValueSerializer<String> {
 
         @Override
         FieldContext makeContext(int size) {
-            return new ByteContext(size);
+            return new ContextImpl(size);
         }
 
+        abstract void outputField(final int ii, final ObjectNode node, final ChunkType inputChunk);
+
         @Override
-        void processField(FieldContext fieldContext, WritableObjectChunk<ObjectNode, Attributes.Values> jsonChunk,
-                OrderedKeys keys, boolean previous) {
-            final ByteContext byteContext = (ByteContext) fieldContext;
+        void processField(
+                final FieldContext fieldContext,
+                final WritableObjectChunk<ObjectNode, Attributes.Values> jsonChunk,
+                final OrderedKeys keys,
+                final boolean previous) {
+            final ContextImpl contextImpl = (ContextImpl) fieldContext;
+            ChunkType inputChunk;
             if (previous) {
-                byteContext.inputChunk = chunkSource.getPrevChunk(byteContext.getContext, keys).asByteChunk();
+                inputChunk = (ChunkType) chunkSource.getPrevChunk(contextImpl.getContext, keys);
             } else {
-                byteContext.inputChunk = chunkSource.getChunk(byteContext.getContext, keys).asByteChunk();
+                inputChunk = (ChunkType) chunkSource.getChunk(contextImpl.getContext, keys);
             }
 
-            for (int ii = 0; ii < byteContext.inputChunk.size(); ++ii) {
+            for (int ii = 0; ii < inputChunk.size(); ++ii) {
                 final ObjectNode node = getChildNode(jsonChunk.get(ii));
-                final byte raw = byteContext.inputChunk.get(ii);
+                outputField(ii, node, inputChunk);
+            }
+        }
+    }
+
+    private JSONFieldProcessor makeByteFieldProcessor(final String fieldName, final ColumnSource<?> chunkSource) {
+        return new JSONFieldProcessorImpl<ByteChunk<Attributes.Values>>(fieldName, chunkSource) {
+            @Override
+            void outputField(final int ii, final ObjectNode node, final ByteChunk<Attributes.Values> inputChunk) {
+                final byte raw = inputChunk.get(ii);
                 if (raw == QueryConstants.NULL_BYTE) {
                     if (outputNulls) {
                         node.putNull(childNodeFieldName);
@@ -152,49 +166,14 @@ public class JsonKeyOrValueSerializer implements KeyOrValueSerializer<String> {
                     node.put(childNodeFieldName, raw);
                 }
             }
-        }
+        };
     }
 
-    private class CharFieldProcessor extends JSONFieldProcessor {
-        private final ColumnSource chunkSource;
-
-        public CharFieldProcessor(String fieldName, ColumnSource chunkSource) {
-            super(fieldName);
-            this.chunkSource = chunkSource;
-        }
-
-        private class CharContext implements FieldContext {
-            ChunkSource.GetContext getContext;
-            CharChunk inputChunk;
-
-            CharContext(int size) {
-                getContext = chunkSource.makeGetContext(size);
-            }
-
+    private JSONFieldProcessor makeCharFieldProcessor(final String fieldName, final ColumnSource<?> chunkSource) {
+        return new JSONFieldProcessorImpl<CharChunk<Attributes.Values>>(fieldName, chunkSource) {
             @Override
-            public void close() {
-                getContext.close();
-            }
-        }
-
-        @Override
-        FieldContext makeContext(int size) {
-            return new CharContext(size);
-        }
-
-        @Override
-        void processField(FieldContext fieldContext, WritableObjectChunk<ObjectNode, Attributes.Values> jsonChunk,
-                OrderedKeys keys, boolean previous) {
-            final CharFieldProcessor.CharContext charContext = (CharFieldProcessor.CharContext) fieldContext;
-            if (previous) {
-                charContext.inputChunk = chunkSource.getPrevChunk(charContext.getContext, keys).asCharChunk();
-            } else {
-                charContext.inputChunk = chunkSource.getChunk(charContext.getContext, keys).asCharChunk();
-            }
-
-            for (int ii = 0; ii < charContext.inputChunk.size(); ++ii) {
-                final ObjectNode node = getChildNode(jsonChunk.get(ii));
-                final char raw = charContext.inputChunk.get(ii);
+            void outputField(final int ii, final ObjectNode node, final CharChunk<Attributes.Values> inputChunk) {
+                final char raw = inputChunk.get(ii);
                 if (raw == QueryConstants.NULL_CHAR) {
                     if (outputNulls) {
                         node.putNull(childNodeFieldName);
@@ -203,49 +182,14 @@ public class JsonKeyOrValueSerializer implements KeyOrValueSerializer<String> {
                     node.put(childNodeFieldName, raw);
                 }
             }
-        }
+        };
     }
 
-    private class ShortFieldProcessor extends JSONFieldProcessor {
-        private final ColumnSource chunkSource;
-
-        public ShortFieldProcessor(String fieldName, ColumnSource chunkSource) {
-            super(fieldName);
-            this.chunkSource = chunkSource;
-        }
-
-        private class ShortContext implements FieldContext {
-            ChunkSource.GetContext getContext;
-            ShortChunk inputChunk;
-
-            ShortContext(int size) {
-                getContext = chunkSource.makeGetContext(size);
-            }
-
+    private JSONFieldProcessor makeShortFieldProcessor(final String fieldName, final ColumnSource<?> chunkSource) {
+        return new JSONFieldProcessorImpl<ShortChunk<Attributes.Values>>(fieldName, chunkSource) {
             @Override
-            public void close() {
-                getContext.close();
-            }
-        }
-
-        @Override
-        FieldContext makeContext(int size) {
-            return new ShortContext(size);
-        }
-
-        @Override
-        void processField(FieldContext fieldContext, WritableObjectChunk<ObjectNode, Attributes.Values> jsonChunk,
-                OrderedKeys keys, boolean previous) {
-            final ShortContext shortContext = (ShortContext) fieldContext;
-            if (previous) {
-                shortContext.inputChunk = chunkSource.getPrevChunk(shortContext.getContext, keys).asShortChunk();
-            } else {
-                shortContext.inputChunk = chunkSource.getChunk(shortContext.getContext, keys).asShortChunk();
-            }
-
-            for (int ii = 0; ii < shortContext.inputChunk.size(); ++ii) {
-                final ObjectNode node = getChildNode(jsonChunk.get(ii));
-                final short raw = shortContext.inputChunk.get(ii);
+            void outputField(final int ii, final ObjectNode node, final ShortChunk<Attributes.Values> inputChunk) {
+                final short raw = inputChunk.get(ii);
                 if (raw == QueryConstants.NULL_SHORT) {
                     if (outputNulls) {
                         node.putNull(childNodeFieldName);
@@ -254,50 +198,15 @@ public class JsonKeyOrValueSerializer implements KeyOrValueSerializer<String> {
                     node.put(childNodeFieldName, raw);
                 }
             }
-        }
+        };
     }
 
-    private class IntFieldProcessor extends JSONFieldProcessor {
-        private final ColumnSource chunkSource;
-
-        public IntFieldProcessor(String fieldName, ColumnSource chunkSource) {
-            super(fieldName);
-            this.chunkSource = chunkSource;
-        }
-
-        private class IntContext implements FieldContext {
-            ChunkSource.GetContext getContext;
-            IntChunk inputChunk;
-
-            IntContext(int size) {
-                getContext = chunkSource.makeGetContext(size);
-            }
-
+    private JSONFieldProcessor makeIntFieldProcessor(final String fieldName, final ColumnSource<?> chunkSource) {
+        return new JSONFieldProcessorImpl<IntChunk<Attributes.Values>>(fieldName, chunkSource) {
             @Override
-            public void close() {
-                getContext.close();
-            }
-        }
-
-        @Override
-        FieldContext makeContext(int size) {
-            return new IntContext(size);
-        }
-
-        @Override
-        void processField(FieldContext fieldContext, WritableObjectChunk<ObjectNode, Attributes.Values> jsonChunk,
-                OrderedKeys keys, boolean previous) {
-            final IntContext intContext = (IntContext) fieldContext;
-            if (previous) {
-                intContext.inputChunk = chunkSource.getPrevChunk(intContext.getContext, keys).asIntChunk();
-            } else {
-                intContext.inputChunk = chunkSource.getChunk(intContext.getContext, keys).asIntChunk();
-            }
-
-            for (int ii = 0; ii < intContext.inputChunk.size(); ++ii) {
-                final ObjectNode node = getChildNode(jsonChunk.get(ii));
-                final int raw = intContext.inputChunk.get(ii);
-                if (raw == QueryConstants.NULL_INT) {
+            void outputField(final int ii, final ObjectNode node, final IntChunk<Attributes.Values> inputChunk) {
+                final int raw = inputChunk.get(ii);
+                if (raw == QueryConstants.NULL_SHORT) {
                     if (outputNulls) {
                         node.putNull(childNodeFieldName);
                     }
@@ -305,49 +214,14 @@ public class JsonKeyOrValueSerializer implements KeyOrValueSerializer<String> {
                     node.put(childNodeFieldName, raw);
                 }
             }
-        }
+        };
     }
 
-    private class LongFieldProcessor extends JSONFieldProcessor {
-        private final ColumnSource chunkSource;
-
-        public LongFieldProcessor(String fieldName, ColumnSource chunkSource) {
-            super(fieldName);
-            this.chunkSource = chunkSource;
-        }
-
-        private class LongContext implements FieldContext {
-            ChunkSource.GetContext getContext;
-            LongChunk inputChunk;
-
-            LongContext(int size) {
-                getContext = chunkSource.makeGetContext(size);
-            }
-
+    private JSONFieldProcessor makeLongFieldProcessor(final String fieldName, final ColumnSource<?> chunkSource) {
+        return new JSONFieldProcessorImpl<LongChunk<Attributes.Values>>(fieldName, chunkSource) {
             @Override
-            public void close() {
-                getContext.close();
-            }
-        }
-
-        @Override
-        FieldContext makeContext(int size) {
-            return new LongContext(size);
-        }
-
-        @Override
-        void processField(FieldContext fieldContext, WritableObjectChunk<ObjectNode, Attributes.Values> jsonChunk,
-                OrderedKeys keys, boolean previous) {
-            final LongContext longContext = (LongContext) fieldContext;
-            if (previous) {
-                longContext.inputChunk = chunkSource.getPrevChunk(longContext.getContext, keys).asLongChunk();
-            } else {
-                longContext.inputChunk = chunkSource.getChunk(longContext.getContext, keys).asLongChunk();
-            }
-
-            for (int ii = 0; ii < longContext.inputChunk.size(); ++ii) {
-                final ObjectNode node = getChildNode(jsonChunk.get(ii));
-                final long raw = longContext.inputChunk.get(ii);
+            void outputField(final int ii, final ObjectNode node, final LongChunk<Attributes.Values> inputChunk) {
+                final long raw = inputChunk.get(ii);
                 if (raw == QueryConstants.NULL_LONG) {
                     if (outputNulls) {
                         node.putNull(childNodeFieldName);
@@ -356,49 +230,14 @@ public class JsonKeyOrValueSerializer implements KeyOrValueSerializer<String> {
                     node.put(childNodeFieldName, raw);
                 }
             }
-        }
+        };
     }
 
-    private class FloatFieldProcessor extends JSONFieldProcessor {
-        private final ColumnSource chunkSource;
-
-        public FloatFieldProcessor(String fieldName, ColumnSource chunkSource) {
-            super(fieldName);
-            this.chunkSource = chunkSource;
-        }
-
-        private class FloatContext implements FieldContext {
-            ChunkSource.GetContext getContext;
-            FloatChunk inputChunk;
-
-            FloatContext(int size) {
-                getContext = chunkSource.makeGetContext(size);
-            }
-
+    private JSONFieldProcessor makeFloatFieldProcessor(final String fieldName, final ColumnSource<?> chunkSource) {
+        return new JSONFieldProcessorImpl<FloatChunk<Attributes.Values>>(fieldName, chunkSource) {
             @Override
-            public void close() {
-                getContext.close();
-            }
-        }
-
-        @Override
-        FieldContext makeContext(int size) {
-            return new FloatContext(size);
-        }
-
-        @Override
-        void processField(FieldContext fieldContext, WritableObjectChunk<ObjectNode, Attributes.Values> jsonChunk,
-                OrderedKeys keys, boolean previous) {
-            final FloatContext floatContext = (FloatContext) fieldContext;
-            if (previous) {
-                floatContext.inputChunk = chunkSource.getPrevChunk(floatContext.getContext, keys).asFloatChunk();
-            } else {
-                floatContext.inputChunk = chunkSource.getChunk(floatContext.getContext, keys).asFloatChunk();
-            }
-
-            for (int ii = 0; ii < floatContext.inputChunk.size(); ++ii) {
-                final ObjectNode node = getChildNode(jsonChunk.get(ii));
-                final float raw = floatContext.inputChunk.get(ii);
+            void outputField(final int ii, final ObjectNode node, final FloatChunk<Attributes.Values> inputChunk) {
+                final float raw = inputChunk.get(ii);
                 if (raw == QueryConstants.NULL_FLOAT) {
                     if (outputNulls) {
                         node.putNull(childNodeFieldName);
@@ -407,49 +246,14 @@ public class JsonKeyOrValueSerializer implements KeyOrValueSerializer<String> {
                     node.put(childNodeFieldName, raw);
                 }
             }
-        }
+        };
     }
 
-    private class DoubleFieldProcessor extends JSONFieldProcessor {
-        private final ColumnSource chunkSource;
-
-        public DoubleFieldProcessor(String fieldName, ColumnSource chunkSource) {
-            super(fieldName);
-            this.chunkSource = chunkSource;
-        }
-
-        private class DoubleContext implements FieldContext {
-            ChunkSource.GetContext getContext;
-            DoubleChunk inputChunk;
-
-            DoubleContext(int size) {
-                getContext = chunkSource.makeGetContext(size);
-            }
-
+    private JSONFieldProcessor makeDoubleFieldProcessor(final String fieldName, final ColumnSource<?> chunkSource) {
+        return new JSONFieldProcessorImpl<DoubleChunk<Attributes.Values>>(fieldName, chunkSource) {
             @Override
-            public void close() {
-                getContext.close();
-            }
-        }
-
-        @Override
-        FieldContext makeContext(int size) {
-            return new DoubleContext(size);
-        }
-
-        @Override
-        void processField(FieldContext fieldContext, WritableObjectChunk<ObjectNode, Attributes.Values> jsonChunk,
-                OrderedKeys keys, boolean previous) {
-            final DoubleContext doubleContext = (DoubleContext) fieldContext;
-            if (previous) {
-                doubleContext.inputChunk = chunkSource.getPrevChunk(doubleContext.getContext, keys).asDoubleChunk();
-            } else {
-                doubleContext.inputChunk = chunkSource.getChunk(doubleContext.getContext, keys).asDoubleChunk();
-            }
-
-            for (int ii = 0; ii < doubleContext.inputChunk.size(); ++ii) {
-                final ObjectNode node = getChildNode(jsonChunk.get(ii));
-                final double raw = doubleContext.inputChunk.get(ii);
+            void outputField(final int ii, final ObjectNode node, final DoubleChunk<Attributes.Values> inputChunk) {
+                final double raw = inputChunk.get(ii);
                 if (raw == QueryConstants.NULL_DOUBLE) {
                     if (outputNulls) {
                         node.putNull(childNodeFieldName);
@@ -458,49 +262,14 @@ public class JsonKeyOrValueSerializer implements KeyOrValueSerializer<String> {
                     node.put(childNodeFieldName, raw);
                 }
             }
-        }
+        };
     }
 
-    private class ToStringFieldProcessor extends JSONFieldProcessor {
-        private final ColumnSource chunkSource;
-
-        public ToStringFieldProcessor(String fieldName, ColumnSource chunkSource) {
-            super(fieldName);
-            this.chunkSource = chunkSource;
-        }
-
-        private class ToStringContext implements FieldContext {
-            ChunkSource.GetContext getContext;
-            ObjectChunk inputChunk;
-
-            ToStringContext(int size) {
-                getContext = chunkSource.makeGetContext(size);
-            }
-
+    private JSONFieldProcessor makeToStringFieldProcessor(final String fieldName, final ColumnSource<?> chunkSource) {
+        return new JSONFieldProcessorImpl<DoubleChunk<Attributes.Values>>(fieldName, chunkSource) {
             @Override
-            public void close() {
-                getContext.close();
-            }
-        }
-
-        @Override
-        FieldContext makeContext(int size) {
-            return new ToStringContext(size);
-        }
-
-        @Override
-        void processField(FieldContext fieldContext, WritableObjectChunk<ObjectNode, Attributes.Values> jsonChunk,
-                OrderedKeys keys, boolean previous) {
-            final ToStringContext toStringContext = (ToStringContext) fieldContext;
-            if (previous) {
-                toStringContext.inputChunk = chunkSource.getPrevChunk(toStringContext.getContext, keys).asObjectChunk();
-            } else {
-                toStringContext.inputChunk = chunkSource.getChunk(toStringContext.getContext, keys).asObjectChunk();
-            }
-
-            for (int ii = 0; ii < toStringContext.inputChunk.size(); ++ii) {
-                final ObjectNode node = getChildNode(jsonChunk.get(ii));
-                final Object raw = toStringContext.inputChunk.get(ii);
+            void outputField(final int ii, final ObjectNode node, final DoubleChunk<Attributes.Values> inputChunk) {
+                final Object raw = inputChunk.get(ii);
                 if (raw == null) {
                     if (outputNulls) {
                         node.putNull(childNodeFieldName);
@@ -509,108 +278,76 @@ public class JsonKeyOrValueSerializer implements KeyOrValueSerializer<String> {
                     node.put(childNodeFieldName, Objects.toString(raw));
                 }
             }
-        }
+        };
     }
 
-    private abstract class ObjectFieldProcessor<T> extends JSONFieldProcessor {
-        private final ColumnSource chunkSource;
+    @FunctionalInterface
+    interface PutFun<T> {
+        void put(ObjectNode node, String childNodeFieldName, T raw);
+    }
 
-        public ObjectFieldProcessor(String fieldName, ColumnSource chunkSource) {
-            super(fieldName);
-            this.chunkSource = chunkSource;
-        }
-
-        private class ObjectContext implements FieldContext {
-            ChunkSource.GetContext getContext;
-            ObjectChunk inputChunk;
-
-            ObjectContext(int size) {
-                getContext = chunkSource.makeGetContext(size);
-            }
-
+    private <T> JSONFieldProcessor makeObjectFieldProcessor(
+            final String fieldName,
+            final ColumnSource<?> chunkSource,
+            final PutFun<T> putFun) {
+        return new JSONFieldProcessorImpl<ObjectChunk<T, Attributes.Values>>(fieldName, chunkSource) {
             @Override
-            public void close() {
-                getContext.close();
-            }
-        }
-
-        @Override
-        FieldContext makeContext(int size) {
-            return new ObjectContext(size);
-        }
-
-        @Override
-        void processField(FieldContext fieldContext, WritableObjectChunk<ObjectNode, Attributes.Values> jsonChunk,
-                OrderedKeys keys, boolean previous) {
-            final ObjectContext objectContext = (ObjectContext) fieldContext;
-            if (previous) {
-                objectContext.inputChunk = chunkSource.getPrevChunk(objectContext.getContext, keys).asObjectChunk();
-            } else {
-                objectContext.inputChunk = chunkSource.getChunk(objectContext.getContext, keys).asObjectChunk();
-            }
-
-            for (int ii = 0; ii < objectContext.inputChunk.size(); ++ii) {
-                final ObjectNode node = getChildNode(jsonChunk.get(ii));
-                final T raw = (T) objectContext.inputChunk.get(ii);
+            void outputField(final int ii, final ObjectNode node, final ObjectChunk<T, Attributes.Values> inputChunk) {
+                final T raw = inputChunk.get(ii);
                 if (raw == null) {
                     if (outputNulls) {
                         node.putNull(childNodeFieldName);
                     }
                 } else {
-                    putValue(node, raw);
+                    putFun.put(node, childNodeFieldName, raw);
                 }
             }
-        }
-
-        abstract void putValue(ObjectNode node, T value);
+        };
     }
 
-    private class BooleanFieldProcessor extends ObjectFieldProcessor<Boolean> {
-        public BooleanFieldProcessor(String fieldName, ColumnSource chunkSource) {
-            super(fieldName, chunkSource);
-        }
-
-        @Override
-        void putValue(ObjectNode node, Boolean value) {
-            node.put(childNodeFieldName, value);
-        }
+    private JSONFieldProcessor makeBooleanFieldProcessor(
+            final String fieldName,
+            final ColumnSource<?> chunkSource) {
+        return makeObjectFieldProcessor(
+                fieldName,
+                chunkSource,
+                (PutFun<Boolean>) ObjectNode::put);
     }
 
-    private class BigIntegerFieldProcessor extends ObjectFieldProcessor<BigInteger> {
-        public BigIntegerFieldProcessor(String fieldName, ColumnSource chunkSource) {
-            super(fieldName, chunkSource);
-        }
-
-        @Override
-        void putValue(ObjectNode node, BigInteger value) {
-            node.put(childNodeFieldName, value);
-        }
+    private JSONFieldProcessor makeBigIntegerFieldProcessor(
+            final String fieldName,
+            final ColumnSource<?> chunkSource) {
+        return makeObjectFieldProcessor(
+                fieldName,
+                chunkSource,
+                (PutFun<BigInteger>) ObjectNode::put);
     }
 
-    private class BigDecimalFieldProcessor extends ObjectFieldProcessor<BigDecimal> {
-        public BigDecimalFieldProcessor(String fieldName, ColumnSource chunkSource) {
-            super(fieldName, chunkSource);
-        }
-
-        @Override
-        void putValue(ObjectNode node, BigDecimal value) {
-            node.put(childNodeFieldName, value);
-        }
+    private JSONFieldProcessor makeBigDecimalFieldProcessor(
+            final String fieldName,
+            final ColumnSource<?> chunkSource) {
+        return makeObjectFieldProcessor(
+                fieldName,
+                chunkSource,
+                (PutFun<BigDecimal>) ObjectNode::put);
     }
 
     private class TimestampFieldProcessor extends JSONFieldProcessor {
-        public TimestampFieldProcessor(String fieldName) {
+        public TimestampFieldProcessor(final String fieldName) {
             super(fieldName);
         }
 
         @Override
-        FieldContext makeContext(int size) {
+        FieldContext makeContext(final int size) {
             return null;
         }
 
         @Override
-        public void processField(FieldContext fieldContext,
-                WritableObjectChunk<ObjectNode, Attributes.Values> jsonChunk, OrderedKeys keys, boolean isRemoval) {
+        public void processField(
+                final FieldContext fieldContext,
+                final WritableObjectChunk<ObjectNode, Attributes.Values> jsonChunk,
+                final OrderedKeys keys,
+                final boolean isRemoval) {
             final String nanosString = String.valueOf(DBDateTime.now().getNanos());
             for (int ii = 0; ii < jsonChunk.size(); ++ii) {
                 getChildNode(jsonChunk.get(ii)).put(childNodeFieldName, nanosString);
@@ -649,31 +386,30 @@ public class JsonKeyOrValueSerializer implements KeyOrValueSerializer<String> {
      */
     private void makeFieldProcessor(final String columnName, final String fieldName) {
         // getColumn should throw a ColumnNotFoundException if it can't find the column, which will blow us up here.
-        @SuppressWarnings("rawtypes")
-        final ColumnSource src = source.getColumnSource(columnName);
+        final ColumnSource<?> src = source.getColumnSource(columnName);
 
         if (byte.class.equals(src.getType())) {
-            fieldProcessors.add(new ByteFieldProcessor(fieldName, src));
+            fieldProcessors.add(makeByteFieldProcessor(fieldName, src));
         } else if (short.class.equals(src.getType())) {
-            fieldProcessors.add(new ShortFieldProcessor(fieldName, src));
+            fieldProcessors.add(makeShortFieldProcessor(fieldName, src));
         } else if (int.class.equals(src.getType())) {
-            fieldProcessors.add(new IntFieldProcessor(fieldName, src));
+            fieldProcessors.add(makeIntFieldProcessor(fieldName, src));
         } else if (double.class.equals(src.getType())) {
-            fieldProcessors.add(new DoubleFieldProcessor(fieldName, src));
+            fieldProcessors.add(makeDoubleFieldProcessor(fieldName, src));
         } else if (float.class.equals(src.getType())) {
-            fieldProcessors.add(new FloatFieldProcessor(fieldName, src));
+            fieldProcessors.add(makeFloatFieldProcessor(fieldName, src));
         } else if (long.class.equals(src.getType())) {
-            fieldProcessors.add(new LongFieldProcessor(fieldName, src));
+            fieldProcessors.add(makeLongFieldProcessor(fieldName, src));
         } else if (char.class.equals(src.getType())) {
-            fieldProcessors.add(new CharFieldProcessor(fieldName, src));
+            fieldProcessors.add(makeCharFieldProcessor(fieldName, src));
         } else if (Boolean.class.equals(src.getType())) {
-            fieldProcessors.add(new BooleanFieldProcessor(fieldName, src));
+            fieldProcessors.add(makeBooleanFieldProcessor(fieldName, src));
         } else if (BigDecimal.class.equals(src.getType())) {
-            fieldProcessors.add(new BigDecimalFieldProcessor(fieldName, src));
+            fieldProcessors.add(makeBigDecimalFieldProcessor(fieldName, src));
         } else if (BigInteger.class.equals(src.getType())) {
-            fieldProcessors.add(new BigIntegerFieldProcessor(fieldName, src));
+            fieldProcessors.add(makeBigIntegerFieldProcessor(fieldName, src));
         } else {
-            fieldProcessors.add(new ToStringFieldProcessor(fieldName, src));
+            fieldProcessors.add(makeToStringFieldProcessor(fieldName, src));
         }
     }
 
