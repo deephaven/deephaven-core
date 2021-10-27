@@ -557,7 +557,9 @@ public final class DBLanguageParser extends GenericVisitorAdapter<Class<?>, DBLa
             Class<?> paramType = paramTypes[candidateParamTypes.length - 1];
             Class<?> candidateParamType = candidateParamTypes[candidateParamTypes.length - 1];
 
-            if (isDbArray(paramType) && candidateParamType.isArray()) {
+            Assert.eqTrue(candidateParamType.isArray(), "candidateParamType.isArray()");
+
+            if (isDbArray(paramType)) {
                 paramType = convertDBArray(paramType, parameterizedTypes[candidateParamTypes.length - 1] == null ? null
                         : parameterizedTypes[candidateParamTypes.length - 1][0]);
             }

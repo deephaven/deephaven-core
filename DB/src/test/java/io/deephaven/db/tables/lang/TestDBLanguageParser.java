@@ -79,6 +79,7 @@ public class TestDBLanguageParser extends BaseArrayTestCase {
         variables.put("myTestClass", TestClass.class);
         variables.put("myIntArray", new int[0].getClass());
         variables.put("myDoubleArray", new double[0].getClass());
+        variables.put("myLongArray", new long[0].getClass());
         variables.put("myCharArray", new char[0].getClass());
         variables.put("myTestClassArray", new TestClass[0].getClass());
         variables.put("myDoubleObjArray", new Double[0].getClass());
@@ -1117,14 +1118,17 @@ public class TestDBLanguageParser extends BaseArrayTestCase {
         resultExpression = "testImplicitConversion2(new int[]{ myInt, myInt })";
         check(expression, resultExpression, new int[0].getClass(), new String[] {"myInt"});
 
+        expression = "testImplicitConversion3(myLongArray)";
+        resultExpression = "testImplicitConversion3(myLongArray)";
+        check(expression, resultExpression, new Object[0].getClass(), new String[] {"myLongArray"});
+
         expression = "testImplicitConversion3(myDBArray)";
         resultExpression = "testImplicitConversion3(ArrayUtils.nullSafeDbArrayToArray(myDBArray))";
         check(expression, resultExpression, new Object[0].getClass(), new String[] {"myDBArray"});
 
-        // expression="testImplicitConversion3(myDoubleArray)"; // TODO: This test fails.
-        // resultExpression="testImplicitConversion3(myDoubleArray)"; // we should *not* convert from DbDoubleArray to
-        // Object[]!
-        // check(expression, resultExpression, new Object[0].getClass(), new String[]{"myDoubleArray"});
+        expression="testImplicitConversion3(myDoubleArray)";
+        resultExpression="testImplicitConversion3(myDoubleArray)";
+        check(expression, resultExpression, new Object[0].getClass(), new String[]{"myDoubleArray"});
 
         expression = "testImplicitConversion3((Object) myDoubleArray)";
         resultExpression = "testImplicitConversion3((Object)myDoubleArray)"; // test a workaround for the above
