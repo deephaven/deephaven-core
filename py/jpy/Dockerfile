@@ -19,7 +19,7 @@ RUN set -eux; \
     apt-get -qq -y --no-install-recommends install zulu17-jdk-headless=17.0.*; \
     apt-get -qq -y purge gnupg software-properties-common curl; \
     apt -y autoremove; \
-    rm -rf /var/lib/apt/lists/* zulu-repo_${ZULU_REPO_VER}_all.deb \
+    rm -rf /var/lib/apt/lists/* zulu-repo_${ZULU_REPO_VER}_all.deb
 ENV LANG='en_US.UTF-8' LANGUAGE='en_US:en' LC_ALL='en_US.UTF-8'
 ENV JAVA_HOME=/usr/lib/jvm/zulu17-ca-amd64
 
