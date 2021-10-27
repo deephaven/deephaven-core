@@ -1184,7 +1184,7 @@ public final class DBLanguageParser extends GenericVisitorAdapter<Class<?>, DBLa
         if (toPrimitive && !ret.equals(boolean.class) && !ret.equals(exprType)) {
             // Casting to a primitive, except booleans and the identity conversion
             printer.append(ret.getSimpleName());
-            if (isAssignableFrom(PyObject.class, exprType)) {
+            if (exprType != NULL_CLASS && isAssignableFrom(PyObject.class, exprType)) {
                 printer.append("PyCast((PyObject)");
             } else {
                 printer.append("Cast(");
