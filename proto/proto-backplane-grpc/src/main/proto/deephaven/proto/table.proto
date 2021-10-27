@@ -33,6 +33,11 @@ service TableService {
   rpc FetchTableMap(FetchTableMapRequest) returns (FetchTableMapResponse) {}
 
   /*
+   * Create a table that has preview columns applied to an existing source table.
+   */
+  rpc ApplyPreviewColumns(ApplyPreviewColumnsRequest) returns (ExportedTableCreationResponse) {}
+
+  /*
    * Create an empty table with the given column names and types.
    */
   rpc EmptyTable(EmptyTableRequest) returns (ExportedTableCreationResponse) {}
@@ -221,6 +226,11 @@ message ExportedTableCreationResponse {
 }
 
 message FetchTableRequest {
+  TableReference source_id = 1;
+  Ticket result_id = 2;
+}
+
+message ApplyPreviewColumnsRequest {
   TableReference source_id = 1;
   Ticket result_id = 2;
 }
@@ -603,6 +613,7 @@ message BatchTableRequest {
       AsOfJoinTablesRequest as_of_join = 27;
       FetchTableRequest fetch_table = 28;
       FetchPandasTableRequest fetch_pandas_table = 29;
+      ApplyPreviewColumnsRequest apply_preview_columns = 30;
     }
   }
 }

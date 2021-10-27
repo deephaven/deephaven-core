@@ -38,6 +38,7 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.Re
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.TerminationNotificationRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.terminationnotificationresponse.StackTrace;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb_service.SessionServiceClient;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.ApplyPreviewColumnsRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.EmptyTableRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.ExportedTableCreationResponse;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.ExportedTableUpdateMessage;
@@ -80,6 +81,7 @@ import jsinterop.annotations.JsOptional;
 import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
+import javax.annotation.Nullable;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.util.List;
@@ -633,17 +635,25 @@ public class WorkerConnection {
         info.failureHandled(throwable.toString());
     }
 
-    public Promise<JsTable> getTable(JsVariableDefinition varDef) {
+    public Promise<JsTable> getTable(JsVariableDefinition varDef, @Nullable Boolean applyPreviewColumns) {
         return whenServerReady("get a table").then(serve -> {
             JsLog.debug("innerGetTable", varDef.getTitle(), " started");
             return newState(info,
                     (c, cts, metadata) -> {
                         JsLog.debug("performing fetch for ", varDef.getTitle(), " / ", cts,
                                 " (" + LazyString.of(cts::getHandle), ")");
-                        FetchTableRequest fetch = new FetchTableRequest();
-                        fetch.setSourceId(TableTicket.createTableRef(varDef));
-                        fetch.setResultId(cts.getHandle().makeTicket());
-                        tableServiceClient.fetchTable(fetch, metadata, c::apply);
+                        // TODO (deephaven-core#188): eliminate this branch by applying preview cols before subscribing
+                        if (applyPreviewColumns == null || applyPreviewColumns) {
+                            ApplyPreviewColumnsRequest req = new ApplyPreviewColumnsRequest();
+                            req.setSourceId(TableTicket.createTableRef(varDef));
+                            req.setResultId(cts.getHandle().makeTicket());
+                            tableServiceClient.applyPreviewColumns(req, metadata, c::apply);
+                        } else {
+                            FetchTableRequest req = new FetchTableRequest();
+                            req.setSourceId(TableTicket.createTableRef(varDef));
+                            req.setResultId(cts.getHandle().makeTicket());
+                            tableServiceClient.fetchTable(req, metadata, c::apply);
+                        }
                     }, "fetch table " + varDef.getTitle()).then(cts -> {
                         JsLog.debug("innerGetTable", varDef.getTitle(), " succeeded ", cts);
                         JsTable table = new JsTable(this, cts);
@@ -673,7 +683,7 @@ public class WorkerConnection {
     public Promise<Object> getObject(JsVariableDefinition definition) {
         switch (VariableType.valueOf(definition.getType())) {
             case Table:
-                return (Promise) getTable(definition);
+                return (Promise) getTable(definition, null);
             case TreeTable:
                 return (Promise) getTreeTable(definition);
             case Figure:
@@ -786,7 +796,7 @@ public class WorkerConnection {
     }
 
     public Promise<JsTreeTable> getTreeTable(JsVariableDefinition varDef) {
-        return getTable(varDef).then(t -> {
+        return getTable(varDef, null).then(t -> {
             Promise<JsTreeTable> result = Promise.resolve(new JsTreeTable(t.state(), this).finishFetch());
             t.close();
             return result;

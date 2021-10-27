@@ -2,6 +2,7 @@ package io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.bat
 
 import elemental2.core.JsArray;
 import elemental2.core.Uint8Array;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.ApplyPreviewColumnsRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.AsOfJoinTablesRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.ComboAggregateRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.CrossJoinTablesRequest;
@@ -39,6 +40,26 @@ import jsinterop.base.JsPropertyMap;
 public class Operation {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ToObjectReturnType {
+        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+        public interface ApplyPreviewColumnsFieldType {
+            @JsOverlay
+            static Operation.ToObjectReturnType.ApplyPreviewColumnsFieldType create() {
+                return Js.uncheckedCast(JsPropertyMap.of());
+            }
+
+            @JsProperty
+            Object getResultId();
+
+            @JsProperty
+            Object getSourceId();
+
+            @JsProperty
+            void setResultId(Object resultId);
+
+            @JsProperty
+            void setSourceId(Object sourceId);
+        }
+
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
         public interface AsOfJoinFieldType {
             @JsOverlay
@@ -1449,6 +1470,9 @@ public class Operation {
         }
 
         @JsProperty
+        Operation.ToObjectReturnType.ApplyPreviewColumnsFieldType getApplyPreviewColumns();
+
+        @JsProperty
         Operation.ToObjectReturnType.AsOfJoinFieldType getAsOfJoin();
 
         @JsProperty
@@ -1534,6 +1558,10 @@ public class Operation {
 
         @JsProperty
         Object getView();
+
+        @JsProperty
+        void setApplyPreviewColumns(
+                Operation.ToObjectReturnType.ApplyPreviewColumnsFieldType applyPreviewColumns);
 
         @JsProperty
         void setAsOfJoin(Operation.ToObjectReturnType.AsOfJoinFieldType asOfJoin);
@@ -1628,6 +1656,26 @@ public class Operation {
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ToObjectReturnType0 {
+        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+        public interface ApplyPreviewColumnsFieldType {
+            @JsOverlay
+            static Operation.ToObjectReturnType0.ApplyPreviewColumnsFieldType create() {
+                return Js.uncheckedCast(JsPropertyMap.of());
+            }
+
+            @JsProperty
+            Object getResultId();
+
+            @JsProperty
+            Object getSourceId();
+
+            @JsProperty
+            void setResultId(Object resultId);
+
+            @JsProperty
+            void setSourceId(Object sourceId);
+        }
+
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
         public interface AsOfJoinFieldType {
             @JsOverlay
@@ -3039,6 +3087,9 @@ public class Operation {
         }
 
         @JsProperty
+        Operation.ToObjectReturnType0.ApplyPreviewColumnsFieldType getApplyPreviewColumns();
+
+        @JsProperty
         Operation.ToObjectReturnType0.AsOfJoinFieldType getAsOfJoin();
 
         @JsProperty
@@ -3124,6 +3175,10 @@ public class Operation {
 
         @JsProperty
         Object getView();
+
+        @JsProperty
+        void setApplyPreviewColumns(
+                Operation.ToObjectReturnType0.ApplyPreviewColumnsFieldType applyPreviewColumns);
 
         @JsProperty
         void setAsOfJoin(Operation.ToObjectReturnType0.AsOfJoinFieldType asOfJoin);
@@ -3225,6 +3280,8 @@ public class Operation {
     public static native Operation.ToObjectReturnType toObject(
             boolean includeInstance, Operation msg);
 
+    public native void clearApplyPreviewColumns();
+
     public native void clearAsOfJoin();
 
     public native void clearComboAggregate();
@@ -3282,6 +3339,8 @@ public class Operation {
     public native void clearUpdateView();
 
     public native void clearView();
+
+    public native ApplyPreviewColumnsRequest getApplyPreviewColumns();
 
     public native AsOfJoinTablesRequest getAsOfJoin();
 
@@ -3343,6 +3402,8 @@ public class Operation {
 
     public native SelectOrUpdateRequest getView();
 
+    public native boolean hasApplyPreviewColumns();
+
     public native boolean hasAsOfJoin();
 
     public native boolean hasComboAggregate();
@@ -3402,6 +3463,10 @@ public class Operation {
     public native boolean hasView();
 
     public native Uint8Array serializeBinary();
+
+    public native void setApplyPreviewColumns();
+
+    public native void setApplyPreviewColumns(ApplyPreviewColumnsRequest value);
 
     public native void setAsOfJoin();
 
