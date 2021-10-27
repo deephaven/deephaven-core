@@ -9,7 +9,7 @@ from deephaven2.column import Column
 
 
 class Table:
-    """ A Table represents a Deephaven table. It allows applications to perform powerful Deephaven table operations
+    """ A Table represents a Deephaven table. It allows applications to perform powerful Deephaven table operations.
 
 
     Note: A client should not instantiate Table directly. Tables are mostly created by factory methods, data ingress
