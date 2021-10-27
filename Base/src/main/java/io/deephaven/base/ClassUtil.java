@@ -28,9 +28,9 @@ public final class ClassUtil {
     }
 
     /**
-     * Finds and caches Class instances based on name. This implementation can handle the strings
-     * created by {@link Class#getName()} and {@link Class#getCanonicalName()}, and some mixture
-     * of the two. JNI names are not supported.
+     * Finds and caches Class instances based on name. This implementation can handle the strings created by
+     * {@link Class#getName()} and {@link Class#getCanonicalName()}, and some mixture of the two. JNI names are not
+     * supported.
      *
      * @param name the name of the class to lookup.
      * @return A class instance
@@ -53,5 +53,6 @@ public final class ClassUtil {
         return result;
     }
 
-    private static class FailedToResolve {}
+    private static class FailedToResolve {
+    }
 }
