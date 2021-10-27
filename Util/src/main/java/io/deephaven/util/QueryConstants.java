@@ -41,32 +41,4 @@ public class QueryConstants {
     public static final long NEG_INF_LONG = Long.MIN_VALUE + 1;
     public static final float NEG_INF_FLOAT = Float.NEGATIVE_INFINITY;
     public static final double NEG_INF_DOUBLE = Double.NEGATIVE_INFINITY;
-
-    public static Object asObjectOrNull(final byte v) {
-        return (v == NULL_BYTE) ? null : v;
-    }
-
-    public static Object asObjectOrNull(final char v) {
-        return (v == NULL_CHAR) ? null : v;
-    }
-
-    public static Object asObjectOrNull(final short v) {
-        return (v == NULL_SHORT) ? null : v;
-    }
-
-    public static Object asObjectOrNull(final int v) {
-        return (v == NULL_INT) ? null : v;
-    }
-
-    public static Object asObjectOrNull(final long v) {
-        return (v == NULL_LONG) ? null : v;
-    }
-
-    public static Object asObjectOrNull(final float v) {
-        return (v == NULL_FLOAT) ? null : v;
-    }
-
-    public static Object asObjectOrNull(final double v) {
-        return (v == NULL_DOUBLE) ? null : v;
-    }
 }

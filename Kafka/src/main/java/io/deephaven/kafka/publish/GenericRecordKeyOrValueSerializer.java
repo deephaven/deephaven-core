@@ -127,7 +127,6 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
 
         class ContextImpl implements FieldContext {
             ChunkSource.GetContext getContext;
-            ChunkType inputChunk;
 
             ContextImpl(final int size) {
                 getContext = chunkSource.makeGetContext(size);
@@ -144,7 +143,7 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
             return new ContextImpl(size);
         }
 
-        abstract Object getFieldElement(int i, ContextImpl contextImpl);
+        abstract Object getFieldElement(int i, ChunkType inputChunk);
 
         @Override
         void processField(
@@ -153,103 +152,105 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
                 final OrderedKeys keys,
                 final boolean previous) {
             final ContextImpl contextImpl = (ContextImpl) fieldContext;
+            final ChunkType inputChunk;
             if (previous) {
-                contextImpl.inputChunk = (ChunkType) chunkSource.getPrevChunk(contextImpl.getContext, keys);
+                inputChunk = (ChunkType) chunkSource.getPrevChunk(contextImpl.getContext, keys);
             } else {
-                contextImpl.inputChunk = (ChunkType) chunkSource.getChunk(contextImpl.getContext, keys);
+                inputChunk = (ChunkType) chunkSource.getChunk(contextImpl.getContext, keys);
             }
 
-            for (int ii = 0; ii < contextImpl.inputChunk.size(); ++ii) {
-                avroChunk.get(ii).put(fieldName, getFieldElement(ii, contextImpl));
+            for (int ii = 0; ii < inputChunk.size(); ++ii) {
+                avroChunk.get(ii).put(fieldName, getFieldElement(ii, inputChunk));
             }
         }
     }
 
-    private static GenericRecordFieldProcessor makeByteFieldProcessor(
+    @FunctionalInterface
+    private interface GetFieldElementFun<ChunkType extends Chunk<Attributes.Values>> {
+        Object get(final int ii, final ChunkType inputChunk);
+    }
+
+    private static <ChunkType extends Chunk<Attributes.Values>> GenericRecordFieldProcessor makeGenericFieldProcessor(
             final String fieldName,
-            final ColumnSource<?> chunkSource) {
-        return new GenericRecordFieldProcessorImpl<ByteChunk<Attributes.Values>>(
+            final ColumnSource<?> chunkSource,
+            final GetFieldElementFun<ChunkType> fun) {
+        return new GenericRecordFieldProcessorImpl<ChunkType>(
                 fieldName, chunkSource) {
             @Override
             Object getFieldElement(
                     final int ii,
-                    final ContextImpl contextImpl) {
-                return TypeUtils.box(contextImpl.inputChunk.get(ii));
+                    final ChunkType inputChunk) {
+                return fun.get(ii, inputChunk);
             }
         };
+    }
+
+
+    private static GenericRecordFieldProcessor makeByteFieldProcessor(
+            final String fieldName,
+            final ColumnSource<?> chunkSource) {
+        return makeGenericFieldProcessor(
+                fieldName,
+                chunkSource,
+                (final int ii, final ByteChunk<Attributes.Values> inputChunk) ->
+                    TypeUtils.box(inputChunk.get(ii)));
     }
 
     private static GenericRecordFieldProcessor makeCharFieldProcessor(
             final String fieldName,
             final ColumnSource<?> chunkSource) {
-        return new GenericRecordFieldProcessorImpl<CharChunk<Attributes.Values>>(
-                fieldName, chunkSource) {
-            @Override
-            Object getFieldElement(
-                    final int ii,
-                    final ContextImpl contextImpl) {
-                return TypeUtils.box(contextImpl.inputChunk.get(ii));
-            }
-        };
+        return makeGenericFieldProcessor(
+                fieldName,
+                chunkSource,
+                (final int ii, final CharChunk<Attributes.Values> inputChunk) ->
+                        TypeUtils.box(inputChunk.get(ii)));
     }
 
     private static GenericRecordFieldProcessor makeShortFieldProcessor(
             final String fieldName,
             final ColumnSource<?> chunkSource) {
-        return new GenericRecordFieldProcessorImpl<ShortChunk<Attributes.Values>>(
-                fieldName, chunkSource) {
-            @Override
-            Object getFieldElement(
-                    final int ii,
-                    final ContextImpl contextImpl) {
-                return TypeUtils.box(contextImpl.inputChunk.get(ii));
-            }
-        };
+        return makeGenericFieldProcessor(
+                fieldName,
+                chunkSource,
+                (final int ii, final ShortChunk<Attributes.Values> inputChunk) ->
+                        TypeUtils.box(inputChunk.get(ii)));
     }
 
     private static GenericRecordFieldProcessor makeIntFieldProcessor(
             final String fieldName,
             final ColumnSource<?> chunkSource) {
-        return new GenericRecordFieldProcessorImpl<IntChunk<Attributes.Values>>(
-                fieldName, chunkSource) {
-            @Override
-            Object getFieldElement(
-                    final int ii,
-                    final ContextImpl contextImpl) {
-                return TypeUtils.box(contextImpl.inputChunk.get(ii));
-            }
-        };
+        return makeGenericFieldProcessor(
+                fieldName,
+                chunkSource,
+                (final int ii, final IntChunk<Attributes.Values> inputChunk) ->
+                        TypeUtils.box(inputChunk.get(ii)));
     }
 
     private static GenericRecordFieldProcessor makeLongFieldProcessor(
             final String fieldName,
             final ColumnSource<?> chunkSource) {
-        return new GenericRecordFieldProcessorImpl<LongChunk<Attributes.Values>>(
-                fieldName, chunkSource) {
-            @Override
-            Object getFieldElement(
-                    final int ii,
-                    final ContextImpl contextImpl) {
-                return TypeUtils.box(contextImpl.inputChunk.get(ii));
-            }
-        };
+        return makeGenericFieldProcessor(
+                fieldName,
+                chunkSource,
+                (final int ii, final LongChunk<Attributes.Values> inputChunk) ->
+                        TypeUtils.box(inputChunk.get(ii)));
     }
 
     private static GenericRecordFieldProcessor makeLongFieldProcessorWithInverseFactor(
             final String fieldName,
             final ColumnSource<?> chunkSource,
-            final long inverseFactor) {
+            final long denominator) {
         return new GenericRecordFieldProcessorImpl<LongChunk<Attributes.Values>>(
                 fieldName, chunkSource) {
             @Override
             Object getFieldElement(
                     final int ii,
-                    final ContextImpl contextImpl) {
-                final long raw = contextImpl.inputChunk.get(ii);
+                    final LongChunk<Attributes.Values> inputChunk) {
+                final long raw = inputChunk.get(ii);
                 if (raw == QueryConstants.NULL_LONG) {
                     return null;
                 }
-                return raw / inverseFactor;
+                return raw / denominator;
             }
         };
     }
@@ -257,43 +258,31 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
     private static GenericRecordFieldProcessor makeFloatFieldProcessor(
             final String fieldName,
             final ColumnSource<?> chunkSource) {
-        return new GenericRecordFieldProcessorImpl<FloatChunk<Attributes.Values>>(
-                fieldName, chunkSource) {
-            @Override
-            Object getFieldElement(
-                    final int ii,
-                    final ContextImpl contextImpl) {
-                return TypeUtils.box(contextImpl.inputChunk.get(ii));
-            }
-        };
+        return makeGenericFieldProcessor(
+                fieldName,
+                chunkSource,
+                (final int ii, final FloatChunk<Attributes.Values> inputChunk) ->
+                        TypeUtils.box(inputChunk.get(ii)));
     }
 
     private static GenericRecordFieldProcessor makeDoubleFieldProcessor(
             final String fieldName,
             final ColumnSource<?> chunkSource) {
-        return new GenericRecordFieldProcessorImpl<DoubleChunk<Attributes.Values>>(
-                fieldName, chunkSource) {
-            @Override
-            Object getFieldElement(
-                    final int ii,
-                    final ContextImpl contextImpl) {
-                return TypeUtils.box(contextImpl.inputChunk.get(ii));
-            }
-        };
+        return makeGenericFieldProcessor(
+                fieldName,
+                chunkSource,
+                (final int ii, final DoubleChunk<Attributes.Values> inputChunk) ->
+                        TypeUtils.box(inputChunk.get(ii)));
     }
 
     private static GenericRecordFieldProcessor makeObjectFieldProcessor(
             final String fieldName,
             final ColumnSource<?> chunkSource) {
-        return new GenericRecordFieldProcessorImpl<ObjectChunk<?, Attributes.Values>>(
-                fieldName, chunkSource) {
-            @Override
-            Object getFieldElement(
-                    final int ii,
-                    final ContextImpl contextImpl) {
-                return contextImpl.inputChunk.get(ii);
-            }
-        };
+        return makeGenericFieldProcessor(
+                fieldName,
+                chunkSource,
+                (final int ii, final ObjectChunk<?, Attributes.Values> inputChunk) ->
+                        inputChunk.get(ii));
     }
 
     private static class TimestampFieldProcessor extends GenericRecordFieldProcessor {
@@ -391,7 +380,10 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
         }
 
         for (int ii = 0; ii < fieldProcessors.size(); ++ii) {
-            fieldProcessors.get(ii).processField(avroContext.fieldContexts[ii], avroContext.avroChunk, toProcess,
+            fieldProcessors.get(ii).processField(
+                    avroContext.fieldContexts[ii],
+                    avroContext.avroChunk,
+                    toProcess,
                     previous);
         }
 
