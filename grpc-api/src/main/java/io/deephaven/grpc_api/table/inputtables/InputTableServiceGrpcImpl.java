@@ -4,10 +4,10 @@ import com.google.rpc.Code;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.TableDefinition;
 import io.deephaven.db.util.config.MutableInputTable;
+import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.grpc_api.session.SessionService;
 import io.deephaven.grpc_api.session.SessionState;
 import io.deephaven.grpc_api.session.TicketRouter;
-import io.deephaven.grpc_api.util.GrpcUtil;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.proto.backplane.grpc.*;
@@ -15,9 +15,6 @@ import io.grpc.stub.StreamObserver;
 
 import javax.inject.Inject;
 import java.io.IOException;
-import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public class InputTableServiceGrpcImpl extends InputTableServiceGrpc.InputTableServiceImplBase {
 
@@ -31,7 +28,6 @@ public class InputTableServiceGrpcImpl extends InputTableServiceGrpc.InputTableS
         this.ticketRouter = ticketRouter;
         this.sessionService = sessionService;
     }
-
 
     @Override
     public void addTablesToInputTable(AddTableRequest request, StreamObserver<AddTableResponse> responseObserver) {

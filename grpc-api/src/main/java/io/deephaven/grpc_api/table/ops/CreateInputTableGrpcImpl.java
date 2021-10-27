@@ -6,20 +6,18 @@ import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.TableDefinition;
 import io.deephaven.db.v2.utils.AppendOnlyArrayBackedMutableTable;
 import io.deephaven.db.v2.utils.KeyedArrayBackedMutableTable;
-import io.deephaven.grpc_api.barrage.util.BarrageSchemaUtil;
+import io.deephaven.extensions.barrage.util.BarrageUtil;
+import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.grpc_api.session.SessionState;
-import io.deephaven.grpc_api.util.GrpcUtil;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
 import io.deephaven.proto.backplane.grpc.CreateInputTableRequest;
 import io.grpc.StatusRuntimeException;
 import org.apache.arrow.flatbuf.Message;
 import org.apache.arrow.flatbuf.MessageHeader;
 import org.apache.arrow.flatbuf.Schema;
-import org.apache.arrow.flatbuf.Type;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.List;
 
@@ -57,7 +55,7 @@ public class CreateInputTableGrpcImpl extends GrpcTableOperation<CreateInputTabl
             if (message.headerType() != MessageHeader.Schema) {
                 throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Must specify schema header in schema message");
             }
-            tableDefinitionFromSchema = BarrageSchemaUtil.schemaToTableDefinition((Schema) message.header(new Schema()));
+            tableDefinitionFromSchema = BarrageUtil.convertArrowSchema((Schema) message.header(new Schema())).tableDef;
         } else if (request.hasSourceTableId()) {
             Table sourceTable = sourceTables.get(0).get();
             tableDefinitionFromSchema = sourceTable.getDefinition();
