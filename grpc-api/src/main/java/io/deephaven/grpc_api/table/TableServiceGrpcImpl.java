@@ -254,7 +254,8 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
     }
 
     @Override
-    public void applyPreviewColumns(ApplyPreviewColumnsRequest request, StreamObserver<ExportedTableCreationResponse> responseObserver) {
+    public void applyPreviewColumns(ApplyPreviewColumnsRequest request,
+            StreamObserver<ExportedTableCreationResponse> responseObserver) {
         oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.APPLY_PREVIEW_COLUMNS, request, responseObserver);
     }
 

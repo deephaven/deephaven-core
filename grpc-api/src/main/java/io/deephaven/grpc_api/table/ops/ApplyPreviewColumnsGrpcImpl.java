@@ -16,6 +16,7 @@ public class ApplyPreviewColumnsGrpcImpl extends GrpcTableOperation<ApplyPreview
         super(BatchTableRequest.Operation::getApplyPreviewColumns, ApplyPreviewColumnsRequest::getResultId,
                 ApplyPreviewColumnsRequest::getSourceId);
     }
+
     @Override
     public Table create(ApplyPreviewColumnsRequest request, List<SessionState.ExportObject<Table>> sourceTables) {
         Assert.eq(sourceTables.size(), "sourceTables.size()", 1);
