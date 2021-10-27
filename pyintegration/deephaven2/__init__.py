@@ -9,4 +9,4 @@ unlocks the unique and tremendous power Deephaven to Python community.
 from .dherror import DHError
 from .csv import read_csv
 
-__version__ = "0.5.1"
+__version__ = "0.5.2"

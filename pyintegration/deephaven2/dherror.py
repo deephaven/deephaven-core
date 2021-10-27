@@ -1,11 +1,23 @@
 #
 #  Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
 #
+""" This module defines a custom exception for the Deephaven Python Integration Package.
+
+The custom exception is named DHError. It encapsulates exceptions thrown by the Deephaven engine and the
+Python/Java integration layer and provides 3 convenient properties: root_cause, compact_traceback, and
+traceback for easy debugging.
+
+"""
 import traceback
 
 
 class DHError(Exception):
-    """ A custom exception class for deephaven python integration.
+    """ The custom exception class for the Deephaven Python package.
+
+    This exception can be raised due to user errors or system errors when Deephaven resources and functions
+    are accessed, for example, during reading a CSV/Parquet file into a Deephaven table or performing an
+    aggregation or join operation on Deephaven tables. It is a good practice for Python code to catch this
+    exception and handle it appropriately.
     """
 
     def __init__(self, cause=None, message=""):
@@ -35,7 +47,6 @@ class DHError(Exception):
 
             if for_compact_tb:
                 self._compact_tb.append(tb_ln)
-
 
     @property
     def root_cause(self):

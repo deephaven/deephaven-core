@@ -1,6 +1,7 @@
 #
 #   Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
 #
+""" This module implements the Table class and functions that work with Tables. """
 from typing import List
 
 from deephaven2 import DHError
@@ -8,7 +9,12 @@ from deephaven2.column import Column
 
 
 class Table:
-    """ A Table object represents a Deephaven table. """
+    """ A Table represents a Deephaven table. It allows applications to perform powerful Deephaven table operations
+
+
+    Note: A client should not instantiate Table directly. Tables are mostly created by factory methods, data ingress
+    operations, queries, aggregations, joins, etc.
+    """
 
     def __init__(self, db_table):
         self._db_table = db_table
@@ -18,22 +24,10 @@ class Table:
     # to make the table visible to DH script session
     def get_dh_table(self):
         return self._db_table
-    
-    @property
-    def db_table(self):
-        """ The underlying Table object in Java. """
-        return self._db_table
 
     @property
     def columns(self):
-        """ Returns the column info of the table.
-
-        Returns:
-            a list of column definitions
-
-        Raises:
-            DHError
-        """
+        """ The column definitions of the table. """
         if self._schema:
             return self._schema
 
@@ -49,7 +43,7 @@ class Table:
         return self._schema
 
     def update(self, formulas: List[str]):
-        """ Perform an update operation on the table and return the result table.
+        """ The update method creates a new table containing a new, in-memory column for each formula.
 
         Args:
             formulas (List[str]): TODO
