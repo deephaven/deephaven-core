@@ -1006,8 +1006,15 @@ public final class DBLanguageParser extends GenericVisitorAdapter<Class<?>, DBLa
             // We'll check for a known component type if this a NameExpr.
             if (n.getName() instanceof NameExpr) {
                 Class<?>[] classes = variableParameterizedTypes.get(((NameExpr) n.getName()).getNameAsString());
-                if (classes != null && classes.length > 0) {
-                    Class<?> ret = classes[0];
+
+                if (classes != null) {
+                    Class<?> ret = null;
+
+                    if (classes.length == 1) {
+                        ret = classes[0]; // scenario 1: this is a list-like type
+                    } else if (classes.length == 2) {
+                        ret = classes[1]; // scenario 2: this is a map-like type
+                    }
 
                     if (ret != null) {
                         return ret;
@@ -1177,7 +1184,7 @@ public final class DBLanguageParser extends GenericVisitorAdapter<Class<?>, DBLa
         if (toPrimitive && !ret.equals(boolean.class) && !ret.equals(exprType)) {
             // Casting to a primitive, except booleans and the identity conversion
             printer.append(ret.getSimpleName());
-            if (exprType.equals(PyObject.class)) {
+            if (isAssignableFrom(PyObject.class, exprType)) {
                 printer.append("PyCast((PyObject)");
             } else {
                 printer.append("Cast(");
