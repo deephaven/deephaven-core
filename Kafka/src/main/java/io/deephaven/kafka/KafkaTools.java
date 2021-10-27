@@ -719,7 +719,9 @@ public class KafkaTools {
          * @param schema An Avro schema.
          * @param columnNames An array indicating the column name to use for each corresponding field in the schema, or
          *        null if the schema field names are expected to map exactly to column names.
-         * @param timestampFieldName If not null, include a field of the given name with a publication timestamp.
+         * @param timestampFieldName If not null, include a field of the given name with a publication timestamp. The
+         *        field with the given name should exist in the provided schema, and be of logical type timestamp
+         *        micros.
          * @return A spec corresponding to the schema provided.
          */
         @SuppressWarnings("unused")
@@ -750,7 +752,9 @@ public class KafkaTools {
          * @param schemaVersion The version to fetch
          * @param columnNames An array indicating the column name to use for each corresponding field in the schema, or
          *        null if the schema field names are expected to map exactly to column names.
-         * @param timestampFieldName If not null, include a field of the given name with a publication timestamp.
+         * @param timestampFieldName If not null, include a field of the given name with a publication timestamp. The
+         *        field with the given name should exist in the provided schema, and be of logical type timestamp
+         *        micros.
          * @return A spec corresponding to the schema provided.
          */
         @SuppressWarnings("unused")
@@ -770,7 +774,9 @@ public class KafkaTools {
          * @param schemaName The registered name for the schema on Schema Server
          * @param columnNames An array indicating the column name to use for each corresponding field in the schema, or
          *        null if the schema field names are expected to map exactly to column names.
-         * @param timestampFieldName If not null, include a field of the given name with a publication timestamp.
+         * @param timestampFieldName If not null, include a field of the given name with a publication timestamp. The
+         *        field with the given name should exist in the provided schema, and be of logical type timestamp
+         *        micros.
          * @return A spec corresponding to the schema provided.
          */
         @SuppressWarnings("unused")

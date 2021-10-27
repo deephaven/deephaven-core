@@ -13,6 +13,7 @@ import org.apache.avro.LogicalType;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericData;
 import org.apache.avro.generic.GenericRecord;
+import org.apache.kafka.common.errors.IllegalSaslStateException;
 
 import java.util.*;
 
@@ -43,12 +44,45 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
         if (type != Schema.Type.RECORD) {
             throw new IllegalArgumentException("The schema is not a toplevel record definition.");
         }
+        final boolean haveTimestampField = !StringUtils.isNullOrEmpty(timestampFieldName);
+        if (haveTimestampField) {
+            checkTimestampField(schema, timestampFieldName);
+        }
         this.schema = schema;
 
         MultiFieldKeyOrValueSerializerUtils.makeFieldProcessors(columnNames, fieldNames, this::makeFieldProcessor);
 
-        if (!StringUtils.isNullOrEmpty(timestampFieldName)) {
+        if (haveTimestampField) {
             fieldProcessors.add(new TimestampFieldProcessor(timestampFieldName));
+        }
+    }
+
+    private static void checkTimestampField(final Schema schema, final String timestampFieldName) {
+        // Check the timestamp field exists and is of the right logical type.
+        final List<Schema.Field> fields = schema.getFields();
+        // Find the field with the right name.
+        Schema.Field timestampField = null;
+        for (Schema.Field field : fields) {
+            if (timestampFieldName.equals(field.name())) {
+                timestampField = field;
+                break;
+            }
+        }
+        if (timestampField == null) {
+            throw new IllegalArgumentException(
+                    "Field of name timestampFieldName='" + timestampFieldName + "' not found.");
+        }
+        final Schema fieldSchema = timestampField.schema();
+        final Schema.Type type = fieldSchema.getType();
+        if (type != Schema.Type.LONG) {
+            throw new IllegalArgumentException(
+                    "Field of name timestampFieldName='" + timestampFieldName + "' has wrong type " + type);
+        }
+        final LogicalType logicalType = fieldSchema.getLogicalType();
+        if (!LogicalTypes.timestampMicros().equals(logicalType)) {
+            throw new IllegalSaslStateException(
+                    "Field of name timestampFieldName='" + timestampFieldName +
+                            "' has wrong logical type " + logicalType);
         }
     }
 
@@ -257,17 +291,19 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
         }
 
         @Override
-        FieldContext makeContext(int size) {
+        FieldContext makeContext(final int size) {
             return null;
         }
 
         @Override
-        public void processField(FieldContext fieldContext,
-                WritableObjectChunk<GenericRecord, Attributes.Values> avroChunk, OrderedKeys keys, boolean isRemoval) {
-            // do we really want nanos instead of micros; there are avro things for micros/millis?
-            final long nanos = DBDateTime.now().getNanos();
+        public void processField(
+                final FieldContext fieldContext,
+                final WritableObjectChunk<GenericRecord, Attributes.Values> avroChunk,
+                final OrderedKeys keys,
+                final boolean isRemoval) {
+            final long micros = DBDateTime.now().getMicros();
             for (int ii = 0; ii < avroChunk.size(); ++ii) {
-                avroChunk.get(ii).put(fieldName, nanos);
+                avroChunk.get(ii).put(fieldName, micros);
             }
         }
     }
