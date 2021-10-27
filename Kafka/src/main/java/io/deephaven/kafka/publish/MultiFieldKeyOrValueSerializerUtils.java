@@ -3,7 +3,7 @@ package io.deephaven.kafka.publish;
 class MultiFieldKeyOrValueSerializerUtils {
     @FunctionalInterface
     interface StringStringProcedure {
-        void apply(String columnName, String fieldName);
+        void apply(int i, String columnName, String fieldName);
     }
 
     static void makeFieldProcessors(
@@ -18,9 +18,9 @@ class MultiFieldKeyOrValueSerializerUtils {
             final String columnName = columnNames[i];
             try {
                 if (fieldNames == null) {
-                    fieldProcessorMaker.apply(columnName, columnName);
+                    fieldProcessorMaker.apply(i, columnName, columnName);
                 } else {
-                    fieldProcessorMaker.apply(columnName, fieldNames[i]);
+                    fieldProcessorMaker.apply(i, columnName, fieldNames[i]);
                 }
             } catch (RuntimeException e) {
                 throw new IllegalArgumentException("Unknown column name " + columnName + " for table", e);

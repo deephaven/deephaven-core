@@ -8,6 +8,8 @@ import io.deephaven.db.v2.sources.chunk.*;
 import io.deephaven.db.v2.utils.OrderedKeys;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
+import org.apache.avro.LogicalTypes;
+import org.apache.avro.LogicalType;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericData;
 import org.apache.avro.generic.GenericRecord;
@@ -34,6 +36,13 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
             final String[] fieldNames,
             final String timestampFieldName) {
         this.source = source;
+        if (schema.isUnion()) {
+            throw new UnsupportedOperationException("Union of records schemas are not supported");
+        }
+        final Schema.Type type = schema.getType();
+        if (type != Schema.Type.RECORD) {
+            throw new IllegalArgumentException("The schema is not a toplevel record definition.");
+        }
         this.schema = schema;
 
         MultiFieldKeyOrValueSerializerUtils.makeFieldProcessors(columnNames, fieldNames, this::makeFieldProcessor);
@@ -181,6 +190,25 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
         };
     }
 
+    private static GenericRecordFieldProcessor makeLongFieldProcessorWithInverseFactor(
+            final String fieldName,
+            final ColumnSource<?> chunkSource,
+            final long inverseFactor) {
+        return new GenericRecordFieldProcessorImpl<LongChunk<Attributes.Values>>(
+                fieldName, chunkSource) {
+            @Override
+            Object getFieldElement(
+                    final int ii,
+                    final ContextImpl contextImpl) {
+                final long raw = contextImpl.inputChunk.get(ii);
+                if (raw == QueryConstants.NULL_LONG) {
+                    return null;
+                }
+                return raw / inverseFactor;
+            }
+        };
+    }
+
     private static GenericRecordFieldProcessor makeFloatFieldProcessor(
             final String fieldName,
             final ColumnSource<?> chunkSource) {
@@ -244,6 +272,23 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
         }
     }
 
+    private GenericRecordFieldProcessor getLongProcessor(
+            final Schema.Field field,
+            final String fieldName,
+            final Class<?> columnType,
+            final ColumnSource<?> src) {
+        final Schema fieldSchema = field.schema();
+        if (columnType == DBDateTime.class && fieldSchema.getType() == Schema.Type.LONG) {
+            final LogicalType logicalType = fieldSchema.getLogicalType();
+            if (LogicalTypes.timestampMicros().equals(logicalType)) {
+                return makeLongFieldProcessorWithInverseFactor(fieldName, src, 1000);
+            } else if (LogicalTypes.timestampMillis().equals(logicalType)) {
+                return makeLongFieldProcessorWithInverseFactor(fieldName, src, 1000 * 1000);
+            }
+        }
+        return makeLongFieldProcessor(fieldName, src);
+    }
+
     /**
      * Create a field processor that translates a given column from its Deephaven row number to output of the intended
      * type.
@@ -251,28 +296,31 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
      * @param columnName The Deephaven column to be translated into publishable format
      * @param fieldName The name of the field in the output (if needed).
      */
-    private void makeFieldProcessor(final String columnName, final String fieldName) {
-        // getColumn should throw a ColumnNotFoundException if it can't find the column, which will blow us up here.
-        @SuppressWarnings("rawtypes")
-        final ColumnSource src = source.getColumnSource(columnName);
+    private void makeFieldProcessor(final int ii, final String columnName, final String fieldName) {
+        // getColumn should throw a ColumnNotFoundException if it can't find the column,
+        // which will blow us up here.
+        final ColumnSource<?> src = source.getColumnSource(columnName);
+        final Schema.Field field = schema.getFields().get(ii);
         final Class<?> type = src.getType();
-        if (byte.class.equals(type)) {
-            fieldProcessors.add(makeByteFieldProcessor(fieldName, src));
-        } else if (short.class.equals(type)) {
-            fieldProcessors.add(makeShortFieldProcessor(fieldName, src));
-        } else if (int.class.equals(type)) {
-            fieldProcessors.add(makeIntFieldProcessor(fieldName, src));
-        } else if (double.class.equals(type)) {
-            fieldProcessors.add(makeDoubleFieldProcessor(fieldName, src));
-        } else if (float.class.equals(type)) {
-            fieldProcessors.add(makeFloatFieldProcessor(fieldName, src));
-        } else if (long.class.equals(type)) {
-            fieldProcessors.add(makeLongFieldProcessor(fieldName, src));
-        } else if (char.class.equals(type)) {
-            fieldProcessors.add(makeCharFieldProcessor(fieldName, src));
+        final GenericRecordFieldProcessor proc;
+        if (type == char.class) {
+            proc = makeCharFieldProcessor(fieldName, src);
+        } else if (type == byte.class) {
+            proc = makeByteFieldProcessor(fieldName, src);
+        } else if (type == short.class) {
+            proc = makeShortFieldProcessor(fieldName, src);
+        } else if (type == int.class) {
+            proc = makeIntFieldProcessor(fieldName, src);
+        } else if (type == long.class) {
+            proc = getLongProcessor(field, fieldName, source.getColumn(columnName).getType(), src);
+        } else if (type == float.class) {
+            proc = makeFloatFieldProcessor(fieldName, src);
+        } else if (type == double.class) {
+            proc = makeDoubleFieldProcessor(fieldName, src);
         } else {
-            fieldProcessors.add(makeObjectFieldProcessor(fieldName, src));
+            proc = makeObjectFieldProcessor(fieldName, src);
         }
+        fieldProcessors.add(proc);
     }
 
     /**

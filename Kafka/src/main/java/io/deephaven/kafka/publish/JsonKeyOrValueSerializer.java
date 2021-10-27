@@ -46,7 +46,9 @@ public class JsonKeyOrValueSerializer implements KeyOrValueSerializer<String> {
         this.nestedObjectDelimiter = nestedObjectDelimiter;
         this.outputNulls = outputNulls;
 
-        MultiFieldKeyOrValueSerializerUtils.makeFieldProcessors(columnNames, fieldNames, this::makeFieldProcessor);
+        MultiFieldKeyOrValueSerializerUtils.makeFieldProcessors(columnNames, fieldNames,
+                (final int unused, final String columnName, final String fieldName) -> makeFieldProcessor(columnName,
+                        fieldName));
 
         if (!StringUtils.isNullOrEmpty(timestampFieldName)) {
             fieldProcessors.add(new TimestampFieldProcessor(timestampFieldName));
