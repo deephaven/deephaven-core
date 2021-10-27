@@ -318,7 +318,8 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
             final LogicalType logicalType = fieldSchema.getLogicalType();
             if (LogicalTypes.timestampMicros().equals(logicalType)) {
                 return makeLongFieldProcessorWithInverseFactor(fieldName, src, 1000);
-            } else if (LogicalTypes.timestampMillis().equals(logicalType)) {
+            }
+            if (LogicalTypes.timestampMillis().equals(logicalType)) {
                 return makeLongFieldProcessorWithInverseFactor(fieldName, src, 1000 * 1000);
             }
         }
