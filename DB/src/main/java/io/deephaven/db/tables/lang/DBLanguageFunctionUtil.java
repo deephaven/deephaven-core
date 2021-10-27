@@ -6,6 +6,7 @@
 package io.deephaven.db.tables.lang;
 
 import io.deephaven.util.QueryConstants;
+import org.jpy.PyObject;
 
 @SuppressWarnings({"unused", "WeakerAccess", "SimplifiableIfStatement"})
 public final class DBLanguageFunctionUtil {
@@ -19287,6 +19288,34 @@ public final class DBLanguageFunctionUtil {
 
     public static short shortCast(Object a) {
         return a == null ? QueryConstants.NULL_SHORT : (short) a;
+    }
+
+    public static int intPyCast(PyObject a) {
+        return a.getIntValue();
+    }
+
+    public static double doublePyCast(PyObject a) {
+        return a.getDoubleValue();
+    }
+
+    public static long longPyCast(PyObject a) {
+        return a.getLongValue();
+    }
+
+    public static float floatPyCast(PyObject a) {
+        return (float) a.getDoubleValue();
+    }
+
+    public static char charPyCast(PyObject a) {
+        return (char) a.getIntValue();
+    }
+
+    public static byte bytePyCast(PyObject a) {
+        return (byte) a.getIntValue();
+    }
+
+    public static short shortPyCast(PyObject a) {
+        return (short) a.getIntValue();
     }
 
     public static int negate(int a) {

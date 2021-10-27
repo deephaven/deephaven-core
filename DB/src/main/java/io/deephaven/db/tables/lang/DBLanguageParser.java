@@ -1003,11 +1003,15 @@ public final class DBLanguageParser extends GenericVisitorAdapter<Class<?>, DBLa
             Class<?> paramType = n.getIndex().accept(this, printer);
             printer.append(')');
 
-            if (DbArray.class.isAssignableFrom(type) && (n.getName() instanceof NameExpr)) {
-                Class<?> ret = variableParameterizedTypes.get(((NameExpr) n.getName()).getNameAsString())[0];
+            // We'll check for a known component type if this a NameExpr.
+            if (n.getName() instanceof NameExpr) {
+                Class<?>[] classes = variableParameterizedTypes.get(((NameExpr) n.getName()).getNameAsString());
+                if (classes != null && classes.length > 0) {
+                    Class<?> ret = classes[0];
 
-                if (ret != null) {
-                    return ret;
+                    if (ret != null) {
+                        return ret;
+                    }
                 }
             }
 
@@ -1173,7 +1177,11 @@ public final class DBLanguageParser extends GenericVisitorAdapter<Class<?>, DBLa
         if (toPrimitive && !ret.equals(boolean.class) && !ret.equals(exprType)) {
             // Casting to a primitive, except booleans and the identity conversion
             printer.append(ret.getSimpleName());
-            printer.append("Cast(");
+            if (exprType.equals(PyObject.class)) {
+                printer.append("PyCast((PyObject)");
+            } else {
+                printer.append("Cast(");
+            }
 
             /*
              * When unboxing to a wider type, do an unboxing conversion followed by a widening conversion. See table

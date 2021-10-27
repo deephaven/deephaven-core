@@ -319,7 +319,8 @@ public class DBLanguageFunctionGenerator {
 
         buf.append("package io.deephaven.db.tables.lang;\n\n");
 
-        buf.append("import io.deephaven.util.QueryConstants;\n\n");
+        buf.append("import io.deephaven.util.QueryConstants;\n");
+        buf.append("import org.jpy.PyObject;\n\n");
 
         buf.append("@SuppressWarnings({\"unused\", \"WeakerAccess\", \"SimplifiableIfStatement\"})\n");
         buf.append("public final class DBLanguageFunctionUtil {\n\n");
@@ -557,6 +558,35 @@ public class DBLanguageFunctionGenerator {
             // the plus and Object are just so we don't get a npe
             append(buf, castFromObjFormatter, BinaryExpr.Operator.PLUS, c, Object.class);
         }
+
+        // Special casts for PyObject to primitive
+        buf.append("    public static int intPyCast(PyObject a) {\n");
+        buf.append("        return a.getIntValue();\n");
+        buf.append("    }\n\n");
+
+        buf.append("    public static double doublePyCast(PyObject a) {\n");
+        buf.append("        return a.getDoubleValue();\n");
+        buf.append("    }\n\n");
+
+        buf.append("    public static long longPyCast(PyObject a) {\n");
+        buf.append("        return a.getLongValue();\n");
+        buf.append("    }\n\n");
+
+        buf.append("    public static float floatPyCast(PyObject a) {\n");
+        buf.append("        return (float) a.getDoubleValue();\n");
+        buf.append("    }\n\n");
+
+        buf.append("    public static char charPyCast(PyObject a) {\n");
+        buf.append("        return (char) a.getIntValue();\n");
+        buf.append("    }\n\n");
+
+        buf.append("    public static byte bytePyCast(PyObject a) {\n");
+        buf.append("        return (byte) a.getIntValue();\n");
+        buf.append("    }\n\n");
+
+        buf.append("    public static short shortPyCast(PyObject a) {\n");
+        buf.append("    return (short) a.getIntValue();\n");
+        buf.append("    }\n\n");
 
         // ------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
