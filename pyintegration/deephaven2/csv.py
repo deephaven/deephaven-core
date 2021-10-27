@@ -43,7 +43,7 @@ class Inference(Enum):
 
     STANDARD_TIMES = _inference_specs_cls.standardTimes()
     """ The order of parsing: INSTANT, INSTANT_LEGACY, SECONDS, MILLISECONDS, MICROSECONDS, NANOSECONDS, SHORT, INT, 
-    LONG, DOUBLE, BOOL, CHAR, STRING, BYTE, FLOAT
+    LONG, DOUBLE, BOOL, CHAR, STRING, BYTE, FLOAT.
      
     For values that can be parsed as SECONDS/MILLISECONDS/MICROSECONDS/NANOSECONDS, they must be within the 21 century.
 
