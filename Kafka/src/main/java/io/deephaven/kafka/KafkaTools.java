@@ -1046,7 +1046,7 @@ public class KafkaTools {
             @NotNull final Produce.KeyOrValueSpec.Avro avroSpec) {
         final Schema schema = getProduceSchema(kafkaConsumerProperties, avroSpec);
         return new GenericRecordKeyOrValueSerializer(
-                t, schema, avroSpec.getColumnNames(), getFieldNames(schema), avroSpec.timestampFieldName);
+                t, schema, avroSpec.getColumnNames(), avroSpec.timestampFieldName);
     }
 
     private static String[] getFieldNames(final Schema schema) {

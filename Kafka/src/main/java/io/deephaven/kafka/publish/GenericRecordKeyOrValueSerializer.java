@@ -8,6 +8,7 @@ import io.deephaven.db.v2.sources.chunk.*;
 import io.deephaven.db.v2.utils.OrderedKeys;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
+import io.deephaven.util.type.TypeUtils;
 import org.apache.avro.LogicalTypes;
 import org.apache.avro.LogicalType;
 import org.apache.avro.Schema;
@@ -34,7 +35,6 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
     public GenericRecordKeyOrValueSerializer(final Table source,
             final Schema schema,
             final String[] columnNames,
-            final String[] fieldNames,
             final String timestampFieldName) {
         this.source = source;
         if (schema.isUnion()) {
@@ -45,21 +45,32 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
             throw new IllegalArgumentException("The schema is not a toplevel record definition.");
         }
         final boolean haveTimestampField = !StringUtils.isNullOrEmpty(timestampFieldName);
+        final List<Schema.Field> fields = schema.getFields();
         if (haveTimestampField) {
-            checkTimestampField(schema, timestampFieldName);
+            checkTimestampField(fields, timestampFieldName);
         }
         this.schema = schema;
 
-        MultiFieldKeyOrValueSerializerUtils.makeFieldProcessors(columnNames, fieldNames, this::makeFieldProcessor);
+        int i = 0;
+        for (Schema.Field field : fields) {
+            if (haveTimestampField && timestampFieldName.equals(field.name())) {
+                continue;
+            }
+            if (columnNames == null) {
+                makeFieldProcessor(i, null);
+            } else {
+                makeFieldProcessor(i, columnNames[i]);
+            }
+            ++i;
+        }
 
         if (haveTimestampField) {
             fieldProcessors.add(new TimestampFieldProcessor(timestampFieldName));
         }
     }
 
-    private static void checkTimestampField(final Schema schema, final String timestampFieldName) {
-        // Check the timestamp field exists and is of the right logical type.
-        final List<Schema.Field> fields = schema.getFields();
+    // Check the timestamp field exists and is of the right logical type.
+    private static void checkTimestampField(final List<Schema.Field> fields, final String timestampFieldName) {
         // Find the field with the right name.
         Schema.Field timestampField = null;
         for (Schema.Field field : fields) {
@@ -163,7 +174,7 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
             Object getFieldElement(
                     final int ii,
                     final ContextImpl contextImpl) {
-                return QueryConstants.asObjectOrNull(contextImpl.inputChunk.get(ii));
+                return TypeUtils.box(contextImpl.inputChunk.get(ii));
             }
         };
     }
@@ -177,7 +188,7 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
             Object getFieldElement(
                     final int ii,
                     final ContextImpl contextImpl) {
-                return QueryConstants.asObjectOrNull(contextImpl.inputChunk.get(ii));
+                return TypeUtils.box(contextImpl.inputChunk.get(ii));
             }
         };
     }
@@ -191,7 +202,7 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
             Object getFieldElement(
                     final int ii,
                     final ContextImpl contextImpl) {
-                return QueryConstants.asObjectOrNull(contextImpl.inputChunk.get(ii));
+                return TypeUtils.box(contextImpl.inputChunk.get(ii));
             }
         };
     }
@@ -205,7 +216,7 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
             Object getFieldElement(
                     final int ii,
                     final ContextImpl contextImpl) {
-                return QueryConstants.asObjectOrNull(contextImpl.inputChunk.get(ii));
+                return TypeUtils.box(contextImpl.inputChunk.get(ii));
             }
         };
     }
@@ -219,7 +230,7 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
             Object getFieldElement(
                     final int ii,
                     final ContextImpl contextImpl) {
-                return QueryConstants.asObjectOrNull(contextImpl.inputChunk.get(ii));
+                return TypeUtils.box(contextImpl.inputChunk.get(ii));
             }
         };
     }
@@ -252,7 +263,7 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
             Object getFieldElement(
                     final int ii,
                     final ContextImpl contextImpl) {
-                return QueryConstants.asObjectOrNull(contextImpl.inputChunk.get(ii));
+                return TypeUtils.box(contextImpl.inputChunk.get(ii));
             }
         };
     }
@@ -266,7 +277,7 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
             Object getFieldElement(
                     final int ii,
                     final ContextImpl contextImpl) {
-                return QueryConstants.asObjectOrNull(contextImpl.inputChunk.get(ii));
+                return TypeUtils.box(contextImpl.inputChunk.get(ii));
             }
         };
     }
@@ -330,14 +341,16 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
      * Create a field processor that translates a given column from its Deephaven row number to output of the intended
      * type.
      *
-     * @param columnName The Deephaven column to be translated into publishable format
-     * @param fieldName The name of the field in the output (if needed).
+     * @param i The field index in the schema.
+     * @param columnNameIn The Deephaven column to be translated into publishable format
      */
-    private void makeFieldProcessor(final int ii, final String columnName, final String fieldName) {
+    private void makeFieldProcessor(final int i, final String columnNameIn) {
         // getColumn should throw a ColumnNotFoundException if it can't find the column,
         // which will blow us up here.
+        final Schema.Field field = schema.getFields().get(i);
+        final String fieldName = field.name();
+        final String columnName = (columnNameIn == null) ? fieldName : columnNameIn;
         final ColumnSource<?> src = source.getColumnSource(columnName);
-        final Schema.Field field = schema.getFields().get(ii);
         final Class<?> type = src.getType();
         final GenericRecordFieldProcessor proc;
         if (type == char.class) {

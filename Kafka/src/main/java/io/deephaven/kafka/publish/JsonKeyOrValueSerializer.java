@@ -46,9 +46,7 @@ public class JsonKeyOrValueSerializer implements KeyOrValueSerializer<String> {
         this.nestedObjectDelimiter = nestedObjectDelimiter;
         this.outputNulls = outputNulls;
 
-        MultiFieldKeyOrValueSerializerUtils.makeFieldProcessors(columnNames, fieldNames,
-                (final int unused, final String columnName, final String fieldName) -> makeFieldProcessor(columnName,
-                        fieldName));
+        makeFieldProcessors(columnNames, fieldNames);
 
         if (!StringUtils.isNullOrEmpty(timestampFieldName)) {
             fieldProcessors.add(new TimestampFieldProcessor(timestampFieldName));
@@ -616,6 +614,27 @@ public class JsonKeyOrValueSerializer implements KeyOrValueSerializer<String> {
             final String nanosString = String.valueOf(DBDateTime.now().getNanos());
             for (int ii = 0; ii < jsonChunk.size(); ++ii) {
                 getChildNode(jsonChunk.get(ii)).put(childNodeFieldName, nanosString);
+            }
+        }
+    }
+
+    void makeFieldProcessors(
+            final String[] columnNames,
+            final String[] fieldNames) {
+        if (fieldNames != null && fieldNames.length != columnNames.length) {
+            throw new IllegalArgumentException(
+                    "fieldNames.length (" + fieldNames.length + ") != columnNames.length (" + columnNames.length + ")");
+        }
+        for (int i = 0; i < columnNames.length; ++i) {
+            final String columnName = columnNames[i];
+            try {
+                if (fieldNames == null) {
+                    makeFieldProcessor(columnName, columnName);
+                } else {
+                    makeFieldProcessor(columnName, fieldNames[i]);
+                }
+            } catch (RuntimeException e) {
+                throw new IllegalArgumentException("Unknown column name " + columnName + " for table", e);
             }
         }
     }
