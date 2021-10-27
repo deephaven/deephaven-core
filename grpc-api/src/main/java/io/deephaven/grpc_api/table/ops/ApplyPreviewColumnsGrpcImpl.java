@@ -8,10 +8,12 @@ import io.deephaven.proto.backplane.grpc.ApplyPreviewColumnsRequest;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
 
 import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.List;
 
+@Singleton
 public class ApplyPreviewColumnsGrpcImpl extends GrpcTableOperation<ApplyPreviewColumnsRequest> {
-    @Inject()
+    @Inject
     protected ApplyPreviewColumnsGrpcImpl() {
         super(BatchTableRequest.Operation::getApplyPreviewColumns, ApplyPreviewColumnsRequest::getResultId,
                 ApplyPreviewColumnsRequest::getSourceId);

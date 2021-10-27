@@ -642,6 +642,7 @@ public class WorkerConnection {
                     (c, cts, metadata) -> {
                         JsLog.debug("performing fetch for ", varDef.getTitle(), " / ", cts,
                                 " (" + LazyString.of(cts::getHandle), ")");
+                        // TODO (deephaven-core#188): eliminate this branch by applying preview cols before subscribing
                         if (applyPreviewColumns == null || applyPreviewColumns) {
                             ApplyPreviewColumnsRequest req = new ApplyPreviewColumnsRequest();
                             req.setSourceId(TableTicket.createTableRef(varDef));
