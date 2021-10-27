@@ -26,7 +26,7 @@ class RemoteProxiedUri {
         }
         final URI innerUri = URI.create(matcher.group(1));
         return RemoteUri.isWellFormed(innerUri) ? RemoteUri.of(DeephavenTarget.from(uri), RemoteUri.of(innerUri))
-                : RemoteUri.of(DeephavenTarget.from(uri), RawUri.of(innerUri));
+                : RemoteUri.of(DeephavenTarget.from(uri), CustomUri.of(innerUri));
     }
 
     static String toString(DeephavenTarget target, RemoteUri uri) {

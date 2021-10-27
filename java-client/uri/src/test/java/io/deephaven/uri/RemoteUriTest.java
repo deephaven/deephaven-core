@@ -147,8 +147,9 @@ public class RemoteUriTest {
     }
 
     @Test
-    void remoteRaw() {
-        final RawUri uri = RawUri.of(URI.create("some-protocol://user@some-host:15/some-path?someQuery=ok#myfragment"));
+    void remoteCustom() {
+        final CustomUri uri =
+                CustomUri.of(URI.create("some-protocol://user@some-host:15/some-path?someQuery=ok#myfragment"));
         final RemoteUri remoteUri = uri.target(TARGET);
         check("dh://host?uri=some-protocol%3A%2F%2Fuser%40some-host%3A15%2Fsome-path%3FsomeQuery%3Dok%23myfragment",
                 remoteUri);
@@ -157,11 +158,17 @@ public class RemoteUriTest {
     @Test
     void proxyParquet() {
         check("dh://gateway?uri=parquet%3A%2F%2F%2Fdata%2Ftest.parquet",
-                RawUri.of(URI.create("parquet:///data/test.parquet")).target(GATEWAY));
+                CustomUri.of(URI.create("parquet:///data/test.parquet")).target(GATEWAY));
     }
 
     @Test
-    void remoteRawDeephaven() {
+    void readmeExample() {
+        check("dh://host?uri=custom%3A%2F%2F%2Ffoo%3Fbar%3Dbaz",
+                CustomUri.of(URI.create("custom:///foo?bar=baz")).target(TARGET));
+    }
+
+    @Test
+    void remoteCustomDeephaven() {
         invalid("dh://host?uri=dh%3A%2F%2Fuser%40some-host%3A15%2Fsome-path%3FsomeQuery%3Dok%23myfragment");
     }
 

@@ -16,7 +16,7 @@ public interface DeephavenUri extends StructuredUri {
     String SECURE_SCHEME = "dh";
 
     /**
-     * The scheme for {@link RemoteUri remote URIs} using plaintext, {@code dh+plain}.
+     * The scheme for {@link RemoteUri remote URIs} using plaintext connections, {@code dh+plain}.
      */
     String PLAINTEXT_SCHEME = "dh+plain";
 

@@ -9,14 +9,14 @@ import java.net.URI;
 
 @Immutable
 @SimpleStyle
-public abstract class RawUri extends StructuredUriBase {
+public abstract class CustomUri extends StructuredUriBase {
 
     public static boolean isValidScheme(String scheme) {
         return scheme != null && !DeephavenUri.isValidScheme(scheme);
     }
 
-    public static RawUri of(URI uri) {
-        return ImmutableRawUri.of(uri);
+    public static CustomUri of(URI uri) {
+        return ImmutableCustomUri.of(uri);
     }
 
     @Parameter
@@ -41,7 +41,7 @@ public abstract class RawUri extends StructuredUriBase {
     @Check
     final void checkScheme() {
         if (!isValidScheme(uri().getScheme())) {
-            throw new IllegalArgumentException(String.format("Invalid raw URI '%s'", uri()));
+            throw new IllegalArgumentException(String.format("Invalid custom URI '%s'", uri()));
         }
     }
 }

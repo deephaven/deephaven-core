@@ -122,8 +122,8 @@ public abstract class RemoteUri extends DeephavenUriBase {
         }
 
         @Override
-        public void visit(URI uri) {
-            out = RemoteProxiedUri.toString(target(), uri);
+        public void visit(URI customUri) {
+            out = RemoteProxiedUri.toString(target(), customUri);
         }
     }
 }

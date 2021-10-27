@@ -190,10 +190,10 @@ public final class BarrageTableResolver implements UriResolver {
         }
 
         @Override
-        public void visit(URI uri) {
+        public void visit(URI customUri) {
             // TODO(deephaven-core#1483): Support resolve URI via gRPC / QST
             throw new UnsupportedOperationException(
-                    "Remote generic URIs not supported yet, see https://github.com/deephaven/deephaven-core/issues/1483");
+                    "Remote custom URIs not supported yet, see https://github.com/deephaven/deephaven-core/issues/1483");
         }
     }
 }

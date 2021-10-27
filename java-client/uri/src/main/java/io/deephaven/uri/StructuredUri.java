@@ -1,14 +1,13 @@
 package io.deephaven.uri;
 
 import java.net.URI;
-import java.util.List;
 
 /**
  * A structured URI is an object which can be represented in serialized form as a {@link URI}; and subsequently, can be
  * deserialized back into the same object.
  *
  * @see DeephavenUri
- * @see RawUri
+ * @see CustomUri
  */
 public interface StructuredUri {
 
@@ -46,6 +45,6 @@ public interface StructuredUri {
 
         void visit(RemoteUri remoteUri);
 
-        void visit(URI uri);
+        void visit(URI customUri);
     }
 }

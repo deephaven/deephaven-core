@@ -7,7 +7,7 @@ import java.net.URI;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
 
-public class RawUriTest {
+public class CustomUriTest {
     @Test
     void someProtocol() {
         check("some-protocol://test@host/for/example?query=yes");
@@ -26,7 +26,7 @@ public class RawUriTest {
     @Test
     void dhField() {
         try {
-            RawUri.of(URI.create("dh:///scope/my_table"));
+            CustomUri.of(URI.create("dh:///scope/my_table"));
             failBecauseExceptionWasNotThrown(IllegalArgumentException.class);
         } catch (IllegalArgumentException e) {
             // expected
@@ -36,7 +36,7 @@ public class RawUriTest {
     @Test
     void tlsField() {
         try {
-            RawUri.of(URI.create("dh://host/local/f/bad"));
+            CustomUri.of(URI.create("dh://host/local/f/bad"));
             failBecauseExceptionWasNotThrown(IllegalArgumentException.class);
         } catch (IllegalArgumentException e) {
             // expected
@@ -46,7 +46,7 @@ public class RawUriTest {
     @Test
     void plaintextField() {
         try {
-            RawUri.of(URI.create("dh+plain://host/local/f/bad"));
+            CustomUri.of(URI.create("dh+plain://host/local/f/bad"));
             failBecauseExceptionWasNotThrown(IllegalArgumentException.class);
         } catch (IllegalArgumentException e) {
             // expected
@@ -54,7 +54,7 @@ public class RawUriTest {
     }
 
     private static void check(String uriStr) {
-        final RawUri uri = RawUri.of(URI.create(uriStr));
+        final CustomUri uri = CustomUri.of(URI.create(uriStr));
         assertThat(uri.toString()).isEqualTo(uriStr);
     }
 }
