@@ -268,7 +268,7 @@ final class UngroupedAggregateColumnSource<DATA_TYPE> extends UngroupedColumnSou
             private int currentIndexPosition;
 
             private Shareable(final boolean shared,
-                    @NotNull final ColumnSource<RowSet> indexSource,
+                    @NotNull final ColumnSource<? extends TrackingRowSet> indexSource,
                     final int chunkCapacity) {
                 this.shared = shared;
 

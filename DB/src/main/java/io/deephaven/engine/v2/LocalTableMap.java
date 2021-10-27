@@ -309,7 +309,8 @@ public class LocalTableMap extends TableMapImpl implements NotificationQueue.Dep
     public TableMap transformTablesWithKey(BiFunction<Object, Table, Table> function) {
         final TableDefinition returnDefinition;
         if (constituentDefinition != null) {
-            final Table emptyTable = new QueryTable(constituentDefinition, RowSetFactoryImpl.INSTANCE.getEmptyRowSet(),
+            final Table emptyTable = new QueryTable(constituentDefinition,
+                    RowSetFactoryImpl.INSTANCE.getEmptyRowSet().tracking(),
                     NullValueColumnSource.createColumnSourceMap(constituentDefinition));
             returnDefinition = function.apply(SENTINEL_KEY, emptyTable).getDefinition();
         } else {

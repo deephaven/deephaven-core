@@ -125,14 +125,14 @@ class NaturalJoinHelper {
                                     bucketingContext.leftSources, control.tableSizeForLeftBuild(leftTable),
                                     bucketingContext.originalLeftSources);
 
-                    final ObjectArraySource<RowSet> indexSource;
+                    final ObjectArraySource<MutableRowSet> indexSource;
                     final MutableInt groupingSize = new MutableInt();
                     if (bucketingContext.useLeftGrouping) {
                         final Map<?, RowSet> grouping =
                                 bucketingContext.leftSources[0].getGroupToRange(leftTable.getRowSet());
 
                         // noinspection unchecked,rawtypes
-                        final Pair<ArrayBackedColumnSource<?>, ObjectArraySource<RowSet>> flatResultColumnSources =
+                        final Pair<ArrayBackedColumnSource<?>, ObjectArraySource<MutableRowSet>> flatResultColumnSources =
                                 AbstractColumnSource.groupingToFlatSources(
                                         (ColumnSource) bucketingContext.leftSources[0], grouping, leftTable.getRowSet(),
                                         groupingSize);
@@ -856,7 +856,7 @@ class NaturalJoinHelper {
             final RowSetShiftData leftShifted = leftRecorder.getShifted();
 
             if (leftRecorder.recordedVariablesAreValid()) {
-                final TrackingMutableRowSet leftModified = leftRecorder.getModified();
+                final RowSet leftModified = leftRecorder.getModified();
                 final ModifiedColumnSet leftModifiedColumns = leftRecorder.getModifiedColumnSet();
                 final boolean leftAdditions = leftAdded.isNonempty();
                 final boolean leftKeyModifications =
@@ -879,11 +879,10 @@ class NaturalJoinHelper {
                     leftRemoved.forAllLongs(redirectionIndex::removeVoid);
                     jsm.removeLeft(pc, leftRemoved, leftSources);
 
-                    final MutableRowSet leftModifiedPreShift;
+                    final RowSet leftModifiedPreShift;
                     if (leftKeyModifications) {
                         if (leftShifted.nonempty()) {
-                            leftModifiedPreShift = leftModified.clone();
-                            leftShifted.unapply(leftModifiedPreShift);
+                            leftModifiedPreShift = leftShifted.unapply(leftModified.clone());
                         } else {
                             leftModifiedPreShift = leftModified;
                         }

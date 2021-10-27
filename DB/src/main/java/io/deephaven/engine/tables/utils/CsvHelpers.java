@@ -14,11 +14,7 @@ import io.deephaven.io.streams.BzipFileOutputStream;
 import io.deephaven.util.annotations.ScriptApi;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.BufferedWriter;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStreamWriter;
+import java.io.*;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.file.Path;
@@ -398,7 +394,8 @@ public class CsvHelpers {
     @ScriptApi
     public static void writeToMultipleFiles(Table table, String path, String filename, long startLine,
             boolean nullsAsEmpty) throws IOException {
-        Table part = table.getSubTable(table.getRowSet().subSetByPositionRange(startLine, startLine + MAX_CSV_LINE_COUNT));
+        Table part = table.getSubTable(
+                table.getRowSet().subSetByPositionRange(startLine, startLine + MAX_CSV_LINE_COUNT).tracking());
         String partFilename = path + filename + "-" + startLine + ".csv";
         TableTools.writeCsv(part, partFilename, nullsAsEmpty);
     }

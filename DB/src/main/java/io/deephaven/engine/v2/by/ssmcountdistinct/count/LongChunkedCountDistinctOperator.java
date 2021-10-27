@@ -9,7 +9,7 @@ package io.deephaven.engine.v2.by.ssmcountdistinct.count;
 
 import io.deephaven.engine.v2.Listener;
 import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
+import io.deephaven.engine.v2.utils.MutableRowSet;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.v2.by.ComboAggregateFactory;
 import io.deephaven.engine.v2.by.IterativeChunkedAggregationOperator;
@@ -45,7 +45,7 @@ public class LongChunkedCountDistinctOperator implements IterativeChunkedAggrega
     private final Supplier<SegmentedSortedMultiSet.RemoveContext> removeContextFactory;
     private final boolean countNull;
     private final boolean exposeInternal;
-    private TrackingMutableRowSet touchedStates;
+    private MutableRowSet touchedStates;
     private UpdateCommitter<LongChunkedCountDistinctOperator> prevFlusher = null;
 
     private final LongSsmBackedSource ssms;

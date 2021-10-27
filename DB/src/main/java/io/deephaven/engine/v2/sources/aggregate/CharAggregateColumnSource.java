@@ -10,6 +10,7 @@ import io.deephaven.engine.v2.sources.chunk.WritableChunk;
 import io.deephaven.engine.v2.sources.chunk.WritableObjectChunk;
 import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.v2.utils.RowSet;
+import io.deephaven.engine.v2.utils.TrackingRowSet;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -18,7 +19,7 @@ import org.jetbrains.annotations.NotNull;
 public final class CharAggregateColumnSource extends BaseAggregateColumnSource<DbCharArray, Character> {
 
     CharAggregateColumnSource(@NotNull final ColumnSource<Character> aggregatedSource,
-                              @NotNull final ColumnSource<RowSet> indexSource) {
+                              @NotNull final ColumnSource<? extends TrackingRowSet> indexSource) {
         super(DbCharArray.class, aggregatedSource, indexSource);
     }
 
@@ -51,7 +52,7 @@ public final class CharAggregateColumnSource extends BaseAggregateColumnSource<D
 
     @Override
     public final void fillPrevChunk(@NotNull final FillContext context, @NotNull final WritableChunk<? super Values> destination, @NotNull final RowSequence rowSequence) {
-        final ObjectChunk<RowSet, ? extends Values> indexChunk = indexSource.getPrevChunk(((AggregateFillContext) context).indexGetContext, rowSequence).asObjectChunk();
+        final ObjectChunk<TrackingRowSet, ? extends Values> indexChunk = indexSource.getPrevChunk(((AggregateFillContext) context).indexGetContext, rowSequence).asObjectChunk();
         final WritableObjectChunk<DbCharArray, ? super Values> typedDestination = destination.asWritableObjectChunk();
         final int size = rowSequence.intSize();
         for (int di = 0; di < size; ++di) {

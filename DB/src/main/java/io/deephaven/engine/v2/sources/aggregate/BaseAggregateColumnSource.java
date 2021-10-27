@@ -10,6 +10,7 @@ import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.UngroupedColumnSource;
 import io.deephaven.engine.v2.sources.chunk.SharedContext;
 import io.deephaven.engine.v2.utils.RowSet;
+import io.deephaven.engine.v2.utils.TrackingRowSet;
 import org.jetbrains.annotations.NotNull;
 
 import static io.deephaven.util.QueryConstants.*;
@@ -21,11 +22,11 @@ abstract class BaseAggregateColumnSource<DB_ARRAY_TYPE extends DbArrayBase, COMP
         extends AbstractColumnSource<DB_ARRAY_TYPE> implements AggregateColumnSource<DB_ARRAY_TYPE, COMPONENT_TYPE> {
 
     final ColumnSource<COMPONENT_TYPE> aggregatedSource;
-    final ColumnSource<RowSet> indexSource;
+    final ColumnSource<? extends TrackingRowSet> indexSource;
 
     BaseAggregateColumnSource(@NotNull final Class<DB_ARRAY_TYPE> dbArrayType,
             @NotNull final ColumnSource<COMPONENT_TYPE> aggregatedSource,
-            @NotNull final ColumnSource<RowSet> indexSource) {
+            @NotNull final ColumnSource<? extends TrackingRowSet> indexSource) {
         super(dbArrayType, aggregatedSource.getType());
         this.aggregatedSource = aggregatedSource;
         this.indexSource = indexSource;
@@ -43,7 +44,7 @@ abstract class BaseAggregateColumnSource<DB_ARRAY_TYPE extends DbArrayBase, COMP
 
         final GetContext indexGetContext;
 
-        private AggregateFillContext(@NotNull final ColumnSource<RowSet> indexSource, final int chunkCapacity,
+        private AggregateFillContext(@NotNull final ColumnSource<? extends TrackingRowSet> indexSource, final int chunkCapacity,
                                      final SharedContext sharedContext) {
             // TODO: Implement a proper shareable context to use with other instances that share an rowSet source.
             // Current usage is "safe" because rowSet sources are only exposed through this wrapper, and all

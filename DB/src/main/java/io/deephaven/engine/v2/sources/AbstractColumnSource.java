@@ -138,13 +138,13 @@ public abstract class AbstractColumnSource<T> implements ColumnSource<T>, Serial
                 }
             }
 
-            final TrackingMutableRowSet matchingValues;
+            final MutableRowSet matchingValues;
             if (invertMatch) {
                 matchingValues = mapper.minus(allInMatchingGroups.build());
             } else {
                 matchingValues = mapper.intersect(allInMatchingGroups.build());
             }
-            return matchingValues;
+            return matchingValues.tracking();
         } else {
             return ChunkFilter.applyChunkFilter(mapper, this, usePrev,
                     ChunkMatchFilterFactory.getChunkFilter(type, caseInsensitive, invertMatch, keys));
@@ -279,11 +279,11 @@ public abstract class AbstractColumnSource<T> implements ColumnSource<T>, Serial
      * @param groupConsumer Consumer for responsive groups
      */
     public static <TYPE> void forEachGroup(@NotNull final Map<TYPE, RowSet> groupToIndex,
-            @NotNull final BiConsumer<TYPE, RowSet> groupConsumer) {
+            @NotNull final BiConsumer<TYPE, MutableRowSet> groupConsumer) {
         groupToIndex.entrySet().stream()
                 .filter(kie -> kie.getValue().isNonempty())
                 .sorted(java.util.Comparator.comparingLong(kie -> kie.getValue().firstRowKey()))
-                .forEachOrdered(kie -> groupConsumer.accept(kie.getKey(), kie.getValue()));
+                .forEachOrdered(kie -> groupConsumer.accept(kie.getKey(), kie.getValue().clone()));
     }
 
     /**
@@ -296,19 +296,19 @@ public abstract class AbstractColumnSource<T> implements ColumnSource<T>, Serial
      * @return A pair of a flat key column source and a flat rowSet column source
      */
     @SuppressWarnings("unused")
-    public static <TYPE> Pair<ArrayBackedColumnSource<TYPE>, ObjectArraySource<RowSet>> groupingToFlatSources(
+    public static <TYPE> Pair<ArrayBackedColumnSource<TYPE>, ObjectArraySource<TrackingMutableRowSet>> groupingToFlatSources(
             @NotNull final ColumnSource<TYPE> originalKeyColumnSource, @NotNull final Map<TYPE, RowSet> groupToIndex) {
         final int numGroups = groupToIndex.size();
         final ArrayBackedColumnSource<TYPE> resultKeyColumnSource = ArrayBackedColumnSource.getMemoryColumnSource(
                 numGroups, originalKeyColumnSource.getType(), originalKeyColumnSource.getComponentType());
-        final ObjectArraySource<RowSet> resultIndexColumnSource = new ObjectArraySource<>(TrackingMutableRowSet.class);
+        final ObjectArraySource<TrackingMutableRowSet> resultIndexColumnSource = new ObjectArraySource<>(TrackingMutableRowSet.class);
         resultIndexColumnSource.ensureCapacity(numGroups);
 
         final MutableInt processedGroupCount = new MutableInt(0);
-        forEachGroup(groupToIndex, (final TYPE key, final RowSet rowSet) -> {
+        forEachGroup(groupToIndex, (final TYPE key, final MutableRowSet rowSet) -> {
             final long groupIndex = processedGroupCount.longValue();
             resultKeyColumnSource.set(groupIndex, key);
-            resultIndexColumnSource.set(groupIndex, rowSet);
+            resultIndexColumnSource.set(groupIndex, rowSet.tracking());
             processedGroupCount.increment();
         });
         Assert.eq(processedGroupCount.intValue(), "processedGroupCount.intValue()", numGroups, "numGroups");
@@ -324,12 +324,12 @@ public abstract class AbstractColumnSource<T> implements ColumnSource<T>, Serial
      */
     public static <TYPE> void forEachResponsiveGroup(@NotNull final Map<TYPE, RowSet> groupToIndex,
             @NotNull final RowSet intersect,
-            @NotNull final BiConsumer<TYPE, RowSet> groupConsumer) {
+            @NotNull final BiConsumer<TYPE, MutableRowSet> groupConsumer) {
         groupToIndex.entrySet().stream()
                 .map(kie -> new Pair<>(kie.getKey(), kie.getValue().intersect(intersect)))
                 .filter(kip -> kip.getSecond().isNonempty())
                 .sorted(java.util.Comparator.comparingLong(kip -> kip.getSecond().firstRowKey()))
-                .forEachOrdered(kip -> groupConsumer.accept(kip.getFirst(), kip.getSecond()));
+                .forEachOrdered(kip -> groupConsumer.accept(kip.getFirst(), kip.getSecond().clone()));
     }
 
     /**
@@ -343,7 +343,7 @@ public abstract class AbstractColumnSource<T> implements ColumnSource<T>, Serial
      * @param responsiveGroups Set to the number of responsive groups on exit
      * @return A pair of a flat key column source and a flat rowSet column source
      */
-    public static <TYPE> Pair<ArrayBackedColumnSource<TYPE>, ObjectArraySource<RowSet>> groupingToFlatSources(
+    public static <TYPE> Pair<ArrayBackedColumnSource<TYPE>, ObjectArraySource<TrackingMutableRowSet>> groupingToFlatSources(
             @NotNull final ColumnSource<TYPE> originalKeyColumnSource,
             @NotNull final Map<TYPE, RowSet> groupToIndex,
             @NotNull final RowSet intersect,
@@ -351,14 +351,14 @@ public abstract class AbstractColumnSource<T> implements ColumnSource<T>, Serial
         final int numGroups = groupToIndex.size();
         final ArrayBackedColumnSource<TYPE> resultKeyColumnSource = ArrayBackedColumnSource.getMemoryColumnSource(
                 numGroups, originalKeyColumnSource.getType(), originalKeyColumnSource.getComponentType());
-        final ObjectArraySource<RowSet> resultIndexColumnSource = new ObjectArraySource<>(TrackingMutableRowSet.class);
+        final ObjectArraySource<TrackingMutableRowSet> resultIndexColumnSource = new ObjectArraySource<>(TrackingMutableRowSet.class);
         resultIndexColumnSource.ensureCapacity(numGroups);
 
         responsiveGroups.setValue(0);
-        forEachResponsiveGroup(groupToIndex, intersect, (final TYPE key, final RowSet rowSet) -> {
+        forEachResponsiveGroup(groupToIndex, intersect, (final TYPE key, final MutableRowSet rowSet) -> {
             final long groupIndex = responsiveGroups.longValue();
             resultKeyColumnSource.set(groupIndex, key);
-            resultIndexColumnSource.set(groupIndex, rowSet);
+            resultIndexColumnSource.set(groupIndex, rowSet.tracking());
             responsiveGroups.increment();
         });
 

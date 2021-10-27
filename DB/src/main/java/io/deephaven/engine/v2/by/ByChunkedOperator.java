@@ -32,8 +32,7 @@ public final class ByChunkedOperator implements IterativeChunkedAggregationOpera
 
     private final QueryTable inputTable;
     private final boolean registeredWithHelper;
-    private final boolean live;
-    private final ObjectArraySource<RowSet> indices;
+    private final ObjectArraySource<TrackingMutableRowSet> rowSets;
     private final String[] inputColumnNames;
     private final Map<String, AggregateColumnSource<?, ?>> resultColumns;
     private final ModifiedColumnSet resultInputsModifiedColumnSet;
@@ -46,15 +45,13 @@ public final class ByChunkedOperator implements IterativeChunkedAggregationOpera
             @NotNull final MatchPair... resultColumnPairs) {
         this.inputTable = inputTable;
         this.registeredWithHelper = registeredWithHelper;
-        live = inputTable.isRefreshing();
-        indices = new ObjectArraySource<>(TrackingMutableRowSet.class);
-        // noinspection unchecked
+        rowSets = new ObjectArraySource<>(TrackingMutableRowSet.class);
         resultColumns = Arrays.stream(resultColumnPairs).collect(Collectors.toMap(MatchPair::left,
-                matchPair -> (AggregateColumnSource<?, ?>) AggregateColumnSource
-                        .make(inputTable.getColumnSource(matchPair.right()), indices),
+                matchPair -> AggregateColumnSource
+                        .make(inputTable.getColumnSource(matchPair.right()), rowSets),
                 Assert::neverInvoked, LinkedHashMap::new));
         inputColumnNames = MatchPair.getRightColumns(resultColumnPairs);
-        if (live) {
+        if (inputTable.isRefreshing()) {
             resultInputsModifiedColumnSet = inputTable.newModifiedColumnSet(inputColumnNames);
         } else {
             resultInputsModifiedColumnSet = null;
@@ -231,16 +228,16 @@ public final class ByChunkedOperator implements IterativeChunkedAggregationOpera
     }
 
     private MutableRowSet indexForSlot(final long destination) {
-        MutableRowSet rowSet = indices.getUnsafe(destination);
+        TrackingMutableRowSet rowSet = rowSets.getUnsafe(destination);
         if (rowSet == null) {
-            indices.set(destination, rowSet = (live ? RowSetFactoryImpl.INSTANCE : RowSetFactoryImpl.INSTANCE).getEmptyRowSet());
+            rowSets.set(destination, rowSet = RowSetFactoryImpl.INSTANCE.getEmptyRowSet().tracking());
         }
         return rowSet;
     }
 
     @Override
     public void ensureCapacity(final long tableSize) {
-        indices.ensureCapacity(tableSize);
+        rowSets.ensureCapacity(tableSize);
     }
 
     @Override
@@ -327,8 +324,8 @@ public final class ByChunkedOperator implements IterativeChunkedAggregationOpera
         if (newDestinations.isEmpty()) {
             return;
         }
-        try (final ChunkSource.GetContext indicesGetContext = indices.makeGetContext(BLOCK_SIZE);
-                final RowSequence.Iterator newDestinationsIterator = newDestinations.getRowSequenceIterator()) {
+        try (final ChunkSource.GetContext indicesGetContext = rowSets.makeGetContext(BLOCK_SIZE);
+             final RowSequence.Iterator newDestinationsIterator = newDestinations.getRowSequenceIterator()) {
             while (newDestinationsIterator.hasMore()) {
                 final long nextDestination = newDestinationsIterator.peekNextKey();
                 final long nextBlockEnd = (nextDestination / BLOCK_SIZE) * BLOCK_SIZE + BLOCK_SIZE - 1;
@@ -336,8 +333,8 @@ public final class ByChunkedOperator implements IterativeChunkedAggregationOpera
                 // it is an ArrayBackedColumnSource), allowing getChunk to skip a copy.
                 final RowSequence newDestinationsSlice =
                         newDestinationsIterator.getNextRowSequenceThrough(nextBlockEnd);
-                final ObjectChunk<RowSet, Values> indicesChunk =
-                        indices.getChunk(indicesGetContext, newDestinationsSlice).asObjectChunk();
+                final ObjectChunk<TrackingMutableRowSet, Values> indicesChunk =
+                        rowSets.getChunk(indicesGetContext, newDestinationsSlice).asObjectChunk();
                 final int indicesChunkSize = indicesChunk.size();
                 for (int ii = 0; ii < indicesChunkSize; ++ii) {
                     indicesChunk.get(ii).initializePreviousValue();

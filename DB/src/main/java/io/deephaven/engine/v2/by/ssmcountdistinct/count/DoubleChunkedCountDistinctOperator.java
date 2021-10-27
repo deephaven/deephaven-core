@@ -25,7 +25,7 @@ import io.deephaven.engine.v2.sources.chunk.Attributes.RowKeys;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 import io.deephaven.engine.v2.ssms.DoubleSegmentedSortedMultiset;
 import io.deephaven.engine.v2.ssms.SegmentedSortedMultiSet;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
+import io.deephaven.engine.v2.utils.MutableRowSet;
 import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.engine.v2.utils.UpdateCommitter;
 import io.deephaven.engine.v2.utils.compact.DoubleCompactKernel;
@@ -45,7 +45,7 @@ public class DoubleChunkedCountDistinctOperator implements IterativeChunkedAggre
     private final Supplier<SegmentedSortedMultiSet.RemoveContext> removeContextFactory;
     private final boolean countNull;
     private final boolean exposeInternal;
-    private TrackingMutableRowSet touchedStates;
+    private MutableRowSet touchedStates;
     private UpdateCommitter<DoubleChunkedCountDistinctOperator> prevFlusher = null;
 
     private final DoubleSsmBackedSource ssms;

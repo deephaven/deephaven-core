@@ -125,7 +125,7 @@ class RightIncrementalChunkedAsOfJoinStateManager
     private final ArrayBackedColumnSource<?> [] overflowKeySources;
     // the location of the next key in an overflow bucket
     private final IntegerArraySource overflowOverflowLocationSource = new IntegerArraySource();
-    // the overflow buckets for the right TrackingMutableRowSet
+    // the overflow buckets for the right MutableRowSet
     @ReplicateHashTable.OverflowStateColumnSource
     // @StateColumnSourceType@ from \QByteArraySource\E
     private final ByteArraySource overflowStateSource
@@ -166,8 +166,8 @@ class RightIncrementalChunkedAsOfJoinStateManager
     /**
      * We use our side source to originally build the rowSet using builders.  When a state is activated (meaning we
      * have a corresponding entry for it on the other side); we'll turn it into an SSA.  If we have updates for an
-     * inactive state, then we turn it into an TrackingMutableRowSet.  The  entry state tells us what we have on each side, using a
-     * nibble for the left and a nibble for the right.
+     * inactive state, then we turn it into an MutableRowSet. The entry state tells us what we have on each side, using
+     * a nibble for the left and a nibble for the right.
      */
     private final ObjectArraySource<Object> leftSideSource;
     private final ObjectArraySource<Object> overflowLeftSideSource;
@@ -1873,9 +1873,9 @@ class RightIncrementalChunkedAsOfJoinStateManager
      * left refreshing case.
      *
      * @param slot the slot in the table (either positive for a main slot, or negative for overflow)
-     * @return the TrackingMutableRowSet for this slot
+     * @return the MutableRowSet for this slot
      */
-    RowSet getAndClearLeftIndex(long slot) {
+    MutableRowSet getAndClearLeftIndex(long slot) {
         final RowSetBuilderSequential builder;
         if (isOverflowLocation(slot)) {
             final long overflowLocation = hashLocationToOverflowLocation(slot);
@@ -2088,7 +2088,7 @@ class RightIncrementalChunkedAsOfJoinStateManager
         throw new IllegalStateException();
     }
 
-    public SegmentedSortedArray getLeftSsaOrIndex(long slot, MutableObject<RowSet> indexOutput) {
+    public SegmentedSortedArray getLeftSsaOrIndex(long slot, MutableObject<MutableRowSet> indexOutput) {
         if (isOverflowLocation(slot)) {
             final long overflowLocation = hashLocationToOverflowLocation(slot);
             final byte entryType = overflowStateSource.getUnsafe(overflowLocation);
@@ -2105,7 +2105,7 @@ class RightIncrementalChunkedAsOfJoinStateManager
         return (byte)((entryType & ENTRY_LEFT_MASK) >> 4);
     }
 
-    public SegmentedSortedArray getRightSsaOrIndex(long slot, MutableObject<RowSet> indexOutput) {
+    public SegmentedSortedArray getRightSsaOrIndex(long slot, MutableObject<MutableRowSet> indexOutput) {
         if (isOverflowLocation(slot)) {
             final long overflowLocation = hashLocationToOverflowLocation(slot);
             final byte entryType = overflowStateSource.getUnsafe(overflowLocation);
@@ -2123,22 +2123,22 @@ class RightIncrementalChunkedAsOfJoinStateManager
     }
 
     @Nullable
-    private static SegmentedSortedArray getSsaOrIndex(MutableObject<RowSet> indexOutput, long location, byte entryType, ObjectArraySource<Object> sideSource, ByteArraySource stateSource, byte stateValueForIndex) {
+    private static SegmentedSortedArray getSsaOrIndex(MutableObject<MutableRowSet> indexOutput, long location, byte entryType, ObjectArraySource<Object> sideSource, ByteArraySource stateSource, byte stateValueForIndex) {
         switch (entryType) {
             case  ENTRY_RIGHT_IS_SSA:
                 return (SegmentedSortedArray) sideSource.getUnsafe(location);
             case  ENTRY_RIGHT_IS_INDEX:
-                indexOutput.setValue((RowSet) sideSource.getUnsafe(location));
+                indexOutput.setValue((MutableRowSet) sideSource.getUnsafe(location));
                 return null;
             case ENTRY_RIGHT_IS_EMPTY: {
-                final RowSet emptyRowSet = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+                final MutableRowSet emptyRowSet = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
                 sideSource.set(location, emptyRowSet);
                 stateSource.set(location, stateValueForIndex);
                 indexOutput.setValue(emptyRowSet);
                 return null;
             }
             case  ENTRY_RIGHT_IS_BUILDER: {
-                final RowSet rowSet = ((RowSetBuilderSequential) sideSource.getUnsafe(location)).build();
+                final MutableRowSet rowSet = ((RowSetBuilderSequential) sideSource.getUnsafe(location)).build();
                 sideSource.set(location, rowSet);
                 stateSource.set(location, stateValueForIndex);
                 indexOutput.setValue(rowSet);

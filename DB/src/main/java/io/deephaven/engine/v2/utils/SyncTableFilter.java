@@ -4,6 +4,9 @@
 
 package io.deephaven.engine.v2.utils;
 
+import gnu.trove.list.array.TLongArrayList;
+import gnu.trove.map.TObjectLongMap;
+import gnu.trove.map.hash.TObjectLongHashMap;
 import io.deephaven.base.Pair;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.verify.Assert;
@@ -13,17 +16,17 @@ import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.live.LiveTableMonitor;
 import io.deephaven.engine.tables.live.NotificationQueue;
-import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.tables.utils.SystemicObjectTracker;
 import io.deephaven.engine.v2.*;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.LogicalClock;
-import io.deephaven.engine.v2.sources.chunk.*;
+import io.deephaven.engine.v2.sources.chunk.Attributes;
+import io.deephaven.engine.v2.sources.chunk.LongChunk;
+import io.deephaven.engine.v2.sources.chunk.WritableLongChunk;
+import io.deephaven.engine.v2.sources.chunk.WritableObjectChunk;
 import io.deephaven.engine.v2.tuples.TupleSource;
 import io.deephaven.engine.v2.tuples.TupleSourceFactory;
-import gnu.trove.list.array.TLongArrayList;
-import gnu.trove.map.TObjectLongMap;
-import gnu.trove.map.hash.TObjectLongHashMap;
+import io.deephaven.util.QueryConstants;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
@@ -60,7 +63,7 @@ public class SyncTableFilter {
             Configuration.getInstance().getIntegerWithDefault("SyncTableFilter.chunkSize", 1 << 16);
     private final List<SyncTableDescription> tables;
     private final QueryTable[] results;
-    private final MutableRowSet[] resultRowSet;
+    private final TrackingMutableRowSet[] resultRowSet;
 
     private final TupleSource[] keySources;
     private final List<ColumnSource<Long>> idSources;
@@ -137,7 +140,7 @@ public class SyncTableFilter {
         this.keySources = new TupleSource[tableCount];
         this.idSources = new ArrayList<>(tableCount);
         this.results = new QueryTable[tableCount];
-        this.resultRowSet = new MutableRowSet[tableCount];
+        this.resultRowSet = new TrackingMutableRowSet[tableCount];
         this.minimumid = new TObjectLongHashMap<>(0, 0.5f, QueryConstants.NULL_LONG);
         this.recorders = new ArrayList<>(tableCount);
 
@@ -167,8 +170,8 @@ public class SyncTableFilter {
             objectToState.add(new HashMap<>());
             keySources[ii] = TupleSourceFactory.makeTupleSource(sources);
             idSources.add(std.table.getColumnSource(std.idColumn, long.class));
-            resultRowSet[ii] = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
-            results[ii] = (QueryTable) ((QueryTable) std.table).getSubTable(resultRowSet[ii], null, mergedListener);
+            resultRowSet[ii] = RowSetFactoryImpl.INSTANCE.getEmptyRowSet().tracking();
+            results[ii] = ((QueryTable) std.table).getSubTable(resultRowSet[ii], null, mergedListener);
 
             final ListenerRecorder listenerRecorder =
                     new ListenerRecorder("SyncTableFilter(" + std.name + ")", (DynamicTable) std.table, results[ii]);
@@ -253,9 +256,9 @@ public class SyncTableFilter {
                 resultRowSet[tt].remove(removed);
                 resultRowSet[tt].insert(added);
 
-                final TrackingMutableRowSet addedAndRemoved = added.intersect(removed);
+                final MutableRowSet addedAndRemoved = added.intersect(removed);
 
-                final TrackingMutableRowSet modified;
+                final MutableRowSet modified;
                 if (recorders.get(tt).getNotificationStep() == currentStep) {
                     modified = recorders.get(tt).getModified().intersect(resultRowSet[tt]);
                     modified.remove(added);
@@ -400,7 +403,7 @@ public class SyncTableFilter {
                 WritableLongChunk.makeWritableChunk(CHUNK_SIZE);
         final ColumnSource<Long> idSource = idSources.get(tableIndex);
         try (final RowSequence.Iterator rsIt = rowSet.getRowSequenceIterator();
-             final ColumnSource.FillContext fillContext = idSource.makeFillContext(CHUNK_SIZE)) {
+                final ColumnSource.FillContext fillContext = idSource.makeFillContext(CHUNK_SIZE)) {
             while (rsIt.hasMore()) {
                 final RowSequence chunkOk = rsIt.getNextRowSequenceWithLength(CHUNK_SIZE);
                 chunkOk.fillRowKeyChunk(keyIndicesChunk);

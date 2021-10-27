@@ -13,8 +13,8 @@ import java.util.function.BiConsumer;
  */
 public class UpdateCoalescer {
 
-    public final TrackingMutableRowSet added;
-    public final TrackingMutableRowSet removed;
+    public final MutableRowSet added;
+    public final MutableRowSet removed;
     public final MutableRowSet modified;
 
     public RowSetShiftData shifted;

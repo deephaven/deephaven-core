@@ -36,7 +36,7 @@ public class SnapshotIncrementalListener extends MergedListener {
         this.leftListener = leftListener;
         this.rightTable = rightTable;
         this.leftColumns = leftColumns;
-        this.lastRightRowSet = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+        this.lastRightRowSet = RowSetFactoryImpl.INSTANCE.getEmptyRowSet().tracking();
     }
 
     @Override
@@ -61,7 +61,7 @@ public class SnapshotIncrementalListener extends MergedListener {
 
     public void doFirstSnapshot(boolean initial) {
         doRowCopy(rightTable.getRowSet());
-        resultTable.getRowSet().insert(rightTable.getRowSet());
+        ((MutableRowSet) resultTable.getRowSet()).insert(rightTable.getRowSet());
         if (!initial) {
             resultTable.notifyListeners(resultTable.getRowSet(), RowSetFactoryImpl.INSTANCE.getEmptyRowSet(),
                     RowSetFactoryImpl.INSTANCE.getEmptyRowSet());
@@ -81,7 +81,7 @@ public class SnapshotIncrementalListener extends MergedListener {
 
             doRowCopy(rowsToCopy);
 
-            resultTable.getRowSet().update(rightAdded, rightRemoved);
+            ((MutableRowSet) resultTable.getRowSet()).update(rightAdded, rightRemoved);
             resultTable.notifyListeners(rightAdded, rightRemoved, rightModified);
         }
     }
@@ -91,7 +91,7 @@ public class SnapshotIncrementalListener extends MergedListener {
     }
 
     public static void copyRowsToResult(RowSet rowsToCopy, QueryTable triggerTable, QueryTable rightTable,
-                                        Map<String, ? extends ColumnSource<?>> leftColumns, Map<String, SparseArrayColumnSource<?>> resultColumns) {
+            Map<String, ? extends ColumnSource<?>> leftColumns, Map<String, SparseArrayColumnSource<?>> resultColumns) {
         final RowSet qtRowSet = triggerTable.getRowSet();
         if (!qtRowSet.isEmpty()) {
             SnapshotUtils.copyStampColumns(leftColumns, qtRowSet.lastRowKey(), resultColumns, rowsToCopy);

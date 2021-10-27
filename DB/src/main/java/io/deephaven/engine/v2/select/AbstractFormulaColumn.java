@@ -17,7 +17,6 @@ import io.deephaven.engine.tables.utils.*;
 import io.deephaven.engine.v2.dbarrays.*;
 import io.deephaven.engine.v2.select.formula.*;
 import io.deephaven.engine.v2.sources.*;
-import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.engine.v2.utils.TrackingRowSet;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
@@ -51,7 +50,7 @@ public abstract class AbstractFormulaColumn implements FormulaColumn {
     protected List<String> userParams;
     protected Param<?>[] params;
     protected Map<String, ? extends ColumnSource<?>> columnSources;
-    private RowSet rowSet;
+    private TrackingRowSet rowSet;
     protected Class<?> returnedType;
     public static final String COLUMN_SUFFIX = "_";
     protected List<String> usedColumnArrays;
@@ -85,7 +84,7 @@ public abstract class AbstractFormulaColumn implements FormulaColumn {
     }
 
     @Override
-    public List<String> initInputs(RowSet rowSet, Map<String, ? extends ColumnSource<?>> columnsOfInterest) {
+    public List<String> initInputs(TrackingRowSet rowSet, Map<String, ? extends ColumnSource<?>> columnsOfInterest) {
         if (this.rowSet != null) {
             Assert.eq(this.rowSet, "this.rowSet", rowSet, "rowSet");
         }
@@ -273,7 +272,7 @@ public abstract class AbstractFormulaColumn implements FormulaColumn {
         final FormulaKernelFactory formulaKernelFactory = getFormulaKernelFactory();
         final FormulaSourceDescriptor sd = getSourceDescriptor();
 
-        return (index, lazy, columnsToData, params) -> {
+        return (rowSet, lazy, columnsToData, params) -> {
             // Maybe warn that we ignore "lazy". By the way, "lazy" is the wrong term anyway. "lazy" doesn't mean
             // "cached", which is how we are using it.
             final Map<String, ColumnSource<?>> netColumnSources = new HashMap<>();
@@ -285,10 +284,10 @@ public abstract class AbstractFormulaColumn implements FormulaColumn {
             final DbArrayBase<?>[] dbArrays = new DbArrayBase[sd.arrays.length];
             for (int ii = 0; ii < sd.arrays.length; ++ii) {
                 final ColumnSource<?> cs = columnsToData.get(sd.arrays[ii]);
-                dbArrays[ii] = makeAppropriateDbArrayWrapper(cs, index);
+                dbArrays[ii] = makeAppropriateDbArrayWrapper(cs, rowSet);
             }
             final FormulaKernel fk = formulaKernelFactory.createInstance(dbArrays, params);
-            return new FormulaKernelAdapter(index, sd, netColumnSources, fk);
+            return new FormulaKernelAdapter(rowSet, sd, netColumnSources, fk);
         };
     }
 

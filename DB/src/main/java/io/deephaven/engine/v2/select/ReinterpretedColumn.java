@@ -12,7 +12,7 @@ import io.deephaven.engine.tables.utils.NameValidator;
 import io.deephaven.engine.v2.NoSuchColumnException;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.WritableSource;
-import io.deephaven.engine.v2.utils.RowSet;
+import io.deephaven.engine.v2.utils.TrackingRowSet;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collections;
@@ -65,7 +65,7 @@ public class ReinterpretedColumn<S, D> implements SelectColumn {
     }
 
     @Override
-    public List<String> initInputs(RowSet rowSet, Map<String, ? extends ColumnSource<?>> columnsOfInterest) {
+    public List<String> initInputs(TrackingRowSet rowSet, Map<String, ? extends ColumnSource<?>> columnsOfInterest) {
         // noinspection unchecked
         final ColumnSource<S> localSourceColumnSource = (ColumnSource<S>) columnsOfInterest.get(sourceName);
         if (localSourceColumnSource == null) {

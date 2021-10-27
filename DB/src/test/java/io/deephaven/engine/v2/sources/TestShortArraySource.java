@@ -165,7 +165,7 @@ public class TestShortArraySource {
         if (values.length > 0) {
             sequentialBuilder.appendRange(0, values.length - 1);
         }
-        final RowSet fullRange = sequentialBuilder.build();
+        final TrackingRowSet fullRange = sequentialBuilder.build().tracking();
         final Map<String, ShortArraySource> oneAndOnly = new HashMap<>();
         oneAndOnly.put("origin", sourceOrigin);
         formulaColumn.initInputs(fullRange, oneAndOnly);
@@ -377,7 +377,7 @@ public class TestShortArraySource {
         if (values.length > 0) {
             sequentialBuilder.appendRange(0, values.length - 1);
         }
-        final RowSet fullRange = sequentialBuilder.build();
+        final TrackingRowSet fullRange = sequentialBuilder.build().tracking();
         final Map<String, ShortArraySource> oneAndOnly = new HashMap<>();
         oneAndOnly.put("origin", sourceOrigin);
         formulaColumn.initInputs(fullRange, oneAndOnly);

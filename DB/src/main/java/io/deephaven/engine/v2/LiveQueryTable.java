@@ -7,14 +7,17 @@ package io.deephaven.engine.v2;
 import io.deephaven.engine.tables.live.LiveTable;
 import io.deephaven.engine.tables.live.LiveTableMonitor;
 import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.utils.*;
+import io.deephaven.engine.v2.utils.RowSet;
+import io.deephaven.engine.v2.utils.RowSetBuilderRandom;
+import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 
 import java.util.Map;
 
 public class LiveQueryTable extends QueryTable implements LiveTable {
     private RowSetBuilderRandom additionsBuilder = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
 
-    public LiveQueryTable(RowSet rowSet, Map<String, ? extends ColumnSource<?>> result) {
+    public LiveQueryTable(TrackingMutableRowSet rowSet, Map<String, ? extends ColumnSource<?>> result) {
         super(rowSet, result);
     }
 
@@ -26,9 +29,10 @@ public class LiveQueryTable extends QueryTable implements LiveTable {
             additionsBuilder = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
         }
         final RowSet added = builder.build();
-        getRowSet().insert(added);
+        getRowSetInternal().insert(added);
         if (added.size() > 0) {
-            notifyListeners(added, RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), RowSetFactoryImpl.INSTANCE.getEmptyRowSet());
+            notifyListeners(added, RowSetFactoryImpl.INSTANCE.getEmptyRowSet(),
+                    RowSetFactoryImpl.INSTANCE.getEmptyRowSet());
         }
     }
 

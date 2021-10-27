@@ -17,7 +17,7 @@ import java.util.Map;
 public class FirstOrLastChunkedOperator implements IterativeChunkedAggregationOperator {
     private final boolean isFirst;
     private final LongArraySource redirections;
-    private final ObjectArraySource<RowSet> indices;
+    private final ObjectArraySource<MutableRowSet> rowSets;
     private final LongColumnSourceRedirectionIndex redirectionIndex;
     private final Map<String, ColumnSource<?>> resultColumns;
     private final boolean exposeRedirections;
@@ -27,7 +27,7 @@ public class FirstOrLastChunkedOperator implements IterativeChunkedAggregationOp
         this.isFirst = isFirst;
         this.redirections = new LongArraySource();
         this.redirectionIndex = new LongColumnSourceRedirectionIndex(redirections);
-        this.indices = new ObjectArraySource<>(TrackingMutableRowSet.class);
+        this.rowSets = new ObjectArraySource<>(MutableRowSet.class);
 
         this.resultColumns = new LinkedHashMap<>(resultPairs.length);
         for (final MatchPair mp : resultPairs) {
@@ -113,7 +113,7 @@ public class FirstOrLastChunkedOperator implements IterativeChunkedAggregationOp
 
     private long doShift(LongChunk<OrderedRowKeys> preShiftIndices, LongChunk<OrderedRowKeys> postShiftIndices,
             int startPosition, int runLength, long destination) {
-        final MutableRowSet rowSet = indexForSlot(destination);
+        final MutableRowSet rowSet = rowSetForSlot(destination);
         rowSet.remove(preShiftIndices, startPosition, runLength);
         rowSet.insert(postShiftIndices, startPosition, runLength);
         return isFirst ? rowSet.firstRowKey() : rowSet.lastRowKey();
@@ -191,7 +191,7 @@ public class FirstOrLastChunkedOperator implements IterativeChunkedAggregationOp
     }
 
     private boolean addChunk(LongChunk<OrderedRowKeys> indices, int start, int length, long destination) {
-        final TrackingMutableRowSet rowSet = indexForSlot(destination);
+        final MutableRowSet rowSet = rowSetForSlot(destination);
         rowSet.insert(indices, start, length);
 
         return updateRedirections(destination, rowSet);
@@ -203,22 +203,22 @@ public class FirstOrLastChunkedOperator implements IterativeChunkedAggregationOp
             return false;
         }
 
-        final TrackingMutableRowSet rowSet = indexForSlot(destination);
+        final MutableRowSet rowSet = rowSetForSlot(destination);
         rowSet.insert(addRowSet);
 
         return updateRedirections(destination, rowSet);
     }
 
-    private TrackingMutableRowSet indexForSlot(long destination) {
-        TrackingMutableRowSet rowSet = indices.getUnsafe(destination);
+    private MutableRowSet rowSetForSlot(long destination) {
+        MutableRowSet rowSet = rowSets.getUnsafe(destination);
         if (rowSet == null) {
-            indices.set(destination, rowSet = RowSetFactoryImpl.INSTANCE.getEmptyRowSet());
+            rowSets.set(destination, rowSet = RowSetFactoryImpl.INSTANCE.getEmptyRowSet());
         }
         return rowSet;
     }
 
     private boolean removeChunk(LongChunk<OrderedRowKeys> indices, int start, int length, long destination) {
-        final TrackingMutableRowSet rowSet = indexForSlot(destination);
+        final MutableRowSet rowSet = rowSetForSlot(destination);
         rowSet.remove(indices, start, length);
 
         return updateRedirections(destination, rowSet);
@@ -237,7 +237,7 @@ public class FirstOrLastChunkedOperator implements IterativeChunkedAggregationOp
 
     @Override
     public void ensureCapacity(long tableSize) {
-        indices.ensureCapacity(tableSize);
+        rowSets.ensureCapacity(tableSize);
         redirections.ensureCapacity(tableSize);
     }
 
@@ -479,7 +479,7 @@ public class FirstOrLastChunkedOperator implements IterativeChunkedAggregationOp
             for (int ii = 0; ii < startPositions.size(); ++ii) {
                 final int startPosition = startPositions.get(ii);
                 final int destination = destinations.get(startPosition);
-                final RowSet rowSet = indices.getUnsafe(destination);
+                final RowSet rowSet = rowSets.getUnsafe(destination);
                 final long trackingKey = isFirst ? rowSet.firstRowKey() : rowSet.lastRowKey();
                 if (redirections.getUnsafe(destination) != trackingKey) {
                     redirections.set(destination, trackingKey);
@@ -542,7 +542,7 @@ public class FirstOrLastChunkedOperator implements IterativeChunkedAggregationOp
         }
 
         private boolean updateSingleton(long destination) {
-            final RowSet trackedRowSet = Require.neqNull(indices.getUnsafe(destination), "indices.get(destination)");
+            final RowSet trackedRowSet = Require.neqNull(rowSets.getUnsafe(destination), "indices.get(destination)");
             final long trackedKey = isFirst ? trackedRowSet.firstRowKey() : trackedRowSet.lastRowKey();
             return trackedKey != redirections.getAndSetUnsafe(destination, trackedKey);
         }

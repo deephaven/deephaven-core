@@ -60,7 +60,7 @@ public class ListenerRecorder extends BaseTable.ListenerImpl {
         return notificationStep;
     }
 
-    public TrackingMutableRowSet getAdded() {
+    public RowSet getAdded() {
         return recordedVariablesAreValid() ? update.added : RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
     }
 
@@ -68,7 +68,7 @@ public class ListenerRecorder extends BaseTable.ListenerImpl {
         return recordedVariablesAreValid() ? update.removed : RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
     }
 
-    public TrackingMutableRowSet getModified() {
+    public RowSet getModified() {
         return recordedVariablesAreValid() ? update.modified : RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
     }
 

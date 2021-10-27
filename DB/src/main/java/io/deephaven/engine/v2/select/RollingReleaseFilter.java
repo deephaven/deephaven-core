@@ -62,13 +62,13 @@ public class RollingReleaseFilter extends SelectFilterLivenessArtifactImpl imple
         }
 
         if (offset + workingSize <= fullSet.size()) {
-            final TrackingMutableRowSet sub = fullSet.subSetByPositionRange(offset, offset + workingSize);
+            final TrackingMutableRowSet sub = fullSet.subSetByPositionRange(offset, offset + workingSize).tracking();
             sub.retain(selection);
             selection.close();
             return sub;
         }
 
-        final TrackingMutableRowSet sub = fullSet.clone();
+        final TrackingMutableRowSet sub = fullSet.clone().tracking();
         sub.removeRange(sub.get((offset + workingSize) % fullSet.size()), sub.get(offset) - 1);
         sub.retain(selection);
         selection.close();

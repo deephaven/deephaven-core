@@ -214,7 +214,7 @@ public class SortHelpers {
      * need to call getPrevRowSet.
      */
     static SortMapping getSortedKeys(SortingOrder[] order, ColumnSource<Comparable<?>>[] columnsToSortBy,
-                                     RowSet indexToSort, boolean usePrev) {
+                                     TrackingRowSet indexToSort, boolean usePrev) {
         return getSortedKeys(order, columnsToSortBy, indexToSort, usePrev, sortBySymbolTable);
     }
 
@@ -223,7 +223,7 @@ public class SortHelpers {
      * need to call getPrevRowSet.
      */
     static SortMapping getSortedKeys(SortingOrder[] order, ColumnSource<Comparable<?>>[] columnsToSortBy,
-                                     RowSet indexToSort, boolean usePrev, boolean allowSymbolTable) {
+                                     TrackingRowSet indexToSort, boolean usePrev, boolean allowSymbolTable) {
         if (indexToSort.size() == 0) {
             return EMPTY_SORT_MAPPING;
         }
@@ -497,7 +497,7 @@ public class SortHelpers {
     }
 
     private static SortMapping getSortMappingGrouped(SortingOrder order, ColumnSource<Comparable<?>> columnSource,
-            RowSet index) {
+            TrackingRowSet index) {
         final Map<Object, RowSet> groupToRange = index.getGrouping(columnSource);
         final Object[] keys = groupToRange.keySet().toArray((Object[]) Array.newInstance(
                 io.deephaven.util.type.TypeUtils.getBoxedType(columnSource.getType()), groupToRange.size()));
@@ -538,7 +538,7 @@ public class SortHelpers {
     }
 
     private static SortMapping getSortMappingMulti(SortingOrder[] order, ColumnSource<Comparable<?>>[] columnSources,
-                                                   RowSet index, boolean usePrev) {
+                                                   TrackingRowSet index, boolean usePrev) {
         Assert.gt(columnSources.length, "columnSources.length", 1);
         final int sortSize = index.intSize();
 

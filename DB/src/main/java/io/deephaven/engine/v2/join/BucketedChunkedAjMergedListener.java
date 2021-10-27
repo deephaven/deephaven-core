@@ -176,7 +176,7 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
                 final int removedSlotCount = asOfJoinStateManager.markForRemoval(leftRestampRemovals, leftKeySources,
                         slots, sequentialBuilders);
 
-                final MutableObject<RowSet> leftIndexOutput = new MutableObject<>();
+                final MutableObject<MutableRowSet> leftIndexOutput = new MutableObject<>();
 
                 for (int slotIndex = 0; slotIndex < removedSlotCount; ++slotIndex) {
                     final long slot = slots.getLong(slotIndex);
@@ -303,7 +303,7 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
             final int removedSlotCount = asOfJoinStateManager.markForRemoval(rightRestampRemovals, rightKeySources,
                     slots, sequentialBuilders);
 
-            final MutableObject<RowSet> indexOutput = new MutableObject<>();
+            final MutableObject<MutableRowSet> rowSetOutput = new MutableObject<>();
             try (final WritableLongChunk<RowKeys> priorRedirections =
                     WritableLongChunk.makeWritableChunk(rightChunkSize);
                     final ColumnSource.FillContext fillContext = rightStampSource.makeFillContext(rightChunkSize);
@@ -315,9 +315,9 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
 
                     try (final RowSet rightRemoved = indexFromBuilder(slotIndex)) {
                         final SegmentedSortedArray rightSsa =
-                                asOfJoinStateManager.getRightSsaOrIndex(slot, indexOutput);
+                                asOfJoinStateManager.getRightSsaOrIndex(slot, rowSetOutput);
                         if (rightSsa == null) {
-                            indexOutput.getValue().remove(rightRemoved);
+                            rowSetOutput.getValue().remove(rightRemoved);
                             continue;
                         }
 

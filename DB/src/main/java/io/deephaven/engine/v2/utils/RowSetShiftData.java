@@ -285,8 +285,9 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
      * Apply all shifts to the provided rowSet. Moves rowSet from pre-shift keyspace to post-shift keyspace.
      * 
      * @param rowSet the rowSet to shift
+     * @return rowSet
      */
-    public void apply(final MutableRowSet rowSet) {
+    public MutableRowSet apply(final MutableRowSet rowSet) {
         final RowSetBuilderSequential toRemove = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
         final RowSetBuilderSequential toInsert = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
         try (final RowSequence.Iterator rsIt = rowSet.getRowSequenceIterator()) {
@@ -310,6 +311,7 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
             rowSet.remove(remove);
             rowSet.insert(insert);
         }
+        return rowSet;
     }
 
     /**
@@ -338,8 +340,9 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
      * Unapply all shifts to the provided rowSet. Moves rowSet from post-shift keyspace to pre-shift keyspace.
      * 
      * @param rowSet the rowSet to shift
+     * @return rowSet
      */
-    public void unapply(final MutableRowSet rowSet) {
+    public RowSet unapply(final MutableRowSet rowSet) {
         final RowSetBuilderSequential toRemove = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
         final RowSetBuilderSequential toInsert = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
         try (final RowSequence.Iterator rsIt = rowSet.getRowSequenceIterator()) {
@@ -363,6 +366,7 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
             rowSet.remove(remove);
             rowSet.insert(insert);
         }
+        return rowSet;
     }
 
     /**
@@ -370,13 +374,15 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
      * 
      * @param rowSet the rowSet to shift
      * @param offset an additional offset to apply to all shifts (such as when applying to a wrapped table)
+     * @return rowSet
      */
-    public void unapply(final MutableRowSet rowSet, final long offset) {
+    public RowSet unapply(final MutableRowSet rowSet, final long offset) {
         // NB: This is an unapply callback, and beginRange, endRange, and shiftDelta have been adjusted so that this is
         // a reversed shift,
         // hence we use the applyShift helper.
         unapply((beginRange, endRange, shiftDelta) -> applyShift(rowSet, beginRange + offset, endRange + offset,
                 shiftDelta));
+        return rowSet;
     }
 
     /**

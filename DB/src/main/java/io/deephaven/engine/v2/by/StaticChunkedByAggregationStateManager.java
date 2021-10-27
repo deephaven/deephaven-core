@@ -1272,7 +1272,7 @@ class StaticChunkedByAggregationStateManager
         return keyHashTableSources;
     }
 
-    ColumnSource<RowSet> getIndexHashTableSource() {
+    ColumnSource<TrackingMutableRowSet> getIndexHashTableSource() {
         //noinspection unchecked
         return new HashTableColumnSource(TrackingMutableRowSet.class, indexSource, overflowIndexSource);
     }

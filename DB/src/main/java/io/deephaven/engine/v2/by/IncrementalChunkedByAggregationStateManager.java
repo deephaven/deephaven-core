@@ -102,7 +102,7 @@ class IncrementalChunkedByAggregationStateManager
 
     @ReplicateHashTable.EmptyStateValue
     // @NullStateValue@ from \Qnull\E, @StateValueType@ from \QIndex\E
-    private static final RowSet EMPTY_VALUE = null;
+    private static final TrackingMutableRowSet EMPTY_VALUE = null;
 
     // mixin getStateValue
     // region overflow pivot
@@ -153,7 +153,7 @@ class IncrementalChunkedByAggregationStateManager
     // we are going to also reuse this for our state entry, so that we do not need additional storage
     @ReplicateHashTable.StateColumnSource
     // @StateColumnSourceType@ from \QObjectArraySource<TrackingMutableRowSet>\E
-    private final ObjectArraySource<RowSet> indexSource
+    private final ObjectArraySource<TrackingMutableRowSet> indexSource
             // @StateColumnSourceConstructor@ from \QObjectArraySource<>(TrackingMutableRowSet.class)\E
             = new ObjectArraySource<>(TrackingMutableRowSet.class);
 
@@ -165,7 +165,7 @@ class IncrementalChunkedByAggregationStateManager
     // the overflow buckets for the right TrackingMutableRowSet
     @ReplicateHashTable.OverflowStateColumnSource
     // @StateColumnSourceType@ from \QObjectArraySource<TrackingMutableRowSet>\E
-    private final ObjectArraySource<RowSet> overflowIndexSource
+    private final ObjectArraySource<TrackingMutableRowSet> overflowIndexSource
             // @StateColumnSourceConstructor@ from \QObjectArraySource<>(TrackingMutableRowSet.class)\E
             = new ObjectArraySource<>(TrackingMutableRowSet.class);
 
@@ -616,7 +616,7 @@ class IncrementalChunkedByAggregationStateManager
                     final long currentHashLocation = bc.insertTableLocations.get(ii);
 
                     // region main insert
-                    indexSource.set(currentHashLocation, RowSetFactoryImpl.INSTANCE.getEmptyRowSet());
+                    indexSource.set(currentHashLocation, RowSetFactoryImpl.INSTANCE.getEmptyRowSet().tracking());
                     cookieSource.set(currentHashLocation, trackingCallback.invoke(NULL_COOKIE, (int) currentHashLocation, sourceChunkIndexKeys.get(firstChunkPositionForHashLocation)));
                     // endregion main insert
                     // mixin rehash
@@ -759,7 +759,7 @@ class IncrementalChunkedByAggregationStateManager
                             overflowLocationSource.set(tableLocation, allocatedOverflowLocation);
 
                             // region build overflow insert
-                            overflowIndexSource.set(allocatedOverflowLocation, RowSetFactoryImpl.INSTANCE.getEmptyRowSet());
+                            overflowIndexSource.set(allocatedOverflowLocation, RowSetFactoryImpl.INSTANCE.getEmptyRowSet().tracking());
                             overflowCookieSource.set(allocatedOverflowLocation, trackingCallback.invoke(NULL_COOKIE, overflowLocationToHashLocation(allocatedOverflowLocation), sourceChunkIndexKeys.get(chunkPosition)));
                             // endregion build overflow insert
 
@@ -909,7 +909,7 @@ class IncrementalChunkedByAggregationStateManager
                     }
 
                     // @StateValueType@ from \QIndex\E
-                    final RowSet stateValueToMove = indexSource.getUnsafe(oldHashLocation);
+                    final TrackingMutableRowSet stateValueToMove = indexSource.getUnsafe(oldHashLocation);
                     indexSource.set(newHashLocation, stateValueToMove);
                     indexSource.set(oldHashLocation, EMPTY_VALUE);
                                 // region rehash move values
@@ -1585,17 +1585,17 @@ class IncrementalChunkedByAggregationStateManager
     }
 
     // region extraction functions
-    ObjectArraySource<RowSet> getIndexSource() {
+    ObjectArraySource<TrackingMutableRowSet> getRowSetSource() {
         return indexSource;
     }
 
-    ObjectArraySource<RowSet> getOverflowIndexSource() {
+    ObjectArraySource<TrackingMutableRowSet> getOverflowRowSetSource() {
         return overflowIndexSource;
     }
 
-    ColumnSource<RowSet> getIndexHashTableSource() {
+    ColumnSource<TrackingMutableRowSet> getRowSetHashTableSource() {
         //noinspection unchecked
-        final ColumnSource<RowSet> indexHashTableSource = new HashTableColumnSource(TrackingMutableRowSet.class, indexSource, overflowIndexSource);
+        final ColumnSource<TrackingMutableRowSet> indexHashTableSource = new HashTableColumnSource(TrackingMutableRowSet.class, indexSource, overflowIndexSource);
         indexHashTableSource.startTrackingPrevValues();
         return indexHashTableSource;
     }

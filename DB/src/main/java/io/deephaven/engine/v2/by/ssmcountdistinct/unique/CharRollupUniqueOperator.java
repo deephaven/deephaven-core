@@ -21,7 +21,7 @@ import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.ssms.CharSegmentedSortedMultiset;
 import io.deephaven.engine.v2.ssms.SegmentedSortedMultiSet;
 import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
+import io.deephaven.engine.v2.utils.MutableRowSet;
 import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.engine.v2.utils.UpdateCommitter;
 import io.deephaven.engine.v2.utils.compact.CharCompactKernel;
@@ -49,7 +49,7 @@ public class CharRollupUniqueOperator implements IterativeChunkedAggregationOper
     private final char nonUniqueKey;
 
     private UpdateCommitter<CharRollupUniqueOperator> prevFlusher = null;
-    private TrackingMutableRowSet touchedStates;
+    private MutableRowSet touchedStates;
 
     public CharRollupUniqueOperator(
                                     // region Constructor

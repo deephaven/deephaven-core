@@ -24,7 +24,7 @@ import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 import io.deephaven.engine.v2.ssms.LongSegmentedSortedMultiset;
 import io.deephaven.engine.v2.ssms.SegmentedSortedMultiSet;
 import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
+import io.deephaven.engine.v2.utils.MutableRowSet;
 import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.engine.v2.utils.UpdateCommitter;
 import io.deephaven.engine.v2.utils.compact.LongCompactKernel;
@@ -47,7 +47,7 @@ public class LongRollupCountDistinctOperator implements IterativeChunkedAggregat
     private final boolean countNull;
 
     private UpdateCommitter<LongRollupCountDistinctOperator> prevFlusher = null;
-    private TrackingMutableRowSet touchedStates;
+    private MutableRowSet touchedStates;
 
     public LongRollupCountDistinctOperator(
                                            // region Constructor

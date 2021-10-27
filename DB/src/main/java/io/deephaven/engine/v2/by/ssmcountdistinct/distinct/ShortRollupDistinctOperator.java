@@ -23,7 +23,7 @@ import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.ssms.ShortSegmentedSortedMultiset;
 import io.deephaven.engine.v2.ssms.SegmentedSortedMultiSet;
 import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
+import io.deephaven.engine.v2.utils.MutableRowSet;
 import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.engine.v2.utils.UpdateCommitter;
 import io.deephaven.engine.v2.utils.compact.ShortCompactKernel;
@@ -45,7 +45,7 @@ public class ShortRollupDistinctOperator implements IterativeChunkedAggregationO
     private final boolean countNull;
 
     private UpdateCommitter<ShortRollupDistinctOperator> prevFlusher = null;
-    private TrackingMutableRowSet touchedStates;
+    private MutableRowSet touchedStates;
 
     public ShortRollupDistinctOperator(
                                       // region Constructor

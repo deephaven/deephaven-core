@@ -341,13 +341,13 @@ public class ParquetTableWriter {
     }
 
     private static <DATA_TYPE> void writeColumnSource(
-            final TrackingMutableRowSet tableRowSet,
+            final RowSet tableRowSet,
             final RowGroupWriter rowGroupWriter,
             final String name,
             final ColumnSource<DATA_TYPE> columnSourceIn,
             final ColumnDefinition<DATA_TYPE> columnDefinition,
             final ParquetInstructions writeInstructions) throws IllegalAccessException, IOException {
-        TrackingMutableRowSet rowSet = tableRowSet;
+        RowSet rowSet = tableRowSet;
         ColumnSource<DATA_TYPE> columnSource = columnSourceIn;
         ColumnSource<?> lengthSource = null;
         RowSet lengthRowSet = null;
@@ -361,12 +361,12 @@ public class ParquetTableWriter {
             targetSize = getTargetSize(columnSource.getComponentType());
             HashMap<String, ColumnSource<?>> columns = new HashMap<>();
             columns.put("array", columnSource);
-            Table t = new QueryTable(rowSet, columns);
+            Table t = new QueryTable(tableRowSet, columns);
             lengthSource = t
                     .view("len= ((Object)array) == null?null:(int)array."
                             + (DbArrayBase.class.isAssignableFrom(columnSource.getType()) ? "size()" : "length"))
                     .getColumnSource("len");
-            lengthRowSet = rowSet;
+            lengthRowSet = tableRowSet;
             List<Integer> valueChunkSize = new ArrayList<>();
             List<Integer> originalChunkSize = new ArrayList<>();
             int runningSize = 0;

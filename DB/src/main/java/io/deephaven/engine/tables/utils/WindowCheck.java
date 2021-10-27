@@ -220,23 +220,22 @@ public class WindowCheck {
                 // now add the new timestamps
                 upstream.added.forAllLongs(this::addIndex);
 
-                final Listener.Update downstream = upstream.copy();
-
+                final MutableRowSet downstreamModified = upstream.modified.clone();
                 try (final RowSet modifiedByTime = recomputeModified()) {
                     if (modifiedByTime.isNonempty()) {
-                        downstream.modified.insert(modifiedByTime);
+                        downstreamModified.insert(modifiedByTime);
                     }
                 }
 
                 // everything that was added, removed, or modified stays added removed or modified
-                downstream.modifiedColumnSet = reusableModifiedColumnSet;
-                if (downstream.modified.isNonempty()) {
-                    mcsTransformer.clearAndTransform(upstream.modifiedColumnSet, downstream.modifiedColumnSet);
-                    downstream.modifiedColumnSet.setAll(mcsNewColumns);
+                if (downstreamModified.isNonempty()) {
+                    mcsTransformer.clearAndTransform(upstream.modifiedColumnSet, reusableModifiedColumnSet);
+                    reusableModifiedColumnSet.setAll(mcsNewColumns);
                 } else {
-                    downstream.modifiedColumnSet.clear();
+                    reusableModifiedColumnSet.clear();
                 }
-                result.notifyListeners(downstream);
+                result.notifyListeners(new Listener.Update(upstream.added.clone(), upstream.removed.clone(),
+                        downstreamModified, upstream.shifted, reusableModifiedColumnSet));
             } else {
                 final RowSet modifiedByTime = recomputeModified();
                 if (modifiedByTime.isNonempty()) {

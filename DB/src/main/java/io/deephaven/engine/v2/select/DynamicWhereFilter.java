@@ -8,8 +8,6 @@ import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.structures.RowSequence;
-import io.deephaven.engine.v2.utils.*;
-import io.deephaven.io.log.impl.LogOutputStringImpl;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.TableDefinition;
 import io.deephaven.engine.tables.live.LiveTableMonitor;
@@ -24,6 +22,8 @@ import io.deephaven.engine.v2.sources.chunk.WritableBooleanChunk;
 import io.deephaven.engine.v2.sources.chunk.WritableLongChunk;
 import io.deephaven.engine.v2.tuples.TupleSource;
 import io.deephaven.engine.v2.tuples.TupleSourceFactory;
+import io.deephaven.engine.v2.utils.*;
+import io.deephaven.io.log.impl.LogOutputStringImpl;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 
 import java.util.*;
@@ -239,12 +239,12 @@ public class DynamicWhereFilter extends SelectFilterLivenessArtifactImpl impleme
         throw Assert.statementNeverExecuted();
     }
 
-    private TrackingMutableRowSet filterGrouping(TrackingRowSet selection, TupleSource tupleSource) {
+    private TrackingMutableRowSet filterGrouping(TrackingMutableRowSet selection, TupleSource tupleSource) {
         final RowSet matchingKeys = selection.getSubSetForKeySet(liveValues, tupleSource);
-        return inclusion ? matchingKeys : selection.minus(matchingKeys);
+        return (inclusion ? matchingKeys.clone() : selection.minus(matchingKeys)).tracking();
     }
 
-    private TrackingMutableRowSet filterGrouping(TrackingRowSet selection, Table table) {
+    private TrackingMutableRowSet filterGrouping(TrackingMutableRowSet selection, Table table) {
         final ColumnSource[] keyColumns =
                 Arrays.stream(matchPairs).map(mp -> table.getColumnSource(mp.left())).toArray(ColumnSource[]::new);
         final TupleSource tupleSource = TupleSourceFactory.makeTupleSource(keyColumns);
@@ -261,7 +261,7 @@ public class DynamicWhereFilter extends SelectFilterLivenessArtifactImpl impleme
 
     private TrackingMutableRowSet filterLinearOne(RowSet selection, ColumnSource keyColumn) {
         if (selection.isEmpty()) {
-            return RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+            return RowSetFactoryImpl.INSTANCE.getEmptyRowSet().tracking();
         }
 
         if (!kernelValid) {
@@ -295,7 +295,7 @@ public class DynamicWhereFilter extends SelectFilterLivenessArtifactImpl impleme
         }
 
 
-        return indexBuilder.build();
+        return indexBuilder.build().tracking();
     }
 
     private TrackingMutableRowSet filterLinearTuple(RowSet selection, TupleSource tupleSource) {
@@ -309,7 +309,7 @@ public class DynamicWhereFilter extends SelectFilterLivenessArtifactImpl impleme
             }
         }
 
-        return indexBuilder.build();
+        return indexBuilder.build().tracking();
     }
 
     @Override

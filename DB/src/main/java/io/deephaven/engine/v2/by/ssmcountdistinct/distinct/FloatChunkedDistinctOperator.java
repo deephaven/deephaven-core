@@ -23,7 +23,7 @@ import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 import io.deephaven.engine.v2.ssms.FloatSegmentedSortedMultiset;
 import io.deephaven.engine.v2.ssms.SegmentedSortedMultiSet;
 import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
+import io.deephaven.engine.v2.utils.MutableRowSet;
 import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.engine.v2.utils.UpdateCommitter;
 import io.deephaven.engine.v2.utils.compact.FloatCompactKernel;
@@ -45,7 +45,7 @@ public class FloatChunkedDistinctOperator implements IterativeChunkedAggregation
     private final Supplier<SegmentedSortedMultiSet.RemoveContext> removeContextFactory;
     private final boolean countNull;
     private final boolean exposeInternal;
-    private TrackingMutableRowSet touchedStates;
+    private MutableRowSet touchedStates;
     private UpdateCommitter<FloatChunkedDistinctOperator> prevFlusher = null;
 
     public FloatChunkedDistinctOperator(

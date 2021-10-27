@@ -11,6 +11,7 @@ import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Require;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.datastructures.util.SmartKey;
+import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.tables.ColumnDefinition;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.TableDefinition;
@@ -26,51 +27,21 @@ import io.deephaven.engine.v2.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.ReinterpretUtilities;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
-import io.deephaven.engine.v2.sources.chunk.ByteChunk;
-import io.deephaven.engine.v2.sources.chunk.CharChunk;
-import io.deephaven.engine.v2.sources.chunk.ChunkType;
-import io.deephaven.engine.v2.sources.chunk.DoubleChunk;
-import io.deephaven.engine.v2.sources.chunk.FloatChunk;
-import io.deephaven.engine.v2.sources.chunk.IntChunk;
-import io.deephaven.engine.v2.sources.chunk.LongChunk;
-import io.deephaven.engine.v2.sources.chunk.ObjectChunk;
-import io.deephaven.engine.v2.sources.chunk.ShortChunk;
+import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.utils.*;
-import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.io.streams.BzipFileOutputStream;
 import io.deephaven.io.util.NullOutputStream;
 import io.deephaven.util.annotations.ScriptApi;
 import io.deephaven.util.process.ProcessEnvironment;
 
-import java.io.BufferedWriter;
-import java.io.ByteArrayOutputStream;
-import java.io.DataOutputStream;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStreamWriter;
-import java.io.PrintStream;
-import java.io.PrintWriter;
+import java.io.*;
 import java.lang.reflect.Array;
 import java.nio.file.Path;
 import java.security.DigestOutputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Base64;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.EnumSet;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.function.BinaryOperator;
 import java.util.function.Function;
 import java.util.stream.Collector;
@@ -1055,7 +1026,7 @@ public class TableTools {
      * @return a Deephaven Table with no columns.
      */
     public static Table emptyTable(long size) {
-        return new QueryTable(RowSetFactoryImpl.INSTANCE.getFlatRowSet(size), Collections.emptyMap());
+        return new QueryTable(RowSetFactoryImpl.INSTANCE.getFlatRowSet(size).tracking(), Collections.emptyMap());
     }
 
     @SuppressWarnings("SameParameterValue")
@@ -1084,7 +1055,7 @@ public class TableTools {
      */
     public static DynamicTable newTable(long size, List<String> names, List<ColumnSource<?>> columnSources) {
         // noinspection unchecked
-        return new QueryTable(RowSetFactoryImpl.INSTANCE.getFlatRowSet(size),
+        return new QueryTable(RowSetFactoryImpl.INSTANCE.getFlatRowSet(size).tracking(),
                 newMapFromLists(LinkedHashMap.class, names, columnSources));
     }
 
@@ -1096,7 +1067,7 @@ public class TableTools {
      * @return a Deephaven DynamicTable
      */
     public static DynamicTable newTable(long size, Map<String, ColumnSource<?>> columns) {
-        return new QueryTable(RowSetFactoryImpl.INSTANCE.getFlatRowSet(size), columns);
+        return new QueryTable(RowSetFactoryImpl.INSTANCE.getFlatRowSet(size).tracking(), columns);
     }
 
     /**
@@ -1111,7 +1082,7 @@ public class TableTools {
             columns.put(columnDefinition.getName(), ArrayBackedColumnSource.getMemoryColumnSource(0,
                     columnDefinition.getDataType(), columnDefinition.getComponentType()));
         }
-        return new QueryTable(definition, RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), columns);
+        return new QueryTable(definition, RowSetFactoryImpl.INSTANCE.getEmptyRowSet().tracking(), columns);
     }
 
     /**
@@ -1122,16 +1093,16 @@ public class TableTools {
      */
     public static DynamicTable newTable(ColumnHolder... columnHolders) {
         checkSizes(columnHolders);
-        RowSet rowSet = getIndex(columnHolders);
+        MutableRowSet rowSet = getRowSet(columnHolders);
         Map<String, ColumnSource<?>> columns = Stream.of(columnHolders).collect(COLUMN_HOLDER_LINKEDMAP_COLLECTOR);
-        return new QueryTable(rowSet, columns);
+        return new QueryTable(rowSet.tracking(), columns);
     }
 
     public static DynamicTable newTable(TableDefinition definition, ColumnHolder... columnHolders) {
         checkSizes(columnHolders);
-        RowSet rowSet = getIndex(columnHolders);
+        MutableRowSet rowSet = getRowSet(columnHolders);
         Map<String, ColumnSource<?>> columns = Stream.of(columnHolders).collect(COLUMN_HOLDER_LINKEDMAP_COLLECTOR);
-        return new QueryTable(definition, rowSet, columns);
+        return new QueryTable(definition, rowSet.tracking(), columns);
     }
 
     private static void checkSizes(ColumnHolder[] columnHolders) {
@@ -1144,7 +1115,7 @@ public class TableTools {
         }
     }
 
-    private static RowSet getIndex(ColumnHolder[] columnHolders) {
+    private static MutableRowSet getRowSet(ColumnHolder[] columnHolders) {
         return columnHolders.length == 0 ? RowSetFactoryImpl.INSTANCE.getEmptyRowSet()
                 : RowSetFactoryImpl.INSTANCE.getFlatRowSet(Array.getLength(columnHolders[0].data));
     }

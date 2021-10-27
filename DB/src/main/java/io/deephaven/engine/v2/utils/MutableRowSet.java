@@ -132,4 +132,23 @@ public interface MutableRowSet extends RowSet {
      * May reclaim some unused memory.
      */
     void compact();
+
+    /**
+     * <p>
+     * Convert the supplied {@link RowSet} reference to a MutableRowSet with the minimal set of casts or
+     * operations.
+     * <p>
+     * If {@code rowSet} is a MutableRowSet, it will be returned with a cast.
+     * <p>
+     * If {@code rowSet} is not mutable, it will be {@link #clone() cloned}.
+     *
+     * @param rowSet The {@link RowSet} reference to convert
+     * @return {@code rowSet}, or a new MutableRowSet backed by the same contents as {@code rowSet}
+     */
+    static MutableRowSet convert(@NotNull final RowSet rowSet) {
+        if (rowSet instanceof MutableRowSet) {
+            return (MutableRowSet) rowSet;
+        }
+        return rowSet.clone();
+    }
 }

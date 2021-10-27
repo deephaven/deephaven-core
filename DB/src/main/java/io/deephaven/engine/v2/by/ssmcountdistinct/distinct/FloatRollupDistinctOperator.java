@@ -23,7 +23,7 @@ import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.ssms.FloatSegmentedSortedMultiset;
 import io.deephaven.engine.v2.ssms.SegmentedSortedMultiSet;
 import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
+import io.deephaven.engine.v2.utils.MutableRowSet;
 import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.engine.v2.utils.UpdateCommitter;
 import io.deephaven.engine.v2.utils.compact.FloatCompactKernel;
@@ -45,7 +45,7 @@ public class FloatRollupDistinctOperator implements IterativeChunkedAggregationO
     private final boolean countNull;
 
     private UpdateCommitter<FloatRollupDistinctOperator> prevFlusher = null;
-    private TrackingMutableRowSet touchedStates;
+    private MutableRowSet touchedStates;
 
     public FloatRollupDistinctOperator(
                                       // region Constructor
