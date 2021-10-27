@@ -19,8 +19,8 @@ public class UriHelper {
      * A URI is a "local path" when the only components are {@link URI#getScheme() scheme} and {@link URI#getPath()
      * path}; and path starts with {@code "/"}.
      *
-     * @param uri the uri
-     * @return true if uri is a "local path"
+     * @param uri the URI
+     * @return true if {@code uri} is a "local path"
      */
     public static boolean isLocalPath(URI uri) {
         return uri.getHost() == null
@@ -35,8 +35,8 @@ public class UriHelper {
      * A URI is a "remote path" when the only components are {@link URI#getScheme() scheme}, {@link URI#getHost() host},
      * and {@link URI#getPath() path}; and path starts with {@code "/"}.
      *
-     * @param uri the uri
-     * @return true if uri is a "remote path"
+     * @param uri the URI
+     * @return true if {@code uri} is a "remote path"
      */
     public static boolean isRemotePath(URI uri) {
         return uri.getHost() != null
@@ -51,8 +51,8 @@ public class UriHelper {
      * A URI is a "remote target" when the only components are {@link URI#getScheme() scheme}, {@link URI#getHost()
      * host}, and {@link URI#getPath() path}; and path is empty.
      *
-     * @param uri the uri
-     * @return true if uri is a "remote target"
+     * @param uri the URI
+     * @return true if {@code uri} is a "remote target"
      */
     public static boolean isRemoteTarget(URI uri) {
         return uri.getHost() != null
@@ -67,8 +67,8 @@ public class UriHelper {
      * A URI is a "remote query" when the only components are {@link URI#getScheme() scheme}, {@link URI#getHost()
      * host}, {@link URI#getQuery() query}, and {@link URI#getPath() path}; and path is empty.
      *
-     * @param uri the uri
-     * @return true if uri is a "remote query"
+     * @param uri the URI
+     * @return true if {@code uri} is a "remote query"
      */
     public static boolean isRemoteQuery(URI uri) {
         return uri.getHost() != null

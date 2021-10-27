@@ -10,7 +10,8 @@ import java.util.Collections;
 import java.util.Set;
 
 /**
- * The parquet table resolver is able to resolve local parquet files, or directories for the scheme {@value #SCHEME}, into {@link Table tables}.
+ * The parquet table resolver is able to resolve local parquet files, or directories for the scheme {@value #SCHEME},
+ * into {@link Table tables}.
  *
  * <p>
  * For example, {@code parquet:///data/my-file.parquet} or {@code parquet:///data/my-dir}.

@@ -48,7 +48,7 @@ public abstract class RemoteUri extends DeephavenUriBase {
      * {@code dh://gateway?uri=dh://host/scope/my_table}. Inner URIs that aren't a Deephaven scheme need to be URL
      * encoded; for example, {@code dh://gateway?uri=parquet%3A%2F%2F%2Fdata%2Ftest.parquet}.
      *
-     * @param uri the uri
+     * @param uri the URI
      * @return the remote URI
      */
     public static RemoteUri of(URI uri) {

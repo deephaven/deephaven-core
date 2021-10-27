@@ -10,34 +10,34 @@ import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
 public class RemoteUriTest {
 
     private static final DeephavenTarget TARGET = DeephavenTarget.builder()
-            .isTLS(true)
+            .isSecure(true)
             .host("host")
             .build();
 
     private static final DeephavenTarget TARGET_PORT = DeephavenTarget.builder()
-            .isTLS(true)
+            .isSecure(true)
             .host("host")
             .port(31337)
             .build();
 
     private static final DeephavenTarget GATEWAY = DeephavenTarget.builder()
-            .isTLS(true)
+            .isSecure(true)
             .host("gateway")
             .build();
 
     private static final DeephavenTarget GATEWAY_PORT = DeephavenTarget.builder()
-            .isTLS(true)
+            .isSecure(true)
             .host("gateway")
             .port(42)
             .build();
 
     private static final DeephavenTarget GATEWAY_1 = DeephavenTarget.builder()
-            .isTLS(true)
+            .isSecure(true)
             .host("gateway-1")
             .build();
 
     private static final DeephavenTarget GATEWAY_2 = DeephavenTarget.builder()
-            .isTLS(false)
+            .isSecure(false)
             .host("gateway-2")
             .build();
 

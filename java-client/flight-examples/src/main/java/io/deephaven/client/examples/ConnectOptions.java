@@ -11,7 +11,7 @@ public class ConnectOptions {
     public static final DeephavenTarget DEFAULT_TARGET = DeephavenTarget.builder()
             .host("localhost")
             .port(10000)
-            .isTLS(false)
+            .isSecure(false)
             .build();
 
     public static ManagedChannel open(ConnectOptions options) {

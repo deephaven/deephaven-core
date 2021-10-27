@@ -11,9 +11,9 @@ package io.deephaven.uri;
 public interface DeephavenUri extends StructuredUri {
 
     /**
-     * The scheme for {@link RemoteUri remote URIs} using TLS, {@code dh}.
+     * The scheme for {@link RemoteUri remote URIs} using secure connections, {@code dh}.
      */
-    String TLS_SCHEME = "dh";
+    String SECURE_SCHEME = "dh";
 
     /**
      * The scheme for {@link RemoteUri remote URIs} using plaintext, {@code dh+plain}.
@@ -23,9 +23,9 @@ public interface DeephavenUri extends StructuredUri {
     /**
      * The scheme for non-remote {@link DeephavenUri Deephaven URIs}, {@code dh}.
      */
-    String LOCAL_SCHEME = TLS_SCHEME;
+    String LOCAL_SCHEME = SECURE_SCHEME;
 
     static boolean isValidScheme(String scheme) {
-        return TLS_SCHEME.equals(scheme) || PLAINTEXT_SCHEME.equals(scheme);
+        return SECURE_SCHEME.equals(scheme) || PLAINTEXT_SCHEME.equals(scheme);
     }
 }

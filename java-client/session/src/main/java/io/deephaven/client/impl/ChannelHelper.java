@@ -16,7 +16,7 @@ public class ChannelHelper {
 
     public static ManagedChannelBuilder<?> channelBuilder(DeephavenTarget target) {
         final ManagedChannelBuilder<?> builder = ManagedChannelBuilder.forAddress(target.host(), port(target));
-        if (target.isTLS()) {
+        if (target.isSecure()) {
             builder.useTransportSecurity();
         } else {
             builder.usePlaintext();
@@ -29,7 +29,7 @@ public class ChannelHelper {
             return target.port().getAsInt();
         }
         // TODO(deephaven-core#1489): Support service discovery for DeephavenTarget
-        if (target.isTLS()) {
+        if (target.isSecure()) {
             return Integer.getInteger("deephaven.target.port", DEFAULT_TLS_PORT);
         }
         return Integer.getInteger("deephaven.target.plaintext_port", DEFAULT_PLAINTEXT_PORT);

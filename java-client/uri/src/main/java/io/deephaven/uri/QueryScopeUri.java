@@ -40,10 +40,10 @@ public abstract class QueryScopeUri extends DeephavenUriBase {
     }
 
     /**
-     * Parses the {@code URI} into a query scope URI. The format looks like {@code dh:///scope/${variableName}}.
+     * Parses the {@code uri} into a query scope URI. The format looks like {@code dh:///scope/${variableName}}.
      *
-     * @param uri the uri
-     * @return the query scope uri
+     * @param uri the URI
+     * @return the query scope URI
      */
     public static QueryScopeUri of(URI uri) {
         if (!isWellFormed(uri)) {

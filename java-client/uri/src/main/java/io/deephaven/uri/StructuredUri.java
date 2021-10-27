@@ -30,7 +30,7 @@ public interface StructuredUri {
     /**
      * The URI string.
      *
-     * @return the uri string
+     * @return the URI string
      */
     @Override
     String toString();

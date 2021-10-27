@@ -43,8 +43,8 @@ public abstract class ApplicationUri extends DeephavenUriBase {
      * Parses the {@code URI} into an application URI. The format looks like
      * {@code dh:///app/${appId}/field/${fieldName}}.
      *
-     * @param uri the uri
-     * @return the application uri
+     * @param uri the URI
+     * @return the application URI
      */
     public static ApplicationUri of(URI uri) {
         if (!isWellFormed(uri)) {

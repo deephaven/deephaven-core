@@ -50,7 +50,7 @@ public final class BarrageTableResolver implements UriResolver {
             .build();
 
     private static final Set<String> SCHEMES = Collections.unmodifiableSet(
-            new HashSet<>(Arrays.asList(DeephavenUri.TLS_SCHEME, DeephavenUri.PLAINTEXT_SCHEME)));
+            new HashSet<>(Arrays.asList(DeephavenUri.SECURE_SCHEME, DeephavenUri.PLAINTEXT_SCHEME)));
 
     public static BarrageTableResolver get() {
         return UriResolversInstance.get().find(BarrageTableResolver.class).get();

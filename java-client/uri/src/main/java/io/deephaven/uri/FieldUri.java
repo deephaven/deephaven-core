@@ -42,8 +42,8 @@ public abstract class FieldUri extends DeephavenUriBase {
     /**
      * Parses the {@code URI} into a field URI. The format looks like {@code dh:///field/${fieldName}}.
      *
-     * @param uri the uri
-     * @return the application uri
+     * @param uri the URI
+     * @return the field URI
      */
     public static FieldUri of(URI uri) {
         if (!isWellFormed(uri)) {
