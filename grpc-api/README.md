@@ -30,4 +30,4 @@ Currently, the following resolvers are installed:
 
 See [UriModule](src/main/java/io/deephaven/grpc_api/uri/UriModule.java).
 
-Additional options for configuring resolution rules will be added in the future.
+Additional options for configuring resolve rules will be added in the future.
