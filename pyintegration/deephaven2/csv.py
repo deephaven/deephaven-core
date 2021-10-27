@@ -27,19 +27,27 @@ class Inference(Enum):
     """
 
     STRINGS = _inference_specs_cls.strings()
-    """ The order of parsing: STRING, INSTANT, SHORT, INT, LONG, DOUBLE, BOOL, CHAR, BYTE, FLOAT """
+    """ The order of parsing: STRING, INSTANT, SHORT, INT, LONG, DOUBLE, BOOL, CHAR, BYTE, FLOAT. 
+    The parsers after STRING are only relevant when a specific column data type is given.
+    """
 
     MINIMAL = _inference_specs_cls.minimal()
-    """ The order of parsing: INSTANT, LONG, DOUBLE, BOOL, STRING, BYTE, SHORT, INT, FLOAT, CHAR """
+    """ The order of parsing: INSTANT, LONG, DOUBLE, BOOL, STRING, BYTE, SHORT, INT, FLOAT, CHAR.
+    The parsers after STRING are only relevant when a specific column data type is given.
+    """
 
     STANDARD = _inference_specs_cls.standard()
-    """ The order of parsing: INSTANT, SHORT, INT, LONG, DOUBLE, BOOL, CHAR, STRING, BYTE, FLOAT """
+    """ The order of parsing: INSTANT, SHORT, INT, LONG, DOUBLE, BOOL, CHAR, STRING, BYTE, FLOAT.
+    The parsers after STRING are only relevant when a specific column data type is given.
+    """
 
     STANDARD_TIMES = _inference_specs_cls.standardTimes()
     """ The order of parsing: INSTANT, INSTANT_LEGACY, SECONDS, MILLISECONDS, MICROSECONDS, NANOSECONDS, SHORT, INT, 
     LONG, DOUBLE, BOOL, CHAR, STRING, BYTE, FLOAT
      
     For values that can be parsed as SECONDS/MILLISECONDS/MICROSECONDS/NANOSECONDS, they must be within the 21 century.
+
+    The parsers after STRING are only relevant when a specific column data type is given.
     """
 
 
