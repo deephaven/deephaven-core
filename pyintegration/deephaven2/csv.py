@@ -73,7 +73,7 @@ def read_csv(path: str,
         delimiter (str): the delimiter used by the CSV, default is the comma
         quote (str): the quote character for the CSV, default is double quote
         ignore_surrounding_spaces (bool): indicates whether surrounding white space should be ignored for unquoted text
-            field, default is True
+            fields, default is True
         trim (bool) : indicates whether to trim white space inside a quoted string, default is False
         charset (str): the name of the charset used for the CSV data, default is 'utf-8'
 
