@@ -4,8 +4,8 @@ plugins {
 
 def archivesBaseNamePrefix = 'deephaven-'
 
-def compilerVersion = Integer.parseInt((String)project.findProperty('compilerVersion') ?: '17')
-def languageLevel = Integer.parseInt((String)project.findProperty('languageLevel') ?: '8')
+def compilerVersion = Integer.parseInt((String)project.findProperty('compilerVersion') ?: '11')
+def languageLevel = Integer.parseInt((String)project.findProperty('languageLevel') ?: '11')
 def runtimeVersion = Integer.parseInt((String)project.findProperty('runtimeVersion') ?: '17')
 def testRuntimeVersion = Integer.parseInt((String)project.findProperty('testRuntimeVersion') ?: '17')
 
@@ -47,8 +47,10 @@ def testRuntimeLauncher = javaToolchains.launcherFor {
 def groovyCompilerLauncher = javaToolchains.launcherFor {
   // See notes in GroovyCompile section below.
   // languageVersion = JavaLanguageVersion.of(compilerVersion)
-  languageVersion = JavaLanguageVersion.of(8)
+  languageVersion = JavaLanguageVersion.of(11)
 } as Provider<JavaLauncher>
+
+
 
 tasks.withType(JavaCompile).configureEach {
   javaCompiler.set compiler
@@ -58,8 +60,12 @@ tasks.withType(JavaCompile).configureEach {
   options.incremental = true
   options.compilerArgs << '-parameters'
 
-  if (compilerVersion != languageLevel) {
-    options.release.set languageLevel
+  def isTestCompile = name == 'compileTestJava'
+
+  if (!isTestCompile) {
+      if (compilerVersion != languageLevel) {
+        options.release.set languageLevel
+      }
   }
 }
 
@@ -74,7 +80,7 @@ tasks.withType(Test).configureEach {
 tasks.withType(GroovyCompile).configureEach {
   javaLauncher.set groovyCompilerLauncher
 
-  // Instead of using the below code, which is rather hacky, we'll set the groovy compiler to 8.
+  // Instead of using the below code, which is rather hacky, we'll set the groovy compiler to 11.
   // In general, it seems like groovy toolchain support is a bit lacking in fit and finish.
 
 //  // The release option doesn't seem to get picked up.
