@@ -18,7 +18,7 @@ in addition to including `DeephavenApiServerModule`.
 [Resolve Tools](src/main/java/io/deephaven/uri/ResolveTools.java) presents top-level static methods for resolving URIs.
 
 Internally, URIs are resolved via a [UriResolvers](src/main/java/io/deephaven/grpc_api/uri/UriResolvers.java),
-which may be composed of multiple of [UriResolver](src/main/java/io/deephaven/grpc_api/uri/UriResolver.java).
+which may be composed of multiple [UriResolver](src/main/java/io/deephaven/grpc_api/uri/UriResolver.java) instances.
 
 Currently, the following resolvers are installed: 
 

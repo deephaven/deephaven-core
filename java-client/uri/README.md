@@ -40,8 +40,8 @@ The resource format allows for a concise representation of resource identificati
 | `dh://host?uri=custom%3A%2F%2F%2Ffoo%3Fbar%3Dbaz` | `dh://host`                                    | remote + custom         | (custom)                                         |
 
 [Deephaven URIs](src/main/java/io/deephaven/uri/DeephavenUri.java) are those that have the scheme `dh` and no host,
-or `dh`/`dh+plain` and a host; and represent Deephaven-specific concepts. Unless configuration otherwise, Deephaven
-servers should be able to resolve Deephaven URIs into appropriate resources.
+or `dh`/`dh+plain` and a host; and represent Deephaven-specific concepts. Unless configured otherwise, Deephaven servers
+should be able to resolve Deephaven URIs into appropriate resources.
 
 [Custom URIs](src/main/java/io/deephaven/uri/CustomUri.java) are any other URI, whereby the server may or may not be
 able to resolve them into resources. This allows for third parties to define and configure URI resolution for their own
