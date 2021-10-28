@@ -555,31 +555,37 @@ public final class DBLanguageParser extends GenericVisitorAdapter<Class<?>, DBLa
         // If the paramTypes includes 1+ varArgs check the classes match -- no need to check if there are 0 varArgs
         if (candidate.isVarArgs() && paramTypes.length >= candidateParamTypes.length) {
             Class<?> paramType = paramTypes[candidateParamTypes.length - 1];
+            Class<?> candidateParamType = candidateParamTypes[candidateParamTypes.length - 1];
 
-            if (isDbArray(paramType) && candidateParamTypes[candidateParamTypes.length - 1].isArray()) {
+            Assert.eqTrue(candidateParamType.isArray(), "candidateParamType.isArray()");
+
+            if (isDbArray(paramType)) {
                 paramType = convertDBArray(paramType, parameterizedTypes[candidateParamTypes.length - 1] == null ? null
                         : parameterizedTypes[candidateParamTypes.length - 1][0]);
             }
 
-            if (candidateParamTypes.length == paramTypes.length && paramType.isArray()) {
-                if (!canAssignType(candidateParamTypes[candidateParamTypes.length - 1], paramType)) {
-                    return;
+            boolean canAssignVarArgs = candidateParamTypes.length == paramTypes.length && paramType.isArray()
+                    && canAssignType(candidateParamType, paramType);
+
+            boolean canAssignParamsToVarArgs = true;
+            final Class<?> lastClass = candidateParamType.getComponentType();
+
+            for (int i = candidateParamTypes.length - 1; i < paramTypes.length; i++) {
+                paramType = paramTypes[i];
+
+                if (isDbArray(paramType) && lastClass.isArray()) {
+                    paramType = convertDBArray(paramType,
+                            parameterizedTypes[i] == null ? null : parameterizedTypes[i][0]);
                 }
-            } else {
-                final Class<?> lastClass = candidateParamTypes[candidateParamTypes.length - 1].getComponentType();
 
-                for (int i = candidateParamTypes.length - 1; i < paramTypes.length; i++) {
-                    paramType = paramTypes[i];
-
-                    if (isDbArray(paramType) && lastClass.isArray()) {
-                        paramType = convertDBArray(paramType,
-                                parameterizedTypes[i] == null ? null : parameterizedTypes[i][0]);
-                    }
-
-                    if (!canAssignType(lastClass, paramType)) {
-                        return;
-                    }
+                if (!canAssignType(lastClass, paramType)) {
+                    canAssignParamsToVarArgs = false;
+                    break;
                 }
+            }
+
+            if (!canAssignVarArgs && !canAssignParamsToVarArgs) {
+                return;
             }
         }
 
@@ -1620,16 +1626,23 @@ public final class DBLanguageParser extends GenericVisitorAdapter<Class<?>, DBLa
         if (isPotentialImplicitCall(method.getDeclaringClass())) {
             if (scope == null) { // python func call or Groovy closure call
                 /*
-                 * python func call 1. the func is defined at the main module level and already wrapped in
-                 * CallableWrapper 2. the func will be called via CallableWrapper.call() method
+                 * @formatter:off
+                 * python func call
+                 * 1. the func is defined at the main module level and already wrapped in CallableWrapper
+                 * 2. the func will be called via CallableWrapper.call() method
+                 * @formatter:on
                  */
                 printer.append(innerPrinter);
                 printer.append(n.getNameAsString());
                 printer.append(".call");
             } else {
                 /*
-                 * python method call 1. need to reference the method with PyObject.getAttribute(); 2. wrap the method
-                 * reference in CallableWrapper() 3. the method will be called via CallableWrapper.call()
+                 * @formatter:off
+                 * python method call
+                 * 1. need to reference the method with PyObject.getAttribute();
+                 * 2. wrap the method reference in CallableWrapper()
+                 * 3. the method will be called via CallableWrapper.call()
+                 * @formatter:on
                  */
                 if (!n.getNameAsString().equals("call")) {
                     // to be backwards compatible with the syntax func.call(...)
