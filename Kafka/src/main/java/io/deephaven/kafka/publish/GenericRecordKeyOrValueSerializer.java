@@ -16,6 +16,7 @@ import org.apache.avro.generic.GenericData;
 import org.apache.avro.generic.GenericRecord;
 
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<GenericRecord> {
     /**
@@ -44,9 +45,10 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
             throw new IllegalArgumentException("The schema is not a toplevel record definition.");
         }
         final boolean haveTimestampField = !StringUtils.isNullOrEmpty(timestampFieldName);
+        TimeUnit timestampFieldUnit = null;
         final List<Schema.Field> fields = schema.getFields();
         if (haveTimestampField) {
-            checkTimestampField(fields, timestampFieldName);
+            timestampFieldUnit = checkTimestampFieldAndGetUnit(fields, timestampFieldName);
         }
         this.schema = schema;
 
@@ -64,12 +66,12 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
         }
 
         if (haveTimestampField) {
-            fieldProcessors.add(new TimestampFieldProcessor(timestampFieldName));
+            fieldProcessors.add(new TimestampFieldProcessor(timestampFieldName, timestampFieldUnit));
         }
     }
 
     // Check the timestamp field exists and is of the right logical type.
-    private static void checkTimestampField(final List<Schema.Field> fields, final String timestampFieldName) {
+    private static TimeUnit checkTimestampFieldAndGetUnit(final List<Schema.Field> fields, final String timestampFieldName) {
         // Find the field with the right name.
         Schema.Field timestampField = null;
         for (Schema.Field field : fields) {
@@ -89,11 +91,15 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
                     "Field of name timestampFieldName='" + timestampFieldName + "' has wrong type " + type);
         }
         final LogicalType logicalType = fieldSchema.getLogicalType();
-        if (!LogicalTypes.timestampMicros().equals(logicalType)) {
-            throw new IllegalStateException(
-                    "Field of name timestampFieldName='" + timestampFieldName +
-                            "' has wrong logical type " + logicalType);
+        if (LogicalTypes.timestampMicros().equals(logicalType)) {
+            return TimeUnit.MICROSECONDS;
         }
+        if (LogicalTypes.timestampMillis().equals(logicalType)) {
+            return TimeUnit.MILLISECONDS;
+        }
+        throw new IllegalStateException(
+                "Field of name timestampFieldName='" + timestampFieldName +
+                        "' has wrong logical type " + logicalType);
     }
 
     interface FieldContext extends SafeCloseable {
@@ -277,8 +283,19 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
     }
 
     private static class TimestampFieldProcessor extends GenericRecordFieldProcessor {
-        public TimestampFieldProcessor(String fieldName) {
+        private final long fromNanosToUnitDenominator;
+        public TimestampFieldProcessor(final String fieldName, final TimeUnit unit) {
             super(fieldName);
+            switch(unit) {
+                case MICROSECONDS:
+                    fromNanosToUnitDenominator = 1000;
+                    break;
+                case MILLISECONDS:
+                    fromNanosToUnitDenominator = 1000 * 1000;
+                    break;
+                default:
+                    throw new IllegalStateException("Unit not supported: " + unit);
+            }
         }
 
         @Override
@@ -292,9 +309,9 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
                 final WritableObjectChunk<GenericRecord, Attributes.Values> avroChunk,
                 final OrderedKeys keys,
                 final boolean isRemoval) {
-            final long micros = DBDateTime.now().getMicros();
+            final long nanos = DBDateTime.now().getNanos();
             for (int ii = 0; ii < avroChunk.size(); ++ii) {
-                avroChunk.get(ii).put(fieldName, micros);
+                avroChunk.get(ii).put(fieldName, nanos / fromNanosToUnitDenominator);
             }
         }
     }
