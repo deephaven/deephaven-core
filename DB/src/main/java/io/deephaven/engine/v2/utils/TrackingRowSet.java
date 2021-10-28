@@ -75,4 +75,9 @@ public interface TrackingRowSet extends RowSet {
      *         in {@code keys}
      */
     RowSet getSubSetForKeySet(Set<Object> keys, TupleSource tupleSource);
+
+    @Override
+    default TrackingMutableRowSet asMutable() {
+        return (TrackingMutableRowSet) this;
+    }
 }

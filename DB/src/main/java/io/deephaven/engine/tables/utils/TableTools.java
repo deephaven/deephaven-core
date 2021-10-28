@@ -1026,7 +1026,7 @@ public class TableTools {
      * @return a Deephaven Table with no columns.
      */
     public static Table emptyTable(long size) {
-        return new QueryTable(RowSetFactoryImpl.INSTANCE.getFlatRowSet(size).tracking(), Collections.emptyMap());
+        return new QueryTable(RowSetFactoryImpl.INSTANCE.getFlatRowSet(size).convertToTracking(), Collections.emptyMap());
     }
 
     @SuppressWarnings("SameParameterValue")
@@ -1055,7 +1055,7 @@ public class TableTools {
      */
     public static DynamicTable newTable(long size, List<String> names, List<ColumnSource<?>> columnSources) {
         // noinspection unchecked
-        return new QueryTable(RowSetFactoryImpl.INSTANCE.getFlatRowSet(size).tracking(),
+        return new QueryTable(RowSetFactoryImpl.INSTANCE.getFlatRowSet(size).convertToTracking(),
                 newMapFromLists(LinkedHashMap.class, names, columnSources));
     }
 
@@ -1067,7 +1067,7 @@ public class TableTools {
      * @return a Deephaven DynamicTable
      */
     public static DynamicTable newTable(long size, Map<String, ColumnSource<?>> columns) {
-        return new QueryTable(RowSetFactoryImpl.INSTANCE.getFlatRowSet(size).tracking(), columns);
+        return new QueryTable(RowSetFactoryImpl.INSTANCE.getFlatRowSet(size).convertToTracking(), columns);
     }
 
     /**
@@ -1082,7 +1082,7 @@ public class TableTools {
             columns.put(columnDefinition.getName(), ArrayBackedColumnSource.getMemoryColumnSource(0,
                     columnDefinition.getDataType(), columnDefinition.getComponentType()));
         }
-        return new QueryTable(definition, RowSetFactoryImpl.INSTANCE.getEmptyRowSet().tracking(), columns);
+        return new QueryTable(definition, RowSetFactoryImpl.INSTANCE.getEmptyRowSet().convertToTracking(), columns);
     }
 
     /**
@@ -1095,14 +1095,14 @@ public class TableTools {
         checkSizes(columnHolders);
         MutableRowSet rowSet = getRowSet(columnHolders);
         Map<String, ColumnSource<?>> columns = Stream.of(columnHolders).collect(COLUMN_HOLDER_LINKEDMAP_COLLECTOR);
-        return new QueryTable(rowSet.tracking(), columns);
+        return new QueryTable(rowSet.convertToTracking(), columns);
     }
 
     public static DynamicTable newTable(TableDefinition definition, ColumnHolder... columnHolders) {
         checkSizes(columnHolders);
         MutableRowSet rowSet = getRowSet(columnHolders);
         Map<String, ColumnSource<?>> columns = Stream.of(columnHolders).collect(COLUMN_HOLDER_LINKEDMAP_COLLECTOR);
-        return new QueryTable(definition, rowSet.tracking(), columns);
+        return new QueryTable(definition, rowSet.convertToTracking(), columns);
     }
 
     private static void checkSizes(ColumnHolder[] columnHolders) {

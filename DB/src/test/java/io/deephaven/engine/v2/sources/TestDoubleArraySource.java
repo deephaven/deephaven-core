@@ -164,7 +164,7 @@ public class TestDoubleArraySource {
         if (values.length > 0) {
             sequentialBuilder.appendRange(0, values.length - 1);
         }
-        final TrackingRowSet fullRange = sequentialBuilder.build().tracking();
+        final TrackingRowSet fullRange = sequentialBuilder.build().convertToTracking();
         final Map<String, DoubleArraySource> oneAndOnly = new HashMap<>();
         oneAndOnly.put("origin", sourceOrigin);
         formulaColumn.initInputs(fullRange, oneAndOnly);
@@ -376,7 +376,7 @@ public class TestDoubleArraySource {
         if (values.length > 0) {
             sequentialBuilder.appendRange(0, values.length - 1);
         }
-        final TrackingRowSet fullRange = sequentialBuilder.build().tracking();
+        final TrackingRowSet fullRange = sequentialBuilder.build().convertToTracking();
         final Map<String, DoubleArraySource> oneAndOnly = new HashMap<>();
         oneAndOnly.put("origin", sourceOrigin);
         formulaColumn.initInputs(fullRange, oneAndOnly);

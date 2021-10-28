@@ -144,7 +144,7 @@ public abstract class AbstractColumnSource<T> implements ColumnSource<T>, Serial
             } else {
                 matchingValues = mapper.intersect(allInMatchingGroups.build());
             }
-            return matchingValues.tracking();
+            return matchingValues.convertToTracking();
         } else {
             return ChunkFilter.applyChunkFilter(mapper, this, usePrev,
                     ChunkMatchFilterFactory.getChunkFilter(type, caseInsensitive, invertMatch, keys));
@@ -308,7 +308,7 @@ public abstract class AbstractColumnSource<T> implements ColumnSource<T>, Serial
         forEachGroup(groupToIndex, (final TYPE key, final MutableRowSet rowSet) -> {
             final long groupIndex = processedGroupCount.longValue();
             resultKeyColumnSource.set(groupIndex, key);
-            resultIndexColumnSource.set(groupIndex, rowSet.tracking());
+            resultIndexColumnSource.set(groupIndex, rowSet.convertToTracking());
             processedGroupCount.increment();
         });
         Assert.eq(processedGroupCount.intValue(), "processedGroupCount.intValue()", numGroups, "numGroups");
@@ -358,7 +358,7 @@ public abstract class AbstractColumnSource<T> implements ColumnSource<T>, Serial
         forEachResponsiveGroup(groupToIndex, intersect, (final TYPE key, final MutableRowSet rowSet) -> {
             final long groupIndex = responsiveGroups.longValue();
             resultKeyColumnSource.set(groupIndex, key);
-            resultIndexColumnSource.set(groupIndex, rowSet.tracking());
+            resultIndexColumnSource.set(groupIndex, rowSet.convertToTracking());
             responsiveGroups.increment();
         });
 

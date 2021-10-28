@@ -52,7 +52,7 @@ public class TrackingMutableRowSetImpl extends GroupingRowSetHelper {
     }
 
     @Override
-    public TrackingMutableRowSet tracking() {
+    public TrackingMutableRowSet convertToTracking() {
         return this;
     }
 

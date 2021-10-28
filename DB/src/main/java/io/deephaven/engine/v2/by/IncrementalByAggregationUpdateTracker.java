@@ -385,7 +385,7 @@ class IncrementalByAggregationUpdateTracker {
         }
         // NB: We should not need to initialize previous value here, as the result rowSet was computed with no
         // mutations.
-        return resultBuilder.build().tracking();
+        return resultBuilder.build().convertToTracking();
     }
 
     /**

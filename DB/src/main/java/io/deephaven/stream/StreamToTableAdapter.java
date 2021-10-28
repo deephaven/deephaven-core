@@ -82,7 +82,7 @@ public class StreamToTableAdapter implements SafeCloseable, LiveTable, StreamCon
         final LinkedHashMap<String, ColumnSource<?>> visibleSources = new LinkedHashMap<>();
         switchSources = makeSwitchSources(tableDefinition, nullColumnSources, visibleSources);
 
-        rowSet = RowSetFactoryImpl.INSTANCE.getEmptyRowSet().tracking();
+        rowSet = RowSetFactoryImpl.INSTANCE.getEmptyRowSet().convertToTracking();
 
         table = new QueryTable(rowSet, visibleSources) {
             {

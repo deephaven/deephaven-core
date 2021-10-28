@@ -12,15 +12,6 @@ import org.jetbrains.annotations.NotNull;
 public interface MutableRowSet extends RowSet {
 
     /**
-     * <p>Convert this MutableRowSet into a {@link TrackingMutableRowSet}.
-     * <p>Implementations are free to transfer ownership of resources from this object to the result. As such, it is an
-     * error to directly use this object afterwards; callers must instead use the returned result.
-     *
-     * @return A {@link TrackingMutableRowSet} constructed from this MutableRowSet, or {@code this} if already tracking
-     */
-    TrackingMutableRowSet tracking();
-
-    /**
      * Add a single key to this RowSet if it's not already present.
      *
      * @param key The key to add
@@ -90,7 +81,7 @@ public interface MutableRowSet extends RowSet {
 
     /**
      * Removes all the keys from <i>other</i> RowSet that are present in this RowSet.
-     * 
+     *
      * @return a new RowSet representing the keys removed
      */
     @NotNull
@@ -110,7 +101,7 @@ public interface MutableRowSet extends RowSet {
 
     /**
      * Modifies the RowSet by keeping only keys in the interval [startRowKey, endRowKey]
-     * 
+     *
      * @param startRowKey beginning of interval of keys to keep.
      * @param endRowKey endRowKey of interval of keys to keep (inclusive).
      */
@@ -133,22 +124,21 @@ public interface MutableRowSet extends RowSet {
      */
     void compact();
 
+    @Override
+    default TrackingMutableRowSet asTracking() {
+        return (TrackingMutableRowSet) this;
+    }
+
     /**
      * <p>
-     * Convert the supplied {@link RowSet} reference to a MutableRowSet with the minimal set of casts or
-     * operations.
+     * Convert this MutableRowSet into a {@link TrackingMutableRowSet}. This is really only suitable when the caller
+     * "owns" this MutableRowSet. Programming errors may occur if the any code holds onto references to {@link this}
+     * rather than the result, because there may be ambiguity about resource ownership.
      * <p>
-     * If {@code rowSet} is a MutableRowSet, it will be returned with a cast.
-     * <p>
-     * If {@code rowSet} is not mutable, it will be {@link #clone() cloned}.
+     * Implementations are free to transfer ownership of resources from this object to the result. As such, it is an
+     * error to directly use this object afterwards; callers must instead use the returned result.
      *
-     * @param rowSet The {@link RowSet} reference to convert
-     * @return {@code rowSet}, or a new MutableRowSet backed by the same contents as {@code rowSet}
+     * @return A {@link TrackingMutableRowSet} constructed from this MutableRowSet, or {@code this} if already tracking
      */
-    static MutableRowSet convert(@NotNull final RowSet rowSet) {
-        if (rowSet instanceof MutableRowSet) {
-            return (MutableRowSet) rowSet;
-        }
-        return rowSet.clone();
-    }
+    TrackingMutableRowSet convertToTracking();
 }

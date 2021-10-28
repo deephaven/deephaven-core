@@ -210,7 +210,7 @@ public class QueryTable extends BaseTable {
             LinkedHashMap<String, ColumnSource<?>> columns,
             @Nullable ModifiedColumnSet modifiedColumnSet) {
         super(definition, "QueryTable"); // TODO: Better descriptions composed from query chain
-        this.rowSet = TrackingMutableRowSet.convert(rowSet);
+        this.rowSet = rowSet.convertToTrackingMutable();
         this.columns = columns;
         this.modifiedColumnSet = modifiedColumnSet;
         initializeTransientFields();
@@ -452,7 +452,7 @@ public class QueryTable extends BaseTable {
     @Override
     public Table slice(final long firstPositionInclusive, final long lastPositionExclusive) {
         if (firstPositionInclusive == lastPositionExclusive) {
-            return getSubTable(RowSetFactoryImpl.INSTANCE.getEmptyRowSet().tracking());
+            return getSubTable(RowSetFactoryImpl.INSTANCE.getEmptyRowSet().convertToTracking());
         }
         return getResult(SliceLikeOperation.slice(this, firstPositionInclusive, lastPositionExclusive, "slice"));
     }
@@ -665,7 +665,7 @@ public class QueryTable extends BaseTable {
             } else if (isSelectDistinct) {
                 if (getColumnSourceMap().isEmpty()) {
                     // if we have no input columns, then the only thing we can do is have an empty result
-                    return new QueryTable(RowSetFactoryImpl.INSTANCE.getEmptyRowSet().tracking(),
+                    return new QueryTable(RowSetFactoryImpl.INSTANCE.getEmptyRowSet().convertToTracking(),
                             Collections.emptyMap());
                 }
                 return ChunkedOperatorAggregationHelper.aggregation(new KeyOnlyAggregationFactory(), this,
@@ -920,7 +920,7 @@ public class QueryTable extends BaseTable {
 
             final TrackingMutableRowSet newMapping;
             if (refilterMatchedRequested && refilterUnmatchedRequested) {
-                newMapping = whereInternal(source.getRowSet().clone().tracking(), source.getRowSet(), false, filters);
+                newMapping = whereInternal(source.getRowSet().clone().convertToTracking(), source.getRowSet(), false, filters);
                 refilterMatchedRequested = refilterUnmatchedRequested = false;
             } else if (refilterUnmatchedRequested) {
                 // things that are added or removed are already reflected in source.build
@@ -929,7 +929,7 @@ public class QueryTable extends BaseTable {
                 if (upstreamModified != null) {
                     unmatchedRows.insert(upstreamModified);
                 }
-                newMapping = whereInternal(unmatchedRows.clone().tracking(), unmatchedRows, false, filters);
+                newMapping = whereInternal(unmatchedRows.clone().convertToTracking(), unmatchedRows, false, filters);
 
                 // add back what we previously matched, but for modifications and removals
                 try (final MutableRowSet previouslyMatched = getRowSet().clone()) {
@@ -953,7 +953,7 @@ public class QueryTable extends BaseTable {
                 if (upstreamModified != null) {
                     matchedRows.insert(upstreamModified);
                 }
-                newMapping = whereInternal(matchedRows.clone().tracking(), matchedRows, false, filters);
+                newMapping = whereInternal(matchedRows.clone().convertToTracking(), matchedRows, false, filters);
                 refilterMatchedRequested = false;
             } else {
                 throw new IllegalStateException("Refilter called when a refilter was not requested!");
@@ -1035,7 +1035,7 @@ public class QueryTable extends BaseTable {
                                     final RowSet rowSetToUpdate = usePrev ? rowSet.getPrevRowSet() : rowSet;
                                     final TrackingMutableRowSet currentMapping;
 
-                                    currentMapping = whereInternal(rowSetToUpdate.clone().tracking(), rowSetToUpdate,
+                                    currentMapping = whereInternal(rowSetToUpdate.clone().convertToTracking(), rowSetToUpdate,
                                             usePrev, filters);
                                     Assert.eq(currentMapping.getPrevRowSet().size(),
                                             "currentMapping.getPrevRowSet.size()", currentMapping.size(),
@@ -1924,7 +1924,7 @@ public class QueryTable extends BaseTable {
             final long initialSize = snapshotHistoryInternal(leftTable.getColumnSourceMap(), leftTable.getRowSet(),
                     rightTable.getColumnSourceMap(), rightTable.getRowSet(),
                     resultColumns, 0);
-            final TrackingMutableRowSet resultRowSet = RowSetFactoryImpl.INSTANCE.getFlatRowSet(initialSize).tracking();
+            final TrackingMutableRowSet resultRowSet = RowSetFactoryImpl.INSTANCE.getFlatRowSet(initialSize).convertToTracking();
             final QueryTable result = new QueryTable(resultRowSet, resultColumns);
             if (isRefreshing()) {
                 listenForUpdates(new ShiftObliviousListenerImpl("snapshotHistory" + resultColumns.keySet().toString(),
@@ -2037,7 +2037,7 @@ public class QueryTable extends BaseTable {
             throwColumnConflictMessage(resultLeftColumns.keySet(), resultRightColumns.keySet());
         }
 
-        final QueryTable result = new QueryTable(RowSetFactoryImpl.INSTANCE.getEmptyRowSet().tracking(), allColumns);
+        final QueryTable result = new QueryTable(RowSetFactoryImpl.INSTANCE.getEmptyRowSet().convertToTracking(), allColumns);
         final SnapshotInternalListener listener = new SnapshotInternalListener(this, lazySnapshot, tableToSnapshot,
                 result, resultLeftColumns, resultRightColumns, result.getRowSetInternal());
 
@@ -2114,7 +2114,7 @@ public class QueryTable extends BaseTable {
                     }
 
                     final QueryTable resultTable =
-                            new QueryTable(RowSetFactoryImpl.INSTANCE.getEmptyRowSet().tracking(), resultColumns);
+                            new QueryTable(RowSetFactoryImpl.INSTANCE.getEmptyRowSet().convertToTracking(), resultColumns);
 
                     if (isRefreshing() && rightTable.isRefreshing()) {
 
@@ -2311,7 +2311,7 @@ public class QueryTable extends BaseTable {
                     }
                     final QueryTable result = new QueryTable(
                             getUngroupIndex(sizes, RowSetFactoryImpl.INSTANCE.getRandomBuilder(), initialBase, rowSet)
-                                    .build().tracking(),
+                                    .build().convertToTracking(),
                             resultMap);
                     if (isRefreshing()) {
                         startTrackingPrev(resultMap.values());
@@ -3151,12 +3151,12 @@ public class QueryTable extends BaseTable {
             recorder.getShifted().apply(currentMapping);
 
             // compute added against filters
-            final MutableRowSet added = whereInternal(recorder.getAdded().clone().tracking(), rowSet, false, filters);
+            final MutableRowSet added = whereInternal(recorder.getAdded().clone().convertToTracking(), rowSet, false, filters);
 
             // check which modified keys match filters (Note: filterColumns will be null if we must always check)
             final boolean runFilters = filterColumns == null || sourceModColumns.containsAny(filterColumns);
             final RowSet matchingModifies = !runFilters ? RowSetFactoryImpl.INSTANCE.getEmptyRowSet()
-                    : whereInternal(recorder.getModified().clone().tracking(), rowSet, false, filters);
+                    : whereInternal(recorder.getModified().clone().convertToTracking(), rowSet, false, filters);
 
             // which propagate as mods?
             final MutableRowSet modified =

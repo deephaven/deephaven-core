@@ -65,7 +65,7 @@ public class DbArrayColumnWrapper<T> extends DbArray.Indirect<T> {
         long newEndPadding = fromIndexInclusive >= rowSet.size() ? toIndexExclusive - fromIndexInclusive
                 : (int) Math.max(0, toIndexExclusive - rowSet.size());
 
-        return new DbArrayColumnWrapper<>(columnSource, rowSet.subSetByPositionRange(realFrom, realTo).tracking(),
+        return new DbArrayColumnWrapper<>(columnSource, rowSet.subSetByPositionRange(realFrom, realTo).convertToTracking(),
                 newStartPadding, newEndPadding);
     }
 
@@ -80,7 +80,7 @@ public class DbArrayColumnWrapper<T> extends DbArray.Indirect<T> {
             }
         }
 
-        return new DbArrayColumnWrapper<>(columnSource, builder.build().tracking(), 0, 0);
+        return new DbArrayColumnWrapper<>(columnSource, builder.build().convertToTracking(), 0, 0);
     }
 
     @Override

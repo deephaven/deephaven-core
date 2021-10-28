@@ -1,10 +1,10 @@
 package io.deephaven.engine.v2.utils;
 
+import gnu.trove.list.array.TLongArrayList;
 import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.util.LongSizedDataStructure;
 import io.deephaven.util.SafeCloseable;
-import gnu.trove.list.array.TLongArrayList;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.jetbrains.annotations.NotNull;
 
@@ -50,8 +50,8 @@ public interface RowSet extends RowSequence, LongSizedDataStructure, SafeCloseab
     }
 
     /**
-     * Returns whether or not this RowSet is flat. Unlike a table, this is a mutable property; which may change from step
-     * to step.
+     * Returns whether or not this RowSet is flat. Unlike a table, this is a mutable property; which may change from
+     * step to step.
      *
      * @return true if the RowSet keys are contiguous and start at zero.
      */
@@ -74,9 +74,11 @@ public interface RowSet extends RowSequence, LongSizedDataStructure, SafeCloseab
     long lastRowKey();
 
     /**
-     * <p>Returns a {@link MutableRowSet} with the row positions of <i>row keys</i> in this RowSet.
+     * <p>
+     * Returns a {@link MutableRowSet} with the row positions of <i>row keys</i> in this RowSet.
      *
-     * <p>This can be thought of as an iterative find() over the values in keys, but <b>all</b> keys <b>must</b> exist
+     * <p>
+     * This can be thought of as an iterative find() over the values in keys, but <b>all</b> keys <b>must</b> exist
      * within this RowSet, because a RowSet result can not represent negative values.
      *
      * @param keys The keys to find positions for
@@ -87,10 +89,12 @@ public interface RowSet extends RowSequence, LongSizedDataStructure, SafeCloseab
     }
 
     /**
-     * <p>Returns the row positions of <i>row keys</i> in the current set as a {@link MutableRowSet}, stopping at
+     * <p>
+     * Returns the row positions of <i>row keys</i> in the current set as a {@link MutableRowSet}, stopping at
      * maximumPosition.
      *
-     * <p>This can be thought of as an iterative {@link #find(long)} over the values in keys, but <b>all</b> keys
+     * <p>
+     * This can be thought of as an iterative {@link #find(long)} over the values in keys, but <b>all</b> keys
      * <b>must</b> exist within this RowSet, because a RowSet result can not represent negative values.
      *
      * @param keys The keys to find positions for
@@ -138,14 +142,14 @@ public interface RowSet extends RowSequence, LongSizedDataStructure, SafeCloseab
     boolean subsetOf(@NotNull RowSet other);
 
     /**
-     * Returns a new RowSet representing the keys of the current set not present inside rowSetToRemove. This operation is
-     * equivalent to set difference. This RowSet is not modified.
+     * Returns a new RowSet representing the keys of the current set not present inside rowSetToRemove. This operation
+     * is equivalent to set difference. This RowSet is not modified.
      */
     MutableRowSet minus(RowSet rowSetToRemove);
 
     /**
      * Returns a new RowSet representing the keys present in both this RowSet and the argument RowSet.
-     * 
+     *
      * @param rowSetToAdd A RowSet whose keys will be joined with our own to produce a new RowSet.
      * @return a new RowSet with the union of the keys in both this RowSet and rowSetToAdd.
      */
@@ -198,7 +202,6 @@ public interface RowSet extends RowSequence, LongSizedDataStructure, SafeCloseab
          *
          * @param v a value to search forward from the current iterator position
          * @return false if iteration is exhausted, otherwise true.
-         *
          */
         boolean advance(long v);
 
@@ -209,7 +212,6 @@ public interface RowSet extends RowSequence, LongSizedDataStructure, SafeCloseab
          * the value provided is not contained in the current range.
          *
          * @param v A value contained in the current iterator range
-         *
          */
         void postpone(long v);
 
@@ -341,10 +343,9 @@ public interface RowSet extends RowSequence, LongSizedDataStructure, SafeCloseab
          * In particular, when iterating with {@code advance()}, you do not use next() to bring the value you advanced
          * to into view, even at the start of the iteration. Many common usages only involve calls to advance().
          * </p>
-         * 
+         *
          * @param v a value to search forward from the current iterator position
          * @return false if iteration is exhausted, otherwise true.
-         *
          */
         boolean advance(long v);
 
@@ -408,7 +409,7 @@ public interface RowSet extends RowSequence, LongSizedDataStructure, SafeCloseab
 
     /**
      * Get a subset of this RowSet within the specified half-closed range of row positions.
-     * 
+     *
      * @param startPos The first position to included in the output (inclusive)
      * @param endPos The last position to included in the output (exclusive)
      * @return A new RowSet, containing only positions &gt;= startPos and &lt; endPos
@@ -417,7 +418,7 @@ public interface RowSet extends RowSequence, LongSizedDataStructure, SafeCloseab
 
     /**
      * Get a subset of this RowSet within the specified closed range of row keys.
-     * 
+     *
      * @param startKey The first key to include in the output.
      * @param endKey The last key (inclusive) to include in the output.
      * @return A new RowSet, containing only values &gt;= startKey and &lt;= endKey.
@@ -426,7 +427,7 @@ public interface RowSet extends RowSequence, LongSizedDataStructure, SafeCloseab
 
     /**
      * Get a subset of this RowSet according to the supplied set of row positions in {@code posRowSet}.
-     * 
+     *
      * @param posRowSet The RowSet of position-based ranges to extract.
      * @return A new RowSet, containing values at the locations in the provided RowSet.
      */
@@ -501,5 +502,52 @@ public interface RowSet extends RowSequence, LongSizedDataStructure, SafeCloseab
 
     default void validate() {
         validate(null);
+    }
+
+    /**
+     * <p>
+     * Cast this RowSet reference to a {@link MutableRowSet}.
+     *
+     * @return {@code this} cast to a {@link MutableRowSet}
+     * @throws ClassCastException If {@code this} is not a {@link MutableRowSet}
+     */
+    default MutableRowSet asMutable() {
+        return (MutableRowSet) this;
+    }
+
+    /**
+     * <p>
+     * Cast this RowSet reference to a {@link TrackingRowSet}.
+     *
+     * @return {@code this} cast to a {@link TrackingRowSet}
+     * @throws ClassCastException If {@code this} is not a {@link TrackingRowSet}
+     */
+    default TrackingRowSet asTracking() {
+        return (TrackingRowSet) this;
+    }
+
+    /**
+     * <p>
+     * Convert this RowSet to a {@link TrackingMutableRowSet} with the minimal set of casts or
+     * operations. This is really only suitable when the caller "owns" this RowSet. Programming errors may occur if the
+     * any code holds onto references to {@link this} rather than the result, because there may be ambiguity about
+     * resource ownership.
+     * <p>
+     * If {@code this} is a {@link TrackingMutableRowSet}, it will be returned with a cast.
+     * <p>
+     * If {@code rowSet} is a {@link MutableRowSet}, tracking will be {@link MutableRowSet#convertToTracking() enabled}.
+     * <p>
+     * If {@code rowSet} is not mutable, it will be {@link #clone() cloned}.
+     *
+     * @return {@code rowSet}, or a new {@link TrackingMutableRowSet} backed by the same contents as {@code rowSet}
+     */
+    default TrackingMutableRowSet convertToTrackingMutable() {
+        if (this instanceof TrackingMutableRowSet) {
+            return (TrackingMutableRowSet) this;
+        }
+        if (this instanceof MutableRowSet) {
+            return ((MutableRowSet) this).convertToTracking();
+        }
+        return clone().convertToTracking();
     }
 }

@@ -130,7 +130,7 @@ public class RowSetShiftDataExpander implements SafeCloseable {
             RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), RowSetFactoryImpl.INSTANCE.getEmptyRowSet(),
             RowSetFactoryImpl.INSTANCE.getEmptyRowSet(),
             RowSetShiftData.EMPTY,
-            ModifiedColumnSet.ALL), RowSetFactoryImpl.INSTANCE.getEmptyRowSet().tracking());
+            ModifiedColumnSet.ALL), RowSetFactoryImpl.INSTANCE.getEmptyRowSet().convertToTracking());
 
     /**
      * Perform backwards compatible validation checks.

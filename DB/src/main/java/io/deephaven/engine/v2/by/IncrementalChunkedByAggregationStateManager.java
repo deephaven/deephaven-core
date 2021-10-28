@@ -616,7 +616,7 @@ class IncrementalChunkedByAggregationStateManager
                     final long currentHashLocation = bc.insertTableLocations.get(ii);
 
                     // region main insert
-                    indexSource.set(currentHashLocation, RowSetFactoryImpl.INSTANCE.getEmptyRowSet().tracking());
+                    indexSource.set(currentHashLocation, RowSetFactoryImpl.INSTANCE.getEmptyRowSet().convertToTracking());
                     cookieSource.set(currentHashLocation, trackingCallback.invoke(NULL_COOKIE, (int) currentHashLocation, sourceChunkIndexKeys.get(firstChunkPositionForHashLocation)));
                     // endregion main insert
                     // mixin rehash
@@ -759,7 +759,7 @@ class IncrementalChunkedByAggregationStateManager
                             overflowLocationSource.set(tableLocation, allocatedOverflowLocation);
 
                             // region build overflow insert
-                            overflowIndexSource.set(allocatedOverflowLocation, RowSetFactoryImpl.INSTANCE.getEmptyRowSet().tracking());
+                            overflowIndexSource.set(allocatedOverflowLocation, RowSetFactoryImpl.INSTANCE.getEmptyRowSet().convertToTracking());
                             overflowCookieSource.set(allocatedOverflowLocation, trackingCallback.invoke(NULL_COOKIE, overflowLocationToHashLocation(allocatedOverflowLocation), sourceChunkIndexKeys.get(chunkPosition)));
                             // endregion build overflow insert
 

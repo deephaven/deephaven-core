@@ -241,7 +241,7 @@ public class DynamicWhereFilter extends SelectFilterLivenessArtifactImpl impleme
 
     private TrackingMutableRowSet filterGrouping(TrackingMutableRowSet selection, TupleSource tupleSource) {
         final RowSet matchingKeys = selection.getSubSetForKeySet(liveValues, tupleSource);
-        return (inclusion ? matchingKeys.clone() : selection.minus(matchingKeys)).tracking();
+        return (inclusion ? matchingKeys.clone() : selection.minus(matchingKeys)).convertToTracking();
     }
 
     private TrackingMutableRowSet filterGrouping(TrackingMutableRowSet selection, Table table) {
@@ -261,7 +261,7 @@ public class DynamicWhereFilter extends SelectFilterLivenessArtifactImpl impleme
 
     private TrackingMutableRowSet filterLinearOne(RowSet selection, ColumnSource keyColumn) {
         if (selection.isEmpty()) {
-            return RowSetFactoryImpl.INSTANCE.getEmptyRowSet().tracking();
+            return RowSetFactoryImpl.INSTANCE.getEmptyRowSet().convertToTracking();
         }
 
         if (!kernelValid) {
@@ -295,7 +295,7 @@ public class DynamicWhereFilter extends SelectFilterLivenessArtifactImpl impleme
         }
 
 
-        return indexBuilder.build().tracking();
+        return indexBuilder.build().convertToTracking();
     }
 
     private TrackingMutableRowSet filterLinearTuple(RowSet selection, TupleSource tupleSource) {
@@ -309,7 +309,7 @@ public class DynamicWhereFilter extends SelectFilterLivenessArtifactImpl impleme
             }
         }
 
-        return indexBuilder.build().tracking();
+        return indexBuilder.build().convertToTracking();
     }
 
     @Override

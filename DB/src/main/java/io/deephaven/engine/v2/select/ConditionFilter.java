@@ -346,7 +346,7 @@ public class ConditionFilter extends AbstractConditionFilter {
                 if (sharedContext != null) {
                     sharedContext.close();
                 }
-                return resultBuilder.build().tracking();
+                return resultBuilder.build().convertToTracking();
             }
         }
 

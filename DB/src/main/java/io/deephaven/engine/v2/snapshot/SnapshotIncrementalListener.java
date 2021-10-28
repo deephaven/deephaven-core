@@ -36,7 +36,7 @@ public class SnapshotIncrementalListener extends MergedListener {
         this.leftListener = leftListener;
         this.rightTable = rightTable;
         this.leftColumns = leftColumns;
-        this.lastRightRowSet = RowSetFactoryImpl.INSTANCE.getEmptyRowSet().tracking();
+        this.lastRightRowSet = RowSetFactoryImpl.INSTANCE.getEmptyRowSet().convertToTracking();
     }
 
     @Override

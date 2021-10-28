@@ -170,7 +170,7 @@ public class ChunkedOperatorAggregationHelper {
         ac.getResultColumns(resultColumnSourceMap);
 
         final TrackingMutableRowSet resultRowSet =
-                RowSetFactoryImpl.INSTANCE.getFlatRowSet(outputPosition.intValue()).tracking();
+                RowSetFactoryImpl.INSTANCE.getFlatRowSet(outputPosition.intValue()).convertToTracking();
         if (withView.isRefreshing()) {
             copyKeyColumns(keyColumnsRaw, keyColumnsCopied, resultRowSet);
         }

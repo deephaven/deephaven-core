@@ -443,7 +443,7 @@ public final class ByExternalChunkedOperator implements IterativeChunkedAggregat
                         }
 
                         final MutableRowSet initialRowSet =
-                                extractAndClearIndex(addedRowSetsBackingChunk, backingChunkOffset).tracking();
+                                extractAndClearIndex(addedRowSetsBackingChunk, backingChunkOffset).convertToTracking();
                         initialRowSet.compact();
                         final QueryTable newTable = makeSubTable(initialRowSet);
                         tablesBackingChunk.set(backingChunkOffset, newTable);
@@ -651,7 +651,7 @@ public final class ByExternalChunkedOperator implements IterativeChunkedAggregat
                         final QueryTable newOrPrepopulatedTable =
                                 (QueryTable) tableMap.computeIfAbsent(tableMapKey, (unused) -> {
                                     final MutableRowSet newRowSet = extractAndClearIndex(
-                                            addedRowSetsBackingChunk, backingChunkOffset).tracking();
+                                            addedRowSetsBackingChunk, backingChunkOffset).convertToTracking();
                                     newRowSet.compact();
                                     final QueryTable newTable = makeSubTable(newRowSet);
                                     tablesBackingChunk.set(backingChunkOffset, newTable);

@@ -50,7 +50,7 @@ public class MutableRowSetImpl extends RowSequenceAsChunkImpl implements Mutable
     }
 
     @Override
-    public TrackingMutableRowSet tracking() {
+    public TrackingMutableRowSet convertToTracking() {
         impl = null; // Force NPE on use after tracking
         closeRowSequenceAsChunkImpl();
         return new TrackingMutableRowSetImpl(impl);
