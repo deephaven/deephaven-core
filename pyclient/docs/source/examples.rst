@@ -11,8 +11,8 @@ The `Session` class is your connection to Deephaven. This is where all operation
 
     from pydeephaven import Session
 
-    #session = Session(host=”envoy”) #Use this if you’re running the python script in docker-compose with the Deephaven default settings
-    session = Session() #Use this if you’re running the python script locally with with Deephaven default settings
+    #session = Session(host=”envoy”) # Use this if you’re running the python script in docker-compose with the Deephaven default settings
+    session = Session() # Use this if you’re running the python script locally with with Deephaven default settings
 
 Ticking table
 #############
@@ -33,7 +33,7 @@ If you don’t bind the table, it will not be updated in Deephaven.
 Execute a query on a table
 ##########################
 
-`table.update()` can be used to execute an update on a table. This example updates a table with a query string::
+`table.update()` can be used to execute an update on a table. This example updates a table with a query string:
 
     from pydeephaven import Session
 

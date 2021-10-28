@@ -69,8 +69,8 @@ The `Session` class is your connection to Deephaven. This is where all operation
 ```
 from pydeephaven import Session
 
-#session = Session(host=”envoy”) #Use this if you’re running the Python script in docker-compose with the Deephaven default settings
-session = Session() #Use this if you’re running the python script locally with with Deephaven default settings
+#session = Session(host=”envoy”) # Use this if you’re running the Python script in docker-compose with the Deephaven default settings
+session = Session() # Use this if you’re running the python script locally with with Deephaven default settings
 ```
 
 ## Ticking table
