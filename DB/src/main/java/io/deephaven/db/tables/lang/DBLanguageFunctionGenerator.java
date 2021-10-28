@@ -585,7 +585,7 @@ public class DBLanguageFunctionGenerator {
         buf.append("    }\n\n");
 
         buf.append("    public static short shortPyCast(PyObject a) {\n");
-        buf.append("    return (short) a.getIntValue();\n");
+        buf.append("        return (short) a.getIntValue();\n");
         buf.append("    }\n\n");
 
         // ------------------------------------------------------------------------------------------------------------------------------------------------------------------
