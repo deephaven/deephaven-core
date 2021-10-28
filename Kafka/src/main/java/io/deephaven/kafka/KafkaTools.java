@@ -684,6 +684,12 @@ public class KafkaTools {
          * @param fieldNames An array parallel to columnNames, including an entry for each field name in JSON to map for
          *        the corresponding column name in the {@code columnNames} array. If null, map columns to fields of the
          *        same name.
+         * @param nestedObjectDelimiter if nested JSON fields are desired, the field separator that is used
+         *                              for the fieldNames parameter, or null for no nesting.   For instance,
+         *                              if a particular column should be mapped to JSON field {@code X} nested inside
+         *                              field {@code Y}, the corresponding element in the {@code fieldNames} array
+         *                              can be {@code "X.Y"}, in which case the value for {@code nestedObjectDelimiter}
+         *                              should be {code "."}
          * @param outputNulls If false, omit fields with a null value.
          * @param timestampFieldName If not null, include a field of the given name with a publication timestamp.
          * @return A JSON spec for the given inputs.
@@ -692,9 +698,10 @@ public class KafkaTools {
         public static KeyOrValueSpec jsonSpec(
                 final String[] columnNames,
                 final String[] fieldNames,
+                final String nestedObjectDelimiter,
                 final boolean outputNulls,
                 final String timestampFieldName) {
-            return new KeyOrValueSpec.Json(columnNames, fieldNames, null, outputNulls,
+            return new KeyOrValueSpec.Json(columnNames, fieldNames, nestedObjectDelimiter, outputNulls,
                     timestampFieldName);
         }
 
