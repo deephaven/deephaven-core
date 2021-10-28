@@ -92,7 +92,7 @@ If you don’t bind the table, it will not be updated in Deephaven.
 
 ## Execute a query on a table
 
-`table.update()` can be used to execute an update on a table. This example shows how to update a table with a query string.
+`table.update()` can be used to execute an update on a table. This updates a table with a query string.
 
 ```
 from pydeephaven import Session
@@ -128,7 +128,7 @@ session.bind_table(name="MyTable", table=table)
 
 ## Sort a table
 
-`table.sort()` can be used to sort a table. This example shows how to sort a table by one of its columns.
+`table.sort()` can be used to sort a table. This example sorts a table by one of its columns.
 
 ```
 from pydeephaven import Session
@@ -197,7 +197,7 @@ session.bind_table(name="MyTable", table=table)
 
 ## Convert a pyarrow table to a Deephaven table
 
-Deephaven natively supports Pyarrow tables. This example converts between a Pyarrow table and a Deephaven table.
+Deephaven natively supports [Pyarrow tables](https://arrow.apache.org/docs/python/index.html). This example converts between a Pyarrow table and a Deephaven table.
 
 ```
 import pyarrow

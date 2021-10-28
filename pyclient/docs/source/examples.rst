@@ -46,11 +46,11 @@ Execute a query on a table
 Query objects
 #############
 
-Query objects can be used to execute queries on a table. The value of a query object comes from the fact that a connection to Deephaven is only made once for all queries, where executing queries directly on a table causes a connection to be made for every query.
+Query objects can be used to execute queries on a table. The value of a query object comes from the fact that a connection to Deephaven is only made once for all queries, whereas executing queries directly on a table causes a connection to be made for every query.
 
-The general flow of using a query object is to construct a query with a table, call operations (sort, filter, update, etc) on the query object, and then assign your table to `query.exec()`.
+The general flow of using a query object is to construct a query with a table, call operations (sort, filter, update, etc.) on the query object, and then assign your table to `query.exec()`.
 
-Any operation that can be executed on a table can also be executed on a query object. This uses a query object to produce the same result as above:
+Any operation that can be executed on a table can also be executed on a query object. This example uses a query object to produce the same result as above:
 
     from pydeephaven import Session
 
