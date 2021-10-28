@@ -10,7 +10,6 @@ import io.confluent.kafka.serializers.KafkaAvroDeserializer;
 import io.confluent.kafka.serializers.KafkaAvroSerializer;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.base.Pair;
-import io.deephaven.base.Procedure;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.db.tables.ColumnDefinition;
 import io.deephaven.db.tables.Table;
@@ -20,12 +19,15 @@ import io.deephaven.db.tables.live.LiveTableMonitor;
 import io.deephaven.db.tables.live.LiveTableRefreshCombiner;
 import io.deephaven.db.tables.live.LiveTableRegistrar;
 import io.deephaven.db.tables.utils.DBDateTime;
+import io.deephaven.db.util.liveness.LivenessScope;
+import io.deephaven.db.util.liveness.LivenessScopeStack;
 import io.deephaven.db.v2.*;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.kafka.ingest.*;
 import io.deephaven.kafka.publish.*;
 import io.deephaven.stream.StreamToTableAdapter;
+import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.ScriptApi;
 import org.apache.avro.LogicalType;
 import org.apache.avro.LogicalTypes;
@@ -1092,7 +1094,7 @@ public class KafkaTools {
      * Consume from Kafka to a Deephaven table.
      *
      * @param table The table used as a source of data to be sent to Kafka.
-     * @param kafkaProrerties Properties to be passed to create the associated KafkaProducer.
+     * @param kafkaProperties Properties to be passed to create the associated KafkaProducer.
      * @param topic Kafka topic name
      * @param keySpec Conversion specification for Kafka record keys from table column data.
      * @param valueSpec Conversion specification for Kafka record values from table column data.
@@ -1104,9 +1106,9 @@ public class KafkaTools {
      *         reference to this return value to ensure liveliness.
      */
     @SuppressWarnings("unused")
-    public static Procedure.Nullary produceFromTable(
+    public static Runnable produceFromTable(
             @NotNull final Table table,
-            @NotNull final Properties kafkaProrerties,
+            @NotNull final Properties kafkaProperties,
             @NotNull final String topic,
             @NotNull final Produce.KeyOrValueSpec keySpec,
             @NotNull final Produce.KeyOrValueSpec valueSpec,
@@ -1124,33 +1126,25 @@ public class KafkaTools {
             throw new IllegalArgumentException(
                     "can't ignore both key and value: keySpec and valueSpec can't both be ignore specs");
         }
-        setSerIfNotSet(kafkaProrerties, KeyOrValue.KEY, keySpec, table);
-        setSerIfNotSet(kafkaProrerties, KeyOrValue.VALUE, valueSpec, table);
+        setSerIfNotSet(kafkaProperties, KeyOrValue.KEY, keySpec, table);
+        setSerIfNotSet(kafkaProperties, KeyOrValue.VALUE, valueSpec, table);
 
         final String[] keyColumns = keySpec.getColumnNames();
         final String[] valueColumns = valueSpec.getColumnNames();
 
-        final Table effectiveTable = (!ignoreKey && lastByKeyColumns)
-                ? table.lastBy(keyColumns)
-                : table.coalesce();
+        final LivenessScope publisherScope = new LivenessScope(true);
+        try (final SafeCloseable ignored = LivenessScopeStack.open(publisherScope, false)) {
+            final Table effectiveTable = (!ignoreKey && lastByKeyColumns)
+                    ? table.lastBy(keyColumns)
+                    : table.coalesce();
 
-        final KeyOrValueSerializer<?> keySerializer = getSerializer(effectiveTable, kafkaProrerties, keySpec);
-        final KeyOrValueSerializer<?> valueSerializer = getSerializer(effectiveTable, kafkaProrerties, valueSpec);
-        final PublishToKafka producer = new PublishToKafka(
-                kafkaProrerties, effectiveTable, topic, keyColumns, keySerializer, valueColumns, valueSerializer);
-        final Procedure.Nullary shutdownCallback = new Procedure.Nullary() {
-            volatile PublishToKafka liveProducer = producer;
+            final KeyOrValueSerializer<?> keySerializer = getSerializer(effectiveTable, kafkaProperties, keySpec);
+            final KeyOrValueSerializer<?> valueSerializer = getSerializer(effectiveTable, kafkaProperties, valueSpec);
 
-            @Override
-            public void call() {
-                if (liveProducer == null) {
-                    return;
-                }
-                liveProducer.destroy();
-                liveProducer = null;
-            }
-        };
-        return shutdownCallback;
+            final PublishToKafka producer = new PublishToKafka(
+                    kafkaProperties, effectiveTable, topic, keyColumns, keySerializer, valueColumns, valueSerializer);
+        }
+        return publisherScope::release;
     }
 
     private static void setSerIfNotSet(

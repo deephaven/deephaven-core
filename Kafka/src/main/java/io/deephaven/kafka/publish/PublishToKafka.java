@@ -24,6 +24,11 @@ import java.util.Properties;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
+/**
+ * This class is an internal implementation detail for io.deephaven.kafka; is not intended to be used directly by client code.
+ * It lives in a separate package as a means of code organization.
+ *
+ */
 public class PublishToKafka<K, V> extends LivenessArtifact {
 
     public static final int CHUNK_SIZE =
@@ -253,7 +258,7 @@ public class PublishToKafka<K, V> extends LivenessArtifact {
     }
 
     @Override
-    public void destroy() {
+    protected void destroy() {
         super.destroy();
         producer.close();
     }
