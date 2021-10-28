@@ -1087,6 +1087,8 @@ def _dictToProperties(d):
 
 @_passThrough
 def _dictToMap(d):
+    if d is None:
+        return None
     r = _jmap_()
     for key, value in d.items():
         if value is None:
