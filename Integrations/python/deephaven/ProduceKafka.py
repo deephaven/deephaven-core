@@ -88,7 +88,7 @@ def produceFromTable(
            expects keyed tables to be streams, add-only, or aggregated.
     :return: A callback object with a 'call' method that, when invoked, stops publishing and cleans up
              subscriptions and resources.
-             Users should hold to this object to ensure liveleness for publishing
+             Users should hold to this object to ensure liveness for publishing
              for as long as this publishing is desired, and once not desired anymore they should
              invoke call() on it.
     :raises: ValueError or TypeError if arguments provided can't be processed.
@@ -121,7 +121,7 @@ def avro(schema, schema_version:str = None, column_names = None):
     :param schema_version:  If a string schema name is provided, the version to fetch from schema
        service; if not specified, a default of 'latest' is assumed.
     :param column_names: A list of strings each corresponding to an schema field, in order,
-       indicating which Deephaven column nanmes to use for the corresponding Avro field,
+       indicating which Deephaven column names to use for the corresponding Avro field,
        or None if the Deephaven columns names are expected to match field names.
     :return:  A Kafka Key or Value spec object to use in a call to produceFromTable.
     :raises:  ValueError, TypeError or Exception if arguments provided can't be processed.
@@ -156,7 +156,7 @@ def json(column_names = None, field_names = None):
 
     :param column_names: A sequence of Deephaven column names to include in the json output
               as json fields, or None to indicate all columns.
-    :param field_names: A squence of field names to use for the corresponding column name in the
+    :param field_names: A sequence of field names to use for the corresponding column name in the
               column_names, or None to indicate that all JSON field names will match column names.
     :return:  A Kafka Key or Value spec object to use in a call to produceFromTable.
     :raises:  ValueError, TypeError or Exception if arguments provided can't be processed.

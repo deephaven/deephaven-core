@@ -47,7 +47,6 @@ import org.apache.http.util.EntityUtils;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.producer.ProducerConfig;
-import org.apache.kafka.common.errors.IllegalSaslStateException;
 import org.apache.kafka.common.serialization.*;
 import org.jetbrains.annotations.NotNull;
 
@@ -81,6 +80,7 @@ public class KafkaTools {
     public static final String BYTE_ARRAY_DESERIALIZER = ByteArrayDeserializer.class.getName();
     public static final String STRING_DESERIALIZER = StringDeserializer.class.getName();
     public static final String BYTE_BUFFER_DESERIALIZER = ByteBufferDeserializer.class.getName();
+    public static final String AVRO_DESERIALIZER = KafkaAvroDeserializer.class.getName();
     public static final String DESERIALIZER_FOR_IGNORE = BYTE_BUFFER_DESERIALIZER;
     public static final String SHORT_SERIALIZER = ShortSerializer.class.getName();
     public static final String INT_SERIALIZER = IntegerSerializer.class.getName();
@@ -90,6 +90,7 @@ public class KafkaTools {
     public static final String BYTE_ARRAY_SERIALIZER = ByteArraySerializer.class.getName();
     public static final String STRING_SERIALIZER = StringSerializer.class.getName();
     public static final String BYTE_BUFFER_SERIALIZER = ByteBufferSerializer.class.getName();
+    public static final String AVRO_SERIALIZER = KafkaAvroSerializer.class.getName();
     public static final String SERIALIZER_FOR_IGNORE = BYTE_BUFFER_SERIALIZER;
     public static final String NESTED_FIELD_NAME_SEPARATOR = ".";
     public static final String AVRO_LATEST_VERSION = "latest";
@@ -236,7 +237,7 @@ public class KafkaTools {
             final Schema schema,
             final Function<String, String> fieldNameToColumnName) {
         if (schema.isUnion()) {
-            throw new UnsupportedOperationException("Union of records schemas are not supported");
+            throw new UnsupportedOperationException("Schemas defined as a union of records are not supported");
         }
         final Schema.Type type = schema.getType();
         if (type != Schema.Type.RECORD) {
@@ -295,13 +296,13 @@ public class KafkaTools {
         /**
          * Class to specify conversion of Kafka KEY or VALUE fields to table columns.
          */
-        public static abstract class KeyOrValueSpec {
+        static abstract class KeyOrValueSpec {
             /**
              * Data format for this Spec.
              *
              * @return Data format for this Spec
              */
-            public abstract DataFormat dataFormat();
+            abstract DataFormat dataFormat();
 
             private static final class Ignore extends KeyOrValueSpec {
                 @Override
@@ -313,11 +314,12 @@ public class KafkaTools {
             /**
              * Avro spec.
              */
-            public static final class Avro extends KeyOrValueSpec {
+            static final class Avro extends KeyOrValueSpec {
                 public final Schema schema;
                 public final String schemaName;
                 public final String schemaVersion;
-                public final Function<String, String> fieldNameToColumnName; // fields mapped to null are skipped.
+                /** fields mapped to null are skipped. */
+                public final Function<String, String> fieldNameToColumnName;
 
                 private Avro(final Schema schema, final Function<String, String> fieldNameToColumnName) {
                     this.schema = schema;
@@ -344,7 +346,7 @@ public class KafkaTools {
             /**
              * Single spec for unidimensional (basic Kafka encoded for one type) fields.
              */
-            public static final class Simple extends KeyOrValueSpec {
+            static final class Simple extends KeyOrValueSpec {
                 public final String columnName;
                 public final Class<?> dataType;
 
@@ -370,7 +372,7 @@ public class KafkaTools {
             /**
              * JSON spec.
              */
-            public static final class Json extends KeyOrValueSpec {
+            static final class Json extends KeyOrValueSpec {
                 public final ColumnDefinition<?>[] columnDefinitions;
                 public final Map<String, String> fieldNameToColumnName;
 
@@ -682,7 +684,6 @@ public class KafkaTools {
          * @param fieldNames An array parallel to columnNames, including an entry for each field name in JSON to map for
          *        the corresponding column name in the {@code columnNames} array. If null, map columns to fields of the
          *        same name.
-         * @param nestedObjectDelimiter A string used to separate values in composite fields.
          * @param outputNulls If false, omit fields with a null value.
          * @param timestampFieldName If not null, include a field of the given name with a publication timestamp.
          * @return A JSON spec for the given inputs.
@@ -691,15 +692,14 @@ public class KafkaTools {
         public static KeyOrValueSpec jsonSpec(
                 final String[] columnNames,
                 final String[] fieldNames,
-                final String nestedObjectDelimiter,
                 final boolean outputNulls,
                 final String timestampFieldName) {
-            return new KeyOrValueSpec.Json(columnNames, fieldNames, nestedObjectDelimiter, outputNulls,
+            return new KeyOrValueSpec.Json(columnNames, fieldNames, null, outputNulls,
                     timestampFieldName);
         }
 
         /**
-         * A JSON spec from a set of column names
+         * A JSON spec from a set of column names.  Shorthand for {@code jsonSpec(columNames, fieldNames, false, null)}
          *
          * @param columnNames An array including an entry for each column intended to be included in the JSON output. If
          *        null, include all columns.
@@ -735,7 +735,7 @@ public class KafkaTools {
         }
 
         /**
-         * Avro spec from an Avro schmea. All columns with names matching schema field names are included.
+         * Avro spec from an Avro schema. All columns with names matching schema field names are included.
          *
          * @param schema An Avro schema.
          * @return A spec corresponding to the schema provided.
@@ -751,9 +751,9 @@ public class KafkaTools {
          * property.
          *
          * @param schemaName The registered name for the schema on Schema Server
-         * @param schemaVersion The version to fetch
+         * @param schemaVersion The version to fetch.  Pass the constant {@code AVRO_LATEST_VERSION} for latest
          * @param columnNames An array indicating the column name to use for each corresponding field in the schema, or
-         *        null if the schema field names are expected to map exactly to column names.
+         *        null if the schema field names are expected to map exactly to column names
          * @param timestampFieldName If not null, include a field of the given name with a publication timestamp. The
          *        field with the given name should exist in the provided schema, and be of logical type timestamp
          *        micros.
@@ -771,51 +771,16 @@ public class KafkaTools {
         /**
          * Avro spec from fetching an Avro schema from a Confluent compatible Schema Server. The Properties used to
          * initialize Kafka should contain the URL for the Schema Server to use under the "schema.registry.url"
-         * property. The version fetched would be latest.
-         *
-         * @param schemaName The registered name for the schema on Schema Server
-         * @param columnNames An array indicating the column name to use for each corresponding field in the schema, or
-         *        null if the schema field names are expected to map exactly to column names.
-         * @param timestampFieldName If not null, include a field of the given name with a publication timestamp. The
-         *        field with the given name should exist in the provided schema, and be of logical type timestamp
-         *        micros.
-         * @return A spec corresponding to the schema provided.
-         */
-        @SuppressWarnings("unused")
-        public static KeyOrValueSpec avroSpec(
-                final String schemaName,
-                final String[] columnNames,
-                final String timestampFieldName) {
-            return new KeyOrValueSpec.Avro(schemaName, AVRO_LATEST_VERSION, columnNames, timestampFieldName);
-        }
-
-        /**
-         * Avro spec from fetching an Avro schema from a Confluent compatible Schema Server. The Properties used to
-         * initialize Kafka should contain the URL for the Schema Server to use under the "schema.registry.url"
          * property. All fields in the schema are mapped to columns of the same name.
          *
          * @param schemaName The registered name for the schema on Schema Server
-         * @param schemaVersion The version to fetch
+         * @param schemaVersion The version to fetch.  Pass the constant {@code AVRO_LATEST_VERSION} for latest
          * @return A spec corresponding to the schema provided, where all columns with names matching schema field names
          *         are included.
          */
         @SuppressWarnings("unused")
         public static KeyOrValueSpec avroSpec(final String schemaName, final String schemaVersion) {
             return new KeyOrValueSpec.Avro(schemaName, schemaVersion, null, null);
-        }
-
-        /**
-         * Avro spec from fetching an Avro schema from a Confluent compatible Schema Server The Properties used to
-         * initialize Kafka should contain the URL for the Schema Server to use under the "schema.registry.url"
-         * property. The version fetched is latest All fields in the schema are mapped to columns of the same name
-         *
-         * @param schemaName The registered name for the schema on Schema Server.
-         * @return A spec corresponding to the schema provided, where all columns with names matching schema field names
-         *         are included.
-         */
-        @SuppressWarnings("unused")
-        public static KeyOrValueSpec avroSpec(final String schemaName) {
-            return new KeyOrValueSpec.Avro(schemaName, AVRO_LATEST_VERSION, null, null);
         }
 
         @SuppressWarnings("unused")
@@ -1034,7 +999,7 @@ public class KafkaTools {
         } else {
             if (!kafkaConsumerProperties.containsKey(SCHEMA_SERVER_PROPERTY)) {
                 throw new IllegalArgumentException(
-                        "Avro schema name specified and schema server url propeorty " +
+                        "Avro schema name specified and schema server url property " +
                                 SCHEMA_SERVER_PROPERTY + " not found.");
             }
             final String schemaServiceUrl = kafkaConsumerProperties.getProperty(SCHEMA_SERVER_PROPERTY);
@@ -1170,10 +1135,10 @@ public class KafkaTools {
                 value = STRING_SERIALIZER;
                 break;
             case AVRO:
-                value = KafkaAvroSerializer.class.getName();
+                value = AVRO_SERIALIZER;
                 break;
             default:
-                throw new IllegalSaslStateException("Unknown dataFormat=" + spec.dataFormat());
+                throw new IllegalStateException("Unknown dataFormat=" + spec.dataFormat());
         }
         prop.setProperty(propKey, value);
     }
@@ -1284,7 +1249,7 @@ public class KafkaTools {
         final KeyOrValueIngestData data = new KeyOrValueIngestData();
         switch (keyOrValueSpec.dataFormat()) {
             case AVRO:
-                setDeserIfNotSet(kafkaConsumerProperties, keyOrValue, KafkaAvroDeserializer.class.getName());
+                setDeserIfNotSet(kafkaConsumerProperties, keyOrValue, AVRO_DESERIALIZER);
                 final Consume.KeyOrValueSpec.Avro avroSpec = (Consume.KeyOrValueSpec.Avro) keyOrValueSpec;
                 data.fieldNameToColumnName = new HashMap<>();
                 final Schema schema;

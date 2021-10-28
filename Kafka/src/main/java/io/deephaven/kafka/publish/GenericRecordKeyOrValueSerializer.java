@@ -14,7 +14,6 @@ import org.apache.avro.LogicalType;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericData;
 import org.apache.avro.generic.GenericRecord;
-import org.apache.kafka.common.errors.IllegalSaslStateException;
 
 import java.util.*;
 
@@ -38,7 +37,7 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
             final String timestampFieldName) {
         this.source = source;
         if (schema.isUnion()) {
-            throw new UnsupportedOperationException("Union of records schemas are not supported");
+            throw new UnsupportedOperationException("Schemas defined as a union of records are not supported");
         }
         final Schema.Type type = schema.getType();
         if (type != Schema.Type.RECORD) {
@@ -91,7 +90,7 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
         }
         final LogicalType logicalType = fieldSchema.getLogicalType();
         if (!LogicalTypes.timestampMicros().equals(logicalType)) {
-            throw new IllegalSaslStateException(
+            throw new IllegalStateException(
                     "Field of name timestampFieldName='" + timestampFieldName +
                             "' has wrong logical type " + logicalType);
         }
