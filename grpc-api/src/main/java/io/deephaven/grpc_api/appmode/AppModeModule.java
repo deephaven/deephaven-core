@@ -23,4 +23,7 @@ public interface AppModeModule {
 
     @Binds
     ApplicationState.Listener bindApplicationStateListener(ApplicationServiceGrpcImpl applicationService);
+
+    @Binds
+    ApplicationStates bindApplicationStates(ApplicationTicketResolver resolver);
 }

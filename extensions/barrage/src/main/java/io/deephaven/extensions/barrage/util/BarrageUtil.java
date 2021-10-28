@@ -21,6 +21,8 @@ import io.deephaven.db.util.config.MutableInputTable;
 import io.deephaven.db.v2.HierarchicalTableInfo;
 import io.deephaven.db.v2.RollupInfo;
 import io.deephaven.db.v2.sources.chunk.ChunkType;
+import io.deephaven.grpc_api.util.SchemaHelper;
+import io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse;
 import org.apache.arrow.flatbuf.KeyValue;
 import org.apache.arrow.flatbuf.Message;
 import org.apache.arrow.flatbuf.MetadataVersion;
@@ -38,7 +40,16 @@ import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.time.LocalDate;
 import java.time.LocalTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -315,6 +326,10 @@ public class BarrageUtil {
             Arrays.fill(result.conversionFactors, 1);
         }
         result.conversionFactors[i] = factor;
+    }
+
+    public static ConvertedArrowSchema convertArrowSchema(final ExportedTableCreationResponse response) {
+        return convertArrowSchema(SchemaHelper.flatbufSchema(response));
     }
 
     public static ConvertedArrowSchema convertArrowSchema(
