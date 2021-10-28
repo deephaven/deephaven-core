@@ -39,8 +39,8 @@ public class TestGroovyDeephavenSession {
         // note var is guaranteed to be non-null
         final Object var = session.getVariable(name);
         if (clazz.isAssignableFrom(var.getClass())) {
-            //noinspection unchecked
-            return (T)var;
+            // noinspection unchecked
+            return (T) var;
         }
         throw new RuntimeException("Unexpected type for variable '" + name + "'. Found: "
                 + var.getClass().getCanonicalName() + " Expected: " + clazz.getCanonicalName());
