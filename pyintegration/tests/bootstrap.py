@@ -1,9 +1,5 @@
-#
-#   Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
-#
-
 import os
-from tests.utils.start_jvm import start_jvm
+from deephaven2.utils.start_jvm import start_jvm
 import jpy
 
 
@@ -11,7 +7,7 @@ def build_py_session():
     if not jpy.has_jvm():
         DEFAULT_DEVROOT = os.environ.get('DEEPHAVEN_DEVROOT', "/tmp/pyintegration")
         DEFAULT_WORKSPACE = os.environ.get('DEEPHAVEN_WORKSPACE', "/tmp")
-        DEFAULT_PROPFILE = os.environ.get('DEEPHAVEN_PROPFILE', '/tmp/pyintegration/configs/dh-defaults.prop')
+        DEFAULT_PROPFILE = os.environ.get('DEEPHAVEN_PROPFILE',  'dh-defaults.prop')
         DEFAULT_CLASSPATH = os.environ.get('DEEPHAVEN_CLASSPATH', "/app/classese/*:/app/libs/*")
         os.environ['JAVA_VERSION'] = '1.8'
         os.environ['JDK_HOME'] = '/usr/lib/jvm/zulu8/jre/'
@@ -25,18 +21,11 @@ def build_py_session():
             'java_home': os.environ.get('JDK_HOME', None),
             'jvm_properties': {'PyObject.cleanup_on_thread': 'false'},
             'jvm_options': {'-Djava.awt.headless=true',
-                            # '-Xms1g',
-                            # '-Xmn512m',
-                            '-XX:+UseG1GC',
-                            '-XX:MaxGCPauseMillis=100',
-                            '-XX:+UseStringDeduplication',
-                            '-XX:InitialRAMPercentage=25.0',
-                            '-XX:MinRAMPercentage=70.0',
-                            '-XX:MaxRAMPercentage=80.0',
-                            # '-XshowSettings:vm',
+                            '-Xms1g',
+                            '-Xmn512m',
                             # '-verbose:gc', '-XX:+PrintGCDetails',
                             },
-            # 'jvm_maxmem': '1g',
+            'jvm_maxmem': '1g',
             'jvm_classpath': DEFAULT_CLASSPATH,
             'skip_default_classpath': True
         }

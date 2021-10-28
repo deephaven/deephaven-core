@@ -1,2 +1,0 @@
-setuptools~=58.2.0
-wrapt~=1.13.1
