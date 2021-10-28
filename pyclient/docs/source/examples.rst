@@ -2,12 +2,12 @@
 Python Client Examples
 #####################
 
-This page contains examples showing how to perform common operations with the Deephaven Python Client.
+This page shows how to perform common operations with the Deephaven Python Client.
 
 Initialize
 ##########
 
-The `Session` class is your connection to Deephaven. This is where all operations start::
+The `Session` class is your connection to Deephaven. This is where all operations start:
 
     from pydeephaven import Session
 
@@ -17,7 +17,7 @@ The `Session` class is your connection to Deephaven. This is where all operation
 Ticking table
 #############
 
-The `Session` class has many methods on it that create tables. This example shows how to create a ticking time table and bind it to Deephaven::
+The `Session` class has many methods that create tables. This example creates a ticking time table and binds it to Deephaven:
 
     from pydeephaven import Session
 
@@ -33,7 +33,7 @@ If you don’t bind the table, it will not be updated in Deephaven.
 Execute a query on a table
 ##########################
 
-`table.update()` can be used to execute an update on a table. This example shows how to update a table with a query string::
+`table.update()` can be used to execute an update on a table. This example updates a table with a query string::
 
     from pydeephaven import Session
 
@@ -50,7 +50,7 @@ Query objects can be used to execute queries on a table. The value of a query ob
 
 The general flow of using a query object is to construct a query with a table, call operations (sort, filter, update, etc) on the query object, and then assign your table to `query.exec()`.
 
-Any operation that can be executed on a table can also be executed on a query object. This example produces the same result as the previous one, but using a query object::
+Any operation that can be executed on a table can also be executed on a query object. This uses a query object to produce the same result as above:
 
     from pydeephaven import Session
 
@@ -67,7 +67,7 @@ Any operation that can be executed on a table can also be executed on a query ob
 Sort a table
 ############
 
-`table.sort()` can be used to sort a table. This example shows how to sort a table by one of its columns::
+`table.sort()` can be used to sort a table. This example sorts a table by one of its columns:
 
     from pydeephaven import Session
 
@@ -82,7 +82,7 @@ Sort a table
 Filter a table
 ##############
 
-`table.where()` can be used to filter a table. This example shows how to filter a table using a filter string::
+`table.where()` can be used to filter a table. This example filters a table using a filter string:
 
     from pydeephaven import Session
 
@@ -97,7 +97,7 @@ Filter a table
 Join 2 tables
 #############
 
-`table.join()` is one of many operations that can join 2 tables. This example shows how to join 2 tables::
+`table.join()` is one of many operations that can join two tables, as shown below:
 
     from pydeephaven import Session
 
@@ -114,7 +114,7 @@ Join 2 tables
 Use a combo aggregation on a table
 ##################################
 
-Combo aggregations can be executed on tables in the Python client. This example shows how to create a combo aggregation that averages the `Count` column of a table, and aggregates it by the `Group` column::
+Combined aggregations can be executed on tables in the Python client. This example creates a combo aggregation that averages the `Count` column of a table, and aggregates it by the `Group` column::
 
     from pydeephaven import Session, ComboAggregation
 
@@ -132,7 +132,7 @@ Combo aggregations can be executed on tables in the Python client. This example 
 Convert a pyarrow table to a Deephaven table
 ############################################
 
-Deephaven natively supports Pyarrow tables. This example show hows to convert between a Pyarrow table and a Deephaven table::
+Deephaven natively supports Pyarrow tables. This example converts between a Pyarrow table and a Deephaven table:
 
     import pyarrow
     from pydeephaven import Session
@@ -151,7 +151,7 @@ Deephaven natively supports Pyarrow tables. This example show hows to convert be
 Execute a script server side
 ############################
 
-`session.run_script()` can be used to execute code on the Deephaven server. This can be used to perform operations that can’t be done on the client side, such as creating a dynamic table writer. This example shows how to execute a script server side::
+`session.run_script()` can be used to execute code on the Deephaven server. This is useful when operations cannot be done on the client-side, such as creating a dynamic table writer. This example shows how to execute a script server-side:
 
     from pydeephaven import Session
 
@@ -168,7 +168,7 @@ Execute a script server side
 Error handling
 ##############
 
-The `DHError` is thrown whenever the client package encounters an error. This example shows how to catch a `DHError`::
+The `DHError` is thrown whenever the client package encounters an error. This example shows how to catch a `DHError`:
 
     from pydeephaven import Session, DHError
 
