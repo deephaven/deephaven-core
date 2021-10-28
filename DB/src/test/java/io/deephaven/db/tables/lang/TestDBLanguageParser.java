@@ -1126,9 +1126,9 @@ public class TestDBLanguageParser extends BaseArrayTestCase {
         resultExpression = "testImplicitConversion3(ArrayUtils.nullSafeDbArrayToArray(myDBArray))";
         check(expression, resultExpression, new Object[0].getClass(), new String[] {"myDBArray"});
 
-        expression="testImplicitConversion3(myDoubleArray)";
-        resultExpression="testImplicitConversion3(myDoubleArray)";
-        check(expression, resultExpression, new Object[0].getClass(), new String[]{"myDoubleArray"});
+        expression = "testImplicitConversion3(myDoubleArray)";
+        resultExpression = "testImplicitConversion3(myDoubleArray)";
+        check(expression, resultExpression, new Object[0].getClass(), new String[] {"myDoubleArray"});
 
         expression = "testImplicitConversion3((Object) myDoubleArray)";
         resultExpression = "testImplicitConversion3((Object)myDoubleArray)"; // test a workaround for the above
