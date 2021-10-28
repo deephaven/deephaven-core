@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+ */
+
 package io.deephaven.db.util;
 
 import com.github.f4b6a3.uuid.UuidCreator;
@@ -50,7 +54,7 @@ public abstract class AbstractScriptSession extends LivenessScope implements Scr
 
     private final Listener changeListener;
 
-    protected AbstractScriptSession(Listener changeListener, boolean isDefaultScriptSession) {
+    protected AbstractScriptSession(@Nullable Listener changeListener, boolean isDefaultScriptSession) {
         this.changeListener = changeListener;
 
         final UUID scriptCacheId = UuidCreator.getRandomBased();
