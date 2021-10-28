@@ -9,7 +9,7 @@ import wrapt
 import deephaven.Types as dh
 
 from deephaven.conversion_utils import _isJavaType, _isStr, \
-    _typeFromName, _dictToProperties, _dictToMap, IDENTITY
+    _typeFromName, _dictToProperties, _dictToMap, _seqToSet, IDENTITY
 
 # None until the first _defineSymbols() call
 _java_type_ = None
@@ -109,7 +109,7 @@ def produceFromTable(
     return _java_type_.produceFromTable(table, kafka_config, topic, key, value, last_by_key_columns)
 
 @_passThrough
-def avro(schema, schema_version:str = None, column_names = None):
+def avro(schema, schema_version:str = None, field_to_col_mapping = None, timestamp_field = None):
     """
     Specify an Avro schema to use when producing a Kafka stream from a Deephaven table.
 
@@ -120,9 +120,11 @@ def avro(schema, schema_version:str = None, column_names = None):
        definition.
     :param schema_version:  If a string schema name is provided, the version to fetch from schema
        service; if not specified, a default of 'latest' is assumed.
-    :param column_names: A list of strings each corresponding to an schema field, in order,
-       indicating which Deephaven column names to use for the corresponding Avro field,
-       or None if the Deephaven columns names are expected to match field names.
+    :param field_to_col_mapping: A dict mapping field names in the schema to column names in the Deephaven table.
+       Any fields in the schema not present in the dict as keys are mapped to columns of the same name.
+       If this argument is None, all schema fields are mapped to columns of the same name.
+    :param timestamp_field: a string for the name of an additional timestamp field to include,
+                            or None for no such field.
     :return:  A Kafka Key or Value spec object to use in a call to produceFromTable.
     :raises:  ValueError, TypeError or Exception if arguments provided can't be processed.
     """
@@ -144,13 +146,14 @@ def avro(schema, schema_version:str = None, column_names = None):
             "'schema' argument expected to be of either " +
             "str type or avro schema type, instead got " + str(schema))
 
+    field_to_col_mapping = _dictToMap(field_to_col_mapping)
     if have_actual_schema:
-        return _produce_jtype_.avroSpec(schema, column_names)
+        return _produce_jtype_.avroSpec(schema, field_to_col_mapping, timestamp_field)
     else:
-        return _produce_jtype_.avroSpec(schema, schema_version, column_names)
+        return _produce_jtype_.avroSpec(schema, schema_version, field_to_col_mapping, timestamp_field)
 
 @_passThrough
-def json(column_names = None, except_columns = None, mapping = None):
+def json(column_names = None, except_columns = None, mapping = None, timestamp_field = None):
     """
     Specify how to produce JSON data when producing a Kafka stream from a Deephaven table.
 
@@ -162,6 +165,8 @@ def json(column_names = None, except_columns = None, mapping = None):
                     implied by earlier arguments and not included as a key in the map
                     implies a field of the same name; if this argument is None all columns
                     will be mapped to JSON fields of the same name.
+    :param timestamp_field: a string for the name of an additional timestamp field to include,
+                            or None for no such field.
     :return:  A Kafka Key or Value spec object to use in a call to produceFromTable.
     :raises:  ValueError, TypeError or Exception if arguments provided can't be processed.
     """
@@ -169,6 +174,7 @@ def json(column_names = None, except_columns = None, mapping = None):
         raise TypeError(
             "argument 'mapping' is expected to be of dict type, " +
             "instead got " + str(mapping) + " of type " + type(mapping).__name__)
+    except_columns = _seqToSet(except_columns)
     mapping = _dictToMap(mapping)
     return _produce_jtype_.jsonSpec(column_names, except_columns, mapping)
 
