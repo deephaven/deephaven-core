@@ -11,12 +11,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
 
-      - name: Setup JDK 8
-        id: setup-java-8
+      - name: Setup JDK 11
+        id: setup-java-11
         uses: actions/setup-java@v2.2.0
         with:
           distribution: 'zulu'
-          java-version: '8.0.302'
+          java-version: '11'
 
       - name: Setup JDK 17
         id: setup-java-17
@@ -26,12 +26,12 @@ jobs:
           java-version: '17.0.0'
 
       - name: Set JAVA_HOME
-        run: echo "JAVA_HOME=${{ steps.setup-java-8.outputs.path }}" >> $GITHUB_ENV
+        run: echo "JAVA_HOME=${{ steps.setup-java-11.outputs.path }}" >> $GITHUB_ENV
 
       - name: Setup gradle properties
         run: |
           cat .github/env/${{ runner.os }}/gradle.properties >> gradle.properties
-          echo "org.gradle.java.installations.paths=${{ steps.setup-java-8.outputs.path }},${{ steps.setup-java-17.outputs.path }}," >> gradle.properties
+          echo "org.gradle.java.installations.paths=${{ steps.setup-java-11.outputs.path }},${{ steps.setup-java-17.outputs.path }}," >> gradle.properties
 
       - name: Get Semver
         id: semver
@@ -97,12 +97,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
 
-      - name: Setup JDK 8
-        id: setup-java-8
+      - name: Setup JDK 11
+        id: setup-java-11
         uses: actions/setup-java@v2.2.0
         with:
           distribution: 'zulu'
-          java-version: '8.0.302'
+          java-version: '11'
 
       - name: Setup JDK 17
         id: setup-java-17
@@ -112,12 +112,12 @@ jobs:
           java-version: '17.0.0'
 
       - name: Set JAVA_HOME
-        run: echo "JAVA_HOME=${{ steps.setup-java-8.outputs.path }}" >> $GITHUB_ENV
+        run: echo "JAVA_HOME=${{ steps.setup-java-11.outputs.path }}" >> $GITHUB_ENV
 
       - name: Setup gradle properties
         run: |
           cat .github/env/${{ runner.os }}/gradle.properties >> gradle.properties
-          echo "org.gradle.java.installations.paths=${{ steps.setup-java-8.outputs.path }},${{ steps.setup-java-17.outputs.path }}," >> gradle.properties
+          echo "org.gradle.java.installations.paths=${{ steps.setup-java-11.outputs.path }},${{ steps.setup-java-17.outputs.path }}," >> gradle.properties
 
       - name: Get Semver
         id: semver
@@ -179,12 +179,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
 
-      - name: Setup JDK 8
-        id: setup-java-8
+      - name: Setup JDK 11
+        id: setup-java-11
         uses: actions/setup-java@v2.2.0
         with:
           distribution: 'zulu'
-          java-version: '8.0.302'
+          java-version: '11'
 
       - name: Setup JDK 17
         id: setup-java-17
@@ -194,12 +194,12 @@ jobs:
           java-version: '17.0.0'
 
       - name: Set JAVA_HOME
-        run: echo "JAVA_HOME=${{ steps.setup-java-8.outputs.path }}" >> $GITHUB_ENV
+        run: echo "JAVA_HOME=${{ steps.setup-java-11.outputs.path }}" >> $GITHUB_ENV
 
       - name: Setup gradle properties
         run: |
           cat .github/env/${{ runner.os }}/gradle.properties >> gradle.properties
-          echo "org.gradle.java.installations.paths=${{ steps.setup-java-8.outputs.path }},${{ steps.setup-java-17.outputs.path }}," >> gradle.properties
+          echo "org.gradle.java.installations.paths=${{ steps.setup-java-11.outputs.path }},${{ steps.setup-java-17.outputs.path }}," >> gradle.properties
 
       - name: Get Semver
         id: semver
@@ -285,12 +285,12 @@ jobs:
             org.opencontainers.image.description=Deephaven web
             org.opencontainers.image.licenses=Deephaven Community License Agreement 1.0
 
-      - name: Setup JDK 8
-        id: setup-java-8
+      - name: Setup JDK 11
+        id: setup-java-11
         uses: actions/setup-java@v2.2.0
         with:
           distribution: 'zulu'
-          java-version: '8.0.302'
+          java-version: '11'
 
       - name: Setup JDK 17
         id: setup-java-17
@@ -300,12 +300,12 @@ jobs:
           java-version: '17.0.0'
 
       - name: Set JAVA_HOME
-        run: echo "JAVA_HOME=${{ steps.setup-java-8.outputs.path }}" >> $GITHUB_ENV
+        run: echo "JAVA_HOME=${{ steps.setup-java-11.outputs.path }}" >> $GITHUB_ENV
 
       - name: Setup gradle properties
         run: |
           cat .github/env/${{ runner.os }}/gradle.properties >> gradle.properties
-          echo "org.gradle.java.installations.paths=${{ steps.setup-java-8.outputs.path }},${{ steps.setup-java-17.outputs.path }}," >> gradle.properties
+          echo "org.gradle.java.installations.paths=${{ steps.setup-java-11.outputs.path }},${{ steps.setup-java-17.outputs.path }}," >> gradle.properties
 
       - name: Set up Docker Buildx
         id: buildx
