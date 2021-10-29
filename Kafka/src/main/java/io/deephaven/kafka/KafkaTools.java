@@ -693,13 +693,10 @@ public class KafkaTools {
                 final String nestedObjectDelimiter,
                 final boolean outputNulls,
                 final String timestampFieldName) {
-            final boolean isColumnNamesNull = columnNames == null;
-            final boolean isExceptColumnsNull = exceptColumns == null;
-            final boolean onlyOneNull = isColumnNamesNull ^ isColumnNamesNull;
-            if (!onlyOneNull) {
+            if (columnNames != null && exceptColumns != null) {
                 throw new IllegalArgumentException(
-                        "Exactly one of columnNames (=" + columnNames +
-                                ") and exceptColumns (=" + exceptColumns + ") should be null");
+                        "Only one of columnNames (=" + columnNames +
+                                ") and exceptColumns (=" + exceptColumns + ") can be non-null");
             }
             return new KeyOrValueSpec.Json(
                     columnNames,
