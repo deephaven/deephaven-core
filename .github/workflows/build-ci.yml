@@ -80,11 +80,11 @@ jobs:
           cat .github/env/${{ runner.os }}/gradle.properties >> gradle.properties
           echo "org.gradle.java.installations.paths=${{ steps.setup-java.outputs.path }}" >> gradle.properties
 
-      - name: Create Dockerfile and context
+      - name: Build grpc-api
         uses: burrunan/gradle-cache-action@v1
         with:
           job-id: build-grpc-api
-          arguments: --scan grpc-api-server-docker:publishDockerfile grpc-api-tensorflow:publishDockerfile
+          arguments: --scan grpc-api-server-docker:publishDockerfile
           gradle-version: wrapper
 
       # TODO: switch to new GitHub cache backend when available
@@ -99,13 +99,22 @@ jobs:
           context: ./grpc-api/server/docker/build/publish/
           push: ${{ github.event_name != 'pull_request' }}
 
+      - name: Build tensorflow
+        uses: burrunan/gradle-cache-action@v1
+        with:
+          job-id: build-grpc-api-tensorflow
+          arguments: --scan grpc-api-server-docker:publishDockerfile
+          gradle-version: wrapper
+          properties: |
+            grpc-api.extension=tensorflow
+
       - name: Publish grpc-api-tensorflow
         uses: docker/build-push-action@v2.5.0
         with:
           tags: ${{ steps.docker_meta_grpc_api_tensorflow.outputs.tags }}
           labels: ${{ steps.docker_meta_grpc_api_tensorflow.outputs.labels }}
           builder: ${{ steps.buildx.outputs.name }}
-          context: ./docker/extensions/TensorFlow/grpc-api/build/publish
+          context: ./grpc-api/server/docker/build/publish/
           push: ${{ github.event_name != 'pull_request' }}
 
   grpc-proxy:

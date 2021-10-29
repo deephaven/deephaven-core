@@ -166,10 +166,6 @@ include(':application-mode')
 
 include(':util-immutables')
 project(':util-immutables').projectDir = file('Util/util-immutables')
-
-include(':grpc-api-tensorflow')
-project(':grpc-api-tensorflow').projectDir = file('docker/extensions/TensorFlow/grpc-api')
-
 // Apply "vanity naming" (look for .gradle files matching ProjectName/ProjectName.gradle)
 File root = settings.rootDir
 mods.each {

@@ -93,11 +93,24 @@ def buildPyWheel = { String taskName, String imgName, String sourcePath ->
 def buildDockerForWheel=buildPyWheel('buildDockerForWheel', 'deephaven/deephaven-wheel', 'python')
 def buildDockerForWheel2=buildPyWheel('buildDockerForWheel2', 'deephaven/deephaven2-wheel', '../pyintegration')
 
+def runtimeBaseDockerfile = layout.buildDirectory.file('deephaven-python-docker/Dockerfile')
+def runtimeBaseContext = layout.buildDirectory.dir('runtime-base-context')
+
+def prepareRuntimeBaseContext = project.tasks.register('prepareRuntimeBaseContext', Sync) {
+    dependsOn deephavenPythonDockerfile
+    def extension = project.hasProperty('grpc-api.extension') ? project.property('grpc-api.extension') : 'default'
+    from("extensions/${extension}") {
+        into 'extension'
+    }
+    from runtimeBaseDockerfile
+    into runtimeBaseContext
+}
+
 /**
  * Produce a docker image with the prereqs to run and use deephaven python
  */
 task deephavenPythonDockerfile(type: Dockerfile) {
-    destFile.set layout.buildDirectory.file('deephaven-python-docker/Dockerfile')
+    destFile.set runtimeBaseDockerfile
     from new Dockerfile.From('deephaven/deephaven-jpy-wheel:local-build').withStage('deephaven-jpy-wheel')
     from new Dockerfile.From('deephaven/deephaven-wheel:local-build').withStage('deephaven-wheel')
     from new Dockerfile.From('deephaven/deephaven2-wheel:local-build').withStage('deephaven2-wheel')
@@ -113,19 +126,26 @@ task deephavenPythonDockerfile(type: Dockerfile) {
                   apt -y install liblzo2-2; \\
                   apt -y install curl; \\
                   pip3 install setuptools wheel; \\
-                  pip3 install *.whl; \\
-                  rm *.whl
+                  pip3 install *.whl
+                  ''')
+
+    copyFile(new Dockerfile.CopyFile('extension/', 'extension/'))
+
+    runCommand('''set -eux; \\
+                  chmod +x ./extension/extra-install.sh; \\
+                  ./extension/extra-install.sh
                   ''')
 }
+
 Docker.registerDockerImage(project, 'buildDeephavenPython') {
     def dhJpyTasks = project(':deephaven-jpy').tasks
     inputs.files dhJpyTasks.getByName('buildDockerForRuntime').outputs.files,
             dhJpyTasks.getByName('buildDockerForWheel').outputs.files,
             buildDockerForWheel.get().outputs.files,
             buildDockerForWheel2.get().outputs.files,
-            deephavenPythonDockerfile.outputs.files
+            prepareRuntimeBaseContext.get().outputs.files
 
-    inputDir.set layout.buildDirectory.dir('deephaven-python-docker')
+    inputDir.set runtimeBaseContext
 
     images.add('deephaven/runtime-base:local-build')
 }

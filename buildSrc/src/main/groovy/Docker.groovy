@@ -425,8 +425,9 @@ class Docker {
                 } else {
                     // We assume exactly one tag set
                     targetImageId images.iterator().next()
-                    onError { t ->
-                        // ignore, the image might not exist
+                    onError { exception ->
+                        if (!exception.message.contains('No such image'))
+                            throw exception
                     }
                 }
             }
