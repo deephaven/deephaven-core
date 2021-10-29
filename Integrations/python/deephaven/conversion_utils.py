@@ -28,6 +28,7 @@ _table_tools_ = None
 _col_def_ = None
 _jprops_ = None
 _jmap_ = None
+_jset_ = None
 _python_tools_ = None
 IDENTITY = None
 
@@ -35,13 +36,14 @@ def _defineSymbols():
     if not jpy.has_jvm():
         raise SystemError("No java functionality can be used until the JVM has been initialized through the jpy module")
 
-    global _table_tools_, _col_def_, _jprops_, _jmap_, _python_tools_, IDENTITY
+    global _table_tools_, _col_def_, _jprops_, _jmap_, _jset_, _python_tools_, IDENTITY
     if _table_tools_ is None:
         # This will raise an exception if the desired object is not the classpath
         _table_tools_ = jpy.get_type("io.deephaven.db.tables.utils.TableTools")
         _col_def_ = jpy.get_type("io.deephaven.db.tables.ColumnDefinition")
         _jprops_ = jpy.get_type("java.util.Properties")
         _jmap_ = jpy.get_type("java.util.HashMap")
+        _jset_ = jpy.get_type("java.util.HashSet")
         _python_tools_ = jpy.get_type("io.deephaven.integrations.python.PythonTools")
         IDENTITY = object()  # Ensure IDENTITY is unique.
 
@@ -1087,11 +1089,22 @@ def _dictToProperties(d):
 
 @_passThrough
 def _dictToMap(d):
+    if d is None:
+        return None
     r = _jmap_()
     for key, value in d.items():
         if value is None:
             value = ''
         r.put(key, value)
+    return r
+
+@_passThrough
+def _seqToSet(s):
+    if s is None:
+        return None
+    r = _jset_()
+    for v in s:
+        r.add(v)
     return r
 
 @_passThrough

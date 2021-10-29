@@ -34,10 +34,15 @@ public class PythonStaticGenerator {
             "io.deephaven.db.tables.utils.DBTimeUtils,dayDiff",
             "io.deephaven.db.plot.colors.ColorMaps,closureMap",
             "io.deephaven.kafka.KafkaTools,consumeToTable",
-            "io.deephaven.kafka.KafkaTools,jsonSpec",
-            "io.deephaven.kafka.KafkaTools,avroSpec",
-            "io.deephaven.kafka.KafkaTools,simpleSpec",
-            "io.deephaven.kafka.KafkaTools,ignoreSpec");
+            "io.deephaven.kafka.KafkaTools.Consume,jsonSpec",
+            "io.deephaven.kafka.KafkaTools.Consume,avroSpec",
+            "io.deephaven.kafka.KafkaTools.Consume,simpleSpec",
+            "io.deephaven.kafka.KafkaTools.Consume,ignoreSpec",
+            "io.deephaven.kafka.KafkaTools,produceFromTable",
+            "io.deephaven.kafka.KafkaTools.Produce,jsonSpec",
+            "io.deephaven.kafka.KafkaTools.Produce,avroSpec",
+            "io.deephaven.kafka.KafkaTools.Produce,simpleSpec",
+            "io.deephaven.kafka.KafkaTools.Produce,ignoreSpec");
     private static final List<String> skipClassDocs = Collections.emptyList();
     private static final Logger log = Logger.getLogger(PythonStaticGenerator.class.toString());
     private static final String gradleTask = ":Generators:generatePythonIntegrationStaticMethods";

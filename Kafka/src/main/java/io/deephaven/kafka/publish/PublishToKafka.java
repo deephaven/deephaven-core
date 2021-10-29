@@ -2,7 +2,6 @@ package io.deephaven.kafka.publish;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
-import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.live.LiveTableMonitor;
 import io.deephaven.db.util.liveness.LivenessArtifact;
@@ -25,6 +24,11 @@ import java.util.Properties;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
+/**
+ * This class is an internal implementation detail for io.deephaven.kafka; is not intended to be used directly by client
+ * code. It lives in a separate package as a means of code organization.
+ *
+ */
 public class PublishToKafka<K, V> extends LivenessArtifact {
 
     public static final int CHUNK_SIZE =
@@ -67,40 +71,27 @@ public class PublishToKafka<K, V> extends LivenessArtifact {
      * @param props The Kafka {@link Properties}
      * @param table The source {@link Table}
      * @param topic The destination topic
-     * @param keySerializerFactory Optional factory for a {@link KeyOrValueSerializer} to produce Kafka record keys
-     * @param valueSerializerFactory Optional factory for a {@link KeyOrValueSerializer} to produce Kafka record values
-     * @param collapseByKeyColumns Whether to publish only the last record for each unique key. Ignored when
-     *        {@code keySerializerFactory} is {@code null}. If
-     *        {@code keySerializerFactory != null && !collapseByKeyColumns}, it is expected that {@code table} will not
-     *        produce any row shifts; that is, the publisher expects keyed tables to be streams, add-only, or
-     *        aggregated.
+     * @param keyColumns Optional array of string column names from table for the columns corresponding to Kafka's Key
+     *        field.
+     * @param keySerializer Optional {@link KeyOrValueSerializer} to produce Kafka record keys
+     * @param valueColumns Optional array of string column names from table for the columns corresponding to Kafka's
+     *        Value field.
+     * @param valueSerializer Optional {@link KeyOrValueSerializer} to produce Kafka record values
      */
-    public PublishToKafka(final Properties props,
-            Table table,
+    public PublishToKafka(
+            final Properties props,
+            final Table table,
             final String topic,
-            final KeyOrValueSerializer.Factory<K> keySerializerFactory,
-            final KeyOrValueSerializer.Factory<V> valueSerializerFactory,
-            final boolean collapseByKeyColumns) {
-        if (keySerializerFactory != null) {
-            keySerializerFactory.validateColumns(table.getDefinition());
-        }
-        if (valueSerializerFactory != null) {
-            valueSerializerFactory.validateColumns(table.getDefinition());
-        }
-        if (table.isLive()
-                && !LiveTableMonitor.DEFAULT.exclusiveLock().isHeldByCurrentThread()
-                && !LiveTableMonitor.DEFAULT.sharedLock().isHeldByCurrentThread()) {
-            throw new KafkaPublisherException(
-                    "Calling thread must hold an exclusive or shared LiveTableMonitor lock to publish live sources");
-        }
+            final String[] keyColumns,
+            final KeyOrValueSerializer<K> keySerializer,
+            final String[] valueColumns,
+            final KeyOrValueSerializer<V> valueSerializer) {
 
-        this.table = table = (keySerializerFactory != null && collapseByKeyColumns)
-                ? table.lastBy(keySerializerFactory.sourceColumnNames(table.getDefinition()))
-                : table.coalesce();
+        this.table = table;
         this.producer = new KafkaProducer<>(props);
         this.topic = topic;
-        this.keySerializer = keySerializerFactory == null ? null : keySerializerFactory.create(table);
-        this.valueSerializer = valueSerializerFactory == null ? null : valueSerializerFactory.create(table);
+        this.keySerializer = keySerializer;
+        this.valueSerializer = valueSerializer;
 
         // Publish the initial table state
         try (final PublicationGuard guard = new PublicationGuard()) {
@@ -110,8 +101,8 @@ public class PublishToKafka<K, V> extends LivenessArtifact {
         // Install a listener to publish subsequent updates
         if (table.isLive()) {
             ((DynamicTable) table).listenForUpdates(publishListener = new PublishListener(
-                    getModifiedColumnSet(table, keySerializerFactory),
-                    getModifiedColumnSet(table, valueSerializerFactory)));
+                    getModifiedColumnSet(table, keyColumns),
+                    getModifiedColumnSet(table, valueColumns)));
             manage(publishListener);
         } else {
             publishListener = null;
@@ -119,13 +110,10 @@ public class PublishToKafka<K, V> extends LivenessArtifact {
         }
     }
 
-    private static ModifiedColumnSet getModifiedColumnSet(@NotNull final Table table,
-            final KeyOrValueSerializer.Factory<?> serializerFactory) {
-        return serializerFactory == null
+    private static ModifiedColumnSet getModifiedColumnSet(@NotNull final Table table, final String[] columns) {
+        return (columns == null)
                 ? ModifiedColumnSet.EMPTY
-                : ((BaseTable) table).newModifiedColumnSet(
-                        serializerFactory.sourceColumnNames(table.getDefinition())
-                                .toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
+                : ((BaseTable) table).newModifiedColumnSet(columns);
     }
 
     private void publishMessages(@NotNull final ReadOnlyIndex rowsToPublish, final boolean usePrevious,
