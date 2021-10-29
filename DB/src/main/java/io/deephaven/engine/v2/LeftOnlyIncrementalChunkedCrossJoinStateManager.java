@@ -74,7 +74,7 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
 
     @ReplicateHashTable.EmptyStateValue
     // @NullStateValue@ from \Qnull\E, @StateValueType@ from \QIndex\E
-    private static final RowSet EMPTY_RIGHT_VALUE = null;
+    private static final TrackingMutableRowSet EMPTY_RIGHT_VALUE = null;
 
     // mixin getStateValue
     // region overflow pivot
@@ -124,9 +124,9 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
 
     // we are going to also reuse this for our state entry, so that we do not need additional storage
     @ReplicateHashTable.StateColumnSource
-    // @StateColumnSourceType@ from \QObjectArraySource<TrackingMutableRowSet>\E
-    private final ObjectArraySource<RowSet> rightIndexSource
-            // @StateColumnSourceConstructor@ from \QObjectArraySource<>(TrackingMutableRowSet.class)\E
+    // @StateColumnSourceType@ from \QObjectArraySource<MutableRowSet>\E
+    private final ObjectArraySource<TrackingMutableRowSet> rightIndexSource
+            // @StateColumnSourceConstructor@ from \QObjectArraySource<>(MutableRowSet.class)\E
             = new ObjectArraySource<>(TrackingMutableRowSet.class);
 
     // the keys for overflow
@@ -136,9 +136,9 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
     private final IntegerArraySource overflowOverflowLocationSource = new IntegerArraySource();
     // the overflow buckets for the right TrackingMutableRowSet
     @ReplicateHashTable.OverflowStateColumnSource
-    // @StateColumnSourceType@ from \QObjectArraySource<TrackingMutableRowSet>\E
-    private final ObjectArraySource<RowSet> overflowRightIndexSource
-            // @StateColumnSourceConstructor@ from \QObjectArraySource<>(TrackingMutableRowSet.class)\E
+    // @StateColumnSourceType@ from \QObjectArraySource<MutableRowSet>\E
+    private final ObjectArraySource<TrackingMutableRowSet> overflowRightIndexSource
+            // @StateColumnSourceConstructor@ from \QObjectArraySource<>(MutableRowSet.class)\E
             = new ObjectArraySource<>(TrackingMutableRowSet.class);
 
     // the type of each of our key chunks
@@ -367,8 +367,8 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
         try (final RowSet added = addBuilder.build();
              final RowSet removed = rmBuilder.build();
              final RowSet postShiftRemoved = rmResultBuilder.build()) {
-            downstream.removed.insert(removed);
-            downstream.added.insert(added);
+            downstream.removed.asMutable().insert(removed);
+            downstream.added.asMutable().insert(added);
             // must remove before adding as removed.intersect(added) may be non-empty
             resultRowSet.remove(postShiftRemoved);
             resultRowSet.insert(added);
@@ -376,7 +376,7 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
         downstream.modified = modBuilder.build();
     }
 
-    private void addToIndex(final ObjectArraySource<RowSet> source, final long location, final long keyToAdd, boolean ignoreMissing) {
+    private void addToIndex(final ObjectArraySource<TrackingMutableRowSet> source, final long location, final long keyToAdd, boolean ignoreMissing) {
         final long size;
         final MutableRowSet rowSet = source.get(location);
         if (rowSet == null) {
@@ -384,7 +384,7 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
                 return;
             }
 
-            source.set(location, RowSetFactoryImpl.INSTANCE.getRowSetByValues(keyToAdd));
+            source.set(location, RowSetFactoryImpl.INSTANCE.getRowSetByValues(keyToAdd).convertToTracking());
             size = 1;
         } else {
             rowSet.insert(keyToAdd);
@@ -1018,7 +1018,7 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
                     }
 
                     // @StateValueType@ from \QIndex\E
-                    final RowSet stateValueToMove = rightIndexSource.getUnsafe(oldHashLocation);
+                    final TrackingMutableRowSet stateValueToMove = rightIndexSource.getUnsafe(oldHashLocation);
                     rightIndexSource.set(newHashLocation, stateValueToMove);
                     rightIndexSource.set(oldHashLocation, EMPTY_RIGHT_VALUE);
                                 // region rehash move values
@@ -1726,7 +1726,7 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
             retVal = rightIndexSource.get(slot);
         }
         if (retVal == null) {
-            retVal = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+            retVal = RowSetFactoryImpl.INSTANCE.getEmptyRowSet().convertToTracking();
         }
         return retVal;
     }
@@ -1735,7 +1735,7 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
     public TrackingRowSet getRightIndexFromLeftIndex(long leftIndex) {
         long slot = leftIndexToSlot.get(leftIndex);
         if (slot == RowSet.NULL_ROW_KEY) {
-            return RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+            return RowSetFactoryImpl.INSTANCE.getEmptyRowSet().convertToTracking();
         }
         return getRightIndex(slot);
     }
@@ -1744,7 +1744,7 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
     public TrackingRowSet getRightIndexFromPrevLeftIndex(long leftIndex) {
         long slot = leftIndexToSlot.getPrev(leftIndex);
         if (slot == RowSet.NULL_ROW_KEY) {
-            return RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+            return RowSetFactoryImpl.INSTANCE.getEmptyRowSet().convertToTracking();
         }
         return getRightIndex(slot);
     }

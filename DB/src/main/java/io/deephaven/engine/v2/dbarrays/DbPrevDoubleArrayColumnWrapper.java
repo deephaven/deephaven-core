@@ -80,7 +80,6 @@ public class DbPrevDoubleArrayColumnWrapper extends DbDoubleArray.Indirect {
     @Override
     public DbDoubleArray subArrayByPositions(long[] positions) {
         RowSetBuilderRandom builder = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
-
         for (long position : positions) {
             final long realPos = position - startPadding;
 

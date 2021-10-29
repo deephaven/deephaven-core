@@ -505,6 +505,13 @@ public interface RowSet extends RowSequence, LongSizedDataStructure, SafeCloseab
     }
 
     /**
+     * @return Whether this RowSet is actually {@link MutableRowSet mutable}
+     */
+    default boolean isMutable() {
+        return this instanceof MutableRowSet;
+    }
+
+    /**
      * <p>
      * Cast this RowSet reference to a {@link MutableRowSet}.
      *
@@ -513,6 +520,13 @@ public interface RowSet extends RowSequence, LongSizedDataStructure, SafeCloseab
      */
     default MutableRowSet asMutable() {
         return (MutableRowSet) this;
+    }
+
+    /**
+     * @return Whether this RowSet is actually {@link TrackingRowSet tracking}
+     */
+    default boolean isTracking() {
+        return this instanceof TrackingRowSet;
     }
 
     /**

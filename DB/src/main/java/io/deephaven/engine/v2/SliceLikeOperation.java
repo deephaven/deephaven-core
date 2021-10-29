@@ -111,7 +111,7 @@ public class SliceLikeOperation implements QueryTable.Operation<QueryTable> {
     }
 
     private void onUpdate(final Listener.Update upstream) {
-        final TrackingMutableRowSet rowSet = resultTable.getRowSet();
+        final TrackingMutableRowSet rowSet = resultTable.getRowSet().asMutable();
         final RowSet sliceRowSet = computeSliceIndex(parent.getRowSet());
 
         final Listener.Update downstream = new Listener.Update();
@@ -125,7 +125,7 @@ public class SliceLikeOperation implements QueryTable.Operation<QueryTable> {
         final MutableRowSet opRemoved = rowSet.minus(sliceRowSet);
         rowSet.remove(opRemoved);
         downstream.shifted.unapply(opRemoved);
-        downstream.removed.insert(opRemoved);
+        downstream.removed.asMutable().insert(opRemoved);
 
         // Must intersect against modified set before adding the new rows to result rowSet.
         downstream.modified = upstream.modified.intersect(rowSet);

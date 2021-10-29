@@ -1,5 +1,6 @@
 package io.deephaven.engine.v2;
 
+import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.engine.v2.utils.TrackingRowSet;
 
 public interface CrossJoinStateManager {
