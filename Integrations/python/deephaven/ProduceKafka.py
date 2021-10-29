@@ -159,8 +159,8 @@ def avro(schema, schema_version:str = None, field_to_col_mapping = None, timesta
     return _produce_jtype_.avroSpec(schema, schema_version, field_to_col_mapping, timestamp_field)
 
 @_passThrough
-def json(column_names = None,
-         except_columns = None,
+def json(include_columns = None,
+         exclude_columns = None,
          mapping = None,
          nested_delim = None,
          output_nulls = False,
@@ -168,10 +168,12 @@ def json(column_names = None,
     """
     Specify how to produce JSON data when producing a Kafka stream from a Deephaven table.
 
-    :param column_names: A sequence of Deephaven column names to include in the JSON output
-              as fields, or None to indicate all columns.
-    :param except_columns: A sequence of Deephaven column names to omit in the JSON output
-              as fields; it can only be set when column_names is None.
+    :param include_columns: A sequence of Deephaven column names to include in the JSON output
+                            as fields, or None to indicate all except the ones mentioned
+                            in the exclude_columns argument.  If include_columns is not None,
+                            exclude_columns should be None.
+    :param exclude_columns: A sequence of Deephaven column names to omit in the JSON output
+                            as fields.  If exclude_columsn is not None, include_columns should be None.
     :param mapping: A dict mapping column names to JSON field names.  Any column name
                     implied by earlier arguments and not included as a key in the map
                     implies a field of the same name; if this argument is None all columns
@@ -188,19 +190,19 @@ def json(column_names = None,
     :return:  A Kafka Key or Value spec object to use in a call to produceFromTable.
     :raises:  ValueError, TypeError or Exception if arguments provided can't be processed.
     """
-    if column_names is not None and except_columns is not None:
+    if include_columns is not None and exclude_columns is not None:
         raise Exception(
-            "Both column_names (=" + str(column_names) +
-            ") and except_columns (=" + str(except_columns) +
+            "Both include_columns (=" + str(include_columns) +
+            ") and exclude_columns (=" + str(exclude_columns) +
             " are not None, at least one of them should be None."
         )
     if mapping is not None and not isinstance(mapping, dict):
         raise TypeError(
             "argument 'mapping' is expected to be of dict type, " +
             "instead got " + str(mapping) + " of type " + type(mapping).__name__)
-    except_columns = _seqToSet(except_columns)
+    exclude_columns = _seqToSet(exclude_columns)
     mapping = _dictToMap(mapping)
-    return _produce_jtype_.jsonSpec(column_names, except_columns, mapping, nested_delim, output_nulls, timestamp_field)
+    return _produce_jtype_.jsonSpec(include_columns, exclude_columns, mapping, nested_delim, output_nulls, timestamp_field)
 
 @_passThrough
 def simple(column_name:str):

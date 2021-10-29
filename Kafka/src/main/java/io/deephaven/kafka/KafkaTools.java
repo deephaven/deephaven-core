@@ -633,21 +633,21 @@ public class KafkaTools {
              * JSON spec.
              */
             static final class Json extends KeyOrValueSpec {
-                final String[] columnNames;
-                final Set<String> exceptColumns;
+                final String[] includeColumns;
+                final Set<String> excludeColumns;
                 final Map<String, String> columnNameToFieldName;
                 final String nestedObjectDelimiter;
                 final boolean outputNulls;
                 final String timestampFieldName;
 
-                Json(final String[] columnNames,
-                        final Set<String> exceptColumns,
+                Json(final String[] includeColumns,
+                        final Set<String> excludeColumns,
                         final Map<String, String> columnNameToFieldName,
                         final String nestedObjectDelimiter,
                         final boolean outputNulls,
                         final String timestampFieldName) {
-                    this.columnNames = columnNames;
-                    this.exceptColumns = exceptColumns;
+                    this.includeColumns = includeColumns;
+                    this.excludeColumns = excludeColumns;
                     this.columnNameToFieldName = columnNameToFieldName;
                     this.nestedObjectDelimiter = nestedObjectDelimiter;
                     this.outputNulls = outputNulls;
@@ -660,17 +660,17 @@ public class KafkaTools {
                 }
 
                 String[] getColumnNames(final Table t) {
-                    if (exceptColumns == null) {
-                        return columnNames;
+                    if (excludeColumns == null) {
+                        return includeColumns;
                     }
                     final ColumnDefinition<?>[] colDefs = t.getDefinition().getColumns();
-                    final int nColNames = colDefs.length - exceptColumns.size();
+                    final int nColNames = colDefs.length - excludeColumns.size();
                     final String[] colNames = new String[nColNames];
                     int c = 0;
                     int exceptMatches = 0;
                     for (int i = 0; i < colDefs.length; ++i) {
                         final String colName = colDefs[i].getName();
-                        if (exceptColumns.contains(colName)) {
+                        if (excludeColumns.contains(colName)) {
                             ++exceptMatches;
                             continue;
                         }
@@ -720,11 +720,11 @@ public class KafkaTools {
         /**
          * A JSON spec from a set of column names
          *
-         * @param columnNames An array including an entry for each column intended to be included in the JSON output. If
-         *        null, include all columns.
-         * @param exceptColumns A set of strings specifying column names to ommit; can only be used when
-         *        {@columnNames} is null, otherwise should be null. If non-null, all table columns except for the ones
-         *        in {@code exceptColumns} will be included.
+         * @param includeColumns An array with an entry for each column intended to be included in the JSON output. If
+         *        null, include all columns except those specified in {@code excludeColumns}. If {@code includeColumns}
+         *        is not null, {@code excludeColumns} should be null.
+         * @param excludeColumns A set specifying column names to ommit; can only be used when {@columnNames} is null.
+         *        In this case all table columns except for the ones in {@code excludeColumns} will be included.
          * @param columnToFieldMapping A map from column name to JSON field name to use for that column. Any column
          *        names implied by earlier arguments not included as a key in the map will be mapped to JSON fields of
          *        the same name. If null, map all columns to fields of the same name.
@@ -739,21 +739,21 @@ public class KafkaTools {
          */
         @SuppressWarnings("unused")
         public static KeyOrValueSpec jsonSpec(
-                final String[] columnNames,
-                final Set<String> exceptColumns,
+                final String[] includeColumns,
+                final Set<String> excludeColumns,
                 final Map<String, String> columnToFieldMapping,
                 final String nestedObjectDelimiter,
                 final boolean outputNulls,
                 final String timestampFieldName) {
-            if (columnNames != null && exceptColumns != null) {
+            if (includeColumns != null && excludeColumns != null) {
                 throw new IllegalArgumentException(
-                        "Both columnNames (=" + columnNames +
-                                ") and exceptColumns (=" + exceptColumns + ") are not null, " +
+                        "Both includeColumns (=" + includeColumns +
+                                ") and excludeColumns (=" + excludeColumns + ") are not null, " +
                                 "at least one of them should be null.");
             }
             return new KeyOrValueSpec.Json(
-                    columnNames,
-                    exceptColumns,
+                    includeColumns,
+                    excludeColumns,
                     columnToFieldMapping,
                     nestedObjectDelimiter,
                     outputNulls,
@@ -762,12 +762,13 @@ public class KafkaTools {
 
         /**
          * A JSON spec from a set of column names. Shorthand for
-         * {@code jsonSpec(columNames, exceptColumns, columnToFieldMapping, null, false, null)}
+         * {@code jsonSpec(columNames, excludeColumns, columnToFieldMapping, null, false, null)}
          *
-         * @param columnNames An array including an entry for each column intended to be included in the JSON output. If
-         *        null, include all columns.
-         * @param exceptColumns An array specifying column names to ommit; can only be used when {@columnNames} is null.
-         *        In this case all table columns except for the ones in {@code exceptColumns} will be included.
+         * @param includeColumns An array with an entry for each column intended to be included in the JSON output. If
+         *        null, include all columns except those specified in {@code excludeColumns}. If {@code includeColumns}
+         *        is not null, {@code excludeColumns} should be null.
+         * @param excludeColumns A set specifying column names to ommit; can only be used when {@columnNames} is null.
+         *        In this case all table columns except for the ones in {@code excludeColumns} will be included.
          * @param columnToFieldMapping A map from column name to JSON field name to use for that column. Any column
          *        names implied by earlier arguments not included as a key in the map will be mapped to JSON fields of
          *        the same name. If null, map all columns to fields of the same name.
@@ -775,10 +776,10 @@ public class KafkaTools {
          */
         @SuppressWarnings("unused")
         public static KeyOrValueSpec jsonSpec(
-                final String[] columnNames,
-                final Set<String> exceptColumns,
+                final String[] includeColumns,
+                final Set<String> excludeColumns,
                 final Map<String, String> columnToFieldMapping) {
-            return jsonSpec(columnNames, exceptColumns, columnToFieldMapping, null, false, null);
+            return jsonSpec(includeColumns, excludeColumns, columnToFieldMapping, null, false, null);
         }
 
         /**
