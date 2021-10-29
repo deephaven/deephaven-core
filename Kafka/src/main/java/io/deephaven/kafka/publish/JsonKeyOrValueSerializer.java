@@ -388,25 +388,26 @@ public class JsonKeyOrValueSerializer implements KeyOrValueSerializer<String> {
         // getColumn should throw a ColumnNotFoundException if it can't find the column, which will blow us up here.
         final ColumnSource<?> src = source.getColumnSource(columnName);
 
-        if (byte.class.equals(src.getType())) {
+        final Class<?> type = src.getType();
+        if (type == byte.class) {
             fieldProcessors.add(makeByteFieldProcessor(fieldName, src));
-        } else if (char.class.equals(src.getType())) {
+        } else if (type == char.class) {
             fieldProcessors.add(makeCharFieldProcessor(fieldName, src));
-        } else if (short.class.equals(src.getType())) {
+        } else if (type == short.class) {
             fieldProcessors.add(makeShortFieldProcessor(fieldName, src));
-        } else if (int.class.equals(src.getType())) {
+        } else if (type == int.class) {
             fieldProcessors.add(makeIntFieldProcessor(fieldName, src));
-        } else if (long.class.equals(src.getType())) {
+        } else if (type == long.class) {
             fieldProcessors.add(makeLongFieldProcessor(fieldName, src));
-        } else if (float.class.equals(src.getType())) {
+        } else if (type == float.class) {
             fieldProcessors.add(makeFloatFieldProcessor(fieldName, src));
-        } else if (double.class.equals(src.getType())) {
+        } else if (type == double.class) {
             fieldProcessors.add(makeDoubleFieldProcessor(fieldName, src));
-        } else if (Boolean.class.equals(src.getType())) {
+        } else if (type == Boolean.class) {
             fieldProcessors.add(makeBooleanFieldProcessor(fieldName, src));
-        } else if (BigDecimal.class.equals(src.getType())) {
+        } else if (type == BigDecimal.class) {
             fieldProcessors.add(makeBigDecimalFieldProcessor(fieldName, src));
-        } else if (BigInteger.class.equals(src.getType())) {
+        } else if (type == BigInteger.class) {
             fieldProcessors.add(makeBigIntegerFieldProcessor(fieldName, src));
         } else {
             fieldProcessors.add(makeToStringFieldProcessor(fieldName, src));

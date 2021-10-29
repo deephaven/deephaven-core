@@ -1040,7 +1040,6 @@ public class KafkaTools {
 
     private static KeyOrValueSerializer<?> getAvroSerializer(
             @NotNull final Table t,
-            @NotNull final Properties kafkaConsumerProperties,
             @NotNull final Produce.KeyOrValueSpec.Avro avroSpec,
             @NotNull final String[] columnNames) {
         return new GenericRecordKeyOrValueSerializer(
@@ -1065,7 +1064,7 @@ public class KafkaTools {
         switch (spec.dataFormat()) {
             case AVRO:
                 final Produce.KeyOrValueSpec.Avro avroSpec = (Produce.KeyOrValueSpec.Avro) spec;
-                return getAvroSerializer(t, kafkaProperties, avroSpec, columnNames);
+                return getAvroSerializer(t, avroSpec, columnNames);
             case JSON:
                 final Produce.KeyOrValueSpec.Json jsonSpec = (Produce.KeyOrValueSpec.Json) spec;
                 return getJsonSerializer(t, jsonSpec, columnNames);

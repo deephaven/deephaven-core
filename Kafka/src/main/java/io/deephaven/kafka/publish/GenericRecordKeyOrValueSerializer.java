@@ -58,9 +58,9 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
                 continue;
             }
             if (columnNames == null) {
-                makeFieldProcessor(i, null);
+                makeFieldProcessor(field, null);
             } else {
-                makeFieldProcessor(i, columnNames[i]);
+                makeFieldProcessor(field, columnNames[i]);
             }
             ++i;
         }
@@ -70,7 +70,7 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
         }
     }
 
-    // Check the timestamp field exists and is of the right logical type.
+    /** Check the timestamp field exists and is of the right logical type. */
     private static TimeUnit checkTimestampFieldAndGetUnit(final List<Schema.Field> fields,
             final String timestampFieldName) {
         // Find the field with the right name.
@@ -340,15 +340,14 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
      * Create a field processor that translates a given column from its Deephaven row number to output of the intended
      * type.
      *
-     * @param i The field index in the schema.
+     * @param field The field in the schema.
      * @param columnNameIn The Deephaven column to be translated into publishable format
      */
-    private void makeFieldProcessor(final int i, final String columnNameIn) {
-        // getColumn should throw a ColumnNotFoundException if it can't find the column,
-        // which will blow us up here.
-        final Schema.Field field = schema.getFields().get(i);
+    private void makeFieldProcessor(final Schema.Field field, final String columnNameIn) {
         final String fieldName = field.name();
         final String columnName = (columnNameIn == null) ? fieldName : columnNameIn;
+        // getColumnSource should throw a ColumnNotFoundException if it can't find the column,
+        // which will blow us up here.
         final ColumnSource<?> src = source.getColumnSource(columnName);
         final Class<?> type = src.getType();
         final GenericRecordFieldProcessor proc;
