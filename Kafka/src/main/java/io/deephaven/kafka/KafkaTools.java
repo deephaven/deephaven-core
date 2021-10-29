@@ -660,21 +660,27 @@ public class KafkaTools {
                 }
 
                 String[] getColumnNames(final Table t) {
-                    if (excludeColumns == null) {
+                    if (excludeColumns == null && includeColumns != null) {
                         return includeColumns;
                     }
                     final ColumnDefinition<?>[] colDefs = t.getDefinition().getColumns();
                     final int nColNames = colDefs.length - excludeColumns.size();
                     final String[] colNames = new String[nColNames];
                     int c = 0;
-                    int exceptMatches = 0;
+                    int excludeMatches = 0;
                     for (int i = 0; i < colDefs.length; ++i) {
                         final String colName = colDefs[i].getName();
-                        if (excludeColumns.contains(colName)) {
-                            ++exceptMatches;
+                        if (excludeColumns != null && excludeColumns.contains(colName)) {
+                            ++excludeMatches;
                             continue;
                         }
                         colNames[c++] = colName;
+                    }
+                    if (excludeColumns != null && excludeMatches != excludeColumns.size()) {
+                        final String[] mismatches = t.getDefinition().getColumnStream().map(ColumnDefinition::getName)
+                                .filter(cn -> !excludeColumns.contains(cn)).toArray(String[]::new);
+                        throw new IllegalArgumentException(
+                                "excludeColumns contains column names not on the table: " + mismatches);
                     }
                     return colNames;
                 }
