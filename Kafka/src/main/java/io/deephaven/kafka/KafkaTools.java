@@ -578,10 +578,10 @@ public class KafkaTools {
                 final String timestampFieldName;
 
                 Avro(final Schema schema,
-                     final String schemaName,
-                     final String schemaVersion,
-                     final Map<String, String> fieldToColumnMapping,
-                     final String timestampFieldName) {
+                        final String schemaName,
+                        final String schemaVersion,
+                        final Map<String, String> fieldToColumnMapping,
+                        final String timestampFieldName) {
                     this.schema = schema;
                     this.schemaName = schemaName;
                     this.schemaVersion = schemaVersion;
@@ -620,11 +620,11 @@ public class KafkaTools {
                 final String timestampFieldName;
 
                 Json(final String[] columnNames,
-                     final Set<String> exceptColumns,
-                     final Map<String, String> columnNameToFieldName,
-                     final String nestedObjectDelimiter,
-                     final boolean outputNulls,
-                     final String timestampFieldName) {
+                        final Set<String> exceptColumns,
+                        final Map<String, String> columnNameToFieldName,
+                        final String nestedObjectDelimiter,
+                        final boolean outputNulls,
+                        final String timestampFieldName) {
                     this.columnNames = columnNames;
                     this.exceptColumns = exceptColumns;
                     this.columnNameToFieldName = columnNameToFieldName;
@@ -656,7 +656,7 @@ public class KafkaTools {
         /**
          * A simple spec for sending one column as either key or value in a Kafka message.
          *
-         * @param columnName  The name of the column to include.
+         * @param columnName The name of the column to include.
          * @return A simple spec for the given input.
          */
         @SuppressWarnings("unused")
@@ -669,18 +669,17 @@ public class KafkaTools {
          *
          * @param columnNames An array including an entry for each column intended to be included in the JSON output. If
          *        null, include all columns.
-         * @param exceptColumns A set of strings specifying column names to ommit; can only be used when {@columnNames} is null,
-         *                     otherwise should be null.
-         *                     If non-null, all table columns except for the ones in {@code exceptColumns} will be included.
-         * @param columnToFieldMapping A map from column name to JSON field name to use for that column.  Any column names
-         *                             implied by earlier arguments not included as a key in the map will be mapped to JSON
-         *                             fields of the same name.  If null, map all columns to fields of the same name.
-         * @param nestedObjectDelimiter if nested JSON fields are desired, the field separator that is used
-         *                              for the fieldNames parameter, or null for no nesting.   For instance,
-         *                              if a particular column should be mapped to JSON field {@code X} nested inside
-         *                              field {@code Y}, the corresponding field name value for the column key in the
-         *                              {@code columnToFieldMapping} map can be the string {@code "X.Y"},
-         *                              in which case the value for {@code nestedObjectDelimiter} should be {code "."}
+         * @param exceptColumns A set of strings specifying column names to ommit; can only be used when
+         *        {@columnNames} is null, otherwise should be null. If non-null, all table columns except for the ones
+         *        in {@code exceptColumns} will be included.
+         * @param columnToFieldMapping A map from column name to JSON field name to use for that column. Any column
+         *        names implied by earlier arguments not included as a key in the map will be mapped to JSON fields of
+         *        the same name. If null, map all columns to fields of the same name.
+         * @param nestedObjectDelimiter if nested JSON fields are desired, the field separator that is used for the
+         *        fieldNames parameter, or null for no nesting. For instance, if a particular column should be mapped to
+         *        JSON field {@code X} nested inside field {@code Y}, the corresponding field name value for the column
+         *        key in the {@code columnToFieldMapping} map can be the string {@code "X.Y"}, in which case the value
+         *        for {@code nestedObjectDelimiter} should be {code "."}
          * @param outputNulls If false, omit fields with a null value.
          * @param timestampFieldName If not null, include a field of the given name with a publication timestamp.
          * @return A JSON spec for the given inputs.
@@ -709,16 +708,16 @@ public class KafkaTools {
         }
 
         /**
-         * A JSON spec from a set of column names.
-         * Shorthand for {@code jsonSpec(columNames, exceptColumns, columnToFieldMapping, null, false, null)}
+         * A JSON spec from a set of column names. Shorthand for
+         * {@code jsonSpec(columNames, exceptColumns, columnToFieldMapping, null, false, null)}
          *
          * @param columnNames An array including an entry for each column intended to be included in the JSON output. If
          *        null, include all columns.
          * @param exceptColumns An array specifying column names to ommit; can only be used when {@columnNames} is null.
-         *                      In this case all table columns except for the ones in {@code exceptColumns} will be included.
-         * @param columnToFieldMapping A map from column name to JSON field name to use for that column.  Any column names
-         *                             implied by earlier arguments not included as a key in the map will be mapped to JSON
-         *                             fields of the same name.  If null, map all columns to fields of the same name.
+         *        In this case all table columns except for the ones in {@code exceptColumns} will be included.
+         * @param columnToFieldMapping A map from column name to JSON field name to use for that column. Any column
+         *        names implied by earlier arguments not included as a key in the map will be mapped to JSON fields of
+         *        the same name. If null, map all columns to fields of the same name.
          * @return A JSON spec for the given inputs.
          */
         @SuppressWarnings("unused")
@@ -732,11 +731,11 @@ public class KafkaTools {
         /**
          * Avro spec to generate Avro messages from an Avro schema.
          *
-         * @param schema An Avro schema.  The message will implement this schema; all fields will be populated from
-         *               some table column via explicit or implicit mapping.
-         * @param fieldToColumnMapping A map from Avro schema field name to column name.  Any field names
-         *                             not included as a key in the map will be mapped to columns with the same name.
-         *                             If null, map all fields to columns of the same name.
+         * @param schema An Avro schema. The message will implement this schema; all fields will be populated from some
+         *        table column via explicit or implicit mapping.
+         * @param fieldToColumnMapping A map from Avro schema field name to column name. Any field names not included as
+         *        a key in the map will be mapped to columns with the same name. If null, map all fields to columns of
+         *        the same name.
          * @param timestampFieldName If not null, include a field of the given name with a publication timestamp. The
          *        field with the given name should exist in the provided schema, and be of logical type timestamp
          *        micros.
@@ -756,10 +755,10 @@ public class KafkaTools {
          * property.
          *
          * @param schemaName The registered name for the schema on Schema Server
-         * @param schemaVersion The version to fetch.  Pass the constant {@code AVRO_LATEST_VERSION} for latest
-         * @param fieldToColumnMapping A map from Avro schema field name to column name.  Any field names
-         *                             not included as a key in the map will be mapped to columns with the same name.
-         *                             If null, map all fields to columns of the same name.
+         * @param schemaVersion The version to fetch. Pass the constant {@code AVRO_LATEST_VERSION} for latest
+         * @param fieldToColumnMapping A map from Avro schema field name to column name. Any field names not included as
+         *        a key in the map will be mapped to columns with the same name. If null, map all fields to columns of
+         *        the same name.
          * @param timestampFieldName If not null, include a field of the given name with a publication timestamp. The
          *        field with the given name should exist in the provided schema, and be of logical type timestamp
          *        micros.
@@ -1094,7 +1093,7 @@ public class KafkaTools {
                 return null;
             case SIMPLE:
                 final Produce.KeyOrValueSpec.Simple simpleSpec = (Produce.KeyOrValueSpec.Simple) spec;
-                return new String[] { simpleSpec.columnName };
+                return new String[] {simpleSpec.columnName};
             default:
                 throw new IllegalStateException("Unrecognized spec type");
         }

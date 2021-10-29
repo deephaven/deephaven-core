@@ -17,6 +17,7 @@ public class QueryConstants {
     public static final long NULL_LONG = Long.MIN_VALUE;
     public static final float NULL_FLOAT = -Float.MAX_VALUE;
     public static final double NULL_DOUBLE = -Double.MAX_VALUE;
+
     @SuppressWarnings("unused")
     public static final Character NULL_CHAR_BOXED = NULL_CHAR;
     @SuppressWarnings("unused")

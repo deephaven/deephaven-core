@@ -71,7 +71,8 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
     }
 
     // Check the timestamp field exists and is of the right logical type.
-    private static TimeUnit checkTimestampFieldAndGetUnit(final List<Schema.Field> fields, final String timestampFieldName) {
+    private static TimeUnit checkTimestampFieldAndGetUnit(final List<Schema.Field> fields,
+            final String timestampFieldName) {
         // Find the field with the right name.
         Schema.Field timestampField = null;
         for (Schema.Field field : fields) {
@@ -284,9 +285,10 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
 
     private static class TimestampFieldProcessor extends GenericRecordFieldProcessor {
         private final long fromNanosToUnitDenominator;
+
         public TimestampFieldProcessor(final String fieldName, final TimeUnit unit) {
             super(fieldName);
-            switch(unit) {
+            switch (unit) {
                 case MICROSECONDS:
                     fromNanosToUnitDenominator = 1000;
                     break;
