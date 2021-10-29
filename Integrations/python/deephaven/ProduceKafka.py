@@ -173,7 +173,7 @@ def json(include_columns = None,
                             in the exclude_columns argument.  If include_columns is not None,
                             exclude_columns should be None.
     :param exclude_columns: A sequence of Deephaven column names to omit in the JSON output
-                            as fields.  If exclude_columsn is not None, include_columns should be None.
+                            as fields.  If exclude_columns is not None, include_columns should be None.
     :param mapping: A dict mapping column names to JSON field names.  Any column name
                     implied by earlier arguments and not included as a key in the map
                     implies a field of the same name; if this argument is None all columns
