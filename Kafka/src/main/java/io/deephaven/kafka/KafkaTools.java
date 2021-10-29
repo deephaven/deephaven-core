@@ -432,7 +432,7 @@ public class KafkaTools {
         }
 
         /**
-         * Avro spec from an Avro schmea.
+         * Avro spec from an Avro schema.
          *
          * @param schema An Avro schema.
          * @param fieldNameToColumnName A mapping specifying which Avro fields to include and what column name to use
@@ -446,7 +446,7 @@ public class KafkaTools {
         }
 
         /**
-         * Avro spec from an Avro schmea. All fields in the schema are mapped to columns of the same name.
+         * Avro spec from an Avro schema. All fields in the schema are mapped to columns of the same name.
          *
          * @param schema An Avro schema.
          * @return A spec corresponding to the schema provided.
@@ -606,6 +606,27 @@ public class KafkaTools {
                     final String schemaServiceUrl = kafkaProperties.getProperty(SCHEMA_SERVER_PROPERTY);
                     schema = getAvroSchema(schemaServiceUrl, schemaName, schemaVersion);
                 }
+
+
+                String[] getColumnNames(final Properties kafkaProperties, final Table t) {
+                    ensureSchema(kafkaProperties);
+                    final List<Schema.Field> fields = schema.getFields();
+                    final int nColNames = fields.size() - ((timestampFieldName != null) ? -1 : 0);
+                    final String[] columnNames = new String[nColNames];
+                    int i = 0;
+                    for (final Schema.Field field : fields) {
+                        final String fieldName = field.name();
+                        if (fieldToColumnMapping == null) {
+                            columnNames[i] = fieldName;
+                        } else if (fieldName.equals(timestampFieldName)) {
+                            continue;
+                        } else {
+                            columnNames[i] = fieldToColumnMapping.getOrDefault(fieldName, fieldName);
+                        }
+                        ++i;
+                    }
+                    return columnNames;
+                }
             }
 
             /**
@@ -636,6 +657,38 @@ public class KafkaTools {
                 @Override
                 DataFormat dataFormat() {
                     return DataFormat.JSON;
+                }
+
+                String[] getColumnNames(final Table t) {
+                    if (exceptColumns == null) {
+                        return columnNames;
+                    }
+                    final ColumnDefinition<?>[] colDefs = t.getDefinition().getColumns();
+                    final int nColNames = colDefs.length - exceptColumns.size();
+                    final String[] colNames = new String[nColNames];
+                    int c = 0;
+                    int exceptMatches = 0;
+                    for (int i = 0; i < colDefs.length; ++i) {
+                        final String colName = colDefs[i].getName();
+                        if (exceptColumns.contains(colName)) {
+                            ++exceptMatches;
+                            continue;
+                        }
+                        colNames[c++] = colName;
+                    }
+                    return colNames;
+                }
+
+                String[] getFieldNames(final String[] columnNames) {
+                    final String[] fieldNames = new String[columnNames.length];
+                    for (int i = 0; i < columnNames.length; ++i) {
+                        if (columnNameToFieldName == null) {
+                            fieldNames[i] = columnNames[i];
+                        } else {
+                            fieldNames[i] = columnNameToFieldName.getOrDefault(columnNames[i], columnNames[i]);
+                        }
+                    }
+                    return fieldNames;
                 }
             }
         }
@@ -977,65 +1030,6 @@ public class KafkaTools {
         return result;
     }
 
-    private static String[] getColumnNames(
-            final Table t,
-            final Produce.KeyOrValueSpec.Json jsonSpec) {
-        if (jsonSpec.exceptColumns == null) {
-            return jsonSpec.columnNames;
-        }
-        final ColumnDefinition<?>[] colDefs = t.getDefinition().getColumns();
-        final int nColNames = colDefs.length - jsonSpec.exceptColumns.size();
-        final String[] colNames = new String[nColNames];
-        int c = 0;
-        int exceptMatches = 0;
-        for (int i = 0; i < colDefs.length; ++i) {
-            final String colName = colDefs[i].getName();
-            if (jsonSpec.exceptColumns.contains(colName)) {
-                ++exceptMatches;
-                continue;
-            }
-            colNames[c++] = colName;
-        }
-        return colNames;
-    }
-
-    private static String[] getFieldNames(
-            final String[] columnNames,
-            final Produce.KeyOrValueSpec.Json spec) {
-        final String[] fieldNames = new String[columnNames.length];
-        for (int i = 0; i < columnNames.length; ++i) {
-            if (spec.columnNameToFieldName == null) {
-                fieldNames[i] = columnNames[i];
-            } else {
-                fieldNames[i] = spec.columnNameToFieldName.getOrDefault(columnNames[i], columnNames[i]);
-            }
-        }
-        return fieldNames;
-    }
-
-    private static String[] getColumnNames(
-            final Schema schema,
-            final Table t,
-            final Map<String, String> fieldNameToColumnMapping,
-            final String timestampFieldName) {
-        final List<Schema.Field> fields = schema.getFields();
-        final int nColNames = fields.size() - ((timestampFieldName != null) ? -1 : 0);
-        final String[] columnNames = new String[nColNames];
-        int i = 0;
-        for (final Schema.Field field : fields) {
-            final String fieldName = field.name();
-            if (fieldNameToColumnMapping == null) {
-                columnNames[i] = fieldName;
-            } else if (fieldName.equals(timestampFieldName)) {
-                continue;
-            } else {
-                columnNames[i] = fieldNameToColumnMapping.getOrDefault(fieldName, fieldName);
-            }
-            ++i;
-        }
-        return columnNames;
-    }
-
     private static KeyOrValueSerializer<?> getAvroSerializer(
             @NotNull final Table t,
             @NotNull final Properties kafkaConsumerProperties,
@@ -1049,7 +1043,7 @@ public class KafkaTools {
             @NotNull final Table t,
             @NotNull final Produce.KeyOrValueSpec.Json jsonSpec,
             @NotNull final String[] columnNames) {
-        final String[] fieldNames = getFieldNames(columnNames, jsonSpec);
+        final String[] fieldNames = jsonSpec.getFieldNames(columnNames);
         return new JsonKeyOrValueSerializer(
                 t, columnNames, fieldNames,
                 jsonSpec.timestampFieldName, jsonSpec.nestedObjectDelimiter, jsonSpec.outputNulls);
@@ -1084,11 +1078,10 @@ public class KafkaTools {
         switch (spec.dataFormat()) {
             case AVRO:
                 final Produce.KeyOrValueSpec.Avro avroSpec = (Produce.KeyOrValueSpec.Avro) spec;
-                avroSpec.ensureSchema(kafkaProperties);
-                return getColumnNames(avroSpec.schema, t, avroSpec.fieldToColumnMapping, avroSpec.timestampFieldName);
+                return avroSpec.getColumnNames(kafkaProperties, t);
             case JSON:
                 final Produce.KeyOrValueSpec.Json jsonSpec = (Produce.KeyOrValueSpec.Json) spec;
-                return getColumnNames(t, jsonSpec);
+                return jsonSpec.getColumnNames(t);
             case IGNORE:
                 return null;
             case SIMPLE:
