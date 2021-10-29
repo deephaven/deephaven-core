@@ -126,9 +126,9 @@ public class GroovyDeephavenSession extends AbstractScriptSession implements Scr
         this(null, runScripts, false);
     }
 
-    public GroovyDeephavenSession(final Listener changeListener,
-            final RunScripts runScripts,
-            boolean isDefaultScriptSession) throws IOException {
+    public GroovyDeephavenSession(
+            @Nullable final Listener changeListener, final RunScripts runScripts, boolean isDefaultScriptSession)
+            throws IOException {
         super(changeListener, isDefaultScriptSession);
 
         this.scriptFinder = new ScriptFinder(DEFAULT_SCRIPT_PATH);

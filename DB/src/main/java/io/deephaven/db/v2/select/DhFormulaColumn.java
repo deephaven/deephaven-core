@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+ */
+
 package io.deephaven.db.v2.select;
 
 import io.deephaven.configuration.Configuration;
@@ -199,8 +203,9 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
 
         // check if this is a column to be created with a numba vectorized function
         for (Param<?> param : params) {
-            if (param.getValue().getClass() == NumbaCallableWrapper.class) {
-                NumbaCallableWrapper numbaCallableWrapper = (NumbaCallableWrapper) param.getValue();
+            final Object value = param.getValue();
+            if (value != null && value.getClass() == NumbaCallableWrapper.class) {
+                NumbaCallableWrapper numbaCallableWrapper = (NumbaCallableWrapper) value;
                 formulaColumnPython = FormulaColumnPython.create(this.columnName,
                         DeephavenCompatibleFunction.create(numbaCallableWrapper.getPyObject(),
                                 numbaCallableWrapper.getReturnType(), this.analyzedFormula.sourceDescriptor.sources,
