@@ -1177,15 +1177,24 @@ public final class DBLanguageParser extends GenericVisitorAdapter<Class<?>, DBLa
          * Now actually print the cast. For casts to primitives (except boolean), we use special null-safe functions
          * (e.g. intCast()) to perform the cast.
          *
-         * There is no "booleanCast()" function.
+         * There is no "booleanCast()" function. However, we do try to cast to String and Boolean from PyObjects.
          *
          * There are also no special functions for the identity conversion -- e.g. "intCast(int)"
          */
-        if (toPrimitive && !ret.equals(boolean.class) && !ret.equals(exprType)) {
+        final boolean isPyUpgrade =
+                ((ret.equals(boolean.class) || ret.equals(Boolean.class) || ret.equals(String.class))
+                        && exprType.equals(PyObject.class));
+
+        if (toPrimitive && !ret.equals(boolean.class) && !ret.equals(exprType) || isPyUpgrade) {
             // Casting to a primitive, except booleans and the identity conversion
+            if (!toPrimitive) {
+                // these methods look like `doStringPyCast` and `doBooleanPyCast`
+                printer.append("do");
+            }
             printer.append(ret.getSimpleName());
+
             if (exprType != NULL_CLASS && isAssignableFrom(PyObject.class, exprType)) {
-                printer.append("PyCast((PyObject)");
+                printer.append("PyCast(");
             } else {
                 printer.append("Cast(");
             }

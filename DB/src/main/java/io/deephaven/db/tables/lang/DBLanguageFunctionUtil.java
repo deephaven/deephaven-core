@@ -19291,83 +19291,94 @@ public final class DBLanguageFunctionUtil {
     }
 
     public static int intPyCast(Object a) {
-        if (a == null) {
-            return QueryConstants.NULL_INT;
-        }
-        if (!(a instanceof PyObject)) {
+        if (a != null && !(a instanceof PyObject)) {
             throw new IllegalArgumentException("provided value is not a PyObject");
         }
-        return ((PyObject)a).getIntValue();
+        PyObject o = (PyObject) a;
+        if (o == null || o.isNone()) {
+            return QueryConstants.NULL_INT;
+        }
+        return o.getIntValue();
     }
 
     public static double doublePyCast(Object a) {
-        if (a == null) {
-            return QueryConstants.NULL_DOUBLE;
-        }
-        if (!(a instanceof PyObject)) {
+        if (a != null && !(a instanceof PyObject)) {
             throw new IllegalArgumentException("provided value is not a PyObject");
         }
-        return ((PyObject)a).getDoubleValue();
+        PyObject o = (PyObject) a;
+        if (o == null || o.isNone()) {
+            return QueryConstants.NULL_DOUBLE;
+        }
+        return o.getDoubleValue();
     }
 
     public static long longPyCast(Object a) {
-        if (a == null) {
-            return QueryConstants.NULL_LONG;
-        }
-        if (!(a instanceof PyObject)) {
+        if (a != null && !(a instanceof PyObject)) {
             throw new IllegalArgumentException("provided value is not a PyObject");
         }
-        return ((PyObject)a).getLongValue();
+        PyObject o = (PyObject) a;
+        if (o == null || o.isNone()) {
+            return QueryConstants.NULL_LONG;
+        }
+        return o.getLongValue();
     }
 
     public static float floatPyCast(Object a) {
-        if (a == null) {
-            return QueryConstants.NULL_FLOAT;
-        }
-        if (!(a instanceof PyObject)) {
+        if (a != null && !(a instanceof PyObject)) {
             throw new IllegalArgumentException("provided value is not a PyObject");
         }
-        return (float) ((PyObject)a).getDoubleValue();
+        PyObject o = (PyObject) a;
+        if (o == null || o.isNone()) {
+            return QueryConstants.NULL_FLOAT;
+        }
+        return (float) o.getDoubleValue();
     }
 
     public static char charPyCast(Object a) {
-        if (a == null) {
-            return QueryConstants.NULL_CHAR;
-        }
-        if (!(a instanceof PyObject)) {
+        if (a != null && !(a instanceof PyObject)) {
             throw new IllegalArgumentException("provided value is not a PyObject");
         }
-        return (char) ((PyObject)a).getIntValue();
+        PyObject o = (PyObject) a;
+        if (o == null || o.isNone()) {
+            return QueryConstants.NULL_CHAR;
+        }
+        return (char) o.getIntValue();
     }
 
     public static byte bytePyCast(Object a) {
-        if (a == null) {
-            return QueryConstants.NULL_BYTE;
-        }
-        if (!(a instanceof PyObject)) {
+        if (a != null && !(a instanceof PyObject)) {
             throw new IllegalArgumentException("provided value is not a PyObject");
         }
-        return (byte) ((PyObject)a).getIntValue();
+        PyObject o = (PyObject) a;
+        if (o == null || o.isNone()) {
+            return QueryConstants.NULL_BYTE;
+        }
+        return (byte) o.getIntValue();
     }
 
     public static short shortPyCast(Object a) {
-        if (a == null) {
-            return QueryConstants.NULL_SHORT;
-        }
-        if (!(a instanceof PyObject)) {
+        if (a != null && !(a instanceof PyObject)) {
             throw new IllegalArgumentException("provided value is not a PyObject");
         }
-        return (short) ((PyObject)a).getIntValue();
+        PyObject o = (PyObject) a;
+        if (o == null || o.isNone()) {
+            return QueryConstants.NULL_SHORT;
+        }
+        return (short) o.getIntValue();
     }
 
-    public static String stringPyCast(Object a) {
+    public static String doStringPyCast(Object a) {
         if (a == null) {
             return null;
         }
         if (!(a instanceof PyObject)) {
             throw new IllegalArgumentException("provided value is not a PyObject");
         }
-        return ((PyObject) a).getStringValue();
+        PyObject o = (PyObject) a;
+        if (o.isNone()) {
+            return null;
+        }
+        return o.getStringValue();
     }
 
     public static boolean booleanPyCast(Object a) {
@@ -19377,7 +19388,21 @@ public final class DBLanguageFunctionUtil {
         if (!(a instanceof PyObject)) {
             throw new IllegalArgumentException("provided value is not a PyObject");
         }
-        return ((PyObject)a).getBooleanValue();
+        return ((PyObject) a).getBooleanValue();
+    }
+
+    public static Boolean doBooleanPyCast(Object a) {
+        if (a == null) {
+            return null;
+        }
+        if (!(a instanceof PyObject)) {
+            throw new IllegalArgumentException("provided value is not a PyObject");
+        }
+        PyObject o = (PyObject) a;
+        if (o.isNone()) {
+            return null;
+        }
+        return o.getBooleanValue();
     }
 
     public static int negate(int a) {
