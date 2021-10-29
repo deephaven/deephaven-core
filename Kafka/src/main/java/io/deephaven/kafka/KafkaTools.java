@@ -608,10 +608,11 @@ public class KafkaTools {
                 }
 
 
-                String[] getColumnNames(final Properties kafkaProperties, final Table t) {
+                String[] getColumnNames(final Properties kafkaProperties) {
                     ensureSchema(kafkaProperties);
                     final List<Schema.Field> fields = schema.getFields();
-                    final int nColNames = fields.size() - ((timestampFieldName != null) ? -1 : 0);
+                    final int timestampFieldCount = ((timestampFieldName != null) ? 1 : 0);
+                    final int nColNames = fields.size() - timestampFieldCount;
                     final String[] columnNames = new String[nColNames];
                     int i = 0;
                     for (final Schema.Field field : fields) {
@@ -1085,7 +1086,7 @@ public class KafkaTools {
         switch (spec.dataFormat()) {
             case AVRO:
                 final Produce.KeyOrValueSpec.Avro avroSpec = (Produce.KeyOrValueSpec.Avro) spec;
-                return avroSpec.getColumnNames(kafkaProperties, t);
+                return avroSpec.getColumnNames(kafkaProperties);
             case JSON:
                 final Produce.KeyOrValueSpec.Json jsonSpec = (Produce.KeyOrValueSpec.Json) spec;
                 return jsonSpec.getColumnNames(t);
