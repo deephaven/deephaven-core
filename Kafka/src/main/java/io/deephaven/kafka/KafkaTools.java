@@ -56,6 +56,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.*;
+import java.util.stream.Collectors;
 
 public class KafkaTools {
 
@@ -678,28 +679,39 @@ public class KafkaTools {
                 }
 
                 String[] getColumnNames(final Table t) {
-                    if (excludeColumns == null && includeColumns != null) {
-                        return includeColumns;
+                    if (excludeColumns != null && includeColumns != null) {
+                        throw new IllegalArgumentException("Can't have both excludeColumns and includeColumns not null");
                     }
                     final String[] tableColumnNames = t.getDefinition().getColumnNamesArray();
-                    final String[] mismatches = Arrays.stream(tableColumnNames)
-                            .filter(cn -> !excludeColumns.contains(cn)).toArray(String[]::new);
-                    if (mismatches.length > 0) {
+                    if (excludeColumns == null && includeColumns == null) {
+                        return tableColumnNames;
+                    }
+                    final Set<String> tableColumnsSet = new HashSet<>(Arrays.asList(tableColumnNames));
+                    if (includeColumns != null) {
+                        // Validate includes
+                        final List<String> missing = Arrays.stream(includeColumns).
+                                filter(cn -> !tableColumnsSet.contains(cn)).
+                                collect(Collectors.toList());
+                        for (final String col : includeColumns) {
+                            if (!tableColumnsSet.contains(col)) {
+                                missing.add(col);
+                            }
+                        }
+                        if (missing.size() > 0) {
+                            throw new IllegalArgumentException(
+                                    "includeColumns contains names not found in table columns: " + missing);
+                        }
+                        return includeColumns;
+                    }
+                    final List<String> mismatches = excludeColumns.stream().
+                            filter(cn -> !tableColumnsSet.contains(cn)).
+                            collect(Collectors.toList());
+                    if (mismatches.size() > 0) {
                         throw new IllegalArgumentException(
                                 "excludeColumns contains column names not on the table: " + mismatches);
                     }
-                    final ColumnDefinition<?>[] colDefs = t.getDefinition().getColumns();
-                    final int nColNames = colDefs.length - excludeColumns.size();
-                    final String[] colNames = new String[nColNames];
-                    int c = 0;
-                    for (final String colName : tableColumnNames) {
-                        if (excludeColumns != null && excludeColumns.contains(colName)) {
-                            continue;
-                        }
-                        colNames[c++] = colName;
-                    }
-
-                    return colNames;
+                    return Arrays.stream(tableColumnNames)
+                            .filter(cn -> !excludeColumns.contains(cn)).toArray(String[]::new);
                 }
 
                 String[] getFieldNames(final String[] columnNames) {
