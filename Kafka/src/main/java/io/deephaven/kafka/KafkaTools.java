@@ -692,11 +692,6 @@ public class KafkaTools {
                         // Validate includes
                         final List<String> missing = Arrays.stream(includeColumns)
                                 .filter(cn -> !tableColumnsSet.contains(cn)).collect(Collectors.toList());
-                        for (final String col : includeColumns) {
-                            if (!tableColumnsSet.contains(col)) {
-                                missing.add(col);
-                            }
-                        }
                         if (missing.size() > 0) {
                             throw new IllegalArgumentException(
                                     "includeColumns contains names not found in table columns: " + missing);
@@ -707,7 +702,7 @@ public class KafkaTools {
                             .collect(Collectors.toList());
                     if (mismatches.size() > 0) {
                         throw new IllegalArgumentException(
-                                "excludeColumns contains column names not on the table: " + mismatches);
+                                "excludeColumns contains names not found in table columns: " + mismatches);
                     }
                     return Arrays.stream(tableColumnNames)
                             .filter(cn -> !excludeColumns.contains(cn)).toArray(String[]::new);
