@@ -105,9 +105,9 @@ public class JsonKeyOrValueSerializer implements KeyOrValueSerializer<String> {
     }
 
     abstract class JSONFieldProcessorImpl<ChunkType extends Chunk<Attributes.Values>> extends JSONFieldProcessor {
-        private final ColumnSource chunkSource;
+        private final ColumnSource<?> chunkSource;
 
-        public JSONFieldProcessorImpl(final String fieldName, final ColumnSource chunkSource) {
+        public JSONFieldProcessorImpl(final String fieldName, final ColumnSource<?> chunkSource) {
             super(fieldName);
             this.chunkSource = chunkSource;
         }
@@ -266,9 +266,9 @@ public class JsonKeyOrValueSerializer implements KeyOrValueSerializer<String> {
     }
 
     private JSONFieldProcessor makeToStringFieldProcessor(final String fieldName, final ColumnSource<?> chunkSource) {
-        return new JSONFieldProcessorImpl<DoubleChunk<Attributes.Values>>(fieldName, chunkSource) {
+        return new JSONFieldProcessorImpl<ObjectChunk<?, Attributes.Values>>(fieldName, chunkSource) {
             @Override
-            void outputField(final int ii, final ObjectNode node, final DoubleChunk<Attributes.Values> inputChunk) {
+            void outputField(final int ii, final ObjectNode node, final ObjectChunk<?, Attributes.Values> inputChunk) {
                 final Object raw = inputChunk.get(ii);
                 if (raw == null) {
                     if (outputNulls) {
@@ -390,18 +390,18 @@ public class JsonKeyOrValueSerializer implements KeyOrValueSerializer<String> {
 
         if (byte.class.equals(src.getType())) {
             fieldProcessors.add(makeByteFieldProcessor(fieldName, src));
+        } else if (char.class.equals(src.getType())) {
+            fieldProcessors.add(makeCharFieldProcessor(fieldName, src));
         } else if (short.class.equals(src.getType())) {
             fieldProcessors.add(makeShortFieldProcessor(fieldName, src));
         } else if (int.class.equals(src.getType())) {
             fieldProcessors.add(makeIntFieldProcessor(fieldName, src));
-        } else if (double.class.equals(src.getType())) {
-            fieldProcessors.add(makeDoubleFieldProcessor(fieldName, src));
-        } else if (float.class.equals(src.getType())) {
-            fieldProcessors.add(makeFloatFieldProcessor(fieldName, src));
         } else if (long.class.equals(src.getType())) {
             fieldProcessors.add(makeLongFieldProcessor(fieldName, src));
-        } else if (char.class.equals(src.getType())) {
-            fieldProcessors.add(makeCharFieldProcessor(fieldName, src));
+        } else if (float.class.equals(src.getType())) {
+            fieldProcessors.add(makeFloatFieldProcessor(fieldName, src));
+        } else if (double.class.equals(src.getType())) {
+            fieldProcessors.add(makeDoubleFieldProcessor(fieldName, src));
         } else if (Boolean.class.equals(src.getType())) {
             fieldProcessors.add(makeBooleanFieldProcessor(fieldName, src));
         } else if (BigDecimal.class.equals(src.getType())) {

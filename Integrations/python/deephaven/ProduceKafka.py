@@ -86,11 +86,11 @@ def produceFromTable(
            Ignored if key is IGNORE.  If key is not IGNORE and last_by_key_columns is false,
            it is expected that table updates will not produce any row shifts; that is, the publisher
            expects keyed tables to be streams, add-only, or aggregated.
-    :return: A callback object with a 'call' method that, when invoked, stops publishing and cleans up
+    :return: A callback that, when invoked, stops publishing and cleans up
              subscriptions and resources.
-             Users should hold to this object to ensure liveness for publishing
+             Users should hold to this callback to ensure liveness for publishing
              for as long as this publishing is desired, and once not desired anymore they should
-             invoke call() on it.
+             invoke it.
     :raises: ValueError or TypeError if arguments provided can't be processed.
     """
 
@@ -106,7 +106,10 @@ def produceFromTable(
             "at least one argument for 'key' or 'value' must be different from IGNORE")
 
     kafka_config = _dictToProperties(kafka_config)
-    return _java_type_.produceFromTable(table, kafka_config, topic, key, value, last_by_key_columns)
+    runnable = _java_type_.produceFromTable(table, kafka_config, topic, key, value, last_by_key_columns)
+    def cleanup():
+        runnable.run()
+    return cleanup
 
 @_passThrough
 def avro(schema, schema_version:str = None, field_to_col_mapping = None, timestamp_field = None):
@@ -146,14 +149,22 @@ def avro(schema, schema_version:str = None, field_to_col_mapping = None, timesta
             "'schema' argument expected to be of either " +
             "str type or avro schema type, instead got " + str(schema))
 
+    if field_to_col_mapping is not None and not isinstance(field_to_col_mapping, dict):
+        raise TypeError(
+            "argument 'mapping' is expected to be of dict type, " +
+            "instead got " + str(field_to_col_mapping) + " of type " + type(field_to_col_mapping).__name__)
     field_to_col_mapping = _dictToMap(field_to_col_mapping)
     if have_actual_schema:
         return _produce_jtype_.avroSpec(schema, field_to_col_mapping, timestamp_field)
-    else:
-        return _produce_jtype_.avroSpec(schema, schema_version, field_to_col_mapping, timestamp_field)
+    return _produce_jtype_.avroSpec(schema, schema_version, field_to_col_mapping, timestamp_field)
 
 @_passThrough
-def json(column_names = None, except_columns = None, mapping = None, timestamp_field = None):
+def json(column_names = None,
+         except_columns = None,
+         mapping = None,
+         nested_delim = None,
+         output_nulls = False,
+         timestamp_field = None):
     """
     Specify how to produce JSON data when producing a Kafka stream from a Deephaven table.
 
@@ -165,19 +176,31 @@ def json(column_names = None, except_columns = None, mapping = None, timestamp_f
                     implied by earlier arguments and not included as a key in the map
                     implies a field of the same name; if this argument is None all columns
                     will be mapped to JSON fields of the same name.
+    :param nested_delim: if nested JSON fields are desired, the field separator that is used
+                         for the fieldNames parameter, or None for no nesting (default).
+                         For instance, if a particular column should be mapped to JSON field X
+                         nested inside field Y, the corresponding field name value for the column key
+                         in the mapping dict can be the string "X.Y",
+                         in which case the value for nested_delim should be "."
+    :param output_nulls: if False (default), do not output a field for null column values.
     :param timestamp_field: a string for the name of an additional timestamp field to include,
                             or None for no such field.
     :return:  A Kafka Key or Value spec object to use in a call to produceFromTable.
     :raises:  ValueError, TypeError or Exception if arguments provided can't be processed.
     """
-    if not isinstance(mapping, dict):
+    if column_names is not None and except_columns is not None:
+        raise Exception(
+            "Both column_names (=" + str(column_names) +
+            ") and except_columns (=" + str(except_columns) +
+            " are not None, at least one of them should be None."
+        )
+    if mapping is not None and not isinstance(mapping, dict):
         raise TypeError(
             "argument 'mapping' is expected to be of dict type, " +
             "instead got " + str(mapping) + " of type " + type(mapping).__name__)
     except_columns = _seqToSet(except_columns)
     mapping = _dictToMap(mapping)
-    return _produce_jtype_.jsonSpec(column_names, except_columns, mapping)
-
+    return _produce_jtype_.jsonSpec(column_names, except_columns, mapping, nested_delim, output_nulls, timestamp_field)
 
 @_passThrough
 def simple(column_name:str):

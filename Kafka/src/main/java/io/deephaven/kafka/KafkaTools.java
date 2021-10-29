@@ -678,9 +678,9 @@ public class KafkaTools {
          * @param nestedObjectDelimiter if nested JSON fields are desired, the field separator that is used
          *                              for the fieldNames parameter, or null for no nesting.   For instance,
          *                              if a particular column should be mapped to JSON field {@code X} nested inside
-         *                              field {@code Y}, the corresponding element in the {@code fieldNames} array
-         *                              can be {@code "X.Y"}, in which case the value for {@code nestedObjectDelimiter}
-         *                              should be {code "."}
+         *                              field {@code Y}, the corresponding field name value for the column key in the
+         *                              {@code columnToFieldMapping} map can be the string {@code "X.Y"},
+         *                              in which case the value for {@code nestedObjectDelimiter} should be {code "."}
          * @param outputNulls If false, omit fields with a null value.
          * @param timestampFieldName If not null, include a field of the given name with a publication timestamp.
          * @return A JSON spec for the given inputs.
@@ -695,8 +695,9 @@ public class KafkaTools {
                 final String timestampFieldName) {
             if (columnNames != null && exceptColumns != null) {
                 throw new IllegalArgumentException(
-                        "Only one of columnNames (=" + columnNames +
-                                ") and exceptColumns (=" + exceptColumns + ") can be non-null");
+                        "Both columnNames (=" + columnNames +
+                                ") and exceptColumns (=" + exceptColumns + ") are not null, " +
+                                "at least one of them should be null.");
             }
             return new KeyOrValueSpec.Json(
                     columnNames,

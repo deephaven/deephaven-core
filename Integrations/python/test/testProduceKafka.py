@@ -39,7 +39,7 @@ class TestProduceKafka(unittest.TestCase):
         Check a simple Kafka subscription creates the right table.
         """
         t = dh.table_of( { 'Price' : (dh.double, [ 10.0, 10.5, 11.0, 11.5 ]) } )
-        c = pk.produceFromTable(
+        cleanup = pk.produceFromTable(
             t,
             {'bootstrap.servers' : 'redpanda:29092'},
             'orders',
@@ -47,18 +47,21 @@ class TestProduceKafka(unittest.TestCase):
             value = pk.simple('Price')
         )
 
-        self.assertIsNotNone(c)
-        c.call()
+        self.assertIsNotNone(cleanup)
+        cleanup()
 
-    def testJson(self):
+    def tableHelper(self):
         t = dh.table_of( {
             'Price'  : (dh.double, [ 210.0, 310.5, 411.0, 411.5 ]),
             'Side'   : (dh.string, [ 'B', 'B', 'S', 'B' ]),
             'Symbol' : (dh.string, [ 'MSFT', 'GOOG', 'AAPL', 'AAPL' ]),
             'Qty'    : (dh.int_,   [ 200, 100, 300, 50 ])
         } )
-
-        c = pk.produceFromTable(
+        return t
+        
+    def testJsonOnlyColumns(self):
+        t = self.tableHelper()
+        cleanup = pk.produceFromTable(
             t,
             {'bootstrap.servers' : 'redpanda:29092'},
             'orders',
@@ -67,6 +70,23 @@ class TestProduceKafka(unittest.TestCase):
             last_by_key_columns = False
         )
         
-        self.assertIsNotNone(c)
-        c.call()
+        self.assertIsNotNone(cleanup)
+        cleanup()
             
+    def testJsonAllArguments(self):
+        t = self.tableHelper()
+        cleanup = pk.produceFromTable(
+            t,
+            {'bootstrap.servers' : 'redpanda:29092'},
+            'orders',
+            key = pk.IGNORE,
+            value = pk.json(
+                ['Symbol', 'Price'],
+                mapping={ 'Symbol' : 'jSymbol', 'Price' : 'jPrice' },
+                timestamp_field='jTs'
+            ),
+            last_by_key_columns = False
+        )
+        
+        self.assertIsNotNone(cleanup)
+        cleanup()

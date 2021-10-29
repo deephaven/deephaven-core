@@ -1100,7 +1100,7 @@ def _dictToMap(d):
 
 @_passThrough
 def _seqToSet(s):
-    if d is None:
+    if s is None:
         return None
     r = _jset_()
     for v in s:
