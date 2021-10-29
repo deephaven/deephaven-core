@@ -38,7 +38,9 @@ dependencies {
 def gradleWrapper = tasks.register("dockerGradleInit", Wrapper.class) { wrapper ->
   wrapper.scriptFile "${buildDir}/template-project/gradlew"
   wrapper.jarFile "${buildDir}/template-project/gradle/wrapper/gradle-wrapper.jar"
+  wrapper.gradleVersion '7.2'
 }
+
 tasks.getByName('check').dependsOn Docker.registerDockerTask(project, 'test-in-docker') {
   copyIn {
     dependsOn gradleWrapper
@@ -65,7 +67,7 @@ tasks.getByName('check').dependsOn Docker.registerDockerTask(project, 'test-in-d
     copyFile 'project', '/project'
     workingDir '/project'
     // run once with no actual classes, so that gradle is preinstalled and cached
-    runCommand '/project/gradlew'
+    runCommand '/project/gradlew --version'
     copyFile 'classpath', '/classpath'
     copyFile 'classes', '/classes'
   }

@@ -115,6 +115,7 @@ Closure<TaskProvider<Task>> gradleTestInDocker = { String taskName, SourceSet so
   def gradleWrapper = tasks.register("${taskName}GradleInit", Wrapper.class) { wrapper ->
     wrapper.scriptFile "${buildDir}/template-project/gradlew"
     wrapper.jarFile "${buildDir}/template-project/gradle/wrapper/gradle-wrapper.jar"
+    wrapper.gradleVersion '7.2'
   }
   return Docker.registerDockerTask(project, taskName) {
     copyIn {
@@ -142,7 +143,7 @@ Closure<TaskProvider<Task>> gradleTestInDocker = { String taskName, SourceSet so
       copyFile 'project', '/project'
       workingDir '/project'
       // run once with no actual classes, so that gradle is preinstalled and cached
-      runCommand '/project/gradlew'
+      runCommand '/project/gradlew --version'
       copyFile 'classpath', '/classpath'
       copyFile 'classes', '/classes'
     }

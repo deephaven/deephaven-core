@@ -1,8 +1,29 @@
-# azul/zulu-open-jdk-debian bumped OS versions
-# https://github.com/zulu-openjdk/zulu-openjdk/commit/8e242a8838b8a5f068193719695b2ed918d402c5
-# which causes downstream dependency failures (no more python3.7 for example).
-# For now, we are pinning to a known working version, which used to be their 8u302 tag.
-FROM docker.io/azul/zulu-openjdk-debian@sha256:75c283c625e4403fbf10a60642fc2fcac70b5ac55213f77c6453bbe1fda4a8c7 as runtime_reqs
+FROM debian:buster-slim as java_base
+ARG ZULU_REPO_VER=1.0.0-3
+RUN set -eux; \
+    if [ -f /etc/dpkg/dpkg.cfg.d/docker ]; then \
+        # if this file exists, we're likely in "debian:xxx-slim", and locales are thus being excluded so we need to remove that exclusion (since we need locales)
+        grep -q '/usr/share/locale' /etc/dpkg/dpkg.cfg.d/docker; \
+        sed -ri '/\/usr\/share\/locale/d' /etc/dpkg/dpkg.cfg.d/docker; \
+        ! grep -q '/usr/share/locale' /etc/dpkg/dpkg.cfg.d/docker; \
+    fi; \
+    apt-get -qq update; \
+    apt-get -qq -y --no-install-recommends install gnupg software-properties-common locales curl; \
+    localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8; \
+    apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 0xB1998361219BD9C9; \
+    curl -sLO https://cdn.azul.com/zulu/bin/zulu-repo_${ZULU_REPO_VER}_all.deb; \
+    dpkg -i zulu-repo_${ZULU_REPO_VER}_all.deb; \
+    apt-get -qq update; \
+    apt-get -qq -y dist-upgrade; \
+    mkdir -p /usr/share/man/man1; \
+    apt-get -qq -y --no-install-recommends install zulu17-jdk-headless=17*; \
+    apt-get -qq -y purge gnupg software-properties-common curl; \
+    apt -y autoremove; \
+    rm -rf /var/lib/apt/lists/* zulu-repo_${ZULU_REPO_VER}_all.deb
+ENV LANG='en_US.UTF-8' LANGUAGE='en_US:en' LC_ALL='en_US.UTF-8'
+ENV JAVA_HOME=/usr/lib/jvm/zulu17-ca-amd64
+
+FROM java_base as runtime_reqs
 RUN set -eux; \
     apt-get update; \
     apt-get install -y --no-install-recommends \
@@ -15,9 +36,10 @@ RUN set -eux; \
 
 FROM runtime_reqs as build_reqs
 RUN set -eux; \
+    echo 'deb http://deb.debian.org/debian buster-backports main' > /etc/apt/sources.list.d/backports.list; \
     apt-get update; \
+    apt-get install -y --no-install-recommends -t buster-backports maven; \
     apt-get install -y --no-install-recommends \
-      maven \
       build-essential \
       python3.7-dev \
       python3-wheel \
