@@ -1057,7 +1057,6 @@ public class KafkaTools {
 
     private static KeyOrValueSerializer<?> getSerializer(
             @NotNull final Table t,
-            @NotNull final Properties kafkaProperties,
             @NotNull final Produce.KeyOrValueSpec spec,
             @NotNull final String[] columnNames) {
         switch (spec.dataFormat()) {
@@ -1146,10 +1145,8 @@ public class KafkaTools {
                     ? table.lastBy(keyColumns)
                     : table.coalesce();
 
-            final KeyOrValueSerializer<?> keySerializer = getSerializer(
-                    effectiveTable, kafkaProperties, keySpec, keyColumns);
-            final KeyOrValueSerializer<?> valueSerializer = getSerializer(
-                    effectiveTable, kafkaProperties, valueSpec, valueColumns);
+            final KeyOrValueSerializer<?> keySerializer = getSerializer(effectiveTable, keySpec, keyColumns);
+            final KeyOrValueSerializer<?> valueSerializer = getSerializer(effectiveTable, valueSpec, valueColumns);
 
             final PublishToKafka producer = new PublishToKafka(
                     kafkaProperties, effectiveTable, topic,
