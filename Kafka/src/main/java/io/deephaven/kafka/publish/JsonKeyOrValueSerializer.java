@@ -265,22 +265,6 @@ public class JsonKeyOrValueSerializer implements KeyOrValueSerializer<String> {
         };
     }
 
-    private JSONFieldProcessor makeToStringFieldProcessor(final String fieldName, final ColumnSource<?> chunkSource) {
-        return new JSONFieldProcessorImpl<ObjectChunk<?, Attributes.Values>>(fieldName, chunkSource) {
-            @Override
-            void outputField(final int ii, final ObjectNode node, final ObjectChunk<?, Attributes.Values> inputChunk) {
-                final Object raw = inputChunk.get(ii);
-                if (raw == null) {
-                    if (outputNulls) {
-                        node.putNull(childNodeFieldName);
-                    }
-                } else {
-                    node.put(childNodeFieldName, Objects.toString(raw));
-                }
-            }
-        };
-    }
-
     @FunctionalInterface
     interface PutFun<T> {
         void put(ObjectNode node, String childNodeFieldName, T raw);
@@ -303,6 +287,14 @@ public class JsonKeyOrValueSerializer implements KeyOrValueSerializer<String> {
                 }
             }
         };
+    }
+
+    private JSONFieldProcessor makeToStringFieldProcessor(final String fieldName, final ColumnSource<?> chunkSource) {
+        return makeObjectFieldProcessor(
+                fieldName,
+                chunkSource,
+                (final ObjectNode node, final String childNodeFieldName, final Object raw) ->
+                        node.put(childNodeFieldName, Objects.toString(raw)));
     }
 
     private JSONFieldProcessor makeBooleanFieldProcessor(
