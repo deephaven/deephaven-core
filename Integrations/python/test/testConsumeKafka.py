@@ -136,8 +136,8 @@ class TestConsumeKafka(unittest.TestCase):
         self.assertEquals(0, r)
         
         t = ck.consumeToTable(
-            {'bootstrap.servers' : 'redpanda:29092',
-             'schema.registry.url' : 'http://registry:8080/api/ccompat'},
+            { 'bootstrap.servers' : 'redpanda:29092',
+              'schema.registry.url' : 'http://registry:8080/api/ccompat' },
             'share_price',
             key = ck.IGNORE,
             value = ck.avro('share_price_record', schema_version='1'),

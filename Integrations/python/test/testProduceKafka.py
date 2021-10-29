@@ -8,6 +8,7 @@
 
 import sys
 import jpy
+import os
 
 from deephaven import ProduceKafka as pk
 from deephaven import Types as dh
@@ -52,10 +53,10 @@ class TestProduceKafka(unittest.TestCase):
 
     def tableHelper(self):
         t = dh.table_of( {
-            'Price'  : (dh.double, [ 210.0, 310.5, 411.0, 411.5 ]),
-            'Side'   : (dh.string, [ 'B', 'B', 'S', 'B' ]),
             'Symbol' : (dh.string, [ 'MSFT', 'GOOG', 'AAPL', 'AAPL' ]),
-            'Qty'    : (dh.int_,   [ 200, 100, 300, 50 ])
+            'Side'   : (dh.string, [ 'B', 'B', 'S', 'B' ]),
+            'Qty'    : (dh.int_,   [ 200, 100, 300, 50 ]),
+            'Price'  : (dh.double, [ 210.0, 310.5, 411.0, 411.5 ])
         } )
         return t
         
@@ -84,6 +85,51 @@ class TestProduceKafka(unittest.TestCase):
                 ['Symbol', 'Price'],
                 mapping={ 'Symbol' : 'jSymbol', 'Price' : 'jPrice' },
                 timestamp_field='jTs'
+            ),
+            last_by_key_columns = False
+        )
+        
+        self.assertIsNotNone(cleanup)
+        cleanup()
+
+    def testAvro(self):
+        avro_as_json = \
+        """
+        { "type" : "record",
+          "namespace" : "io.deephaven.examples",
+          "name" : "share_price_timestamped",
+          "fields" : [
+            { "name" : "Symbol", "type" : "string" },
+            { "name" : "Side",   "type" : "string" },
+            { "name" : "Qty",    "type" : "int"    },
+            { "name" : "Price",  "type" : "double" },
+            { "name" : "Timestamp",
+              "type" : {
+                 "type" : "long",
+                 "logicalType" : "timestamp-micros"
+              }
+            }
+          ]
+        }
+        """
+
+        sys_str = "curl -X POST -H 'Content-type: application/json; artifactType=AVRO' " + \
+          "-H 'X-Registry-ArtifactId: share_price_timestamped_record' -H 'X-Registry-Version: 1' " + \
+          "--data-binary '%s' http://registry:8080/api/artifacts" % (avro_as_json)
+
+        r = os.system(sys_str)
+        self.assertEquals(0, r)
+
+        t = self.tableHelper()
+        cleanup = pk.produceFromTable(
+            t,
+            { 'bootstrap.servers' : 'redpanda:29092',
+              'schema.registry.url' : 'http://registry:8080/api/ccompat' },
+            'share_price_timestamped',
+            key = pk.IGNORE,
+            value = pk.avro(
+                'share_price_timestamped_record',
+                timestamp_field='Timestamp'
             ),
             last_by_key_columns = False
         )
