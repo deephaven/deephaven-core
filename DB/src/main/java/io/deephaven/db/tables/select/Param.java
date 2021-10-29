@@ -94,7 +94,7 @@ public class Param<T> {
                     }
                 }
 
-                if (iface != null && iface.getMethods().length > 0) {
+                if (iface != null && Modifier.isPublic(iface.getModifiers()) && iface.getMethods().length > 0) {
                     return ityp;
                 }
             }
@@ -102,7 +102,7 @@ public class Param<T> {
             type = type.getSuperclass();
         }
 
-        return origType;
+        return type;
     }
 
     public String getDeclaredTypeName() {
