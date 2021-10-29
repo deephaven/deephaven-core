@@ -611,16 +611,33 @@ public class KafkaTools {
                 String[] getColumnNames(final Properties kafkaProperties) {
                     ensureSchema(kafkaProperties);
                     final List<Schema.Field> fields = schema.getFields();
+                    // ensure we got timestampFieldName right
+                    if (timestampFieldName != null) {
+                        boolean found = false;
+                        for (final Schema.Field field : fields) {
+                            final String fieldName = field.name();
+                            if (fieldName.equals(timestampFieldName)) {
+                                found = true;
+                                break;
+                            }
+                        }
+                        if (!found) {
+                            throw new IllegalArgumentException(
+                                    "timestampFieldName=" + timestampFieldName +
+                                            " is not a field name in the provided schema.");
+                        }
+                    }
                     final int timestampFieldCount = ((timestampFieldName != null) ? 1 : 0);
                     final int nColNames = fields.size() - timestampFieldCount;
                     final String[] columnNames = new String[nColNames];
                     int i = 0;
                     for (final Schema.Field field : fields) {
                         final String fieldName = field.name();
+                        if (timestampFieldName != null && fieldName.equals(timestampFieldName)) {
+                            continue;
+                        }
                         if (fieldToColumnMapping == null) {
                             columnNames[i] = fieldName;
-                        } else if (fieldName.equals(timestampFieldName)) {
-                            continue;
                         } else {
                             columnNames[i] = fieldToColumnMapping.getOrDefault(fieldName, fieldName);
                         }
