@@ -680,7 +680,8 @@ public class KafkaTools {
 
                 String[] getColumnNames(final Table t) {
                     if (excludeColumns != null && includeColumns != null) {
-                        throw new IllegalArgumentException("Can't have both excludeColumns and includeColumns not null");
+                        throw new IllegalArgumentException(
+                                "Can't have both excludeColumns and includeColumns not null");
                     }
                     final String[] tableColumnNames = t.getDefinition().getColumnNamesArray();
                     if (excludeColumns == null && includeColumns == null) {
@@ -689,9 +690,8 @@ public class KafkaTools {
                     final Set<String> tableColumnsSet = new HashSet<>(Arrays.asList(tableColumnNames));
                     if (includeColumns != null) {
                         // Validate includes
-                        final List<String> missing = Arrays.stream(includeColumns).
-                                filter(cn -> !tableColumnsSet.contains(cn)).
-                                collect(Collectors.toList());
+                        final List<String> missing = Arrays.stream(includeColumns)
+                                .filter(cn -> !tableColumnsSet.contains(cn)).collect(Collectors.toList());
                         for (final String col : includeColumns) {
                             if (!tableColumnsSet.contains(col)) {
                                 missing.add(col);
@@ -703,9 +703,8 @@ public class KafkaTools {
                         }
                         return includeColumns;
                     }
-                    final List<String> mismatches = excludeColumns.stream().
-                            filter(cn -> !tableColumnsSet.contains(cn)).
-                            collect(Collectors.toList());
+                    final List<String> mismatches = excludeColumns.stream().filter(cn -> !tableColumnsSet.contains(cn))
+                            .collect(Collectors.toList());
                     if (mismatches.size() > 0) {
                         throw new IllegalArgumentException(
                                 "excludeColumns contains column names not on the table: " + mismatches);

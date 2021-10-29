@@ -191,7 +191,6 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
         };
     }
 
-
     private static GenericRecordFieldProcessor makeByteFieldProcessor(
             final String fieldName,
             final ColumnSource<?> chunkSource) {
@@ -241,19 +240,14 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
             final String fieldName,
             final ColumnSource<?> chunkSource,
             final long denominator) {
-        return new GenericRecordFieldProcessorImpl<LongChunk<Attributes.Values>>(
-                fieldName, chunkSource) {
-            @Override
-            Object getFieldElement(
-                    final int ii,
-                    final LongChunk<Attributes.Values> inputChunk) {
-                final long raw = inputChunk.get(ii);
-                if (raw == QueryConstants.NULL_LONG) {
-                    return null;
-                }
-                return raw / denominator;
-            }
-        };
+        return makeGenericFieldProcessor(
+                fieldName, chunkSource, (final int ii, final LongChunk<Attributes.Values> inputChunk) -> {
+                    final long raw = inputChunk.get(ii);
+                    if (raw == QueryConstants.NULL_LONG) {
+                        return null;
+                    }
+                    return raw / denominator;
+                });
     }
 
     private static GenericRecordFieldProcessor makeFloatFieldProcessor(

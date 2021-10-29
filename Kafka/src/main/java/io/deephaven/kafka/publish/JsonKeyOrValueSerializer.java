@@ -293,8 +293,8 @@ public class JsonKeyOrValueSerializer implements KeyOrValueSerializer<String> {
         return makeObjectFieldProcessor(
                 fieldName,
                 chunkSource,
-                (final ObjectNode node, final String childNodeFieldName, final Object raw) ->
-                        node.put(childNodeFieldName, Objects.toString(raw)));
+                (final ObjectNode node, final String childNodeFieldName, final Object raw) -> node
+                        .put(childNodeFieldName, Objects.toString(raw)));
     }
 
     private JSONFieldProcessor makeBooleanFieldProcessor(
