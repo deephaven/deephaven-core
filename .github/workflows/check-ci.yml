@@ -59,3 +59,11 @@ jobs:
         with:
           name: check-ci-reports
           path: '**/build/reports/tests/**'
+
+      - name: Upload JVM Error Logs
+        uses: actions/upload-artifact@v2
+        if: failure()
+        with:
+          name: check-ci-jvm-err
+          path: '*_pid*.log'
+          if-no-files-found: ignore
