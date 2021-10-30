@@ -61,5 +61,5 @@ jobs:
         if: failure()
         with:
           name: long-check-ci-jvm-err
-          path: *_pid*.log
+          path: '*_pid*.log'
           if-no-files-found: ignore
