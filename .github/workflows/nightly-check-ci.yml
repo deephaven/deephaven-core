@@ -60,6 +60,14 @@ jobs:
           name: nightly-check-ci-reports
           path: '**/build/reports/tests/**'
 
+      - name: Upload JVM Error Logs
+        uses: actions/upload-artifact@v2
+        if: failure()
+        with:
+          name: nightly-check-ci-jvm-err
+          path: *_pid*.log
+          if-no-files-found: ignore
+
       - name: Publish Test Results
         uses: scacap/action-surefire-report@v1
         if: ${{ github.repository_owner == 'deephaven' }}
@@ -127,6 +135,14 @@ jobs:
         with:
           name: nightly-testSerial-ci-reports
           path: '**/build/reports/tests/**'
+
+      - name: Upload JVM Error Logs
+        uses: actions/upload-artifact@v2
+        if: failure()
+        with:
+          name: nightly-testSerial-ci-jvm-err
+          path: *_pid*.log
+          if-no-files-found: ignore
 
       - name: Publish Test Results
         uses: scacap/action-surefire-report@v1
@@ -196,6 +212,14 @@ jobs:
           name: nightly-testParallel-ci-reports
           path: '**/build/reports/tests/**'
 
+      - name: Upload JVM Error Logs
+        uses: actions/upload-artifact@v2
+        if: failure()
+        with:
+          name: nightly-testParallel-ci-jvm-err
+          path: *_pid*.log
+          if-no-files-found: ignore
+
       - name: Publish Test Results
         uses: scacap/action-surefire-report@v1
         if: ${{ github.repository_owner == 'deephaven' }}
@@ -263,6 +287,14 @@ jobs:
         with:
           name: nightly-testOutOfBand-ci-reports
           path: '**/build/reports/tests/**'
+
+      - name: Upload JVM Error Logs
+        uses: actions/upload-artifact@v2
+        if: failure()
+        with:
+          name: nightly-testOutOfBand-ci-jvm-err
+          path: *_pid*.log
+          if-no-files-found: ignore
 
       - name: Publish Test Results
         uses: scacap/action-surefire-report@v1
