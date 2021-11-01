@@ -19292,7 +19292,7 @@ public final class DBLanguageFunctionUtil {
 
     public static int intPyCast(Object a) {
         if (a != null && !(a instanceof PyObject)) {
-            throw new IllegalArgumentException("provided value is not a PyObject");
+            throw new IllegalArgumentException("Provided value is not a PyObject");
         }
         PyObject o = (PyObject) a;
         if (o == null || o.isNone()) {
@@ -19303,7 +19303,7 @@ public final class DBLanguageFunctionUtil {
 
     public static double doublePyCast(Object a) {
         if (a != null && !(a instanceof PyObject)) {
-            throw new IllegalArgumentException("provided value is not a PyObject");
+            throw new IllegalArgumentException("Provided value is not a PyObject");
         }
         PyObject o = (PyObject) a;
         if (o == null || o.isNone()) {
@@ -19314,7 +19314,7 @@ public final class DBLanguageFunctionUtil {
 
     public static long longPyCast(Object a) {
         if (a != null && !(a instanceof PyObject)) {
-            throw new IllegalArgumentException("provided value is not a PyObject");
+            throw new IllegalArgumentException("Provided value is not a PyObject");
         }
         PyObject o = (PyObject) a;
         if (o == null || o.isNone()) {
@@ -19325,7 +19325,7 @@ public final class DBLanguageFunctionUtil {
 
     public static float floatPyCast(Object a) {
         if (a != null && !(a instanceof PyObject)) {
-            throw new IllegalArgumentException("provided value is not a PyObject");
+            throw new IllegalArgumentException("Provided value is not a PyObject");
         }
         PyObject o = (PyObject) a;
         if (o == null || o.isNone()) {
@@ -19336,7 +19336,7 @@ public final class DBLanguageFunctionUtil {
 
     public static char charPyCast(Object a) {
         if (a != null && !(a instanceof PyObject)) {
-            throw new IllegalArgumentException("provided value is not a PyObject");
+            throw new IllegalArgumentException("Provided value is not a PyObject");
         }
         PyObject o = (PyObject) a;
         if (o == null || o.isNone()) {
@@ -19347,7 +19347,7 @@ public final class DBLanguageFunctionUtil {
 
     public static byte bytePyCast(Object a) {
         if (a != null && !(a instanceof PyObject)) {
-            throw new IllegalArgumentException("provided value is not a PyObject");
+            throw new IllegalArgumentException("Provided value is not a PyObject");
         }
         PyObject o = (PyObject) a;
         if (o == null || o.isNone()) {
@@ -19358,7 +19358,7 @@ public final class DBLanguageFunctionUtil {
 
     public static short shortPyCast(Object a) {
         if (a != null && !(a instanceof PyObject)) {
-            throw new IllegalArgumentException("provided value is not a PyObject");
+            throw new IllegalArgumentException("Provided value is not a PyObject");
         }
         PyObject o = (PyObject) a;
         if (o == null || o.isNone()) {
@@ -19368,38 +19368,33 @@ public final class DBLanguageFunctionUtil {
     }
 
     public static String doStringPyCast(Object a) {
-        if (a == null) {
-            return null;
-        }
-        if (!(a instanceof PyObject)) {
-            throw new IllegalArgumentException("provided value is not a PyObject");
+        if (a != null && !(a instanceof PyObject)) {
+            throw new IllegalArgumentException("Provided value is not a PyObject");
         }
         PyObject o = (PyObject) a;
-        if (o.isNone()) {
+        if (o == null || o.isNone()) {
             return null;
         }
         return o.getStringValue();
     }
 
     public static boolean booleanPyCast(Object a) {
-        if (a == null) {
-            return false;
+        if (a != null && !(a instanceof PyObject)) {
+            throw new IllegalArgumentException("Provided value is not a PyObject");
         }
-        if (!(a instanceof PyObject)) {
-            throw new IllegalArgumentException("provided value is not a PyObject");
+        PyObject o = (PyObject) a;
+        if (o == null || o.isNone()) {
+            throw new NullPointerException("Provided value is unexpectedly null; cannot cast to boolean");
         }
         return ((PyObject) a).getBooleanValue();
     }
 
     public static Boolean doBooleanPyCast(Object a) {
-        if (a == null) {
-            return null;
-        }
-        if (!(a instanceof PyObject)) {
-            throw new IllegalArgumentException("provided value is not a PyObject");
+        if (a != null && !(a instanceof PyObject)) {
+            throw new IllegalArgumentException("Provided value is not a PyObject");
         }
         PyObject o = (PyObject) a;
-        if (o.isNone()) {
+        if (o == null || o.isNone()) {
             return null;
         }
         return o.getBooleanValue();

@@ -4,7 +4,6 @@
 
 package io.deephaven.db.tables.lang;
 
-import io.deephaven.util.QueryConstants;
 import io.deephaven.util.type.TypeUtils;
 import com.github.javaparser.ast.expr.BinaryExpr;
 import org.jpy.PyObject;
@@ -564,7 +563,7 @@ public class DBLanguageFunctionGenerator {
         // Special casts for PyObject to primitive
         buf.append("        public static int intPyCast(Object a) {\n");
         buf.append("            if (a != null && !(a instanceof PyObject)) {\n");
-        buf.append("                throw new IllegalArgumentException(\"provided value is not a PyObject\");\n");
+        buf.append("                throw new IllegalArgumentException(\"Provided value is not a PyObject\");\n");
         buf.append("            }\n");
         buf.append("            PyObject o = (PyObject) a;\n");
         buf.append("            if (o == null || o.isNone()) {\n");
@@ -575,7 +574,7 @@ public class DBLanguageFunctionGenerator {
 
         buf.append("        public static double doublePyCast(Object a) {\n");
         buf.append("            if (a != null && !(a instanceof PyObject)) {\n");
-        buf.append("                throw new IllegalArgumentException(\"provided value is not a PyObject\");\n");
+        buf.append("                throw new IllegalArgumentException(\"Provided value is not a PyObject\");\n");
         buf.append("            }\n");
         buf.append("            PyObject o = (PyObject) a;\n");
         buf.append("            if (o == null || o.isNone()) {\n");
@@ -586,7 +585,7 @@ public class DBLanguageFunctionGenerator {
 
         buf.append("        public static long longPyCast(Object a) {\n");
         buf.append("            if (a != null && !(a instanceof PyObject)) {\n");
-        buf.append("                throw new IllegalArgumentException(\"provided value is not a PyObject\");\n");
+        buf.append("                throw new IllegalArgumentException(\"Provided value is not a PyObject\");\n");
         buf.append("            }\n");
         buf.append("            PyObject o = (PyObject) a;\n");
         buf.append("            if (o == null || o.isNone()) {\n");
@@ -597,7 +596,7 @@ public class DBLanguageFunctionGenerator {
 
         buf.append("        public static float floatPyCast(Object a) {\n");
         buf.append("            if (a != null && !(a instanceof PyObject)) {\n");
-        buf.append("                throw new IllegalArgumentException(\"provided value is not a PyObject\");\n");
+        buf.append("                throw new IllegalArgumentException(\"Provided value is not a PyObject\");\n");
         buf.append("            }\n");
         buf.append("            PyObject o = (PyObject) a;\n");
         buf.append("            if (o == null || o.isNone()) {\n");
@@ -608,7 +607,7 @@ public class DBLanguageFunctionGenerator {
 
         buf.append("        public static char charPyCast(Object a) {\n");
         buf.append("            if (a != null && !(a instanceof PyObject)) {\n");
-        buf.append("                throw new IllegalArgumentException(\"provided value is not a PyObject\");\n");
+        buf.append("                throw new IllegalArgumentException(\"Provided value is not a PyObject\");\n");
         buf.append("            }\n");
         buf.append("            PyObject o = (PyObject) a;\n");
         buf.append("            if (o == null || o.isNone()) {\n");
@@ -619,7 +618,7 @@ public class DBLanguageFunctionGenerator {
 
         buf.append("        public static byte bytePyCast(Object a) {\n");
         buf.append("            if (a != null && !(a instanceof PyObject)) {\n");
-        buf.append("                throw new IllegalArgumentException(\"provided value is not a PyObject\");\n");
+        buf.append("                throw new IllegalArgumentException(\"Provided value is not a PyObject\");\n");
         buf.append("            }\n");
         buf.append("            PyObject o = (PyObject) a;\n");
         buf.append("            if (o == null || o.isNone()) {\n");
@@ -630,7 +629,7 @@ public class DBLanguageFunctionGenerator {
 
         buf.append("        public static short shortPyCast(Object a) {\n");
         buf.append("            if (a != null && !(a instanceof PyObject)) {\n");
-        buf.append("                throw new IllegalArgumentException(\"provided value is not a PyObject\");\n");
+        buf.append("                throw new IllegalArgumentException(\"Provided value is not a PyObject\");\n");
         buf.append("            }\n");
         buf.append("            PyObject o = (PyObject) a;\n");
         buf.append("            if (o == null || o.isNone()) {\n");
@@ -640,38 +639,34 @@ public class DBLanguageFunctionGenerator {
         buf.append("        }\n\n");
 
         buf.append("        public static String doStringPyCast(Object a) {\n");
-        buf.append("            if (a == null) {\n");
-        buf.append("                return null;\n");
-        buf.append("            }\n");
-        buf.append("            if (!(a instanceof PyObject)) {\n");
-        buf.append("                throw new IllegalArgumentException(\"provided value is not a PyObject\");\n");
+        buf.append("            if (a != null && !(a instanceof PyObject)) {\n");
+        buf.append("                throw new IllegalArgumentException(\"Provided value is not a PyObject\");\n");
         buf.append("            }\n");
         buf.append("            PyObject o = (PyObject) a;\n");
-        buf.append("            if (o.isNone()) {\n");
+        buf.append("            if (o == null || o.isNone()) {\n");
         buf.append("                return null;\n");
         buf.append("            }\n");
         buf.append("            return o.getStringValue();\n");
         buf.append("        }\n\n");
 
         buf.append("        public static boolean booleanPyCast(Object a) {\n");
-        buf.append("            if (a == null) {\n");
-        buf.append("                return false;\n");
+        buf.append("            if (a != null && !(a instanceof PyObject)) {\n");
+        buf.append("                throw new IllegalArgumentException(\"Provided value is not a PyObject\");\n");
         buf.append("            }\n");
-        buf.append("            if (!(a instanceof PyObject)) {\n");
-        buf.append("                throw new IllegalArgumentException(\"provided value is not a PyObject\");\n");
+        buf.append("            PyObject o = (PyObject) a;\n");
+        buf.append("            if (o == null || o.isNone()) {\n");
+        buf.append("                throw new NullPointerException(\"Provided value is unexpectedly null;");
+        buf.append(" cannot cast to boolean\");\n");
         buf.append("            }\n");
         buf.append("            return ((PyObject) a).getBooleanValue();\n");
         buf.append("        }\n\n");
 
         buf.append("        public static Boolean doBooleanPyCast(Object a) {\n");
-        buf.append("            if (a == null) {\n");
-        buf.append("                return null;\n");
-        buf.append("            }\n");
-        buf.append("            if (!(a instanceof PyObject)) {\n");
-        buf.append("                throw new IllegalArgumentException(\"provided value is not a PyObject\");\n");
+        buf.append("            if (a != null && !(a instanceof PyObject)) {\n");
+        buf.append("                throw new IllegalArgumentException(\"Provided value is not a PyObject\");\n");
         buf.append("            }\n");
         buf.append("            PyObject o = (PyObject) a;\n");
-        buf.append("            if (o.isNone()) {\n");
+        buf.append("            if (o == null || o.isNone()) {\n");
         buf.append("                return null;\n");
         buf.append("            }\n");
         buf.append("            return o.getBooleanValue();\n");

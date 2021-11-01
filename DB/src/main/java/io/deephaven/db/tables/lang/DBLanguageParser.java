@@ -1185,7 +1185,7 @@ public final class DBLanguageParser extends GenericVisitorAdapter<Class<?>, DBLa
                 ((ret.equals(boolean.class) || ret.equals(Boolean.class) || ret.equals(String.class))
                         && exprType.equals(PyObject.class));
 
-        if (toPrimitive && !ret.equals(boolean.class) && !ret.equals(exprType) || isPyUpgrade) {
+        if ((toPrimitive && !ret.equals(boolean.class) && !ret.equals(exprType)) || isPyUpgrade) {
             // Casting to a primitive, except booleans and the identity conversion
             if (!toPrimitive) {
                 // these methods look like `doStringPyCast` and `doBooleanPyCast`
@@ -1512,7 +1512,7 @@ public final class DBLanguageParser extends GenericVisitorAdapter<Class<?>, DBLa
                 // The to-be-cast expr is a Python object field accessor
                 final String clsName = printer.pythonCastContext.getSimpleName();
                 printer.append(", " + clsName + ".class");
-                // Let's advertise to the caller our the casted type
+                // Let's advertise to the caller the cast context type
                 ret = printer.pythonCastContext;
             }
             printer.append(')');
