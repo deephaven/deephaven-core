@@ -297,7 +297,7 @@ public class FlightMessageRoundTripTest {
                 }
                 updateString.append("}");
             }
-             updateString.append("}");
+            updateString.append("}");
         }
         updateString.append("}");
         assertRoundTripDataEqual(TableTools.emptyTable(10).update(updateString.toString()));
