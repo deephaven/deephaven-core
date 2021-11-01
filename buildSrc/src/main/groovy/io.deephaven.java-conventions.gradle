@@ -4,7 +4,7 @@ plugins {
 
 def archivesBaseNamePrefix = 'deephaven-'
 
-def compilerVersion = Integer.parseInt((String)project.findProperty('compilerVersion') ?: '11')
+def compilerVersion = Integer.parseInt((String)project.findProperty('compilerVersion') ?: '17')
 
 def languageLevel = Integer.parseInt((String)project.findProperty('languageLevel') ?: '11')
 def runtimeVersion = Integer.parseInt((String)project.findProperty('runtimeVersion') ?: '17')
