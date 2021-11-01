@@ -2317,12 +2317,6 @@ public final class IntSegmentedSortedMultiset implements SegmentedSortedMultiSet
     }
 
     @Override
-    public int getPrev(long i) {
-        // TODO: Maybe needs to care about the LogicalClock
-        return prevValues != null ? prevValues.get((int)i) : get(i);
-    }
-
-    @Override
     public DbIntArray getDirect() {
         return new DbIntArrayDirect(keyArray());
     }

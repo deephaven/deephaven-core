@@ -43,7 +43,6 @@ public class DbSubIntArray extends DbIntArray.Indirect {
 
     @Override
     public int[] toArray() {
-        //noinspection unchecked
         final int[] result = new int[positions.length];
         for (int ii = 0; ii < positions.length; ++ii) {
             result[ii] = get(ii);
@@ -54,14 +53,6 @@ public class DbSubIntArray extends DbIntArray.Indirect {
     @Override
     public long size() {
         return positions.length;
-    }
-
-    @Override
-    public int getPrev(final long index) {
-        if (index < 0 || index >= positions.length) {
-            return QueryConstants.NULL_INT;
-        }
-        return innerArray.getPrev(positions[LongSizedDataStructure.intSize("getPrev", index)]);
     }
 
     @Override

@@ -31,10 +31,6 @@ public class DbCharArrayDirect implements DbCharArray {
         return data[LongSizedDataStructure.intSize("DbArrayDirect get",  i)];
     }
 
-    public char getPrev(long offset) {
-        return get(offset);
-    }
-
     @Override
     public DbCharArray subArray(long fromIndex, long toIndex) {
         return new DbCharArraySlice(this, fromIndex, toIndex - fromIndex);

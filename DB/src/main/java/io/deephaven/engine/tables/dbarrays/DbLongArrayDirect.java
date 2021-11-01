@@ -34,7 +34,7 @@ public class DbLongArrayDirect implements DbLongArray {
         return data[LongSizedDataStructure.intSize("DbArrayDirect get",  i)];
     }
 
-    public long getPrev(long offset) {
+    private long getPrev(long offset) {
         return get(offset);
     }
 

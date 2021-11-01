@@ -2314,12 +2314,6 @@ public final class CharSegmentedSortedMultiset implements SegmentedSortedMultiSe
     }
 
     @Override
-    public char getPrev(long i) {
-        // TODO: Maybe needs to care about the LogicalClock
-        return prevValues != null ? prevValues.get((int)i) : get(i);
-    }
-
-    @Override
     public DbCharArray getDirect() {
         return new DbCharArrayDirect(keyArray());
     }

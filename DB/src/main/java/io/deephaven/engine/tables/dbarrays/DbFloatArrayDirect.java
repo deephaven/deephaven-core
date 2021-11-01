@@ -34,10 +34,6 @@ public class DbFloatArrayDirect implements DbFloatArray {
         return data[LongSizedDataStructure.intSize("DbArrayDirect get",  i)];
     }
 
-    public float getPrev(long offset) {
-        return get(offset);
-    }
-
     @Override
     public DbFloatArray subArray(long fromIndex, long toIndex) {
         return new DbFloatArraySlice(this, fromIndex, toIndex - fromIndex);

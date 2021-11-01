@@ -34,10 +34,6 @@ public class DbShortArrayDirect implements DbShortArray {
         return data[LongSizedDataStructure.intSize("DbArrayDirect get",  i)];
     }
 
-    public short getPrev(long offset) {
-        return get(offset);
-    }
-
     @Override
     public DbShortArray subArray(long fromIndex, long toIndex) {
         return new DbShortArraySlice(this, fromIndex, toIndex - fromIndex);

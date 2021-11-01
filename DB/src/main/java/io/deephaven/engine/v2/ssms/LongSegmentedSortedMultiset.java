@@ -2320,8 +2320,7 @@ public final class LongSegmentedSortedMultiset implements SegmentedSortedMultiSe
         return size;
     }
 
-    @Override
-    public long getPrev(long i) {
+    private long getPrev(long i) {
         // TODO: Maybe needs to care about the LogicalClock
         return prevValues != null ? prevValues.get((int)i) : get(i);
     }

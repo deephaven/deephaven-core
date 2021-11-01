@@ -28,12 +28,12 @@ public class DbByteArrayColumnWrapper extends DbByteArray.Indirect {
     private final long startPadding;
     private final long endPadding;
 
-    public DbByteArrayColumnWrapper(@NotNull final ColumnSource<Byte> columnSource, @NotNull final RowSet rowSet){
+    public DbByteArrayColumnWrapper(@NotNull final ColumnSource<Byte> columnSource, @NotNull final RowSet rowSet) {
         this(columnSource, rowSet, 0, 0);
     }
 
     public DbByteArrayColumnWrapper(@NotNull final ColumnSource<Byte> columnSource, @NotNull final RowSet rowSet,
-                                    final long startPadding, final long endPadding){
+                                    final long startPadding, final long endPadding) {
         Assert.neqNull(rowSet, "rowSet");
         this.columnSource = columnSource;
         this.rowSet = rowSet;
@@ -50,17 +50,6 @@ public class DbByteArrayColumnWrapper extends DbByteArray.Indirect {
         }
 
         return columnSource.getByte(rowSet.get(i));
-    }
-
-    @Override
-    public byte getPrev(long i) {
-        i-= startPadding;
-
-        if (i<0 || i> rowSet.size()-1) {
-            return NULL_BYTE;
-        }
-
-        return columnSource.getPrevByte(rowSet.get(i));
     }
 
     @Override

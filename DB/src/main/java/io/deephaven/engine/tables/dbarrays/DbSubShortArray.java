@@ -43,7 +43,6 @@ public class DbSubShortArray extends DbShortArray.Indirect {
 
     @Override
     public short[] toArray() {
-        //noinspection unchecked
         final short[] result = new short[positions.length];
         for (int ii = 0; ii < positions.length; ++ii) {
             result[ii] = get(ii);
@@ -54,14 +53,6 @@ public class DbSubShortArray extends DbShortArray.Indirect {
     @Override
     public long size() {
         return positions.length;
-    }
-
-    @Override
-    public short getPrev(final long index) {
-        if (index < 0 || index >= positions.length) {
-            return QueryConstants.NULL_SHORT;
-        }
-        return innerArray.getPrev(positions[LongSizedDataStructure.intSize("getPrev", index)]);
     }
 
     @Override

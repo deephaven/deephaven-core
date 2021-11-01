@@ -97,7 +97,7 @@ abstract class BaseAggregateColumnSource<DB_ARRAY_TYPE extends DbArrayBase, COMP
         if (groupIndexKey == RowSet.NULL_ROW_KEY) {
             return null;
         }
-        return aggregatedSource.getPrev(indexSource.getPrev(groupIndexKey).getPrevRowSet().get(offsetInGroup));
+        return aggregatedSource.getPrev(indexSource.getPrev(groupIndexKey).getPrev(offsetInGroup));
     }
 
     @Override
@@ -113,7 +113,7 @@ abstract class BaseAggregateColumnSource<DB_ARRAY_TYPE extends DbArrayBase, COMP
         if (groupIndexKey == RowSet.NULL_ROW_KEY) {
             return NULL_BOOLEAN;
         }
-        return aggregatedSource.getPrevBoolean(indexSource.getPrev(groupIndexKey).getPrevRowSet().get(offsetInGroup));
+        return aggregatedSource.getPrevBoolean(indexSource.getPrev(groupIndexKey).getPrev(offsetInGroup));
     }
 
     @Override
@@ -129,7 +129,7 @@ abstract class BaseAggregateColumnSource<DB_ARRAY_TYPE extends DbArrayBase, COMP
         if (groupIndexKey == RowSet.NULL_ROW_KEY) {
             return NULL_DOUBLE;
         }
-        return aggregatedSource.getPrevDouble(indexSource.getPrev(groupIndexKey).getPrevRowSet().get(offsetInGroup));
+        return aggregatedSource.getPrevDouble(indexSource.getPrev(groupIndexKey).getPrev(offsetInGroup));
     }
 
     @Override
@@ -145,7 +145,7 @@ abstract class BaseAggregateColumnSource<DB_ARRAY_TYPE extends DbArrayBase, COMP
         if (groupIndexKey == RowSet.NULL_ROW_KEY) {
             return NULL_FLOAT;
         }
-        return aggregatedSource.getPrevFloat(indexSource.getPrev(groupIndexKey).getPrevRowSet().get(offsetInGroup));
+        return aggregatedSource.getPrevFloat(indexSource.getPrev(groupIndexKey).getPrev(offsetInGroup));
     }
 
     @Override
@@ -161,7 +161,7 @@ abstract class BaseAggregateColumnSource<DB_ARRAY_TYPE extends DbArrayBase, COMP
         if (groupIndexKey == RowSet.NULL_ROW_KEY) {
             return NULL_BYTE;
         }
-        return aggregatedSource.getPrevByte(indexSource.getPrev(groupIndexKey).getPrevRowSet().get(offsetInGroup));
+        return aggregatedSource.getPrevByte(indexSource.getPrev(groupIndexKey).getPrev(offsetInGroup));
     }
 
     @Override
@@ -177,7 +177,7 @@ abstract class BaseAggregateColumnSource<DB_ARRAY_TYPE extends DbArrayBase, COMP
         if (groupIndexKey == RowSet.NULL_ROW_KEY) {
             return NULL_CHAR;
         }
-        return aggregatedSource.getPrevChar(indexSource.getPrev(groupIndexKey).getPrevRowSet().get(offsetInGroup));
+        return aggregatedSource.getPrevChar(indexSource.getPrev(groupIndexKey).getPrev(offsetInGroup));
     }
 
     @Override
@@ -193,7 +193,7 @@ abstract class BaseAggregateColumnSource<DB_ARRAY_TYPE extends DbArrayBase, COMP
         if (groupIndexKey == RowSet.NULL_ROW_KEY) {
             return NULL_SHORT;
         }
-        return aggregatedSource.getPrevShort(indexSource.getPrev(groupIndexKey).getPrevRowSet().get(offsetInGroup));
+        return aggregatedSource.getPrevShort(indexSource.getPrev(groupIndexKey).getPrev(offsetInGroup));
     }
 
     @Override
@@ -209,7 +209,7 @@ abstract class BaseAggregateColumnSource<DB_ARRAY_TYPE extends DbArrayBase, COMP
         if (groupIndexKey == RowSet.NULL_ROW_KEY) {
             return NULL_INT;
         }
-        return aggregatedSource.getPrevInt(indexSource.getPrev(groupIndexKey).getPrevRowSet().get(offsetInGroup));
+        return aggregatedSource.getPrevInt(indexSource.getPrev(groupIndexKey).getPrev(offsetInGroup));
     }
 
     @Override
@@ -225,6 +225,6 @@ abstract class BaseAggregateColumnSource<DB_ARRAY_TYPE extends DbArrayBase, COMP
         if (groupIndexKey == RowSet.NULL_ROW_KEY) {
             return NULL_LONG;
         }
-        return aggregatedSource.getPrevLong(indexSource.getPrev(groupIndexKey).getPrevRowSet().get(offsetInGroup));
+        return aggregatedSource.getPrevLong(indexSource.getPrev(groupIndexKey).getPrev(offsetInGroup));
     }
 }

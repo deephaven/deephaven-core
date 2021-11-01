@@ -15,7 +15,6 @@ import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
 import io.deephaven.engine.v2.utils.RowSetBuilderRandom;
-import io.deephaven.engine.v2.utils.TrackingRowSet;
 import org.jetbrains.annotations.NotNull;
 
 import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
@@ -29,20 +28,15 @@ public class DbPrevDoubleArrayColumnWrapper extends DbDoubleArray.Indirect {
     private final long startPadding;
     private final long endPadding;
 
-    public DbPrevDoubleArrayColumnWrapper(@NotNull final ColumnSource<Double> columnSource, @NotNull final TrackingRowSet rowSet) {
+    public DbPrevDoubleArrayColumnWrapper(@NotNull final ColumnSource<Double> columnSource, @NotNull final RowSet rowSet) {
         this(columnSource, rowSet, 0, 0);
     }
 
-    public DbPrevDoubleArrayColumnWrapper(@NotNull final ColumnSource<Double> columnSource, @NotNull final TrackingRowSet rowSet,
-                                        final long startPadding, final long endPadding) {
-        this(columnSource, rowSet, startPadding, endPadding, false);
-    }
-
-    private DbPrevDoubleArrayColumnWrapper(@NotNull final ColumnSource<Double> columnSource, @NotNull final TrackingRowSet rowSet,
-                                         final long startPadding, final long endPadding, final boolean alreadyPrevIndex) {
+    private DbPrevDoubleArrayColumnWrapper(@NotNull final ColumnSource<Double> columnSource, @NotNull final RowSet rowSet,
+                                         final long startPadding, final long endPadding) {
         Assert.neqNull(rowSet, "rowSet");
         this.columnSource = columnSource;
-        this.rowSet = alreadyPrevIndex ? rowSet : rowSet.getPrevRowSet();
+        this.rowSet = rowSet;
         this.startPadding = startPadding;
         this.endPadding = endPadding;
     }
@@ -59,11 +53,6 @@ public class DbPrevDoubleArrayColumnWrapper extends DbDoubleArray.Indirect {
     }
 
     @Override
-    public double getPrev(long offset) {
-        return get(offset);
-    }
-
-    @Override
     public DbDoubleArray subArray(long fromIndex, long toIndex) {
         fromIndex-=startPadding;
         toIndex-=startPadding;
@@ -74,7 +63,7 @@ public class DbPrevDoubleArrayColumnWrapper extends DbDoubleArray.Indirect {
         long newStartPadding=toIndex<0 ? toIndex-fromIndex : Math.max(0, -fromIndex);
         long newEndPadding= fromIndex>= rowSet.size() ? toIndex-fromIndex : Math.max(0, toIndex - rowSet.size());
 
-        return new DbPrevDoubleArrayColumnWrapper(columnSource, rowSet.subSetByPositionRange(realFrom, realTo), newStartPadding, newEndPadding, true);
+        return new DbPrevDoubleArrayColumnWrapper(columnSource, rowSet.subSetByPositionRange(realFrom, realTo), newStartPadding, newEndPadding);
     }
 
     @Override

@@ -42,8 +42,6 @@ public interface DbByteArray extends DbArrayBase<DbByteArray> {
     @Override
     long size();
 
-    byte getPrev(long i);
-
     @Override
     @FinalDefault
     default Class getComponentType() {

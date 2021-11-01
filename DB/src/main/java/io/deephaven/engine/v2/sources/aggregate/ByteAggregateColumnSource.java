@@ -39,7 +39,7 @@ public final class ByteAggregateColumnSource extends BaseAggregateColumnSource<D
         if (index == RowSet.NULL_ROW_KEY) {
             return null;
         }
-        return new DbPrevByteArrayColumnWrapper(aggregatedSource, indexSource.getPrev(index));
+        return new DbPrevByteArrayColumnWrapper(aggregatedSource, indexSource.getPrev(index).getPrevRowSet());
     }
 
     @Override
@@ -59,7 +59,7 @@ public final class ByteAggregateColumnSource extends BaseAggregateColumnSource<D
         final WritableObjectChunk<DbByteArray, ? super Values> typedDestination = destination.asWritableObjectChunk();
         final int size = rowSequence.intSize();
         for (int di = 0; di < size; ++di) {
-            typedDestination.set(di, new DbPrevByteArrayColumnWrapper(aggregatedSource, indexChunk.get(di)));
+            typedDestination.set(di, new DbPrevByteArrayColumnWrapper(aggregatedSource, indexChunk.get(di).getPrevRowSet()));
         }
         typedDestination.setSize(size);
     }

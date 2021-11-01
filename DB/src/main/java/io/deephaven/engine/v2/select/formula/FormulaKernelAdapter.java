@@ -8,7 +8,6 @@ import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
 import io.deephaven.engine.structures.RowSequence;
-import io.deephaven.engine.v2.utils.TrackingRowSet;
 import io.deephaven.util.type.TypeUtils;
 import org.jetbrains.annotations.NotNull;
 
@@ -21,7 +20,7 @@ public class FormulaKernelAdapter extends io.deephaven.engine.v2.select.Formula 
     private final ChunkType chunkType;
     private final GetHandler getHandler;
 
-    public FormulaKernelAdapter(final TrackingRowSet rowSet, final FormulaSourceDescriptor sourceDescriptor,
+    public FormulaKernelAdapter(final RowSet rowSet, final FormulaSourceDescriptor sourceDescriptor,
                                 final Map<String, ? extends ColumnSource> columnSources,
                                 final FormulaKernel kernel) {
         super(rowSet);

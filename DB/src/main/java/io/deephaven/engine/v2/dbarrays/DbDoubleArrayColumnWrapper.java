@@ -53,17 +53,6 @@ public class DbDoubleArrayColumnWrapper extends DbDoubleArray.Indirect {
     }
 
     @Override
-    public double getPrev(long i) {
-        i-= startPadding;
-
-        if (i<0 || i> rowSet.size()-1) {
-            return NULL_DOUBLE;
-        }
-
-        return columnSource.getPrevDouble(rowSet.get(i));
-    }
-
-    @Override
     public DbDoubleArray subArray(long fromIndex, long toIndex) {
         fromIndex-=startPadding;
         toIndex-=startPadding;

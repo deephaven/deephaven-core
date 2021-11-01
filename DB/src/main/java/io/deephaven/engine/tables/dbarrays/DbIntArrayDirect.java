@@ -34,10 +34,6 @@ public class DbIntArrayDirect implements DbIntArray {
         return data[LongSizedDataStructure.intSize("DbArrayDirect get",  i)];
     }
 
-    public int getPrev(long offset) {
-        return get(offset);
-    }
-
     @Override
     public DbIntArray subArray(long fromIndex, long toIndex) {
         return new DbIntArraySlice(this, fromIndex, toIndex - fromIndex);

@@ -36,7 +36,7 @@ public final class ObjectAggregateColumnSource<COMPONENT_TYPE> extends BaseAggre
         if (index == RowSet.NULL_ROW_KEY) {
             return null;
         }
-        return new DbPrevArrayColumnWrapper<>(aggregatedSource, indexSource.getPrev(index));
+        return new DbPrevArrayColumnWrapper<>(aggregatedSource, indexSource.getPrev(index).getPrevRowSet());
     }
 
     @Override
@@ -56,7 +56,7 @@ public final class ObjectAggregateColumnSource<COMPONENT_TYPE> extends BaseAggre
         final WritableObjectChunk<DbArray<COMPONENT_TYPE>, ? super Values> typedDestination = destination.asWritableObjectChunk();
         final int size = rowSequence.intSize();
         for (int di = 0; di < size; ++di) {
-            typedDestination.set(di, new DbPrevArrayColumnWrapper<>(aggregatedSource, indexChunk.get(di)));
+            typedDestination.set(di, new DbPrevArrayColumnWrapper<>(aggregatedSource, indexChunk.get(di).getPrevRowSet()));
         }
         typedDestination.setSize(size);
     }

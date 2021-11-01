@@ -43,7 +43,6 @@ public class DbSubDoubleArray extends DbDoubleArray.Indirect {
 
     @Override
     public double[] toArray() {
-        //noinspection unchecked
         final double[] result = new double[positions.length];
         for (int ii = 0; ii < positions.length; ++ii) {
             result[ii] = get(ii);
@@ -54,14 +53,6 @@ public class DbSubDoubleArray extends DbDoubleArray.Indirect {
     @Override
     public long size() {
         return positions.length;
-    }
-
-    @Override
-    public double getPrev(final long index) {
-        if (index < 0 || index >= positions.length) {
-            return QueryConstants.NULL_DOUBLE;
-        }
-        return innerArray.getPrev(positions[LongSizedDataStructure.intSize("getPrev", index)]);
     }
 
     @Override

@@ -2317,12 +2317,6 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
     }
 
     @Override
-    public float getPrev(long i) {
-        // TODO: Maybe needs to care about the LogicalClock
-        return prevValues != null ? prevValues.get((int)i) : get(i);
-    }
-
-    @Override
     public DbFloatArray getDirect() {
         return new DbFloatArrayDirect(keyArray());
     }

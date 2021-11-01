@@ -36,7 +36,7 @@ public final class CharAggregateColumnSource extends BaseAggregateColumnSource<D
         if (index == RowSet.NULL_ROW_KEY) {
             return null;
         }
-        return new DbPrevCharArrayColumnWrapper(aggregatedSource, indexSource.getPrev(index));
+        return new DbPrevCharArrayColumnWrapper(aggregatedSource, indexSource.getPrev(index).getPrevRowSet());
     }
 
     @Override
@@ -56,7 +56,7 @@ public final class CharAggregateColumnSource extends BaseAggregateColumnSource<D
         final WritableObjectChunk<DbCharArray, ? super Values> typedDestination = destination.asWritableObjectChunk();
         final int size = rowSequence.intSize();
         for (int di = 0; di < size; ++di) {
-            typedDestination.set(di, new DbPrevCharArrayColumnWrapper(aggregatedSource, indexChunk.get(di)));
+            typedDestination.set(di, new DbPrevCharArrayColumnWrapper(aggregatedSource, indexChunk.get(di).getPrevRowSet()));
         }
         typedDestination.setSize(size);
     }

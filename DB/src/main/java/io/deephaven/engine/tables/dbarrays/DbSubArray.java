@@ -61,14 +61,6 @@ public class DbSubArray<T> extends DbArray.Indirect<T> {
     }
 
     @Override
-    public T getPrev(final long index) {
-        if (index < 0 || index >= positions.length) {
-            return null;
-        }
-        return innerArray.getPrev(positions[LongSizedDataStructure.intSize("DbSubArray getPrev", index)]);
-    }
-
-    @Override
     public boolean isEmpty() {
         return positions.length == 0;
     }

@@ -93,11 +93,6 @@ public class DbDateTimeSsmSourceWrapper extends AbstractColumnSource<DbArray>
         }
 
         @Override
-        public DBDateTime getPrev(long offset) {
-            return underlying.getPrevAsDate(offset);
-        }
-
-        @Override
         public Chunk<Attributes.Values> toChunk() {
             return underlying.toDateChunk();
         }

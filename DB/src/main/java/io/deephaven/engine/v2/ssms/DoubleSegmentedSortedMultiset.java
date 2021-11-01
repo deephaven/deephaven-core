@@ -2317,12 +2317,6 @@ public final class DoubleSegmentedSortedMultiset implements SegmentedSortedMulti
     }
 
     @Override
-    public double getPrev(long i) {
-        // TODO: Maybe needs to care about the LogicalClock
-        return prevValues != null ? prevValues.get((int)i) : get(i);
-    }
-
-    @Override
     public DbDoubleArray getDirect() {
         return new DbDoubleArrayDirect(keyArray());
     }

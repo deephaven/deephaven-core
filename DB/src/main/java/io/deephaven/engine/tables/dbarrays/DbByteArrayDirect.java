@@ -34,10 +34,6 @@ public class DbByteArrayDirect implements DbByteArray {
         return data[LongSizedDataStructure.intSize("DbArrayDirect get",  i)];
     }
 
-    public byte getPrev(long offset) {
-        return get(offset);
-    }
-
     @Override
     public DbByteArray subArray(long fromIndex, long toIndex) {
         return new DbByteArraySlice(this, fromIndex, toIndex - fromIndex);

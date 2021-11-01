@@ -40,7 +40,6 @@ public class DbSubCharArray extends DbCharArray.Indirect {
 
     @Override
     public char[] toArray() {
-        //noinspection unchecked
         final char[] result = new char[positions.length];
         for (int ii = 0; ii < positions.length; ++ii) {
             result[ii] = get(ii);
@@ -51,14 +50,6 @@ public class DbSubCharArray extends DbCharArray.Indirect {
     @Override
     public long size() {
         return positions.length;
-    }
-
-    @Override
-    public char getPrev(final long index) {
-        if (index < 0 || index >= positions.length) {
-            return QueryConstants.NULL_CHAR;
-        }
-        return innerArray.getPrev(positions[LongSizedDataStructure.intSize("getPrev", index)]);
     }
 
     @Override

@@ -93,14 +93,6 @@ public class DbArraySlice<T> extends DbArray.Indirect<T> {
     }
 
     @Override
-    public T getPrev(final long index) {
-        if (index < 0 || index >= length) {
-            return null;
-        }
-        return innerArray.getPrev(offsetIndex + index);
-    }
-
-    @Override
     public boolean isEmpty() {
         return length == 0;
     }

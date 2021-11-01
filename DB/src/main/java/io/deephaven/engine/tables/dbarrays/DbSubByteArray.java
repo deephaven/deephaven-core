@@ -57,14 +57,6 @@ public class DbSubByteArray extends DbByteArray.Indirect {
     }
 
     @Override
-    public byte getPrev(final long index) {
-        if (index < 0 || index >= positions.length) {
-            return QueryConstants.NULL_BYTE;
-        }
-        return innerArray.getPrev(positions[LongSizedDataStructure.intSize("getPrev", index)]);
-    }
-
-    @Override
     public boolean isEmpty() {
         return positions.length == 0;
     }

@@ -42,8 +42,6 @@ public interface DbShortArray extends DbArrayBase<DbShortArray> {
     @Override
     long size();
 
-    short getPrev(long i);
-
     @Override
     @FinalDefault
     default Class getComponentType() {

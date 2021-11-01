@@ -42,8 +42,6 @@ public interface DbFloatArray extends DbArrayBase<DbFloatArray> {
     @Override
     long size();
 
-    float getPrev(long i);
-
     @Override
     @FinalDefault
     default Class getComponentType() {

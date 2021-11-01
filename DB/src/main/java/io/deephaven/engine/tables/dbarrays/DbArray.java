@@ -42,8 +42,6 @@ public interface DbArray<T> extends DbArrayBase<DbArray<T>> {
         return toString(this, prefixLength);
     }
 
-    T getPrev(long offset);
-
     @Override
     default Chunk<Attributes.Values> toChunk() {
         return ObjectChunk.chunkWrap(toArray());

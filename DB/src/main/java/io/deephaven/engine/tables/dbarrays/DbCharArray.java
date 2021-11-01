@@ -39,8 +39,6 @@ public interface DbCharArray extends DbArrayBase<DbCharArray> {
     @Override
     long size();
 
-    char getPrev(long i);
-
     @Override
     @FinalDefault
     default Class getComponentType() {

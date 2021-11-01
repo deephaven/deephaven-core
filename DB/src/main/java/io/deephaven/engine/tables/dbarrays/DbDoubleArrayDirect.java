@@ -34,10 +34,6 @@ public class DbDoubleArrayDirect implements DbDoubleArray {
         return data[LongSizedDataStructure.intSize("DbArrayDirect get",  i)];
     }
 
-    public double getPrev(long offset) {
-        return get(offset);
-    }
-
     @Override
     public DbDoubleArray subArray(long fromIndex, long toIndex) {
         return new DbDoubleArraySlice(this, fromIndex, toIndex - fromIndex);

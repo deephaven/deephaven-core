@@ -10,7 +10,6 @@ package io.deephaven.engine.tables.dbarrays;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.util.LongSizedDataStructure;
-import io.deephaven.util.QueryConstants;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
@@ -79,14 +78,6 @@ public class DbFloatArraySlice extends DbFloatArray.Indirect {
     @Override
     public long size() {
         return length;
-    }
-
-    @Override
-    public float getPrev(final long index) {
-        if (index < 0 || index >= length) {
-            return QueryConstants.NULL_FLOAT;
-        }
-        return innerArray.getPrev(offsetIndex + index);
     }
 
     @Override

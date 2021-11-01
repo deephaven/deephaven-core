@@ -53,17 +53,6 @@ public class DbFloatArrayColumnWrapper extends DbFloatArray.Indirect {
     }
 
     @Override
-    public float getPrev(long i) {
-        i-= startPadding;
-
-        if (i<0 || i> rowSet.size()-1) {
-            return NULL_FLOAT;
-        }
-
-        return columnSource.getPrevFloat(rowSet.get(i));
-    }
-
-    @Override
     public DbFloatArray subArray(long fromIndex, long toIndex) {
         fromIndex-=startPadding;
         toIndex-=startPadding;

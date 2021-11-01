@@ -2317,12 +2317,6 @@ public final class ByteSegmentedSortedMultiset implements SegmentedSortedMultiSe
     }
 
     @Override
-    public byte getPrev(long i) {
-        // TODO: Maybe needs to care about the LogicalClock
-        return prevValues != null ? prevValues.get((int)i) : get(i);
-    }
-
-    @Override
     public DbByteArray getDirect() {
         return new DbByteArrayDirect(keyArray());
     }

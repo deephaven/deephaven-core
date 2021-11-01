@@ -43,7 +43,6 @@ public class DbSubFloatArray extends DbFloatArray.Indirect {
 
     @Override
     public float[] toArray() {
-        //noinspection unchecked
         final float[] result = new float[positions.length];
         for (int ii = 0; ii < positions.length; ++ii) {
             result[ii] = get(ii);
@@ -54,14 +53,6 @@ public class DbSubFloatArray extends DbFloatArray.Indirect {
     @Override
     public long size() {
         return positions.length;
-    }
-
-    @Override
-    public float getPrev(final long index) {
-        if (index < 0 || index >= positions.length) {
-            return QueryConstants.NULL_FLOAT;
-        }
-        return innerArray.getPrev(positions[LongSizedDataStructure.intSize("getPrev", index)]);
     }
 
     @Override

@@ -25,12 +25,12 @@ public class DbCharArrayColumnWrapper extends DbCharArray.Indirect {
     private final long startPadding;
     private final long endPadding;
 
-    public DbCharArrayColumnWrapper(@NotNull final ColumnSource<Character> columnSource, @NotNull final RowSet rowSet){
+    public DbCharArrayColumnWrapper(@NotNull final ColumnSource<Character> columnSource, @NotNull final RowSet rowSet) {
         this(columnSource, rowSet, 0, 0);
     }
 
     public DbCharArrayColumnWrapper(@NotNull final ColumnSource<Character> columnSource, @NotNull final RowSet rowSet,
-                                    final long startPadding, final long endPadding){
+                                    final long startPadding, final long endPadding) {
         Assert.neqNull(rowSet, "rowSet");
         this.columnSource = columnSource;
         this.rowSet = rowSet;
@@ -47,17 +47,6 @@ public class DbCharArrayColumnWrapper extends DbCharArray.Indirect {
         }
 
         return columnSource.getChar(rowSet.get(i));
-    }
-
-    @Override
-    public char getPrev(long i) {
-        i-= startPadding;
-
-        if (i<0 || i> rowSet.size()-1) {
-            return NULL_CHAR;
-        }
-
-        return columnSource.getPrevChar(rowSet.get(i));
     }
 
     @Override

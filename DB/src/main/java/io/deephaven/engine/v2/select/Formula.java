@@ -8,7 +8,6 @@ import io.deephaven.engine.v2.sources.chunk.Context;
 import io.deephaven.engine.v2.sources.chunk.WritableChunk;
 import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.v2.utils.RowSet;
-import io.deephaven.engine.v2.utils.TrackingRowSet;
 import org.jetbrains.annotations.NotNull;
 
 import static io.deephaven.util.QueryConstants.*;
@@ -21,9 +20,9 @@ public abstract class Formula implements ElementSource {
         return __rowSet;
     }
 
-    protected final TrackingRowSet __rowSet;
+    protected final RowSet __rowSet;
 
-    protected Formula(TrackingRowSet __rowSet) {
+    protected Formula(RowSet __rowSet) {
         this.__rowSet = __rowSet;
     }
 

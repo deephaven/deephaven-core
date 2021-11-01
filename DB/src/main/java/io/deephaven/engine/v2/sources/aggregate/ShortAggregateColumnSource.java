@@ -39,7 +39,7 @@ public final class ShortAggregateColumnSource extends BaseAggregateColumnSource<
         if (index == RowSet.NULL_ROW_KEY) {
             return null;
         }
-        return new DbPrevShortArrayColumnWrapper(aggregatedSource, indexSource.getPrev(index));
+        return new DbPrevShortArrayColumnWrapper(aggregatedSource, indexSource.getPrev(index).getPrevRowSet());
     }
 
     @Override
@@ -59,7 +59,7 @@ public final class ShortAggregateColumnSource extends BaseAggregateColumnSource<
         final WritableObjectChunk<DbShortArray, ? super Values> typedDestination = destination.asWritableObjectChunk();
         final int size = rowSequence.intSize();
         for (int di = 0; di < size; ++di) {
-            typedDestination.set(di, new DbPrevShortArrayColumnWrapper(aggregatedSource, indexChunk.get(di)));
+            typedDestination.set(di, new DbPrevShortArrayColumnWrapper(aggregatedSource, indexChunk.get(di).getPrevRowSet()));
         }
         typedDestination.setSize(size);
     }

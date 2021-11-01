@@ -39,7 +39,7 @@ public final class FloatAggregateColumnSource extends BaseAggregateColumnSource<
         if (index == RowSet.NULL_ROW_KEY) {
             return null;
         }
-        return new DbPrevFloatArrayColumnWrapper(aggregatedSource, indexSource.getPrev(index));
+        return new DbPrevFloatArrayColumnWrapper(aggregatedSource, indexSource.getPrev(index).getPrevRowSet());
     }
 
     @Override
@@ -59,7 +59,7 @@ public final class FloatAggregateColumnSource extends BaseAggregateColumnSource<
         final WritableObjectChunk<DbFloatArray, ? super Values> typedDestination = destination.asWritableObjectChunk();
         final int size = rowSequence.intSize();
         for (int di = 0; di < size; ++di) {
-            typedDestination.set(di, new DbPrevFloatArrayColumnWrapper(aggregatedSource, indexChunk.get(di)));
+            typedDestination.set(di, new DbPrevFloatArrayColumnWrapper(aggregatedSource, indexChunk.get(di).getPrevRowSet()));
         }
         typedDestination.setSize(size);
     }

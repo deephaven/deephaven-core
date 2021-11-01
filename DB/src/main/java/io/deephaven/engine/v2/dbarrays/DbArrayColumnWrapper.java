@@ -11,9 +11,11 @@ import io.deephaven.engine.tables.dbarrays.DbArray;
 import io.deephaven.engine.tables.dbarrays.DbArrayBase;
 import io.deephaven.engine.tables.dbarrays.DbArrayDirect;
 import io.deephaven.engine.v2.sources.ColumnSource;
+import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
 import io.deephaven.engine.v2.utils.RowSetBuilderRandom;
 import io.deephaven.engine.v2.utils.TrackingRowSet;
+import io.deephaven.tablelogger.Row;
 import io.deephaven.util.type.TypeUtils;
 import org.jetbrains.annotations.NotNull;
 
@@ -24,15 +26,15 @@ public class DbArrayColumnWrapper<T> extends DbArray.Indirect<T> {
     private static final long serialVersionUID = -5944424618636079377L;
 
     private final ColumnSource<T> columnSource;
-    private final TrackingRowSet rowSet;
+    private final RowSet rowSet;
     private final long startPadding;
     private final long endPadding;
 
-    public DbArrayColumnWrapper(@NotNull final ColumnSource<T> columnSource, @NotNull final TrackingRowSet rowSet) {
+    public DbArrayColumnWrapper(@NotNull final ColumnSource<T> columnSource, @NotNull final RowSet rowSet) {
         this(columnSource, rowSet, 0, 0);
     }
 
-    public DbArrayColumnWrapper(@NotNull final ColumnSource<T> columnSource, @NotNull final TrackingRowSet rowSet,
+    public DbArrayColumnWrapper(@NotNull final ColumnSource<T> columnSource, @NotNull final RowSet rowSet,
             final long startPadding, final long endPadding) {
         Assert.neqNull(rowSet, "rowSet");
         this.columnSource = columnSource;
@@ -65,7 +67,7 @@ public class DbArrayColumnWrapper<T> extends DbArray.Indirect<T> {
         long newEndPadding = fromIndexInclusive >= rowSet.size() ? toIndexExclusive - fromIndexInclusive
                 : (int) Math.max(0, toIndexExclusive - rowSet.size());
 
-        return new DbArrayColumnWrapper<>(columnSource, rowSet.subSetByPositionRange(realFrom, realTo).convertToTracking(),
+        return new DbArrayColumnWrapper<>(columnSource, rowSet.subSetByPositionRange(realFrom, realTo),
                 newStartPadding, newEndPadding);
     }
 
@@ -80,7 +82,7 @@ public class DbArrayColumnWrapper<T> extends DbArray.Indirect<T> {
             }
         }
 
-        return new DbArrayColumnWrapper<>(columnSource, builder.build().convertToTracking(), 0, 0);
+        return new DbArrayColumnWrapper<>(columnSource, builder.build(), 0, 0);
     }
 
     @Override
@@ -136,16 +138,5 @@ public class DbArrayColumnWrapper<T> extends DbArray.Indirect<T> {
         } else {
             return new DbArrayDirect<>(toArray());
         }
-    }
-
-    @Override
-    public T getPrev(long i) {
-        i -= startPadding;
-
-        if (i < 0 || i > rowSet.size() - 1) {
-            return null;
-        }
-
-        return columnSource.getPrev(rowSet.getPrev(i));
     }
 }

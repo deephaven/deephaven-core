@@ -57,11 +57,6 @@ public class DbArrayDirect<T> implements DbArray<T> {
     }
 
     @Override
-    public T getPrev(long offset) {
-        return get(offset);
-    }
-
-    @Override
     public final String toString() {
         return DbArray.toString(this, 10);
     }

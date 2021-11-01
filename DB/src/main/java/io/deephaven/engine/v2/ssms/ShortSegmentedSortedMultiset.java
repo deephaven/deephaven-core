@@ -2317,12 +2317,6 @@ public final class ShortSegmentedSortedMultiset implements SegmentedSortedMultiS
     }
 
     @Override
-    public short getPrev(long i) {
-        // TODO: Maybe needs to care about the LogicalClock
-        return prevValues != null ? prevValues.get((int)i) : get(i);
-    }
-
-    @Override
     public DbShortArray getDirect() {
         return new DbShortArrayDirect(keyArray());
     }

@@ -53,17 +53,6 @@ public class DbIntArrayColumnWrapper extends DbIntArray.Indirect {
     }
 
     @Override
-    public int getPrev(long i) {
-        i-= startPadding;
-
-        if (i<0 || i> rowSet.size()-1) {
-            return NULL_INT;
-        }
-
-        return columnSource.getPrevInt(rowSet.get(i));
-    }
-
-    @Override
     public DbIntArray subArray(long fromIndex, long toIndex) {
         fromIndex-=startPadding;
         toIndex-=startPadding;

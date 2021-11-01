@@ -42,8 +42,6 @@ public interface DbDoubleArray extends DbArrayBase<DbDoubleArray> {
     @Override
     long size();
 
-    double getPrev(long i);
-
     @Override
     @FinalDefault
     default Class getComponentType() {

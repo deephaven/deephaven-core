@@ -42,8 +42,6 @@ public interface DbIntArray extends DbArrayBase<DbIntArray> {
     @Override
     long size();
 
-    int getPrev(long i);
-
     @Override
     @FinalDefault
     default Class getComponentType() {

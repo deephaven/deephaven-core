@@ -42,8 +42,6 @@ public interface DbLongArray extends DbArrayBase<DbLongArray> {
     @Override
     long size();
 
-    long getPrev(long i);
-
     @Override
     @FinalDefault
     default Class getComponentType() {

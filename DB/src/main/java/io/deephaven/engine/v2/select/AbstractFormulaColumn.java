@@ -17,6 +17,7 @@ import io.deephaven.engine.tables.utils.*;
 import io.deephaven.engine.v2.dbarrays.*;
 import io.deephaven.engine.v2.select.formula.*;
 import io.deephaven.engine.v2.sources.*;
+import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.engine.v2.utils.TrackingRowSet;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
@@ -239,7 +240,7 @@ public abstract class AbstractFormulaColumn implements FormulaColumn {
     }
 
     @SuppressWarnings("unchecked")
-    private static DbArrayBase<?> makeAppropriateDbArrayWrapper(ColumnSource<?> cs, TrackingRowSet rowSet) {
+    private static DbArrayBase<?> makeAppropriateDbArrayWrapper(ColumnSource<?> cs, RowSet rowSet) {
         final Class<?> type = cs.getType();
         if (type == Boolean.class) {
             return new DbArrayColumnWrapper<>((ColumnSource<Boolean>) cs, rowSet);

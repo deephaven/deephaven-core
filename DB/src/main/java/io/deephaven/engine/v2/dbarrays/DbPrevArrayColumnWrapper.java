@@ -6,14 +6,13 @@ package io.deephaven.engine.v2.dbarrays;
 
 import io.deephaven.base.ClampUtil;
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.util.LongSizedDataStructure;
 import io.deephaven.engine.tables.dbarrays.DbArray;
 import io.deephaven.engine.tables.dbarrays.DbArrayDirect;
+import io.deephaven.engine.util.LongSizedDataStructure;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.utils.RowSet;
-import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
 import io.deephaven.engine.v2.utils.RowSetBuilderRandom;
-import io.deephaven.engine.v2.utils.TrackingRowSet;
+import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
 import io.deephaven.util.type.TypeUtils;
 import org.jetbrains.annotations.NotNull;
 
@@ -28,20 +27,15 @@ public class DbPrevArrayColumnWrapper<T> extends DbArray.Indirect<T> {
     private final long startPadding;
     private final long endPadding;
 
-    public DbPrevArrayColumnWrapper(@NotNull final ColumnSource<T> columnSource, @NotNull final TrackingRowSet rowSet) {
+    public DbPrevArrayColumnWrapper(@NotNull final ColumnSource<T> columnSource, @NotNull final RowSet rowSet) {
         this(columnSource, rowSet, 0, 0);
     }
 
-    public DbPrevArrayColumnWrapper(@NotNull final ColumnSource<T> columnSource, @NotNull final TrackingRowSet rowSet,
+    private DbPrevArrayColumnWrapper(@NotNull final ColumnSource<T> columnSource, @NotNull final RowSet rowSet,
             final long startPadding, final long endPadding) {
-        this(columnSource, rowSet, startPadding, endPadding, false);
-    }
-
-    private DbPrevArrayColumnWrapper(@NotNull final ColumnSource<T> columnSource, @NotNull final TrackingRowSet rowSet,
-            final long startPadding, final long endPadding, final boolean alreadyPrevIndex) {
         Assert.neqNull(rowSet, "rowSet");
         this.columnSource = columnSource;
-        this.rowSet = alreadyPrevIndex ? rowSet : rowSet.getPrevRowSet();
+        this.rowSet = rowSet;
         this.startPadding = startPadding;
         this.endPadding = endPadding;
     }
@@ -69,8 +63,8 @@ public class DbPrevArrayColumnWrapper<T> extends DbArray.Indirect<T> {
         long newEndPadding = fromIndexInclusive >= rowSet.size() ? toIndexExclusive - fromIndexInclusive
                 : (int) Math.max(0, toIndexExclusive - rowSet.size());
 
-        return new DbPrevArrayColumnWrapper<>(columnSource, rowSet.subSetByPositionRange(realFrom, realTo), newStartPadding,
-                newEndPadding, true);
+        return new DbPrevArrayColumnWrapper<>(columnSource, rowSet.subSetByPositionRange(realFrom, realTo),
+                newStartPadding, newEndPadding);
     }
 
     @Override
@@ -101,7 +95,7 @@ public class DbPrevArrayColumnWrapper<T> extends DbArray.Indirect<T> {
         long sz = Math.min(size(), maxSize);
 
         @SuppressWarnings("unchecked")
-        T result[] = (T[]) Array.newInstance(TypeUtils.getBoxedType(columnSource.getType()),
+        T[] result = (T[]) Array.newInstance(TypeUtils.getBoxedType(columnSource.getType()),
                 LongSizedDataStructure.intSize("toArray", sz));
         for (int i = 0; i < sz; i++) {
             result[i] = get(i);
@@ -125,8 +119,4 @@ public class DbPrevArrayColumnWrapper<T> extends DbArray.Indirect<T> {
         return new DbArrayDirect<>(toArray());
     }
 
-    @Override
-    public T getPrev(long offset) {
-        return get(offset);
-    }
 }

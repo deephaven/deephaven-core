@@ -53,17 +53,6 @@ public class DbShortArrayColumnWrapper extends DbShortArray.Indirect {
     }
 
     @Override
-    public short getPrev(long i) {
-        i-= startPadding;
-
-        if (i<0 || i> rowSet.size()-1) {
-            return NULL_SHORT;
-        }
-
-        return columnSource.getPrevShort(rowSet.get(i));
-    }
-
-    @Override
     public DbShortArray subArray(long fromIndex, long toIndex) {
         fromIndex-=startPadding;
         toIndex-=startPadding;

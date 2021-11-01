@@ -52,8 +52,7 @@ public class DbLongArrayColumnWrapper extends DbLongArray.Indirect {
         return columnSource.getLong(rowSet.get(i));
     }
 
-    @Override
-    public long getPrev(long i) {
+    private long getPrev(long i) {
         i-= startPadding;
 
         if (i<0 || i> rowSet.size()-1) {

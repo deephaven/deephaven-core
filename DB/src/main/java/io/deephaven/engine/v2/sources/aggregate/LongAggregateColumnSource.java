@@ -39,7 +39,7 @@ public final class LongAggregateColumnSource extends BaseAggregateColumnSource<D
         if (index == RowSet.NULL_ROW_KEY) {
             return null;
         }
-        return new DbPrevLongArrayColumnWrapper(aggregatedSource, indexSource.getPrev(index));
+        return new DbPrevLongArrayColumnWrapper(aggregatedSource, indexSource.getPrev(index).getPrevRowSet());
     }
 
     @Override
@@ -59,7 +59,7 @@ public final class LongAggregateColumnSource extends BaseAggregateColumnSource<D
         final WritableObjectChunk<DbLongArray, ? super Values> typedDestination = destination.asWritableObjectChunk();
         final int size = rowSequence.intSize();
         for (int di = 0; di < size; ++di) {
-            typedDestination.set(di, new DbPrevLongArrayColumnWrapper(aggregatedSource, indexChunk.get(di)));
+            typedDestination.set(di, new DbPrevLongArrayColumnWrapper(aggregatedSource, indexChunk.get(di).getPrevRowSet()));
         }
         typedDestination.setSize(size);
     }
