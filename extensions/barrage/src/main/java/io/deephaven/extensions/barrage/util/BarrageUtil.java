@@ -24,6 +24,7 @@ import io.deephaven.db.v2.RollupInfo;
 import io.deephaven.db.v2.sources.chunk.ChunkType;
 import io.deephaven.grpc_api.util.SchemaHelper;
 import io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse;
+import io.deephaven.util.type.TypeUtils;
 import org.apache.arrow.flatbuf.KeyValue;
 import org.apache.arrow.flatbuf.Message;
 import org.apache.arrow.flatbuf.MetadataVersion;
@@ -399,8 +400,8 @@ public class BarrageUtil {
         return result;
     }
 
-    private static boolean isTypeNativelySupported(Class<?> typ) {
-        if (typ.isPrimitive() || supportedTypes.contains(typ)) {
+    private static boolean isTypeNativelySupported(final Class<?> typ) {
+        if (typ.isPrimitive() || TypeUtils.isBoxedType(typ) || supportedTypes.contains(typ)) {
             return true;
         }
         if (typ.isArray()) {

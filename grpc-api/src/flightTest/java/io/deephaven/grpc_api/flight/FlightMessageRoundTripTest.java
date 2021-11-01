@@ -269,7 +269,7 @@ public class FlightMessageRoundTripTest {
     }
 
     @Test
-    public void testStringArrayCol() throws InterruptedException, ExecutionException {
+    public void testStringCol() throws InterruptedException, ExecutionException {
         assertRoundTripDataEqual(TableTools.emptyTable(10).update("S = \"test\""));
         assertRoundTripDataEqual(TableTools.emptyTable(10).update("S = new String[] {\"test\", \"42\"}"));
         assertRoundTripDataEqual(TableTools.emptyTable(10).update("S = new String[][] {new String[] {\"t1\"}}"));
@@ -301,6 +301,16 @@ public class FlightMessageRoundTripTest {
         }
         updateString.append("}");
         assertRoundTripDataEqual(TableTools.emptyTable(10).update(updateString.toString()));
+    }
+
+    @Test
+    public void testLongCol() throws InterruptedException, ExecutionException {
+        assertRoundTripDataEqual(TableTools.emptyTable(10).update("L = ii"));
+        assertRoundTripDataEqual(TableTools.emptyTable(10).update("L = new long[] {ii}"));
+        assertRoundTripDataEqual(TableTools.emptyTable(10).update("L = new long[][] {new long[] {ii}}"));
+        assertRoundTripDataEqual(TableTools.emptyTable(10).update("L = (Long)ii"));
+        assertRoundTripDataEqual(TableTools.emptyTable(10).update("L = new Long[] {ii}"));
+        assertRoundTripDataEqual(TableTools.emptyTable(10).update("L = new Long[][] {new Long[] {ii}}"));
     }
 
     @Test
