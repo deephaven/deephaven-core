@@ -324,6 +324,7 @@ apply plugin: 'io.deephaven.java-conventions'
 String javaDocOverviewLocation = 'build/docs/overview.html'
 tasks.register 'allJavadoc', Javadoc, {
     Javadoc jdoc ->
+        // TODO(deephaven-core#1513): Remove non-LTS JDK 15 as part of javadocs process
         jdoc.javadocTool = javaToolchains.javadocToolFor{it ->
             // Javadoc version >=11 is needed for search
             // Javadoc version >12 is needed to avoid javadoc bugs in linking with modules
