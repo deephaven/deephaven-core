@@ -10,7 +10,7 @@ import wrapt
 import sys
 
 # None until the first _defineSymbols() call
-_Runtime_ = None
+Runtime = None
 
 #
 # Define Java types
@@ -19,20 +19,6 @@ _Runtime_ = None
 # 
 
 # None until the first _defineSymbols() call
-# primitives
-boolean = None
-byte = None
-char = None
-double = None
-float = None
-float32 = None
-float64 = None
-int = None
-int16 = None
-int32 = None
-int64 = None
-long = None
-short = None
 # java.io
 File = None
 # java.lang
@@ -81,33 +67,15 @@ def _defineSymbols():
         raise SystemError("No java functionality can be used until the JVM has been initialized through the jpy module")
     
     # Put everything here (TODO)
-    global _Runtime_, \
-        boolean, byte, char, double, float, float32, float64, int, int16, int32, int64, long, short, \
-        File, \
-        Boolean, Byte, Character, Double, Float, Integer, Long, Math, Short, String, System, \
+    global File, \
+        Boolean, Byte, Character, Double, Float, Integer, Long, Math, Runtime, Short, String, System, \
         BigDecimal, BigInteger, \
         Buffer, ByteBuffer, CharBuffer, DoubleBuffer, FloatBuffer, IntBuffer, LongBuffer, ShortBuffer, \
         DecimalFormat, SimpleDateFormat, \
         Arrays, Collections, Currency, Date, GregorianCalendar, HashMap, LinkedHashMap, Locale, \
         Random, TimeZone, WeakHashMap
 
-    if _Runtime_ is None:
-        _Runtime_ = jpy.get_type("java.lang.Runtime")
-
-        # Primitives
-        boolean = jpy.get_type("boolean")
-        byte = jpy.get_type("byte")
-        char = jpy.get_type("char")
-        double = jpy.get_type("double")
-        float = jpy.get_type("float")
-        float32 = jpy.get_type("float")
-        float64 = jpy.get_type("double")
-        int = jpy.get_type("int")
-        int16 = jpy.get_type("short")
-        int32 = jpy.get_type("int")
-        int64 = jpy.get_type("long")
-        long = jpy.get_type("long")
-        short = jpy.get_type("short")
+    if Runtime is None:
 
         # java.io
         File = jpy.get_type("java.io.File")
@@ -121,6 +89,7 @@ def _defineSymbols():
         Integer = jpy.get_type("java.lang.Integer")
         Long = jpy.get_type("java.lang.Long")
         Math = jpy.get_type("java.lang.Math")
+        Runtime = jpy.get_type("java.lang.Runtime")
         Short = jpy.get_type("java.lang.Short")
         String = jpy.get_type("java.lang.String")
         System = jpy.get_type("java.lang.System")
@@ -177,8 +146,8 @@ except Exception as e:
     pass
 
 @_passThrough
-def _print_memory_statistics():
-    rt = _Runtime_.getRuntime()
+def print_memory_statistics():
+    rt = Runtime.getRuntime()
     print("Total memory (MB): " + str(rt.totalMemory() / 1024 / 1024))
     print("Free memory (MB): " + str(rt.freeMemory() / 1024 / 1024))
     print("Used memory (MB): " + str((rt.totalMemory() - rt.freeMemory()) / 1024 / 1024))
