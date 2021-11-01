@@ -4,6 +4,7 @@
 
 package io.deephaven.extensions.barrage.util;
 
+import com.github.javaparser.ast.stmt.LocalClassDeclarationStmt;
 import com.google.flatbuffers.FlatBufferBuilder;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.ByteStringAccess;
@@ -439,11 +440,18 @@ public class BarrageUtil {
             putMetadata(metadata, "inputtable.isKey", Arrays.asList(inputTable.getKeyNames()).contains(name) + "");
         }
 
+        return arrowFieldFor(name, type, componentType, metadata);
+    }
+
+    private static Field arrowFieldFor(
+            final String name, final Class<?> type, final Class<?> componentType, final Map<String, String> metadata) {
+        List<Field> children = Collections.emptyList();
+
         final FieldType fieldType = arrowFieldTypeFor(type, componentType, metadata);
         if (fieldType.getType().isComplex()) {
             if (type.isArray()) {
-                children = Collections.singletonList(
-                        new Field("", arrowFieldTypeFor(componentType, null, metadata), Collections.emptyList()));
+                children = Collections.singletonList(arrowFieldFor(
+                        "", componentType, componentType.getComponentType(), Collections.emptyMap()));
             } else {
                 throw new UnsupportedOperationException("Arrow Complex Type Not Supported: " + fieldType.getType());
             }

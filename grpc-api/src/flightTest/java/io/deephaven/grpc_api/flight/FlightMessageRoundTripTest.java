@@ -270,7 +270,37 @@ public class FlightMessageRoundTripTest {
 
     @Test
     public void testStringArrayCol() throws InterruptedException, ExecutionException {
+        assertRoundTripDataEqual(TableTools.emptyTable(10).update("S = \"test\""));
         assertRoundTripDataEqual(TableTools.emptyTable(10).update("S = new String[] {\"test\", \"42\"}"));
+        assertRoundTripDataEqual(TableTools.emptyTable(10).update("S = new String[][] {new String[] {\"t1\"}}"));
+
+        final StringBuilder updateString = new StringBuilder("S = new String[][][] {");
+        for (int i = 0; i < 4; ++i) {
+            if (i == 0) {
+                updateString.append("null");
+                continue;
+            }
+
+            updateString.append(", new String[][] {");
+            for (int j = 0; j <= i; ++j) {
+                if (j == 0) {
+                    updateString.append("null");
+                    continue;
+                }
+                updateString.append(", new String[] {");
+                for (int k = 0; k <= j; ++k) {
+                    if (k == 0) {
+                        updateString.append("null");
+                        continue;
+                    }
+                    updateString.append(", \"elem_").append(i).append("_").append(j).append("_").append(k).append("\"");
+                }
+                updateString.append("}");
+            }
+             updateString.append("}");
+        }
+        updateString.append("}");
+        assertRoundTripDataEqual(TableTools.emptyTable(10).update(updateString.toString()));
     }
 
     @Test
