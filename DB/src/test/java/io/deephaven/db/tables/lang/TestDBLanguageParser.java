@@ -839,32 +839,44 @@ public class TestDBLanguageParser extends BaseArrayTestCase {
 
     public void testPyObjectToPrimitiveCasts() throws Exception {
         String expression = "(int)myPyObject";
-        String resultExpression = "intPyCast((PyObject)myPyObject)";
+        String resultExpression = "intPyCast(myPyObject)";
         check(expression, resultExpression, int.class, new String[] {"myPyObject"});
 
         expression = "(double)myPyObject";
-        resultExpression = "doublePyCast((PyObject)myPyObject)";
+        resultExpression = "doublePyCast(myPyObject)";
         check(expression, resultExpression, double.class, new String[] {"myPyObject"});
 
         expression = "(long)myPyObject";
-        resultExpression = "longPyCast((PyObject)myPyObject)";
+        resultExpression = "longPyCast(myPyObject)";
         check(expression, resultExpression, long.class, new String[] {"myPyObject"});
 
         expression = "(float)myPyObject";
-        resultExpression = "floatPyCast((PyObject)myPyObject)";
+        resultExpression = "floatPyCast(myPyObject)";
         check(expression, resultExpression, float.class, new String[] {"myPyObject"});
 
         expression = "(char)myPyObject";
-        resultExpression = "charPyCast((PyObject)myPyObject)";
+        resultExpression = "charPyCast(myPyObject)";
         check(expression, resultExpression, char.class, new String[] {"myPyObject"});
 
         expression = "(byte)myPyObject";
-        resultExpression = "bytePyCast((PyObject)myPyObject)";
+        resultExpression = "bytePyCast(myPyObject)";
         check(expression, resultExpression, byte.class, new String[] {"myPyObject"});
 
         expression = "(short)myPyObject";
-        resultExpression = "shortPyCast((PyObject)myPyObject)";
+        resultExpression = "shortPyCast(myPyObject)";
         check(expression, resultExpression, short.class, new String[] {"myPyObject"});
+
+        expression = "(String)myPyObject";
+        resultExpression = "doStringPyCast(myPyObject)";
+        check(expression, resultExpression, String.class, new String[] {"myPyObject"});
+
+        expression = "(boolean)myPyObject";
+        resultExpression = "booleanPyCast(myPyObject)";
+        check(expression, resultExpression, boolean.class, new String[] {"myPyObject"});
+
+        expression = "(Boolean)myPyObject";
+        resultExpression = "doBooleanPyCast(myPyObject)";
+        check(expression, resultExpression, Boolean.class, new String[] {"myPyObject"});
     }
 
     public void testVariables() throws Exception {
