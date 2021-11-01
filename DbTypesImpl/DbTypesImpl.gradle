@@ -13,7 +13,7 @@ dependencies {
     api project(':DbTypes'), 
             'com.sun.activation:javax.activation:1.2.0'
 
-    testRuntime project(':configs'), project(path: ':test-configs')
+    testRuntimeOnly project(':configs'), project(path: ':test-configs')
 
     testRuntimeOnly project(':log-to-slf4j')
     Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')

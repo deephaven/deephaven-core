@@ -37,7 +37,7 @@ dependencies {
     api project(':DB')
     testCompile 'junit:junit:4.13.2'
     testCompile project(path: ':DB', configuration: 'testOutput')
-    testRuntime project(path: ':configs'), project(path: ':test-configs')
+    testRuntimeOnly project(path: ':configs'), project(path: ':test-configs')
 
     testRuntimeOnly project(':log-to-slf4j')
     Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')

@@ -10,7 +10,7 @@ configurations {
 dependencies {
     api project(':log-factory')
 
-    testRuntime project(path: ':configs'), project(path: ':test-configs')
+    testRuntimeOnly project(path: ':configs'), project(path: ':test-configs')
 
     testRuntimeOnly project(':log-to-slf4j')
     Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')

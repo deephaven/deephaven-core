@@ -10,5 +10,5 @@ configurations {
 dependencies {
     api project(':DB')
 
-    testRuntime project(path: ':configs'), project(path: ':test-configs')
+    testRuntimeOnly project(path: ':configs'), project(path: ':test-configs')
 }

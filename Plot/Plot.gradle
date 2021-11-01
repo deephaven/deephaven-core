@@ -17,7 +17,7 @@ dependencies {
     testCompile TestTools.projectDependency(project, 'Util'),
                 TestTools.projectDependency(project, 'DB')
 
-    testRuntime project(path: ':configs'), project(path: ':test-configs'), project(':Numerics')
+    testRuntimeOnly project(path: ':configs'), project(path: ':test-configs'), project(':Numerics')
 
     testRuntimeOnly project(':log-to-slf4j')
     Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')

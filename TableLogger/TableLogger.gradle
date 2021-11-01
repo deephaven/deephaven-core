@@ -9,7 +9,7 @@ configurations {
 
 dependencies {
     api project(':Util')
-    testRuntime project(path: ':configs'), project(path: ':test-configs')
+    testRuntimeOnly project(path: ':configs'), project(path: ':test-configs')
 
     runtimeOnly project(path: ':configs')
 
