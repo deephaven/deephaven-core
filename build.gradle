@@ -20,10 +20,23 @@ plugins {
 
 import io.deephaven.tools.Java
 import io.deephaven.tools.License
+import org.gradle.internal.jvm.Jvm
 
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.concurrent.TimeUnit
+
+def isCi = System.getenv().getOrDefault("CI", "false") == "true"
+def gradleJvmVersion = Jvm.current().getJavaVersion()
+if (isCi) {
+    if (gradleJvmVersion != JavaVersion.VERSION_11) {
+        throw new IllegalStateException("JDK 11 is currently required for CI builds")
+    }
+} else {
+    if (!gradleJvmVersion.isCompatibleWith(JavaVersion.VERSION_11)) {
+        throw new IllegalStateException("JDK 11+ is currently required for development builds. For help installing, see https://deephaven.io/core/docs/how-to-guides/launch-build")
+    }
+}
 
 allprojects {
     repositories {
