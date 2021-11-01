@@ -1,15 +1,17 @@
 import jpy
 from deephaven.plugin.object import Exporter, ObjectType, Reference
 
-_JExporter = jpy.get_type('io.deephaven.plugin.type.ObjectType$Exporter')
+_JExporterAdapter = jpy.get_type('io.deephaven.server.plugin.python.ExporterAdapter')
 
 class ExporterAdapter(Exporter):
-    def __init__(self, exporter: _JExporter):
+    def __init__(self, exporter: _JExporterAdapter):
         self._exporter = exporter
 
     def new_server_side_reference(self, object) -> Reference:
-        # todo: unwrap_to_java_type(object)?
-        _reference = self._exporter.newServerSideReference(object)
+        if isinstance(object, jpy.JType):
+            _reference = self._exporter.newServerSideReference(object)
+        else:
+            _reference = self._exporter.newServerSideReferencePyObject(object)
         return Reference(bytes(_reference.id().toByteArray()))
 
     def __str__(self):
@@ -23,7 +25,7 @@ class ObjectTypeAdapter:
     def is_type(self, object):
         return self._user_object_type.is_type(object)
 
-    def to_bytes(self, exporter: _JExporter, object):
+    def to_bytes(self, exporter: _JExporterAdapter, object):
         return self._user_object_type.to_bytes(ExporterAdapter(exporter), object)
 
     def __str__(self):
