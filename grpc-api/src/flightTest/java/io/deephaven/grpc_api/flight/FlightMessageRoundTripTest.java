@@ -269,6 +269,11 @@ public class FlightMessageRoundTripTest {
     }
 
     @Test
+    public void testStringArrayCol() throws InterruptedException, ExecutionException {
+        assertRoundTripDataEqual(TableTools.emptyTable(10).update("S = new String[] {\"test\", \"42\"}"));
+    }
+
+    @Test
     public void testFlightInfo() {
         final String staticTableName = "flightInfoTest";
         final String tickingTableName = "flightInfoTestTicking";

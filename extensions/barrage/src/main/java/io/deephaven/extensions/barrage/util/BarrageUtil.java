@@ -398,6 +398,16 @@ public class BarrageUtil {
         return result;
     }
 
+    private static boolean isTypeNativelySupported(Class<?> typ) {
+        if (typ.isPrimitive() || supportedTypes.contains(typ)) {
+            return true;
+        }
+        if (typ.isArray()) {
+            return isTypeNativelySupported(typ.getComponentType());
+        }
+        return false;
+    }
+
     private static Field arrowFieldFor(final String name, final ColumnDefinition<?> column, final String description,
             final MutableInputTable inputTable, final Map<String, String> extraMetadata) {
         List<Field> children = Collections.emptyList();
@@ -407,7 +417,7 @@ public class BarrageUtil {
         final Class<?> componentType = column.getComponentType();
         final Map<String, String> metadata = new HashMap<>(extraMetadata);
 
-        if (type.isPrimitive() || supportedTypes.contains(type)) {
+        if (isTypeNativelySupported(type)) {
             putMetadata(metadata, "type", type.getCanonicalName());
         } else {
             // otherwise will be converted to a string
