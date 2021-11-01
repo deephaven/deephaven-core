@@ -1,6 +1,8 @@
 {
  "className": "io.deephaven.qst.table.TicketTable",
  "methods": {
+  "fromApplicationField": "Create a ticket table from the provided applicationId and fieldName.\n\n:param applicationId: (java.lang.String) - the application id\n:param fieldName: (java.lang.String) - the application field name\n:return: (io.deephaven.qst.table.TicketTable) the ticket table",
+  "fromQueryScopeField": "Create a ticket table from the provided fieldName.\n\n:param fieldName: (java.lang.String) - the query scope field name\n:return: (io.deephaven.qst.table.TicketTable) the ticket table",
   "of": "**Incompatible overloads text - text from the first overload:**\n\nCreate a ticket table with the UTF-8 bytes from the ticket string.\n\n*Overload 1*  \n  :param ticket: (byte[]) - the ticket\n  :return: (io.deephaven.qst.table.TicketTable) the ticket table\n  \n*Overload 2*  \n  :param ticket: (java.lang.String) - the ticket string\n  :return: (io.deephaven.qst.table.TicketTable) the ticket table",
   "ticket": "The ticket.\n\n:return: (byte[]) the ticket",
   "walk": "Note: Java generics information - <V extends io.deephaven.qst.table.TableSpec.Visitor>\n\n:param visitor: V\n:return: V"

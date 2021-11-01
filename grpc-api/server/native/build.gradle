@@ -13,7 +13,7 @@ dependencies {
   runtimeOnly project(':log-to-slf4j')
   runtimeOnly project(':logback-print-stream-globals')
   runtimeOnly project(':logback-logbuffer')
-  runtimeOnly 'ch.qos.logback:logback-classic:1.2.3'
+  Classpaths.inheritLogbackClassic(project)
 
   // Note: if we want to switch back to DH-first logging, we would need to comment out the above and
   // enable something like the following:
@@ -31,3 +31,5 @@ application {
       '-XX:+UseStringDeduplication',
       '-XshowSettings:vm' ]
 }
+
+apply plugin: 'io.deephaven.java-open-nio'

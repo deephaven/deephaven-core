@@ -8,5 +8,5 @@ dependencies {
 	// access to the internal logger.
 	implementation project(':log-factory')
 	Classpaths.inheritSlf4j(project, 'slf4j-api', 'compileOnly') // users must provide their own impl and slf4j config
-	compileOnly 'ch.qos.logback:logback-classic:1.2.3' // so we can attach an interceptor, if supported
+	Classpaths.inheritLogbackClassic(project, 'compileOnly') // so we can attach an interceptor, if supported
 }

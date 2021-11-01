@@ -9,13 +9,12 @@ import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.utils.DBTimeUtils;
 import io.deephaven.db.util.ScriptSession;
 import io.deephaven.db.util.liveness.LivenessArtifact;
-import io.deephaven.db.util.liveness.LivenessManager;
 import io.deephaven.db.util.liveness.LivenessReferent;
 import io.deephaven.db.v2.DynamicNode;
-import io.deephaven.grpc_api.barrage.util.BarrageSchemaUtil;
+import io.deephaven.extensions.barrage.util.BarrageUtil;
 import io.deephaven.grpc_api.session.SessionService;
 import io.deephaven.grpc_api.session.SessionState;
-import io.deephaven.grpc_api.util.GrpcUtil;
+import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.grpc_api.util.Scheduler;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
@@ -82,9 +81,7 @@ public class ApplicationServiceGrpcImpl extends ApplicationServiceGrpc.Applicati
         changes.removed.keySet().stream().map(AppFieldId::fromScopeName).forEach(id -> {
             updatedFields.remove(id);
             Field<?> oldField = addedFields.remove(id);
-            if (oldField != null) {
-                tracker.maybeUnmanage(oldField.value());
-            } else {
+            if (oldField == null) {
                 removedFields.add(id);
             }
         });
@@ -100,16 +97,7 @@ public class ApplicationServiceGrpcImpl extends ApplicationServiceGrpc.Applicati
                 recentField = true;
             }
 
-            // Note the order w.r.t. the tracker is intentional to avoid dropping ref count to zero
-            Object newValue = scriptSession.unwrapObject(scriptSession.getVariable(name));
-            Object oldValue = field.value();
-
-            if (newValue != oldValue) {
-                tracker.maybeManage(newValue);
-                tracker.maybeUnmanage(oldValue);
-            }
-
-            field.value = newValue;
+            field.value = scriptSession.unwrapObject(scriptSession.getVariable(name));
             if (!recentField) {
                 updatedFields.add(id);
             }
@@ -125,7 +113,6 @@ public class ApplicationServiceGrpcImpl extends ApplicationServiceGrpc.Applicati
                 throw new IllegalStateException(
                         String.format("Field information could not be generated for scope variable '%s'", name));
             }
-            tracker.maybeManage(field.value);
             final Field<?> oldField = addedFields.put(id, field);
             if (oldField != null) {
                 throw new IllegalStateException(
@@ -305,7 +292,7 @@ public class ApplicationServiceGrpcImpl extends ApplicationServiceGrpc.Applicati
         if (obj instanceof Table) {
             final Table table = (Table) obj;
             return FieldInfo.FieldType.newBuilder().setTable(TableInfo.newBuilder()
-                    .setSchemaHeader(BarrageSchemaUtil.schemaBytesFromTable(table))
+                    .setSchemaHeader(BarrageUtil.schemaBytesFromTable(table))
                     .setIsStatic(!table.isLive())
                     .setSize(table.size())
                     .build()).build();

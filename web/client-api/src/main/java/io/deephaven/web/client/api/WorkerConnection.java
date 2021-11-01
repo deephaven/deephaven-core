@@ -38,6 +38,7 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.Re
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.TerminationNotificationRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.terminationnotificationresponse.StackTrace;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb_service.SessionServiceClient;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.ApplyPreviewColumnsRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.EmptyTableRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.ExportedTableCreationResponse;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.ExportedTableUpdateMessage;
@@ -80,6 +81,7 @@ import jsinterop.annotations.JsOptional;
 import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
+import javax.annotation.Nullable;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.util.List;
@@ -633,17 +635,25 @@ public class WorkerConnection {
         info.failureHandled(throwable.toString());
     }
 
-    public Promise<JsTable> getTable(JsVariableDefinition varDef) {
+    public Promise<JsTable> getTable(JsVariableDefinition varDef, @Nullable Boolean applyPreviewColumns) {
         return whenServerReady("get a table").then(serve -> {
             JsLog.debug("innerGetTable", varDef.getTitle(), " started");
             return newState(info,
                     (c, cts, metadata) -> {
                         JsLog.debug("performing fetch for ", varDef.getTitle(), " / ", cts,
                                 " (" + LazyString.of(cts::getHandle), ")");
-                        FetchTableRequest fetch = new FetchTableRequest();
-                        fetch.setSourceId(TableTicket.createTableRef(varDef));
-                        fetch.setResultId(cts.getHandle().makeTicket());
-                        tableServiceClient.fetchTable(fetch, metadata, c::apply);
+                        // TODO (deephaven-core#188): eliminate this branch by applying preview cols before subscribing
+                        if (applyPreviewColumns == null || applyPreviewColumns) {
+                            ApplyPreviewColumnsRequest req = new ApplyPreviewColumnsRequest();
+                            req.setSourceId(TableTicket.createTableRef(varDef));
+                            req.setResultId(cts.getHandle().makeTicket());
+                            tableServiceClient.applyPreviewColumns(req, metadata, c::apply);
+                        } else {
+                            FetchTableRequest req = new FetchTableRequest();
+                            req.setSourceId(TableTicket.createTableRef(varDef));
+                            req.setResultId(cts.getHandle().makeTicket());
+                            tableServiceClient.fetchTable(req, metadata, c::apply);
+                        }
                     }, "fetch table " + varDef.getTitle()).then(cts -> {
                         JsLog.debug("innerGetTable", varDef.getTitle(), " succeeded ", cts);
                         JsTable table = new JsTable(this, cts);
@@ -673,7 +683,7 @@ public class WorkerConnection {
     public Promise<Object> getObject(JsVariableDefinition definition) {
         switch (VariableType.valueOf(definition.getType())) {
             case Table:
-                return (Promise) getTable(definition);
+                return (Promise) getTable(definition, null);
             case TreeTable:
                 return (Promise) getTreeTable(definition);
             case Figure:
@@ -786,7 +796,7 @@ public class WorkerConnection {
     }
 
     public Promise<JsTreeTable> getTreeTable(JsVariableDefinition varDef) {
-        return getTable(varDef).then(t -> {
+        return getTable(varDef, null).then(t -> {
             Promise<JsTreeTable> result = Promise.resolve(new JsTreeTable(t.state(), this).finishFetch());
             t.close();
             return result;
@@ -890,8 +900,7 @@ public class WorkerConnection {
                     createMessage(schema, MessageHeader.Schema, Schema.endSchema(schema), 0, 0);
             schemaMessage.setDataHeader(schemaMessagePayload);
 
-            Uint8Array rpcTicket = config.newTicketRaw();
-            schemaMessage.setAppMetadata(BarrageUtils.barrageMessage(rpcTicket, 0, false));
+            schemaMessage.setAppMetadata(BarrageUtils.emptyMessage());
             schemaMessage.setFlightDescriptor(cts.getHandle().makeFlightDescriptor());
 
             // we wait for any errors in this response to pass to the caller, but success is determined by the eventual
@@ -920,7 +929,7 @@ public class WorkerConnection {
                 }
             });
             FlightData bodyMessage = new FlightData();
-            bodyMessage.setAppMetadata(BarrageUtils.barrageMessage(rpcTicket, 1, true));
+            bodyMessage.setAppMetadata(BarrageUtils.emptyMessage());
 
             Builder bodyData = new Builder(1024);
 
@@ -1166,6 +1175,21 @@ public class WorkerConnection {
 
         for (ClientTableState state : statesToFlush) {
             if (state.hasNoSubscriptions()) {
+                // state may be retained if it is held by at least one paused binding;
+                // it is either an unsubscribed active table, an interim state for an
+                // active table, or a pending rollback for an operation that has not
+                // yet completed (we leave orphaned nodes paused until a request completes).
+                if (state.isSubscribed()) {
+                    state.setSubscribed(false);
+                    if (state.getHandle().isConnected()) {
+                        BiDiStream<FlightData, FlightData> stream = subscriptionStreams.remove(state);
+                        if (stream != null) {
+                            stream.end();
+                            stream.cancel();
+                        }
+                    }
+                }
+
                 if (state.isEmpty()) {
                     // completely empty; perform release
                     final ClientTableState.ResolutionState previousState = state.getResolution();
@@ -1178,21 +1202,6 @@ public class WorkerConnection {
                         // don't send a release message to the server if the table isn't really there
                         if (state.getHandle().isConnected()) {
                             releaseHandle(state.getHandle());
-                        }
-                    }
-                } else {
-                    // state is still retained as it is held by at least one paused binding;
-                    // it is either an unsubscribed active table, an interim state for an
-                    // active table, or a pending rollback for an operation that has not
-                    // yet completed (we leave orphaned nodes paused until a request completes).
-                    if (state.isSubscribed()) {
-                        state.setSubscribed(false);
-                        if (state.getHandle().isConnected()) {
-                            BiDiStream<FlightData, FlightData> stream = subscriptionStreams.remove(state);
-                            if (stream != null) {
-                                stream.end();
-                                stream.cancel();
-                            }
                         }
                     }
                 }
@@ -1230,21 +1239,22 @@ public class WorkerConnection {
                     viewportOffset = BarrageSubscriptionRequest.createViewportVector(subscriptionReq, serializeRanges(
                             vps.stream().map(TableSubscriptionRequest::getRows).collect(Collectors.toSet())));
                 }
-                double serializationOptionsOffset = BarrageSerializationOptions
-                        .createBarrageSerializationOptions(subscriptionReq, ColumnConversionMode.Stringify, true);
+                // TODO #188 support minUpdateIntervalMs
+                double serializationOptionsOffset = BarrageSubscriptionOptions
+                        .createBarrageSubscriptionOptions(subscriptionReq, ColumnConversionMode.Stringify, true, 1000,
+                                0);
                 double tableTicketOffset =
                         BarrageSubscriptionRequest.createTicketVector(subscriptionReq, state.getHandle().getTicket());
                 BarrageSubscriptionRequest.startBarrageSubscriptionRequest(subscriptionReq);
                 BarrageSubscriptionRequest.addColumns(subscriptionReq, columnsOffset);
-                BarrageSubscriptionRequest.addSerializationOptions(subscriptionReq, serializationOptionsOffset);
-                // BarrageSubscriptionRequest.addUpdateIntervalMs();//TODO #188 support this
+                BarrageSubscriptionRequest.addSubscriptionOptions(subscriptionReq, serializationOptionsOffset);
                 BarrageSubscriptionRequest.addViewport(subscriptionReq, viewportOffset);
                 BarrageSubscriptionRequest.addTicket(subscriptionReq, tableTicketOffset);
                 subscriptionReq.finish(BarrageSubscriptionRequest.endBarrageSubscriptionRequest(subscriptionReq));
 
                 FlightData request = new FlightData();
-                request.setAppMetadata(BarrageUtils.barrageMessage(subscriptionReq,
-                        BarrageMessageType.BarrageSubscriptionRequest, new Uint8Array(0), 0, false));
+                request.setAppMetadata(
+                        BarrageUtils.wrapMessage(subscriptionReq, BarrageMessageType.BarrageSubscriptionRequest));
 
                 BiDiStream<FlightData, FlightData> stream = this.<FlightData, FlightData>streamFactory().create(
                         headers -> flightServiceClient.doExchange(headers),

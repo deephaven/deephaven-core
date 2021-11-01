@@ -19,7 +19,7 @@ dependencies {
   Classpaths.inheritSlf4j(project, 'jcl-over-slf4j', 'runtimeOnly')
   runtimeOnly project(':logback-print-stream-globals')
   runtimeOnly project(':logback-logbuffer')
-  runtimeOnly 'ch.qos.logback:logback-classic:1.2.3'
+  Classpaths.inheritLogbackClassic(project)
 }
 
 def dockerLicenses = License.createFrom(project).syncDockerLicense().get()
@@ -56,6 +56,10 @@ docker {
         '-XX:MinRAMPercentage=70.0',
         // the percentage of system memory that the JVM will use as maximum
         '-XX:MaxRAMPercentage=80.0',
+
+        // TODO(deephaven-core#1493): add-opens Docker application based on plugin conventions
+        '--add-opens', 'java.base/java.nio=ALL-UNNAMED',
+
         '-XshowSettings:vm'
     ]
   }
@@ -135,3 +139,5 @@ tasks.register('publishDockerfile') {
     output.get().asFile.write("FROM ${input.get().asFile.text}")
   }
 }*/
+
+apply plugin: 'io.deephaven.java-open-nio'

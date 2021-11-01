@@ -7,20 +7,20 @@ description = 'The Deephaven client session library'
 dependencies {
   api project(':qst')
   api project(':proto:proto-backplane-grpc')
+  api project(':uri')
 
-  annotationProcessor 'org.immutables:value:2.8.1'
-  compileOnly project(':util-immutables')
+  Classpaths.inheritImmutables(project)
 
   compileOnly 'javax.inject:javax.inject:1'
 
-  testImplementation(platform('org.junit:junit-bom:5.7.2'))
+  Classpaths.inheritJUnitPlatform(project)
 
   testImplementation 'org.junit.jupiter:junit-jupiter'
   testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
   testRuntimeOnly 'org.junit.vintage:junit-vintage-engine'
   testImplementation 'junit:junit:4.13.2'
 
-  testImplementation 'org.assertj:assertj-core:3.19.0'
+  Classpaths.inheritAssertJ(project)
 
   Classpaths.inheritSlf4j(project, 'slf4j-api', 'implementation')
   Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')

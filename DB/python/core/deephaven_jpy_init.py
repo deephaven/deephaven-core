@@ -73,6 +73,7 @@ def query_update_performance_set(evaluationNumber):
 
 def importjava(clazz):
     _jclass_ = jpy.get_type("java.lang.Class")
+    ql = jpy.get_type("io.deephaven.db.tables.libs.QueryLibrary")
 
     def _get_short_class_name_(clazz):
         return _jclass_.forName(clazz).getSimpleName()
@@ -80,11 +81,12 @@ def importjava(clazz):
     clazz = clazz.strip()
     javaclass = _get_short_class_name_(clazz)
     globals()[javaclass] = jpy.get_type(clazz)
-    db.importClass(_jclass_.forName(clazz))
+    ql.importClass(_jclass_.forName(clazz))
 
 
 def importstatic(clazz):
     _jclass_ = jpy.get_type("java.lang.Class")
+    ql = jpy.get_type("io.deephaven.db.tables.libs.QueryLibrary")
     clazz = clazz.strip()
     javaclass = jpy.get_type(clazz)
     for key, value in javaclass.__dict__.items():
@@ -95,7 +97,7 @@ def importstatic(clazz):
                     if methods[0].is_static:
                         globals()[value.name] = value
 
-    db.importClass(_jclass_.forName(clazz))
+    ql.importClass(_jclass_.forName(clazz))
 
 
 def java_array(type, values):

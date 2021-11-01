@@ -30,8 +30,6 @@ using deephaven::client::highlevel::TableHandle;
 using deephaven::client::utility::streamf;
 using deephaven::client::utility::stringf;
 using deephaven::client::utility::TableMaker;
-using deephaven::client::utility::flight::statusOrDie;
-using deephaven::client::utility::flight::valueOrDie;
 
 namespace deephaven {
 namespace client {

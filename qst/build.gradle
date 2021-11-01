@@ -7,12 +7,11 @@ description = 'The Deephaven Query Syntax Tree POJOs'
 dependencies {
     api project(':table-api')
 
-    annotationProcessor 'org.immutables:value:2.8.1'
-    compileOnly project(':util-immutables')
+    Classpaths.inheritImmutables(project)
 
-    testImplementation(platform('org.junit:junit-bom:5.7.2'))
+    Classpaths.inheritJUnitPlatform(project)
+    Classpaths.inheritAssertJ(project)
     testImplementation 'org.junit.jupiter:junit-jupiter'
-    testImplementation 'org.assertj:assertj-core:3.19.0'
 }
 
 test {

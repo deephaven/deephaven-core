@@ -12,7 +12,7 @@ public class KafkaIngesterException extends UncheckedDeephavenException {
      * @param reason the exception detail message
      * @param cause the exception cause
      */
-    public KafkaIngesterException(String reason, Exception cause) {
+    public KafkaIngesterException(String reason, Throwable cause) {
         super(reason, cause);
     }
 

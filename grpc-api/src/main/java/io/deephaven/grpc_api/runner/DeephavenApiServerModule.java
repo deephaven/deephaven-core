@@ -14,6 +14,7 @@ import io.deephaven.grpc_api.console.python.PythonConsoleSessionModule;
 import io.deephaven.grpc_api.log.LogModule;
 import io.deephaven.grpc_api.session.SessionModule;
 import io.deephaven.grpc_api.table.TableModule;
+import io.deephaven.grpc_api.uri.UriModule;
 import io.deephaven.grpc_api.util.Scheduler;
 import io.deephaven.util.process.ProcessEnvironment;
 import io.deephaven.util.thread.NamingThreadFactory;
@@ -42,6 +43,7 @@ import java.util.concurrent.TimeUnit;
         ArrowModule.class,
         AuthContextModule.class,
         LogModule.class,
+        UriModule.class,
         SessionModule.class,
         TableModule.class,
         ConsoleModule.class,

@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.kafka.publish.SimpleKeyOrValueSerializer$Factory",
+ "methods": {
+  "create": "Create a serializer using columns of source as input.\n\n:param source: (io.deephaven.db.tables.Table) - The source Table\n:return: (io.deephaven.kafka.publish.KeyOrValueSerializer<SimpleKeyOrValueSerializer.Factory.SERIALIZED_TYPE>) The resulting serializer",
+  "sourceColumnNames": "Get a list of the source column names that will be used by the serializers returns by KeyOrValueSerializer.Factory.create(Table).\n\n:param tableDefinition: (io.deephaven.db.tables.TableDefinition) - The TableDefinition of a Table that will be subsequently supplied to\n        KeyOrValueSerializer.Factory.create(Table)\n:return: (java.util.List<java.lang.String>) The list of input column names",
+  "validateColumns": "Validate that this factory is compatible with tableDefinition.\n\n:param tableDefinition: (io.deephaven.db.tables.TableDefinition) - A TableDefinition specifying all available source columns"
+ },
+ "path": "io.deephaven.kafka.publish.SimpleKeyOrValueSerializer.Factory",
+ "typeName": "class"
+}

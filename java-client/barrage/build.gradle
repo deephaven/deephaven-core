@@ -1,0 +1,27 @@
+plugins {
+    id 'java-library'
+}
+
+configurations {
+    compile.extendsFrom irisDb
+    testCompile.extendsFrom irisDbTest
+}
+
+description = 'The Deephaven Barrage Client'
+
+dependencies {
+    api project(':java-client-flight')
+    api project(':extensions-barrage')
+
+    compileOnly 'javax.inject:javax.inject:1'
+
+    Classpaths.inheritImmutables(project)
+
+    Classpaths.inheritSlf4j(project, 'slf4j-api', 'implementation')
+    Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')
+    testRuntimeOnly project(':log-to-slf4j')
+
+    Classpaths.inheritJUnitPlatform(project)
+    Classpaths.inheritAssertJ(project)
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+}

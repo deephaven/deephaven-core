@@ -11,6 +11,7 @@ import dagger.assisted.AssistedFactory;
 import dagger.assisted.AssistedInject;
 import io.deephaven.base.formatters.FormatBitSet;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.extensions.barrage.util.BarrageMessageConsumer;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.db.tables.TableDefinition;
 import io.deephaven.db.tables.utils.DBTimeUtils;
@@ -44,7 +45,7 @@ import io.deephaven.db.v2.utils.BarrageMessage;
 import io.deephaven.db.v2.utils.Index;
 import io.deephaven.db.v2.utils.OrderedKeys;
 import io.deephaven.db.v2.utils.UpdatePerformanceTracker;
-import io.deephaven.grpc_api.util.GrpcUtil;
+import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.grpc_api.util.Scheduler;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
@@ -384,24 +385,30 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
     /////////////////////////////////////
 
     /**
-     * Here is the typical lifecycle of a subscription: 1) The new subscription is added to pendingSubscriptions. It is
-     * not active and its viewport / subscribed columns are empty. 2) If a subscription is updated before the initial
-     * snapshot is prepared, we overwrite the viewport / columns stored in the variables prefixed with `pending`. These
-     * variables will always contain the most recently requested viewport / columns that have not yet been acknowledged
-     * by the BMP. 3) The BMP's update propagation job runs. All pendingSubscriptions (new or updated) will have their
-     * pending viewport / columns requests accepted. All pendingSubscriptions move to the activeSubscription list if
-     * they were brand new. The pendingSubscription list is cleared. At this stage, the `pending` variables are nulled
-     * and their contents move to the variables prefixed with `snapshot`. If a viewport's subscribedColumns change when
-     * the viewport remains the same, we copy the reference from `viewport` to `snapshotViewport`. The propagation job
-     * is responsible for building the snapshot and sending it to the client. Finally, the `snapshot` variables are
-     * nulled and promoted to `viewport` and `subscribedColumns`. 4) If a subscription is updated during or after stage
-     * 3, it will be added back to the pendingSubscription list, and the updated requests will sit in the `pending`
-     * variables until the next time the update propagation job executes. It will NOT be removed from the
-     * activeSubscription list. A given subscription will exist no more than once in either subscription list. 5)
-     * Finally, when a subscription is removed we mark it as having a `pendingDelete` and add it to the
-     * pendingSubscription list. Any subscription requests/updates that re-use this handleId will ignore this instance
-     * of Subscription and be allowed to construct a new Subscription starting from step 1. When the update propagation
-     * job is run we clean up deleted subscriptions and rebuild any state that is used to filter recorded updates.
+     * @formatter:off
+     * Here is the typical lifecycle of a subscription:
+     *   1) The new subscription is added to pendingSubscriptions. It is not active and its viewport / subscribed
+     *      columns are empty.
+     *   2) If a subscription is updated before the initial snapshot is prepared, we overwrite the viewport / columns
+     *      stored in the variables prefixed with `pending`. These variables will always contain the most recently
+     *      requested viewport / columns that have not yet been acknowledged by the BMP.
+     *   3) The BMP's update propagation job runs. All pendingSubscriptions (new or updated) will have their pending
+     *      viewport / columns requests accepted. All pendingSubscriptions move to the activeSubscription list if they
+     *      were brand new. The pendingSubscription list is cleared. At this stage, the `pending` variables are nulled
+     *      and their contents move to the variables prefixed with `snapshot`. If a viewport's subscribedColumns change
+     *      when the viewport remains the same, we copy the reference from `viewport` to `snapshotViewport`. The
+     *      propagation job is responsible for building the snapshot and sending it to the client. Finally, the
+     *      `snapshot` variables are nulled and promoted to `viewport` and `subscribedColumns`.
+     *   4) If a subscription is updated during or after stage 3, it will be added back to the pendingSubscription list,
+     *      and the updated requests will sit in the `pending` variables until the next time the update propagation job
+     *      executes. It will NOT be removed from the activeSubscription list. A given subscription will exist no more
+     *      than once in either subscription list.
+     *   5) Finally, when a subscription is removed we mark it as having a `pendingDelete` and add it to the
+     *      pendingSubscription list. Any subscription requests/updates that re-use this handleId will ignore this
+     *      instance of Subscription and be allowed to construct a new Subscription starting from step 1. When the
+     *      update propagation job is run we clean up deleted subscriptions and rebuild any state that is used to filter
+     *      recorded updates.
+     * @formatter:on
      */
     private class Subscription {
         final Options options;
@@ -440,7 +447,7 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
 
     public boolean addSubscription(final StreamObserver<MessageView> listener,
             final Options options,
-            final BitSet columnsToSubscribe,
+            final @Nullable BitSet columnsToSubscribe,
             final @Nullable Index initialViewport) {
         synchronized (this) {
             final boolean hasSubscription = activeSubscriptions.stream().anyMatch(item -> item.listener == listener)
@@ -450,14 +457,19 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
                         "asking to add a subscription for an already existing session and listener");
             }
 
-            final Subscription subscription =
-                    new Subscription(listener, options, (BitSet) columnsToSubscribe.clone(), initialViewport);
+            final BitSet cols;
+            if (columnsToSubscribe == null) {
+                cols = new BitSet(sourceColumns.length);
+                cols.set(0, sourceColumns.length);
+            } else {
+                cols = (BitSet) columnsToSubscribe.clone();
+            }
+            final Subscription subscription = new Subscription(listener, options, cols, initialViewport);
 
-            Assert.neqNull(columnsToSubscribe, "columnsToSubscribe");
             log.info().append(logPrefix)
                     .append(subscription.logPrefix)
                     .append("subbing to columns ")
-                    .append(FormatBitSet.formatBitSet(columnsToSubscribe))
+                    .append(FormatBitSet.formatBitSet(cols))
                     .endl();
 
             subscription.hasPendingUpdate = true;

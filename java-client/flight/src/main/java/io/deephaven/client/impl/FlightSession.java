@@ -2,6 +2,8 @@ package io.deephaven.client.impl;
 
 import io.deephaven.client.impl.TableHandle.TableHandleException;
 import io.deephaven.grpc_api.util.FlightExportTicketHelper;
+import io.deephaven.grpc_api.util.SchemaHelper;
+import io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse;
 import io.deephaven.qst.table.NewTable;
 import io.deephaven.qst.table.TicketTable;
 import io.grpc.ManagedChannel;
@@ -22,7 +24,7 @@ import java.util.Collections;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 
-public final class FlightSession implements AutoCloseable {
+public class FlightSession implements AutoCloseable {
 
     public static FlightSession of(SessionImpl session, BufferAllocator incomingAllocator,
             ManagedChannel channel) {
@@ -31,12 +33,12 @@ public final class FlightSession implements AutoCloseable {
         return new FlightSession(session, client);
     }
 
-    private final SessionImpl session;
+    protected final SessionImpl session;
 
     // TODO(deephaven-core#988): Add more async support to org.apache.arrow.flight.FlightClient
-    private final FlightClient client;
+    protected final FlightClient client;
 
-    private FlightSession(SessionImpl session, FlightClient client) {
+    protected FlightSession(SessionImpl session, FlightClient client) {
         this.session = Objects.requireNonNull(session);
         this.client = Objects.requireNonNull(client);
     }
@@ -48,6 +50,20 @@ public final class FlightSession implements AutoCloseable {
      */
     public Session session() {
         return session;
+    }
+
+    /**
+     * Create a schema from the existing handle's response.
+     *
+     * <p>
+     * Equivalent to {@code SchemaHelper.schema(handle.response())}.
+     *
+     * @param handle the handle
+     * @return the schema
+     * @see SchemaHelper#schema(ExportedTableCreationResponse)
+     */
+    public Schema schema(TableHandle handle) {
+        return SchemaHelper.schema(handle.response());
     }
 
     /**

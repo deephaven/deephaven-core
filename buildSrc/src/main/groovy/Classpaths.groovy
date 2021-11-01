@@ -2,7 +2,10 @@ import groovy.transform.CompileStatic
 import org.gradle.api.Action
 import org.gradle.api.Project
 import org.gradle.api.artifacts.Configuration
+import org.gradle.api.artifacts.Dependency
 import org.gradle.api.internal.artifacts.dependencies.DefaultExternalModuleDependency
+import org.gradle.api.plugins.JavaPlatformPlugin
+import org.gradle.api.plugins.JavaPlugin
 import org.gradle.internal.Actions
 
 /**
@@ -50,6 +53,34 @@ class Classpaths {
     static final String SLF4J_GROUP = 'org.slf4j'
     static final String SLF4J_VERSION = '1.7.32'
 
+    static final String FLATBUFFER_GROUP = 'com.google.flatbuffers'
+    static final String FLATBUFFER_NAME = 'flatbuffers-java'
+    static final String FLATBUFFER_VERSION = '1.12.0'
+
+    static final String DAGGER_GROUP = 'com.google.dagger'
+    static final String DAGGER_NAME = 'dagger'
+    static final String DAGGER_COMPILER = 'dagger-compiler'
+    static final String DAGGER_VERSION = '2.31.1'
+
+    static final String IMMUTABLES_GROUP = 'org.immutables'
+    static final String IMMUTABLES_NAME = 'value'
+    static final String IMMUTABLES_VERSION = '2.8.1'
+
+    static final String JUNIT_GROUP = 'org.junit'
+    static final String JUNIT_NAME = 'junit-bom'
+    static final String JUNIT_VERSION = '5.7.2'
+
+    static final String ASSERTJ_GROUP = 'org.assertj'
+    static final String ASSERTJ_NAME = 'assertj-core'
+    static final String ASSERTJ_VERSION = '3.19.0'
+
+    static final String LOGBACK_GROUP = 'ch.qos.logback'
+    static final String LOGBACK_NAME = 'logback-classic'
+    static final String LOGBACK_VERSION = '1.2.3'
+
+    static final String GROOVY_GROUP = 'org.codehaus.groovy'
+    static final String GROOVY_VERSION = '3.0.9'
+
     static boolean addDependency(Configuration conf, String group, String name, String version, Action<? super DefaultExternalModuleDependency> configure = Actions.doNothing()) {
         if (!conf.dependencies.find { it.name == name && it.group == group}) {
             DefaultExternalModuleDependency dep = dependency group, name, version
@@ -58,6 +89,10 @@ class Classpaths {
             true
         }
         false
+    }
+
+    static void addDependency(Configuration conf, Dependency dep) {
+        conf.dependencies.add(dep)
     }
 
     static DefaultExternalModuleDependency dependency(String group, String name, String version) {
@@ -118,8 +153,46 @@ class Classpaths {
         addDependency(config, ARROW_GROUP, name, ARROW_VERSION)
     }
 
+    static void inheritFlatbuffer(Project p, String configName) {
+        Configuration config = p.configurations.getByName(configName)
+        addDependency(config, FLATBUFFER_GROUP, FLATBUFFER_NAME, FLATBUFFER_VERSION)
+    }
+
+    static void inheritDagger(Project p, boolean test = false) {
+        Configuration ic = p.configurations.getByName(test ? 'testImplementation' : 'implementation')
+        addDependency(ic, DAGGER_GROUP, DAGGER_NAME, DAGGER_VERSION)
+        Configuration ap = p.configurations.getByName(test ? 'testAnnotationProcessor' : 'annotationProcessor')
+        addDependency(ap, DAGGER_GROUP, DAGGER_COMPILER, DAGGER_VERSION)
+    }
+
+    static void inheritImmutables(Project p) {
+        Configuration ap = p.configurations.getByName('annotationProcessor')
+        addDependency(ap, IMMUTABLES_GROUP, IMMUTABLES_NAME, IMMUTABLES_VERSION)
+        p.getDependencies().add('compileOnly', p.project(':util-immutables'))
+    }
+
+    static void inheritJUnitPlatform(Project p, String configName = JavaPlugin.TEST_IMPLEMENTATION_CONFIGURATION_NAME) {
+        Configuration config = p.configurations.getByName(configName)
+        addDependency(config, p.getDependencies().platform(JUNIT_GROUP + ":" + JUNIT_NAME + ":" + JUNIT_VERSION))
+    }
+
+    static void inheritAssertJ(Project p, String configName = JavaPlugin.TEST_IMPLEMENTATION_CONFIGURATION_NAME) {
+        Configuration config = p.configurations.getByName(configName)
+        addDependency(config, ASSERTJ_GROUP, ASSERTJ_NAME, ASSERTJ_VERSION)
+    }
+
+    static void inheritLogbackClassic(Project p, String configName = JavaPlugin.RUNTIME_ONLY_CONFIGURATION_NAME) {
+        Configuration config = p.configurations.getByName(configName)
+        addDependency(config, LOGBACK_GROUP, LOGBACK_NAME, LOGBACK_VERSION)
+    }
+
     static void inheritSlf4j(Project p, String name, String configName) {
         Configuration config = p.configurations.getByName(configName)
         addDependency(config, SLF4J_GROUP, name, SLF4J_VERSION)
+    }
+
+    static void inheritGroovy(Project p, String name, String configName) {
+        Configuration config = p.configurations.getByName(configName)
+        addDependency(config, GROOVY_GROUP, name, GROOVY_VERSION)
     }
 }
