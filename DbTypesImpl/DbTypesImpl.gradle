@@ -1,12 +1,16 @@
+plugins {
+    id 'java-library'
+}
+
 configurations {
-    compile.extendsFrom dhDbTypesImpl
+    api.extendsFrom dhDbTypesImpl
 
     testCompile.extendsFrom fishBaseTest, fishConfig
 }
 
 
 dependencies {
-    compile project(':DbTypes'), 
+    api project(':DbTypes'), 
             'com.sun.activation:javax.activation:1.2.0'
 
     testRuntime project(':configs'), project(path: ':test-configs')

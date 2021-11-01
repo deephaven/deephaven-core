@@ -1,10 +1,14 @@
+plugins {
+    id 'java-library'
+}
+
 configurations {
-    compile.extendsFrom fishUtil, fishData
+    api.extendsFrom fishUtil, fishData
     testCompile.extendsFrom fishDataTest
 }
 
 dependencies {
-    compile project(':Util')
+    api project(':Util')
     testRuntime project(path: ':configs'), project(path: ':test-configs')
 
     runtimeOnly project(path: ':configs')

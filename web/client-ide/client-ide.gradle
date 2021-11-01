@@ -10,8 +10,8 @@ evaluationDependsOn ':proto:raw-js-openapi'
 apply from: "$rootDir/gradle/web-client.gradle"
 
 dependencies {
-    compile project(':web-client-api')
-    compile project(':open-api-lang-parser')
+    api project(':web-client-api')
+    api project(':open-api-lang-parser')
 }
 
 GwtTools.gwtCompile project, 'io.deephaven.ide.DeephavenIde', 'Create a jar of javascript for web IDE'

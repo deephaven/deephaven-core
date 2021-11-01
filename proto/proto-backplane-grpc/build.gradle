@@ -1,4 +1,5 @@
 plugins {
+  id 'java-library'
   id 'com.bmuschko.docker-remote-api'
 }
 
@@ -12,7 +13,7 @@ configurations.download.transitive=false
 dependencies {
   // technically we should have a runtime dependency on barrage-core, but instead we are regenerating
   // the same output that it contains, and we have declared the correct dependencies as necessary
-  //  compile 'io.deephaven.barrage:barrage-core:0.2.0'
+  //  api 'io.deephaven.barrage:barrage-core:0.2.0'
   download 'io.deephaven.barrage:barrage-core:0.2.0'
   Classpaths.inheritArrow(project, 'flight-core', 'download')
   Classpaths.inheritArrow(project, 'flight-core', 'compileOnly')

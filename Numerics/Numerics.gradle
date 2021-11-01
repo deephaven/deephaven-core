@@ -1,10 +1,14 @@
+plugins {
+    id 'java-library'
+}
+
 configurations {
-    compile.extendsFrom dhNumerics
+    api.extendsFrom dhNumerics
     testCompile.extendsFrom fishBaseTest
 }
 
 dependencies {
-    compile project(':DB')
+    api project(':DB')
 
     testRuntime project(path: ':configs'), project(path: ':test-configs')
 }

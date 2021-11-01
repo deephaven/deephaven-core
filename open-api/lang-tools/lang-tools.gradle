@@ -7,11 +7,11 @@ apply from: "$rootDir/gradle/web-common.gradle"
 Classpaths.inheritCommonsText(project)
 dependencies {
 
-    compile project(':open-api-shared-ide'),
+    api project(':open-api-shared-ide'),
             project(':open-api-lang-parser')
 
-    compile(project(':DB'))
-    compile project(':IO')
+    api(project(':DB'))
+    api project(':IO')
 
     testImplementation 'org.spockframework:spock-core:2.0-groovy-3.0'
 

@@ -1,5 +1,9 @@
+plugins {
+    id 'java-library'
+}
+
 dependencies {
-    compile project(':Base'), project(':DataStructures'), project(':IO'), project(':log-factory'), depCommonsLang3
+    api project(':Base'), project(':DataStructures'), project(':IO'), project(':log-factory'), depCommonsLang3
     testCompile fileTree(dir: "${rootDir}/test-libs", include: ['*.jar'])
 
     testCompile project(path: ':Base', configuration: 'tests')

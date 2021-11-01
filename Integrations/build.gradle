@@ -1,6 +1,7 @@
 import com.bmuschko.gradle.docker.tasks.image.Dockerfile
 
 plugins {
+    id 'java-library'
     id 'com.bmuschko.docker-remote-api'
     id 'com.avast.gradle.docker-compose'
 }
@@ -8,13 +9,13 @@ plugins {
 evaluationDependsOn ':deephaven-jpy'
 
 configurations {
-    compile.extendsFrom dhIntegrations
+    api.extendsFrom dhIntegrations
     testCompile.extendsFrom fishBaseTest
 }
 
 dependencies {
 
-    compile project(':DB'), project(':DbTypes')
+    api project(':DB'), project(':DbTypes')
     testRuntimeOnly project(':log-to-slf4j')
     // add configs, and some runtime dependencies to test classpaths
     testRuntime project(':configs'), project(':test-configs'),

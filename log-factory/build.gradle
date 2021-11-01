@@ -3,7 +3,7 @@ plugins {
 }
 
 configurations {
-  compile.extendsFrom fishIo
+  api.extendsFrom fishIo
 }
 
 dependencies {

@@ -5,6 +5,6 @@ apply from: "$rootDir/gradle/web-client.gradle"
 // on everything necessary to "speak OpenAPI".
 
 dependencies {
-    compile project(':open-api-shared-ide')
+    api project(':open-api-shared-ide')
 
 }

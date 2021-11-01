@@ -1,12 +1,16 @@
+plugins {
+    id 'java-library'
+}
+
 configurations {
-    compile.extendsFrom dhPlot
+    api.extendsFrom dhPlot
 
     testCompile.extendsFrom dhDbTest, fishIoTest
 }
 
 dependencies {
 
-    compile project(':DB')
+    api project(':DB')
 
     compileOnly 'javax.inject:javax.inject:1'
 

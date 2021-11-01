@@ -1,5 +1,9 @@
+plugins {
+    id 'java-library'
+}
+
 configurations {
-    compile.extendsFrom dhDbTypes, fishConfig
+    api.extendsFrom dhDbTypes, fishConfig
 
     testCompile.extendsFrom fishBaseTest, fishConfig
 }

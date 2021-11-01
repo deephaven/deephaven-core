@@ -7,7 +7,7 @@ configurations {
 }
 
 dependencies {
-    compile project(':open-api-shared-fu')
+    api project(':open-api-shared-fu')
 
     testCompile 'com.google.guava:guava:19.0'
 }

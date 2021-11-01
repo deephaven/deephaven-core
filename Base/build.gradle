@@ -1,7 +1,11 @@
-dependencies {
-    compile depLog4j, depTrove3, depAnnotations, depCommonsCompress
+plugins {
+    id 'java-library'
+}
 
-    compile 'io.deephaven:hash:0.1.0'
+dependencies {
+    api depLog4j, depTrove3, depAnnotations, depCommonsCompress
+
+    api 'io.deephaven:hash:0.1.0'
 
     testCompile fileTree(dir: "${rootDir}/test-libs", include: ['*.jar'])
 }

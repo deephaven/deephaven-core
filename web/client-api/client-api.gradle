@@ -1,11 +1,11 @@
 apply from: "$rootDir/gradle/web-client.gradle"
 
 dependencies {
-    compile project(':web-shared-beans')
-    compile project(':web-client-backplane')
-    compile project(':open-api-shared-ide')
+    api project(':web-shared-beans')
+    api project(':web-client-backplane')
+    api project(':open-api-shared-ide')
 
-    compile 'com.vertispan.nio:gwt-nio:1.0-alpha-1'
+    api 'com.vertispan.nio:gwt-nio:1.0-alpha-1'
 }
 Classpaths.inheritElemental project, 'elemental2-core'
 Classpaths.inheritElemental project, 'elemental2-promise'

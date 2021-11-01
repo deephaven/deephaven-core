@@ -1,10 +1,14 @@
+plugins {
+    id 'java-library'
+}
+
 configurations {
-    compile.extendsFrom fishConfig, commonsLang3
+    api.extendsFrom fishConfig, commonsLang3
     testCompile.extendsFrom fishIoTest
 }
 
 dependencies {
-    compile project(':Util')
+    api project(':Util')
     testRuntime project(path: ':configs'), project(path: ':test-configs')
 
     testRuntimeOnly project(':log-to-slf4j')

@@ -10,11 +10,15 @@
  * area as minimal as possible.
  */
 
+plugins {
+  id 'java-library'
+}
+
 configurations {
-  compile.extendsFrom fishBase
+  api.extendsFrom fishBase
 }
 
 dependencies {
-  compile project(':deephaven-jpy')
-  compile project(':deephaven-jpy-config')
+  api project(':deephaven-jpy')
+  api project(':deephaven-jpy-config')
 }

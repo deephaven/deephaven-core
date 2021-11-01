@@ -1,9 +1,13 @@
+plugins {
+    id 'java-library'
+}
+
 configurations {
-    compile.extendsFrom dhConsole
+    api.extendsFrom dhConsole
 }
 
 dependencies {
-    compile project(':DB')
+    api project(':DB')
 
     testCompile project(path: ':DB', configuration: 'testOutput')
 

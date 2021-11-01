@@ -1,7 +1,11 @@
 import io.deephaven.tools.Tools
 
+plugins {
+    id 'java-library'
+}
+
 configurations {
-    compile.extendsFrom dhDb
+    api.extendsFrom dhDb
 
     testCompile.extendsFrom dhDbTest, mxj, fishIoTest
 
@@ -44,7 +48,7 @@ sourceSets {
 }
 
 dependencies {
-    compile project(':Util'),
+    api project(':Util'),
             project(':CompilerTools'),
             project(':TableLogger'),
             project(':web-shared-beans'),

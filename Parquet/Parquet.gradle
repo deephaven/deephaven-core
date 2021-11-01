@@ -22,9 +22,9 @@ dependencies {
     implementation project(':CompilerTools')
 
     /*
-    compile 'org.apache.parquet:parquet-common:1.10.0'
-    compile 'org.apache.parquet:parquet-encoding:1.10.0'
-    compile 'org.apache.parquet:parquet-column:1.10.0'
+    api 'org.apache.parquet:parquet-common:1.10.0'
+    api 'org.apache.parquet:parquet-encoding:1.10.0'
+    api 'org.apache.parquet:parquet-column:1.10.0'
     */
     testImplementation 'junit:junit:4.13.2'
 

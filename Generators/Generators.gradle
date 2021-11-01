@@ -1,9 +1,10 @@
 plugins {
+    id 'java-library'
     id 'com.bmuschko.docker-remote-api'
 }
 
 configurations {
-    compile.extendsFrom fishConfig, jdom
+    api.extendsFrom fishConfig, jdom
     testCompile.extendsFrom fishBaseTest
 }
 
@@ -11,7 +12,7 @@ evaluationDependsOn(':deephaven-jpy')
 
 dependencies {
 
-    compile project(':DB'),
+    api project(':DB'),
             project(':Plot')
             project(':Kafka')
 

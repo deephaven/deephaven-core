@@ -1,5 +1,9 @@
+plugins {
+    id 'java-library'
+}
+
 configurations {
-    compile.extendsFrom dhBenchmarkSupport
+    api.extendsFrom dhBenchmarkSupport
 
     testCompile.extendsFrom dhDbTest, fishIoTest
 
@@ -23,7 +27,7 @@ sourceSets {
 }
 
 dependencies {
-    compile project(':DB'),
+    api project(':DB'),
             'org.openjdk.jmh:jmh-core:1.20'
 
     testCompile TestTools.projectDependency(project, 'Util'),

@@ -1,9 +1,9 @@
 plugins {
-  id 'java'
+  id 'java-library'
 }
 
 description = 'Provides a io.deephaven.configuration.PropertyInputStreamLoader that only loads from the classpath. Useful for unit-testing that shouldn\'t depend on etcd.'
 
 configurations {
-  compile.extendsFrom fishConfig
+  api.extendsFrom fishConfig
 }

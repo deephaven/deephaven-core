@@ -188,11 +188,6 @@ configure modsRegular,
             j.from p.tasks.withType(Javadoc)*.destinationDir
     }
 
-    p.tasks.create('listCompileDeps').doLast {
-        println "$p.path compile dependencies:"
-        p.configurations.compile.each { File file -> println file.name }
-    }
-
     p.artifacts {
         archives p.tasks.sourceJar
 //        archives p.tasks.javadocJar

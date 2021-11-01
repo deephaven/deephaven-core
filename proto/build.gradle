@@ -13,16 +13,19 @@ subprojects {
 
 // by convention, all subprojects that start with "proto-" will have the default protobuf settings applied
 configure(subprojects.findAll{ it.name.startsWith('proto-') }) { p ->
+
+  apply plugin: 'java-library'
+
   dependencies {
-    compile "com.google.protobuf:protobuf-java:${protobufVersion}"
+    api "com.google.protobuf:protobuf-java:${protobufVersion}"
 
-    compile "io.grpc:grpc-protobuf:${grpcVersion}"
-    compile "io.grpc:grpc-stub:${grpcVersion}"
-    compile "io.grpc:grpc-services:${grpcVersion}"
+    api "io.grpc:grpc-protobuf:${grpcVersion}"
+    api "io.grpc:grpc-stub:${grpcVersion}"
+    api "io.grpc:grpc-services:${grpcVersion}"
 
-    compile "io.grpc:grpc-testing:${grpcVersion}"
+    api "io.grpc:grpc-testing:${grpcVersion}"
 
-    compile "io.grpc:grpc-netty:${grpcVersion}"
+    api "io.grpc:grpc-netty:${grpcVersion}"
 
     runtimeOnly "io.netty:netty-tcnative-boringssl-static:${boringSslVersion}"
   }

@@ -1,10 +1,14 @@
+plugins {
+    id 'java-library'
+}
+
 configurations {
-    compile.extendsFrom configurations.dhUtil, commonsLang3
+    api.extendsFrom configurations.dhUtil, commonsLang3
     testCompile.extendsFrom fishBaseTest
 }
 
 dependencies {
-    compile project(':log-factory')
+    api project(':log-factory')
 
     testRuntime project(path: ':configs'), project(path: ':test-configs')
 

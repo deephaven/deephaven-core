@@ -1,6 +1,10 @@
+plugins {
+    id 'java-library'
+}
+
 dependencies {
-    compile project(':Base'), project(':DataStructures'), project(':IO'), project(':Configuration'), project(':log-factory')
-    compile depCommonsEmail, depCommonsNet
+    api project(':Base'), project(':DataStructures'), project(':IO'), project(':Configuration'), project(':log-factory')
+    api depCommonsEmail, depCommonsNet
 
     testCompile project(path: ':Base', configuration: 'tests')
 }

@@ -1,5 +1,9 @@
+plugins {
+    id 'java-library'
+}
+
 dependencies {
-    compile project(':Base'), project(':SevenZip'), depCommonsCodec
+    api project(':Base'), project(':SevenZip'), depCommonsCodec
     testCompile project(path: ':Base', configuration: 'tests')
 }
 

@@ -3,7 +3,7 @@ plugins {
 }
 
 configurations {
-    compile.extendsFrom irisDb
+    api.extendsFrom irisDb
     testCompile.extendsFrom irisDbTest
 }
 
