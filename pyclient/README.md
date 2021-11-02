@@ -42,7 +42,7 @@ $ pip3 install dist/pydeephaven-0.6.0-py3-none-any.whl
 ```python    
     >>> from pydeephaven import Session
     >>> session = Session() # assuming Deephaven Community Edition is running locally with the default configuration
-    >>> table1 = session.time_table(period=1000000).update(formulas=["Col1 = i % 2"])
+    >>> table1 = session.time_table(period=1000000000).update(formulas=["Col1 = i % 2"])
     >>> df = table1.snapshot().to_pandas()
     >>> print(df)
                         Timestamp  Col1
@@ -64,7 +64,7 @@ $ pip3 install dist/pydeephaven-0.6.0-py3-none-any.whl
 
 ## Initialize
 
-The `Session` class is your connection to Deephaven. This is where all operations start.
+The `Session` class is your connection to Deephaven. This is what allows your Python code to interact with Deephaven.
 
 ```
 from pydeephaven import Session
@@ -82,7 +82,7 @@ from pydeephaven import Session
 
 session = Session()
 
-table = session.time_table(period=1000000).update(formulas=["Col1 = i % 2"])
+table = session.time_table(period=1000000000).update(formulas=["Col1 = i % 2"])
 session.bind_table(name="MyTable", table=table)
 ```
 
@@ -99,30 +99,11 @@ from pydeephaven import Session
 
 session = Session()
 
+# create a table with no columns and 3 rows
 table = session.empty_table(3)
+# Create derived table having a new column MyColumn populated with the row index "i"
 table = table.update(["MyColumn = i"])
-session.bind_table(name="MyTable", table=table)
-```
-
-## Query objects
-
-Query objects can be used to execute queries on a table. The value of a query object comes from the fact that a connection to Deephaven is only made once for all queries, whereas executing queries directly on a table causes a connection to be made for every query.
-
-The general flow of using a query object is to construct a query with a table, call operations (sort, filter, update, etc.) on the query object, and then assign your table to `query.exec()`.
-
-Any operation that can be executed on a table can also be executed on a query object. This example uses a query object to produce the same result as above.
-
-```
-from pydeephaven import Session
-
-session = Session()
-
-table = session.empty_table(3)
-
-query = session.query(table)
-query = query.update(["MyColumn = i"])
-
-table = query.exec()
+# Update the Deephaven Web Console with this new table
 session.bind_table(name="MyTable", table=table)
 ```
 
@@ -156,6 +137,34 @@ table = table.update(["Values = i"])
 
 table = table.where(["Values % 2 == 1"])
 session.bind_table(name="MyTable", table=table)
+```
+
+## Query objects
+
+Query objects are a way to create and manage a sequence of Deephaven query operations as a single unit. Query objects have the potential to perform better than the corresponding individual queries, because the query object can be transmitted to the server in one request rather than several, and because the system can perform certain optimizations when it is able to see the whole sequence of queries at once. They are similar in spirit to prepared statements in SQL.
+
+The general flow of using a query object is to construct a query with a table, call operations (sort, filter, update, etc) on the query object, and then assign your table to `query.exec()`.
+
+Any operation that can be executed on a table can also be executed on a query object. This example shows two operations that compute the same result, with the first one using the table updates and the second one using a query object.
+
+```
+from pydeephaven import Session
+
+session = Session()
+
+table = session.empty_table(10)
+
+# executed immediately
+table1= table.update(["MyColumn = i"]).sort(["MyColumn", descending).where(["MyColumn > 5"]);
+
+# create Query Object (execution is deferred until the "exec" statement)
+queryObj = session.query(table)(update(["MyColumn = i"]).sort(["MyColumn", descending).where(["MyColumn > 5"]);
+# Transmit the QueryObject to the server and execute it
+table2 = query.exec();
+
+
+session.bind_table(name="MyTable1", table=table1)
+session.bind_table(name="MyTable2", table=table2)
 ```
 
 ## Join 2 tables
