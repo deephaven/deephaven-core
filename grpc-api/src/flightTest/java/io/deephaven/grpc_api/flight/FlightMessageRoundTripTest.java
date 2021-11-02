@@ -306,6 +306,8 @@ public class FlightMessageRoundTripTest {
         assertRoundTripDataEqual(TableTools.emptyTable(10).update("L = new Long[] {ii, null}"));
         assertRoundTripDataEqual(TableTools.emptyTable(10).update("L = new Long[][] {new Long[] {ii}}"));
         assertRoundTripDataEqual(TableTools.emptyTable(10).update("L = new Long[][] {null, new Long[] {null, ii}}"));
+        assertRoundTripDataEqual(TableTools.emptyTable(10).update("L = io.deephaven.util.QueryConstants.NULL_LONG"));
+        assertRoundTripDataEqual(TableTools.emptyTable(10).update("L = new long[] {0, -1, io.deephaven.util.QueryConstants.NULL_LONG}"));
     }
 
     @Test
