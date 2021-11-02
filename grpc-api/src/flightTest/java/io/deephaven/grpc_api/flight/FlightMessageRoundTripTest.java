@@ -274,33 +274,26 @@ public class FlightMessageRoundTripTest {
         assertRoundTripDataEqual(TableTools.emptyTable(10).update("S = new String[] {\"test\", \"42\"}"));
         assertRoundTripDataEqual(TableTools.emptyTable(10).update("S = new String[][] {new String[] {\"t1\"}}"));
 
-        final StringBuilder updateString = new StringBuilder("S = new String[][][] {");
-        for (int i = 0; i < 4; ++i) {
-            if (i == 0) {
-                updateString.append("null");
-                continue;
-            }
-
-            updateString.append(", new String[][] {");
-            for (int j = 0; j <= i; ++j) {
-                if (j == 0) {
-                    updateString.append("null");
-                    continue;
-                }
-                updateString.append(", new String[] {");
-                for (int k = 0; k <= j; ++k) {
-                    if (k == 0) {
-                        updateString.append("null");
-                        continue;
-                    }
-                    updateString.append(", \"elem_").append(i).append("_").append(j).append("_").append(k).append("\"");
-                }
-                updateString.append("}");
-            }
-            updateString.append("}");
-        }
-        updateString.append("}");
-        assertRoundTripDataEqual(TableTools.emptyTable(10).update(updateString.toString()));
+        assertRoundTripDataEqual(TableTools.emptyTable(10).update("S = new String[][][] {" +
+                "null, new String[][] {" +
+                "   null, " +
+                "   new String[] {" +
+                "       null, \"elem_1_1_1\"" +
+                "}}, new String[][] {" +
+                "   null, " +
+                "   new String[] {" +
+                "       null, \"elem_2_1_1\"" +
+                "   }, new String[] {" +
+                "       null, \"elem_2_2_1\", \"elem_2_2_2\"" +
+                "}}, new String[][] {" +
+                "   null, " +
+                "   new String[] {" +
+                "       null, \"elem_3_1_1\"" +
+                "   }, new String[] {" +
+                "       null, \"elem_3_2_1\", \"elem_3_2_2\"" +
+                "   }, new String[] {" +
+                "       null, \"elem_3_3_1\", \"elem_3_3_2\", \"elem_3_3_3\"" +
+                "}}}"));
     }
 
     @Test
@@ -310,7 +303,9 @@ public class FlightMessageRoundTripTest {
         assertRoundTripDataEqual(TableTools.emptyTable(10).update("L = new long[][] {new long[] {ii}}"));
         assertRoundTripDataEqual(TableTools.emptyTable(10).update("L = (Long)ii"));
         assertRoundTripDataEqual(TableTools.emptyTable(10).update("L = new Long[] {ii}"));
+        assertRoundTripDataEqual(TableTools.emptyTable(10).update("L = new Long[] {ii, null}"));
         assertRoundTripDataEqual(TableTools.emptyTable(10).update("L = new Long[][] {new Long[] {ii}}"));
+        assertRoundTripDataEqual(TableTools.emptyTable(10).update("L = new Long[][] {null, new Long[] {null, ii}}"));
     }
 
     @Test
