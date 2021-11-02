@@ -1,7 +1,9 @@
 import unittest
+
+import jpy
+
+from tests.utils.bootstrap import build_py_session
 from testbase import BaseTestCase
-import jpy, jpyutil
-from bootstrap import build_py_session
 
 
 class BootstrapTestCase(BaseTestCase):

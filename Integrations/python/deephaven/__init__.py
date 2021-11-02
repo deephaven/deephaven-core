@@ -85,8 +85,9 @@ from .conversion_utils import convertToJavaArray, convertToJavaList, convertToJa
 from . import Calendars as cals, \
     ComboAggregateFactory as caf, \
     DBTimeUtils as dbtu, \
-    KafkaTools as kt, \
     MovingAverages as mavg, \
+    ConsumeKafka as ck, \
+    ProduceKafka as pk, \
     npy, \
     Plot as plt, \
     ParquetTools as pt, \
@@ -111,7 +112,8 @@ def initialize():
     dbtu._defineSymbols()
     dh._defineSymbols()
     java._defineSymbols()
-    kt._defineSymbols()
+    ck._defineSymbols()
+    pk._defineSymbols()
     mavg._defineSymbols()
     plt._defineSymbols()
     figw._defineSymbols()

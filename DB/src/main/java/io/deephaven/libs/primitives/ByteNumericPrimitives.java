@@ -1903,7 +1903,7 @@ public class ByteNumericPrimitives {
             return NULL_BYTE;
         }
 
-        byte val = NEG_INF_BYTE;
+        byte val = MIN_BYTE;
         long count = 0;
         for (int i = 0; i < values.size(); i++) {
             byte c = values.get(i);
@@ -1927,7 +1927,7 @@ public class ByteNumericPrimitives {
             return NULL_BYTE;
         }
 
-        byte val = NEG_INF_BYTE;
+        byte val = MIN_BYTE;
         long count = 0;
         for (byte c : values) {
             if (!BytePrimitives.isNull(c)) {
@@ -1950,7 +1950,7 @@ public class ByteNumericPrimitives {
             return NULL_BYTE;
         }
 
-        byte val = NEG_INF_BYTE;
+        byte val = MIN_BYTE;
         long count = 0;
         for (Byte c : values) {
             if (!(c == null || BytePrimitives.isNull(c))) {
@@ -1973,7 +1973,7 @@ public class ByteNumericPrimitives {
             return NULL_BYTE;
         }
 
-        byte val = POS_INF_BYTE;
+        byte val = MAX_BYTE;
         long count = 0;
         for (int i = 0; i < values.size(); i++) {
             byte c = values.get(i);
@@ -1997,7 +1997,7 @@ public class ByteNumericPrimitives {
             return NULL_BYTE;
         }
 
-        byte val = POS_INF_BYTE;
+        byte val = MAX_BYTE;
         long count = 0;
         for (byte c : values) {
             if (!BytePrimitives.isNull(c)) {
@@ -2020,7 +2020,7 @@ public class ByteNumericPrimitives {
             return NULL_BYTE;
         }
 
-        byte val = POS_INF_BYTE;
+        byte val = MAX_BYTE;
         long count = 0;
         for (Byte c : values) {
             if (!(c == null || BytePrimitives.isNull(c))) {
@@ -2192,7 +2192,7 @@ public class ByteNumericPrimitives {
             return NULL_INT;
         }
 
-        byte val = NEG_INF_BYTE;
+        byte val = MIN_BYTE;
         int index = -1;
         long count = 0;
         for (int i = 0; i < values.length; i++) {
@@ -2232,7 +2232,7 @@ public class ByteNumericPrimitives {
             return NULL_INT;
         }
 
-        byte val = NEG_INF_BYTE;
+        byte val = MIN_BYTE;
         int index = -1;
         long count = 0;
         for (int i = 0; i < values.size(); i++) {
@@ -2258,7 +2258,7 @@ public class ByteNumericPrimitives {
             return NULL_INT;
         }
 
-        byte val = POS_INF_BYTE;
+        byte val = MAX_BYTE;
         int index = -1;
         long count = 0;
         for (int i = 0; i < values.length; i++) {
@@ -2298,7 +2298,7 @@ public class ByteNumericPrimitives {
             return NULL_INT;
         }
 
-        byte val = POS_INF_BYTE;
+        byte val = MAX_BYTE;
         int index = -1;
         long count = 0;
         for (int i = 0; i < values.size(); i++) {

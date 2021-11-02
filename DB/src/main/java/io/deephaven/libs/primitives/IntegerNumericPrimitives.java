@@ -1903,7 +1903,7 @@ public class IntegerNumericPrimitives {
             return NULL_INT;
         }
 
-        int val = NEG_INF_INT;
+        int val = MIN_INT;
         long count = 0;
         for (int i = 0; i < values.size(); i++) {
             int c = values.get(i);
@@ -1927,7 +1927,7 @@ public class IntegerNumericPrimitives {
             return NULL_INT;
         }
 
-        int val = NEG_INF_INT;
+        int val = MIN_INT;
         long count = 0;
         for (int c : values) {
             if (!IntegerPrimitives.isNull(c)) {
@@ -1950,7 +1950,7 @@ public class IntegerNumericPrimitives {
             return NULL_INT;
         }
 
-        int val = NEG_INF_INT;
+        int val = MIN_INT;
         long count = 0;
         for (Integer c : values) {
             if (!(c == null || IntegerPrimitives.isNull(c))) {
@@ -1973,7 +1973,7 @@ public class IntegerNumericPrimitives {
             return NULL_INT;
         }
 
-        int val = POS_INF_INT;
+        int val = MAX_INT;
         long count = 0;
         for (int i = 0; i < values.size(); i++) {
             int c = values.get(i);
@@ -1997,7 +1997,7 @@ public class IntegerNumericPrimitives {
             return NULL_INT;
         }
 
-        int val = POS_INF_INT;
+        int val = MAX_INT;
         long count = 0;
         for (int c : values) {
             if (!IntegerPrimitives.isNull(c)) {
@@ -2020,7 +2020,7 @@ public class IntegerNumericPrimitives {
             return NULL_INT;
         }
 
-        int val = POS_INF_INT;
+        int val = MAX_INT;
         long count = 0;
         for (Integer c : values) {
             if (!(c == null || IntegerPrimitives.isNull(c))) {
@@ -2192,7 +2192,7 @@ public class IntegerNumericPrimitives {
             return NULL_INT;
         }
 
-        int val = NEG_INF_INT;
+        int val = MIN_INT;
         int index = -1;
         long count = 0;
         for (int i = 0; i < values.length; i++) {
@@ -2232,7 +2232,7 @@ public class IntegerNumericPrimitives {
             return NULL_INT;
         }
 
-        int val = NEG_INF_INT;
+        int val = MIN_INT;
         int index = -1;
         long count = 0;
         for (int i = 0; i < values.size(); i++) {
@@ -2258,7 +2258,7 @@ public class IntegerNumericPrimitives {
             return NULL_INT;
         }
 
-        int val = POS_INF_INT;
+        int val = MAX_INT;
         int index = -1;
         long count = 0;
         for (int i = 0; i < values.length; i++) {
@@ -2298,7 +2298,7 @@ public class IntegerNumericPrimitives {
             return NULL_INT;
         }
 
-        int val = POS_INF_INT;
+        int val = MAX_INT;
         int index = -1;
         long count = 0;
         for (int i = 0; i < values.size(); i++) {

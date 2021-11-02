@@ -81,9 +81,7 @@ public class ApplicationServiceGrpcImpl extends ApplicationServiceGrpc.Applicati
         changes.removed.keySet().stream().map(AppFieldId::fromScopeName).forEach(id -> {
             updatedFields.remove(id);
             Field<?> oldField = addedFields.remove(id);
-            if (oldField != null) {
-                tracker.maybeUnmanage(oldField.value());
-            } else {
+            if (oldField == null) {
                 removedFields.add(id);
             }
         });
@@ -99,16 +97,7 @@ public class ApplicationServiceGrpcImpl extends ApplicationServiceGrpc.Applicati
                 recentField = true;
             }
 
-            // Note the order w.r.t. the tracker is intentional to avoid dropping ref count to zero
-            Object newValue = scriptSession.unwrapObject(scriptSession.getVariable(name));
-            Object oldValue = field.value();
-
-            if (newValue != oldValue) {
-                tracker.maybeManage(newValue);
-                tracker.maybeUnmanage(oldValue);
-            }
-
-            field.value = newValue;
+            field.value = scriptSession.unwrapObject(scriptSession.getVariable(name));
             if (!recentField) {
                 updatedFields.add(id);
             }
@@ -124,7 +113,6 @@ public class ApplicationServiceGrpcImpl extends ApplicationServiceGrpc.Applicati
                 throw new IllegalStateException(
                         String.format("Field information could not be generated for scope variable '%s'", name));
             }
-            tracker.maybeManage(field.value);
             final Field<?> oldField = addedFields.put(id, field);
             if (oldField != null) {
                 throw new IllegalStateException(

@@ -21,6 +21,8 @@ from testFigureWrapper import TestFigureWrapper  # axis methods - how to resolve
 from testTableTools import TestTableTools  # bad call signature inspection
 from testTableDataframeConversion import TestTableDataframeConversion  # pass 2.7 & 3.7
 from testParquetTools import TestParquetTools
+from testConsumeKafka import TestConsumeKafka
+from testProduceKafka import TestProduceKafka
 
 
 # add specific arguments for testing, including the arguments for jvm initialization
@@ -61,7 +63,9 @@ if __name__ == "__main__":
         'FigW'.lower(): TestFigureWrapper,
         'TTools'.lower(): TestTableTools,
         'TConv'.lower(): TestTableDataframeConversion,
-        'TMT'.lower(): TestParquetTools,
+        'TPqt'.lower(): TestParquetTools,
+        'TCK'.lower(): TestConsumeKafka,
+        'TPK'.lower(): TestProduceKafka
     }
 
     suite = []

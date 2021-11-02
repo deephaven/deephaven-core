@@ -13,6 +13,8 @@ dependencies {
     api project(':java-client-flight')
     api project(':extensions-barrage')
 
+    compileOnly 'javax.inject:javax.inject:1'
+
     Classpaths.inheritImmutables(project)
 
     Classpaths.inheritSlf4j(project, 'slf4j-api', 'implementation')

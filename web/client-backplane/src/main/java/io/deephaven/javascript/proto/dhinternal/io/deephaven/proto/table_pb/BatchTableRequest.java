@@ -20,6 +20,26 @@ public class BatchTableRequest {
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
         public interface OpsListFieldType {
             @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+            public interface ApplyPreviewColumnsFieldType {
+                @JsOverlay
+                static BatchTableRequest.ToObjectReturnType.OpsListFieldType.ApplyPreviewColumnsFieldType create() {
+                    return Js.uncheckedCast(JsPropertyMap.of());
+                }
+
+                @JsProperty
+                Object getResultId();
+
+                @JsProperty
+                Object getSourceId();
+
+                @JsProperty
+                void setResultId(Object resultId);
+
+                @JsProperty
+                void setSourceId(Object sourceId);
+            }
+
+            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
             public interface AsOfJoinFieldType {
                 @JsOverlay
                 static BatchTableRequest.ToObjectReturnType.OpsListFieldType.AsOfJoinFieldType create() {
@@ -1430,6 +1450,9 @@ public class BatchTableRequest {
             }
 
             @JsProperty
+            BatchTableRequest.ToObjectReturnType.OpsListFieldType.ApplyPreviewColumnsFieldType getApplyPreviewColumns();
+
+            @JsProperty
             BatchTableRequest.ToObjectReturnType.OpsListFieldType.AsOfJoinFieldType getAsOfJoin();
 
             @JsProperty
@@ -1515,6 +1538,10 @@ public class BatchTableRequest {
 
             @JsProperty
             Object getView();
+
+            @JsProperty
+            void setApplyPreviewColumns(
+                    BatchTableRequest.ToObjectReturnType.OpsListFieldType.ApplyPreviewColumnsFieldType applyPreviewColumns);
 
             @JsProperty
             void setAsOfJoin(
@@ -1644,6 +1671,26 @@ public class BatchTableRequest {
     public interface ToObjectReturnType0 {
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
         public interface OpsListFieldType {
+            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+            public interface ApplyPreviewColumnsFieldType {
+                @JsOverlay
+                static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.ApplyPreviewColumnsFieldType create() {
+                    return Js.uncheckedCast(JsPropertyMap.of());
+                }
+
+                @JsProperty
+                Object getResultId();
+
+                @JsProperty
+                Object getSourceId();
+
+                @JsProperty
+                void setResultId(Object resultId);
+
+                @JsProperty
+                void setSourceId(Object sourceId);
+            }
+
             @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
             public interface AsOfJoinFieldType {
                 @JsOverlay
@@ -3055,6 +3102,9 @@ public class BatchTableRequest {
             }
 
             @JsProperty
+            BatchTableRequest.ToObjectReturnType0.OpsListFieldType.ApplyPreviewColumnsFieldType getApplyPreviewColumns();
+
+            @JsProperty
             BatchTableRequest.ToObjectReturnType0.OpsListFieldType.AsOfJoinFieldType getAsOfJoin();
 
             @JsProperty
@@ -3140,6 +3190,10 @@ public class BatchTableRequest {
 
             @JsProperty
             Object getView();
+
+            @JsProperty
+            void setApplyPreviewColumns(
+                    BatchTableRequest.ToObjectReturnType0.OpsListFieldType.ApplyPreviewColumnsFieldType applyPreviewColumns);
 
             @JsProperty
             void setAsOfJoin(

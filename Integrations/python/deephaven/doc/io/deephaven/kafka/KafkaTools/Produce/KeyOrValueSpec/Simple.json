@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.kafka.KafkaTools$Produce$KeyOrValueSpec$Simple",
+ "methods": {
+  "dataFormat": "Data format for this Spec.\n\n:return: (io.deephaven.kafka.KafkaTools.DataFormat) Data format for this Spec",
+  "getColumnNames": ":return: java.lang.String[]"
+ },
+ "path": "io.deephaven.kafka.KafkaTools.Produce.KeyOrValueSpec.Simple",
+ "text": "Single spec for unidimensional (basic Kafka encoded for one type) fields.",
+ "typeName": "class"
+}

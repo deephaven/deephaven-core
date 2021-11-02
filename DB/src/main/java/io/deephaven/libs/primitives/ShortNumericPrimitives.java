@@ -1900,7 +1900,7 @@ public class ShortNumericPrimitives {
             return NULL_SHORT;
         }
 
-        short val = NEG_INF_SHORT;
+        short val = MIN_SHORT;
         long count = 0;
         for (int i = 0; i < values.size(); i++) {
             short c = values.get(i);
@@ -1924,7 +1924,7 @@ public class ShortNumericPrimitives {
             return NULL_SHORT;
         }
 
-        short val = NEG_INF_SHORT;
+        short val = MIN_SHORT;
         long count = 0;
         for (short c : values) {
             if (!ShortPrimitives.isNull(c)) {
@@ -1947,7 +1947,7 @@ public class ShortNumericPrimitives {
             return NULL_SHORT;
         }
 
-        short val = NEG_INF_SHORT;
+        short val = MIN_SHORT;
         long count = 0;
         for (Short c : values) {
             if (!(c == null || ShortPrimitives.isNull(c))) {
@@ -1970,7 +1970,7 @@ public class ShortNumericPrimitives {
             return NULL_SHORT;
         }
 
-        short val = POS_INF_SHORT;
+        short val = MAX_SHORT;
         long count = 0;
         for (int i = 0; i < values.size(); i++) {
             short c = values.get(i);
@@ -1994,7 +1994,7 @@ public class ShortNumericPrimitives {
             return NULL_SHORT;
         }
 
-        short val = POS_INF_SHORT;
+        short val = MAX_SHORT;
         long count = 0;
         for (short c : values) {
             if (!ShortPrimitives.isNull(c)) {
@@ -2017,7 +2017,7 @@ public class ShortNumericPrimitives {
             return NULL_SHORT;
         }
 
-        short val = POS_INF_SHORT;
+        short val = MAX_SHORT;
         long count = 0;
         for (Short c : values) {
             if (!(c == null || ShortPrimitives.isNull(c))) {
@@ -2189,7 +2189,7 @@ public class ShortNumericPrimitives {
             return NULL_INT;
         }
 
-        short val = NEG_INF_SHORT;
+        short val = MIN_SHORT;
         int index = -1;
         long count = 0;
         for (int i = 0; i < values.length; i++) {
@@ -2229,7 +2229,7 @@ public class ShortNumericPrimitives {
             return NULL_INT;
         }
 
-        short val = NEG_INF_SHORT;
+        short val = MIN_SHORT;
         int index = -1;
         long count = 0;
         for (int i = 0; i < values.size(); i++) {
@@ -2255,7 +2255,7 @@ public class ShortNumericPrimitives {
             return NULL_INT;
         }
 
-        short val = POS_INF_SHORT;
+        short val = MAX_SHORT;
         int index = -1;
         long count = 0;
         for (int i = 0; i < values.length; i++) {
@@ -2295,7 +2295,7 @@ public class ShortNumericPrimitives {
             return NULL_INT;
         }
 
-        short val = POS_INF_SHORT;
+        short val = MAX_SHORT;
         int index = -1;
         long count = 0;
         for (int i = 0; i < values.size(); i++) {

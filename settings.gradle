@@ -116,8 +116,6 @@ project(':extensions-classgraph').projectDir = file('extensions/classgraph')
 include(':extensions-suanshu')
 project(':extensions-suanshu').projectDir = file('extensions/suanshu')
 
-include(':Internals')
-
 include(':Base')
 
 include(':SevenZip')
@@ -141,6 +139,9 @@ include(':ParquetHadoop')
 include(':envoy')
 
 include(':grpc-proxy')
+
+include(':uri')
+project(':uri').projectDir = file('java-client/uri')
 
 include(':java-client-session')
 project(':java-client-session').projectDir = file('java-client/session')
