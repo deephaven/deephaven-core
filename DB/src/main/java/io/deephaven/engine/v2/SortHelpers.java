@@ -214,7 +214,7 @@ public class SortHelpers {
      * need to call getPrevRowSet.
      */
     static SortMapping getSortedKeys(SortingOrder[] order, ColumnSource<Comparable<?>>[] columnsToSortBy,
-                                     TrackingRowSet indexToSort, boolean usePrev) {
+                                     RowSet indexToSort, boolean usePrev) {
         return getSortedKeys(order, columnsToSortBy, indexToSort, usePrev, sortBySymbolTable);
     }
 

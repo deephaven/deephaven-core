@@ -3,6 +3,7 @@ package io.deephaven.engine.v2;
 import io.deephaven.base.verify.Require;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.exceptions.UncheckedTableException;
+import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.tables.live.NotificationQueue;
 import io.deephaven.engine.tables.select.WouldMatchPair;
 import io.deephaven.engine.util.liveness.LivenessArtifact;
@@ -14,7 +15,6 @@ import io.deephaven.engine.v2.sources.chunk.Attributes;
 import io.deephaven.engine.v2.sources.chunk.WritableChunk;
 import io.deephaven.engine.v2.sources.chunk.WritableObjectChunk;
 import io.deephaven.engine.v2.utils.*;
-import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.util.SafeCloseableList;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.jetbrains.annotations.NotNull;
@@ -88,15 +88,15 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
 
         try (final SafeCloseableList closer = new SafeCloseableList()) {
             final RowSet fullRowSet = usePrev ? closer.add(parent.getRowSet().getPrevRowSet()) : parent.getRowSet();
-            final TrackingMutableRowSet rowSetToUpdate = closer.add(fullRowSet.clone());
 
             final List<NotificationQueue.Dependency> dependencies = new ArrayList<>();
             final Map<String, ColumnSource<?>> newColumns = new LinkedHashMap<>(parent.getColumnSourceMap());
             matchColumns.forEach(holder -> {
                 final SelectFilter filter = holder.getFilter();
                 filter.init(parent.getDefinition());
-                final TrackingMutableRowSet result = filter.filter(rowSetToUpdate, fullRowSet, parent, usePrev);
-                holder.column = new IndexWrapperColumnSource(holder.getColumnName(), parent, result, filter);
+                final MutableRowSet result = filter.filter(fullRowSet, fullRowSet, parent, usePrev);
+                holder.column = new IndexWrapperColumnSource(
+                        holder.getColumnName(), parent, result.convertToTracking(), filter);
 
                 if (newColumns.put(holder.getColumnName(), holder.column) != null) {
                     // This should never happen or the check in the constructor has failed.
@@ -203,7 +203,7 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
                             downstream.modifiedColumnSet,
                             parent))
                     .filter(Objects::nonNull)
-                    .forEach(downstream.modified::insert);
+                    .forEach(rs -> downstream.modified.asMutable().insert(rs));
 
             resultTable.notifyListeners(downstream);
         }
@@ -228,15 +228,16 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
             for (final ColumnHolder holder : matchColumns) {
                 if (holder.column.recomputeRequested()) {
                     if (downstream == null) {
-                        downstream = new io.deephaven.engine.v2.Listener.Update(RowSetFactoryImpl.INSTANCE.getEmptyRowSet(),
-                                RowSetFactoryImpl.INSTANCE.getEmptyRowSet(),
-                                RowSetFactoryImpl.INSTANCE.getEmptyRowSet(),
-                                RowSetShiftData.EMPTY,
-                                resultTable.modifiedColumnSet);
+                        downstream =
+                                new io.deephaven.engine.v2.Listener.Update(RowSetFactoryImpl.INSTANCE.getEmptyRowSet(),
+                                        RowSetFactoryImpl.INSTANCE.getEmptyRowSet(),
+                                        RowSetFactoryImpl.INSTANCE.getEmptyRowSet(),
+                                        RowSetShiftData.EMPTY,
+                                        resultTable.modifiedColumnSet);
                     }
 
                     downstream.modifiedColumnSet.setAll(holder.getColumnName());
-                    downstream.modified.insert(holder.column.recompute(parent, EMPTY_INDEX));
+                    downstream.modified.asMutable().insert(holder.column.recompute(parent, EMPTY_INDEX));
                 }
             }
 
@@ -268,7 +269,8 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
         private final String name;
         private final ModifiedColumnSet possibleUpstreamModified;
 
-        IndexWrapperColumnSource(String name, QueryTable parent, TrackingMutableRowSet sourceRowSet, SelectFilter filter) {
+        IndexWrapperColumnSource(String name, QueryTable parent, TrackingMutableRowSet sourceRowSet,
+                SelectFilter filter) {
             super(Boolean.class);
             this.source = sourceRowSet;
             this.filter = filter;
@@ -290,9 +292,8 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
         @Override
         public void fillChunk(@NotNull FillContext context,
                 @NotNull WritableChunk<? super Attributes.Values> destination, @NotNull RowSequence rowSequence) {
-            try (final SafeCloseableList closer = new SafeCloseableList()) {
-                final RowSet keysToCheck = closer.add(rowSequence.asRowSet());
-                final RowSet intersection = closer.add(keysToCheck.intersect(source));
+            try (final RowSet keysToCheck = rowSequence.asRowSet();
+                    final RowSet intersection = keysToCheck.intersect(source)) {
                 fillChunkInternal(keysToCheck, intersection, rowSequence.intSize(), destination);
             }
         }
@@ -300,9 +301,9 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
         @Override
         public void fillPrevChunk(@NotNull FillContext context,
                 @NotNull WritableChunk<? super Attributes.Values> destination, @NotNull RowSequence rowSequence) {
-            try (final SafeCloseableList closer = new SafeCloseableList()) {
-                final TrackingRowSet keysToCheck = closer.add(rowSequence.asRowSet());
-                final RowSet intersection = closer.add(keysToCheck.getPrevRowSet().intersect(source.getPrevRowSet()));
+            try (final RowSet keysToCheck = rowSequence.asRowSet();
+                    final RowSet sourcePrev = source.getPrevRowSet();
+                    final RowSet intersection = keysToCheck.intersect(sourcePrev)) {
                 fillChunkInternal(keysToCheck, intersection, rowSequence.intSize(), destination);
             }
         }
@@ -316,7 +317,7 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
          * @param destination the destination chunk
          */
         private void fillChunkInternal(RowSet keysToCheck, RowSet intersection, int RowSequenceSize,
-                                       @NotNull WritableChunk<? super Attributes.Values> destination) {
+                @NotNull WritableChunk<? super Attributes.Values> destination) {
             final WritableObjectChunk<Boolean, ? super Attributes.Values> writeable =
                     destination.asWritableObjectChunk();
             writeable.setSize(RowSequenceSize);
@@ -389,8 +390,8 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
         }
 
         /**
-         * Update the internal rowSet with the upstream {@link io.deephaven.engine.v2.Listener.Update}. If the
-         * column was recomputed, return an optional containing rows that were modified.
+         * Update the internal rowSet with the upstream {@link io.deephaven.engine.v2.Listener.Update}. If the column
+         * was recomputed, return an optional containing rows that were modified.
          *
          * @param added the set of added rows in the update
          * @param removed the set of removed rows in the update
@@ -404,9 +405,10 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
          * @return an Optional containing rows modified to add to the downstream update
          */
         @Nullable
-        private RowSet update(TrackingMutableRowSet added, RowSet removed, TrackingMutableRowSet modified, RowSet modPreShift, RowSetShiftData shift,
-                              ModifiedColumnSet upstreamModified, ModifiedColumnSet downstreamModified,
-                              QueryTable table) {
+        private RowSet update(RowSet added, RowSet removed, RowSet modified,
+                RowSet modPreShift, RowSetShiftData shift,
+                ModifiedColumnSet upstreamModified, ModifiedColumnSet downstreamModified,
+                QueryTable table) {
             final boolean affected = upstreamModified != null && upstreamModified.containsAny(possibleUpstreamModified);
 
             // Remove the removed keys, and pre-shift modifieds
@@ -427,21 +429,22 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
             }
 
             // Filter and add addeds
-            final MutableRowSet filteredAdded = filter.filter(added, source, table, false);
-            RowSet keysToRemove = EMPTY_INDEX;
+            try (final SafeCloseableList toClose = new SafeCloseableList()) {
+                final MutableRowSet filteredAdded = toClose.add(filter.filter(added, source, table, false));
+                RowSet keysToRemove = EMPTY_INDEX;
 
-            // If we were affected, recompute mods and re-add the ones that pass.
-            if (affected) {
-                downstreamModified.setAll(name);
-                final RowSet filteredModified = filter.filter(modified, source, table, false);
+                // If we were affected, recompute mods and re-add the ones that pass.
+                if (affected) {
+                    downstreamModified.setAll(name);
+                    final RowSet filteredModified = toClose.add(filter.filter(modified, source, table, false));
 
-                // Now apply the additions and remove any non-matching modifieds
-                filteredAdded.insert(filteredModified);
-                keysToRemove = modified.minus(filteredModified);
+                    // Now apply the additions and remove any non-matching modifieds
+                    filteredAdded.insert(filteredModified);
+                    keysToRemove = toClose.add(modified.minus(filteredModified));
+                }
+
+                source.update(filteredAdded, keysToRemove);
             }
-
-            source.update(filteredAdded, keysToRemove);
-
             return null;
         }
 

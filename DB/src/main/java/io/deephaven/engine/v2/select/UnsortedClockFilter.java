@@ -12,7 +12,9 @@ import io.deephaven.engine.v2.utils.*;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.*;
+import java.util.Comparator;
+import java.util.PriorityQueue;
+import java.util.Queue;
 
 /**
  * This will filter a table on a DBDateTime column for all rows greater than "now" according to a supplied clock. It
@@ -63,9 +65,9 @@ public class UnsortedClockFilter extends ClockFilter {
     }
 
     @Override
-    protected @Nullable
-    RowSet initializeAndGetInitialIndex(@NotNull final RowSet selection, @NotNull final RowSet fullSet,
-                                        @NotNull final Table table) {
+    @Nullable
+    protected MutableRowSet initializeAndGetInitialIndex(@NotNull final RowSet selection, @NotNull final RowSet fullSet,
+            @NotNull final Table table) {
         rangesByNextTime = new PriorityQueue<>(INITIAL_RANGE_QUEUE_CAPACITY, new RangeComparator());
 
         if (selection.isEmpty()) {
@@ -119,7 +121,8 @@ public class UnsortedClockFilter extends ClockFilter {
     }
 
     @Override
-    protected RowSet updateAndGetAddedIndex() {
+    @Nullable
+    protected MutableRowSet updateAndGetAddedIndex() {
         if (rangesByNextTime.isEmpty()) {
             return null;
         }

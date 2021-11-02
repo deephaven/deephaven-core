@@ -5,9 +5,13 @@
 package io.deephaven.engine.v2.sources;
 
 import io.deephaven.base.verify.Require;
-import io.deephaven.engine.v2.sources.chunk.*;
+import io.deephaven.engine.v2.sources.chunk.Attributes;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
+import io.deephaven.engine.v2.sources.chunk.ChunkSource;
+import io.deephaven.engine.v2.sources.chunk.ChunkType;
+import io.deephaven.engine.v2.sources.chunk.DefaultChunkSource;
 import io.deephaven.engine.v2.tuples.TupleSource;
+import io.deephaven.engine.v2.utils.MutableRowSet;
 import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.util.annotations.FinalDefault;
@@ -22,8 +26,8 @@ import java.util.Map;
  * A "source" for column data - allows cell values to be looked up by (long) keys.
  *
  * <p>
- * Note for implementors: All {@link ColumnSource} implementations must map {@link TrackingMutableRowSet#NULL_ROW_KEY} to a null value for
- * all {@code get} and {@code getPrev} methods.
+ * Note for implementors: All {@link ColumnSource} implementations must map {@link TrackingMutableRowSet#NULL_ROW_KEY}
+ * to a null value for all {@code get} and {@code getPrev} methods.
  */
 public interface ColumnSource<T>
         extends DefaultChunkSource.WithPrev<Values>, ElementSource<T>, TupleSource<T>, Releasable {
@@ -43,7 +47,8 @@ public interface ColumnSource<T>
         return ChunkType.fromElementType(dataType);
     }
 
-    TrackingMutableRowSet match(boolean invertMatch, boolean usePrev, boolean caseInsensitive, RowSet mapper, final Object... keys);
+    MutableRowSet match(boolean invertMatch, boolean usePrev, boolean caseInsensitive, RowSet mapper,
+            final Object... keys);
 
     Map<T, RowSet> getValuesMapping(RowSet subRange);
 

@@ -12,7 +12,7 @@ public class ShiftObliviousUpdateCoalescer {
     private static final boolean VALIDATE_COALESCED_UPDATES = Configuration.getInstance()
             .getBooleanWithDefault("ShiftObliviousUpdateCoalescer.validateCoalescedUpdates", true);
 
-    private TrackingMutableRowSet added, modified, removed;
+    private MutableRowSet added, modified, removed;
 
     public ShiftObliviousUpdateCoalescer() {
         reset();
@@ -30,17 +30,17 @@ public class ShiftObliviousUpdateCoalescer {
     }
 
     public void update(final RowSet addedOnUpdate, final RowSet removedOnUpdate,
-                       final RowSet modifiedOnUpdate) {
+            final RowSet modifiedOnUpdate) {
         // Note: extract removes matching ranges from the source rowSet
         try (final RowSet addedBack = this.removed.extract(addedOnUpdate);
-             final RowSet actuallyAdded = addedOnUpdate.minus(addedBack)) {
+                final RowSet actuallyAdded = addedOnUpdate.minus(addedBack)) {
             this.added.insert(actuallyAdded);
             this.modified.insert(addedBack);
         }
 
         // Things we've added, but are now removing. Do not aggregate these as removed since client never saw them.
         try (final RowSet additionsRemoved = this.added.extract(removedOnUpdate);
-             final RowSet actuallyRemoved = removedOnUpdate.minus(additionsRemoved)) {
+                final RowSet actuallyRemoved = removedOnUpdate.minus(additionsRemoved)) {
             this.removed.insert(actuallyRemoved);
         }
 
@@ -56,40 +56,40 @@ public class ShiftObliviousUpdateCoalescer {
                 && (this.added.overlaps(this.modified) || this.added.overlaps(this.removed)
                         || this.removed.overlaps(modified))) {
             final String assertionMessage = "Coalesced overlaps detected: " +
-                    "added=" + added.toString() +
-                    ", removed=" + removed.toString() +
-                    ", modified=" + modified.toString() +
-                    ", addedOnUpdate=" + addedOnUpdate.toString() +
-                    ", removedOnUpdate=" + removedOnUpdate.toString() +
-                    ", modifiedOnUpdate=" + modifiedOnUpdate.toString() +
-                    "addedIntersectRemoved=" + added.intersect(removed).toString() +
-                    "addedIntersectModified=" + added.intersect(modified).toString() +
-                    "removedIntersectModified=" + removed.intersect(modified).toString();
+                    "added=" + added +
+                    ", removed=" + removed +
+                    ", modified=" + modified +
+                    ", addedOnUpdate=" + addedOnUpdate +
+                    ", removedOnUpdate=" + removedOnUpdate +
+                    ", modifiedOnUpdate=" + modifiedOnUpdate +
+                    "addedIntersectRemoved=" + added.intersect(removed) +
+                    "addedIntersectModified=" + added.intersect(modified) +
+                    "removedIntersectModified=" + removed.intersect(modified);
             Assert.assertion(false, assertionMessage);
         }
     }
 
     public RowSet takeAdded() {
         final RowSet r = added;
-        added = RowSetFactoryImpl.INSTANCE.getEmptyRowSet().convertToTracking();
+        added = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
         return r;
     }
 
     public RowSet takeRemoved() {
         final RowSet r = removed;
-        removed = RowSetFactoryImpl.INSTANCE.getEmptyRowSet().convertToTracking();
+        removed = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
         return r;
     }
 
     public RowSet takeModified() {
         final RowSet r = modified;
-        modified = RowSetFactoryImpl.INSTANCE.getEmptyRowSet().convertToTracking();
+        modified = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
         return r;
     }
 
     public void reset() {
-        added = RowSetFactoryImpl.INSTANCE.getEmptyRowSet().convertToTracking();
-        modified = RowSetFactoryImpl.INSTANCE.getEmptyRowSet().convertToTracking();
-        removed = RowSetFactoryImpl.INSTANCE.getEmptyRowSet().convertToTracking();
+        added = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+        modified = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+        removed = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
     }
 }

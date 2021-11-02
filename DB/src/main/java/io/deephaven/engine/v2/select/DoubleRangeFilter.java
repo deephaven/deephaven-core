@@ -8,8 +8,8 @@ import io.deephaven.engine.tables.TableDefinition;
 import io.deephaven.engine.util.DhDoubleComparisons;
 import io.deephaven.engine.v2.select.chunkfilters.DoubleRangeComparator;
 import io.deephaven.engine.v2.sources.ColumnSource;
+import io.deephaven.engine.v2.utils.MutableRowSet;
 import io.deephaven.engine.v2.utils.RowSet;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.gui.table.filters.Condition;
 import io.deephaven.util.QueryConstants;
 
@@ -84,9 +84,9 @@ public class DoubleRangeFilter extends AbstractRangeFilter {
     }
 
     @Override
-    TrackingMutableRowSet binarySearch(TrackingMutableRowSet selection, ColumnSource columnSource, boolean usePrev, boolean reverse) {
+    MutableRowSet binarySearch(RowSet selection, ColumnSource columnSource, boolean usePrev, boolean reverse) {
         if (selection.isEmpty()) {
-            return selection;
+            return selection.clone();
         }
 
         //noinspection unchecked

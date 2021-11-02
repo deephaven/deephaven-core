@@ -9,8 +9,8 @@ import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.TableDefinition;
 import io.deephaven.engine.tables.live.LiveTable;
 import io.deephaven.engine.tables.live.LiveTableMonitor;
+import io.deephaven.engine.v2.utils.MutableRowSet;
 import io.deephaven.engine.v2.utils.RowSet;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 
 import java.util.Collections;
 import java.util.List;
@@ -54,7 +54,7 @@ public abstract class BaseIncrementalReleaseFilter extends SelectFilterLivenessA
     }
 
     @Override
-    public TrackingMutableRowSet filter(TrackingMutableRowSet selection, RowSet fullSet, Table table, boolean usePrev) {
+    public MutableRowSet filter(RowSet selection, RowSet fullSet, Table table, boolean usePrev) {
         if (usePrev) {
             Assert.eqZero(releasedSize, "releasedSize");
             Assert.eq(fullSet.size(), "fullSet.size()", selection.size(), "selection.size()");

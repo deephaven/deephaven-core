@@ -118,7 +118,9 @@ public class ShiftedRowSequence extends RowSequenceAsChunkImpl implements RowSeq
 
     @Override
     public RowSet asRowSet() {
-        return wrappedOK.asRowSet().shift(shiftAmount);
+        try (final RowSet wrappedAsRowSet = wrappedOK.asRowSet()) {
+            return wrappedAsRowSet.shift(shiftAmount);
+        }
     }
 
     @Override

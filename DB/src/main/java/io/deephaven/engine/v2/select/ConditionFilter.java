@@ -314,8 +314,8 @@ public class ConditionFilter extends AbstractConditionFilter {
         }
 
         @Override
-        public TrackingMutableRowSet filter(final RowSet selection, final RowSet fullSet, final Table table, final boolean usePrev,
-                                            String formula, final Param... params) {
+        public MutableRowSet filter(final RowSet selection, final RowSet fullSet, final Table table, final boolean usePrev,
+                                    String formula, final Param... params) {
             try (final FilterKernel.Context context = filterKernel.getContext(chunkSize);
                     final RowSequence.Iterator rsIterator = selection.getRowSequenceIterator()) {
                 final ChunkGetter[] chunkGetters = new ChunkGetter[columnNames.length];
@@ -346,7 +346,7 @@ public class ConditionFilter extends AbstractConditionFilter {
                 if (sharedContext != null) {
                     sharedContext.close();
                 }
-                return resultBuilder.build().convertToTracking();
+                return resultBuilder.build();
             }
         }
 

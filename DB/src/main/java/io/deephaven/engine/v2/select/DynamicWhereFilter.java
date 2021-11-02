@@ -182,7 +182,7 @@ public class DynamicWhereFilter extends SelectFilterLivenessArtifactImpl impleme
     public void init(TableDefinition tableDefinition) {}
 
     @Override
-    public TrackingMutableRowSet filter(TrackingMutableRowSet selection, RowSet fullSet, Table table, boolean usePrev) {
+    public MutableRowSet filter(RowSet selection, RowSet fullSet, Table table, boolean usePrev) {
         if (usePrev) {
             throw new PreviousFilteringNotSupported();
         }
@@ -190,6 +190,7 @@ public class DynamicWhereFilter extends SelectFilterLivenessArtifactImpl impleme
         final ColumnSource[] keyColumns =
                 Arrays.stream(matchPairs).map(mp -> table.getColumnSource(mp.left())).toArray(ColumnSource[]::new);
         final TupleSource tupleSource = TupleSourceFactory.makeTupleSource(keyColumns);
+        final TrackingRowSet trackingSelection = selection.isTracking() ? selection.asTracking() : null;
 
         switch (groupStrategy) {
             case DEFAULT: {
@@ -204,54 +205,63 @@ public class DynamicWhereFilter extends SelectFilterLivenessArtifactImpl impleme
                 }
 
                 // pick something sensible
-                if (selection.hasGrouping(keyColumns)) {
-                    if (selection.size() > (selection.getGrouping(tupleSource).size() * 2)) {
-                        return filterGrouping(selection, tupleSource);
-                    } else {
-                        return filterLinear(selection, keyColumns, tupleSource);
+                if (trackingSelection != null) {
+                    if (trackingSelection.hasGrouping(keyColumns)) {
+                        if (selection.size() > (trackingSelection.getGrouping(tupleSource).size() * 2L)) {
+                            return filterGrouping(trackingSelection, tupleSource);
+                        } else {
+                            return filterLinear(selection, keyColumns, tupleSource);
+                        }
                     }
-                }
-                final boolean allGrouping = Arrays.stream(keyColumns).allMatch(selection::hasGrouping);
-                if (allGrouping) {
-                    return filterGrouping(selection, tupleSource);
-                }
+                    final boolean allGrouping = Arrays.stream(keyColumns).allMatch(trackingSelection::hasGrouping);
+                    if (allGrouping) {
+                        return filterGrouping(trackingSelection, tupleSource);
+                    }
 
-                final ColumnSource[] sourcesWithGroupings =
-                        Arrays.stream(keyColumns).filter(selection::hasGrouping).toArray(ColumnSource[]::new);
-                final OptionalInt minGroupCount =
-                        Arrays.stream(sourcesWithGroupings).mapToInt(x -> selection.getGrouping(x).size()).min();
-                if (minGroupCount.isPresent() && (minGroupCount.getAsInt() * 4) < selection.size()) {
-                    return filterGrouping(selection, tupleSource);
+                    final ColumnSource[] sourcesWithGroupings =
+                            Arrays.stream(keyColumns).filter(trackingSelection::hasGrouping)
+                                    .toArray(ColumnSource[]::new);
+                    final OptionalInt minGroupCount =
+                            Arrays.stream(sourcesWithGroupings).mapToInt(x -> trackingSelection.getGrouping(x).size())
+                                    .min();
+                    if (minGroupCount.isPresent() && (minGroupCount.getAsInt() * 4L) < selection.size()) {
+                        return filterGrouping(trackingSelection, tupleSource);
+                    }
                 }
                 return filterLinear(selection, keyColumns, tupleSource);
             }
             case USE_EXISTING_GROUPS:
-                if (selection.hasGrouping(keyColumns)) {
-                    return filterGrouping(selection, tupleSource);
+                if (trackingSelection != null && trackingSelection.hasGrouping(keyColumns)) {
+                    return filterGrouping(trackingSelection, tupleSource);
                 } else {
                     return filterLinear(selection, keyColumns, tupleSource);
                 }
             case CREATE_GROUPS:
-                return filterGrouping(selection, table);
+                try (final TrackingRowSet rowSetForGrouping =
+                        trackingSelection != null ? null : selection.convertToTrackingMutable()) {
+                    return filterGrouping(
+                            trackingSelection != null ? trackingSelection : rowSetForGrouping, table);
+                }
             case LINEAR:
                 return filterLinear(selection, keyColumns, tupleSource);
         }
+        // noinspection ConstantConditions
         throw Assert.statementNeverExecuted();
     }
 
-    private TrackingMutableRowSet filterGrouping(TrackingMutableRowSet selection, TupleSource tupleSource) {
+    private MutableRowSet filterGrouping(TrackingRowSet selection, TupleSource tupleSource) {
         final RowSet matchingKeys = selection.getSubSetForKeySet(liveValues, tupleSource);
-        return (inclusion ? matchingKeys.clone() : selection.minus(matchingKeys)).convertToTracking();
+        return (inclusion ? matchingKeys.clone() : selection.minus(matchingKeys));
     }
 
-    private TrackingMutableRowSet filterGrouping(TrackingMutableRowSet selection, Table table) {
+    private MutableRowSet filterGrouping(TrackingRowSet selection, Table table) {
         final ColumnSource[] keyColumns =
                 Arrays.stream(matchPairs).map(mp -> table.getColumnSource(mp.left())).toArray(ColumnSource[]::new);
         final TupleSource tupleSource = TupleSourceFactory.makeTupleSource(keyColumns);
         return filterGrouping(selection, tupleSource);
     }
 
-    private TrackingMutableRowSet filterLinear(RowSet selection, ColumnSource[] keyColumns, TupleSource tupleSource) {
+    private MutableRowSet filterLinear(RowSet selection, ColumnSource[] keyColumns, TupleSource tupleSource) {
         if (keyColumns.length == 1) {
             return filterLinearOne(selection, keyColumns[0]);
         } else {
@@ -259,9 +269,9 @@ public class DynamicWhereFilter extends SelectFilterLivenessArtifactImpl impleme
         }
     }
 
-    private TrackingMutableRowSet filterLinearOne(RowSet selection, ColumnSource keyColumn) {
+    private MutableRowSet filterLinearOne(RowSet selection, ColumnSource keyColumn) {
         if (selection.isEmpty()) {
-            return RowSetFactoryImpl.INSTANCE.getEmptyRowSet().convertToTracking();
+            return RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
         }
 
         if (!kernelValid) {
@@ -295,10 +305,10 @@ public class DynamicWhereFilter extends SelectFilterLivenessArtifactImpl impleme
         }
 
 
-        return indexBuilder.build().convertToTracking();
+        return indexBuilder.build();
     }
 
-    private TrackingMutableRowSet filterLinearTuple(RowSet selection, TupleSource tupleSource) {
+    private MutableRowSet filterLinearTuple(RowSet selection, TupleSource tupleSource) {
         final RowSetBuilderSequential indexBuilder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
 
         for (final RowSet.Iterator it = selection.iterator(); it.hasNext();) {
@@ -309,7 +319,7 @@ public class DynamicWhereFilter extends SelectFilterLivenessArtifactImpl impleme
             }
         }
 
-        return indexBuilder.build().convertToTracking();
+        return indexBuilder.build();
     }
 
     @Override

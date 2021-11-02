@@ -85,14 +85,13 @@ public class DownsampledWhereFilter extends SelectFilterImpl {
     public void init(TableDefinition tableDefinition) {}
 
     @Override
-    public TrackingMutableRowSet filter(TrackingMutableRowSet selection, RowSet fullSet, Table table, boolean usePrev) {
+    public MutableRowSet filter(RowSet selection, RowSet fullSet, Table table, boolean usePrev) {
         if (DynamicNode.isDynamicAndIsRefreshing(table)) {
             throw new UnsupportedOperationException("Can not do a DownsampledWhereFilter on a refreshing table!");
         }
 
         // NB: because our source is not refreshing, we don't care about the previous values
 
-        // noinspection unchecked
         ColumnSource<DBDateTime> timestampColumn = table.getColumnSource(column);
 
         RowSetBuilderSequential builder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();

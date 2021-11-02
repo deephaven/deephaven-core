@@ -10,6 +10,7 @@ import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.v2.utils.MutableRowSet;
 import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
+import io.deephaven.util.SafeCloseable;
 
 import java.util.*;
 
@@ -36,39 +37,38 @@ public class DisjunctiveFilter extends ComposedFilter {
     }
 
     @Override
-    public TrackingMutableRowSet filter(TrackingMutableRowSet selection, RowSet fullSet, Table table, boolean usePrev) {
+    public MutableRowSet filter(RowSet selection, RowSet fullSet, Table table, boolean usePrev) {
         MutableRowSet matched = null;
+        try (MutableRowSet remaining = selection.clone()) {
+            for (SelectFilter filter : componentFilters) {
+                if (Thread.interrupted()) {
+                    throw new QueryCancellationException("interrupted while filtering");
+                }
 
-        for (SelectFilter filter : componentFilters) {
-            if (Thread.interrupted()) {
-                throw new QueryCancellationException("interrupted while filtering");
-            }
+                // If a previous clause has already matched a row, we do not need to re-evaluate it
+                if (matched != null) {
+                    remaining.remove(matched);
+                }
 
-            TrackingMutableRowSet currentMapping = selection.clone();
+                final MutableRowSet filterMatched = filter.filter(remaining, fullSet, table, usePrev);
 
-            // If a previous clause has already matched a row, we do not need to re-evaluate it
-            if (matched != null) {
-                currentMapping = currentMapping.minus(matched);
-            }
+                // All matched entries get put into the value
+                if (matched == null) {
+                    matched = filterMatched;
+                } else {
+                    try (final SafeCloseable ignored = filterMatched) {
+                        matched.insert(filterMatched);
+                    }
+                }
 
-            currentMapping = filter.filter(currentMapping, fullSet, table, usePrev);
-
-            // and all matched entries get put into the value
-            if (matched == null) {
-                matched = currentMapping;
-            } else {
-                matched.insert(currentMapping);
-            }
-
-            // everything in the input set already belongs in the output set
-            if (matched.size() == selection.size()) {
-                break;
+                if (matched.size() == selection.size()) {
+                    // Everything in the input set already belongs in the output set
+                    break;
+                }
             }
         }
 
-        final TrackingMutableRowSet result = matched == null ? selection.clone() : matched.clone();
-        Assert.eq(result.size(), "result.size()", result.getPrevRowSet().size(), "result.getPrevRowSet.size()");
-        return result;
+        return matched == null ? selection.clone() : matched.clone();
     }
 
     @Override

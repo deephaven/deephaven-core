@@ -231,7 +231,7 @@ public class MutableRowSetImpl extends RowSequenceAsChunkImpl implements Mutable
 
     @Override
     public final RowSet asRowSet() {
-        return this;
+        return clone();
     }
 
     @Override

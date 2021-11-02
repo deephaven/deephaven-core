@@ -5,8 +5,8 @@ import io.deephaven.engine.tables.ColumnDefinition;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.TableDefinition;
 import io.deephaven.engine.tables.utils.DBTimeUtils;
+import io.deephaven.engine.v2.utils.MutableRowSet;
 import io.deephaven.engine.v2.utils.RowSet;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.gui.table.filters.Condition;
 import io.deephaven.util.type.TypeUtils;
 
@@ -231,7 +231,7 @@ public class RangeConditionFilter extends SelectFilterImpl {
     }
 
     @Override
-    public TrackingMutableRowSet filter(TrackingMutableRowSet selection, RowSet fullSet, Table table, boolean usePrev) {
+    public MutableRowSet filter(RowSet selection, RowSet fullSet, Table table, boolean usePrev) {
         return filter.filter(selection, fullSet, table, usePrev);
     }
 

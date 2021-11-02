@@ -138,10 +138,10 @@ public interface ChunkFilter {
      * @param usePrev should we use previous values from the column source?
      * @param chunkFilter the chunk filter to apply
      *
-     * @return a new TrackingMutableRowSet representing the filtered values
+     * @return A new MutableRowSet representing the filtered values, owned by the caller
      */
-    static TrackingMutableRowSet applyChunkFilter(RowSet selection, ColumnSource<?> columnSource, boolean usePrev,
-                                                  ChunkFilter chunkFilter) {
+    static MutableRowSet applyChunkFilter(RowSet selection, ColumnSource<?> columnSource, boolean usePrev,
+                                          ChunkFilter chunkFilter) {
         final RowSetBuilderSequential builder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
 
         final int contextSize = (int) Math.min(FILTER_CHUNK_SIZE, selection.size());

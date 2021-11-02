@@ -37,6 +37,7 @@ import io.deephaven.engine.v2.sources.sparse.SparseConstants;
 import io.deephaven.engine.v2.utils.*;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
+import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.TestUseOnly;
 import io.deephaven.util.annotations.VisibleForTesting;
 import org.apache.commons.lang3.mutable.Mutable;
@@ -838,7 +839,7 @@ public class QueryTable extends BaseTable {
         private boolean refilterUnmatchedRequested = false;
         private MergedListener whereListener;
 
-        public FilteredTable(final TrackingMutableRowSet currentMapping, final QueryTable source,
+        public FilteredTable(final RowSet currentMapping, final QueryTable source,
                 final SelectFilter[] filters) {
             super(source.getDefinition(), currentMapping, source.columns, null);
             this.source = source;
@@ -918,19 +919,19 @@ public class QueryTable extends BaseTable {
                 });
             }
 
-            final TrackingMutableRowSet newMapping;
+            final MutableRowSet newMapping;
             if (refilterMatchedRequested && refilterUnmatchedRequested) {
-                newMapping = whereInternal(source.getRowSet().clone().convertToTracking(), source.getRowSet(), false, filters);
+                newMapping = whereInternal(source.getRowSet(), source.getRowSet(), false, filters);
                 refilterMatchedRequested = refilterUnmatchedRequested = false;
             } else if (refilterUnmatchedRequested) {
                 // things that are added or removed are already reflected in source.build
-                final MutableRowSet unmatchedRows = source.getRowSet().minus(getRowSet());
-                // we must check rows that have been modified instead of just preserving them
-                if (upstreamModified != null) {
-                    unmatchedRows.insert(upstreamModified);
+                try (final MutableRowSet unmatchedRows = source.getRowSet().minus(getRowSet())) {
+                    // we must check rows that have been modified instead of just preserving them
+                    if (upstreamModified != null) {
+                        unmatchedRows.insert(upstreamModified);
+                    }
+                    newMapping = whereInternal(unmatchedRows, unmatchedRows, false, filters);
                 }
-                newMapping = whereInternal(unmatchedRows.clone().convertToTracking(), unmatchedRows, false, filters);
-
                 // add back what we previously matched, but for modifications and removals
                 try (final MutableRowSet previouslyMatched = getRowSet().clone()) {
                     if (upstreamAdded != null) {
@@ -944,16 +945,17 @@ public class QueryTable extends BaseTable {
 
                 refilterUnmatchedRequested = false;
             } else if (refilterMatchedRequested) {
-                // we need to take removed rows out of our rowSet so we do not read them; and also examine added or
+                // we need to take removed rows out of our rowSet so we do not read them, and also examine added or
                 // modified rows
-                final MutableRowSet matchedRows = getRowSet().clone();
-                if (upstreamAdded != null) {
-                    matchedRows.insert(upstreamAdded);
+                try (final MutableRowSet matchedRows = getRowSet().clone()) {
+                    if (upstreamAdded != null) {
+                        matchedRows.insert(upstreamAdded);
+                    }
+                    if (upstreamModified != null) {
+                        matchedRows.insert(upstreamModified);
+                    }
+                    newMapping = whereInternal(matchedRows, matchedRows, false, filters);
                 }
-                if (upstreamModified != null) {
-                    matchedRows.insert(upstreamModified);
-                }
-                newMapping = whereInternal(matchedRows.clone().convertToTracking(), matchedRows, false, filters);
                 refilterMatchedRequested = false;
             } else {
                 throw new IllegalStateException("Refilter called when a refilter was not requested!");
@@ -1032,17 +1034,13 @@ public class QueryTable extends BaseTable {
                         initializeWithSnapshot("where", swapListener,
                                 (prevRequested, beforeClock) -> {
                                     final boolean usePrev = prevRequested && isRefreshing();
-                                    final RowSet rowSetToUpdate = usePrev ? rowSet.getPrevRowSet() : rowSet;
-                                    final TrackingMutableRowSet currentMapping;
-
-                                    currentMapping = whereInternal(rowSetToUpdate.clone().convertToTracking(), rowSetToUpdate,
-                                            usePrev, filters);
-                                    Assert.eq(currentMapping.getPrevRowSet().size(),
-                                            "currentMapping.getPrevRowSet.size()", currentMapping.size(),
-                                            "currentMapping.size()");
-
-                                    final FilteredTable filteredTable =
-                                            new FilteredTable(currentMapping, this, filters);
+                                    final FilteredTable filteredTable;
+                                    try (final RowSet prevIfNeeded = usePrev ? rowSet.getPrevRowSet() : null) {
+                                        final RowSet rowSetToUpdate = usePrev ? prevIfNeeded : rowSet;
+                                        final RowSet currentMapping = whereInternal(rowSetToUpdate, rowSetToUpdate,
+                                                usePrev, filters);
+                                        filteredTable = new FilteredTable(currentMapping, this, filters);
+                                    }
 
                                     for (final SelectFilter filter : filters) {
                                         filter.setRecomputeListener(filteredTable);
@@ -1090,15 +1088,19 @@ public class QueryTable extends BaseTable {
     }
 
     @SuppressWarnings("WeakerAccess")
-    protected TrackingMutableRowSet whereInternal(TrackingMutableRowSet currentMapping, RowSet fullSet, boolean usePrev,
+    protected MutableRowSet whereInternal(RowSet currentMapping, RowSet fullSet, boolean usePrev,
             SelectFilter... filters) {
+        MutableRowSet matched = currentMapping.clone();
+
         for (SelectFilter filter : filters) {
             if (Thread.interrupted()) {
                 throw new QueryCancellationException("interrupted while filtering");
             }
-            currentMapping = filter.filter(currentMapping, fullSet, this, usePrev);
+            try (final SafeCloseable ignored = matched) { // Ensure we close old matched
+                matched = filter.filter(matched, fullSet, this, usePrev);
+            }
         }
-        return currentMapping;
+        return matched;
     }
 
     @Override
@@ -1924,7 +1926,8 @@ public class QueryTable extends BaseTable {
             final long initialSize = snapshotHistoryInternal(leftTable.getColumnSourceMap(), leftTable.getRowSet(),
                     rightTable.getColumnSourceMap(), rightTable.getRowSet(),
                     resultColumns, 0);
-            final TrackingMutableRowSet resultRowSet = RowSetFactoryImpl.INSTANCE.getFlatRowSet(initialSize).convertToTracking();
+            final TrackingMutableRowSet resultRowSet =
+                    RowSetFactoryImpl.INSTANCE.getFlatRowSet(initialSize).convertToTracking();
             final QueryTable result = new QueryTable(resultRowSet, resultColumns);
             if (isRefreshing()) {
                 listenForUpdates(new ShiftObliviousListenerImpl("snapshotHistory" + resultColumns.keySet().toString(),
@@ -2037,7 +2040,8 @@ public class QueryTable extends BaseTable {
             throwColumnConflictMessage(resultLeftColumns.keySet(), resultRightColumns.keySet());
         }
 
-        final QueryTable result = new QueryTable(RowSetFactoryImpl.INSTANCE.getEmptyRowSet().convertToTracking(), allColumns);
+        final QueryTable result =
+                new QueryTable(RowSetFactoryImpl.INSTANCE.getEmptyRowSet().convertToTracking(), allColumns);
         final SnapshotInternalListener listener = new SnapshotInternalListener(this, lazySnapshot, tableToSnapshot,
                 result, resultLeftColumns, resultRightColumns, result.getRowSetInternal());
 
@@ -2114,7 +2118,8 @@ public class QueryTable extends BaseTable {
                     }
 
                     final QueryTable resultTable =
-                            new QueryTable(RowSetFactoryImpl.INSTANCE.getEmptyRowSet().convertToTracking(), resultColumns);
+                            new QueryTable(RowSetFactoryImpl.INSTANCE.getEmptyRowSet().convertToTracking(),
+                                    resultColumns);
 
                     if (isRefreshing() && rightTable.isRefreshing()) {
 
@@ -3151,7 +3156,8 @@ public class QueryTable extends BaseTable {
             recorder.getShifted().apply(currentMapping);
 
             // compute added against filters
-            final MutableRowSet added = whereInternal(recorder.getAdded().clone().convertToTracking(), rowSet, false, filters);
+            final MutableRowSet added =
+                    whereInternal(recorder.getAdded().clone().convertToTracking(), rowSet, false, filters);
 
             // check which modified keys match filters (Note: filterColumns will be null if we must always check)
             final boolean runFilters = filterColumns == null || sourceModColumns.containsAny(filterColumns);

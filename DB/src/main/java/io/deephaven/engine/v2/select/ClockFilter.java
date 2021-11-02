@@ -4,8 +4,8 @@
 
 package io.deephaven.engine.v2.select;
 
-import io.deephaven.base.verify.Require;
 import io.deephaven.base.clock.Clock;
+import io.deephaven.base.verify.Require;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.TableDefinition;
 import io.deephaven.engine.tables.lang.DBLanguageFunctionUtil;
@@ -15,7 +15,10 @@ import io.deephaven.engine.tables.utils.DBDateTime;
 import io.deephaven.engine.v2.DynamicNode;
 import io.deephaven.engine.v2.QueryTable;
 import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.utils.*;
+import io.deephaven.engine.v2.utils.MutableRowSet;
+import io.deephaven.engine.v2.utils.RowSet;
+import io.deephaven.engine.v2.utils.RowSetBuilderRandom;
+import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -55,8 +58,8 @@ public abstract class ClockFilter extends SelectFilterLivenessArtifactImpl imple
     }
 
     @Override
-    public final TrackingMutableRowSet filter(@NotNull final TrackingMutableRowSet selection, @NotNull final RowSet fullSet, @NotNull final Table table,
-                                              boolean usePrev) {
+    public final MutableRowSet filter(@NotNull final RowSet selection, @NotNull final RowSet fullSet,
+            @NotNull final Table table, boolean usePrev) {
         if (usePrev) {
             throw new PreviousFilteringNotSupported();
         }
@@ -65,25 +68,23 @@ public abstract class ClockFilter extends SelectFilterLivenessArtifactImpl imple
         Require.requirement(DynamicNode.notDynamicOrNotRefreshing(table),
                 "DynamicNode.notDynamicOrNotRefreshing(table)");
 
-        // noinspection unchecked
         final ColumnSource<DBDateTime> dateTimeColumnSource = table.getColumnSource(columnName);
         // Obviously, column needs to be of date-time values.
         Require.requirement(DBDateTime.class.isAssignableFrom(dateTimeColumnSource.getType()),
                 "DBDateTime.class.isAssignableFrom(dateTimeColumnSource.getType())");
 
-        // noinspection unchecked
         nanosColumnSource = dateTimeColumnSource.allowsReinterpret(long.class)
                 ? table.dateTimeColumnAsNanos(columnName).getColumnSource(columnName)
                 : table.view(columnName + " = isNull(" + columnName + ") ? NULL_LONG : " + columnName + ".getNanos()")
                         .getColumnSource(columnName);
 
-        final RowSet initial = initializeAndGetInitialIndex(selection, fullSet, table);
+        final MutableRowSet initial = initializeAndGetInitialIndex(selection, fullSet, table);
         return initial == null ? RowSetFactoryImpl.INSTANCE.getEmptyRowSet() : initial;
     }
 
-    protected abstract @Nullable
-    RowSet initializeAndGetInitialIndex(@NotNull final RowSet selection,
-                                        @NotNull final RowSet fullSet, @NotNull final Table table);
+    @Nullable
+    protected abstract MutableRowSet initializeAndGetInitialIndex(@NotNull final RowSet selection,
+            @NotNull final RowSet fullSet, @NotNull final Table table);
 
     @Override
     public final boolean isSimpleFilter() {
@@ -116,13 +117,14 @@ public abstract class ClockFilter extends SelectFilterLivenessArtifactImpl imple
     public final void refresh() {
         final RowSet added = updateAndGetAddedIndex();
         if (added != null && !added.isEmpty()) {
-            resultTable.getRowSet().insert(added);
-            resultTable.notifyListeners(added, RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), RowSetFactoryImpl.INSTANCE.getEmptyRowSet());
+            resultTable.getRowSet().asMutable().insert(added);
+            resultTable.notifyListeners(added, RowSetFactoryImpl.INSTANCE.getEmptyRowSet(),
+                    RowSetFactoryImpl.INSTANCE.getEmptyRowSet());
         }
     }
 
-    protected abstract @Nullable
-    RowSet updateAndGetAddedIndex();
+    @Nullable
+    protected abstract MutableRowSet updateAndGetAddedIndex();
 
     boolean isLive() {
         return live;
@@ -147,8 +149,8 @@ public abstract class ClockFilter extends SelectFilterLivenessArtifactImpl imple
 
         @Nullable
         RowSetBuilderRandom consumeKeysAndAppendAdded(final ColumnSource<Long> nanosColumnSource,
-                                                      final long nowNanos,
-                                                      @Nullable RowSetBuilderRandom addedBuilder) {
+                final long nowNanos,
+                @Nullable RowSetBuilderRandom addedBuilder) {
             final long firstKeyAdded = nextKey;
             long lastKeyAdded = -1L;
             while (nextKey <= lastKey

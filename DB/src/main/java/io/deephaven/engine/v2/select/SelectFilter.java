@@ -7,13 +7,7 @@ package io.deephaven.engine.v2.select;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.RawString;
 import io.deephaven.api.Strings;
-import io.deephaven.api.filter.Filter;
-import io.deephaven.api.filter.FilterAnd;
-import io.deephaven.api.filter.FilterCondition;
-import io.deephaven.api.filter.FilterIsNotNull;
-import io.deephaven.api.filter.FilterIsNull;
-import io.deephaven.api.filter.FilterNot;
-import io.deephaven.api.filter.FilterOr;
+import io.deephaven.api.filter.*;
 import io.deephaven.api.value.Value;
 import io.deephaven.api.value.Value.Visitor;
 import io.deephaven.engine.tables.Table;
@@ -22,8 +16,8 @@ import io.deephaven.engine.tables.select.SelectFilterFactory;
 import io.deephaven.engine.v2.QueryTable;
 import io.deephaven.engine.v2.remote.ConstructSnapshot;
 import io.deephaven.engine.v2.select.MatchFilter.MatchType;
+import io.deephaven.engine.v2.utils.MutableRowSet;
 import io.deephaven.engine.v2.utils.RowSet;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collection;
@@ -114,18 +108,20 @@ public interface SelectFilter {
     /**
      * Filter selection to only matching rows.
      *
-     * @param selection the indices that should be filtered. The selection must be a subset of fullSet; and may not
-     *        include rows that the engine determines need not be evaluated to produce the result.
-     * @param fullSet the complete TrackingMutableRowSet of the table to filter. The fullSet is used for calculating variables like "i"
-     *        or "ii".
+     * @param selection the indices that should be filtered. The selection must be a subset of fullSet, and may include
+     *        rows that the engine determines need not be evaluated to produce the result. Implementations <em>may
+     *        not</em> mutate or {@link RowSet#close() close} {@code selection}.
+     * @param fullSet the complete TrackingMutableRowSet of the table to filter. The fullSet is used for calculating
+     *        variables like "i" or "ii". Implementations <em>may not</em> mutate or {@link RowSet#close() close}
+     *        {@code fullSet}.
      * @param table the table to filter
      * @param usePrev true if previous values should be used. Implementing previous value filtering is optional, and a
      *        {@link PreviousFilteringNotSupported} exception may be thrown. If a PreviousFiltering exception is thrown,
      *        then the caller must acquire the LiveTableMonitor lock.
      *
-     * @return the subset of selection accepted by this filter
+     * @return The subset of selection accepted by this filter; ownership passes to the caller
      */
-    TrackingMutableRowSet filter(TrackingMutableRowSet selection, RowSet fullSet, Table table, boolean usePrev);
+    MutableRowSet filter(RowSet selection, RowSet fullSet, Table table, boolean usePrev);
 
     /**
      * @return true if this is a filter that does not require any code execution, but rather is handled entirely within

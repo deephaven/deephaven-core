@@ -13,6 +13,7 @@ import io.deephaven.engine.v2.remote.ConstructSnapshot;
 import io.deephaven.engine.v2.select.SelectFilter;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.LogicalClock;
+import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.ReferentialIntegrity;
 import gnu.trove.iterator.TLongIterator;
 import gnu.trove.list.array.TLongArrayList;
@@ -76,7 +77,7 @@ public class TreeTableFilter implements Function.Unary<Table, Table>, MemoizedOp
         /**
          * The rowSet of values that match our desired filter.
          */
-        private TrackingMutableRowSet valuesRowSet;
+        private MutableRowSet valuesRowSet;
         /**
          * The rowSet of ancestors of matching values.
          */
@@ -138,12 +139,11 @@ public class TreeTableFilter implements Function.Unary<Table, Table>, MemoizedOp
         }
 
         private void doInitialFilter(final boolean usePrev) {
-            valuesRowSet = doValueFilter(usePrev, source.getRowSet().asMutable());
+            valuesRowSet = doValueFilter(usePrev, source.getRowSet());
 
             parentReferences = new HashMap<>(valuesRowSet.intSize("parentReferenceMap"));
             parentRowSet = computeParents(usePrev, valuesRowSet);
-            resultRowSet = valuesRowSet.union(parentRowSet);
-            resultRowSet.initializePreviousValue();
+            resultRowSet = valuesRowSet.union(parentRowSet).convertToTracking();
 
             validateState(usePrev);
 
@@ -191,7 +191,7 @@ public class TreeTableFilter implements Function.Unary<Table, Table>, MemoizedOp
             }
 
             TLongArrayList parentsToProcess = new TLongArrayList();
-            expectedRowSet.forEach(parentsToProcess::add);
+            expectedRowSet.forAllLongs(parentsToProcess::add);
 
             final RowSet sourceRowSet = usePrev ? source.getRowSet().getPrevRowSet() : source.getRowSet();
             do {
@@ -287,12 +287,14 @@ public class TreeTableFilter implements Function.Unary<Table, Table>, MemoizedOp
             parentRowSet.remove(builder.build());
         }
 
-        private TrackingMutableRowSet doValueFilter(boolean usePrev, TrackingMutableRowSet rowsToFilter) {
+        private MutableRowSet doValueFilter(boolean usePrev, RowSet rowsToFilter) {
+            MutableRowSet matched = rowsToFilter.clone();
             for (final SelectFilter filter : filters) {
-                rowsToFilter = filter.filter(rowsToFilter, source.getRowSet(), source, usePrev);
+                try (final SafeCloseable ignored = matched) { // Ensure we close old matched
+                    matched = filter.filter(matched, source.getRowSet(), source, usePrev);
+                }
             }
-
-            return rowsToFilter;
+            return matched;
         }
 
         private RowSet checkForResurrectedParent(RowSet rowsToCheck) {
@@ -415,8 +417,8 @@ public class TreeTableFilter implements Function.Unary<Table, Table>, MemoizedOp
                 upstream.shifted.apply(parentRowSet);
                 upstream.shifted.apply(resultRowSet);
 
-                // Finally handle added sets.
-                try (final TrackingMutableRowSet addedAndModified = upstream.added.union(upstream.modified);
+                // Finally, handle added sets.
+                try (final MutableRowSet addedAndModified = upstream.added.union(upstream.modified);
                      final RowSet newFiltered = doValueFilter(false, addedAndModified);
                      final RowSet resurrectedParents = checkForResurrectedParent(addedAndModified);
                      final RowSet newParents = computeParents(false, newFiltered);
@@ -436,11 +438,11 @@ public class TreeTableFilter implements Function.Unary<Table, Table>, MemoizedOp
                     resultRowSet.update(downstream.added, resultRemovals);
 
                     downstream.modified = upstream.modified.intersect(resultRowSet);
-                    downstream.modified.remove(downstream.added);
+                    downstream.modified.asMutable().remove(downstream.added);
 
                     // convert post filter removals into pre-shift space -- note these rows must have previously existed
                     upstream.shifted.unapply(resultRemovals);
-                    downstream.removed.insert(resultRemovals);
+                    downstream.removed.asMutable().insert(resultRemovals);
                 }
 
                 downstream.shifted = upstream.shifted;

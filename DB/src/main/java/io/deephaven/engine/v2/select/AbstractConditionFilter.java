@@ -1,11 +1,6 @@
 package io.deephaven.engine.v2.select;
 
 import io.deephaven.UncheckedDeephavenException;
-import io.deephaven.engine.v2.select.python.DeephavenCompatibleFunction;
-import io.deephaven.engine.v2.utils.RowSet;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
-import io.deephaven.io.logger.Logger;
-import io.deephaven.util.process.ProcessEnvironment;
 import io.deephaven.engine.tables.ColumnDefinition;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.TableDefinition;
@@ -15,6 +10,11 @@ import io.deephaven.engine.tables.libs.QueryLibrary;
 import io.deephaven.engine.tables.select.Param;
 import io.deephaven.engine.tables.select.QueryScope;
 import io.deephaven.engine.tables.utils.DBTimeUtils;
+import io.deephaven.engine.v2.select.python.DeephavenCompatibleFunction;
+import io.deephaven.engine.v2.utils.MutableRowSet;
+import io.deephaven.engine.v2.utils.RowSet;
+import io.deephaven.io.logger.Logger;
+import io.deephaven.util.process.ProcessEnvironment;
 import org.jetbrains.annotations.NotNull;
 
 import java.lang.reflect.InvocationTargetException;
@@ -23,7 +23,7 @@ import java.lang.reflect.Type;
 import java.net.MalformedURLException;
 import java.util.*;
 
-import static io.deephaven.engine.util.PythonScopeJpyImpl.*;
+import static io.deephaven.engine.util.PythonScopeJpyImpl.NumbaCallableWrapper;
 import static io.deephaven.engine.v2.select.DhFormulaColumn.COLUMN_SUFFIX;
 
 public abstract class AbstractConditionFilter extends SelectFilterImpl {
@@ -209,7 +209,7 @@ public abstract class AbstractConditionFilter extends SelectFilterImpl {
             DBLanguageParser.Result result) throws MalformedURLException, ClassNotFoundException;
 
     @Override
-    public TrackingMutableRowSet filter(TrackingMutableRowSet selection, RowSet fullSet, Table table, boolean usePrev) {
+    public MutableRowSet filter(RowSet selection, RowSet fullSet, Table table, boolean usePrev) {
         if (usePrev && params.length > 0) {
             throw new PreviousFilteringNotSupported("Previous filter with parameters not supported.");
         }
@@ -254,7 +254,11 @@ public abstract class AbstractConditionFilter extends SelectFilterImpl {
     public abstract AbstractConditionFilter renameFilter(Map<String, String> renames);
 
     public interface Filter {
-        TrackingMutableRowSet filter(
+        /**
+         * See {@link SelectFilter#filter(RowSet, RowSet, Table, boolean)} for basic documentation of {@code selection},
+         * {@code fullSet}, {@code table}, and {@code usePrev}.
+         */
+        MutableRowSet filter(
                 RowSet selection,
                 RowSet fullSet,
                 Table table,

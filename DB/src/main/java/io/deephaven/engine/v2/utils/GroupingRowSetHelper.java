@@ -22,6 +22,12 @@ import java.util.stream.Collectors;
  */
 public abstract class GroupingRowSetHelper extends MutableRowSetImpl implements TrackingMutableRowSet {
 
+    /* TODO (https://github.com/deephaven/deephaven-core/issues/1521):
+     * We need to do something better than weakly-reachable List<ColumnSource>s here. Indices are probably cleaned
+     * up well before we want right now. Values are only cleaned up on access. Both are sub-par. Worse, the keys are
+     * often strongly reachable from the values.
+     */
+
     /**
      * These mappings last forever, and only include column sources that are immutable. Whenever this RowSet is changed,
      * we must clear the mappings.
@@ -170,8 +176,6 @@ public abstract class GroupingRowSetHelper extends MutableRowSetImpl implements 
         final BiConsumer<Object, RowSet> resultCollector = result::put;
         collectGrouping(this, this::intersect, mappings, ephemeralMappings, resultCollector, tupleSource, sourcesKey);
 
-        // TODO: We need to do something better than weakly-reachable List<ColumnSource>s here. Indices are probably
-        // cleaned up well before we want right now. Values only cleaned up on access. Both are sub-par.
         if (areColumnsImmutable(sourcesKey)) {
             if (mappings == null) {
                 mappings = new WeakHashMap<>();

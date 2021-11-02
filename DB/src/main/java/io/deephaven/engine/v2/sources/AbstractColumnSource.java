@@ -114,7 +114,7 @@ public abstract class AbstractColumnSource<T> implements ColumnSource<T>, Serial
     }
 
     @Override
-    public TrackingMutableRowSet match(boolean invertMatch, boolean usePrev, boolean caseInsensitive, RowSet mapper,
+    public MutableRowSet match(boolean invertMatch, boolean usePrev, boolean caseInsensitive, RowSet mapper,
                                        final Object... keys) {
         final Map<T, RowSet> groupToRange = (isImmutable() || !usePrev) ? getGroupToRange(mapper) : null;
         if (groupToRange != null) {
@@ -139,12 +139,14 @@ public abstract class AbstractColumnSource<T> implements ColumnSource<T>, Serial
             }
 
             final MutableRowSet matchingValues;
-            if (invertMatch) {
-                matchingValues = mapper.minus(allInMatchingGroups.build());
-            } else {
-                matchingValues = mapper.intersect(allInMatchingGroups.build());
+            try (final RowSet matchingGroups = allInMatchingGroups.build()) {
+                if (invertMatch) {
+                    matchingValues = mapper.minus(matchingGroups);
+                } else {
+                    matchingValues = mapper.intersect(matchingGroups);
+                }
             }
-            return matchingValues.convertToTracking();
+            return matchingValues;
         } else {
             return ChunkFilter.applyChunkFilter(mapper, this, usePrev,
                     ChunkMatchFilterFactory.getChunkFilter(type, caseInsensitive, invertMatch, keys));
