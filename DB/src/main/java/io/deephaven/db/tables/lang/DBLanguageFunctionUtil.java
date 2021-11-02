@@ -19331,7 +19331,7 @@ public final class DBLanguageFunctionUtil {
         if (o == null || o.isNone()) {
             return QueryConstants.NULL_FLOAT;
         }
-        return floatCast(o.getDoubleValue());
+        return (float) o.getDoubleValue());
     }
 
     public static char charPyCast(Object a) {
@@ -19342,7 +19342,7 @@ public final class DBLanguageFunctionUtil {
         if (o == null || o.isNone()) {
             return QueryConstants.NULL_CHAR;
         }
-        return charCast(o.getIntValue());
+        return (char) o.getIntValue();
     }
 
     public static byte bytePyCast(Object a) {
@@ -19353,7 +19353,7 @@ public final class DBLanguageFunctionUtil {
         if (o == null || o.isNone()) {
             return QueryConstants.NULL_BYTE;
         }
-        return byteCast(o.getIntValue());
+        return (byte) o.getIntValue();
     }
 
     public static short shortPyCast(Object a) {
@@ -19364,7 +19364,7 @@ public final class DBLanguageFunctionUtil {
         if (o == null || o.isNone()) {
             return QueryConstants.NULL_SHORT;
         }
-        return shortCast(o.getIntValue());
+        return (short) o.getIntValue();
     }
 
     public static String doStringPyCast(Object a) {

@@ -602,7 +602,7 @@ public class DBLanguageFunctionGenerator {
         buf.append("            if (o == null || o.isNone()) {\n");
         buf.append("                return QueryConstants.NULL_FLOAT;\n");
         buf.append("            }\n");
-        buf.append("            return floatCast(o.getDoubleValue());\n");
+        buf.append("            return (float) o.getDoubleValue();\n");
         buf.append("        }\n\n");
 
         buf.append("        public static char charPyCast(Object a) {\n");
@@ -613,7 +613,7 @@ public class DBLanguageFunctionGenerator {
         buf.append("            if (o == null || o.isNone()) {\n");
         buf.append("                return QueryConstants.NULL_CHAR;\n");
         buf.append("            }\n");
-        buf.append("            return charCast(o.getIntValue());\n");
+        buf.append("            return (char) o.getIntValue();\n");
         buf.append("        }\n\n");
 
         buf.append("        public static byte bytePyCast(Object a) {\n");
@@ -624,7 +624,7 @@ public class DBLanguageFunctionGenerator {
         buf.append("            if (o == null || o.isNone()) {\n");
         buf.append("                return QueryConstants.NULL_BYTE;\n");
         buf.append("            }\n");
-        buf.append("            return byteCast(o.getIntValue());\n");
+        buf.append("            return (byte) o.getIntValue();\n");
         buf.append("        }\n\n");
 
         buf.append("        public static short shortPyCast(Object a) {\n");
@@ -635,7 +635,7 @@ public class DBLanguageFunctionGenerator {
         buf.append("            if (o == null || o.isNone()) {\n");
         buf.append("                return QueryConstants.NULL_SHORT;\n");
         buf.append("            }\n");
-        buf.append("            return shortCast(o.getIntValue());\n");
+        buf.append("            return (short) o.getIntValue();\n");
         buf.append("        }\n\n");
 
         buf.append("        public static String doStringPyCast(Object a) {\n");
