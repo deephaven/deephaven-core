@@ -19331,7 +19331,7 @@ public final class DBLanguageFunctionUtil {
         if (o == null || o.isNone()) {
             return QueryConstants.NULL_FLOAT;
         }
-        return (float) o.getDoubleValue());
+        return (float) o.getDoubleValue();
     }
 
     public static char charPyCast(Object a) {
