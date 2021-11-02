@@ -19331,7 +19331,7 @@ public final class DBLanguageFunctionUtil {
         if (o == null || o.isNone()) {
             return QueryConstants.NULL_FLOAT;
         }
-        return (float) o.getDoubleValue();
+        return floatCast(o.getDoubleValue());
     }
 
     public static char charPyCast(Object a) {
@@ -19342,7 +19342,7 @@ public final class DBLanguageFunctionUtil {
         if (o == null || o.isNone()) {
             return QueryConstants.NULL_CHAR;
         }
-        return (char) o.getIntValue();
+        return charCast(o.getIntValue());
     }
 
     public static byte bytePyCast(Object a) {
@@ -19353,7 +19353,7 @@ public final class DBLanguageFunctionUtil {
         if (o == null || o.isNone()) {
             return QueryConstants.NULL_BYTE;
         }
-        return (byte) o.getIntValue();
+        return byteCast(o.getIntValue());
     }
 
     public static short shortPyCast(Object a) {
@@ -19364,7 +19364,7 @@ public final class DBLanguageFunctionUtil {
         if (o == null || o.isNone()) {
             return QueryConstants.NULL_SHORT;
         }
-        return (short) o.getIntValue();
+        return shortCast(o.getIntValue());
     }
 
     public static String doStringPyCast(Object a) {
@@ -19386,7 +19386,7 @@ public final class DBLanguageFunctionUtil {
         if (o == null || o.isNone()) {
             throw new NullPointerException("Provided value is unexpectedly null; cannot cast to boolean");
         }
-        return ((PyObject) a).getBooleanValue();
+        return o.getBooleanValue();
     }
 
     public static Boolean doBooleanPyCast(Object a) {
