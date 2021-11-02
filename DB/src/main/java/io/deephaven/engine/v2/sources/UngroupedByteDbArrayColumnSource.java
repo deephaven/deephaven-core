@@ -80,7 +80,7 @@ public class UngroupedByteDbArrayColumnSource extends UngroupedColumnSource<Byte
             }
         } else {
             final DbByteArray segmentArray = innerSource.getPrev(segment);
-            result = segmentArray == null ? NULL_BYTE : segmentArray.getPrev(offset);
+            result = segmentArray == null ? NULL_BYTE : segmentArray.get(offset);
         }
 
         return (result == NULL_BYTE ? null : result);
@@ -100,7 +100,7 @@ public class UngroupedByteDbArrayColumnSource extends UngroupedColumnSource<Byte
         }
 
         final DbByteArray segmentArray = innerSource.getPrev(segment);
-        return segmentArray == null ? NULL_BYTE : segmentArray.getPrev(offset);
+        return segmentArray == null ? NULL_BYTE : segmentArray.get(offset);
     }
 
     @Override

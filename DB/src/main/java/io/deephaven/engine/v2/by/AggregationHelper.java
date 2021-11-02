@@ -143,13 +143,13 @@ public class AggregationHelper {
                                                 // notified
                                                 return;
                                             }
-                                            ((MutableRowSet) resultTable.getRowSet()).insert(0);
+                                            resultTable.getRowSet().asMutable().insert(0);
                                             added = RowSetFactoryImpl.INSTANCE.getFlatRowSet(1);
                                             removed = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
                                             modified = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
                                             modifiedColumnSet = ModifiedColumnSet.EMPTY;
                                         } else if (isEmpty) {
-                                            ((MutableRowSet) resultTable.getRowSet()).remove(0);
+                                            resultTable.getRowSet().asMutable().remove(0);
                                             added = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
                                             removed = RowSetFactoryImpl.INSTANCE.getFlatRowSet(1);
                                             modified = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();

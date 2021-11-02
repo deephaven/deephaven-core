@@ -120,7 +120,7 @@ public final class DeltaAwareColumnSource<T> extends AbstractColumnSource<T>
      * field is volatile because we want concurrent lockfree getters to see correct values from "get()" even though we
      * might be in the middle of commitValues().
      */
-    private volatile TrackingMutableRowSet deltaRows;
+    private volatile MutableRowSet deltaRows;
     /**
      * The maximum key inserted into deltaRows during this phase. We use this to make sure that keys are not inserted
      * out of numerical order.

@@ -6,6 +6,7 @@ package io.deephaven.engine.v2;
 
 import io.deephaven.engine.v2.locations.TableLocation;
 import io.deephaven.engine.v2.sources.DeferredGroupingColumnSource;
+import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import org.jetbrains.annotations.NotNull;
 
@@ -42,7 +43,7 @@ public interface ColumnSourceManager {
      * 
      * @return The rowSet of added keys
      */
-    TrackingMutableRowSet refresh();
+    RowSet refresh();
 
     /**
      * Get the added locations, first the ones that have been "included" (found to exist with non-zero size) in order of

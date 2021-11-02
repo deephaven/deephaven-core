@@ -213,7 +213,7 @@ public class ChunkedOperatorAggregationHelper {
                                         keyColumnsCopied,
                                         result.getModifiedColumnSetForUpdates(), resultModifiedColumnSetFactories);
                             }
-                            ((MutableRowSet) result.getRowSet()).update(downstream.added, downstream.removed);
+                            result.getRowSet().asMutable().update(downstream.added, downstream.removed);
                             result.notifyListeners(downstream);
                         }
 
@@ -553,19 +553,19 @@ public class ChunkedOperatorAggregationHelper {
                 downstream.removed = emptiedStatesBuilder.build();
 
                 try (final RowSet addedBack = downstream.added.intersect(downstream.removed)) {
-                    ((MutableRowSet) downstream.added).remove(addedBack);
-                    ((MutableRowSet) downstream.removed).remove(addedBack);
+                    downstream.added.asMutable().remove(addedBack);
+                    downstream.removed.asMutable().remove(addedBack);
 
                     if (newStates.isNonempty()) {
-                        ((MutableRowSet) downstream.added).insert(newStates);
+                        downstream.added.asMutable().insert(newStates);
                         copyKeyColumns(keyColumnsRaw, keyColumnsCopied, newStates);
                     }
 
                     downstream.modified = modifiedStatesBuilder.build();
-                    ((MutableRowSet) downstream.modified).remove(downstream.added);
-                    ((MutableRowSet) downstream.modified).remove(downstream.removed);
+                    downstream.modified.asMutable().remove(downstream.added);
+                    downstream.modified.asMutable().remove(downstream.removed);
                     if (ac.addedBackModified()) {
-                        ((MutableRowSet) downstream.modified).insert(addedBack);
+                        downstream.modified.asMutable().insert(addedBack);
                     }
                 }
 
@@ -1745,12 +1745,12 @@ public class ChunkedOperatorAggregationHelper {
                                     downstream.added = RowSetFactoryImpl.INSTANCE.getRowSetByValues(0);
                                     downstream.removed = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
                                     downstream.modified = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
-                                    ((MutableRowSet) result.getRowSet()).insert(0);
+                                    result.getRowSet().asMutable().insert(0);
                                 } else if (lastSize == 1 && newResultSize == 0) {
                                     downstream.added = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
                                     downstream.removed = RowSetFactoryImpl.INSTANCE.getRowSetByValues(0);
                                     downstream.modified = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
-                                    ((MutableRowSet) result.getRowSet()).remove(0);
+                                    result.getRowSet().asMutable().remove(0);
                                 } else {
                                     if (!anyTrue(BooleanChunk.chunkWrap(modifiedOperators))) {
                                         return;

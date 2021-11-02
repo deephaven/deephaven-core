@@ -98,7 +98,7 @@ public class ReverseOperation implements QueryTable.MemoizableOperation<QueryTab
     }
 
     private void onUpdate(final Listener.Update upstream) {
-        final MutableRowSet rowSet = resultTable.getRowSet();
+        final MutableRowSet rowSet = resultTable.getRowSet().asMutable();
         final RowSet parentRowSet = parent.getRowSet();
         Assert.eq(resultSize, "resultSize", rowSet.size(), "rowSet.size()");
 

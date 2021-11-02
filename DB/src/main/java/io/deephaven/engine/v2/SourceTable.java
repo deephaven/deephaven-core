@@ -173,7 +173,7 @@ public abstract class SourceTable extends RedefinableTable {
             QueryPerformanceRecorder.withNugget(description + ".initializeLocationSizes()", sizeForInstrumentation(),
                     () -> {
                         Assert.eqNull(rowSet, "rowSet");
-                        rowSet = refreshLocationSizes();
+                        rowSet = refreshLocationSizes().convertToTrackingMutable();
                         setAttribute(EMPTY_SOURCE_TABLE_ATTRIBUTE, rowSet.isEmpty());
                         if (!isRefreshing()) {
                             return;
@@ -188,7 +188,7 @@ public abstract class SourceTable extends RedefinableTable {
         }
     }
 
-    private TrackingMutableRowSet refreshLocationSizes() {
+    private RowSet refreshLocationSizes() {
         try {
             return columnSourceManager.refresh();
         } catch (Exception e) {

@@ -77,7 +77,7 @@ public class UngroupedCharDbArrayColumnSource extends UngroupedColumnSource<Char
             }
         } else {
             final DbCharArray segmentArray = innerSource.getPrev(segment);
-            result = segmentArray == null ? NULL_CHAR : segmentArray.getPrev(offset);
+            result = segmentArray == null ? NULL_CHAR : segmentArray.get(offset);
         }
 
         return (result == NULL_CHAR ? null : result);
@@ -97,7 +97,7 @@ public class UngroupedCharDbArrayColumnSource extends UngroupedColumnSource<Char
         }
 
         final DbCharArray segmentArray = innerSource.getPrev(segment);
-        return segmentArray == null ? NULL_CHAR : segmentArray.getPrev(offset);
+        return segmentArray == null ? NULL_CHAR : segmentArray.get(offset);
     }
 
     @Override

@@ -80,7 +80,7 @@ public class UngroupedIntDbArrayColumnSource extends UngroupedColumnSource<Integ
             }
         } else {
             final DbIntArray segmentArray = innerSource.getPrev(segment);
-            result = segmentArray == null ? NULL_INT : segmentArray.getPrev(offset);
+            result = segmentArray == null ? NULL_INT : segmentArray.get(offset);
         }
 
         return (result == NULL_INT ? null : result);
@@ -100,7 +100,7 @@ public class UngroupedIntDbArrayColumnSource extends UngroupedColumnSource<Integ
         }
 
         final DbIntArray segmentArray = innerSource.getPrev(segment);
-        return segmentArray == null ? NULL_INT : segmentArray.getPrev(offset);
+        return segmentArray == null ? NULL_INT : segmentArray.get(offset);
     }
 
     @Override

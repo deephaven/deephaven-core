@@ -80,7 +80,7 @@ public class UngroupedLongDbArrayColumnSource extends UngroupedColumnSource<Long
             }
         } else {
             final DbLongArray segmentArray = innerSource.getPrev(segment);
-            result = segmentArray == null ? NULL_LONG : segmentArray.getPrev(offset);
+            result = segmentArray == null ? NULL_LONG : segmentArray.get(offset);
         }
 
         return (result == NULL_LONG ? null : result);
@@ -100,7 +100,7 @@ public class UngroupedLongDbArrayColumnSource extends UngroupedColumnSource<Long
         }
 
         final DbLongArray segmentArray = innerSource.getPrev(segment);
-        return segmentArray == null ? NULL_LONG : segmentArray.getPrev(offset);
+        return segmentArray == null ? NULL_LONG : segmentArray.get(offset);
     }
 
     @Override

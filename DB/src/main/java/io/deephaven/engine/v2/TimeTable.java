@@ -79,7 +79,7 @@ public class TimeTable extends QueryTable implements LiveTable {
                 lastIndex = 0;
                 dateTimeArraySource.ensureCapacity(lastIndex + 1);
                 dateTimeArraySource.set(lastIndex, lastTime = currentBinnedTime);
-                getRowSet().insert(lastIndex);
+                getRowSet().asMutable().insert(lastIndex);
             } else
                 while (currentBinnedTime.compareTo(lastTime) > 0) {
                     lastTime = DBTimeUtils.plus(lastTime, dbPeriod);
@@ -96,7 +96,7 @@ public class TimeTable extends QueryTable implements LiveTable {
                     log.info().append("TimeTable updated to ").append(lastTime.toString()).endl();
                 }
                 final RowSet range = RowSetFactoryImpl.INSTANCE.getRowSetByRange(rangeStart, lastIndex);
-                getRowSet().insert(range);
+                getRowSet().asMutable().insert(range);
                 if (notifyListeners) {
                     notifyListeners(range, RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), RowSetFactoryImpl.INSTANCE.getEmptyRowSet());
                 }

@@ -123,7 +123,7 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
     }
 
     @Override
-    public synchronized TrackingMutableRowSet refresh() {
+    public synchronized RowSet refresh() {
         final RowSetBuilderSequential addedIndexBuilder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
         for (final IncludedTableLocationEntry entry : orderedIncludedTableLocations) { // Ordering matters, since we're
                                                                                        // using a sequential builder.
@@ -438,11 +438,11 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
                 }
                 final T columnPartitionValue =
                         location.getTableLocation().getKey().getPartitionValue(definition.getName());
-                final MutableRowSet current = columnPartitionToIndex.get(columnPartitionValue);
+                final RowSet current = columnPartitionToIndex.get(columnPartitionValue);
                 if (current == null) {
                     columnPartitionToIndex.put(columnPartitionValue, locationAddedIndexInTable.clone());
                 } else {
-                    current.insert(locationAddedIndexInTable);
+                    current.asMutable().insert(locationAddedIndexInTable);
                 }
             }
         }

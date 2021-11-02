@@ -165,8 +165,8 @@ public class HashSetBackedTableFactory {
 
             updateValueSet(addedBuilder, removedBuilder);
 
-            final TrackingMutableRowSet added = addedBuilder.build();
-            final TrackingMutableRowSet removed = removedBuilder.build();
+            final MutableRowSet added = addedBuilder.build();
+            final MutableRowSet removed = removedBuilder.build();
 
             if (added.size() > 0 || removed.size() > 0) {
                 final RowSet modified = added.intersect(removed);

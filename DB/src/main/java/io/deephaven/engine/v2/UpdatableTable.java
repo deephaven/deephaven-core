@@ -120,7 +120,7 @@ public class UpdatableTable extends QueryTable implements LiveTable {
         final RowSet added = setToIndex(addedSet);
         final RowSet removed = setToIndex(removedSet);
         final RowSet modified = setToIndex(modifiedSet);
-        getRowSet().update(added, removed);
+        getRowSet().asMutable().update(added, removed);
         if (added.isNonempty() || removed.isNonempty() || modified.isNonempty()) {
             final Listener.Update update = new Listener.Update();
             update.added = added;

@@ -80,7 +80,7 @@ public class UngroupedFloatDbArrayColumnSource extends UngroupedColumnSource<Flo
             }
         } else {
             final DbFloatArray segmentArray = innerSource.getPrev(segment);
-            result = segmentArray == null ? NULL_FLOAT : segmentArray.getPrev(offset);
+            result = segmentArray == null ? NULL_FLOAT : segmentArray.get(offset);
         }
 
         return (result == NULL_FLOAT ? null : result);
@@ -100,7 +100,7 @@ public class UngroupedFloatDbArrayColumnSource extends UngroupedColumnSource<Flo
         }
 
         final DbFloatArray segmentArray = innerSource.getPrev(segment);
-        return segmentArray == null ? NULL_FLOAT : segmentArray.getPrev(offset);
+        return segmentArray == null ? NULL_FLOAT : segmentArray.get(offset);
     }
 
     @Override

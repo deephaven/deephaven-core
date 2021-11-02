@@ -80,7 +80,7 @@ public class UngroupedShortDbArrayColumnSource extends UngroupedColumnSource<Sho
             }
         } else {
             final DbShortArray segmentArray = innerSource.getPrev(segment);
-            result = segmentArray == null ? NULL_SHORT : segmentArray.getPrev(offset);
+            result = segmentArray == null ? NULL_SHORT : segmentArray.get(offset);
         }
 
         return (result == NULL_SHORT ? null : result);
@@ -100,7 +100,7 @@ public class UngroupedShortDbArrayColumnSource extends UngroupedColumnSource<Sho
         }
 
         final DbShortArray segmentArray = innerSource.getPrev(segment);
-        return segmentArray == null ? NULL_SHORT : segmentArray.getPrev(offset);
+        return segmentArray == null ? NULL_SHORT : segmentArray.get(offset);
     }
 
     @Override

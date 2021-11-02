@@ -80,7 +80,7 @@ public class UngroupedDoubleDbArrayColumnSource extends UngroupedColumnSource<Do
             }
         } else {
             final DbDoubleArray segmentArray = innerSource.getPrev(segment);
-            result = segmentArray == null ? NULL_DOUBLE : segmentArray.getPrev(offset);
+            result = segmentArray == null ? NULL_DOUBLE : segmentArray.get(offset);
         }
 
         return (result == NULL_DOUBLE ? null : result);
@@ -100,7 +100,7 @@ public class UngroupedDoubleDbArrayColumnSource extends UngroupedColumnSource<Do
         }
 
         final DbDoubleArray segmentArray = innerSource.getPrev(segment);
-        return segmentArray == null ? NULL_DOUBLE : segmentArray.getPrev(offset);
+        return segmentArray == null ? NULL_DOUBLE : segmentArray.get(offset);
     }
 
     @Override

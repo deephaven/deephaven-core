@@ -223,15 +223,15 @@ public class SortHelpers {
      * need to call getPrevRowSet.
      */
     static SortMapping getSortedKeys(SortingOrder[] order, ColumnSource<Comparable<?>>[] columnsToSortBy,
-                                     TrackingRowSet indexToSort, boolean usePrev, boolean allowSymbolTable) {
+                                     RowSet indexToSort, boolean usePrev, boolean allowSymbolTable) {
         if (indexToSort.size() == 0) {
             return EMPTY_SORT_MAPPING;
         }
 
         if (columnsToSortBy.length == 1) {
-            if (indexToSort.hasGrouping(columnsToSortBy[0])) {
+            if (indexToSort.isTracking() && indexToSort.asTracking().hasGrouping(columnsToSortBy[0])) {
                 if (!usePrev || columnsToSortBy[0].isImmutable()) {
-                    return getSortMappingGrouped(order[0], columnsToSortBy[0], indexToSort);
+                    return getSortMappingGrouped(order[0], columnsToSortBy[0], indexToSort.asTracking());
                 } else {
                     return getSortMappingOne(order[0], columnsToSortBy[0], indexToSort, usePrev);
                 }
@@ -538,7 +538,7 @@ public class SortHelpers {
     }
 
     private static SortMapping getSortMappingMulti(SortingOrder[] order, ColumnSource<Comparable<?>>[] columnSources,
-                                                   TrackingRowSet index, boolean usePrev) {
+                                                   RowSet index, boolean usePrev) {
         Assert.gt(columnSources.length, "columnSources.length", 1);
         final int sortSize = index.intSize();
 
@@ -550,7 +550,7 @@ public class SortHelpers {
 
         ColumnSource<Comparable<?>> columnSource = columnSources[0];
 
-        if (index.hasGrouping(columnSources[0])) {
+        if (index.isTracking() && index.asTracking().hasGrouping(columnSources[0])) {
             final Map<Comparable<?>, RowSet> groupToRange = columnSource.getGroupToRange();
             final Object[] keys = groupToRange.keySet().toArray(
                     (Object[]) Array.newInstance(TypeUtils.getBoxedType(columnSource.getType()), groupToRange.size()));

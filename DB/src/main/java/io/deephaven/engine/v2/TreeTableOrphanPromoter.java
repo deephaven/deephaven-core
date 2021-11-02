@@ -375,8 +375,8 @@ public class TreeTableOrphanPromoter implements Function.Unary<Table, Table> {
                                     return true;
                                 });
 
-                                ((MutableRowSet) downstream.modified).insert(builder.build());
-                                ((MutableRowSet) downstream.modified).remove(upstream.added);
+                                downstream.modified.asMutable().insert(builder.build());
+                                downstream.modified.asMutable().remove(upstream.added);
 
                                 if (downstream.modified.isNonempty()) {
                                     mcsTransformer.clearAndTransform(upstream.modifiedColumnSet,

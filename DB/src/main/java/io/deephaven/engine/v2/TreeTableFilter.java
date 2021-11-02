@@ -138,7 +138,7 @@ public class TreeTableFilter implements Function.Unary<Table, Table>, MemoizedOp
         }
 
         private void doInitialFilter(final boolean usePrev) {
-            valuesRowSet = doValueFilter(usePrev, source.getRowSet());
+            valuesRowSet = doValueFilter(usePrev, source.getRowSet().asMutable());
 
             parentReferences = new HashMap<>(valuesRowSet.intSize("parentReferenceMap"));
             parentRowSet = computeParents(usePrev, valuesRowSet);

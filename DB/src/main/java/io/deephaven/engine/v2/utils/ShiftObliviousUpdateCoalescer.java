@@ -22,8 +22,8 @@ public class ShiftObliviousUpdateCoalescer {
      * The class assumes ownership of one reference to the indices passed; the caller should ensure to
      * TrackingMutableRowSet.clone() them before passing them if they are shared.
      */
-    public ShiftObliviousUpdateCoalescer(final TrackingMutableRowSet added, final TrackingRowSet removed,
-            final TrackingRowSet modified) {
+    public ShiftObliviousUpdateCoalescer(final TrackingMutableRowSet added, final TrackingMutableRowSet removed,
+            final TrackingMutableRowSet modified) {
         this.added = added;
         this.removed = removed;
         this.modified = modified;
@@ -52,7 +52,7 @@ public class ShiftObliviousUpdateCoalescer {
             this.modified.insert(actuallyModified);
         }
 
-        if (TrackingMutableRowSet.VALIDATE_COALESCED_UPDATES
+        if (VALIDATE_COALESCED_UPDATES
                 && (this.added.overlaps(this.modified) || this.added.overlaps(this.removed)
                         || this.removed.overlaps(modified))) {
             final String assertionMessage = "Coalesced overlaps detected: " +
@@ -71,25 +71,25 @@ public class ShiftObliviousUpdateCoalescer {
 
     public RowSet takeAdded() {
         final RowSet r = added;
-        added = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+        added = RowSetFactoryImpl.INSTANCE.getEmptyRowSet().convertToTracking();
         return r;
     }
 
     public RowSet takeRemoved() {
         final RowSet r = removed;
-        removed = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+        removed = RowSetFactoryImpl.INSTANCE.getEmptyRowSet().convertToTracking();
         return r;
     }
 
     public RowSet takeModified() {
         final RowSet r = modified;
-        modified = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+        modified = RowSetFactoryImpl.INSTANCE.getEmptyRowSet().convertToTracking();
         return r;
     }
 
     public void reset() {
-        added = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
-        modified = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
-        removed = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+        added = RowSetFactoryImpl.INSTANCE.getEmptyRowSet().convertToTracking();
+        modified = RowSetFactoryImpl.INSTANCE.getEmptyRowSet().convertToTracking();
+        removed = RowSetFactoryImpl.INSTANCE.getEmptyRowSet().convertToTracking();
     }
 }

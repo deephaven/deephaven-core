@@ -55,7 +55,7 @@ public class UngroupedDbArrayColumnSource<T> extends UngroupedColumnSource<T>
             Assert.neqNull(innerSource, "innerSource");
             DbArray<T> prevArray = innerSource.getPrev(segment);
             Assert.neqNull(prevArray, "prevArray");
-            return prevArray.getPrev((int) offset);
+            return prevArray.get((int) offset);
         }
     }
 

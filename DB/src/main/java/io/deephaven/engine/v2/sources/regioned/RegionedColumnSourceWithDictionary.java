@@ -299,7 +299,6 @@ class RegionedColumnSourceWithDictionary<DATA_TYPE>
             }
 
             final RowSetBuilderSequential symbolTableAddedBuilder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
-            // noinspection unchecked
             final RegionedColumnSourceBase<DATA_TYPE, Values, ColumnRegionObject<DATA_TYPE, Values>> dictionaryColumn =
                     (RegionedColumnSourceBase<DATA_TYPE, Values, ColumnRegionObject<DATA_TYPE, Values>>) symbolTable
                             .getColumnSource(SymbolTableSource.SYMBOL_COLUMN_NAME);
@@ -315,7 +314,7 @@ class RegionedColumnSourceWithDictionary<DATA_TYPE>
 
             final RowSet symbolTableAdded = symbolTableAddedBuilder.build();
             if (symbolTableAdded.isNonempty()) {
-                symbolTable.getRowSet().insert(symbolTableAdded);
+                symbolTable.getRowSet().asMutable().insert(symbolTableAdded);
                 symbolTable.notifyListeners(new Update(symbolTableAdded, RowSetFactoryImpl.INSTANCE.getEmptyRowSet(),
                         RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), RowSetShiftData.EMPTY, emptyModifiedColumns));
             }

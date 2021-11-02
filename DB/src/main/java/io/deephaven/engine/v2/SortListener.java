@@ -69,7 +69,7 @@ public class SortListener extends BaseTable.ListenerImpl {
         this.result = result;
         this.reverseLookup = reverseLookup;
         this.columnsToSortBy = columnsToSortBy;
-        this.resultRowSet = result.getRowSet();
+        this.resultRowSet = result.getRowSet().asMutable();
         this.order = order;
         this.sortMapping = sortMapping;
         this.sortedColumnsToSortBy = sortedColumnsToSortBy;
@@ -783,7 +783,7 @@ public class SortListener extends BaseTable.ListenerImpl {
         }
 
         @Override
-        public RowSet build() {
+        public MutableRowSet build() {
             RowSetBuilderSequential builder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
             appendToBuilder(builder);
             return builder.build();

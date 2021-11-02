@@ -279,7 +279,7 @@ public class ParallelDeferredGroupingProvider<DATA_TYPE> implements KeyRangeGrou
     @Override
     public Pair<Map<DATA_TYPE, RowSet>, Boolean> getGroupToRange(@NotNull final RowSet hint) {
         final List<Source<DATA_TYPE, ?>> includedSources = sources.stream()
-                .filter(source -> MutableRowSetImpl.FACTORY.getIndexByRange(source.firstKey, source.lastKey)
+                .filter(source -> RowSetFactoryImpl.INSTANCE.getRowSetByRange(source.firstKey, source.lastKey)
                         .overlaps(hint))
                 .collect(Collectors.toList());
         return new Pair<>(buildGrouping(includedSources), includedSources.size() == sources.size());
