@@ -22,45 +22,78 @@ Runtime = None
 # java.io
 File = None
 # java.lang
+"""Boolean class: https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/lang/Boolean.html"""
 Boolean = None
+"""Byte class: https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/lang/Byte.html"""
 Byte = None
+"""Character class: https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/lang/Character.html"""
 Character = None
+"""Double class: https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/lang/Double.html"""
 Double = None
+"""Float class: https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/lang/Float.html"""
 Float = None
+"""Integer class: https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/lang/Integer.html"""
 Integer = None
+"""Long class: https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/lang/Long.html"""
 Long = None
+"""Math class: https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/lang/Math.html"""
 Math = None
+"""Short class: https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/lang/Short.html"""
 Short = None
+"""String class: https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/lang/String.html"""
 String = None
+"""System class: https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/lang/System.html"""
 System = None
 # java.math
+"""BigDecimal class: https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/math/BigDecimal.html"""
 BigDecimal = None
+"""BigInteger class: https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/math/BigInteger.html"""
 BigInteger = None
 # java.nio
+"""Buffer class: https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/nio/Buffer.html"""
 Buffer = None
+"""ByteBuffer class: https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/nio/ByteBuffer.html"""
 ByteBuffer = None
+"""CharBuffer class: https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/nio/CharBuffer.html"""
 CharBuffer = None
+"""DoubleBuffer class: https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/nio/DoubleBuffer.html"""
 DoubleBuffer = None
+"""FloatBuffer class: https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/nio/FloatBuffer.html"""
 FloatBuffer = None
+"""IntBuffer class: https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/nio/IntBuffer.html"""
 IntBuffer = None
+"""LongBuffer class: https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/nio/LongBuffer.html"""
 LongBuffer = None
+"""ShortBuffer class: https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/nio/ShortBuffer.html"""
 ShortBuffer = None
 # java.text
+"""DecimalFormat class: https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/text/DecimalFormat.html"""
 DecimalFormat = None
+"""SimpleDateFormat class: https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/text/SimpleDateFormat.html"""
 SimpleDateFormat = None
 # java.util
+"""Arrays class: https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/util/Arrays.html"""
 Arrays = None
+"""Collections class: https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/util/Collections.html"""
 Collections = None
+"""Currency class: https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/util/Currency.html"""
 Currency = None
+"""Date class: https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/util/Date.html"""
 Date = None
+"""GregorianCalendar class: https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/util/GregorianCalendar.html"""
 GregorianCalender = None
+"""HashMap class: https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/util/HashMap.html"""
 HashMap = None
+"""LinkedHashMap class: https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/util/LinkedHashMap.html"""
 LinkedHashMap = None
+"""Locale class: https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/util/Locale.html"""
 Locale = None
+"""Random class: https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/util/Random.html"""
 Random = None
+"""TimeZone class: https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/util/TimeZone.html"""
 TimeZone = None
+"""WeakHashMap class: https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/util/WeakHashMap.html"""
 WeakHashMap = None
-
 
 def _defineSymbols():
     if not jpy.has_jvm():
@@ -147,6 +180,9 @@ except Exception as e:
 
 @_passThrough
 def print_memory_statistics():
+    """
+    Print memory statistics about the JVM
+    """
     rt = Runtime.getRuntime()
     print("Total memory (MB): " + str(rt.totalMemory() / 1024 / 1024))
     print("Free memory (MB): " + str(rt.freeMemory() / 1024 / 1024))
