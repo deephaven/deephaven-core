@@ -10,17 +10,22 @@ import io.deephaven.engine.tables.ColumnDefinition;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.TableDefinition;
 import io.deephaven.engine.tables.live.LiveTableMonitor;
-import io.deephaven.engine.v2.locations.*;
+import io.deephaven.engine.v2.locations.TableDataException;
+import io.deephaven.engine.v2.locations.TableLocation;
+import io.deephaven.engine.v2.locations.TableLocationProvider;
 import io.deephaven.engine.v2.locations.impl.StandaloneTableLocationKey;
 import io.deephaven.engine.v2.sources.DeferredGroupingColumnSource;
+import io.deephaven.engine.v2.utils.MutableRowSet;
 import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -55,7 +60,7 @@ public class TestSimpleSourceTable extends LiveTableTestCase {
     private TableLocationProvider locationProvider;
     private TableLocation tableLocation;
 
-    private TrackingMutableRowSet expectedRowSet;
+    private MutableRowSet expectedRowSet;
 
     private SimpleSourceTable SUT;
 

@@ -4,11 +4,12 @@
 
 package io.deephaven.engine.v2;
 
+import com.google.common.primitives.Ints;
+import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.base.FileUtils;
 import io.deephaven.base.Pair;
 import io.deephaven.base.verify.AssertionFailure;
 import io.deephaven.datastructures.util.CollectionUtil;
-import com.google.common.primitives.Ints;
 import io.deephaven.engine.tables.ColumnDefinition;
 import io.deephaven.engine.tables.DataColumn;
 import io.deephaven.engine.tables.Table;
@@ -19,7 +20,10 @@ import io.deephaven.engine.tables.select.MatchPairFactory;
 import io.deephaven.engine.tables.select.QueryScope;
 import io.deephaven.engine.tables.select.SelectColumnFactory;
 import io.deephaven.engine.tables.select.SelectFilterFactory;
-import io.deephaven.engine.tables.utils.*;
+import io.deephaven.engine.tables.utils.DBDateTime;
+import io.deephaven.engine.tables.utils.DBTimeUtils;
+import io.deephaven.engine.tables.utils.ParquetTools;
+import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.util.liveness.LivenessScopeStack;
 import io.deephaven.engine.util.liveness.SingletonLivenessManager;
 import io.deephaven.engine.v2.remote.ConstructSnapshot;
@@ -29,14 +33,13 @@ import io.deephaven.engine.v2.sources.AbstractColumnSource;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.LogicalClock;
 import io.deephaven.engine.v2.utils.*;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
-import io.deephaven.UncheckedDeephavenException;
 import junit.framework.TestCase;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.junit.Assert;
+import org.junit.experimental.categories.Category;
 
 import java.io.File;
 import java.io.IOException;
@@ -51,7 +54,6 @@ import java.util.function.Function;
 import java.util.function.IntSupplier;
 import java.util.function.Supplier;
 import java.util.stream.LongStream;
-import org.junit.experimental.categories.Category;
 
 import static io.deephaven.engine.tables.utils.TableTools.*;
 import static io.deephaven.engine.v2.TstUtils.*;
@@ -1016,7 +1018,7 @@ public class QueryTableTest extends QueryTableTestBase {
                     }
                 };
 
-        final QueryTable bigTable = new QueryTable(i(0, (long) Integer.MAX_VALUE, (long) Integer.MAX_VALUE * 2L),
+        final QueryTable bigTable = new QueryTable(i(0, Integer.MAX_VALUE, (long) Integer.MAX_VALUE * 2L),
                 Collections.singletonMap("LICS", longIdentityColumnSource));
         bigTable.setRefreshing(true);
         final Table bigReversed = bigTable.reverse();
@@ -1027,7 +1029,7 @@ public class QueryTableTest extends QueryTableTestBase {
         assertEquals(0, (long) licsr.get(2));
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-            bigTable.getRowSet().insert(Long.MAX_VALUE);
+            bigTable.getRowSet().asMutable().insert(Long.MAX_VALUE);
             bigTable.notifyListeners(i(Long.MAX_VALUE), i(), i());
         });
 
@@ -1127,7 +1129,7 @@ public class QueryTableTest extends QueryTableTestBase {
             builder.shiftRange(1 << 29, 1 << 30, 1024);
             downstream.shifted = builder.build();
 
-            try (final TrackingMutableRowSet rowSetCopy = table.getRowSet().clone()) {
+            try (final MutableRowSet rowSetCopy = table.getRowSet().clone()) {
                 downstream.shifted.apply(rowSetCopy);
                 TstUtils.removeRows(table, table.getRowSet());
                 TstUtils.addToTable(table, rowSetCopy, c("Sentinel", 1));
@@ -1660,7 +1662,8 @@ public class QueryTableTest extends QueryTableTestBase {
         final DynamicTable setTable = TstUtils.testRefreshingTable(TableTools.stringCol("Key"));
 
         // Owned by setScope, rc == 1
-        // It will also manage setTable whose rc == 3 after (1 ShiftObliviousSwapListener, one ShiftObliviousListenerImpl from by)
+        // It will also manage setTable whose rc == 3 after (1 ShiftObliviousSwapListener, one
+        // ShiftObliviousListenerImpl from by)
         final Table whereIn = toBeFiltered.whereIn(setTable, "Key");
 
         // Manage it rcs == (2,3)
@@ -2044,7 +2047,8 @@ public class QueryTableTest extends QueryTableTestBase {
                 c("intCol", 10, 20, 40, 60));
 
         final QueryTable selected = function.call(queryTable);
-        final io.deephaven.engine.v2.SimpleListener simpleListener = new io.deephaven.engine.v2.SimpleListener(selected);
+        final io.deephaven.engine.v2.SimpleListener simpleListener =
+                new io.deephaven.engine.v2.SimpleListener(selected);
         selected.listenForUpdates(simpleListener);
 
         final Supplier<Listener.Update> newUpdate =
@@ -2133,7 +2137,8 @@ public class QueryTableTest extends QueryTableTestBase {
                 c("intCol", 10, 20, 40, 60));
 
         final QueryTable selected = function.call(queryTable);
-        final io.deephaven.engine.v2.SimpleListener simpleListener = new io.deephaven.engine.v2.SimpleListener(selected);
+        final io.deephaven.engine.v2.SimpleListener simpleListener =
+                new io.deephaven.engine.v2.SimpleListener(selected);
         selected.listenForUpdates(simpleListener);
 
         final Supplier<Listener.Update> newUpdate =
@@ -2925,7 +2930,8 @@ public class QueryTableTest extends QueryTableTestBase {
 
     public void testIds7153() {
         final QueryTable lTable =
-                testRefreshingTable(RowSetFactoryImpl.INSTANCE.getRowSetByValues(10, 12, 14, 16), c("X", "a", "b", "c", "d"));
+                testRefreshingTable(RowSetFactoryImpl.INSTANCE.getRowSetByValues(10, 12, 14, 16),
+                        c("X", "a", "b", "c", "d"));
         final QueryTable rTable = testRefreshingTable(c("X", "a", "b", "c", "d"), c("R", 0, 1, 2, 3));
 
         final MutableObject<QueryTable> nj = new MutableObject<>();
@@ -2982,7 +2988,7 @@ public class QueryTableTest extends QueryTableTestBase {
         // LogicalClock.DEFAULT.currentStep()
         // assertion error when notifying from an uncoalesced table.
 
-        final TrackingMutableRowSet parentRowSet = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+        final TrackingMutableRowSet parentRowSet = RowSetFactoryImpl.INSTANCE.getEmptyRowSet().convertToTracking();
         final Supplier<QueryTable> supplier = () -> TstUtils.testRefreshingTable(parentRowSet);
 
         final UncoalescedTable table = new UncoalescedTable(
@@ -3014,8 +3020,7 @@ public class QueryTableTest extends QueryTableTestBase {
     }
 
     public void testNotifyListenersReleasesUpdateEmptyUpdate() {
-        final TrackingMutableRowSet rowSet = RowSetFactoryImpl.INSTANCE.getFlatRowSet(100);
-        final QueryTable src = TstUtils.testRefreshingTable(rowSet);
+        final QueryTable src = TstUtils.testRefreshingTable(RowSetFactoryImpl.INSTANCE.getFlatRowSet(100));
         final Listener.Update update = new Listener.Update();
         update.added = update.removed = update.modified = i();
         update.shifted = RowSetShiftData.EMPTY;
@@ -3033,8 +3038,7 @@ public class QueryTableTest extends QueryTableTestBase {
     }
 
     public void testNotifyListenersReleasesUpdateNoListeners() {
-        final TrackingMutableRowSet rowSet = RowSetFactoryImpl.INSTANCE.getFlatRowSet(100);
-        final QueryTable src = TstUtils.testRefreshingTable(rowSet);
+        final QueryTable src = TstUtils.testRefreshingTable(RowSetFactoryImpl.INSTANCE.getFlatRowSet(100));
         final Listener.Update update = new Listener.Update();
         update.added = RowSetFactoryImpl.INSTANCE.getRowSetByRange(200, 220); // must be a non-empty update
         update.removed = update.modified = i();
@@ -3049,8 +3053,7 @@ public class QueryTableTest extends QueryTableTestBase {
     }
 
     public void testNotifyListenersReleasesUpdateDirectListener() {
-        final TrackingMutableRowSet rowSet = RowSetFactoryImpl.INSTANCE.getFlatRowSet(100);
-        final QueryTable src = TstUtils.testRefreshingTable(rowSet);
+        final QueryTable src = TstUtils.testRefreshingTable(RowSetFactoryImpl.INSTANCE.getFlatRowSet(100));
         final Listener.Update update = new Listener.Update();
         update.added = RowSetFactoryImpl.INSTANCE.getRowSetByRange(200, 220); // must be a non-empty update
         update.removed = update.modified = i();
@@ -3069,8 +3072,7 @@ public class QueryTableTest extends QueryTableTestBase {
     }
 
     public void testNotifyListenersReleasesUpdateChildListener() {
-        final TrackingMutableRowSet rowSet = RowSetFactoryImpl.INSTANCE.getFlatRowSet(100);
-        final QueryTable src = TstUtils.testRefreshingTable(rowSet);
+        final QueryTable src = TstUtils.testRefreshingTable(RowSetFactoryImpl.INSTANCE.getFlatRowSet(100));
         final Listener.Update update = new Listener.Update();
         update.added = RowSetFactoryImpl.INSTANCE.getRowSetByRange(200, 220); // must be a non-empty update
         update.removed = update.modified = i();
@@ -3089,8 +3091,7 @@ public class QueryTableTest extends QueryTableTestBase {
     }
 
     public void testNotifyListenersReleasesUpdateShiftAwareChildListener() {
-        final TrackingMutableRowSet rowSet = RowSetFactoryImpl.INSTANCE.getFlatRowSet(100);
-        final QueryTable src = TstUtils.testRefreshingTable(rowSet);
+        final QueryTable src = TstUtils.testRefreshingTable(RowSetFactoryImpl.INSTANCE.getFlatRowSet(100));
         final Listener.Update update = new Listener.Update();
         update.added = RowSetFactoryImpl.INSTANCE.getRowSetByRange(200, 220); // must be a non-empty update
         update.removed = update.modified = i();

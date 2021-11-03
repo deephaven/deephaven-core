@@ -50,7 +50,8 @@ public class StreamTableAggregationTest {
      *        {@code false})
      */
     private void doOperatorTest(@NotNull final UnaryOperator<Table> operator, final boolean windowed) {
-        final QueryTable normal = new QueryTable(RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), source.getColumnSourceMap());
+        final QueryTable normal =
+                new QueryTable(RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), source.getColumnSourceMap());
         normal.setRefreshing(true);
 
         final QueryTable addOnly = (QueryTable) normal.copy();
@@ -63,7 +64,7 @@ public class StreamTableAggregationTest {
             streamSources = source.getColumnSourceMap();
         } else {
             // Redirecting so we can present a zero-based TrackingMutableRowSet from the stream table
-            streamInternalRowSet = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+            streamInternalRowSet = RowSetFactoryImpl.INSTANCE.getEmptyRowSet().convertToTracking();
             final RedirectionIndex streamRedirections = new WrappedIndexRedirectionIndexImpl(streamInternalRowSet);
             streamSources = source.getColumnSourceMap().entrySet().stream().collect(Collectors.toMap(
                     Map.Entry::getKey,
@@ -105,9 +106,11 @@ public class StreamTableAggregationTest {
             try {
                 LiveTableMonitor.DEFAULT.refreshLiveTableForUnitTests(() -> {
                     if (normalStepInserted.isNonempty()) {
-                        normal.getRowSet().insert(normalStepInserted);
-                        normal.notifyListeners(new Update(normalStepInserted, RowSetFactoryImpl.INSTANCE.getEmptyRowSet(),
-                                RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY));
+                        normal.getRowSet().asMutable().insert(normalStepInserted);
+                        normal.notifyListeners(
+                                new Update(normalStepInserted, RowSetFactoryImpl.INSTANCE.getEmptyRowSet(),
+                                        RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), RowSetShiftData.EMPTY,
+                                        ModifiedColumnSet.EMPTY));
                     }
                 });
                 final RowSet finalStreamLastInserted = streamLastInserted;
@@ -117,10 +120,11 @@ public class StreamTableAggregationTest {
                             streamInternalRowSet.clear();
                             streamInternalRowSet.insert(normalStepInserted);
                         }
-                        stream.getRowSet().clear();
-                        stream.getRowSet().insert(streamStepInserted);
+                        stream.getRowSet().asMutable().clear();
+                        stream.getRowSet().asMutable().insert(streamStepInserted);
                         stream.notifyListeners(new Update(streamStepInserted, finalStreamLastInserted,
-                                RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY));
+                                RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), RowSetShiftData.EMPTY,
+                                ModifiedColumnSet.EMPTY));
                     }
                 });
             } finally {

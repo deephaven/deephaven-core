@@ -59,7 +59,7 @@ public class StreamTableOperationsTest {
             streamSources = source.getColumnSourceMap();
         } else {
             // Redirecting so we can present a zero-based TrackingMutableRowSet from the stream table
-            streamInternalRowSet = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+            streamInternalRowSet = RowSetFactoryImpl.INSTANCE.getEmptyRowSet().convertToTracking();
             final RedirectionIndex streamRedirections = new WrappedIndexRedirectionIndexImpl(streamInternalRowSet);
             streamSources = source.getColumnSourceMap().entrySet().stream().collect(Collectors.toMap(
                     Map.Entry::getKey,
@@ -101,7 +101,7 @@ public class StreamTableOperationsTest {
                 final RowSet finalNormalLastInserted = normalLastInserted;
                 LiveTableMonitor.DEFAULT.refreshLiveTableForUnitTests(() -> {
                     if (normalStepInserted.isNonempty() || finalNormalLastInserted.isNonempty()) {
-                        normal.getRowSet().update(normalStepInserted, finalNormalLastInserted);
+                        normal.getRowSet().asMutable().update(normalStepInserted, finalNormalLastInserted);
                         normal.notifyListeners(new Update(normalStepInserted, finalNormalLastInserted,
                                 RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY));
                     }
@@ -113,8 +113,8 @@ public class StreamTableOperationsTest {
                             streamInternalRowSet.clear();
                             streamInternalRowSet.insert(normalStepInserted);
                         }
-                        stream.getRowSet().clear();
-                        stream.getRowSet().insert(streamStepInserted);
+                        stream.getRowSet().asMutable().clear();
+                        stream.getRowSet().asMutable().insert(streamStepInserted);
                         stream.notifyListeners(new Update(streamStepInserted, finalStreamLastInserted,
                                 RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY));
                     }
