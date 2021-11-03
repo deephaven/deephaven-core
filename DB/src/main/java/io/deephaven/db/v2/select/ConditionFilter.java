@@ -383,7 +383,7 @@ public class ConditionFilter extends AbstractConditionFilter {
                 addParamClass.accept(column.getComponentType());
             }
             for (final Param<?> param : params) {
-                addParamClass.accept(param.getDeclaredType());
+                addParamClass.accept(param.getDeclaredClass());
             }
 
             filterKernelClass = CompilerTools.compile("GeneratedFilterKernel", this.classBody = classBody.toString(),
