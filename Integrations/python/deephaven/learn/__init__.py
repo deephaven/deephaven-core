@@ -61,6 +61,10 @@ def _passThrough(wrapped, instance, args, kwargs):
     _defineSymbols()
     return wrapped(*args, **kwargs)
 
+try:
+    _defineSymbols()
+except Exception as e:
+    pass
 
 @_passThrough
 class Input:
