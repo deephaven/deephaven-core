@@ -259,6 +259,7 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
             StreamObserver<ExportedTableCreationResponse> responseObserver) {
         oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.APPLY_PREVIEW_COLUMNS, request, responseObserver);
     }
+
     @Override
     public void createInputTable(CreateInputTableRequest request,
             StreamObserver<ExportedTableCreationResponse> responseObserver) {
