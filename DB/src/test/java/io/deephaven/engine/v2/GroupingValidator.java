@@ -50,7 +50,7 @@ public class GroupingValidator extends InstrumentedListenerAdapter {
         source.listenForUpdates(this);
     }
 
-    private void validateGroupings(Collection<String[]> groupingColumns, TrackingRowSet rowSet) {
+    private void validateGroupings(Collection<String[]> groupingColumns, RowSet rowSet) {
         for (String[] groupingToCheck : groupingColumns) {
             validateGrouping(groupingToCheck, rowSet, source, context);
         }
@@ -62,14 +62,15 @@ public class GroupingValidator extends InstrumentedListenerAdapter {
         }
     }
 
-    public static void validateGrouping(String[] groupingToCheck, TrackingRowSet rowSet, DynamicTable source, String context) {
+    public static void validateGrouping(String[] groupingToCheck, RowSet rowSet, DynamicTable source, String context) {
         final ColumnSource[] groupColumns = getColumnSources(groupingToCheck, source);
         final TupleSource tupleSource = TupleSourceFactory.makeTupleSource(groupColumns);
-        validateGrouping(groupingToCheck, rowSet, source, context, rowSet.getGrouping(tupleSource));
+        validateGrouping(groupingToCheck, rowSet, source, context,
+                rowSet.isTracking() ? rowSet.asTracking().getGrouping(tupleSource) : Collections.emptyMap());
     }
 
     public static void validateGrouping(String[] groupingToCheck, RowSet rowSet, DynamicTable source, String context,
-                                        Map<Object, RowSet> grouping) {
+            Map<Object, RowSet> grouping) {
         final ColumnSource[] groupColumns = getColumnSources(groupingToCheck, source);
         for (Map.Entry<Object, RowSet> objectIndexEntry : grouping.entrySet()) {
             for (RowSet.Iterator it = objectIndexEntry.getValue().iterator(); it.hasNext();) {
@@ -91,7 +92,7 @@ public class GroupingValidator extends InstrumentedListenerAdapter {
     }
 
     public static void validateRestrictedGrouping(String[] groupingToCheck, RowSet rowSet, DynamicTable source,
-                                                  String context, Map<Object, RowSet> grouping, Set<Object> validKeys) {
+            String context, Map<Object, RowSet> grouping, Set<Object> validKeys) {
         ColumnSource[] groupColumns = getColumnSources(groupingToCheck, source);
         for (Map.Entry<Object, RowSet> objectIndexEntry : grouping.entrySet()) {
             final Object groupKey = objectIndexEntry.getKey();

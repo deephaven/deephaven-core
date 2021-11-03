@@ -46,7 +46,7 @@ final public class RedirectionLayer extends SelectAndViewAnalyzer {
         // we need to remove the removed values from our redirection rowSet, and add them to our free rowSet; so that
         // updating tables will not consume more space over the course of a day for abandoned rows
         final RowSetBuilderRandom innerToFreeBuilder = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
-        upstream.removed.forAllLongs(key -> innerToFreeBuilder.addKey(redirectionIndex.remove(key)));
+        upstream.removed.forAllRowKeys(key -> innerToFreeBuilder.addKey(redirectionIndex.remove(key)));
         freeValues.insert(innerToFreeBuilder.build());
 
         // we have to shift things that have not been removed, this handles the unmodified rows; but also the
@@ -105,7 +105,7 @@ final public class RedirectionLayer extends SelectAndViewAnalyzer {
             // if there are not enough free values, we'll remove all the free values then beyond
             final MutableLong lastAllocated = new MutableLong(0);
             final RowSet.Iterator freeIt = freeValues.iterator();
-            upstream.added.forAllLongs(outerKey -> {
+            upstream.added.forAllRowKeys(outerKey -> {
                 final long innerKey = freeIt.hasNext() ? freeIt.nextLong() : ++maxInnerIndex;
                 lastAllocated.setValue(innerKey);
                 redirectionIndex.put(outerKey, innerKey);

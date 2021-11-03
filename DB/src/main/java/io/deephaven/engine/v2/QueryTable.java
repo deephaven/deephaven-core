@@ -1186,7 +1186,7 @@ public class QueryTable extends BaseTable {
         final long acceptableBlocks = (long) (MAXIMUM_STATIC_SELECT_MEMORY_OVERHEAD * (double) requiredBlocks);
         final MutableLong lastBlock = new MutableLong(-1L);
         final MutableLong usedBlocks = new MutableLong(0);
-        return !getRowSet().forEachLongRange((s, e) -> {
+        return !getRowSet().forEachRowKeyRange((s, e) -> {
             long startBlock = s >> SparseConstants.LOG_BLOCK_SIZE;
             final long endBlock = e >> SparseConstants.LOG_BLOCK_SIZE;
             final long lb = lastBlock.longValue();
@@ -1897,7 +1897,7 @@ public class QueryTable extends BaseTable {
         final int rightSize = rightRowSet.intSize();
         long[] destOffsetHolder = new long[] {destOffset};
         // For each key on the snapshotting side
-        leftRowSet.forAllLongs(snapshotKey -> {
+        leftRowSet.forAllRowKeys(snapshotKey -> {
             final long doff = destOffsetHolder[0];
             destOffsetHolder[0] += rightSize;
             try (final RowSet destRowSet = RowSetFactoryImpl.INSTANCE.getRowSetByRange(doff, doff + rightSize - 1)) {

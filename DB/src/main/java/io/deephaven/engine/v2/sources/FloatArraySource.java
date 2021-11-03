@@ -248,7 +248,7 @@ public class FloatArraySource extends ArraySourceHelper<Float, float[]> implemen
         }
         final WritableFloatChunk<? super Values> dest = destGeneric.asWritableFloatChunk();
         final FillSparseChunkContext<float[]> ctx = new FillSparseChunkContext<>();
-        indices.forAllLongs((final long v) -> {
+        indices.forAllRowKeys((final long v) -> {
             if (v >= ctx.capForCurrentBlock) {
                 ctx.currentBlockNo = getBlockNo(v);
                 ctx.capForCurrentBlock = (ctx.currentBlockNo + 1L) << LOG_BLOCK_SIZE;
@@ -274,7 +274,7 @@ public class FloatArraySource extends ArraySourceHelper<Float, float[]> implemen
 
         final WritableFloatChunk<? super Values> dest = destGeneric.asWritableFloatChunk();
         final FillSparseChunkContext<float[]> ctx = new FillSparseChunkContext<>();
-        indices.forAllLongs((final long v) -> {
+        indices.forAllRowKeys((final long v) -> {
             if (v >= ctx.capForCurrentBlock) {
                 ctx.currentBlockNo = getBlockNo(v);
                 ctx.capForCurrentBlock = (ctx.currentBlockNo + 1L) << LOG_BLOCK_SIZE;

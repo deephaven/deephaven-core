@@ -77,7 +77,7 @@ public class DynamicWhereFilter extends SelectFilterLivenessArtifactImpl impleme
                 Arrays.stream(matchPairs).map(mp -> setTable.getColumnSource(mp.right())).toArray(ColumnSource[]::new);
         setTupleSource = TupleSourceFactory.makeTupleSource(setColumns);
 
-        setTable.getRowSet().forAllLongs((final long v) -> addKey(makeKey(v)));
+        setTable.getRowSet().forAllRowKeys((final long v) -> addKey(makeKey(v)));
 
         if (DynamicNode.isDynamicAndIsRefreshing(setTable)) {
             final String[] columnNames = Arrays.stream(matchPairs).map(MatchPair::right).toArray(String[]::new);
@@ -94,8 +94,8 @@ public class DynamicWhereFilter extends SelectFilterLivenessArtifactImpl impleme
 
                     final MutableBoolean trueModification = new MutableBoolean(false);
 
-                    upstream.added.forAllLongs((final long v) -> addKey(makeKey(v)));
-                    upstream.removed.forAllLongs((final long v) -> removeKey(makePrevKey(v)));
+                    upstream.added.forAllRowKeys((final long v) -> addKey(makeKey(v)));
+                    upstream.removed.forAllRowKeys((final long v) -> removeKey(makePrevKey(v)));
 
                     upstream.forAllModified((preIndex, postIndex) -> {
                         final Object oldKey = makePrevKey(preIndex);

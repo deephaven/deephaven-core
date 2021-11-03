@@ -190,7 +190,7 @@ public class TickSuppressor {
                                     }
 
                                     final MutableInt pos = new MutableInt(0);
-                                    postChunkOk.forAllLongs((idx) -> {
+                                    postChunkOk.forAllRowKeys((idx) -> {
                                         boolean idxChanged = false;
                                         for (final int cc : changedColumnIndices) {
                                             if (changedCellsArray[cc].get(pos.intValue())) {

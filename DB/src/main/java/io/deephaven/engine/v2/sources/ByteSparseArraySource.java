@@ -145,7 +145,7 @@ public class ByteSparseArraySource extends SparseArrayColumnSource<Byte> impleme
 
     @Override
     public void remove(RowSet toRemove) {
-        toRemove.forEachLong((i) -> { set(i, NULL_BYTE); return true; });
+        toRemove.forEachRowKey((i) -> { set(i, NULL_BYTE); return true; });
     }
 
     // region boxed methods
@@ -453,7 +453,7 @@ public class ByteSparseArraySource extends SparseArrayColumnSource<Byte> impleme
     void fillByRanges(@NotNull WritableChunk<? super Values> dest, @NotNull RowSequence rowSequence) {
         final WritableByteChunk<? super Values> chunk = dest.asWritableByteChunk();
         final FillByContext<byte[]> ctx = new FillByContext<>();
-        rowSequence.forAllLongRanges((long firstKey, final long lastKey) -> {
+        rowSequence.forAllRowKeyRanges((long firstKey, final long lastKey) -> {
             if (firstKey > ctx.maxKeyInCurrentBlock) {
                 ctx.block = blocks.getInnermostBlockByKeyOrNull(firstKey);
                 ctx.maxKeyInCurrentBlock = firstKey | INDEX_MASK;
@@ -490,7 +490,7 @@ public class ByteSparseArraySource extends SparseArrayColumnSource<Byte> impleme
     void fillByKeys(@NotNull WritableChunk<? super Values> dest, @NotNull RowSequence rowSequence) {
         final WritableByteChunk<? super Values> chunk = dest.asWritableByteChunk();
         final FillByContext<byte[]> ctx = new FillByContext<>();
-        rowSequence.forEachLong((final long v) -> {
+        rowSequence.forEachRowKey((final long v) -> {
             if (v > ctx.maxKeyInCurrentBlock) {
                 ctx.block = blocks.getInnermostBlockByKeyOrNull(v);
                 ctx.maxKeyInCurrentBlock = v | INDEX_MASK;

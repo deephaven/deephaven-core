@@ -194,7 +194,7 @@ public class SortHelpers {
         @Override
         final public boolean forEachLong(LongPredicate consumer) {
             for (int ii = 0; ii < groups.length; ++ii) {
-                if (!groups[ii].forEachLong(consumer::test)) {
+                if (!groups[ii].forEachRowKey(consumer::test)) {
                     return false;
                 }
             }
@@ -512,7 +512,7 @@ public class SortHelpers {
             final MutableInt outputIdx = new MutableInt(0);
             for (final Object key : keys) {
                 final RowSet group = groupToRange.get(key).intersect(index);
-                group.forAllLongs(indexKey -> {
+                group.forAllRowKeys(indexKey -> {
                     indexKeysArray[outputIdx.intValue()] = indexKey;
                     outputIdx.increment();
                 });
@@ -568,7 +568,7 @@ public class SortHelpers {
                     offsetsOut.add(outputIdx.intValue());
                     lengthsOut.add(group.intSize());
                 }
-                group.forAllLongs(indexKey -> {
+                group.forAllRowKeys(indexKey -> {
                     indexKeysArray[outputIdx.intValue()] = indexKey;
                     outputIdx.increment();
                 });

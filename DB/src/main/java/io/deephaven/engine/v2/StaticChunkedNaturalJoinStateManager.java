@@ -1207,7 +1207,7 @@ class StaticChunkedNaturalJoinStateManager
                     final long rightSide = getStateValue(leftHashSlots, ii);
                     checkExactMatch(exactMatch, ii, rightSide);
                     final RowSet leftRowSetForKey = leftIndices.get(ii);
-                    leftRowSetForKey.forAllLongs((long ll) -> innerIndex[(int) ll] = rightSide);
+                    leftRowSetForKey.forAllRowKeys((long ll) -> innerIndex[(int) ll] = rightSide);
                 }
                 return new ContiguousRedirectionIndexImpl(innerIndex);
             }
@@ -1220,7 +1220,7 @@ class StaticChunkedNaturalJoinStateManager
                     checkExactMatch(exactMatch, ii, rightSide);
                     if (rightSide != NO_RIGHT_ENTRY_VALUE) {
                         final RowSet leftRowSetForKey = leftIndices.get(ii);
-                        leftRowSetForKey.forAllLongs((long ll) -> sparseRedirections.set(ll, rightSide));
+                        leftRowSetForKey.forAllRowKeys((long ll) -> sparseRedirections.set(ll, rightSide));
                     }
                 }
                 return new LongColumnSourceRedirectionIndex(sparseRedirections);
@@ -1234,7 +1234,7 @@ class StaticChunkedNaturalJoinStateManager
                     checkExactMatch(exactMatch, ii, rightSide);
                     if (rightSide != NO_RIGHT_ENTRY_VALUE) {
                         final RowSet leftRowSetForKey = leftIndices.get(ii);
-                        leftRowSetForKey.forAllLongs((long ll) -> redirectionIndex.put(ll, rightSide));
+                        leftRowSetForKey.forAllRowKeys((long ll) -> redirectionIndex.put(ll, rightSide));
                     }
                 }
 

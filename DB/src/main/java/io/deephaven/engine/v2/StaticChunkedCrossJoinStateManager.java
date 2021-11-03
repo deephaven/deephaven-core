@@ -323,7 +323,7 @@ class StaticChunkedCrossJoinStateManager
         validateKeySpaceSize(leftTable);
 
         final RowSetBuilderSequential resultIndex = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
-        leftTable.getRowSet().forAllLongs(ii -> {
+        leftTable.getRowSet().forAllRowKeys(ii -> {
             final long regionStart = ii << getNumShiftBits();
             final RowSet rightRowSet = getRightIndexFromLeftIndex(ii);
             if (rightRowSet.isNonempty()) {

@@ -33,7 +33,7 @@ public class ReplicateFreezeBy {
         final File objectFile = new File(objectResult);
         final List<String> lines = FileUtils.readLines(objectFile, Charset.defaultCharset());
         final List<String> newLines = ReplicateUtilities.replaceRegion(lines, "clearIndex",
-                Collections.singletonList("        removed.forAllLongs(idx -> resultSource.set(idx, null));"));
+                Collections.singletonList("        removed.forAllRowKeys(idx -> resultSource.set(idx, null));"));
         FileUtils.writeLines(objectFile, newLines);
     }
 

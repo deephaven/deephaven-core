@@ -170,7 +170,7 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
             slots.ensureCapacity(leftRestampRemovals.size());
 
             if (leftRestampRemovals.isNonempty()) {
-                leftRestampRemovals.forAllLongs(redirectionIndex::removeVoid);
+                leftRestampRemovals.forAllRowKeys(redirectionIndex::removeVoid);
 
                 // We first do a probe pass, adding all of the removals to a builder in the as of join state manager
                 final int removedSlotCount = asOfJoinStateManager.markForRemoval(leftRestampRemovals, leftKeySources,
@@ -182,7 +182,7 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
                     final long slot = slots.getLong(slotIndex);
                     final RowSet leftRemoved = indexFromBuilder(slotIndex);
 
-                    leftRemoved.forAllLongs(redirectionIndex::removeVoid);
+                    leftRemoved.forAllRowKeys(redirectionIndex::removeVoid);
 
 
                     final SegmentedSortedArray leftSsa = asOfJoinStateManager.getLeftSsaOrIndex(slot, leftIndexOutput);

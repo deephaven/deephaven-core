@@ -672,7 +672,7 @@ public class ReplicateSourcesAndChunks {
                 "            // This implementation is in \"key\" style (rather than range style).",
                 "            final WritableByteChunk<? super Values> chunk = destGeneric.asWritableByteChunk();",
                 "            final FillByContext<byte[]> ctx = new FillByContext<>();",
-                "            indices.forEachLong((final long v) -> {",
+                "            indices.forEachRowKey((final long v) -> {",
                 "                if (v > ctx.maxKeyInCurrentBlock) {",
                 "                    ctx.block = wrapped.blocks.getInnermostBlockByKeyOrNull(v);",
                 "                    ctx.maxKeyInCurrentBlock = v | INDEX_MASK;",

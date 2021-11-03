@@ -518,7 +518,7 @@ public abstract class RowSequenceTestBase {
             // Check TrackingMutableRowSet
             final MutableInt idx = new MutableInt(0);
             final RowSet ix = rowSequence.asRowSet();
-            assertTrue(msg, ix.forEachLong((value) -> {
+            assertTrue(msg, ix.forEachRowKey((value) -> {
                 assertEquals(msg + " && value==" + value, expectedIndices.get(idx.intValue()), value);
                 idx.add(1);
                 return true;
@@ -598,7 +598,7 @@ public abstract class RowSequenceTestBase {
                     final RowSet expected = ix.subSetByKeyRange(s, e);
                     try (final RowSequence rs1 = rs.getRowSequenceByKeyRange(s, e)) {
                         final RowSetBuilderSequential b = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
-                        rs1.forEachLong((final long v) -> {
+                        rs1.forEachRowKey((final long v) -> {
                             b.appendKey(v);
                             return true;
                         });
@@ -617,7 +617,7 @@ public abstract class RowSequenceTestBase {
                     final RowSet expected = ix.subSetByKeyRange(s, e);
                     try (final RowSequence rs1 = rs.getRowSequenceByKeyRange(s, e)) {
                         final RowSetBuilderSequential b = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
-                        rs1.forAllLongs(b::appendKey);
+                        rs1.forAllRowKeys(b::appendKey);
                         final RowSet result = b.build();
                         assertEquals(ctxt, expected.size(), result.size());
                         final RowSet d = expected.minus(result);
@@ -633,7 +633,7 @@ public abstract class RowSequenceTestBase {
                     final RowSet expected = ix.subSetByKeyRange(s, e);
                     try (final RowSequence rs1 = rs.getRowSequenceByKeyRange(s, e)) {
                         final RowSetBuilderSequential b = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
-                        rs1.forEachLongRange((final long start, final long end) -> {
+                        rs1.forEachRowKeyRange((final long start, final long end) -> {
                             b.appendRange(start, end);
                             return true;
                         });
@@ -652,7 +652,7 @@ public abstract class RowSequenceTestBase {
                     final RowSet expected = ix.subSetByKeyRange(s, e);
                     try (final RowSequence rs1 = rs.getRowSequenceByKeyRange(s, e)) {
                         final RowSetBuilderSequential b = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
-                        rs1.forAllLongRanges(b::appendRange);
+                        rs1.forAllRowKeyRanges(b::appendRange);
                         final RowSet result = b.build();
                         assertEquals(ctxt, expected.size(), result.size());
                         final RowSet d = expected.minus(result);

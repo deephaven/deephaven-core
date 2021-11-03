@@ -35,7 +35,7 @@ public class SelectOverheadLimiter {
 
         void addIndex(RowSet rowSet) {
             size += rowSet.size();
-            rowSet.forAllLongs(key -> {
+            rowSet.forAllRowKeys(key -> {
                 final long block = key >> SparseConstants.LOG_BLOCK_SIZE;
                 blockReferences.adjustOrPutValue(block, 1, 1);
             });
@@ -43,7 +43,7 @@ public class SelectOverheadLimiter {
 
         void removeIndex(RowSet rowSet) {
             size -= rowSet.size();
-            rowSet.forAllLongs(key -> {
+            rowSet.forAllRowKeys(key -> {
                 final long block = key >> SparseConstants.LOG_BLOCK_SIZE;
                 final long newReferences = blockReferences.adjustOrPutValue(block, -1, -1);
                 Assert.geqZero(newReferences, "newReferences");

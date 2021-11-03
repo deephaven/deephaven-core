@@ -657,7 +657,7 @@ public class TstUtils {
         @Override
         public TreeMap<Long, U> populateMap(final TreeMap<Long, U> values, final RowSet toAdd, final Random random) {
             final TreeMap<Long, U> result = new TreeMap<>();
-            toAdd.forAllLongs((final long nextKey) -> {
+            toAdd.forAllRowKeys((final long nextKey) -> {
                 final U value = nextValue(values, nextKey, random);
                 result.put(nextKey, value);
                 values.put(nextKey, value);
@@ -1926,7 +1926,7 @@ public class TstUtils {
             for (int ii = 0; ii < builders.length; ++ii) {
                 builders[ii] = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
             }
-            toAdd.forAllLongs((long ll) -> builders[pickGenerator(random)].appendKey(ll));
+            toAdd.forAllRowKeys((long ll) -> builders[pickGenerator(random)].appendKey(ll));
 
             for (int ii = 0; ii < builders.length; ++ii) {
                 final RowSet toAddWithGenerator = builders[ii].build();

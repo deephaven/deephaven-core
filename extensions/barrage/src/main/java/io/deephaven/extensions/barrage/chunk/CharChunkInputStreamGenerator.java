@@ -50,7 +50,7 @@ public class CharChunkInputStreamGenerator extends BaseChunkInputStreamGenerator
             }
             if (cachedNullCount == -1) {
                 cachedNullCount = 0;
-                subset.forAllLongs(row -> {
+                subset.forAllRowKeys(row -> {
                     if (chunk.get((int) row) == NULL_CHAR) {
                         ++cachedNullCount;
                     }
@@ -98,7 +98,7 @@ public class CharChunkInputStreamGenerator extends BaseChunkInputStreamGenerator
                     context.accumulator = 0;
                     context.count = 0;
                 };
-                subset.forAllLongs(row -> {
+                subset.forAllRowKeys(row -> {
                     if (chunk.get((int) row) != NULL_CHAR) {
                         context.accumulator |= 1L << context.count;
                     }
@@ -114,7 +114,7 @@ public class CharChunkInputStreamGenerator extends BaseChunkInputStreamGenerator
             }
 
                 // write the included values
-                subset.forAllLongs(row -> {
+                subset.forAllRowKeys(row -> {
                     try {
                         final char val = chunk.get((int) row);
                         dos.writeChar(val);

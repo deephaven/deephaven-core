@@ -383,7 +383,7 @@ public class AggregationHelper {
                                                             stateManager.getOverflowRowSetSource(), beginRange, endRange,
                                                             shiftDelta);
                                                 } else {
-                                                    resultRowSet.forAllLongs((final long stateKey) -> {
+                                                    resultRowSet.forAllRowKeys((final long stateKey) -> {
                                                         final int stateSlot = (int) resultIndexToHashSlot.get(stateKey);
                                                         stateManager.applyShift(stateSlot, beginRange, endRange,
                                                                 shiftDelta, updateTracker::processAppliedShift);

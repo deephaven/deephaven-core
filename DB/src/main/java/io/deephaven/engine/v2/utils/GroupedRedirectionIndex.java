@@ -106,7 +106,7 @@ public class GroupedRedirectionIndex implements RedirectionIndex {
         mappedKeysOut.setSize(keysToMap.intSize());
         try (final ResettableWritableLongChunk<Attributes.RowKeys> resettableKeys =
                 ResettableWritableLongChunk.makeResettableChunk()) {
-            keysToMap.forAllLongRanges((begin, end) -> {
+            keysToMap.forAllRowKeyRanges((begin, end) -> {
                 while (begin <= end) {
                     // figure out which group we belong to, based on the first key in the range
                     int slot = Arrays.binarySearch(groupSizes, lastSlot.intValue(), groupSizes.length, begin);

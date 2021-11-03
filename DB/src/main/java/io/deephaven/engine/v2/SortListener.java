@@ -910,7 +910,7 @@ public class SortListener extends BaseTable.ListenerImpl {
     private static void fillArray(final long[] dest, final RowSet src, final int destIndex,
                                   final LongUnaryOperator transformer) {
         final MutableInt pos = new MutableInt(destIndex);
-        src.forAllLongs((final long v) -> {
+        src.forAllRowKeys((final long v) -> {
             dest[pos.intValue()] = transformer.applyAsLong(v);
             pos.increment();
         });

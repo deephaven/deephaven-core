@@ -66,7 +66,7 @@ public class TestReadOnlyRedirectedColumnSource {
             final WritableObjectChunk<String, Values> chunk,
             final long offset) {
         final MutableLong pos = new MutableLong();
-        rs.forAllLongs(k -> {
+        rs.forAllRowKeys(k -> {
             final String s = (String) cs.get(k);
             assertEquals("offset=" + (pos.intValue() + offset) + ", k=" + k, s, chunk.get(pos.intValue()));
             pos.increment();
@@ -139,7 +139,7 @@ public class TestReadOnlyRedirectedColumnSource {
 
         final TByteList byteList = new TByteArrayList(6);
         final ColumnSource reinterpretedB = b.getColumnSource("BoolVal2").reinterpret(byte.class);
-        b.getRowSet().forAllLongs(x -> {
+        b.getRowSet().forAllRowKeys(x -> {
             final byte value = reinterpretedB.getByte(x);
             System.out.println(value);
             byteList.add(value);
@@ -164,14 +164,14 @@ public class TestReadOnlyRedirectedColumnSource {
         TableTools.showWithIndex(c);
         final ColumnSource reinterpretedC = c.getColumnSource("BoolVal3").reinterpret(byte.class);
         byteList.clear();
-        b.getRowSet().forAllLongs(x -> {
+        b.getRowSet().forAllRowKeys(x -> {
             final byte value = reinterpretedC.getByte(x);
             System.out.println(value);
             byteList.add(value);
         });
 
         byteList.clear();
-        b.getRowSet().forAllLongs(x -> {
+        b.getRowSet().forAllRowKeys(x -> {
             final byte value = reinterpretedC.getPrevByte(x);
             System.out.println(value);
             byteList.add(value);
@@ -218,7 +218,7 @@ public class TestReadOnlyRedirectedColumnSource {
 
         // checks unchunked
         byteList.clear();
-        b.getRowSet().forAllLongs(x -> {
+        b.getRowSet().forAllRowKeys(x -> {
             final byte value = reinterpretedB.getPrevByte(x);
             System.out.println(value);
             byteList.add(value);

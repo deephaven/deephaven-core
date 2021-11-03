@@ -438,7 +438,7 @@ public class RowSequenceKeyRangesChunkImpl implements RowSequence {
     }
 
     @Override
-    public boolean forEachLong(final LongAbortableConsumer lc) {
+    public boolean forEachRowKey(final LongAbortableConsumer lc) {
         if (backingChunk.size() == 0) {
             return true;
         }
@@ -473,7 +473,7 @@ public class RowSequenceKeyRangesChunkImpl implements RowSequence {
     }
 
     @Override
-    public boolean forEachLongRange(final LongRangeAbortableConsumer lrac) {
+    public boolean forEachRowKeyRange(final LongRangeAbortableConsumer lrac) {
         if (backingChunk.size() == 0) {
             return true;
         }

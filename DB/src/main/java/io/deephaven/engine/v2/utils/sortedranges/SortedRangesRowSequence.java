@@ -176,7 +176,7 @@ public class SortedRangesRowSequence extends RowSequenceAsChunkImpl {
     @Override
     public void fillRowKeyChunk(final WritableLongChunk<? extends Attributes.RowKeys> chunkToFill) {
         chunkToFill.setSize(0);
-        forEachLong((final long key) -> {
+        forEachRowKey((final long key) -> {
             chunkToFill.add(key);
             return true;
         });
@@ -185,7 +185,7 @@ public class SortedRangesRowSequence extends RowSequenceAsChunkImpl {
     @Override
     public void fillRowKeyRangesChunk(final WritableLongChunk<Attributes.OrderedRowKeyRanges> chunkToFill) {
         chunkToFill.setSize(0);
-        forEachLongRange((final long start, final long end) -> {
+        forEachRowKeyRange((final long start, final long end) -> {
             chunkToFill.add(start);
             chunkToFill.add(end);
             return true;
@@ -218,7 +218,7 @@ public class SortedRangesRowSequence extends RowSequenceAsChunkImpl {
     }
 
     @Override
-    public boolean forEachLong(final LongAbortableConsumer lac) {
+    public boolean forEachRowKey(final LongAbortableConsumer lac) {
         if (size == 0) {
             return true;
         }
@@ -286,7 +286,7 @@ public class SortedRangesRowSequence extends RowSequenceAsChunkImpl {
     }
 
     @Override
-    public boolean forEachLongRange(final LongRangeAbortableConsumer lrac) {
+    public boolean forEachRowKeyRange(final LongRangeAbortableConsumer lrac) {
         if (size == 0) {
             return true;
         }

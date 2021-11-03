@@ -1345,7 +1345,7 @@ class RightIncrementalChunkedNaturalJoinStateManager
                     assert leftRowSet != null;
                     if (leftRowSet.isNonempty()) {
                         checkExactMatch(exactMatch, leftRowSet.firstRowKey(), rightSide);
-                        leftRowSet.forAllLongs(li -> {
+                        leftRowSet.forAllRowKeys(li -> {
                             innerIndex[(int)li] = rightSide;
                         });
                     }
@@ -1362,7 +1362,7 @@ class RightIncrementalChunkedNaturalJoinStateManager
                     if (leftRowSet.isNonempty()) {
                         checkExactMatch(exactMatch, leftRowSet.firstRowKey(), rightSide);
                         if (rightSide != NO_RIGHT_ENTRY_VALUE) {
-                            leftRowSet.forAllLongs(li -> {
+                            leftRowSet.forAllRowKeys(li -> {
                                 sparseRedirections.set(li, rightSide);
                             });
                         }
@@ -1380,7 +1380,7 @@ class RightIncrementalChunkedNaturalJoinStateManager
                     if (leftRowSet.isNonempty()) {
                         checkExactMatch(exactMatch, leftRowSet.firstRowKey(), rightSide);
                         if (rightSide != NO_RIGHT_ENTRY_VALUE) {
-                            leftRowSet.forAllLongs(li -> {
+                            leftRowSet.forAllRowKeys(li -> {
                                 redirectionIndex.put(li, rightSide);
                             });
                         }

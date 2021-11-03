@@ -22,7 +22,7 @@ public final class LongChunkFiller implements ChunkFiller {
     public final void fillByRanges(final ElementSource src, final RowSequence keys, final WritableChunk<? super Values> dest) {
         final WritableLongChunk<? super Values> typedDest = dest.asWritableLongChunk();
         final MutableInt destPos = new MutableInt(0);
-        keys.forAllLongRanges((start, end) -> {
+        keys.forAllRowKeyRanges((start, end) -> {
             for (long v = start; v <= end; ++v) {
                 typedDest.set(destPos.intValue(), src.getLong(v));
                 destPos.increment();
@@ -35,7 +35,7 @@ public final class LongChunkFiller implements ChunkFiller {
     public final void fillByIndices(final ElementSource src, final RowSequence keys, final WritableChunk<? super Values> dest) {
         final WritableLongChunk<? super Values> typedDest = dest.asWritableLongChunk();
         final MutableInt destPos = new MutableInt(0);
-        keys.forAllLongs(v -> {
+        keys.forAllRowKeys(v -> {
             typedDest.set(destPos.intValue(), src.getLong(v));
             destPos.increment();
         });
@@ -58,7 +58,7 @@ public final class LongChunkFiller implements ChunkFiller {
     public final void fillPrevByRanges(final ElementSource src, final RowSequence keys, final WritableChunk<? super Values> dest) {
         final WritableLongChunk<? super Values> typedDest = dest.asWritableLongChunk();
         final MutableInt destPos = new MutableInt(0);
-        keys.forAllLongRanges((start, end) -> {
+        keys.forAllRowKeyRanges((start, end) -> {
             for (long v = start; v <= end; ++v) {
                 typedDest.set(destPos.intValue(), src.getPrevLong(v));
                 destPos.increment();
@@ -71,7 +71,7 @@ public final class LongChunkFiller implements ChunkFiller {
     public final void fillPrevByIndices(final ElementSource src, final RowSequence keys, final WritableChunk<? super Values> dest) {
         final WritableLongChunk<? super Values> typedDest = dest.asWritableLongChunk();
         final MutableInt destPos = new MutableInt(0);
-        keys.forAllLongs(v -> {
+        keys.forAllRowKeys(v -> {
             typedDest.set(destPos.intValue(), src.getPrevLong(v));
             destPos.increment();
         });
@@ -93,6 +93,6 @@ public final class LongChunkFiller implements ChunkFiller {
     @Override
     public void fillFromSingleValue(ElementSource src, long srcKey, WritableSource dest, RowSequence destKeys) {
         final long value = src.getLong(srcKey);
-        destKeys.forAllLongs(destKey -> dest.set(destKey, value));
+        destKeys.forAllRowKeys(destKey -> dest.set(destKey, value));
     }
 }

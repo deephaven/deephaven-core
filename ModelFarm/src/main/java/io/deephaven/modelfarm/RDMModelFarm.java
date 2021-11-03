@@ -99,14 +99,14 @@ public abstract class RDMModelFarm<KEYTYPE, DATATYPE, ROWDATAMANAGERTYPE extends
     }
 
     private void removeKeyIndex(final RowSet rowSet) {
-        rowSet.forAllLongs((final long i) -> {
+        rowSet.forAllRowKeys((final long i) -> {
             final KEYTYPE key = dataManager.uniqueIdPrev(i);
             keyIndexDelta.put(key, REMOVED_ENTRY_VALUE);
         });
     }
 
     private void addKeyIndex(final RowSet rowSet) {
-        rowSet.forAllLongs((final long i) -> {
+        rowSet.forAllRowKeys((final long i) -> {
             final KEYTYPE key = dataManager.uniqueIdCurrent(i);
             keyIndexDelta.put(key, i);
         });

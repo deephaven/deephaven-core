@@ -8,7 +8,7 @@ import io.deephaven.engine.structures.RowSequence;
  * This interface is really a mixin to avoid code duplication in the classes that implement it.
  */
 public interface SingleRangeMixin extends RowSequence {
-    default boolean forEachLong(final LongAbortableConsumer lc) {
+    default boolean forEachRowKey(final LongAbortableConsumer lc) {
         for (long v = rangeStart(); v <= rangeEnd(); ++v) {
             if (!lc.accept(v)) {
                 return false;
@@ -17,7 +17,7 @@ public interface SingleRangeMixin extends RowSequence {
         return true;
     }
 
-    default boolean forEachLongRange(final LongRangeAbortableConsumer larc) {
+    default boolean forEachRowKeyRange(final LongRangeAbortableConsumer larc) {
         return larc.accept(rangeStart(), rangeEnd());
     }
 

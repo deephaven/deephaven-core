@@ -309,7 +309,7 @@ class RightIncrementalChunkedCrossJoinStateManager
         validateKeySpaceSize();
 
         final RowSetBuilderSequential resultIndex = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
-        leftTable.getRowSet().forAllLongs(index -> {
+        leftTable.getRowSet().forAllRowKeys(index -> {
             final long regionStart = index << getNumShiftBits();
             final RowSet rightRowSet = getRightIndexFromLeftIndex(index);
             if (rightRowSet.isNonempty()) {
@@ -657,9 +657,9 @@ class RightIncrementalChunkedCrossJoinStateManager
 
     public void updateLeftRedirectionIndex(RowSet leftAdded, long slotLocation) {
         if (slotLocation == RowSet.NULL_ROW_KEY) {
-            leftAdded.forAllLongs(leftIndexToSlot::removeVoid);
+            leftAdded.forAllRowKeys(leftIndexToSlot::removeVoid);
         } else {
-            leftAdded.forAllLongs(ii -> leftIndexToSlot.putVoid(ii, slotLocation));
+            leftAdded.forAllRowKeys(ii -> leftIndexToSlot.putVoid(ii, slotLocation));
         }
     }
 
@@ -673,7 +673,7 @@ class RightIncrementalChunkedCrossJoinStateManager
         if (size > maxRightGroupSize) {
             maxRightGroupSize = size;
         }
-        rightAdded.forAllLongs(ii -> rightIndexToSlot.putVoid(ii, slotLocation));
+        rightAdded.forAllRowKeys(ii -> rightIndexToSlot.putVoid(ii, slotLocation));
     }
     // endregion build wrappers
 
@@ -1329,9 +1329,9 @@ class RightIncrementalChunkedCrossJoinStateManager
                     leftIndexSource.set(newHashLocation, leftRowSetValue);
                     leftIndexSource.set(oldHashLocation, null);
                     if (leftRowSetValue != null) {
-                        leftRowSetValue.forAllLongs(left -> leftIndexToSlot.putVoid(left, newHashLocation));
+                        leftRowSetValue.forAllRowKeys(left -> leftIndexToSlot.putVoid(left, newHashLocation));
                     }
-                    stateValueToMove.forAllLongs(right -> {
+                    stateValueToMove.forAllRowKeys(right -> {
                         // stateValueToMove may not yet be up to date and may include modifications
                         final long prevLocation = rightIndexToSlot.get(right);
                         if (prevLocation == oldHashLocation) {
@@ -1411,7 +1411,7 @@ class RightIncrementalChunkedCrossJoinStateManager
                         // Right rowSet source move
                         final TrackingMutableRowSet stateValueToMove = overflowRightIndexSource.getUnsafe(overflowLocation);
                         rightIndexSource.set(tableLocation, stateValueToMove);
-                        stateValueToMove.forAllLongs(right -> {
+                        stateValueToMove.forAllRowKeys(right -> {
                             // stateValueToMove may not yet be up to date and may include modifications
                             final long prevLocation = rightIndexToSlot.get(right);
                             if (prevLocation == overflowHashLocation) {
@@ -1425,7 +1425,7 @@ class RightIncrementalChunkedCrossJoinStateManager
                         leftIndexSource.set(tableLocation, leftRowSetValue);
                         overflowLeftIndexSource.set(overflowLocation, null);
                         if (leftRowSetValue != null) {
-                            leftRowSetValue.forAllLongs(left -> leftIndexToSlot.putVoid(left, tableLocation));
+                            leftRowSetValue.forAllRowKeys(left -> leftIndexToSlot.putVoid(left, tableLocation));
                         }
 
                         // notify tracker and move/update cookie

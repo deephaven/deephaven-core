@@ -91,7 +91,7 @@ public class VarListChunkInputStreamGenerator<T> extends BaseChunkInputStreamGen
                 myOffsets.set(0, 0);
                 final RowSetBuilderSequential myOffsetBuilder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
                 final MutableInt off = new MutableInt();
-                subset.forAllLongs(key -> {
+                subset.forAllRowKeys(key -> {
                     final int startOffset = offsets.get(LongSizedDataStructure.intSize(DEBUG_NAME, key));
                     final int endOffset = offsets.get(LongSizedDataStructure.intSize(DEBUG_NAME,  key + 1));
                     final int idx = off.incrementAndGet();
@@ -115,7 +115,7 @@ public class VarListChunkInputStreamGenerator<T> extends BaseChunkInputStreamGen
         public int nullCount() {
             if (cachedNullCount == -1) {
                 cachedNullCount = 0;
-                subset.forAllLongs(i -> {
+                subset.forAllRowKeys(i -> {
                     if (chunk.get((int)i) == null) {
                         ++cachedNullCount;
                     }
@@ -194,7 +194,7 @@ public class VarListChunkInputStreamGenerator<T> extends BaseChunkInputStreamGen
                     context.accumulator = 0;
                     context.count = 0;
                 };
-                subset.forAllLongs(rawRow -> {
+                subset.forAllRowKeys(rawRow -> {
                     final int row = LongSizedDataStructure.intSize(DEBUG_NAME, rawRow);
                     if (chunk.get(row) != null) {
                         context.accumulator |= 1L << context.count;

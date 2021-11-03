@@ -86,7 +86,7 @@ public class IndexIterationBench {
 
     @Benchmark
     public void b04_forEachIndex(final Blackhole bh) {
-        ix.forAllLongs((final long v) -> bh.consume(v));
+        ix.forAllRowKeys((final long v) -> bh.consume(v));
     }
 
     @Benchmark

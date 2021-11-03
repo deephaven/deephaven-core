@@ -48,6 +48,7 @@ import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.jpy.annotations.Mutable;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -252,7 +253,7 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
     private final BitSet objectColumns = new BitSet();
 
     // We keep this rowSet in-sync with deltas being propagated to subscribers.
-    private final TrackingMutableRowSet propagationRowSet;
+    private final MutableRowSet propagationRowSet;
 
     /**
      * On every update we compute which subset of rows need to be recorded dependent on our active subscriptions. We
@@ -640,7 +641,7 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
     private void enqueueUpdate(final Listener.Update upstream) {
         Assert.holdsLock(this, "enqueueUpdate must hold lock!");
 
-        final TrackingMutableRowSet addsToRecord;
+        final MutableRowSet addsToRecord;
         final RowSet modsToRecord;
         final TrackingRowSet rowSet = parent.getRowSet();
 
@@ -648,7 +649,7 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
             addsToRecord = upstream.added.clone();
             modsToRecord = upstream.modified.clone();
         } else if (activeViewport != null) {
-            try (final RowSet deltaViewport = rowSet.subSetForPositions(activeViewport)) {
+            try (final MutableRowSet deltaViewport = rowSet.subSetForPositions(activeViewport)) {
                 addsToRecord = deltaViewport.intersect(upstream.added);
                 modsToRecord = deltaViewport.intersect(upstream.modified);
             }
@@ -674,7 +675,7 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
 
                     final ShiftInversionHelper inverter = new ShiftInversionHelper(upstream.shifted);
 
-                    sub.viewport.forAllLongRanges((posStart, posEnd) -> {
+                    sub.viewport.forAllRowKeyRanges((posStart, posEnd) -> {
                         // Note: we already know that both rowSet and prevRowSet are non-empty.
                         final long currKeyStart =
                                 inverter.mapToPrevKeyspace(rowSet.get(Math.min(posStart, rowSet.size() - 1)), false);
@@ -1282,7 +1283,7 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
             addColumnSet = new BitSet();
             modColumnSet = new BitSet();
 
-            final TrackingMutableRowSet localAdded = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+            final MutableRowSet localAdded = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
             for (int i = startDelta; i < endDelta; ++i) {
                 final Delta delta = pendingDeltas.get(i);
                 localAdded.remove(delta.update.removed);
@@ -1375,7 +1376,7 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
                         final MutableRowSet remaining = addedMapping ? addedRemaining : modifiedRemaining;
                         final RowSet deltaRecorded = recordedAdds ? delta.recordedAdds : delta.recordedMods;
                         try (final RowSet recorded = remaining.intersect(deltaRecorded);
-                             final TrackingMutableRowSet sourceRows = deltaRecorded.invert(recorded);
+                             final MutableRowSet sourceRows = deltaRecorded.invert(recorded);
                              final RowSet destinationsInPosSpace = remaining.invert(recorded);
                              final RowSet rowsToFill = (addedMapping ? unfilledAdds : unfilledMods)
                                         .subSetForPositions(destinationsInPosSpace)) {
@@ -1494,7 +1495,7 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
         Assert.eq(keys.size(), "keys.size()", values.size(), "values.size()");
         Assert.leq(keys.size(), "keys.size()", mapping.length, "mapping.length");
         final RowSet.Iterator vit = values.iterator();
-        keys.forAllLongs(lkey -> {
+        keys.forAllRowKeys(lkey -> {
             final int key = LongSizedDataStructure.intSize("applyRedirMapping", lkey);
             Assert.eq(mapping[key], "mapping[key]", RowSet.NULL_ROW_KEY, "TrackingMutableRowSet.NULL_KEY");
             mapping[key] = vit.nextLong();

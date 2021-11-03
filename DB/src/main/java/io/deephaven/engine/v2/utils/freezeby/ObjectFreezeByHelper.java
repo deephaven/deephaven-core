@@ -46,7 +46,7 @@ class ObjectFreezeByHelper implements FreezeByOperator.FreezeByHelper {
     @Override
     public void clearIndex(RowSequence removed) {
         // region clearIndex
-        removed.forAllLongs(idx -> resultSource.set(idx, null));
+        removed.forAllRowKeys(idx -> resultSource.set(idx, null));
         // endregion clearIndex
     }
 }

@@ -21,7 +21,7 @@ import java.util.stream.IntStream;
  * its own offset in those arrays.
  */
 public class BucketState {
-    private final TrackingMutableRowSet rowSet = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+    private final MutableRowSet rowSet = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
 
     private RowSet cachedRowSet;
 
@@ -44,7 +44,7 @@ public class BucketState {
         this.trackNulls = trackNulls;
         if (trackNulls) {
             this.nulls = IntStream.range(0, valueTrackers.length).mapToObj(ignore -> RowSetFactoryImpl.INSTANCE.getEmptyRowSet())
-                    .toArray(RowSet[]::new);
+                    .toArray(MutableRowSet[]::new);
         } else {
             this.nulls = null;
         }

@@ -85,7 +85,7 @@ public class WindowCheck {
                     new TimeWindowListener(inWindowColumn, inWindowColumnSource, recorder, dynamicSource, result);
             recorder.setMergedListener(timeWindowListener);
             dynamicSource.listenForUpdates(recorder);
-            table.getRowSet().forAllLongs(timeWindowListener::addIndex);
+            table.getRowSet().forAllRowKeys(timeWindowListener::addIndex);
             result.addParentReference(timeWindowListener);
             result.manage(table);
             if (addToMonitor) {
@@ -218,7 +218,7 @@ public class WindowCheck {
                 });
 
                 // now add the new timestamps
-                upstream.added.forAllLongs(this::addIndex);
+                upstream.added.forAllRowKeys(this::addIndex);
 
                 final MutableRowSet downstreamModified = upstream.modified.clone();
                 try (final RowSet modifiedByTime = recomputeModified()) {
@@ -301,7 +301,7 @@ public class WindowCheck {
          * @param rowSet the indices to remove
          */
         private void removeIndex(final RowSet rowSet) {
-            rowSet.forAllLongs((final long key) -> {
+            rowSet.forAllRowKeys((final long key) -> {
                 final Entry e = indexToEntry.remove(key);
                 if (e != null) {
                     priorityQueue.remove(e);

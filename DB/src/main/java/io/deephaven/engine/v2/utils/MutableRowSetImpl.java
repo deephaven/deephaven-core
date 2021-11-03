@@ -235,7 +235,7 @@ public class MutableRowSetImpl extends RowSequenceAsChunkImpl implements Mutable
     }
 
     @Override
-    public final RowSet invert(final RowSet keys, final long maximumPosition) {
+    public final MutableRowSet invert(final RowSet keys, final long maximumPosition) {
         return new MutableRowSetImpl(impl.ixInvertOnNew(getImpl(keys), maximumPosition));
     }
 
@@ -282,7 +282,7 @@ public class MutableRowSetImpl extends RowSequenceAsChunkImpl implements Mutable
     }
 
     @Override
-    public final RowSet shift(final long shiftAmount) {
+    public final MutableRowSet shift(final long shiftAmount) {
         return new MutableRowSetImpl(impl.ixShiftOnNew(shiftAmount));
     }
 
@@ -312,12 +312,12 @@ public class MutableRowSetImpl extends RowSequenceAsChunkImpl implements Mutable
     }
 
     @Override
-    public final boolean forEachLong(final LongAbortableConsumer lc) {
+    public final boolean forEachRowKey(final LongAbortableConsumer lc) {
         return impl.ixForEachLong(lc);
     }
 
     @Override
-    public final boolean forEachLongRange(final LongRangeAbortableConsumer larc) {
+    public final boolean forEachRowKeyRange(final LongRangeAbortableConsumer larc) {
         return impl.ixForEachLongRange(larc);
     }
 

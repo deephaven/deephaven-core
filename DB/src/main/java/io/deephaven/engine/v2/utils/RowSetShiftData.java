@@ -302,7 +302,7 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
 
                 toRemove.appendRange(beginRange, endRange);
                 rsIt.getNextRowSequenceThrough(endRange)
-                        .forAllLongRanges((s, e) -> toInsert.appendRange(s + shiftDelta, e + shiftDelta));
+                        .forAllRowKeyRanges((s, e) -> toInsert.appendRange(s + shiftDelta, e + shiftDelta));
             }
         }
 
@@ -357,7 +357,7 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
 
                 toRemove.appendRange(beginRange + shiftDelta, endRange + shiftDelta);
                 rsIt.getNextRowSequenceThrough(endRange + shiftDelta)
-                        .forAllLongRanges((s, e) -> toInsert.appendRange(s - shiftDelta, e - shiftDelta));
+                        .forAllRowKeyRanges((s, e) -> toInsert.appendRange(s - shiftDelta, e - shiftDelta));
             }
         }
 
@@ -1132,7 +1132,7 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
                     break;
                 }
 
-                rsIt.getNextRowSequenceThrough(endRange + shiftDelta).forAllLongRanges((s, e) -> {
+                rsIt.getNextRowSequenceThrough(endRange + shiftDelta).forAllRowKeyRanges((s, e) -> {
                     preShiftBuilder.appendRange(s - shiftDelta, e - shiftDelta);
                     postShiftBuilder.appendRange(s, e);
                 });

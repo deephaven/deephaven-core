@@ -48,7 +48,7 @@ class SimpleUniqueStaticNaturalJoinStateManager extends StaticNaturalJoinStateMa
                 final IntChunk<? extends Values> dataChunkAsInt = transform.apply(dataChunk);
                 final MutableInt position = new MutableInt(0);
 
-                chunkOk.forEachLong((long keyIndex) -> {
+                chunkOk.forEachRowKey((long keyIndex) -> {
                     final int tableLocation = dataChunkAsInt.get(position.intValue());
                     position.increment();
                     if (tableLocation < 0 || tableLocation >= tableSize) {

@@ -131,7 +131,7 @@ public final class IterPerformanceTest {
         @Override
         public long getBaseCrc32(final long x) {
             final CRC32 crc32 = new CRC32();
-            ix.forEachLong((long v) -> {
+            ix.forEachRowKey((long v) -> {
                 updateCrc32(crc32, v | x);
                 return true;
             });

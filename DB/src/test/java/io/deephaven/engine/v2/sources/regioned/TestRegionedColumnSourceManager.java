@@ -8,9 +8,9 @@ import io.deephaven.engine.v2.locations.*;
 import io.deephaven.engine.v2.locations.impl.SimpleTableLocationKey;
 import io.deephaven.engine.v2.locations.impl.TableLocationUpdateSubscriptionBuffer;
 import io.deephaven.engine.v2.sources.ColumnSource;
+import io.deephaven.engine.v2.utils.MutableRowSet;
 import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import gnu.trove.map.TIntIntMap;
 import gnu.trove.map.hash.TIntIntHashMap;
 import org.jetbrains.annotations.NotNull;
@@ -78,7 +78,7 @@ public class TestRegionedColumnSourceManager extends LiveTableTestCase {
     private TIntIntMap locationIndexToRegionIndex;
     private RowSet expectedRowSet;
     private RowSet expectedAddedRowSet;
-    private Map<String, RowSet> expectedPartitioningColumnGrouping;
+    private Map<String, MutableRowSet> expectedPartitioningColumnGrouping;
 
     private RegionedColumnSourceManager SUT;
 
@@ -249,7 +249,7 @@ public class TestRegionedColumnSourceManager extends LiveTableTestCase {
     }
 
     private void setSizeExpectations(final boolean refreshing, final long... sizes) {
-        final TrackingMutableRowSet newExpectedRowSet = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+        final MutableRowSet newExpectedRowSet = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
         expectedPartitioningColumnGrouping = new LinkedHashMap<>();
         IntStream.range(0, sizes.length).forEachOrdered(li -> {
             final long size = sizes[li];

@@ -192,8 +192,8 @@ public class SortBenchmark {
         update.added = inputTable.getRowSet().subSetByPositionRange(addMarker, addMarker + sizePerStep - 1);
         update.modified = inputTable.getRowSet().subSetByPositionRange(modMarker, modMarker + sizePerStep - 1);
         update.removed = inputTable.getRowSet().subSetByPositionRange(rmMarker, rmMarker + sizePerStep - 1);
-        update.modified.retain(rollingInputRowSet);
-        update.removed.retain(rollingInputRowSet);
+        update.modified.asMutable().retain(rollingInputRowSet);
+        update.removed.asMutable().retain(rollingInputRowSet);
         update.modifiedColumnSet = mcsWithoutSortColumn;
         update.shifted = RowSetShiftData.EMPTY;
 
@@ -218,8 +218,8 @@ public class SortBenchmark {
         update.added = inputTable.getRowSet().subSetByPositionRange(addMarker, addMarker + sizePerStep - 1);
         update.modified = inputTable.getRowSet().subSetByPositionRange(modMarker, modMarker + sizePerStep - 1);
         update.removed = inputTable.getRowSet().subSetByPositionRange(rmMarker, rmMarker + sizePerStep - 1);
-        update.modified.retain(rollingInputRowSet);
-        update.removed.retain(rollingInputRowSet);
+        update.modified.asMutable().retain(rollingInputRowSet);
+        update.removed.asMutable().retain(rollingInputRowSet);
         update.modifiedColumnSet = mcsWithSortColumn;
         update.shifted = RowSetShiftData.EMPTY;
 

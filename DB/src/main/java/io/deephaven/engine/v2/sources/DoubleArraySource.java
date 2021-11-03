@@ -248,7 +248,7 @@ public class DoubleArraySource extends ArraySourceHelper<Double, double[]> imple
         }
         final WritableDoubleChunk<? super Values> dest = destGeneric.asWritableDoubleChunk();
         final FillSparseChunkContext<double[]> ctx = new FillSparseChunkContext<>();
-        indices.forAllLongs((final long v) -> {
+        indices.forAllRowKeys((final long v) -> {
             if (v >= ctx.capForCurrentBlock) {
                 ctx.currentBlockNo = getBlockNo(v);
                 ctx.capForCurrentBlock = (ctx.currentBlockNo + 1L) << LOG_BLOCK_SIZE;
@@ -274,7 +274,7 @@ public class DoubleArraySource extends ArraySourceHelper<Double, double[]> imple
 
         final WritableDoubleChunk<? super Values> dest = destGeneric.asWritableDoubleChunk();
         final FillSparseChunkContext<double[]> ctx = new FillSparseChunkContext<>();
-        indices.forAllLongs((final long v) -> {
+        indices.forAllRowKeys((final long v) -> {
             if (v >= ctx.capForCurrentBlock) {
                 ctx.currentBlockNo = getBlockNo(v);
                 ctx.capForCurrentBlock = (ctx.currentBlockNo + 1L) << LOG_BLOCK_SIZE;

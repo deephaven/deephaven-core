@@ -191,7 +191,7 @@ public class TreeTableFilter implements Function.Unary<Table, Table>, MemoizedOp
             }
 
             TLongArrayList parentsToProcess = new TLongArrayList();
-            expectedRowSet.forAllLongs(parentsToProcess::add);
+            expectedRowSet.forAllRowKeys(parentsToProcess::add);
 
             final RowSet sourceRowSet = usePrev ? source.getRowSet().getPrevRowSet() : source.getRowSet();
             do {

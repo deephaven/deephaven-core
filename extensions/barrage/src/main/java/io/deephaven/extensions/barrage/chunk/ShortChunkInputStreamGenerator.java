@@ -53,7 +53,7 @@ public class ShortChunkInputStreamGenerator extends BaseChunkInputStreamGenerato
             }
             if (cachedNullCount == -1) {
                 cachedNullCount = 0;
-                subset.forAllLongs(row -> {
+                subset.forAllRowKeys(row -> {
                     if (chunk.get((int) row) == NULL_SHORT) {
                         ++cachedNullCount;
                     }
@@ -101,7 +101,7 @@ public class ShortChunkInputStreamGenerator extends BaseChunkInputStreamGenerato
                     context.accumulator = 0;
                     context.count = 0;
                 };
-                subset.forAllLongs(row -> {
+                subset.forAllRowKeys(row -> {
                     if (chunk.get((int) row) != NULL_SHORT) {
                         context.accumulator |= 1L << context.count;
                     }
@@ -117,7 +117,7 @@ public class ShortChunkInputStreamGenerator extends BaseChunkInputStreamGenerato
             }
 
                 // write the included values
-                subset.forAllLongs(row -> {
+                subset.forAllRowKeys(row -> {
                     try {
                         final short val = chunk.get((int) row);
                         dos.writeShort(val);

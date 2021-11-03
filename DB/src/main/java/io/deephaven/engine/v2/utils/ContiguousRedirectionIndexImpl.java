@@ -85,7 +85,7 @@ public class ContiguousRedirectionIndexImpl implements RedirectionIndex {
             @NotNull final WritableLongChunk<Attributes.RowKeys> mappedKeysOut,
             @NotNull final RowSequence keysToMap) {
         mappedKeysOut.setSize(0);
-        keysToMap.forAllLongRanges((final long start, final long end) -> {
+        keysToMap.forAllRowKeyRanges((final long start, final long end) -> {
             for (long v = start; v <= end; ++v) {
                 mappedKeysOut.add(redirections[(int) v]);
             }
@@ -117,7 +117,7 @@ public class ContiguousRedirectionIndexImpl implements RedirectionIndex {
 
         synchronized (this) {
             mappedKeysOut.setSize(0);
-            keysToMap.forAllLongRanges((final long start, final long end) -> {
+            keysToMap.forAllRowKeyRanges((final long start, final long end) -> {
                 for (long v = start; v <= end; ++v) {
                     long result = checkpoint.get(v);
                     if (result == UPDATES_KEY_NOT_FOUND) {

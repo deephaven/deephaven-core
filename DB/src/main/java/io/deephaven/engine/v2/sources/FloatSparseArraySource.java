@@ -144,7 +144,7 @@ public class FloatSparseArraySource extends SparseArrayColumnSource<Float> imple
 
     @Override
     public void remove(RowSet toRemove) {
-        toRemove.forEachLong((i) -> { set(i, NULL_FLOAT); return true; });
+        toRemove.forEachRowKey((i) -> { set(i, NULL_FLOAT); return true; });
     }
 
     // region boxed methods
@@ -452,7 +452,7 @@ public class FloatSparseArraySource extends SparseArrayColumnSource<Float> imple
     void fillByRanges(@NotNull WritableChunk<? super Values> dest, @NotNull RowSequence rowSequence) {
         final WritableFloatChunk<? super Values> chunk = dest.asWritableFloatChunk();
         final FillByContext<float[]> ctx = new FillByContext<>();
-        rowSequence.forAllLongRanges((long firstKey, final long lastKey) -> {
+        rowSequence.forAllRowKeyRanges((long firstKey, final long lastKey) -> {
             if (firstKey > ctx.maxKeyInCurrentBlock) {
                 ctx.block = blocks.getInnermostBlockByKeyOrNull(firstKey);
                 ctx.maxKeyInCurrentBlock = firstKey | INDEX_MASK;
@@ -489,7 +489,7 @@ public class FloatSparseArraySource extends SparseArrayColumnSource<Float> imple
     void fillByKeys(@NotNull WritableChunk<? super Values> dest, @NotNull RowSequence rowSequence) {
         final WritableFloatChunk<? super Values> chunk = dest.asWritableFloatChunk();
         final FillByContext<float[]> ctx = new FillByContext<>();
-        rowSequence.forEachLong((final long v) -> {
+        rowSequence.forEachRowKey((final long v) -> {
             if (v > ctx.maxKeyInCurrentBlock) {
                 ctx.block = blocks.getInnermostBlockByKeyOrNull(v);
                 ctx.maxKeyInCurrentBlock = v | INDEX_MASK;

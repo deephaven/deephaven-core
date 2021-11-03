@@ -323,7 +323,7 @@ public class UnionSourceManager {
                                 }
                                 Assert.leq(beginRange, "beginRange", endRange, "endRange");
                                 shiftRemoveBuilder.appendRange(beginRange, endRange);
-                                rsIt.getNextRowSequenceThrough(endRange).forAllLongRanges(
+                                rsIt.getNextRowSequenceThrough(endRange).forAllRowKeyRanges(
                                         (s, e) -> shiftAddedBuilder.appendRange(s + rangeDelta, e + rangeDelta));
                             }
                         }

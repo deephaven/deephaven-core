@@ -96,7 +96,7 @@ public class AppendOnlyArrayBackedMutableTable extends BaseArrayBackedMutableTab
             final long firstRow = nextRow;
             final long lastRow = firstRow + addRowSet.intSize() - 1;
             try (final RowSequence destinations = RowSequenceUtil.forRange(firstRow, lastRow)) {
-                destinations.forAllLongs(indexChangeRecorder::addIndex);
+                destinations.forAllRowKeys(indexChangeRecorder::addIndex);
                 nextRow = lastRow + 1;
 
                 final SharedContext sharedContext = SharedContext.makeSharedContext();

@@ -229,11 +229,11 @@ public class BarrageTable extends QueryTable implements LiveTable, BarrageMessag
 
         // make sure that these rowSet updates make some sense compared with each other, and our current view of the
         // table
-        final MutableRowSet currentRowSet = getRowSet();
+        final MutableRowSet currentRowSet = getRowSet().asMutable();
         final boolean mightBeInitialSnapshot = currentRowSet.isEmpty() && update.isSnapshot;
 
         try (final RowSet currRowsFromPrev = currentRowSet.clone();
-             final TrackingMutableRowSet populatedRows =
+             final MutableRowSet populatedRows =
                         (serverViewport != null ? currentRowSet.subSetForPositions(serverViewport) : null)) {
 
             // removes
@@ -374,7 +374,7 @@ public class BarrageTable extends QueryTable implements LiveTable, BarrageMessag
                 WritableLongChunk.makeWritableChunk(rowsToFree.intSize("BarrageTable"))) {
             redirectedRows.setSize(0);
 
-            rowsToFree.forAllLongs(next -> {
+            rowsToFree.forAllRowKeys(next -> {
                 final long prevIndex = redirectionIndex.remove(next);
                 Assert.assertion(prevIndex != -1, "prevIndex != -1", prevIndex, "prevIndex", next, "next");
                 redirectedRows.add(prevIndex);
@@ -409,7 +409,7 @@ public class BarrageTable extends QueryTable implements LiveTable, BarrageMessag
             if (getRowSet().isNonempty()) {
                 // publish one last clear downstream; this data would be stale
                 final RowSet allRows = getRowSet().clone();
-                getRowSet().remove(allRows);
+                getRowSet().asMutable().remove(allRows);
                 notifyListeners(RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), allRows, RowSetFactoryImpl.INSTANCE.getEmptyRowSet());
             }
             cleanup();

@@ -161,13 +161,13 @@ public class ShiftedRowSequence extends RowSequenceAsChunkImpl implements RowSeq
     }
 
     @Override
-    public boolean forEachLong(LongAbortableConsumer consumer) {
-        return wrappedOK.forEachLong((ii) -> consumer.accept(ii + shiftAmount));
+    public boolean forEachRowKey(LongAbortableConsumer consumer) {
+        return wrappedOK.forEachRowKey((ii) -> consumer.accept(ii + shiftAmount));
     }
 
     @Override
-    public boolean forEachLongRange(LongRangeAbortableConsumer consumer) {
-        return wrappedOK.forEachLongRange((s, e) -> consumer.accept(s + shiftAmount, e + shiftAmount));
+    public boolean forEachRowKeyRange(LongRangeAbortableConsumer consumer) {
+        return wrappedOK.forEachRowKeyRange((s, e) -> consumer.accept(s + shiftAmount, e + shiftAmount));
     }
 
     @Override
@@ -179,7 +179,7 @@ public class ShiftedRowSequence extends RowSequenceAsChunkImpl implements RowSeq
     @Override
     public long rangesCountUpperBound() {
         final MutableInt mi = new MutableInt(0);
-        wrappedOK.forAllLongRanges((final long start, final long end) -> mi.increment());
+        wrappedOK.forAllRowKeyRanges((final long start, final long end) -> mi.increment());
         return mi.intValue();
     }
 

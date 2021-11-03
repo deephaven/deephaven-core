@@ -431,7 +431,7 @@ public class IndexedDataColumn<TYPE> implements DataColumn<TYPE> {
     @Override
     @SafeVarargs
     public final void setArray(final long startPos, final TYPE... values) {
-        getSubIndexByPos(startPos, startPos + values.length).forAllLongs(new LongConsumer() {
+        getSubIndexByPos(startPos, startPos + values.length).forAllRowKeys(new LongConsumer() {
             int vi;
 
             @Override
@@ -459,7 +459,7 @@ public class IndexedDataColumn<TYPE> implements DataColumn<TYPE> {
 
     @Override
     public void setBytes(final long startPos, final byte... values) {
-        getSubIndexByPos(startPos, startPos + values.length).forAllLongs(new LongConsumer() {
+        getSubIndexByPos(startPos, startPos + values.length).forAllRowKeys(new LongConsumer() {
             int vi;
 
             @Override
@@ -476,7 +476,7 @@ public class IndexedDataColumn<TYPE> implements DataColumn<TYPE> {
 
     @Override
     public void setChars(final long startPos, final char... values) {
-        getSubIndexByPos(startPos, startPos + values.length).forAllLongs(new LongConsumer() {
+        getSubIndexByPos(startPos, startPos + values.length).forAllRowKeys(new LongConsumer() {
             int vi;
 
             @Override
@@ -493,7 +493,7 @@ public class IndexedDataColumn<TYPE> implements DataColumn<TYPE> {
 
     @Override
     public void setDoubles(final long startPos, final double... values) {
-        getSubIndexByPos(startPos, startPos + values.length).forAllLongs(new LongConsumer() {
+        getSubIndexByPos(startPos, startPos + values.length).forAllRowKeys(new LongConsumer() {
             int vi;
 
             @Override
@@ -510,7 +510,7 @@ public class IndexedDataColumn<TYPE> implements DataColumn<TYPE> {
 
     @Override
     public void setFloats(final long startPos, final float... values) {
-        getSubIndexByPos(startPos, startPos + values.length).forAllLongs(new LongConsumer() {
+        getSubIndexByPos(startPos, startPos + values.length).forAllRowKeys(new LongConsumer() {
             int vi;
 
             @Override
@@ -527,7 +527,7 @@ public class IndexedDataColumn<TYPE> implements DataColumn<TYPE> {
 
     @Override
     public void setInts(final long startPos, final int... values) {
-        getSubIndexByPos(startPos, startPos + values.length).forAllLongs(new LongConsumer() {
+        getSubIndexByPos(startPos, startPos + values.length).forAllRowKeys(new LongConsumer() {
             int vi;
 
             @Override
@@ -544,7 +544,7 @@ public class IndexedDataColumn<TYPE> implements DataColumn<TYPE> {
 
     @Override
     public void setLongs(final long startPos, final long... values) {
-        getSubIndexByPos(startPos, startPos + values.length).forAllLongs(new LongConsumer() {
+        getSubIndexByPos(startPos, startPos + values.length).forAllRowKeys(new LongConsumer() {
             int vi;
 
             @Override
@@ -561,7 +561,7 @@ public class IndexedDataColumn<TYPE> implements DataColumn<TYPE> {
 
     @Override
     public void setShorts(final long startPos, final short... values) {
-        getSubIndexByPos(startPos, startPos + values.length).forAllLongs(new LongConsumer() {
+        getSubIndexByPos(startPos, startPos + values.length).forAllRowKeys(new LongConsumer() {
             int vi;
 
             @Override

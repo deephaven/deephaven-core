@@ -33,7 +33,7 @@ public class RowSetUtilities {
     public static void fillKeyIndicesChunk(final RowSet index,
             final WritableLongChunk<? extends Attributes.RowKeys> chunkToFill) {
         chunkToFill.setSize(0); // so that we can actually add from the beginning.
-        index.forEachLong((final long v) -> {
+        index.forEachRowKey((final long v) -> {
             chunkToFill.add(v);
             return true;
         });
@@ -42,7 +42,7 @@ public class RowSetUtilities {
     public static void fillKeyRangesChunk(final RowSet index,
             final WritableLongChunk<Attributes.OrderedRowKeyRanges> chunkToFill) {
         chunkToFill.setSize(0);
-        index.forAllLongRanges((final long start, final long end) -> {
+        index.forAllRowKeyRanges((final long start, final long end) -> {
             chunkToFill.add(start);
             chunkToFill.add(end);
         });
@@ -177,7 +177,7 @@ public class RowSetUtilities {
     }
 
     /**
-     * This is equivalent to `sourceRowSet.invert(destRowSet).forAllLongRanges(lrc)`, but requires O(1) space. Note that
+     * This is equivalent to `sourceRowSet.invert(destRowSet).forAllRowKeyRanges(lrc)`, but requires O(1) space. Note that
      * coalescing adjacent position-space runs enables callers to make minimal System.arraycopy calls.
      *
      * @param sourceRowSet rowSet to find the destRowSet keys in - ranges in the callback will be on this rowSet
@@ -191,7 +191,7 @@ public class RowSetUtilities {
         final MutableLong pendingEnd = new MutableLong(RowSet.NULL_ROW_KEY);
         final RowSequence.Iterator sourceProbe = sourceRowSet.getRowSequenceIterator();
         final MutableLong sourceOffset = new MutableLong();
-        destRowSet.forAllLongRanges((start, end) -> {
+        destRowSet.forAllRowKeyRanges((start, end) -> {
             final long sourceStart = sourceOffset.getValue() + sourceProbe.advanceAndGetPositionDistance(start);
             final long sourceEnd = sourceStart + sourceProbe.advanceAndGetPositionDistance(end);
             if (!hasPending.booleanValue()) {

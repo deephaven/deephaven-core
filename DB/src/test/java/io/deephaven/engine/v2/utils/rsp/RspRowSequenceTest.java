@@ -404,7 +404,7 @@ public class RspRowSequenceTest extends RowSequenceTestBase {
                             final RowSequence.Iterator it = rs.getRowSequenceIterator();
                             while (it.hasMore()) {
                                 final RowSequence rsIt = it.getNextRowSequenceWithLength(13);
-                                rsIt.forAllLongRanges(res::addRange);
+                                rsIt.forAllRowKeyRanges(res::addRange);
                             }
                             final String m = "startKey==" + startKey + " && endKey==" + endKey;
                             assertEquals(m, expected.getCardinality(), res.getCardinality());
@@ -507,7 +507,7 @@ public class RspRowSequenceTest extends RowSequenceTestBase {
         rb.addRange(7, 8); // we stop here (7 below in getRowSequenceByRange), so that there is one range after us.
         rb.addRange(10, 11);
         final RowSequence rs = rb.getRowSequenceByKeyRange(1, 7);
-        rs.forAllLongRanges((final long start, final long end) -> {
+        rs.forAllRowKeyRanges((final long start, final long end) -> {
             assertTrue(end >= start);
         });
     }

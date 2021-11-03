@@ -7,7 +7,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 public class RowSetShiftDataExpanderTest {
 
@@ -493,7 +493,8 @@ public class RowSetShiftDataExpanderTest {
      * Profit by letting @Before / @After clear context and run validate automagically.
      */
     private static class Context {
-        public final TrackingMutableRowSet sourceRowSet = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+        public final TrackingMutableRowSet sourceRowSet =
+                RowSetFactoryImpl.INSTANCE.getEmptyRowSet().convertToTracking();
         public final MutableRowSet added = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
         public final MutableRowSet removed = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
         public final MutableRowSet modified = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
@@ -514,9 +515,9 @@ public class RowSetShiftDataExpanderTest {
 
             final RowSetShiftData shiftData = shifted.build();
             shiftData.validate();
-            final RowSetShiftDataExpander expander = new RowSetShiftDataExpander(new Listener.Update(
-                    added, removed, modified, shiftData, ModifiedColumnSet.ALL), sourceRowSet);
-            expander.validate(sourceRowSet);
+            final Listener.Update update = new Listener.Update(added, removed, modified, shiftData, ModifiedColumnSet.ALL);
+            final RowSetShiftDataExpander expander = new RowSetShiftDataExpander(update, sourceRowSet);
+            expander.validate(update, sourceRowSet);
 
             assertEquals(expectAdded, expander.getAdded());
             assertEquals(expectRemoved, expander.getRemoved());

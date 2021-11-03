@@ -93,14 +93,14 @@ public class ToMapListener<K, V> extends InstrumentedListenerAdapter implements 
         final LongConsumer remover = (final long key) -> {
             newMap.put(prevKeyProducer.apply(key), DELETED_ENTRY_VALUE);
         };
-        upstream.removed.forAllLongs(remover);
-        upstream.getModifiedPreShift().forAllLongs(remover);
+        upstream.removed.forAllRowKeys(remover);
+        upstream.getModifiedPreShift().forAllRowKeys(remover);
 
         final LongConsumer adder = (final long key) -> {
             newMap.put(keyProducer.apply(key), key);
         };
-        upstream.added.forAllLongs(adder);
-        upstream.modified.forAllLongs(adder);
+        upstream.added.forAllRowKeys(adder);
+        upstream.modified.forAllRowKeys(adder);
 
         currentMap = newMap;
         LiveTableMonitor.DEFAULT.addNotification(new Flusher());

@@ -143,7 +143,7 @@ abstract public class AbstractSparseLongArraySource<T> extends SparseArrayColumn
 
     @Override
     public void remove(RowSet toRemove) {
-        toRemove.forEachLong((i) -> { set(i, NULL_LONG); return true; });
+        toRemove.forEachRowKey((i) -> { set(i, NULL_LONG); return true; });
     }
 
     // region boxed methods
@@ -433,7 +433,7 @@ abstract public class AbstractSparseLongArraySource<T> extends SparseArrayColumn
     void fillByRanges(@NotNull WritableChunk<? super Values> dest, @NotNull RowSequence rowSequence) {
         final WritableLongChunk<? super Values> chunk = dest.asWritableLongChunk();
         final FillByContext<long[]> ctx = new FillByContext<>();
-        rowSequence.forAllLongRanges((long firstKey, final long lastKey) -> {
+        rowSequence.forAllRowKeyRanges((long firstKey, final long lastKey) -> {
             if (firstKey > ctx.maxKeyInCurrentBlock) {
                 ctx.block = blocks.getInnermostBlockByKeyOrNull(firstKey);
                 ctx.maxKeyInCurrentBlock = firstKey | INDEX_MASK;
@@ -470,7 +470,7 @@ abstract public class AbstractSparseLongArraySource<T> extends SparseArrayColumn
     void fillByKeys(@NotNull WritableChunk<? super Values> dest, @NotNull RowSequence rowSequence) {
         final WritableLongChunk<? super Values> chunk = dest.asWritableLongChunk();
         final FillByContext<long[]> ctx = new FillByContext<>();
-        rowSequence.forEachLong((final long v) -> {
+        rowSequence.forEachRowKey((final long v) -> {
             if (v > ctx.maxKeyInCurrentBlock) {
                 ctx.block = blocks.getInnermostBlockByKeyOrNull(v);
                 ctx.maxKeyInCurrentBlock = v | INDEX_MASK;

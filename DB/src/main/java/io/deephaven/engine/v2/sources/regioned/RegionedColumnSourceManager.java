@@ -280,7 +280,7 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
             }
 
             final long regionFirstKey = RegionedColumnSource.getFirstElementIndex(regionIndex);
-            initialIndex.forAllLongRanges((subRegionFirstKey, subRegionLastKey) -> addedIndexBuilder
+            initialIndex.forAllRowKeyRanges((subRegionFirstKey, subRegionLastKey) -> addedIndexBuilder
                     .appendRange(regionFirstKey + subRegionFirstKey, regionFirstKey + subRegionLastKey));
             RowSet addIndexInTable = null;
             try {
@@ -342,7 +342,7 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
                 }
                 try (final RowSet addedIndex = updateIndex.minus(indexAtLastUpdate)) {
                     final long regionFirstKey = RegionedColumnSource.getFirstElementIndex(regionIndex);
-                    addedIndex.forAllLongRanges((subRegionFirstKey, subRegionLastKey) -> addedIndexBuilder
+                    addedIndex.forAllRowKeyRanges((subRegionFirstKey, subRegionLastKey) -> addedIndexBuilder
                             .appendRange(regionFirstKey + subRegionFirstKey, regionFirstKey + subRegionLastKey));
                     RowSet addIndexInTable = null;
                     try {

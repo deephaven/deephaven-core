@@ -54,7 +54,7 @@ public class TestPartitioningColumns {
         final ColumnSource<? extends Comparable<?>>[] partitionValueSources =
                 input.getColumnSources().toArray(ColumnSource.ZERO_LENGTH_COLUMN_SOURCE_ARRAY);
         final int numColumns = partitionValueSources.length;
-        input.getRowSet().forAllLongs((final long indexKey) -> {
+        input.getRowSet().forAllRowKeys((final long indexKey) -> {
             for (int ci = 0; ci < numColumns; ++ci) {
                 partitions.put(partitionKeys[ci], partitionValueSources[ci].get(indexKey));
             }

@@ -53,7 +53,7 @@ public class FloatChunkInputStreamGenerator extends BaseChunkInputStreamGenerato
             }
             if (cachedNullCount == -1) {
                 cachedNullCount = 0;
-                subset.forAllLongs(row -> {
+                subset.forAllRowKeys(row -> {
                     if (chunk.get((int) row) == NULL_FLOAT) {
                         ++cachedNullCount;
                     }
@@ -101,7 +101,7 @@ public class FloatChunkInputStreamGenerator extends BaseChunkInputStreamGenerato
                     context.accumulator = 0;
                     context.count = 0;
                 };
-                subset.forAllLongs(row -> {
+                subset.forAllRowKeys(row -> {
                     if (chunk.get((int) row) != NULL_FLOAT) {
                         context.accumulator |= 1L << context.count;
                     }
@@ -117,7 +117,7 @@ public class FloatChunkInputStreamGenerator extends BaseChunkInputStreamGenerato
             }
 
                 // write the included values
-                subset.forAllLongs(row -> {
+                subset.forAllRowKeys(row -> {
                     try {
                         final float val = chunk.get((int) row);
                         dos.writeFloat(val);

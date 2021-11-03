@@ -270,7 +270,7 @@ public class QueryTableFlattenTest extends QueryTableTestBase {
         }
     }
 
-    private static TrackingMutableRowSet indexByRange(long firstKey, long lastKey) {
+    private static RowSet indexByRange(long firstKey, long lastKey) {
         return RowSetFactoryImpl.INSTANCE.getRowSetByRange(firstKey, lastKey);
     }
 

@@ -546,14 +546,14 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
                                 CodeGenerator.block(
                                         CodeGenerator.optional("maybeCreateI",
                                                 "__context.__iChunk.setSize(0);",
-                                                "inverted.forAllLongs(l -> __context.__iChunk.add(__intSize(l)));"),
+                                                "inverted.forAllRowKeys(l -> __context.__iChunk.add(__intSize(l)));"),
                                         CodeGenerator.optional("maybeCreateII",
                                                 "inverted.fillRowKeyChunk(__context.__iiChunk);"))),
                         CodeGenerator.repeated("getChunks",
                                 "final [[CHUNK_TYPE]] __chunk__col__[[COL_SOURCE_NAME]] = __sources[[[SOURCE_INDEX]]].[[AS_CHUNK_METHOD]]();"),
                         "final int[] __chunkPosHolder = new int[] {0};",
                         "if ([[LAZY_RESULT_CACHE_NAME]] != null)", CodeGenerator.block(
-                                "__RowSequence.forAllLongs(k ->", CodeGenerator.block(
+                                "__RowSequence.forAllRowKeys(k ->", CodeGenerator.block(
                                         "final int __chunkPos = __chunkPosHolder[0]++;",
                                         CodeGenerator.optional("maybeCreateI",
                                                 "final int i = __context.__iChunk.get(__chunkPos);"),
@@ -563,7 +563,7 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
                                         "__typedDestination.set(__chunkPos, ([[RESULT_TYPE]])[[LAZY_RESULT_CACHE_NAME]].computeIfAbsent(__lazyKey, __unusedKey -> applyFormulaPerItem([[APPLY_FORMULA_ARGS]])));"),
                                 ");" // close the lambda
                         ), CodeGenerator.samelineBlock("else",
-                                "__RowSequence.forAllLongs(k ->", CodeGenerator.block(
+                                "__RowSequence.forAllRowKeys(k ->", CodeGenerator.block(
                                         "final int __chunkPos = __chunkPosHolder[0]++;",
                                         CodeGenerator.optional("maybeCreateI",
                                                 "final int i = __context.__iChunk.get(__chunkPos);"),

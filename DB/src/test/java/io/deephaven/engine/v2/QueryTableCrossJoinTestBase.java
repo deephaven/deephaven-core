@@ -353,7 +353,7 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
         final MutableLong lastRightId = new MutableLong();
         final MutableObject<String> lastSharedKey = new MutableObject<>();
 
-        chunkedCrossJoin.getRowSet().forAllLongs(ii -> {
+        chunkedCrossJoin.getRowSet().forAllRowKeys(ii -> {
             final String sharedKey = (String) keyColumn.get(ii);
 
             final long leftId = leftColumn.getLong(ii);
@@ -408,14 +408,14 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
         assertTableEquals(z3, z);
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-            xqt.getRowSet().insertRange(size, size * 2);
+            xqt.getRowSet().asMutable().insertRange(size, size * 2);
             xqt.notifyListeners(RowSetFactoryImpl.INSTANCE.getRowSetByRange(size, size * 2), i(), i());
         });
 
         assertTableEquals(z3, z);
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-            yqt.getRowSet().insertRange(size, size * 2);
+            yqt.getRowSet().asMutable().insertRange(size, size * 2);
             yqt.notifyListeners(RowSetFactoryImpl.INSTANCE.getRowSetByRange(size, size * 2), i(), i());
         });
 

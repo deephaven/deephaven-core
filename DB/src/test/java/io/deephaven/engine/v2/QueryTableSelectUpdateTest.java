@@ -375,8 +375,8 @@ public class QueryTableSelectUpdateTest {
 
                 final RowSetBuilderSequential originalBuilder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
                 final RowSetBuilderSequential recomputedBuilder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
-                checkInvert.forEach(x -> originalBuilder.appendKey(originalValue.getRowSet().get(x)));
-                checkInvert.forEach(x -> recomputedBuilder.appendKey(recomputedValue.getRowSet().get(x)));
+                checkInvert.forAllRowKeys(x -> originalBuilder.appendKey(originalValue.getRowSet().get(x)));
+                checkInvert.forAllRowKeys(x -> recomputedBuilder.appendKey(recomputedValue.getRowSet().get(x)));
 
                 System.out.println("Original Sub Table: " + checkInvert);
                 TableTools.showWithIndex(originalValue.getSubTable(originalBuilder.build()));

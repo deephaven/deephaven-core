@@ -485,7 +485,7 @@ class CrossJoinModifiedSlotTracker {
             slotState.indexBuilder = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
             long sizePrev = slotState.rightRowSet.sizePrev();
             if (sizePrev > 0) {
-                leftRemoved.forAllLongs(ii -> {
+                leftRemoved.forAllRowKeys(ii -> {
                     final long prevOffset = ii << jsm.getPrevNumShiftBits();
                     builder.addRange(prevOffset, prevOffset + sizePrev - 1);
                 });
@@ -509,7 +509,7 @@ class CrossJoinModifiedSlotTracker {
             slotState.indexBuilder = null;
             long size = slotState.rightRowSet.size();
             if (size > 0) {
-                leftAdded.forAllLongs(ii -> {
+                leftAdded.forAllRowKeys(ii -> {
                     final long currOffset = ii << jsm.getNumShiftBits();
                     downstreamAdds.addRange(currOffset, currOffset + size - 1);
                 });
@@ -559,7 +559,7 @@ class CrossJoinModifiedSlotTracker {
             slotState.indexBuilder = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
             final long sizePrev = slotState.rightRowSet.sizePrev();
             if (sizePrev > 0) {
-                leftRemoved.forAllLongs(ii -> {
+                leftRemoved.forAllRowKeys(ii -> {
                     final long prevOffset = ii << jsm.getPrevNumShiftBits();
                     rmBuilder.addRange(prevOffset, prevOffset + sizePrev - 1);
                 });

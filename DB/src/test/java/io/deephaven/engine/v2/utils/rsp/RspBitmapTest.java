@@ -4257,7 +4257,7 @@ public class RspBitmapTest {
                 RspBitmap rbs = rb.subrangeByValue(start, end);
                 try (final RspRangeIterator it = rbs.getRangeIterator();
                         final RowSequence rs = rb.getRowSequenceByKeyRange(start, end)) {
-                    rs.forEachLongRange((final long rstart, final long rend) -> {
+                    rs.forEachRowKeyRange((final long rstart, final long rend) -> {
                         final String m3 = m2 + " && rstart==" + rstart + " && rend==" + rend;
                         assertTrue(m3, it.hasNext());
                         it.next();
@@ -4280,7 +4280,7 @@ public class RspBitmapTest {
                         rs2 = rsIt.getNextRowSequenceWithLength(rbsCard);
                     }
                     assertEquals(m2, rbsCard, rs2.size());
-                    rs2.forEachLongRange((final long rstart, final long rend) -> {
+                    rs2.forEachRowKeyRange((final long rstart, final long rend) -> {
                         final String m3 = m2 + " && rstart==" + rstart + " && rend==" + rend;
                         assertTrue(m3, it.hasNext());
                         it.next();

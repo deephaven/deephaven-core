@@ -288,7 +288,7 @@ final class UngroupedAggregateColumnSource<DATA_TYPE> extends UngroupedColumnSou
 
                 currentIndexPosition = -1;
                 componentKeyIndices.setSize(0);
-                rowSequence.forAllLongs((final long keyIndex) -> {
+                rowSequence.forAllRowKeys((final long keyIndex) -> {
                     final long indexKeyIndex = getGroupIndexKey(keyIndex, base);
                     if (currentIndexPosition == -1 || indexKeyIndex != indexKeyIndices.get(currentIndexPosition)) {
                         ++currentIndexPosition;

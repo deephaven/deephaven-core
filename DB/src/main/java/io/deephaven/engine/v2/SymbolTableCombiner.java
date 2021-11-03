@@ -245,7 +245,7 @@ class SymbolTableCombiner
         }
 
         final MutableLong position = new MutableLong();
-        rowSet.forAllLongs((long ll) -> {
+        rowSet.forAllRowKeys((long ll) -> {
             final int uniqueIdentifier = resultIdentifiers.getInt(position.longValue());
             position.increment();
             symbolMapper.set(idSource.getLong(ll), uniqueIdentifier);
@@ -1220,7 +1220,7 @@ class SymbolTableCombiner
         }
 
         final MutableLong position = new MutableLong();
-        symbolTable.getRowSet().forAllLongs((long ll) -> {
+        symbolTable.getRowSet().forAllRowKeys((long ll) -> {
             final int uniqueIdentifier = resultIdentifiers.getInt(position.longValue());
             position.increment();
             symbolMapper.set(idSource.getLong(ll), uniqueIdentifier);

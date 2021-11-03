@@ -82,7 +82,7 @@ public interface WritableSource<T> extends ColumnSource<T>, WritableChunkSink<At
             @NotNull RowSequence rowSequence) {
         final SinkFiller filler = (SinkFiller) context;
         filler.reset(this, src);
-        rowSequence.forEachLong(filler);
+        rowSequence.forEachRowKey(filler);
     }
 
     @Override

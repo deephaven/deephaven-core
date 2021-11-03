@@ -201,7 +201,7 @@ public class RowSequenceRowKeysChunkImpl implements RowSequence {
     }
 
     @Override
-    public boolean forEachLong(final LongAbortableConsumer lc) {
+    public boolean forEachRowKey(final LongAbortableConsumer lc) {
         for (int i = 0; i < backingChunk.size(); ++i) {
             if (!lc.accept(backingChunk.get(i))) {
                 return false;
@@ -211,7 +211,7 @@ public class RowSequenceRowKeysChunkImpl implements RowSequence {
     }
 
     @Override
-    public boolean forEachLongRange(final LongRangeAbortableConsumer lc) {
+    public boolean forEachRowKeyRange(final LongRangeAbortableConsumer lc) {
         long pendingStart = -2;
         long pendingEnd = -2;
         for (int i = 0; i < backingChunk.size(); ++i) {

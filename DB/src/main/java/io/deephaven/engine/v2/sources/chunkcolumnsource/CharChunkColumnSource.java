@@ -93,7 +93,7 @@ public class CharChunkColumnSource extends AbstractColumnSource<Character> imple
     public void fillChunk(@NotNull final FillContext context, @NotNull final WritableChunk<? super Attributes.Values> destination, @NotNull final RowSequence rowSequence) {
         final MutableInt searchStartChunkIndex = new MutableInt(0);
         destination.setSize(0);
-        rowSequence.forAllLongRanges((s, e) -> {
+        rowSequence.forAllRowKeyRanges((s, e) -> {
             while (s <= e) {
                 final int chunkIndex = getChunkIndex(s, searchStartChunkIndex.intValue());
                 final int offsetWithinChunk = (int) (s - firstOffsetForData.get(chunkIndex));

@@ -498,7 +498,7 @@ class NaturalJoinHelper {
         @Override
         public void onUpdate(final Update upstream) {
             final Update downstream = upstream.copy();
-            upstream.removed.forAllLongs(redirectionIndex::removeVoid);
+            upstream.removed.forAllRowKeys(redirectionIndex::removeVoid);
 
             try (final RowSet prevRowSet = leftTable.getRowSet().getPrevRowSet()) {
                 redirectionIndex.applyShift(prevRowSet, upstream.shifted);
@@ -513,7 +513,7 @@ class NaturalJoinHelper {
                 jsm.decorateLeftSide(downstream.modified, leftSources, newLeftRedirections);
                 final MutableBoolean updatedRightRow = new MutableBoolean(false);
                 final MutableInt position = new MutableInt(0);
-                downstream.modified.forAllLongs((long modifiedKey) -> {
+                downstream.modified.forAllRowKeys((long modifiedKey) -> {
                     final long newRedirection = newLeftRedirections.getLong(position.intValue());
                     final long old;
                     if (newRedirection == RowSet.NULL_ROW_KEY) {
@@ -535,7 +535,7 @@ class NaturalJoinHelper {
             newLeftRedirections.ensureCapacity(downstream.added.size());
             jsm.decorateLeftSide(downstream.added, leftSources, newLeftRedirections);
             final MutableInt position = new MutableInt(0);
-            downstream.added.forAllLongs((long ll) -> {
+            downstream.added.forAllRowKeys((long ll) -> {
                 final long newRedirection = newLeftRedirections.getLong(position.intValue());
                 if (newRedirection != RowSet.NULL_ROW_KEY) {
                     redirectionIndex.putVoid(ll, newRedirection);
@@ -714,9 +714,9 @@ class NaturalJoinHelper {
 
             if (rightIndex == RowSet.NULL_ROW_KEY) {
                 jsm.checkExactMatch(exactMatch, leftIndices.firstRowKey(), rightIndex);
-                leftIndices.forAllLongs(redirectionIndex::removeVoid);
+                leftIndices.forAllRowKeys(redirectionIndex::removeVoid);
             } else {
-                leftIndices.forAllLongs((long key) -> redirectionIndex.putVoid(key, rightIndex));
+                leftIndices.forAllRowKeys((long key) -> redirectionIndex.putVoid(key, rightIndex));
             }
         }
     }
@@ -876,7 +876,7 @@ class NaturalJoinHelper {
                         probeSize == 0 ? null : jsm.makeProbeContext(leftSources, probeSize);
                         final IncrementalChunkedNaturalJoinStateManager.BuildContext bc =
                                 buildSize == 0 ? null : jsm.makeBuildContext(leftSources, buildSize)) {
-                    leftRemoved.forAllLongs(redirectionIndex::removeVoid);
+                    leftRemoved.forAllRowKeys(redirectionIndex::removeVoid);
                     jsm.removeLeft(pc, leftRemoved, leftSources);
 
                     final RowSet leftModifiedPreShift;
@@ -889,7 +889,7 @@ class NaturalJoinHelper {
 
                         // remove pre-shift modified
                         jsm.removeLeft(pc, leftModifiedPreShift, leftSources);
-                        leftModifiedPreShift.forAllLongs(redirectionIndex::removeVoid);
+                        leftModifiedPreShift.forAllRowKeys(redirectionIndex::removeVoid);
                     } else {
                         leftModifiedPreShift = null;
                     }
@@ -965,7 +965,7 @@ class NaturalJoinHelper {
 
         private void copyRedirections(final RowSet leftRows, @NotNull final LongArraySource leftRedirections) {
             final MutableInt position = new MutableInt(0);
-            leftRows.forAllLongs((long ll) -> {
+            leftRows.forAllRowKeys((long ll) -> {
                 final long rightKey = leftRedirections.getLong(position.intValue());
                 jsm.checkExactMatch(exactMatch, ll, rightKey);
                 if (rightKey == RowSet.NULL_ROW_KEY) {

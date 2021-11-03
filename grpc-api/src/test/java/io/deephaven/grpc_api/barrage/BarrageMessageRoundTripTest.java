@@ -788,7 +788,7 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
 
                                     for (final RemoteNugget nugget : nuggets) {
                                         final RemoteClient client = nugget.clients.get(nugget.clients.size() - 1);
-                                        final TrackingMutableRowSet viewport = client.viewport.clone();
+                                        final MutableRowSet viewport = client.viewport.clone();
                                         viewport.shiftInPlace(Math.max(size / 25, 1));
                                         client.setViewport(viewport);
                                     }
@@ -924,7 +924,7 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
 
                                     for (final RemoteNugget nugget : nuggets) {
                                         final RemoteClient client = nugget.clients.get(nugget.clients.size() - 1);
-                                        final TrackingMutableRowSet viewport = client.viewport.clone();
+                                        final MutableRowSet viewport = client.viewport.clone();
                                         viewport.shiftInPlace(size / 5);
                                         client.setViewport(viewport);
                                     }
@@ -1121,7 +1121,7 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
                     update.modified = i();
                 } else {
                     update.modified = RowSetFactoryImpl.INSTANCE.getRowSetByRange(Math.max(0, lastKey - stepSize), lastKey);
-                    update.modified.retain(helper.sourceTable.getRowSet());
+                    update.modified.asMutable().retain(helper.sourceTable.getRowSet());
                 }
                 update.shifted = RowSetShiftData.EMPTY;
                 update.modifiedColumnSet = ModifiedColumnSet.EMPTY;
@@ -1183,7 +1183,7 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
                     update.modified = i();
                 } else {
                     update.modified = RowSetFactoryImpl.INSTANCE.getRowSetByRange(Math.max(0, lastKey - stepSize), lastKey);
-                    update.modified.retain(helper.sourceTable.getRowSet());
+                    update.modified.asMutable().retain(helper.sourceTable.getRowSet());
                 }
                 update.shifted = RowSetShiftData.EMPTY;
                 update.modifiedColumnSet = ModifiedColumnSet.EMPTY;

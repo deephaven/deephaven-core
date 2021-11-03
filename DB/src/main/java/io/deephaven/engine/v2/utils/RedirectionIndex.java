@@ -59,7 +59,7 @@ public interface RedirectionIndex {
             @NotNull final RowSequence keysToMap) {
         // Assume that caller provided a chunk large enough to use.
         mappedKeysOut.setSize(0);
-        keysToMap.forEachLong((final long k) -> {
+        keysToMap.forEachRowKey((final long k) -> {
             mappedKeysOut.add(get(k));
             return true;
         });
@@ -82,7 +82,7 @@ public interface RedirectionIndex {
             @NotNull final RowSequence keysToMap) {
         // Assume that caller provided a chunk large enough to use.
         mappedKeysOut.setSize(0);
-        keysToMap.forEachLong((final long k) -> {
+        keysToMap.forEachRowKey((final long k) -> {
             mappedKeysOut.add(getPrev(k));
             return true;
         });
@@ -114,7 +114,7 @@ public interface RedirectionIndex {
     }
 
     default void removeAll(final RowSequence keys) {
-        keys.forAllLongs(this::remove);
+        keys.forAllRowKeys(this::remove);
     }
 
     /**
@@ -135,7 +135,7 @@ public interface RedirectionIndex {
             @NotNull RowSequence rowSequence) {
         final MutableInt offset = new MutableInt();
         final LongChunk<? extends Values> valuesLongChunk = src.asLongChunk();
-        rowSequence.forAllLongs(key -> {
+        rowSequence.forAllRowKeys(key -> {
             final long index = valuesLongChunk.get(offset.intValue());
             if (index == RowSet.NULL_ROW_KEY) {
                 removeVoid(key);

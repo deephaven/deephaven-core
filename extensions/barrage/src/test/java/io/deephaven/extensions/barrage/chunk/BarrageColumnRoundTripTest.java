@@ -68,7 +68,7 @@ public class BarrageColumnRoundTripTest extends LiveTableTestCase {
                     }
                 } else {
                     final MutableInt off = new MutableInt();
-                    subset.forAllLongs(key -> Assert.equals(original.get((int) key), "original.get(key)",
+                    subset.forAllRowKeys(key -> Assert.equals(original.get((int) key), "original.get(key)",
                             computed.get(off.getAndIncrement()), "computed.get(off.getAndIncrement())"));
                 }
             });
@@ -92,7 +92,7 @@ public class BarrageColumnRoundTripTest extends LiveTableTestCase {
                     }
                 } else {
                     final MutableInt off = new MutableInt();
-                    subset.forAllLongs(key -> Assert.equals(original.get((int) key), "original.get(key)",
+                    subset.forAllRowKeys(key -> Assert.equals(original.get((int) key), "original.get(key)",
                             computed.get(off.getAndIncrement()), "computed.get(off.getAndIncrement())"));
                 }
             });
@@ -116,7 +116,7 @@ public class BarrageColumnRoundTripTest extends LiveTableTestCase {
                     }
                 } else {
                     final MutableInt off = new MutableInt();
-                    subset.forAllLongs(key -> Assert.equals(original.get((int) key), "original.get(key)",
+                    subset.forAllRowKeys(key -> Assert.equals(original.get((int) key), "original.get(key)",
                             computed.get(off.getAndIncrement()), "computed.get(off.getAndIncrement())"));
                 }
             });
@@ -140,7 +140,7 @@ public class BarrageColumnRoundTripTest extends LiveTableTestCase {
                     }
                 } else {
                     final MutableInt off = new MutableInt();
-                    subset.forAllLongs(key -> Assert.equals(original.get((int) key), "original.get(key)",
+                    subset.forAllRowKeys(key -> Assert.equals(original.get((int) key), "original.get(key)",
                             computed.get(off.getAndIncrement()), "computed.get(off.getAndIncrement())"));
                 }
             });
@@ -164,7 +164,7 @@ public class BarrageColumnRoundTripTest extends LiveTableTestCase {
                     }
                 } else {
                     final MutableInt off = new MutableInt();
-                    subset.forAllLongs(key -> Assert.equals(original.get((int) key), "original.get(key)",
+                    subset.forAllRowKeys(key -> Assert.equals(original.get((int) key), "original.get(key)",
                             computed.get(off.getAndIncrement()), "computed.get(off.getAndIncrement())"));
                 }
             });
@@ -188,7 +188,7 @@ public class BarrageColumnRoundTripTest extends LiveTableTestCase {
                     }
                 } else {
                     final MutableInt off = new MutableInt();
-                    subset.forAllLongs(key -> Assert.equals(original.get((int) key), "original.get(key)",
+                    subset.forAllRowKeys(key -> Assert.equals(original.get((int) key), "original.get(key)",
                             computed.get(off.getAndIncrement()), "computed.get(off.getAndIncrement())"));
                 }
             });
@@ -212,7 +212,7 @@ public class BarrageColumnRoundTripTest extends LiveTableTestCase {
                     }
                 } else {
                     final MutableInt off = new MutableInt();
-                    subset.forAllLongs(key -> Assert.equals(original.get((int) key), "original.get(key)",
+                    subset.forAllRowKeys(key -> Assert.equals(original.get((int) key), "original.get(key)",
                             computed.get(off.getAndIncrement()), "computed.get(off.getAndIncrement())"));
                 }
             });
@@ -349,7 +349,7 @@ public class BarrageColumnRoundTripTest extends LiveTableTestCase {
                 subset = RowSetFactoryImpl.INSTANCE.getFlatRowSet(untypedOriginal.size());
             }
             final MutableInt off = new MutableInt();
-            subset.forAllLongs(key -> {
+            subset.forAllRowKeys(key -> {
                 final T next = original.get((int) key);
                 if (next == null) {
                     Assert.eqNull(computed.get(off.getAndIncrement()), "computed");
@@ -380,7 +380,7 @@ public class BarrageColumnRoundTripTest extends LiveTableTestCase {
                 subset = RowSetFactoryImpl.INSTANCE.getFlatRowSet(original.size());
             }
             final MutableInt off = new MutableInt();
-            subset.forAllLongs(key -> {
+            subset.forAllRowKeys(key -> {
                 if (original.get((int) key) == null) {
                     Assert.eqNull(computed.get(off.getAndIncrement()), "computed");
                 } else {
@@ -402,7 +402,7 @@ public class BarrageColumnRoundTripTest extends LiveTableTestCase {
                 subset = RowSetFactoryImpl.INSTANCE.getFlatRowSet(original.size());
             }
             final MutableInt off = new MutableInt();
-            subset.forAllLongs(i -> {
+            subset.forAllRowKeys(i -> {
                 final long[] nt = original.get((int) i);
                 if (nt == null) {
                     Assert.eqNull(computed.get(off.getAndIncrement()), "computed");

@@ -53,7 +53,7 @@ public class ByteChunkInputStreamGenerator extends BaseChunkInputStreamGenerator
             }
             if (cachedNullCount == -1) {
                 cachedNullCount = 0;
-                subset.forAllLongs(row -> {
+                subset.forAllRowKeys(row -> {
                     if (chunk.get((int) row) == NULL_BYTE) {
                         ++cachedNullCount;
                     }
@@ -101,7 +101,7 @@ public class ByteChunkInputStreamGenerator extends BaseChunkInputStreamGenerator
                     context.accumulator = 0;
                     context.count = 0;
                 };
-                subset.forAllLongs(row -> {
+                subset.forAllRowKeys(row -> {
                     if (chunk.get((int) row) != NULL_BYTE) {
                         context.accumulator |= 1L << context.count;
                     }
@@ -117,7 +117,7 @@ public class ByteChunkInputStreamGenerator extends BaseChunkInputStreamGenerator
             }
 
                 // write the included values
-                subset.forAllLongs(row -> {
+                subset.forAllRowKeys(row -> {
                     try {
                         final byte val = chunk.get((int) row);
                         dos.writeByte(val);

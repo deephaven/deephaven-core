@@ -111,12 +111,12 @@ public class FormulaSample extends io.deephaven.engine.v2.select.Formula {
         try (final RowSet prev = __usePrev ? __rowSet.getPrevRowSet() : null;
              final RowSet inverted = ((prev != null) ? prev : __rowSet).invert(__rowSequence.asRowSet())) {
             __context.__iChunk.setSize(0);
-            inverted.forAllLongs(l -> __context.__iChunk.add(__intSize(l)));
+            inverted.forAllRowKeys(l -> __context.__iChunk.add(__intSize(l)));
             inverted.fillRowKeyChunk(__context.__iiChunk);
         }
         final int[] __chunkPosHolder = new int[] {0};
         if (__lazyResultCache != null) {
-            __rowSequence.forAllLongs(k -> {
+            __rowSequence.forAllRowKeys(k -> {
                 final int __chunkPos = __chunkPosHolder[0]++;
                 final int i = __context.__iChunk.get(__chunkPos);
                 final long ii = __context.__iiChunk.get(__chunkPos);
@@ -125,7 +125,7 @@ public class FormulaSample extends io.deephaven.engine.v2.select.Formula {
             }
             );
         } else {
-            __rowSequence.forAllLongs(k -> {
+            __rowSequence.forAllRowKeys(k -> {
                 final int __chunkPos = __chunkPosHolder[0]++;
                 final int i = __context.__iChunk.get(__chunkPos);
                 final long ii = __context.__iiChunk.get(__chunkPos);

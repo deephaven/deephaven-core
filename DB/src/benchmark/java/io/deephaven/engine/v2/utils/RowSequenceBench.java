@@ -68,7 +68,7 @@ public class RowSequenceBench {
     // Ensure that our calls to forEach are not on a single visible type of OK for the JVM.
     long fixedCost() {
         final MutableLong accum = new MutableLong(0);
-        fixedCostOk.forEachLong((final long v) -> {
+        fixedCostOk.forEachRowKey((final long v) -> {
             accum.setValue(accum.longValue() ^ v);
             return true;
         });
@@ -100,7 +100,7 @@ public class RowSequenceBench {
     @Benchmark
     public void b02_IndexForEach(final Blackhole bh) {
         final CRC32 crc32 = new CRC32();
-        ix.forEachLong((final long v) -> {
+        ix.forEachRowKey((final long v) -> {
             updateCrc32(crc32, v);
             return true;
         });
@@ -131,7 +131,7 @@ public class RowSequenceBench {
         indicesChunk.setSize(chunkSz);
         while (rsIt.hasMore()) {
             final RowSequence rs = rsIt.getNextRowSequenceWithLength(chunkSz);
-            rs.forEachLong((final long v) -> {
+            rs.forEachRowKey((final long v) -> {
                 updateCrc32(crc32, v);
                 return true;
             });
@@ -159,7 +159,7 @@ public class RowSequenceBench {
     @Benchmark
     public void b06_IndexForEachRange(final Blackhole bh) {
         final CRC32 crc32 = new CRC32();
-        ix.forAllLongRanges((final long s, final long e) -> {
+        ix.forAllRowKeyRanges((final long s, final long e) -> {
             for (long v = s; v <= e; ++v) {
                 updateCrc32(crc32, v);
             }
@@ -195,7 +195,7 @@ public class RowSequenceBench {
         final RowSequence.Iterator rsIt = ix.getRowSequenceIterator();
         while (rsIt.hasMore()) {
             final RowSequence rs = rsIt.getNextRowSequenceWithLength(chunkSz / 2);
-            rs.forAllLongRanges((final long s, final long e) -> {
+            rs.forAllRowKeyRanges((final long s, final long e) -> {
                 for (long v = s; v <= e; ++v) {
                     updateCrc32(crc32, v);
                 }

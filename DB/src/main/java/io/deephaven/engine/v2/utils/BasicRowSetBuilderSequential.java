@@ -23,7 +23,7 @@ class BasicRowSetBuilderSequential extends TreeIndexImplBuilderSequential implem
             appendTreeIndexImpl(shiftAmount, ((MutableRowSetImpl) rowSequence).getImpl(), false);
             return;
         }
-        rowSequence.forAllLongRanges((start, end) -> {
+        rowSequence.forAllRowKeyRanges((start, end) -> {
             appendRange(start + shiftAmount, end + shiftAmount);
         });
     }

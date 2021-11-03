@@ -29,10 +29,10 @@ public class ObjectChunkPage<T, ATTR extends Attributes.Any> extends ObjectChunk
         WritableObjectChunk<T, ? super ATTR>  to = destination.asWritableObjectChunk();
 
         if (rowSequence.getAverageRunLengthEstimate() >= Chunk.SYSTEM_ARRAYCOPY_THRESHOLD) {
-            rowSequence.forAllLongRanges((final long rangeStartKey, final long rangeLastKey) ->
+            rowSequence.forAllRowKeyRanges((final long rangeStartKey, final long rangeLastKey) ->
                     to.appendTypedChunk(this, (int) getRowOffset(rangeStartKey), (int) (rangeLastKey - rangeStartKey + 1)));
         } else {
-            rowSequence.forEachLong((final long key) -> {
+            rowSequence.forEachRowKey((final long key) -> {
                 to.add(get((int) getRowOffset(key)));
                 return true;
             });

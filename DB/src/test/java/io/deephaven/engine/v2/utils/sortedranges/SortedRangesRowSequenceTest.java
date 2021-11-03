@@ -100,7 +100,7 @@ public class SortedRangesRowSequenceTest extends RowSequenceTestBase {
         try (final RowSequence rs = sr.getRowSequenceByKeyRange(5, 24)) {
             final long[] expected = new long[] {5, 6, 7, 8, 9, 15, 20, 21, 22, 23, 24};
             final MutableInt i = new MutableInt(0);
-            rs.forEachLong((final long v) -> {
+            rs.forEachRowKey((final long v) -> {
                 final int j = i.intValue();
                 assertEquals("v==" + v + " && j==" + j, expected[j], v);
                 i.increment();

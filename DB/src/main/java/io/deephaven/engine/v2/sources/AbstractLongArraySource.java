@@ -209,7 +209,7 @@ public abstract class AbstractLongArraySource<T> extends ArraySourceHelper<T, lo
         }
         final WritableLongChunk<? super Values> dest = destGeneric.asWritableLongChunk();
         final FillSparseChunkContext<long[]> ctx = new FillSparseChunkContext<>();
-        indices.forAllLongs((final long v) -> {
+        indices.forAllRowKeys((final long v) -> {
             if (v >= ctx.capForCurrentBlock) {
                 ctx.currentBlockNo = getBlockNo(v);
                 ctx.capForCurrentBlock = (ctx.currentBlockNo + 1) << LOG_BLOCK_SIZE;
@@ -239,7 +239,7 @@ public abstract class AbstractLongArraySource<T> extends ArraySourceHelper<T, lo
 
         final WritableLongChunk<? super Values> dest = destGeneric.asWritableLongChunk();
         final FillSparseChunkContext<long[]> ctx = new FillSparseChunkContext<>();
-        indices.forAllLongs((final long v) -> {
+        indices.forAllRowKeys((final long v) -> {
             if (v >= ctx.capForCurrentBlock) {
                 ctx.currentBlockNo = getBlockNo(v);
                 ctx.capForCurrentBlock = (ctx.currentBlockNo + 1) << LOG_BLOCK_SIZE;
@@ -315,7 +315,7 @@ public abstract class AbstractLongArraySource<T> extends ArraySourceHelper<T, lo
         }
         final WritableObjectChunk<R, ? super Values> dest = destGeneric.asWritableObjectChunk();
         final FillSparseChunkContext<long[]> ctx = new FillSparseChunkContext<>();
-        indices.forAllLongs((final long v) -> {
+        indices.forAllRowKeys((final long v) -> {
             if (v >= ctx.capForCurrentBlock) {
                 ctx.currentBlockNo = getBlockNo(v);
                 ctx.capForCurrentBlock = (ctx.currentBlockNo + 1) << LOG_BLOCK_SIZE;
@@ -340,7 +340,7 @@ public abstract class AbstractLongArraySource<T> extends ArraySourceHelper<T, lo
 
         final WritableObjectChunk<R, ? super Values> dest = destGeneric.asWritableObjectChunk();
         final FillSparseChunkContext<long[]> ctx = new FillSparseChunkContext<>();
-        indices.forAllLongs((final long v) -> {
+        indices.forAllRowKeys((final long v) -> {
             if (v >= ctx.capForCurrentBlock) {
                 ctx.currentBlockNo = getBlockNo(v);
                 ctx.capForCurrentBlock = (ctx.currentBlockNo + 1) << LOG_BLOCK_SIZE;

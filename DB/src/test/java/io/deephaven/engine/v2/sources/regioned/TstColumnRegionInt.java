@@ -43,7 +43,7 @@ public class TstColumnRegionInt {
             int size = destination.size();
             int length = (int) rowSequence.size();
 
-            rowSequence.forAllLongs(key ->
+            rowSequence.forAllRowKeys(key ->
             {
                 for (int i = 0; i < length; ++i) {
                     intDestination.set(size + i, (int) key);

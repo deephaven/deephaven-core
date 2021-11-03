@@ -284,13 +284,13 @@ public class AsOfJoinHelper {
             public void onUpdate(Update upstream) {
                 final Update downstream = upstream.copy();
 
-                upstream.removed.forAllLongs(redirectionIndex::removeVoid);
+                upstream.removed.forAllRowKeys(redirectionIndex::removeVoid);
 
                 final boolean keysModified = upstream.modifiedColumnSet.containsAny(leftKeysOrStamps);
 
                 final RowSet restampKeys;
                 if (keysModified) {
-                    upstream.getModifiedPreShift().forAllLongs(redirectionIndex::removeVoid);
+                    upstream.getModifiedPreShift().forAllRowKeys(redirectionIndex::removeVoid);
                     restampKeys = upstream.modified.union(upstream.added);
                 } else {
                     restampKeys = upstream.added;
@@ -308,7 +308,7 @@ public class AsOfJoinHelper {
 
                     try (final RowSet foundKeys = foundBuilder.build();
                          final RowSet notFound = restampKeys.minus(foundKeys)) {
-                        notFound.forAllLongs(redirectionIndex::removeVoid);
+                        notFound.forAllRowKeys(redirectionIndex::removeVoid);
                     }
 
                     try (final AsOfStampContext stampContext = new AsOfStampContext(order, disallowExactMatch,
@@ -1464,14 +1464,14 @@ public class AsOfJoinHelper {
                                 public void onUpdate(Update upstream) {
                                     final Update downstream = upstream.copy();
 
-                                    upstream.removed.forAllLongs(redirectionIndex::removeVoid);
+                                    upstream.removed.forAllRowKeys(redirectionIndex::removeVoid);
 
                                     final boolean stampModified = upstream.modified.isNonempty()
                                             && upstream.modifiedColumnSet.containsAny(leftStampColumn);
 
                                     final RowSet restampKeys;
                                     if (stampModified) {
-                                        upstream.getModifiedPreShift().forAllLongs(redirectionIndex::removeVoid);
+                                        upstream.getModifiedPreShift().forAllRowKeys(redirectionIndex::removeVoid);
                                         restampKeys = upstream.modified.union(upstream.added);
                                     } else {
                                         restampKeys = upstream.added;

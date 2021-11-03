@@ -53,7 +53,7 @@ public class DoubleChunkInputStreamGenerator extends BaseChunkInputStreamGenerat
             }
             if (cachedNullCount == -1) {
                 cachedNullCount = 0;
-                subset.forAllLongs(row -> {
+                subset.forAllRowKeys(row -> {
                     if (chunk.get((int) row) == NULL_DOUBLE) {
                         ++cachedNullCount;
                     }
@@ -101,7 +101,7 @@ public class DoubleChunkInputStreamGenerator extends BaseChunkInputStreamGenerat
                     context.accumulator = 0;
                     context.count = 0;
                 };
-                subset.forAllLongs(row -> {
+                subset.forAllRowKeys(row -> {
                     if (chunk.get((int) row) != NULL_DOUBLE) {
                         context.accumulator |= 1L << context.count;
                     }
@@ -117,7 +117,7 @@ public class DoubleChunkInputStreamGenerator extends BaseChunkInputStreamGenerat
             }
 
                 // write the included values
-                subset.forAllLongs(row -> {
+                subset.forAllRowKeys(row -> {
                     try {
                         final double val = chunk.get((int) row);
                         dos.writeDouble(val);

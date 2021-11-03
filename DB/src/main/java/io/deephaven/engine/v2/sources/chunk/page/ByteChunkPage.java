@@ -32,10 +32,10 @@ public class ByteChunkPage<ATTR extends Attributes.Any> extends ByteChunk<ATTR> 
         WritableByteChunk<? super ATTR> to = destination.asWritableByteChunk();
 
         if (rowSequence.getAverageRunLengthEstimate() >= Chunk.SYSTEM_ARRAYCOPY_THRESHOLD) {
-            rowSequence.forAllLongRanges((final long rangeStartKey, final long rangeEndKey) ->
+            rowSequence.forAllRowKeyRanges((final long rangeStartKey, final long rangeEndKey) ->
                     to.appendTypedChunk(this, getChunkOffset(rangeStartKey), (int) (rangeEndKey - rangeStartKey + 1)));
         } else {
-            rowSequence.forEachLong((final long key) -> {
+            rowSequence.forEachRowKey((final long key) -> {
                 to.add(get(getChunkOffset(key)));
                 return true;
             });

@@ -153,7 +153,7 @@ public class ObjectSparseArraySource<T> extends SparseArrayColumnSource<T> imple
 
     @Override
     public void remove(RowSet toRemove) {
-        toRemove.forEachLong((i) -> { set(i, null); return true; });
+        toRemove.forEachRowKey((i) -> { set(i, null); return true; });
     }
 
     // region boxed methods
@@ -453,7 +453,7 @@ public class ObjectSparseArraySource<T> extends SparseArrayColumnSource<T> imple
     void fillByRanges(@NotNull WritableChunk<? super Values> dest, @NotNull RowSequence rowSequence) {
         final WritableObjectChunk<T, ? super Values> chunk = dest.asWritableObjectChunk();
         final FillByContext<T []> ctx = new FillByContext<>();
-        rowSequence.forAllLongRanges((long firstKey, final long lastKey) -> {
+        rowSequence.forAllRowKeyRanges((long firstKey, final long lastKey) -> {
             if (firstKey > ctx.maxKeyInCurrentBlock) {
                 ctx.block = blocks.getInnermostBlockByKeyOrNull(firstKey);
                 ctx.maxKeyInCurrentBlock = firstKey | INDEX_MASK;
@@ -490,7 +490,7 @@ public class ObjectSparseArraySource<T> extends SparseArrayColumnSource<T> imple
     void fillByKeys(@NotNull WritableChunk<? super Values> dest, @NotNull RowSequence rowSequence) {
         final WritableObjectChunk<T, ? super Values> chunk = dest.asWritableObjectChunk();
         final FillByContext<T []> ctx = new FillByContext<>();
-        rowSequence.forEachLong((final long v) -> {
+        rowSequence.forEachRowKey((final long v) -> {
             if (v > ctx.maxKeyInCurrentBlock) {
                 ctx.block = blocks.getInnermostBlockByKeyOrNull(v);
                 ctx.maxKeyInCurrentBlock = v | INDEX_MASK;

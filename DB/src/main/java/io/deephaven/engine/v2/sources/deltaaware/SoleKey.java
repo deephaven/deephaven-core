@@ -99,12 +99,12 @@ class SoleKey implements RowSequence {
     }
 
     @Override
-    public boolean forEachLong(LongAbortableConsumer lac) {
+    public boolean forEachRowKey(LongAbortableConsumer lac) {
         return lac.accept(key);
     }
 
     @Override
-    public boolean forEachLongRange(LongRangeAbortableConsumer larc) {
+    public boolean forEachRowKeyRange(LongRangeAbortableConsumer larc) {
         return larc.accept(key, key);
     }
 

@@ -64,7 +64,7 @@ public interface RowSetBuilderSequential extends TLongProcedure, LongRangeConsum
      * @param rowSequence The {@link RowSequence} to append
      */
     default void appendRowSequence(final RowSequence rowSequence) {
-        rowSequence.forAllLongRanges(this::appendRange);
+        rowSequence.forAllRowKeyRanges(this::appendRange);
     }
 
     /**
@@ -74,6 +74,6 @@ public interface RowSetBuilderSequential extends TLongProcedure, LongRangeConsum
      * @param offset An offset to apply to every range in the RowSet
      */
     default void appendRowSequenceWithOffset(final RowSequence rowSequence, final long offset) {
-        rowSequence.forAllLongRanges((s, e) -> appendRange(s + offset, e + offset));
+        rowSequence.forAllRowKeyRanges((s, e) -> appendRange(s + offset, e + offset));
     }
 }

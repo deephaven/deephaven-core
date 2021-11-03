@@ -80,7 +80,7 @@ public class TestPartitionAwareSourceTable extends LiveTableTestCase {
     private Listener listener;
     private final TstUtils.TstNotification notification = new TstUtils.TstNotification();
 
-    private TrackingMutableRowSet expectedRowSet;
+    private MutableRowSet expectedRowSet;
 
     private PartitionAwareSourceTable SUT;
 

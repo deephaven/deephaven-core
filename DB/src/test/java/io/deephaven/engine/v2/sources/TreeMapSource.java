@@ -59,7 +59,7 @@ public class TreeMapSource<T> extends AbstractColumnSource<T> {
             throw new IllegalArgumentException("TrackingMutableRowSet=" + rowSet + ", data(" + vs.length + ")=" + Arrays.toString(vs));
         }
 
-        rowSet.forAllLongs(new LongConsumer() {
+        rowSet.forAllRowKeys(new LongConsumer() {
             private final MutableInt ii = new MutableInt(0);
 
             @Override

@@ -224,7 +224,7 @@ public class RedirectionIndexLockFreeImpl implements RedirectionIndex {
             updateCommitter.maybeActivate();
         }
 
-        keys.forAllLongs(key -> updates.put(key, BASELINE_KEY_NOT_FOUND));
+        keys.forAllRowKeys(key -> updates.put(key, BASELINE_KEY_NOT_FOUND));
     }
 
     @Override
@@ -260,7 +260,7 @@ public class RedirectionIndexLockFreeImpl implements RedirectionIndex {
 
         final MutableInt offset = new MutableInt();
         final LongChunk<? extends Values> valuesLongChunk = src.asLongChunk();
-        rowSequence.forAllLongs(key -> {
+        rowSequence.forAllRowKeys(key -> {
             updates.put(key, valuesLongChunk.get(offset.intValue()));
             offset.increment();
         });

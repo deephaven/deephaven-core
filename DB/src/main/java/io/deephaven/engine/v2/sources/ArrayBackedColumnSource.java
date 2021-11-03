@@ -610,7 +610,7 @@ public abstract class ArrayBackedColumnSource<T>
             return;
         }
         MutableInt destOffset = new MutableInt(0);
-        rowSequence.forAllLongRanges((final long from, final long to) -> {
+        rowSequence.forAllRowKeyRanges((final long from, final long to) -> {
             final int fromBlock = getBlockNo(from);
             final int toBlock = getBlockNo(to);
             final int fromOffsetInBlock = (int) (from & INDEX_MASK);

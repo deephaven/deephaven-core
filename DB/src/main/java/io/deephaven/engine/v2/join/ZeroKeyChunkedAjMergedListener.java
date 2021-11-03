@@ -138,7 +138,7 @@ public class ZeroKeyChunkedAjMergedListener extends MergedListener {
                 }
 
                 if (leftRestampRemovals.isNonempty()) {
-                    leftRestampRemovals.forAllLongs(redirectionIndex::removeVoid);
+                    leftRestampRemovals.forAllRowKeys(redirectionIndex::removeVoid);
 
                     try (final RowSequence.Iterator leftRsIt = leftRestampRemovals.getRowSequenceIterator()) {
                         assert leftFillContext != null;

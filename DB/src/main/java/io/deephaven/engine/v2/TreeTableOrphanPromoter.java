@@ -294,12 +294,12 @@ public class TreeTableOrphanPromoter implements Function.Unary<Table, Table> {
                                 final Set<Object> removedIds = new HashSet<>();
                                 final Set<Object> addedIds = new HashSet<>();
 
-                                upstream.removed.forAllLongs((final long v) -> {
+                                upstream.removed.forAllRowKeys((final long v) -> {
                                     final Object id = idSource.getPrev(v);
                                     removedIds.add(id);
                                 });
 
-                                upstream.added.forAllLongs((final long v) -> {
+                                upstream.added.forAllRowKeys((final long v) -> {
                                     final Object id = idSource.get(v);
                                     if (!removedIds.remove(id)) {
                                         addedIds.add(id);

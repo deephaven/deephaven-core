@@ -48,7 +48,7 @@ public interface ChunkSource<ATTR extends Attributes.Any> extends FillContextMak
      * Same as {@link #getChunk(GetContext, RowSequence)}, except that you pass in the begin and last keys representing
      * the begin and last (inclusive) keys of a single range rather than an {@link RowSequence}. Typically you want to
      * call this only if you don't have an {@link RowSequence}, such as during an
-     * {@link RowSequence#forAllLongRanges(LongRangeConsumer)} call. In this case, it allows you to avoid creating an
+     * {@link RowSequence#forAllRowKeyRanges(LongRangeConsumer)} call. In this case, it allows you to avoid creating an
      * intermediary {@link RowSequence} object.
      *
      * @param context A context containing all mutable/state related data used in retrieving the Chunk. In particular,

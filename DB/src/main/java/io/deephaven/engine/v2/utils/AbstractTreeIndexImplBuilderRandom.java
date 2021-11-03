@@ -157,7 +157,7 @@ abstract class AbstractTreeIndexImplBuilderRandom implements TreeIndexImpl.Build
             MutableRowSetImpl.addToBuilderFromImpl(this, (MutableRowSetImpl) rowSet);
             return;
         }
-        rowSet.forEachLongRange((final long start, final long end) -> {
+        rowSet.forEachRowKeyRange((final long start, final long end) -> {
             addRange(start, end);
             return true;
         });

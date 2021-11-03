@@ -150,7 +150,7 @@ public class CrossJoinHelper {
                             }
                         } else if (upstream.modified.isNonempty()) {
                             final RowSetBuilderSequential modBuilder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
-                            upstream.modified.forAllLongs(ll -> {
+                            upstream.modified.forAllRowKeys(ll -> {
                                 final RowSet rightRowSet = jsm.getRightIndexFromLeftIndex(ll);
                                 if (rightRowSet.isNonempty()) {
                                     final long currResultOffset = ll << jsm.getNumShiftBits();
@@ -313,7 +313,7 @@ public class CrossJoinHelper {
                                 try (final MutableRowSet toRemove = RowSetFactoryImpl.INSTANCE.getEmptyRowSet()) {
                                     // This could use a sequential builder, however, since we are always appending
                                     // non-overlapping containers, inserting into an rowSet is actually rather efficient.
-                                    leftIndexToVisitForRightRm.forAllLongs(ii -> {
+                                    leftIndexToVisitForRightRm.forAllRowKeys(ii -> {
                                         final long prevOffset = ii << prevRightBits;
                                         final CrossJoinModifiedSlotTracker.SlotState state = tracker
                                                 .getFinalSlotState(jsm.getTrackerCookie(jsm.getSlotFromLeftIndex(ii)));
@@ -358,14 +358,14 @@ public class CrossJoinHelper {
                                  final MutableRowSet modified = RowSetFactoryImpl.INSTANCE.getEmptyRowSet()) {
                                 downstream.added = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
 
-                                leftIndexesToVisitForAdds.forAllLongs(ii -> {
+                                leftIndexesToVisitForAdds.forAllRowKeys(ii -> {
                                     final long currOffset = ii << currRightBits;
                                     final CrossJoinModifiedSlotTracker.SlotState state = tracker
                                             .getFinalSlotState(jsm.getTrackerCookie(jsm.getSlotFromLeftIndex(ii)));
                                     downstream.added.asMutable().insertWithShift(currOffset, state.rightAdded);
                                 });
 
-                                leftIndexesToVisitForMods.forAllLongs(ii -> {
+                                leftIndexesToVisitForMods.forAllRowKeys(ii -> {
                                     final long currOffset = ii << currRightBits;
                                     final CrossJoinModifiedSlotTracker.SlotState state = tracker
                                             .getFinalSlotState(jsm.getTrackerCookie(jsm.getSlotFromLeftIndex(ii)));
@@ -448,7 +448,7 @@ public class CrossJoinHelper {
                                         }
 
                                         shiftBuilder.shiftRange(minTouched, maxTouched, shiftDelta);
-                                        rsIt.getNextRowSequenceThrough(maxTouched).forAllLongRanges((s, e) -> {
+                                        rsIt.getNextRowSequenceThrough(maxTouched).forAllRowKeyRanges((s, e) -> {
                                             toRemoveFromResultIndex.appendRange(s, e);
                                             toInsertIntoResultIndex.appendRange(s + shiftDelta, e + shiftDelta);
                                         });
@@ -460,7 +460,7 @@ public class CrossJoinHelper {
                                     }
                                 };
 
-                                rowsToShift.forAllLongs(ii -> {
+                                rowsToShift.forAllRowKeys(ii -> {
                                     final long pi = prevIter.nextLong();
 
                                     final long prevOffset = pi << prevRightBits;
@@ -529,7 +529,7 @@ public class CrossJoinHelper {
                             }
                         } else if (rowsToShift.isNonempty()) {
                             // note: no left shifts in this branch
-                            rowsToShift.forAllLongs(ii -> {
+                            rowsToShift.forAllRowKeys(ii -> {
                                 final long prevOffset = ii << prevRightBits;
                                 final long currOffset = ii << currRightBits;
                                 final long slotFromLeftIndex = jsm.getSlotFromLeftIndex(ii);
@@ -594,7 +594,7 @@ public class CrossJoinHelper {
                                     }
 
                                     shiftBuilder.shiftRange(beginRange, endRange, shiftDelta);
-                                    rsIt.getNextRowSequenceThrough(endRange).forAllLongRanges((s, e) -> {
+                                    rsIt.getNextRowSequenceThrough(endRange).forAllRowKeyRanges((s, e) -> {
                                         toRemoveFromResultIndex.appendRange(s, e);
                                         toInsertIntoResultIndex.appendRange(s + shiftDelta, e + shiftDelta);
                                     });
@@ -748,7 +748,7 @@ public class CrossJoinHelper {
                         final RowSetBuilderSequential addToResultIndex = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
 
                         // Accumulate all changes by left row.
-                        leftChanged.forAllLongs(ii -> {
+                        leftChanged.forAllRowKeys(ii -> {
                             final long prevOffset = ii << prevRightBits;
                             final long currOffset = ii << currRightBits;
 
@@ -1110,7 +1110,7 @@ public class CrossJoinHelper {
         // Initialize result table.
         try (final MutableRowSet currRight = rightTable.getRowSet().clone()) {
             final MutableLong currRightShift = new MutableLong();
-            leftTable.getRowSet().forAllLongs((currIdx) -> {
+            leftTable.getRowSet().forAllRowKeys((currIdx) -> {
                 final long currResultIdx = currIdx << crossJoinState.getNumShiftBits();
                 currRightShift.setValue(furtherShiftIndex(currRight, currRightShift.longValue(), currResultIdx));
                 resultRowSet.insert(currRight);

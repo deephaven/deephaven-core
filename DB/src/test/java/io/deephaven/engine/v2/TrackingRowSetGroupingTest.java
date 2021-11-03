@@ -329,7 +329,7 @@ public class TrackingRowSetGroupingTest extends LiveTableTestCase {
         keySet.clear();
         final TupleSource intSymFactory = TupleSourceFactory.makeTupleSource(intColumnSource, symColumnSource);
         TstUtils.selectSubIndexSet(5, countingTable.getRowSet(), random)
-                .forEach(row -> keySet.add(intSymFactory.createTuple(row)));
+                .forAllRowKeys(row -> keySet.add(intSymFactory.createTuple(row)));
         countingTable.getColumnSources().forEach(x -> ((CountingTable.MethodCounter) x).clear());
 
         final Map<Object, RowSet> intSymGrouping = countingTable.getRowSet().getGroupingForKeySet(keySet,
@@ -345,7 +345,7 @@ public class TrackingRowSetGroupingTest extends LiveTableTestCase {
         final TupleSource intSymDoubleFactory =
                 TupleSourceFactory.makeTupleSource(intColumnSource, symColumnSource, doubleColumnSource);
         TstUtils.selectSubIndexSet(5, countingTable.getRowSet(), random)
-                .forEach(row -> keySet.add(intSymDoubleFactory.createTuple(row)));
+                .forAllRowKeys(row -> keySet.add(intSymDoubleFactory.createTuple(row)));
         countingTable.getColumnSources().forEach(x -> ((CountingTable.MethodCounter) x).clear());
 
         final Map<Object, RowSet> intSymDoubleGrouping = countingTable.getRowSet().getGroupingForKeySet(keySet,
@@ -365,7 +365,7 @@ public class TrackingRowSetGroupingTest extends LiveTableTestCase {
         final TupleSource intSymSym2DoubleFactory = TupleSourceFactory.makeTupleSource(intColumnSource, symColumnSource,
                 sym2ColumnSource, doubleColumnSource);
         TstUtils.selectSubIndexSet(5, countingTable.getRowSet(), random)
-                .forEach(row -> keySet.add(intSymSym2DoubleFactory.createTuple(row)));
+                .forAllRowKeys(row -> keySet.add(intSymSym2DoubleFactory.createTuple(row)));
         countingTable.getColumnSources().forEach(x -> ((CountingTable.MethodCounter) x).clear());
 
         final Map<Object, RowSet> intSymSym2DoubleGrouping =

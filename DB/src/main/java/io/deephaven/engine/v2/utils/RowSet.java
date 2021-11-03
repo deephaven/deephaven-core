@@ -84,7 +84,7 @@ public interface RowSet extends RowSequence, LongSizedDataStructure, SafeCloseab
      * @param keys The keys to find positions for
      * @return A new {@link MutableRowSet} containing the positions of the keys in this RowSet
      */
-    default RowSet invert(RowSet keys) {
+    default MutableRowSet invert(RowSet keys) {
         return invert(keys, Long.MAX_VALUE);
     }
 
@@ -101,7 +101,7 @@ public interface RowSet extends RowSequence, LongSizedDataStructure, SafeCloseab
      * @param maximumPosition The largest position for which we will find a key
      * @return A new {@link MutableRowSet} containing the positions of the keys in this RowSet
      */
-    RowSet invert(RowSet keys, long maximumPosition);
+    MutableRowSet invert(RowSet keys, long maximumPosition);
 
     /**
      * For the given keys RowSet, under the assertion that none of them are present in the current RowSet, return the
@@ -155,7 +155,7 @@ public interface RowSet extends RowSequence, LongSizedDataStructure, SafeCloseab
      */
     MutableRowSet union(RowSet rowSetToAdd);
 
-    RowSet shift(long shiftAmount);
+    MutableRowSet shift(long shiftAmount);
 
     interface RangeIterator extends SafeCloseable {
         void close();
@@ -296,25 +296,25 @@ public interface RowSet extends RowSequence, LongSizedDataStructure, SafeCloseab
      * @return false if the consumer returned false at some point, true if the consumer always returned true and all
      *         values in the RowSet were consumed.
      */
-    boolean forEachLong(LongAbortableConsumer lc);
+    boolean forEachRowKey(LongAbortableConsumer lc);
 
-    default void forAllLongs(java.util.function.LongConsumer lc) {
-        forEachLong((final long v) -> {
+    default void forAllRowKeys(java.util.function.LongConsumer lc) {
+        forEachRowKey((final long v) -> {
             lc.accept(v);
             return true;
         });
     }
 
     // vs has to be big enough to hold every key on this RowSet.
-    default void toLongArray(final long[] vs) {
-        toLongArray(vs, 0);
+    default void toRowKeyArray(final long[] vs) {
+        toRowKeyArray(vs, 0);
     }
 
     // vs has to be big enough to hold every key on this RowSet starting from offset.
-    default void toLongArray(final long[] vs, final int offset) {
+    default void toRowKeyArray(final long[] vs, final int offset) {
         final int[] vi = new int[1];
         vi[0] = offset;
-        forEachLong((final long v) -> {
+        forEachRowKey((final long v) -> {
             vs[vi[0]++] = v;
             return true;
         });
@@ -435,7 +435,7 @@ public interface RowSet extends RowSequence, LongSizedDataStructure, SafeCloseab
         final MutableLong currentOffset = new MutableLong();
         final RowSequence.Iterator iter = getRowSequenceIterator();
         final RowSetBuilderSequential builder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
-        posRowSet.forEachLongRange((start, end) -> {
+        posRowSet.forEachRowKeyRange((start, end) -> {
             if (currentOffset.longValue() < start) {
                 // skip items until the beginning of this range
                 iter.getNextRowSequenceWithLength(start - currentOffset.longValue());
@@ -447,7 +447,7 @@ public interface RowSet extends RowSequence, LongSizedDataStructure, SafeCloseab
             }
 
             iter.getNextRowSequenceWithLength(end + 1 - currentOffset.longValue())
-                    .forAllLongRanges(builder::appendRange);
+                    .forAllRowKeyRanges(builder::appendRange);
             currentOffset.setValue(end + 1);
             return iter.hasMore();
         });

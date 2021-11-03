@@ -178,7 +178,7 @@ public class ObjectArraySource<T> extends ArraySourceHelper<T, T[]> implements M
         }
         final WritableObjectChunk<T, ? super Values> dest = destGeneric.asWritableObjectChunk();
         final FillSparseChunkContext<T[]> ctx = new FillSparseChunkContext<>();
-        indices.forEachLong((final long v) -> {
+        indices.forEachRowKey((final long v) -> {
             if (v >= ctx.capForCurrentBlock) {
                 ctx.currentBlockNo = getBlockNo(v);
                 ctx.capForCurrentBlock = (ctx.currentBlockNo + 1L) << LOG_BLOCK_SIZE;
@@ -205,7 +205,7 @@ public class ObjectArraySource<T> extends ArraySourceHelper<T, T[]> implements M
 
         final WritableObjectChunk<T, ? super Values> dest = destGeneric.asWritableObjectChunk();
         final FillSparseChunkContext<T[]> ctx = new FillSparseChunkContext<>();
-        indices.forEachLong((final long v) -> {
+        indices.forEachRowKey((final long v) -> {
             if (v >= ctx.capForCurrentBlock) {
                 ctx.currentBlockNo = getBlockNo(v);
                 ctx.capForCurrentBlock = (ctx.currentBlockNo + 1L) << LOG_BLOCK_SIZE;

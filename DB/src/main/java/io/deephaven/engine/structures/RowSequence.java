@@ -157,7 +157,7 @@ public interface RowSequence extends SafeCloseable, LongSizedDataStructure {
      * @param lac a consumer to feed the individual row key values to.
      * @return false if the consumer provided ever returned false, true otherwise.
      */
-    boolean forEachLong(LongAbortableConsumer lac);
+    boolean forEachRowKey(LongAbortableConsumer lac);
 
     /**
      * For as long as the consumer wants more ranges, call accept on the consumer with the individual row key ranges in
@@ -166,17 +166,17 @@ public interface RowSequence extends SafeCloseable, LongSizedDataStructure {
      * @param larc a consumer to feed the individual row key values to.
      * @return false if the consumer provided ever returned false, true otherwise.
      */
-    boolean forEachLongRange(LongRangeAbortableConsumer larc);
+    boolean forEachRowKeyRange(LongRangeAbortableConsumer larc);
 
-    default void forAllLongs(java.util.function.LongConsumer lc) {
-        forEachLong((final long v) -> {
+    default void forAllRowKeys(java.util.function.LongConsumer lc) {
+        forEachRowKey((final long v) -> {
             lc.accept(v);
             return true;
         });
     }
 
-    default void forAllLongRanges(LongRangeConsumer lrc) {
-        forEachLongRange((final long first, final long last) -> {
+    default void forAllRowKeyRanges(LongRangeConsumer lrc) {
+        forEachRowKeyRange((final long first, final long last) -> {
             lrc.accept(first, last);
             return true;
         });
@@ -402,12 +402,12 @@ public interface RowSequence extends SafeCloseable, LongSizedDataStructure {
         }
 
         @Override
-        public boolean forEachLong(final LongAbortableConsumer lac) {
+        public boolean forEachRowKey(final LongAbortableConsumer lac) {
             return true;
         }
 
         @Override
-        public boolean forEachLongRange(final LongRangeAbortableConsumer larc) {
+        public boolean forEachRowKeyRange(final LongRangeAbortableConsumer larc) {
             return true;
         }
 

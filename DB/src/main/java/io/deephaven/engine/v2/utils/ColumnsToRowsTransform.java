@@ -307,14 +307,14 @@ public class ColumnsToRowsTransform {
 
     private static MutableRowSet transformIndex(final RowSet rowSet, final int fanout, final int fanoutPow2) {
         final RowSetBuilderSequential sequentialBuilder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
-        rowSet.forAllLongs(idx -> sequentialBuilder.appendRange(idx * fanoutPow2, idx * fanoutPow2 + fanout - 1));
+        rowSet.forAllRowKeys(idx -> sequentialBuilder.appendRange(idx * fanoutPow2, idx * fanoutPow2 + fanout - 1));
         return sequentialBuilder.build();
     }
 
     private static RowSet transformIndex(final RowSet rowSet, final int fanoutPow2, final boolean[] rowModified,
                                          final int maxModified) {
         final RowSetBuilderSequential sequentialBuilder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
-        rowSet.forAllLongs(idx -> {
+        rowSet.forAllRowKeys(idx -> {
             for (int ii = 0; ii <= maxModified; ++ii) {
                 if (rowModified[ii]) {
                     sequentialBuilder.appendKey(idx * fanoutPow2 + ii);
@@ -355,7 +355,7 @@ public class ColumnsToRowsTransform {
             final MutableInt outputPosition = new MutableInt();
             final WritableObjectChunk<String, ?> objectChunk = destination.asWritableObjectChunk();
             destination.setSize(rowSequence.intSize());
-            rowSequence.forAllLongs(idx -> {
+            rowSequence.forAllRowKeys(idx -> {
                 objectChunk.set(outputPosition.intValue(), getLabel(idx));
                 outputPosition.increment();
             });
@@ -580,7 +580,7 @@ public class ColumnsToRowsTransform {
                 context.outputPositions[ii].setSize(0);
             }
             final MutableInt outputPosition = new MutableInt();
-            rowSequence.forAllLongs(idx -> {
+            rowSequence.forAllRowKeys(idx -> {
                 final int sourceColumn = (int) (idx & mask);
                 final long sourceIndex = idx >> bits;
                 context.outputPositions[sourceColumn].add(outputPosition.intValue());

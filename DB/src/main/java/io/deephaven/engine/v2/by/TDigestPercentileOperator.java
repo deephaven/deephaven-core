@@ -133,7 +133,7 @@ public class TDigestPercentileOperator implements IterativeChunkedAggregationOpe
 
     @Override
     public void propagateInitialState(@NotNull QueryTable resultTable) {
-        resultTable.getRowSet().forAllLongs(this::updateDestination);
+        resultTable.getRowSet().forAllRowKeys(this::updateDestination);
     }
 
     private void updateDestination(long destination) {
@@ -146,8 +146,8 @@ public class TDigestPercentileOperator implements IterativeChunkedAggregationOpe
     @Override
     public void propagateUpdates(@NotNull Listener.Update downstream,
             @NotNull RowSet newDestinations) {
-        downstream.added.forAllLongs(this::updateDestination);
-        downstream.modified.forAllLongs(this::updateDestination);
+        downstream.added.forAllRowKeys(this::updateDestination);
+        downstream.modified.forAllRowKeys(this::updateDestination);
     }
 
     @Override

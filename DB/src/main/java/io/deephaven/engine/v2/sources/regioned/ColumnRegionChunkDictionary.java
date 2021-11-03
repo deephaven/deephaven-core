@@ -72,7 +72,7 @@ public class ColumnRegionChunkDictionary<DICT_TYPE, DATA_TYPE, ATTR extends Any>
             @NotNull final RowSequence rowSequence) {
         final WritableObjectChunk<DATA_TYPE, ? super ATTR> objectDestination =
                 destination.asWritableObjectChunk();
-        rowSequence.forAllLongs((final long key) -> objectDestination.add(getObject(key)));
+        rowSequence.forAllRowKeys((final long key) -> objectDestination.add(getObject(key)));
     }
 
     @Override

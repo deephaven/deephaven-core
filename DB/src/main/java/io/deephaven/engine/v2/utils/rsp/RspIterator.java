@@ -241,7 +241,7 @@ public class RspIterator implements PrimitiveIterator.OfLong, SafeCloseable {
                 if (bi >= count) {
                     if (buf == null) {
                         // Lazy initialize to avoid the allocation in the cases it might never be used
-                        // (eg, pure forEachLong consumption).
+                        // (eg, pure forEachRowKey consumption).
                         buf = new short[BUFSZ];
                     }
                     count = cit.next(buf, 0, buf.length);
@@ -288,7 +288,7 @@ public class RspIterator implements PrimitiveIterator.OfLong, SafeCloseable {
                 int c = 0;
                 if (buf == null) {
                     // Lazy initialize to avoid the allocation in the cases it might never be used
-                    // (eg, pure forEachLong consumption).
+                    // (eg, pure forEachRowKey consumption).
                     buf = new short[BUFSZ];
                 }
                 while (true) {

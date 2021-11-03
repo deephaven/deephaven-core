@@ -430,7 +430,7 @@ public final class ByExternalChunkedOperator implements IterativeChunkedAggregat
                             .box(tableMapKeysSource.getChunk(tableMapKeysGetContext, initialDestinationsSlice));
 
                     final MutableInt tableMapKeyOffset = new MutableInt();
-                    initialDestinationsSlice.forAllLongs((final long destinationToInitialize) -> {
+                    initialDestinationsSlice.forAllRowKeys((final long destinationToInitialize) -> {
                         final Object tableMapKey = tableMapKeyChunk.get(tableMapKeyOffset.intValue());
                         tableMapKeyOffset.increment();
 
@@ -538,7 +538,7 @@ public final class ByExternalChunkedOperator implements IterativeChunkedAggregat
                 final RowSequence resurrectedDestinationsSlice =
                         resurrectedDestinationsIterator.getNextRowSequenceThrough(lastBackingChunkDestination);
 
-                resurrectedDestinationsSlice.forAllLongs((final long resurrectedDestination) -> {
+                resurrectedDestinationsSlice.forAllRowKeys((final long resurrectedDestination) -> {
                     final int backingChunkOffset =
                             Math.toIntExact(resurrectedDestination - firstBackingChunkDestination);
 
@@ -633,7 +633,7 @@ public final class ByExternalChunkedOperator implements IterativeChunkedAggregat
                         .box(tableMapKeysSource.getChunk(tableMapKeysGetContext, newDestinationsSlice));
 
                 final MutableInt tableMapKeyOffset = new MutableInt();
-                newDestinationsSlice.forAllLongs((final long newDestination) -> {
+                newDestinationsSlice.forAllRowKeys((final long newDestination) -> {
                     final Object tableMapKey = tableMapKeyChunk.get(tableMapKeyOffset.intValue());
                     tableMapKeyOffset.increment();
 
@@ -769,7 +769,7 @@ public final class ByExternalChunkedOperator implements IterativeChunkedAggregat
                 final RowSequence removedDestinationsSlice =
                         removedDestinationsIterator.getNextRowSequenceThrough(lastBackingChunkDestination);
 
-                removedDestinationsSlice.forAllLongs((final long removedDestination) -> {
+                removedDestinationsSlice.forAllRowKeys((final long removedDestination) -> {
                     final int backingChunkOffset = Math.toIntExact(removedDestination - firstBackingChunkDestination);
 
                     final QueryTable removedTable = tablesBackingChunk.get(backingChunkOffset);
@@ -845,7 +845,7 @@ public final class ByExternalChunkedOperator implements IterativeChunkedAggregat
                 final RowSequence modifiedDestinationsSlice =
                         modifiedDestinationsIterator.getNextRowSequenceThrough(lastBackingChunkDestination);
 
-                modifiedDestinationsSlice.forAllLongs((final long modifiedDestination) -> {
+                modifiedDestinationsSlice.forAllRowKeys((final long modifiedDestination) -> {
                     final int backingChunkOffset = Math.toIntExact(modifiedDestination - firstBackingChunkDestination);
 
                     final QueryTable modifiedTable = tablesBackingChunk.get(backingChunkOffset);

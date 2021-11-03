@@ -99,7 +99,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
                 final int[] rightModifySentinel = new int[modRowSet.intSize()];
 
                 final MutableInt position = new MutableInt();
-                modRowSet.forAllLongs((long ll) -> {
+                modRowSet.forAllRowKeys((long ll) -> {
                     final int ii = (int) ll;
                     if (ii % 2 == 0) {
                         // make something that exists go away

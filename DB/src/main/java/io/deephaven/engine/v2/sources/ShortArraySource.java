@@ -248,7 +248,7 @@ public class ShortArraySource extends ArraySourceHelper<Short, short[]> implemen
         }
         final WritableShortChunk<? super Values> dest = destGeneric.asWritableShortChunk();
         final FillSparseChunkContext<short[]> ctx = new FillSparseChunkContext<>();
-        indices.forAllLongs((final long v) -> {
+        indices.forAllRowKeys((final long v) -> {
             if (v >= ctx.capForCurrentBlock) {
                 ctx.currentBlockNo = getBlockNo(v);
                 ctx.capForCurrentBlock = (ctx.currentBlockNo + 1L) << LOG_BLOCK_SIZE;
@@ -274,7 +274,7 @@ public class ShortArraySource extends ArraySourceHelper<Short, short[]> implemen
 
         final WritableShortChunk<? super Values> dest = destGeneric.asWritableShortChunk();
         final FillSparseChunkContext<short[]> ctx = new FillSparseChunkContext<>();
-        indices.forAllLongs((final long v) -> {
+        indices.forAllRowKeys((final long v) -> {
             if (v >= ctx.capForCurrentBlock) {
                 ctx.currentBlockNo = getBlockNo(v);
                 ctx.capForCurrentBlock = (ctx.currentBlockNo + 1L) << LOG_BLOCK_SIZE;

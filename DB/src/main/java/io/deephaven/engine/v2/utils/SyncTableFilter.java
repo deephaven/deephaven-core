@@ -408,7 +408,7 @@ public class SyncTableFilter {
                 final RowSequence chunkOk = rsIt.getNextRowSequenceWithLength(CHUNK_SIZE);
                 chunkOk.fillRowKeyChunk(keyIndicesChunk);
                 valuesChunk.setSize(0);
-                chunkOk.forEachLong(idx -> {
+                chunkOk.forEachRowKey(idx -> {
                     Object tuple = keySources[tableIndex].createTuple(idx);
                     // noinspection unchecked
                     valuesChunk.add(tuple);

@@ -43,7 +43,7 @@ public class TstColumnRegionDouble {
             int size = destination.size();
             int length = (int) rowSequence.size();
 
-            rowSequence.forAllLongs(key ->
+            rowSequence.forAllRowKeys(key ->
             {
                 for (int i = 0; i < length; ++i) {
                     doubleDestination.set(size + i, (double) key);

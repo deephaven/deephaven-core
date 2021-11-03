@@ -404,7 +404,7 @@ public class BitShiftingColumnSource<T> extends AbstractColumnSource<T> implemen
                 currentRunPosition.setValue(0);
                 currentRunInnerIndexKey.setValue(RowSet.NULL_ROW_KEY);
 
-                rowSequence.forAllLongs((final long indexKey) -> {
+                rowSequence.forAllRowKeys((final long indexKey) -> {
                     final long lastInnerIndexKey = currentRunInnerIndexKey.longValue();
                     final long innerIndexKey =
                             usePrev ? shiftState.getPrevShifted(indexKey) : shiftState.getShifted(indexKey);

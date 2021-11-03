@@ -407,7 +407,7 @@ public class TableUpdateValidator implements QueryTable.Operation {
             final Chunk<? extends Attributes.Values> actual = getSourceChunk(toValidate, usePrev);
             chunkEquals.equal(expected, actual, equalValuesDest());
             MutableInt off = new MutableInt();
-            toValidate.forAllLongs((i) -> {
+            toValidate.forAllRowKeys((i) -> {
                 off.increment();
                 if (equalValuesDest().get(off.intValue() - 1)) {
                     return;

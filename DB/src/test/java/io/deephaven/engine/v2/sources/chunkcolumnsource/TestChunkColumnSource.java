@@ -164,7 +164,7 @@ public class TestChunkColumnSource {
                 columnSource.fillChunk(fillContext, destChunk, ranges);
                 TestCase.assertEquals(ranges.intSize(), destChunk.size());
                 final MutableInt di = new MutableInt(0);
-                ranges.forAllLongs(kk -> {
+                ranges.forAllRowKeys(kk -> {
                     final int si = (int) kk;
                     if (si < 1024) {
                         TestCase.assertEquals(charChunk1.get(si), destChunk.get(di.getAndIncrement()));

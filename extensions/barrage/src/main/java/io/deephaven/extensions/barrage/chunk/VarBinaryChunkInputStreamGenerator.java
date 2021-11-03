@@ -140,7 +140,7 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
         public int nullCount() {
             if (cachedNullCount == -1) {
                 cachedNullCount = 0;
-                subset.forAllLongs(i -> {
+                subset.forAllRowKeys(i -> {
                     if (chunk.get((int)i) == null) {
                         ++cachedNullCount;
                     }
@@ -170,7 +170,7 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
 
             // payload
             final MutableLong numPayloadBytes = new MutableLong();
-            subset.forAllLongRanges((s, e) -> {
+            subset.forAllRowKeyRanges((s, e) -> {
                 // account for payload
                 numPayloadBytes.add(myOffsets.get(LongSizedDataStructure.intSize(DEBUG_NAME, e + 1)));
                 numPayloadBytes.subtract(myOffsets.get(LongSizedDataStructure.intSize(DEBUG_NAME, s)));
@@ -196,7 +196,7 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
                     cachedSize += myOffsets.get(subset.intSize(DEBUG_NAME)) - myOffsets.get(0);
                 } else  {
                     cachedSize += subset.isEmpty() ? 0 : Integer.BYTES; // account for the n+1 offset
-                    subset.forAllLongRanges((s, e) -> {
+                    subset.forAllRowKeyRanges((s, e) -> {
                         // account for offsets
                         cachedSize += (e - s + 1) * Integer.BYTES;
                         // account for payload
@@ -234,7 +234,7 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
                     context.accumulator = 0;
                     context.count = 0;
                 };
-                subset.forAllLongs(rawRow -> {
+                subset.forAllRowKeys(rawRow -> {
                     final int row = LongSizedDataStructure.intSize(DEBUG_NAME, rawRow);
                     if (chunk.get(row) != null) {
                         context.accumulator |= 1L << context.count;
@@ -253,7 +253,7 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
             dos.writeInt(0);
 
             final MutableInt logicalSize = new MutableInt();
-            subset.forAllLongs((rawRow) -> {
+            subset.forAllRowKeys((rawRow) -> {
                 try {
                     final int rowEnd = LongSizedDataStructure.intSize(DEBUG_NAME, rawRow + 1);
                     final int size = myOffsets.get(rowEnd) - myOffsets.get(rowEnd - 1);
@@ -272,7 +272,7 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
             }
 
             final MutableLong payloadLen = new MutableLong();
-            subset.forAllLongRanges((s, e) -> {
+            subset.forAllRowKeys((s, e) -> {
                 try {
                     // we have already int-size verified all rows in the rowSet
                     final int startOffset = myOffsets.get((int) s);

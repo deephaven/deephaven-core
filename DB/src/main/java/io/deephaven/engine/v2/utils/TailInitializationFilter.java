@@ -76,7 +76,7 @@ public class TailInitializationFilter {
         final RowSetBuilderSequential builder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
         // we are going to binary search each partition of this table, because the different partitions have
         // non-contiguous indices, but values within a partition are contiguous indices.
-        table.getRowSet().forEachLongRange((s, e) -> {
+        table.getRowSet().forEachRowKeyRange((s, e) -> {
             final long lastValue = getValue.applyAsLong(e);
             if (lastValue == QueryConstants.NULL_LONG) {
                 throw new IllegalArgumentException("Found null timestamp at rowSet " + e);

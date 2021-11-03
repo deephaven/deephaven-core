@@ -2552,7 +2552,7 @@ public class SortedRangesTest {
         assertEquals(m, ix.size(), rsIx.size());
         assertTrue(m, rsIx.subsetOf(ix));
         try (final RowSet.RangeIterator rit = ix.rangeIterator()) {
-            rs.forEachLongRange((final long start, final long end) -> {
+            rs.forEachRowKeyRange((final long start, final long end) -> {
                 final String m2 = m + " && start==" + start + " && end==" + end;
                 assertTrue(m2, rit.hasNext());
                 rit.next();
@@ -2562,7 +2562,7 @@ public class SortedRangesTest {
             });
         }
         try (final RowSet.Iterator it = ix.iterator()) {
-            rs.forEachLong((final long v) -> {
+            rs.forEachRowKey((final long v) -> {
                 final String m2 = m + " && v==" + v;
                 assertTrue(m2, it.hasNext());
                 assertEquals(m2, v, it.nextLong());

@@ -197,7 +197,7 @@ public class RspRowSequence extends RowSequenceAsChunkImpl {
     }
 
     @Override
-    public boolean forEachLong(final LongAbortableConsumer lac) {
+    public boolean forEachRowKey(final LongAbortableConsumer lac) {
         if (startIdx == endIdx) {
             return arr.forEachLongInSpanWithOffsetAndMaxCount(startIdx, startOffset, lac, size());
         }
@@ -216,7 +216,7 @@ public class RspRowSequence extends RowSequenceAsChunkImpl {
     }
 
     @Override
-    public boolean forEachLongRange(final LongRangeAbortableConsumer lrac) {
+    public boolean forEachRowKeyRange(final LongRangeAbortableConsumer lrac) {
         if (startIdx == endIdx) {
             final long remaining = endOffset - startOffset + 1;
             return arr.forEachLongRangeInSpanWithOffsetAndMaxCardinality(startIdx, startOffset, remaining, lrac);

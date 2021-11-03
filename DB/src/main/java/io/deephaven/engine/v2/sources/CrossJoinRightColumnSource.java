@@ -533,7 +533,7 @@ public class CrossJoinRightColumnSource<T> extends AbstractColumnSource<T> imple
                     }
                 };
 
-                rowSequence.forAllLongs(ii -> {
+                rowSequence.forAllRowKeys(ii -> {
                     final long leftIndex =
                             usePrev ? crossJoinManager.getPrevShifted(ii) : crossJoinManager.getShifted(ii);
                     if (leftIndex != lastLeftIndex.longValue()) {

@@ -138,7 +138,8 @@ public class RowSetShiftDataExpander implements SafeCloseable {
     /**
      * Perform backwards compatible validation checks.
      * 
-     * @param sourceRowSet the underlying rowSet that apply to added/removed/modified
+     * @param update The update originally passed at construction time, used only for logging debug info on error
+     * @param sourceRowSet The underlying rowSet that apply to added/removed/modified
      */
     public void validate(final Listener.Update update, final TrackingRowSet sourceRowSet) {
         final boolean previousContainsAdds;
