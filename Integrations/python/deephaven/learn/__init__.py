@@ -14,6 +14,7 @@ _Input_ = None
 _Output_ = None
 _Computer_ = None
 _Scatterer_ = None
+Gatherer = None
 
 
 def _defineSymbols():
@@ -29,12 +30,13 @@ def _defineSymbols():
     if not jpy.has_jvm():
         raise SystemError("No java functionality can be used until the JVM has been initialized through the jpy module")
 
-    global _Input_, _Output_, _Computer_, _Scatterer_
+    global _Input_, _Output_, _Computer_, _Scatterer_, Gatherer
     if _Input_ is None:
         _Input_ = jpy.get_type("io.deephaven.integrations.learn.Input")
         _Output_ = jpy.get_type("io.deephaven.integrations.learn.Output")
         _Computer_ = jpy.get_type("io.deephaven.integrations.learn.Computer")
         _Scatterer_ = jpy.get_type("io.deephaven.integrations.learn.Scatterer")
+        Gatherer = jpy.get_type("io.deephaven.integrations.learn.Gatherer")
 
 
 # every module method that invokes Java classes should be decorated with @_passThrough
