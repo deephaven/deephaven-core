@@ -487,7 +487,6 @@ public class TstUtils {
         final ColumnHolder[] sources = new ColumnHolder[columnInfos.length];
         for (int i = 0; i < columnInfos.length; i++) {
             sources[i] = columnInfos[i].c();
-
         }
         if (refreshing) {
             return testRefreshingTable(rowSet, sources);
