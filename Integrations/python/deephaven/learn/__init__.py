@@ -39,7 +39,7 @@ def _defineSymbols():
         _Computer_ = jpy.get_type("io.deephaven.integrations.learn.Computer")
         _Scatterer_ = jpy.get_type("io.deephaven.integrations.learn.Scatterer")
     
-    if Gatherer is None:
+    if gatherer is None:
         gatherer = jpy.get_type("io.deephaven.integrations.learn.Gatherer")
 
 
