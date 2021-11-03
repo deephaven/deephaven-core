@@ -1,11 +1,10 @@
 package io.deephaven.web.shared.data;
 
 import java.io.Serializable;
-import java.util.Arrays;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
-public class TableAttributesDefinition implements Serializable {
+public class TableAttributesDefinition {
     public static final String INPUT_TABLE_ATTRIBUTE = "InputTable",
             TOTALS_TABLE_ATTRIBUTE = "TotalsTable",
             TABLE_DESCRIPTION_ATTRIBUTE = "TableDescription",
@@ -15,24 +14,27 @@ public class TableAttributesDefinition implements Serializable {
             LAYOUT_HINTS_ATTRIBUTE = "LayoutHints",
             PLUGIN_NAME = "PluginName";
 
+    private static final String HIERARCHICAL_COLUMN_NAME = "hierarchicalColumnName";
+
     // special cased attributes that have a complex type yet are always sent
     private RollupDefinition rollupDefinition;// rollup subtype of "HierarchicalSourceTableInfo"
-    private String treeHierarchicalColumnName;// technically a part of "HierarchicalSourceTableInfo", won't be copied
-                                              // separately
-    private String[][] columnDescriptions;// "ColumnDescriptions"
 
-    // enumerate the plain keys/values
-    // this includes description, plugin name, totals table config
-    private String[] keys;
-    private String[] values;
+    private final Map<String, String> map;
+    private final Set<String> remainingAttributeKeys;
 
-    // list the unhandled keys
-    private String[] remainingKeys;
-
-    private transient Map<String, String> map;
+    public TableAttributesDefinition(Map<String, String> keys, Set<String> remainingAttributes) {
+        map = keys;
+        this.remainingAttributeKeys = remainingAttributes;
+        if (map.containsKey(HIERARCHICAL_SOURCE_INFO_ATTRIBUTE + "." + HIERARCHICAL_COLUMN_NAME)) {
+            // marker present for tree table metadata
+            rollupDefinition = new RollupDefinition();
+            rollupDefinition.setByColumns(map.get(HIERARCHICAL_COLUMN_NAME + "." + "byColumns").split(","));
+            rollupDefinition.setLeafType(RollupDefinition.LeafType.valueOf(map.get(HIERARCHICAL_COLUMN_NAME + "."  + "leafType")));
+        }
+    }
 
     public boolean isInputTable() {
-        return Arrays.stream(remainingKeys).anyMatch(key -> key.equals(INPUT_TABLE_ATTRIBUTE));
+        return remainingAttributeKeys.contains(INPUT_TABLE_ATTRIBUTE);
     }
 
     public RollupDefinition getRollupDefinition() {
@@ -44,69 +46,34 @@ public class TableAttributesDefinition implements Serializable {
     }
 
     public String getTreeHierarchicalColumnName() {
-        return treeHierarchicalColumnName;
-    }
-
-    public void setTreeHierarchicalColumnName(final String treeHierarchicalColumnName) {
-        this.treeHierarchicalColumnName = treeHierarchicalColumnName;
-    }
-
-    public String[][] getColumnDescriptions() {
-        return columnDescriptions;
-    }
-
-    public void setColumnDescriptions(final String[][] columnDescriptions) {
-        this.columnDescriptions = columnDescriptions;
+        return map.get(HIERARCHICAL_COLUMN_NAME);
     }
 
     public String[] getKeys() {
-        return keys;
+        return map.keySet().toArray(new String[0]);
     }
 
-    public void setKeys(final String[] keys) {
-        this.keys = keys;
+    public String getValue(String key) {
+        return map.get(key);
     }
 
-    public String[] getValues() {
-        return values;
-    }
-
-    public void setValues(final String[] values) {
-        this.values = values;
-    }
-
-    public String[] getRemainingKeys() {
-        return remainingKeys;
-    }
-
-    public void setRemainingKeys(final String[] remainingKeys) {
-        this.remainingKeys = remainingKeys;
-    }
-
-    // helpers for attributes that used to be on the table def
-    public Map<String, String> getAsMap() {
-        if (map == null) {
-            map = new HashMap<>();
-            for (int i = 0; i < keys.length; i++) {
-                map.put(keys[i], values[i]);
-            }
-        }
-        return map;
+    public Set<String> getRemainingAttributeKeys() {
+        return remainingAttributeKeys;
     }
 
     public String getTotalsTableConfig() {
-        return getAsMap().get(TOTALS_TABLE_ATTRIBUTE);
+        return map.get(TOTALS_TABLE_ATTRIBUTE);
     }
 
     public String getDescription() {
-        return getAsMap().get(TABLE_DESCRIPTION_ATTRIBUTE);
+        return map.get(TABLE_DESCRIPTION_ATTRIBUTE);
     }
 
     public String getPluginName() {
-        return getAsMap().get(PLUGIN_NAME);
+        return map.get(PLUGIN_NAME);
     }
 
     public String getLayoutHints() {
-        return getAsMap().get(LAYOUT_HINTS_ATTRIBUTE);
+        return map.get(LAYOUT_HINTS_ATTRIBUTE);
     }
 }

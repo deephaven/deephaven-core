@@ -14,17 +14,10 @@ c.addEventListener(dh.Client.EVENT_CONNECT, () => {
   });
 });
 
-function el(id) {
-  return document.getElementById(id);
-}
-function newEl(tagName) {
-  return document.createElement(tagName);
-}
-
 function ensureLog() {
-  var log = el('log');
+  var log = document.getElementById('log');
   if (log) return log;
-  log = newEl('div');
+  log = document.createElement('div');
   log.innerHTML =`
    <h3>Log</h3>
    <button onclick="clearLog()">Clear Log</button>
@@ -35,7 +28,7 @@ function ensureLog() {
 // <div>
 }
 function log(message) {
-  const logMessage = newEl('li');
+  const logMessage = document.createElement('li');
   logMessage.innerText = message;
   if (arguments.length > 1) {
     logMessage.classList.add(
@@ -53,11 +46,11 @@ function monitor(name, sock) {
     return;
   }
   if (!monitor.statusEl) {
-    monitor.statusEl = newEl('div');
+    monitor.statusEl = document.createElement('div');
     monitor.statusEl.innerHTML = '<h3>Socket Status</h3>';
     document.body.appendChild(monitor.statusEl);
   }
-  var el = newEl('div');
+  var el = document.createElement('div');
   el.innerHTML = `
     <span>${name}: </span>
     <span class='state' />

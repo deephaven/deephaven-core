@@ -18,6 +18,8 @@ public class ColumnDefinition implements Serializable {
 
     // Indicates that this is a style column for the row
     private boolean forRow;
+    private boolean inputTableKeyColumn;
+    private String description;
 
     public String getName() {
         return name;
@@ -117,5 +119,21 @@ public class ColumnDefinition implements Serializable {
 
     public void setStyleColumnName(String styleColumn) {
         this.styleColumn = styleColumn;
+    }
+
+    public void setInputTableKeyColumn(boolean inputTableKeyColumn) {
+        this.inputTableKeyColumn = inputTableKeyColumn;
+    }
+
+    public boolean getInputTableKeyColumn() {
+        return inputTableKeyColumn;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public String getDescription() {
+        return description;
     }
 }
