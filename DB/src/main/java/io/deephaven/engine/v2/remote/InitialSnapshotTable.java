@@ -14,7 +14,10 @@ import io.deephaven.engine.v2.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.RedirectedColumnSource;
 import io.deephaven.engine.v2.sources.WritableSource;
-import io.deephaven.engine.v2.utils.*;
+import io.deephaven.engine.v2.utils.MutableRowSet;
+import io.deephaven.engine.v2.utils.RedirectionIndex;
+import io.deephaven.engine.v2.utils.RowSet;
+import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
 
 import java.util.BitSet;
 import java.util.LinkedHashMap;
@@ -83,58 +86,59 @@ public class InitialSnapshotTable extends QueryTable {
     protected void processInitialSnapshot(InitialSnapshot snapshot) {
         final RowSet viewPort = snapshot.viewport;
         final RowSet addedRowSet = snapshot.rowsIncluded;
-        final MutableRowSet newlyPopulated = viewPort == null ? addedRowSet : snapshot.rowSet.subSetForPositions(viewPort);
-        if (viewPort != null) {
-            newlyPopulated.retain(addedRowSet);
-        }
-
-        final RowSet destinationRowSet = getFreeRows(newlyPopulated.size());
-
-        final RowSet.Iterator addedIt = addedRowSet.iterator();
-        final RowSet.Iterator destIt = destinationRowSet.iterator();
-
-        long nextInViewport = -1;
-        final RowSet.Iterator populationIt;
-        if (viewPort == null) {
-            populationIt = null;
-        } else {
-            populationIt = newlyPopulated.iterator();
-            if (populationIt.hasNext()) {
-                nextInViewport = populationIt.nextLong();
+        try (final MutableRowSet newlyPopulated =
+                viewPort == null ? addedRowSet.clone() : snapshot.rowSet.subSetForPositions(viewPort)) {
+            if (viewPort != null) {
+                newlyPopulated.retain(addedRowSet);
             }
-        }
 
-        int arrayIndex = 0;
-        while (addedIt.hasNext()) {
-            final long addedKey = addedIt.nextLong();
-            final boolean found = viewPort == null || addedKey == nextInViewport;
+            final RowSet destinationRowSet = getFreeRows(newlyPopulated.size());
 
-            if (found) {
-                final long destIndex = destIt.nextLong();
-                for (int ii = 0; ii < setters.length; ii++) {
-                    if (subscribedColumns.get(ii) && snapshot.dataColumns[ii] != null) {
-                        // noinspection unchecked,rawtypes
-                        ((Setter) setters[ii]).set(snapshot.dataColumns[ii], arrayIndex, destIndex);
+            final RowSet.Iterator addedIt = addedRowSet.iterator();
+            final RowSet.Iterator destIt = destinationRowSet.iterator();
+
+            long nextInViewport = -1;
+            final RowSet.Iterator populationIt;
+            if (viewPort == null) {
+                populationIt = null;
+            } else {
+                populationIt = newlyPopulated.iterator();
+                if (populationIt.hasNext()) {
+                    nextInViewport = populationIt.nextLong();
+                }
+            }
+
+            int arrayIndex = 0;
+            while (addedIt.hasNext()) {
+                final long addedKey = addedIt.nextLong();
+                final boolean found = viewPort == null || addedKey == nextInViewport;
+
+                if (found) {
+                    final long destIndex = destIt.nextLong();
+                    for (int ii = 0; ii < setters.length; ii++) {
+                        if (subscribedColumns.get(ii) && snapshot.dataColumns[ii] != null) {
+                            // noinspection unchecked,rawtypes
+                            ((Setter) setters[ii]).set(snapshot.dataColumns[ii], arrayIndex, destIndex);
+                        }
+                    }
+                    final long prevIndex = redirectionIndex.put(addedKey, destIndex);
+                    Assert.assertion(prevIndex == -1, "prevIndex == -1", prevIndex, "prevIndex");
+                    if (populationIt != null) {
+                        nextInViewport = populationIt.hasNext() ? populationIt.nextLong() : -1;
                     }
                 }
-                final long prevIndex = redirectionIndex.put(addedKey, destIndex);
-                Assert.assertion(prevIndex == -1, "prevIndex == -1", prevIndex, "prevIndex");
-                if (populationIt != null) {
-                    nextInViewport = populationIt.hasNext() ? populationIt.nextLong() : -1;
+                arrayIndex++;
+            }
+
+            for (int ii = 0; ii < setters.length; ii++) {
+                if (subscribedColumns.get(ii) && snapshot.dataColumns[ii] != null) {
+                    final MutableRowSet ix = populatedCells[ii];
+                    ix.insert(newlyPopulated);
                 }
             }
-            arrayIndex++;
+            populatedRows.insert(newlyPopulated);
         }
-
-        for (int ii = 0; ii < setters.length; ii++) {
-            if (subscribedColumns.get(ii) && snapshot.dataColumns[ii] != null) {
-                final MutableRowSet ix = populatedCells[ii];
-                ix.insert(newlyPopulated);
-            }
-        }
-        populatedRows.insert(newlyPopulated);
-
-        getRowSet().insert(snapshot.rowSet);
+        getRowSet().asMutable().insert(snapshot.rowSet);
     }
 
     protected RowSet getFreeRows(long size) {

@@ -126,11 +126,14 @@ public class RowSetShiftDataExpander implements SafeCloseable {
     /**
      * Immutable, re-usable {@link RowSetShiftDataExpander} for an empty set of changes.
      */
-    public static final RowSetShiftDataExpander EMPTY = new RowSetShiftDataExpander(new Listener.Update(
-            RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), RowSetFactoryImpl.INSTANCE.getEmptyRowSet(),
-            RowSetFactoryImpl.INSTANCE.getEmptyRowSet(),
-            RowSetShiftData.EMPTY,
-            ModifiedColumnSet.ALL), RowSetFactoryImpl.INSTANCE.getEmptyRowSet().convertToTracking());
+    public static final RowSetShiftDataExpander EMPTY = new RowSetShiftDataExpander(
+            new Listener.Update(
+                    RowSetFactoryImpl.INSTANCE.getEmptyRowSet(),
+                    RowSetFactoryImpl.INSTANCE.getEmptyRowSet(),
+                    RowSetFactoryImpl.INSTANCE.getEmptyRowSet(),
+                    RowSetShiftData.EMPTY,
+                    ModifiedColumnSet.ALL),
+            RowSetFactoryImpl.INSTANCE.getEmptyRowSet().convertToTracking());
 
     /**
      * Perform backwards compatible validation checks.

@@ -46,7 +46,7 @@ public class ReplayLastByGroupedTable extends QueryReplayGroupedTable {
         final RowSet added = addedBuilder.build();
         final RowSet modified = modifiedBuilder.build();
         if (added.size() > 0 || modified.size() > 0) {
-            getRowSet().insert(added);
+            getRowSet().asMutable().insert(added);
             notifyListeners(added, RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), modified);
         }
     }

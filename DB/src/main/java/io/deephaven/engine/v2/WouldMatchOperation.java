@@ -203,7 +203,10 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
                             downstream.modifiedColumnSet,
                             parent))
                     .filter(Objects::nonNull)
-                    .forEach(rs -> downstream.modified.asMutable().insert(rs));
+                    .forEach(rs -> {
+                        downstream.modified.asMutable().insert(rs);
+                        rs.close();
+                    });
 
             resultTable.notifyListeners(downstream);
         }
@@ -237,7 +240,9 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
                     }
 
                     downstream.modifiedColumnSet.setAll(holder.getColumnName());
-                    downstream.modified.asMutable().insert(holder.column.recompute(parent, EMPTY_INDEX));
+                    try (final RowSet recomputed = holder.column.recompute(parent, EMPTY_INDEX)) {
+                        downstream.modified.asMutable().insert(recomputed);
+                    }
                 }
             }
 
@@ -428,8 +433,8 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
                 return recompute(table, added);
             }
 
-            // Filter and add addeds
             try (final SafeCloseableList toClose = new SafeCloseableList()) {
+                // Filter and add addeds
                 final MutableRowSet filteredAdded = toClose.add(filter.filter(added, source, table, false));
                 RowSet keysToRemove = EMPTY_INDEX;
 
@@ -450,16 +455,19 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
 
         private RowSet recompute(QueryTable table, RowSet upstreamAdded) {
             doRecompute = false;
-            final RowSet refiltered = filter.filter(table.getRowSet().clone(), table.getRowSet(), table, false);
+            final RowSet rowsChanged;
+            try (final SafeCloseableList toClose = new SafeCloseableList()) {
+                final MutableRowSet refiltered =
+                        toClose.add(filter.filter(table.getRowSet().clone(), table.getRowSet(), table, false));
 
-            // This is just Xor, but there is no TrackingMutableRowSet op for that
-            final RowSet newlySet = refiltered.minus(source);
-            final RowSet justCleared = source.minus(refiltered);
-            final RowSet rowsChanged = newlySet.union(justCleared)
-                    .minus(upstreamAdded);
+                // This is just Xor, but there is no TrackingMutableRowSet op for that
+                final RowSet newlySet = toClose.add(refiltered.minus(source));
+                final RowSet justCleared = toClose.add(source.minus(refiltered));
+                rowsChanged = toClose.add(newlySet.union(justCleared))
+                        .minus(upstreamAdded);
 
-            source.update(newlySet, justCleared);
-
+                source.update(newlySet, justCleared);
+            }
             return rowsChanged;
         }
 

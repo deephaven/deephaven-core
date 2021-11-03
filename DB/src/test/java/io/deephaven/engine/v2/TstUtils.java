@@ -13,7 +13,10 @@ import io.deephaven.engine.tables.StringSetWrapper;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.libs.StringSet;
 import io.deephaven.engine.tables.live.LiveTable;
-import io.deephaven.engine.tables.utils.*;
+import io.deephaven.engine.tables.utils.ArrayUtils;
+import io.deephaven.engine.tables.utils.DBDateTime;
+import io.deephaven.engine.tables.utils.TableDiff;
+import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.util.liveness.LivenessScopeStack;
 import io.deephaven.engine.v2.sources.*;
 import io.deephaven.engine.v2.utils.*;
@@ -42,11 +45,11 @@ public class TstUtils {
         return TableTools.col(name, data);
     }
 
-    public static TrackingMutableRowSet i(long... keys) {
+    public static MutableRowSet i(long... keys) {
         return RowSetFactoryImpl.INSTANCE.getRowSetByValues(keys);
     }
 
-    public static TrackingMutableRowSet ir(final long firstKey, final long lastKey) {
+    public static MutableRowSet ir(final long firstKey, final long lastKey) {
         return RowSetFactoryImpl.INSTANCE.getRowSetByRange(firstKey, lastKey);
     }
 
@@ -96,7 +99,7 @@ public class TstUtils {
             throw new IllegalStateException("Not all columns were populated, missing " + expected);
         }
 
-        table.getRowSet().insert(rowSet);
+        table.getRowSet().asMutable().insert(rowSet);
         if (table.isFlat()) {
             Assert.assertion(table.getRowSet().isFlat(), "table.build().isFlat()", table.getRowSet(),
                     "table.build()", rowSet, "rowSet");
@@ -108,7 +111,7 @@ public class TstUtils {
         if (table instanceof DynamicTable) {
             Require.requirement(((DynamicTable) table).isRefreshing(), "table.isRefreshing()");
         }
-        table.getRowSet().remove(rowSet);
+        table.getRowSet().asMutable().remove(rowSet);
         if (table.isFlat()) {
             Assert.assertion(table.getRowSet().isFlat(), "table.build().isFlat()", table.getRowSet(),
                     "table.build()", rowSet, "rowSet");
@@ -158,7 +161,7 @@ public class TstUtils {
         return c(colName, data);
     }
 
-    public static TrackingMutableRowSet getRandomIndex(long minValue, int size, Random random) {
+    public static MutableRowSet getRandomIndex(long minValue, int size, Random random) {
         final RowSetBuilderRandom builder = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
         long previous = minValue;
         for (int i = 0; i < size; i++) {
@@ -369,7 +372,7 @@ public class TstUtils {
         }
     }
 
-    static TrackingMutableRowSet getInitialIndex(int size, Random random) {
+    static MutableRowSet getInitialIndex(int size, Random random) {
         final RowSetBuilderRandom builder = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
         long firstKey = 10;
         for (int i = 0; i < size; i++) {
@@ -378,7 +381,7 @@ public class TstUtils {
         return builder.build();
     }
 
-    public static TrackingMutableRowSet selectSubIndexSet(int size, RowSet sourceRowSet, Random random) {
+    public static MutableRowSet selectSubIndexSet(int size, RowSet sourceRowSet, Random random) {
         Assert.assertion(size <= sourceRowSet.size(), "size <= sourceRowSet.size()", size, "size", sourceRowSet,
                 "sourceRowSet.size()");
 
@@ -405,8 +408,9 @@ public class TstUtils {
                 Math.min((int) (Math.max(0.0, ((random.nextGaussian() / 0.1) + 0.9)) * emptySlots), targetSize),
                 (int) emptySlots);
 
-        final TrackingMutableRowSet fillIn =
-                selectSubIndexSet(slotsToFill, RowSetFactoryImpl.INSTANCE.getRowSetByRange(0, maxKey).minus(sourceRowSet), random);
+        final MutableRowSet fillIn =
+                selectSubIndexSet(slotsToFill,
+                        RowSetFactoryImpl.INSTANCE.getRowSetByRange(0, maxKey).minus(sourceRowSet), random);
 
         final int endSlots = targetSize - (int) fillIn.size();
 
@@ -415,7 +419,8 @@ public class TstUtils {
         density = Math.min(density, 1);
         final long rangeSize = (long) ((1.0 / density) * endSlots);
         final RowSet expansion =
-                selectSubIndexSet(endSlots, RowSetFactoryImpl.INSTANCE.getRowSetByRange(maxKey + 1, maxKey + rangeSize + 1), random);
+                selectSubIndexSet(endSlots,
+                        RowSetFactoryImpl.INSTANCE.getRowSetByRange(maxKey + 1, maxKey + rangeSize + 1), random);
 
         fillIn.insert(expansion);
 
@@ -475,7 +480,7 @@ public class TstUtils {
     }
 
     public static QueryTable getTable(boolean refreshing, int size, Random random, ColumnInfo[] columnInfos) {
-        final TrackingMutableRowSet rowSet = getInitialIndex(size, random);
+        final MutableRowSet rowSet = getInitialIndex(size, random);
         for (ColumnInfo columnInfo : columnInfos) {
             columnInfo.populateMap(rowSet, random);
         }
@@ -493,11 +498,11 @@ public class TstUtils {
 
     public static QueryTable testTable(ColumnHolder... columnHolders) {
         final Object[] boxedData = ArrayUtils.getBoxedArray(columnHolders[0].data);
-        final TrackingMutableRowSet rowSet = RowSetFactoryImpl.INSTANCE.getFlatRowSet(boxedData.length);
+        final RowSet rowSet = RowSetFactoryImpl.INSTANCE.getFlatRowSet(boxedData.length);
         return testTable(rowSet, columnHolders);
     }
 
-    public static QueryTable testTable(TrackingMutableRowSet rowSet, ColumnHolder... columnHolders) {
+    public static QueryTable testTable(RowSet rowSet, ColumnHolder... columnHolders) {
         final Map<String, ColumnSource<?>> columns = new LinkedHashMap<>();
         for (ColumnHolder columnHolder : columnHolders) {
             columns.put(columnHolder.name, getTreeMapColumnSource(rowSet, columnHolder));
@@ -505,13 +510,13 @@ public class TstUtils {
         return new QueryTable(rowSet, columns);
     }
 
-    public static QueryTable testRefreshingTable(TrackingMutableRowSet rowSet, ColumnHolder... columnHolders) {
+    public static QueryTable testRefreshingTable(RowSet rowSet, ColumnHolder... columnHolders) {
         final QueryTable queryTable = testTable(rowSet, columnHolders);
         queryTable.setRefreshing(true);
         return queryTable;
     }
 
-    public static QueryTable testFlatRefreshingTable(TrackingMutableRowSet rowSet, ColumnHolder... columnHolders) {
+    public static QueryTable testFlatRefreshingTable(RowSet rowSet, ColumnHolder... columnHolders) {
         Assert.assertion(rowSet.isFlat(), "rowSet.isFlat()", rowSet, "rowSet");
         final QueryTable queryTable = testTable(rowSet, columnHolders);
         queryTable.setRefreshing(true);
@@ -520,7 +525,7 @@ public class TstUtils {
     }
 
     public static QueryTable testRefreshingTable(ColumnHolder... columnHolders) {
-        final TrackingMutableRowSet rowSet = columnHolders.length == 0 ? RowSetFactoryImpl.INSTANCE.getEmptyRowSet()
+        final RowSet rowSet = columnHolders.length == 0 ? RowSetFactoryImpl.INSTANCE.getEmptyRowSet()
                 : RowSetFactoryImpl.INSTANCE.getFlatRowSet(Array.getLength(columnHolders[0].data));
         final Map<String, ColumnSource<?>> columns = new LinkedHashMap<>();
         for (ColumnHolder columnHolder : columnHolders) {
@@ -1536,7 +1541,8 @@ public class TstUtils {
 
                 if (!ceiling.equals(currentCeiling) || !floor.equals(currentFloor)) {
                     // we're past the end of the last run so we need to generate the values for the map
-                    generateValues(toAdd.intersect(RowSetFactoryImpl.INSTANCE.getRowSetByRange(firstKey, lastKey)), currentFloor,
+                    generateValues(toAdd.intersect(RowSetFactoryImpl.INSTANCE.getRowSetByRange(firstKey, lastKey)),
+                            currentFloor,
                             currentCeiling, result, random);
                     firstKey = nextKey;
                     currentFloor = floor;
@@ -1545,7 +1551,8 @@ public class TstUtils {
                 lastKey = nextKey;
             }
 
-            generateValues(toAdd.intersect(RowSetFactoryImpl.INSTANCE.getRowSetByRange(firstKey, lastKey)), currentFloor,
+            generateValues(toAdd.intersect(RowSetFactoryImpl.INSTANCE.getRowSetByRange(firstKey, lastKey)),
+                    currentFloor,
                     currentCeiling, result, random);
 
             values.putAll(result);

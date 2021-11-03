@@ -431,7 +431,7 @@ public interface RowSet extends RowSequence, LongSizedDataStructure, SafeCloseab
      * @param posRowSet The RowSet of position-based ranges to extract.
      * @return A new RowSet, containing values at the locations in the provided RowSet.
      */
-    default RowSet subSetForPositions(RowSet posRowSet) {
+    default MutableRowSet subSetForPositions(RowSet posRowSet) {
         final MutableLong currentOffset = new MutableLong();
         final RowSequence.Iterator iter = getRowSequenceIterator();
         final RowSetBuilderSequential builder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();

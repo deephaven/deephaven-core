@@ -3,6 +3,7 @@ package io.deephaven.engine.v2;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.datastructures.util.CollectionUtil;
+import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.tables.dbarrays.*;
 import io.deephaven.engine.v2.hashing.ChunkEquals;
 import io.deephaven.engine.v2.sources.ColumnSource;
@@ -10,7 +11,6 @@ import io.deephaven.engine.v2.sources.SparseArrayColumnSource;
 import io.deephaven.engine.v2.sources.WritableChunkSink;
 import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.utils.*;
-import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.SafeCloseableList;
 import org.apache.commons.lang3.mutable.MutableInt;
@@ -44,7 +44,7 @@ public class TableUpdateValidator implements QueryTable.Operation {
     private final ModifiedColumnSet validationMCS;
     private ColumnInfo[] columnInfos;
 
-    private TrackingMutableRowSet trackingRowSet;
+    private MutableRowSet rowSet;
     private QueryTable resultTable;
     private SharedContext sharedContext;
     private final String description;
@@ -93,7 +93,7 @@ public class TableUpdateValidator implements QueryTable.Operation {
 
     @Override
     public Result initialize(boolean usePrev, long beforeClock) {
-        trackingRowSet = usePrev ? tableToValidate.getRowSet().getPrevRowSet() : tableToValidate.getRowSet().clone();
+        rowSet = usePrev ? tableToValidate.getRowSet().getPrevRowSet() : tableToValidate.getRowSet().clone();
 
         resultTable = new QueryTable(RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), Collections.emptyMap());
         resultTable.setFlat();
@@ -101,7 +101,7 @@ public class TableUpdateValidator implements QueryTable.Operation {
         final Listener listener;
         try (final SafeCloseable ignored1 = maybeOpenSharedContext();
                 final SafeCloseable ignored2 = new SafeCloseableList(columnInfos)) {
-            updateValues(ModifiedColumnSet.ALL, trackingRowSet, usePrev);
+            updateValues(ModifiedColumnSet.ALL, rowSet, usePrev);
 
             listener = new BaseTable.ListenerImpl(getDescription(), tableToValidate, resultTable) {
                 @Override
@@ -119,7 +119,7 @@ public class TableUpdateValidator implements QueryTable.Operation {
     }
 
     public void validate() {
-        Assert.equals(trackingRowSet, "trackingRowSet", tableToValidate.getRowSet(), "tableToValidate.build()");
+        Assert.equals(rowSet, "rowSet", tableToValidate.getRowSet(), "tableToValidate.build()");
     }
 
     public void deepValidation() {
@@ -127,7 +127,7 @@ public class TableUpdateValidator implements QueryTable.Operation {
                 final SafeCloseable ignored2 = new SafeCloseableList(columnInfos)) {
 
             validate();
-            validateValues("EndOfTickValidation", ModifiedColumnSet.ALL, trackingRowSet, false, false);
+            validateValues("EndOfTickValidation", ModifiedColumnSet.ALL, rowSet, false, false);
             if (!issues.isEmpty()) {
                 final StringBuilder result =
                         new StringBuilder("Table to validate " + getDescription() + " has inconsistent state:");
@@ -155,35 +155,35 @@ public class TableUpdateValidator implements QueryTable.Operation {
 
             // remove
             if (aggressiveUpdateValidation) {
-                validateValues("pre-update", ModifiedColumnSet.ALL, trackingRowSet, true, false);
+                validateValues("pre-update", ModifiedColumnSet.ALL, rowSet, true, false);
             } else {
                 validateValues("pre-update removed", ModifiedColumnSet.ALL, upstream.removed, true, false);
                 validateValues("pre-update modified", upstream.modifiedColumnSet, upstream.getModifiedPreShift(), true,
                         false);
             }
 
-            validateIndexesEqual("pre-update rowSet", trackingRowSet, tableToValidate.getRowSet().getPrevRowSet());
-            trackingRowSet.remove(upstream.removed);
+            validateIndexesEqual("pre-update rowSet", rowSet, tableToValidate.getRowSet().getPrevRowSet());
+            rowSet.remove(upstream.removed);
             Arrays.stream(columnInfos).forEach((ci) -> ci.remove(upstream.removed));
 
             // shift columns first because they use tracking rowSet
             Arrays.stream(columnInfos).forEach((ci) -> upstream.shifted.apply(ci));
-            upstream.shifted.apply(trackingRowSet);
+            upstream.shifted.apply(rowSet);
 
             if (aggressiveUpdateValidation) {
-                final RowSet unmodified = trackingRowSet.minus(upstream.modified);
+                final RowSet unmodified = rowSet.minus(upstream.modified);
                 validateValues("post-shift unmodified", ModifiedColumnSet.ALL, unmodified, false, false);
                 validateValues("post-shift unmodified columns", upstream.modifiedColumnSet, upstream.modified, false,
                         true);
             }
 
             // added
-            if (trackingRowSet.overlaps(upstream.added)) {
+            if (rowSet.overlaps(upstream.added)) {
                 noteIssue(() -> "post-shift rowSet contains rows that are added: "
-                        + trackingRowSet.intersect(upstream.added));
+                        + rowSet.intersect(upstream.added));
             }
-            trackingRowSet.insert(upstream.added);
-            validateIndexesEqual("post-update rowSet", trackingRowSet, tableToValidate.getRowSet());
+            rowSet.insert(upstream.added);
+            validateIndexesEqual("post-update rowSet", rowSet, tableToValidate.getRowSet());
             updateValues(ModifiedColumnSet.ALL, upstream.added, false);
 
             // modified
@@ -369,7 +369,7 @@ public class TableUpdateValidator implements QueryTable.Operation {
 
         @Override
         public void shift(final long beginRange, final long endRange, final long shiftDelta) {
-            expectedSource.shift(trackingRowSet.subSetByKeyRange(beginRange, endRange), shiftDelta);
+            expectedSource.shift(rowSet.subSetByKeyRange(beginRange, endRange), shiftDelta);
         }
 
         public void remove(final RowSet toRemove) {
