@@ -9,7 +9,8 @@ public class Gatherer {
      *
      * @param indexSet indices of the rows of the table to put into the tensor
      * @param columnSources columns of data to put into the tensor
-     * @return contiguous RAM allocated for the tensor.  When a numpy tensor is passed in for this argument, jpy will handle passing the memory reference as a 1d java array here.
+     * @return contiguous RAM allocated for the tensor. When a numpy tensor is passed in for this argument, jpy will
+     *         handle passing the memory reference as a 1d java array here.
      */
     public static double[] create_2d_tensor(final IndexSet indexSet, final ColumnSource<?>[] columnSources) {
 
@@ -18,10 +19,10 @@ public class Gatherer {
         final double[] tensor = new double[nRows * nCols];
 
         int j = 0;
-        for( ColumnSource<?> cs : columnSources ) {
+        for (ColumnSource<?> cs : columnSources) {
             int i = 0;
 
-            for( long idx : indexSet ) {
+            for (long idx : indexSet) {
                 final int ij = nCols * i + j;
                 tensor[ij] = cs.getDouble(idx);
                 i++;
