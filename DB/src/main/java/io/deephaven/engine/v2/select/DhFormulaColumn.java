@@ -281,7 +281,7 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
 
     private CodeGenerator generateConstructor() {
         final CodeGenerator g = CodeGenerator.create(
-                "public $CLASSNAME$(final TrackingMutableRowSet rowSet,", CodeGenerator.indent(
+                "public $CLASSNAME$(final TrackingRowSet rowSet,", CodeGenerator.indent(
                         "final boolean __lazy,",
                         "final java.util.Map<String, ? extends [[COLUMN_SOURCE_CLASSNAME]]> __columnsToData,",
                         "final [[PARAM_CLASSNAME]]... __params)"),
@@ -355,7 +355,7 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
                         (usePrev
                                 ? CodeGenerator.optional("maybeCreateIorII",
                                         "final long findResult;",
-                                        "try (final TrackingMutableRowSet prev = __rowSet.getPrevRowSet())", CodeGenerator.block(
+                                        "try (final RowSet prev = __rowSet.getPrevRowSet())", CodeGenerator.block(
                                                 "findResult = prev.find(k);"))
                                 : CodeGenerator.optional("maybeCreateIorII",
                                         "final long findResult = __rowSet.find(k);")),
@@ -540,9 +540,9 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
                 CodeGenerator.block(
                         "final [[DEST_CHUNK_TYPE]] __typedDestination = __destination.[[DEST_AS_CHUNK_METHOD]]();",
                         CodeGenerator.optional("maybeCreateIOrII",
-                                "try (final TrackingMutableRowSet prev = __usePrev ? __rowSet.getPrevRowSet() : null;",
+                                "try (final RowSet prev = __usePrev ? __rowSet.getPrevRowSet() : null;",
                                 CodeGenerator.indent(
-                                        "final TrackingMutableRowSet inverted = ((prev != null) ? prev : __rowSet).invert(__RowSequence.asRowSet()))"),
+                                        "final RowSet inverted = ((prev != null) ? prev : __rowSet).invert(__RowSequence.asRowSet()))"),
                                 CodeGenerator.block(
                                         CodeGenerator.optional("maybeCreateI",
                                                 "__context.__iChunk.setSize(0);",
