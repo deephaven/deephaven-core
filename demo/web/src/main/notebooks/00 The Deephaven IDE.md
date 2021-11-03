@@ -13,7 +13,7 @@ The IDE provides a REPL experience for exploring data, one that uniquely support
 People often use it for building server-side data-driven applications.
 \
 \
-This console is Python experience.
+This console is a Python experience.
 
 ```python
 print("Hello world!")
