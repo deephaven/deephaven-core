@@ -14,7 +14,7 @@ _Input_ = None
 _Output_ = None
 _Computer_ = None
 _Scatterer_ = None
-Gatherer = None
+gatherer = None
 
 
 def _defineSymbols():
