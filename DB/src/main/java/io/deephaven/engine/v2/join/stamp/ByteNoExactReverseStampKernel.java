@@ -14,11 +14,11 @@ public class ByteNoExactReverseStampKernel implements StampKernel {
     private ByteNoExactReverseStampKernel() {} // static use only
 
     @Override
-    public void computeRedirections(Chunk<Values> leftStamps, Chunk<Values> rightStamps, LongChunk<RowKeys> rightKeyIndices, WritableLongChunk<Attributes.RowKeys> leftRedirections) {
+    public void computeRedirections(Chunk<Values> leftStamps, Chunk<Values> rightStamps, LongChunk<Attributes.RowKeys> rightKeyIndices, WritableLongChunk<Attributes.RowKeys> leftRedirections) {
         computeRedirections(leftStamps.asByteChunk(), rightStamps.asByteChunk(), rightKeyIndices, leftRedirections);
     }
 
-    static private void computeRedirections(ByteChunk<Values> leftStamps, ByteChunk<Values> rightStamps, LongChunk<Attributes.RowKeys> rightKeyIndices, WritableLongChunk<RowKeys> leftRedirections) {
+    static private void computeRedirections(ByteChunk<Values> leftStamps, ByteChunk<Values> rightStamps, LongChunk<RowKeys> rightKeyIndices, WritableLongChunk<Attributes.RowKeys> leftRedirections) {
         final int leftSize = leftStamps.size();
         final int rightSize = rightStamps.size();
         if (rightSize == 0) {

@@ -88,8 +88,8 @@ public abstract class BaseTestObjectTimSortKernel extends TestTimSortKernel {
             columnSource = new AbstractColumnSource.DefaultedImmutable<Object>(Object.class) {
                 // region tuple column source
                 @Override
-                public Object get(long index) {
-                    return javaTuples.get(((int)index) / 10).getFirstElement();
+                public Object get(long rowSet) {
+                    return javaTuples.get(((int)rowSet) / 10).getFirstElement();
                 }
                 // endregion tuple column source
             };

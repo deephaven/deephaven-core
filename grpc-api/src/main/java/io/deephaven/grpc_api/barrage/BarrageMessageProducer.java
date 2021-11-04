@@ -1497,7 +1497,7 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
         final RowSet.Iterator vit = values.iterator();
         keys.forAllRowKeys(lkey -> {
             final int key = LongSizedDataStructure.intSize("applyRedirMapping", lkey);
-            Assert.eq(mapping[key], "mapping[key]", RowSet.NULL_ROW_KEY, "TrackingMutableRowSet.NULL_KEY");
+            Assert.eq(mapping[key], "mapping[key]", RowSet.NULL_ROW_KEY, "RowSet.NULL_ROW_KEY");
             mapping[key] = vit.nextLong();
         });
     }

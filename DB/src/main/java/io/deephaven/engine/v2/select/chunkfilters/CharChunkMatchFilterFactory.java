@@ -51,7 +51,7 @@ public class CharChunkMatchFilterFactory {
         }
 
         @Override
-        public void filter(CharChunk<? extends Values> values, LongChunk<Attributes.OrderedRowKeys> keys, WritableLongChunk<Attributes.OrderedRowKeys> results) {
+        public void filter(CharChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys, WritableLongChunk<OrderedRowKeys> results) {
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
                 if (values.get(ii) == value) {
@@ -69,7 +69,7 @@ public class CharChunkMatchFilterFactory {
         }
 
         @Override
-        public void filter(CharChunk<? extends Values> values, LongChunk<Attributes.OrderedRowKeys> keys, WritableLongChunk<Attributes.OrderedRowKeys> results) {
+        public void filter(CharChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys, WritableLongChunk<OrderedRowKeys> results) {
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
                 if (values.get(ii) != value) {
@@ -89,7 +89,7 @@ public class CharChunkMatchFilterFactory {
         }
 
         @Override
-        public void filter(CharChunk<? extends Values> values, LongChunk<Attributes.OrderedRowKeys> keys, WritableLongChunk<Attributes.OrderedRowKeys> results) {
+        public void filter(CharChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys, WritableLongChunk<OrderedRowKeys> results) {
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
                 final char checkValue = values.get(ii);
@@ -110,7 +110,7 @@ public class CharChunkMatchFilterFactory {
         }
 
         @Override
-        public void filter(CharChunk<? extends Values> values, LongChunk<Attributes.OrderedRowKeys> keys, WritableLongChunk<Attributes.OrderedRowKeys> results) {
+        public void filter(CharChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys, WritableLongChunk<OrderedRowKeys> results) {
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
                 final char checkValue = values.get(ii);
@@ -133,7 +133,7 @@ public class CharChunkMatchFilterFactory {
         }
 
         @Override
-        public void filter(CharChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys, WritableLongChunk<Attributes.OrderedRowKeys> results) {
+        public void filter(CharChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys, WritableLongChunk<OrderedRowKeys> results) {
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
                 final char checkValue = values.get(ii);
@@ -156,7 +156,7 @@ public class CharChunkMatchFilterFactory {
         }
 
         @Override
-        public void filter(CharChunk<? extends Values> values, LongChunk<Attributes.OrderedRowKeys> keys, WritableLongChunk<Attributes.OrderedRowKeys> results) {
+        public void filter(CharChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys, WritableLongChunk<OrderedRowKeys> results) {
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
                 final char checkValue = values.get(ii);
@@ -175,7 +175,7 @@ public class CharChunkMatchFilterFactory {
         }
 
         @Override
-        public void filter(CharChunk<? extends Values> values, LongChunk<Attributes.OrderedRowKeys> keys, WritableLongChunk<Attributes.OrderedRowKeys> results) {
+        public void filter(CharChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys, WritableLongChunk<OrderedRowKeys> results) {
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
                 final char checkValue = values.get(ii);
@@ -194,7 +194,7 @@ public class CharChunkMatchFilterFactory {
         }
 
         @Override
-        public void filter(CharChunk<? extends Values> values, LongChunk<Attributes.OrderedRowKeys> keys, WritableLongChunk<Attributes.OrderedRowKeys> results) {
+        public void filter(CharChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys, WritableLongChunk<OrderedRowKeys> results) {
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
                 final char checkValue = values.get(ii);

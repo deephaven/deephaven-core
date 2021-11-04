@@ -24,12 +24,12 @@ public class ByteReverseSsaChecker implements SsaChecker {
         checkSsa((ByteReverseSegmentedSortedArray)ssa, valueChunk.asByteChunk(), tableIndexChunk);
     }
 
-    static void checkSsa(ByteReverseSegmentedSortedArray ssa, ByteChunk<? extends Values> valueChunk, LongChunk<? extends RowKeys> tableIndexChunk) {
+    static void checkSsa(ByteReverseSegmentedSortedArray ssa, ByteChunk<? extends Values> valueChunk, LongChunk<? extends Attributes.RowKeys> tableIndexChunk) {
         ssa.validateInternal();
 
         //noinspection unchecked
         final ByteChunk<Values> resultChunk = (ByteChunk) ssa.asByteChunk();
-        final LongChunk<Attributes.RowKeys> indexChunk = ssa.keyIndicesChunk();
+        final LongChunk<RowKeys> indexChunk = ssa.keyIndicesChunk();
 
         Assert.eq(valueChunk.size(), "valueChunk.size()", resultChunk.size(), "resultChunk.size()");
         Assert.eq(tableIndexChunk.size(), "tableIndexChunk.size()", indexChunk.size(), "indexChunk.size()");

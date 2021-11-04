@@ -19,7 +19,7 @@ public class ByteLongMegaMergeDescendingKernel {
     }
 
     // region Context
-    public static class ByteLongMegaMergeDescendingKernelContext<ATTR extends Any, KEY_INDICES extends Attributes.Indices> implements LongMegaMergeKernel<ATTR, KEY_INDICES> {
+    public static class ByteLongMegaMergeDescendingKernelContext<ATTR extends Any, KEY_INDICES extends Indices> implements LongMegaMergeKernel<ATTR, KEY_INDICES> {
         @SuppressWarnings("rawtypes")
         private static final ByteLongMegaMergeDescendingKernelContext INSTANCE = new ByteLongMegaMergeDescendingKernelContext();
 
@@ -30,17 +30,17 @@ public class ByteLongMegaMergeDescendingKernel {
     }
     // endregion Context
 
-    public static <ATTR extends Any, KEY_INDICES extends Attributes.Indices> ByteLongMegaMergeDescendingKernelContext<ATTR, KEY_INDICES> createContext() {
+    public static <ATTR extends Any, KEY_INDICES extends Indices> ByteLongMegaMergeDescendingKernelContext<ATTR, KEY_INDICES> createContext() {
         //noinspection unchecked
         return ByteLongMegaMergeDescendingKernelContext.INSTANCE;
     }
 
-    static public <ATTR extends Any, KEY_INDICES extends Indices> void merge(LongArraySource destinationKeys,
-                                                                             ByteArraySource destinationValues,
-                                                                             long destinationOffset,
-                                                                             long destinationSize,
-                                                                             LongChunk<KEY_INDICES> keysChunk,
-                                                                             ByteChunk<ATTR> valuesChunk
+    static public <ATTR extends Any, KEY_INDICES extends Attributes.Indices> void merge(LongArraySource destinationKeys,
+                                                                                        ByteArraySource destinationValues,
+                                                                                        long destinationOffset,
+                                                                                        long destinationSize,
+                                                                                        LongChunk<KEY_INDICES> keysChunk,
+                                                                                        ByteChunk<ATTR> valuesChunk
     ) {
         destinationKeys.ensureCapacity(destinationOffset + destinationSize + keysChunk.size(), false);
         destinationValues.ensureCapacity(destinationOffset + destinationSize + valuesChunk.size(), false);

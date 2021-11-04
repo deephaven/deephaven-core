@@ -9,7 +9,7 @@ package io.deephaven.engine.v2.sources;
 
 import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
-import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedRowKeyRanges;
+import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedRowKeys;
 import io.deephaven.engine.v2.sources.sparse.DoubleOneOrN;
 import io.deephaven.engine.v2.sources.sparse.LongOneOrN;
 import io.deephaven.engine.v2.utils.*;
@@ -591,7 +591,7 @@ public class DoubleSparseArraySource extends SparseArrayColumnSource<Double> imp
             return;
         }
         final DoubleChunk<? extends Values> chunk = src.asDoubleChunk();
-        final LongChunk<OrderedRowKeyRanges> ranges = rowSequence.asRowKeyRangesChunk();
+        final LongChunk<Attributes.OrderedRowKeyRanges> ranges = rowSequence.asRowKeyRangesChunk();
 
         final boolean hasPrev = prevFlusher != null;
 
@@ -660,7 +660,7 @@ public class DoubleSparseArraySource extends SparseArrayColumnSource<Double> imp
             return;
         }
         final DoubleChunk<? extends Values> chunk = src.asDoubleChunk();
-        final LongChunk<Attributes.OrderedRowKeys> keys = rowSequence.asRowKeyChunk();
+        final LongChunk<OrderedRowKeys> keys = rowSequence.asRowKeyChunk();
 
         final boolean hasPrev = prevFlusher != null;
 

@@ -10,6 +10,7 @@ import io.deephaven.engine.v2.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.v2.sources.ByteArraySource;
 import io.deephaven.engine.v2.sources.LongArraySource;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Any;
+import io.deephaven.engine.v2.sources.chunk.Attributes.Indices;
 import io.deephaven.engine.v2.sources.chunk.*;
 
 public class ByteLongMegaMergeKernel {
@@ -18,7 +19,7 @@ public class ByteLongMegaMergeKernel {
     }
 
     // region Context
-    public static class ByteLongMegaMergeKernelContext<ATTR extends Any, KEY_INDICES extends Attributes.Indices> implements LongMegaMergeKernel<ATTR, KEY_INDICES> {
+    public static class ByteLongMegaMergeKernelContext<ATTR extends Any, KEY_INDICES extends Indices> implements LongMegaMergeKernel<ATTR, KEY_INDICES> {
         @SuppressWarnings("rawtypes")
         private static final ByteLongMegaMergeKernelContext INSTANCE = new ByteLongMegaMergeKernelContext();
 
@@ -29,7 +30,7 @@ public class ByteLongMegaMergeKernel {
     }
     // endregion Context
 
-    public static <ATTR extends Any, KEY_INDICES extends Attributes.Indices> ByteLongMegaMergeKernelContext<ATTR, KEY_INDICES> createContext() {
+    public static <ATTR extends Any, KEY_INDICES extends Indices> ByteLongMegaMergeKernelContext<ATTR, KEY_INDICES> createContext() {
         //noinspection unchecked
         return ByteLongMegaMergeKernelContext.INSTANCE;
     }
@@ -150,7 +151,7 @@ public class ByteLongMegaMergeKernel {
         }
     }
 
-    private static <ATTR extends Any, KEY_INDICES extends Attributes.Indices> void copyChunkToDest(LongChunk<KEY_INDICES> keysChunk, ByteChunk<ATTR> valuesChunk, LongArraySource destinationKeys, ByteArraySource destinationValues, int sourceStart, long destStart, int length) {
+    private static <ATTR extends Any, KEY_INDICES extends Indices> void copyChunkToDest(LongChunk<KEY_INDICES> keysChunk, ByteChunk<ATTR> valuesChunk, LongArraySource destinationKeys, ByteArraySource destinationValues, int sourceStart, long destStart, int length) {
         destinationValues.copyFromChunk(destStart, length, (ByteChunk)valuesChunk, sourceStart);
         destinationKeys.copyFromChunk(destStart, length, keysChunk, sourceStart);
     }

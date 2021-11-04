@@ -7,14 +7,15 @@
 
 package io.deephaven.engine.v2.by;
 
-import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.util.DhDoubleComparisons;
 import io.deephaven.engine.util.NullSafeAddition;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.DoubleArraySource;
+import io.deephaven.engine.v2.sources.DoubleArraySource;
 import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.sources.chunk.Attributes.*;
+import io.deephaven.engine.structures.RowSequence;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 

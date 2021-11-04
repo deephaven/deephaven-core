@@ -9,12 +9,12 @@ package io.deephaven.engine.v2.dbarrays;
 
 import io.deephaven.base.ClampUtil;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.tables.dbarrays.DbDoubleArray;
 import io.deephaven.engine.util.LongSizedDataStructure;
-import io.deephaven.engine.tables.dbarrays.*;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.utils.RowSet;
-import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
 import io.deephaven.engine.v2.utils.RowSetBuilderRandom;
+import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
 import org.jetbrains.annotations.NotNull;
 
 import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
@@ -28,12 +28,13 @@ public class DbPrevDoubleArrayColumnWrapper extends DbDoubleArray.Indirect {
     private final long startPadding;
     private final long endPadding;
 
-    public DbPrevDoubleArrayColumnWrapper(@NotNull final ColumnSource<Double> columnSource, @NotNull final RowSet rowSet) {
+    public DbPrevDoubleArrayColumnWrapper(@NotNull final ColumnSource<Double> columnSource,
+            @NotNull final RowSet rowSet) {
         this(columnSource, rowSet, 0, 0);
     }
 
-    private DbPrevDoubleArrayColumnWrapper(@NotNull final ColumnSource<Double> columnSource, @NotNull final RowSet rowSet,
-                                         final long startPadding, final long endPadding) {
+    private DbPrevDoubleArrayColumnWrapper(@NotNull final ColumnSource<Double> columnSource,
+            @NotNull final RowSet rowSet, final long startPadding, final long endPadding) {
         Assert.neqNull(rowSet, "rowSet");
         this.columnSource = columnSource;
         this.rowSet = rowSet;
@@ -43,9 +44,9 @@ public class DbPrevDoubleArrayColumnWrapper extends DbDoubleArray.Indirect {
 
     @Override
     public double get(long i) {
-        i-= startPadding;
+        i -= startPadding;
 
-        if (i<0 || i> rowSet.size()-1) {
+        if (i < 0 || i > rowSet.size() - 1) {
             return NULL_DOUBLE;
         }
 
@@ -54,21 +55,23 @@ public class DbPrevDoubleArrayColumnWrapper extends DbDoubleArray.Indirect {
 
     @Override
     public DbDoubleArray subArray(long fromIndex, long toIndex) {
-        fromIndex-=startPadding;
-        toIndex-=startPadding;
+        fromIndex -= startPadding;
+        toIndex -= startPadding;
 
         final long realFrom = ClampUtil.clampLong(0, rowSet.size(), fromIndex);
         final long realTo = ClampUtil.clampLong(0, rowSet.size(), toIndex);
 
-        long newStartPadding=toIndex<0 ? toIndex-fromIndex : Math.max(0, -fromIndex);
-        long newEndPadding= fromIndex>= rowSet.size() ? toIndex-fromIndex : Math.max(0, toIndex - rowSet.size());
+        long newStartPadding = toIndex < 0 ? toIndex - fromIndex : Math.max(0, -fromIndex);
+        long newEndPadding = fromIndex >= rowSet.size() ? toIndex - fromIndex : Math.max(0, toIndex - rowSet.size());
 
-        return new DbPrevDoubleArrayColumnWrapper(columnSource, rowSet.subSetByPositionRange(realFrom, realTo), newStartPadding, newEndPadding);
+        return new DbPrevDoubleArrayColumnWrapper(columnSource, rowSet.subSetByPositionRange(realFrom, realTo),
+                newStartPadding, newEndPadding);
     }
 
     @Override
     public DbDoubleArray subArrayByPositions(long[] positions) {
         RowSetBuilderRandom builder = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
+
         for (long position : positions) {
             final long realPos = position - startPadding;
 
@@ -82,21 +85,21 @@ public class DbPrevDoubleArrayColumnWrapper extends DbDoubleArray.Indirect {
 
     @Override
     public double[] toArray() {
-        return toArray(false,Integer.MAX_VALUE);
+        return toArray(false, Integer.MAX_VALUE);
     }
 
-    public double[] toArray(boolean shouldBeNullIfOutofBounds,int maxSize) {
-        if (shouldBeNullIfOutofBounds && (startPadding>0 || endPadding>0)){
+    public double[] toArray(boolean shouldBeNullIfOutofBounds, int maxSize) {
+        if (shouldBeNullIfOutofBounds && (startPadding > 0 || endPadding > 0)) {
             return null;
         }
 
-        long sz=Math.min(size(),maxSize);
+        long sz = Math.min(size(), maxSize);
 
         double[] result = new double[LongSizedDataStructure.intSize("toArray", sz)];
         for (int i = 0; i < sz; i++) {
             result[i] = get(i);
         }
-        
+
         return result;
     }
 

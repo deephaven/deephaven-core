@@ -6,7 +6,7 @@ package io.deephaven.engine.v2.sources;
 import io.deephaven.engine.tables.live.LiveTableMonitor;
 import io.deephaven.engine.v2.select.FormulaColumn;
 import io.deephaven.engine.v2.sources.chunk.*;
-import io.deephaven.engine.v2.sources.chunk.Attributes.RowKeys;
+import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedRowKeyRanges;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.engine.v2.utils.RowSetBuilderSequential;
@@ -97,7 +97,7 @@ public class TestShortArraySource {
                 pos++;
             }
             // region samecheck
-            final LongChunk<Attributes.OrderedRowKeyRanges> ranges = okChunk.asRowKeyRangesChunk();
+            final LongChunk<OrderedRowKeyRanges> ranges = okChunk.asRowKeyRangesChunk();
             if (ranges.size() > 2 || ranges.get(0) / ShortArraySource.BLOCK_SIZE != (ranges.get(1) / ShortArraySource.BLOCK_SIZE)) {
                 assertTrue(DefaultGetContext.isMyWritableChunk(context, chunk));
 
@@ -553,7 +553,7 @@ public class TestShortArraySource {
 
         try (final ChunkSource.FillContext ctx = source.makeFillContext(keys.length);
              final WritableShortChunk<Values> dest = WritableShortChunk.makeWritableChunk(keys.length);
-             final ResettableLongChunk<RowKeys> rlc = ResettableLongChunk.makeResettableChunk()) {
+             final ResettableLongChunk<Attributes.RowKeys> rlc = ResettableLongChunk.makeResettableChunk()) {
             rlc.resetFromTypedArray(keys, 0, keys.length);
             source.fillChunkUnordered(ctx, dest, rlc);
             assertEquals(keys.length, dest.size());

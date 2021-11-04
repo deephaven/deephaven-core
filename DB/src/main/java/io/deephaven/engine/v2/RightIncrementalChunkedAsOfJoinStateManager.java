@@ -125,7 +125,7 @@ class RightIncrementalChunkedAsOfJoinStateManager
     private final ArrayBackedColumnSource<?> [] overflowKeySources;
     // the location of the next key in an overflow bucket
     private final IntegerArraySource overflowOverflowLocationSource = new IntegerArraySource();
-    // the overflow buckets for the right MutableRowSet
+    // the overflow buckets for the right RowSet
     @ReplicateHashTable.OverflowStateColumnSource
     // @StateColumnSourceType@ from \QByteArraySource\E
     private final ByteArraySource overflowStateSource

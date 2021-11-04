@@ -80,11 +80,11 @@ public class ShortReverseSsaSsaStamp implements SsaSsaStamp {
     }
 
     @Override
-    public void processRemovals(SegmentedSortedArray leftSsa, Chunk<? extends Values> rightStampChunk, LongChunk<Attributes.RowKeys> rightKeys, WritableLongChunk<Attributes.RowKeys> priorRedirections, RedirectionIndex redirectionIndex, RowSetBuilderRandom modifiedBuilder, boolean disallowExactMatch) {
+    public void processRemovals(SegmentedSortedArray leftSsa, Chunk<? extends Values> rightStampChunk, LongChunk<RowKeys> rightKeys, WritableLongChunk<RowKeys> priorRedirections, RedirectionIndex redirectionIndex, RowSetBuilderRandom modifiedBuilder, boolean disallowExactMatch) {
         processRemovals((ShortReverseSegmentedSortedArray)leftSsa, rightStampChunk.asShortChunk(), rightKeys, priorRedirections, redirectionIndex, modifiedBuilder, disallowExactMatch);
     }
 
-    static private void processRemovals(ShortReverseSegmentedSortedArray leftSsa, ShortChunk<? extends Values> rightStampChunk, LongChunk<RowKeys> rightKeys, WritableLongChunk<Attributes.RowKeys> nextRedirections, RedirectionIndex redirectionIndex, RowSetBuilderRandom modifiedBuilder, boolean disallowExactMatch) {
+    static private void processRemovals(ShortReverseSegmentedSortedArray leftSsa, ShortChunk<? extends Values> rightStampChunk, LongChunk<Attributes.RowKeys> rightKeys, WritableLongChunk<Attributes.RowKeys> nextRedirections, RedirectionIndex redirectionIndex, RowSetBuilderRandom modifiedBuilder, boolean disallowExactMatch) {
         // When removing a row, record the stamp, redirection key, and prior redirection key.  Binary search
         // in the left for the removed key to find the smallest value geq the removed right.  Update all rows
         // with the removed redirection to the previous key.
@@ -146,7 +146,7 @@ public class ShortReverseSsaSsaStamp implements SsaSsaStamp {
 
         final ShortReverseSegmentedSortedArray.Iterator leftIt = leftSsa.iterator(disallowExactMatch, false);
 
-        try (final SizedLongChunk<RowKeys> modifiedKeys = new SizedLongChunk<>()) {
+        try (final SizedLongChunk<Attributes.RowKeys> modifiedKeys = new SizedLongChunk<>()) {
             int capacity = rightStampChunk.size();
             modifiedKeys.ensureCapacity(capacity).setSize(capacity);
             int mks = 0;
@@ -204,7 +204,7 @@ public class ShortReverseSsaSsaStamp implements SsaSsaStamp {
     private static void findModified(ShortReverseSegmentedSortedArray leftSsa, RedirectionIndex redirectionIndex, ShortChunk<? extends Values> rightStampChunk, LongChunk<Attributes.RowKeys> rightStampIndices, RowSetBuilderRandom modifiedBuilder, boolean disallowExactMatch) {
         final ShortReverseSegmentedSortedArray.Iterator leftIt = leftSsa.iterator(disallowExactMatch, false);
 
-        try (final SizedLongChunk<RowKeys> modifiedKeys = new SizedLongChunk<>()) {
+        try (final SizedLongChunk<Attributes.RowKeys> modifiedKeys = new SizedLongChunk<>()) {
             int capacity = rightStampChunk.size();
             modifiedKeys.ensureCapacity(capacity).setSize(capacity);
             int mks = 0;
@@ -236,7 +236,7 @@ public class ShortReverseSsaSsaStamp implements SsaSsaStamp {
     }
 
     @Override
-    public void applyShift(SegmentedSortedArray leftSsa, Chunk<? extends Values> rightStampChunk, LongChunk<RowKeys> rightStampKeys, long shiftDelta, RedirectionIndex redirectionIndex, boolean disallowExactMatch) {
+    public void applyShift(SegmentedSortedArray leftSsa, Chunk<? extends Values> rightStampChunk, LongChunk<Attributes.RowKeys> rightStampKeys, long shiftDelta, RedirectionIndex redirectionIndex, boolean disallowExactMatch) {
         applyShift((ShortReverseSegmentedSortedArray)leftSsa, rightStampChunk.asShortChunk(), rightStampKeys, shiftDelta, redirectionIndex, disallowExactMatch);
     }
 

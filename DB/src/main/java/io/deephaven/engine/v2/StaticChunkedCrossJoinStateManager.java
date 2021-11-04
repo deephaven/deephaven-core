@@ -70,7 +70,7 @@ class StaticChunkedCrossJoinStateManager
     // endregion preamble variables
 
     @ReplicateHashTable.EmptyStateValue
-    // @NullStateValue@ from \Qnull\E, @StateValueType@ from \QIndex\E
+    // @NullStateValue@ from \Qnull\E, @StateValueType@ from \QTrackingMutableRowSet\E
     private static final TrackingMutableRowSet EMPTY_RIGHT_VALUE = null;
 
     // mixin getStateValue
@@ -400,7 +400,7 @@ class StaticChunkedCrossJoinStateManager
 
         // the chunk of state values that we read from the hash table
         // @WritableStateChunkType@ from \QWritableObjectChunk<TrackingMutableRowSet,Values>\E
-        final WritableObjectChunk<RowSet,Values> workingStateEntries;
+        final WritableObjectChunk<TrackingMutableRowSet,Values> workingStateEntries;
 
         // the chunks for getting key values from the hash table
         final WritableChunk<Values>[] workingKeyChunks;
@@ -426,7 +426,7 @@ class StaticChunkedCrossJoinStateManager
 
         // mixin allowUpdateWriteThroughState
         // @WritableStateChunkType@ from \QWritableObjectChunk<TrackingMutableRowSet,Values>\E, @WritableStateChunkName@ from \QWritableObjectChunk\E
-        final ResettableWritableObjectChunk<RowSet,Values> writeThroughState = ResettableWritableObjectChunk.makeResettableChunk();
+        final ResettableWritableObjectChunk<TrackingMutableRowSet,Values> writeThroughState = ResettableWritableObjectChunk.makeResettableChunk();
         // endmixin allowUpdateWriteThroughState
         final ResettableWritableIntChunk<Values> writeThroughOverflowLocations = ResettableWritableIntChunk.makeResettableChunk();
         // endmixin rehash
@@ -971,7 +971,7 @@ class StaticChunkedCrossJoinStateManager
                         lastBackingChunkLocation = firstBackingChunkLocation + bc.writeThroughChunks[0].size() - 1;
                     }
 
-                    // @StateValueType@ from \QIndex\E
+                    // @StateValueType@ from \QTrackingMutableRowSet\E
                     final TrackingMutableRowSet stateValueToMove = rightIndexSource.getUnsafe(oldHashLocation);
                     rightIndexSource.set(newHashLocation, stateValueToMove);
                     rightIndexSource.set(oldHashLocation, EMPTY_RIGHT_VALUE);
@@ -1187,7 +1187,7 @@ class StaticChunkedCrossJoinStateManager
 
     // mixin allowUpdateWriteThroughState
     // @WritableStateChunkType@ from \QWritableObjectChunk<TrackingMutableRowSet,Values>\E
-    private void updateWriteThroughState(ResettableWritableObjectChunk<RowSet,Values> writeThroughState, long firstPosition, long expectedLastPosition) {
+    private void updateWriteThroughState(ResettableWritableObjectChunk<TrackingMutableRowSet,Values> writeThroughState, long firstPosition, long expectedLastPosition) {
         final long firstBackingChunkPosition = rightIndexSource.resetWritableChunkToBackingStore(writeThroughState, firstPosition);
         if (firstBackingChunkPosition != firstPosition) {
             throw new IllegalStateException("ArrayBackedColumnSources have different block sizes!");
@@ -1330,7 +1330,7 @@ class StaticChunkedCrossJoinStateManager
         // the chunk of right indices that we read from the hash table, the empty right rowSet is used as a sentinel that the
         // state exists; otherwise when building from the left it is always null
         // @WritableStateChunkType@ from \QWritableObjectChunk<TrackingMutableRowSet,Values>\E
-        final WritableObjectChunk<RowSet,Values> workingStateEntries;
+        final WritableObjectChunk<TrackingMutableRowSet,Values> workingStateEntries;
 
         // the overflow locations that we need to get from the overflowLocationSource (or overflowOverflowLocationSource)
         final WritableLongChunk<RowKeys> overflowLocationsToFetch;

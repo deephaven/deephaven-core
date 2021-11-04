@@ -267,7 +267,7 @@ public class ShortRollupCountDistinctOperator implements IterativeChunkedAggrega
     }
 
     @Override
-    public void modifyChunk(BucketedContext bucketedContext, Chunk<? extends Values> preValues, Chunk<? extends Values> postValues, LongChunk<? extends RowKeys> postShiftIndices, IntChunk<Attributes.RowKeys> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length, WritableBooleanChunk<Values> stateModified) {
+    public void modifyChunk(BucketedContext bucketedContext, Chunk<? extends Values> preValues, Chunk<? extends Values> postValues, LongChunk<? extends Attributes.RowKeys> postShiftIndices, IntChunk<RowKeys> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length, WritableBooleanChunk<Values> stateModified) {
         final BucketSsmDistinctRollupContext context = updateRemoveValues((BucketSsmDistinctRollupContext)bucketedContext, preValues, startPositions, length);
 
         final SegmentedSortedMultiSet.RemoveContext removeContext = removeContextFactory.get();
@@ -358,7 +358,7 @@ public class ShortRollupCountDistinctOperator implements IterativeChunkedAggrega
     }
 
     @Override
-    public boolean addChunk(SingletonContext singletonContext, int chunkSize, Chunk<? extends Values> values, LongChunk<? extends Attributes.RowKeys> inputIndices, long destination) {
+    public boolean addChunk(SingletonContext singletonContext, int chunkSize, Chunk<? extends Values> values, LongChunk<? extends RowKeys> inputIndices, long destination) {
         final SsmDistinctRollupContext context = updateAddValues((SsmDistinctRollupContext)singletonContext, values);
         final WritableChunk<? extends Values> updatedValues = context.valueCopy.get();
         if (updatedValues == null || updatedValues.size() == 0) {

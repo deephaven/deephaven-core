@@ -80,7 +80,7 @@ public class LongSsaSsaStamp implements SsaSsaStamp {
     }
 
     @Override
-    public void processRemovals(SegmentedSortedArray leftSsa, Chunk<? extends Values> rightStampChunk, LongChunk<Attributes.RowKeys> rightKeys, WritableLongChunk<Attributes.RowKeys> priorRedirections, RedirectionIndex redirectionIndex, RowSetBuilderRandom modifiedBuilder, boolean disallowExactMatch) {
+    public void processRemovals(SegmentedSortedArray leftSsa, Chunk<? extends Values> rightStampChunk, LongChunk<RowKeys> rightKeys, WritableLongChunk<RowKeys> priorRedirections, RedirectionIndex redirectionIndex, RowSetBuilderRandom modifiedBuilder, boolean disallowExactMatch) {
         processRemovals((LongSegmentedSortedArray)leftSsa, rightStampChunk.asLongChunk(), rightKeys, priorRedirections, redirectionIndex, modifiedBuilder, disallowExactMatch);
     }
 
@@ -240,7 +240,7 @@ public class LongSsaSsaStamp implements SsaSsaStamp {
         applyShift((LongSegmentedSortedArray)leftSsa, rightStampChunk.asLongChunk(), rightStampKeys, shiftDelta, redirectionIndex, disallowExactMatch);
     }
 
-    private void applyShift(LongSegmentedSortedArray leftSsa, LongChunk<? extends Values> rightStampChunk, LongChunk<RowKeys> rightStampKeys, long shiftDelta, RedirectionIndex redirectionIndex, boolean disallowExactMatch) {
+    private void applyShift(LongSegmentedSortedArray leftSsa, LongChunk<? extends Values> rightStampChunk, LongChunk<Attributes.RowKeys> rightStampKeys, long shiftDelta, RedirectionIndex redirectionIndex, boolean disallowExactMatch) {
         final LongSegmentedSortedArray.Iterator leftIt = leftSsa.iterator(disallowExactMatch, false);
 
         for (int ii = 0; ii < rightStampChunk.size(); ++ii) {

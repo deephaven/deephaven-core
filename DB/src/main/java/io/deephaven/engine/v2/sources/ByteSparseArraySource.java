@@ -10,7 +10,6 @@ package io.deephaven.engine.v2.sources;
 import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedRowKeys;
-import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedRowKeyRanges;
 import io.deephaven.engine.v2.sources.sparse.ByteOneOrN;
 import io.deephaven.engine.v2.sources.sparse.LongOneOrN;
 import io.deephaven.engine.v2.utils.*;
@@ -592,7 +591,7 @@ public class ByteSparseArraySource extends SparseArrayColumnSource<Byte> impleme
             return;
         }
         final ByteChunk<? extends Values> chunk = src.asByteChunk();
-        final LongChunk<OrderedRowKeyRanges> ranges = rowSequence.asRowKeyRangesChunk();
+        final LongChunk<Attributes.OrderedRowKeyRanges> ranges = rowSequence.asRowKeyRangesChunk();
 
         final boolean hasPrev = prevFlusher != null;
 

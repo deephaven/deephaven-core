@@ -23,6 +23,7 @@ import io.deephaven.engine.v2.utils.*;
 import java.util.Arrays;
 import io.deephaven.engine.v2.sort.permute.IntPermuteKernel;
 // @StateChunkTypeEnum@ from \QObject\E
+import io.deephaven.engine.v2.sort.permute.ObjectPermuteKernel;
 import io.deephaven.engine.v2.utils.compact.IntCompactKernel;
 import io.deephaven.engine.v2.utils.compact.LongCompactKernel;
 // endmixin rehash
@@ -101,7 +102,7 @@ class IncrementalChunkedByAggregationStateManager
     // endregion preamble variables
 
     @ReplicateHashTable.EmptyStateValue
-    // @NullStateValue@ from \Qnull\E, @StateValueType@ from \QIndex\E
+    // @NullStateValue@ from \Qnull\E, @StateValueType@ from \QTrackingMutableRowSet\E
     private static final TrackingMutableRowSet EMPTY_VALUE = null;
 
     // mixin getStateValue
@@ -346,7 +347,7 @@ class IncrementalChunkedByAggregationStateManager
 
         // the chunk of state values that we read from the hash table
         // @WritableStateChunkType@ from \QWritableObjectChunk<TrackingMutableRowSet,Values>\E
-        final WritableObjectChunk<RowSet,Values> workingStateEntries;
+        final WritableObjectChunk<TrackingMutableRowSet,Values> workingStateEntries;
 
         // the chunks for getting key values from the hash table
         final WritableChunk<Values>[] workingKeyChunks;
@@ -908,7 +909,7 @@ class IncrementalChunkedByAggregationStateManager
                         lastBackingChunkLocation = firstBackingChunkLocation + bc.writeThroughChunks[0].size() - 1;
                     }
 
-                    // @StateValueType@ from \QIndex\E
+                    // @StateValueType@ from \QTrackingMutableRowSet\E
                     final TrackingMutableRowSet stateValueToMove = indexSource.getUnsafe(oldHashLocation);
                     indexSource.set(newHashLocation, stateValueToMove);
                     indexSource.set(oldHashLocation, EMPTY_VALUE);
@@ -1286,7 +1287,7 @@ class IncrementalChunkedByAggregationStateManager
         // the chunk of right indices that we read from the hash table, the empty right rowSet is used as a sentinel that the
         // state exists; otherwise when building from the left it is always null
         // @WritableStateChunkType@ from \QWritableObjectChunk<TrackingMutableRowSet,Values>\E
-        final WritableObjectChunk<RowSet,Values> workingStateEntries;
+        final WritableObjectChunk<TrackingMutableRowSet,Values> workingStateEntries;
 
         // the overflow locations that we need to get from the overflowLocationSource (or overflowOverflowLocationSource)
         final WritableLongChunk<RowKeys> overflowLocationsToFetch;

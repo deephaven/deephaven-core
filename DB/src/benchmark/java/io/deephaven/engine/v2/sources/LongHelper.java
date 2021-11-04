@@ -3,7 +3,7 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.v2.sources;
 
-import io.deephaven.engine.v2.sources.chunk.Attributes;
+import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedRowKeys;
 import io.deephaven.engine.v2.sources.chunk.LongChunk;
 import io.deephaven.engine.v2.sources.chunk.WritableLongChunk;
 import io.deephaven.engine.structures.RowSequence;
@@ -45,7 +45,7 @@ class LongHelper implements FillBenchmarkHelper {
     }
 
     @Override
-    public void getFromArray(Blackhole bh, int fetchSize, LongChunk<Attributes.OrderedRowKeys> keys) {
+    public void getFromArray(Blackhole bh, int fetchSize, LongChunk<OrderedRowKeys> keys) {
         final WritableLongChunk result = WritableLongChunk.makeWritableChunk(fetchSize);
         for (int ii = 0; ii < keys.size(); ++ii) {
             result.set(ii, longArray[(int)keys.get(ii)]);

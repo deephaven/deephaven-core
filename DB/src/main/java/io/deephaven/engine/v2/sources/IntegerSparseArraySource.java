@@ -9,9 +9,7 @@ package io.deephaven.engine.v2.sources;
 
 import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
-import io.deephaven.engine.v2.sources.chunk.Attributes.RowKeys;
 import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedRowKeys;
-import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedRowKeyRanges;
 import io.deephaven.engine.v2.sources.sparse.IntOneOrN;
 import io.deephaven.engine.v2.sources.sparse.LongOneOrN;
 import io.deephaven.engine.v2.utils.*;
@@ -544,7 +542,7 @@ public class IntegerSparseArraySource extends SparseArrayColumnSource<Integer> i
     }
 
     @Override
-    void fillPrevByUnRowSequence(@NotNull WritableChunk<? super Values> dest, @NotNull LongChunk<? extends RowKeys> keys) {
+    void fillPrevByUnRowSequence(@NotNull WritableChunk<? super Values> dest, @NotNull LongChunk<? extends Attributes.RowKeys> keys) {
         final WritableIntChunk<? super Values> intChunk = dest.asWritableIntChunk();
         for (int ii = 0; ii < keys.size(); ) {
             final long firstKey = keys.get(ii);
@@ -593,7 +591,7 @@ public class IntegerSparseArraySource extends SparseArrayColumnSource<Integer> i
             return;
         }
         final IntChunk<? extends Values> chunk = src.asIntChunk();
-        final LongChunk<OrderedRowKeyRanges> ranges = rowSequence.asRowKeyRangesChunk();
+        final LongChunk<Attributes.OrderedRowKeyRanges> ranges = rowSequence.asRowKeyRangesChunk();
 
         final boolean hasPrev = prevFlusher != null;
 

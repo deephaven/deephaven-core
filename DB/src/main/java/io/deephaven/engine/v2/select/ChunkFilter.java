@@ -131,9 +131,9 @@ public interface ChunkFilter {
             Configuration.getInstance().getLongWithDefault("ChunkFilter.interruptionGoalMillis", 100);
 
     /**
-     * Apply a chunk filter to an TrackingMutableRowSet and column source, producing a new TrackingMutableRowSet that is responsive to the filter.
+     * Apply a chunk filter to a RowSet and column source, producing a new MutableRowSet that is responsive to the filter.
      *
-     * @param selection the TrackingMutableRowSet to filter
+     * @param selection the RowSet to filter
      * @param columnSource the column source to filter
      * @param usePrev should we use previous values from the column source?
      * @param chunkFilter the chunk filter to apply

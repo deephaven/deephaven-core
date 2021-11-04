@@ -5,6 +5,8 @@
 package io.deephaven.engine.v2.sources;
 
 import io.deephaven.engine.v2.sources.chunk.*;
+import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedRowKeyRanges;
+import io.deephaven.engine.v2.sources.chunk.Attributes.RowKeys;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedRowKeys;
 import io.deephaven.engine.v2.sources.sparse.CharOneOrN;
@@ -505,7 +507,7 @@ public class CharacterSparseArraySource extends SparseArrayColumnSource<Characte
 
     // region fillByUnRowSequence
     @Override
-    void fillByUnRowSequence(@NotNull WritableChunk<? super Values> dest, @NotNull LongChunk<? extends Attributes.RowKeys> keys) {
+    void fillByUnRowSequence(@NotNull WritableChunk<? super Values> dest, @NotNull LongChunk<? extends RowKeys> keys) {
         final WritableCharChunk<? super Values> charChunk = dest.asWritableCharChunk();
         for (int ii = 0; ii < keys.size(); ) {
             final long firstKey = keys.get(ii);
@@ -539,7 +541,7 @@ public class CharacterSparseArraySource extends SparseArrayColumnSource<Characte
     }
 
     @Override
-    void fillPrevByUnRowSequence(@NotNull WritableChunk<? super Values> dest, @NotNull LongChunk<? extends Attributes.RowKeys> keys) {
+    void fillPrevByUnRowSequence(@NotNull WritableChunk<? super Values> dest, @NotNull LongChunk<? extends RowKeys> keys) {
         final WritableCharChunk<? super Values> charChunk = dest.asWritableCharChunk();
         for (int ii = 0; ii < keys.size(); ) {
             final long firstKey = keys.get(ii);
@@ -588,7 +590,7 @@ public class CharacterSparseArraySource extends SparseArrayColumnSource<Characte
             return;
         }
         final CharChunk<? extends Values> chunk = src.asCharChunk();
-        final LongChunk<Attributes.OrderedRowKeyRanges> ranges = rowSequence.asRowKeyRangesChunk();
+        final LongChunk<OrderedRowKeyRanges> ranges = rowSequence.asRowKeyRangesChunk();
 
         final boolean hasPrev = prevFlusher != null;
 
@@ -710,7 +712,7 @@ public class CharacterSparseArraySource extends SparseArrayColumnSource<Characte
 
     // region fillFromChunkUnordered
     @Override
-    public void fillFromChunkUnordered(@NotNull FillFromContext context, @NotNull Chunk<? extends Values> src, @NotNull LongChunk<Attributes.RowKeys> keys) {
+    public void fillFromChunkUnordered(@NotNull FillFromContext context, @NotNull Chunk<? extends Values> src, @NotNull LongChunk<RowKeys> keys) {
         if (keys.size() == 0) {
             return;
         }

@@ -1,8 +1,6 @@
-/*
- * ---------------------------------------------------------------------------------------------------------------------
+/* ---------------------------------------------------------------------------------------------------------------------
  * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit DbPrevCharArrayColumnWrapper and regenerate
- * ------------------------------------------------------------------------------------------------------------------
- */
+ * ------------------------------------------------------------------------------------------------------------------ */
 /*
  * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
  */
@@ -30,12 +28,13 @@ public class DbPrevByteArrayColumnWrapper extends DbByteArray.Indirect {
     private final long startPadding;
     private final long endPadding;
 
-    public DbPrevByteArrayColumnWrapper(@NotNull final ColumnSource<Byte> columnSource, @NotNull final RowSet rowSet) {
+    public DbPrevByteArrayColumnWrapper(@NotNull final ColumnSource<Byte> columnSource,
+            @NotNull final RowSet rowSet) {
         this(columnSource, rowSet, 0, 0);
     }
 
-    private DbPrevByteArrayColumnWrapper(@NotNull final ColumnSource<Byte> columnSource, @NotNull final RowSet rowSet,
-            final long startPadding, final long endPadding) {
+    private DbPrevByteArrayColumnWrapper(@NotNull final ColumnSource<Byte> columnSource,
+            @NotNull final RowSet rowSet, final long startPadding, final long endPadding) {
         Assert.neqNull(rowSet, "rowSet");
         this.columnSource = columnSource;
         this.rowSet = rowSet;

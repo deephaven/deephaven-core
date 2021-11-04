@@ -37,9 +37,9 @@ class TableShowTools {
             int lineLen = 0;
             final Set<Integer> columnLimits = new HashSet<>();
             if (showIndex) {
-                out.print("  Position");
+                out.print("RowPosition");
                 out.print(delimiter);
-                out.print("     TrackingMutableRowSet");
+                out.print("     RowKey");
                 out.print(delimiter);
                 columnLimits.add(10);
                 columnLimits.add(21);

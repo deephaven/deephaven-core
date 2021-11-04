@@ -10,6 +10,7 @@ import io.deephaven.engine.v2.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.v2.sources.FloatArraySource;
 import io.deephaven.engine.v2.sources.LongArraySource;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Any;
+import io.deephaven.engine.v2.sources.chunk.Attributes.Indices;
 import io.deephaven.engine.v2.sources.chunk.*;
 
 public class FloatLongMegaMergeDescendingKernel {
@@ -18,7 +19,7 @@ public class FloatLongMegaMergeDescendingKernel {
     }
 
     // region Context
-    public static class FloatLongMegaMergeDescendingKernelContext<ATTR extends Any, KEY_INDICES extends Attributes.Indices> implements LongMegaMergeKernel<ATTR, KEY_INDICES> {
+    public static class FloatLongMegaMergeDescendingKernelContext<ATTR extends Any, KEY_INDICES extends Indices> implements LongMegaMergeKernel<ATTR, KEY_INDICES> {
         @SuppressWarnings("rawtypes")
         private static final FloatLongMegaMergeDescendingKernelContext INSTANCE = new FloatLongMegaMergeDescendingKernelContext();
 
@@ -29,7 +30,7 @@ public class FloatLongMegaMergeDescendingKernel {
     }
     // endregion Context
 
-    public static <ATTR extends Any, KEY_INDICES extends Attributes.Indices> FloatLongMegaMergeDescendingKernelContext<ATTR, KEY_INDICES> createContext() {
+    public static <ATTR extends Any, KEY_INDICES extends Indices> FloatLongMegaMergeDescendingKernelContext<ATTR, KEY_INDICES> createContext() {
         //noinspection unchecked
         return FloatLongMegaMergeDescendingKernelContext.INSTANCE;
     }
@@ -150,7 +151,7 @@ public class FloatLongMegaMergeDescendingKernel {
         }
     }
 
-    private static <ATTR extends Any, KEY_INDICES extends Attributes.Indices> void copyChunkToDest(LongChunk<KEY_INDICES> keysChunk, FloatChunk<ATTR> valuesChunk, LongArraySource destinationKeys, FloatArraySource destinationValues, int sourceStart, long destStart, int length) {
+    private static <ATTR extends Any, KEY_INDICES extends Indices> void copyChunkToDest(LongChunk<KEY_INDICES> keysChunk, FloatChunk<ATTR> valuesChunk, LongArraySource destinationKeys, FloatArraySource destinationValues, int sourceStart, long destStart, int length) {
         destinationValues.copyFromChunk(destStart, length, (FloatChunk)valuesChunk, sourceStart);
         destinationKeys.copyFromChunk(destStart, length, keysChunk, sourceStart);
     }

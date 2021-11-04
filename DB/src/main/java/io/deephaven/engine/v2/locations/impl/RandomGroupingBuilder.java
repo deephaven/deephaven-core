@@ -43,7 +43,7 @@ public class RandomGroupingBuilder<DATA_TYPE> {
     /**
      * Get the groupings under construction in a form usable by AbstractColumnSource implementations.
      *
-     * @return A mapping from grouping value to its matching TrackingMutableRowSet
+     * @return A mapping from grouping value to its matching RowSet
      */
     public Map<DATA_TYPE, RowSet> getGroupToIndex() {
         if (groupToIndex != null) {

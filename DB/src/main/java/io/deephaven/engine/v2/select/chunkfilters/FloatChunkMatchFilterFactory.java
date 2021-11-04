@@ -54,7 +54,7 @@ public class FloatChunkMatchFilterFactory {
         }
 
         @Override
-        public void filter(FloatChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys, WritableLongChunk<Attributes.OrderedRowKeys> results) {
+        public void filter(FloatChunk<? extends Values> values, LongChunk<Attributes.OrderedRowKeys> keys, WritableLongChunk<Attributes.OrderedRowKeys> results) {
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
                 if (values.get(ii) == value) {
@@ -72,7 +72,7 @@ public class FloatChunkMatchFilterFactory {
         }
 
         @Override
-        public void filter(FloatChunk<? extends Values> values, LongChunk<Attributes.OrderedRowKeys> keys, WritableLongChunk<OrderedRowKeys> results) {
+        public void filter(FloatChunk<? extends Values> values, LongChunk<Attributes.OrderedRowKeys> keys, WritableLongChunk<Attributes.OrderedRowKeys> results) {
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
                 if (values.get(ii) != value) {
@@ -92,7 +92,7 @@ public class FloatChunkMatchFilterFactory {
         }
 
         @Override
-        public void filter(FloatChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys, WritableLongChunk<Attributes.OrderedRowKeys> results) {
+        public void filter(FloatChunk<? extends Values> values, LongChunk<Attributes.OrderedRowKeys> keys, WritableLongChunk<Attributes.OrderedRowKeys> results) {
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
                 final float checkValue = values.get(ii);
@@ -136,7 +136,7 @@ public class FloatChunkMatchFilterFactory {
         }
 
         @Override
-        public void filter(FloatChunk<? extends Values> values, LongChunk<Attributes.OrderedRowKeys> keys, WritableLongChunk<OrderedRowKeys> results) {
+        public void filter(FloatChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys, WritableLongChunk<Attributes.OrderedRowKeys> results) {
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
                 final float checkValue = values.get(ii);
@@ -178,7 +178,7 @@ public class FloatChunkMatchFilterFactory {
         }
 
         @Override
-        public void filter(FloatChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys, WritableLongChunk<Attributes.OrderedRowKeys> results) {
+        public void filter(FloatChunk<? extends Values> values, LongChunk<Attributes.OrderedRowKeys> keys, WritableLongChunk<Attributes.OrderedRowKeys> results) {
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
                 final float checkValue = values.get(ii);
@@ -197,7 +197,7 @@ public class FloatChunkMatchFilterFactory {
         }
 
         @Override
-        public void filter(FloatChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys, WritableLongChunk<Attributes.OrderedRowKeys> results) {
+        public void filter(FloatChunk<? extends Values> values, LongChunk<Attributes.OrderedRowKeys> keys, WritableLongChunk<Attributes.OrderedRowKeys> results) {
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
                 final float checkValue = values.get(ii);

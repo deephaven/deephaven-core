@@ -64,7 +64,7 @@ public class SingleRangeRowSequence extends RowSequenceAsChunkImpl implements Si
 
     @Override
     public RowSet asRowSet() {
-        return new TrackingMutableRowSetImpl(SingleRange.make(rangeStart(), rangeEnd()));
+        return new MutableRowSetImpl(SingleRange.make(rangeStart(), rangeEnd()));
     }
 
     @Override

@@ -98,12 +98,12 @@ public interface SegmentedSortedArray extends LongSizedDataStructure {
     boolean isReversed();
 
     /**
-     * @return the first rowSet in this SSA, TrackingMutableRowSet.NULL_KEY when empty.
+     * @return the first rowSet in this SSA, RowSet.NULL_ROW_KEY when empty.
      */
     long getFirst();
 
     /**
-     * @return the last rowSet in this SSA, TrackingMutableRowSet.NULL_KEY when empty.
+     * @return the last rowSet in this SSA, RowSet.NULL_ROW_KEY when empty.
      */
     long getLast();
 }

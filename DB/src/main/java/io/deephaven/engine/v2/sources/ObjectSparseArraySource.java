@@ -11,8 +11,7 @@ import io.deephaven.engine.tables.dbarrays.DbArrayBase;
 
 import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
-import io.deephaven.engine.v2.sources.chunk.Attributes.RowKeys;
-import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedRowKeyRanges;
+import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedRowKeys;
 import io.deephaven.engine.v2.sources.sparse.ObjectOneOrN;
 import io.deephaven.engine.v2.sources.sparse.LongOneOrN;
 import io.deephaven.engine.v2.utils.*;
@@ -592,7 +591,7 @@ public class ObjectSparseArraySource<T> extends SparseArrayColumnSource<T> imple
             return;
         }
         final ObjectChunk<T, ? extends Values> chunk = src.asObjectChunk();
-        final LongChunk<OrderedRowKeyRanges> ranges = rowSequence.asRowKeyRangesChunk();
+        final LongChunk<Attributes.OrderedRowKeyRanges> ranges = rowSequence.asRowKeyRangesChunk();
 
         final boolean hasPrev = prevFlusher != null;
 
@@ -661,7 +660,7 @@ public class ObjectSparseArraySource<T> extends SparseArrayColumnSource<T> imple
             return;
         }
         final ObjectChunk<T, ? extends Values> chunk = src.asObjectChunk();
-        final LongChunk<Attributes.OrderedRowKeys> keys = rowSequence.asRowKeyChunk();
+        final LongChunk<OrderedRowKeys> keys = rowSequence.asRowKeyChunk();
 
         final boolean hasPrev = prevFlusher != null;
 
@@ -714,7 +713,7 @@ public class ObjectSparseArraySource<T> extends SparseArrayColumnSource<T> imple
 
     // region fillFromChunkUnordered
     @Override
-    public void fillFromChunkUnordered(@NotNull FillFromContext context, @NotNull Chunk<? extends Values> src, @NotNull LongChunk<RowKeys> keys) {
+    public void fillFromChunkUnordered(@NotNull FillFromContext context, @NotNull Chunk<? extends Values> src, @NotNull LongChunk<Attributes.RowKeys> keys) {
         if (keys.size() == 0) {
             return;
         }

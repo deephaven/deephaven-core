@@ -6,6 +6,7 @@ package io.deephaven.engine.v2.join.stamp;
 import io.deephaven.engine.util.DhDoubleComparisons;
 
 import io.deephaven.engine.v2.sources.chunk.*;
+import io.deephaven.engine.v2.sources.chunk.Attributes.RowKeys;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 import io.deephaven.engine.v2.utils.RowSet;
 
@@ -15,11 +16,11 @@ public class DoubleStampKernel implements StampKernel {
     private DoubleStampKernel() {} // static use only
 
     @Override
-    public void computeRedirections(Chunk<Values> leftStamps, Chunk<Values> rightStamps, LongChunk<Attributes.RowKeys> rightKeyIndices, WritableLongChunk<Attributes.RowKeys> leftRedirections) {
+    public void computeRedirections(Chunk<Values> leftStamps, Chunk<Values> rightStamps, LongChunk<Attributes.RowKeys> rightKeyIndices, WritableLongChunk<RowKeys> leftRedirections) {
         computeRedirections(leftStamps.asDoubleChunk(), rightStamps.asDoubleChunk(), rightKeyIndices, leftRedirections);
     }
 
-    static private void computeRedirections(DoubleChunk<Values> leftStamps, DoubleChunk<Values> rightStamps, LongChunk<Attributes.RowKeys> rightKeyIndices, WritableLongChunk<Attributes.RowKeys> leftRedirections) {
+    static private void computeRedirections(DoubleChunk<Values> leftStamps, DoubleChunk<Values> rightStamps, LongChunk<RowKeys> rightKeyIndices, WritableLongChunk<RowKeys> leftRedirections) {
         final int leftSize = leftStamps.size();
         final int rightSize = rightStamps.size();
         if (rightSize == 0) {

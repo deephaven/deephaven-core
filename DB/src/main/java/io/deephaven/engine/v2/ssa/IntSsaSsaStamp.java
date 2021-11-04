@@ -4,6 +4,7 @@
 package io.deephaven.engine.v2.ssa;
 
 import io.deephaven.engine.v2.sources.chunk.*;
+import io.deephaven.engine.v2.sources.chunk.Attributes.RowKeys;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 import io.deephaven.engine.v2.sources.chunk.sized.SizedLongChunk;
 import io.deephaven.engine.v2.utils.RowSet;
@@ -79,7 +80,7 @@ public class IntSsaSsaStamp implements SsaSsaStamp {
     }
 
     @Override
-    public void processRemovals(SegmentedSortedArray leftSsa, Chunk<? extends Values> rightStampChunk, LongChunk<Attributes.RowKeys> rightKeys, WritableLongChunk<Attributes.RowKeys> priorRedirections, RedirectionIndex redirectionIndex, RowSetBuilderRandom modifiedBuilder, boolean disallowExactMatch) {
+    public void processRemovals(SegmentedSortedArray leftSsa, Chunk<? extends Values> rightStampChunk, LongChunk<RowKeys> rightKeys, WritableLongChunk<RowKeys> priorRedirections, RedirectionIndex redirectionIndex, RowSetBuilderRandom modifiedBuilder, boolean disallowExactMatch) {
         processRemovals((IntSegmentedSortedArray)leftSsa, rightStampChunk.asIntChunk(), rightKeys, priorRedirections, redirectionIndex, modifiedBuilder, disallowExactMatch);
     }
 

@@ -8,6 +8,7 @@ import io.deephaven.engine.v2.sort.LongMegaMergeKernel;
 import io.deephaven.engine.v2.sort.timsort.TimsortUtilities;
 import io.deephaven.engine.v2.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.v2.sources.LongArraySource;
+import io.deephaven.engine.v2.sources.LongArraySource;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Any;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Indices;
 import io.deephaven.engine.v2.sources.chunk.*;
@@ -34,12 +35,12 @@ public class LongLongMegaMergeDescendingKernel {
         return LongLongMegaMergeDescendingKernelContext.INSTANCE;
     }
 
-    static public <ATTR extends Any, KEY_INDICES extends Indices> void merge(LongArraySource destinationKeys,
-                                                                             LongArraySource destinationValues,
-                                                                             long destinationOffset,
-                                                                             long destinationSize,
-                                                                             LongChunk<KEY_INDICES> keysChunk,
-                                                                             LongChunk<ATTR> valuesChunk
+    static public <ATTR extends Any, KEY_INDICES extends Attributes.Indices> void merge(LongArraySource destinationKeys,
+                                                                                        LongArraySource destinationValues,
+                                                                                        long destinationOffset,
+                                                                                        long destinationSize,
+                                                                                        LongChunk<KEY_INDICES> keysChunk,
+                                                                                        LongChunk<ATTR> valuesChunk
     ) {
         destinationKeys.ensureCapacity(destinationOffset + destinationSize + keysChunk.size(), false);
         destinationValues.ensureCapacity(destinationOffset + destinationSize + valuesChunk.size(), false);
@@ -150,7 +151,7 @@ public class LongLongMegaMergeDescendingKernel {
         }
     }
 
-    private static <ATTR extends Any, KEY_INDICES extends Attributes.Indices> void copyChunkToDest(LongChunk<KEY_INDICES> keysChunk, LongChunk<ATTR> valuesChunk, LongArraySource destinationKeys, LongArraySource destinationValues, int sourceStart, long destStart, int length) {
+    private static <ATTR extends Any, KEY_INDICES extends Indices> void copyChunkToDest(LongChunk<KEY_INDICES> keysChunk, LongChunk<ATTR> valuesChunk, LongArraySource destinationKeys, LongArraySource destinationValues, int sourceStart, long destStart, int length) {
         destinationValues.copyFromChunk(destStart, length, (LongChunk)valuesChunk, sourceStart);
         destinationKeys.copyFromChunk(destStart, length, keysChunk, sourceStart);
     }

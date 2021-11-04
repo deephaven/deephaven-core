@@ -35,12 +35,12 @@ public class ObjectLongMegaMergeDescendingKernel {
         return ObjectLongMegaMergeDescendingKernelContext.INSTANCE;
     }
 
-    static public <ATTR extends Any, KEY_INDICES extends Indices> void merge(LongArraySource destinationKeys,
-                                                                             ObjectArraySource destinationValues,
-                                                                             long destinationOffset,
-                                                                             long destinationSize,
-                                                                             LongChunk<KEY_INDICES> keysChunk,
-                                                                             ObjectChunk<Object, ATTR> valuesChunk
+    static public <ATTR extends Any, KEY_INDICES extends Attributes.Indices> void merge(LongArraySource destinationKeys,
+                                                                                        ObjectArraySource destinationValues,
+                                                                                        long destinationOffset,
+                                                                                        long destinationSize,
+                                                                                        LongChunk<KEY_INDICES> keysChunk,
+                                                                                        ObjectChunk<Object, ATTR> valuesChunk
     ) {
         destinationKeys.ensureCapacity(destinationOffset + destinationSize + keysChunk.size(), false);
         destinationValues.ensureCapacity(destinationOffset + destinationSize + valuesChunk.size(), false);

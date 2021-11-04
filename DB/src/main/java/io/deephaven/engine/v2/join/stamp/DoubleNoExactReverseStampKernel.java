@@ -16,11 +16,11 @@ public class DoubleNoExactReverseStampKernel implements StampKernel {
     private DoubleNoExactReverseStampKernel() {} // static use only
 
     @Override
-    public void computeRedirections(Chunk<Values> leftStamps, Chunk<Values> rightStamps, LongChunk<RowKeys> rightKeyIndices, WritableLongChunk<Attributes.RowKeys> leftRedirections) {
+    public void computeRedirections(Chunk<Values> leftStamps, Chunk<Values> rightStamps, LongChunk<Attributes.RowKeys> rightKeyIndices, WritableLongChunk<Attributes.RowKeys> leftRedirections) {
         computeRedirections(leftStamps.asDoubleChunk(), rightStamps.asDoubleChunk(), rightKeyIndices, leftRedirections);
     }
 
-    static private void computeRedirections(DoubleChunk<Values> leftStamps, DoubleChunk<Values> rightStamps, LongChunk<Attributes.RowKeys> rightKeyIndices, WritableLongChunk<Attributes.RowKeys> leftRedirections) {
+    static private void computeRedirections(DoubleChunk<Values> leftStamps, DoubleChunk<Values> rightStamps, LongChunk<RowKeys> rightKeyIndices, WritableLongChunk<Attributes.RowKeys> leftRedirections) {
         final int leftSize = leftStamps.size();
         final int rightSize = rightStamps.size();
         if (rightSize == 0) {

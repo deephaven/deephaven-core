@@ -61,13 +61,13 @@ public class DoubleAddOnlySortedFirstOrLastChunkedOperator extends BaseAddOnlyFi
     public boolean addChunk(final SingletonContext singletonContext, // Unused
                             final int chunkSize,
                             @NotNull final Chunk<? extends Values> values,
-                            @NotNull final LongChunk<? extends Attributes.RowKeys> inputIndices,
+                            @NotNull final LongChunk<? extends RowKeys> inputIndices,
                             final long destination) {
         return addChunk(values.asDoubleChunk(), inputIndices, 0, inputIndices.size(), destination);
     }
 
     private boolean addChunk(@NotNull final DoubleChunk<? extends Values> values,
-                             @NotNull final LongChunk<? extends Attributes.RowKeys> indices,
+                             @NotNull final LongChunk<? extends RowKeys> indices,
                              final int start,
                              final int length,
                              final long destination) {

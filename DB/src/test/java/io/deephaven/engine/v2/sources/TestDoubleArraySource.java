@@ -6,6 +6,7 @@ package io.deephaven.engine.v2.sources;
 import io.deephaven.engine.tables.live.LiveTableMonitor;
 import io.deephaven.engine.v2.select.FormulaColumn;
 import io.deephaven.engine.v2.sources.chunk.*;
+import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedRowKeyRanges;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.engine.v2.utils.RowSetBuilderSequential;
@@ -96,7 +97,7 @@ public class TestDoubleArraySource {
                 pos++;
             }
             // region samecheck
-            final LongChunk<Attributes.OrderedRowKeyRanges> ranges = okChunk.asRowKeyRangesChunk();
+            final LongChunk<OrderedRowKeyRanges> ranges = okChunk.asRowKeyRangesChunk();
             if (ranges.size() > 2 || ranges.get(0) / DoubleArraySource.BLOCK_SIZE != (ranges.get(1) / DoubleArraySource.BLOCK_SIZE)) {
                 assertTrue(DefaultGetContext.isMyWritableChunk(context, chunk));
 

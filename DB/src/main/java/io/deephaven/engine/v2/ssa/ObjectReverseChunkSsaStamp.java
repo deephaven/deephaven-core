@@ -3,6 +3,10 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.v2.ssa;
 
+import java.util.Objects;
+
+import java.util.Objects;
+
 import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.sources.chunk.Attributes.RowKeys;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
@@ -19,7 +23,7 @@ public class ObjectReverseChunkSsaStamp implements ChunkSsaStamp {
     private ObjectReverseChunkSsaStamp() {} // use the instance
 
     @Override
-    public void processEntry(Chunk<Values> leftStampValues, Chunk<RowKeys> leftStampKeys, SegmentedSortedArray ssa, WritableLongChunk<Attributes.RowKeys> rightKeysForLeft, boolean disallowExactMatch) {
+    public void processEntry(Chunk<Values> leftStampValues, Chunk<Attributes.RowKeys> leftStampKeys, SegmentedSortedArray ssa, WritableLongChunk<Attributes.RowKeys> rightKeysForLeft, boolean disallowExactMatch) {
         processEntry(leftStampValues.asObjectChunk(), leftStampKeys, (ObjectReverseSegmentedSortedArray)ssa, rightKeysForLeft, disallowExactMatch);
     }
 
@@ -67,7 +71,7 @@ public class ObjectReverseChunkSsaStamp implements ChunkSsaStamp {
         processRemovals(leftStampValues.asObjectChunk(), leftStampKeys, rightStampChunk.asObjectChunk(), rightKeys, priorRedirections, redirectionIndex, modifiedBuilder, disallowExactMatch);
     }
 
-    private static void processRemovals(ObjectChunk<Object, Values> leftStampValues, LongChunk<Attributes.RowKeys> leftStampKeys, ObjectChunk<Object, ? extends Values> rightStampChunk, LongChunk<Attributes.RowKeys> rightKeys, WritableLongChunk<Attributes.RowKeys> nextRedirections, RedirectionIndex redirectionIndex, RowSetBuilderRandom modifiedBuilder, boolean disallowExactMatch) {
+    private static void processRemovals(ObjectChunk<Object, Values> leftStampValues, LongChunk<Attributes.RowKeys> leftStampKeys, ObjectChunk<Object, ? extends Values> rightStampChunk, LongChunk<RowKeys> rightKeys, WritableLongChunk<Attributes.RowKeys> nextRedirections, RedirectionIndex redirectionIndex, RowSetBuilderRandom modifiedBuilder, boolean disallowExactMatch) {
         // When removing a row, record the stamp, redirection key, and prior redirection key.  Binary search
         // in the left for the removed key to find the smallest value geq the removed right.  Update all rows
         // with the removed redirection to the previous key.

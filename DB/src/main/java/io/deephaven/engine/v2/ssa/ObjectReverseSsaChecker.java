@@ -5,9 +5,12 @@ package io.deephaven.engine.v2.ssa;
 
 import java.util.Objects;
 
+import java.util.Objects;
+
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.v2.hashing.ObjectChunkEquals;
 import io.deephaven.engine.v2.hashing.LongChunkEquals;
+import io.deephaven.engine.v2.sources.chunk.Attributes;
 import io.deephaven.engine.v2.sources.chunk.Attributes.RowKeys;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 import io.deephaven.engine.v2.sources.chunk.ObjectChunk;
@@ -25,7 +28,7 @@ public class ObjectReverseSsaChecker implements SsaChecker {
         checkSsa((ObjectReverseSegmentedSortedArray)ssa, valueChunk.asObjectChunk(), tableIndexChunk);
     }
 
-    static void checkSsa(ObjectReverseSegmentedSortedArray ssa, ObjectChunk<Object, ? extends Values> valueChunk, LongChunk<? extends RowKeys> tableIndexChunk) {
+    static void checkSsa(ObjectReverseSegmentedSortedArray ssa, ObjectChunk<Object, ? extends Values> valueChunk, LongChunk<? extends Attributes.RowKeys> tableIndexChunk) {
         ssa.validateInternal();
 
         //noinspection unchecked

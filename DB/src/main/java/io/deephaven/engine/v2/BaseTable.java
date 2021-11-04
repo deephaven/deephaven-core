@@ -234,7 +234,7 @@ public abstract class BaseTable extends LivenessArtifact
                 CopyAttributeOperation.ByExternal,
                 CopyAttributeOperation.WouldMatch));
 
-        // for a merged table, we'll allow operations that keep our TrackingMutableRowSet + column sources the same to break us down
+        // for a merged table, we'll allow operations that keep our RowSet + column sources the same to break us down
         // into constituent tables
         tempMap.put(MERGED_TABLE_ATTRIBUTE, EnumSet.of(
                 CopyAttributeOperation.DropColumns,
@@ -767,7 +767,7 @@ public abstract class BaseTable extends LivenessArtifact
             return;
         }
 
-        // Excuse the sloppiness in TrackingMutableRowSet closing after this point, we're planning to crash the process anyway...
+        // Excuse the sloppiness in RowSet closing after this point, we're planning to crash the process anyway...
 
         String serializedIndices = null;
         if (PRINT_SERIALIZED_UPDATE_OVERLAPS) {
@@ -811,7 +811,7 @@ public abstract class BaseTable extends LivenessArtifact
 
         // Everything is messed up for this table, print out the indices in an easy to understand way
         final LogOutput logOutput = new LogOutputStringImpl()
-                .append("TrackingMutableRowSet update error detected: ")
+                .append("RowSet update error detected: ")
                 .append(LogOutput::nl).append("\t          previousIndex=").append(getRowSet().getPrevRowSet())
                 .append(LogOutput::nl).append("\t           currentIndex=").append(getRowSet())
                 .append(LogOutput::nl).append("\t                  added=").append(update.added)
@@ -831,7 +831,7 @@ public abstract class BaseTable extends LivenessArtifact
         log.error().append(indexUpdateErrorMessage).endl();
 
         if (serializedIndices != null) {
-            log.error().append("TrackingMutableRowSet update error detected: serialized data=").append(serializedIndices).endl();
+            log.error().append("RowSet update error detected: serialized data=").append(serializedIndices).endl();
         }
 
         Assert.assertion(false, "!(previousMissingRemovals || currentMissingAdds || " +

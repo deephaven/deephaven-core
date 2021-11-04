@@ -7,10 +7,11 @@
 
 package io.deephaven.engine.v2.by.ssmcountdistinct.count;
 
-import io.deephaven.engine.v2.Listener;
+import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
 import io.deephaven.engine.v2.utils.MutableRowSet;
 import io.deephaven.util.QueryConstants;
+import io.deephaven.engine.v2.Listener;
 import io.deephaven.engine.v2.by.ComboAggregateFactory;
 import io.deephaven.engine.v2.by.IterativeChunkedAggregationOperator;
 import io.deephaven.engine.v2.by.ssmcountdistinct.BucketSsmDistinctContext;
@@ -22,10 +23,10 @@ import io.deephaven.engine.v2.sources.LongArraySource;
 import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.sources.chunk.Attributes.ChunkLengths;
 import io.deephaven.engine.v2.sources.chunk.Attributes.ChunkPositions;
+import io.deephaven.engine.v2.sources.chunk.Attributes.RowKeys;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 import io.deephaven.engine.v2.ssms.ByteSegmentedSortedMultiset;
 import io.deephaven.engine.v2.ssms.SegmentedSortedMultiSet;
-import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.engine.v2.utils.UpdateCommitter;
 import io.deephaven.engine.v2.utils.compact.ByteCompactKernel;
 import org.jetbrains.annotations.NotNull;
@@ -81,7 +82,7 @@ public class ByteChunkedCountDistinctOperator implements IterativeChunkedAggrega
     }
 
     @Override
-    public void addChunk(BucketedContext bucketedContext, Chunk<? extends Values> values, LongChunk<? extends Attributes.RowKeys> inputIndices, IntChunk<Attributes.RowKeys> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length, WritableBooleanChunk<Values> stateModified) {
+    public void addChunk(BucketedContext bucketedContext, Chunk<? extends Values> values, LongChunk<? extends RowKeys> inputIndices, IntChunk<Attributes.RowKeys> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length, WritableBooleanChunk<Values> stateModified) {
         final BucketSsmDistinctContext context = getAndUpdateContext(values, startPositions, length, bucketedContext);
         for (int ii = 0; ii < startPositions.size(); ++ii) {
             final int runLength = context.lengthCopy.get(ii);

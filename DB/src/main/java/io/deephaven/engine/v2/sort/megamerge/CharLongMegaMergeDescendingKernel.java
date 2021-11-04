@@ -27,17 +27,17 @@ public class CharLongMegaMergeDescendingKernel {
     }
     // endregion Context
 
-    public static <ATTR extends Any, KEY_INDICES extends Attributes.Indices> CharLongMegaMergeDescendingKernelContext<ATTR, KEY_INDICES> createContext() {
+    public static <ATTR extends Any, KEY_INDICES extends Indices> CharLongMegaMergeDescendingKernelContext<ATTR, KEY_INDICES> createContext() {
         //noinspection unchecked
         return CharLongMegaMergeDescendingKernelContext.INSTANCE;
     }
 
-    static public <ATTR extends Any, KEY_INDICES extends Indices> void merge(LongArraySource destinationKeys,
-                                                                             CharacterArraySource destinationValues,
-                                                                             long destinationOffset,
-                                                                             long destinationSize,
-                                                                             LongChunk<KEY_INDICES> keysChunk,
-                                                                             CharChunk<ATTR> valuesChunk
+    static public <ATTR extends Any, KEY_INDICES extends Attributes.Indices> void merge(LongArraySource destinationKeys,
+                                                                                        CharacterArraySource destinationValues,
+                                                                                        long destinationOffset,
+                                                                                        long destinationSize,
+                                                                                        LongChunk<KEY_INDICES> keysChunk,
+                                                                                        CharChunk<ATTR> valuesChunk
     ) {
         destinationKeys.ensureCapacity(destinationOffset + destinationSize + keysChunk.size(), false);
         destinationValues.ensureCapacity(destinationOffset + destinationSize + valuesChunk.size(), false);

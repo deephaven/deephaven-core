@@ -119,7 +119,7 @@ class StaticChunkedAsOfJoinStateManager
     private final ArrayBackedColumnSource<?> [] overflowKeySources;
     // the location of the next key in an overflow bucket
     private final IntegerArraySource overflowOverflowLocationSource = new IntegerArraySource();
-    // the overflow buckets for the right TrackingMutableRowSet
+    // the overflow buckets for the right RowSet
     @ReplicateHashTable.OverflowStateColumnSource
     // @StateColumnSourceType@ from \QByteArraySource\E
     private final ByteArraySource overflowStateSource
@@ -150,7 +150,7 @@ class StaticChunkedAsOfJoinStateManager
 
     /**
      * For the ticking case we need to reuse our right indices for more than one update.  We convert the
-     * SequentialBuilders into actual TrackingMutableRowSet objects.  Before the conversion (which must be during the build phase)
+     * SequentialBuilders into actual RowSet objects.  Before the conversion (which must be during the build phase)
      * we put the sequential builders into rightIndexSource and overflowRightIndexSource.  After the conversion, the
      * sources store actual indices.
      */

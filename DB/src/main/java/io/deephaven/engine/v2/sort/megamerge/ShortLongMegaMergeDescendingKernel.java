@@ -151,7 +151,7 @@ public class ShortLongMegaMergeDescendingKernel {
         }
     }
 
-    private static <ATTR extends Any, KEY_INDICES extends Attributes.Indices> void copyChunkToDest(LongChunk<KEY_INDICES> keysChunk, ShortChunk<ATTR> valuesChunk, LongArraySource destinationKeys, ShortArraySource destinationValues, int sourceStart, long destStart, int length) {
+    private static <ATTR extends Any, KEY_INDICES extends Indices> void copyChunkToDest(LongChunk<KEY_INDICES> keysChunk, ShortChunk<ATTR> valuesChunk, LongArraySource destinationKeys, ShortArraySource destinationValues, int sourceStart, long destStart, int length) {
         destinationValues.copyFromChunk(destStart, length, (ShortChunk)valuesChunk, sourceStart);
         destinationKeys.copyFromChunk(destStart, length, keysChunk, sourceStart);
     }

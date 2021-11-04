@@ -28,12 +28,12 @@ public class DbLongArrayColumnWrapper extends DbLongArray.Indirect {
     private final long startPadding;
     private final long endPadding;
 
-    public DbLongArrayColumnWrapper(@NotNull final ColumnSource<Long> columnSource, @NotNull final RowSet rowSet){
+    public DbLongArrayColumnWrapper(@NotNull final ColumnSource<Long> columnSource, @NotNull final RowSet rowSet) {
         this(columnSource, rowSet, 0, 0);
     }
 
     public DbLongArrayColumnWrapper(@NotNull final ColumnSource<Long> columnSource, @NotNull final RowSet rowSet,
-                                    final long startPadding, final long endPadding){
+                                    final long startPadding, final long endPadding) {
         Assert.neqNull(rowSet, "rowSet");
         this.columnSource = columnSource;
         this.rowSet = rowSet;
@@ -50,16 +50,6 @@ public class DbLongArrayColumnWrapper extends DbLongArray.Indirect {
         }
 
         return columnSource.getLong(rowSet.get(i));
-    }
-
-    private long getPrev(long i) {
-        i-= startPadding;
-
-        if (i<0 || i> rowSet.size()-1) {
-            return NULL_LONG;
-        }
-
-        return columnSource.getPrevLong(rowSet.get(i));
     }
 
     @Override

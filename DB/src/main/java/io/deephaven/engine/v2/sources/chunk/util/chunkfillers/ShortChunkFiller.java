@@ -8,7 +8,6 @@ import static io.deephaven.engine.v2.sources.chunk.Attributes.RowKeys;
 import static io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 
 import io.deephaven.engine.v2.sources.WritableSource;
-import io.deephaven.engine.v2.sources.chunk.Attributes;
 import io.deephaven.engine.v2.sources.chunk.LongChunk;
 import io.deephaven.engine.v2.sources.chunk.WritableShortChunk;
 import io.deephaven.engine.v2.sources.chunk.WritableChunk;
@@ -79,7 +78,7 @@ public final class ShortChunkFiller implements ChunkFiller {
     }
 
     @Override
-    public final void fillPrevByIndices(final ElementSource src, final LongChunk<? extends Attributes.RowKeys> chunk, final WritableChunk<? super Values> dest) {
+    public final void fillPrevByIndices(final ElementSource src, final LongChunk<? extends RowKeys> chunk, final WritableChunk<? super Values> dest) {
         final WritableShortChunk<? super Values> typedDest = dest.asWritableShortChunk();
         final int sz = chunk.size();
         // Calling setSize early provides a more informative exception if the destination chunk

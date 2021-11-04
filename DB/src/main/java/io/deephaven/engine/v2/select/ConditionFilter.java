@@ -451,7 +451,7 @@ public class ConditionFilter extends AbstractConditionFilter {
         }
 
         classBody.append("\n").append(indenter)
-                .append("public $CLASSNAME$(Table table, TrackingMutableRowSet fullSet, Param... params) {\n");
+                .append("public $CLASSNAME$(Table table, TrackingRowSet fullSet, Param... params) {\n");
         indenter.increaseLevel();
         for (int i = 0; i < params.length; i++) {
             final Param param = params[i];
@@ -541,7 +541,7 @@ public class ConditionFilter extends AbstractConditionFilter {
             return filter;
         }
         final FilterKernel filterKernel = (FilterKernel) filterKernelClass
-                .getConstructor(Table.class, TrackingMutableRowSet.class, Param[].class).newInstance(table, fullSet, (Object) params);
+                .getConstructor(Table.class, TrackingRowSet.class, Param[].class).newInstance(table, fullSet, (Object) params);
         final String[] columnNames = usedInputs.stream().map(p -> p.first).toArray(String[]::new);
         return new ChunkFilter(filterKernel, columnNames, CHUNK_SIZE);
     }

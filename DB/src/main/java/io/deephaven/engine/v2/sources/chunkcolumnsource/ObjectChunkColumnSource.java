@@ -9,6 +9,7 @@ import io.deephaven.engine.v2.sources.AbstractColumnSource;
 import io.deephaven.engine.v2.sources.ImmutableColumnSourceGetDefaults;
 import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.structures.RowSequence;
+import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;

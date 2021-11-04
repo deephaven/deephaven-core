@@ -156,7 +156,7 @@ public class QueryTable extends BaseTable {
             Configuration.getInstance().getBooleanWithDefault("QueryTable.redirectSelect", false);
     /**
      * For a static select(), we would prefer to flatten the table to avoid using memory unnecessarily (because the data
-     * may be spread out across many blocks depending on the input TrackingMutableRowSet). However, the select() can
+     * may be spread out across many blocks depending on the input RowSet). However, the select() can
      * become slower because it must look things up in a redirection rowSet.
      *
      * Values less than zero disable overhead checking, and result in never flattening the input.

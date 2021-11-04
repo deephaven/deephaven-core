@@ -82,7 +82,7 @@ public class FloatReverseSsaSsaStamp implements SsaSsaStamp {
     }
 
     @Override
-    public void processRemovals(SegmentedSortedArray leftSsa, Chunk<? extends Values> rightStampChunk, LongChunk<Attributes.RowKeys> rightKeys, WritableLongChunk<Attributes.RowKeys> priorRedirections, RedirectionIndex redirectionIndex, RowSetBuilderRandom modifiedBuilder, boolean disallowExactMatch) {
+    public void processRemovals(SegmentedSortedArray leftSsa, Chunk<? extends Values> rightStampChunk, LongChunk<RowKeys> rightKeys, WritableLongChunk<RowKeys> priorRedirections, RedirectionIndex redirectionIndex, RowSetBuilderRandom modifiedBuilder, boolean disallowExactMatch) {
         processRemovals((FloatReverseSegmentedSortedArray)leftSsa, rightStampChunk.asFloatChunk(), rightKeys, priorRedirections, redirectionIndex, modifiedBuilder, disallowExactMatch);
     }
 
@@ -148,7 +148,7 @@ public class FloatReverseSsaSsaStamp implements SsaSsaStamp {
 
         final FloatReverseSegmentedSortedArray.Iterator leftIt = leftSsa.iterator(disallowExactMatch, false);
 
-        try (final SizedLongChunk<RowKeys> modifiedKeys = new SizedLongChunk<>()) {
+        try (final SizedLongChunk<Attributes.RowKeys> modifiedKeys = new SizedLongChunk<>()) {
             int capacity = rightStampChunk.size();
             modifiedKeys.ensureCapacity(capacity).setSize(capacity);
             int mks = 0;
@@ -199,14 +199,14 @@ public class FloatReverseSsaSsaStamp implements SsaSsaStamp {
     }
 
     @Override
-    public void findModified(SegmentedSortedArray leftSsa, RedirectionIndex redirectionIndex, Chunk<? extends Values> rightStampChunk, LongChunk<RowKeys> rightStampIndices, RowSetBuilderRandom modifiedBuilder, boolean disallowExactMatch) {
+    public void findModified(SegmentedSortedArray leftSsa, RedirectionIndex redirectionIndex, Chunk<? extends Values> rightStampChunk, LongChunk<Attributes.RowKeys> rightStampIndices, RowSetBuilderRandom modifiedBuilder, boolean disallowExactMatch) {
         findModified((FloatReverseSegmentedSortedArray)leftSsa, redirectionIndex, rightStampChunk.asFloatChunk(), rightStampIndices, modifiedBuilder, disallowExactMatch);
     }
 
     private static void findModified(FloatReverseSegmentedSortedArray leftSsa, RedirectionIndex redirectionIndex, FloatChunk<? extends Values> rightStampChunk, LongChunk<Attributes.RowKeys> rightStampIndices, RowSetBuilderRandom modifiedBuilder, boolean disallowExactMatch) {
         final FloatReverseSegmentedSortedArray.Iterator leftIt = leftSsa.iterator(disallowExactMatch, false);
 
-        try (final SizedLongChunk<RowKeys> modifiedKeys = new SizedLongChunk<>()) {
+        try (final SizedLongChunk<Attributes.RowKeys> modifiedKeys = new SizedLongChunk<>()) {
             int capacity = rightStampChunk.size();
             modifiedKeys.ensureCapacity(capacity).setSize(capacity);
             int mks = 0;
@@ -238,7 +238,7 @@ public class FloatReverseSsaSsaStamp implements SsaSsaStamp {
     }
 
     @Override
-    public void applyShift(SegmentedSortedArray leftSsa, Chunk<? extends Values> rightStampChunk, LongChunk<RowKeys> rightStampKeys, long shiftDelta, RedirectionIndex redirectionIndex, boolean disallowExactMatch) {
+    public void applyShift(SegmentedSortedArray leftSsa, Chunk<? extends Values> rightStampChunk, LongChunk<Attributes.RowKeys> rightStampKeys, long shiftDelta, RedirectionIndex redirectionIndex, boolean disallowExactMatch) {
         applyShift((FloatReverseSegmentedSortedArray)leftSsa, rightStampChunk.asFloatChunk(), rightStampKeys, shiftDelta, redirectionIndex, disallowExactMatch);
     }
 

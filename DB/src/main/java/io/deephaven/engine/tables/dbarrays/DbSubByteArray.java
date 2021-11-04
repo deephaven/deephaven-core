@@ -43,7 +43,6 @@ public class DbSubByteArray extends DbByteArray.Indirect {
 
     @Override
     public byte[] toArray() {
-        //noinspection unchecked
         final byte[] result = new byte[positions.length];
         for (int ii = 0; ii < positions.length; ++ii) {
             result[ii] = get(ii);

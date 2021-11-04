@@ -7,10 +7,7 @@ package io.deephaven.engine.v2.by;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.FloatArraySource;
 import io.deephaven.engine.v2.sources.chunk.*;
-import io.deephaven.engine.v2.sources.chunk.Attributes.ChunkLengths;
-import io.deephaven.engine.v2.sources.chunk.Attributes.ChunkPositions;
-import io.deephaven.engine.v2.sources.chunk.Attributes.RowKeys;
-import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
+import io.deephaven.engine.v2.sources.chunk.Attributes.*;
 import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.structures.rowsequence.RowSequenceUtil;
 
@@ -41,7 +38,7 @@ class FloatChunkedReAvgOperator implements IterativeChunkedAggregationOperator {
     }
 
     @Override
-    public void addChunk(BucketedContext context, Chunk<? extends Values> values, LongChunk<? extends RowKeys> inputIndices, IntChunk<Attributes.RowKeys> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length, WritableBooleanChunk<Values> stateModified) {
+    public void addChunk(BucketedContext context, Chunk<? extends Values> values, LongChunk<? extends RowKeys> inputIndices, IntChunk<RowKeys> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length, WritableBooleanChunk<Values> stateModified) {
         doBucketedUpdate((ReAvgContext) context, destinations, startPositions, stateModified);
     }
 
@@ -85,7 +82,7 @@ class FloatChunkedReAvgOperator implements IterativeChunkedAggregationOperator {
     }
 
     @Override
-    public boolean removeChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> values, LongChunk<? extends Attributes.RowKeys> inputIndices, long destination) {
+    public boolean removeChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> values, LongChunk<? extends RowKeys> inputIndices, long destination) {
         return updateResult(destination);
     }
 
@@ -133,7 +130,7 @@ class FloatChunkedReAvgOperator implements IterativeChunkedAggregationOperator {
     }
 
     private class ReAvgContext implements BucketedContext {
-        final WritableLongChunk<Attributes.OrderedRowKeys> keyIndices;
+        final WritableLongChunk<OrderedRowKeys> keyIndices;
         final ChunkSource.GetContext sumContext;
         final ChunkSource.GetContext nncContext;
         final ChunkSource.GetContext nanContext;

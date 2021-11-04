@@ -22,7 +22,7 @@ import java.util.function.LongConsumer;
 import java.util.stream.StreamSupport;
 
 /**
- * DataColumn implementation backed by a ColumnSource and an TrackingMutableRowSet.
+ * DataColumn implementation backed by a ColumnSource and a RowSet.
  */
 @SuppressWarnings("WeakerAccess")
 public class IndexedDataColumn<TYPE> implements DataColumn<TYPE> {

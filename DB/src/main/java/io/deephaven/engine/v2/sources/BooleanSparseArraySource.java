@@ -13,8 +13,8 @@ import static io.deephaven.engine.util.BooleanUtils.NULL_BOOLEAN_AS_BYTE;
 
 
 import io.deephaven.engine.v2.sources.chunk.*;
-import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 import io.deephaven.engine.v2.sources.chunk.Attributes.RowKeys;
+import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedRowKeys;
 import io.deephaven.engine.v2.sources.sparse.ByteOneOrN;
 import io.deephaven.engine.v2.sources.sparse.LongOneOrN;
@@ -674,7 +674,7 @@ public class BooleanSparseArraySource extends SparseArrayColumnSource<Boolean> i
             return;
         }
         final ObjectChunk<Boolean, ? extends Values> chunk = src.asObjectChunk();
-        final LongChunk<Attributes.OrderedRowKeys> keys = rowSequence.asRowKeyChunk();
+        final LongChunk<OrderedRowKeys> keys = rowSequence.asRowKeyChunk();
 
         final boolean hasPrev = prevFlusher != null;
 
@@ -790,15 +790,15 @@ public class BooleanSparseArraySource extends SparseArrayColumnSource<Boolean> i
 
     // region getChunk
     @Override
-    public ObjectChunk<Boolean, Values> getChunk(@NotNull GetContext context, @NotNull RowSequence rowSequence) {
-        return getChunkByFilling(context, rowSequence).asObjectChunk();
+    public ObjectChunk<Boolean, Values> getChunk(@NotNull GetContext context, @NotNull RowSequence RowSequence) {
+        return getChunkByFilling(context, RowSequence).asObjectChunk();
     }
     // endregion getChunk
 
     // region getPrevChunk
     @Override
-    public ObjectChunk<Boolean, Values> getPrevChunk(@NotNull GetContext context, @NotNull RowSequence rowSequence) {
-        return getPrevChunkByFilling(context, rowSequence).asObjectChunk();
+    public ObjectChunk<Boolean, Values> getPrevChunk(@NotNull GetContext context, @NotNull RowSequence RowSequence) {
+        return getPrevChunkByFilling(context, RowSequence).asObjectChunk();
     }
     // endregion getPrevChunk
 
@@ -823,13 +823,13 @@ public class BooleanSparseArraySource extends SparseArrayColumnSource<Boolean> i
         }
 
         @Override
-        public byte getByte(long index) {
-            return wrapped.getByte(index);
+        public byte getByte(long rowSet) {
+            return wrapped.getByte(rowSet);
         }
 
         @Override
-        public byte getPrevByte(long index) {
-            return wrapped.getPrevByte(index);
+        public byte getPrevByte(long rowSet) {
+            return wrapped.getPrevByte(rowSet);
         }
 
         @Override
@@ -864,13 +864,13 @@ public class BooleanSparseArraySource extends SparseArrayColumnSource<Boolean> i
         }
 
         @Override
-        public void fillChunk(@NotNull final ColumnSource.FillContext context, @NotNull final WritableChunk<? super Values> destination, @NotNull final RowSequence rowSequence) {
-            fillSparseChunk(destination, rowSequence);
+        public void fillChunk(@NotNull final ColumnSource.FillContext context, @NotNull final WritableChunk<? super Values> destination, @NotNull final RowSequence RowSequence) {
+            fillSparseChunk(destination, RowSequence);
         }
 
         @Override
-        public void fillPrevChunk(@NotNull final ColumnSource.FillContext context, @NotNull final WritableChunk<? super Values> destination, @NotNull final RowSequence rowSequence) {
-            fillSparsePrevChunk(destination, rowSequence);
+        public void fillPrevChunk(@NotNull final ColumnSource.FillContext context, @NotNull final WritableChunk<? super Values> destination, @NotNull final RowSequence RowSequence) {
+            fillSparsePrevChunk(destination, RowSequence);
         }
 
         @Override
@@ -879,7 +879,7 @@ public class BooleanSparseArraySource extends SparseArrayColumnSource<Boolean> i
         }
 
         @Override
-        public void fillPrevChunkUnordered(@NotNull final FillContext context, @NotNull final WritableChunk<? super Values> destination, @NotNull final LongChunk<? extends Attributes.RowKeys> keyIndices) {
+        public void fillPrevChunkUnordered(@NotNull final FillContext context, @NotNull final WritableChunk<? super Values> destination, @NotNull final LongChunk<? extends RowKeys> keyIndices) {
             fillSparsePrevChunkUnordered(destination, keyIndices);
         }
 
@@ -925,12 +925,12 @@ public class BooleanSparseArraySource extends SparseArrayColumnSource<Boolean> i
             final WritableByteChunk<? super Values> chunk = destGeneric.asWritableByteChunk();
             // This implementation is in "key" style (rather than range style).
             for (int ii = 0; ii < indices.size(); ) {
-                final long firstKey = indices.get(ii);
-                if (firstKey == RowSet.NULL_ROW_KEY) {
+                final long firstRowKey = indices.get(ii);
+                if (firstRowKey == RowSet.NULL_ROW_KEY) {
                     chunk.set(ii++, NULL_BOOLEAN_AS_BYTE);
                     continue;
                 }
-                final long masked = firstKey & ~INDEX_MASK;
+                final long masked = firstRowKey & ~INDEX_MASK;
                 int lastII = ii;
                 while (lastII + 1 < indices.size()) {
                     final int nextII = lastII + 1;
@@ -941,7 +941,7 @@ public class BooleanSparseArraySource extends SparseArrayColumnSource<Boolean> i
                     }
                     lastII = nextII;
                 }
-                final byte [] block = wrapped.blocks.getInnermostBlockByKeyOrNull(firstKey);
+                final byte [] block = wrapped.blocks.getInnermostBlockByKeyOrNull(firstRowKey);
                 if (block == null) {
                     chunk.fillWithNullValue(ii, lastII - ii + 1);
                     ii = lastII + 1;
@@ -955,15 +955,15 @@ public class BooleanSparseArraySource extends SparseArrayColumnSource<Boolean> i
             destGeneric.setSize(indices.size());
         }
 
-        private void fillSparsePrevChunkUnordered(@NotNull final WritableChunk<? super Values> destGeneric, @NotNull final LongChunk<? extends Attributes.RowKeys> indices) {
+        private void fillSparsePrevChunkUnordered(@NotNull final WritableChunk<? super Values> destGeneric, @NotNull final LongChunk<? extends RowKeys> indices) {
             final WritableByteChunk<? super Values> booleanObjectChunk = destGeneric.asWritableByteChunk();
             for (int ii = 0; ii < indices.size(); ) {
-                final long firstKey = indices.get(ii);
-                if (firstKey == RowSet.NULL_ROW_KEY) {
+                final long firstRowKey = indices.get(ii);
+                if (firstRowKey == RowSet.NULL_ROW_KEY) {
                     booleanObjectChunk.set(ii++, NULL_BOOLEAN_AS_BYTE);
                     continue;
                 }
-                final long masked = firstKey & ~INDEX_MASK;
+                final long masked = firstRowKey & ~INDEX_MASK;
                 int lastII = ii;
                 while (lastII + 1 < indices.size()) {
                     final int nextII = lastII + 1;
@@ -975,7 +975,7 @@ public class BooleanSparseArraySource extends SparseArrayColumnSource<Boolean> i
                     lastII = nextII;
                 }
 
-                final byte [] block = wrapped.blocks.getInnermostBlockByKeyOrNull(firstKey);
+                final byte [] block = wrapped.blocks.getInnermostBlockByKeyOrNull(firstRowKey);
                 if (block == null) {
                     booleanObjectChunk.fillWithNullValue(ii, lastII - ii + 1);
                     ii = lastII + 1;
@@ -983,8 +983,8 @@ public class BooleanSparseArraySource extends SparseArrayColumnSource<Boolean> i
                 }
 
                 final long [] prevInUse = (wrapped.prevFlusher == null || wrapped.prevInUse == null) ? null :
-                        wrapped.prevInUse.getInnermostBlockByKeyOrNull(firstKey);
-                final byte [] prevBlock = prevInUse == null ? null : wrapped.prevBlocks.getInnermostBlockByKeyOrNull(firstKey);
+                        wrapped.prevInUse.getInnermostBlockByKeyOrNull(firstRowKey);
+                final byte [] prevBlock = prevInUse == null ? null : wrapped.prevBlocks.getInnermostBlockByKeyOrNull(firstRowKey);
                 while (ii <= lastII) {
                     final int indexWithinBlock = (int) (indices.get(ii) & INDEX_MASK);
                     final int indexWithinInUse = indexWithinBlock >> LOG_INUSE_BITSET_SIZE;
@@ -998,13 +998,13 @@ public class BooleanSparseArraySource extends SparseArrayColumnSource<Boolean> i
         }
 
         @Override
-        public void fillFromChunk(@NotNull FillFromContext context_unused, @NotNull Chunk<? extends Values> src, @NotNull RowSequence rowSequence) {
+        public void fillFromChunk(@NotNull FillFromContext context_unused, @NotNull Chunk<? extends Values> src, @NotNull RowSequence RowSequence) {
             // This implementation is in "key" style (rather than range style).
-            if (rowSequence.size() == 0) {
+            if (RowSequence.size() == 0) {
                 return;
             }
             final ByteChunk<? extends Values> chunk = src.asByteChunk();
-            final LongChunk<OrderedRowKeys> keys = rowSequence.asRowKeyChunk();
+            final LongChunk<OrderedRowKeys> keys = RowSequence.asRowKeyChunk();
 
             final boolean hasPrev = wrapped.prevFlusher != null;
 
@@ -1013,16 +1013,16 @@ public class BooleanSparseArraySource extends SparseArrayColumnSource<Boolean> i
             }
 
             for (int ii = 0; ii < keys.size(); ) {
-                final long firstKey = keys.get(ii);
-                final long maxKeyInCurrentBlock = firstKey | INDEX_MASK;
+                final long firstRowKey = keys.get(ii);
+                final long maxKeyInCurrentBlock = firstRowKey | INDEX_MASK;
                 int lastII = ii;
                 while (lastII + 1 < keys.size() && keys.get(lastII + 1) <= maxKeyInCurrentBlock) {
                     ++lastII;
                 }
 
-                final int block0 = (int) (firstKey >> BLOCK0_SHIFT) & BLOCK0_MASK;
-                final int block1 = (int) (firstKey >> BLOCK1_SHIFT) & BLOCK1_MASK;
-                final int block2 = (int) (firstKey >> BLOCK2_SHIFT) & BLOCK2_MASK;
+                final int block0 = (int) (firstRowKey >> BLOCK0_SHIFT) & BLOCK0_MASK;
+                final int block1 = (int) (firstRowKey >> BLOCK1_SHIFT) & BLOCK1_MASK;
+                final int block2 = (int) (firstRowKey >> BLOCK2_SHIFT) & BLOCK2_MASK;
                 final byte [] block = wrapped.ensureBlock(block0, block1, block2);
 
                 if (chunk.isAlias(block)) {
@@ -1030,7 +1030,7 @@ public class BooleanSparseArraySource extends SparseArrayColumnSource<Boolean> i
                 }
 
                 // This conditional with its constant condition should be very friendly to the branch predictor.
-                final byte[] prevBlock = hasPrev ? wrapped.ensurePrevBlock(firstKey, block0, block1, block2) : null;
+                final byte[] prevBlock = hasPrev ? wrapped.ensurePrevBlock(firstRowKey, block0, block1, block2) : null;
                 final long[] inUse = hasPrev ? wrapped.prevInUse.get(block0).get(block1).get(block2) : null;
 
                 while (ii <= lastII) {

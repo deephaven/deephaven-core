@@ -91,7 +91,7 @@ public class ByteSsaSsaStamp implements SsaSsaStamp {
 
         final ByteSegmentedSortedArray.Iterator leftIt = leftSsa.iterator(disallowExactMatch, false);
 
-        try (final SizedLongChunk<RowKeys> modifiedKeys = new SizedLongChunk<>()) {
+        try (final SizedLongChunk<Attributes.RowKeys> modifiedKeys = new SizedLongChunk<>()) {
             int capacity = rightStampChunk.size();
             modifiedKeys.ensureCapacity(capacity).setSize(capacity);
             int mks = 0;
@@ -146,7 +146,7 @@ public class ByteSsaSsaStamp implements SsaSsaStamp {
 
         final ByteSegmentedSortedArray.Iterator leftIt = leftSsa.iterator(disallowExactMatch, false);
 
-        try (final SizedLongChunk<RowKeys> modifiedKeys = new SizedLongChunk<>()) {
+        try (final SizedLongChunk<Attributes.RowKeys> modifiedKeys = new SizedLongChunk<>()) {
             int capacity = rightStampChunk.size();
             modifiedKeys.ensureCapacity(capacity).setSize(capacity);
             int mks = 0;
@@ -201,10 +201,10 @@ public class ByteSsaSsaStamp implements SsaSsaStamp {
         findModified((ByteSegmentedSortedArray)leftSsa, redirectionIndex, rightStampChunk.asByteChunk(), rightStampIndices, modifiedBuilder, disallowExactMatch);
     }
 
-    private static void findModified(ByteSegmentedSortedArray leftSsa, RedirectionIndex redirectionIndex, ByteChunk<? extends Values> rightStampChunk, LongChunk<RowKeys> rightStampIndices, RowSetBuilderRandom modifiedBuilder, boolean disallowExactMatch) {
+    private static void findModified(ByteSegmentedSortedArray leftSsa, RedirectionIndex redirectionIndex, ByteChunk<? extends Values> rightStampChunk, LongChunk<Attributes.RowKeys> rightStampIndices, RowSetBuilderRandom modifiedBuilder, boolean disallowExactMatch) {
         final ByteSegmentedSortedArray.Iterator leftIt = leftSsa.iterator(disallowExactMatch, false);
 
-        try (final SizedLongChunk<RowKeys> modifiedKeys = new SizedLongChunk<>()) {
+        try (final SizedLongChunk<Attributes.RowKeys> modifiedKeys = new SizedLongChunk<>()) {
             int capacity = rightStampChunk.size();
             modifiedKeys.ensureCapacity(capacity).setSize(capacity);
             int mks = 0;
@@ -236,11 +236,11 @@ public class ByteSsaSsaStamp implements SsaSsaStamp {
     }
 
     @Override
-    public void applyShift(SegmentedSortedArray leftSsa, Chunk<? extends Values> rightStampChunk, LongChunk<RowKeys> rightStampKeys, long shiftDelta, RedirectionIndex redirectionIndex, boolean disallowExactMatch) {
+    public void applyShift(SegmentedSortedArray leftSsa, Chunk<? extends Values> rightStampChunk, LongChunk<Attributes.RowKeys> rightStampKeys, long shiftDelta, RedirectionIndex redirectionIndex, boolean disallowExactMatch) {
         applyShift((ByteSegmentedSortedArray)leftSsa, rightStampChunk.asByteChunk(), rightStampKeys, shiftDelta, redirectionIndex, disallowExactMatch);
     }
 
-    private void applyShift(ByteSegmentedSortedArray leftSsa, ByteChunk<? extends Values> rightStampChunk, LongChunk<RowKeys> rightStampKeys, long shiftDelta, RedirectionIndex redirectionIndex, boolean disallowExactMatch) {
+    private void applyShift(ByteSegmentedSortedArray leftSsa, ByteChunk<? extends Values> rightStampChunk, LongChunk<Attributes.RowKeys> rightStampKeys, long shiftDelta, RedirectionIndex redirectionIndex, boolean disallowExactMatch) {
         final ByteSegmentedSortedArray.Iterator leftIt = leftSsa.iterator(disallowExactMatch, false);
 
         for (int ii = 0; ii < rightStampChunk.size(); ++ii) {

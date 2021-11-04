@@ -61,7 +61,7 @@ public class IntAddOnlySortedFirstOrLastChunkedOperator extends BaseAddOnlyFirst
     public boolean addChunk(final SingletonContext singletonContext, // Unused
                             final int chunkSize,
                             @NotNull final Chunk<? extends Values> values,
-                            @NotNull final LongChunk<? extends Attributes.RowKeys> inputIndices,
+                            @NotNull final LongChunk<? extends RowKeys> inputIndices,
                             final long destination) {
         return addChunk(values.asIntChunk(), inputIndices, 0, inputIndices.size(), destination);
     }

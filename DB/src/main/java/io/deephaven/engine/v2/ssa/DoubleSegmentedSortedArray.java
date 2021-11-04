@@ -61,12 +61,12 @@ public final class DoubleSegmentedSortedArray implements SegmentedSortedArray {
     }
 
     @Override
-    public void insert(Chunk<? extends Any> valuesToInsert, LongChunk<? extends Attributes.RowKeys> indicesToInsert) {
+    public void insert(Chunk<? extends Any> valuesToInsert, LongChunk<? extends RowKeys> indicesToInsert) {
         insert(valuesToInsert.asDoubleChunk(), indicesToInsert);
     }
 
     @Override
-    public <T extends Any> int insertAndGetNextValue(Chunk<T> valuesToInsert, LongChunk<? extends Attributes.RowKeys> indicesToInsert, WritableChunk<T> nextValue) {
+    public <T extends Any> int insertAndGetNextValue(Chunk<T> valuesToInsert, LongChunk<? extends RowKeys> indicesToInsert, WritableChunk<T> nextValue) {
         insert(valuesToInsert.asDoubleChunk(), indicesToInsert);
         // TODO: Integrate this into insert, so we do not need to do a double binary search
         return findNext(valuesToInsert.asDoubleChunk(), indicesToInsert, nextValue.asWritableDoubleChunk());
@@ -81,7 +81,7 @@ public final class DoubleSegmentedSortedArray implements SegmentedSortedArray {
      * @param <T>          the type of our chunks
      * @return how many next values we found (the last value has no next if less than stampValues.size())
      */
-    private <T extends Any> int findNext(DoubleChunk<T> stampValues, LongChunk<? extends RowKeys> stampIndices, WritableDoubleChunk<T> nextValues) {
+    private <T extends Any> int findNext(DoubleChunk<T> stampValues, LongChunk<? extends Attributes.RowKeys> stampIndices, WritableDoubleChunk<T> nextValues) {
         if (stampValues.size() == 0) {
             return 0;
         }
@@ -409,7 +409,7 @@ public final class DoubleSegmentedSortedArray implements SegmentedSortedArray {
         return Math.max(minimumSize, leafSizes.length * 2);
     }
 
-    private void distributeValues(int targetSize, int startingLeaf, int distributionSlots, DoubleChunk<? extends Any> valuesToInsert, LongChunk<? extends RowKeys> indices) {
+    private void distributeValues(int targetSize, int startingLeaf, int distributionSlots, DoubleChunk<? extends Any> valuesToInsert, LongChunk<? extends Attributes.RowKeys> indices) {
         final int totalInsertions = valuesToInsert.size() + leafSizes[startingLeaf];
         final int shortLeaves = (distributionSlots * targetSize) - totalInsertions;
         final int lastFullSlot = startingLeaf + shortLeaves;
@@ -481,14 +481,14 @@ public final class DoubleSegmentedSortedArray implements SegmentedSortedArray {
         Assert.eq(totalInsertions, "totalInsertions", insertedValues, "insertedValues");
     }
 
-    private void makeSingletonLeaf(DoubleChunk<? extends Any> values, LongChunk<? extends Attributes.RowKeys> indices) {
+    private void makeSingletonLeaf(DoubleChunk<? extends Any> values, LongChunk<? extends RowKeys> indices) {
         directoryValues = new double[values.size()];
         directoryIndex = new long[indices.size()];
         copyToLeaf(0, directoryValues, values, directoryIndex, indices);
         leafCount = 1;
     }
 
-    private void makeLeavesInitial(DoubleChunk<? extends Any> values, LongChunk<? extends Attributes.RowKeys> indices) {
+    private void makeLeavesInitial(DoubleChunk<? extends Any> values, LongChunk<? extends RowKeys> indices) {
         final int insertSize = values.size();
         if (insertSize <= leafSize) {
             makeSingletonLeaf(values, indices);
@@ -834,7 +834,7 @@ public final class DoubleSegmentedSortedArray implements SegmentedSortedArray {
     }
 
     @Override
-    public void remove(Chunk<? extends Any> valuesToRemove, LongChunk<? extends RowKeys> indicesToRemove) {
+    public void remove(Chunk<? extends Any> valuesToRemove, LongChunk<? extends Attributes.RowKeys> indicesToRemove) {
         remove(valuesToRemove.asDoubleChunk(), indicesToRemove);
     }
 
@@ -877,7 +877,7 @@ public final class DoubleSegmentedSortedArray implements SegmentedSortedArray {
             removeFromLeaf(size, directoryValues, valuesToRemove, directoryIndex, indicesToRemove, priorRedirections, RowSet.NULL_ROW_KEY);
         } else {
             try (final ResettableDoubleChunk<Any> leafValuesRemoveChunk = ResettableDoubleChunk.makeResettableChunk();
-                 final ResettableLongChunk<Attributes.RowKeys> leafKeysRemoveChunk = ResettableLongChunk.makeResettableChunk();
+                 final ResettableLongChunk<RowKeys> leafKeysRemoveChunk = ResettableLongChunk.makeResettableChunk();
                  final ResettableWritableLongChunk<Attributes.RowKeys> priorRedirectionsSlice = priorRedirections == null ? null : ResettableWritableLongChunk.makeResettableChunk()) {
                 int firstValuesPosition = 0;
                 int totalCount = 0;
@@ -1029,7 +1029,7 @@ public final class DoubleSegmentedSortedArray implements SegmentedSortedArray {
     }
 
     @Override
-    public void applyShift(Chunk<? extends Any> stampChunk, LongChunk<? extends Attributes.RowKeys> keyChunk, long shiftDelta) {
+    public void applyShift(Chunk<? extends Any> stampChunk, LongChunk<? extends RowKeys> keyChunk, long shiftDelta) {
         applyShift(stampChunk.asDoubleChunk(), keyChunk, shiftDelta);
     }
 
@@ -1129,7 +1129,7 @@ public final class DoubleSegmentedSortedArray implements SegmentedSortedArray {
         }
     }
 
-    private void applyShiftReverse(DoubleChunk<? extends Any> stampChunk, LongChunk<? extends RowKeys> keyChunk, long shiftDelta) {
+    private void applyShiftReverse(DoubleChunk<? extends Any> stampChunk, LongChunk<? extends Attributes.RowKeys> keyChunk, long shiftDelta) {
         validate();
         final int shiftSize = stampChunk.size();
         if (shiftSize == 0) {
@@ -1140,7 +1140,7 @@ public final class DoubleSegmentedSortedArray implements SegmentedSortedArray {
             shiftLeafReverse(size, directoryValues, stampChunk, directoryIndex, keyChunk, shiftDelta);
         } else {
             try (final ResettableDoubleChunk<Any> leafValuesChunk = ResettableDoubleChunk.makeResettableChunk();
-                 final ResettableLongChunk<Attributes.RowKeys> leafKeyChunk = ResettableLongChunk.makeResettableChunk()) {
+                 final ResettableLongChunk<RowKeys> leafKeyChunk = ResettableLongChunk.makeResettableChunk()) {
                 int lastValuesPosition = shiftSize - 1;
                 while (lastValuesPosition >= 0) {
                     // we need to find out where our stampChunk should go using a binary search of the directory
@@ -1180,7 +1180,7 @@ public final class DoubleSegmentedSortedArray implements SegmentedSortedArray {
         validate();
     }
 
-    private void shiftLeafReverse(int leafSize, double [] leafValues, DoubleChunk<? extends Any> shiftValues, long [] leafIndices, LongChunk<? extends RowKeys> shiftIndices, long shiftDelta) {
+    private void shiftLeafReverse(int leafSize, double [] leafValues, DoubleChunk<? extends Any> shiftValues, long [] leafIndices, LongChunk<? extends Attributes.RowKeys> shiftIndices, long shiftDelta) {
         Assert.leq(leafSize, "leafSize", this.leafSize, "this.leafSize");
         final int shiftSize = shiftValues.size();
 
@@ -1384,7 +1384,7 @@ public final class DoubleSegmentedSortedArray implements SegmentedSortedArray {
      *
      * @return a chunk of the SSA's indices, the caller owns the chunk and should close it
      */
-    LongChunk<Attributes.RowKeys> keyIndicesChunk() {
+    LongChunk<RowKeys> keyIndicesChunk() {
         final int chunkSize = intSize();
         final WritableLongChunk<Attributes.RowKeys> indices = WritableLongChunk.makeWritableChunk(chunkSize);
         if (leafCount == 0) {

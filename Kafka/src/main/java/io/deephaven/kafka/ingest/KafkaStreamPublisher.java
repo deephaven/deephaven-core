@@ -60,12 +60,12 @@ public class KafkaStreamPublisher implements ConsumerRecordToStreamPublisherAdap
 
         keyIsSimpleObject = this.simpleKeyColumnIndex >= 0;
         if (keyIsSimpleObject && keyProcessor != null) {
-            throw new IllegalArgumentException("Simple Key Column TrackingMutableRowSet can not be set when a keyProcessor is set");
+            throw new IllegalArgumentException("Simple Key Column Index can not be set when a keyProcessor is set");
         }
 
         valueIsSimpleObject = this.simpleValueColumnIndex >= 0;
         if (valueIsSimpleObject && valueProcessor != null) {
-            throw new IllegalArgumentException("Simple Value Column TrackingMutableRowSet can not be set when a valueProcessor is set");
+            throw new IllegalArgumentException("Simple Value Column Index can not be set when a valueProcessor is set");
         }
     }
 

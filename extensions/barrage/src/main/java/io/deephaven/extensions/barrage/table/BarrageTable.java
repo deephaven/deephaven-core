@@ -296,7 +296,7 @@ public class BarrageTable extends QueryTable implements LiveTable, BarrageMessag
                                 WritableLongChunk.makeWritableChunk(column.rowsModified.intSize())) {
                     redirectionIndex.fillChunk(redirContext, keys, column.rowsModified);
                     for (int i = 0; i < keys.size(); ++i) {
-                        Assert.notEquals(keys.get(i), "keys[i]", RowSet.NULL_ROW_KEY, "TrackingMutableRowSet.NULL_KEY");
+                        Assert.notEquals(keys.get(i), "keys[i]", RowSet.NULL_ROW_KEY, "RowSet.NULL_ROW_KEY");
                     }
 
                     try (final WritableChunkSink.FillFromContext ctxt =

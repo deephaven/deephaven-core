@@ -137,7 +137,7 @@ public class ByteChunkedUniqueOperator implements IterativeChunkedAggregationOpe
     }
 
     @Override
-    public void modifyChunk(BucketedContext bucketedContext, Chunk<? extends Values> preValues, Chunk<? extends Values> postValues, LongChunk<? extends RowKeys> postShiftIndices, IntChunk<Attributes.RowKeys> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length, WritableBooleanChunk<Values> stateModified) {
+    public void modifyChunk(BucketedContext bucketedContext, Chunk<? extends Values> preValues, Chunk<? extends Values> postValues, LongChunk<? extends Attributes.RowKeys> postShiftIndices, IntChunk<RowKeys> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length, WritableBooleanChunk<Values> stateModified) {
         final BucketSsmDistinctContext context = getAndUpdateContext(preValues, startPositions, length, bucketedContext);
         final SegmentedSortedMultiSet.RemoveContext removeContext = removeContextFactory.get();
         context.ssmsToMaybeClear.fillWithValue(0, startPositions.size(), false);
@@ -194,7 +194,7 @@ public class ByteChunkedUniqueOperator implements IterativeChunkedAggregationOpe
     }
 
     @Override
-    public boolean addChunk(SingletonContext singletonContext, int chunkSize, Chunk<? extends Values> values, LongChunk<? extends Attributes.RowKeys> inputIndices, long destination) {
+    public boolean addChunk(SingletonContext singletonContext, int chunkSize, Chunk<? extends Values> values, LongChunk<? extends RowKeys> inputIndices, long destination) {
         final SsmDistinctContext context = getAndUpdateContext(values, singletonContext);
         final ByteSegmentedSortedMultiset ssm = ssmForSlot(destination);
         if (context.valueCopy.size() > 0) {
@@ -204,7 +204,7 @@ public class ByteChunkedUniqueOperator implements IterativeChunkedAggregationOpe
     }
 
     @Override
-    public boolean removeChunk(SingletonContext singletonContext, int chunkSize, Chunk<? extends Values> values, LongChunk<? extends Attributes.RowKeys> inputIndices, long destination) {
+    public boolean removeChunk(SingletonContext singletonContext, int chunkSize, Chunk<? extends Values> values, LongChunk<? extends RowKeys> inputIndices, long destination) {
         final SsmDistinctContext context = getAndUpdateContext(values, singletonContext);
         if (context.valueCopy.size() == 0) {
             return false;
@@ -220,7 +220,7 @@ public class ByteChunkedUniqueOperator implements IterativeChunkedAggregationOpe
     }
 
     @Override
-    public boolean modifyChunk(SingletonContext singletonContext, int chunkSize, Chunk<? extends Values> preValues, Chunk<? extends Values> postValues, LongChunk<? extends Attributes.RowKeys> postShiftIndices, long destination) {
+    public boolean modifyChunk(SingletonContext singletonContext, int chunkSize, Chunk<? extends Values> preValues, Chunk<? extends Values> postValues, LongChunk<? extends RowKeys> postShiftIndices, long destination) {
         final SsmDistinctContext context = getAndUpdateContext(preValues, singletonContext);
         if (context.valueCopy.size() > 0) {
             final ByteSegmentedSortedMultiset ssm = ssmForSlot(destination);

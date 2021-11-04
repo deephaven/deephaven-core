@@ -1,8 +1,6 @@
-/*
- * ---------------------------------------------------------------------------------------------------------------------
+/* ---------------------------------------------------------------------------------------------------------------------
  * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit DbPrevCharArrayColumnWrapper and regenerate
- * ------------------------------------------------------------------------------------------------------------------
- */
+ * ------------------------------------------------------------------------------------------------------------------ */
 /*
  * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
  */
@@ -35,8 +33,8 @@ public class DbPrevShortArrayColumnWrapper extends DbShortArray.Indirect {
         this(columnSource, rowSet, 0, 0);
     }
 
-    private DbPrevShortArrayColumnWrapper(@NotNull final ColumnSource<Short> columnSource, @NotNull final RowSet rowSet,
-            final long startPadding, final long endPadding) {
+    private DbPrevShortArrayColumnWrapper(@NotNull final ColumnSource<Short> columnSource,
+            @NotNull final RowSet rowSet, final long startPadding, final long endPadding) {
         Assert.neqNull(rowSet, "rowSet");
         this.columnSource = columnSource;
         this.rowSet = rowSet;

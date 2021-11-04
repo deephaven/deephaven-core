@@ -84,7 +84,7 @@ public class ByteReverseSsaSsaStamp implements SsaSsaStamp {
         processRemovals((ByteReverseSegmentedSortedArray)leftSsa, rightStampChunk.asByteChunk(), rightKeys, priorRedirections, redirectionIndex, modifiedBuilder, disallowExactMatch);
     }
 
-    static private void processRemovals(ByteReverseSegmentedSortedArray leftSsa, ByteChunk<? extends Values> rightStampChunk, LongChunk<RowKeys> rightKeys, WritableLongChunk<RowKeys> nextRedirections, RedirectionIndex redirectionIndex, RowSetBuilderRandom modifiedBuilder, boolean disallowExactMatch) {
+    static private void processRemovals(ByteReverseSegmentedSortedArray leftSsa, ByteChunk<? extends Values> rightStampChunk, LongChunk<Attributes.RowKeys> rightKeys, WritableLongChunk<Attributes.RowKeys> nextRedirections, RedirectionIndex redirectionIndex, RowSetBuilderRandom modifiedBuilder, boolean disallowExactMatch) {
         // When removing a row, record the stamp, redirection key, and prior redirection key.  Binary search
         // in the left for the removed key to find the smallest value geq the removed right.  Update all rows
         // with the removed redirection to the previous key.
@@ -133,7 +133,7 @@ public class ByteReverseSsaSsaStamp implements SsaSsaStamp {
     }
 
     @Override
-    public void processInsertion(SegmentedSortedArray leftSsa, Chunk<? extends Values> rightStampChunk, LongChunk<RowKeys> rightKeys, Chunk<Values> nextRightValue, RedirectionIndex redirectionIndex, RowSetBuilderRandom modifiedBuilder, boolean endsWithLastValue, boolean disallowExactMatch) {
+    public void processInsertion(SegmentedSortedArray leftSsa, Chunk<? extends Values> rightStampChunk, LongChunk<Attributes.RowKeys> rightKeys, Chunk<Values> nextRightValue, RedirectionIndex redirectionIndex, RowSetBuilderRandom modifiedBuilder, boolean endsWithLastValue, boolean disallowExactMatch) {
         processInsertion((ByteReverseSegmentedSortedArray)leftSsa, rightStampChunk.asByteChunk(), rightKeys, nextRightValue.asByteChunk(), redirectionIndex, modifiedBuilder, endsWithLastValue, disallowExactMatch);
     }
 
@@ -201,10 +201,10 @@ public class ByteReverseSsaSsaStamp implements SsaSsaStamp {
         findModified((ByteReverseSegmentedSortedArray)leftSsa, redirectionIndex, rightStampChunk.asByteChunk(), rightStampIndices, modifiedBuilder, disallowExactMatch);
     }
 
-    private static void findModified(ByteReverseSegmentedSortedArray leftSsa, RedirectionIndex redirectionIndex, ByteChunk<? extends Values> rightStampChunk, LongChunk<RowKeys> rightStampIndices, RowSetBuilderRandom modifiedBuilder, boolean disallowExactMatch) {
+    private static void findModified(ByteReverseSegmentedSortedArray leftSsa, RedirectionIndex redirectionIndex, ByteChunk<? extends Values> rightStampChunk, LongChunk<Attributes.RowKeys> rightStampIndices, RowSetBuilderRandom modifiedBuilder, boolean disallowExactMatch) {
         final ByteReverseSegmentedSortedArray.Iterator leftIt = leftSsa.iterator(disallowExactMatch, false);
 
-        try (final SizedLongChunk<RowKeys> modifiedKeys = new SizedLongChunk<>()) {
+        try (final SizedLongChunk<Attributes.RowKeys> modifiedKeys = new SizedLongChunk<>()) {
             int capacity = rightStampChunk.size();
             modifiedKeys.ensureCapacity(capacity).setSize(capacity);
             int mks = 0;
@@ -236,11 +236,11 @@ public class ByteReverseSsaSsaStamp implements SsaSsaStamp {
     }
 
     @Override
-    public void applyShift(SegmentedSortedArray leftSsa, Chunk<? extends Values> rightStampChunk, LongChunk<RowKeys> rightStampKeys, long shiftDelta, RedirectionIndex redirectionIndex, boolean disallowExactMatch) {
+    public void applyShift(SegmentedSortedArray leftSsa, Chunk<? extends Values> rightStampChunk, LongChunk<Attributes.RowKeys> rightStampKeys, long shiftDelta, RedirectionIndex redirectionIndex, boolean disallowExactMatch) {
         applyShift((ByteReverseSegmentedSortedArray)leftSsa, rightStampChunk.asByteChunk(), rightStampKeys, shiftDelta, redirectionIndex, disallowExactMatch);
     }
 
-    private void applyShift(ByteReverseSegmentedSortedArray leftSsa, ByteChunk<? extends Values> rightStampChunk, LongChunk<RowKeys> rightStampKeys, long shiftDelta, RedirectionIndex redirectionIndex, boolean disallowExactMatch) {
+    private void applyShift(ByteReverseSegmentedSortedArray leftSsa, ByteChunk<? extends Values> rightStampChunk, LongChunk<Attributes.RowKeys> rightStampKeys, long shiftDelta, RedirectionIndex redirectionIndex, boolean disallowExactMatch) {
         final ByteReverseSegmentedSortedArray.Iterator leftIt = leftSsa.iterator(disallowExactMatch, false);
 
         for (int ii = 0; ii < rightStampChunk.size(); ++ii) {

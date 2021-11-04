@@ -7,8 +7,8 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.select.MatchPair;
 import io.deephaven.engine.util.DhIntComparisons;
-import io.deephaven.engine.v2.Listener;
 import io.deephaven.engine.v2.QueryTable;
+import io.deephaven.engine.v2.Listener;
 import io.deephaven.engine.v2.sources.IntegerArraySource;
 import io.deephaven.engine.v2.sources.chunk.Attributes.ChunkLengths;
 import io.deephaven.engine.v2.sources.chunk.Attributes.ChunkPositions;
@@ -67,8 +67,8 @@ public class IntStreamSortedFirstOrLastChunkedOperator extends CopyingPermutedSt
     @Override
     public void addChunk(final BucketedContext bucketedContext, // Unused
                          @NotNull final Chunk<? extends Values> values,
-                         @NotNull final LongChunk<? extends Attributes.RowKeys> inputIndices,
-                         @NotNull final IntChunk<Attributes.RowKeys> destinations,
+                         @NotNull final LongChunk<? extends RowKeys> inputIndices,
+                         @NotNull final IntChunk<RowKeys> destinations,
                          @NotNull final IntChunk<ChunkPositions> startPositions,
                          @NotNull final IntChunk<ChunkLengths> length,
                          @NotNull final WritableBooleanChunk<Values> stateModified) {
@@ -85,7 +85,7 @@ public class IntStreamSortedFirstOrLastChunkedOperator extends CopyingPermutedSt
     public boolean addChunk(final SingletonContext singletonContext, // Unused
                             final int chunkSize,
                             @NotNull final Chunk<? extends Values> values,
-                            @NotNull final LongChunk<? extends Attributes.RowKeys> inputIndices,
+                            @NotNull final LongChunk<? extends RowKeys> inputIndices,
                             final long destination) {
         return addChunk(values.asIntChunk(), inputIndices, 0, inputIndices.size(), destination);
     }

@@ -69,7 +69,7 @@ public class DoubleChunkSsaStamp implements ChunkSsaStamp {
         processRemovals(leftStampValues.asDoubleChunk(), leftStampKeys, rightStampChunk.asDoubleChunk(), rightKeys, priorRedirections, redirectionIndex, modifiedBuilder, disallowExactMatch);
     }
 
-    private static void processRemovals(DoubleChunk<Values> leftStampValues, LongChunk<Attributes.RowKeys> leftStampKeys, DoubleChunk<? extends Values> rightStampChunk, LongChunk<Attributes.RowKeys> rightKeys, WritableLongChunk<Attributes.RowKeys> nextRedirections, RedirectionIndex redirectionIndex, RowSetBuilderRandom modifiedBuilder, boolean disallowExactMatch) {
+    private static void processRemovals(DoubleChunk<Values> leftStampValues, LongChunk<Attributes.RowKeys> leftStampKeys, DoubleChunk<? extends Values> rightStampChunk, LongChunk<RowKeys> rightKeys, WritableLongChunk<Attributes.RowKeys> nextRedirections, RedirectionIndex redirectionIndex, RowSetBuilderRandom modifiedBuilder, boolean disallowExactMatch) {
         // When removing a row, record the stamp, redirection key, and prior redirection key.  Binary search
         // in the left for the removed key to find the smallest value geq the removed right.  Update all rows
         // with the removed redirection to the previous key.
@@ -170,7 +170,7 @@ public class DoubleChunkSsaStamp implements ChunkSsaStamp {
     }
 
     @Override
-    public void applyShift(Chunk<Values> leftStampValues, LongChunk<RowKeys> leftStampKeys, Chunk<? extends Values> rightStampChunk, LongChunk<Attributes.RowKeys> rightStampKeys, long shiftDelta, RedirectionIndex redirectionIndex, boolean disallowExactMatch) {
+    public void applyShift(Chunk<Values> leftStampValues, LongChunk<Attributes.RowKeys> leftStampKeys, Chunk<? extends Values> rightStampChunk, LongChunk<Attributes.RowKeys> rightStampKeys, long shiftDelta, RedirectionIndex redirectionIndex, boolean disallowExactMatch) {
         applyShift(leftStampValues.asDoubleChunk(), leftStampKeys, rightStampChunk.asDoubleChunk(), rightStampKeys, shiftDelta, redirectionIndex, disallowExactMatch);
     }
 

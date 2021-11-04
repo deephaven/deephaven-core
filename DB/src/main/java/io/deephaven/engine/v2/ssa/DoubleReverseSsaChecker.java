@@ -8,6 +8,7 @@ import io.deephaven.engine.util.DhDoubleComparisons;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.v2.hashing.DoubleChunkEquals;
 import io.deephaven.engine.v2.hashing.LongChunkEquals;
+import io.deephaven.engine.v2.sources.chunk.Attributes;
 import io.deephaven.engine.v2.sources.chunk.Attributes.RowKeys;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 import io.deephaven.engine.v2.sources.chunk.DoubleChunk;
@@ -25,7 +26,7 @@ public class DoubleReverseSsaChecker implements SsaChecker {
         checkSsa((DoubleReverseSegmentedSortedArray)ssa, valueChunk.asDoubleChunk(), tableIndexChunk);
     }
 
-    static void checkSsa(DoubleReverseSegmentedSortedArray ssa, DoubleChunk<? extends Values> valueChunk, LongChunk<? extends RowKeys> tableIndexChunk) {
+    static void checkSsa(DoubleReverseSegmentedSortedArray ssa, DoubleChunk<? extends Values> valueChunk, LongChunk<? extends Attributes.RowKeys> tableIndexChunk) {
         ssa.validateInternal();
 
         //noinspection unchecked

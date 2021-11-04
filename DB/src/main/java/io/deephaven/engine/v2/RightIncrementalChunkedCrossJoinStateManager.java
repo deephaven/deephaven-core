@@ -23,6 +23,7 @@ import io.deephaven.engine.v2.utils.*;
 import java.util.Arrays;
 import io.deephaven.engine.v2.sort.permute.IntPermuteKernel;
 // @StateChunkTypeEnum@ from \QObject\E
+import io.deephaven.engine.v2.sort.permute.ObjectPermuteKernel;
 import io.deephaven.engine.v2.utils.compact.IntCompactKernel;
 import io.deephaven.engine.v2.utils.compact.LongCompactKernel;
 // endmixin rehash
@@ -67,7 +68,7 @@ class RightIncrementalChunkedCrossJoinStateManager
          * @param cookie    The last known cookie for state slot (in main table space)
          * @param stateSlot The state slot (in main table space)
          * @param index     The probed rowSet key
-         * @param prevIndex The probed prev rowSet key (applicable only when prevIndex provided to build/probe otherwise TrackingMutableRowSet.NULL_KEY)
+         * @param prevIndex The probed prev rowSet key (applicable only when prevIndex provided to build/probe otherwise RowSet.NULL_ROW_KEY)
          * @return The new cookie for the state
          */
         long invoke(long cookie, long stateSlot, long index, long prevIndex);
@@ -75,7 +76,7 @@ class RightIncrementalChunkedCrossJoinStateManager
     // endregion preamble variables
 
     @ReplicateHashTable.EmptyStateValue
-    // @NullStateValue@ from \Qnull\E, @StateValueType@ from \QIndex\E
+    // @NullStateValue@ from \Qnull\E, @StateValueType@ from \QTrackingMutableRowSet\E
     private static final TrackingMutableRowSet EMPTY_RIGHT_VALUE = null;
 
     // mixin getStateValue
@@ -718,7 +719,7 @@ class RightIncrementalChunkedCrossJoinStateManager
 
         // the chunk of state values that we read from the hash table
         // @WritableStateChunkType@ from \QWritableObjectChunk<TrackingMutableRowSet,Values>\E
-        final WritableObjectChunk<RowSet,Values> workingStateEntries;
+        final WritableObjectChunk<TrackingMutableRowSet,Values> workingStateEntries;
 
         // the chunks for getting key values from the hash table
         final WritableChunk<Values>[] workingKeyChunks;
@@ -1320,7 +1321,7 @@ class RightIncrementalChunkedCrossJoinStateManager
                         lastBackingChunkLocation = firstBackingChunkLocation + bc.writeThroughChunks[0].size() - 1;
                     }
 
-                    // @StateValueType@ from \QIndex\E
+                    // @StateValueType@ from \QTrackingMutableRowSet\E
                     final TrackingMutableRowSet stateValueToMove = rightIndexSource.getUnsafe(oldHashLocation);
                     rightIndexSource.set(newHashLocation, stateValueToMove);
                     rightIndexSource.set(oldHashLocation, EMPTY_RIGHT_VALUE);
@@ -1701,7 +1702,7 @@ class RightIncrementalChunkedCrossJoinStateManager
         // the chunk of right indices that we read from the hash table, the empty right rowSet is used as a sentinel that the
         // state exists; otherwise when building from the left it is always null
         // @WritableStateChunkType@ from \QWritableObjectChunk<TrackingMutableRowSet,Values>\E
-        final WritableObjectChunk<RowSet,Values> workingStateEntries;
+        final WritableObjectChunk<TrackingMutableRowSet,Values> workingStateEntries;
 
         // the overflow locations that we need to get from the overflowLocationSource (or overflowOverflowLocationSource)
         final WritableLongChunk<RowKeys> overflowLocationsToFetch;

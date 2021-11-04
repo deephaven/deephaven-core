@@ -6,6 +6,8 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.v2.sort.timsort;
 
+import java.util.Objects;
+
 import io.deephaven.engine.v2.sort.IntSortKernel;
 import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.sources.chunk.Attributes.*;

@@ -11,6 +11,7 @@ import io.deephaven.engine.util.liveness.LivenessScopeStack;
 import io.deephaven.engine.v2.*;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.chunk.Attributes;
+import io.deephaven.engine.v2.sources.chunk.Attributes.RowKeys;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 import io.deephaven.engine.v2.sources.chunk.ShortChunk;
 import io.deephaven.engine.v2.sources.chunk.LongChunk;
@@ -226,7 +227,7 @@ public class TestShortSegmentedSortedArray extends LiveTableTestCase {
         }
     }
 
-    private void checkSsa(ShortSegmentedSortedArray ssa, ShortChunk<? extends Values> valueChunk, LongChunk<? extends Attributes.RowKeys> tableIndexChunk, @NotNull final SsaTestHelpers.TestDescriptor desc) {
+    private void checkSsa(ShortSegmentedSortedArray ssa, ShortChunk<? extends Values> valueChunk, LongChunk<? extends RowKeys> tableIndexChunk, @NotNull final SsaTestHelpers.TestDescriptor desc) {
         try {
             ssa.validate();
             ShortSsaChecker.checkSsa(ssa, valueChunk, tableIndexChunk);

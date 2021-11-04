@@ -6,6 +6,7 @@ package io.deephaven.engine.v2.ssa;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.v2.hashing.ByteChunkEquals;
 import io.deephaven.engine.v2.hashing.LongChunkEquals;
+import io.deephaven.engine.v2.sources.chunk.Attributes;
 import io.deephaven.engine.v2.sources.chunk.Attributes.RowKeys;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 import io.deephaven.engine.v2.sources.chunk.ByteChunk;
@@ -23,7 +24,7 @@ public class ByteSsaChecker implements SsaChecker {
         checkSsa((ByteSegmentedSortedArray)ssa, valueChunk.asByteChunk(), tableIndexChunk);
     }
 
-    static void checkSsa(ByteSegmentedSortedArray ssa, ByteChunk<? extends Values> valueChunk, LongChunk<? extends RowKeys> tableIndexChunk) {
+    static void checkSsa(ByteSegmentedSortedArray ssa, ByteChunk<? extends Values> valueChunk, LongChunk<? extends Attributes.RowKeys> tableIndexChunk) {
         ssa.validateInternal();
 
         //noinspection unchecked

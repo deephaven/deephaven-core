@@ -1,8 +1,6 @@
-/*
- * ---------------------------------------------------------------------------------------------------------------------
+/* ---------------------------------------------------------------------------------------------------------------------
  * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit DbPrevCharArrayColumnWrapper and regenerate
- * ------------------------------------------------------------------------------------------------------------------
- */
+ * ------------------------------------------------------------------------------------------------------------------ */
 /*
  * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
  */
@@ -30,12 +28,13 @@ public class DbPrevLongArrayColumnWrapper extends DbLongArray.Indirect {
     private final long startPadding;
     private final long endPadding;
 
-    public DbPrevLongArrayColumnWrapper(@NotNull final ColumnSource<Long> columnSource, @NotNull final RowSet rowSet) {
+    public DbPrevLongArrayColumnWrapper(@NotNull final ColumnSource<Long> columnSource,
+            @NotNull final RowSet rowSet) {
         this(columnSource, rowSet, 0, 0);
     }
 
-    private DbPrevLongArrayColumnWrapper(@NotNull final ColumnSource<Long> columnSource, @NotNull final RowSet rowSet,
-            final long startPadding, final long endPadding) {
+    private DbPrevLongArrayColumnWrapper(@NotNull final ColumnSource<Long> columnSource,
+            @NotNull final RowSet rowSet, final long startPadding, final long endPadding) {
         Assert.neqNull(rowSet, "rowSet");
         this.columnSource = columnSource;
         this.rowSet = rowSet;
@@ -52,10 +51,6 @@ public class DbPrevLongArrayColumnWrapper extends DbLongArray.Indirect {
         }
 
         return columnSource.getPrevLong(rowSet.get(i));
-    }
-
-    private long getPrev(long offset) {
-        return get(offset);
     }
 
     @Override

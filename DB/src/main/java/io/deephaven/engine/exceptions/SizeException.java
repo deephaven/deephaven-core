@@ -1,14 +1,13 @@
 package io.deephaven.engine.exceptions;
 
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.UncheckedDeephavenException;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * <p>
- * Unchecked exception thrown when {@link TrackingMutableRowSet}, {@link io.deephaven.engine.tables.Table} or
- * {@link io.deephaven.engine.tables.DataColumn} operations are invoked (directly, or indirectly as data updates) that
- * cannot be completed correctly due to size constraints on the underlying data structures.
+ * Unchecked exception thrown when {@link io.deephaven.engine.v2.utils.RowSet}, {@link io.deephaven.engine.tables.Table}
+ * or {@link io.deephaven.engine.tables.DataColumn} operations are invoked (directly, or indirectly as data updates)
+ * that cannot be completed correctly due to size constraints on the underlying data structures.
  * <p>
  * For example, the current implementations of {@link io.deephaven.engine.v2.utils.RedirectionIndex}, required for
  * {@link io.deephaven.engine.tables.Table#sort}, can only support an 32-bit integer number of keys.

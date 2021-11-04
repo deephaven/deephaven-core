@@ -18,7 +18,7 @@ public class IntNoExactReverseStampKernel implements StampKernel {
         computeRedirections(leftStamps.asIntChunk(), rightStamps.asIntChunk(), rightKeyIndices, leftRedirections);
     }
 
-    static private void computeRedirections(IntChunk<Values> leftStamps, IntChunk<Values> rightStamps, LongChunk<Attributes.RowKeys> rightKeyIndices, WritableLongChunk<RowKeys> leftRedirections) {
+    static private void computeRedirections(IntChunk<Values> leftStamps, IntChunk<Values> rightStamps, LongChunk<RowKeys> rightKeyIndices, WritableLongChunk<Attributes.RowKeys> leftRedirections) {
         final int leftSize = leftStamps.size();
         final int rightSize = rightStamps.size();
         if (rightSize == 0) {

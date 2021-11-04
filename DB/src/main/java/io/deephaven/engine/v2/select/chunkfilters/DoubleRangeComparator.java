@@ -21,7 +21,7 @@ public class DoubleRangeComparator {
             this.upper = upper;
         }
 
-        abstract public void filter(DoubleChunk<? extends Values> values, LongChunk<Attributes.OrderedRowKeys> keys, WritableLongChunk<Attributes.OrderedRowKeys> results);
+        abstract public void filter(DoubleChunk<? extends Values> values, LongChunk<Attributes.OrderedRowKeys> keys, WritableLongChunk<OrderedRowKeys> results);
     }
 
     static class DoubleDoubleInclusiveInclusiveFilter extends DoubleDoubleFilter {
@@ -29,7 +29,7 @@ public class DoubleRangeComparator {
             super(lower, upper);
         }
 
-        public void filter(DoubleChunk<? extends Values> values, LongChunk<Attributes.OrderedRowKeys> keys, WritableLongChunk<Attributes.OrderedRowKeys> results) {
+        public void filter(DoubleChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys, WritableLongChunk<OrderedRowKeys> results) {
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
                 final double value = values.get(ii);
@@ -45,7 +45,7 @@ public class DoubleRangeComparator {
             super(lower, upper);
         }
 
-        public void filter(DoubleChunk<? extends Values> values, LongChunk<Attributes.OrderedRowKeys> keys, WritableLongChunk<Attributes.OrderedRowKeys> results) {
+        public void filter(DoubleChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys, WritableLongChunk<Attributes.OrderedRowKeys> results) {
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
                 final double value = values.get(ii);
@@ -61,7 +61,7 @@ public class DoubleRangeComparator {
             super(lower, upper);
         }
 
-        public void filter(DoubleChunk<? extends Values> values, LongChunk<Attributes.OrderedRowKeys> keys, WritableLongChunk<OrderedRowKeys> results) {
+        public void filter(DoubleChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys, WritableLongChunk<OrderedRowKeys> results) {
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
                 final double value = values.get(ii);
@@ -77,7 +77,7 @@ public class DoubleRangeComparator {
             super(lower, upper);
         }
 
-        public void filter(DoubleChunk<? extends Values> values, LongChunk<Attributes.OrderedRowKeys> keys, WritableLongChunk<OrderedRowKeys> results) {
+        public void filter(DoubleChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys, WritableLongChunk<OrderedRowKeys> results) {
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
                 final double value = values.get(ii);

@@ -35,12 +35,12 @@ public class IntLongMegaMergeKernel {
         return IntLongMegaMergeKernelContext.INSTANCE;
     }
 
-    static public <ATTR extends Any, KEY_INDICES extends Indices> void merge(LongArraySource destinationKeys,
-                                                                             IntegerArraySource destinationValues,
-                                                                             long destinationOffset,
-                                                                             long destinationSize,
-                                                                             LongChunk<KEY_INDICES> keysChunk,
-                                                                             IntChunk<ATTR> valuesChunk
+    static public <ATTR extends Any, KEY_INDICES extends Attributes.Indices> void merge(LongArraySource destinationKeys,
+                                                                                        IntegerArraySource destinationValues,
+                                                                                        long destinationOffset,
+                                                                                        long destinationSize,
+                                                                                        LongChunk<KEY_INDICES> keysChunk,
+                                                                                        IntChunk<ATTR> valuesChunk
     ) {
         destinationKeys.ensureCapacity(destinationOffset + destinationSize + keysChunk.size(), false);
         destinationValues.ensureCapacity(destinationOffset + destinationSize + valuesChunk.size(), false);
@@ -151,7 +151,7 @@ public class IntLongMegaMergeKernel {
         }
     }
 
-    private static <ATTR extends Any, KEY_INDICES extends Attributes.Indices> void copyChunkToDest(LongChunk<KEY_INDICES> keysChunk, IntChunk<ATTR> valuesChunk, LongArraySource destinationKeys, IntegerArraySource destinationValues, int sourceStart, long destStart, int length) {
+    private static <ATTR extends Any, KEY_INDICES extends Indices> void copyChunkToDest(LongChunk<KEY_INDICES> keysChunk, IntChunk<ATTR> valuesChunk, LongArraySource destinationKeys, IntegerArraySource destinationValues, int sourceStart, long destStart, int length) {
         destinationValues.copyFromChunk(destStart, length, (IntChunk)valuesChunk, sourceStart);
         destinationKeys.copyFromChunk(destStart, length, keysChunk, sourceStart);
     }

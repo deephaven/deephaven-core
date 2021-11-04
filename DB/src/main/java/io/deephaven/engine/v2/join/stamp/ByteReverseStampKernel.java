@@ -4,6 +4,7 @@
 package io.deephaven.engine.v2.join.stamp;
 
 import io.deephaven.engine.v2.sources.chunk.*;
+import io.deephaven.engine.v2.sources.chunk.Attributes.RowKeys;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 import io.deephaven.engine.v2.utils.RowSet;
 
@@ -13,11 +14,11 @@ public class ByteReverseStampKernel implements StampKernel {
     private ByteReverseStampKernel() {} // static use only
 
     @Override
-    public void computeRedirections(Chunk<Values> leftStamps, Chunk<Values> rightStamps, LongChunk<Attributes.RowKeys> rightKeyIndices, WritableLongChunk<Attributes.RowKeys> leftRedirections) {
+    public void computeRedirections(Chunk<Values> leftStamps, Chunk<Values> rightStamps, LongChunk<Attributes.RowKeys> rightKeyIndices, WritableLongChunk<RowKeys> leftRedirections) {
         computeRedirections(leftStamps.asByteChunk(), rightStamps.asByteChunk(), rightKeyIndices, leftRedirections);
     }
 
-    static private void computeRedirections(ByteChunk<Values> leftStamps, ByteChunk<Values> rightStamps, LongChunk<Attributes.RowKeys> rightKeyIndices, WritableLongChunk<Attributes.RowKeys> leftRedirections) {
+    static private void computeRedirections(ByteChunk<Values> leftStamps, ByteChunk<Values> rightStamps, LongChunk<RowKeys> rightKeyIndices, WritableLongChunk<RowKeys> leftRedirections) {
         final int leftSize = leftStamps.size();
         final int rightSize = rightStamps.size();
         if (rightSize == 0) {

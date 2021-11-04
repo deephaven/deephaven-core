@@ -10,6 +10,7 @@ import io.deephaven.engine.v2.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.v2.sources.DoubleArraySource;
 import io.deephaven.engine.v2.sources.LongArraySource;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Any;
+import io.deephaven.engine.v2.sources.chunk.Attributes.Indices;
 import io.deephaven.engine.v2.sources.chunk.*;
 
 public class DoubleLongMegaMergeKernel {
@@ -18,7 +19,7 @@ public class DoubleLongMegaMergeKernel {
     }
 
     // region Context
-    public static class DoubleLongMegaMergeKernelContext<ATTR extends Any, KEY_INDICES extends Attributes.Indices> implements LongMegaMergeKernel<ATTR, KEY_INDICES> {
+    public static class DoubleLongMegaMergeKernelContext<ATTR extends Any, KEY_INDICES extends Indices> implements LongMegaMergeKernel<ATTR, KEY_INDICES> {
         @SuppressWarnings("rawtypes")
         private static final DoubleLongMegaMergeKernelContext INSTANCE = new DoubleLongMegaMergeKernelContext();
 
@@ -29,7 +30,7 @@ public class DoubleLongMegaMergeKernel {
     }
     // endregion Context
 
-    public static <ATTR extends Any, KEY_INDICES extends Attributes.Indices> DoubleLongMegaMergeKernelContext<ATTR, KEY_INDICES> createContext() {
+    public static <ATTR extends Any, KEY_INDICES extends Indices> DoubleLongMegaMergeKernelContext<ATTR, KEY_INDICES> createContext() {
         //noinspection unchecked
         return DoubleLongMegaMergeKernelContext.INSTANCE;
     }
@@ -150,7 +151,7 @@ public class DoubleLongMegaMergeKernel {
         }
     }
 
-    private static <ATTR extends Any, KEY_INDICES extends Attributes.Indices> void copyChunkToDest(LongChunk<KEY_INDICES> keysChunk, DoubleChunk<ATTR> valuesChunk, LongArraySource destinationKeys, DoubleArraySource destinationValues, int sourceStart, long destStart, int length) {
+    private static <ATTR extends Any, KEY_INDICES extends Indices> void copyChunkToDest(LongChunk<KEY_INDICES> keysChunk, DoubleChunk<ATTR> valuesChunk, LongArraySource destinationKeys, DoubleArraySource destinationValues, int sourceStart, long destStart, int length) {
         destinationValues.copyFromChunk(destStart, length, (DoubleChunk)valuesChunk, sourceStart);
         destinationKeys.copyFromChunk(destStart, length, keysChunk, sourceStart);
     }

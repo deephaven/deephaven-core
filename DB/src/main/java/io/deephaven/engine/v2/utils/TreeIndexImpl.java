@@ -159,7 +159,7 @@ public interface TreeIndexImpl {
     /**
      * Invert the given rowSet.
      *
-     * @param keys TrackingMutableRowSet of keys to invert
+     * @param keys TreeIndexImpl of keys to invert
      * @param maximumPosition the largest position to add to indexBuilder, inclusive
      *
      * @return the inverse of rowSet

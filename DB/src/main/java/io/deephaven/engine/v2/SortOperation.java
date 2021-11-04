@@ -239,7 +239,7 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
             }
 
             // fillFromChunk may convert the provided RowSequence to a KeyRanges (or RowKeys) chunk that is owned by
-            // the TrackingMutableRowSet and is not closed until the rowSet is closed.
+            // the RowSequence and is not closed until the RowSequence is closed.
             WritableChunkSink.FillFromContext fillFromContext =
                     closer.add(sortMapping.makeFillFromContext(sortedKeys.length));
             sortMapping.fillFromChunk(fillFromContext, LongChunk.chunkWrap(sortedKeys),

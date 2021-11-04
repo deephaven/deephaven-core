@@ -5,6 +5,8 @@ package io.deephaven.engine.v2.join.stamp;
 
 import java.util.Objects;
 
+import java.util.Objects;
+
 import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.sources.chunk.Attributes.RowKeys;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
@@ -16,7 +18,7 @@ public class ObjectReverseStampKernel implements StampKernel {
     private ObjectReverseStampKernel() {} // static use only
 
     @Override
-    public void computeRedirections(Chunk<Values> leftStamps, Chunk<Values> rightStamps, LongChunk<RowKeys> rightKeyIndices, WritableLongChunk<Attributes.RowKeys> leftRedirections) {
+    public void computeRedirections(Chunk<Values> leftStamps, Chunk<Values> rightStamps, LongChunk<Attributes.RowKeys> rightKeyIndices, WritableLongChunk<RowKeys> leftRedirections) {
         computeRedirections(leftStamps.asObjectChunk(), rightStamps.asObjectChunk(), rightKeyIndices, leftRedirections);
     }
 

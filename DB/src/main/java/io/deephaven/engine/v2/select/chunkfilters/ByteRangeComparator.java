@@ -21,7 +21,7 @@ public class ByteRangeComparator {
             this.upper = upper;
         }
 
-        abstract public void filter(ByteChunk<? extends Values> values, LongChunk<Attributes.OrderedRowKeys> keys, WritableLongChunk<Attributes.OrderedRowKeys> results);
+        abstract public void filter(ByteChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys, WritableLongChunk<OrderedRowKeys> results);
     }
 
     static class ByteByteInclusiveInclusiveFilter extends ByteByteFilter {
@@ -29,7 +29,7 @@ public class ByteRangeComparator {
             super(lower, upper);
         }
 
-        public void filter(ByteChunk<? extends Values> values, LongChunk<Attributes.OrderedRowKeys> keys, WritableLongChunk<Attributes.OrderedRowKeys> results) {
+        public void filter(ByteChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys, WritableLongChunk<OrderedRowKeys> results) {
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
                 final byte value = values.get(ii);
@@ -77,7 +77,7 @@ public class ByteRangeComparator {
             super(lower, upper);
         }
 
-        public void filter(ByteChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys, WritableLongChunk<Attributes.OrderedRowKeys> results) {
+        public void filter(ByteChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys, WritableLongChunk<OrderedRowKeys> results) {
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
                 final byte value = values.get(ii);

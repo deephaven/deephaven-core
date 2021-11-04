@@ -5,11 +5,13 @@ package io.deephaven.engine.v2.ssa;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.v2.hashing.LongChunkEquals;
+import io.deephaven.engine.v2.hashing.LongChunkEquals;
 import io.deephaven.engine.v2.sources.chunk.Attributes;
 import io.deephaven.engine.v2.sources.chunk.Attributes.RowKeys;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 import io.deephaven.engine.v2.sources.chunk.LongChunk;
 import io.deephaven.engine.v2.sources.chunk.Chunk;
+import io.deephaven.engine.v2.sources.chunk.LongChunk;
 import io.deephaven.engine.v2.utils.ChunkUtils;
 
 public class LongReverseSsaChecker implements SsaChecker {
@@ -18,7 +20,7 @@ public class LongReverseSsaChecker implements SsaChecker {
     private LongReverseSsaChecker() {} // static use only
 
     @Override
-    public void checkSsa(SegmentedSortedArray ssa, Chunk<? extends Values> valueChunk, LongChunk<? extends Attributes.RowKeys> tableIndexChunk) {
+    public void checkSsa(SegmentedSortedArray ssa, Chunk<? extends Values> valueChunk, LongChunk<? extends RowKeys> tableIndexChunk) {
         checkSsa((LongReverseSegmentedSortedArray)ssa, valueChunk.asLongChunk(), tableIndexChunk);
     }
 

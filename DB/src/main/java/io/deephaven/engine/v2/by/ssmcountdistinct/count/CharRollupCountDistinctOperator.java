@@ -64,10 +64,10 @@ public class CharRollupCountDistinctOperator implements IterativeChunkedAggregat
 
     //region Bucketed Updates
     private BucketSsmDistinctRollupContext updateAddValues(BucketSsmDistinctRollupContext bucketedContext,
-                                                           Chunk<? extends Attributes.Values> inputs,
-                                                           IntChunk<Attributes.ChunkPositions> starts,
-                                                           IntChunk<Attributes.ChunkLengths> lengths) {
-        final ObjectChunk<CharSegmentedSortedMultiset, ? extends Attributes.Values> inputValues = inputs.asObjectChunk();
+                                                           Chunk<? extends Values> inputs,
+                                                           IntChunk<ChunkPositions> starts,
+                                                           IntChunk<ChunkLengths> lengths) {
+        final ObjectChunk<CharSegmentedSortedMultiset, ? extends Values> inputValues = inputs.asObjectChunk();
 
         bucketedContext.lengthCopy.setSize(lengths.size());
         bucketedContext.starts.setSize(lengths.size());
@@ -138,10 +138,10 @@ public class CharRollupCountDistinctOperator implements IterativeChunkedAggregat
     }
 
     private BucketSsmDistinctRollupContext updateRemoveValues(BucketSsmDistinctRollupContext context,
-                                                              Chunk<? extends Attributes.Values> inputs,
-                                                              IntChunk<Attributes.ChunkPositions> starts,
-                                                              IntChunk<Attributes.ChunkLengths> lengths) {
-        final ObjectChunk<CharSegmentedSortedMultiset, ? extends Attributes.Values> inputValues = inputs.asObjectChunk();
+                                                              Chunk<? extends Values> inputs,
+                                                              IntChunk<ChunkPositions> starts,
+                                                              IntChunk<ChunkLengths> lengths) {
+        final ObjectChunk<CharSegmentedSortedMultiset, ? extends Values> inputValues = inputs.asObjectChunk();
 
         context.lengthCopy.setSize(lengths.size());
         context.starts.setSize(lengths.size());
@@ -219,7 +219,7 @@ public class CharRollupCountDistinctOperator implements IterativeChunkedAggregat
                                        Chunk<? extends Values> inputs,
                                        IntChunk<ChunkPositions> starts,
                                        IntChunk<ChunkLengths> lengths) {
-        final ObjectChunk<CharSegmentedSortedMultiset, ? extends Attributes.Values> inputValues = inputs.asObjectChunk();
+        final ObjectChunk<CharSegmentedSortedMultiset, ? extends Values> inputValues = inputs.asObjectChunk();
 
         context.lengthCopy.setSize(lengths.size());
         context.starts.setSize(lengths.size());
@@ -320,8 +320,8 @@ public class CharRollupCountDistinctOperator implements IterativeChunkedAggregat
 
     //region Singleton Updates
     private SsmDistinctRollupContext updateAddValues(SsmDistinctRollupContext context,
-                                                     Chunk<? extends Attributes.Values> inputs) {
-        final ObjectChunk<CharSegmentedSortedMultiset, ? extends Attributes.Values> values = inputs.asObjectChunk();
+                                                     Chunk<? extends Values> inputs) {
+        final ObjectChunk<CharSegmentedSortedMultiset, ? extends Values> values = inputs.asObjectChunk();
 
         if(context.valueCopy.get() != null) {
             context.valueCopy.get().setSize(0);
@@ -370,8 +370,8 @@ public class CharRollupCountDistinctOperator implements IterativeChunkedAggregat
     }
 
     private SsmDistinctRollupContext updateRemoveValues(SsmDistinctRollupContext context,
-                                                        Chunk<? extends Attributes.Values> inputs) {
-        final ObjectChunk<CharSegmentedSortedMultiset, ? extends Attributes.Values> values = inputs.asObjectChunk();
+                                                        Chunk<? extends Values> inputs) {
+        final ObjectChunk<CharSegmentedSortedMultiset, ? extends Values> values = inputs.asObjectChunk();
 
         if(context.valueCopy.get() != null) {
             context.valueCopy.get().setSize(0);
@@ -424,7 +424,7 @@ public class CharRollupCountDistinctOperator implements IterativeChunkedAggregat
 
     private void updateModifyAddValues(SsmDistinctRollupContext context,
                                        Chunk<? extends Values> inputs) {
-        final ObjectChunk<CharSegmentedSortedMultiset, ? extends Attributes.Values> values = inputs.asObjectChunk();
+        final ObjectChunk<CharSegmentedSortedMultiset, ? extends Values> values = inputs.asObjectChunk();
 
         if(context.valueCopy.get() != null) {
             context.valueCopy.get().setSize(0);

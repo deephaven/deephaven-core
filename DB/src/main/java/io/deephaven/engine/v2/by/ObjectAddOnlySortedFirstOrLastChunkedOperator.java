@@ -43,8 +43,8 @@ public class ObjectAddOnlySortedFirstOrLastChunkedOperator extends BaseAddOnlyFi
     @Override
     public void addChunk(final BucketedContext bucketedContext, // Unused
                          @NotNull final Chunk<? extends Values> values,
-                         @NotNull final LongChunk<? extends Attributes.RowKeys> inputIndices,
-                         @NotNull final IntChunk<Attributes.RowKeys> destinations,
+                         @NotNull final LongChunk<? extends RowKeys> inputIndices,
+                         @NotNull final IntChunk<RowKeys> destinations,
                          @NotNull final IntChunk<ChunkPositions> startPositions,
                          @NotNull final IntChunk<ChunkLengths> length,
                          @NotNull final WritableBooleanChunk<Values> stateModified) {
@@ -61,7 +61,7 @@ public class ObjectAddOnlySortedFirstOrLastChunkedOperator extends BaseAddOnlyFi
     public boolean addChunk(final SingletonContext singletonContext, // Unused
                             final int chunkSize,
                             @NotNull final Chunk<? extends Values> values,
-                            @NotNull final LongChunk<? extends Attributes.RowKeys> inputIndices,
+                            @NotNull final LongChunk<? extends RowKeys> inputIndices,
                             final long destination) {
         return addChunk(values.asObjectChunk(), inputIndices, 0, inputIndices.size(), destination);
     }

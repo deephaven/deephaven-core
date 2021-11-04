@@ -14,7 +14,7 @@ public class IntNoExactStampKernel implements StampKernel {
     private IntNoExactStampKernel() {} // static use only
 
     @Override
-    public void computeRedirections(Chunk<Values> leftStamps, Chunk<Values> rightStamps, LongChunk<RowKeys> rightKeyIndices, WritableLongChunk<RowKeys> leftRedirections) {
+    public void computeRedirections(Chunk<Values> leftStamps, Chunk<Values> rightStamps, LongChunk<Attributes.RowKeys> rightKeyIndices, WritableLongChunk<Attributes.RowKeys> leftRedirections) {
         computeRedirections(leftStamps.asIntChunk(), rightStamps.asIntChunk(), rightKeyIndices, leftRedirections);
     }
 

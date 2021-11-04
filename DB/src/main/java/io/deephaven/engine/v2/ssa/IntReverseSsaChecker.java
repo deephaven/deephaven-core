@@ -29,7 +29,7 @@ public class IntReverseSsaChecker implements SsaChecker {
 
         //noinspection unchecked
         final IntChunk<Values> resultChunk = (IntChunk) ssa.asIntChunk();
-        final LongChunk<Attributes.RowKeys> indexChunk = ssa.keyIndicesChunk();
+        final LongChunk<RowKeys> indexChunk = ssa.keyIndicesChunk();
 
         Assert.eq(valueChunk.size(), "valueChunk.size()", resultChunk.size(), "resultChunk.size()");
         Assert.eq(tableIndexChunk.size(), "tableIndexChunk.size()", indexChunk.size(), "indexChunk.size()");

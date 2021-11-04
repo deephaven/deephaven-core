@@ -12,7 +12,6 @@ import io.deephaven.engine.util.BooleanUtils;
 import io.deephaven.engine.tables.live.LiveTableMonitor;
 import io.deephaven.engine.v2.select.FormulaColumn;
 import io.deephaven.engine.v2.sources.chunk.*;
-import io.deephaven.engine.v2.sources.chunk.Attributes.RowKeys;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.engine.v2.utils.RowSetBuilderSequential;
@@ -552,7 +551,7 @@ public class TestBooleanArraySource {
 
         try (final ChunkSource.FillContext ctx = source.makeFillContext(keys.length);
              final WritableObjectChunk<Boolean, Values> dest = WritableObjectChunk.makeWritableChunk(keys.length);
-             final ResettableLongChunk<RowKeys> rlc = ResettableLongChunk.makeResettableChunk()) {
+             final ResettableLongChunk<Attributes.RowKeys> rlc = ResettableLongChunk.makeResettableChunk()) {
             rlc.resetFromTypedArray(keys, 0, keys.length);
             source.fillChunkUnordered(ctx, dest, rlc);
             assertEquals(keys.length, dest.size());

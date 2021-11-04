@@ -9,7 +9,7 @@ package io.deephaven.engine.v2.sources;
 
 import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
-import io.deephaven.engine.v2.sources.chunk.Attributes.RowKeys;
+import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedRowKeys;
 import io.deephaven.engine.v2.sources.sparse.LongOneOrN;
 import io.deephaven.engine.v2.utils.*;
 import io.deephaven.engine.structures.RowSequence;
@@ -489,7 +489,7 @@ abstract public class AbstractSparseLongArraySource<T> extends SparseArrayColumn
 
     // region fillByUnRowSequence
     @Override
-    void fillByUnRowSequence(@NotNull WritableChunk<? super Values> dest, @NotNull LongChunk<? extends RowKeys> keys) {
+    void fillByUnRowSequence(@NotNull WritableChunk<? super Values> dest, @NotNull LongChunk<? extends Attributes.RowKeys> keys) {
         final WritableLongChunk<? super Values> longChunk = dest.asWritableLongChunk();
         for (int ii = 0; ii < keys.size(); ) {
             final long firstKey = keys.get(ii);
@@ -523,7 +523,7 @@ abstract public class AbstractSparseLongArraySource<T> extends SparseArrayColumn
     }
 
     @Override
-    void fillPrevByUnRowSequence(@NotNull WritableChunk<? super Values> dest, @NotNull LongChunk<? extends RowKeys> keys) {
+    void fillPrevByUnRowSequence(@NotNull WritableChunk<? super Values> dest, @NotNull LongChunk<? extends Attributes.RowKeys> keys) {
         final WritableLongChunk<? super Values> longChunk = dest.asWritableLongChunk();
         for (int ii = 0; ii < keys.size(); ) {
             final long firstKey = keys.get(ii);
@@ -641,7 +641,7 @@ abstract public class AbstractSparseLongArraySource<T> extends SparseArrayColumn
             return;
         }
         final LongChunk<? extends Values> chunk = src.asLongChunk();
-        final LongChunk<Attributes.OrderedRowKeys> keys = rowSequence.asRowKeyChunk();
+        final LongChunk<OrderedRowKeys> keys = rowSequence.asRowKeyChunk();
 
         final boolean hasPrev = prevFlusher != null;
 
@@ -694,7 +694,7 @@ abstract public class AbstractSparseLongArraySource<T> extends SparseArrayColumn
 
     // region fillFromChunkUnordered
     @Override
-    public void fillFromChunkUnordered(@NotNull FillFromContext context, @NotNull Chunk<? extends Values> src, @NotNull LongChunk<RowKeys> keys) {
+    public void fillFromChunkUnordered(@NotNull FillFromContext context, @NotNull Chunk<? extends Values> src, @NotNull LongChunk<Attributes.RowKeys> keys) {
         if (keys.size() == 0) {
             return;
         }

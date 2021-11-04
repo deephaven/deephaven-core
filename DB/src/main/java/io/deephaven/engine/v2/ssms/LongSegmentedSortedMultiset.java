@@ -2320,11 +2320,6 @@ public final class LongSegmentedSortedMultiset implements SegmentedSortedMultiSe
         return size;
     }
 
-    private long getPrev(long i) {
-        // TODO: Maybe needs to care about the LogicalClock
-        return prevValues != null ? prevValues.get((int)i) : get(i);
-    }
-
     @Override
     public DbLongArray getDirect() {
         return new DbLongArrayDirect(keyArray());
@@ -2530,15 +2525,9 @@ public final class LongSegmentedSortedMultiset implements SegmentedSortedMultiSe
         return new DbArrayDirect<>(keyArray);
     }
 
-
     public DBDateTime[] toDateArray() {
         return keyArrayAsDate();
     }
-
-    public DBDateTime getPrevAsDate(long offset) {
-        return DBTimeUtils.nanosToTime(getPrev(offset));
-    }
-
 
     public Chunk<Attributes.Values> toDateChunk() {
         return ObjectChunk.chunkWrap(toDateArray());

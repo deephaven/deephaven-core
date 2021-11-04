@@ -28,12 +28,12 @@ public class DbFloatArrayColumnWrapper extends DbFloatArray.Indirect {
     private final long startPadding;
     private final long endPadding;
 
-    public DbFloatArrayColumnWrapper(@NotNull final ColumnSource<Float> columnSource, @NotNull final RowSet rowSet){
+    public DbFloatArrayColumnWrapper(@NotNull final ColumnSource<Float> columnSource, @NotNull final RowSet rowSet) {
         this(columnSource, rowSet, 0, 0);
     }
 
     public DbFloatArrayColumnWrapper(@NotNull final ColumnSource<Float> columnSource, @NotNull final RowSet rowSet,
-                                    final long startPadding, final long endPadding){
+                                    final long startPadding, final long endPadding) {
         Assert.neqNull(rowSet, "rowSet");
         this.columnSource = columnSource;
         this.rowSet = rowSet;
