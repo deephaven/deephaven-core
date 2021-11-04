@@ -216,8 +216,6 @@ configure modsRegular,
 
         useJUnit()
 
-        workingDir = "$rootDir/.."
-
         new File("$rootDir/tmp/workspace".toString()).mkdirs()
         new File("$rootDir/tmp/logs".toString()).mkdirs()
 

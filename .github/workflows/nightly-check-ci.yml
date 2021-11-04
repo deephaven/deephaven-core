@@ -65,7 +65,7 @@ jobs:
         if: failure()
         with:
           name: nightly-check-ci-jvm-err
-          path: '*_pid*.log'
+          path: '**/*_pid*.log'
           if-no-files-found: ignore
 
       - name: Publish Test Results
@@ -141,7 +141,7 @@ jobs:
         if: failure()
         with:
           name: nightly-testSerial-ci-jvm-err
-          path: '*_pid*.log'
+          path: '**/*_pid*.log'
           if-no-files-found: ignore
 
       - name: Publish Test Results
@@ -217,7 +217,7 @@ jobs:
         if: failure()
         with:
           name: nightly-testParallel-ci-jvm-err
-          path: '*_pid*.log'
+          path: '**/*_pid*.log'
           if-no-files-found: ignore
 
       - name: Publish Test Results
@@ -293,7 +293,7 @@ jobs:
         if: failure()
         with:
           name: nightly-testOutOfBand-ci-jvm-err
-          path: '*_pid*.log'
+          path: '**/*_pid*.log'
           if-no-files-found: ignore
 
       - name: Publish Test Results
