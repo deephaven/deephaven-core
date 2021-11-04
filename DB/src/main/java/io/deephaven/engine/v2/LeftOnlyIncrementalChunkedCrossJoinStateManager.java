@@ -134,7 +134,7 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
     private final ArrayBackedColumnSource<?> [] overflowKeySources;
     // the location of the next key in an overflow bucket
     private final IntegerArraySource overflowOverflowLocationSource = new IntegerArraySource();
-    // the overflow buckets for the right RowSet
+    // the overflow buckets for the right TrackingMutableRowSet
     @ReplicateHashTable.OverflowStateColumnSource
     // @StateColumnSourceType@ from \QObjectArraySource<TrackingMutableRowSet>\E
     private final ObjectArraySource<TrackingMutableRowSet> overflowRightIndexSource

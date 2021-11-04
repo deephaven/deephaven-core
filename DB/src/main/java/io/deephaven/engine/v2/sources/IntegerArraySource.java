@@ -10,7 +10,7 @@ package io.deephaven.engine.v2.sources;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.util.DhIntComparisons;
 import io.deephaven.engine.v2.sources.chunk.*;
-import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
+import io.deephaven.engine.v2.sources.chunk.Attributes.*;
 import io.deephaven.engine.v2.sources.chunk.ResettableWritableChunk;
 import io.deephaven.engine.v2.sources.chunk.WritableIntChunk;
 import io.deephaven.engine.v2.sources.chunk.WritableChunk;
@@ -25,7 +25,6 @@ import java.util.Arrays;
 import static io.deephaven.util.QueryConstants.NULL_INT;
 import static io.deephaven.util.type.TypeUtils.box;
 import static io.deephaven.util.type.TypeUtils.unbox;
-import static io.deephaven.engine.v2.sources.chunk.Attributes.*;
 
 /**
  * Simple array source for Integer.

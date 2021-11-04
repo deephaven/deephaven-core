@@ -13,6 +13,7 @@ import static io.deephaven.engine.util.BooleanUtils.NULL_BOOLEAN_AS_BYTE;
 
 
 import io.deephaven.engine.v2.sources.chunk.*;
+import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedRowKeyRanges;
 import io.deephaven.engine.v2.sources.chunk.Attributes.RowKeys;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedRowKeys;
@@ -603,7 +604,7 @@ public class BooleanSparseArraySource extends SparseArrayColumnSource<Boolean> i
             return;
         }
         final ObjectChunk<Boolean, ? extends Values> chunk = src.asObjectChunk();
-        final LongChunk<Attributes.OrderedRowKeyRanges> ranges = rowSequence.asRowKeyRangesChunk();
+        final LongChunk<OrderedRowKeyRanges> ranges = rowSequence.asRowKeyRangesChunk();
 
         final boolean hasPrev = prevFlusher != null;
 

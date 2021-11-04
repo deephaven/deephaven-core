@@ -11,7 +11,9 @@ import io.deephaven.engine.v2.sources.DoubleArraySource;
 import io.deephaven.engine.v2.sources.LongArraySource;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Any;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Indices;
-import io.deephaven.engine.v2.sources.chunk.*;
+import io.deephaven.engine.v2.sources.chunk.DoubleChunk;
+import io.deephaven.engine.v2.sources.chunk.Chunk;
+import io.deephaven.engine.v2.sources.chunk.LongChunk;
 
 public class DoubleLongMegaMergeDescendingKernel {
     private DoubleLongMegaMergeDescendingKernel() {
@@ -19,38 +21,43 @@ public class DoubleLongMegaMergeDescendingKernel {
     }
 
     // region Context
-    public static class DoubleLongMegaMergeDescendingKernelContext<ATTR extends Any, KEY_INDICES extends Indices> implements LongMegaMergeKernel<ATTR, KEY_INDICES> {
+    public static class DoubleLongMegaMergeDescendingKernelContext<ATTR extends Any, KEY_INDICES extends Indices>
+            implements LongMegaMergeKernel<ATTR, KEY_INDICES> {
         @SuppressWarnings("rawtypes")
         private static final DoubleLongMegaMergeDescendingKernelContext INSTANCE = new DoubleLongMegaMergeDescendingKernelContext();
 
         @Override
-        public void merge(LongArraySource indexDestinationSource, ArrayBackedColumnSource<?> valuesDestinationSource, long destinationOffset, long destinationSize, LongChunk<KEY_INDICES> indexKeys, Chunk<ATTR> valuesToMerge) {
-            DoubleLongMegaMergeDescendingKernel.merge(indexDestinationSource, (DoubleArraySource)valuesDestinationSource, destinationOffset, destinationSize, indexKeys, valuesToMerge.asDoubleChunk());
+        public void merge(LongArraySource indexDestinationSource, ArrayBackedColumnSource<?> valuesDestinationSource,
+                long destinationOffset, long destinationSize, LongChunk<KEY_INDICES> indexKeys,
+                Chunk<ATTR> valuesToMerge) {
+            DoubleLongMegaMergeDescendingKernel.merge(indexDestinationSource, (DoubleArraySource) valuesDestinationSource,
+                    destinationOffset, destinationSize, indexKeys, valuesToMerge.asDoubleChunk());
         }
     }
     // endregion Context
 
     public static <ATTR extends Any, KEY_INDICES extends Indices> DoubleLongMegaMergeDescendingKernelContext<ATTR, KEY_INDICES> createContext() {
-        //noinspection unchecked
+        // noinspection unchecked
         return DoubleLongMegaMergeDescendingKernelContext.INSTANCE;
     }
 
-    static public <ATTR extends Any, KEY_INDICES extends Attributes.Indices> void merge(LongArraySource destinationKeys,
-                                                                                        DoubleArraySource destinationValues,
-                                                                                        long destinationOffset,
-                                                                                        long destinationSize,
-                                                                                        LongChunk<KEY_INDICES> keysChunk,
-                                                                                        DoubleChunk<ATTR> valuesChunk
-    ) {
+    static public <ATTR extends Any, KEY_INDICES extends Indices> void merge(LongArraySource destinationKeys,
+            DoubleArraySource destinationValues,
+            long destinationOffset,
+            long destinationSize,
+            LongChunk<KEY_INDICES> keysChunk,
+            DoubleChunk<ATTR> valuesChunk) {
         destinationKeys.ensureCapacity(destinationOffset + destinationSize + keysChunk.size(), false);
         destinationValues.ensureCapacity(destinationOffset + destinationSize + valuesChunk.size(), false);
 
         // find the location of run2[0] in run1
         final double run2lo = valuesChunk.get(0);
-        final long mergeStartPosition = upperBound(destinationValues, destinationOffset, destinationOffset + destinationSize, run2lo);
+        final long mergeStartPosition =
+                upperBound(destinationValues, destinationOffset, destinationOffset + destinationSize, run2lo);
 
         if (mergeStartPosition == destinationOffset + destinationSize) {
-            copyChunkToDest(keysChunk, valuesChunk, destinationKeys, destinationValues, 0, destinationSize + destinationOffset, valuesChunk.size());
+            copyChunkToDest(keysChunk, valuesChunk, destinationKeys, destinationValues, 0,
+                    destinationSize + destinationOffset, valuesChunk.size());
             return;
         }
 
@@ -68,8 +75,7 @@ public class DoubleLongMegaMergeDescendingKernel {
 
         int minGallop = TimsortUtilities.INITIAL_GALLOP;
 
-        no_data_left:
-        while (ii >= mergeStartPosition) {
+        no_data_left: while (ii >= mergeStartPosition) {
             int destWins = 0;
             int chunkWins = 0;
 
@@ -103,14 +109,16 @@ public class DoubleLongMegaMergeDescendingKernel {
                 }
             }
 
-            // we are in galloping mode now, if we had run out of data then we should have already bailed out to no_data_left
+            // we are in galloping mode now, if we had run out of data then we should have already bailed out to
+            // no_data_left
             while (ii >= mergeStartPosition) {
                 // if we had a lot of things from run2, we take the next thing from run1 then find it in run2
                 final int copyUntil2 = lowerBound(valuesChunk, 0, chunkCursor, val1);
 
                 final int gallopLength2 = chunkCursor - copyUntil2 + 1;
                 if (gallopLength2 > 1) {
-                    copyChunkToDest(keysChunk, valuesChunk, destinationKeys, destinationValues, copyUntil2, ii - gallopLength2 + 1, gallopLength2);
+                    copyChunkToDest(keysChunk, valuesChunk, destinationKeys, destinationValues, copyUntil2,
+                            ii - gallopLength2 + 1, gallopLength2);
                     chunkCursor -= gallopLength2;
                     ii -= gallopLength2;
 
@@ -139,7 +147,8 @@ public class DoubleLongMegaMergeDescendingKernel {
                     minGallop--;
                 }
 
-                if (gallopLength1 < TimsortUtilities.INITIAL_GALLOP && gallopLength2 < TimsortUtilities.INITIAL_GALLOP) {
+                if (gallopLength1 < TimsortUtilities.INITIAL_GALLOP
+                        && gallopLength2 < TimsortUtilities.INITIAL_GALLOP) {
                     minGallop += 2; // undo the possible subtraction from above
                     break;
                 }
@@ -147,16 +156,20 @@ public class DoubleLongMegaMergeDescendingKernel {
         }
 
         if (chunkCursor >= 0) {
-            copyChunkToDest(keysChunk, valuesChunk, destinationKeys, destinationValues, 0, ii - chunkCursor, chunkCursor + 1);
+            copyChunkToDest(keysChunk, valuesChunk, destinationKeys, destinationValues, 0, ii - chunkCursor,
+                    chunkCursor + 1);
         }
     }
 
-    private static <ATTR extends Any, KEY_INDICES extends Indices> void copyChunkToDest(LongChunk<KEY_INDICES> keysChunk, DoubleChunk<ATTR> valuesChunk, LongArraySource destinationKeys, DoubleArraySource destinationValues, int sourceStart, long destStart, int length) {
-        destinationValues.copyFromChunk(destStart, length, (DoubleChunk)valuesChunk, sourceStart);
+    private static <ATTR extends Any, KEY_INDICES extends Indices> void copyChunkToDest(
+            LongChunk<KEY_INDICES> keysChunk, DoubleChunk<ATTR> valuesChunk, LongArraySource destinationKeys,
+            DoubleArraySource destinationValues, int sourceStart, long destStart, int length) {
+        destinationValues.copyFromChunk(destStart, length, (DoubleChunk) valuesChunk, sourceStart);
         destinationKeys.copyFromChunk(destStart, length, keysChunk, sourceStart);
     }
 
-    private static void moveInDest(LongArraySource destinationKeys, DoubleArraySource destinationValues, long sourceStart, long destStart, long length) {
+    private static void moveInDest(LongArraySource destinationKeys, DoubleArraySource destinationValues,
+            long sourceStart, long destStart, long length) {
         destinationKeys.move(sourceStart, destStart, length);
         destinationValues.move(sourceStart, destStart, length);
     }
@@ -182,8 +195,9 @@ public class DoubleLongMegaMergeDescendingKernel {
         return bound(values, lo, hi, searchValue, false);
     }
 
-    private static long bound(DoubleArraySource valuesToSort, long lo, long hi, double searchValue, @SuppressWarnings("SameParameterValue") final boolean lower) {
-        final int compareLimit = lower ? -1 : 0;  // lt or leq
+    private static long bound(DoubleArraySource valuesToSort, long lo, long hi, double searchValue,
+            @SuppressWarnings("SameParameterValue") final boolean lower) {
+        final int compareLimit = lower ? -1 : 0; // lt or leq
 
         while (lo < hi) {
             final long mid = (lo + hi) >>> 1;
@@ -202,12 +216,14 @@ public class DoubleLongMegaMergeDescendingKernel {
 
     // when we binary search in 2, we must identify a position for search value that is *before* our test values;
     // because the values from run 1 may never be inserted after an equal value from run 2
-    private static int lowerBound(DoubleChunk<?> valuesToSort, @SuppressWarnings("SameParameterValue") int lo, int hi, double searchValue) {
+    private static int lowerBound(DoubleChunk<?> valuesToSort, @SuppressWarnings("SameParameterValue") int lo, int hi,
+            double searchValue) {
         return bound(valuesToSort, lo, hi, searchValue, true);
     }
 
-    private static int bound(DoubleChunk<?> valuesToSort, int lo, int hi, double searchValue, @SuppressWarnings("SameParameterValue") final boolean lower) {
-        final int compareLimit = lower ? -1 : 0;  // lt or leq
+    private static int bound(DoubleChunk<?> valuesToSort, int lo, int hi, double searchValue,
+            @SuppressWarnings("SameParameterValue") final boolean lower) {
+        final int compareLimit = lower ? -1 : 0; // lt or leq
 
         while (lo < hi) {
             final int mid = (lo + hi) >>> 1;

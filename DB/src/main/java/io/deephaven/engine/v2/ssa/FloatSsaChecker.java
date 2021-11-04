@@ -55,8 +55,8 @@ public class FloatSsaChecker implements SsaChecker {
             messageBuilder.append("Result:\n").append(ChunkUtils.dumpChunk(resultChunk)).append("\n");
             messageBuilder.append("Values:\n").append(ChunkUtils.dumpChunk(valueChunk)).append("\n");;
 
-            messageBuilder.append("Result TrackingMutableRowSet:\n").append(ChunkUtils.dumpChunk(indexChunk)).append("\n");
-            messageBuilder.append("Table TrackingMutableRowSet:\n").append(ChunkUtils.dumpChunk(tableIndexChunk)).append("\n");;
+            messageBuilder.append("Result row keys:\n").append(ChunkUtils.dumpChunk(indexChunk)).append("\n");
+            messageBuilder.append("Table row keys:\n").append(ChunkUtils.dumpChunk(tableIndexChunk)).append("\n");;
 
             for (int ii = 0; ii < indexChunk.size(); ++ii) {
                 if (indexChunk.get(ii) != tableIndexChunk.get(ii)) {

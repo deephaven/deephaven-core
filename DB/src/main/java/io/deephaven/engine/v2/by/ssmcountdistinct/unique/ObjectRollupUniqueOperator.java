@@ -367,7 +367,7 @@ public class ObjectRollupUniqueOperator implements IterativeChunkedAggregationOp
     }
 
     @Override
-    public boolean addChunk(SingletonContext singletonContext, int chunkSize, Chunk<? extends Values> values, LongChunk<? extends Attributes.RowKeys> inputIndices, long destination) {
+    public boolean addChunk(SingletonContext singletonContext, int chunkSize, Chunk<? extends Values> values, LongChunk<? extends RowKeys> inputIndices, long destination) {
         final SsmDistinctRollupContext context = updateAddValues((SsmDistinctRollupContext)singletonContext, values);
         final WritableChunk<? extends Values> updatedValues = context.valueCopy.get();
         if (updatedValues == null || updatedValues.size() == 0) {
