@@ -24,7 +24,6 @@ sourceSets {
 test {
     useJUnit()
 
-    workingDir = "$rootDir"
     enableAssertions = true
     maxHeapSize = '3g'
 
