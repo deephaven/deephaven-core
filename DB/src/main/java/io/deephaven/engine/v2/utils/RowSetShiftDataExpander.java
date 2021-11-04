@@ -37,7 +37,7 @@ public class RowSetShiftDataExpander implements SafeCloseable {
         if (update.shifted.empty() && !update.added.overlaps(update.removed)) {
             added = update.added.clone();
             removed = update.removed.clone();
-            modified = update.removed.clone();
+            modified = update.modified.clone();
             return;
         }
 
