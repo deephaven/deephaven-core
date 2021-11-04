@@ -10,6 +10,7 @@ import io.deephaven.db.v2.select.SelectColumn;
 import io.deephaven.db.v2.sources.ColumnSource;
 import io.deephaven.util.type.TypeUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.jpy.PyListWrapper;
 
 import java.util.*;
 import java.util.function.Function;
@@ -27,6 +28,8 @@ public class ColumnPreviewManager {
             new PreviewColumnFactory<>(Object.class, ArrayPreview.class, ArrayPreview::fromArray);
     private static final PreviewColumnFactory<DbArrayBase, ArrayPreview> dbArrayPreviewFactory =
             new PreviewColumnFactory<>(DbArrayBase.class, ArrayPreview.class, ArrayPreview::fromDbArray);
+    private static final PreviewColumnFactory<PyListWrapper, ArrayPreview> pyListWrapperPreviewFactory =
+            new PreviewColumnFactory<>(PyListWrapper.class, ArrayPreview.class, ArrayPreview::fromPyListWrapper);
 
     // Factory for non-serializable types
     private static final PreviewColumnFactory<Object, DisplayWrapper> nonDisplayableFactory =
@@ -86,6 +89,10 @@ public class ColumnPreviewManager {
             } else if (DbArrayBase.class.isAssignableFrom(type)) {
                 // Always wrap DbArrays
                 selectColumns.add(dbArrayPreviewFactory.makeColumn(name));
+                originalTypes.put(name, type.getName());
+            } else if (PyListWrapper.class.isAssignableFrom(type)) {
+                // Always wrap PyListWrapper
+                selectColumns.add(pyListWrapperPreviewFactory.makeColumn(name));
                 originalTypes.put(name, type.getName());
             } else if (type.isArray()) {
                 // Always wrap arrays
