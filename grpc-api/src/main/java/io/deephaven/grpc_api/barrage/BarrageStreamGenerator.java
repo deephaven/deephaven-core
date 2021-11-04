@@ -421,9 +421,11 @@ public class BarrageStreamGenerator implements
         for (final ChunkInputStreamGenerator col : addColumnData) {
             final ChunkInputStreamGenerator.DrainableColumn drainableColumn =
                     col.getInputStream(view.options, myAddedOffsets);
-            addStream.accept(drainableColumn);
             drainableColumn.visitFieldNodes(fieldNodeListener);
             drainableColumn.visitBuffers(bufferListener);
+
+            // Add the drainable last as it is allowed to immediately close a row set the visitors need
+            addStream.accept(drainableColumn);
         }
         return rowsAdded.original.size();
     }
@@ -448,9 +450,11 @@ public class BarrageStreamGenerator implements
             final ChunkInputStreamGenerator.DrainableColumn drainableColumn =
                     mcd.data.getInputStream(view.options, myModOffsets);
 
-            addStream.accept(drainableColumn);
             drainableColumn.visitFieldNodes(fieldNodeListener);
             drainableColumn.visitBuffers(bufferListener);
+
+            // See comment in appendAddColumns
+            addStream.accept(drainableColumn);
         }
         return numRows;
     }

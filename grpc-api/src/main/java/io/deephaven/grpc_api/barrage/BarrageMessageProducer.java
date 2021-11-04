@@ -439,7 +439,15 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
         }
     }
 
-    public boolean addSubscription(final StreamObserver<MessageView> listener,
+    /**
+     * Add a subscription to this BarrageMessageProducer.
+     *
+     * @param listener The listener for this subscription
+     * @param options The {@link Options subscription options}
+     * @param columnsToSubscribe The initial columns to subscribe to
+     * @param initialViewport Initial viewport, to be owned by the subscription
+     */
+    public void addSubscription(final StreamObserver<MessageView> listener,
             final Options options,
             final @Nullable BitSet columnsToSubscribe,
             final @Nullable RowSet initialViewport) {
@@ -448,7 +456,7 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
                     || pendingSubscriptions.stream().anyMatch(item -> item.listener == listener);
             if (hasSubscription) {
                 throw new IllegalStateException(
-                        "asking to add a subscription for an already existing session and listener");
+                        "Asking to add a subscription for an already existing session and listener");
             }
 
             final BitSet cols;
@@ -473,7 +481,6 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
             log.info().append(logPrefix).append(subscription.logPrefix)
                     .append("scheduling update immediately, for initial snapshot.").endl();
             updatePropagationJob.scheduleImmediately();
-            return true;
         }
     }
 

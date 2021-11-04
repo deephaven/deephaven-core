@@ -410,9 +410,7 @@ public class ArrowFlightUtil {
             final RowSet viewport =
                     isViewport ? BarrageProtoUtil.toIndex(subscriptionRequest.viewportAsByteBuffer()) : null;
 
-            if (!bmp.addSubscription(listener, optionsAdapter.adapt(subscriptionRequest), columns, viewport)) {
-                throw new IllegalStateException("listener is already a subscriber!");
-            }
+            bmp.addSubscription(listener, optionsAdapter.adapt(subscriptionRequest), columns, viewport);
 
             for (final BarrageSubscriptionRequest request : preExportSubscriptions) {
                 apply(request);
