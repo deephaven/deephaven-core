@@ -101,7 +101,7 @@ public class TailInitializationFilter {
             }
             return true;
         });
-        final MutableRowSet resultRowSet = builder.build();
+        final MutableRowSet resultRowSet = builder.build().convertToTracking();
         final QueryTable result = new QueryTable(table.getDefinition(), resultRowSet, table.getColumnSourceMap());
         if (table.isLive()) {
             // TODO: Assert AddOnly in T+, propagate AddOnly in Treasure
@@ -112,7 +112,7 @@ public class TailInitializationFilter {
                             Assert.assertion(removed.isEmpty(), "removed.empty()");
                             Assert.assertion(modified.isEmpty(), "modified.empty()");
                             resultRowSet.insert(added);
-                            result.notifyListeners(added.clone(), removed, modified);
+                            result.notifyListeners(added.clone(), removed.clone(), modified.clone());
                         }
                     };
             ((DynamicTable) table).listenForUpdates(listener, false);

@@ -96,7 +96,7 @@ public class FunctionGeneratedTableFactory {
         // enable prev tracking after columns are initialized
         columns.values().forEach(ColumnSource::startTrackingPrevValues);
 
-        rowSet = RowSetFactoryImpl.INSTANCE.getFlatRowSet(initialTable.size());
+        rowSet = RowSetFactoryImpl.INSTANCE.getFlatRowSet(initialTable.size()).convertToTracking();
     }
 
     private FunctionBackedTable getTable() {
@@ -126,7 +126,6 @@ public class FunctionGeneratedTableFactory {
                 // noinspection unchecked
                 destColumn.copy((ColumnSource) entry.getValue(), current, position++);
             }
-
         }
     }
 

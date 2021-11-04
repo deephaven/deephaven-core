@@ -36,8 +36,8 @@ public class TestUngroupRebase extends LiveTableTestCase {
 
             // don't remove or add anything, let's just do one step
             LiveTableMonitor.DEFAULT.startCycleForUnitTests();
-            RowSet keysToRemove = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
             RowSet keysToAdd = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+            RowSet keysToRemove = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
             RowSet keysToModify = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
             table.notifyListeners(keysToAdd, keysToRemove, keysToModify);
             LiveTableMonitor.DEFAULT.completeCycleForUnitTests();
@@ -46,8 +46,8 @@ public class TestUngroupRebase extends LiveTableTestCase {
 
             // Now let's modify the first row, but not cause a rebase
             LiveTableMonitor.DEFAULT.startCycleForUnitTests();
-            keysToRemove = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
             keysToAdd = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+            keysToRemove = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
             keysToModify = RowSetFactoryImpl.INSTANCE.getRowSetByValues(0);
             ColumnHolder keyModifications = TstUtils.c("X", 1);
             ColumnHolder valueModifications = TstUtils.c("Y", new int[] {10, 20, 30});
@@ -60,6 +60,8 @@ public class TestUngroupRebase extends LiveTableTestCase {
 
             // Now let's modify the first row such that we will cause a rebasing operation
             LiveTableMonitor.DEFAULT.startCycleForUnitTests();
+            keysToAdd = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+            keysToRemove = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
             keysToModify = RowSetFactoryImpl.INSTANCE.getRowSetByValues(0);
             valueModifications = TstUtils.c("Y", new int[] {10, 20, 30, 40, 50, 60});
             TstUtils.addToTable(table, keysToModify, keyModifications, valueModifications);
@@ -84,8 +86,8 @@ public class TestUngroupRebase extends LiveTableTestCase {
 
             // let's remove the second row, so that we can add something to it on the next step
             LiveTableMonitor.DEFAULT.startCycleForUnitTests();
-            keysToRemove = RowSetFactoryImpl.INSTANCE.getRowSetByValues(1);
             keysToAdd = RowSetFactoryImpl.INSTANCE.getRowSetByValues();
+            keysToRemove = RowSetFactoryImpl.INSTANCE.getRowSetByValues(1);
             keysToModify = RowSetFactoryImpl.INSTANCE.getRowSetByValues();
             TstUtils.removeRows(table2, keysToRemove);
             table2.notifyListeners(keysToAdd, keysToRemove, keysToModify);
@@ -95,8 +97,8 @@ public class TestUngroupRebase extends LiveTableTestCase {
 
             // now we want to add it back, causing a rebase, and modify another
             LiveTableMonitor.DEFAULT.startCycleForUnitTests();
-            keysToRemove = RowSetFactoryImpl.INSTANCE.getRowSetByValues();
             keysToAdd = RowSetFactoryImpl.INSTANCE.getRowSetByValues(1);
+            keysToRemove = RowSetFactoryImpl.INSTANCE.getRowSetByValues();
             keysToModify = RowSetFactoryImpl.INSTANCE.getRowSetByValues(2, 3);
 
             ColumnHolder keyAdditions = TstUtils.c("X", 2);
@@ -113,8 +115,8 @@ public class TestUngroupRebase extends LiveTableTestCase {
 
             // an empty step
             LiveTableMonitor.DEFAULT.startCycleForUnitTests();
-            keysToRemove = RowSetFactoryImpl.INSTANCE.getRowSetByValues();
             keysToAdd = RowSetFactoryImpl.INSTANCE.getRowSetByValues();
+            keysToRemove = RowSetFactoryImpl.INSTANCE.getRowSetByValues();
             keysToModify = RowSetFactoryImpl.INSTANCE.getRowSetByValues();
             TstUtils.addToTable(table2, keysToModify, intCol("X"), TstUtils.c("Y"));
             table2.notifyListeners(keysToAdd, keysToRemove, keysToModify);
@@ -124,8 +126,8 @@ public class TestUngroupRebase extends LiveTableTestCase {
 
             // and another step, to make sure everything is fine post rebase
             LiveTableMonitor.DEFAULT.startCycleForUnitTests();
-            keysToRemove = RowSetFactoryImpl.INSTANCE.getRowSetByValues();
             keysToAdd = RowSetFactoryImpl.INSTANCE.getRowSetByValues();
+            keysToRemove = RowSetFactoryImpl.INSTANCE.getRowSetByValues();
             keysToModify = RowSetFactoryImpl.INSTANCE.getRowSetByValues(2, 3);
             TstUtils.addToTable(table2, keysToModify, keyModifications, valueModifications);
             table2.notifyListeners(keysToAdd, keysToRemove, keysToModify);

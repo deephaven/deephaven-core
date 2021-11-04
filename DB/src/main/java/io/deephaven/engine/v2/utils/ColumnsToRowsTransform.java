@@ -192,7 +192,7 @@ public class ColumnsToRowsTransform {
             }
         }
 
-        final MutableRowSet resultRowSet = transformIndex(source.getRowSet(), fanout, fanoutPow2);
+        final MutableRowSet resultRowSet = transformIndex(source.getRowSet(), fanout, fanoutPow2).convertToTracking();
 
         final QueryTable result = new QueryTable(resultRowSet, resultMap);
 

@@ -346,7 +346,7 @@ public class TestKeyedTableListener extends BaseCachedJMockTestCase {
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             final RowSet newRemoved = TstUtils.i(2);
             TstUtils.removeRows(table, newRemoved);
-            table.notifyListeners(noAdded, newRemoved, noModified);
+            table.notifyListeners(noAdded.clone(), newRemoved, noModified.clone());
         });
 
         // Now add
@@ -354,7 +354,7 @@ public class TestKeyedTableListener extends BaseCachedJMockTestCase {
             final RowSet newAdded = TstUtils.i(2);
             TstUtils.addToTable(table, newAdded, TstUtils.c("Key1", "D"), TstUtils.c("Key2", 4),
                     TstUtils.c("Data", 4.0));
-            table.notifyListeners(newAdded, noRemoved, noModified);
+            table.notifyListeners(newAdded, noRemoved.clone(), noModified.clone());
         });
 
         // Check cKey is removed

@@ -192,7 +192,7 @@ public class SingleRangeTest {
         if (start1 < start2 && end2 < end1) {
             // hole.
             check = (final RowSet t) -> {
-                final TreeIndexImpl timpl = ((ImplementedByTreeIndexImpl) t).getImpl();
+                final TreeIndexImpl timpl = ((MutableRowSetImpl) t).getImpl();
                 assertTrue((timpl instanceof RspBitmap) || (timpl instanceof SortedRanges));
                 int rangeCount = 0;
                 final RowSet.RangeIterator it = t.rangeIterator();
@@ -216,13 +216,13 @@ public class SingleRangeTest {
         } else if (start2 <= start1 && end1 <= end2) {
             // completely removed
             check = (final RowSet t) -> {
-                assertTrue(((ImplementedByTreeIndexImpl) t).getImpl() == TreeIndexImpl.EMPTY);
+                assertTrue(((MutableRowSetImpl) t).getImpl() == TreeIndexImpl.EMPTY);
                 assertTrue(t.isEmpty());
             };
         } else {
             // results in single range
             check = (final RowSet t) -> {
-                assertTrue(((ImplementedByTreeIndexImpl) t).getImpl() instanceof SingleRange);
+                assertTrue(((MutableRowSetImpl) t).getImpl() instanceof SingleRange);
                 if (start1 < start2) {
                     assertEquals(start1, t.firstRowKey());
                     assertEquals(start2 - 1, t.lastRowKey());
