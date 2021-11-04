@@ -308,7 +308,7 @@ public class TestPartitionAwareSourceTable extends LiveTableTestCase {
         checking(new Expectations() {
             {
                 oneOf(columnSourceManager).refresh();
-                will(returnValue(toAdd));
+                will(returnValue(toAdd.clone()));
                 checking(new Expectations() {
                     {
                         oneOf(listener).getNotification(with(any(Listener.Update.class)));

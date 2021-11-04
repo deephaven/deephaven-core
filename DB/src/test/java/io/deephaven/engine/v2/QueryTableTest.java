@@ -1922,7 +1922,7 @@ public class QueryTableTest extends QueryTableTestBase {
 
 
 
-        final SimpleListener simpleListener = new SimpleListener(snapshot);
+        final SimpleShiftObliviousListener simpleListener = new SimpleShiftObliviousListener(snapshot);
         snapshot.listenForUpdates(simpleListener);
 
         final CoalescingListener coalescingListener = new CoalescingListener(rightTable);
@@ -3061,7 +3061,7 @@ public class QueryTableTest extends QueryTableTestBase {
         update.modifiedColumnSet = ModifiedColumnSet.EMPTY;
 
         // we want to specifically test the direct listener path
-        final ShiftObliviousListener listener = new SimpleListener(src);
+        final ShiftObliviousListener listener = new SimpleShiftObliviousListener(src);
         src.listenForDirectUpdates(listener);
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
@@ -3080,7 +3080,7 @@ public class QueryTableTest extends QueryTableTestBase {
         update.modifiedColumnSet = ModifiedColumnSet.EMPTY;
 
         // we want to specifically test non-shift-aware-listener path
-        final ShiftObliviousListener listener = new SimpleListener(src);
+        final ShiftObliviousListener listener = new SimpleShiftObliviousListener(src);
         src.listenForUpdates(listener);
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {

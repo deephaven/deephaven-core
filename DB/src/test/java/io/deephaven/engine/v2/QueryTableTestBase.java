@@ -168,60 +168,6 @@ public abstract class QueryTableTestBase extends LiveTableTestCase {
         }
     }
 
-    protected static class SimpleListener extends ShiftObliviousInstrumentedListenerAdapter {
-        protected SimpleListener(DynamicTable source) {
-            super(source, false);
-            reset();
-        }
-
-        public int getCount() {
-            return count;
-        }
-
-        int count;
-        RowSet added, removed, modified;
-
-        void reset() {
-            freeResources();
-            count = 0;
-            added = null;
-            removed = null;
-            modified = null;
-        }
-
-        @Override
-        public void onUpdate(RowSet added, RowSet removed, RowSet modified) {
-            freeResources();
-            // Need to clone to save RowSetShiftDataExpander indices that are destroyed at the end of the LTM cycle.
-            this.added = added.clone();
-            this.removed = removed.clone();
-            this.modified = modified.clone();
-            ++count;
-        }
-
-        @Override
-        public String toString() {
-            return "SimpleListener{" +
-                    "count=" + count +
-                    ", added=" + added +
-                    ", removed=" + removed +
-                    ", modified=" + modified +
-                    '}';
-        }
-
-        public void freeResources() {
-            if (added != null) {
-                added.close();
-            }
-            if (removed != null) {
-                removed.close();
-            }
-            if (modified != null) {
-                modified.close();
-            }
-        }
-    }
-
     public static int[] intColumn(Table table, String column) {
         final int[] result = new int[table.intSize()];
         final MutableInt pos = new MutableInt();
@@ -298,11 +244,10 @@ public abstract class QueryTableTestBase extends LiveTableTestCase {
 
         @Override
         public void onUpdate(final RowSet added, final RowSet removed, final RowSet modified) {
-            QueryTableTestBase.this.added = added;
-            QueryTableTestBase.this.removed = removed;
-            QueryTableTestBase.this.modified = modified;
+            QueryTableTestBase.this.added = added.clone();
+            QueryTableTestBase.this.removed = removed.clone();
+            QueryTableTestBase.this.modified = modified.clone();
             ++count;
         }
     }
-
 }

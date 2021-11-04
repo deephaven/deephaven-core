@@ -97,7 +97,7 @@ public class StreamTableAggregationTest {
             final RowSet normalStepInserted = refreshSize == 0
                     ? RowSetFactoryImpl.INSTANCE.getEmptyRowSet()
                     : RowSetFactoryImpl.INSTANCE.getRowSetByRange(usedSize, usedSize + refreshSize - 1);
-            final RowSet streamStepInserted = streamInternalRowSet == null ? normalStepInserted
+            final RowSet streamStepInserted = streamInternalRowSet == null ? normalStepInserted.clone()
                     : refreshSize == 0
                             ? RowSetFactoryImpl.INSTANCE.getEmptyRowSet()
                             : RowSetFactoryImpl.INSTANCE.getRowSetByRange(0, refreshSize - 1);
@@ -122,7 +122,7 @@ public class StreamTableAggregationTest {
                         }
                         stream.getRowSet().asMutable().clear();
                         stream.getRowSet().asMutable().insert(streamStepInserted);
-                        stream.notifyListeners(new Update(streamStepInserted, finalStreamLastInserted,
+                        stream.notifyListeners(new Update(streamStepInserted.clone(), finalStreamLastInserted,
                                 RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), RowSetShiftData.EMPTY,
                                 ModifiedColumnSet.EMPTY));
                     }

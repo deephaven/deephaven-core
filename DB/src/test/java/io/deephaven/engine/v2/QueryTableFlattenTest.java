@@ -80,7 +80,7 @@ public class QueryTableFlattenTest extends QueryTableTestBase {
         data[9] = 104;
         final QueryTable queryTable = TstUtils.testRefreshingTable(i(data), longCol("intCol", data));
 
-        final TestHelper helper = new TestHelper<>(queryTable.flatten(), QueryTableTestBase.SimpleListener::new);
+        final TestHelper helper = new TestHelper<>(queryTable.flatten(), SimpleShiftObliviousListener::new);
 
         helper.modAndValidate(() -> {
             addToTable(queryTable, i(70, 71, 78, 81), longCol("intCol", 70, 71, 78, 81));
@@ -118,7 +118,7 @@ public class QueryTableFlattenTest extends QueryTableTestBase {
         }
         final QueryTable queryTable = TstUtils.testRefreshingTable(indexByRange(0, 9), c("intCol", data));
 
-        final TestHelper helper = new TestHelper<>(queryTable.flatten(), QueryTableTestBase.SimpleListener::new);
+        final TestHelper helper = new TestHelper<>(queryTable.flatten(), SimpleShiftObliviousListener::new);
 
         helper.modAndValidate(() -> {
             addToTable(queryTable, i(0), c("intCol", 1));
@@ -153,7 +153,7 @@ public class QueryTableFlattenTest extends QueryTableTestBase {
         }
         final QueryTable queryTable = TstUtils.testRefreshingTable(indexByRange(0, 9), c("intCol", data));
 
-        final TestHelper helper = new TestHelper<>(queryTable.flatten(), QueryTableTestBase.SimpleListener::new);
+        final TestHelper helper = new TestHelper<>(queryTable.flatten(), SimpleShiftObliviousListener::new);
 
         helper.modAndValidate(() -> {
             addToTable(queryTable, i(8), c("intCol", 1));
@@ -226,10 +226,10 @@ public class QueryTableFlattenTest extends QueryTableTestBase {
             listener = factory.newListener(this.sourceTable);
             if (listener instanceof ShiftObliviousListener) {
                 this.sourceTable.listenForUpdates((ShiftObliviousListener) listener);
-            } else if (listener instanceof Listener) {
+            } else if (listener instanceof SimpleListener) {
                 this.sourceTable.listenForUpdates((Listener) listener);
             } else {
-                throw new IllegalArgumentException("ShiftObliviousListener type unsupported: " + listener.getClass().getName());
+                throw new IllegalArgumentException("Listener type unsupported: " + listener.getClass().getName());
             }
 
             validator = TableUpdateValidator.make(this.sourceTable);
@@ -261,11 +261,11 @@ public class QueryTableFlattenTest extends QueryTableTestBase {
             LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(modTable::run);
             showWithIndex(sourceTable);
 
-            if (listener instanceof SimpleListener) {
+            if (listener instanceof SimpleShiftObliviousListener) {
                 Assert.assertEquals(0, shifted.size());
-                validate((SimpleListener) listener, updateCount, added, removed, modified);
-            } else if (listener instanceof io.deephaven.engine.v2.SimpleListener) {
-                validate((io.deephaven.engine.v2.SimpleListener) listener, updateCount, added, removed, modified, shifted);
+                validate((SimpleShiftObliviousListener) listener, updateCount, added, removed, modified);
+            } else if (listener instanceof SimpleListener) {
+                validate((SimpleListener) listener, updateCount, added, removed, modified, shifted);
             }
         }
     }
@@ -285,7 +285,7 @@ public class QueryTableFlattenTest extends QueryTableTestBase {
         return builder.build();
     }
 
-    private static void validate(final SimpleListener listener, final long count, final RowSet added,
+    private static void validate(final SimpleShiftObliviousListener listener, final long count, final RowSet added,
                                  final RowSet removed, final RowSet modified) {
         Assert.assertEquals("simpleListener.getCount()", count, listener.getCount());
         Assert.assertEquals("simpleListener.added", added, listener.added);
@@ -293,7 +293,7 @@ public class QueryTableFlattenTest extends QueryTableTestBase {
         Assert.assertEquals("simpleListener.modified", modified, listener.modified);
     }
 
-    private static void validate(final io.deephaven.engine.v2.SimpleListener listener, final long count, final RowSet added,
+    private static void validate(final SimpleListener listener, final long count, final RowSet added,
                                  final RowSet removed, final RowSet modified, final RowSetShiftData shifted) {
         Assert.assertEquals("simpleListener.getCount()", count, listener.getCount());
         Assert.assertEquals("simpleListener.added", added, listener.update.added);

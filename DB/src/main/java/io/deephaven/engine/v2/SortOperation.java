@@ -139,7 +139,8 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
                 });
 
         sortMapping = new ReadOnlyLongColumnSourceRedirectionIndex<>(redirectionSource);
-        final MutableRowSet resultRowSet = RowSetFactoryImpl.INSTANCE.getFlatRowSet(initialSortedKeys.size());
+        final MutableRowSet resultRowSet =
+                RowSetFactoryImpl.INSTANCE.getFlatRowSet(initialSortedKeys.size()).convertToTracking();
 
         final Map<String, ColumnSource<?>> resultMap = new LinkedHashMap<>();
         for (Map.Entry<String, ColumnSource<?>> stringColumnSourceEntry : parent.getColumnSourceMap().entrySet()) {
