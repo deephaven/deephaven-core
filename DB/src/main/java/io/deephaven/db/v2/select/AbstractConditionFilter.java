@@ -17,6 +17,8 @@ import io.deephaven.db.v2.utils.Index;
 import org.jetbrains.annotations.NotNull;
 
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.net.MalformedURLException;
 import java.util.*;
 
@@ -84,7 +86,15 @@ public abstract class AbstractConditionFilter extends SelectFilterImpl {
             final QueryScope queryScope = QueryScope.getScope();
             for (Param<?> param : queryScope.getParams(queryScope.getParamNames())) {
                 possibleParams.put(param.getName(), param);
-                possibleVariables.put(param.getName(), param.getDeclaredType());
+                possibleVariables.put(param.getName(), param.getDeclaredClass());
+                Type declaredType = param.getDeclaredType();
+                if (declaredType instanceof ParameterizedType) {
+                    ParameterizedType pt = (ParameterizedType) declaredType;
+                    Class<?>[] paramTypes = Arrays.stream(pt.getActualTypeArguments())
+                            .map(Param::classFromType)
+                            .toArray(Class<?>[]::new);
+                    possibleVariableParameterizedTypes.put(param.getName(), paramTypes);
+                }
             }
 
             Class<?> compType;

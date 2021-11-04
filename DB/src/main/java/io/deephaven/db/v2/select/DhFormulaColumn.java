@@ -669,7 +669,7 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
         if (paramLambda != null) {
             for (int ii = 0; ii < params.length; ++ii) {
                 final Param<?> p = params[ii];
-                final ParamParameter pp = new ParamParameter(ii, p.getName(), p.getDeclaredType(),
+                final ParamParameter pp = new ParamParameter(ii, p.getName(), p.getDeclaredClass(),
                         p.getDeclaredTypeName());
                 addIfNotNull(results, paramLambda.apply(pp));
             }
@@ -692,7 +692,7 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
         final Map<String, Class<?>> arrayDict = makeNameToTypeDict(sd.arrays, columnSources);
         final Map<String, Class<?>> allParamDict = new HashMap<>();
         for (final Param<?> param : params) {
-            allParamDict.put(param.getName(), param.getDeclaredType());
+            allParamDict.put(param.getName(), param.getDeclaredClass());
         }
         final Map<String, Class<?>> paramDict = new HashMap<>();
         for (final String p : sd.params) {

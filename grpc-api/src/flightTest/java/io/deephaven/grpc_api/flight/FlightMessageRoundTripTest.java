@@ -269,6 +269,49 @@ public class FlightMessageRoundTripTest {
     }
 
     @Test
+    public void testStringCol() throws InterruptedException, ExecutionException {
+        assertRoundTripDataEqual(TableTools.emptyTable(10).update("S = \"test\""));
+        assertRoundTripDataEqual(TableTools.emptyTable(10).update("S = new String[] {\"test\", \"42\"}"));
+        assertRoundTripDataEqual(TableTools.emptyTable(10).update("S = new String[][] {new String[] {\"t1\"}}"));
+
+        assertRoundTripDataEqual(TableTools.emptyTable(10).update("S = new String[][][] {" +
+                "null, new String[][] {" +
+                "   null, " +
+                "   new String[] {" +
+                "       null, \"elem_1_1_1\"" +
+                "}}, new String[][] {" +
+                "   null, " +
+                "   new String[] {" +
+                "       null, \"elem_2_1_1\"" +
+                "   }, new String[] {" +
+                "       null, \"elem_2_2_1\", \"elem_2_2_2\"" +
+                "}}, new String[][] {" +
+                "   null, " +
+                "   new String[] {" +
+                "       null, \"elem_3_1_1\"" +
+                "   }, new String[] {" +
+                "       null, \"elem_3_2_1\", \"elem_3_2_2\"" +
+                "   }, new String[] {" +
+                "       null, \"elem_3_3_1\", \"elem_3_3_2\", \"elem_3_3_3\"" +
+                "}}}"));
+    }
+
+    @Test
+    public void testLongCol() throws InterruptedException, ExecutionException {
+        assertRoundTripDataEqual(TableTools.emptyTable(10).update("L = ii"));
+        assertRoundTripDataEqual(TableTools.emptyTable(10).update("L = new long[] {ii}"));
+        assertRoundTripDataEqual(TableTools.emptyTable(10).update("L = new long[][] {new long[] {ii}}"));
+        assertRoundTripDataEqual(TableTools.emptyTable(10).update("L = (Long)ii"));
+        assertRoundTripDataEqual(TableTools.emptyTable(10).update("L = new Long[] {ii}"));
+        assertRoundTripDataEqual(TableTools.emptyTable(10).update("L = new Long[] {ii, null}"));
+        assertRoundTripDataEqual(TableTools.emptyTable(10).update("L = new Long[][] {new Long[] {ii}}"));
+        assertRoundTripDataEqual(TableTools.emptyTable(10).update("L = new Long[][] {null, new Long[] {null, ii}}"));
+        assertRoundTripDataEqual(TableTools.emptyTable(10).update("L = io.deephaven.util.QueryConstants.NULL_LONG"));
+        assertRoundTripDataEqual(
+                TableTools.emptyTable(10).update("L = new long[] {0, -1, io.deephaven.util.QueryConstants.NULL_LONG}"));
+    }
+
+    @Test
     public void testFlightInfo() {
         final String staticTableName = "flightInfoTest";
         final String tickingTableName = "flightInfoTestTicking";

@@ -6,6 +6,7 @@
 package io.deephaven.db.tables.lang;
 
 import io.deephaven.util.QueryConstants;
+import org.jpy.PyObject;
 
 @SuppressWarnings({"unused", "WeakerAccess", "SimplifiableIfStatement"})
 public final class DBLanguageFunctionUtil {
@@ -19287,6 +19288,116 @@ public final class DBLanguageFunctionUtil {
 
     public static short shortCast(Object a) {
         return a == null ? QueryConstants.NULL_SHORT : (short) a;
+    }
+
+    public static int intPyCast(Object a) {
+        if (a != null && !(a instanceof PyObject)) {
+            throw new IllegalArgumentException("Provided value is not a PyObject");
+        }
+        PyObject o = (PyObject) a;
+        if (o == null || o.isNone()) {
+            return QueryConstants.NULL_INT;
+        }
+        return o.getIntValue();
+    }
+
+    public static double doublePyCast(Object a) {
+        if (a != null && !(a instanceof PyObject)) {
+            throw new IllegalArgumentException("Provided value is not a PyObject");
+        }
+        PyObject o = (PyObject) a;
+        if (o == null || o.isNone()) {
+            return QueryConstants.NULL_DOUBLE;
+        }
+        return o.getDoubleValue();
+    }
+
+    public static long longPyCast(Object a) {
+        if (a != null && !(a instanceof PyObject)) {
+            throw new IllegalArgumentException("Provided value is not a PyObject");
+        }
+        PyObject o = (PyObject) a;
+        if (o == null || o.isNone()) {
+            return QueryConstants.NULL_LONG;
+        }
+        return o.getLongValue();
+    }
+
+    public static float floatPyCast(Object a) {
+        if (a != null && !(a instanceof PyObject)) {
+            throw new IllegalArgumentException("Provided value is not a PyObject");
+        }
+        PyObject o = (PyObject) a;
+        if (o == null || o.isNone()) {
+            return QueryConstants.NULL_FLOAT;
+        }
+        return (float) o.getDoubleValue();
+    }
+
+    public static char charPyCast(Object a) {
+        if (a != null && !(a instanceof PyObject)) {
+            throw new IllegalArgumentException("Provided value is not a PyObject");
+        }
+        PyObject o = (PyObject) a;
+        if (o == null || o.isNone()) {
+            return QueryConstants.NULL_CHAR;
+        }
+        return (char) o.getIntValue();
+    }
+
+    public static byte bytePyCast(Object a) {
+        if (a != null && !(a instanceof PyObject)) {
+            throw new IllegalArgumentException("Provided value is not a PyObject");
+        }
+        PyObject o = (PyObject) a;
+        if (o == null || o.isNone()) {
+            return QueryConstants.NULL_BYTE;
+        }
+        return (byte) o.getIntValue();
+    }
+
+    public static short shortPyCast(Object a) {
+        if (a != null && !(a instanceof PyObject)) {
+            throw new IllegalArgumentException("Provided value is not a PyObject");
+        }
+        PyObject o = (PyObject) a;
+        if (o == null || o.isNone()) {
+            return QueryConstants.NULL_SHORT;
+        }
+        return (short) o.getIntValue();
+    }
+
+    public static String doStringPyCast(Object a) {
+        if (a != null && !(a instanceof PyObject)) {
+            throw new IllegalArgumentException("Provided value is not a PyObject");
+        }
+        PyObject o = (PyObject) a;
+        if (o == null || o.isNone()) {
+            return null;
+        }
+        return o.getStringValue();
+    }
+
+    public static boolean booleanPyCast(Object a) {
+        if (a != null && !(a instanceof PyObject)) {
+            throw new IllegalArgumentException("Provided value is not a PyObject");
+        }
+        PyObject o = (PyObject) a;
+        if (o == null || o.isNone()) {
+            throw new NullPointerException("Provided value is unexpectedly null; cannot cast to boolean");
+        }
+        return o.getBooleanValue();
+    }
+
+    public static Boolean doBooleanPyCast(Object a) {
+        if (a != null && !(a instanceof PyObject)) {
+            throw new IllegalArgumentException("Provided value is not a PyObject");
+        }
+        PyObject o = (PyObject) a;
+        if (o == null || o.isNone()) {
+            return null;
+        }
+        return o.getBooleanValue();
     }
 
     public static int negate(int a) {

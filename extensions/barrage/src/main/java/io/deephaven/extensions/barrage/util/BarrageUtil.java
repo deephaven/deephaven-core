@@ -23,6 +23,7 @@ import io.deephaven.db.v2.RollupInfo;
 import io.deephaven.db.v2.sources.chunk.ChunkType;
 import io.deephaven.grpc_api.util.SchemaHelper;
 import io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse;
+import io.deephaven.util.type.TypeUtils;
 import org.apache.arrow.flatbuf.KeyValue;
 import org.apache.arrow.flatbuf.Message;
 import org.apache.arrow.flatbuf.MetadataVersion;
@@ -398,6 +399,16 @@ public class BarrageUtil {
         return result;
     }
 
+    private static boolean isTypeNativelySupported(final Class<?> typ) {
+        if (typ.isPrimitive() || TypeUtils.isBoxedType(typ) || supportedTypes.contains(typ)) {
+            return true;
+        }
+        if (typ.isArray()) {
+            return isTypeNativelySupported(typ.getComponentType());
+        }
+        return false;
+    }
+
     private static Field arrowFieldFor(final String name, final ColumnDefinition<?> column, final String description,
             final MutableInputTable inputTable, final Map<String, String> extraMetadata) {
         List<Field> children = Collections.emptyList();
@@ -407,7 +418,7 @@ public class BarrageUtil {
         final Class<?> componentType = column.getComponentType();
         final Map<String, String> metadata = new HashMap<>(extraMetadata);
 
-        if (type.isPrimitive() || supportedTypes.contains(type)) {
+        if (isTypeNativelySupported(type)) {
             putMetadata(metadata, "type", type.getCanonicalName());
         } else {
             // otherwise will be converted to a string
@@ -429,11 +440,18 @@ public class BarrageUtil {
             putMetadata(metadata, "inputtable.isKey", Arrays.asList(inputTable.getKeyNames()).contains(name) + "");
         }
 
+        return arrowFieldFor(name, type, componentType, metadata);
+    }
+
+    private static Field arrowFieldFor(
+            final String name, final Class<?> type, final Class<?> componentType, final Map<String, String> metadata) {
+        List<Field> children = Collections.emptyList();
+
         final FieldType fieldType = arrowFieldTypeFor(type, componentType, metadata);
         if (fieldType.getType().isComplex()) {
             if (type.isArray()) {
-                children = Collections.singletonList(
-                        new Field("", arrowFieldTypeFor(componentType, null, metadata), Collections.emptyList()));
+                children = Collections.singletonList(arrowFieldFor(
+                        "", componentType, componentType.getComponentType(), Collections.emptyMap()));
             } else {
                 throw new UnsupportedOperationException("Arrow Complex Type Not Supported: " + fieldType.getType());
             }
