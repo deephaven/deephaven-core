@@ -564,12 +564,12 @@ class TableInterface(ABC):
         table_op = DedicatedAggOp(AggType.COUNT, count_column=col)
         return self.table_op_handler(table_op)
 
-    def combo_by(self, by: List[str], agg: ComboAggregation):
+    def combo_by(self, agg: ComboAggregation, by: List[str]):
         """ Perform a Combined Aggregation operation on the table and return the result table.
 
         Args:
-            by (List[str]): the group-by column names
             agg (ComboAggregation): the combined aggregation definition
+            by (List[str]): the group-by column names
 
         Returns:
             a Table object

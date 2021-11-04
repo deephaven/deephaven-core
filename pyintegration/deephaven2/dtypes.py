@@ -11,12 +11,12 @@ from typing import Iterable
 import jpy
 from deephaven2 import DHError
 
-_qst_type = jpy.get_type("io.deephaven.qst.type.Type")
-_table_tools = jpy.get_type("io.deephaven.db.tables.utils.TableTools")
+QstType = jpy.get_type("io.deephaven.qst.type.Type")
+TableTools = jpy.get_type("io.deephaven.db.tables.utils.TableTools")
 
 
 def _qst_custom_type(cls_name: str):
-    return _qst_type.find(_table_tools.typeFromName(cls_name))
+    return QstType.find(TableTools.typeFromName(cls_name))
 
 
 class DType(Enum):
@@ -26,22 +26,22 @@ class DType(Enum):
         big_decimal = BigDecimal(12.88)
 
     """
-    bool_ = _qst_type.booleanType(), "java.lang.Boolean"
-    byte = _qst_type.byteType(), "byte"
+    bool_ = QstType.booleanType(), "java.lang.Boolean"
+    byte = QstType.byteType(), "byte"
     int8 = byte
-    short = _qst_type.shortType(), "short"
+    short = QstType.shortType(), "short"
     int16 = short
-    char = _qst_type.charType(), "char"
-    int_ = _qst_type.intType(), "int"
+    char = QstType.charType(), "char"
+    int_ = QstType.intType(), "int"
     int32 = int_
-    long = _qst_type.longType(), "long"
+    long = QstType.longType(), "long"
     int64 = long
-    float_ = _qst_type.floatType(), "float"
+    float_ = QstType.floatType(), "float"
     single = float_
     float32 = float_
-    double = _qst_type.doubleType(), "double"
+    double = QstType.doubleType(), "double"
     float64 = double
-    string = _qst_type.stringType(), "java.lang.String"
+    string = QstType.stringType(), "java.lang.String"
     BigDecimal = _qst_custom_type("java.math.BigDecimal"), "java.math.BigDecimal"
     StringSet = _qst_custom_type("io.deephaven.db.tables.libs.StringSet"), "io.deephaven.db.tables.libs.StringSet"
     DBDateTime = _qst_custom_type("io.deephaven.db.tables.utils.DBDateTime"), "io.deephaven.db.tables.utils.DBDateTime"
