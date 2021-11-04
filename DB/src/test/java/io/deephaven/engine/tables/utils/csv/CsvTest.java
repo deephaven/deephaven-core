@@ -138,7 +138,7 @@ public class CsvTest {
                 .row(null)
                 .row(TIMESTAMP_B)
                 .newTable();
-        return new CsvTest("timestampDb", "timestamp-engine.csv", CsvSpecs.csv(), expected);
+        return new CsvTest("timestampDb", "timestamp-db.csv", CsvSpecs.csv(), expected);
     }
 
     public static CsvTest bools() {

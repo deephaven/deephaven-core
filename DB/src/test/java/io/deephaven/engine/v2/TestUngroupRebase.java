@@ -46,6 +46,8 @@ public class TestUngroupRebase extends LiveTableTestCase {
 
             // Now let's modify the first row, but not cause a rebase
             LiveTableMonitor.DEFAULT.startCycleForUnitTests();
+            keysToRemove = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+            keysToAdd = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
             keysToModify = RowSetFactoryImpl.INSTANCE.getRowSetByValues(0);
             ColumnHolder keyModifications = TstUtils.c("X", 1);
             ColumnHolder valueModifications = TstUtils.c("Y", new int[] {10, 20, 30});

@@ -145,7 +145,7 @@ public class TestScriptRepository extends BaseArrayTestCase {
             fail("Unable to find git repo directory " + gitPath.toString());
         }
 
-        final File lockFile = gitPath.resolve("rowSet.lock").toFile();
+        final File lockFile = gitPath.resolve("index.lock").toFile();
         if (!lockFile.exists()) {
             new FileOutputStream(lockFile).close();
         }

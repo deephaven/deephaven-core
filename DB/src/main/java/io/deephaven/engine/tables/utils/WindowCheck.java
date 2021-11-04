@@ -110,7 +110,6 @@ public class WindowCheck {
         private final RAPriQueue<Entry> priorityQueue;
         /** a map from table indices to our entries. */
         private final TLongObjectHashMap<Entry> indexToEntry;
-        private final RowSet EMPTY_ROW_SET = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
         private final ModifiedColumnSet.Transformer mcsTransformer;
         private final ModifiedColumnSet mcsNewColumns;
         private final ModifiedColumnSet reusableModifiedColumnSet;
@@ -190,20 +189,21 @@ public class WindowCheck {
                 removeIndex(upstream.removed);
 
                 // anything that was shifted needs to be placed in the proper slots
-                final RowSet preShiftRowSet = source.getRowSet().getPrevRowSet();
-                upstream.shifted.apply((start, end, delta) -> {
-                    final RowSet subRowSet = preShiftRowSet.subSetByKeyRange(start, end);
+                try (final RowSet preShiftRowSet = source.getRowSet().getPrevRowSet()) {
+                    upstream.shifted.apply((start, end, delta) -> {
+                        final RowSet subRowSet = preShiftRowSet.subSetByKeyRange(start, end);
 
-                    final RowSet.SearchIterator it = delta < 0 ? subRowSet.searchIterator() : subRowSet.reverseIterator();
-                    while (it.hasNext()) {
-                        final long idx = it.nextLong();
-                        final Entry entry = indexToEntry.remove(idx);
-                        if (entry != null) {
-                            entry.index = idx + delta;
-                            indexToEntry.put(idx + delta, entry);
+                        final RowSet.SearchIterator it = delta < 0 ? subRowSet.searchIterator() : subRowSet.reverseIterator();
+                        while (it.hasNext()) {
+                            final long idx = it.nextLong();
+                            final Entry entry = indexToEntry.remove(idx);
+                            if (entry != null) {
+                                entry.index = idx + delta;
+                                indexToEntry.put(idx + delta, entry);
+                            }
                         }
-                    }
-                });
+                    });
+                }
 
                 // TODO: improve performance with getChunk
                 // TODO: reinterpret inWindowColumnSource so that it compares longs instead of objects
@@ -241,8 +241,8 @@ public class WindowCheck {
                 if (modifiedByTime.isNonempty()) {
                     final Listener.Update downstream = new Listener.Update();
                     downstream.modified = modifiedByTime;
-                    downstream.added = EMPTY_ROW_SET;
-                    downstream.removed = EMPTY_ROW_SET;
+                    downstream.added = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+                    downstream.removed = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
                     downstream.shifted = RowSetShiftData.EMPTY;
                     downstream.modifiedColumnSet = reusableModifiedColumnSet;
                     downstream.modifiedColumnSet.clear();

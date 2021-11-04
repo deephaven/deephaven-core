@@ -183,6 +183,14 @@ public class QueryTable extends BaseTable {
     // Cached results
     transient Map<MemoizedOperationKey, MemoizedResult<?>> cachedOperations;
 
+    /**
+     * Creates a new abstract table, inferring a definition but creating a new column source map.
+     *
+     * @param rowSet The rowSet of the new table. Ownership transfers to the result. Will be
+     *        {@link RowSet#convertToTrackingMutable() converted}; saving a reference externally should be done with
+     *        care.
+     * @param columns The column source map for the table, which will be copied into a new column source map
+     */
     public QueryTable(RowSet rowSet, Map<String, ? extends ColumnSource<?>> columns) {
         this(TableDefinition.inferFrom(columns), rowSet, columns);
     }
@@ -190,9 +198,11 @@ public class QueryTable extends BaseTable {
     /**
      * Creates a new abstract table, reusing a definition but creating a new column source map.
      *
-     * @param definition the definition to use for this table
-     * @param rowSet the rowSet of the new table
-     * @param columns the column source map for the table, which will be copied into a new column source map
+     * @param definition The definition to use for this table
+     * @param rowSet The rowSet of the new table. Ownership transfers to the result. Will be
+     *        {@link RowSet#convertToTrackingMutable() converted}; saving a reference externally should be done with
+     *        care.
+     * @param columns The column source map for the table, which will be copied into a new column source map
      */
     public QueryTable(TableDefinition definition, RowSet rowSet,
             Map<String, ? extends ColumnSource<?>> columns) {
@@ -202,10 +212,12 @@ public class QueryTable extends BaseTable {
     /**
      * Creates a new abstract table, reusing a definition and column source map.
      *
-     * @param definition the definition to use for this table
-     * @param rowSet the rowSet of the new table
-     * @param columns the column source map for the table, which is not copied.
-     * @param modifiedColumnSet optional {@link ModifiedColumnSet} that should be re-used if supplied
+     * @param definition The definition to use for this table
+     * @param rowSet The rowSet of the new table. Ownership transfers to the result. Will be
+     *        {@link RowSet#convertToTrackingMutable() converted}; saving a reference externally should be done with
+     *        care.
+     * @param columns The column source map for the table, which is not copied.
+     * @param modifiedColumnSet Pptional {@link ModifiedColumnSet} that should be re-used if supplied
      */
     private QueryTable(TableDefinition definition, RowSet rowSet,
             LinkedHashMap<String, ColumnSource<?>> columns,

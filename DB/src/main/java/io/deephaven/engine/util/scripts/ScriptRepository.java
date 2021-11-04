@@ -184,7 +184,7 @@ public class ScriptRepository implements ScriptPathLoader {
      * @param updateEnabled {@code true} if updates are to be enabled.
      * @param gitURI URI of the remote repository.
      * @param branch Branch to use in the remote repository.
-     * @param resetGitLockFiles if true, and an rowSet lock file (rowSet.lock) exists, delete it
+     * @param resetGitLockFiles if true, and an index lock file (index.lock) exists, delete it
      * @return The Git repository, or {@code null} if Git updates aren't enabled.
      * @throws RuntimeException if the setup failed.
      */
@@ -200,7 +200,7 @@ public class ScriptRepository implements ScriptPathLoader {
             final Path gitPath = rootPath.resolve(".git");
             if (Files.isDirectory(gitPath)) {
                 if (resetGitLockFiles) {
-                    final Path lockFile = gitPath.resolve("rowSet.lock");
+                    final Path lockFile = gitPath.resolve("index.lock");
                     if (Files.isRegularFile(lockFile)) {
                         final String lockFileName = lockFile.toAbsolutePath().toString();
                         log.warn().append("Deleting lock file ").append(lockFileName).endl();

@@ -48,8 +48,8 @@ public class UnionSourceManager {
         names = tableDefinition.getColumnList().stream().map(ColumnDefinition::getName).toArray(String[]::new);
         this.parentDependency = parentDependency;
 
-        rowSet = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
-        result = new QueryTable(rowSet, getColumnSources());
+        result = new QueryTable(RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), getColumnSources());
+        rowSet = result.getRowSet().asMutable();
         modifiedColumnSet = result.newModifiedColumnSet(names);
 
         mergedListener = new MergedUnionListener(listeners, "TableTools.merge()", result);

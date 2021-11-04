@@ -4,7 +4,10 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.utils.QueryPerformanceRecorder;
 import io.deephaven.engine.v2.remote.ConstructSnapshot;
-import io.deephaven.engine.v2.sources.*;
+import io.deephaven.engine.v2.sources.ArrayBackedColumnSource;
+import io.deephaven.engine.v2.sources.ColumnSource;
+import io.deephaven.engine.v2.sources.ReinterpretUtilities;
+import io.deephaven.engine.v2.sources.WritableSource;
 import io.deephaven.engine.v2.utils.*;
 import org.apache.commons.lang3.mutable.Mutable;
 import org.apache.commons.lang3.mutable.MutableObject;
@@ -66,12 +69,14 @@ public class StreamTableTools {
                         final MutableRowSet rowSet;
                         if (usePrev) {
                             try (final RowSet useRowSet = baseStreamTable.getRowSet().getPrevRowSet()) {
-                                rowSet = RowSetFactoryImpl.INSTANCE.getFlatRowSet(useRowSet.size());
+                                rowSet = RowSetFactoryImpl.INSTANCE.getFlatRowSet(useRowSet.size()).convertToTracking();
                                 ChunkUtils.copyData(sourceColumns, useRowSet, destColumns, rowSet, usePrev);
                             }
                         } else {
-                            rowSet = RowSetFactoryImpl.INSTANCE.getFlatRowSet(baseStreamTable.getRowSet().size());
-                            ChunkUtils.copyData(sourceColumns, baseStreamTable.getRowSet(), destColumns, rowSet, usePrev);
+                            rowSet = RowSetFactoryImpl.INSTANCE.getFlatRowSet(baseStreamTable.getRowSet().size())
+                                    .convertToTracking();
+                            ChunkUtils.copyData(sourceColumns, baseStreamTable.getRowSet(), destColumns, rowSet,
+                                    usePrev);
                         }
 
                         final QueryTable result = new QueryTable(rowSet, columns);
@@ -96,7 +101,8 @@ public class StreamTableTools {
                                 columns.values().forEach(c -> c.ensureCapacity(currentSize + newRows));
 
                                 final RowSet newRange =
-                                        RowSetFactoryImpl.INSTANCE.getRowSetByRange(currentSize, currentSize + newRows - 1);
+                                        RowSetFactoryImpl.INSTANCE.getRowSetByRange(currentSize,
+                                                currentSize + newRows - 1);
 
                                 ChunkUtils.copyData(sourceColumns, upstream.added, destColumns, newRange, false);
                                 rowSet.insertRange(currentSize, currentSize + newRows - 1);
