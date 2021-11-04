@@ -21,6 +21,7 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.util.Objects;
 import java.util.PrimitiveIterator;
 import java.util.function.LongConsumer;
 
@@ -36,7 +37,7 @@ public class MutableRowSetImpl extends RowSequenceAsChunkImpl implements Mutable
     }
 
     public MutableRowSetImpl(final TreeIndexImpl impl) {
-        this.impl = impl;
+        this.impl = Objects.requireNonNull(impl);
     }
 
     protected final TreeIndexImpl getImpl() {

@@ -388,7 +388,9 @@ class CrossJoinModifiedSlotTracker {
 
             if (finishedRightProcessing) {
                 state.finalizedRight = true;
-                state.rightAdded = state.rightRemoved = state.rightModified = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+                state.rightAdded = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+                state.rightRemoved = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+                state.rightModified = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
                 state.innerShifted = RowSetShiftData.EMPTY;
             }
         } else {

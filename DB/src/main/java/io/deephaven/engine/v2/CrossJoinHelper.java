@@ -88,7 +88,7 @@ public class CrossJoinHelper {
                     // We can only build from right, because the left hand side does not permit us to nicely rehash as
                     // we only have the redirection rowSet when building left and no way to reverse the lookup.
                     final RowSet resultRowSet = jsm.buildFromRight(leftTable, bucketingContext.leftSources, rightTable,
-                            bucketingContext.rightSources);
+                            bucketingContext.rightSources).convertToTracking();
 
                     return makeResult(leftTable, rightTable, columnsToAdd, jsm, resultRowSet,
                             cs -> new CrossJoinRightColumnSource<>(jsm, cs, rightTable.isLive()));
@@ -101,7 +101,8 @@ public class CrossJoinHelper {
                 jsm.setMaximumLoadFactor(control.getMaximumLoadFactor());
                 jsm.setTargetLoadFactor(control.getTargetLoadFactor());
 
-                final MutableRowSet resultRowSet = jsm.buildLeftTicking(leftTable, rightTable, bucketingContext.rightSources);
+                final MutableRowSet resultRowSet =
+                        jsm.buildLeftTicking(leftTable, rightTable, bucketingContext.rightSources).convertToTracking();
                 final QueryTable resultTable = makeResult(leftTable, rightTable, columnsToAdd, jsm, resultRowSet,
                         cs -> new CrossJoinRightColumnSource<>(jsm, cs, rightTable.isLive()));
 
@@ -190,7 +191,7 @@ public class CrossJoinHelper {
             jsm.setMaximumLoadFactor(control.getMaximumLoadFactor());
             jsm.setTargetLoadFactor(control.getTargetLoadFactor());
 
-            final MutableRowSet resultRowSet = jsm.build(leftTable, rightTable);
+            final MutableRowSet resultRowSet = jsm.build(leftTable, rightTable).convertToTracking();
 
             final QueryTable resultTable = makeResult(leftTable, rightTable, columnsToAdd, jsm, resultRowSet,
                     cs -> new CrossJoinRightColumnSource<>(jsm, cs, rightTable.isLive()));

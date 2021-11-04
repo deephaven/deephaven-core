@@ -243,10 +243,10 @@ class StaticChunkedCrossJoinStateManager
 
     // region build wrappers
     @NotNull
-    RowSet buildFromRight(@NotNull final QueryTable leftTable,
-                          @NotNull final ColumnSource<?>[] leftKeys,
-                          @NotNull final QueryTable rightTable,
-                          @NotNull final ColumnSource<?>[] rightKeys) {
+    MutableRowSet buildFromRight(@NotNull final QueryTable leftTable,
+                                 @NotNull final ColumnSource<?>[] leftKeys,
+                                 @NotNull final QueryTable rightTable,
+                                 @NotNull final ColumnSource<?>[] rightKeys) {
         final boolean ignoreMissing = false;
         if (!rightTable.isEmpty()) {
             try (final BuildContext bc = makeBuildContext(rightKeys, rightTable.size())) {
@@ -282,10 +282,10 @@ class StaticChunkedCrossJoinStateManager
     }
 
     @NotNull
-    RowSet buildFromLeft(@NotNull final QueryTable leftTable,
-                         @NotNull final ColumnSource<?>[] leftKeys,
-                         @NotNull final QueryTable rightTable,
-                         @NotNull final ColumnSource<?>[] rightKeys) {
+    MutableRowSet buildFromLeft(@NotNull final QueryTable leftTable,
+                                @NotNull final ColumnSource<?>[] leftKeys,
+                                @NotNull final QueryTable rightTable,
+                                @NotNull final ColumnSource<?>[] rightKeys) {
         if (!leftTable.isEmpty()) {
             try (final BuildContext bc = makeBuildContext(leftKeys, leftTable.size())) {
                 buildTable(bc, leftTable.getRowSet(), leftKeys, (slot, index) -> {
