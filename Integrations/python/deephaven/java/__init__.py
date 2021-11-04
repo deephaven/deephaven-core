@@ -177,14 +177,3 @@ try:
     _defineSymbols()
 except Exception as e:
     pass
-
-@_passThrough
-def print_memory_statistics():
-    """
-    Print memory statistics about the JVM
-    """
-    rt = Runtime.getRuntime()
-    print("Total memory (MB): " + str(rt.totalMemory() / 1024 / 1024))
-    print("Free memory (MB): " + str(rt.freeMemory() / 1024 / 1024))
-    print("Used memory (MB): " + str((rt.totalMemory() - rt.freeMemory()) / 1024 / 1024))
-    return
