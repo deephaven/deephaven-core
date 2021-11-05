@@ -104,8 +104,10 @@ public class ClassUtilTest {
     public static boolean verifyNotInitializedWasNotInitialized = false;
 }
 
+
 class Outer {
 }
+
 
 class VerifyNotInitialized {
     static {

@@ -74,7 +74,8 @@ public class CreateInputTableGrpcImpl extends GrpcTableOperation<CreateInputTabl
                 return AppendOnlyArrayBackedMutableTable.make(tableDefinitionFromSchema);
             case IN_MEMORY_KEY_BACKED:
                 return KeyedArrayBackedMutableTable.make(tableDefinitionFromSchema,
-                        request.getKind().getInMemoryKeyBacked().getKeyColumnsList().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
+                        request.getKind().getInMemoryKeyBacked().getKeyColumnsList()
+                                .toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
             case KIND_NOT_SET:
             default:
                 throw new IllegalStateException("Unsupported input table kind");

@@ -112,7 +112,8 @@ public class InputTableServiceGrpcImpl extends InputTableServiceGrpc.InputTableS
                         try {
                             mutableInputTable.delete(tableToDelete);
                         } catch (IOException ioException) {
-                            throw GrpcUtil.statusRuntimeException(Code.DATA_LOSS, "Error deleting table from inputtable");
+                            throw GrpcUtil.statusRuntimeException(Code.DATA_LOSS,
+                                    "Error deleting table from inputtable");
                         }
                     });
         });
