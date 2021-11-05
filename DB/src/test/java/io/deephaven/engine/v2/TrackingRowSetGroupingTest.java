@@ -259,7 +259,8 @@ public class TrackingRowSetGroupingTest extends LiveTableTestCase {
 
         final TupleSource intSymSym2DoubleTupleSource = TupleSourceFactory.makeTupleSource(intColumnSource,
                 symColumnSource, sym2ColumnSource, doubleColumnSource);
-        Map<Object, RowSet> intSymSym2DoubleGrouping = countingTable.getRowSet().getGrouping(intSymSym2DoubleTupleSource);
+        Map<Object, RowSet> intSymSym2DoubleGrouping =
+                countingTable.getRowSet().getGrouping(intSymSym2DoubleTupleSource);
         assertEquals(0, ((CountingTable.MethodCounter) symColumnSource).getMethodCount("get"));
         assertEquals(0, ((CountingTable.MethodCounter) sym2ColumnSource).getMethodCount("get"));
         assertEquals(0, ((CountingTable.MethodCounter) intColumnSource).getMethodCount("get"));
@@ -381,7 +382,8 @@ public class TrackingRowSetGroupingTest extends LiveTableTestCase {
         countingTable.getColumnSources().forEach(x -> ((CountingTable.MethodCounter) x).clear());
 
         GroupingValidator.validateRestrictedGrouping(new String[] {"intCol", "Sym", "Sym2", "doubleCol"},
-                countingTable.getRowSet(), countingTable, "intCol+sym+sym2+doubleCol", intSymSym2DoubleGrouping, keySet);
+                countingTable.getRowSet(), countingTable, "intCol+sym+sym2+doubleCol", intSymSym2DoubleGrouping,
+                keySet);
     }
 
 }

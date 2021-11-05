@@ -12,9 +12,9 @@ public interface FormulaGenerator {
             Map<String, ? extends ColumnSource> columnsOverride);
 
     Formula getFormula(RowSet rowSet, Class returnType, boolean initLazyMap,
-                       Map<String, ? extends ColumnSource> columnsToData,
-                       Map<String, ? extends ColumnSource> fallThroughColumns, boolean fallThroughContiguous,
-                       Map<String, ? extends ColumnSource> columnsOverride, RowSet overflowStateRowSet);
+            Map<String, ? extends ColumnSource> columnsToData,
+            Map<String, ? extends ColumnSource> fallThroughColumns, boolean fallThroughContiguous,
+            Map<String, ? extends ColumnSource> columnsOverride, RowSet overflowStateRowSet);
 
     Class getReturnedType();
 

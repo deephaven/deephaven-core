@@ -6,7 +6,6 @@
   "get": ":param i: long\n:return: int",
   "getComponentType": ":return: java.lang.Class",
   "getDirect": "Return a version of this DbArrayBase that is flattened out to only reference memory.\n\n:return: io.deephaven.engine.tables.dbarrays.DbIntArray",
-  "getPrev": ":param i: long\n:return: int",
   "hashCode": "Helper method for implementing Object.hashCode(). Follows the pattern in\n Arrays.hashCode(Object[]).\n\n:param array: (io.deephaven.engine.tables.dbarrays.DbIntArray) - The DbIntArray to hash\n:return: (int) The hash code",
   "intValToString": ":param val: java.lang.Object\n:return: java.lang.String",
   "primitiveIntValToString": ":param val: int\n:return: java.lang.String",

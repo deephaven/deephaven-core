@@ -5,6 +5,6 @@
   "onFailure": "Notification of exceptions.\n\n:param originalException: (java.lang.Throwable) - exception\n:param sourceEntry: (io.deephaven.engine.v2.utils.UpdatePerformanceTracker.Entry) - performance tracking"
  },
  "path": "io.deephaven.engine.v2.ListenerBase",
- "text": "Listener for table changes.",
+ "text": "ShiftObliviousListener for table changes.",
  "typeName": "interface"
 }

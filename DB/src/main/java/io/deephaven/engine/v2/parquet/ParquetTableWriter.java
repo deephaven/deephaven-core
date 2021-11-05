@@ -522,9 +522,9 @@ public class ParquetTableWriter {
                 final Object nullValue = getNullValue(columnType);
                 try (final RowSequence.Iterator lengthIndexIt =
                         lengthRowSet != null ? lengthRowSet.getRowSequenceIterator() : null;
-                     final ChunkSource.GetContext lengthSourceContext =
+                        final ChunkSource.GetContext lengthSourceContext =
                                 lengthSource != null ? lengthSource.makeGetContext(targetSize) : null;
-                     final RowSequence.Iterator it = rowSet.getRowSequenceIterator()) {
+                        final RowSequence.Iterator it = rowSet.getRowSequenceIterator()) {
                     final IntBuffer repeatCount = lengthSource != null ? IntBuffer.allocate(targetSize) : null;
                     for (int step = 0; step < stepsCount; ++step) {
                         final RowSequence rs = it.getNextRowSequenceWithLength(valuesStepGetter.get());

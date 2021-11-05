@@ -7,7 +7,7 @@
   "getColumnSources": "Get a map of name to DeferredGroupingColumnSource for the column sources maintained by this manager.\n\n:return: (java.util.Map<java.lang.String,? extends io.deephaven.engine.v2.sources.DeferredGroupingColumnSource<?>>) An unmodifiable view of the column source map maintained by this manager.",
   "includedLocations": "Get the added locations that have been found to exist and have non-zero size.\n\n:return: (java.util.Collection<io.deephaven.engine.v2.locations.TableLocation>) The added locations that have been found to exist and have non-zero size",
   "isEmpty": "Report whether this ColumnSourceManager has no locations that have been \"included\" (i.e. found to exist with\n non-zero size).\n\n:return: (boolean) True if there are no included locations",
-  "refresh": "Observe size changes in the previously added table locations, and update the managed column sources accordingly.\n\n:return: (io.deephaven.engine.v2.utils.Index) The index of added keys"
+  "refresh": "Observe size changes in the previously added table locations, and update the managed column sources accordingly.\n\n:return: (io.deephaven.engine.v2.utils.MutableRowSet) The rowSet of added keys"
  },
  "path": "io.deephaven.engine.v2.ColumnSourceManager",
  "text": "Manager for ColumnSources in a Table.",

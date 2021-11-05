@@ -419,7 +419,8 @@ final class UngroupedAggregateColumnSource<DATA_TYPE> extends UngroupedColumnSou
             return;
         }
         final UngroupedFillContext tc = (UngroupedFillContext) context;
-        tc.shareable.extractFillChunkInformation(aggregateColumnSource.groupRowSetSource, getPrevBase(), true, rowSequence);
+        tc.shareable.extractFillChunkInformation(aggregateColumnSource.groupRowSetSource, getPrevBase(), true,
+                rowSequence);
         tc.doFillChunk(aggregateColumnSource.aggregatedSource, true, destination);
     }
 

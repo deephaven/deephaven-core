@@ -7,7 +7,6 @@
   "get": ":param i: long\n:return: char",
   "getComponentType": ":return: java.lang.Class",
   "getDirect": "Return a version of this DbArrayBase that is flattened out to only reference memory.\n\n:return: io.deephaven.engine.tables.dbarrays.DbCharArray",
-  "getPrev": ":param i: long\n:return: char",
   "hashCode": "Helper method for implementing Object.hashCode(). Follows the pattern in\n Arrays.hashCode(Object[]).\n\n:param array: (io.deephaven.engine.tables.dbarrays.DbCharArray) - The DbCharArray to hash\n:return: (int) The hash code",
   "primitiveCharValToString": ":param val: char\n:return: java.lang.String",
   "size": "The size of this data structure.\n\n:return: (long) The size",

@@ -242,7 +242,8 @@ public class RspRowSequence extends RowSequenceAsChunkImpl {
         return true;
     }
 
-    // Note unlike RowSet.Iterator, this Iterator will /not/ automatically release its underlying TrackingMutableRowSet representation
+    // Note unlike RowSet.Iterator, this Iterator will /not/ automatically release its underlying TrackingMutableRowSet
+    // representation
     // when iteration is exhausted. The API for OK.Iterator makes that impossible.
     static class Iterator implements RowSequence.Iterator {
         private static class RSWrapper extends RspRowSequence {

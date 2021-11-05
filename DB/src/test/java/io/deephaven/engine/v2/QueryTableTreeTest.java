@@ -725,7 +725,8 @@ public class QueryTableTreeTest extends QueryTableTestBase {
         }
 
         @Override
-        public TreeMap<Long, IdParentPair> populateMap(TreeMap<Long, IdParentPair> values, RowSet toAdd, Random random) {
+        public TreeMap<Long, IdParentPair> populateMap(TreeMap<Long, IdParentPair> values, RowSet toAdd,
+                Random random) {
             final TreeMap<Long, IdParentPair> result = new TreeMap<>();
 
             for (final RowSet.Iterator it = toAdd.iterator(); it.hasNext();) {

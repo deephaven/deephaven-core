@@ -97,8 +97,8 @@ public class CategoryDataSeriesKernel {
     }
 
     /**
-     * Get the rowSet key of the category within the original dataset. This can be used to enforce a global ordering of a
-     * MultiSeries cat plot.
+     * Get the rowSet key of the category within the original dataset. This can be used to enforce a global ordering of
+     * a MultiSeries cat plot.
      *
      * @param category The category to locate.
      * @return the key of the specified category within the original data set. or -1 if not present.

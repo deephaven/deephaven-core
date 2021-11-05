@@ -89,8 +89,9 @@ class SnapshotState {
     // endregion
 
     interface Copier {
-        void copy(boolean usePrev, ColumnSource columnSource, RowSet.Iterator it, Object target, int offset, Table table,
-                  TableMap tableMap, BitSet childPresenceColumn);
+        void copy(boolean usePrev, ColumnSource columnSource, RowSet.Iterator it, Object target, int offset,
+                Table table,
+                TableMap tableMap, BitSet childPresenceColumn);
     }
 
     SnapshotState(HierarchicalTable baseTable, String hierarchicalColumnName) {

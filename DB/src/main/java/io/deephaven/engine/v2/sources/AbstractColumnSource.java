@@ -115,7 +115,7 @@ public abstract class AbstractColumnSource<T> implements ColumnSource<T>, Serial
 
     @Override
     public MutableRowSet match(boolean invertMatch, boolean usePrev, boolean caseInsensitive, RowSet mapper,
-                                       final Object... keys) {
+            final Object... keys) {
         final Map<T, RowSet> groupToRange = (isImmutable() || !usePrev) ? getGroupToRange(mapper) : null;
         if (groupToRange != null) {
             RowSetBuilderRandom allInMatchingGroups = RowSetFactory.builderRandom();
@@ -177,7 +177,8 @@ public abstract class AbstractColumnSource<T> implements ColumnSource<T>, Serial
 
         // if we have a grouping we can use it to avoid iterating the entire subRange. The issue is that our grouping
         // could be bigger than the rowSet we care about, by a very large margin. In this case we could be spinning
-        // on TrackingMutableRowSet intersect operations that are actually useless. This check says that if our subRange is smaller
+        // on TrackingMutableRowSet intersect operations that are actually useless. This check says that if our subRange
+        // is smaller
         // than the number of keys in our grouping, we should just fetch the keys instead and generate the grouping
         // from scratch.
         boolean useGroupToRange = (groupToRange != null) && (groupToRange.size() < subRange.size());
@@ -292,8 +293,8 @@ public abstract class AbstractColumnSource<T> implements ColumnSource<T>, Serial
      * Convert a group-to-rowSet map to a pair of flat in-memory column sources, one for the keys and one for the
      * indexes.
      *
-     * @param originalKeyColumnSource The key column source whose contents are reflected by the group-to-rowSet map (used
-     *        for typing, only)
+     * @param originalKeyColumnSource The key column source whose contents are reflected by the group-to-rowSet map
+     *        (used for typing, only)
      * @param groupToIndex The group-to-rowSet map to convert
      * @return A pair of a flat key column source and a flat rowSet column source
      */
@@ -303,7 +304,8 @@ public abstract class AbstractColumnSource<T> implements ColumnSource<T>, Serial
         final int numGroups = groupToIndex.size();
         final ArrayBackedColumnSource<TYPE> resultKeyColumnSource = ArrayBackedColumnSource.getMemoryColumnSource(
                 numGroups, originalKeyColumnSource.getType(), originalKeyColumnSource.getComponentType());
-        final ObjectArraySource<TrackingMutableRowSet> resultIndexColumnSource = new ObjectArraySource<>(TrackingMutableRowSet.class);
+        final ObjectArraySource<TrackingMutableRowSet> resultIndexColumnSource =
+                new ObjectArraySource<>(TrackingMutableRowSet.class);
         resultIndexColumnSource.ensureCapacity(numGroups);
 
         final MutableInt processedGroupCount = new MutableInt(0);
@@ -338,8 +340,8 @@ public abstract class AbstractColumnSource<T> implements ColumnSource<T>, Serial
      * Convert a group-to-rowSet map to a pair of flat in-memory column sources, one for the keys and one for the
      * indexes.
      *
-     * @param originalKeyColumnSource The key column source whose contents are reflected by the group-to-rowSet map (used
-     *        for typing, only)
+     * @param originalKeyColumnSource The key column source whose contents are reflected by the group-to-rowSet map
+     *        (used for typing, only)
      * @param groupToIndex The group-to-rowSet map to convert
      * @param intersect Limit returned indices to values contained within intersect
      * @param responsiveGroups Set to the number of responsive groups on exit
@@ -353,7 +355,8 @@ public abstract class AbstractColumnSource<T> implements ColumnSource<T>, Serial
         final int numGroups = groupToIndex.size();
         final ArrayBackedColumnSource<TYPE> resultKeyColumnSource = ArrayBackedColumnSource.getMemoryColumnSource(
                 numGroups, originalKeyColumnSource.getType(), originalKeyColumnSource.getComponentType());
-        final ObjectArraySource<TrackingMutableRowSet> resultIndexColumnSource = new ObjectArraySource<>(TrackingMutableRowSet.class);
+        final ObjectArraySource<TrackingMutableRowSet> resultIndexColumnSource =
+                new ObjectArraySource<>(TrackingMutableRowSet.class);
         resultIndexColumnSource.ensureCapacity(numGroups);
 
         responsiveGroups.setValue(0);

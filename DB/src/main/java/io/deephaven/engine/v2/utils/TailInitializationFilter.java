@@ -19,9 +19,9 @@ import java.util.function.LongUnaryOperator;
  * Timestamp.
  *
  * This is only designed to operate against a source table, if any rows are modified or removed from the table, then the
- * ShiftObliviousListener throws an IllegalStateException. Each contiguous range of indices is assumed to be a partition. If you
- * filter or otherwise alter the source table before calling TailInitializationFilter, this assumption will be violated
- * and the resulting table will not be filtered as desired.
+ * ShiftObliviousListener throws an IllegalStateException. Each contiguous range of indices is assumed to be a
+ * partition. If you filter or otherwise alter the source table before calling TailInitializationFilter, this assumption
+ * will be violated and the resulting table will not be filtered as desired.
  *
  * Once initialized, the filter returns all new rows, rows that have already been passed are not removed or modified.
  *

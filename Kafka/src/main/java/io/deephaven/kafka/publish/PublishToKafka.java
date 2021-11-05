@@ -117,7 +117,7 @@ public class PublishToKafka<K, V> extends LivenessArtifact {
     }
 
     private void publishMessages(@NotNull final RowSet rowsToPublish, final boolean usePrevious,
-                                 final boolean publishValues, @NotNull final Callback callback) {
+            final boolean publishValues, @NotNull final Callback callback) {
         if (rowsToPublish.isEmpty()) {
             return;
         }

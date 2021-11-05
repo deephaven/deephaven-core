@@ -307,7 +307,7 @@ public class AsOfJoinHelper {
                             asOfJoinStateManager.probeLeft(restampKeys, leftSources, updatedSlots, foundBuilder);
 
                     try (final RowSet foundKeys = foundBuilder.build();
-                         final RowSet notFound = restampKeys.minus(foundKeys)) {
+                            final RowSet notFound = restampKeys.minus(foundKeys)) {
                         notFound.forAllRowKeys(redirectionIndex::removeVoid);
                     }
 
@@ -409,11 +409,11 @@ public class AsOfJoinHelper {
     }
 
     private static void processLeftSlotWithRightCache(AsOfStampContext stampContext,
-                                                      RowSet leftRowSet, RowSet rightRowSet, RedirectionIndex redirectionIndex,
-                                                      ColumnSource<?> rightStampSource,
-                                                      ResettableWritableLongChunk<RowKeys> keyChunk, ResettableWritableChunk<Values> valuesChunk,
-                                                      ArrayValuesCache arrayValuesCache,
-                                                      long slot) {
+            RowSet leftRowSet, RowSet rightRowSet, RedirectionIndex redirectionIndex,
+            ColumnSource<?> rightStampSource,
+            ResettableWritableLongChunk<RowKeys> keyChunk, ResettableWritableChunk<Values> valuesChunk,
+            ArrayValuesCache arrayValuesCache,
+            long slot) {
         final long[] rightStampKeys = arrayValuesCache.getKeys(slot);
         if (rightStampKeys == null) {
             final int rightSize = rightRowSet.intSize();
@@ -695,7 +695,7 @@ public class AsOfJoinHelper {
                 // After all the removals are done, we do the shifts
                 if (upstream.shifted.nonempty()) {
                     try (final RowSet fullPrevRowSet = rightTable.getRowSet().getPrevRowSet();
-                         final RowSet previousToShift = fullPrevRowSet.minus(restampRemovals)) {
+                            final RowSet previousToShift = fullPrevRowSet.minus(restampRemovals)) {
                         if (previousToShift.isNonempty()) {
                             try (final ResettableWritableLongChunk<RowKeys> leftKeyChunk =
                                     ResettableWritableLongChunk.makeResettableChunk();
@@ -1098,10 +1098,10 @@ public class AsOfJoinHelper {
     private static void fillSsaWithSort(QueryTable rightTable, ColumnSource<?> stampSource, int nodeSize,
             SegmentedSortedArray ssa, SortingOrder order) {
         try (final ColumnSource.FillContext context = stampSource.makeFillContext(nodeSize);
-             final RowSequence.Iterator rsIt = rightTable.getRowSet().getRowSequenceIterator();
-             final WritableChunk<Values> stampChunk = stampSource.getChunkType().makeWritableChunk(nodeSize);
-             final WritableLongChunk<RowKeys> keyChunk = WritableLongChunk.makeWritableChunk(nodeSize);
-             final LongSortKernel<Values, RowKeys> sortKernel =
+                final RowSequence.Iterator rsIt = rightTable.getRowSet().getRowSequenceIterator();
+                final WritableChunk<Values> stampChunk = stampSource.getChunkType().makeWritableChunk(nodeSize);
+                final WritableLongChunk<RowKeys> keyChunk = WritableLongChunk.makeWritableChunk(nodeSize);
+                final LongSortKernel<Values, RowKeys> sortKernel =
                         LongSortKernel.makeContext(stampSource.getChunkType(), order, nodeSize, true)) {
             while (rsIt.hasMore()) {
                 final RowSequence chunkOk = rsIt.getNextRowSequenceWithLength(nodeSize);
@@ -1242,7 +1242,8 @@ public class AsOfJoinHelper {
                                 for (int ii = 0; ii < chunks; ++ii) {
                                     final long startChunk = chunks - ii - 1;
                                     try (final RowSet chunkOk =
-                                            restampAdditions.subSetByPositionRange(startChunk * control.rightChunkSize(),
+                                            restampAdditions.subSetByPositionRange(
+                                                    startChunk * control.rightChunkSize(),
                                                     (startChunk + 1) * control.rightChunkSize())) {
                                         rightStampSource.fillChunk(fillContext, stampChunk, chunkOk);
                                         insertedIndices.setSize(chunkOk.intSize());
@@ -1334,21 +1335,21 @@ public class AsOfJoinHelper {
     }
 
     private static void rightIncrementalApplySsaShift(RowSetShiftData shiftData, SegmentedSortedArray ssa,
-                                                      LongSortKernel<Values, RowKeys> sortKernel, ChunkSource.FillContext fillContext,
-                                                      RowSet restampRemovals, QueryTable table,
-                                                      int chunkSize, ColumnSource<?> stampSource, ChunkSsaStamp chunkSsaStamp,
-                                                      WritableChunk<Values> leftStampValues, WritableLongChunk<RowKeys> leftStampKeys,
-                                                      RedirectionIndex redirectionIndex, boolean disallowExactMatch) {
+            LongSortKernel<Values, RowKeys> sortKernel, ChunkSource.FillContext fillContext,
+            RowSet restampRemovals, QueryTable table,
+            int chunkSize, ColumnSource<?> stampSource, ChunkSsaStamp chunkSsaStamp,
+            WritableChunk<Values> leftStampValues, WritableLongChunk<RowKeys> leftStampKeys,
+            RedirectionIndex redirectionIndex, boolean disallowExactMatch) {
 
         try (final RowSet fullPrevRowSet = table.getRowSet().getPrevRowSet();
-             final RowSet previousToShift = fullPrevRowSet.minus(restampRemovals);
-             final SizedSafeCloseable<ColumnSource.FillContext> shiftFillContext =
+                final RowSet previousToShift = fullPrevRowSet.minus(restampRemovals);
+                final SizedSafeCloseable<ColumnSource.FillContext> shiftFillContext =
                         new SizedSafeCloseable<>(stampSource::makeFillContext);
-             final SizedSafeCloseable<LongSortKernel<Values, RowKeys>> shiftSortKernel =
+                final SizedSafeCloseable<LongSortKernel<Values, RowKeys>> shiftSortKernel =
                         new SizedSafeCloseable<>(sz -> LongSortKernel.makeContext(stampSource.getChunkType(),
                                 ssa.isReversed() ? SortingOrder.Descending : SortingOrder.Ascending, sz, true));
-             final SizedChunk<Values> rightStampValues = new SizedChunk<>(stampSource.getChunkType());
-             final SizedLongChunk<RowKeys> rightStampKeys = new SizedLongChunk<>()) {
+                final SizedChunk<Values> rightStampValues = new SizedChunk<>(stampSource.getChunkType());
+                final SizedLongChunk<RowKeys> rightStampKeys = new SizedLongChunk<>()) {
 
             final RowSetShiftData.Iterator sit = shiftData.applyIterator();
             while (sit.hasNext()) {

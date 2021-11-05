@@ -1,0 +1,12 @@
+{
+ "className": "io.deephaven.engine.v2.utils.RspBitmapBuilderSequential",
+ "methods": {
+  "appendKey": ":param rowKey: long",
+  "appendRange": ":param rangeFirstRowKey: long\n:param rangeLastRowKey: long",
+  "appendTreeIndexImpl": ":param shiftAmount: long\n:param ix: io.deephaven.engine.v2.utils.OrderedLongSet\n:param acquire: boolean",
+  "getTreeIndexImpl": ":return: io.deephaven.engine.v2.utils.OrderedLongSet",
+  "setDomain": ":param minRowKey: long\n:param maxRowKey: long"
+ },
+ "path": "io.deephaven.engine.v2.utils.RspBitmapBuilderSequential",
+ "typeName": "class"
+}

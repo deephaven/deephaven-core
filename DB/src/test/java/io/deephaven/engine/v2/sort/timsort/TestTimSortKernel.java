@@ -161,7 +161,7 @@ public abstract class TestTimSortKernel {
     @FunctionalInterface
     interface PartitionKernelStuffFactory<T> {
         PartitionKernelStuff<T> apply(List<T> javaTuples, RowSet rowSet, int chunkSize, int nPartitions,
-                                      boolean preserveEquality);
+                boolean preserveEquality);
     }
 
     <T> void partitionCorrectnessTest(int dataSize, int chunkSize, int nPartitions,

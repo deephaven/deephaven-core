@@ -1715,8 +1715,8 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
 
     /**
      *
-     * @param newSpanIdx an rowSet, as returned by getSpanAtIndex(k). Note this can be negative, in which case this is an
-     *        insertion (existing elements pushed to the right as necessary).
+     * @param newSpanIdx an rowSet, as returned by getSpanAtIndex(k). Note this can be negative, in which case this is
+     *        an insertion (existing elements pushed to the right as necessary).
      * @param newSpanKey the key.
      * @param newSpanFlen the number of 2^16 intervals.
      *

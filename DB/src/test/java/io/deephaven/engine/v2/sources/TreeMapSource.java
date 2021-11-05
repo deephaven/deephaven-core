@@ -56,7 +56,8 @@ public class TreeMapSource<T> extends AbstractColumnSource<T> {
             lastAdditionTime = currentStep;
         }
         if (rowSet.size() != vs.length) {
-            throw new IllegalArgumentException("TrackingMutableRowSet=" + rowSet + ", data(" + vs.length + ")=" + Arrays.toString(vs));
+            throw new IllegalArgumentException(
+                    "TrackingMutableRowSet=" + rowSet + ", data(" + vs.length + ")=" + Arrays.toString(vs));
         }
 
         rowSet.forAllRowKeys(new LongConsumer() {

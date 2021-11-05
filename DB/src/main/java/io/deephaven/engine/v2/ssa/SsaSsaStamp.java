@@ -59,16 +59,16 @@ public interface SsaSsaStamp {
             boolean disallowExactMatch);
 
     void processRemovals(SegmentedSortedArray leftSsa, Chunk<? extends Values> rightStampChunk,
-                         LongChunk<RowKeys> rightKeys, WritableLongChunk<RowKeys> priorRedirections,
-                         RedirectionIndex redirectionIndex, RowSetBuilderRandom modifiedBuilder, boolean disallowExactMatch);
+            LongChunk<RowKeys> rightKeys, WritableLongChunk<RowKeys> priorRedirections,
+            RedirectionIndex redirectionIndex, RowSetBuilderRandom modifiedBuilder, boolean disallowExactMatch);
 
     void processInsertion(SegmentedSortedArray leftSsa, Chunk<? extends Values> rightStampChunk,
-                          LongChunk<Attributes.RowKeys> rightKeys, Chunk<Values> nextRightValue, RedirectionIndex redirectionIndex,
-                          RowSetBuilderRandom modifiedBuilder, boolean endsWithLastValue, boolean disallowExactMatch);
+            LongChunk<Attributes.RowKeys> rightKeys, Chunk<Values> nextRightValue, RedirectionIndex redirectionIndex,
+            RowSetBuilderRandom modifiedBuilder, boolean endsWithLastValue, boolean disallowExactMatch);
 
     void findModified(SegmentedSortedArray leftSsa, RedirectionIndex redirectionIndex,
-                      Chunk<? extends Values> rightStampChunk, LongChunk<Attributes.RowKeys> rightStampIndices,
-                      RowSetBuilderRandom modifiedBuilder, boolean disallowExactMatch);
+            Chunk<? extends Values> rightStampChunk, LongChunk<Attributes.RowKeys> rightStampIndices,
+            RowSetBuilderRandom modifiedBuilder, boolean disallowExactMatch);
 
     void applyShift(SegmentedSortedArray leftSsa, Chunk<? extends Values> rightStampChunk,
             LongChunk<RowKeys> rightStampKeys, long shiftDelta, RedirectionIndex redirectionIndex,

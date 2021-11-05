@@ -30,7 +30,8 @@ import java.util.function.LongConsumer;
  * Implementation for chunk-oriented aggregation operations, including {@link Table#join}.
  */
 public class CrossJoinHelper {
-    // Note: This would be >= 16 to get efficient performance from TrackingMutableRowSet#insert and TrackingMutableRowSet#shiftInPlace. However, it is
+    // Note: This would be >= 16 to get efficient performance from TrackingMutableRowSet#insert and
+    // TrackingMutableRowSet#shiftInPlace. However, it is
     // very costly for joins of many small groups for the default to be so high.
     public static final int DEFAULT_NUM_RIGHT_BITS_TO_RESERVE = Configuration.getInstance()
             .getIntegerForClassWithDefault(CrossJoinHelper.class, "numRightBitsToReserve", 10);
@@ -88,8 +89,8 @@ public class CrossJoinHelper {
                     // We can only build from right, because the left hand side does not permit us to nicely rehash as
                     // we only have the redirection rowSet when building left and no way to reverse the lookup.
                     final TrackingMutableRowSet resultRowSet = jsm.buildFromRight(leftTable,
-                            bucketingContext.leftSources, rightTable, bucketingContext.rightSources).
-                            convertToTracking();
+                            bucketingContext.leftSources, rightTable, bucketingContext.rightSources)
+                            .convertToTracking();
 
                     return makeResult(leftTable, rightTable, columnsToAdd, jsm, resultRowSet,
                             cs -> new CrossJoinRightColumnSource<>(jsm, cs, rightTable.isLive()));
@@ -314,7 +315,8 @@ public class CrossJoinHelper {
 
                                 try (final MutableRowSet toRemove = RowSetFactory.empty()) {
                                     // This could use a sequential builder, however, since we are always appending
-                                    // non-overlapping containers, inserting into an rowSet is actually rather efficient.
+                                    // non-overlapping containers, inserting into an rowSet is actually rather
+                                    // efficient.
                                     leftIndexToVisitForRightRm.forAllRowKeys(ii -> {
                                         final long prevOffset = ii << prevRightBits;
                                         final CrossJoinModifiedSlotTracker.SlotState state = tracker
@@ -356,8 +358,8 @@ public class CrossJoinHelper {
                             });
 
                             try (final RowSet leftIndexesToVisitForAdds = addsToVisit.build();
-                                 final RowSet leftIndexesToVisitForMods = modsToVisit.build();
-                                 final MutableRowSet modified = RowSetFactory.empty()) {
+                                    final RowSet leftIndexesToVisitForMods = modsToVisit.build();
+                                    final MutableRowSet modified = RowSetFactory.empty()) {
                                 downstream.added = RowSetFactory.empty();
 
                                 leftIndexesToVisitForAdds.forAllRowKeys(ii -> {
@@ -415,7 +417,7 @@ public class CrossJoinHelper {
 
                             try (final RowSequence.Iterator rsIt =
                                     allRowsShift ? null : resultRowSet.getRowSequenceIterator();
-                                 final MutableRowSet unshiftedRowsToShift = rowsToShift.clone()) {
+                                    final MutableRowSet unshiftedRowsToShift = rowsToShift.clone()) {
                                 upstreamLeft.shifted.unapply(unshiftedRowsToShift);
                                 final RowSet.SearchIterator prevIter = unshiftedRowsToShift.searchIterator();
 
@@ -607,7 +609,7 @@ public class CrossJoinHelper {
                         downstream.shifted = shiftBuilder.build();
 
                         try (final RowSet toRemove = toRemoveFromResultIndex.build();
-                             final RowSet toInsert = toInsertIntoResultIndex.build()) {
+                                final RowSet toInsert = toInsertIntoResultIndex.build()) {
                             if (prevRightBits != currRightBits) {
                                 // every row shifted
                                 resultRowSet.clear();
@@ -757,7 +759,8 @@ public class CrossJoinHelper {
                             final long slot = jsm.getSlotFromLeftIndex(ii);
                             final CrossJoinModifiedSlotTracker.SlotState slotState =
                                     tracker.getFinalSlotState(jsm.getTrackerCookie(slot));
-                            final TrackingRowSet rightRowSet = slotState == null ? jsm.getRightIndex(slot) : slotState.rightRowSet;
+                            final TrackingRowSet rightRowSet =
+                                    slotState == null ? jsm.getRightIndex(slot) : slotState.rightRowSet;
 
                             if (numRightBitsChanged) {
                                 if (rightRowSet.isNonempty()) {
@@ -1137,7 +1140,7 @@ public class CrossJoinHelper {
     }
 
     private static RowSetShiftData expandLeftOnlyShift(final RowSet leftRowSet, final RowSetShiftData leftShifts,
-                                                       final CrossJoinShiftState shiftState) {
+            final CrossJoinShiftState shiftState) {
         final int currRightBits = shiftState.getNumShiftBits();
         final int prevRightBits = shiftState.getPrevNumShiftBits();
         final boolean needPerRowShift = currRightBits != prevRightBits;

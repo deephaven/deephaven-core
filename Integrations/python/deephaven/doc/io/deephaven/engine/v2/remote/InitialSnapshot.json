@@ -3,7 +3,7 @@
  "methods": {
   "clone": ":return: io.deephaven.engine.v2.remote.InitialSnapshot",
   "setType": ":param type: java.lang.Object\n:return: io.deephaven.engine.v2.remote.InitialSnapshot",
-  "setViewport": ":param viewport: io.deephaven.engine.v2.utils.Index\n:return: io.deephaven.engine.v2.remote.InitialSnapshot",
+  "setViewport": ":param viewport: io.deephaven.engine.v2.utils.RowSet\n:return: io.deephaven.engine.v2.remote.InitialSnapshot",
   "toString": ":return: java.lang.String"
  },
  "path": "io.deephaven.engine.v2.remote.InitialSnapshot",

@@ -20,10 +20,10 @@ import org.jetbrains.annotations.NotNull;
 import java.io.Serializable;
 
 /**
- * A set of sorted shifts. To apply shifts without losing data, use {@link RowSetShiftData#apply(Callback)}. The callback
- * will be invoked with shifts in an order that will preserve data when applied immediately using memmove semantics.
- * Internally the shifts are ordered by rangeStart. The {@link RowSetShiftData.Builder} will verify that no two ranges
- * overlap before or after shifting and assert that the constructed {@code RowSetShiftData} will be valid.
+ * A set of sorted shifts. To apply shifts without losing data, use {@link RowSetShiftData#apply(Callback)}. The
+ * callback will be invoked with shifts in an order that will preserve data when applied immediately using memmove
+ * semantics. Internally the shifts are ordered by rangeStart. The {@link RowSetShiftData.Builder} will verify that no
+ * two ranges overlap before or after shifting and assert that the constructed {@code RowSetShiftData} will be valid.
  */
 public final class RowSetShiftData implements Serializable, LogOutputAppendable {
 
@@ -307,7 +307,7 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
         }
 
         try (final RowSet remove = toRemove.build();
-             final RowSet insert = toInsert.build()) {
+                final RowSet insert = toInsert.build()) {
             rowSet.remove(remove);
             rowSet.insert(insert);
         }
@@ -362,7 +362,7 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
         }
 
         try (final RowSet remove = toRemove.build();
-             final RowSet insert = toInsert.build()) {
+                final RowSet insert = toInsert.build()) {
             rowSet.remove(remove);
             rowSet.insert(insert);
         }
@@ -715,7 +715,7 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
          * @param currCardinality the cardinality of the keyspace currently allocated to this table
          */
         public void appendShiftData(final RowSetShiftData innerShiftData, final long prevOffset,
-                                    final long prevCardinality, final long currOffset, final long currCardinality) {
+                final long prevCardinality, final long currOffset, final long currCardinality) {
             long watermarkKey = 0; // id space of source table
 
             // These bounds seem weird. We are going to insert a shift for the keyspace prior to the shift with
@@ -1065,8 +1065,8 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
         }
 
         /**
-         * Make final modifications to the {@link RowSetShiftData} and return it. Invoke {@link #close()} to minimize the
-         * lifetime of the pre-shift {@link RowSequence.Iterator}.
+         * Make final modifications to the {@link RowSetShiftData} and return it. Invoke {@link #close()} to minimize
+         * the lifetime of the pre-shift {@link RowSequence.Iterator}.
          *
          * @return The built RowSetShiftData
          */

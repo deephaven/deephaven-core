@@ -2,6 +2,6 @@
  "className": "io.deephaven.engine.v2.JoinRedirectionIndex",
  "methods": {},
  "path": "io.deephaven.engine.v2.JoinRedirectionIndex",
- "text": "Makes a redirection Index based on the type provided by the join control.",
+ "text": "Makes a redirection index based on the type provided by the join control.",
  "typeName": "class"
 }

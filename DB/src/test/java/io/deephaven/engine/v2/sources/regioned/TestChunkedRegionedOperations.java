@@ -305,8 +305,8 @@ public class TestChunkedRegionedOperations {
         boolean first = true;
         assertEquals(expected.size(), actual.size());
         try (final SafeCloseableList closeables = new SafeCloseableList();
-             final RowSequence.Iterator expectedIterator = expected.getRowSet().getRowSequenceIterator();
-             final RowSequence.Iterator actualIterator = actual.getRowSet().getRowSequenceIterator()) {
+                final RowSequence.Iterator expectedIterator = expected.getRowSet().getRowSequenceIterator();
+                final RowSequence.Iterator actualIterator = actual.getRowSet().getRowSequenceIterator()) {
             final ChunkType[] chunkTypes = expected.getDefinition().getColumnStream().map(ColumnDefinition::getDataType)
                     .map(ChunkType::fromElementType).toArray(ChunkType[]::new);
             final Equals[] equals = Arrays.stream(chunkTypes).map(Equals::make).toArray(Equals[]::new);

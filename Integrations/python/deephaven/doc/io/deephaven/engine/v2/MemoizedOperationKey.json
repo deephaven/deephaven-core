@@ -12,6 +12,6 @@
   "wouldMatch": ":param pairs: io.deephaven.engine.tables.select.WouldMatchPair...\n:return: io.deephaven.engine.v2.MemoizedOperationKey.WouldMatch"
  },
  "path": "io.deephaven.engine.v2.MemoizedOperationKey",
- "text": "Keys for memoized operations on QueryTable.\n\n When a null key is returned from one of the static methods; the operation will not be memoized (e.g., if we might\n depend on the query scope; we can't memoize the operation).",
+ "text": "Indices for memoized operations on QueryTable.\n\n When a null key is returned from one of the static methods; the operation will not be memoized (e.g., if we might\n depend on the query scope; we can't memoize the operation).",
  "typeName": "class"
 }

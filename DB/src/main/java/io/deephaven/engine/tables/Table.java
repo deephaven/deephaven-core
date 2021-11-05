@@ -140,8 +140,8 @@ public interface Table extends
      * producing aggregate results that are valid over the entire observed stream from the time the operation is
      * initiated. These semantics necessitate a few exclusions, i.e. unsupported operations:
      * <ol>
-     * <li>{@link #by(SelectColumn...) by()} as an rowSet-aggregation is unsupported. This means any of the overloads for
-     * {@link #by(AggregationStateFactory, SelectColumn...)} or {@link #by(Collection, Collection)} using
+     * <li>{@link #by(SelectColumn...) by()} as an rowSet-aggregation is unsupported. This means any of the overloads
+     * for {@link #by(AggregationStateFactory, SelectColumn...)} or {@link #by(Collection, Collection)} using
      * {@link AggregationIndexStateFactory}, {@link AggregationFormulaStateFactory}, or {@link Array}.
      * {@link io.deephaven.engine.v2.by.ComboAggregateFactory#AggArray(java.lang.String...)}, and
      * {@link ComboAggregateFactory#AggFormula(java.lang.String, java.lang.String, java.lang.String...)} are also
@@ -2626,8 +2626,8 @@ public interface Table extends
     boolean awaitUpdate(long timeout) throws InterruptedException;
 
     /**
-     * Subscribe for updates to this table. ShiftObliviousListener will be invoked via the LiveTableMonitor notification queue
-     * associated with this Table.
+     * Subscribe for updates to this table. ShiftObliviousListener will be invoked via the LiveTableMonitor notification
+     * queue associated with this Table.
      *
      * @param listener listener for updates
      */
@@ -2742,7 +2742,7 @@ public interface Table extends
      * @return a transformer that knows the dirty details
      */
     default ModifiedColumnSet.Transformer newModifiedColumnSetTransformer(String[] columnNames,
-                                                                          ModifiedColumnSet[] columnSets) {
+            ModifiedColumnSet[] columnSets) {
         throw new UnsupportedOperationException();
     }
 
@@ -2755,7 +2755,7 @@ public interface Table extends
      * @return a transformer that passes dirty details via an identity mapping
      */
     default ModifiedColumnSet.Transformer newModifiedColumnSetTransformer(Table resultTable,
-                                                                          String... columnNames) {
+            String... columnNames) {
         final ModifiedColumnSet[] columnSets = new ModifiedColumnSet[columnNames.length];
         for (int i = 0; i < columnNames.length; ++i) {
             columnSets[i] = resultTable.newModifiedColumnSet(columnNames[i]);
@@ -2772,7 +2772,7 @@ public interface Table extends
      * @return a transformer that passes dirty details via an identity mapping
      */
     default ModifiedColumnSet.Transformer newModifiedColumnSetTransformer(Table resultTable,
-                                                                          MatchPair... matchPairs) {
+            MatchPair... matchPairs) {
         final ModifiedColumnSet[] columnSets = new ModifiedColumnSet[matchPairs.length];
         for (int ii = 0; ii < matchPairs.length; ++ii) {
             columnSets[ii] = resultTable.newModifiedColumnSet(matchPairs[ii].left());
@@ -2793,8 +2793,8 @@ public interface Table extends
     }
 
     /**
-     * Create a transformer that uses an identity mapping from one Table another. The two tables must have
-     * equivalent column names and column ordering.
+     * Create a transformer that uses an identity mapping from one Table another. The two tables must have equivalent
+     * column names and column ordering.
      *
      * @param other the result table
      * @return a simple Transformer that makes a cheap, but CSM compatible copy

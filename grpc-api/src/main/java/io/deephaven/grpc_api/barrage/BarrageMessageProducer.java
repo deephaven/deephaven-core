@@ -145,7 +145,7 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
          * @return a MessageView filtered by the subscription properties that can be sent to that subscriber
          */
         MessageView getSubView(Options options, boolean isInitialSnapshot, @Nullable RowSet viewport,
-                               @Nullable RowSet keyspaceViewport, BitSet subscribedColumns);
+                @Nullable RowSet keyspaceViewport, BitSet subscribedColumns);
     }
 
     /**
@@ -285,9 +285,9 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
         private final BitSet modifiedColumns;
 
         private Delta(final long step, final long deltaColumnOffset,
-                      final Listener.Update update,
-                      final RowSet recordedAdds, final RowSet recordedMods,
-                      final BitSet subscribedColumns, final BitSet modifiedColumns) {
+                final Listener.Update update,
+                final RowSet recordedAdds, final RowSet recordedMods,
+                final BitSet subscribedColumns, final BitSet modifiedColumns) {
             this.step = step;
             this.deltaColumnOffset = deltaColumnOffset;
             this.update = update.copy();
@@ -535,7 +535,7 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
     }
 
     public boolean updateViewportAndColumns(final StreamObserver<MessageView> listener,
-                                            final RowSet newViewport, final BitSet columnsToSubscribe) {
+            final RowSet newViewport, final BitSet columnsToSubscribe) {
         return findAndUpdateSubscription(listener, sub -> {
             if (sub.pendingViewport != null) {
                 sub.pendingViewport.close();
@@ -595,7 +595,8 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
                                 .append("lastIndexClockStep=").append(lastIndexClockStep)
                                 .append(", upstream=").append(upstream).append(", shouldEnqueueDelta=")
                                 .append(shouldEnqueueDelta)
-                                .append(", rowSet=").append(parent.getRowSet()).append(", prevRowSet=").append(prevRowSet)
+                                .append(", rowSet=").append(parent.getRowSet()).append(", prevRowSet=")
+                                .append(prevRowSet)
                                 .endl();
                     }
                 }
@@ -669,7 +670,8 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
         // Note: viewports are in position space, inserted and removed rows may cause the keyspace for a given viewport
         // to shift. Let's compute which rows are being scoped into view. If current rowSet is empty, we have nothing to
         // store. If prev rowSet is empty, all rows are new and are already in addsToRecord.
-        if (activeViewport != null && (upstream.added.isNonempty() || upstream.removed.isNonempty()) && rowSet.isNonempty()
+        if (activeViewport != null && (upstream.added.isNonempty() || upstream.removed.isNonempty())
+                && rowSet.isNonempty()
                 && rowSet.sizePrev() > 0) {
             final RowSetBuilderRandom scopedViewBuilder = RowSetFactory.builderRandom();
 
@@ -995,7 +997,8 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
         // then we spend the effort to take a snapshot
         if (needsSnapshot) {
             try (final RowSet snapshotRowSet = snapshotRows.build()) {
-                snapshot = getSnapshot(updatedSubscriptions, snapshotColumns, needsFullSnapshot ? null : snapshotRowSet);
+                snapshot =
+                        getSnapshot(updatedSubscriptions, snapshotColumns, needsFullSnapshot ? null : snapshotRowSet);
             }
         }
 
@@ -1170,7 +1173,8 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
 
             final boolean isViewport = subscription.viewport != null;
             try (final RowSet keySpaceViewport =
-                    isViewport ? snapshotGenerator.getMessage().rowsAdded.subSetForPositions(subscription.viewport) : null) {
+                    isViewport ? snapshotGenerator.getMessage().rowsAdded.subSetForPositions(subscription.viewport)
+                            : null) {
                 if (subscription.pendingInitialSnapshot) {
                     // Send schema metadata to this new client.
                     subscription.listener.onNext(streamGeneratorFactory.getSchemaView(
@@ -1382,9 +1386,9 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
                         final MutableRowSet remaining = addedMapping ? addedRemaining : modifiedRemaining;
                         final RowSet deltaRecorded = recordedAdds ? delta.recordedAdds : delta.recordedMods;
                         try (final RowSet recorded = remaining.intersect(deltaRecorded);
-                             final MutableRowSet sourceRows = deltaRecorded.invert(recorded);
-                             final RowSet destinationsInPosSpace = remaining.invert(recorded);
-                             final RowSet rowsToFill = (addedMapping ? unfilledAdds : unfilledMods)
+                                final MutableRowSet sourceRows = deltaRecorded.invert(recorded);
+                                final RowSet destinationsInPosSpace = remaining.invert(recorded);
+                                final RowSet rowsToFill = (addedMapping ? unfilledAdds : unfilledMods)
                                         .subSetForPositions(destinationsInPosSpace)) {
                             sourceRows.shiftInPlace(
                                     delta.deltaColumnOffset + (recordedAdds ? 0 : delta.recordedAdds.size()));

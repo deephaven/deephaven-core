@@ -615,7 +615,8 @@ class NaturalJoinHelper {
                     while (sit.hasNext()) {
                         sit.next();
                         final RowSet shiftedRowSet =
-                                previousToShift.subSetByKeyRange(sit.beginRange(), sit.endRange()).shift(sit.shiftDelta());
+                                previousToShift.subSetByKeyRange(sit.beginRange(), sit.endRange())
+                                        .shift(sit.shiftDelta());
                         jsm.applyRightShift(pc, rightSources, shiftedRowSet, sit.shiftDelta(), modifiedSlotTracker);
                     }
                 }
@@ -832,8 +833,9 @@ class NaturalJoinHelper {
                         final RowSetShiftData.Iterator sit = rightShifted.applyIterator();
                         while (sit.hasNext()) {
                             sit.next();
-                            final RowSet shiftedRowSet = previousToShift.subSetByKeyRange(sit.beginRange(), sit.endRange())
-                                    .shift(sit.shiftDelta());
+                            final RowSet shiftedRowSet =
+                                    previousToShift.subSetByKeyRange(sit.beginRange(), sit.endRange())
+                                            .shift(sit.shiftDelta());
                             jsm.applyRightShift(pc, rightSources, shiftedRowSet, sit.shiftDelta(), modifiedSlotTracker);
                         }
                     }

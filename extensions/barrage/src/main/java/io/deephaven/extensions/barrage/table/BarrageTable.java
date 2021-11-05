@@ -200,7 +200,7 @@ public class BarrageTable extends QueryTable implements LiveTable, BarrageMessag
     }
 
     private UpdateCoalescer processUpdate(final BarrageMessage update,
-                                          final UpdateCoalescer coalescer) {
+            final UpdateCoalescer coalescer) {
         if (DEBUG_ENABLED) {
             saveForDebugging(update);
 
@@ -233,7 +233,7 @@ public class BarrageTable extends QueryTable implements LiveTable, BarrageMessag
         final boolean mightBeInitialSnapshot = currentRowSet.isEmpty() && update.isSnapshot;
 
         try (final RowSet currRowsFromPrev = currentRowSet.clone();
-             final MutableRowSet populatedRows =
+                final MutableRowSet populatedRows =
                         (serverViewport != null ? currentRowSet.subSetForPositions(serverViewport) : null)) {
 
             // removes

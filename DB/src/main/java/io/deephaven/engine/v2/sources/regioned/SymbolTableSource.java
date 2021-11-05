@@ -39,8 +39,8 @@ public interface SymbolTableSource<SYMBOL_TYPE> extends ColumnSource<SYMBOL_TYPE
      * Get a static {@link Table} view of this SymbolTableSource's symbol table, providing a many:1 or 1:1 mapping of
      * unique {@code long} identifiers to the symbol values in this source.
      *
-     * @param sourceIndex The {@link RowSet} whose keys must be mappable via the result {@link Table}'s
-     *        identifier column
+     * @param sourceIndex The {@link RowSet} whose keys must be mappable via the result {@link Table}'s identifier
+     *        column
      * @param useLookupCaching Hint whether symbol lookups performed to generate the symbol table should apply caching.
      *        Implementations may ignore this hint.
      * @return The symbol table
@@ -55,8 +55,8 @@ public interface SymbolTableSource<SYMBOL_TYPE> extends ColumnSource<SYMBOL_TYPE
      * <p>
      * The result will be refreshing if {@code table} {@link Table#isRefreshing() is refreshing}.
      *
-     * @param sourceTable The {@link QueryTable} whose {@link TrackingMutableRowSet} keys must be mappable via the result
-     *        {@link Table}'s identifier column
+     * @param sourceTable The {@link QueryTable} whose {@link TrackingMutableRowSet} keys must be mappable via the
+     *        result {@link Table}'s identifier column
      * @param useLookupCaching Hint whether symbol lookups performed to generate the symbol table should apply caching.
      *        Implementations may ignore this hint.
      * @return The symbol table

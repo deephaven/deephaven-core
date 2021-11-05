@@ -1,6 +1,8 @@
 {
  "className": "io.deephaven.proto.backplane.grpc.BatchTableRequest$OperationOrBuilder",
  "methods": {
+  "getApplyPreviewColumns": ".io.deephaven.proto.backplane.grpc.ApplyPreviewColumnsRequest apply_preview_columns = 30;\n\n:return: (io.deephaven.proto.backplane.grpc.ApplyPreviewColumnsRequest) The applyPreviewColumns.",
+  "getApplyPreviewColumnsOrBuilder": ".io.deephaven.proto.backplane.grpc.ApplyPreviewColumnsRequest apply_preview_columns = 30;\n\n:return: io.deephaven.proto.backplane.grpc.ApplyPreviewColumnsRequestOrBuilder",
   "getAsOfJoin": ".io.deephaven.proto.backplane.grpc.AsOfJoinTablesRequest as_of_join = 27;\n\n:return: (io.deephaven.proto.backplane.grpc.AsOfJoinTablesRequest) The asOfJoin.",
   "getAsOfJoinOrBuilder": ".io.deephaven.proto.backplane.grpc.AsOfJoinTablesRequest as_of_join = 27;\n\n:return: io.deephaven.proto.backplane.grpc.AsOfJoinTablesRequestOrBuilder",
   "getComboAggregate": ".io.deephaven.proto.backplane.grpc.ComboAggregateRequest combo_aggregate = 19;\n\n:return: (io.deephaven.proto.backplane.grpc.ComboAggregateRequest) The comboAggregate.",
@@ -60,6 +62,7 @@
   "getUpdateViewOrBuilder": ".io.deephaven.proto.backplane.grpc.SelectOrUpdateRequest update_view = 7;\n\n:return: io.deephaven.proto.backplane.grpc.SelectOrUpdateRequestOrBuilder",
   "getView": ".io.deephaven.proto.backplane.grpc.SelectOrUpdateRequest view = 6;\n\n:return: (io.deephaven.proto.backplane.grpc.SelectOrUpdateRequest) The view.",
   "getViewOrBuilder": ".io.deephaven.proto.backplane.grpc.SelectOrUpdateRequest view = 6;\n\n:return: io.deephaven.proto.backplane.grpc.SelectOrUpdateRequestOrBuilder",
+  "hasApplyPreviewColumns": ".io.deephaven.proto.backplane.grpc.ApplyPreviewColumnsRequest apply_preview_columns = 30;\n\n:return: (boolean) Whether the applyPreviewColumns field is set.",
   "hasAsOfJoin": ".io.deephaven.proto.backplane.grpc.AsOfJoinTablesRequest as_of_join = 27;\n\n:return: (boolean) Whether the asOfJoin field is set.",
   "hasComboAggregate": ".io.deephaven.proto.backplane.grpc.ComboAggregateRequest combo_aggregate = 19;\n\n:return: (boolean) Whether the comboAggregate field is set.",
   "hasCrossJoin": ".io.deephaven.proto.backplane.grpc.CrossJoinTablesRequest cross_join = 23;\n\n:return: (boolean) Whether the crossJoin field is set.",

@@ -53,7 +53,7 @@ final public class RedirectionLayer extends SelectAndViewAnalyzer {
         // modified rows need to have their redirections updated for subsequent modified columns
         if (upstream.shifted.nonempty()) {
             try (final RowSet prevRowSet = resultRowSet.getPrevRowSet();
-                 final RowSet prevNoRemovals = prevRowSet.minus(upstream.removed)) {
+                    final RowSet prevNoRemovals = prevRowSet.minus(upstream.removed)) {
                 final MutableObject<RowSet.SearchIterator> forwardIt = new MutableObject<>();
 
                 upstream.shifted.intersect(prevNoRemovals).apply((begin, end, delta) -> {

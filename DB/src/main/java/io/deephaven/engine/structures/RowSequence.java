@@ -207,7 +207,8 @@ public interface RowSequence extends SafeCloseable, LongSizedDataStructure {
          * Peek at the next row key that would be returned by {@link #getNextRowSequenceThrough(long)} or
          * {@link #getNextRowSequenceWithLength(long)}. Does not advance the position.
          *
-         * @return The next row key that would be returned, or {@link TrackingMutableRowSet#NULL_ROW_KEY} if this iterator is exhausted
+         * @return The next row key that would be returned, or {@link TrackingMutableRowSet#NULL_ROW_KEY} if this
+         *         iterator is exhausted
          */
         long peekNextKey();
 

@@ -47,7 +47,7 @@ public class SortedAssertionInstrumentedListenerAdapter extends BaseTable.Listen
         if (upstream.added.isNonempty() || modifiedRows) {
             final RowSet rowsOfInterest = modifiedRows ? upstream.added.union(upstream.modified) : upstream.added;
             try (final RowSet ignored = modifiedRows ? rowsOfInterest : null;
-                 final RowSet toProcess = makeAdjacentIndex(rowsOfInterest)) {
+                    final RowSet toProcess = makeAdjacentIndex(rowsOfInterest)) {
                 Assert.assertion(toProcess.subsetOf(parentRowSet), "toProcess.subsetOf(parentRowSet)",
                         makeAdjacentIndex(rowsOfInterest), "toProcess", parentRowSet, "parentRowSet");
                 doCheck(toProcess);
@@ -61,7 +61,7 @@ public class SortedAssertionInstrumentedListenerAdapter extends BaseTable.Listen
     }
 
     public static void doCheckStatic(RowSet toProcess, ColumnSource<?> parentColumnSource, SortCheck sortCheck,
-                                     String description, String column, SortingOrder order) {
+            String description, String column, SortingOrder order) {
         final int contextSize = (int) Math.min(CHUNK_SIZE, toProcess.size());
 
         try (final ChunkSource.GetContext getContext = parentColumnSource.makeGetContext(contextSize);

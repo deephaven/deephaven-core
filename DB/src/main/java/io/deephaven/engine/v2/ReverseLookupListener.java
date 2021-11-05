@@ -299,7 +299,7 @@ public class ReverseLookupListener extends LivenessArtifact
     }
 
     private void addEntries(@NotNull final RowSet index, final boolean usePrev,
-                            @NotNull final Runnable consistencyChecker) {
+            @NotNull final Runnable consistencyChecker) {
         for (final RowSet.Iterator it = index.iterator(); it.hasNext();) {
             final long row = it.nextLong();
             final Object keyToReverse = usePrev ? getPrevKey(row) : getKey(row);

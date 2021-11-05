@@ -520,8 +520,7 @@ public class TstUtils {
     public static QueryTable testRefreshingTable(ColumnHolder... columnHolders) {
         final TrackingMutableRowSet rowSet = (columnHolders.length == 0
                 ? RowSetFactory.empty()
-                : RowSetFactory.flat(Array.getLength(columnHolders[0].data))
-        ).convertToTracking();
+                : RowSetFactory.flat(Array.getLength(columnHolders[0].data))).convertToTracking();
         final Map<String, ColumnSource<?>> columns = new LinkedHashMap<>();
         for (ColumnHolder columnHolder : columnHolders) {
             columns.put(columnHolder.name, getTreeMapColumnSource(rowSet, columnHolder));

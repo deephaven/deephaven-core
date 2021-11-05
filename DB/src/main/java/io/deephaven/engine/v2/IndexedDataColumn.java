@@ -165,7 +165,7 @@ public class IndexedDataColumn<TYPE> implements DataColumn<TYPE> {
     @Override
     public byte[] getBytes(final long startPosInclusive, final long endPosExclusive) {
         try (final RowSet rangeRowSet = getSubIndexByPos(startPosInclusive, endPosExclusive);
-             final ChunkSource.FillContext context =
+                final ChunkSource.FillContext context =
                         columnSource.makeFillContext(rangeRowSet.intSize("getBytes"), null)) {
             final byte[] result = new byte[rangeRowSet.intSize("getBytes")];
             columnSource.fillChunk(context, WritableByteChunk.writableChunkWrap(result), rangeRowSet);
@@ -203,7 +203,7 @@ public class IndexedDataColumn<TYPE> implements DataColumn<TYPE> {
     @Override
     public char[] getChars(final long startPosInclusive, final long endPosExclusive) {
         try (final RowSet rangeRowSet = getSubIndexByPos(startPosInclusive, endPosExclusive);
-             final ChunkSource.FillContext context =
+                final ChunkSource.FillContext context =
                         columnSource.makeFillContext(rangeRowSet.intSize("getChars"), null)) {
             final char[] result = new char[rangeRowSet.intSize("getChars")];
             columnSource.fillChunk(context, WritableCharChunk.writableChunkWrap(result), rangeRowSet);
@@ -241,7 +241,7 @@ public class IndexedDataColumn<TYPE> implements DataColumn<TYPE> {
     @Override
     public double[] getDoubles(final long startPosInclusive, final long endPosExclusive) {
         try (final RowSet rangeRowSet = getSubIndexByPos(startPosInclusive, endPosExclusive);
-             final ChunkSource.FillContext context =
+                final ChunkSource.FillContext context =
                         columnSource.makeFillContext(rangeRowSet.intSize("getDoubles"), null)) {
             final double[] result = new double[rangeRowSet.intSize("getDoubles")];
             columnSource.fillChunk(context, WritableDoubleChunk.writableChunkWrap(result), rangeRowSet);
@@ -279,7 +279,7 @@ public class IndexedDataColumn<TYPE> implements DataColumn<TYPE> {
     @Override
     public float[] getFloats(final long startPosInclusive, final long endPosExclusive) {
         try (final RowSet rangeRowSet = getSubIndexByPos(startPosInclusive, endPosExclusive);
-             final ChunkSource.FillContext context =
+                final ChunkSource.FillContext context =
                         columnSource.makeFillContext(rangeRowSet.intSize("getFloats"), null)) {
             final float[] result = new float[rangeRowSet.intSize("getFloats")];
             columnSource.fillChunk(context, WritableFloatChunk.writableChunkWrap(result), rangeRowSet);
@@ -317,7 +317,7 @@ public class IndexedDataColumn<TYPE> implements DataColumn<TYPE> {
     @Override
     public int[] getInts(final long startPosInclusive, final long endPosExclusive) {
         try (final RowSet rangeRowSet = getSubIndexByPos(startPosInclusive, endPosExclusive);
-             final ChunkSource.FillContext context =
+                final ChunkSource.FillContext context =
                         columnSource.makeFillContext(rangeRowSet.intSize("getInts"), null)) {
             final int[] result = new int[rangeRowSet.intSize("getInts")];
             columnSource.fillChunk(context, WritableIntChunk.writableChunkWrap(result), rangeRowSet);
@@ -355,7 +355,7 @@ public class IndexedDataColumn<TYPE> implements DataColumn<TYPE> {
     @Override
     public long[] getLongs(final long startPosInclusive, final long endPosExclusive) {
         try (final RowSet rangeRowSet = getSubIndexByPos(startPosInclusive, endPosExclusive);
-             final ChunkSource.FillContext context =
+                final ChunkSource.FillContext context =
                         columnSource.makeFillContext(rangeRowSet.intSize("getLongs"), null)) {
             final long[] result = new long[rangeRowSet.intSize("getLongs")];
             columnSource.fillChunk(context, WritableLongChunk.writableChunkWrap(result), rangeRowSet);
@@ -393,7 +393,7 @@ public class IndexedDataColumn<TYPE> implements DataColumn<TYPE> {
     @Override
     public short[] getShorts(final long startPosInclusive, final long endPosExclusive) {
         try (final RowSet rangeRowSet = getSubIndexByPos(startPosInclusive, endPosExclusive);
-             final ChunkSource.FillContext context =
+                final ChunkSource.FillContext context =
                         columnSource.makeFillContext(rangeRowSet.intSize("getShorts"), null)) {
             final short[] result = new short[rangeRowSet.intSize("getShorts")];
             columnSource.fillChunk(context, WritableShortChunk.writableChunkWrap(result), rangeRowSet);

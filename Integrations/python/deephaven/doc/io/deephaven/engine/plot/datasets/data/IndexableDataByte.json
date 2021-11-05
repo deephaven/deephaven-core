@@ -1,7 +1,7 @@
 {
  "className": "io.deephaven.engine.plot.datasets.data.IndexableDataByte",
  "methods": {
-  "get": "Gets the value at the given index.\n\n:param index: (int) - index\n:return: (java.lang.Byte) value of this dataset at index",
+  "get": "Gets the value at the given rowSet.\n\n:param index: (int) - rowSet\n:return: (java.lang.Byte) value of this dataset at rowSet",
   "size": "Gets the size of this dataset.\n\n:return: (int) the size of this dataset"
  },
  "path": "io.deephaven.engine.plot.datasets.data.IndexableDataByte",

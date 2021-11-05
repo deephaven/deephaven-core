@@ -24,7 +24,8 @@ public abstract class SelectAndViewAnalyzer {
     }
 
     public static SelectAndViewAnalyzer create(Mode mode, Map<String, ColumnSource<?>> columnSources,
-                                               TrackingRowSet rowSet, ModifiedColumnSet parentMcs, boolean publishTheseSources, SelectColumn... selectColumns) {
+            TrackingRowSet rowSet, ModifiedColumnSet parentMcs, boolean publishTheseSources,
+            SelectColumn... selectColumns) {
         SelectAndViewAnalyzer analyzer = createBaseLayer(columnSources, publishTheseSources);
         final Map<String, ColumnDefinition<?>> columnDefinitions = new LinkedHashMap<>();
         final RedirectionIndex redirectionIndex;

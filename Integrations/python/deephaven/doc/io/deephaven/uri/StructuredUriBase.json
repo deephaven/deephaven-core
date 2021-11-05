@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.uri.StructuredUriBase",
+ "methods": {
+  "target": "Wraps up this URI as a remote URI.\n\n:param target: (io.deephaven.uri.DeephavenTarget) - the target\n:return: (io.deephaven.uri.RemoteUri) the remote URI"
+ },
+ "path": "io.deephaven.uri.StructuredUriBase",
+ "typeName": "class"
+}

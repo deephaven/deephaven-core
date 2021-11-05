@@ -50,8 +50,8 @@ public interface CopyKernel {
 
     class Utils {
         /**
-         * Returns the rowSet of the first bit that is set to {@code true} that occurs on or after the specified starting
-         * rowSet and up to but not including the specified word rowSet.
+         * Returns the rowSet of the first bit that is set to {@code true} that occurs on or after the specified
+         * starting rowSet and up to but not including the specified word rowSet.
          * <p>
          * If no such bit exists then {@code endIndex} is returned.
          *

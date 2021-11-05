@@ -2392,7 +2392,8 @@ public class QueryTableAggregationTest {
         };
         for (int step = 0; step < 50; step++) {
             LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-                final RowSet keysToAdd = TstUtils.newIndex(random.nextInt(size / 2 + 1), queryTable.getRowSet(), random);
+                final RowSet keysToAdd =
+                        TstUtils.newIndex(random.nextInt(size / 2 + 1), queryTable.getRowSet(), random);
                 final ColumnHolder[] columnAdditions = new ColumnHolder[columnInfo.length];
                 for (int column = 0; column < columnAdditions.length; column++) {
                     columnAdditions[column] = columnInfo[column].populateMapAndC(keysToAdd, random);
@@ -3336,7 +3337,7 @@ public class QueryTableAggregationTest {
         }
         final QueryTable table = TstUtils.testRefreshingTable(
                 RowSetFactory.fromRange(100, 100 + keyValues.length - 1).convertToTracking(),
-                        stringCol("Key", keyValues), intCol("IntCol", sentinels));
+                stringCol("Key", keyValues), intCol("IntCol", sentinels));
 
         final Table flat = table.flatten();
         final TableMap map = flat.byExternal("Key");

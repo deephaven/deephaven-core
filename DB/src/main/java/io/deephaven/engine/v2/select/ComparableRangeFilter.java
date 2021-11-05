@@ -242,8 +242,8 @@ public class ComparableRangeFilter extends AbstractRangeFilter {
 
 
     static long bound(RowSet selection, boolean usePrev, ColumnSource<Comparable> comparableColumnSource,
-                      long minPosition, long maxPosition, Comparable targetValue, boolean inclusive, int compareSign,
-                      boolean end) {
+            long minPosition, long maxPosition, Comparable targetValue, boolean inclusive, int compareSign,
+            boolean end) {
         while (minPosition < maxPosition) {
             final long midPos = (minPosition + maxPosition) / 2;
             final long midIdx = selection.get(midPos);

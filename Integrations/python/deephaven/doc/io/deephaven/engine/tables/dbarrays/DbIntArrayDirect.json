@@ -4,7 +4,6 @@
   "equals": ":param obj: java.lang.Object\n:return: boolean",
   "get": ":param i: long\n:return: int",
   "getDirect": "Return a version of this DbArrayBase that is flattened out to only reference memory.\n\n:return: io.deephaven.engine.tables.dbarrays.DbIntArrayDirect",
-  "getPrev": ":param offset: long\n:return: int",
   "hashCode": ":return: int",
   "size": "The size of this data structure.\n\n:return: (long) The size",
   "subArray": ":param fromIndex: long\n:param toIndex: long\n:return: io.deephaven.engine.tables.dbarrays.DbIntArray",

@@ -39,8 +39,8 @@ public interface GroupingProvider<DATA_TYPE> {
 
     /**
      * Returns a grouping structure, possibly constructed on-demand; the grouping is only required to include groupings
-     * for values that exist within the hint TrackingMutableRowSet; but it may include more. The hint allows the underlying
-     * implementation to optionally optimize out groupings that do not overlap hint.
+     * for values that exist within the hint TrackingMutableRowSet; but it may include more. The hint allows the
+     * underlying implementation to optionally optimize out groupings that do not overlap hint.
      * <p>
      * The return value is a pair, containing a "complete" indicator. If the complete indicator is true, then the caller
      * may safely cache the resultant Map.

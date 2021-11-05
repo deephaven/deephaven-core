@@ -26,8 +26,8 @@ public class PythonShiftObliviousListenerAdapter extends ShiftObliviousInstrumen
      * Create a Python listener.
      *
      * No description for this listener will be provided. A hard reference to this listener will be maintained to
-     * prevent garbage collection. See {@link #PythonShiftObliviousListenerAdapter(String, Table, boolean, PyObject)} if you do
-     * not want to prevent garbage collection of this listener.
+     * prevent garbage collection. See {@link #PythonShiftObliviousListenerAdapter(String, Table, boolean, PyObject)} if
+     * you do not want to prevent garbage collection of this listener.
      *
      * @param source The source table to which this listener will subscribe.
      * @param pyObjectIn Python listener object.
@@ -40,8 +40,8 @@ public class PythonShiftObliviousListenerAdapter extends ShiftObliviousInstrumen
      * Create a Python listener.
      *
      * A hard reference to this listener will be maintained to prevent garbage collection. See
-     * {@link #PythonShiftObliviousListenerAdapter(String, Table, boolean, PyObject)} if you do not want to prevent garbage
-     * collection of this listener.
+     * {@link #PythonShiftObliviousListenerAdapter(String, Table, boolean, PyObject)} if you do not want to prevent
+     * garbage collection of this listener.
      *
      * @param description A description for the UpdatePerformanceTracker to append to its entry description.
      * @param source The source table to which this listener will subscribe.

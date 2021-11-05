@@ -210,7 +210,8 @@ public abstract class SourceTable extends RedefinableTable {
                 // NB: The availableLocationsLiveTable previously had functionality to notify
                 // "location listeners", but it was never used - resurrect from git history if needed.
                 if (!locationSizesInitialized) {
-                    // We don't want to start polling size changes until the initial TrackingMutableRowSet has been computed.
+                    // We don't want to start polling size changes until the initial TrackingMutableRowSet has been
+                    // computed.
                     return;
                 }
                 final boolean wasEmpty = rowSet.isEmpty();

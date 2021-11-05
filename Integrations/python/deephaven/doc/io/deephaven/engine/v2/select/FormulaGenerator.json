@@ -3,7 +3,7 @@
  "methods": {
   "disallowRefresh": ":return: boolean",
   "getColumnArrays": ":return: java.util.List<java.lang.String>",
-  "getFormula": ":param index: io.deephaven.engine.v2.utils.Index\n:param returnType: java.lang.Class\n:param initLazyMap: boolean\n:param columnsToData: java.util.Map<java.lang.String,? extendsio.deephaven.engine.v2.sources.ColumnSource>\n:param fallThroughColumns: java.util.Map<java.lang.String,? extendsio.deephaven.engine.v2.sources.ColumnSource>\n:param fallThroughContiguous: boolean\n:param columnsOverride: java.util.Map<java.lang.String,? extendsio.deephaven.engine.v2.sources.ColumnSource>\n:param overrideIndex: io.deephaven.engine.v2.utils.Index\n:return: io.deephaven.engine.v2.select.Formula",
+  "getFormula": ":param rowSet: io.deephaven.engine.v2.utils.RowSet\n:param returnType: java.lang.Class\n:param initLazyMap: boolean\n:param columnsToData: java.util.Map<java.lang.String,? extendsio.deephaven.engine.v2.sources.ColumnSource>\n:param fallThroughColumns: java.util.Map<java.lang.String,? extendsio.deephaven.engine.v2.sources.ColumnSource>\n:param fallThroughContiguous: boolean\n:param columnsOverride: java.util.Map<java.lang.String,? extendsio.deephaven.engine.v2.sources.ColumnSource>\n:param overflowStateRowSet: io.deephaven.engine.v2.utils.RowSet\n:return: io.deephaven.engine.v2.select.Formula",
   "getReturnedType": ":return: java.lang.Class",
   "initDef": ":param columnDefinitionMap: java.util.Map<java.lang.String,io.deephaven.engine.tables.ColumnDefinition>\n:param columnsOverride: java.util.Map<java.lang.String,? extendsio.deephaven.engine.v2.sources.ColumnSource>\n:return: java.util.List<java.lang.String>"
  },

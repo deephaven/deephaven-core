@@ -328,7 +328,7 @@ public final class ByChunkedOperator implements IterativeChunkedAggregationOpera
             return;
         }
         try (final ChunkSource.GetContext indicesGetContext = rowSets.makeGetContext(BLOCK_SIZE);
-             final RowSequence.Iterator newDestinationsIterator = newDestinations.getRowSequenceIterator()) {
+                final RowSequence.Iterator newDestinationsIterator = newDestinations.getRowSequenceIterator()) {
             while (newDestinationsIterator.hasMore()) {
                 final long nextDestination = newDestinationsIterator.peekNextKey();
                 final long nextBlockEnd = (nextDestination / BLOCK_SIZE) * BLOCK_SIZE + BLOCK_SIZE - 1;

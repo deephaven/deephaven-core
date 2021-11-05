@@ -314,8 +314,9 @@ public class ConditionFilter extends AbstractConditionFilter {
         }
 
         @Override
-        public MutableRowSet filter(final RowSet selection, final RowSet fullSet, final Table table, final boolean usePrev,
-                                    String formula, final Param... params) {
+        public MutableRowSet filter(final RowSet selection, final RowSet fullSet, final Table table,
+                final boolean usePrev,
+                String formula, final Param... params) {
             try (final FilterKernel.Context context = filterKernel.getContext(chunkSize);
                     final RowSequence.Iterator rsIterator = selection.getRowSequenceIterator()) {
                 final ChunkGetter[] chunkGetters = new ChunkGetter[columnNames.length];
@@ -541,7 +542,8 @@ public class ConditionFilter extends AbstractConditionFilter {
             return filter;
         }
         final FilterKernel filterKernel = (FilterKernel) filterKernelClass
-                .getConstructor(Table.class, TrackingRowSet.class, Param[].class).newInstance(table, fullSet, (Object) params);
+                .getConstructor(Table.class, TrackingRowSet.class, Param[].class)
+                .newInstance(table, fullSet, (Object) params);
         final String[] columnNames = usedInputs.stream().map(p -> p.first).toArray(String[]::new);
         return new ChunkFilter(filterKernel, columnNames, CHUNK_SIZE);
     }

@@ -71,7 +71,7 @@ public class GroupingValidator extends InstrumentedListenerAdapter {
     }
 
     public static void validateGrouping(String[] groupingToCheck, RowSet rowSet, Table source, String context,
-                                        Map<Object, RowSet> grouping) {
+            Map<Object, RowSet> grouping) {
         final ColumnSource[] groupColumns = getColumnSources(groupingToCheck, source);
         for (Map.Entry<Object, RowSet> objectIndexEntry : grouping.entrySet()) {
             for (RowSet.Iterator it = objectIndexEntry.getValue().iterator(); it.hasNext();) {
@@ -175,7 +175,7 @@ public class GroupingValidator extends InstrumentedListenerAdapter {
     public void onUpdate(final Update upstream) {
         validateGroupings(groupingColumns, source.getRowSet());
         // NB: This would normally be inappropriate: we don't expect grouping support on the non-tracking row sets we
-        //     use for updates. Forcing support by cloning and making the result tracking.
+        // use for updates. Forcing support by cloning and making the result tracking.
         validateGroupings(groupingColumns, upstream.added.clone().convertToTracking());
         validateGroupings(groupingColumns, upstream.modified.clone().convertToTracking());
         validationCount++;

@@ -46,10 +46,11 @@ public class TestListenerFailure extends LiveTableTestCase {
 
         try {
             updated
-                    .listenForUpdates(new ShiftObliviousInstrumentedListenerAdapter("Dummy", (QueryTable) updated, false) {
-                        @Override
-                        public void onUpdate(RowSet added, RowSet removed, RowSet modified) {}
-                    }, false);
+                    .listenForUpdates(
+                            new ShiftObliviousInstrumentedListenerAdapter("Dummy", (QueryTable) updated, false) {
+                                @Override
+                                public void onUpdate(RowSet added, RowSet removed, RowSet modified) {}
+                            }, false);
             TestCase.fail("Should not be allowed to listen to failed table");
         } catch (IllegalStateException ise) {
             assertEquals("Can not listen to failed table QueryTable", ise.getMessage());

@@ -53,7 +53,7 @@ public abstract class InstrumentedListenerAdapter extends InstrumentedListener {
      *        In most scenarios, it's better to specify {@code false} and keep a reference in the calling code.
      */
     public InstrumentedListenerAdapter(@Nullable final String description, @NotNull final Table source,
-                                       final boolean retain) {
+            final boolean retain) {
         super(description);
         this.source = Require.neqNull(source, "source");
         if (this.retain = retain) {

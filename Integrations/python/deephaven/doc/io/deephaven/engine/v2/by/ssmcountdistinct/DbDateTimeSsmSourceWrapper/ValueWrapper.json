@@ -6,7 +6,6 @@
   "get": ":param i: long\n:return: io.deephaven.engine.tables.utils.DBDateTime",
   "getComponentType": ":return: java.lang.Class<io.deephaven.engine.tables.utils.DBDateTime>",
   "getDirect": "Return a version of this DbArrayBase that is flattened out to only reference memory.\n\n:return: io.deephaven.engine.tables.dbarrays.DbArray<io.deephaven.engine.tables.utils.DBDateTime>",
-  "getPrev": ":param offset: long\n:return: io.deephaven.engine.tables.utils.DBDateTime",
   "getPrevValues": ":param previousLongs: io.deephaven.engine.tables.dbarrays.DbLongArray\n:return: io.deephaven.engine.tables.dbarrays.DbArray<io.deephaven.engine.tables.utils.DBDateTime>",
   "hashCode": ":return: int",
   "intSize": "Returns LongSizedDataStructure.size() cast to an int, if this can be done without losing precision. Otherwise,\n throws SizeException.\n\n*Overload 1*  \n  :return: (int) LongSizedDataStructure.size(), cast to an int\n  \n*Overload 2*  \n  :param operation: (java.lang.String) - A description of the operation that requires an int size\n  :return: (int) LongSizedDataStructure.size(), cast to an int",

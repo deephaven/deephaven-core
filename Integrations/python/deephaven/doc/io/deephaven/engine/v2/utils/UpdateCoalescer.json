@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.engine.v2.utils.UpdateCoalescer",
+ "methods": {
+  "coalesce": ":return: io.deephaven.engine.v2.Listener.Update",
+  "update": ":param update: io.deephaven.engine.v2.Listener.Update\n:return: io.deephaven.engine.v2.utils.UpdateCoalescer"
+ },
+ "path": "io.deephaven.engine.v2.utils.UpdateCoalescer",
+ "text": "Helper utility for coalescing multiple updates.",
+ "typeName": "class"
+}

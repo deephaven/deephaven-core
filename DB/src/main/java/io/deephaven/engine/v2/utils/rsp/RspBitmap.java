@@ -1351,7 +1351,7 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
 
     @Override
     public final OrderedLongSet ixInsertSecondHalf(final LongChunk<Attributes.OrderedRowKeys> values,
-                                                   final int offset, final int length) {
+            final int offset, final int length) {
         final RspBitmap ans = addValuesUnsafe(values, offset, length);
         ans.finishMutations();
         return ans;
@@ -1359,7 +1359,7 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
 
     @Override
     public final OrderedLongSet ixRemoveSecondHalf(final LongChunk<OrderedRowKeys> values,
-                                                   final int offset, final int length) {
+            final int offset, final int length) {
         return ixRemove(OrderedLongSet.fromChunk(values, offset, length, true));
     }
 

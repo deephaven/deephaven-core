@@ -59,18 +59,18 @@ public interface ChunkSsaStamp {
             WritableLongChunk<Attributes.RowKeys> rightKeysForLeft, boolean disallowExactMatch);
 
     void processRemovals(Chunk<Values> leftStampValues, LongChunk<RowKeys> leftStampKeys,
-                         Chunk<? extends Values> rightStampChunk, LongChunk<Attributes.RowKeys> rightKeys,
-                         WritableLongChunk<Attributes.RowKeys> priorRedirections, RedirectionIndex redirectionIndex,
-                         RowSetBuilderRandom modifiedBuilder, boolean disallowExactMatch);
+            Chunk<? extends Values> rightStampChunk, LongChunk<Attributes.RowKeys> rightKeys,
+            WritableLongChunk<Attributes.RowKeys> priorRedirections, RedirectionIndex redirectionIndex,
+            RowSetBuilderRandom modifiedBuilder, boolean disallowExactMatch);
 
     void processInsertion(Chunk<Values> leftStampValues, LongChunk<Attributes.RowKeys> leftStampKeys,
-                          Chunk<? extends Values> rightStampChunk, LongChunk<RowKeys> rightKeys, Chunk<Values> nextRightValue,
-                          RedirectionIndex redirectionIndex, RowSetBuilderRandom modifiedBuilder, boolean endsWithLastValue,
-                          boolean disallowExactMatch);
+            Chunk<? extends Values> rightStampChunk, LongChunk<RowKeys> rightKeys, Chunk<Values> nextRightValue,
+            RedirectionIndex redirectionIndex, RowSetBuilderRandom modifiedBuilder, boolean endsWithLastValue,
+            boolean disallowExactMatch);
 
     int findModified(int first, Chunk<Values> leftStampValues, LongChunk<Attributes.RowKeys> leftStampKeys,
-                     RedirectionIndex redirectionIndex, Chunk<? extends Values> rightStampChunk,
-                     LongChunk<RowKeys> rightStampIndices, RowSetBuilderRandom modifiedBuilder, boolean disallowExactMatch);
+            RedirectionIndex redirectionIndex, Chunk<? extends Values> rightStampChunk,
+            LongChunk<RowKeys> rightStampIndices, RowSetBuilderRandom modifiedBuilder, boolean disallowExactMatch);
 
     void applyShift(Chunk<Values> leftStampValues, LongChunk<Attributes.RowKeys> leftStampKeys,
             Chunk<? extends Values> rightStampChunk, LongChunk<RowKeys> rightStampKeys, long shiftDelta,

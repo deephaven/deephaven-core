@@ -2,7 +2,8 @@
  "className": "io.deephaven.engine.tables.remote.preview.ArrayPreview",
  "methods": {
   "fromArray": ":param array: java.lang.Object\n:return: io.deephaven.engine.tables.remote.preview.ArrayPreview",
-  "fromDbArray": ":param dbArray: io.deephaven.engine.tables.dbarrays.DbArrayBase\n:return: io.deephaven.engine.tables.remote.preview.ArrayPreview",
+  "fromDbArray": ":param dbArray: io.deephaven.engine.tables.dbarrays.DbArrayBase<?>\n:return: io.deephaven.engine.tables.remote.preview.ArrayPreview",
+  "fromPyListWrapper": ":param list: org.jpy.PyListWrapper\n:return: io.deephaven.engine.tables.remote.preview.ArrayPreview",
   "toString": ":return: java.lang.String"
  },
  "path": "io.deephaven.engine.tables.remote.preview.ArrayPreview",

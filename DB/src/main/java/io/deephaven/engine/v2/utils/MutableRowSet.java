@@ -144,5 +144,7 @@ public interface MutableRowSet extends RowSet {
      *
      * @return A {@link TrackingMutableRowSet} constructed from this MutableRowSet, or {@code this} if already tracking
      */
-    TrackingMutableRowSet convertToTracking(); // TODO-RWC: toTracking, moveToTracking, trackingMove. Or do Cristian's proposal of TrackingRowSet.move(MutableRowSet), but that seems worse in chained statements
+    TrackingMutableRowSet convertToTracking(); // TODO-RWC: toTracking, moveToTracking, trackingMove. Or do Cristian's
+                                               // proposal of TrackingRowSet.move(MutableRowSet), but that seems worse
+                                               // in chained statements
 }

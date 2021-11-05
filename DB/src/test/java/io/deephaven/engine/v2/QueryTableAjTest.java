@@ -971,11 +971,13 @@ public class QueryTableAjTest {
                 System.out.println("Left Table:" + leftTable.size());
                 showWithIndex(leftTable, 100);
                 System.out.println("Left Table (sorted):");
-                show(leftTable.update("TrackingMutableRowSet=k").sort("LeftStamp").moveUpColumns("TrackingMutableRowSet"), 100);
+                show(leftTable.update("TrackingMutableRowSet=k").sort("LeftStamp")
+                        .moveUpColumns("TrackingMutableRowSet"), 100);
                 System.out.println("Right Table:" + rightTable.size());
                 showWithIndex(rightTable, 100);
                 System.out.println("Right Table Sorted:" + rightSorted.size());
-                show(rightTable.update("TrackingMutableRowSet=k").sort("RightStamp").moveUpColumns("TrackingMutableRowSet"), 100);
+                show(rightTable.update("TrackingMutableRowSet=k").sort("RightStamp")
+                        .moveUpColumns("TrackingMutableRowSet"), 100);
                 if (withReverse) {
                     System.out.println("Right Table (reversed):");
                     showWithIndex(rightReversed, 100);

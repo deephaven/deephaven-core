@@ -53,16 +53,17 @@ public class GenerateTableUpdates {
     }
 
     static public RowSet[] computeTableUpdates(int size, Random random, QueryTable table,
-                                               TstUtils.ColumnInfo[] columnInfo) {
+            TstUtils.ColumnInfo[] columnInfo) {
         return computeTableUpdates(size, random, table, columnInfo, true, true, true);
     }
 
     static public RowSet[] computeTableUpdates(int size, Random random, QueryTable table,
-                                               TstUtils.ColumnInfo[] columnInfo, boolean add, boolean remove, boolean modify) {
+            TstUtils.ColumnInfo[] columnInfo, boolean add, boolean remove, boolean modify) {
         final RowSet keysToRemove;
         if (remove && table.getRowSet().size() > 0) {
-            keysToRemove = TstUtils.selectSubIndexSet(random.nextInt(table.getRowSet().intSize() + 1), table.getRowSet(),
-                    random);
+            keysToRemove =
+                    TstUtils.selectSubIndexSet(random.nextInt(table.getRowSet().intSize() + 1), table.getRowSet(),
+                            random);
         } else {
             keysToRemove = TstUtils.i();
         }
@@ -80,7 +81,8 @@ public class GenerateTableUpdates {
         final RowSet keysToModify;
         if (modify && table.getRowSet().size() > 0) {
             keysToModify =
-                    TstUtils.selectSubIndexSet(random.nextInt((int) table.getRowSet().size()), table.getRowSet(), random);
+                    TstUtils.selectSubIndexSet(random.nextInt((int) table.getRowSet().size()), table.getRowSet(),
+                            random);
         } else {
             keysToModify = TstUtils.i();
         }
@@ -153,8 +155,9 @@ public class GenerateTableUpdates {
 
             // Removes in pre-shift keyspace.
             if (rowSet.size() > 0) {
-                update.removed = TstUtils.selectSubIndexSet(Math.min(rowSet.intSize(), random.nextInt(targetUpdateSize)),
-                        rowSet, random);
+                update.removed =
+                        TstUtils.selectSubIndexSet(Math.min(rowSet.intSize(), random.nextInt(targetUpdateSize)),
+                                rowSet, random);
                 rowSet.remove(update.removed); // remove blatted and explicit removals
             } else {
                 update.removed = TstUtils.i();

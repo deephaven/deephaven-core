@@ -28,8 +28,7 @@ import static io.deephaven.engine.v2.utils.RowSet.NULL_ROW_KEY;
 
 /**
  * {@link RegionedColumnSourceObject} with support for dictionary access via {@link SymbolTableSource} methods. Note
- * that it may not be the case that all values are stored as dictionary offsets. See
- * {@link #hasSymbolTable(RowSet)}.
+ * that it may not be the case that all values are stored as dictionary offsets. See {@link #hasSymbolTable(RowSet)}.
  */
 class RegionedColumnSourceWithDictionary<DATA_TYPE>
         extends RegionedColumnSourceObject.AsValues<DATA_TYPE>
@@ -163,7 +162,8 @@ class RegionedColumnSourceWithDictionary<DATA_TYPE>
 
         @Override
         public DATA_TYPE get(final long elementIndex) {
-            return (elementIndex == NULL_ROW_KEY ? getNullRegion() : lookupRegion(elementIndex)).getObject(elementIndex);
+            return (elementIndex == NULL_ROW_KEY ? getNullRegion() : lookupRegion(elementIndex))
+                    .getObject(elementIndex);
         }
 
         @Override
@@ -304,7 +304,7 @@ class RegionedColumnSourceWithDictionary<DATA_TYPE>
                             .getColumnSource(SymbolTableSource.SYMBOL_COLUMN_NAME);
 
             try (final RowSet.SearchIterator keysToVisit = upstream.added.searchIterator();
-                 final RowSequence.Iterator knownKeys = symbolTable.getRowSet().getRowSequenceIterator()) {
+                    final RowSequence.Iterator knownKeys = symbolTable.getRowSet().getRowSequenceIterator()) {
                 keysToVisit.nextLong(); // Safe, since sourceIndex must be non-empty
                 do {
                     dictionaryColumn.lookupRegion(keysToVisit.currentValue()).gatherDictionaryValuesIndex(keysToVisit,

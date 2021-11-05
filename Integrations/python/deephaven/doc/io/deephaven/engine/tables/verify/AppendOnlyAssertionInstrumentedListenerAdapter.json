@@ -1,7 +1,7 @@
 {
  "className": "io.deephaven.engine.tables.verify.AppendOnlyAssertionInstrumentedListenerAdapter",
  "methods": {
-  "onUpdate": "Process notification of table changes.\n\n:param upstream: (io.deephaven.engine.v2.ShiftAwareListener.Update) - The set of upstream table updates."
+  "onUpdate": "Process notification of table changes.\n\n:param upstream: (io.deephaven.engine.v2.Listener.Update) - The set of upstream table updates."
  },
  "path": "io.deephaven.engine.tables.verify.AppendOnlyAssertionInstrumentedListenerAdapter",
  "typeName": "class"

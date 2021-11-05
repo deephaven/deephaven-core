@@ -7,13 +7,13 @@ import io.deephaven.engine.v2.sources.chunk.ObjectChunk;
 
 import io.deephaven.engine.v2.sources.chunk.WritableObjectChunk;
 
-import io.deephaven.engine.v2.utils.*;
 import io.deephaven.util.BooleanUtils;
 
 import io.deephaven.engine.tables.live.LiveTableMonitor;
 import io.deephaven.engine.v2.select.FormulaColumn;
 import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
+import io.deephaven.engine.v2.utils.*;
 import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.util.Shuffle;
 import junit.framework.TestCase;

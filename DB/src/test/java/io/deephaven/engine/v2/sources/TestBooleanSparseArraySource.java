@@ -7,14 +7,16 @@ import io.deephaven.engine.v2.sources.chunk.ObjectChunk;
 
 import io.deephaven.engine.v2.sources.chunk.WritableObjectChunk;
 
-import io.deephaven.engine.v2.utils.RowSetFactory;
 import io.deephaven.util.BooleanUtils;
 
 import io.deephaven.engine.tables.live.LiveTableMonitor;
 import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
+import io.deephaven.engine.v2.sources.chunk.BooleanChunk;
+import io.deephaven.engine.v2.sources.chunk.WritableBooleanChunk;
 import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.engine.v2.utils.RowSetBuilderSequential;
+import io.deephaven.engine.v2.utils.RowSetFactory;
 import io.deephaven.engine.structures.RowSequence;
 import org.junit.After;
 import org.junit.Before;

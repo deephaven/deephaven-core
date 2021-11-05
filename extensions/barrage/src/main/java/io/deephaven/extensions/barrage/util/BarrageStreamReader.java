@@ -252,8 +252,8 @@ public class BarrageStreamReader implements BarrageMessageConsumer.StreamReader<
         }
 
         try (final RowSet.Iterator sit = sRowSet.iterator();
-             final RowSet.Iterator eit = eRowSet.iterator();
-             final RowSet.Iterator dit = dRowSet.iterator()) {
+                final RowSet.Iterator eit = eRowSet.iterator();
+                final RowSet.Iterator dit = dRowSet.iterator()) {
             while (sit.hasNext()) {
                 if (!eit.hasNext() || !dit.hasNext()) {
                     throw new IllegalStateException("RowSetShiftData is inconsistent");

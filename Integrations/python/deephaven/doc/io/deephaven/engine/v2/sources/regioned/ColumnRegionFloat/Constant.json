@@ -2,7 +2,7 @@
  "className": "io.deephaven.engine.v2.sources.regioned.ColumnRegionFloat$Constant",
  "methods": {
   "fillChunkAppend": "Appends the values repeating value length times to destination.\n\n:param context: io.deephaven.engine.v2.sources.chunk.ChunkSource.FillContext\n:param destination: io.deephaven.engine.v2.sources.chunk.WritableChunk<? superColumnRegionFloat.Constant.ATTR>\n:param length: int",
-  "getFloat": "Get a single float from this region.\n\n:param elementIndex: (long) - Element (float) index in the table's address space\n:return: (float) The float value at the specified element (float) index"
+  "getFloat": "Get a single float from this region.\n\n:param elementIndex: (long) - Element (float) rowSet in the table's address space\n:return: (float) The float value at the specified element (float) rowSet"
  },
  "path": "io.deephaven.engine.v2.sources.regioned.ColumnRegionFloat.Constant",
  "typeName": "class"

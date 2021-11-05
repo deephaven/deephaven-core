@@ -4,7 +4,6 @@
   "get": ":param index: long\n:return: DbArraySlice.T",
   "getComponentType": ":return: java.lang.Class<DbArraySlice.T>",
   "getDirect": "Return a version of this DbArrayBase that is flattened out to only reference memory.\n\n:return: io.deephaven.engine.tables.dbarrays.DbArray<DbArraySlice.T>",
-  "getPrev": ":param index: long\n:return: DbArraySlice.T",
   "isEmpty": ":return: boolean",
   "size": "The size of this data structure.\n\n:return: (long) The size",
   "subArray": ":param fromIndexInclusive: long\n:param toIndexExclusive: long\n:return: io.deephaven.engine.tables.dbarrays.DbArray<DbArraySlice.T>",

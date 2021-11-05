@@ -1,7 +1,7 @@
 {
  "className": "io.deephaven.engine.v2.remote.DeltaUpdates",
  "methods": {
-  "asUpdate": ":param modified: io.deephaven.engine.v2.utils.Index\n:param mcs: io.deephaven.engine.v2.ModifiedColumnSet\n:return: io.deephaven.engine.v2.ShiftAwareListener.Update",
+  "asUpdate": ":param modified: io.deephaven.engine.v2.utils.RowSet\n:param mcs: io.deephaven.engine.v2.ModifiedColumnSet\n:return: io.deephaven.engine.v2.Listener.Update",
   "clone": ":return: io.deephaven.engine.v2.remote.DeltaUpdates",
   "toString": ":return: java.lang.String"
  },

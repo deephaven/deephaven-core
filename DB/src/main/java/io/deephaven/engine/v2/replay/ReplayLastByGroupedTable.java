@@ -12,8 +12,9 @@ import java.util.Map;
 
 public class ReplayLastByGroupedTable extends QueryReplayGroupedTable {
 
-    public ReplayLastByGroupedTable(TrackingRowSet rowSet, Map<String, ? extends ColumnSource<?>> input, String timeColumn,
-                                    Replayer replayer, String[] groupingColumns) {
+    public ReplayLastByGroupedTable(TrackingRowSet rowSet, Map<String, ? extends ColumnSource<?>> input,
+            String timeColumn,
+            Replayer replayer, String[] groupingColumns) {
         super(rowSet, input, timeColumn, replayer, RedirectionIndex.FACTORY.createRedirectionIndex(100),
                 groupingColumns);
         // noinspection unchecked

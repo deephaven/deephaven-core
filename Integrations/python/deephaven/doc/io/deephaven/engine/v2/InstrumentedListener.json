@@ -1,8 +1,7 @@
 {
  "className": "io.deephaven.engine.v2.InstrumentedListener",
  "methods": {
-  "getNotification": "Creates a notification for the table changes.\n\n:param added: (io.deephaven.engine.v2.utils.Index) - rows added\n:param removed: (io.deephaven.engine.v2.utils.Index) - rows removed\n:param modified: (io.deephaven.engine.v2.utils.Index) - rows modified\n:return: (io.deephaven.engine.v2.utils.AbstractIndexUpdateNotification) table change notification",
-  "setInitialImage": "Sets the index for the initial data.\n\n:param initialImage: (io.deephaven.engine.v2.utils.Index) - initial image"
+  "getNotification": "Creates a notification for the table changes.\n\n:param update: (io.deephaven.engine.v2.Listener.Update) - The set of upstream table updates.\n:return: (io.deephaven.engine.v2.utils.AbstractIndexUpdateNotification) table change notification"
  },
  "path": "io.deephaven.engine.v2.InstrumentedListener",
  "typeName": "class"

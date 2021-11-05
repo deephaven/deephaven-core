@@ -839,8 +839,9 @@ public class QueryTableWhereTest {
         QueryScope.addParam("slowCounter", slowCounter);
 
         final long start = System.currentTimeMillis();
-        final RowSet result = ChunkFilter.applyChunkFilter(tableToFilter.getRowSet(), tableToFilter.getColumnSource("X"),
-                false, slowCounter);
+        final RowSet result =
+                ChunkFilter.applyChunkFilter(tableToFilter.getRowSet(), tableToFilter.getColumnSource("X"),
+                        false, slowCounter);
         final long end = System.currentTimeMillis();
         System.out.println("Duration: " + (end - start));
 

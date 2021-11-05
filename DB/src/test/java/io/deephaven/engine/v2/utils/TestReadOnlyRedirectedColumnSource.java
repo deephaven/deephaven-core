@@ -190,7 +190,8 @@ public class TestReadOnlyRedirectedColumnSource {
         }
 
         try (final ChunkSource.GetContext context = reinterpretedC.makeGetContext(6)) {
-            final ByteChunk<? extends Values> result = reinterpretedC.getPrevChunk(context, b.getRowSet()).asByteChunk();
+            final ByteChunk<? extends Values> result =
+                    reinterpretedC.getPrevChunk(context, b.getRowSet()).asByteChunk();
             final byte[] chunkResult = new byte[6];
             result.copyToTypedArray(0, chunkResult, 0, 6);
             assertArrayEquals(nullBytes, chunkResult);

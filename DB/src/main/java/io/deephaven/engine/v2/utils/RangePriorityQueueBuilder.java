@@ -9,8 +9,8 @@ import io.deephaven.configuration.Configuration;
 /**
  * A BuilderRandom type that uses a priority queue of ranges.
  *
- * Each range entered into the TrackingMutableRowSet is stored in a priority queue, backed by two long arrays. One array contains the
- * start elements, the second array contains the end elements. The priority function is the start element.
+ * Each range entered into the TrackingMutableRowSet is stored in a priority queue, backed by two long arrays. One array
+ * contains the start elements, the second array contains the end elements. The priority function is the start element.
  *
  * We may have many overlapping ranges in the priority queue; as an optimization, if two adjacent ranges are entered
  * into the queue consecutively, the range is not stored in the queue more than once.

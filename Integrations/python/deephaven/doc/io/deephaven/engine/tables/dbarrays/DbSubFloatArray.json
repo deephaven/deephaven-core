@@ -2,7 +2,6 @@
  "className": "io.deephaven.engine.tables.dbarrays.DbSubFloatArray",
  "methods": {
   "get": ":param index: long\n:return: float",
-  "getPrev": ":param index: long\n:return: float",
   "isEmpty": ":return: boolean",
   "size": "The size of this data structure.\n\n:return: (long) The size",
   "subArray": ":param fromIndex: long\n:param toIndex: long\n:return: io.deephaven.engine.tables.dbarrays.DbFloatArray",

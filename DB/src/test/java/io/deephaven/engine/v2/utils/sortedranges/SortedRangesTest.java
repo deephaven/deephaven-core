@@ -1535,7 +1535,7 @@ public class SortedRangesTest {
         // Ensure sarCopy wasn't modified.
         assertEquals(sar.getCardinality(), sarCopy.getCardinality());
         try (final RowSet.Iterator sarIter = sar.getIterator();
-             final RowSet.Iterator sarCopyIter = sarCopy.getIterator()) {
+                final RowSet.Iterator sarCopyIter = sarCopy.getIterator()) {
             while (sarIter.hasNext()) {
                 assertTrue(sarCopyIter.hasNext());
                 assertEquals(sarIter.nextLong(), sarCopyIter.nextLong());
@@ -1639,7 +1639,8 @@ public class SortedRangesTest {
     private static final long[][] vss = new long[][] {sar0vs, vs0, vs1, vs2, vs3};
 
     private static void checkInvert(
-            final String prefixMsg, final SortedRanges sar, final RowSet.RangeIterator ixrit, final RowSet.Iterator ixit,
+            final String prefixMsg, final SortedRanges sar, final RowSet.RangeIterator ixrit,
+            final RowSet.Iterator ixit,
             final long maxPosition) {
         final OrderedLongSetBuilderSequential b = new OrderedLongSetBuilderSequential();
         final boolean r = sar.invertOnNew(ixrit, b, maxPosition);
@@ -2616,7 +2617,8 @@ public class SortedRangesTest {
                                     }
                                     final long rStart = Math.min(rs.lastRowKey(), Math.max(rs2Start, rs.firstRowKey()));
                                     final long rEnd = Math.max(rs.firstRowKey(), Math.min(rs2End, rs.lastRowKey()));
-                                    final RowSet ix2 = new TrackingMutableRowSetImpl(sr.ixSubindexByKeyOnNew(rStart, rEnd));
+                                    final RowSet ix2 =
+                                            new TrackingMutableRowSetImpl(sr.ixSubindexByKeyOnNew(rStart, rEnd));
                                     checkOkAgainstIndex(m5, rs2, ix2);
                                 }
                             }

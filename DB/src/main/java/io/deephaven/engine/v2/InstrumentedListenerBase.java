@@ -74,7 +74,8 @@ public abstract class InstrumentedListenerBase extends LivenessArtifact
 
     @Override
     public LogOutput append(@NotNull final LogOutput logOutput) {
-        return logOutput.append("ShiftObliviousInstrumentedListener:(identity=").append(System.identityHashCode(this)).append(", ")
+        return logOutput.append("ShiftObliviousInstrumentedListener:(identity=").append(System.identityHashCode(this))
+                .append(", ")
                 .append(entry).append(")");
     }
 
@@ -113,7 +114,7 @@ public abstract class InstrumentedListenerBase extends LivenessArtifact
     protected abstract void onFailureInternal(Throwable originalException, UpdatePerformanceTracker.Entry sourceEntry);
 
     protected final void onFailureInternalWithDependent(final Table dependent, final Throwable originalException,
-                                                        final UpdatePerformanceTracker.Entry sourceEntry) {
+            final UpdatePerformanceTracker.Entry sourceEntry) {
         dependent.notifyListenersOnError(originalException, sourceEntry);
 
         // although we have notified the dependent tables, we should notify the client side as well. In pretty

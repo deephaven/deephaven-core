@@ -180,7 +180,7 @@ class AsOfStampContext implements Context {
      * @param rightStampChunk the output chunk of right stamp values
      */
     void getAndCompactStamps(RowSet rightRowSet, WritableLongChunk<RowKeys> rightKeyIndicesChunk,
-                             WritableChunk<Values> rightStampChunk) {
+            WritableChunk<Values> rightStampChunk) {
         ensureRightFillCapacity(rightRowSet.intSize());
         // read the right stamp column
         rightKeyIndicesChunk.setSize(rightRowSet.intSize());
@@ -201,7 +201,7 @@ class AsOfStampContext implements Context {
      * @param redirectionIndex the redirection rowSet to update
      */
     void processEntry(RowSet leftRowSet, Chunk<Values> rightStampChunk, LongChunk<RowKeys> rightKeyIndicesChunk,
-                      RedirectionIndex redirectionIndex) {
+            RedirectionIndex redirectionIndex) {
         ensureLeftCapacity(leftRowSet.intSize());
 
         // read the left stamp column

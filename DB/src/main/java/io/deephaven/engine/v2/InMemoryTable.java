@@ -52,7 +52,8 @@ public class InMemoryTable extends QueryTable {
                                 x -> Array.newInstance(x.getDataType(), size)).toArray(Object[]::new)));
     }
 
-    private InMemoryTable(TableDefinition definition, TrackingRowSet rowSet, Map<String, ? extends ColumnSource<?>> columns) {
+    private InMemoryTable(TableDefinition definition, TrackingRowSet rowSet,
+            Map<String, ? extends ColumnSource<?>> columns) {
         super(definition, rowSet, columns);
     }
 

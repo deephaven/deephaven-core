@@ -218,14 +218,14 @@ public class ZeroKeyChunkedAjMergedListener extends MergedListener {
                     final RowSetShiftData rightShifted = rightRecorder.getShifted();
                     if (rightShifted.nonempty()) {
                         try (final RowSet fullPrevRowSet = rightTable.getRowSet().getPrevRowSet();
-                             final RowSet previousToShift = fullPrevRowSet.minus(rightRestampRemovals);
-                             final SizedSafeCloseable<ColumnSource.FillContext> shiftFillContext =
+                                final RowSet previousToShift = fullPrevRowSet.minus(rightRestampRemovals);
+                                final SizedSafeCloseable<ColumnSource.FillContext> shiftFillContext =
                                         new SizedSafeCloseable<>(rightStampSource::makeFillContext);
-                             final SizedSafeCloseable<LongSortKernel<Values, RowKeys>> shiftSortContext =
+                                final SizedSafeCloseable<LongSortKernel<Values, RowKeys>> shiftSortContext =
                                         new SizedSafeCloseable<>(
                                                 sz -> LongSortKernel.makeContext(stampChunkType, order, sz, true));
-                             final SizedChunk<Values> shiftRightStampValues = new SizedChunk<>(stampChunkType);
-                             final SizedLongChunk<Attributes.RowKeys> shiftRightStampKeys = new SizedLongChunk<>()) {
+                                final SizedChunk<Values> shiftRightStampValues = new SizedChunk<>(stampChunkType);
+                                final SizedLongChunk<Attributes.RowKeys> shiftRightStampKeys = new SizedLongChunk<>()) {
                             final RowSetShiftData.Iterator sit = rightShifted.applyIterator();
                             while (sit.hasNext()) {
                                 sit.next();
@@ -288,8 +288,9 @@ public class ZeroKeyChunkedAjMergedListener extends MergedListener {
                         final int chunks = (rightRestampAdditions.intSize() + rightChunkSize - 1) / rightChunkSize;
                         for (int ii = 0; ii < chunks; ++ii) {
                             final int startChunk = chunks - ii - 1;
-                            try (final RowSet chunkOk = rightRestampAdditions.subSetByPositionRange(startChunk * rightChunkSize,
-                                    (startChunk + 1) * rightChunkSize)) {
+                            try (final RowSet chunkOk =
+                                    rightRestampAdditions.subSetByPositionRange(startChunk * rightChunkSize,
+                                            (startChunk + 1) * rightChunkSize)) {
                                 final int chunkSize = chunkOk.intSize();
                                 rightStampSource.fillChunk(fillContext, stampChunk, chunkOk);
                                 insertedIndices.setSize(chunkSize);

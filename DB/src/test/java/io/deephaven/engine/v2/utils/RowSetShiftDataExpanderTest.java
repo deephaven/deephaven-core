@@ -515,7 +515,8 @@ public class RowSetShiftDataExpanderTest {
 
             final RowSetShiftData shiftData = shifted.build();
             shiftData.validate();
-            final Listener.Update update = new Listener.Update(added, removed, modified, shiftData, ModifiedColumnSet.ALL);
+            final Listener.Update update =
+                    new Listener.Update(added, removed, modified, shiftData, ModifiedColumnSet.ALL);
             final RowSetShiftDataExpander expander = new RowSetShiftDataExpander(update, sourceRowSet);
             expander.validate(update, sourceRowSet);
 

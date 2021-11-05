@@ -5,7 +5,6 @@
   "get": ":param i: long\n:return: DbArrayDirect.T",
   "getComponentType": ":return: java.lang.Class<DbArrayDirect.T>",
   "getDirect": "Return a version of this DbArrayBase that is flattened out to only reference memory.\n\n:return: io.deephaven.engine.tables.dbarrays.DbArrayDirect<DbArrayDirect.T>",
-  "getPrev": ":param offset: long\n:return: DbArrayDirect.T",
   "hashCode": ":return: int",
   "size": "The size of this data structure.\n\n:return: (long) The size",
   "subArray": ":param fromIndexInclusive: long\n:param toIndexExclusive: long\n:return: io.deephaven.engine.tables.dbarrays.DbArray<DbArrayDirect.T>",

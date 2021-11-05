@@ -160,13 +160,13 @@ public abstract class SingleRange implements OrderedLongSet {
 
     @Override
     public final OrderedLongSet ixInsertSecondHalf(final LongChunk<Attributes.OrderedRowKeys> keys, final int offset,
-                                                   final int length) {
+            final int length) {
         return OrderedLongSet.fromChunk(keys, offset, length, false).ixInsertRange(rangeStart(), rangeEnd());
     }
 
     @Override
     public final OrderedLongSet ixRemoveSecondHalf(final LongChunk<Attributes.OrderedRowKeys> keys, final int offset,
-                                                   final int length) {
+            final int length) {
         return ixRemove(OrderedLongSet.fromChunk(keys, offset, length, true));
     }
 

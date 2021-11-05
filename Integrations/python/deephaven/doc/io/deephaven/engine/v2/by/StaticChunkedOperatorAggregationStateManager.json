@@ -1,7 +1,7 @@
 {
  "className": "io.deephaven.engine.v2.by.StaticChunkedOperatorAggregationStateManager",
  "methods": {
-  "add": ":param bc: io.deephaven.util.SafeCloseable\n:param RowSequence: io.deephaven.engine.v2.utils.RowSequence\n:param sources: io.deephaven.engine.v2.sources.ColumnSource<?>[]\n:param nextOutputPosition: org.apache.commons.lang3.mutable.MutableInt\n:param outputPositions: io.deephaven.engine.v2.sources.chunk.WritableIntChunk<io.deephaven.engine.v2.sources.chunk.Attributes.KeyIndices>",
+  "add": ":param bc: io.deephaven.util.SafeCloseable\n:param rowSequence: io.deephaven.engine.structures.RowSequence\n:param sources: io.deephaven.engine.v2.sources.ColumnSource<?>[]\n:param nextOutputPosition: org.apache.commons.lang3.mutable.MutableInt\n:param outputPositions: io.deephaven.engine.v2.sources.chunk.WritableIntChunk<io.deephaven.engine.v2.sources.chunk.Attributes.RowKeys>",
   "doRehash": ":param bc: io.deephaven.engine.v2.by.StaticChunkedOperatorAggregationStateManager.BuildContext",
   "findPositionForKey": ":param key: java.lang.Object\n:return: int",
   "getKeyHashTableSources": ":return: io.deephaven.engine.v2.sources.ColumnSource[]",

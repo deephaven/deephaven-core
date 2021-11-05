@@ -50,7 +50,7 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
 
     @Override
     public void applyUpdate(final Listener.Update upstream, final RowSet toClear,
-                            final UpdateHelper helper) {
+            final UpdateHelper helper) {
         final int PAGE_SIZE = 4096;
         final LongToIntFunction contextSize = (long size) -> size > PAGE_SIZE ? PAGE_SIZE : (int) size;
 

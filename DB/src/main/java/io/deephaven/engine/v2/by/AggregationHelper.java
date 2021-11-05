@@ -109,7 +109,8 @@ public class AggregationHelper {
                     final ColumnSource<TrackingMutableRowSet> resultIndexColumnSource =
                             new SingleValueObjectColumnSource<>((TrackingMutableRowSet) inputTable.getRowSet());
                     final boolean empty =
-                            usePrev ? inputTable.getRowSet().firstRowKeyPrev() == RowSet.NULL_ROW_KEY : inputTable.isEmpty();
+                            usePrev ? inputTable.getRowSet().firstRowKeyPrev() == RowSet.NULL_ROW_KEY
+                                    : inputTable.isEmpty();
                     final QueryTable resultTable = new QueryTable(
                             RowSetFactory.flat(empty ? 0 : 1).convertToTracking(),
                             inputTable.getColumnSourceMap().entrySet().stream().collect(Collectors.toMap(
@@ -131,7 +132,8 @@ public class AggregationHelper {
                                 new BaseTable.ListenerImpl("by()", inputTable, resultTable) {
                                     @Override
                                     public void onUpdate(@NotNull final Update upstream) {
-                                        final boolean wasEmpty = inputTable.getRowSet().firstRowKeyPrev() == RowSet.NULL_ROW_KEY;
+                                        final boolean wasEmpty =
+                                                inputTable.getRowSet().firstRowKeyPrev() == RowSet.NULL_ROW_KEY;
                                         final boolean isEmpty = inputTable.getRowSet().isEmpty();
                                         final RowSet added;
                                         final RowSet removed;
@@ -318,8 +320,9 @@ public class AggregationHelper {
                     }
 
                     // Gather the result aggregate columns
-                    final ColumnSource<TrackingMutableRowSet> resultIndexColumnSource = new ReadOnlyRedirectedColumnSource<>(
-                            resultIndexToHashSlot, stateManager.getRowSetHashTableSource());
+                    final ColumnSource<TrackingMutableRowSet> resultIndexColumnSource =
+                            new ReadOnlyRedirectedColumnSource<>(
+                                    resultIndexToHashSlot, stateManager.getRowSetHashTableSource());
                     Arrays.stream(aggregatedColumnNames)
                             .forEachOrdered((final String aggregatedColumnName) -> {
                                 final AggregateColumnSource<?, ?> aggregatedColumnSource = AggregateColumnSource.make(
@@ -381,7 +384,8 @@ public class AggregationHelper {
                                                     stateManager.processShift(maybeReinterpretedKeyColumnSources,
                                                             shiftedPreviousRowSet, updateTracker);
                                                     updateTracker.applyShiftToStates(stateManager.getRowSetSource(),
-                                                            stateManager.getOverflowRowSetSource(), beginRange, endRange,
+                                                            stateManager.getOverflowRowSetSource(), beginRange,
+                                                            endRange,
                                                             shiftDelta);
                                                 } else {
                                                     resultRowSet.forAllRowKeys((final long stateKey) -> {
@@ -410,7 +414,8 @@ public class AggregationHelper {
                                     stateManager.getOverflowRowSetSource());
 
                             final Update downstream = updateTracker.makeUpdateFromStates(
-                                    stateManager.getRowSetSource(), stateManager.getOverflowRowSetSource(), resultRowSet,
+                                    stateManager.getRowSetSource(), stateManager.getOverflowRowSetSource(),
+                                    resultRowSet,
                                     resultIndexToHashSlot,
                                     (final boolean someKeyHasAddsOrRemoves, final boolean someKeyHasModifies) -> {
                                         if (someKeyHasAddsOrRemoves) {
@@ -506,13 +511,13 @@ public class AggregationHelper {
         final int chunkSize = Math.min(numGroups, IncrementalChunkedByAggregationStateManager.CHUNK_SIZE);
 
         try (final RowSequence groupIndices = RowSetFactory.flat(numGroups);
-             final RowSequence.Iterator groupIndicesIterator = groupIndices.getRowSequenceIterator();
-             final ChunkSource.GetContext hashSlotGetContext = groupIndexToHashSlot.makeGetContext(chunkSize);
-             final WritableObjectChunk<TrackingMutableRowSet, Values> aggregatedIndexes =
+                final RowSequence.Iterator groupIndicesIterator = groupIndices.getRowSequenceIterator();
+                final ChunkSource.GetContext hashSlotGetContext = groupIndexToHashSlot.makeGetContext(chunkSize);
+                final WritableObjectChunk<TrackingMutableRowSet, Values> aggregatedIndexes =
                         WritableObjectChunk.makeWritableChunk(chunkSize);
-             final WritableLongChunk<OrderedRowKeys> mapKeySourceIndices =
+                final WritableLongChunk<OrderedRowKeys> mapKeySourceIndices =
                         WritableLongChunk.makeWritableChunk(chunkSize);
-             final ChunkSource.GetContext mapKeyGetContext = inputKeyIndexToMapKeySource.makeGetContext(chunkSize)) {
+                final ChunkSource.GetContext mapKeyGetContext = inputKeyIndexToMapKeySource.makeGetContext(chunkSize)) {
             while (groupIndicesIterator.hasMore()) {
                 final RowSequence groupIndexesForThisChunk =
                         groupIndicesIterator.getNextRowSequenceWithLength(chunkSize);

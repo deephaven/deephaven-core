@@ -5,6 +5,6 @@
   "sort": "**Incompatible overloads text - text from the first overload:**\n\nSort the values in valuesToSort permuting the indexKeys chunk in the same way.\n\n*Overload 1*  \n  :param indexKeys: io.deephaven.engine.v2.sources.chunk.WritableIntChunk<IntSortKernel.KEY_INDICES>\n  :param valuesToSort: io.deephaven.engine.v2.sources.chunk.WritableChunk<IntSortKernel.ATTR>\n  \n*Overload 2*  \n  :param indexKeys: io.deephaven.engine.v2.sources.chunk.WritableIntChunk<IntSortKernel.KEY_INDICES>\n  :param valuesToSort: io.deephaven.engine.v2.sources.chunk.WritableChunk<IntSortKernel.ATTR>\n  :param offsetsIn: io.deephaven.engine.v2.sources.chunk.IntChunk<? extendsio.deephaven.engine.v2.sources.chunk.Attributes.ChunkPositions>\n  :param lengthsIn: io.deephaven.engine.v2.sources.chunk.IntChunk<? extendsio.deephaven.engine.v2.sources.chunk.Attributes.ChunkLengths>"
  },
  "path": "io.deephaven.engine.v2.sort.IntSortKernel",
- "text": "The SortKernel sorts a chunk of primitive value together with a parallel IntChunk of KeyIndices.",
+ "text": "The SortKernel sorts a chunk of primitive value together with a parallel IntChunk of RowKeys.",
  "typeName": "interface"
 }

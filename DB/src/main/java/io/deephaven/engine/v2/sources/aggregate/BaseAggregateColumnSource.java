@@ -44,7 +44,7 @@ abstract class BaseAggregateColumnSource<DB_ARRAY_TYPE extends DbArrayBase, COMP
         final GetContext groupRowSetGetContext;
 
         private AggregateFillContext(@NotNull final ColumnSource<? extends RowSet> groupRowSetSource,
-                                     final int chunkCapacity, final SharedContext sharedContext) {
+                final int chunkCapacity, final SharedContext sharedContext) {
             // TODO: Implement a proper shareable context to use with other instances that share a rowSet source.
             // Current usage is "safe" because rowSet sources are only exposed through this wrapper, and all
             // sources at a given level will pass through their ordered keys to the rowSet source unchanged.

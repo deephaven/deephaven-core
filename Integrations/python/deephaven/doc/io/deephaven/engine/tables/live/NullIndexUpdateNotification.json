@@ -6,6 +6,6 @@
   "isTerminal": "Terminal notifications guarantee that they will not queue additional notifications or mutate data structures\n that should result in additional notifications. They are in turn guaranteed to be called after all\n non-terminal notifications for a given cycle through the notification queue.\n\n:return: (boolean) True iff this notification is terminal."
  },
  "path": "io.deephaven.engine.tables.live.NullIndexUpdateNotification",
- "text": "This is a notification that does not actually notify anything.\n\n It is useful for the SwapListener to have the ability to create a notification for its\n parent before there is anything to notify.",
+ "text": "This is a notification that does not actually notify anything.\n\n It is useful for the ShiftObliviousSwapListener to have the ability to create a notification for its parent\n before there is anything to notify.",
  "typeName": "class"
 }

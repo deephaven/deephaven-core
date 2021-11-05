@@ -217,7 +217,7 @@ public class SparseSelect {
                                         if (upstream.shifted.nonempty()) {
                                             try (final RowSet currentWithoutAddsOrModifies =
                                                     source.getRowSet().minus(addedAndModified);
-                                                 final SafeCloseablePair<RowSet, RowSet> shifts = upstream.shifted
+                                                    final SafeCloseablePair<RowSet, RowSet> shifts = upstream.shifted
                                                             .extractParallelShiftedRowsFromPostShiftIndex(
                                                                     currentWithoutAddsOrModifies)) {
                                                 doShift(shifts, outputSources, modifiedColumns);
@@ -233,7 +233,7 @@ public class SparseSelect {
 
                                     if (upstream.shifted.nonempty()) {
                                         try (final RowSet currentWithoutAdds = source.getRowSet().minus(upstream.added);
-                                             final SafeCloseablePair<RowSet, RowSet> shifts =
+                                                final SafeCloseablePair<RowSet, RowSet> shifts =
                                                         upstream.shifted.extractParallelShiftedRowsFromPostShiftIndex(
                                                                 currentWithoutAdds)) {
                                             doShift(shifts, outputSources, modifiedColumns);
@@ -261,7 +261,7 @@ public class SparseSelect {
     }
 
     private static void doShift(SafeCloseablePair<RowSet, RowSet> shifts, SparseArrayColumnSource<?>[] outputSources,
-                                boolean[] toShift) {
+            boolean[] toShift) {
         if (executor == null) {
             doShiftSingle(shifts, outputSources, toShift);
         } else {
@@ -270,8 +270,8 @@ public class SparseSelect {
     }
 
     private static void doCopy(RowSet addedAndModified, ColumnSource<?>[] inputSources,
-                               WritableSource<?>[] outputSources,
-                               boolean[] toCopy) {
+            WritableSource<?>[] outputSources,
+            boolean[] toCopy) {
         if (executor == null) {
             doCopySingle(addedAndModified, inputSources, outputSources, toCopy);
         } else {
@@ -280,7 +280,7 @@ public class SparseSelect {
     }
 
     private static void doCopySingle(RowSet addedAndModified, ColumnSource<?>[] inputSources,
-                                     WritableSource<?>[] outputSources, boolean[] toCopy) {
+            WritableSource<?>[] outputSources, boolean[] toCopy) {
         final ChunkSource.GetContext[] gcs = new ChunkSource.GetContext[inputSources.length];
         final WritableChunkSink.FillFromContext[] ffcs = new WritableChunkSink.FillFromContext[inputSources.length];
         try (final SafeCloseableArray<ChunkSource.GetContext> ignored = new SafeCloseableArray<>(gcs);
@@ -307,7 +307,7 @@ public class SparseSelect {
     }
 
     private static void doCopyThreads(RowSet addedAndModified, ColumnSource<?>[] inputSources,
-                                      WritableSource<?>[] outputSources, boolean[] toCopy) {
+            WritableSource<?>[] outputSources, boolean[] toCopy) {
         final Future<?>[] futures = new Future[inputSources.length];
         for (int columnIndex = 0; columnIndex < inputSources.length; columnIndex++) {
             if (toCopy == null || toCopy[columnIndex]) {
@@ -330,7 +330,7 @@ public class SparseSelect {
     }
 
     private static void doCopySource(RowSet addedAndModified, WritableSource<?> outputSource,
-                                     ColumnSource<?> inputSource) {
+            ColumnSource<?> inputSource) {
         try (final RowSequence.Iterator rsIt = addedAndModified.getRowSequenceIterator();
                 final WritableChunkSink.FillFromContext ffc =
                         outputSource.makeFillFromContext(SPARSE_SELECT_CHUNK_SIZE);
@@ -402,7 +402,8 @@ public class SparseSelect {
         }
     }
 
-    private static void doShiftSource(SafeCloseablePair<RowSet, RowSet> shifts, SparseArrayColumnSource<?> outputSource) {
+    private static void doShiftSource(SafeCloseablePair<RowSet, RowSet> shifts,
+            SparseArrayColumnSource<?> outputSource) {
         try (final RowSequence.Iterator preIt = shifts.first.getRowSequenceIterator();
                 final RowSequence.Iterator postIt = shifts.second.getRowSequenceIterator();
                 final WritableChunkSink.FillFromContext ffc =

@@ -186,7 +186,7 @@ public class IndexIteration {
     }
 
     private int fillChunkByIndexRangeIterator(RowSet.RangeIterator it, int rangeStart, int size,
-                                              WritableDoubleChunk doubleChunk, int sourceId) {
+            WritableDoubleChunk doubleChunk, int sourceId) {
         int pos = 0;
         int rangeEnd = (int) it.currentRangeEnd() + 1;
         int length = rangeEnd - rangeStart;

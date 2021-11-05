@@ -22,8 +22,8 @@ public class FormulaKernelAdapter extends io.deephaven.engine.v2.select.Formula 
     private final GetHandler getHandler;
 
     public FormulaKernelAdapter(final TrackingRowSet rowSet, final FormulaSourceDescriptor sourceDescriptor,
-                                final Map<String, ? extends ColumnSource> columnSources,
-                                final FormulaKernel kernel) {
+            final Map<String, ? extends ColumnSource> columnSources,
+            final FormulaKernel kernel) {
         super(rowSet);
         this.sourceDescriptor = sourceDescriptor;
         this.columnSources = columnSources;

@@ -9,7 +9,8 @@ import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.engine.v2.utils.RowSetShiftData;
 import org.jetbrains.annotations.Nullable;
 
-public abstract class ShiftObliviousInstrumentedListener extends InstrumentedListenerBase implements ShiftObliviousListener {
+public abstract class ShiftObliviousInstrumentedListener extends InstrumentedListenerBase
+        implements ShiftObliviousListener {
 
     private RowSet initialImage;
     private RowSet initialImageClone;

@@ -25,8 +25,8 @@ public class PythonListenerAdapter extends InstrumentedListenerAdapter {
      * Creates a Python listener.
      *
      * No description for this listener will be provided. A hard reference to this listener will be maintained to
-     * prevent garbage collection. See {@link #PythonListenerAdapter(String, Table, boolean, PyObject)}
-     * if you do not want to prevent garbage collection of this listener.
+     * prevent garbage collection. See {@link #PythonListenerAdapter(String, Table, boolean, PyObject)} if you do not
+     * want to prevent garbage collection of this listener.
      *
      * @param source The source table to which this listener will subscribe.
      * @param pyObjectIn Python listener object.
@@ -39,8 +39,8 @@ public class PythonListenerAdapter extends InstrumentedListenerAdapter {
      * Create a Python listener.
      *
      * A hard reference to this listener will be maintained to prevent garbage collection. See
-     * {@link #PythonListenerAdapter(String, Table, boolean, PyObject)} if you do not want to prevent
-     * garbage collection of this listener.
+     * {@link #PythonListenerAdapter(String, Table, boolean, PyObject)} if you do not want to prevent garbage collection
+     * of this listener.
      *
      * @param description A description for the UpdatePerformanceTracker to append to its entry description.
      * @param source The source table to which this listener will subscribe.
@@ -59,7 +59,7 @@ public class PythonListenerAdapter extends InstrumentedListenerAdapter {
      * @param pyObjectIn Python listener object.
      */
     public PythonListenerAdapter(String description, Table source, boolean retain,
-                                 PyObject pyObjectIn) {
+            PyObject pyObjectIn) {
         super(description, source, retain);
         pyCallable = PythonUtilities.pyListenerFunc(pyObjectIn);
     }

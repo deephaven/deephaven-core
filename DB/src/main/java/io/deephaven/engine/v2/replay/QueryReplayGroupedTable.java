@@ -73,7 +73,7 @@ public abstract class QueryReplayGroupedTable extends QueryTable implements Live
     }
 
     protected QueryReplayGroupedTable(TrackingRowSet rowSet, Map<String, ? extends ColumnSource<?>> input,
-                                      String timeColumn, Replayer replayer, RedirectionIndex redirectionIndex, String[] groupingColumns) {
+            String timeColumn, Replayer replayer, RedirectionIndex redirectionIndex, String[] groupingColumns) {
 
         super(RowSetFactory.empty().convertToTracking(), getResultSources(input, redirectionIndex));
         this.redirectionIndex = redirectionIndex;

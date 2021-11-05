@@ -13,7 +13,7 @@
   "from": ":param headers: java.lang.Iterable<io.deephaven.qst.column.header.ColumnHeader<?>>\n:return: io.deephaven.engine.tables.TableDefinition",
   "getColumn": "Note: Java generics information - <T>\n\n:param columnName: (java.lang.String) - the column name to search for\n:return: (io.deephaven.engine.tables.ColumnDefinition<T>) The column definition for the supplied name, or null if no such column exists in this table definition.",
   "getColumnDefinitionsTable": ":return: io.deephaven.engine.tables.Table",
-  "getColumnIndex": ":param column: (io.deephaven.engine.tables.ColumnDefinition<?>) - the ColumnDefinition to search for\n:return: (int) The index of the column for the supplied name, or -1 if no such column exists in this table definition.\n         Note: This is an O(columns.length) lookup.",
+  "getColumnIndex": ":param column: (io.deephaven.engine.tables.ColumnDefinition<?>) - the ColumnDefinition to search for\n:return: (int) The rowSet of the column for the supplied name, or -1 if no such column exists in this table definition.\n         Note: This is an O(columns.length) lookup.",
   "getColumnList": ":return: (java.util.List<io.deephaven.engine.tables.ColumnDefinition<?>>) A list view of the column definition array for this table definition.",
   "getColumnNameMap": ":return: (java.util.Map<java.lang.String,io.deephaven.engine.tables.ColumnDefinition<?>>) A freshly-allocated, unmodifiable map from column name to column definition.",
   "getColumnNames": ":return: (java.util.List<java.lang.String>) A freshly-allocated list of column names in the same order as the column definitions array.",

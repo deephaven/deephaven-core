@@ -2,7 +2,7 @@
  "className": "io.deephaven.engine.util.PrintListener",
  "methods": {
   "onFailureInternal": ":param originalException: java.lang.Throwable\n:param sourceEntry: io.deephaven.engine.v2.utils.UpdatePerformanceTracker.Entry",
-  "onUpdate": "Process notification of table changes.\n\n:param upstream: (io.deephaven.engine.v2.ShiftAwareListener.Update) - The set of upstream table updates.",
+  "onUpdate": "Process notification of table changes.\n\n:param upstream: (io.deephaven.engine.v2.Listener.Update) - The set of upstream table updates.",
   "stop": "Remove this listener from the table."
  },
  "path": "io.deephaven.engine.util.PrintListener",

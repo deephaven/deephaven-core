@@ -13,7 +13,8 @@ import io.deephaven.engine.v2.utils.RowSet;
 public interface ShiftObliviousListener extends ListenerBase {
     /**
      * Process notification of table changes.
-     *  @param added rows added
+     * 
+     * @param added rows added
      * @param removed rows removed
      * @param modified rows modified
      */

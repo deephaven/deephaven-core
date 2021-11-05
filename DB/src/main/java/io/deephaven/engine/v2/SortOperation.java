@@ -108,8 +108,7 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
         }
 
         final RedirectionIndex sortMapping = sortedKeys.makeHistoricalRedirectionIndex();
-        final TrackingRowSet resultRowSet = RowSetFactory.flat(sortedKeys.size()).
-                convertToTracking();
+        final TrackingRowSet resultRowSet = RowSetFactory.flat(sortedKeys.size()).convertToTracking();
 
         final Map<String, ColumnSource<?>> resultMap = new LinkedHashMap<>();
         for (Map.Entry<String, ColumnSource<?>> stringColumnSourceEntry : this.parent.getColumnSourceMap().entrySet()) {
@@ -235,8 +234,7 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
             final long offset = SortListener.REBALANCE_MIDPOINT - sortedKeys.length / 2;
             final TrackingRowSet resultRowSet = (sortedKeys.length == 0
                     ? RowSetFactory.empty()
-                    : RowSetFactory.fromRange(offset, offset + sortedKeys.length - 1)
-            ).convertToTracking();
+                    : RowSetFactory.fromRange(offset, offset + sortedKeys.length - 1)).convertToTracking();
 
             for (int i = 0; i < sortedKeys.length; i++) {
                 reverseLookup.put(sortedKeys[i], i + offset);

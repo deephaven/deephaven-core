@@ -278,7 +278,8 @@ public class UnionSourceManager {
 
                 final RowSetShiftData shiftData = listener.getShifted();
 
-                updateAddedBuilder.appendRowSequenceWithOffset(listener.getAdded(), unionRedirection.startOfIndices[tableId]);
+                updateAddedBuilder.appendRowSequenceWithOffset(listener.getAdded(),
+                        unionRedirection.startOfIndices[tableId]);
                 updateModifiedBuilder.appendRowSequenceWithOffset(listener.getModified(),
                         unionRedirection.startOfIndices[tableId]);
 
@@ -347,7 +348,7 @@ public class UnionSourceManager {
 
             // Finally add the new keys to the rowSet in post-shift key-space.
             try (RowSet shiftRemoveRowSet = shiftRemoveBuilder.build();
-                 RowSet shiftAddedRowSet = shiftAddedBuilder.build()) {
+                    RowSet shiftAddedRowSet = shiftAddedBuilder.build()) {
                 rowSet.remove(shiftRemoveRowSet);
                 rowSet.insert(shiftAddedRowSet);
             }

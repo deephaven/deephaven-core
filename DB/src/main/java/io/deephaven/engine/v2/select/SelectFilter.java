@@ -111,9 +111,8 @@ public interface SelectFilter {
      * @param selection the indices that should be filtered. The selection must be a subset of fullSet, and may include
      *        rows that the engine determines need not be evaluated to produce the result. Implementations <em>may
      *        not</em> mutate or {@link RowSet#close() close} {@code selection}.
-     * @param fullSet the complete RowSet of the table to filter. The fullSet is used for calculating
-     *        variables like "i" or "ii". Implementations <em>may not</em> mutate or {@link RowSet#close() close}
-     *        {@code fullSet}.
+     * @param fullSet the complete RowSet of the table to filter. The fullSet is used for calculating variables like "i"
+     *        or "ii". Implementations <em>may not</em> mutate or {@link RowSet#close() close} {@code fullSet}.
      * @param table the table to filter
      * @param usePrev true if previous values should be used. Implementing previous value filtering is optional, and a
      *        {@link PreviousFilteringNotSupported} exception may be thrown. If a PreviousFiltering exception is thrown,

@@ -78,7 +78,8 @@ public class QueryTableFlattenTest extends QueryTableTestBase {
         data[7] = 101;
         data[8] = 102;
         data[9] = 104;
-        final QueryTable queryTable = TstUtils.testRefreshingTable(i(data).convertToTracking(), longCol("intCol", data));
+        final QueryTable queryTable =
+                TstUtils.testRefreshingTable(i(data).convertToTracking(), longCol("intCol", data));
 
         final TestHelper helper = new TestHelper<>(queryTable.flatten(), SimpleShiftObliviousListener::new);
 
@@ -179,7 +180,8 @@ public class QueryTableFlattenTest extends QueryTableTestBase {
         data[7] = 101;
         data[8] = 102;
         data[9] = 104;
-        final QueryTable queryTable = TstUtils.testRefreshingTable(i(data).convertToTracking(), longCol("intCol", data));
+        final QueryTable queryTable =
+                TstUtils.testRefreshingTable(i(data).convertToTracking(), longCol("intCol", data));
 
         final TestHelper helper = new TestHelper<>(queryTable.flatten(), SimpleListener::new);
 
@@ -259,7 +261,7 @@ public class QueryTableFlattenTest extends QueryTableTestBase {
         }
 
         void modAndValidate(final Runnable modTable, final RowSet added, final RowSet removed, final RowSet modified,
-                            final RowSetShiftData shifted) {
+                final RowSetShiftData shifted) {
             ++updateCount;
 
             LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(modTable::run);
@@ -290,7 +292,7 @@ public class QueryTableFlattenTest extends QueryTableTestBase {
     }
 
     private static void validate(final SimpleShiftObliviousListener listener, final long count, final RowSet added,
-                                 final RowSet removed, final RowSet modified) {
+            final RowSet removed, final RowSet modified) {
         Assert.assertEquals("simpleListener.getCount()", count, listener.getCount());
         Assert.assertEquals("simpleListener.added", added, listener.added);
         Assert.assertEquals("simpleListener.removed", removed, listener.removed);
@@ -298,7 +300,7 @@ public class QueryTableFlattenTest extends QueryTableTestBase {
     }
 
     private static void validate(final SimpleListener listener, final long count, final RowSet added,
-                                 final RowSet removed, final RowSet modified, final RowSetShiftData shifted) {
+            final RowSet removed, final RowSet modified, final RowSetShiftData shifted) {
         Assert.assertEquals("simpleListener.getCount()", count, listener.getCount());
         Assert.assertEquals("simpleListener.added", added, listener.update.added);
         Assert.assertEquals("simpleListener.removed", removed, listener.update.removed);

@@ -49,14 +49,14 @@ public class ToMapListener<K, V> extends InstrumentedListenerAdapter implements 
     }
 
     public static <K1, V1> ToMapListener<K1, V1> make(Table source, ColumnSource<K1> keySource,
-                                                      ColumnSource<V1> valueSource) {
+            ColumnSource<V1> valueSource) {
         // noinspection unchecked
         return QueryPerformanceRecorder.withNugget("ToMapListener",
                 () -> new ToMapListener<>(source, keySource, valueSource));
     }
 
     public static <K1, V1> ToMapListener<K1, V1> make(Table source, LongFunction<K1> keyProducer,
-                                                      LongFunction<K1> prevKeyProducer, LongFunction<V1> valueProducer, LongFunction<V1> prevValueProducer) {
+            LongFunction<K1> prevKeyProducer, LongFunction<V1> valueProducer, LongFunction<V1> prevValueProducer) {
         // noinspection unchecked
         return QueryPerformanceRecorder.withNugget("ToMapListener",
                 () -> new ToMapListener<>(source, keyProducer, prevKeyProducer, valueProducer, prevValueProducer));
@@ -72,7 +72,7 @@ public class ToMapListener<K, V> extends InstrumentedListenerAdapter implements 
     }
 
     private ToMapListener(Table source, LongFunction<K> keyProducer, LongFunction<K> prevKeyProducer,
-                          LongFunction<V> valueProducer, LongFunction<V> prevValueProducer) {
+            LongFunction<V> valueProducer, LongFunction<V> prevValueProducer) {
         super(source, false);
         this.keyProducer = keyProducer;
         this.prevKeyProducer = prevKeyProducer;

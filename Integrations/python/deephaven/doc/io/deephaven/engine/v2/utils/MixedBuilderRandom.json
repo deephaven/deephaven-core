@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.engine.v2.utils.MixedBuilderRandom",
+ "methods": {
+  "add": "*Overload 1*  \n  :param ix: io.deephaven.engine.v2.utils.sortedranges.SortedRanges\n  :param acquire: boolean\n  \n*Overload 2*  \n  :param ix: io.deephaven.engine.v2.utils.rsp.RspBitmap\n  :param acquire: boolean",
+  "addKey": ":param key: long",
+  "addRange": ":param startKey: long\n:param endKey: long",
+  "getTreeIndexImpl": ":return: io.deephaven.engine.v2.utils.OrderedLongSet"
+ },
+ "path": "io.deephaven.engine.v2.utils.MixedBuilderRandom",
+ "typeName": "class"
+}

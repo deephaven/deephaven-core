@@ -26,7 +26,8 @@ import java.io.IOException;
  */
 public abstract class ShiftObliviousInstrumentedListenerAdapter extends ShiftObliviousInstrumentedListener {
 
-    private static final RetentionCache<ShiftObliviousInstrumentedListenerAdapter> RETENTION_CACHE = new RetentionCache<>();
+    private static final RetentionCache<ShiftObliviousInstrumentedListenerAdapter> RETENTION_CACHE =
+            new RetentionCache<>();
 
     private final boolean retain;
 
@@ -51,7 +52,7 @@ public abstract class ShiftObliviousInstrumentedListenerAdapter extends ShiftObl
      *        In most scenarios, it's better to specify {@code false} and keep a reference in the calling code.
      */
     public ShiftObliviousInstrumentedListenerAdapter(@Nullable final String description, @NotNull final Table source,
-                                                     final boolean retain) {
+            final boolean retain) {
         super(description);
         this.source = Require.neqNull(source, "source");
         if (this.retain = retain) {

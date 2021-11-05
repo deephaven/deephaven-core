@@ -69,13 +69,15 @@ public class RspBitmapBuilderSequential implements BuilderSequential {
     public void appendRange(final long rangeFirstRowKey, final long rangeLastRowKey) {
         if (RspArray.debug) {
             if (rangeFirstRowKey > rangeLastRowKey) {
-                throw new IllegalArgumentException("start (= " + rangeFirstRowKey + ") > end (= " + rangeLastRowKey + ")");
+                throw new IllegalArgumentException(
+                        "start (= " + rangeFirstRowKey + ") > end (= " + rangeLastRowKey + ")");
             }
         }
         if (pendingStart != -1) {
             if (check && rangeFirstRowKey <= pendingEnd) {
                 throw new IllegalArgumentException(outOfOrderKeyErrorMsg +
-                        "last=" + pendingEnd + " while appending range start=" + rangeFirstRowKey + ", end=" + rangeLastRowKey);
+                        "last=" + pendingEnd + " while appending range start=" + rangeFirstRowKey + ", end="
+                        + rangeLastRowKey);
             }
             if (pendingEnd + 1 == rangeFirstRowKey) {
                 pendingEnd = rangeLastRowKey;

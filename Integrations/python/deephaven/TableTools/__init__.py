@@ -698,7 +698,7 @@ def mergeSorted(keyColumn, *tables):
 @_passThrough
 def newTable(*args):
     """
-    Creates a new Deephaven Table.
+    Creates a new Table.
     
     *Overload 1*  
       :param size: (long) - the number of rows to allocate
@@ -722,7 +722,7 @@ def newTable(*args):
     *Overload 5*  
       :param definition: io.deephaven.engine.tables.TableDefinition
       :param columnHolders: io.deephaven.engine.v2.utils.ColumnHolder...
-      :return: (io.deephaven.engine.tables.Table) a Deephaven Table
+      :return: io.deephaven.engine.tables.Table
     """
     
     return _custom_newTable(*args)
@@ -772,17 +772,17 @@ def readCsv(*args):
       
     *Overload 3*  
       :param filePath: (java.lang.String) - the fully-qualified path to a CSV file to be read.
-      :return: (io.deephaven.engine.tables.Table) a Deephaven Table
+      :return: (io.deephaven.engine.tables.Table) a Deephaven Table object
       
     *Overload 4*  
       :param filePath: (java.lang.String) - the fully-qualified path to a CSV file to be read.
       :param format: (java.lang.String) - an Apache Commons CSV format name to be used to parse the CSV, or a single non-newline character to
               use as a delimiter.
-      :return: (io.deephaven.engine.tables.Table) a Deephaven Table
+      :return: (io.deephaven.engine.tables.Table) a Deephaven Table object
       
     *Overload 5*  
       :param file: (java.io.File) - a file object providing access to the CSV file to be read.
-      :return: (io.deephaven.engine.tables.Table) a Deephaven Table
+      :return: (io.deephaven.engine.tables.Table) a Deephaven Table object
     """
     
     return _java_type_.readCsv(*args)

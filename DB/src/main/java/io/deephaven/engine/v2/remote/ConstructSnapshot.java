@@ -59,7 +59,8 @@ public class ConstructSnapshot {
         }
     }
 
-    private static final io.deephaven.io.logger.Logger log = LoggerFactory.getLogger(ShiftObliviousInstrumentedListener.class);
+    private static final io.deephaven.io.logger.Logger log =
+            LoggerFactory.getLogger(ShiftObliviousInstrumentedListener.class);
 
     /**
      * The maximum number of allowed attempts to construct a snapshot concurrently with {@link LiveTableMonitor} refresh
@@ -1359,7 +1360,7 @@ public class ConstructSnapshot {
     }
 
     private static <T> Object getSnapshotData(final ColumnSource<T> columnSource, final SharedContext sharedContext,
-                                              final RowSet rowSet, final boolean usePrev) {
+            final RowSet rowSet, final boolean usePrev) {
         final ColumnSource<?> sourceToUse = ReinterpretUtilities.maybeConvertToPrimitive(columnSource);
         final Class<?> type = sourceToUse.getType();
         final int size = rowSet.intSize();
@@ -1387,7 +1388,7 @@ public class ConstructSnapshot {
     }
 
     private static <T> WritableChunk<Values> getSnapshotDataAsChunk(final ColumnSource<T> columnSource,
-                                                                    final SharedContext sharedContext, final RowSet rowSet, final boolean usePrev) {
+            final SharedContext sharedContext, final RowSet rowSet, final boolean usePrev) {
         final ColumnSource<?> sourceToUse = ReinterpretUtilities.maybeConvertToPrimitive(columnSource);
         final int size = rowSet.intSize();
         try (final ColumnSource.FillContext context = sharedContext != null

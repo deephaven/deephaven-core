@@ -3,7 +3,8 @@ package io.deephaven.engine.v2;
 import io.deephaven.engine.tables.live.NotificationQueue;
 import io.deephaven.engine.v2.utils.RowSet;
 
-public class ShiftObliviousSwapListener extends SwapListenerBase<ShiftObliviousListener> implements ShiftObliviousListener {
+public class ShiftObliviousSwapListener extends SwapListenerBase<ShiftObliviousListener>
+        implements ShiftObliviousListener {
 
     public ShiftObliviousSwapListener(BaseTable sourceTable) {
         super(sourceTable);

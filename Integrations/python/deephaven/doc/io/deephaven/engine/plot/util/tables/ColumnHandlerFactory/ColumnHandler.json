@@ -1,9 +1,9 @@
 {
  "className": "io.deephaven.engine.plot.util.tables.ColumnHandlerFactory$ColumnHandler",
  "methods": {
-  "get": "Gets the object in row i of the column.\n\n:param i: (int) - index\n:return: (java.lang.Object) object in row i of the column",
+  "get": "Gets the object in row i of the column.\n\n:param i: (int) - rowSet\n:return: (java.lang.Object) object in row i of the column",
   "getColumnName": "Gets the column's name.\n\n:return: (java.lang.String) name of the column being held",
-  "getDouble": "Gets the object in row i of the column as a double.\n\n:param i: (int) - index\n:return: (double) column's value at row i as a double",
+  "getDouble": "Gets the object in row i of the column as a double.\n\n:param i: (int) - rowSet\n:return: (double) column's value at row i as a double",
   "getTableHandle": "Gets the handle for the underlying table.\n\n:return: (io.deephaven.engine.plot.util.tables.TableHandle) handle for the table",
   "size": "Gets the number of rows in the column.\n\n:return: (int) size of the column",
   "type": "Gets the data type of the column.\n\n:return: (java.lang.Class) column's data type",

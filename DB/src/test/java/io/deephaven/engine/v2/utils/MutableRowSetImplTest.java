@@ -449,7 +449,7 @@ public class MutableRowSetImplTest extends TestCase {
      * containing the subset of fullKeys as an RowSet and the expected positions as a TLongList.
      */
     private Pair<RowSet, TLongList> generateSubset(long[] fullKeys, RowSet fullRowSet, int maxPosition,
-                                                   Random generator) {
+            Random generator) {
         switch (generator.nextInt(2)) {
             case 0:
                 return generateSubsetMethod1(fullKeys, fullRowSet, maxPosition, generator);
@@ -464,8 +464,8 @@ public class MutableRowSetImplTest extends TestCase {
      * For each key, randomly flip a count as to whether it belongs in the output.
      */
     private Pair<RowSet, TLongList> generateSubsetMethod1(long[] fullKeys,
-                                                          @SuppressWarnings("unused") RowSet fullRowSet,
-                                                          int maxPosition, Random generator) {
+            @SuppressWarnings("unused") RowSet fullRowSet,
+            int maxPosition, Random generator) {
         final boolean subset[] = new boolean[(int) fullRowSet.lastRowKey() + 1];
 
         final double density = generator.nextDouble();
@@ -505,8 +505,8 @@ public class MutableRowSetImplTest extends TestCase {
      * within each range.
      */
     private Pair<RowSet, TLongList> generateSubsetMethod2(@SuppressWarnings("unused") long[] fullKeys,
-                                                          RowSet fullRowSet,
-                                                          int maxPosition, Random generator) {
+            RowSet fullRowSet,
+            int maxPosition, Random generator) {
         final boolean subset[] = new boolean[(int) fullKeys[fullKeys.length - 1] + 1];
 
         final TLongList expected = new TLongArrayList();

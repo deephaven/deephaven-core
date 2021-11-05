@@ -1,6 +1,7 @@
 {
  "className": "io.deephaven.proto.backplane.grpc.TableServiceGrpc",
  "methods": {
+  "getApplyPreviewColumnsMethod": ":return: io.grpc.MethodDescriptor<io.deephaven.proto.backplane.grpc.ApplyPreviewColumnsRequest,io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse>",
   "getAsOfJoinTablesMethod": ":return: io.grpc.MethodDescriptor<io.deephaven.proto.backplane.grpc.AsOfJoinTablesRequest,io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse>",
   "getBatchMethod": ":return: io.grpc.MethodDescriptor<io.deephaven.proto.backplane.grpc.BatchTableRequest,io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse>",
   "getComboAggregateMethod": ":return: io.grpc.MethodDescriptor<io.deephaven.proto.backplane.grpc.ComboAggregateRequest,io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse>",

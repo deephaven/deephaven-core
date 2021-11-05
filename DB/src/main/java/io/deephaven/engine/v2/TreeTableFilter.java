@@ -209,8 +209,9 @@ public class TreeTableFilter implements Function.Unary<Table, Table>, MemoizedOp
                         continue;
                     }
                     if (sourceRowSet.find(parentRow) < 0) {
-                        throw new IllegalStateException("Reverse Lookup ShiftObliviousListener points at row " + parentRow + " for "
-                                + parent + ", but the row is not in the rowSet=" + source.getRowSet());
+                        throw new IllegalStateException(
+                                "Reverse Lookup ShiftObliviousListener points at row " + parentRow + " for "
+                                        + parent + ", but the row is not in the rowSet=" + source.getRowSet());
                     }
                     newParentKeys.add(parentRow);
                 }
@@ -389,9 +390,9 @@ public class TreeTableFilter implements Function.Unary<Table, Table>, MemoizedOp
 
                 try (final RowSet allRemoved =
                         useModified ? upstream.removed.union(upstream.getModifiedPreShift()) : null;
-                     final RowSet valuesToRemove =
+                        final RowSet valuesToRemove =
                                 (useModified ? allRemoved : upstream.removed).intersect(valuesRowSet);
-                     final RowSet removedParents =
+                        final RowSet removedParents =
                                 (useModified ? allRemoved : upstream.removed).intersect(parentRowSet)) {
 
                     removeValues(valuesToRemove);
@@ -419,10 +420,10 @@ public class TreeTableFilter implements Function.Unary<Table, Table>, MemoizedOp
 
                 // Finally, handle added sets.
                 try (final MutableRowSet addedAndModified = upstream.added.union(upstream.modified);
-                     final RowSet newFiltered = doValueFilter(false, addedAndModified);
-                     final RowSet resurrectedParents = checkForResurrectedParent(addedAndModified);
-                     final RowSet newParents = computeParents(false, newFiltered);
-                     final RowSet newResurrectedParents = computeParents(false, resurrectedParents)) {
+                        final RowSet newFiltered = doValueFilter(false, addedAndModified);
+                        final RowSet resurrectedParents = checkForResurrectedParent(addedAndModified);
+                        final RowSet newParents = computeParents(false, newFiltered);
+                        final RowSet newResurrectedParents = computeParents(false, resurrectedParents)) {
 
 
                     valuesRowSet.insert(newFiltered);
@@ -433,7 +434,7 @@ public class TreeTableFilter implements Function.Unary<Table, Table>, MemoizedOp
 
                 // Compute expected results and the sets we will propagate to child listeners.
                 try (final RowSet result = valuesRowSet.union(parentRowSet);
-                     final MutableRowSet resultRemovals = resultRowSet.minus(result)) {
+                        final MutableRowSet resultRemovals = resultRowSet.minus(result)) {
                     downstream.added = result.minus(resultRowSet);
                     resultRowSet.update(downstream.added, resultRemovals);
 

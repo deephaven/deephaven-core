@@ -322,7 +322,8 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
                 if (!indexAtLastUpdate.subsetOf(updateIndex)) { // Bad change
                     // noinspection ThrowableNotThrown
                     Assert.statementNeverExecuted(
-                            "TrackingMutableRowSet keys removed at location " + location + ": " + indexAtLastUpdate.minus(updateIndex));
+                            "TrackingMutableRowSet keys removed at location " + location + ": "
+                                    + indexAtLastUpdate.minus(updateIndex));
                 }
                 if (indexAtLastUpdate.size() == updateIndex.size()) {
                     // Nothing to do

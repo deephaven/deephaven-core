@@ -143,7 +143,7 @@ public class WindowCheck {
          * @param result our initialized result table
          */
         private TimeWindowListener(final String inWindowColumnName, final InWindowColumnSource inWindowColumnSource,
-                                   final ListenerRecorder recorder, final Table source, final QueryTable result) {
+                final ListenerRecorder recorder, final Table source, final QueryTable result) {
             super(Collections.singleton(recorder), Collections.singleton(source), "WindowCheck", result);
             this.source = source;
             this.recorder = recorder;
@@ -187,7 +187,8 @@ public class WindowCheck {
                     upstream.shifted.apply((start, end, delta) -> {
                         final RowSet subRowSet = preShiftRowSet.subSetByKeyRange(start, end);
 
-                        final RowSet.SearchIterator it = delta < 0 ? subRowSet.searchIterator() : subRowSet.reverseIterator();
+                        final RowSet.SearchIterator it =
+                                delta < 0 ? subRowSet.searchIterator() : subRowSet.reverseIterator();
                         while (it.hasNext()) {
                             final long idx = it.nextLong();
                             final Entry entry = indexToEntry.remove(idx);

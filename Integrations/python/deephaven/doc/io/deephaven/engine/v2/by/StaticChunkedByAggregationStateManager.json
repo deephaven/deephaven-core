@@ -1,7 +1,7 @@
 {
  "className": "io.deephaven.engine.v2.by.StaticChunkedByAggregationStateManager",
  "methods": {
-  "doRehash": ":param bc: io.deephaven.engine.v2.by.StaticChunkedByAggregationStateManager.BuildContext\n:param sourceChunkInsertedHashSlots: io.deephaven.engine.v2.sources.chunk.WritableIntChunk<io.deephaven.engine.v2.sources.chunk.Attributes.KeyIndices>\n:param insertedHashSlots: io.deephaven.engine.v2.sources.IntegerArraySource",
+  "doRehash": ":param bc: io.deephaven.engine.v2.by.StaticChunkedByAggregationStateManager.BuildContext\n:param sourceChunkInsertedHashSlots: io.deephaven.engine.v2.sources.chunk.WritableIntChunk<io.deephaven.engine.v2.sources.chunk.Attributes.RowKeys>\n:param insertedHashSlots: io.deephaven.engine.v2.sources.IntegerArraySource",
   "rehashRequired": ":return: boolean"
  },
  "path": "io.deephaven.engine.v2.by.StaticChunkedByAggregationStateManager",

@@ -1,7 +1,7 @@
 {
  "className": "io.deephaven.engine.v2.select.analyzers.RedirectionLayer",
  "methods": {
-  "applyUpdate": "Apply this update to this SelectAndViewAnalyzer.\n\n:param upstream: (io.deephaven.engine.v2.ShiftAwareListener.Update) - the upstream update\n:param toClear: (io.deephaven.engine.v2.utils.ReadOnlyIndex) - rows that used to exist and no longer exist\n:param helper: (io.deephaven.engine.v2.select.analyzers.SelectAndViewAnalyzer.UpdateHelper) - convenience class that memoizes reusable calculations for this update",
+  "applyUpdate": "Apply this update to this SelectAndViewAnalyzer.\n\n:param upstream: (io.deephaven.engine.v2.Listener.Update) - the upstream update\n:param toClear: (io.deephaven.engine.v2.utils.RowSet) - rows that used to exist and no longer exist\n:param helper: (io.deephaven.engine.v2.select.analyzers.SelectAndViewAnalyzer.UpdateHelper) - convenience class that memoizes reusable calculations for this update",
   "calcDependsOnRecurse": ":return: java.util.Map<java.lang.String,java.util.Set<java.lang.String>>",
   "getColumnSourcesRecurse": ":param mode: io.deephaven.engine.v2.select.analyzers.SelectAndViewAnalyzer.GetMode\n:return: java.util.Map<java.lang.String,io.deephaven.engine.v2.sources.ColumnSource<?>>",
   "getInner": ":return: io.deephaven.engine.v2.select.analyzers.SelectAndViewAnalyzer",
@@ -9,6 +9,6 @@
   "updateColumnDefinitionsFromTopLayer": ":param columnDefinitions: java.util.Map<java.lang.String,io.deephaven.engine.tables.ColumnDefinition<?>>"
  },
  "path": "io.deephaven.engine.v2.select.analyzers.RedirectionLayer",
- "text": "A layer that maintains the redirection index for future SelectColumnLayers.",
+ "text": "A layer that maintains the redirection rowSet for future SelectColumnLayers.",
  "typeName": "class"
 }

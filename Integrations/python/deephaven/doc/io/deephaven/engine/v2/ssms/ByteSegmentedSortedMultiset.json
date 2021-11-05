@@ -16,7 +16,6 @@
   "getMinByte": ":return: byte",
   "getMinCount": ":return: (long) the number of times the minimum value exists in this SSM.",
   "getNodeSize": ":return: int",
-  "getPrev": ":param i: long\n:return: byte",
   "getPrevValues": ":return: io.deephaven.engine.tables.dbarrays.DbByteArray",
   "getRemovedSize": ":return: int",
   "hashCode": ":return: int",

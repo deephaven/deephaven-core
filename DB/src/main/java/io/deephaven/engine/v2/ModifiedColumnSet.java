@@ -11,8 +11,8 @@ import java.util.BitSet;
 import java.util.Map;
 
 /**
- * Data structure to represent a subset of columns, used for propagating modifications via
- * {@link Listener.Update} instances.
+ * Data structure to represent a subset of columns, used for propagating modifications via {@link Listener.Update}
+ * instances.
  */
 public class ModifiedColumnSet {
 

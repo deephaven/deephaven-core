@@ -62,9 +62,9 @@ public class SortListener extends BaseTable.ListenerImpl {
     private final ModifiedColumnSet sortColumnSet;
 
     public SortListener(Table parent, QueryTable result, HashMapK4V4 reverseLookup,
-                        ColumnSource<Comparable<?>>[] columnsToSortBy, SortingOrder[] order,
-                        RedirectionIndex sortMapping, ColumnSource<Comparable<?>>[] sortedColumnsToSortBy,
-                        ModifiedColumnSet.Transformer mcsTransformer, ModifiedColumnSet sortColumnSet) {
+            ColumnSource<Comparable<?>>[] columnsToSortBy, SortingOrder[] order,
+            RedirectionIndex sortMapping, ColumnSource<Comparable<?>>[] sortedColumnsToSortBy,
+            ModifiedColumnSet.Transformer mcsTransformer, ModifiedColumnSet sortColumnSet) {
         super("sortInternal", parent, result);
         this.parent = parent;
         this.result = result;
@@ -126,7 +126,8 @@ public class SortListener extends BaseTable.ListenerImpl {
     // Note that the median of this table is 40.
     //
     // Values to add (note these have already been sorted thanks to the code above):
-    // B: highest <= key doesn't exist (start of table is a special case), so at-key-rowSet is 9 and direction is reverse
+    // B: highest <= key doesn't exist (start of table is a special case), so at-key-rowSet is 9 and direction is
+    // reverse
     // (this will occupy an empty slot at 9)
     // C: highest <= key is C at 10, before the median, so at-key-rowSet is 10 and dir is reverse (this will push the
     // existing C to the left)
@@ -366,8 +367,8 @@ public class SortListener extends BaseTable.ListenerImpl {
      * @param qs Queue state -- containing the view on the various keys arrays, directions, etc.
      */
     private void performUpdatesInDirection(final RowSetBuilderSequential added, final RowSetShiftData.Builder shifted,
-                                           final long start,
-                                           final QueueState qs, final SortMappingAggregator mappingChanges) {
+            final long start,
+            final QueueState qs, final SortMappingAggregator mappingChanges) {
         final long numRequestedAdds = (qs.addedEnd - qs.addedCurrent) * qs.direction;
 
         if (numRequestedAdds == 0) {
@@ -443,7 +444,8 @@ public class SortListener extends BaseTable.ListenerImpl {
                         Arrays.binarySearch(qs.addedOutputKeys, qs.addedCurrent, qs.addedEnd, maxRunKey));
             }
 
-            // note: if TrackingMutableRowSet.SearchIterator had an O(1) method to get pos we should prefer that over TrackingMutableRowSet#find,
+            // note: if TrackingMutableRowSet.SearchIterator had an O(1) method to get pos we should prefer that over
+            // TrackingMutableRowSet#find,
             // turn maxRunKey into an advancing iterator (similar to gapEvictionIter), and also use that method to
             // compute sizeToShift
             final long backMaxIdx = qs.twiddleIfNegative(resultRowSet.find(maxRunKey));
@@ -764,7 +766,8 @@ public class SortListener extends BaseTable.ListenerImpl {
             final int rangeDirection = -Long.compare(rangeFirstRowKey, rangeLastRowKey);
             if (rangeDirection * direction < 0) {
                 Assert.assertion(rangeDirection * direction >= 0, "Range must be compatible with direction",
-                        (Object) rangeFirstRowKey, "firstRowKey", (Object) rangeLastRowKey, "lastRowKey", direction, "direction");
+                        (Object) rangeFirstRowKey, "firstRowKey", (Object) rangeLastRowKey, "lastRowKey", direction,
+                        "direction");
             }
 
             final int lSize = lasts.size();
@@ -909,7 +912,7 @@ public class SortListener extends BaseTable.ListenerImpl {
     }
 
     private static void fillArray(final long[] dest, final RowSet src, final int destIndex,
-                                  final LongUnaryOperator transformer) {
+            final LongUnaryOperator transformer) {
         final MutableInt pos = new MutableInt(destIndex);
         src.forAllRowKeys((final long v) -> {
             dest[pos.intValue()] = transformer.applyAsLong(v);

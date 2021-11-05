@@ -1,8 +1,10 @@
 {
  "className": "io.deephaven.engine.tables.select.Param",
  "methods": {
+  "classFromType": ":param declaredType: java.lang.reflect.Type\n:return: java.lang.Class<?>",
   "expandParameterClasses": "Get a map from binary name to declared type for the dynamic classes referenced by an array of param classes.\n\n:param params: (java.util.List<java.lang.Class<?>>) - The parameters to operate on\n:return: (java.util.Map<java.lang.String,java.lang.Class<?>>) The result map",
-  "getDeclaredType": ":return: java.lang.Class<?>",
+  "getDeclaredClass": ":return: java.lang.Class<?>",
+  "getDeclaredType": ":return: java.lang.reflect.Type",
   "getDeclaredTypeName": ":return: java.lang.String",
   "getName": ":return: java.lang.String",
   "getPrimitiveTypeNameIfAvailable": ":return: java.lang.String",

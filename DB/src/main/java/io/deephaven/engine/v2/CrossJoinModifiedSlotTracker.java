@@ -169,7 +169,7 @@ class CrossJoinModifiedSlotTracker {
             // make our right rowSet be what it needs to be
             final long oldRightSize = rightRowSet.size();
             try (final RowSet added = innerAdded.build();
-                 final RowSet removed = innerRemoved.build()) {
+                    final RowSet removed = innerRemoved.build()) {
                 rightRowSet.remove(removed);
 
                 // then we shift

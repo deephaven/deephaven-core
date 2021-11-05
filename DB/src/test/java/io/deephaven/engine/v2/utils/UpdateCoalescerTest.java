@@ -589,9 +589,9 @@ public class UpdateCoalescerTest {
         final Listener.Update agg = coalescer.coalesce();
 
         try (final MutableRowSet perUpdate = rowSet.clone();
-             final MutableRowSet aggUpdate = rowSet.clone();
-             final MutableRowSet perModify = RowSetFactory.empty();
-             final MutableRowSet perAdded = RowSetFactory.empty()) {
+                final MutableRowSet aggUpdate = rowSet.clone();
+                final MutableRowSet perModify = RowSetFactory.empty();
+                final MutableRowSet perAdded = RowSetFactory.empty()) {
 
             for (Listener.Update up : updates) {
                 perAdded.remove(up.removed);
@@ -635,7 +635,7 @@ public class UpdateCoalescerTest {
                     Assert.eqTrue(iter.currentValue() <= endRange, "iter.currentValue() <= endRange");
                 }
                 try (final RowSet sub = RowSetFactory.fromRange(beginRange, endRange);
-                     final MutableRowSet moving = myindex.extract(sub)) {
+                        final MutableRowSet moving = myindex.extract(sub)) {
                     moving.shiftInPlace(shiftDelta);
                     myindex.insert(moving);
                 }

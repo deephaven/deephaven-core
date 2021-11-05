@@ -5,6 +5,6 @@
   "computeShiftIfNeeded": "Computes any shift that should be applied to future tables.\n\n:param tableId: (int) - the table id of the table that might need more space\n:param maxKey: (long) - the max key for the table with tableId\n:return: (long) the relative shift to be applied to all tables with greater tableIds"
  },
  "path": "io.deephaven.engine.v2.sources.UnionRedirection",
- "text": "This class manages the constituent Tables for a UnionColumnSource, so that we can map from an outer (merged) index\n into the appropriate segment of a component table.",
+ "text": "This class manages the constituent Tables for a UnionColumnSource, so that we can map from an outer (merged) rowSet\n into the appropriate segment of a component table.",
  "typeName": "class"
 }

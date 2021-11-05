@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.engine.v2.utils.ExternalizableRowSetUtils",
+ "methods": {
+  "readExternalCompressedDelta": ":param in: java.io.DataInput\n:return: io.deephaven.engine.v2.utils.RowSet",
+  "writeExternalCompressedDeltas": "Write an TrackingMutableRowSet to out.\n\n:param out: (java.io.DataOutput) - The destination\n:param rowSet: (io.deephaven.engine.v2.utils.RowSet) - The rowSet"
+ },
+ "path": "io.deephaven.engine.v2.utils.ExternalizableRowSetUtils",
+ "text": "Utility methods used for writing/reading TrackingMutableRowSetes.",
+ "typeName": "class"
+}

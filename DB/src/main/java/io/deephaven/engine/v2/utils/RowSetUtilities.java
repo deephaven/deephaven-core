@@ -177,15 +177,15 @@ public class RowSetUtilities {
     }
 
     /**
-     * This is equivalent to `sourceRowSet.invert(destRowSet).forAllRowKeyRanges(lrc)`, but requires O(1) space. Note that
-     * coalescing adjacent position-space runs enables callers to make minimal System.arraycopy calls.
+     * This is equivalent to `sourceRowSet.invert(destRowSet).forAllRowKeyRanges(lrc)`, but requires O(1) space. Note
+     * that coalescing adjacent position-space runs enables callers to make minimal System.arraycopy calls.
      *
      * @param sourceRowSet rowSet to find the destRowSet keys in - ranges in the callback will be on this rowSet
      * @param destRowSet rowSet values to look for within sourceRowSet
      * @param lrc consumer to handle each inverted range that is encountered
      */
     public static void forAllInvertedLongRanges(final RowSet sourceRowSet, final RowSet destRowSet,
-                                                final LongRangeConsumer lrc) {
+            final LongRangeConsumer lrc) {
         final MutableBoolean hasPending = new MutableBoolean();
         final MutableLong pendingStart = new MutableLong(RowSet.NULL_ROW_KEY);
         final MutableLong pendingEnd = new MutableLong(RowSet.NULL_ROW_KEY);

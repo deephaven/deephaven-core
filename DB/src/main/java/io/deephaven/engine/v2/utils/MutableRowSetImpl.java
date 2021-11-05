@@ -430,7 +430,8 @@ public class MutableRowSetImpl extends RowSequenceAsChunkImpl implements Mutable
         out.writeObject(innerSet);
     }
 
-    public static void addToBuilderFromImpl(final OrderedLongSet.BuilderRandom builder, final MutableRowSetImpl rowSet) {
+    public static void addToBuilderFromImpl(final OrderedLongSet.BuilderRandom builder,
+            final MutableRowSetImpl rowSet) {
         if (rowSet.innerSet instanceof SingleRange) {
             builder.add((SingleRange) rowSet.innerSet);
             return;

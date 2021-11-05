@@ -22,10 +22,10 @@ import java.util.stream.Collectors;
  */
 public abstract class GroupingRowSetHelper extends MutableRowSetImpl implements TrackingMutableRowSet {
 
-    /* TODO (https://github.com/deephaven/deephaven-core/issues/1521):
-     * We need to do something better than weakly-reachable List<ColumnSource>s here. Indices are probably cleaned
-     * up well before we want right now. Values are only cleaned up on access. Both are sub-par. Worse, the keys are
-     * often strongly reachable from the values.
+    /*
+     * TODO (https://github.com/deephaven/deephaven-core/issues/1521): We need to do something better than
+     * weakly-reachable List<ColumnSource>s here. Indices are probably cleaned up well before we want right now. Values
+     * are only cleaned up on access. Both are sub-par. Worse, the keys are often strongly reachable from the values.
      */
 
     /**

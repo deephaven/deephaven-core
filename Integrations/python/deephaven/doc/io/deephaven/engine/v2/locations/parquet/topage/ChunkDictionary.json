@@ -1,9 +1,9 @@
 {
  "className": "io.deephaven.engine.v2.locations.parquet.topage.ChunkDictionary",
  "methods": {
-  "get": "Forward lookup from the integral index.\n\n:param index: long\n:return: (ChunkDictionary.T) the DATA_TYPE associated with the index.",
+  "get": "Forward lookup from the integral rowSet.\n\n:param index: long\n:return: (ChunkDictionary.T) the DATA_TYPE associated with the rowSet.",
   "length": ":return: int",
-  "rget": "Reverse lookup of the DATA_TYPE.\n\n:param highestIndex: int\n:param value: ChunkDictionary.T\n:return: (int) the integral index associated with the DATA_TYPE."
+  "rget": "Reverse lookup of the DATA_TYPE.\n\n:param highestIndex: int\n:param value: ChunkDictionary.T\n:return: (int) the integral rowSet associated with the DATA_TYPE."
  },
  "path": "io.deephaven.engine.v2.locations.parquet.topage.ChunkDictionary",
  "text": "Chunk-backed dictionary for use by ToPage implementations.",

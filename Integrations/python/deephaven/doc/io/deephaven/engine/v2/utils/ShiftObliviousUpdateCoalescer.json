@@ -1,0 +1,12 @@
+{
+ "className": "io.deephaven.engine.v2.utils.ShiftObliviousUpdateCoalescer",
+ "methods": {
+  "takeAdded": ":return: io.deephaven.engine.v2.utils.RowSet",
+  "takeModified": ":return: io.deephaven.engine.v2.utils.RowSet",
+  "takeRemoved": ":return: io.deephaven.engine.v2.utils.RowSet",
+  "update": ":param addedOnUpdate: io.deephaven.engine.v2.utils.RowSet\n:param removedOnUpdate: io.deephaven.engine.v2.utils.RowSet\n:param modifiedOnUpdate: io.deephaven.engine.v2.utils.RowSet"
+ },
+ "path": "io.deephaven.engine.v2.utils.ShiftObliviousUpdateCoalescer",
+ "text": "Helper utility for coalescing multiple updates.",
+ "typeName": "class"
+}

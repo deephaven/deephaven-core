@@ -65,7 +65,7 @@ public interface Listener extends ListenerBase {
         public Update() {}
 
         public Update(final RowSet added, final RowSet removed, final RowSet modified, final RowSetShiftData shifted,
-                      final ModifiedColumnSet modifiedColumnSet) {
+                final ModifiedColumnSet modifiedColumnSet) {
             this.added = added;
             this.removed = removed;
             this.modified = modified;

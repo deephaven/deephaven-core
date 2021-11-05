@@ -342,10 +342,11 @@ public class TestRegionedColumnSourceManager extends LiveTableTestCase {
             assertTrue(expectedPartitioningColumnGrouping.isEmpty());
         } else {
             assertEquals(expectedPartitioningColumnGrouping.keySet(), partitioningColumnGrouping.keySet());
-            expectedPartitioningColumnGrouping.forEach((final String columnPartition, final RowSet expectedGrouping) -> {
-                final RowSet grouping = partitioningColumnGrouping.get(columnPartition);
-                assertIndexEquals(expectedGrouping, grouping);
-            });
+            expectedPartitioningColumnGrouping
+                    .forEach((final String columnPartition, final RowSet expectedGrouping) -> {
+                        final RowSet grouping = partitioningColumnGrouping.get(columnPartition);
+                        assertIndexEquals(expectedGrouping, grouping);
+                    });
         }
     }
 

@@ -7,8 +7,8 @@ import io.deephaven.engine.v2.utils.AbstractIndexUpdateNotification;
 /**
  * This is a notification that does not actually notify anything.
  *
- * It is useful for the {@link ShiftObliviousSwapListener} to have the ability to create a notification for its
- * parent before there is anything to notify.
+ * It is useful for the {@link ShiftObliviousSwapListener} to have the ability to create a notification for its parent
+ * before there is anything to notify.
  */
 public class NullIndexUpdateNotification extends AbstractIndexUpdateNotification {
     public NullIndexUpdateNotification() {

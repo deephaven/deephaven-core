@@ -700,7 +700,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
                 final MutableLong outData,
                 final SortedRanges sar,
                 final RowSetUtilities.Comparator comp, final int startPos) { // startPos points to the beginning of a
-                                                                            // range.
+                                                                             // range.
             final long endPosUnpackedData = sar.unpackedGet(sar.count - 1);
             final long endPosUnpackedValue = Math.abs(endPosUnpackedData);
             int c = comp.directionToTargetFrom(endPosUnpackedValue);
@@ -1481,7 +1481,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
         final SortedRangesLong res = workSortedRangesLongPerThread.get();
         res.reset();
         try (RowSet.RangeIterator it1 = sr.getRangeIterator();
-             RowSet.RangeIterator it2 = takeComplement
+                RowSet.RangeIterator it2 = takeComplement
                         ? new ComplementRangeIterator(tix.ixRangeIterator())
                         : tix.ixRangeIterator()) {
             it1.next();
@@ -1597,7 +1597,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
         final SortedRangesLong res = workSortedRangesLongPerThread.get();
         res.reset();
         try (RowSet.RangeIterator it1 = sr1.getRangeIterator();
-             RowSet.RangeIterator it2 = sr2.getRangeIterator()) {
+                RowSet.RangeIterator it2 = sr2.getRangeIterator()) {
             it1.next();
             it2.next();
             long s1 = it1.currentRangeStart();
@@ -1968,7 +1968,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
                 sar.isDense() && otherSar.isDense());
         if (out != null) {
             try (final RowSet.RangeIterator sarIter = sar.getRangeIterator();
-                 final RowSet.RangeIterator otherIter = otherSar.getRangeIterator()) {
+                    final RowSet.RangeIterator otherIter = otherSar.getRangeIterator()) {
                 SortedRanges.unionOnNewHelper(out, sarIter, otherIter);
             }
         }
@@ -4173,7 +4173,8 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
         int i = iStart;
         boolean iNeg = iStartNeg;
         long iValue = iStartValue;
-        // iEndExclusive will be set to mark the end rowSet (exclusive) of the positions to be eliminated from the array.
+        // iEndExclusive will be set to mark the end rowSet (exclusive) of the positions to be eliminated from the
+        // array.
         int iEndExclusive = -1;
         while (true) {
             if (packedEnd <= iValue) {
@@ -4450,13 +4451,13 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
 
     @Override
     public final OrderedLongSet ixInsertSecondHalf(final LongChunk<Attributes.OrderedRowKeys> keys, final int offset,
-                                                   final int length) {
+            final int length) {
         return ixInsert(OrderedLongSet.fromChunk(keys, offset, length, true));
     }
 
     @Override
     public final OrderedLongSet ixRemoveSecondHalf(final LongChunk<Attributes.OrderedRowKeys> keys, final int offset,
-                                                   final int length) {
+            final int length) {
         return ixRemove(OrderedLongSet.fromChunk(keys, offset, length, true));
     }
 

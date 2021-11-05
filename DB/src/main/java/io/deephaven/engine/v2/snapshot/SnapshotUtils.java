@@ -76,8 +76,8 @@ public class SnapshotUtils {
     }
 
     /**
-     * For each name in srcColumns, copy all the data at srcColumns.get(name) (with a range of rows defined by srcRowSet)
-     * to a column indicated by destColumns.get(name) (with a range of rows defined by destRowSet).
+     * For each name in srcColumns, copy all the data at srcColumns.get(name) (with a range of rows defined by
+     * srcRowSet) to a column indicated by destColumns.get(name) (with a range of rows defined by destRowSet).
      *
      * @param srcColumns The stamp columns that serve as the source data
      * @param srcRowSet The keys in the srcColumns we are reading from
@@ -85,9 +85,9 @@ public class SnapshotUtils {
      * @param destRowSet The keys in destColumns we want to write to
      */
     public static void copyDataColumns(@NotNull Map<String, ? extends ColumnSource<?>> srcColumns,
-                                       @NotNull RowSet srcRowSet, @NotNull Map<String, ? extends WritableSource<?>> destColumns,
-                                       @NotNull RowSet destRowSet,
-                                       boolean usePrev) {
+            @NotNull RowSet srcRowSet, @NotNull Map<String, ? extends WritableSource<?>> destColumns,
+            @NotNull RowSet destRowSet,
+            boolean usePrev) {
         assert srcRowSet.size() == destRowSet.size();
         if (srcRowSet.isEmpty()) {
             return;

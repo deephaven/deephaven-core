@@ -6,6 +6,6 @@
   "removeIndex": "Flag key as a removal (if it wasn't added on this cycle). Must only be called in an updater function.\n\n:param key: (long) - The key"
  },
  "path": "io.deephaven.engine.v2.UpdatableTable.IndexChangeRecorder",
- "text": "Interface provided to updater functions that allows index changes to be recorded for propagation.",
+ "text": "Interface provided to updater functions that allows rowSet changes to be recorded for propagation.",
  "typeName": "interface"
 }

@@ -40,10 +40,10 @@ public class SortHelpers {
             Configuration.getInstance().getBooleanWithDefault("QueryTable.sortBySymbolTable", true);
 
     /**
-     * If we have more than this many entries per group, instead of creating a large flat redirection TrackingMutableRowSet, we create a
-     * redirection rowSet that is composed of the group indices and an accumulated cardinality cache. This can save a
-     * significant amount of memory when the groups are large and storing them using our TrackingMutableRowSet structure is more
-     * efficient.
+     * If we have more than this many entries per group, instead of creating a large flat redirection
+     * TrackingMutableRowSet, we create a redirection rowSet that is composed of the group indices and an accumulated
+     * cardinality cache. This can save a significant amount of memory when the groups are large and storing them using
+     * our TrackingMutableRowSet structure is more efficient.
      */
     public static int groupedRedirectionThreshold =
             Configuration.getInstance().getIntegerWithDefault("SortHelpers.groupedRedirectionThreshold", 32);
@@ -214,7 +214,7 @@ public class SortHelpers {
      * need to call getPrevRowSet.
      */
     static SortMapping getSortedKeys(SortingOrder[] order, ColumnSource<Comparable<?>>[] columnsToSortBy,
-                                     RowSet indexToSort, boolean usePrev) {
+            RowSet indexToSort, boolean usePrev) {
         return getSortedKeys(order, columnsToSortBy, indexToSort, usePrev, sortBySymbolTable);
     }
 
@@ -223,7 +223,7 @@ public class SortHelpers {
      * need to call getPrevRowSet.
      */
     static SortMapping getSortedKeys(SortingOrder[] order, ColumnSource<Comparable<?>>[] columnsToSortBy,
-                                     RowSet indexToSort, boolean usePrev, boolean allowSymbolTable) {
+            RowSet indexToSort, boolean usePrev, boolean allowSymbolTable) {
         if (indexToSort.size() == 0) {
             return EMPTY_SORT_MAPPING;
         }
@@ -333,7 +333,7 @@ public class SortHelpers {
     private static final String SORTED_INDEX_COLUMN_UPDATE = SORTED_INDEX_COLUMN_NAME + "=i";
 
     private static SortMapping doSymbolTableMapping(SortingOrder order, ColumnSource<Comparable<?>> columnSource,
-                                                    RowSet index, boolean usePrev) {
+            RowSet index, boolean usePrev) {
         final int sortSize = index.intSize();
 
         final ColumnSource<Long> reinterpreted = columnSource.reinterpret(long.class);
@@ -432,7 +432,7 @@ public class SortHelpers {
     }
 
     private static SortMapping getSortMappingOne(SortingOrder order, ColumnSource<Comparable<?>> columnSource,
-                                                 RowSet index, boolean usePrev) {
+            RowSet index, boolean usePrev) {
         final long sortSize = index.size();
 
         if (sortSize >= megaSortSize) {
@@ -444,7 +444,7 @@ public class SortHelpers {
 
     @NotNull
     private static SortMapping doMegaSortOne(SortingOrder order, ColumnSource<Comparable<?>> columnSource,
-                                             RowSet index, boolean usePrev, long sortSize) {
+            RowSet index, boolean usePrev, long sortSize) {
         final LongArraySource resultIndices = new LongArraySource();
         resultIndices.ensureCapacity(sortSize, false);
         final ArrayBackedColumnSource<?> valuesToMerge =
@@ -538,7 +538,7 @@ public class SortHelpers {
     }
 
     private static SortMapping getSortMappingMulti(SortingOrder[] order, ColumnSource<Comparable<?>>[] columnSources,
-                                                   RowSet index, boolean usePrev) {
+            RowSet index, boolean usePrev) {
         Assert.gt(columnSources.length, "columnSources.length", 1);
         final int sortSize = index.intSize();
 

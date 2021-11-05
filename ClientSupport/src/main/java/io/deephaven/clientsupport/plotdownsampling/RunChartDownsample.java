@@ -524,7 +524,8 @@ public class RunChartDownsample implements Function.Unary<Table, Table> {
             nanosPerPx = (long) (1.1 * (last - first) / key.bins);
         }
 
-        private void handleAdded(final DownsampleChunkContext context, final boolean usePrev, final RowSet addedRowSet) {
+        private void handleAdded(final DownsampleChunkContext context, final boolean usePrev,
+                final RowSet addedRowSet) {
             final RowSet rowSet = usePrev ? addedRowSet.trackingCast().getPrevRowSet() : addedRowSet;
             if (rowSet.isEmpty()) {
                 return;
@@ -717,8 +718,8 @@ public class RunChartDownsample implements Function.Unary<Table, Table> {
             if (rangeMode == RangeMode.ZOOM) {
                 return Stream.concat(
                         Stream.of(head, tail).filter(s -> !s.getIndex().isEmpty()), // note: we only filter these two,
-                                                                                  // since states shouldn't contain
-                                                                                  // empty indexes anyway
+                                                                                    // since states shouldn't contain
+                                                                                    // empty indexes anyway
                         states.values().stream())
                         .reduce(RowSetFactory.builderRandom(), (builder, state) -> {
                             builder.addRowSet(state.makeIndex());

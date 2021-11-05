@@ -120,7 +120,7 @@ public class TableDiff {
                     .toArray(ColumnDiffContext[]::new);
 
             try (final RowSequence.Iterator expectedIterator = expectedResult.getRowSet().getRowSequenceIterator();
-                 final RowSequence.Iterator actualIterator = actualResult.getRowSet().getRowSequenceIterator()) {
+                    final RowSequence.Iterator actualIterator = actualResult.getRowSet().getRowSequenceIterator()) {
 
                 int columnsRemaining = columnContexts.length;
                 long position = 0;

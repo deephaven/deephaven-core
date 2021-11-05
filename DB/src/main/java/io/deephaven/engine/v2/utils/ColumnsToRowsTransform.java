@@ -192,8 +192,8 @@ public class ColumnsToRowsTransform {
             }
         }
 
-        final TrackingMutableRowSet resultRowSet = transformIndex(source.getRowSet(), fanout, fanoutPow2).
-                convertToTracking();
+        final TrackingMutableRowSet resultRowSet =
+                transformIndex(source.getRowSet(), fanout, fanoutPow2).convertToTracking();
 
         final QueryTable result = new QueryTable(resultRowSet, resultMap);
 
@@ -313,7 +313,7 @@ public class ColumnsToRowsTransform {
     }
 
     private static RowSet transformIndex(final RowSet rowSet, final int fanoutPow2, final boolean[] rowModified,
-                                         final int maxModified) {
+            final int maxModified) {
         final RowSetBuilderSequential sequentialBuilder = RowSetFactory.builderSequential();
         rowSet.forAllRowKeys(idx -> {
             for (int ii = 0; ii <= maxModified; ++ii) {

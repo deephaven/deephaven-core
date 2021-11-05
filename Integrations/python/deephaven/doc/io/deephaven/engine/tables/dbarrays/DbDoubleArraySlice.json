@@ -2,7 +2,6 @@
  "className": "io.deephaven.engine.tables.dbarrays.DbDoubleArraySlice",
  "methods": {
   "get": ":param index: long\n:return: double",
-  "getPrev": ":param index: long\n:return: double",
   "isEmpty": ":return: boolean",
   "size": "The size of this data structure.\n\n:return: (long) The size",
   "subArray": ":param fromIndexInclusive: long\n:param toIndexExclusive: long\n:return: io.deephaven.engine.tables.dbarrays.DbDoubleArray",
