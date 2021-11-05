@@ -7,9 +7,9 @@
 
 package io.deephaven.engine.v2.sources;
 
-import io.deephaven.engine.util.BooleanUtils;
+import io.deephaven.util.BooleanUtils;
 
-import static io.deephaven.engine.util.BooleanUtils.NULL_BOOLEAN_AS_BYTE;
+import static io.deephaven.util.BooleanUtils.NULL_BOOLEAN_AS_BYTE;
 
 
 import io.deephaven.engine.v2.sources.chunk.*;

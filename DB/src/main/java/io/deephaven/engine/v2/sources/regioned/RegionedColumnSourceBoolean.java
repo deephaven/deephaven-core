@@ -1,6 +1,6 @@
 package io.deephaven.engine.v2.sources.regioned;
 
-import io.deephaven.engine.util.BooleanUtils;
+import io.deephaven.util.BooleanUtils;
 import io.deephaven.engine.v2.sources.ColumnSourceGetDefaults;
 import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.structures.RowSequence;

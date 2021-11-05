@@ -8,9 +8,9 @@ import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
-import static io.deephaven.engine.util.BooleanUtils.FALSE_BOOLEAN_AS_BYTE;
-import static io.deephaven.engine.util.BooleanUtils.NULL_BOOLEAN_AS_BYTE;
-import static io.deephaven.engine.util.BooleanUtils.TRUE_BOOLEAN_AS_BYTE;
+import static io.deephaven.util.BooleanUtils.FALSE_BOOLEAN_AS_BYTE;
+import static io.deephaven.util.BooleanUtils.NULL_BOOLEAN_AS_BYTE;
+import static io.deephaven.util.BooleanUtils.TRUE_BOOLEAN_AS_BYTE;
 
 public class ArrayGenerator {
 

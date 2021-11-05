@@ -10,7 +10,7 @@ import io.deephaven.engine.structures.rowsequence.RowSequenceUtil;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.utils.DBDateTime;
 import io.deephaven.engine.tables.utils.DBTimeUtils;
-import io.deephaven.engine.util.BooleanUtils;
+import io.deephaven.util.BooleanUtils;
 import io.deephaven.engine.v2.*;
 import io.deephaven.engine.v2.Listener.Update;
 import io.deephaven.engine.v2.select.SelectColumn;

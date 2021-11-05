@@ -5,7 +5,7 @@ package io.deephaven.engine.v2.sources.deltaaware;
 
 import io.deephaven.engine.v2.sources.chunk.ObjectChunk;
 
-import io.deephaven.engine.util.BooleanUtils;
+import io.deephaven.util.BooleanUtils;
 
 import io.deephaven.engine.tables.live.LiveTableMonitor;
 import io.deephaven.engine.v2.sources.ArrayGenerator;
@@ -199,7 +199,7 @@ public class TestBooleanDeltaAwareColumnSource {
         for (final RowSet.Iterator it = keys.iterator(); it.hasNext(); ) {
             final long key = it.nextLong();
             final byte expectedValue = expected.get(key);
-            final byte actualValue = io.deephaven.engine.util.BooleanUtils.booleanAsByte(values.get(sliceOffset++));
+            final byte actualValue = io.deephaven.util.BooleanUtils.booleanAsByte(values.get(sliceOffset++));
             assertEquals(expectedValue, actualValue);
         }
     }

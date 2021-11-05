@@ -1,6 +1,6 @@
 package io.deephaven.engine.v2.by.ssmminmax;
 
-import io.deephaven.engine.util.BooleanUtils;
+import io.deephaven.util.BooleanUtils;
 import io.deephaven.engine.v2.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.v2.sources.BooleanArraySource;
 import io.deephaven.engine.v2.ssms.ObjectSegmentedSortedMultiset;

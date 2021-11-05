@@ -1,6 +1,6 @@
 package io.deephaven.engine.v2.sources.immutable;
 
-import io.deephaven.engine.util.BooleanUtils;
+import io.deephaven.util.BooleanUtils;
 import io.deephaven.engine.v2.sources.AbstractColumnSource;
 import io.deephaven.engine.v2.sources.ImmutableColumnSourceGetDefaults;
 

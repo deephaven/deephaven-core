@@ -4,7 +4,7 @@
 
 package io.deephaven.engine.v2.sources;
 
-import io.deephaven.engine.util.BooleanUtils;
+import io.deephaven.util.BooleanUtils;
 import io.deephaven.engine.v2.sources.chunk.ObjectChunk;
 import io.deephaven.engine.v2.sources.chunk.WritableObjectChunk;
 import org.apache.commons.io.FileUtils;
@@ -137,7 +137,7 @@ public class ReplicateSourcesAndChunkTest {
                 "byte.class", "boolean.class",
                 "BooleanChunk<[?] extends Values>", "ObjectChunk<Boolean, ? extends Values>",
                 "asBooleanChunk", "asObjectChunk",
-                "values.get\\((.*)\\)", "io.deephaven.engine.util.BooleanUtils.booleanAsByte(values.get($1))");
+                "values.get\\((.*)\\)", "io.deephaven.util.BooleanUtils.booleanAsByte(values.get($1))");
         lines = addImport(lines, BooleanUtils.class);
         lines = addImport(lines, ObjectChunk.class);
         FileUtils.writeLines(booleanFile, lines);

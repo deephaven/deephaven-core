@@ -4,7 +4,7 @@ import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.tables.live.LiveTableMonitor;
 import io.deephaven.engine.tables.select.QueryScope;
 import io.deephaven.engine.tables.utils.TableTools;
-import io.deephaven.engine.util.BooleanUtils;
+import io.deephaven.util.BooleanUtils;
 import io.deephaven.engine.v2.DynamicNode;
 import io.deephaven.engine.v2.InMemoryTable;
 import io.deephaven.engine.tables.Table;

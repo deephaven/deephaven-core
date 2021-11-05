@@ -7,7 +7,7 @@ import io.deephaven.engine.v2.sources.chunk.ObjectChunk;
 
 import io.deephaven.engine.v2.sources.chunk.WritableObjectChunk;
 
-import io.deephaven.engine.util.BooleanUtils;
+import io.deephaven.util.BooleanUtils;
 
 import io.deephaven.engine.tables.live.LiveTableMonitor;
 import io.deephaven.engine.v2.select.FormulaColumn;

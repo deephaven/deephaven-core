@@ -3,7 +3,7 @@ package io.deephaven.engine.v2.tuples.generated;
 import io.deephaven.datastructures.util.SmartKey;
 import io.deephaven.engine.tables.utils.DBDateTime;
 import io.deephaven.engine.tables.utils.DBTimeUtils;
-import io.deephaven.engine.util.BooleanUtils;
+import io.deephaven.util.BooleanUtils;
 import io.deephaven.engine.util.tuples.generated.LongByteDoubleTuple;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.WritableSource;

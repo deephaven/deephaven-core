@@ -1,6 +1,6 @@
 package io.deephaven.engine.v2.sources.deltaaware;
 
-import io.deephaven.engine.util.BooleanUtils;
+import io.deephaven.util.BooleanUtils;
 import io.deephaven.engine.v2.sources.chunk.ChunkSource;
 import io.deephaven.engine.v2.sources.WritableChunkSink;
 import io.deephaven.engine.v2.sources.chunk.*;

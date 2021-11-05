@@ -6,7 +6,7 @@ package io.deephaven.engine.v2.sources;
 
 import io.deephaven.compilertools.ReplicateUtilities;
 import io.deephaven.engine.tables.dbarrays.DbArrayBase;
-import io.deephaven.engine.util.BooleanUtils;
+import io.deephaven.util.BooleanUtils;
 import io.deephaven.engine.util.DhObjectComparisons;
 import org.apache.commons.io.FileUtils;
 

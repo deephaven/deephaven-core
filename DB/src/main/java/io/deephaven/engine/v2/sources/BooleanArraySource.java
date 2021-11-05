@@ -4,7 +4,7 @@
 
 package io.deephaven.engine.v2.sources;
 
-import io.deephaven.engine.util.BooleanUtils;
+import io.deephaven.util.BooleanUtils;
 import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.sources.chunk.Attributes.RowKeys;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
@@ -15,7 +15,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
 
-import static io.deephaven.engine.util.BooleanUtils.NULL_BOOLEAN_AS_BYTE;
+import static io.deephaven.util.BooleanUtils.NULL_BOOLEAN_AS_BYTE;
 
 /**
  * TODO: Re-implement this with better compression (only need 2 bits per value, or we can pack 5 values into 1 byte if we're feeling fancy).

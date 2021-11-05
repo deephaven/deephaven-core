@@ -13,7 +13,7 @@ import io.deephaven.engine.tables.select.MatchPair;
 import io.deephaven.engine.tables.utils.DBDateTime;
 import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.util.QueryConstants;
-import io.deephaven.engine.util.BooleanUtils;
+import io.deephaven.util.BooleanUtils;
 import io.deephaven.engine.util.ColumnFormattingValues;
 import io.deephaven.engine.v2.HierarchicalTable;
 import io.deephaven.engine.v2.HierarchicalTableInfo;
