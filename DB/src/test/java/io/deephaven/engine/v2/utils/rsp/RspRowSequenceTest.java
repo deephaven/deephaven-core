@@ -574,7 +574,7 @@ public class RspRowSequenceTest extends RowSequenceTestBase {
 
     @Test
     public void testAsKeyRangesChunkRegression0SortedRanges() {
-        MutableRowSet rowSet = RowSetFactoryImpl.INSTANCE.empty();
+        MutableRowSet rowSet = RowSetFactory.empty();
         rowSet.insertRange(130972, 131071);
         rowSet.insert(262144);
 

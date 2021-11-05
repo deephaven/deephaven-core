@@ -275,7 +275,7 @@ public class QueryTableFlattenTest extends QueryTableTestBase {
     }
 
     private static MutableRowSet indexByRange(long firstKey, long lastKey) {
-        return RowSetFactoryImpl.INSTANCE.fromRange(firstKey, lastKey);
+        return RowSetFactory.fromRange(firstKey, lastKey);
     }
 
     private static RowSetShiftData shiftDataByValues(long... values) {

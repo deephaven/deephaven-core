@@ -59,7 +59,7 @@ public class SequentialIndexBuilderBench {
 
     @Benchmark
     public void b01_buildAndPopulateWithSequentialBuilderKeyIndices(final Blackhole bh) {
-        final RowSetBuilderSequential b = RowSetFactoryImpl.INSTANCE.builderSequential();
+        final RowSetBuilderSequential b = RowSetFactory.builderSequential();
         for (int i = 0; i < sz; ++i) {
             b.appendKey(values[i]);
         }
@@ -79,7 +79,7 @@ public class SequentialIndexBuilderBench {
 
     @Benchmark
     public void c01_buildAndPopulateWithSequentialBuilderKeyRanges(final Blackhole bh) {
-        final RowSetBuilderSequential b = RowSetFactoryImpl.INSTANCE.builderSequential();
+        final RowSetBuilderSequential b = RowSetFactory.builderSequential();
         for (int i = 0; i < sz; ++i) {
             final long v = values[i];
             b.appendRange(v, v + rangeStep);

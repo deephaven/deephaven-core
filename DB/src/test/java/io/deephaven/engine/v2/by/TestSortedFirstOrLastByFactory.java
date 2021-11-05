@@ -9,7 +9,7 @@ import io.deephaven.engine.tables.live.LiveTableMonitor;
 import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.util.SortedBy;
 import io.deephaven.engine.v2.*;
-import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
+import io.deephaven.engine.v2.utils.RowSetFactory;
 import io.deephaven.engine.v2.utils.RowSetShiftData;
 import io.deephaven.test.types.OutOfBandTest;
 import junit.framework.TestCase;
@@ -87,7 +87,7 @@ public class TestSortedFirstOrLastByFactory extends LiveTableTestCase {
 
     public void testIds6445() {
         final QueryTable source =
-                TstUtils.testRefreshingTable(RowSetFactoryImpl.INSTANCE.flat(5).convertToTracking(),
+                TstUtils.testRefreshingTable(RowSetFactory.flat(5).convertToTracking(),
                         intCol("SFB", 2, 1, 2, 1, 2), intCol("Sentinel", 1, 2, 3, 4, 5),
                         col("DummyBucket", "A", "A", "A", "A", "A"));
         // final FuzzerPrintListener pl = new FuzzerPrintListener("source", source);
@@ -117,14 +117,14 @@ public class TestSortedFirstOrLastByFactory extends LiveTableTestCase {
         // shift modify combination left it at the same rowSet; we would not notice the mdoification
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             final Listener.Update update = new Listener.Update();
-            update.added = RowSetFactoryImpl.INSTANCE.fromKeys(0);
-            update.removed = RowSetFactoryImpl.INSTANCE.empty();
-            update.modified = RowSetFactoryImpl.INSTANCE.fromKeys(2, 4);
+            update.added = RowSetFactory.fromKeys(0);
+            update.removed = RowSetFactory.empty();
+            update.modified = RowSetFactory.fromKeys(2, 4);
             update.modifiedColumnSet = source.getModifiedColumnSetForUpdates();
             update.modifiedColumnSet.clear();
             update.modifiedColumnSet.setAll("SFB");
 
-            addToTable(source, RowSetFactoryImpl.INSTANCE.flat(6), intCol("SFB", 3, 2, 3, 2, 3, 2),
+            addToTable(source, RowSetFactory.flat(6), intCol("SFB", 3, 2, 3, 2, 3, 2),
                     intCol("Sentinel", 6, 1, 2, 3, 4, 5), col("DummyBucket", "A", "A", "A", "A", "A", "A"));
 
             final RowSetShiftData.Builder sb = new RowSetShiftData.Builder();
@@ -142,14 +142,14 @@ public class TestSortedFirstOrLastByFactory extends LiveTableTestCase {
         // shifting without modifications
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             final Listener.Update update = new Listener.Update();
-            update.added = RowSetFactoryImpl.INSTANCE.fromKeys(0);
-            update.removed = RowSetFactoryImpl.INSTANCE.empty();
-            update.modified = RowSetFactoryImpl.INSTANCE.fromKeys();
+            update.added = RowSetFactory.fromKeys(0);
+            update.removed = RowSetFactory.empty();
+            update.modified = RowSetFactory.fromKeys();
             update.modifiedColumnSet = source.getModifiedColumnSetForUpdates();
             update.modifiedColumnSet.clear();
             update.modifiedColumnSet.setAll("SFB");
 
-            addToTable(source, RowSetFactoryImpl.INSTANCE.flat(7), intCol("SFB", 4, 3, 2, 3, 2, 3, 2),
+            addToTable(source, RowSetFactory.flat(7), intCol("SFB", 4, 3, 2, 3, 2, 3, 2),
                     intCol("Sentinel", 7, 6, 1, 2, 3, 4, 5), col("DummyBucket", "A", "A", "A", "A", "A", "A", "A"));
 
             final RowSetShiftData.Builder sb = new RowSetShiftData.Builder();
@@ -168,14 +168,14 @@ public class TestSortedFirstOrLastByFactory extends LiveTableTestCase {
         // here we are shifting, but not modifying the SFB column (but are modifying sentinel)
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             final Listener.Update update = new Listener.Update();
-            update.added = RowSetFactoryImpl.INSTANCE.fromKeys(0);
-            update.removed = RowSetFactoryImpl.INSTANCE.empty();
-            update.modified = RowSetFactoryImpl.INSTANCE.fromKeys(3);
+            update.added = RowSetFactory.fromKeys(0);
+            update.removed = RowSetFactory.empty();
+            update.modified = RowSetFactory.fromKeys(3);
             update.modifiedColumnSet = source.getModifiedColumnSetForUpdates();
             update.modifiedColumnSet.clear();
             update.modifiedColumnSet.setAll("Sentinel");
 
-            addToTable(source, RowSetFactoryImpl.INSTANCE.flat(8), intCol("SFB", 4, 4, 3, 2, 3, 2, 3, 2),
+            addToTable(source, RowSetFactory.flat(8), intCol("SFB", 4, 4, 3, 2, 3, 2, 3, 2),
                     intCol("Sentinel", 8, 7, 6, 9, 2, 3, 4, 5),
                     col("DummyBucket", "A", "A", "A", "A", "A", "A", "A", "A"));
 
@@ -195,14 +195,14 @@ public class TestSortedFirstOrLastByFactory extends LiveTableTestCase {
         // we are shifting, and claiming to modify SFB but not actually doing it
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             final Listener.Update update = new Listener.Update();
-            update.added = RowSetFactoryImpl.INSTANCE.fromKeys(0);
-            update.removed = RowSetFactoryImpl.INSTANCE.empty();
-            update.modified = RowSetFactoryImpl.INSTANCE.fromKeys(4);
+            update.added = RowSetFactory.fromKeys(0);
+            update.removed = RowSetFactory.empty();
+            update.modified = RowSetFactory.fromKeys(4);
             update.modifiedColumnSet = source.getModifiedColumnSetForUpdates();
             update.modifiedColumnSet.clear();
             update.modifiedColumnSet.setAll("SFB");
 
-            addToTable(source, RowSetFactoryImpl.INSTANCE.flat(9), intCol("SFB", 4, 4, 4, 3, 2, 3, 2, 3, 2),
+            addToTable(source, RowSetFactory.flat(9), intCol("SFB", 4, 4, 4, 3, 2, 3, 2, 3, 2),
                     intCol("Sentinel", 10, 8, 7, 6, 9, 2, 3, 4, 5),
                     col("DummyBucket", "A", "A", "A", "A", "A", "A", "A", "A", "A"));
 
@@ -222,14 +222,14 @@ public class TestSortedFirstOrLastByFactory extends LiveTableTestCase {
         // here we are shifting, and modifying SFB but not actually doing it
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             final Listener.Update update = new Listener.Update();
-            update.added = RowSetFactoryImpl.INSTANCE.fromKeys(0);
-            update.removed = RowSetFactoryImpl.INSTANCE.empty();
-            update.modified = RowSetFactoryImpl.INSTANCE.fromKeys(4);
+            update.added = RowSetFactory.fromKeys(0);
+            update.removed = RowSetFactory.empty();
+            update.modified = RowSetFactory.fromKeys(4);
             update.modifiedColumnSet = source.getModifiedColumnSetForUpdates();
             update.modifiedColumnSet.clear();
             update.modifiedColumnSet.setAll("SFB");
 
-            addToTable(source, RowSetFactoryImpl.INSTANCE.flat(10), intCol("SFB", 4, 4, 4, 4, 1, 2, 3, 2, 3, 2),
+            addToTable(source, RowSetFactory.flat(10), intCol("SFB", 4, 4, 4, 4, 1, 2, 3, 2, 3, 2),
                     intCol("Sentinel", 11, 10, 8, 7, 6, 9, 2, 3, 4, 5),
                     col("DummyBucket", "A", "A", "A", "A", "A", "A", "A", "A", "A", "A"));
 
@@ -249,14 +249,14 @@ public class TestSortedFirstOrLastByFactory extends LiveTableTestCase {
         // claim to modify sfb, but don't really. Actually modify sentinel.
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             final Listener.Update update = new Listener.Update();
-            update.added = RowSetFactoryImpl.INSTANCE.fromKeys(0);
-            update.removed = RowSetFactoryImpl.INSTANCE.empty();
-            update.modified = RowSetFactoryImpl.INSTANCE.fromKeys(5);
+            update.added = RowSetFactory.fromKeys(0);
+            update.removed = RowSetFactory.empty();
+            update.modified = RowSetFactory.fromKeys(5);
             update.modifiedColumnSet = source.getModifiedColumnSetForUpdates();
             update.modifiedColumnSet.clear();
             update.modifiedColumnSet.setAll("SFB", "Sentinel");
 
-            addToTable(source, RowSetFactoryImpl.INSTANCE.flat(11), intCol("SFB", 4, 4, 4, 4, 4, 1, 2, 3, 2, 3, 2),
+            addToTable(source, RowSetFactory.flat(11), intCol("SFB", 4, 4, 4, 4, 4, 1, 2, 3, 2, 3, 2),
                     intCol("Sentinel", 12, 11, 10, 8, 7, 13, 9, 2, 3, 4, 5),
                     col("DummyBucket", "A", "A", "A", "A", "A", "A", "A", "A", "A", "A", "A"));
 

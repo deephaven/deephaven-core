@@ -6,7 +6,6 @@ package io.deephaven.engine.v2;
 import io.deephaven.base.verify.Require;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.structures.RowSequence;
-import io.deephaven.engine.structures.rowsequence.RowSequenceUtil;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.v2.hashing.*;
 // this is ugly to have twice, but we do need it twice for replication
@@ -20,7 +19,6 @@ import io.deephaven.engine.v2.sources.chunk.Attributes.*;
 import io.deephaven.engine.v2.utils.*;
 
 
-import io.deephaven.util.SafeCloseableArray;
 import org.jetbrains.annotations.NotNull;
 
 // region extra imports
@@ -197,7 +195,7 @@ class RightIncrementalChunkedNaturalJoinStateManager
     private void addLeftIndex(long tableLocation, long keyToAdd) {
         final MutableRowSet rowSet = leftRowSetSource.get(tableLocation);
         if (rowSet == null) {
-            leftRowSetSource.set(tableLocation, RowSetFactoryImpl.INSTANCE.fromKeys(keyToAdd));
+            leftRowSetSource.set(tableLocation, RowSetFactory.fromKeys(keyToAdd));
         } else {
             rowSet.insert(keyToAdd);
         }
@@ -252,7 +250,7 @@ class RightIncrementalChunkedNaturalJoinStateManager
     private void addLeftIndexOverflow(long overflowLocation, long keyToAdd) {
         final MutableRowSet rowSet = overflowLeftRowSetSource.get(overflowLocation);
         if (rowSet == null) {
-            overflowLeftRowSetSource.set(overflowLocation, RowSetFactoryImpl.INSTANCE.fromKeys(keyToAdd));
+            overflowLeftRowSetSource.set(overflowLocation, RowSetFactory.fromKeys(keyToAdd));
         } else {
             rowSet.insert(keyToAdd);
         }

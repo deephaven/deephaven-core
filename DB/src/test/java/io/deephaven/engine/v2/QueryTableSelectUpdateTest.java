@@ -377,8 +377,8 @@ public class QueryTableSelectUpdateTest {
             if (LiveTableTestCase.printTableUpdates) {
                 System.out.println("Positions to validate: " + checkInvert);
 
-                final RowSetBuilderSequential originalBuilder = RowSetFactoryImpl.INSTANCE.builderSequential();
-                final RowSetBuilderSequential recomputedBuilder = RowSetFactoryImpl.INSTANCE.builderSequential();
+                final RowSetBuilderSequential originalBuilder = RowSetFactory.builderSequential();
+                final RowSetBuilderSequential recomputedBuilder = RowSetFactory.builderSequential();
                 checkInvert.forAllRowKeys(x -> originalBuilder.appendKey(originalValue.getRowSet().get(x)));
                 checkInvert.forAllRowKeys(x -> recomputedBuilder.appendKey(recomputedValue.getRowSet().get(x)));
 
@@ -451,10 +451,10 @@ public class QueryTableSelectUpdateTest {
     private void doTestSparseRedirectedUpdate() {
         System.gc();
 
-        final QueryTable leftTable = new QueryTable(RowSetFactoryImpl.INSTANCE.flat(99).convertToTracking(),
+        final QueryTable leftTable = new QueryTable(RowSetFactory.flat(99).convertToTracking(),
                 Collections.emptyMap());
         leftTable.setRefreshing(true);
-        final QueryTable rightTable = new QueryTable(RowSetFactoryImpl.INSTANCE.flat(1).convertToTracking(),
+        final QueryTable rightTable = new QueryTable(RowSetFactory.flat(1).convertToTracking(),
                 Collections.emptyMap());
         rightTable.setRefreshing(true);
 
@@ -959,7 +959,7 @@ public class QueryTableSelectUpdateTest {
 
     @Test
     public void testSparseSelectWideIndex() {
-        final RowSetBuilderSequential builder = RowSetFactoryImpl.INSTANCE.builderSequential();
+        final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
         final int[] intVals = new int[63];
         for (int ii = 0; ii < 63; ii++) {
             builder.appendKey(1L << ii);
@@ -975,7 +975,7 @@ public class QueryTableSelectUpdateTest {
     @Test
     public void testSparseSelectSkipMemoryColumns() {
         final int[] intVals = {1, 2, 3, 4, 5};
-        final Table table = TstUtils.testRefreshingTable(RowSetFactoryImpl.INSTANCE.flat(5).convertToTracking(),
+        final Table table = TstUtils.testRefreshingTable(RowSetFactory.flat(5).convertToTracking(),
                         intCol("Value", intVals))
                 .update("V2=Value*2");
         final Table selected = SparseSelect.sparseSelect(table);

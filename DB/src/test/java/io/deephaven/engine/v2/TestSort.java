@@ -12,7 +12,7 @@ import io.deephaven.engine.tables.DataColumn;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.live.LiveTableMonitor;
 import io.deephaven.engine.tables.utils.DBDateTime;
-import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
+import io.deephaven.engine.v2.utils.RowSetFactory;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.tables.utils.TableTools;
@@ -618,7 +618,7 @@ public class TestSort extends BaseArrayTestCase {
         }
         columns.put("Sentinel", ArrayBackedColumnSource.getMemoryColumnSourceUntyped(sentinels));
 
-        return new QueryTable(RowSetFactoryImpl.INSTANCE.fromRange(0, size - 1).convertToTracking(), columns);
+        return new QueryTable(RowSetFactory.fromRange(0, size - 1).convertToTracking(), columns);
     }
 
     private Comparable[][] createBoxedData(Table source, int ncols, int size) {

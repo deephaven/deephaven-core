@@ -23,7 +23,6 @@ import io.deephaven.engine.v2.utils.*;
 import java.util.Arrays;
 import io.deephaven.engine.v2.sort.permute.IntPermuteKernel;
 // @StateChunkTypeEnum@ from \QInt\E
-import io.deephaven.engine.v2.sort.permute.IntPermuteKernel;
 import io.deephaven.engine.v2.utils.compact.IntCompactKernel;
 import io.deephaven.engine.v2.utils.compact.LongCompactKernel;
 // endmixin rehash
@@ -1003,7 +1002,7 @@ class SymbolTableCombiner
              final WritableIntChunk stateChunk = WritableIntChunk.makeWritableChunk(maxSize);
              final ChunkSource.FillContext fillContext = uniqueIdentifierSource.makeFillContext(maxSize)) {
 
-            uniqueIdentifierSource.fillChunk(fillContext, stateChunk, RowSetFactoryImpl.INSTANCE.flat(tableHashPivot));
+            uniqueIdentifierSource.fillChunk(fillContext, stateChunk, RowSetFactory.flat(tableHashPivot));
 
             ChunkUtils.fillInOrder(positions);
 
@@ -1616,8 +1615,8 @@ class SymbolTableCombiner
         final WritableIntChunk<HashCode> overflowHashChunk = WritableIntChunk.makeWritableChunk(nextOverflowLocation);
 
 
-        final RowSequence tableLocations = RowSetFactoryImpl.INSTANCE.fromRange(0, tableSize - 1);
-        final RowSequence overflowLocations = nextOverflowLocation > 0 ? RowSetFactoryImpl.INSTANCE.fromRange(0, nextOverflowLocation - 1) : RowSequence.EMPTY;
+        final RowSequence tableLocations = RowSetFactory.fromRange(0, tableSize - 1);
+        final RowSequence overflowLocations = nextOverflowLocation > 0 ? RowSetFactory.fromRange(0, nextOverflowLocation - 1) : RowSequence.EMPTY;
 
         for (int ii = 0; ii < keyColumnCount; ++ii) {
             dumpChunks[ii] = keyChunkTypes[ii].makeWritableChunk(tableSize);

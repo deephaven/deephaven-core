@@ -77,7 +77,7 @@ abstract public class AbstractSparseLongArraySource<T> extends SparseArrayColumn
 
     // region serialization
     private void writeObject(java.io.ObjectOutputStream out) throws IOException {
-        final RowSetBuilderSequential sb = RowSetFactoryImpl.INSTANCE.builderSequential();
+        final RowSetBuilderSequential sb = RowSetFactory.builderSequential();
         blocks.enumerate(NULL_LONG, sb::appendKey);
         final RowSet rowSet = sb.build();
 

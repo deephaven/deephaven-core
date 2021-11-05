@@ -270,7 +270,7 @@ public class MutableRowSetImpl extends RowSequenceAsChunkImpl implements Mutable
     @Override
     public final MutableRowSet minus(final RowSet indexToRemove) {
         if (indexToRemove == this) {
-            return RowSetFactoryImpl.INSTANCE.empty();
+            return RowSetFactory.empty();
         }
         return new MutableRowSetImpl(impl.ixMinusOnNew(getImpl(indexToRemove)));
     }

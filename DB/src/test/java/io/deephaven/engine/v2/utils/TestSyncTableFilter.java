@@ -384,12 +384,12 @@ public class TestSyncTableFilter extends LiveTableTestCase {
     }
 
     public void testTableMap() {
-        final QueryTable source1 = TstUtils.testRefreshingTable(RowSetFactoryImpl.INSTANCE.flat(10).convertToTracking(),
+        final QueryTable source1 = TstUtils.testRefreshingTable(RowSetFactory.flat(10).convertToTracking(),
                 col("Partition", "A", "A", "B", "B", "C", "C", "C", "D", "D", "D"),
                 longCol("ID", 1, 2, /* B */ 1, 2, /* C */ 1, 2, 2, /* D */ 1, 2, 2),
                 intCol("Sentinel", 101, 102, 103, 104, 105, 106, 107, 108, 109, 110));
 
-        final QueryTable source2 = TstUtils.testRefreshingTable(RowSetFactoryImpl.INSTANCE.flat(5).convertToTracking(),
+        final QueryTable source2 = TstUtils.testRefreshingTable(RowSetFactory.flat(5).convertToTracking(),
                 col("Division", "A", "A", "B", "C", "C"),
                 longCol("ID", 2, 3, 1, 2, 2),
                 intCol("Sentinel", 201, 202, 203, 204, 205));

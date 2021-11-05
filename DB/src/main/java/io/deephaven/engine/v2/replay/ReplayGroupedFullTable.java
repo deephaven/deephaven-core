@@ -26,7 +26,7 @@ public class ReplayGroupedFullTable extends QueryReplayGroupedTable {
         if (allIterators.isEmpty()) {
             return;
         }
-        RowSetBuilderRandom rowSetBuilder = RowSetFactoryImpl.INSTANCE.builderRandom();
+        RowSetBuilderRandom rowSetBuilder = RowSetFactory.builderRandom();
         while (!allIterators.isEmpty() && allIterators.peek().lastTime.getNanos() < replayer.currentTimeNanos()) {
             IteratorsAndNextTime currentIt = allIterators.poll();
             final long key = redirIndexSize++;
@@ -40,7 +40,7 @@ public class ReplayGroupedFullTable extends QueryReplayGroupedTable {
         final RowSet added = rowSetBuilder.build();
         if (added.size() > 0) {
             getRowSet().mutableCast().insert(added);
-            notifyListeners(added, RowSetFactoryImpl.INSTANCE.empty(), RowSetFactoryImpl.INSTANCE.empty());
+            notifyListeners(added, RowSetFactory.empty(), RowSetFactory.empty());
         }
     }
 

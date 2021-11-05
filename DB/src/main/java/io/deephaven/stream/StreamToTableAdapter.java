@@ -17,7 +17,7 @@ import io.deephaven.engine.v2.sources.chunk.Attributes;
 import io.deephaven.engine.v2.sources.chunk.ChunkType;
 import io.deephaven.engine.v2.sources.chunk.WritableChunk;
 import io.deephaven.engine.v2.sources.chunkcolumnsource.ChunkColumnSource;
-import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
+import io.deephaven.engine.v2.utils.RowSetFactory;
 import io.deephaven.engine.v2.utils.RowSetShiftData;
 import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.internal.log.LoggerFactory;
@@ -81,7 +81,7 @@ public class StreamToTableAdapter implements SafeCloseable, LiveTable, StreamCon
         final LinkedHashMap<String, ColumnSource<?>> visibleSources = new LinkedHashMap<>();
         switchSources = makeSwitchSources(tableDefinition, nullColumnSources, visibleSources);
 
-        rowSet = RowSetFactoryImpl.INSTANCE.empty().convertToTracking();
+        rowSet = RowSetFactory.empty().convertToTracking();
 
         table = new QueryTable(rowSet, visibleSources) {
             {
@@ -328,8 +328,8 @@ public class StreamToTableAdapter implements SafeCloseable, LiveTable, StreamCon
             rowSet.removeRange(newSize, oldSize - 1);
         }
 
-        table.notifyListeners(new Listener.Update(RowSetFactoryImpl.INSTANCE.flat(newSize),
-                RowSetFactoryImpl.INSTANCE.flat(oldSize), RowSetFactoryImpl.INSTANCE.empty(),
+        table.notifyListeners(new Listener.Update(RowSetFactory.flat(newSize),
+                RowSetFactory.flat(oldSize), RowSetFactory.empty(),
                 RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY));
     }
 

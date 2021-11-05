@@ -42,7 +42,7 @@ public class FlattenOperation implements QueryTable.MemoizableOperation<QueryTab
             resultColumns.put(entry.getKey(), new ReadOnlyRedirectedColumnSource<>(redirectionIndex, entry.getValue()));
         }
 
-        resultTable = new QueryTable(RowSetFactoryImpl.INSTANCE.flat(size).convertToTracking(), resultColumns);
+        resultTable = new QueryTable(RowSetFactory.flat(size).convertToTracking(), resultColumns);
         resultTable.setFlat();
         parent.copyAttributes(resultTable, BaseTable.CopyAttributeOperation.Flatten);
 
@@ -83,8 +83,8 @@ public class FlattenOperation implements QueryTable.MemoizableOperation<QueryTab
         // Check to see if we can simply invert and pass-down.
         downstream.modified = rowSet.invert(upstream.modified);
         if (upstream.added.isEmpty() && upstream.removed.isEmpty()) {
-            downstream.added = RowSetFactoryImpl.INSTANCE.empty();
-            downstream.removed = RowSetFactoryImpl.INSTANCE.empty();
+            downstream.added = RowSetFactory.empty();
+            downstream.removed = RowSetFactory.empty();
             downstream.shifted = RowSetShiftData.EMPTY;
             resultTable.notifyListeners(downstream);
             return;

@@ -5,7 +5,7 @@ import io.deephaven.engine.tables.select.QueryScope;
 import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.v2.sources.AbstractColumnSource;
 import io.deephaven.engine.v2.utils.RowSet;
-import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
+import io.deephaven.engine.v2.utils.RowSetFactory;
 import io.deephaven.test.junit4.EngineCleanup;
 import io.deephaven.test.types.OutOfBandTest;
 import org.junit.Rule;
@@ -82,7 +82,7 @@ public class QueryTableHugeSortTest {
                 TableTools.emptyTable(tableSize).updateView("Captain=captains[(int)(ii / segSize)]", "Sentinel=ii");
         final Map<String, RowSet> gtr = new LinkedHashMap<>();
         for (int ii = 0; ii < captains.length; ++ii) {
-            gtr.put(captains[ii], RowSetFactoryImpl.INSTANCE.fromRange(ii * segSize, (ii + 1) * segSize - 1));
+            gtr.put(captains[ii], RowSetFactory.fromRange(ii * segSize, (ii + 1) * segSize - 1));
         }
         System.out.println(gtr);
         ((AbstractColumnSource) (grouped.getColumnSource("Captain"))).setGroupToRange(gtr);

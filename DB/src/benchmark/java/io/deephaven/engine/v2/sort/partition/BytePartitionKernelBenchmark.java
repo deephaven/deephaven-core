@@ -8,7 +8,7 @@ import io.deephaven.engine.v2.sort.timsort.BaseTestByteTimSortKernel;
 import io.deephaven.engine.v2.sort.timsort.TestTimSortKernel;
 import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.engine.v2.utils.RowSetBuilderSequential;
-import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
+import io.deephaven.engine.v2.utils.RowSetFactory;
 import org.openjdk.jmh.annotations.*;
 
 import java.util.List;
@@ -69,7 +69,7 @@ public class BytePartitionKernelBenchmark {
         final Random random = new Random(0);
         final List<ByteLongTuple> stuffToSort = generate.generate(random, dataSize);
 
-        final RowSetBuilderSequential sequentialBuilder = RowSetFactoryImpl.INSTANCE.builderSequential();
+        final RowSetBuilderSequential sequentialBuilder = RowSetFactory.builderSequential();
         stuffToSort.stream().mapToLong(ByteLongTuple::getSecondElement).forEach(sequentialBuilder::appendKey);
         final RowSet rowSet = sequentialBuilder.build();
         final int numPartitionsValue;

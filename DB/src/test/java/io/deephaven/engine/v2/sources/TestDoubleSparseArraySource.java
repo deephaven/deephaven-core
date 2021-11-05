@@ -10,7 +10,7 @@ import io.deephaven.engine.v2.sources.chunk.DoubleChunk;
 import io.deephaven.engine.v2.sources.chunk.WritableDoubleChunk;
 import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.engine.v2.utils.RowSetBuilderSequential;
-import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
+import io.deephaven.engine.v2.utils.RowSetFactory;
 import io.deephaven.engine.structures.RowSequence;
 import org.junit.After;
 import org.junit.Before;
@@ -56,7 +56,7 @@ public class TestDoubleSparseArraySource {
         final ColumnSource.FillContext fillContext = source.makeFillContext(chunkSize);
         final WritableDoubleChunk<Values> dest = WritableDoubleChunk.makeWritableChunk(chunkSize);
 
-        source.fillChunk(fillContext, dest, RowSetFactoryImpl.INSTANCE.fromRange(0, 1023));
+        source.fillChunk(fillContext, dest, RowSetFactory.fromRange(0, 1023));
         for (int ii = 0; ii < 1024; ++ii) {
             checkFromSource("null check: " + ii, NULL_DOUBLE, dest.get(ii));
         }
@@ -111,7 +111,7 @@ public class TestDoubleSparseArraySource {
         final ColumnSource.GetContext getContext = source.makeGetContext(chunkSize);
 
         // the asChunk is not needed here, but it's needed when replicated to Boolean
-        final DoubleChunk<Values> result = source.getChunk(getContext, RowSetFactoryImpl.INSTANCE.fromRange(0, 1023)).asDoubleChunk();
+        final DoubleChunk<Values> result = source.getChunk(getContext, RowSetFactory.fromRange(0, 1023)).asDoubleChunk();
         for (int ii = 0; ii < 1024; ++ii) {
             checkFromSource("null check: " + ii, NULL_DOUBLE, result.get(ii));
         }
@@ -151,7 +151,7 @@ public class TestDoubleSparseArraySource {
     }
 
     private RowSet generateIndex(Random random, int maxsize, int runLength) {
-        final RowSetBuilderSequential builder = RowSetFactoryImpl.INSTANCE.builderSequential();
+        final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
         int nextKey = random.nextInt(runLength);
         while (nextKey < maxsize) {
             int lastKey;
@@ -190,7 +190,7 @@ public class TestDoubleSparseArraySource {
     private void checkRangeFill(int chunkSize, DoubleSparseArraySource source, ColumnSource.FillContext fillContext,
                                 WritableDoubleChunk<Values> dest, double[] expectations, int firstKey, int lastKey, boolean usePrev) {
         int offset;
-        final RowSet rowSet = RowSetFactoryImpl.INSTANCE.fromRange(firstKey, lastKey);
+        final RowSet rowSet = RowSetFactory.fromRange(firstKey, lastKey);
         offset = firstKey;
         for (final RowSequence.Iterator it = rowSet.getRowSequenceIterator(); it.hasMore(); ) {
             final RowSequence nextOk = it.getNextRowSequenceWithLength(chunkSize);
@@ -207,7 +207,7 @@ public class TestDoubleSparseArraySource {
 
     private void checkRangeGet(int chunkSize, DoubleSparseArraySource source, ColumnSource.GetContext getContext, double[] expectations, int firstKey, int lastKey, boolean usePrev) {
         int offset;
-        final RowSet rowSet = RowSetFactoryImpl.INSTANCE.fromRange(firstKey, lastKey);
+        final RowSet rowSet = RowSetFactory.fromRange(firstKey, lastKey);
         offset = firstKey;
         for (final RowSequence.Iterator it = rowSet.getRowSequenceIterator(); it.hasMore(); ) {
             final RowSequence nextOk = it.getNextRowSequenceWithLength(chunkSize);
@@ -273,8 +273,8 @@ public class TestDoubleSparseArraySource {
         // super hack
         final double[] peekedBlock = source.ensureBlock(0, 0, 0);
 
-        try (RowSet srcKeys = RowSetFactoryImpl.INSTANCE.fromRange(rangeStart, rangeEnd)) {
-            try (RowSet destKeys = RowSetFactoryImpl.INSTANCE.fromRange(rangeStart + 1, rangeEnd + 1)) {
+        try (RowSet srcKeys = RowSetFactory.fromRange(rangeStart, rangeEnd)) {
+            try (RowSet destKeys = RowSetFactory.fromRange(rangeStart + 1, rangeEnd + 1)) {
                 try (ChunkSource.GetContext srcContext = source.makeGetContext(arraySize)) {
                     try (WritableChunkSink.FillFromContext destContext = source.makeFillFromContext(arraySize)) {
                         Chunk chunk = source.getChunk(srcContext, srcKeys);
@@ -305,7 +305,7 @@ public class TestDoubleSparseArraySource {
         final DoubleSparseArraySource src = new DoubleSparseArraySource();
         src.startTrackingPrevValues();
         LiveTableMonitor.DEFAULT.startCycleForUnitTests();
-        try (final RowSet keys = RowSetFactoryImpl.INSTANCE.empty();
+        try (final RowSet keys = RowSetFactory.empty();
              final WritableDoubleChunk<Values> chunk = WritableDoubleChunk.makeWritableChunk(0)) {
             // Fill from an empty chunk
             src.fillFromChunkByKeys(keys, chunk);

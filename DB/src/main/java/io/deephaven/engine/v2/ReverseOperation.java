@@ -240,7 +240,7 @@ public class ReverseOperation implements QueryTable.MemoizableOperation<QueryTab
 
     private MutableRowSet transform(final RowSet outerRowSet, final boolean usePrev) {
         final long pivot = usePrev ? getPivotPrev() : pivotPoint;
-        final RowSetBuilderRandom reversedBuilder = RowSetFactoryImpl.INSTANCE.builderRandom();
+        final RowSetBuilderRandom reversedBuilder = RowSetFactory.builderRandom();
 
         for (final RowSet.RangeIterator rangeIterator = outerRowSet.rangeIterator(); rangeIterator.hasNext();) {
             rangeIterator.next();

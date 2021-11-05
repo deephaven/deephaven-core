@@ -25,8 +25,8 @@ public class ReplayLastByGroupedTable extends QueryReplayGroupedTable {
         if (allIterators.isEmpty()) {
             return;
         }
-        RowSetBuilderRandom addedBuilder = RowSetFactoryImpl.INSTANCE.builderRandom();
-        RowSetBuilderRandom modifiedBuilder = RowSetFactoryImpl.INSTANCE.builderRandom();
+        RowSetBuilderRandom addedBuilder = RowSetFactory.builderRandom();
+        RowSetBuilderRandom modifiedBuilder = RowSetFactory.builderRandom();
         // List<IteratorsAndNextTime> iteratorsToAddBack = new ArrayList<>(allIterators.size());
         while (!allIterators.isEmpty() && allIterators.peek().lastTime.getNanos() < replayer.currentTimeNanos()) {
             IteratorsAndNextTime currentIt = allIterators.poll();
@@ -47,7 +47,7 @@ public class ReplayLastByGroupedTable extends QueryReplayGroupedTable {
         final RowSet modified = modifiedBuilder.build();
         if (added.size() > 0 || modified.size() > 0) {
             getRowSet().mutableCast().insert(added);
-            notifyListeners(added, RowSetFactoryImpl.INSTANCE.empty(), modified);
+            notifyListeners(added, RowSetFactory.empty(), modified);
         }
     }
 }

@@ -2,7 +2,7 @@ package io.deephaven.engine.v2;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.tables.live.LiveTableMonitor;
-import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
+import io.deephaven.engine.v2.utils.RowSetFactory;
 import io.deephaven.engine.v2.utils.RowSetShiftData;
 import io.deephaven.engine.v2.utils.OutOfKeySpaceException;
 import io.deephaven.test.types.OutOfBandTest;
@@ -102,7 +102,7 @@ public class QueryTableCrossJoinSmallRightBitsTest extends QueryTableCrossJoinTe
         for (int grp = 0; grp < sizes.length; ++grp) {
             int[] data = new int[sizes[grp]];
             Arrays.fill(data, grp);
-            TstUtils.addToTable(rTable, RowSetFactoryImpl.INSTANCE.fromRange(grp * 10, grp * 10 + data.length - 1),
+            TstUtils.addToTable(rTable, RowSetFactory.fromRange(grp * 10, grp * 10 + data.length - 1),
                     intCol("A", data));
         }
 
@@ -158,7 +158,7 @@ public class QueryTableCrossJoinSmallRightBitsTest extends QueryTableCrossJoinTe
         for (int grp = 0; grp < sizes.length; ++grp) {
             int[] data = new int[sizes[grp]];
             Arrays.fill(data, grp);
-            TstUtils.addToTable(rTable, RowSetFactoryImpl.INSTANCE.fromRange(grp * 10, grp * 10 + data.length - 1),
+            TstUtils.addToTable(rTable, RowSetFactory.fromRange(grp * 10, grp * 10 + data.length - 1),
                     intCol("A", data));
         }
 
@@ -211,7 +211,7 @@ public class QueryTableCrossJoinSmallRightBitsTest extends QueryTableCrossJoinTe
         for (int grp = 0; grp < sizes.length; ++grp) {
             int[] data = new int[sizes[grp]];
             Arrays.fill(data, grp);
-            TstUtils.addToTable(rTable, RowSetFactoryImpl.INSTANCE.fromRange(grp * 10, grp * 10 + data.length - 1),
+            TstUtils.addToTable(rTable, RowSetFactory.fromRange(grp * 10, grp * 10 + data.length - 1),
                     intCol("A", data));
         }
 
@@ -270,7 +270,7 @@ public class QueryTableCrossJoinSmallRightBitsTest extends QueryTableCrossJoinTe
         for (int grp = 0; grp < sizes.length; ++grp) {
             int[] data = new int[sizes[grp]];
             Arrays.fill(data, grp);
-            TstUtils.addToTable(rTable, RowSetFactoryImpl.INSTANCE.fromRange(grp * 10, grp * 10 + data.length - 1),
+            TstUtils.addToTable(rTable, RowSetFactory.fromRange(grp * 10, grp * 10 + data.length - 1),
                     intCol("A", data));
         }
 

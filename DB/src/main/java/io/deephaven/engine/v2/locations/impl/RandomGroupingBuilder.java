@@ -7,7 +7,7 @@ package io.deephaven.engine.v2.locations.impl;
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.engine.v2.utils.RowSetBuilderRandom;
-import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
+import io.deephaven.engine.v2.utils.RowSetFactory;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.LinkedHashMap;
@@ -36,7 +36,7 @@ public class RandomGroupingBuilder<DATA_TYPE> {
         Require.neqNull(groupToIndexBuilder, "groupToIndexBuilder");
 
         final RowSetBuilderRandom indexBuilder =
-                groupToIndexBuilder.computeIfAbsent(value, (k) -> RowSetFactoryImpl.INSTANCE.builderRandom());
+                groupToIndexBuilder.computeIfAbsent(value, (k) -> RowSetFactory.builderRandom());
         indexBuilder.addRange(firstKey, lastKey);
     }
 

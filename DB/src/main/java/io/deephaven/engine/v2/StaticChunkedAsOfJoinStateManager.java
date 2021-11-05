@@ -272,7 +272,7 @@ class StaticChunkedAsOfJoinStateManager
         boolean addedSlot = false;
         RowSetBuilderSequential builder = source.getUnsafe(location);
         if (builder == null) {
-            source.set(location, builder = RowSetFactoryImpl.INSTANCE.builderSequential());
+            source.set(location, builder = RowSetFactory.builderSequential());
             addedSlot = true;
         }
         builder.appendKey(keyToAdd);
@@ -1122,7 +1122,7 @@ class StaticChunkedAsOfJoinStateManager
              final WritableByteChunk stateChunk = WritableByteChunk.makeWritableChunk(maxSize);
              final ChunkSource.FillContext fillContext = stateSource.makeFillContext(maxSize)) {
 
-            stateSource.fillChunk(fillContext, stateChunk, RowSetFactoryImpl.INSTANCE.flat(tableHashPivot));
+            stateSource.fillChunk(fillContext, stateChunk, RowSetFactory.flat(tableHashPivot));
 
             ChunkUtils.fillInOrder(positions);
 

@@ -434,7 +434,7 @@ public interface RowSet extends RowSequence, LongSizedDataStructure, SafeCloseab
     default MutableRowSet subSetForPositions(RowSet posRowSet) {
         final MutableLong currentOffset = new MutableLong();
         final RowSequence.Iterator iter = getRowSequenceIterator();
-        final RowSetBuilderSequential builder = RowSetFactoryImpl.INSTANCE.builderSequential();
+        final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
         posRowSet.forEachRowKeyRange((start, end) -> {
             if (currentOffset.longValue() < start) {
                 // skip items until the beginning of this range

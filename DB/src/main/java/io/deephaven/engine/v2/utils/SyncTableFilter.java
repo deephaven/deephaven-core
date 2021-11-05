@@ -73,8 +73,8 @@ public class SyncTableFilter {
     private final List<ListenerRecorder> recorders;
 
     private static class KeyState {
-        MutableRowSet pendingRows = RowSetFactoryImpl.INSTANCE.empty();
-        MutableRowSet matchedRows = RowSetFactoryImpl.INSTANCE.empty();
+        MutableRowSet pendingRows = RowSetFactory.empty();
+        MutableRowSet matchedRows = RowSetFactory.empty();
         RowSetBuilderSequential unprocessedBuilder = null;
         RowSetBuilderSequential currentIdBuilder = null;
         final TLongArrayList unprocessedIds = new TLongArrayList();
@@ -170,7 +170,7 @@ public class SyncTableFilter {
             objectToState.add(new HashMap<>());
             keySources[ii] = TupleSourceFactory.makeTupleSource(sources);
             idSources.add(std.table.getColumnSource(std.idColumn, long.class));
-            resultRowSet[ii] = RowSetFactoryImpl.INSTANCE.empty().convertToTracking();
+            resultRowSet[ii] = RowSetFactory.empty().convertToTracking();
             results[ii] = ((QueryTable) std.table).getSubTable(resultRowSet[ii], null, mergedListener);
 
             final ListenerRecorder listenerRecorder =
@@ -187,7 +187,7 @@ public class SyncTableFilter {
         final HashSet<Object> keysToRefilter = hashSetPair.first;
         Assert.eqZero(hashSetPair.second.size(), "hashSetPair.second.size()");
         for (int tt = 0; tt < tableCount; tt++) {
-            final RowSetBuilderRandom addedBuilder = RowSetFactoryImpl.INSTANCE.builderRandom();
+            final RowSetBuilderRandom addedBuilder = RowSetFactory.builderRandom();
             for (Object key : keysToRefilter) {
                 final KeyState state = objectToState.get(tt).get(key);
                 doMatch(tt, state, minimumid.get(key));
@@ -226,8 +226,8 @@ public class SyncTableFilter {
             final HashSet<Object> keysToRefilter = hashSetPair.first;
             final HashSet<Object> keysWithNewCurrentRows = hashSetPair.second;
             for (int tt = 0; tt < objectToState.size(); tt++) {
-                final RowSetBuilderRandom removedBuilder = RowSetFactoryImpl.INSTANCE.builderRandom();
-                final RowSetBuilderRandom addedBuilder = RowSetFactoryImpl.INSTANCE.builderRandom();
+                final RowSetBuilderRandom removedBuilder = RowSetFactory.builderRandom();
+                final RowSetBuilderRandom addedBuilder = RowSetFactory.builderRandom();
                 for (Object key : keysToRefilter) {
                     final KeyState state = objectToState.get(tt).get(key);
                     removedBuilder.addRowSet(state.matchedRows);
@@ -288,8 +288,8 @@ public class SyncTableFilter {
     }
 
     private void doMatch(final int tableIndex, final KeyState state, final long matchValue) {
-        final RowSetBuilderSequential matchedBuilder = RowSetFactoryImpl.INSTANCE.builderSequential();
-        final RowSetBuilderSequential pendingBuilder = RowSetFactoryImpl.INSTANCE.builderSequential();
+        final RowSetBuilderSequential matchedBuilder = RowSetFactory.builderSequential();
+        final RowSetBuilderSequential pendingBuilder = RowSetFactory.builderSequential();
         final WritableLongChunk<Attributes.OrderedRowKeys> keyIndices =
                 WritableLongChunk.makeWritableChunk(CHUNK_SIZE);
 
@@ -424,7 +424,7 @@ public class SyncTableFilter {
                     final KeyState currentState =
                             objectToState.get(tableIndex).computeIfAbsent(key, (k) -> new KeyState());
                     if (currentState.unprocessedBuilder == null) {
-                        currentState.unprocessedBuilder = RowSetFactoryImpl.INSTANCE.builderSequential();
+                        currentState.unprocessedBuilder = RowSetFactory.builderSequential();
                     }
                     final long minid = minimumid.get(key);
 
@@ -434,7 +434,7 @@ public class SyncTableFilter {
                     }
                     if (id == minid) {
                         if (currentState.currentIdBuilder == null) {
-                            currentState.currentIdBuilder = RowSetFactoryImpl.INSTANCE.builderSequential();
+                            currentState.currentIdBuilder = RowSetFactory.builderSequential();
                         }
                         currentState.currentIdBuilder.appendKey(keyIndicesChunk.get(ii));
                         continue;

@@ -74,7 +74,7 @@ public class UnsortedClockFilter extends ClockFilter {
             return null;
         }
 
-        final RowSetBuilderSequential addedBuilder = RowSetFactoryImpl.INSTANCE.builderSequential();
+        final RowSetBuilderSequential addedBuilder = RowSetFactory.builderSequential();
 
         final long nowNanos = clock.currentTimeMicros() * 1000L;
         final RowSet.Iterator selectionIterator = selection.iterator();

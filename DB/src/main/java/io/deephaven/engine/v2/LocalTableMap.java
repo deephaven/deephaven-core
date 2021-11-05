@@ -23,7 +23,7 @@ import io.deephaven.engine.v2.sources.UnionColumnSource;
 import io.deephaven.engine.v2.sources.UnionSourceManager;
 import io.deephaven.engine.v2.utils.AbstractNotification;
 import io.deephaven.engine.v2.utils.AsyncClientErrorNotifier;
-import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
+import io.deephaven.engine.v2.utils.RowSetFactory;
 import io.deephaven.util.annotations.ReferentialIntegrity;
 import io.deephaven.util.thread.NamingThreadFactory;
 import java.io.IOException;
@@ -310,7 +310,7 @@ public class LocalTableMap extends TableMapImpl implements NotificationQueue.Dep
         final TableDefinition returnDefinition;
         if (constituentDefinition != null) {
             final Table emptyTable = new QueryTable(constituentDefinition,
-                    RowSetFactoryImpl.INSTANCE.empty().convertToTracking(),
+                    RowSetFactory.empty().convertToTracking(),
                     NullValueColumnSource.createColumnSourceMap(constituentDefinition));
             returnDefinition = function.apply(SENTINEL_KEY, emptyTable).getDefinition();
         } else {

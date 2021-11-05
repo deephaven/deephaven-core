@@ -31,7 +31,7 @@ import java.util.stream.Collectors;
  */
 public final class ByExternalChunkedOperator implements IterativeChunkedAggregationOperator {
 
-    private static final MutableRowSet NONEXISTENT_TABLE_ROW_SET = RowSetFactoryImpl.INSTANCE.empty();
+    private static final MutableRowSet NONEXISTENT_TABLE_ROW_SET = RowSetFactory.empty();
     private static final RowSetShiftData.SmartCoalescingBuilder NONEXISTENT_TABLE_SHIFT_BUILDER =
             new RowSetShiftData.SmartCoalescingBuilder(NONEXISTENT_TABLE_ROW_SET.clone());
     private static final QueryTable NONEXISTENT_TABLE =
@@ -314,7 +314,7 @@ public final class ByExternalChunkedOperator implements IterativeChunkedAggregat
             return false;
         }
         if (rowSet == null) {
-            final MutableRowSet currentRowSet = RowSetFactoryImpl.INSTANCE.empty();
+            final MutableRowSet currentRowSet = RowSetFactory.empty();
             currentRowSet.insert(rowSetToAdd);
             indexColumn.set(destination, currentRowSet);
         } else {
@@ -479,7 +479,7 @@ public final class ByExternalChunkedOperator implements IterativeChunkedAggregat
 
     @Override
     public void resetForStep(@NotNull final Listener.Update upstream) {
-        stepShiftedDestinations = RowSetFactoryImpl.INSTANCE.empty();
+        stepShiftedDestinations = RowSetFactory.empty();
         final boolean upstreamModified = upstream.modified.isNonempty() && upstream.modifiedColumnSet.nonempty();
         if (upstreamModified) {
             // We re-use this for all sub-tables that have modifies.
@@ -557,8 +557,8 @@ public final class ByExternalChunkedOperator implements IterativeChunkedAggregat
                     final Listener.Update downstream = new Listener.Update();
 
                     downstream.added = nullToEmpty(extractAndClearIndex(addedRowSetsBackingChunk, backingChunkOffset));
-                    downstream.removed = RowSetFactoryImpl.INSTANCE.empty();
-                    downstream.modified = RowSetFactoryImpl.INSTANCE.empty();
+                    downstream.removed = RowSetFactory.empty();
+                    downstream.modified = RowSetFactory.empty();
                     downstream.shifted = RowSetShiftData.EMPTY;
                     downstream.modifiedColumnSet = ModifiedColumnSet.EMPTY;
 
@@ -673,8 +673,8 @@ public final class ByExternalChunkedOperator implements IterativeChunkedAggregat
 
                         downstream.added =
                                 nullToEmpty(extractAndClearIndex(addedRowSetsBackingChunk, backingChunkOffset));
-                        downstream.removed = RowSetFactoryImpl.INSTANCE.empty();
-                        downstream.modified = RowSetFactoryImpl.INSTANCE.empty();
+                        downstream.removed = RowSetFactory.empty();
+                        downstream.modified = RowSetFactory.empty();
                         downstream.shifted = RowSetShiftData.EMPTY;
                         downstream.modifiedColumnSet = ModifiedColumnSet.EMPTY;
 
@@ -730,7 +730,7 @@ public final class ByExternalChunkedOperator implements IterativeChunkedAggregat
     private QueryTable makeSubTable(@Nullable final RowSet initialRowSetToInsert) {
         // We don't start from initialRowSetToInsert because it is expected to be a MutableRowSetImpl.
         final QueryTable subTable =
-                parentTable.getSubTable(RowSetFactoryImpl.INSTANCE.empty().convertToTracking(), resultModifiedColumnSet);
+                parentTable.getSubTable(RowSetFactory.empty().convertToTracking(), resultModifiedColumnSet);
         subTable.setRefreshing(parentTable.isRefreshing());
         if (aggregationUpdateListener != null) {
             subTable.addParentReference(aggregationUpdateListener);
@@ -783,10 +783,10 @@ public final class ByExternalChunkedOperator implements IterativeChunkedAggregat
 
                     final Listener.Update downstream = new Listener.Update();
 
-                    downstream.added = RowSetFactoryImpl.INSTANCE.empty();
+                    downstream.added = RowSetFactory.empty();
                     downstream.removed =
                             nullToEmpty(extractAndClearIndex(removedRowSetsBackingChunk, backingChunkOffset));
-                    downstream.modified = RowSetFactoryImpl.INSTANCE.empty();
+                    downstream.modified = RowSetFactory.empty();
                     downstream.shifted = RowSetShiftData.EMPTY;
                     downstream.modifiedColumnSet = ModifiedColumnSet.EMPTY;
 
@@ -864,7 +864,7 @@ public final class ByExternalChunkedOperator implements IterativeChunkedAggregat
                             nullToEmpty(extractAndClearIndex(removedRowSetsBackingChunk, backingChunkOffset));
                     downstream.modified = stepValuesModified
                             ? nullToEmpty(extractAndClearIndex(modifiedRowSetsBackingChunk, backingChunkOffset))
-                            : RowSetFactoryImpl.INSTANCE.empty();
+                            : RowSetFactory.empty();
                     downstream.shifted =
                             extractAndClearShiftDataBuilder(shiftDataBuildersBackingChunk, backingChunkOffset);
                     downstream.modifiedColumnSet =
@@ -900,7 +900,7 @@ public final class ByExternalChunkedOperator implements IterativeChunkedAggregat
     }
 
     private static RowSet nullToEmpty(@Nullable final RowSet rowSet) {
-        return rowSet == null ? RowSetFactoryImpl.INSTANCE.empty() : rowSet;
+        return rowSet == null ? RowSetFactory.empty() : rowSet;
     }
 
     private static RowSetShiftData extractAndClearShiftDataBuilder(

@@ -64,7 +64,7 @@ public class TstRowSetUtil {
     }
 
     public static MutableRowSet rowSetFromString(String string) {
-        final RowSetBuilderRandom builder = RowSetFactoryImpl.INSTANCE.builderRandom();
+        final RowSetBuilderRandom builder = RowSetFactory.builderRandom();
         return rowSetFromString(string, builder);
     }
 

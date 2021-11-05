@@ -1,18 +1,29 @@
 package io.deephaven.engine.v2.utils;
 
-import gnu.trove.list.array.TLongArrayList;
+import gnu.trove.list.TLongList;
+import io.deephaven.configuration.Configuration;
+import io.deephaven.engine.v2.utils.singlerange.SingleRange;
+
+import javax.validation.constraints.NotNull;
 
 /**
- * Factory for constructing {@link MutableRowSet row sets}.
+ * Repository of factory methods for constructing {@link MutableRowSet row sets}.
  */
-public interface RowSetFactory {
+public abstract class RowSetFactory {
+
+    private static final boolean USE_PRIORITY_QUEUE_RANDOM_BUILDER =
+            Configuration.getInstance().getBooleanWithDefault("RowSetFactory.usePriorityQueueRandomBuilder", true);
+
+    private RowSetFactory() {}
 
     /**
      * Get an empty {@link MutableRowSet}.
      *
      * @return A new {@link MutableRowSet} containing no rows
      */
-    MutableRowSet empty();
+    public static MutableRowSet empty() {
+        return new MutableRowSetImpl();
+    }
 
     /**
      * Get a {@link MutableRowSet} containing the specified row keys. Row keys must be nonnegative numbers.
@@ -20,7 +31,19 @@ public interface RowSetFactory {
      * @param rowKeys The row keys to include
      * @return A new {@link MutableRowSet} containing the specified row keys
      */
-    MutableRowSet fromKeys(long... rowKeys);
+    public static MutableRowSet fromKeys(final long... rowKeys) {
+        if (rowKeys.length == 0) {
+            return empty();
+        }
+        if (rowKeys.length == 1) {
+            return fromKeys(rowKeys[0]);
+        }
+        final RowSetBuilderRandom indexBuilder = builderRandom();
+        for (final long rowKey : rowKeys) {
+            indexBuilder.addKey(rowKey);
+        }
+        return indexBuilder.build();
+    }
 
     /**
      * Produce a {@link MutableRowSet} containing a single row key. Row keys must be nonnegative numbers.
@@ -28,53 +51,63 @@ public interface RowSetFactory {
      * @param rowKey The row key to include
      * @return A new {@link MutableRowSet} containing the specified row key
      */
-    MutableRowSet fromKeys(long rowKey);
+    public static MutableRowSet fromKeys(final long rowKey) {
+        return fromRange(rowKey, rowKey);
+    }
 
     /**
-     * Get an {@link MutableRowSet} containing the specified keys.
+     * Get a {@link MutableRowSet} containing the specified row keys.
      * <p>
-     * The provided list is sorted, and then passed to a sequential builder.
+     * The provided {@link TLongList} is sorted and then passed to a {@link RowSetBuilderSequential}.
      *
-     * @param list a Trove long array list; note that this list is mutated within the method
-     * @return a RowSet containing the values from list
+     * @param rowKeys A {@link TLongList}. Note that this list is mutated within the method!
+     * @return A new {@link MutableRowSet} containing the values from {@code rowKeys}
      */
-    /**
-     * Get a {@link MutableRowSet} containing the specified row keys. Row keys must be nonnegative numbers.
-     * 
-     * @apiNote The provided list is sorted in-place and then passed to a
-     *          {@link RowSetBuilderSequential}.
-     *
-     * @param rowKeys The row keys to include; note that this list is mutated to ensure sorted order
-     * @return A new {@link MutableRowSet} containing the specified row keys
-     */
-    RowSet fromKeys(TLongArrayList rowKeys);
+    public static RowSet fromKeys(@NotNull final TLongList rowKeys) {
+        rowKeys.sort();
+        final RowSetBuilderSequential builder = builderSequential();
+        rowKeys.forEach(builder);
+        return builder.build();
+    }
 
     /**
-     * Create a {@link RowSet} containing the continuous range [firstRowKey, lastRowKey]
+     * Create a {@link MutableRowSet} containing the continuous range [firstRowKey, lastRowKey].
      *
      * @param firstRowKey The first row key in the continuous range
      * @param lastRowKey The last row key in the continuous range
-     * @return A RowSet containing the specified row key range
+     * @return A new {@link MutableRowSet} containing the specified row key range
      */
-    MutableRowSet fromRange(long firstRowKey, long lastRowKey);
+    public static MutableRowSet fromRange(final long firstRowKey, final long lastRowKey) {
+        return new MutableRowSetImpl(SingleRange.make(firstRowKey, lastRowKey));
+    }
 
     /**
-     * Get a flat {@link MutableRowSet} containing the range [0, size), or an {@link #empty() empty row set} if
-     * the specified size is <= 0.
+     * Get a flat {@link MutableRowSet} containing the row key range {@code [0, size)}, or an {@link #empty() empty row
+     * set} if {@code size <= 0}.
      *
-     * @param size The size of the RowSet to create
-     * @return A flat {@link MutableRowSet} containing the keys [0, size) or an empty {@link MutableRowSet} if the size
-     *         is <= 0
+     * @param size The size of the {@link MutableRowSet} to create
+     * @return A flat {@link MutableRowSet} containing the row key range {@code [0, size)} or an {@link #empty() empty
+     *         row set} if the {@code size <= 0}
      */
-    MutableRowSet flat(long size);
+    public static MutableRowSet flat(final long size) {
+        return size <= 0 ? empty() : fromRange(0, size - 1);
+    }
 
     /**
-     * @return A {@link RowSetBuilderRandom} suitable for inserting ranges in no particular order
+     * @return A {@link RowSetBuilderRandom} suitable for inserting row keys and row key ranges in no particular order
      */
-    RowSetBuilderRandom builderRandom();
+    public static RowSetBuilderRandom builderRandom() {
+        if (USE_PRIORITY_QUEUE_RANDOM_BUILDER) {
+            return new AdaptiveRowSetBuilderRandom();
+        } else {
+            return new BasicRowSetBuilderRandom();
+        }
+    }
 
     /**
-     * @return A {@link RowSetBuilderRandom} optimized for inserting ranges sequentially in order
+     * @return A {@link RowSetBuilderRandom} optimized for inserting row keys and row key ranges sequentially in order
      */
-    RowSetBuilderSequential builderSequential();
+    public static RowSetBuilderSequential builderSequential() {
+        return new BasicRowSetBuilderSequential();
+    }
 }

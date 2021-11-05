@@ -322,7 +322,7 @@ public class ConditionFilter extends AbstractConditionFilter {
                 final Context sourceContexts[] = new Context[columnNames.length];
                 final SharedContext sharedContext = populateChunkGettersAndContexts(selection, fullSet, table, usePrev,
                         chunkGetters, sourceContexts);
-                final RowSetBuilderSequential resultBuilder = RowSetFactoryImpl.INSTANCE.builderSequential();
+                final RowSetBuilderSequential resultBuilder = RowSetFactory.builderSequential();
                 final Chunk inputChunks[] = new Chunk[columnNames.length];
                 while (rsIterator.hasMore()) {
                     final RowSequence currentChunkRowSequence = rsIterator.getNextRowSequenceWithLength(chunkSize);

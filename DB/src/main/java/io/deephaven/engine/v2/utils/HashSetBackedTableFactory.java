@@ -74,8 +74,8 @@ public class HashSetBackedTableFactory {
             String... colNames) {
         HashSetBackedTableFactory factory = new HashSetBackedTableFactory(setGenerator, refreshIntervalMs, colNames);
 
-        RowSetBuilderRandom addedBuilder = RowSetFactoryImpl.INSTANCE.builderRandom();
-        RowSetBuilderRandom removedBuilder = RowSetFactoryImpl.INSTANCE.builderRandom();
+        RowSetBuilderRandom addedBuilder = RowSetFactory.builderRandom();
+        RowSetBuilderRandom removedBuilder = RowSetFactory.builderRandom();
 
         factory.updateValueSet(addedBuilder, removedBuilder);
 
@@ -160,8 +160,8 @@ public class HashSetBackedTableFactory {
             }
             nextRefresh = System.currentTimeMillis() + refreshIntervalMs;
 
-            RowSetBuilderRandom addedBuilder = RowSetFactoryImpl.INSTANCE.builderRandom();
-            RowSetBuilderRandom removedBuilder = RowSetFactoryImpl.INSTANCE.builderRandom();
+            RowSetBuilderRandom addedBuilder = RowSetFactory.builderRandom();
+            RowSetBuilderRandom removedBuilder = RowSetFactory.builderRandom();
 
             updateValueSet(addedBuilder, removedBuilder);
 

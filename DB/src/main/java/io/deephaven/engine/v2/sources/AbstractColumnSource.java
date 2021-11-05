@@ -118,7 +118,7 @@ public abstract class AbstractColumnSource<T> implements ColumnSource<T>, Serial
                                        final Object... keys) {
         final Map<T, RowSet> groupToRange = (isImmutable() || !usePrev) ? getGroupToRange(mapper) : null;
         if (groupToRange != null) {
-            RowSetBuilderRandom allInMatchingGroups = RowSetFactoryImpl.INSTANCE.builderRandom();
+            RowSetBuilderRandom allInMatchingGroups = RowSetFactory.builderRandom();
 
             if (caseInsensitive && (type == String.class)) {
                 KeyedObjectHashSet keySet = new KeyedObjectHashSet<>(new CIStringKey());
@@ -196,7 +196,7 @@ public abstract class AbstractColumnSource<T> implements ColumnSource<T>, Serial
                 T value = get(key);
                 RowSetBuilderSequential indexes = valueToIndexSet.get(value);
                 if (indexes == null) {
-                    indexes = RowSetFactoryImpl.INSTANCE.builderSequential();
+                    indexes = RowSetFactory.builderSequential();
                 }
                 indexes.appendKey(key);
                 valueToIndexSet.put(value, indexes);

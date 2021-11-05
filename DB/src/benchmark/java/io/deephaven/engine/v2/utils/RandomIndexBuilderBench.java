@@ -66,7 +66,7 @@ public class RandomIndexBuilderBench {
 
     @Benchmark
     public void b01_buildAndPopulateWithRandomBuilderKeyIndices(final Blackhole bh) {
-        final RowSetBuilderRandom b = RowSetFactoryImpl.INSTANCE.builderRandom();
+        final RowSetBuilderRandom b = RowSetFactory.builderRandom();
         for (int i = 0; i < sz; ++i) {
             b.addKey(values[i]);
         }
@@ -86,7 +86,7 @@ public class RandomIndexBuilderBench {
 
     @Benchmark
     public void c01_buildAndPopulateWithRandomBuilderKeyRanges(final Blackhole bh) {
-        final RowSetBuilderRandom b = RowSetFactoryImpl.INSTANCE.builderRandom();
+        final RowSetBuilderRandom b = RowSetFactory.builderRandom();
         for (int i = 0; i < sz; ++i) {
             final long v = values[i];
             b.addRange(v, v + rangeStep);

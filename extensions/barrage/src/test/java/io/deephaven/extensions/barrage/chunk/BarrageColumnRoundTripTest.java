@@ -10,7 +10,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.engine.v2.utils.RowSetBuilderSequential;
-import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
+import io.deephaven.engine.v2.utils.RowSetFactory;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.engine.v2.LiveTableTestCase;
 import io.deephaven.engine.v2.sources.chunk.Attributes;
@@ -346,7 +346,7 @@ public class BarrageColumnRoundTripTest extends LiveTableTestCase {
             final WritableObjectChunk<T, Attributes.Values> computed = unTypedComputed.asWritableObjectChunk();
 
             if (subset == null) {
-                subset = RowSetFactoryImpl.INSTANCE.flat(untypedOriginal.size());
+                subset = RowSetFactory.flat(untypedOriginal.size());
             }
             final MutableInt off = new MutableInt();
             subset.forAllRowKeys(key -> {
@@ -377,7 +377,7 @@ public class BarrageColumnRoundTripTest extends LiveTableTestCase {
             final WritableObjectChunk<T, Attributes.Values> original = untypedOriginal.asWritableObjectChunk();
             final WritableObjectChunk<String, Attributes.Values> computed = untypedComputed.asWritableObjectChunk();
             if (subset == null) {
-                subset = RowSetFactoryImpl.INSTANCE.flat(original.size());
+                subset = RowSetFactory.flat(original.size());
             }
             final MutableInt off = new MutableInt();
             subset.forAllRowKeys(key -> {
@@ -399,7 +399,7 @@ public class BarrageColumnRoundTripTest extends LiveTableTestCase {
             final WritableObjectChunk<long[], Attributes.Values> original = untypedOriginal.asWritableObjectChunk();
             final WritableObjectChunk<long[], Attributes.Values> computed = unTypedComputed.asWritableObjectChunk();
             if (subset == null) {
-                subset = RowSetFactoryImpl.INSTANCE.flat(original.size());
+                subset = RowSetFactory.flat(original.size());
             }
             final MutableInt off = new MutableInt();
             subset.forAllRowKeys(i -> {
@@ -421,7 +421,7 @@ public class BarrageColumnRoundTripTest extends LiveTableTestCase {
     }
 
     @SuppressWarnings("UnstableApiUsage")
-    private <T> void testRoundTripSerialization(
+    private static <T> void testRoundTripSerialization(
             final BarrageSubscriptionOptions options, final Class<T> type,
             final Consumer<WritableChunk<Attributes.Values>> initData, final Validator validator) throws IOException {
         final ChunkType chunkType = ChunkType.fromElementType(type);
@@ -458,7 +458,7 @@ public class BarrageColumnRoundTripTest extends LiveTableTestCase {
             try (final BarrageProtoUtil.ExposedByteArrayOutputStream baos =
                     new BarrageProtoUtil.ExposedByteArrayOutputStream();
                     final ChunkInputStreamGenerator.DrainableColumn column =
-                            generator.getInputStream(options, RowSetFactoryImpl.INSTANCE.empty());) {
+                            generator.getInputStream(options, RowSetFactory.empty());) {
 
                 final ArrayList<ChunkInputStreamGenerator.FieldNodeInfo> fieldNodes = new ArrayList<>();
                 column.visitFieldNodes((numElements, nullCount) -> fieldNodes
@@ -478,7 +478,7 @@ public class BarrageColumnRoundTripTest extends LiveTableTestCase {
 
             // swiss cheese subset
             final Random random = new Random();
-            final RowSetBuilderSequential builder = RowSetFactoryImpl.INSTANCE.builderSequential();
+            final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
             for (int i = 0; i < data.size(); ++i) {
                 if (random.nextBoolean()) {
                     builder.appendKey(i);

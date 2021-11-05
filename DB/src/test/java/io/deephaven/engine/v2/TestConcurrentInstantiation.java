@@ -52,7 +52,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
     private final ExecutorService dualPool = Executors.newFixedThreadPool(2);
 
     public void testTreeTableFilter() throws ExecutionException, InterruptedException {
-        final QueryTable source = TstUtils.testRefreshingTable(RowSetFactoryImpl.INSTANCE.flat(10).convertToTracking(),
+        final QueryTable source = TstUtils.testRefreshingTable(RowSetFactory.flat(10).convertToTracking(),
                 col("Sentinel", 1, 2, 3, 4, 5, 6, 7, 8, 9, 10),
                 col("Parent", NULL_INT, NULL_INT, 1, 1, 2, 3, 5, 5, 3, 2));
         final Table treed =

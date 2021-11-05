@@ -7,7 +7,7 @@ import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.datastructures.util.SmartKey;
 import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.engine.v2.utils.RowSetBuilderSequential;
-import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
+import io.deephaven.engine.v2.utils.RowSetFactory;
 import io.deephaven.io.log.LogLevel;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.io.logger.StreamLoggerImpl;
@@ -139,17 +139,17 @@ public class QueryTableTreeTest extends QueryTableTestBase {
         try {
 
             final QueryTable source = TstUtils.testRefreshingTable(
-                    RowSetFactoryImpl.INSTANCE.flat(10).convertToTracking(),
+                    RowSetFactory.flat(10).convertToTracking(),
                     col("Sentinel", 1, 2, 3, 4, 5, 6, 7, 8, 9, 10),
                     col("Parent", NULL_INT, NULL_INT, 1, 1, 2, 3, 5, 5, 3, 2),
                     col("Extra", "a", "b", "c", "d", "e", "f", "g", "h", "i", "j"));
             final QueryTable source2 = TstUtils.testRefreshingTable(
-                    RowSetFactoryImpl.INSTANCE.flat(11).convertToTracking(),
+                    RowSetFactory.flat(11).convertToTracking(),
                     col("Sentinel", 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11),
                     col("Parent", NULL_INT, NULL_INT, 1, 1, 2, 3, 5, 5, 3, 2, NULL_INT),
                     col("Extra", "aa", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k"));
             final QueryTable source3 = TstUtils.testRefreshingTable(
-                    RowSetFactoryImpl.INSTANCE.flat(12).convertToTracking(),
+                    RowSetFactory.flat(12).convertToTracking(),
                     col("Sentinel", 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12),
                     col("Parent", NULL_INT, NULL_INT, 1, 1, 2, 3, 5, 5, 3, 2, NULL_INT, 11),
                     col("Extra", "aa", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l"));
@@ -335,12 +335,12 @@ public class QueryTableTreeTest extends QueryTableTestBase {
         try {
 
             final QueryTable source = TstUtils.testRefreshingTable(
-                    RowSetFactoryImpl.INSTANCE.flat(10).convertToTracking(),
+                    RowSetFactory.flat(10).convertToTracking(),
                     col("Sentinel", 1, 2, 3, 4, 5, 6, 7, 8, 9, 10),
                     col("Parent", NULL_INT, NULL_INT, 1, 1, 2, 3, 5, 5, 3, 2),
                     col("Extra", "a", "b", "c", "d", "e", "f", "g", "h", "i", "j"));
             final QueryTable source2 = TstUtils.testRefreshingTable(
-                    RowSetFactoryImpl.INSTANCE.flat(11).convertToTracking(),
+                    RowSetFactory.flat(11).convertToTracking(),
                     col("Sentinel", 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12),
                     col("Parent", NULL_INT, 1, 1, 2, 3, 5, 5, 3, 2, NULL_INT, 11),
                     col("Extra", "bb", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l"));
@@ -486,7 +486,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
     }
 
     public void testTreeTableSimpleFilter() {
-        final QueryTable source = TstUtils.testRefreshingTable(RowSetFactoryImpl.INSTANCE.flat(10).convertToTracking(),
+        final QueryTable source = TstUtils.testRefreshingTable(RowSetFactory.flat(10).convertToTracking(),
                 col("Sentinel", 1, 2, 3, 4, 5, 6, 7, 8, 9, 10),
                 col("Parent", NULL_INT, NULL_INT, 1, 1, 2, 3, 5, 5, 3, 6));
 
@@ -578,7 +578,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
     }
 
     public void testOrphanPromoterSimple() {
-        final QueryTable source = TstUtils.testRefreshingTable(RowSetFactoryImpl.INSTANCE.flat(4).convertToTracking(),
+        final QueryTable source = TstUtils.testRefreshingTable(RowSetFactory.flat(4).convertToTracking(),
                 col("Sentinel", 1, 2, 3, 4), col("Parent", NULL_INT, NULL_INT, 1, 5));
 
         final Table treed = LiveTableMonitor.DEFAULT.exclusiveLock().computeLocked(() -> TreeTableOrphanPromoter
@@ -628,7 +628,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
     }
 
     public void testTreeTableEdgeCases() {
-        final QueryTable source = TstUtils.testRefreshingTable(RowSetFactoryImpl.INSTANCE.flat(4).convertToTracking(),
+        final QueryTable source = TstUtils.testRefreshingTable(RowSetFactory.flat(4).convertToTracking(),
                 col("Sentinel", 0, 1, 2, 3),
                 col("Filter", 0, 0, 0, 0),
                 col("Parent", NULL_INT, NULL_INT, NULL_INT, NULL_INT));
@@ -1555,7 +1555,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
 
     private void testIncrementalSimple(ComboBy comboBy) {
         final QueryTable table =
-                TstUtils.testRefreshingTable(RowSetFactoryImpl.INSTANCE.flat(6).convertToTracking(),
+                TstUtils.testRefreshingTable(RowSetFactory.flat(6).convertToTracking(),
                         col("G1", "A", "A", "A", "B", "B", "B"),
                         col("G2", "C", "C", "D", "D", "E", "E"),
                         col("IntCol", 1, 2, 3, 4, 5, 6));
@@ -1731,7 +1731,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
         int nextHid = 11;
         long index = 2;
 
-        final QueryTable source = TstUtils.testRefreshingTable(RowSetFactoryImpl.INSTANCE.flat(1).convertToTracking(),
+        final QueryTable source = TstUtils.testRefreshingTable(RowSetFactory.flat(1).convertToTracking(),
                 longCol("Sentinel", 1), stringCol("hid", "a"), stringCol("hpos", "1"),
                 col("open", true), doubleCol("rand", 1.0));
 
@@ -1756,7 +1756,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
             LiveTableMonitor.DEFAULT.startCycleForUnitTests();
 
             final int numChanges = random.nextInt(100);
-            final RowSetBuilderSequential builder = RowSetFactoryImpl.INSTANCE.builderSequential();
+            final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
 
             for (int count = 0; count < numChanges; ++count) {
                 assertEquals(openHid.size(), hidToPos.size());

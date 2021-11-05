@@ -104,7 +104,7 @@ public class UpdatableTable extends QueryTable implements LiveTable {
     }
 
     private static RowSet setToIndex(@NotNull final TLongSet set) {
-        final RowSetBuilderRandom builder = RowSetFactoryImpl.INSTANCE.builderRandom();
+        final RowSetBuilderRandom builder = RowSetFactory.builderRandom();
         set.forEach(key -> {
             builder.addKey(key);
             return true;

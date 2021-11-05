@@ -48,7 +48,7 @@ public class UnionSourceManager {
         names = tableDefinition.getColumnList().stream().map(ColumnDefinition::getName).toArray(String[]::new);
         this.parentDependency = parentDependency;
 
-        result = new QueryTable(RowSetFactoryImpl.INSTANCE.empty().convertToTracking(), getColumnSources());
+        result = new QueryTable(RowSetFactory.empty().convertToTracking(), getColumnSources());
         rowSet = result.getRowSet().mutableCast();
         modifiedColumnSet = result.newModifiedColumnSet(names);
 
@@ -147,7 +147,7 @@ public class UnionSourceManager {
             if (onNewTableMapKey) {
                 // synthetically invoke onUpdate lest our MergedUnionListener#process never fires.
                 final Listener.Update update = new Listener.Update(
-                        table.getRowSet().clone(), RowSetFactoryImpl.INSTANCE.empty(), RowSetFactoryImpl.INSTANCE.empty(),
+                        table.getRowSet().clone(), RowSetFactory.empty(), RowSetFactory.empty(),
                         RowSetShiftData.EMPTY, ModifiedColumnSet.ALL);
                 listener.onUpdate(update);
                 update.release();
@@ -233,7 +233,7 @@ public class UnionSourceManager {
             if (accumulatedShift > 0) {
                 final int maxTableId = tables.size() - 1;
 
-                final RowSetBuilderSequential builder = RowSetFactoryImpl.INSTANCE.builderSequential();
+                final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
                 rowSet.removeRange(unionRedirection.prevStartOfIndices[firstShiftingTable], Long.MAX_VALUE);
 
                 for (int tableId = firstShiftingTable; tableId <= maxTableId; ++tableId) {
@@ -244,11 +244,11 @@ public class UnionSourceManager {
                 rowSet.insert(builder.build());
             }
 
-            final RowSetBuilderSequential updateAddedBuilder = RowSetFactoryImpl.INSTANCE.builderSequential();
-            final RowSetBuilderSequential shiftAddedBuilder = RowSetFactoryImpl.INSTANCE.builderSequential();
-            final RowSetBuilderSequential shiftRemoveBuilder = RowSetFactoryImpl.INSTANCE.builderSequential();
-            final RowSetBuilderSequential updateRemovedBuilder = RowSetFactoryImpl.INSTANCE.builderSequential();
-            final RowSetBuilderSequential updateModifiedBuilder = RowSetFactoryImpl.INSTANCE.builderSequential();
+            final RowSetBuilderSequential updateAddedBuilder = RowSetFactory.builderSequential();
+            final RowSetBuilderSequential shiftAddedBuilder = RowSetFactory.builderSequential();
+            final RowSetBuilderSequential shiftRemoveBuilder = RowSetFactory.builderSequential();
+            final RowSetBuilderSequential updateRemovedBuilder = RowSetFactory.builderSequential();
+            final RowSetBuilderSequential updateModifiedBuilder = RowSetFactory.builderSequential();
 
             // listeners should be quiescent by the time we are processing this notification, because of the dependency
             // tracking

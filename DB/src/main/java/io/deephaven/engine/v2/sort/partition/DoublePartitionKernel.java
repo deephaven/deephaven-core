@@ -11,7 +11,7 @@ import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.sources.chunk.Attributes.*;
 import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.engine.v2.utils.RowSetBuilderSequential;
-import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
+import io.deephaven.engine.v2.utils.RowSetFactory;
 
 import java.util.stream.IntStream;
 
@@ -43,7 +43,7 @@ public class DoublePartitionKernel {
                 builders = new RowSetBuilderSequential[numPartitions];
             }
             for (int ii = 0; ii < builders.length; ++ii) {
-                builders[ii] = RowSetFactoryImpl.INSTANCE.builderSequential();
+                builders[ii] = RowSetFactory.builderSequential();
                 accumulatedKeys[ii] = WritableLongChunk.makeWritableChunk(chunkSize);
                 accumulatedKeys[ii].setSize(0);
             }
@@ -55,7 +55,7 @@ public class DoublePartitionKernel {
             for (int ii = 0; ii < builders.length; ++ii) {
                 partitions[ii] = builders[ii].build();
                 if (resetBuilders) {
-                    builders[ii] = RowSetFactoryImpl.INSTANCE.builderSequential();
+                    builders[ii] = RowSetFactory.builderSequential();
                 } else {
                     builders[ii] = null;
                 }
@@ -106,7 +106,7 @@ public class DoublePartitionKernel {
         final int samplesRequired = pivotsRequired * 3;
         PartitionUtilities.sampleIndexKeys(0, rowSet, samplesRequired, pivotKeys);
 
-        final RowSetBuilderSequential builder = RowSetFactoryImpl.INSTANCE.builderSequential();
+        final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
         for (int ii = 0; ii < pivotKeys.size(); ++ii) {
             builder.appendKey(pivotKeys.get(ii));
         }

@@ -21,7 +21,7 @@ import io.deephaven.engine.v2.sources.LogicalClock;
 import io.deephaven.engine.v2.sources.UnionRedirection;
 import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.utils.RowSet;
-import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
+import io.deephaven.engine.v2.utils.RowSetFactory;
 import io.deephaven.engine.v2.utils.RowSetShiftData;
 import io.deephaven.test.junit4.EngineCleanup;
 import io.deephaven.test.types.OutOfBandTest;
@@ -844,7 +844,7 @@ public class QueryTableWhereTest {
         final long end = System.currentTimeMillis();
         System.out.println("Duration: " + (end - start));
 
-        assertEquals(RowSetFactoryImpl.INSTANCE.fromRange(0, 999_999), result);
+        assertEquals(RowSetFactory.fromRange(0, 999_999), result);
 
         assertEquals(2_000_000, slowCounter.invokedValues);
         slowCounter.reset();

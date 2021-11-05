@@ -128,7 +128,7 @@ public class TestReadOnlyRedirectedColumnSource {
         QueryScope.addParam("ids6196_values", ids6196_values);
 
         final QueryTable qt =
-                TstUtils.testRefreshingTable(RowSetFactoryImpl.INSTANCE.flat(6).convertToTracking(),
+                TstUtils.testRefreshingTable(RowSetFactory.flat(6).convertToTracking(),
                         intCol("IntVal", 0, 1, 2, 3, 4, 5));
 
         final Table a = LiveTableMonitor.DEFAULT.sharedLock().computeLocked(
@@ -201,8 +201,8 @@ public class TestReadOnlyRedirectedColumnSource {
         TableTools.showWithIndex(captured);
 
         LiveTableMonitor.DEFAULT.startCycleForUnitTests();
-        TstUtils.addToTable(qt, RowSetFactoryImpl.INSTANCE.flat(3), intCol("IntVal", 1, 2, 3));
-        qt.notifyListeners(RowSetFactoryImpl.INSTANCE.empty(), RowSetFactoryImpl.INSTANCE.empty(), RowSetFactoryImpl.INSTANCE.flat(3));
+        TstUtils.addToTable(qt, RowSetFactory.flat(3), intCol("IntVal", 1, 2, 3));
+        qt.notifyListeners(RowSetFactory.empty(), RowSetFactory.empty(), RowSetFactory.flat(3));
 
         LiveTableMonitor.DEFAULT.flushAllNormalNotificationsForUnitTests();
 

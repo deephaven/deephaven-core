@@ -10,7 +10,7 @@ import io.deephaven.engine.tables.select.MatchPairFactory;
 import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.chunk.*;
-import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
+import io.deephaven.engine.v2.utils.RowSetFactory;
 import io.deephaven.engine.v2.utils.RowSetShiftData;
 import io.deephaven.test.types.OutOfBandTest;
 import org.apache.commons.lang3.mutable.MutableInt;
@@ -317,21 +317,21 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
 
         final QueryTable left;
         if (leftTicking) {
-            left = TstUtils.testRefreshingTable(RowSetFactoryImpl.INSTANCE.flat(nextLeftRow).convertToTracking(),
+            left = TstUtils.testRefreshingTable(RowSetFactory.flat(nextLeftRow).convertToTracking(),
                     c("sharedKey", leftKeys.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)),
                     c("leftData", leftData.toArray(new Long[] {})));
         } else {
-            left = TstUtils.testTable(RowSetFactoryImpl.INSTANCE.flat(nextLeftRow).convertToTracking(),
+            left = TstUtils.testTable(RowSetFactory.flat(nextLeftRow).convertToTracking(),
                     c("sharedKey", leftKeys.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)),
                     c("leftData", leftData.toArray(new Long[] {})));
         }
         final QueryTable right;
         if (rightTicking) {
-            right = TstUtils.testRefreshingTable(RowSetFactoryImpl.INSTANCE.flat(nextRightRow).convertToTracking(),
+            right = TstUtils.testRefreshingTable(RowSetFactory.flat(nextRightRow).convertToTracking(),
                     c("sharedKey", rightKeys.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)),
                     c("rightData", rightData.toArray(new Long[] {})));
         } else {
-            right = TstUtils.testTable(RowSetFactoryImpl.INSTANCE.flat(nextRightRow).convertToTracking(),
+            right = TstUtils.testTable(RowSetFactory.flat(nextRightRow).convertToTracking(),
                     c("sharedKey", rightKeys.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)),
                     c("rightData", rightData.toArray(new Long[] {})));
         }
@@ -401,10 +401,10 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
     public void testStaticVsNaturalJoin2() {
         final int size = 10000;
 
-        final QueryTable xqt = new QueryTable(RowSetFactoryImpl.INSTANCE.flat(size).convertToTracking(),
+        final QueryTable xqt = new QueryTable(RowSetFactory.flat(size).convertToTracking(),
                 Collections.emptyMap());
         xqt.setRefreshing(true);
-        final QueryTable yqt = new QueryTable(RowSetFactoryImpl.INSTANCE.flat(size).convertToTracking(),
+        final QueryTable yqt = new QueryTable(RowSetFactory.flat(size).convertToTracking(),
                 Collections.emptyMap());
         yqt.setRefreshing(true);
 
@@ -418,14 +418,14 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             xqt.getRowSet().mutableCast().insertRange(size, size * 2);
-            xqt.notifyListeners(RowSetFactoryImpl.INSTANCE.fromRange(size, size * 2), i(), i());
+            xqt.notifyListeners(RowSetFactory.fromRange(size, size * 2), i(), i());
         });
 
         assertTableEquals(z3, z);
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             yqt.getRowSet().mutableCast().insertRange(size, size * 2);
-            yqt.notifyListeners(RowSetFactoryImpl.INSTANCE.fromRange(size, size * 2), i(), i());
+            yqt.notifyListeners(RowSetFactory.fromRange(size, size * 2), i(), i());
         });
 
         assertTableEquals(z3, z);
@@ -651,7 +651,7 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
                 for (int i = 0; i <= numSteps.getValue(); ++i) {
                     data[i] = i;
                 }
-                addToTable(rightTicking, RowSetFactoryImpl.INSTANCE.fromRange(rightOffset, rightOffset + numSteps.getValue()),
+                addToTable(rightTicking, RowSetFactory.fromRange(rightOffset, rightOffset + numSteps.getValue()),
                         longCol("intCol", data));
                 TstUtils.removeRows(rightTicking, i(rightOffset - 1));
 
@@ -662,9 +662,9 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
                 up.added = i(rightOffset + numSteps.getValue());
                 up.removed = i();
                 if (numSteps.getValue() == 0) {
-                    up.modified = RowSetFactoryImpl.INSTANCE.empty();
+                    up.modified = RowSetFactory.empty();
                 } else {
-                    up.modified = RowSetFactoryImpl.INSTANCE.fromRange(rightOffset, rightOffset + numSteps.getValue() - 1);
+                    up.modified = RowSetFactory.fromRange(rightOffset, rightOffset + numSteps.getValue() - 1);
                 }
                 up.modifiedColumnSet = ModifiedColumnSet.ALL;
                 rightTicking.notifyListeners(up);

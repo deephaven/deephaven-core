@@ -111,7 +111,7 @@ public class AggregationHelper {
                     final boolean empty =
                             usePrev ? inputTable.getRowSet().firstRowKeyPrev() == RowSet.NULL_ROW_KEY : inputTable.isEmpty();
                     final QueryTable resultTable = new QueryTable(
-                            RowSetFactoryImpl.INSTANCE.flat(empty ? 0 : 1).convertToTracking(),
+                            RowSetFactory.flat(empty ? 0 : 1).convertToTracking(),
                             inputTable.getColumnSourceMap().entrySet().stream().collect(Collectors.toMap(
                                     Map.Entry::getKey,
                                     (final Map.Entry<String, ColumnSource<?>> columnNameToSourceEntry) -> {
@@ -144,25 +144,25 @@ public class AggregationHelper {
                                                 return;
                                             }
                                             resultTable.getRowSet().mutableCast().insert(0);
-                                            added = RowSetFactoryImpl.INSTANCE.flat(1);
-                                            removed = RowSetFactoryImpl.INSTANCE.empty();
-                                            modified = RowSetFactoryImpl.INSTANCE.empty();
+                                            added = RowSetFactory.flat(1);
+                                            removed = RowSetFactory.empty();
+                                            modified = RowSetFactory.empty();
                                             modifiedColumnSet = ModifiedColumnSet.EMPTY;
                                         } else if (isEmpty) {
                                             resultTable.getRowSet().mutableCast().remove(0);
-                                            added = RowSetFactoryImpl.INSTANCE.empty();
-                                            removed = RowSetFactoryImpl.INSTANCE.flat(1);
-                                            modified = RowSetFactoryImpl.INSTANCE.empty();
+                                            added = RowSetFactory.empty();
+                                            removed = RowSetFactory.flat(1);
+                                            modified = RowSetFactory.empty();
                                             modifiedColumnSet = ModifiedColumnSet.EMPTY;
                                         } else if (upstream.added.isNonempty() || upstream.removed.isNonempty()) {
-                                            added = RowSetFactoryImpl.INSTANCE.empty();
-                                            removed = RowSetFactoryImpl.INSTANCE.empty();
-                                            modified = RowSetFactoryImpl.INSTANCE.flat(1);
+                                            added = RowSetFactory.empty();
+                                            removed = RowSetFactory.empty();
+                                            modified = RowSetFactory.flat(1);
                                             modifiedColumnSet = ModifiedColumnSet.ALL;
                                         } else if (upstream.modified.isNonempty()) {
-                                            added = RowSetFactoryImpl.INSTANCE.empty();
-                                            removed = RowSetFactoryImpl.INSTANCE.empty();
-                                            modified = RowSetFactoryImpl.INSTANCE.flat(1);
+                                            added = RowSetFactory.empty();
+                                            removed = RowSetFactory.empty();
+                                            modified = RowSetFactory.flat(1);
                                             transformer.clearAndTransform(upstream.modifiedColumnSet,
                                                     modifiedColumnSet = resultTable.getModifiedColumnSetForUpdates());
                                         } else {
@@ -195,7 +195,7 @@ public class AggregationHelper {
         final ArrayBackedColumnSource<?> resultKeyColumnSource = flatResultColumnSources.getFirst();
         final ObjectArraySource<TrackingMutableRowSet> resultIndexColumnSource = flatResultColumnSources.getSecond();
 
-        final TrackingMutableRowSet resultRowSet = RowSetFactoryImpl.INSTANCE.flat(groupToIndex.size()).convertToTracking();
+        final TrackingMutableRowSet resultRowSet = RowSetFactory.flat(groupToIndex.size()).convertToTracking();
         final Map<String, ColumnSource<?>> resultColumnSourceMap = new LinkedHashMap<>();
         resultColumnSourceMap.put(keyColumnName, resultKeyColumnSource);
         existingColumnSourceMap.entrySet().stream()
@@ -234,7 +234,7 @@ public class AggregationHelper {
         // TODO: Consider selecting the hash inputTable sources, in order to truncate them to size and improve density
 
         // Compute result rowSet and redirection to hash slots
-        final TrackingRowSet resultRowSet = RowSetFactoryImpl.INSTANCE.flat(numGroups).convertToTracking();
+        final TrackingRowSet resultRowSet = RowSetFactory.flat(numGroups).convertToTracking();
         final RedirectionIndex resultIndexToHashSlot = new IntColumnSourceRedirectionIndex(groupIndexToHashSlot);
 
         // Construct result column sources
@@ -505,7 +505,7 @@ public class AggregationHelper {
         final ColumnSource<TrackingMutableRowSet> hashSlotToIndexSource = stateManager.getIndexHashTableSource();
         final int chunkSize = Math.min(numGroups, IncrementalChunkedByAggregationStateManager.CHUNK_SIZE);
 
-        try (final RowSequence groupIndices = RowSetFactoryImpl.INSTANCE.flat(numGroups);
+        try (final RowSequence groupIndices = RowSetFactory.flat(numGroups);
              final RowSequence.Iterator groupIndicesIterator = groupIndices.getRowSequenceIterator();
              final ChunkSource.GetContext hashSlotGetContext = groupIndexToHashSlot.makeGetContext(chunkSize);
              final WritableObjectChunk<TrackingMutableRowSet, Values> aggregatedIndexes =

@@ -9,7 +9,6 @@ package io.deephaven.engine.v2.by.ssmcountdistinct.unique;
 
 import io.deephaven.engine.v2.sources.BoxedColumnSource;
 import io.deephaven.engine.tables.utils.DBDateTime;
-import io.deephaven.engine.v2.by.ssmcountdistinct.DbDateTimeSsmSourceWrapper;
 
 import io.deephaven.engine.v2.Listener;
 import io.deephaven.engine.v2.by.ComboAggregateFactory;
@@ -27,10 +26,7 @@ import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.ssms.LongSegmentedSortedMultiset;
 import io.deephaven.engine.v2.ssms.SegmentedSortedMultiSet;
-import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
-import io.deephaven.engine.v2.utils.MutableRowSet;
-import io.deephaven.engine.v2.utils.RowSet;
-import io.deephaven.engine.v2.utils.UpdateCommitter;
+import io.deephaven.engine.v2.utils.*;
 import io.deephaven.engine.v2.utils.compact.LongCompactKernel;
 import org.jetbrains.annotations.NotNull;
 
@@ -535,7 +531,7 @@ public class LongRollupUniqueOperator implements IterativeChunkedAggregationOper
         }
 
         prevFlusher = new UpdateCommitter<>(this, LongRollupUniqueOperator::flushPrevious);
-        touchedStates = RowSetFactoryImpl.INSTANCE.empty();
+        touchedStates = RowSetFactory.empty();
         ssms.startTrackingPrevValues();
         internalResult.startTrackingPrevValues();
     }

@@ -9,7 +9,7 @@ import io.deephaven.engine.v2.Listener;
 import io.deephaven.engine.v2.SortHelpers;
 import io.deephaven.engine.v2.select.IncrementalReleaseFilter;
 import io.deephaven.engine.v2.select.RollingReleaseFilter;
-import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
+import io.deephaven.engine.v2.utils.RowSetFactory;
 import io.deephaven.engine.v2.utils.RowSetShiftData;
 import io.deephaven.benchmarking.*;
 import io.deephaven.benchmarking.generator.EnumStringColumnGenerator;
@@ -145,7 +145,7 @@ public class SortBenchmark {
 
         rollingSortTable = inputTable.where(rollingReleaseFilter).sort(sortCol);
 
-        rollingInputRowSet = RowSetFactoryImpl.INSTANCE.empty().convertToTracking();
+        rollingInputRowSet = RowSetFactory.empty().convertToTracking();
         rollingInputTable = inputTable.getSubTable(rollingInputRowSet);
         rollingInputTable.setRefreshing(true);
         rollingOutputTable = rollingInputTable.sort(sortCol);

@@ -14,7 +14,7 @@ import io.deephaven.engine.util.LongSizedDataStructure;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.engine.v2.utils.RowSetBuilderRandom;
-import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
+import io.deephaven.engine.v2.utils.RowSetFactory;
 import org.jetbrains.annotations.NotNull;
 
 import static io.deephaven.util.QueryConstants.NULL_INT;
@@ -70,7 +70,7 @@ public class DbPrevIntArrayColumnWrapper extends DbIntArray.Indirect {
 
     @Override
     public DbIntArray subArrayByPositions(long[] positions) {
-        RowSetBuilderRandom builder = RowSetFactoryImpl.INSTANCE.builderRandom();
+        RowSetBuilderRandom builder = RowSetFactory.builderRandom();
 
         for (long position : positions) {
             final long realPos = position - startPadding;

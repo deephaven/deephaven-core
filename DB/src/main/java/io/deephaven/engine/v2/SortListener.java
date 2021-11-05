@@ -293,7 +293,7 @@ public class SortListener extends BaseTable.ListenerImpl {
                     addedStart, numAddedKeys);
 
             final RowSetShiftData.Builder shiftBuilder = new RowSetShiftData.Builder();
-            final RowSetBuilderSequential addedBuilder = RowSetFactoryImpl.INSTANCE.builderSequential();
+            final RowSetBuilderSequential addedBuilder = RowSetFactory.builderSequential();
 
             performUpdatesInDirection(addedBuilder, shiftBuilder, medianOutputKey - 1, rqs, mappingChanges);
             performUpdatesInDirection(addedBuilder, shiftBuilder, medianOutputKey, fqs, mappingChanges);
@@ -304,12 +304,12 @@ public class SortListener extends BaseTable.ListenerImpl {
             // Compute modified set in post-shift space.
             if (modifiedNeedsSorting && numPropagatedModdedKeys == 0 || upstream.modified.isEmpty()
                     || upstream.modifiedColumnSet.empty()) {
-                downstream.modified = RowSetFactoryImpl.INSTANCE.empty();
+                downstream.modified = RowSetFactory.empty();
             } else if (modifiedNeedsSorting) {
                 Arrays.sort(propagatedModOutputKeys, 0, numPropagatedModdedKeys);
 
                 int ii, si;
-                final RowSetBuilderSequential modifiedBuilder = RowSetFactoryImpl.INSTANCE.builderSequential();
+                final RowSetBuilderSequential modifiedBuilder = RowSetFactory.builderSequential();
                 for (ii = 0, si = 0; ii < numPropagatedModdedKeys && si < downstream.shifted.size(); ++si) {
                     final long beginRange = downstream.shifted.getBeginRange(si);
                     final long endRange = downstream.shifted.getEndRange(si);
@@ -354,7 +354,7 @@ public class SortListener extends BaseTable.ListenerImpl {
     }
 
     private RowSet sortedArrayToIndex(long[] arr, int offset, int length) {
-        final RowSetBuilderSequential builder = RowSetFactoryImpl.INSTANCE.builderSequential();
+        final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
         builder.appendKeys(LongIterators.wrap(arr, offset, length));
         return builder.build();
     }
@@ -785,7 +785,7 @@ public class SortListener extends BaseTable.ListenerImpl {
 
         @Override
         public MutableRowSet build() {
-            RowSetBuilderSequential builder = RowSetFactoryImpl.INSTANCE.builderSequential();
+            RowSetBuilderSequential builder = RowSetFactory.builderSequential();
             appendToBuilder(builder);
             return builder.build();
         }

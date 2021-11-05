@@ -74,7 +74,7 @@ public class IndexIteration {
             indexPoints[j] = indexPoints[j - 1] + 1;
             j++;
         }
-        rowSet = RowSetFactoryImpl.INSTANCE.fromKeys(indexPoints);
+        rowSet = RowSetFactory.fromKeys(indexPoints);
 
         sets = new double[setsCount][];
 

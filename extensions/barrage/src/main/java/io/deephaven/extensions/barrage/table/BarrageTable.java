@@ -64,7 +64,7 @@ public class BarrageTable extends QueryTable implements LiveTable, BarrageMessag
     /** we compact the parent table's key-space and instead redirect; ideal for viewport */
     private final RedirectionIndex redirectionIndex;
     /** represents which rows in writable source exist but are not mapped to any parent rows */
-    private MutableRowSet freeset = RowSetFactoryImpl.INSTANCE.empty();
+    private MutableRowSet freeset = RowSetFactory.empty();
 
 
     /** unsubscribed must never be reset to false once it has been set to true */
@@ -116,7 +116,7 @@ public class BarrageTable extends QueryTable implements LiveTable, BarrageMessag
             final WritableSource<?>[] writableSources,
             final RedirectionIndex redirectionIndex,
             final boolean isViewPort) {
-        super(RowSetFactoryImpl.INSTANCE.empty().convertToTracking(), columns);
+        super(RowSetFactory.empty().convertToTracking(), columns);
         this.registrar = registrar;
         this.notificationQueue = notificationQueue;
 
@@ -125,7 +125,7 @@ public class BarrageTable extends QueryTable implements LiveTable, BarrageMessag
                 .getEntry("BarrageTable refresh " + System.identityHashCode(this));
 
         if (isViewPort) {
-            serverViewport = RowSetFactoryImpl.INSTANCE.empty();
+            serverViewport = RowSetFactory.empty();
         } else {
             serverViewport = null;
         }
@@ -205,7 +205,7 @@ public class BarrageTable extends QueryTable implements LiveTable, BarrageMessag
             saveForDebugging(update);
 
             modifiedColumnSet.clear();
-            final MutableRowSet mods = RowSetFactoryImpl.INSTANCE.empty();
+            final MutableRowSet mods = RowSetFactory.empty();
             for (int ci = 0; ci < update.modColumnData.length; ++ci) {
                 final RowSet rowsModified = update.modColumnData[ci].rowsModified;
                 if (rowsModified.isNonempty()) {
@@ -252,7 +252,7 @@ public class BarrageTable extends QueryTable implements LiveTable, BarrageMessag
             }
             currentRowSet.insert(update.rowsAdded);
 
-            final MutableRowSet totalMods = RowSetFactoryImpl.INSTANCE.empty();
+            final MutableRowSet totalMods = RowSetFactory.empty();
             for (int i = 0; i < update.modColumnData.length; ++i) {
                 final BarrageMessage.ModColumnData column = update.modColumnData[i];
                 totalMods.insert(column.rowsModified);
@@ -334,13 +334,13 @@ public class BarrageTable extends QueryTable implements LiveTable, BarrageMessag
 
     private RowSet getFreeRows(long size) {
         if (size <= 0) {
-            return RowSetFactoryImpl.INSTANCE.empty();
+            return RowSetFactory.empty();
         }
 
         boolean needsResizing = false;
         if (capacity == 0) {
             capacity = Integer.highestOneBit((int) Math.max(size * 2, 8));
-            freeset = RowSetFactoryImpl.INSTANCE.flat(capacity);
+            freeset = RowSetFactory.flat(capacity);
             needsResizing = true;
         } else if (freeset.size() < size) {
             int usedSlots = (int) (capacity - freeset.size());
@@ -410,7 +410,7 @@ public class BarrageTable extends QueryTable implements LiveTable, BarrageMessag
                 // publish one last clear downstream; this data would be stale
                 final RowSet allRows = getRowSet().clone();
                 getRowSet().mutableCast().remove(allRows);
-                notifyListeners(RowSetFactoryImpl.INSTANCE.empty(), allRows, RowSetFactoryImpl.INSTANCE.empty());
+                notifyListeners(RowSetFactory.empty(), allRows, RowSetFactory.empty());
             }
             cleanup();
             return;

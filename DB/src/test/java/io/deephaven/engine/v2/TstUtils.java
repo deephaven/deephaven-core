@@ -46,11 +46,11 @@ public class TstUtils {
     }
 
     public static MutableRowSet i(long... keys) {
-        return RowSetFactoryImpl.INSTANCE.fromKeys(keys);
+        return RowSetFactory.fromKeys(keys);
     }
 
     public static MutableRowSet ir(final long firstKey, final long lastKey) {
-        return RowSetFactoryImpl.INSTANCE.fromRange(firstKey, lastKey);
+        return RowSetFactory.fromRange(firstKey, lastKey);
     }
 
     public static void addToTable(final Table table, final RowSet rowSet, final ColumnHolder... columnHolders) {
@@ -156,7 +156,7 @@ public class TstUtils {
     }
 
     public static MutableRowSet getRandomIndex(long minValue, int size, Random random) {
-        final RowSetBuilderRandom builder = RowSetFactoryImpl.INSTANCE.builderRandom();
+        final RowSetBuilderRandom builder = RowSetFactory.builderRandom();
         long previous = minValue;
         for (int i = 0; i < size; i++) {
             previous += (1 + random.nextInt(100));
@@ -367,7 +367,7 @@ public class TstUtils {
     }
 
     static MutableRowSet getInitialIndex(int size, Random random) {
-        final RowSetBuilderRandom builder = RowSetFactoryImpl.INSTANCE.builderRandom();
+        final RowSetBuilderRandom builder = RowSetFactory.builderRandom();
         long firstKey = 10;
         for (int i = 0; i < size; i++) {
             builder.addKey(firstKey = firstKey + random.nextInt(3));
@@ -387,7 +387,7 @@ public class TstUtils {
         Collections.shuffle(Arrays.asList(positions), random);
 
         // now create an rowSet with each of our selected positions
-        final RowSetBuilderRandom resultBuilder = RowSetFactoryImpl.INSTANCE.builderRandom();
+        final RowSetBuilderRandom resultBuilder = RowSetFactory.builderRandom();
         for (int ii = 0; ii < size; ++ii) {
             resultBuilder.addKey(sourceRowSet.get(positions[ii]));
         }
@@ -404,7 +404,7 @@ public class TstUtils {
 
         final MutableRowSet fillIn =
                 selectSubIndexSet(slotsToFill,
-                        RowSetFactoryImpl.INSTANCE.fromRange(0, maxKey).minus(sourceRowSet), random);
+                        RowSetFactory.fromRange(0, maxKey).minus(sourceRowSet), random);
 
         final int endSlots = targetSize - (int) fillIn.size();
 
@@ -414,7 +414,7 @@ public class TstUtils {
         final long rangeSize = (long) ((1.0 / density) * endSlots);
         final RowSet expansion =
                 selectSubIndexSet(endSlots,
-                        RowSetFactoryImpl.INSTANCE.fromRange(maxKey + 1, maxKey + rangeSize + 1), random);
+                        RowSetFactory.fromRange(maxKey + 1, maxKey + rangeSize + 1), random);
 
         fillIn.insert(expansion);
 
@@ -491,7 +491,7 @@ public class TstUtils {
 
     public static QueryTable testTable(ColumnHolder... columnHolders) {
         final Object[] boxedData = ArrayUtils.getBoxedArray(columnHolders[0].data);
-        final TrackingRowSet rowSet = RowSetFactoryImpl.INSTANCE.flat(boxedData.length).convertToTracking();
+        final TrackingRowSet rowSet = RowSetFactory.flat(boxedData.length).convertToTracking();
         return testTable(rowSet, columnHolders);
     }
 
@@ -519,8 +519,8 @@ public class TstUtils {
 
     public static QueryTable testRefreshingTable(ColumnHolder... columnHolders) {
         final TrackingMutableRowSet rowSet = (columnHolders.length == 0
-                ? RowSetFactoryImpl.INSTANCE.empty()
-                : RowSetFactoryImpl.INSTANCE.flat(Array.getLength(columnHolders[0].data))
+                ? RowSetFactory.empty()
+                : RowSetFactory.flat(Array.getLength(columnHolders[0].data))
         ).convertToTracking();
         final Map<String, ColumnSource<?>> columns = new LinkedHashMap<>();
         for (ColumnHolder columnHolder : columnHolders) {
@@ -1536,7 +1536,7 @@ public class TstUtils {
 
                 if (!ceiling.equals(currentCeiling) || !floor.equals(currentFloor)) {
                     // we're past the end of the last run so we need to generate the values for the map
-                    generateValues(toAdd.intersect(RowSetFactoryImpl.INSTANCE.fromRange(firstKey, lastKey)),
+                    generateValues(toAdd.intersect(RowSetFactory.fromRange(firstKey, lastKey)),
                             currentFloor,
                             currentCeiling, result, random);
                     firstKey = nextKey;
@@ -1546,7 +1546,7 @@ public class TstUtils {
                 lastKey = nextKey;
             }
 
-            generateValues(toAdd.intersect(RowSetFactoryImpl.INSTANCE.fromRange(firstKey, lastKey)),
+            generateValues(toAdd.intersect(RowSetFactory.fromRange(firstKey, lastKey)),
                     currentFloor,
                     currentCeiling, result, random);
 
@@ -1919,7 +1919,7 @@ public class TstUtils {
 
             final RowSetBuilderSequential[] builders = new RowSetBuilderSequential[generators.size()];
             for (int ii = 0; ii < builders.length; ++ii) {
-                builders[ii] = RowSetFactoryImpl.INSTANCE.builderSequential();
+                builders[ii] = RowSetFactory.builderSequential();
             }
             toAdd.forAllRowKeys((long ll) -> builders[pickGenerator(random)].appendKey(ll));
 

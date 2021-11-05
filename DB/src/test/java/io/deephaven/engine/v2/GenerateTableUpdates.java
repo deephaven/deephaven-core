@@ -31,7 +31,7 @@ public class GenerateTableUpdates {
             TstUtils.ColumnInfo[] columnInfos) {
         final long firstKey = table.getRowSet().lastRowKey() + 1;
         final int randomSize = 1 + random.nextInt(size);
-        final RowSet keysToAdd = RowSetFactoryImpl.INSTANCE.fromRange(firstKey, firstKey + randomSize - 1);
+        final RowSet keysToAdd = RowSetFactory.fromRange(firstKey, firstKey + randomSize - 1);
         final ColumnHolder[] columnAdditions = new ColumnHolder[columnInfos.length];
         for (int i = 0; i < columnAdditions.length; i++) {
             columnAdditions[i] = columnInfos[i].populateMapAndC(keysToAdd, random);
@@ -49,7 +49,7 @@ public class GenerateTableUpdates {
                 throw new RuntimeException(e);
             }
         }
-        table.notifyListeners(keysToAdd, RowSetFactoryImpl.INSTANCE.empty(), RowSetFactoryImpl.INSTANCE.empty());
+        table.notifyListeners(keysToAdd, RowSetFactory.empty(), RowSetFactory.empty());
     }
 
     static public RowSet[] computeTableUpdates(int size, Random random, QueryTable table,
@@ -230,7 +230,7 @@ public class GenerateTableUpdates {
                 final long blatStart = delta < 0 ? start + delta : end;
                 final long blatEnd = delta < 0 ? start - 1 : end + delta;
                 try (final RowSet blattedRows =
-                        rowSet.extract(RowSetFactoryImpl.INSTANCE.fromRange(blatStart, blatEnd))) {
+                        rowSet.extract(RowSetFactory.fromRange(blatStart, blatEnd))) {
                     update.removed.mutableCast().insert(blattedRows);
                 }
             });

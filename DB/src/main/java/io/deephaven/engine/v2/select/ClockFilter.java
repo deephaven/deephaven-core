@@ -15,10 +15,7 @@ import io.deephaven.engine.tables.utils.DBDateTime;
 import io.deephaven.engine.v2.DynamicNode;
 import io.deephaven.engine.v2.QueryTable;
 import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.utils.MutableRowSet;
-import io.deephaven.engine.v2.utils.RowSet;
-import io.deephaven.engine.v2.utils.RowSetBuilderRandom;
-import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
+import io.deephaven.engine.v2.utils.*;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -79,7 +76,7 @@ public abstract class ClockFilter extends SelectFilterLivenessArtifactImpl imple
                         .getColumnSource(columnName);
 
         final MutableRowSet initial = initializeAndGetInitialIndex(selection, fullSet, table);
-        return initial == null ? RowSetFactoryImpl.INSTANCE.empty() : initial;
+        return initial == null ? RowSetFactory.empty() : initial;
     }
 
     @Nullable
@@ -118,8 +115,8 @@ public abstract class ClockFilter extends SelectFilterLivenessArtifactImpl imple
         final RowSet added = updateAndGetAddedIndex();
         if (added != null && !added.isEmpty()) {
             resultTable.getRowSet().mutableCast().insert(added);
-            resultTable.notifyListeners(added, RowSetFactoryImpl.INSTANCE.empty(),
-                    RowSetFactoryImpl.INSTANCE.empty());
+            resultTable.notifyListeners(added, RowSetFactory.empty(),
+                    RowSetFactory.empty());
         }
     }
 
@@ -161,7 +158,7 @@ public abstract class ClockFilter extends SelectFilterLivenessArtifactImpl imple
                 return null;
             }
             if (addedBuilder == null) {
-                addedBuilder = RowSetFactoryImpl.INSTANCE.builderRandom();
+                addedBuilder = RowSetFactory.builderRandom();
             }
             addedBuilder.addRange(firstKeyAdded, lastKeyAdded);
             return addedBuilder;

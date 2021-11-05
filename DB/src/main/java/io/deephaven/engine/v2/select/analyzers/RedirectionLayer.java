@@ -19,7 +19,7 @@ final public class RedirectionLayer extends SelectAndViewAnalyzer {
     private final SelectAndViewAnalyzer inner;
     private final TrackingRowSet resultRowSet;
     private final RedirectionIndex redirectionIndex;
-    private final MutableRowSet freeValues = RowSetFactoryImpl.INSTANCE.empty();
+    private final MutableRowSet freeValues = RowSetFactory.empty();
     private long maxInnerIndex;
 
     RedirectionLayer(SelectAndViewAnalyzer inner, TrackingRowSet resultRowSet, RedirectionIndex redirectionIndex) {
@@ -45,7 +45,7 @@ final public class RedirectionLayer extends SelectAndViewAnalyzer {
 
         // we need to remove the removed values from our redirection rowSet, and add them to our free rowSet; so that
         // updating tables will not consume more space over the course of a day for abandoned rows
-        final RowSetBuilderRandom innerToFreeBuilder = RowSetFactoryImpl.INSTANCE.builderRandom();
+        final RowSetBuilderRandom innerToFreeBuilder = RowSetFactory.builderRandom();
         upstream.removed.forAllRowKeys(key -> innerToFreeBuilder.addKey(redirectionIndex.remove(key)));
         freeValues.insert(innerToFreeBuilder.build());
 

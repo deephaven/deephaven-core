@@ -7,7 +7,7 @@ import io.deephaven.engine.v2.sources.chunk.CharChunk;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.engine.v2.utils.RowSetBuilderSequential;
-import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
+import io.deephaven.engine.v2.utils.RowSetFactory;
 
 import org.junit.After;
 import org.junit.Before;
@@ -200,7 +200,7 @@ public class TestCharacterDeltaAwareColumnSource {
     }
 
     private static RowSet rangesToIndex(long[] ranges) {
-        RowSetBuilderSequential builder = RowSetFactoryImpl.INSTANCE.builderSequential();
+        RowSetBuilderSequential builder = RowSetFactory.builderSequential();
         for (int ii = 0; ii < ranges.length; ii += 2) {
             builder.appendRange(ranges[ii], ranges[ii + 1] - 1);
         }

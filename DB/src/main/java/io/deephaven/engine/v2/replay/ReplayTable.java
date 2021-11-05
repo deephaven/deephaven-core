@@ -11,7 +11,7 @@ import io.deephaven.engine.v2.QueryTable;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.engine.v2.utils.RowSetBuilderRandom;
-import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
+import io.deephaven.engine.v2.utils.RowSetFactory;
 
 import java.util.Map;
 
@@ -26,7 +26,7 @@ public class ReplayTable extends QueryTable implements LiveTable {
 
     public ReplayTable(RowSet rowSet, Map<String, ? extends ColumnSource<?>> result, String timeColumn,
                        Replayer replayer) {
-        super(RowSetFactoryImpl.INSTANCE.empty().convertToTracking(), result);
+        super(RowSetFactory.empty().convertToTracking(), result);
         Require.requirement(replayer != null, "replayer != null");
         // noinspection unchecked
         replayer.registerTimeSource(rowSet, (ColumnSource<DBDateTime>) result.get(timeColumn));
@@ -55,7 +55,7 @@ public class ReplayTable extends QueryTable implements LiveTable {
         if (done || nextTime >= replayer.currentTimeNanos()) {
             return;
         }
-        RowSetBuilderRandom indexBuilder = RowSetFactoryImpl.INSTANCE.builderRandom();
+        RowSetBuilderRandom indexBuilder = RowSetFactory.builderRandom();
         while (!done && nextTime < replayer.currentTimeNanos()) {
             indexBuilder.addKey(curr);
             if (indexIterator.hasNext()) {
@@ -68,7 +68,7 @@ public class ReplayTable extends QueryTable implements LiveTable {
         final RowSet added = indexBuilder.build();
         if (added.size() > 0) {
             getRowSet().mutableCast().insert(added);
-            notifyListeners(added, RowSetFactoryImpl.INSTANCE.empty(), RowSetFactoryImpl.INSTANCE.empty());
+            notifyListeners(added, RowSetFactory.empty(), RowSetFactory.empty());
         }
     }
 }

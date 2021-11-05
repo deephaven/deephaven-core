@@ -13,10 +13,7 @@ import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.ReadOnlyRedirectedColumnSource;
 import io.deephaven.engine.v2.tuples.TupleSource;
 import io.deephaven.engine.v2.tuples.TupleSourceFactory;
-import io.deephaven.engine.v2.utils.RowSet;
-import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
-import io.deephaven.engine.v2.utils.RedirectionIndex;
-import io.deephaven.engine.v2.utils.TrackingRowSet;
+import io.deephaven.engine.v2.utils.*;
 
 import java.util.Arrays;
 import java.util.LinkedHashMap;
@@ -78,7 +75,7 @@ public abstract class QueryReplayGroupedTable extends QueryTable implements Live
     protected QueryReplayGroupedTable(TrackingRowSet rowSet, Map<String, ? extends ColumnSource<?>> input,
                                       String timeColumn, Replayer replayer, RedirectionIndex redirectionIndex, String[] groupingColumns) {
 
-        super(RowSetFactoryImpl.INSTANCE.empty().convertToTracking(), getResultSources(input, redirectionIndex));
+        super(RowSetFactory.empty().convertToTracking(), getResultSources(input, redirectionIndex));
         this.redirectionIndex = redirectionIndex;
         Map<Object, RowSet> grouping;
 

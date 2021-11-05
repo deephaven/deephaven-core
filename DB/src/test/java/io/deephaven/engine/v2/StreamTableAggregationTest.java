@@ -50,7 +50,7 @@ public class StreamTableAggregationTest {
      *        {@code false})
      */
     private void doOperatorTest(@NotNull final UnaryOperator<Table> operator, final boolean windowed) {
-        final QueryTable normal = new QueryTable(RowSetFactoryImpl.INSTANCE.empty().convertToTracking(),
+        final QueryTable normal = new QueryTable(RowSetFactory.empty().convertToTracking(),
                 source.getColumnSourceMap());
         normal.setRefreshing(true);
 
@@ -64,7 +64,7 @@ public class StreamTableAggregationTest {
             streamSources = source.getColumnSourceMap();
         } else {
             // Redirecting so we can present a zero-based TrackingMutableRowSet from the stream table
-            streamInternalRowSet = RowSetFactoryImpl.INSTANCE.empty().convertToTracking();
+            streamInternalRowSet = RowSetFactory.empty().convertToTracking();
             final RedirectionIndex streamRedirections = new WrappedIndexRedirectionIndexImpl(streamInternalRowSet);
             streamSources = source.getColumnSourceMap().entrySet().stream().collect(Collectors.toMap(
                     Map.Entry::getKey,
@@ -72,7 +72,7 @@ public class StreamTableAggregationTest {
                     Assert::neverInvoked,
                     LinkedHashMap::new));
         }
-        final QueryTable stream = new QueryTable(RowSetFactoryImpl.INSTANCE.empty().convertToTracking(), streamSources);
+        final QueryTable stream = new QueryTable(RowSetFactory.empty().convertToTracking(), streamSources);
         stream.setRefreshing(true);
         stream.setAttribute(Table.STREAM_TABLE_ATTRIBUTE, true);
 
@@ -91,16 +91,16 @@ public class StreamTableAggregationTest {
 
         int step = 0;
         long usedSize = 0;
-        RowSet streamLastInserted = RowSetFactoryImpl.INSTANCE.empty();
+        RowSet streamLastInserted = RowSetFactory.empty();
         while (usedSize < INPUT_SIZE) {
             final long refreshSize = Math.min(INPUT_SIZE - usedSize, refreshSizes.nextLong());
             final RowSet normalStepInserted = refreshSize == 0
-                    ? RowSetFactoryImpl.INSTANCE.empty()
-                    : RowSetFactoryImpl.INSTANCE.fromRange(usedSize, usedSize + refreshSize - 1);
+                    ? RowSetFactory.empty()
+                    : RowSetFactory.fromRange(usedSize, usedSize + refreshSize - 1);
             final RowSet streamStepInserted = streamInternalRowSet == null ? normalStepInserted.clone()
                     : refreshSize == 0
-                            ? RowSetFactoryImpl.INSTANCE.empty()
-                            : RowSetFactoryImpl.INSTANCE.fromRange(0, refreshSize - 1);
+                            ? RowSetFactory.empty()
+                            : RowSetFactory.fromRange(0, refreshSize - 1);
 
             LiveTableMonitor.DEFAULT.startCycleForUnitTests();
             try {
@@ -108,8 +108,8 @@ public class StreamTableAggregationTest {
                     if (normalStepInserted.isNonempty()) {
                         normal.getRowSet().mutableCast().insert(normalStepInserted);
                         normal.notifyListeners(
-                                new Update(normalStepInserted, RowSetFactoryImpl.INSTANCE.empty(),
-                                        RowSetFactoryImpl.INSTANCE.empty(), RowSetShiftData.EMPTY,
+                                new Update(normalStepInserted, RowSetFactory.empty(),
+                                        RowSetFactory.empty(), RowSetShiftData.EMPTY,
                                         ModifiedColumnSet.EMPTY));
                     }
                 });
@@ -123,7 +123,7 @@ public class StreamTableAggregationTest {
                         stream.getRowSet().mutableCast().clear();
                         stream.getRowSet().mutableCast().insert(streamStepInserted);
                         stream.notifyListeners(new Update(streamStepInserted.clone(), finalStreamLastInserted,
-                                RowSetFactoryImpl.INSTANCE.empty(), RowSetShiftData.EMPTY,
+                                RowSetFactory.empty(), RowSetShiftData.EMPTY,
                                 ModifiedColumnSet.EMPTY));
                     }
                 });

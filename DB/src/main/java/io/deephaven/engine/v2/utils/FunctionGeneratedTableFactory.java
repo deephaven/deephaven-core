@@ -95,7 +95,7 @@ public class FunctionGeneratedTableFactory {
         // enable prev tracking after columns are initialized
         columns.values().forEach(ColumnSource::startTrackingPrevValues);
 
-        rowSet = RowSetFactoryImpl.INSTANCE.flat(initialTable.size()).convertToTracking();
+        rowSet = RowSetFactory.flat(initialTable.size()).convertToTracking();
     }
 
     private FunctionBackedTable getTable() {
@@ -155,23 +155,23 @@ public class FunctionGeneratedTableFactory {
             long newSize = updateTable();
 
             if (newSize < size) {
-                final RowSet removed = RowSetFactoryImpl.INSTANCE.fromRange(newSize, size - 1);
+                final RowSet removed = RowSetFactory.fromRange(newSize, size - 1);
                 rowSet.remove(removed);
                 final RowSet modified = rowSet.clone();
-                notifyListeners(RowSetFactoryImpl.INSTANCE.empty(), removed, modified);
+                notifyListeners(RowSetFactory.empty(), removed, modified);
                 return;
             }
             if (newSize > size) {
-                final RowSet added = RowSetFactoryImpl.INSTANCE.fromRange(size, newSize - 1);
+                final RowSet added = RowSetFactory.fromRange(size, newSize - 1);
                 final RowSet modified = rowSet.clone();
                 rowSet.insert(added);
-                notifyListeners(added, RowSetFactoryImpl.INSTANCE.empty(), modified);
+                notifyListeners(added, RowSetFactory.empty(), modified);
                 return;
             }
             if (size > 0) {
                 // no size change, just modified
                 final RowSet modified = rowSet.clone();
-                notifyListeners(RowSetFactoryImpl.INSTANCE.empty(), RowSetFactoryImpl.INSTANCE.empty(), modified);
+                notifyListeners(RowSetFactory.empty(), RowSetFactory.empty(), modified);
             }
         }
 

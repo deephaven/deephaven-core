@@ -14,10 +14,7 @@ import io.deephaven.engine.v2.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.RedirectedColumnSource;
 import io.deephaven.engine.v2.sources.WritableSource;
-import io.deephaven.engine.v2.utils.MutableRowSet;
-import io.deephaven.engine.v2.utils.RedirectionIndex;
-import io.deephaven.engine.v2.utils.RowSet;
-import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
+import io.deephaven.engine.v2.utils.*;
 
 import java.util.BitSet;
 import java.util.LinkedHashMap;
@@ -26,7 +23,7 @@ import java.util.Map;
 public class InitialSnapshotTable extends QueryTable {
     protected final Setter<?>[] setters;
     protected int capacity;
-    protected MutableRowSet freeset = RowSetFactoryImpl.INSTANCE.empty();
+    protected MutableRowSet freeset = RowSetFactory.empty();
     protected final MutableRowSet populatedRows;
     protected final MutableRowSet[] populatedCells;
     protected WritableSource<?>[] writableSources;
@@ -36,17 +33,17 @@ public class InitialSnapshotTable extends QueryTable {
 
     protected InitialSnapshotTable(Map<String, ? extends ColumnSource<?>> result, WritableSource<?>[] writableSources,
             RedirectionIndex redirectionIndex, BitSet subscribedColumns) {
-        super(RowSetFactoryImpl.INSTANCE.empty().convertToTracking(), result);
+        super(RowSetFactory.empty().convertToTracking(), result);
         this.subscribedColumns = subscribedColumns;
         this.writableSources = writableSources;
         this.setters = new Setter[writableSources.length];
         this.populatedCells = new MutableRowSet[writableSources.length];
         for (int ii = 0; ii < writableSources.length; ++ii) {
             setters[ii] = getSetter(writableSources[ii]);
-            this.populatedCells[ii] = RowSetFactoryImpl.INSTANCE.fromKeys();
+            this.populatedCells[ii] = RowSetFactory.fromKeys();
         }
         this.redirectionIndex = redirectionIndex;
-        this.populatedRows = RowSetFactoryImpl.INSTANCE.fromKeys();
+        this.populatedRows = RowSetFactory.fromKeys();
     }
 
     public BitSet getSubscribedColumns() {
@@ -145,7 +142,7 @@ public class InitialSnapshotTable extends QueryTable {
         boolean needsResizing = false;
         if (capacity == 0) {
             capacity = Integer.highestOneBit((int) Math.max(size * 2, 8));
-            freeset = RowSetFactoryImpl.INSTANCE.flat(capacity);
+            freeset = RowSetFactory.flat(capacity);
             needsResizing = true;
         } else if (freeset.size() < size) {
             int allocatedSize = (int) (capacity - freeset.size());

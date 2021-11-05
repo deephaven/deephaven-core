@@ -190,7 +190,7 @@ public class QueryTableSortTest extends QueryTableTestBase {
     }
 
     public void testGroupedSortRefreshing() {
-        final Table table = testRefreshingTable(RowSetFactoryImpl.INSTANCE.flat(9).convertToTracking(),
+        final Table table = testRefreshingTable(RowSetFactory.flat(9).convertToTracking(),
                 cG("A", "Apple", "Apple", "Apple", "Banana", "Banana", "Banana", "Canteloupe", "Canteloupe",
                         "Canteloupe"),
                 c("Secondary", "C", "A", "B", "C", "A", "B", "C", "A", "B")).update("Sentinel=i");
@@ -224,9 +224,9 @@ public class QueryTableSortTest extends QueryTableTestBase {
             values[ii] = choices[ii % choices.length];
         }
 
-        final Table grouped = testTable(RowSetFactoryImpl.INSTANCE.flat(values.length).convertToTracking(),
+        final Table grouped = testTable(RowSetFactory.flat(values.length).convertToTracking(),
                 cG("Captain", values)).update("Sentinel=i");
-        final Table nogroups = testTable(RowSetFactoryImpl.INSTANCE.flat(values.length).convertToTracking(),
+        final Table nogroups = testTable(RowSetFactory.flat(values.length).convertToTracking(),
                 c("Captain", values)).update("Sentinel=i");
 
         final Table sortedGrouped = grouped.sortDescending("Captain");

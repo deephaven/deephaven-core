@@ -17,7 +17,7 @@ import io.deephaven.engine.v2.locations.impl.StandaloneTableLocationKey;
 import io.deephaven.engine.v2.sources.DeferredGroupingColumnSource;
 import io.deephaven.engine.v2.utils.MutableRowSet;
 import io.deephaven.engine.v2.utils.RowSet;
-import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
+import io.deephaven.engine.v2.utils.RowSetFactory;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -110,7 +110,7 @@ public class TestSimpleSourceTable extends LiveTableTestCase {
             }
         });
 
-        expectedRowSet = RowSetFactoryImpl.INSTANCE.empty();
+        expectedRowSet = RowSetFactory.empty();
 
         // Since TestPAST covers refreshing SourceTables, let this cover the static case.
         SUT = new SimpleSourceTable(TABLE_DEFINITION, "", componentFactory, locationProvider, null);
@@ -159,7 +159,7 @@ public class TestSimpleSourceTable extends LiveTableTestCase {
         Assert.assertion(!(throwException && !coalesce), "!(throwException && !listen)");
         final TableDataException exception = new TableDataException("test");
         final RowSet toAdd =
-                RowSetFactoryImpl.INSTANCE.fromRange(expectedRowSet.lastRowKey() + 1,
+                RowSetFactory.fromRange(expectedRowSet.lastRowKey() + 1,
                         expectedRowSet.lastRowKey() + INDEX_INCREMENT);
 
         checking(new Expectations() {
@@ -227,7 +227,7 @@ public class TestSimpleSourceTable extends LiveTableTestCase {
                 oneOf(locationProvider).refresh();
                 oneOf(columnSourceManager).addLocation(tableLocation);
                 oneOf(columnSourceManager).refresh();
-                will(returnValue(RowSetFactoryImpl.INSTANCE.empty()));
+                will(returnValue(RowSetFactory.empty()));
                 oneOf(columnSourceManager).getColumnSources();
                 will(returnValue(getIncludedColumnsMap(includedColumnIndices1)));
             }
@@ -260,7 +260,7 @@ public class TestSimpleSourceTable extends LiveTableTestCase {
                 oneOf(locationProvider).refresh();
                 oneOf(columnSourceManager).addLocation(tableLocation);
                 oneOf(columnSourceManager).refresh();
-                will(returnValue(RowSetFactoryImpl.INSTANCE.empty()));
+                will(returnValue(RowSetFactory.empty()));
                 oneOf(columnSourceManager).getColumnSources();
                 will(returnValue(getIncludedColumnsMap(includedColumnIndices2)));
             }
@@ -302,7 +302,7 @@ public class TestSimpleSourceTable extends LiveTableTestCase {
                 oneOf(locationProvider).refresh();
                 oneOf(columnSourceManager).addLocation(tableLocation);
                 oneOf(columnSourceManager).refresh();
-                will(returnValue(RowSetFactoryImpl.INSTANCE.empty()));
+                will(returnValue(RowSetFactory.empty()));
                 oneOf(columnSourceManager).getColumnSources();
                 will(returnValue(getIncludedColumnsMap(includedColumnIndices3)));
             }

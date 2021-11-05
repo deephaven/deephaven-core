@@ -7,16 +7,14 @@ import io.deephaven.engine.v2.sources.chunk.ObjectChunk;
 
 import io.deephaven.engine.v2.sources.chunk.WritableObjectChunk;
 
+import io.deephaven.engine.v2.utils.RowSetFactory;
 import io.deephaven.util.BooleanUtils;
 
 import io.deephaven.engine.tables.live.LiveTableMonitor;
 import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
-import io.deephaven.engine.v2.sources.chunk.BooleanChunk;
-import io.deephaven.engine.v2.sources.chunk.WritableBooleanChunk;
 import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.engine.v2.utils.RowSetBuilderSequential;
-import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
 import io.deephaven.engine.structures.RowSequence;
 import org.junit.After;
 import org.junit.Before;
@@ -62,7 +60,7 @@ public class TestBooleanSparseArraySource {
         final ColumnSource.FillContext fillContext = source.makeFillContext(chunkSize);
         final WritableObjectChunk<Boolean, Values> dest = WritableObjectChunk.makeWritableChunk(chunkSize);
 
-        source.fillChunk(fillContext, dest, RowSetFactoryImpl.INSTANCE.fromRange(0, 1023));
+        source.fillChunk(fillContext, dest, RowSetFactory.fromRange(0, 1023));
         for (int ii = 0; ii < 1024; ++ii) {
             checkFromSource("null check: " + ii, NULL_BOOLEAN, dest.get(ii));
         }
@@ -117,7 +115,7 @@ public class TestBooleanSparseArraySource {
         final ColumnSource.GetContext getContext = source.makeGetContext(chunkSize);
 
         // the asChunk is not needed here, but it's needed when replicated to Boolean
-        final ObjectChunk<Boolean, Values> result = source.getChunk(getContext, RowSetFactoryImpl.INSTANCE.fromRange(0, 1023)).asObjectChunk();
+        final ObjectChunk<Boolean, Values> result = source.getChunk(getContext, RowSetFactory.fromRange(0, 1023)).asObjectChunk();
         for (int ii = 0; ii < 1024; ++ii) {
             checkFromSource("null check: " + ii, NULL_BOOLEAN, result.get(ii));
         }
@@ -157,7 +155,7 @@ public class TestBooleanSparseArraySource {
     }
 
     private RowSet generateIndex(Random random, int maxsize, int runLength) {
-        final RowSetBuilderSequential builder = RowSetFactoryImpl.INSTANCE.builderSequential();
+        final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
         int nextKey = random.nextInt(runLength);
         while (nextKey < maxsize) {
             int lastKey;
@@ -196,7 +194,7 @@ public class TestBooleanSparseArraySource {
     private void checkRangeFill(int chunkSize, BooleanSparseArraySource source, ColumnSource.FillContext fillContext,
                                 WritableObjectChunk<Boolean, Values> dest, byte[] expectations, int firstKey, int lastKey, boolean usePrev) {
         int offset;
-        final RowSet rowSet = RowSetFactoryImpl.INSTANCE.fromRange(firstKey, lastKey);
+        final RowSet rowSet = RowSetFactory.fromRange(firstKey, lastKey);
         offset = firstKey;
         for (final RowSequence.Iterator it = rowSet.getRowSequenceIterator(); it.hasMore(); ) {
             final RowSequence nextOk = it.getNextRowSequenceWithLength(chunkSize);
@@ -213,7 +211,7 @@ public class TestBooleanSparseArraySource {
 
     private void checkRangeGet(int chunkSize, BooleanSparseArraySource source, ColumnSource.GetContext getContext, byte[] expectations, int firstKey, int lastKey, boolean usePrev) {
         int offset;
-        final RowSet rowSet = RowSetFactoryImpl.INSTANCE.fromRange(firstKey, lastKey);
+        final RowSet rowSet = RowSetFactory.fromRange(firstKey, lastKey);
         offset = firstKey;
         for (final RowSequence.Iterator it = rowSet.getRowSequenceIterator(); it.hasMore(); ) {
             final RowSequence nextOk = it.getNextRowSequenceWithLength(chunkSize);
@@ -274,8 +272,8 @@ public class TestBooleanSparseArraySource {
         // super hack
         final byte[] peekedBlock = source.ensureBlock(0, 0, 0);
 
-        try (RowSet srcKeys = RowSetFactoryImpl.INSTANCE.fromRange(rangeStart, rangeEnd)) {
-            try (RowSet destKeys = RowSetFactoryImpl.INSTANCE.fromRange(rangeStart + 1, rangeEnd + 1)) {
+        try (RowSet srcKeys = RowSetFactory.fromRange(rangeStart, rangeEnd)) {
+            try (RowSet destKeys = RowSetFactory.fromRange(rangeStart + 1, rangeEnd + 1)) {
                 try (ChunkSource.GetContext srcContext = source.makeGetContext(arraySize)) {
                     try (WritableChunkSink.FillFromContext destContext = source.makeFillFromContext(arraySize)) {
                         Chunk chunk = source.getChunk(srcContext, srcKeys);
@@ -306,7 +304,7 @@ public class TestBooleanSparseArraySource {
         final BooleanSparseArraySource src = new BooleanSparseArraySource();
         src.startTrackingPrevValues();
         LiveTableMonitor.DEFAULT.startCycleForUnitTests();
-        try (final RowSet keys = RowSetFactoryImpl.INSTANCE.empty();
+        try (final RowSet keys = RowSetFactory.empty();
              final WritableObjectChunk<Boolean, Values> chunk = WritableObjectChunk.makeWritableChunk(0)) {
             // Fill from an empty chunk
             src.fillFromChunkByKeys(keys, chunk);

@@ -69,11 +69,11 @@ public class StreamTableTools {
                         final TrackingMutableRowSet rowSet;
                         if (usePrev) {
                             try (final RowSet useRowSet = baseStreamTable.getRowSet().getPrevRowSet()) {
-                                rowSet = RowSetFactoryImpl.INSTANCE.flat(useRowSet.size()).convertToTracking();
+                                rowSet = RowSetFactory.flat(useRowSet.size()).convertToTracking();
                                 ChunkUtils.copyData(sourceColumns, useRowSet, destColumns, rowSet, usePrev);
                             }
                         } else {
-                            rowSet = RowSetFactoryImpl.INSTANCE.flat(baseStreamTable.getRowSet().size())
+                            rowSet = RowSetFactory.flat(baseStreamTable.getRowSet().size())
                                     .convertToTracking();
                             ChunkUtils.copyData(sourceColumns, baseStreamTable.getRowSet(), destColumns, rowSet,
                                     usePrev);
@@ -101,7 +101,7 @@ public class StreamTableTools {
                                 columns.values().forEach(c -> c.ensureCapacity(currentSize + newRows));
 
                                 final RowSet newRange =
-                                        RowSetFactoryImpl.INSTANCE.fromRange(currentSize,
+                                        RowSetFactory.fromRange(currentSize,
                                                 currentSize + newRows - 1);
 
                                 ChunkUtils.copyData(sourceColumns, upstream.added, destColumns, newRange, false);
@@ -109,8 +109,8 @@ public class StreamTableTools {
 
                                 final Update downstream = new Update();
                                 downstream.added = newRange;
-                                downstream.modified = RowSetFactoryImpl.INSTANCE.empty();
-                                downstream.removed = RowSetFactoryImpl.INSTANCE.empty();
+                                downstream.modified = RowSetFactory.empty();
+                                downstream.removed = RowSetFactory.empty();
                                 downstream.modifiedColumnSet = ModifiedColumnSet.EMPTY;
                                 downstream.shifted = RowSetShiftData.EMPTY;
                                 result.notifyListeners(downstream);

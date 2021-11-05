@@ -5,7 +5,7 @@ import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.live.LiveTableMonitor;
 import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.v2.utils.RowSet;
-import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
+import io.deephaven.engine.v2.utils.RowSetFactory;
 import io.deephaven.engine.v2.utils.RowSetShiftData;
 
 import io.deephaven.test.types.OutOfBandTest;
@@ -361,11 +361,11 @@ public class QueryTableSliceTest extends QueryTableTestBase {
                 final int ii = i;
                 final int jj = j;
                 LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-                    RowSet added = RowSetFactoryImpl.INSTANCE.fromRange(ii * jj, (ii + 1) * jj - 1);
+                    RowSet added = RowSetFactory.fromRange(ii * jj, (ii + 1) * jj - 1);
                     upTable.getRowSet().mutableCast().insert(added);
                     Listener.Update update =
-                            new Listener.Update(added, RowSetFactoryImpl.INSTANCE.empty(),
-                                    RowSetFactoryImpl.INSTANCE.empty(), RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY);
+                            new Listener.Update(added, RowSetFactory.empty(),
+                                    RowSetFactory.empty(), RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY);
                     upTable.notifyListeners(update);
                 });
 
@@ -382,7 +382,7 @@ public class QueryTableSliceTest extends QueryTableTestBase {
 
     public void testZeroHead() {
         final QueryTable table = TstUtils.testRefreshingTable(
-                RowSetFactoryImpl.INSTANCE.fromRange(10, 35).convertToTracking(),
+                RowSetFactory.fromRange(10, 35).convertToTracking(),
                 TableTools.charCol("letter", "abcdefghijklmnopqrstuvwxyz".toCharArray()));
         final Table noRows = table.head(0);
         assertEquals(0, noRows.size());
@@ -394,7 +394,7 @@ public class QueryTableSliceTest extends QueryTableTestBase {
 
     public void testSlice() {
         final QueryTable table = TstUtils.testRefreshingTable(
-                RowSetFactoryImpl.INSTANCE.fromRange(10, 35).convertToTracking(),
+                RowSetFactory.fromRange(10, 35).convertToTracking(),
                 TableTools.charCol("letter", "abcdefghijklmnopqrstuvwxyz".toCharArray()));
 
         doSliceTest(table, "abcdefghij", 0, 10);

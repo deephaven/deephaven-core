@@ -23,10 +23,7 @@ import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.ssms.DoubleSegmentedSortedMultiset;
 import io.deephaven.engine.v2.ssms.SegmentedSortedMultiSet;
-import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
-import io.deephaven.engine.v2.utils.MutableRowSet;
-import io.deephaven.engine.v2.utils.RowSet;
-import io.deephaven.engine.v2.utils.UpdateCommitter;
+import io.deephaven.engine.v2.utils.*;
 import io.deephaven.engine.v2.utils.compact.DoubleCompactKernel;
 import org.jetbrains.annotations.NotNull;
 
@@ -526,7 +523,7 @@ public class DoubleRollupUniqueOperator implements IterativeChunkedAggregationOp
         }
 
         prevFlusher = new UpdateCommitter<>(this, DoubleRollupUniqueOperator::flushPrevious);
-        touchedStates = RowSetFactoryImpl.INSTANCE.empty();
+        touchedStates = RowSetFactory.empty();
         ssms.startTrackingPrevValues();
         internalResult.startTrackingPrevValues();
     }

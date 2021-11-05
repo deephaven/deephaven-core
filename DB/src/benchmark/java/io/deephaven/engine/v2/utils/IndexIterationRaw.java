@@ -83,7 +83,7 @@ public class IndexIterationRaw {
             indexPoints[j] = indexPoints[j - 1] + 1;
             j++;
         }
-        rspRowSet = RowSetFactoryImpl.INSTANCE.fromKeys(indexPoints);
+        rspRowSet = RowSetFactory.fromKeys(indexPoints);
 
         indexChunk = WritableLongChunk.makeWritableChunk(chunkSize);
         rangeChunk = WritableLongChunk.makeWritableChunk(2 * chunkSize);

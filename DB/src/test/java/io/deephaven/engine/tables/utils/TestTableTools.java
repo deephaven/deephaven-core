@@ -1192,7 +1192,7 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
         final QueryTable result = (QueryTable) TableTools.merge(table, m2);
 
         final Consumer<Boolean> validate = (usePrev) -> {
-            final RowSet rowSet = RowSetFactoryImpl.INSTANCE.empty();
+            final RowSet rowSet = RowSetFactory.empty();
             final int numElements = 1024;
 
             // noinspection unchecked
@@ -1258,7 +1258,7 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
             final int firstNextIdx = (step * stepSize) + 1;
             final int lastNextIdx = ((step + 1) * stepSize);
             LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-                final RowSet addRowSet = RowSetFactoryImpl.INSTANCE.fromRange(firstNextIdx, lastNextIdx);
+                final RowSet addRowSet = RowSetFactory.fromRange(firstNextIdx, lastNextIdx);
 
                 final int[] addInts = new int[stepSize];
                 final char[] addChars = new char[stepSize];

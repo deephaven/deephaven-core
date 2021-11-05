@@ -38,7 +38,6 @@ public class QueryLibraryImportsDefaults implements QueryLibraryImports {
                 TrackingRowSet.class,
                 TrackingMutableRowSet.class,
                 RowSetFactory.class,
-                RowSetFactoryImpl.class,
                 RowSetBuilderRandom.class,
                 RowSetBuilderSequential.class,
                 io.deephaven.engine.util.LongSizedDataStructure.class,

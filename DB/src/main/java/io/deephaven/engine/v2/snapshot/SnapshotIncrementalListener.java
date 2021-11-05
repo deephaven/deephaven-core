@@ -36,7 +36,7 @@ public class SnapshotIncrementalListener extends MergedListener {
         this.leftListener = leftListener;
         this.rightTable = rightTable;
         this.leftColumns = leftColumns;
-        this.lastRightRowSet = RowSetFactoryImpl.INSTANCE.empty().convertToTracking();
+        this.lastRightRowSet = RowSetFactory.empty().convertToTracking();
     }
 
     @Override
@@ -64,7 +64,7 @@ public class SnapshotIncrementalListener extends MergedListener {
         resultTable.getRowSet().mutableCast().insert(rightTable.getRowSet());
         if (!initial) {
             resultTable.notifyListeners(resultTable.getRowSet().clone(),
-                    RowSetFactoryImpl.INSTANCE.empty(), RowSetFactoryImpl.INSTANCE.empty());
+                    RowSetFactory.empty(), RowSetFactory.empty());
         }
         firstSnapshot = false;
     }

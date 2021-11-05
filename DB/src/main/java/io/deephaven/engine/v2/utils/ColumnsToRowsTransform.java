@@ -272,7 +272,7 @@ public class ColumnsToRowsTransform {
                             }
                         }
                     } else {
-                        downstream.modified = RowSetFactoryImpl.INSTANCE.empty();
+                        downstream.modified = RowSetFactory.empty();
                     }
 
                     resultRowSet.remove(downstream.removed);
@@ -307,14 +307,14 @@ public class ColumnsToRowsTransform {
     }
 
     private static MutableRowSet transformIndex(final RowSet rowSet, final int fanout, final int fanoutPow2) {
-        final RowSetBuilderSequential sequentialBuilder = RowSetFactoryImpl.INSTANCE.builderSequential();
+        final RowSetBuilderSequential sequentialBuilder = RowSetFactory.builderSequential();
         rowSet.forAllRowKeys(idx -> sequentialBuilder.appendRange(idx * fanoutPow2, idx * fanoutPow2 + fanout - 1));
         return sequentialBuilder.build();
     }
 
     private static RowSet transformIndex(final RowSet rowSet, final int fanoutPow2, final boolean[] rowModified,
                                          final int maxModified) {
-        final RowSetBuilderSequential sequentialBuilder = RowSetFactoryImpl.INSTANCE.builderSequential();
+        final RowSetBuilderSequential sequentialBuilder = RowSetFactory.builderSequential();
         rowSet.forAllRowKeys(idx -> {
             for (int ii = 0; ii <= maxModified; ++ii) {
                 if (rowModified[ii]) {

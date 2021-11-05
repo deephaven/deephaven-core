@@ -333,7 +333,7 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
         this.scheduler = scheduler;
         this.streamGeneratorFactory = streamGeneratorFactory;
 
-        this.propagationRowSet = RowSetFactoryImpl.INSTANCE.empty();
+        this.propagationRowSet = RowSetFactory.empty();
 
         this.parent = parent;
         this.updateIntervalMs = updateIntervalMs;
@@ -427,7 +427,7 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
             this.options = options;
             this.listener = listener;
             this.logPrefix = "Sub{" + Integer.toHexString(System.identityHashCode(listener)) + "}: ";
-            this.viewport = initialViewport != null ? RowSetFactoryImpl.INSTANCE.empty() : null;
+            this.viewport = initialViewport != null ? RowSetFactory.empty() : null;
             this.subscribedColumns = new BitSet();
             this.pendingColumns = subscribedColumns;
             this.pendingViewport = initialViewport;
@@ -662,8 +662,8 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
         } else {
             // we have new viewport subscriptions and we are actively fetching snapshots so there is no data to record
             // however we must record the rowSet updates or else the propagationRowSet will be out of sync
-            addsToRecord = RowSetFactoryImpl.INSTANCE.empty();
-            modsToRecord = RowSetFactoryImpl.INSTANCE.empty();
+            addsToRecord = RowSetFactory.empty();
+            modsToRecord = RowSetFactory.empty();
         }
 
         // Note: viewports are in position space, inserted and removed rows may cause the keyspace for a given viewport
@@ -671,7 +671,7 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
         // store. If prev rowSet is empty, all rows are new and are already in addsToRecord.
         if (activeViewport != null && (upstream.added.isNonempty() || upstream.removed.isNonempty()) && rowSet.isNonempty()
                 && rowSet.sizePrev() > 0) {
-            final RowSetBuilderRandom scopedViewBuilder = RowSetFactoryImpl.INSTANCE.builderRandom();
+            final RowSetBuilderRandom scopedViewBuilder = RowSetFactory.builderRandom();
 
             try (final RowSet prevRowSet = rowSet.getPrevRowSet()) {
                 for (final Subscription sub : activeSubscriptions) {
@@ -918,7 +918,7 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
                     if (!needsSnapshot) {
                         needsSnapshot = true;
                         snapshotColumns = new BitSet();
-                        snapshotRows = RowSetFactoryImpl.INSTANCE.builderRandom();
+                        snapshotRows = RowSetFactory.builderRandom();
                     }
 
                     subscription.hasPendingUpdate = false;
@@ -955,7 +955,7 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
 
                 boolean haveViewport = false;
                 postSnapshotColumns.clear();
-                final RowSetBuilderRandom postSnapshotViewportBuilder = RowSetFactoryImpl.INSTANCE.builderRandom();
+                final RowSetBuilderRandom postSnapshotViewportBuilder = RowSetFactory.builderRandom();
 
                 for (int i = 0; i < activeSubscriptions.size(); ++i) {
                     final Subscription sub = activeSubscriptions.get(i);
@@ -1207,17 +1207,17 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
             // We can use this update directly with minimal effort.
             final RowSet localAdded;
             if (firstDelta.recordedAdds.isEmpty()) {
-                localAdded = RowSetFactoryImpl.INSTANCE.empty();
+                localAdded = RowSetFactory.empty();
             } else {
-                localAdded = RowSetFactoryImpl.INSTANCE.fromRange(
+                localAdded = RowSetFactory.fromRange(
                         firstDelta.deltaColumnOffset,
                         firstDelta.deltaColumnOffset + firstDelta.recordedAdds.size() - 1);
             }
             final RowSet localModified;
             if (firstDelta.recordedMods.isEmpty()) {
-                localModified = RowSetFactoryImpl.INSTANCE.empty();
+                localModified = RowSetFactory.empty();
             } else {
-                localModified = RowSetFactoryImpl.INSTANCE.fromRange(
+                localModified = RowSetFactory.fromRange(
                         firstDelta.deltaColumnOffset + firstDelta.recordedAdds.size(),
                         firstDelta.deltaColumnOffset + firstDelta.recordedAdds.size() + firstDelta.recordedMods.size()
                                 - 1);
@@ -1270,7 +1270,7 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
                     }
                     modifications.data = chunk;
                 } else {
-                    modifications.rowsModified = RowSetFactoryImpl.INSTANCE.empty();
+                    modifications.rowsModified = RowSetFactory.empty();
                     modifications.data = deltaColumn.getChunkType().getEmptyChunk();
                 }
 
@@ -1289,7 +1289,7 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
             addColumnSet = new BitSet();
             modColumnSet = new BitSet();
 
-            final MutableRowSet localAdded = RowSetFactoryImpl.INSTANCE.empty();
+            final MutableRowSet localAdded = RowSetFactory.empty();
             for (int i = startDelta; i < endDelta; ++i) {
                 final Delta delta = pendingDeltas.get(i);
                 localAdded.remove(delta.update.removed);
@@ -1323,8 +1323,8 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
             // output rows to input data may be different per Column. We can re-use calculations where the set of deltas
             // that modify column A are the same as column B.
             final class ColumnInfo {
-                final MutableRowSet modified = RowSetFactoryImpl.INSTANCE.empty();
-                final MutableRowSet recordedMods = RowSetFactoryImpl.INSTANCE.empty();
+                final MutableRowSet modified = RowSetFactory.empty();
+                final MutableRowSet recordedMods = RowSetFactory.empty();
                 long[] addedMapping;
                 long[] modifiedMapping;
             }
@@ -1364,10 +1364,10 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
                 Arrays.fill(retval.addedMapping, RowSet.NULL_ROW_KEY);
                 Arrays.fill(retval.modifiedMapping, RowSet.NULL_ROW_KEY);
 
-                final MutableRowSet unfilledAdds = localAdded.isEmpty() ? RowSetFactoryImpl.INSTANCE.empty()
-                        : RowSetFactoryImpl.INSTANCE.fromRange(0, retval.addedMapping.length - 1);
-                final MutableRowSet unfilledMods = retval.recordedMods.isEmpty() ? RowSetFactoryImpl.INSTANCE.empty()
-                        : RowSetFactoryImpl.INSTANCE.fromRange(0, retval.modifiedMapping.length - 1);
+                final MutableRowSet unfilledAdds = localAdded.isEmpty() ? RowSetFactory.empty()
+                        : RowSetFactory.fromRange(0, retval.addedMapping.length - 1);
+                final MutableRowSet unfilledMods = retval.recordedMods.isEmpty() ? RowSetFactory.empty()
+                        : RowSetFactory.fromRange(0, retval.modifiedMapping.length - 1);
 
                 final MutableRowSet addedRemaining = localAdded.clone();
                 final MutableRowSet modifiedRemaining = retval.recordedMods.clone();
@@ -1478,7 +1478,7 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
 
                     modifications.data = chunk;
                 } else {
-                    modifications.rowsModified = RowSetFactoryImpl.INSTANCE.empty();
+                    modifications.rowsModified = RowSetFactory.empty();
                     modifications.data = sourceColumn.getChunkType().getEmptyChunk();
                 }
 

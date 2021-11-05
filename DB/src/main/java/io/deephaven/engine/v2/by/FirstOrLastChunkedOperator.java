@@ -212,7 +212,7 @@ public class FirstOrLastChunkedOperator implements IterativeChunkedAggregationOp
     private MutableRowSet rowSetForSlot(long destination) {
         MutableRowSet rowSet = rowSets.getUnsafe(destination);
         if (rowSet == null) {
-            rowSets.set(destination, rowSet = RowSetFactoryImpl.INSTANCE.empty());
+            rowSets.set(destination, rowSet = RowSetFactory.empty());
         }
         return rowSet;
     }

@@ -10,7 +10,7 @@ import io.deephaven.engine.v2.locations.impl.TableLocationUpdateSubscriptionBuff
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.utils.MutableRowSet;
 import io.deephaven.engine.v2.utils.RowSet;
-import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
+import io.deephaven.engine.v2.utils.RowSetFactory;
 import gnu.trove.map.TIntIntMap;
 import gnu.trove.map.hash.TIntIntHashMap;
 import org.jetbrains.annotations.NotNull;
@@ -141,8 +141,8 @@ public class TestRegionedColumnSourceManager extends LiveTableTestCase {
         Arrays.fill(lastSizes, -1); // Not null size
         regionCount = 0;
         locationIndexToRegionIndex = new TIntIntHashMap(4, 0.5f, -1, -1);
-        expectedRowSet = RowSetFactoryImpl.INSTANCE.empty();
-        expectedAddedRowSet = RowSetFactoryImpl.INSTANCE.empty();
+        expectedRowSet = RowSetFactory.empty();
+        expectedAddedRowSet = RowSetFactory.empty();
         expectedPartitioningColumnGrouping = new LinkedHashMap<>();
     }
 
@@ -176,7 +176,7 @@ public class TestRegionedColumnSourceManager extends LiveTableTestCase {
                 will(new CustomAction("Return last size") {
                     @Override
                     public Object invoke(Invocation invocation) {
-                        return RowSetFactoryImpl.INSTANCE.flat(lastSizes[li]);
+                        return RowSetFactory.flat(lastSizes[li]);
                     }
                 });
             }
@@ -249,7 +249,7 @@ public class TestRegionedColumnSourceManager extends LiveTableTestCase {
     }
 
     private void setSizeExpectations(final boolean refreshing, final long... sizes) {
-        final MutableRowSet newExpectedRowSet = RowSetFactoryImpl.INSTANCE.empty();
+        final MutableRowSet newExpectedRowSet = RowSetFactory.empty();
         expectedPartitioningColumnGrouping = new LinkedHashMap<>();
         IntStream.range(0, sizes.length).forEachOrdered(li -> {
             final long size = sizes[li];
@@ -325,7 +325,7 @@ public class TestRegionedColumnSourceManager extends LiveTableTestCase {
                 newExpectedRowSet.insertRange(
                         RegionedColumnSource.getFirstElementIndex(regionIndex),
                         RegionedColumnSource.getFirstElementIndex(regionIndex) + size - 1);
-                expectedPartitioningColumnGrouping.computeIfAbsent(cp, cpk -> RowSetFactoryImpl.INSTANCE.empty())
+                expectedPartitioningColumnGrouping.computeIfAbsent(cp, cpk -> RowSetFactory.empty())
                         .insertRange(
                                 RegionedColumnSource.getFirstElementIndex(regionIndex),
                                 RegionedColumnSource.getFirstElementIndex(regionIndex) + size - 1);

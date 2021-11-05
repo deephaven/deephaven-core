@@ -1278,7 +1278,7 @@ public class ConstructSnapshot {
             final BitSet columnsToSerialize,
             final RowSet keysToSnapshot) {
         snapshot.rowsAdded = (usePrev ? table.getRowSet().getPrevRowSet() : table.getRowSet()).clone();
-        snapshot.rowsRemoved = RowSetFactoryImpl.INSTANCE.empty();
+        snapshot.rowsRemoved = RowSetFactory.empty();
         snapshot.addColumnData = new BarrageMessage.AddColumnData[table.getColumnSources().size()];
 
         // TODO (core#412): when sending app metadata; this can be reduced to a zero-len array
@@ -1311,7 +1311,7 @@ public class ConstructSnapshot {
                 final BarrageMessage.AddColumnData acd = new BarrageMessage.AddColumnData();
                 snapshot.addColumnData[ii] = acd;
                 final boolean columnIsEmpty = columnsToSerialize != null && !columnsToSerialize.get(ii);
-                final RowSet rows = columnIsEmpty ? RowSetFactoryImpl.INSTANCE.empty() : snapshot.rowsIncluded;
+                final RowSet rows = columnIsEmpty ? RowSetFactory.empty() : snapshot.rowsIncluded;
                 // Note: cannot use shared context across several calls of differing lengths and no sharing necessary
                 // when empty
                 acd.data = getSnapshotDataAsChunk(columnSource, columnIsEmpty ? null : sharedContext, rows, usePrev);
@@ -1320,8 +1320,8 @@ public class ConstructSnapshot {
 
                 final BarrageMessage.ModColumnData mcd = new BarrageMessage.ModColumnData();
                 snapshot.modColumnData[ii] = mcd;
-                mcd.rowsModified = RowSetFactoryImpl.INSTANCE.empty();
-                mcd.data = getSnapshotDataAsChunk(columnSource, null, RowSetFactoryImpl.INSTANCE.empty(), usePrev);
+                mcd.rowsModified = RowSetFactory.empty();
+                mcd.data = getSnapshotDataAsChunk(columnSource, null, RowSetFactory.empty(), usePrev);
                 mcd.type = acd.type;
                 mcd.componentType = acd.componentType;
             }

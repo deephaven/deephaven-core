@@ -73,7 +73,7 @@ public class UpdatePerformanceTest {
 
         private TestValues.Builder builder(final int i) {
             return new TestValues.Builder() {
-                private final RowSetBuilderRandom b = RowSetFactoryImpl.INSTANCE.builderRandom();
+                private final RowSetBuilderRandom b = RowSetFactory.builderRandom();
 
                 @Override
                 public void add(long v) {

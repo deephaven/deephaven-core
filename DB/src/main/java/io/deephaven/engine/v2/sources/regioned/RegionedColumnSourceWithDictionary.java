@@ -220,9 +220,9 @@ class RegionedColumnSourceWithDictionary<DATA_TYPE>
 
         final TrackingRowSet symbolTableRowSet;
         if (sourceIndex.isEmpty()) {
-            symbolTableRowSet = RowSetFactoryImpl.INSTANCE.empty().convertToTracking();
+            symbolTableRowSet = RowSetFactory.empty().convertToTracking();
         } else {
-            final RowSetBuilderSequential symbolTableIndexBuilder = RowSetFactoryImpl.INSTANCE.builderSequential();
+            final RowSetBuilderSequential symbolTableIndexBuilder = RowSetFactory.builderSequential();
             try (final RowSet.SearchIterator keysToVisit = sourceIndex.searchIterator()) {
                 keysToVisit.nextLong(); // Safe, since sourceIndex must be non-empty
                 do {
@@ -298,7 +298,7 @@ class RegionedColumnSourceWithDictionary<DATA_TYPE>
                 return;
             }
 
-            final RowSetBuilderSequential symbolTableAddedBuilder = RowSetFactoryImpl.INSTANCE.builderSequential();
+            final RowSetBuilderSequential symbolTableAddedBuilder = RowSetFactory.builderSequential();
             final RegionedColumnSourceBase<DATA_TYPE, Values, ColumnRegionObject<DATA_TYPE, Values>> dictionaryColumn =
                     (RegionedColumnSourceBase<DATA_TYPE, Values, ColumnRegionObject<DATA_TYPE, Values>>) symbolTable
                             .getColumnSource(SymbolTableSource.SYMBOL_COLUMN_NAME);
@@ -315,8 +315,8 @@ class RegionedColumnSourceWithDictionary<DATA_TYPE>
             final RowSet symbolTableAdded = symbolTableAddedBuilder.build();
             if (symbolTableAdded.isNonempty()) {
                 symbolTable.getRowSet().mutableCast().insert(symbolTableAdded);
-                symbolTable.notifyListeners(new Update(symbolTableAdded, RowSetFactoryImpl.INSTANCE.empty(),
-                        RowSetFactoryImpl.INSTANCE.empty(), RowSetShiftData.EMPTY, emptyModifiedColumns));
+                symbolTable.notifyListeners(new Update(symbolTableAdded, RowSetFactory.empty(),
+                        RowSetFactory.empty(), RowSetShiftData.EMPTY, emptyModifiedColumns));
             } else {
                 symbolTableAdded.close();
             }

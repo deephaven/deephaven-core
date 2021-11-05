@@ -83,7 +83,7 @@ public class SortedAssertionInstrumentedListenerAdapter extends BaseTable.Listen
 
     private RowSet makeAdjacentIndex(RowSet rowsOfInterest) {
         try (final RowSet inverted = parentRowSet.invert(rowsOfInterest)) {
-            final RowSetBuilderSequential processBuilder = RowSetFactoryImpl.INSTANCE.builderSequential();
+            final RowSetBuilderSequential processBuilder = RowSetFactory.builderSequential();
             long lastPosition = parentRowSet.size() - 1;
             long lastUsedPosition = 0;
             for (RowSet.RangeIterator rangeIterator = inverted.rangeIterator(); rangeIterator.hasNext();) {

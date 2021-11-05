@@ -62,19 +62,19 @@ public class ListenerRecorder extends BaseTable.ListenerImpl {
     }
 
     public RowSet getAdded() {
-        return recordedVariablesAreValid() ? update.added : RowSetFactoryImpl.INSTANCE.empty();
+        return recordedVariablesAreValid() ? update.added : RowSetFactory.empty();
     }
 
     public RowSet getRemoved() {
-        return recordedVariablesAreValid() ? update.removed : RowSetFactoryImpl.INSTANCE.empty();
+        return recordedVariablesAreValid() ? update.removed : RowSetFactory.empty();
     }
 
     public RowSet getModified() {
-        return recordedVariablesAreValid() ? update.modified : RowSetFactoryImpl.INSTANCE.empty();
+        return recordedVariablesAreValid() ? update.modified : RowSetFactory.empty();
     }
 
     public RowSet getModifiedPreShift() {
-        return recordedVariablesAreValid() ? update.getModifiedPreShift() : RowSetFactoryImpl.INSTANCE.empty();
+        return recordedVariablesAreValid() ? update.getModifiedPreShift() : RowSetFactory.empty();
     }
 
     public RowSetShiftData getShifted() {

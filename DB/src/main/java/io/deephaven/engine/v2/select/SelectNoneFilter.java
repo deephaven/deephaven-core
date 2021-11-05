@@ -4,7 +4,7 @@ import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.TableDefinition;
 import io.deephaven.engine.v2.utils.MutableRowSet;
 import io.deephaven.engine.v2.utils.RowSet;
-import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
+import io.deephaven.engine.v2.utils.RowSetFactory;
 
 import java.util.Collections;
 import java.util.List;
@@ -33,7 +33,7 @@ public class SelectNoneFilter extends SelectFilterImpl {
 
     @Override
     public MutableRowSet filter(RowSet selection, RowSet fullSet, Table table, boolean usePrev) {
-        return RowSetFactoryImpl.INSTANCE.empty();
+        return RowSetFactory.empty();
     }
 
     @Override

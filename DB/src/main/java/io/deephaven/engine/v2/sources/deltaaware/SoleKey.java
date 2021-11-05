@@ -47,7 +47,7 @@ class SoleKey implements RowSequence {
 
     @Override
     public RowSet asRowSet() {
-        return RowSetFactoryImpl.INSTANCE.fromKeys(key);
+        return RowSetFactory.fromKeys(key);
     }
 
     @Override

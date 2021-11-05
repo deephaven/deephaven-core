@@ -34,7 +34,7 @@ public class RowSequenceBench {
     public void setup() {
         indicesChunk = WritableLongChunk.makeWritableChunk(chunkSz);
         rangesChunk = WritableLongChunk.makeWritableChunk(chunkSz);
-        final RowSetBuilderRandom ib = RowSetFactoryImpl.INSTANCE.builderRandom();
+        final RowSetBuilderRandom ib = RowSetFactory.builderRandom();
         final TestValues.Builder tb = new TestValues.Builder() {
             @Override
             public void add(final long v) {

@@ -18,7 +18,7 @@ import io.deephaven.engine.v2.sources.chunk.WritableObjectChunk;
 import io.deephaven.engine.v2.sources.chunk.util.pools.PoolableChunk;
 import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.engine.v2.utils.RowSetBuilderSequential;
-import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
+import io.deephaven.engine.v2.utils.RowSetFactory;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.chunk.array.ArrayExpansionKernel;
 import org.apache.commons.lang3.mutable.MutableInt;
@@ -89,7 +89,7 @@ public class VarListChunkInputStreamGenerator<T> extends BaseChunkInputStreamGen
             if (subset.size() != offsets.size() - 1) {
                 myOffsets = WritableIntChunk.makeWritableChunk(subset.intSize(DEBUG_NAME) + 1);
                 myOffsets.set(0, 0);
-                final RowSetBuilderSequential myOffsetBuilder = RowSetFactoryImpl.INSTANCE.builderSequential();
+                final RowSetBuilderSequential myOffsetBuilder = RowSetFactory.builderSequential();
                 final MutableInt off = new MutableInt();
                 subset.forAllRowKeys(key -> {
                     final int startOffset = offsets.get(LongSizedDataStructure.intSize(DEBUG_NAME, key));

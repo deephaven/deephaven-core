@@ -72,7 +72,7 @@ public class TailInitializationFilter {
     }
 
     private static Table mostRecentLong(final Table table, final LongUnaryOperator getValue, final long nanos) {
-        final RowSetBuilderSequential builder = RowSetFactoryImpl.INSTANCE.builderSequential();
+        final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
         // we are going to binary search each partition of this table, because the different partitions have
         // non-contiguous indices, but values within a partition are contiguous indices.
         table.getRowSet().forEachRowKeyRange((s, e) -> {

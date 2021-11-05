@@ -232,7 +232,7 @@ public final class ByChunkedOperator implements IterativeChunkedAggregationOpera
     private MutableRowSet rowSetForSlot(final long destination) {
         MutableRowSet rowSet = rowSets.getUnsafe(destination);
         if (rowSet == null) {
-            final MutableRowSet empty = RowSetFactoryImpl.INSTANCE.empty();
+            final MutableRowSet empty = RowSetFactory.empty();
             rowSets.set(destination, rowSet = live ? empty.convertToTracking() : empty);
         }
         return rowSet;

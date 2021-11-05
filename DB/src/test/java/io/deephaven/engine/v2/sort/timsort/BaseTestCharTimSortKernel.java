@@ -330,7 +330,7 @@ public abstract class BaseTestCharTimSortKernel extends TestTimSortKernel {
 
         final RowSet[] results = context.getPartitions(true);
 
-        final MutableRowSet reconstructed = RowSetFactoryImpl.INSTANCE.empty();
+        final MutableRowSet reconstructed = RowSetFactory.empty();
 
         // make sure that each partition is a subset of the rowSet and is disjoint
         for (int ii = 0; ii < results.length; ii++) {
@@ -381,7 +381,7 @@ public abstract class BaseTestCharTimSortKernel extends TestTimSortKernel {
             lastSize += partition.intSize();
 //            System.out.println("Expected Partition Max: " + expectedPartition.get(expectedPartition.size() - 1));
 
-            final RowSetBuilderRandom builder = RowSetFactoryImpl.INSTANCE.builderRandom();
+            final RowSetBuilderRandom builder = RowSetFactory.builderRandom();
             expectedPartition.stream().mapToLong(CharLongTuple::getSecondElement).forEach(builder::addKey);
             final RowSet expectedRowSet = builder.build();
 

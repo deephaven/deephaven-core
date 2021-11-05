@@ -108,7 +108,7 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
         }
 
         final RedirectionIndex sortMapping = sortedKeys.makeHistoricalRedirectionIndex();
-        final TrackingRowSet resultRowSet = RowSetFactoryImpl.INSTANCE.flat(sortedKeys.size()).
+        final TrackingRowSet resultRowSet = RowSetFactory.flat(sortedKeys.size()).
                 convertToTracking();
 
         final Map<String, ColumnSource<?>> resultMap = new LinkedHashMap<>();
@@ -141,7 +141,7 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
 
         sortMapping = new ReadOnlyLongColumnSourceRedirectionIndex<>(redirectionSource);
         final TrackingMutableRowSet resultRowSet =
-                RowSetFactoryImpl.INSTANCE.flat(initialSortedKeys.size()).convertToTracking();
+                RowSetFactory.flat(initialSortedKeys.size()).convertToTracking();
 
         final Map<String, ColumnSource<?>> resultMap = new LinkedHashMap<>();
         for (Map.Entry<String, ColumnSource<?>> stringColumnSourceEntry : parent.getColumnSourceMap().entrySet()) {
@@ -178,14 +178,14 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
                         }
                         redirectionSource.setNewCurrent(updateInnerRedirectSource);
 
-                        final RowSet added = RowSetFactoryImpl.INSTANCE.flat(upstream.added.size());
-                        final RowSet removed = RowSetFactoryImpl.INSTANCE.flat(upstream.removed.size());
+                        final RowSet added = RowSetFactory.flat(upstream.added.size());
+                        final RowSet removed = RowSetFactory.flat(upstream.removed.size());
                         if (added.size() > removed.size()) {
                             resultRowSet.insertRange(removed.size(), added.size() - 1);
                         } else if (removed.size() > added.size()) {
                             resultRowSet.removeRange(added.size(), removed.size() - 1);
                         }
-                        resultTable.notifyListeners(new Update(added, removed, RowSetFactoryImpl.INSTANCE.empty(),
+                        resultTable.notifyListeners(new Update(added, removed, RowSetFactory.empty(),
                                 RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY));
                     }
                 };
@@ -234,8 +234,8 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
             // Center the keys around middleKeyToUse
             final long offset = SortListener.REBALANCE_MIDPOINT - sortedKeys.length / 2;
             final TrackingRowSet resultRowSet = (sortedKeys.length == 0
-                    ? RowSetFactoryImpl.INSTANCE.empty()
-                    : RowSetFactoryImpl.INSTANCE.fromRange(offset, offset + sortedKeys.length - 1)
+                    ? RowSetFactory.empty()
+                    : RowSetFactory.fromRange(offset, offset + sortedKeys.length - 1)
             ).convertToTracking();
 
             for (int i = 0; i < sortedKeys.length; i++) {

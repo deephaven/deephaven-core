@@ -9,7 +9,7 @@ package io.deephaven.engine.tables.dbarrays;
 
 import io.deephaven.engine.v2.dbarrays.DbShortArrayColumnWrapper;
 import io.deephaven.engine.v2.sources.ArrayBackedColumnSource;
-import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
+import io.deephaven.engine.v2.utils.RowSetFactory;
 import junit.framework.TestCase;
 
 import static io.deephaven.util.QueryConstants.NULL_SHORT;
@@ -20,7 +20,7 @@ public class DbShortArrayTest extends TestCase {
         //noinspection unchecked
         DbShortArray dbArray = new DbShortArrayColumnWrapper(
                 ArrayBackedColumnSource.getMemoryColumnSource(new short[]{(short)10, (short)20, (short)30}),
-                RowSetFactoryImpl.INSTANCE.fromRange(0, 2));
+                RowSetFactory.fromRange(0, 2));
         assertEquals(3, dbArray.size());
         assertEquals((short)10, dbArray.get(0));
         assertEquals((short)20, dbArray.get(1));
@@ -108,7 +108,7 @@ public class DbShortArrayTest extends TestCase {
         //noinspection unchecked
         DbShortArray dbArray = new DbShortArrayColumnWrapper(
                 ArrayBackedColumnSource.getMemoryColumnSource(new short[]{(short)10, (short)20, (short)30}),
-                RowSetFactoryImpl.INSTANCE.fromRange(0, 2));
+                RowSetFactory.fromRange(0, 2));
 
         for (int start=-4; start<=4; start++){
             for (int end=-1; end<=7; end++){

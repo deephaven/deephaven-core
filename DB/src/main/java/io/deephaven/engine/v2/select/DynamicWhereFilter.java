@@ -271,7 +271,7 @@ public class DynamicWhereFilter extends SelectFilterLivenessArtifactImpl impleme
 
     private MutableRowSet filterLinearOne(RowSet selection, ColumnSource keyColumn) {
         if (selection.isEmpty()) {
-            return RowSetFactoryImpl.INSTANCE.empty();
+            return RowSetFactory.empty();
         }
 
         if (!kernelValid) {
@@ -279,7 +279,7 @@ public class DynamicWhereFilter extends SelectFilterLivenessArtifactImpl impleme
             kernelValid = true;
         }
 
-        final RowSetBuilderSequential indexBuilder = RowSetFactoryImpl.INSTANCE.builderSequential();
+        final RowSetBuilderSequential indexBuilder = RowSetFactory.builderSequential();
 
         try (final ColumnSource.GetContext getContext = keyColumn.makeGetContext(CHUNK_SIZE);
                 final RowSequence.Iterator rsIt = selection.getRowSequenceIterator()) {
@@ -309,7 +309,7 @@ public class DynamicWhereFilter extends SelectFilterLivenessArtifactImpl impleme
     }
 
     private MutableRowSet filterLinearTuple(RowSet selection, TupleSource tupleSource) {
-        final RowSetBuilderSequential indexBuilder = RowSetFactoryImpl.INSTANCE.builderSequential();
+        final RowSetBuilderSequential indexBuilder = RowSetFactory.builderSequential();
 
         for (final RowSet.Iterator it = selection.iterator(); it.hasNext();) {
             final long row = it.nextLong();

@@ -23,7 +23,6 @@ import io.deephaven.engine.v2.utils.*;
 import java.util.Arrays;
 import io.deephaven.engine.v2.sort.permute.IntPermuteKernel;
 // @StateChunkTypeEnum@ from \QInt\E
-import io.deephaven.engine.v2.sort.permute.IntPermuteKernel;
 import io.deephaven.engine.v2.utils.compact.IntCompactKernel;
 import io.deephaven.engine.v2.utils.compact.LongCompactKernel;
 // endmixin rehash
@@ -1071,7 +1070,7 @@ class IncrementalChunkedOperatorAggregationStateManager
              final WritableIntChunk stateChunk = WritableIntChunk.makeWritableChunk(maxSize);
              final ChunkSource.FillContext fillContext = stateSource.makeFillContext(maxSize)) {
 
-            stateSource.fillChunk(fillContext, stateChunk, RowSetFactoryImpl.INSTANCE.flat(tableHashPivot));
+            stateSource.fillChunk(fillContext, stateChunk, RowSetFactory.flat(tableHashPivot));
 
             ChunkUtils.fillInOrder(positions);
 

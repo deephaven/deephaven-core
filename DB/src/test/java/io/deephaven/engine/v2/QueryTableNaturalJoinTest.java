@@ -77,13 +77,13 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
 
             final int foffset = offset;
             LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-                final RowSet addRowSet = RowSetFactoryImpl.INSTANCE.fromRange(foffset, foffset + leftJoinKey.length - 1);
+                final RowSet addRowSet = RowSetFactory.fromRange(foffset, foffset + leftJoinKey.length - 1);
                 addToTable(leftTable, addRowSet, stringCol("JoinKey", leftJoinKey),
                         intCol("LeftSentinel", leftSentinel));
                 leftTable.notifyListeners(addRowSet.clone(), i(), i());
 
 
-                final RowSetBuilderSequential modIndexBuilder = RowSetFactoryImpl.INSTANCE.builderSequential();
+                final RowSetBuilderSequential modIndexBuilder = RowSetFactory.builderSequential();
 
                 int slot = random.nextInt(foffset / 100);
                 for (int ii = 0; ii < 100; ++ii) {

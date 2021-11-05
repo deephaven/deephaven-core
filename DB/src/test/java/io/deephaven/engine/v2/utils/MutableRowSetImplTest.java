@@ -85,7 +85,7 @@ public class MutableRowSetImplTest extends TestCase {
 
     @NotNull
     protected MutableRowSet getSortedIndex(long... keys) {
-        final RowSetBuilderRandom treeIndexBuilder = RowSetFactoryImpl.INSTANCE.builderRandom();
+        final RowSetBuilderRandom treeIndexBuilder = RowSetFactory.builderRandom();
         for (long key : keys) {
             treeIndexBuilder.addKey(key);
         }
@@ -97,20 +97,15 @@ public class MutableRowSetImplTest extends TestCase {
         return new MutableRowSetImpl(orderedLongSet);
     }
 
-    @NotNull
-    protected RowSetFactory getFactory() {
-        return RowSetFactoryImpl.INSTANCE;
-    }
-
     public void testSimple() {
-        assertEquals(1, RowSetFactoryImpl.INSTANCE.fromRange(2, 2).size());
-        final RowSet.Iterator it = RowSetFactoryImpl.INSTANCE.fromRange(2, 2).iterator();
+        assertEquals(1, RowSetFactory.fromRange(2, 2).size());
+        final RowSet.Iterator it = RowSetFactory.fromRange(2, 2).iterator();
         assertEquals(2, it.nextLong());
         assertFalse(it.hasNext());
     }
 
     public void testSimpleRangeIterator() {
-        final RowSet rowSet = RowSetFactoryImpl.INSTANCE.fromRange(3, 100);
+        final RowSet rowSet = RowSetFactory.fromRange(3, 100);
         final RowSet.RangeIterator rit = rowSet.rangeIterator();
         assertTrue(rit.hasNext());
         rit.next();
@@ -120,7 +115,7 @@ public class MutableRowSetImplTest extends TestCase {
     }
 
     public void testSerialize() throws IOException, ClassNotFoundException {
-        MutableRowSet rowSet = RowSetFactoryImpl.INSTANCE.fromRange(0, 100);
+        MutableRowSet rowSet = RowSetFactory.fromRange(0, 100);
         RowSet copy = (RowSet) doSerDeser(rowSet);
         assertEquals(rowSet, copy);
         rowSet.insert(1000000);
@@ -235,7 +230,7 @@ public class MutableRowSetImplTest extends TestCase {
     }
 
     public void testRange() {
-        final MutableRowSet index = RowSetFactoryImpl.INSTANCE.empty();
+        final MutableRowSet index = RowSetFactory.empty();
         assertEquals(1, getRefCount(index));
         final RowSet range = index.subSetByPositionRange(0, 10);
         // The refCount of an empty RowSet is implementation dependant.
@@ -660,7 +655,7 @@ public class MutableRowSetImplTest extends TestCase {
         final long[] keys = {1, 2, 3};
 
         RowSet rowSet = getSortedIndex(keys);
-        RowSet result = rowSet.minus(getFactory().empty());
+        RowSet result = rowSet.minus(RowSetFactory.empty());
         compareIndexAndKeyValues(result, keys);
 
         result = rowSet.minus(rowSet);
@@ -691,7 +686,7 @@ public class MutableRowSetImplTest extends TestCase {
     }
 
     public void testUnionIntoFullLeaf() {
-        final RowSetBuilderRandom rowSetBuilder1 = getFactory().builderRandom();
+        final RowSetBuilderRandom rowSetBuilder1 = RowSetFactory.builderRandom();
         for (int ii = 0; ii < 4; ++ii) {
             rowSetBuilder1.addRange(ii * 128, ii * 128 + 64);
         }
@@ -722,7 +717,7 @@ public class MutableRowSetImplTest extends TestCase {
         final MutableRowSet idx = rowSetBuilder1.build();
 
         // Now try to force an overflow.
-        final RowSetBuilderRandom rowSetBuilder2 = getFactory().builderRandom();
+        final RowSetBuilderRandom rowSetBuilder2 = RowSetFactory.builderRandom();
         rowSetBuilder2.addRange(7900, 8265);
         final RowSet idx2 = rowSetBuilder2.build();
 
@@ -743,7 +738,7 @@ public class MutableRowSetImplTest extends TestCase {
     }
 
     private void doTestFunnyOverlap(@SuppressWarnings("SameParameterValue") String input) {
-        final RowSetBuilderRandom rowSetBuilder1 = getFactory().builderRandom();
+        final RowSetBuilderRandom rowSetBuilder1 = RowSetFactory.builderRandom();
 
         final TLongArrayList keyList = new TLongArrayList();
 
@@ -766,7 +761,7 @@ public class MutableRowSetImplTest extends TestCase {
         final RowSet rowSet1 = rowSetBuilder1.build();
         rowSet1.validate();
 
-        final RowSetBuilderRandom rowSetBuilder2 = getFactory().builderRandom();
+        final RowSetBuilderRandom rowSetBuilder2 = RowSetFactory.builderRandom();
 
         for (String range : splitInput) {
             final int dash = range.indexOf("-");
@@ -803,7 +798,7 @@ public class MutableRowSetImplTest extends TestCase {
                 keyList.set(jj, oldKey);
                 keyList.set(ii, newKey);
             }
-            final RowSetBuilderRandom rowSetBuilder3 = getFactory().builderRandom();
+            final RowSetBuilderRandom rowSetBuilder3 = RowSetFactory.builderRandom();
             for (int ii = 0; ii < keyList.size(); ++ii) {
                 rowSetBuilder3.addKey(keyList.get(ii));
             }
@@ -1088,7 +1083,7 @@ public class MutableRowSetImplTest extends TestCase {
         final int maxRange = 20;
         final int maxValue = 1 << 24;
 
-        final MutableRowSet check = getFactory().empty();
+        final MutableRowSet check = RowSetFactory.empty();
 
         final Random random = new Random(1);
 
@@ -1099,7 +1094,7 @@ public class MutableRowSetImplTest extends TestCase {
                 System.out.println(ii + ": " + (System.currentTimeMillis() - startTime) + "ms: " + check);
             }
 
-            final RowSetBuilderRandom builder = getFactory().builderRandom();
+            final RowSetBuilderRandom builder = RowSetFactory.builderRandom();
             for (int jj = 0; jj < 128; ++jj) {
                 final int start = random.nextInt(maxValue);
                 final int end = start + random.nextInt(maxRange);
@@ -1120,7 +1115,7 @@ public class MutableRowSetImplTest extends TestCase {
                 check.validate(m);
             }
 
-            final RowSetBuilderSequential builder2 = getFactory().builderSequential();
+            final RowSetBuilderSequential builder2 = RowSetFactory.builderSequential();
             for (final RowSet.Iterator it = check.iterator(); it.hasNext();) {
                 final long next = it.nextLong();
                 final boolean partA = random.nextBoolean();
@@ -1292,7 +1287,7 @@ public class MutableRowSetImplTest extends TestCase {
 
     public void testSplitRangeIterator() {
         // insert merging two adjacent nodes
-        final RowSetBuilderRandom builder = RowSetFactoryImpl.INSTANCE.builderRandom();
+        final RowSetBuilderRandom builder = RowSetFactory.builderRandom();
         for (int ii = 0; ii < 65; ++ii) {
             builder.addKey(ii * 2);
         }
@@ -1302,7 +1297,7 @@ public class MutableRowSetImplTest extends TestCase {
         rowSet.validate();
 
         // insert range merging two adjacent nodes
-        final RowSetBuilderRandom builder2 = RowSetFactoryImpl.INSTANCE.builderRandom();
+        final RowSetBuilderRandom builder2 = RowSetFactory.builderRandom();
         for (int ii = 0; ii < 65; ++ii) {
             builder2.addKey(ii * 4);
         }
@@ -1312,7 +1307,7 @@ public class MutableRowSetImplTest extends TestCase {
         rowSet2.validate();
 
         // force two nodes into existence
-        final RowSetBuilderRandom builder3 = RowSetFactoryImpl.INSTANCE.builderRandom();
+        final RowSetBuilderRandom builder3 = RowSetFactory.builderRandom();
         for (int ii = 0; ii < 65; ++ii) {
             builder3.addKey(ii * 4);
         }
@@ -1328,7 +1323,7 @@ public class MutableRowSetImplTest extends TestCase {
     }
 
     public void testSequentialSplitRange() {
-        final RowSetBuilderSequential builder = RowSetFactoryImpl.INSTANCE.builderSequential();
+        final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
         for (int ii = 0; ii < 64; ++ii) {
             builder.appendKey(ii * 2);
         }
@@ -1336,7 +1331,7 @@ public class MutableRowSetImplTest extends TestCase {
         final RowSet checkRowSet = builder.build();
         checkRowSet.validate();
 
-        final RowSetBuilderSequential builder2 = RowSetFactoryImpl.INSTANCE.builderSequential();
+        final RowSetBuilderSequential builder2 = RowSetFactory.builderSequential();
         for (int ii = 0; ii < 63; ++ii) {
             builder2.appendKey(ii * 4);
         }
@@ -1345,7 +1340,7 @@ public class MutableRowSetImplTest extends TestCase {
         final RowSet checkRowSet2 = builder2.build();
         checkRowSet2.validate();
 
-        final RowSetBuilderSequential builder3 = RowSetFactoryImpl.INSTANCE.builderSequential();
+        final RowSetBuilderSequential builder3 = RowSetFactory.builderSequential();
         for (int ii = 0; ii < 63; ++ii) {
             builder3.appendKey(ii * 4);
         }
@@ -1400,21 +1395,21 @@ public class MutableRowSetImplTest extends TestCase {
     }
 
     public void testAddIndex3() {
-        final RowSetBuilderRandom result = RowSetFactoryImpl.INSTANCE.builderRandom();
+        final RowSetBuilderRandom result = RowSetFactory.builderRandom();
         for (int ii = 0; ii < 64; ++ii) {
             result.addKey(ii * 100);
         }
         for (int ii = 0; ii < 32; ++ii) {
             result.addKey(3101 + ii * 2);
         }
-        final RowSet rowSetToAdd = RowSetFactoryImpl.INSTANCE.fromKeys(3164, 3166);
+        final RowSet rowSetToAdd = RowSetFactory.fromKeys(3164, 3166);
         result.addRowSet(rowSetToAdd);
         final RowSet checkRowSet = result.build();
         checkRowSet.validate();
     }
 
     public void testAddIndex() {
-        final RowSetBuilderRandom result = RowSetFactoryImpl.INSTANCE.builderRandom();
+        final RowSetBuilderRandom result = RowSetFactory.builderRandom();
         for (int ii = 0; ii < 64; ++ii) {
             result.addKey(ii * 100);
         }
@@ -1441,15 +1436,15 @@ public class MutableRowSetImplTest extends TestCase {
 
         final MutableRowSet idx2 = idx.clone();
 
-        final RowSet rowSetToAdd = RowSetFactoryImpl.INSTANCE.fromKeys(3164);
+        final RowSet rowSetToAdd = RowSetFactory.fromKeys(3164);
         idx.insert(rowSetToAdd);
         idx.validate();
 
-        final MutableRowSet rowSetToAdd2 = RowSetFactoryImpl.INSTANCE.fromRange(3164, 3199);
+        final MutableRowSet rowSetToAdd2 = RowSetFactory.fromRange(3164, 3199);
         rowSetToAdd2.insert(idx2);
         rowSetToAdd2.validate();
 
-        final RowSet rowSetToAdd3 = RowSetFactoryImpl.INSTANCE.fromRange(3164, 3199);
+        final RowSet rowSetToAdd3 = RowSetFactory.fromRange(3164, 3199);
         idx2.insert(rowSetToAdd3);
         idx2.validate();
     }
@@ -1613,7 +1608,7 @@ public class MutableRowSetImplTest extends TestCase {
     }
 
     private RowSet getUnionIndexStrings(final String[] indexStrings) {
-        final RowSetBuilderRandom result = RowSetFactoryImpl.INSTANCE.builderRandom();
+        final RowSetBuilderRandom result = RowSetFactory.builderRandom();
         for (String indexString : indexStrings) {
             final RowSet rowSetToAdd = TstRowSetUtil.rowSetFromString(indexString);
             rowSetToAdd.validate();
@@ -1638,7 +1633,7 @@ public class MutableRowSetImplTest extends TestCase {
             final int size = random.nextInt(10);
 
             final RangePriorityQueueBuilder priorityQueueBuilder = new RangePriorityQueueBuilder(16);
-            final RowSetBuilderRandom treeBuilder = RowSetFactoryImpl.INSTANCE.builderRandom();
+            final RowSetBuilderRandom treeBuilder = RowSetFactory.builderRandom();
 
             values.clear();
 
@@ -1908,7 +1903,7 @@ public class MutableRowSetImplTest extends TestCase {
 
     public void testRandomBuilderEmptyAdds() {
         // Make a perfect merge between two leaves, collapsing to a single range.
-        final RowSetBuilderRandom b = RowSetFactoryImpl.INSTANCE.builderRandom();
+        final RowSetBuilderRandom b = RowSetFactory.builderRandom();
         for (int i = 1; i <= 32; ++i) {
             b.addKey(2 * i);
         }
@@ -1937,7 +1932,7 @@ public class MutableRowSetImplTest extends TestCase {
     }
 
     public void testIteratorBinarySearch() {
-        final RowSetBuilderRandom b = RowSetFactoryImpl.INSTANCE.builderRandom();
+        final RowSetBuilderRandom b = RowSetFactory.builderRandom();
         b.addRange(2, 3);
         b.addRange(5, 9);
         b.addRange(15, 19);
@@ -2037,7 +2032,7 @@ public class MutableRowSetImplTest extends TestCase {
     }
 
     public void testIteratorBinarySearchForSingleRangeIndex() {
-        final RowSet sr = RowSetFactoryImpl.INSTANCE.fromRange(5, 9);
+        final RowSet sr = RowSetFactory.fromRange(5, 9);
         final RowSet.SearchIterator it = sr.searchIterator();
         RowSet.TargetComparator comp = makeCompFor(4);
         long v = it.binarySearchValue(comp, 1);
@@ -2060,7 +2055,7 @@ public class MutableRowSetImplTest extends TestCase {
     }
 
     public void testRangeIteratorAdvance() {
-        final RowSetBuilderRandom bl = RowSetFactoryImpl.INSTANCE.builderRandom();
+        final RowSetBuilderRandom bl = RowSetFactory.builderRandom();
         bl.addRange(2, 3);
         bl.addRange(5, 9);
         bl.addRange(15, 19);
@@ -2112,14 +2107,14 @@ public class MutableRowSetImplTest extends TestCase {
     }
 
     public void testRangeIteratorAdvanceEmptyIndex() {
-        final RowSet ix = RowSetFactoryImpl.INSTANCE.empty();
+        final RowSet ix = RowSetFactory.empty();
         final RowSet.RangeIterator rit = ix.rangeIterator();
         assertFalse(rit.advance(0));
         assertFalse(rit.hasNext());
     }
 
     public void testRangeIteratorAdvanceBack() {
-        final MutableRowSet ix = RowSetFactoryImpl.INSTANCE.empty();
+        final MutableRowSet ix = RowSetFactory.empty();
         final long s = 300;
         final long e = 600;
         ix.insertRange(s, e);
@@ -2134,7 +2129,7 @@ public class MutableRowSetImplTest extends TestCase {
     }
 
     private RowSet singleRangeIndex(final long start, final long end) {
-        final RowSetBuilderRandom b = RowSetFactoryImpl.INSTANCE.builderRandom();
+        final RowSetBuilderRandom b = RowSetFactory.builderRandom();
         b.addRange(start, end);
         return b.build();
     }
@@ -2219,11 +2214,11 @@ public class MutableRowSetImplTest extends TestCase {
     }
 
     public void testGetAverageRunLengthEstimate() {
-        final RowSet e = RowSetFactoryImpl.INSTANCE.empty();
+        final RowSet e = RowSetFactory.empty();
         assertEquals(1, e.getAverageRunLengthEstimate());
         final RowSet r1 = singleRangeIndex(0, 65535);
         assertEquals(BLOCK_SIZE, r1.getAverageRunLengthEstimate());
-        final MutableRowSet r2 = RowSetFactoryImpl.INSTANCE.empty();
+        final MutableRowSet r2 = RowSetFactory.empty();
         r2.insert(1);
         r2.insert(3);
         r2.insert(5);
@@ -2238,7 +2233,7 @@ public class MutableRowSetImplTest extends TestCase {
     }
 
     public void testGetRowSequenceByKeyRange() {
-        final RowSetBuilderSequential b = RowSetFactoryImpl.INSTANCE.builderSequential();
+        final RowSetBuilderSequential b = RowSetFactory.builderSequential();
         final long[] vs = new long[] {3, 4, 5, 8, 10, 12, 29, 31, 44, 45, 46, 59, 60, 61, 72, 65537, 65539, 65536 * 3,
                 65536 * 3 + 5};
         for (long v : vs) {
@@ -2272,7 +2267,7 @@ public class MutableRowSetImplTest extends TestCase {
     }
 
     public void testGetRowSequenceByPosition() {
-        final RowSetBuilderSequential b = RowSetFactoryImpl.INSTANCE.builderSequential();
+        final RowSetBuilderSequential b = RowSetFactory.builderSequential();
         final long[] vs = new long[] {3, 4, 5, 8, 10, 12, 29, 31, 44, 45, 46, 59, 60, 61, 72, 65537, 65539, 65536 * 3,
                 65536 * 3 + 5};
         for (long v : vs) {
@@ -2308,7 +2303,7 @@ public class MutableRowSetImplTest extends TestCase {
     }
 
     public void testFillChunk() {
-        final RowSetBuilderSequential b = RowSetFactoryImpl.INSTANCE.builderSequential();
+        final RowSetBuilderSequential b = RowSetFactory.builderSequential();
         final long[] vs = new long[] {3, 4, 5, 8, 10, 12, 29, 31, 44, 45, 46, 59, 60, 61, 72, 65537, 65539, 65536 * 3,
                 65536 * 3 + 5};
         for (long v : vs) {
@@ -2321,7 +2316,7 @@ public class MutableRowSetImplTest extends TestCase {
     }
 
     public void testBuilderAddKeys() {
-        final RowSetBuilderRandom b = RowSetFactoryImpl.INSTANCE.builderRandom();
+        final RowSetBuilderRandom b = RowSetFactory.builderRandom();
         b.addKey(27);
         final long[] vs =
                 {3, 4, 5, 8, 10, 12, 29, 31, 44, 45, 46, 59, 60, 61, 72, 65537, 65539, 65536 * 3, 65536 * 3 + 5};
@@ -2347,7 +2342,7 @@ public class MutableRowSetImplTest extends TestCase {
     }
 
     public void testBuilderAppendKeys() {
-        final RowSetBuilderSequential b = RowSetFactoryImpl.INSTANCE.builderSequential();
+        final RowSetBuilderSequential b = RowSetFactory.builderSequential();
         b.appendKey(1);
         final long[] vs =
                 {3, 4, 5, 8, 10, 12, 29, 31, 44, 45, 46, 59, 60, 61, 72, 65537, 65539, 65536 * 3, 65536 * 3 + 5};
@@ -2373,7 +2368,7 @@ public class MutableRowSetImplTest extends TestCase {
     }
 
     public void testBuilderAddRanges() {
-        final RowSetBuilderRandom b = RowSetFactoryImpl.INSTANCE.builderRandom();
+        final RowSetBuilderRandom b = RowSetFactory.builderRandom();
         final long[] vs =
                 {3, 4, 5, 8, 10, 12, 29, 31, 44, 45, 46, 59, 60, 61, 72, 91, 65537, 65539, 65536 * 3, 65536 * 3 + 5};
         b.addRanges(new LongRangeIterator() {
@@ -2400,7 +2395,7 @@ public class MutableRowSetImplTest extends TestCase {
             }
         });
         final RowSet ix = b.build();
-        final RowSetBuilderRandom b2 = RowSetFactoryImpl.INSTANCE.builderRandom();
+        final RowSetBuilderRandom b2 = RowSetFactory.builderRandom();
         for (int i = 0; i < vs.length; i += 2) {
             b2.addRange(vs[i], vs[i + 1]);
         }
@@ -2410,7 +2405,7 @@ public class MutableRowSetImplTest extends TestCase {
     }
 
     public void testBuilderAppendRanges() {
-        final RowSetBuilderSequential b = RowSetFactoryImpl.INSTANCE.builderSequential();
+        final RowSetBuilderSequential b = RowSetFactory.builderSequential();
         final long[] vs =
                 {3, 4, 5, 8, 10, 12, 29, 31, 44, 45, 46, 59, 60, 61, 72, 91, 65537, 65539, 65536 * 3, 65536 * 3 + 5};
         b.appendRanges(new LongRangeIterator() {
@@ -2437,7 +2432,7 @@ public class MutableRowSetImplTest extends TestCase {
             }
         });
         final RowSet ix = b.build();
-        final RowSetBuilderRandom b2 = RowSetFactoryImpl.INSTANCE.builderRandom();
+        final RowSetBuilderRandom b2 = RowSetFactory.builderRandom();
         for (int i = 0; i < vs.length; i += 2) {
             b2.addRange(vs[i], vs[i + 1]);
         }
@@ -2450,10 +2445,10 @@ public class MutableRowSetImplTest extends TestCase {
         final int sz = 10;
         final MutableRowSet[] ixs = new MutableRowSet[sz];
         for (int i = 0; i < sz; ++i) {
-            ixs[i] = RowSetFactoryImpl.INSTANCE.empty();
+            ixs[i] = RowSetFactory.empty();
             ixs[i].insert(i);
         }
-        final MutableRowSet r = RowSetFactoryImpl.INSTANCE.empty();
+        final MutableRowSet r = RowSetFactory.empty();
         for (int i = 0; i < sz; ++i) {
             r.insert(ixs[i]);
         }
@@ -2463,7 +2458,7 @@ public class MutableRowSetImplTest extends TestCase {
     }
 
     public void testSubindexByPosRegreesion0() {
-        final MutableRowSet ix = RowSetFactoryImpl.INSTANCE.empty();
+        final MutableRowSet ix = RowSetFactory.empty();
         ix.insertRange(0, 95 * ((long) BLOCK_SIZE));
         final long s1 = 0x1000000 * ((long) BLOCK_SIZE);
         ix.insertRange(s1, s1 + 95 * 65536);
@@ -2485,7 +2480,7 @@ public class MutableRowSetImplTest extends TestCase {
     }
 
     public void testContainsRange() {
-        final MutableRowSet ix = RowSetFactoryImpl.INSTANCE.empty();
+        final MutableRowSet ix = RowSetFactory.empty();
         ix.insertRange(1, 3);
         ix.insertRange(BLOCK_LAST, BLOCK_SIZE);
         ix.insertRange(2 * BLOCK_SIZE, 2 * BLOCK_SIZE + 1);
@@ -2521,7 +2516,7 @@ public class MutableRowSetImplTest extends TestCase {
     }
 
     public void testOverlapsRange() {
-        final MutableRowSet ix = RowSetFactoryImpl.INSTANCE.empty();
+        final MutableRowSet ix = RowSetFactory.empty();
         ix.insertRange(3, 5);
         ix.insertRange(BLOCK_LAST, BLOCK_SIZE);
         ix.insertRange(2 * BLOCK_SIZE, 2 * BLOCK_SIZE + 1);
@@ -2570,8 +2565,8 @@ public class MutableRowSetImplTest extends TestCase {
     }
 
     public void testOneRangeIndexMinus() {
-        final RowSet ix = RowSetFactoryImpl.INSTANCE.fromRange(1000, 5000);
-        final RowSet r = ix.minus(RowSetFactoryImpl.INSTANCE.fromRange(1001, 4999));
+        final RowSet ix = RowSetFactory.fromRange(1000, 5000);
+        final RowSet r = ix.minus(RowSetFactory.fromRange(1001, 4999));
         final MutableRowSet c = ix.clone();
         c.removeRange(1001, 4999);
     }
@@ -2614,13 +2609,13 @@ public class MutableRowSetImplTest extends TestCase {
         releaseReleasedRegression0case1(TstRowSetUtil.makeEmptySr());
     }
 
-    private void releaseReleasedRegression0case2(final MutableRowSet ix) {
+    private static void releaseReleasedRegression0case2(final MutableRowSet ix) {
         ix.insertRange(1, 2);
         ix.insertRange(5, 6);
         final RowSet ix2 = ix.clone();
         assertEquals(2, getRefCount(ix));
         assertEquals(2, getRefCount(ix2));
-        ix.update(RowSetFactoryImpl.INSTANCE.empty(), ix2);
+        ix.update(RowSetFactory.empty(), ix2);
         assertEquals(0, ix.size());
         assertEquals(1, getRefCount(ix2));
     }
@@ -2634,7 +2629,7 @@ public class MutableRowSetImplTest extends TestCase {
     }
 
     public void testSearchIteratorRegression0() {
-        final MutableRowSet ix0 = RowSetFactoryImpl.INSTANCE.empty();
+        final MutableRowSet ix0 = RowSetFactory.empty();
         // force a bitmap container.
         for (int i = 0; i < 5000; ++i) {
             ix0.insert(2 * i);
@@ -2652,7 +2647,7 @@ public class MutableRowSetImplTest extends TestCase {
     }
 
     public void testAsKeyRangesChunk() {
-        final MutableRowSet rowSet = RowSetFactoryImpl.INSTANCE.empty();
+        final MutableRowSet rowSet = RowSetFactory.empty();
         rowSet.insertRange(130972, 131071);
         rowSet.insert(262144);
 
@@ -2665,7 +2660,7 @@ public class MutableRowSetImplTest extends TestCase {
     }
 
     public void testReverseIteratorAdvanceRegression0() {
-        RowSetBuilderSequential builder = RowSetFactoryImpl.INSTANCE.builderSequential();
+        RowSetBuilderSequential builder = RowSetFactory.builderSequential();
         final int key = 1073741822;
         builder.appendKey(key);
         builder.appendKey(1073741824);
@@ -2676,7 +2671,7 @@ public class MutableRowSetImplTest extends TestCase {
     }
 
     public void testReverseIteratorAdvanceRegression1() {
-        RowSetBuilderSequential builder = RowSetFactoryImpl.INSTANCE.builderSequential();
+        RowSetBuilderSequential builder = RowSetFactory.builderSequential();
         int key = 1073741822;
         builder.appendKey(1073741820);
         builder.appendKey(key);
@@ -2689,7 +2684,7 @@ public class MutableRowSetImplTest extends TestCase {
 
     public void testReverseIteratorAdvanceRegression2() {
         long key = 1073741824;
-        RowSetBuilderRandom builder = RowSetFactoryImpl.INSTANCE.builderRandom();
+        RowSetBuilderRandom builder = RowSetFactory.builderRandom();
         builder.addKey(key);
         builder.addKey(key + 10);
         MutableRowSet rowSet = builder.build();
@@ -2700,7 +2695,7 @@ public class MutableRowSetImplTest extends TestCase {
 
     public void testReverseIteratorAdvanceRegression3() {
         long key = 1073741824;
-        RowSetBuilderRandom builder = RowSetFactoryImpl.INSTANCE.builderRandom();
+        RowSetBuilderRandom builder = RowSetFactory.builderRandom();
         builder.addKey(key);
         builder.addKey(key + 10);
         MutableRowSet rowSet = builder.build();
@@ -2712,7 +2707,7 @@ public class MutableRowSetImplTest extends TestCase {
 
     public void testReverseIteratorAdvanceRegression4() {
         long key = 1073741822;
-        RowSetBuilderSequential builder = RowSetFactoryImpl.INSTANCE.builderSequential();
+        RowSetBuilderSequential builder = RowSetFactory.builderSequential();
         builder.appendKey(key);
         RowSet rowSet = builder.build();
         RowSet.SearchIterator iter = rowSet.reverseIterator();
@@ -2722,7 +2717,7 @@ public class MutableRowSetImplTest extends TestCase {
 
     public void testReverseIteratorAdvanceRegression5() {
         long key = 1073741823;
-        RowSetBuilderSequential builder = RowSetFactoryImpl.INSTANCE.builderSequential();
+        RowSetBuilderSequential builder = RowSetFactory.builderSequential();
         builder.appendKey(key - 1);
         builder.appendKey(key + 1);
         RowSet rowSet = builder.build();
@@ -2734,7 +2729,7 @@ public class MutableRowSetImplTest extends TestCase {
     }
 
     public void testReverseIteratorAdvanceRegression6() {
-        RowSetBuilderSequential builder = RowSetFactoryImpl.INSTANCE.builderSequential();
+        RowSetBuilderSequential builder = RowSetFactory.builderSequential();
         final int key = BLOCK_SIZE;
         builder.appendKey(key - 1);
         builder.appendKey(key + 1);
@@ -2746,7 +2741,7 @@ public class MutableRowSetImplTest extends TestCase {
     }
 
     public void testIteratorAdvanceRegression1() {
-        final RowSet ix = RowSetFactoryImpl.INSTANCE.fromKeys(3, 5, 7, 9, 11, 21);
+        final RowSet ix = RowSetFactory.fromKeys(3, 5, 7, 9, 11, 21);
         final RowSet.RangeIterator rit = ix.rangeIterator();
         assertTrue(rit.advance(21));
         assertEquals(21, rit.currentRangeStart());
@@ -3040,8 +3035,8 @@ public class MutableRowSetImplTest extends TestCase {
         ix2.retain(ix1);
         assertEquals(1, getRefCount(ix2));
         assertEquals(1, getRefCount(clone));
-        assertEquals(RowSetFactoryImpl.INSTANCE.fromKeys(20), ix2);
-        assertEquals(RowSetFactoryImpl.INSTANCE.fromKeys(18, 20), clone);
+        assertEquals(RowSetFactory.fromKeys(20), ix2);
+        assertEquals(RowSetFactory.fromKeys(18, 20), clone);
     }
 
 
@@ -3054,8 +3049,8 @@ public class MutableRowSetImplTest extends TestCase {
         ix2.retainRange(20, 24);
         assertEquals(1, getRefCount(ix2));
         assertEquals(1, getRefCount(clone));
-        assertEquals(RowSetFactoryImpl.INSTANCE.fromKeys(20), ix2);
-        assertEquals(RowSetFactoryImpl.INSTANCE.fromKeys(18, 20), clone);
+        assertEquals(RowSetFactory.fromKeys(20), ix2);
+        assertEquals(RowSetFactory.fromKeys(18, 20), clone);
     }
 
     public void testRetainSrPrefix() {
@@ -3165,8 +3160,8 @@ public class MutableRowSetImplTest extends TestCase {
 
     public void testRemoveTime() {
         final Random r = new Random();
-        final RowSetBuilderSequential outer = RowSetFactoryImpl.INSTANCE.builderSequential();
-        final RowSetBuilderSequential inner = RowSetFactoryImpl.INSTANCE.builderSequential();
+        final RowSetBuilderSequential outer = RowSetFactory.builderSequential();
+        final RowSetBuilderSequential inner = RowSetFactory.builderSequential();
         for (long i = 0; i < 1500000; ++i) {
             long ii = i << 16;
             outer.appendRange(ii, ii + 5);

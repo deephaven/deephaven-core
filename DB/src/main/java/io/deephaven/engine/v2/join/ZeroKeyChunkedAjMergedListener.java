@@ -123,7 +123,7 @@ public class ZeroKeyChunkedAjMergedListener extends MergedListener {
                         leftAdditionsOrRemovals ? WritableLongChunk.makeWritableChunk(leftChunkSize) : null;
                 final LongSortKernel<Values, RowKeys> sortKernel = LongSortKernel.makeContext(stampChunkType, order,
                         Math.max(leftChunkSize, rightChunkSize), true)) {
-            final RowSetBuilderRandom modifiedBuilder = RowSetFactoryImpl.INSTANCE.builderRandom();
+            final RowSetBuilderRandom modifiedBuilder = RowSetFactory.builderRandom();
 
             // first we remove anything that is not of interest from the left hand side, because we don't want to
             // process the relevant right hand side changes
@@ -172,8 +172,8 @@ public class ZeroKeyChunkedAjMergedListener extends MergedListener {
                             leftChunkSize, leftStampSource);
                 }
             } else {
-                downstream.added = RowSetFactoryImpl.INSTANCE.empty();
-                downstream.removed = RowSetFactoryImpl.INSTANCE.empty();
+                downstream.added = RowSetFactory.empty();
+                downstream.removed = RowSetFactory.empty();
                 downstream.shifted = RowSetShiftData.EMPTY;
             }
 

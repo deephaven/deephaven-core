@@ -4,7 +4,7 @@ import io.deephaven.base.verify.Require;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.engine.v2.utils.RowSetBuilderSequential;
-import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
+import io.deephaven.engine.v2.utils.RowSetFactory;
 import io.deephaven.io.log.LogLevel;
 import io.deephaven.io.logger.StreamLoggerImpl;
 import io.deephaven.util.process.ProcessEnvironment;
@@ -339,8 +339,8 @@ public class TestConditionFilter extends PythonTest {
 
     private void check(String expression, Predicate<Map<String, Object>> testPredicate, boolean testPython,
             boolean testNative) {
-        final RowSetBuilderSequential keepBuilder = RowSetFactoryImpl.INSTANCE.builderSequential();
-        final RowSetBuilderSequential dropBuilder = RowSetFactoryImpl.INSTANCE.builderSequential();
+        final RowSetBuilderSequential keepBuilder = RowSetFactory.builderSequential();
+        final RowSetBuilderSequential dropBuilder = RowSetFactory.builderSequential();
 
         final Map<String, ? extends ColumnSource> sourcesMap =
                 testDataTable.updateView("actualI = i", "actualII = ii", "actualK = k").getColumnSourceMap();

@@ -16,7 +16,7 @@ import io.deephaven.engine.v2.sources.chunk.Attributes.RowKeys;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.utils.RowSetBuilderRandom;
-import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
+import io.deephaven.engine.v2.utils.RowSetFactory;
 import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.v2.utils.RowSet;
 import org.jetbrains.annotations.NotNull;
@@ -60,7 +60,7 @@ public class ObjectStreamSortedFirstOrLastChunkedOperator extends CopyingPermute
     public void resetForStep(@NotNull final Listener.Update upstream) {
         super.resetForStep(upstream);
         if (isCombo) {
-            changedDestinationsBuilder = RowSetFactoryImpl.INSTANCE.builderRandom();
+            changedDestinationsBuilder = RowSetFactory.builderRandom();
         }
     }
 

@@ -7,7 +7,7 @@ package io.deephaven.integrations.python;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.v2.ShiftObliviousInstrumentedListenerAdapter;
 import io.deephaven.engine.v2.utils.RowSet;
-import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
+import io.deephaven.engine.v2.utils.RowSetFactory;
 import io.deephaven.util.annotations.ScriptApi;
 import org.jpy.PyObject;
 
@@ -68,7 +68,7 @@ public class PythonReplayShiftObliviousListenerAdapter extends ShiftObliviousIns
 
     @Override
     public void replay() {
-        final RowSet emptyRowSet = RowSetFactoryImpl.INSTANCE.empty();
+        final RowSet emptyRowSet = RowSetFactory.empty();
         final boolean isReplay = true;
         pyCallable.call("__call__", isReplay, source.getRowSet(), emptyRowSet, emptyRowSet);
     }

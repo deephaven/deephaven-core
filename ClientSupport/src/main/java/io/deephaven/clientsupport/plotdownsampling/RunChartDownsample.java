@@ -222,7 +222,7 @@ public class RunChartDownsample implements Function.Unary<Table, Table> {
         }
 
         public static DownsamplerListener of(final QueryTable sourceTable, final DownsampleKey key) {
-            final TrackingRowSet rowSet = RowSetFactoryImpl.INSTANCE.empty().convertToTracking();
+            final TrackingRowSet rowSet = RowSetFactory.empty().convertToTracking();
             final QueryTable resultTable = sourceTable.getSubTable(rowSet);
             return new DownsamplerListener(sourceTable, resultTable, key);
         }
@@ -243,7 +243,7 @@ public class RunChartDownsample implements Function.Unary<Table, Table> {
         private final ColumnSource<Long> xColumnSource;
 
         private final ValueTracker[] values;
-        private final MutableRowSet availableSlots = RowSetFactoryImpl.INSTANCE.builderSequential().build();
+        private final MutableRowSet availableSlots = RowSetFactory.builderSequential().build();
         private int nextSlot;
 
         private final int[] allYColumnIndexes;
@@ -720,7 +720,7 @@ public class RunChartDownsample implements Function.Unary<Table, Table> {
                                                                                   // since states shouldn't contain
                                                                                   // empty indexes anyway
                         states.values().stream())
-                        .reduce(RowSetFactoryImpl.INSTANCE.builderRandom(), (builder, state) -> {
+                        .reduce(RowSetFactory.builderRandom(), (builder, state) -> {
                             builder.addRowSet(state.makeIndex());
                             return builder;
                         }, (b1, b2) -> {
@@ -728,7 +728,7 @@ public class RunChartDownsample implements Function.Unary<Table, Table> {
                             return b1;
                         }).build();
             }
-            return states.values().stream().reduce(RowSetFactoryImpl.INSTANCE.builderRandom(), (builder, state) -> {
+            return states.values().stream().reduce(RowSetFactory.builderRandom(), (builder, state) -> {
                 builder.addRowSet(state.makeIndex());
                 return builder;
             }, (b1, b2) -> {

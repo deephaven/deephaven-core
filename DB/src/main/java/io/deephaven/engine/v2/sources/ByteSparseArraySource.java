@@ -78,7 +78,7 @@ public class ByteSparseArraySource extends SparseArrayColumnSource<Byte> impleme
 
     // region serialization
     private void writeObject(java.io.ObjectOutputStream out) throws IOException {
-        final RowSetBuilderSequential sb = RowSetFactoryImpl.INSTANCE.builderSequential();
+        final RowSetBuilderSequential sb = RowSetFactory.builderSequential();
         blocks.enumerate(NULL_BYTE, sb::appendKey);
         final RowSet rowSet = sb.build();
 

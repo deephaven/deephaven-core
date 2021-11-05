@@ -94,7 +94,7 @@ public class DownsampledWhereFilter extends SelectFilterImpl {
 
         ColumnSource<DBDateTime> timestampColumn = table.getColumnSource(column);
 
-        RowSetBuilderSequential builder = RowSetFactoryImpl.INSTANCE.builderSequential();
+        RowSetBuilderSequential builder = RowSetFactory.builderSequential();
 
 
         RowSet.Iterator it = selection.iterator();

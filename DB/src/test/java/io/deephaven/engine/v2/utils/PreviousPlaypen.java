@@ -6,7 +6,7 @@ public class PreviousPlaypen {
     public static void main(String[] args) {
         // LogicalClock.DEFAULT.startUpdateCycle();
 
-        // final TrackingMutableRowSet i = RowSetFactoryImpl.INSTANCE.flat(100).convertToTracking();;
+        // final TrackingMutableRowSet i = RowSetFactory.flat(100).convertToTracking();;
         // System.out.println(i);
         // System.out.println(i.getPrevRowSet());
         //
@@ -18,7 +18,7 @@ public class PreviousPlaypen {
 
         LogicalClock.DEFAULT.startUpdateCycle();
 
-        final TrackingMutableRowSet i2 = RowSetFactoryImpl.INSTANCE.flat(200).convertToTracking();
+        final TrackingMutableRowSet i2 = RowSetFactory.flat(200).convertToTracking();
         System.out.println(i2);
         System.out.println(i2.getPrevRowSet());
 
