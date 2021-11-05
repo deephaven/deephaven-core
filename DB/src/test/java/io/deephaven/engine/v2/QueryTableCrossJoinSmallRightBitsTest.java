@@ -120,7 +120,8 @@ public class QueryTableCrossJoinSmallRightBitsTest extends QueryTableCrossJoinTe
 
             final Listener.Update lUpdate = new Listener.Update();
             lUpdate.modified = i(1, 2, 3);
-            lUpdate.added = lUpdate.removed = i();
+            lUpdate.added = i();
+            lUpdate.removed = i();
             lUpdate.modifiedColumnSet = ModifiedColumnSet.ALL;
             lUpdate.shifted = RowSetShiftData.EMPTY;
             lTable.notifyListeners(lUpdate);
@@ -175,7 +176,8 @@ public class QueryTableCrossJoinSmallRightBitsTest extends QueryTableCrossJoinTe
 
             final Listener.Update lUpdate = new Listener.Update();
             lUpdate.modified = i(1, 2, 3);
-            lUpdate.added = lUpdate.removed = i();
+            lUpdate.added = i();
+            lUpdate.removed = i();
             lUpdate.modifiedColumnSet = ModifiedColumnSet.ALL;
             lUpdate.shifted = RowSetShiftData.EMPTY;
             lTable.notifyListeners(lUpdate);
@@ -228,7 +230,8 @@ public class QueryTableCrossJoinSmallRightBitsTest extends QueryTableCrossJoinTe
 
             final Listener.Update lUpdate = new Listener.Update();
             lUpdate.modified = i(2, 3, 4);
-            lUpdate.added = lUpdate.removed = i();
+            lUpdate.added = i();
+            lUpdate.removed = i();
             lUpdate.modifiedColumnSet = ModifiedColumnSet.ALL;
             final RowSetShiftData.Builder leftShifted = new RowSetShiftData.Builder();
             leftShifted.shiftRange(0, 4, 1);
@@ -286,7 +289,8 @@ public class QueryTableCrossJoinSmallRightBitsTest extends QueryTableCrossJoinTe
 
             final Listener.Update lUpdate = new Listener.Update();
             lUpdate.modified = i(2, 3, 4);
-            lUpdate.added = lUpdate.removed = i();
+            lUpdate.added = i();
+            lUpdate.removed = i();
             lUpdate.modifiedColumnSet = ModifiedColumnSet.ALL;
             final RowSetShiftData.Builder leftShifted = new RowSetShiftData.Builder();
             leftShifted.shiftRange(0, 4, 1);

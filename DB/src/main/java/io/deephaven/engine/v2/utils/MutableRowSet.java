@@ -139,8 +139,10 @@ public interface MutableRowSet extends RowSet {
      * <p>
      * Implementations are free to transfer ownership of resources from this object to the result. As such, it is an
      * error to directly use this object afterwards; callers must instead use the returned result.
+     * <p>
+     * It is an error to invoke this on an instance that is already tracking.
      *
      * @return A {@link TrackingMutableRowSet} constructed from this MutableRowSet, or {@code this} if already tracking
      */
-    TrackingMutableRowSet convertToTracking();
+    TrackingMutableRowSet convertToTracking(); // TODO-RWC: toTracking, moveToTracking, trackingMove. Or do Cristian's proposal of TrackingRowSet.move(MutableRowSet), but that seems worse in chained statements
 }

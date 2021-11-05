@@ -53,7 +53,7 @@ public class TrackingMutableRowSetImpl extends GroupingRowSetHelper {
 
     @Override
     public TrackingMutableRowSet convertToTracking() {
-        return this;
+        throw new UnsupportedOperationException("Already tracking! You must clone() before convertToTracking()");
     }
 
     @Override

@@ -81,7 +81,9 @@ public class TestSelectOverheadLimiter extends LiveTableTestCase {
             final RowSetShiftData.Builder builder = new RowSetShiftData.Builder();
             builder.shiftRange(0, 1000, 10000);
             update.shifted = builder.build();
-            update.added = update.removed = update.modified = i();
+            update.added = i();
+            update.removed = i();
+            update.modified = i();
             update.modifiedColumnSet = ModifiedColumnSet.EMPTY;
             queryTable.notifyListeners(update);
         });

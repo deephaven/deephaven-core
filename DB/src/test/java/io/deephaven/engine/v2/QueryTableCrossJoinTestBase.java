@@ -61,7 +61,8 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
             addToTable(rTable, i(1 << 16), longCol("Y", 3));
             final Listener.Update update = new Listener.Update();
             update.added = i(1 << 16);
-            update.removed = update.modified = i();
+            update.removed = i();
+            update.modified = i();
             update.modifiedColumnSet = ModifiedColumnSet.EMPTY;
             update.shifted = RowSetShiftData.EMPTY;
             rTable.notifyListeners(update);
@@ -95,7 +96,9 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
             removeRows(rTable, i(origIndex));
             addToTable(rTable, i(newIndex), longCol("Y", 2));
             final Listener.Update update = new Listener.Update();
-            update.added = update.removed = update.modified = i();
+            update.added = i();
+            update.removed = i();
+            update.modified = i();
             update.modifiedColumnSet = ModifiedColumnSet.EMPTY;
             final RowSetShiftData.Builder shiftBuilder = new RowSetShiftData.Builder();
             shiftBuilder.shiftRange(origIndex, origIndex, newIndex - origIndex);
@@ -132,7 +135,8 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
             addToTable(rTable, i(129, 1 << 16), longCol("Y", 2, 4));
             final Listener.Update update = new Listener.Update();
             update.added = i(1 << 16);
-            update.removed = update.modified = i();
+            update.removed = i();
+            update.modified = i();
             update.modifiedColumnSet = ModifiedColumnSet.EMPTY;
             final RowSetShiftData.Builder shiftBuilder = new RowSetShiftData.Builder();
             shiftBuilder.shiftRange(128, 128, 1);
@@ -163,7 +167,9 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
             removeRows(lTable, i(0, 1, 2, 3));
             addToTable(lTable, i(2, 4, 5, 7), c("X", "a", "b", "c", "d"));
             final Listener.Update lUpdate = new Listener.Update();
-            lUpdate.added = lUpdate.removed = lUpdate.modified = i();
+            lUpdate.added = i();
+            lUpdate.removed = i();
+            lUpdate.modified = i();
             final RowSetShiftData.Builder lShiftBuilder = new RowSetShiftData.Builder();
             lShiftBuilder.shiftRange(0, 0, 2);
             lShiftBuilder.shiftRange(1, 2, 3);
@@ -177,7 +183,8 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
             addToTable(rTable, i(129, 1 << 16), longCol("Y", 2, 4));
             final Listener.Update rUpdate = new Listener.Update();
             rUpdate.added = i(1 << 16);
-            rUpdate.removed = rUpdate.modified = i();
+            rUpdate.removed = i();
+            rUpdate.modified = i();
             rUpdate.modifiedColumnSet = ModifiedColumnSet.EMPTY;
             final RowSetShiftData.Builder rShiftBuilder = new RowSetShiftData.Builder();
             rShiftBuilder.shiftRange(128, 128, 1);

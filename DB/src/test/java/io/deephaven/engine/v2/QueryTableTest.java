@@ -1099,7 +1099,8 @@ public class QueryTableTest extends QueryTableTestBase {
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             Listener.Update downstream = new Listener.Update();
-            downstream.added = downstream.removed = i();
+            downstream.added = i();
+            downstream.removed = i();
             downstream.modified = i(1);
             downstream.modifiedColumnSet = ModifiedColumnSet.ALL;
 
@@ -1123,7 +1124,9 @@ public class QueryTableTest extends QueryTableTestBase {
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             Listener.Update downstream = new Listener.Update();
-            downstream.added = downstream.removed = downstream.modified = i();
+            downstream.added = i();
+            downstream.removed = i();
+            downstream.modified = i();
             downstream.modifiedColumnSet = ModifiedColumnSet.EMPTY;
 
             final RowSetShiftData.Builder builder = new RowSetShiftData.Builder();
@@ -2039,8 +2042,6 @@ public class QueryTableTest extends QueryTableTestBase {
                     assertEquals("", diff(lastSnapshot, snapshot, 10));
                 }
             }
-        } catch (Exception e) {
-            TestCase.fail(e.getMessage());
         } finally {
             simpleListener.freeResources();
         }
@@ -2951,7 +2952,8 @@ public class QueryTableTest extends QueryTableTestBase {
             addToTable(lTable, newRows, c("X", "e", "f", "g", "h"));
             final Listener.Update update = new Listener.Update();
             update.added = newRows;
-            update.removed = update.modified = i();
+            update.removed = i();
+            update.modified = i();
             update.modifiedColumnSet = ModifiedColumnSet.EMPTY;
             update.shifted = RowSetShiftData.EMPTY;
             lTable.notifyListeners(update);
@@ -3031,7 +3033,9 @@ public class QueryTableTest extends QueryTableTestBase {
     public void testNotifyListenersReleasesUpdateEmptyUpdate() {
         final QueryTable src = TstUtils.testRefreshingTable(RowSetFactoryImpl.INSTANCE.flat(100).convertToTracking());
         final Listener.Update update = new Listener.Update();
-        update.added = update.removed = update.modified = i();
+        update.added = i();
+        update.removed = i();
+        update.modified = i();
         update.shifted = RowSetShiftData.EMPTY;
         update.modifiedColumnSet = ModifiedColumnSet.EMPTY;
 
@@ -3050,7 +3054,8 @@ public class QueryTableTest extends QueryTableTestBase {
         final QueryTable src = TstUtils.testRefreshingTable(RowSetFactoryImpl.INSTANCE.flat(100).convertToTracking());
         final Listener.Update update = new Listener.Update();
         update.added = RowSetFactoryImpl.INSTANCE.fromRange(200, 220); // must be a non-empty update
-        update.removed = update.modified = i();
+        update.removed = i();
+        update.modified = i();
         update.shifted = RowSetShiftData.EMPTY;
         update.modifiedColumnSet = ModifiedColumnSet.EMPTY;
 
@@ -3065,7 +3070,8 @@ public class QueryTableTest extends QueryTableTestBase {
         final QueryTable src = TstUtils.testRefreshingTable(RowSetFactoryImpl.INSTANCE.flat(100).convertToTracking());
         final Listener.Update update = new Listener.Update();
         update.added = RowSetFactoryImpl.INSTANCE.fromRange(200, 220); // must be a non-empty update
-        update.removed = update.modified = i();
+        update.removed = i();
+        update.modified = i();
         update.shifted = RowSetShiftData.EMPTY;
         update.modifiedColumnSet = ModifiedColumnSet.EMPTY;
 
@@ -3084,7 +3090,8 @@ public class QueryTableTest extends QueryTableTestBase {
         final QueryTable src = TstUtils.testRefreshingTable(RowSetFactoryImpl.INSTANCE.flat(100).convertToTracking());
         final Listener.Update update = new Listener.Update();
         update.added = RowSetFactoryImpl.INSTANCE.fromRange(200, 220); // must be a non-empty update
-        update.removed = update.modified = i();
+        update.removed = i();
+        update.modified = i();
         update.shifted = RowSetShiftData.EMPTY;
         update.modifiedColumnSet = ModifiedColumnSet.EMPTY;
 
@@ -3103,7 +3110,8 @@ public class QueryTableTest extends QueryTableTestBase {
         final QueryTable src = TstUtils.testRefreshingTable(RowSetFactoryImpl.INSTANCE.flat(100).convertToTracking());
         final Listener.Update update = new Listener.Update();
         update.added = RowSetFactoryImpl.INSTANCE.fromRange(200, 220); // must be a non-empty update
-        update.removed = update.modified = i();
+        update.removed = i();
+        update.modified = i();
         update.shifted = RowSetShiftData.EMPTY;
         update.modifiedColumnSet = ModifiedColumnSet.EMPTY;
 

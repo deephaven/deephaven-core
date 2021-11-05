@@ -80,7 +80,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
                 final RowSet addRowSet = RowSetFactoryImpl.INSTANCE.fromRange(foffset, foffset + leftJoinKey.length - 1);
                 addToTable(leftTable, addRowSet, stringCol("JoinKey", leftJoinKey),
                         intCol("LeftSentinel", leftSentinel));
-                leftTable.notifyListeners(addRowSet, i(), i());
+                leftTable.notifyListeners(addRowSet.clone(), i(), i());
 
 
                 final RowSetBuilderSequential modIndexBuilder = RowSetFactoryImpl.INSTANCE.builderSequential();

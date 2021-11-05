@@ -25,10 +25,10 @@ public interface RowSetFactory {
     /**
      * Produce a {@link MutableRowSet} containing a single row key. Row keys must be nonnegative numbers.
      *
-     * @param key The row key to include
+     * @param rowKey The row key to include
      * @return A new {@link MutableRowSet} containing the specified row key
      */
-    MutableRowSet fromKeys(long key);
+    MutableRowSet fromKeys(long rowKey);
 
     /**
      * Get an {@link MutableRowSet} containing the specified keys.

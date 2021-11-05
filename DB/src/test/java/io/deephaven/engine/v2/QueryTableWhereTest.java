@@ -692,7 +692,8 @@ public class QueryTableWhereTest {
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             Listener.Update update = new Listener.Update();
-            update.added = update.removed = i();
+            update.added = i();
+            update.removed = i();
             update.modified = source.getRowSet().clone();
             update.modifiedColumnSet = source.newModifiedColumnSet("X");
             update.shifted = RowSetShiftData.EMPTY;

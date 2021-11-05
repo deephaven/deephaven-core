@@ -1245,12 +1245,13 @@ public class QueryTable extends BaseTable {
                                     publishTheseSources, selectColumns);
 
                     // Init all the rows by cooking up a fake Update
-                    final RowSet emptyRowSet = RowSetFactoryImpl.INSTANCE.empty();
                     final Listener.Update fakeUpdate =
-                            new Listener.Update(rowSet, emptyRowSet, emptyRowSet,
+                            new Listener.Update(rowSet.clone(),
+                                    RowSetFactoryImpl.INSTANCE.empty(), RowSetFactoryImpl.INSTANCE.empty(),
                                     RowSetShiftData.EMPTY, ModifiedColumnSet.ALL);
-                    try (final SelectAndViewAnalyzer.UpdateHelper updateHelper =
-                            new SelectAndViewAnalyzer.UpdateHelper(emptyRowSet, fakeUpdate)) {
+                    try (final RowSet emptyRowSet = RowSetFactoryImpl.INSTANCE.empty();
+                         final SelectAndViewAnalyzer.UpdateHelper updateHelper =
+                                 new SelectAndViewAnalyzer.UpdateHelper(emptyRowSet, fakeUpdate)) {
                         analyzer.applyUpdate(fakeUpdate, emptyRowSet, updateHelper);
                     }
 
@@ -1968,7 +1969,7 @@ public class QueryTable extends BaseTable {
     }
 
     public Table silent() {
-        return new QueryTable(getRowSet().mutableCast(), getColumnSourceMap());
+        return new QueryTable(getRowSet(), getColumnSourceMap());
     }
 
     @Override
@@ -2170,7 +2171,7 @@ public class QueryTable extends BaseTable {
                                         SnapshotIncrementalListener.copyRowsToResult(rightTable.getRowSet(),
                                                 QueryTable.this, rightTable, leftColumns, resultColumns);
                                         resultTable.getRowSet().mutableCast().insert(rightTable.getRowSet());
-                                        resultTable.notifyListeners(resultTable.getRowSet(),
+                                        resultTable.notifyListeners(resultTable.getRowSet().clone(),
                                                 RowSetFactoryImpl.INSTANCE.empty(),
                                                 RowSetFactoryImpl.INSTANCE.empty());
                                         removeUpdateListener(this);

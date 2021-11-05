@@ -565,8 +565,8 @@ public class ConstructSnapshot {
             if (positionsToSnapshot == null) {
                 keysToSnapshot = null;
             } else if (usePrev) {
-                try (final RowSet prevIndex = table.getRowSet().getPrevRowSet()) {
-                    keysToSnapshot = prevIndex.subSetForPositions(positionsToSnapshot);
+                try (final RowSet prevRowSet = table.getRowSet().getPrevRowSet()) {
+                    keysToSnapshot = prevRowSet.subSetForPositions(positionsToSnapshot);
                 }
             } else {
                 keysToSnapshot = table.getRowSet().subSetForPositions(positionsToSnapshot);
@@ -1267,7 +1267,7 @@ public class ConstructSnapshot {
      * @param snapshot The snapshot to populate
      * @param logIdentityObject an object for use with log() messages
      * @param columnsToSerialize A {@link BitSet} of columns to include, null for all
-     * @param positionsToSnapshot An TrackingMutableRowSet of keys within the table to include, null for all
+     * @param keysToSnapshot A RowSet of keys within the table to include, null for all
      *
      * @return true if the snapshot was computed with an unchanged clock, false otherwise.
      */
@@ -1276,7 +1276,7 @@ public class ConstructSnapshot {
             final BaseTable table,
             final Object logIdentityObject,
             final BitSet columnsToSerialize,
-            final RowSet positionsToSnapshot) {
+            final RowSet keysToSnapshot) {
         snapshot.rowsAdded = (usePrev ? table.getRowSet().getPrevRowSet() : table.getRowSet()).clone();
         snapshot.rowsRemoved = RowSetFactoryImpl.INSTANCE.empty();
         snapshot.addColumnData = new BarrageMessage.AddColumnData[table.getColumnSources().size()];
@@ -1284,10 +1284,10 @@ public class ConstructSnapshot {
         // TODO (core#412): when sending app metadata; this can be reduced to a zero-len array
         snapshot.modColumnData = new BarrageMessage.ModColumnData[table.getColumnSources().size()];
 
-        if (positionsToSnapshot != null) {
-            snapshot.rowsIncluded = snapshot.rowsAdded.intersect(positionsToSnapshot);
+        if (keysToSnapshot != null) {
+            snapshot.rowsIncluded = snapshot.rowsAdded.intersect(keysToSnapshot);
         } else {
-            snapshot.rowsIncluded = snapshot.rowsAdded;
+            snapshot.rowsIncluded = snapshot.rowsAdded.clone();
         }
 
         LongSizedDataStructure.intSize("construct snapshot", snapshot.rowsIncluded.size());
@@ -1330,7 +1330,7 @@ public class ConstructSnapshot {
         final LogEntry infoEntry = log.info().append(System.identityHashCode(logIdentityObject))
                 .append(": Snapshot candidate step=")
                 .append((usePrev ? -1 : 0) + LogicalClock.getStep(getConcurrentAttemptClockValue()))
-                .append(", rows=").append(snapshot.rowsIncluded).append("/").append(positionsToSnapshot)
+                .append(", rows=").append(snapshot.rowsIncluded).append("/").append(keysToSnapshot)
                 .append(", cols=");
         if (columnsToSerialize == null) {
             infoEntry.append("ALL");

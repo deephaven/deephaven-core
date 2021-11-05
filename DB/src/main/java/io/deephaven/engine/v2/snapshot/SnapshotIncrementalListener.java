@@ -63,8 +63,8 @@ public class SnapshotIncrementalListener extends MergedListener {
         doRowCopy(rightTable.getRowSet());
         resultTable.getRowSet().mutableCast().insert(rightTable.getRowSet());
         if (!initial) {
-            resultTable.notifyListeners(resultTable.getRowSet(), RowSetFactoryImpl.INSTANCE.empty(),
-                    RowSetFactoryImpl.INSTANCE.empty());
+            resultTable.notifyListeners(resultTable.getRowSet().clone(),
+                    RowSetFactoryImpl.INSTANCE.empty(), RowSetFactoryImpl.INSTANCE.empty());
         }
         firstSnapshot = false;
     }
@@ -74,9 +74,9 @@ public class SnapshotIncrementalListener extends MergedListener {
         lastRightRowSet.insert(rightTable.getRowSet());
         try (final RowSetShiftDataExpander expander =
                 new RowSetShiftDataExpander(rightUpdates.coalesce(), lastRightRowSet)) {
-            final RowSet rightAdded = expander.getAdded();
-            final RowSet rightModified = expander.getModified();
-            final RowSet rightRemoved = expander.getRemoved();
+            final RowSet rightAdded = expander.getAdded().clone();
+            final RowSet rightModified = expander.getModified().clone();
+            final RowSet rightRemoved = expander.getRemoved().clone();
             final RowSet rowsToCopy = rightAdded.union(rightModified);
 
             doRowCopy(rowsToCopy);
