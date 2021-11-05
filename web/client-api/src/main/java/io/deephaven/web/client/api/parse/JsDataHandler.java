@@ -21,7 +21,6 @@ import io.deephaven.javascript.proto.dhinternal.flatbuffers.Builder;
 import io.deephaven.web.client.api.LongWrapper;
 import io.deephaven.web.client.api.i18n.JsDateTimeFormat;
 import io.deephaven.web.client.api.i18n.JsTimeZone;
-import io.deephaven.web.client.api.subscription.QueryConstants;
 import io.deephaven.web.shared.fu.JsConsumer;
 import io.deephaven.web.shared.fu.JsFunction;
 import jsinterop.base.Js;
@@ -32,9 +31,19 @@ import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Objects;
 
+import static io.deephaven.web.client.api.subscription.QueryConstants.FALSE_BOOLEAN_AS_BYTE;
+import static io.deephaven.web.client.api.subscription.QueryConstants.NULL_BOOLEAN_AS_BYTE;
+import static io.deephaven.web.client.api.subscription.QueryConstants.NULL_BYTE;
+import static io.deephaven.web.client.api.subscription.QueryConstants.NULL_CHAR;
+import static io.deephaven.web.client.api.subscription.QueryConstants.NULL_DOUBLE;
+import static io.deephaven.web.client.api.subscription.QueryConstants.NULL_FLOAT;
+import static io.deephaven.web.client.api.subscription.QueryConstants.NULL_INT;
+import static io.deephaven.web.client.api.subscription.QueryConstants.NULL_LONG;
+import static io.deephaven.web.client.api.subscription.QueryConstants.NULL_SHORT;
+import static io.deephaven.web.client.api.subscription.QueryConstants.TRUE_BOOLEAN_AS_BYTE;
+
 /**
- * Given the expected type of a column, pick one of the enum entries and use that to parse the data.
- * Use the instance to wrap the instance
+ * Given the expected type of a column, pick one of the enum entries and use that to read the data into arrow buffers.
  */
 public enum JsDataHandler {
     STRING(Type.Utf8, "java.lang.String") {
@@ -44,12 +53,14 @@ public enum JsDataHandler {
         }
 
         @Override
-        public void write(Object[] data, ParseContext context, JsConsumer<Node> addNode, JsConsumer<Uint8Array> addBuffer) {
+        public void write(Object[] data, ParseContext context, JsConsumer<Node> addNode,
+                JsConsumer<Uint8Array> addBuffer) {
             int nullCount = 0;
             BitSet nulls = new BitSet(data.length);
             Int32Array positions = makeBuffer(data.length + 1, 4, Int32Array::new);
             // work out the total length we'll need for the payload, plus padding
-            int payloadLength = Arrays.stream(data).filter(Objects::nonNull).map(Object::toString).mapToInt(String::length).sum();
+            int payloadLength =
+                    Arrays.stream(data).filter(Objects::nonNull).map(Object::toString).mapToInt(String::length).sum();
             Uint8Array payload = makeBuffer(payloadLength);
 
             int lastOffset = 0;
@@ -80,7 +91,8 @@ public enum JsDataHandler {
         }
 
         @Override
-        public void write(Object[] data, ParseContext context, JsConsumer<Node> addNode, JsConsumer<Uint8Array> addBuffer) {
+        public void write(Object[] data, ParseContext context, JsConsumer<Node> addNode,
+                JsConsumer<Uint8Array> addBuffer) {
             int nullCount = 0;
             BitSet nulls = new BitSet(data.length);
             // using float because we can convert longs to
@@ -90,7 +102,7 @@ public enum JsDataHandler {
 
                 final long dateValue;
                 if (data[i] == null) {
-                    dateValue = QueryConstants.NULL_LONG;
+                    dateValue = NULL_LONG;
                 } else if (data[i] instanceof LongWrapper) {
                     dateValue = ((LongWrapper) data[i]).getWrapped();
                 } else if (data[i] instanceof JsDate) {
@@ -99,14 +111,14 @@ public enum JsDataHandler {
                     // fall back to assuming it is a string, figure out what it formats as
                     String str = data[i].toString().trim();
                     if (str.isEmpty()) {
-                        dateValue = QueryConstants.NULL_LONG;
+                        dateValue = NULL_LONG;
                     } else {
-                        //take the format string and the timezone, and solve for a date
+                        // take the format string and the timezone, and solve for a date
                         dateValue = JsDateTimeFormat.parse(context.dateTimePattern, str, context.timeZone).getWrapped();
                     }
                 }
 
-                if (dateValue == QueryConstants.NULL_LONG) {
+                if (dateValue == NULL_LONG) {
                     nullCount++;
                 } else {
                     nulls.set(i);
@@ -128,8 +140,9 @@ public enum JsDataHandler {
         }
 
         @Override
-        public void write(Object[] data, ParseContext context, JsConsumer<Node> addNode, JsConsumer<Uint8Array> addBuffer) {
-            writeSimpleNumbers(data, addNode, addBuffer, Int32Array.BYTES_PER_ELEMENT, QueryConstants.NULL_INT, Int32Array::new);
+        public void write(Object[] data, ParseContext context, JsConsumer<Node> addNode,
+                JsConsumer<Uint8Array> addBuffer) {
+            writeSimpleNumbers(data, addNode, addBuffer, Int32Array.BYTES_PER_ELEMENT, NULL_INT, Int32Array::new);
         }
     },
     SHORT(Type.Int, "short") {
@@ -137,9 +150,11 @@ public enum JsDataHandler {
         public double writeType(Builder builder) {
             return Int.createInt(builder, 16, true);
         }
+
         @Override
-        public void write(Object[] data, ParseContext context, JsConsumer<Node> addNode, JsConsumer<Uint8Array> addBuffer) {
-            writeSimpleNumbers(data, addNode, addBuffer, Int16Array.BYTES_PER_ELEMENT, QueryConstants.NULL_SHORT, Int16Array::new);
+        public void write(Object[] data, ParseContext context, JsConsumer<Node> addNode,
+                JsConsumer<Uint8Array> addBuffer) {
+            writeSimpleNumbers(data, addNode, addBuffer, Int16Array.BYTES_PER_ELEMENT, NULL_SHORT, Int16Array::new);
         }
     },
     LONG(Type.Int, "long") {
@@ -149,7 +164,8 @@ public enum JsDataHandler {
         }
 
         @Override
-        public void write(Object[] data, ParseContext context, JsConsumer<Node> addNode, JsConsumer<Uint8Array> addBuffer) {
+        public void write(Object[] data, ParseContext context, JsConsumer<Node> addNode,
+                JsConsumer<Uint8Array> addBuffer) {
             int nullCount = 0;
             BitSet nulls = new BitSet(data.length);
             // using float because we can convert longs to
@@ -158,13 +174,13 @@ public enum JsDataHandler {
             for (int i = 0; i < data.length; i++) {
                 final long value;
                 if (data[i] == null) {
-                    value = QueryConstants.NULL_LONG;
+                    value = NULL_LONG;
                 } else if (data[i] instanceof LongWrapper) {
                     value = ((LongWrapper) data[i]).getWrapped();
                 } else if (Js.typeof(data[i]).equals("string")) {
                     String str = (String) data[i];
                     if (str.trim().length() == 0) {
-                        value = QueryConstants.NULL_LONG;
+                        value = NULL_LONG;
                     } else {
                         value = Long.parseLong(str);
                     }
@@ -172,7 +188,7 @@ public enum JsDataHandler {
                     // fall back to whatever we can get - this is null safe, since we already tested for null above
                     value = (long) (double) JsDataHandler.doubleFromData(data[i]);
                 }
-                if (value == QueryConstants.NULL_LONG) {
+                if (value == NULL_LONG) {
                     nullCount++;
                 } else {
                     nulls.set(i);
@@ -194,8 +210,9 @@ public enum JsDataHandler {
         }
 
         @Override
-        public void write(Object[] data, ParseContext context, JsConsumer<Node> addNode, JsConsumer<Uint8Array> addBuffer) {
-            writeSimpleNumbers(data, addNode, addBuffer, Int8Array.BYTES_PER_ELEMENT, QueryConstants.NULL_BYTE, Int8Array::new);
+        public void write(Object[] data, ParseContext context, JsConsumer<Node> addNode,
+                JsConsumer<Uint8Array> addBuffer) {
+            writeSimpleNumbers(data, addNode, addBuffer, Int8Array.BYTES_PER_ELEMENT, NULL_BYTE, Int8Array::new);
         }
     },
     CHAR(Type.Int, "char") {
@@ -205,8 +222,9 @@ public enum JsDataHandler {
         }
 
         @Override
-        public void write(Object[] data, ParseContext context, JsConsumer<Node> addNode, JsConsumer<Uint8Array> addBuffer) {
-            writeSimpleNumbers(data, addNode, addBuffer, Uint16Array.BYTES_PER_ELEMENT, QueryConstants.NULL_CHAR, Uint16Array::new);
+        public void write(Object[] data, ParseContext context, JsConsumer<Node> addNode,
+                JsConsumer<Uint8Array> addBuffer) {
+            writeSimpleNumbers(data, addNode, addBuffer, Uint16Array.BYTES_PER_ELEMENT, NULL_CHAR, Uint16Array::new);
         }
     },
     FLOAT(Type.FloatingPoint, "float") {
@@ -216,8 +234,9 @@ public enum JsDataHandler {
         }
 
         @Override
-        public void write(Object[] data, ParseContext context, JsConsumer<Node> addNode, JsConsumer<Uint8Array> addBuffer) {
-            writeSimpleNumbers(data, addNode, addBuffer, Float32Array.BYTES_PER_ELEMENT, QueryConstants.NULL_FLOAT, Float32Array::new);
+        public void write(Object[] data, ParseContext context, JsConsumer<Node> addNode,
+                JsConsumer<Uint8Array> addBuffer) {
+            writeSimpleNumbers(data, addNode, addBuffer, Float32Array.BYTES_PER_ELEMENT, NULL_FLOAT, Float32Array::new);
         }
     },
     DOUBLE(Type.FloatingPoint, "double") {
@@ -227,8 +246,10 @@ public enum JsDataHandler {
         }
 
         @Override
-        public void write(Object[] data, ParseContext context, JsConsumer<Node> addNode, JsConsumer<Uint8Array> addBuffer) {
-            writeSimpleNumbers(data, addNode, addBuffer, Float64Array.BYTES_PER_ELEMENT, QueryConstants.NULL_DOUBLE, Float64Array::new);
+        public void write(Object[] data, ParseContext context, JsConsumer<Node> addNode,
+                JsConsumer<Uint8Array> addBuffer) {
+            writeSimpleNumbers(data, addNode, addBuffer, Float64Array.BYTES_PER_ELEMENT, NULL_DOUBLE,
+                    Float64Array::new);
         }
     },
     BOOLEAN(Type.Int, "boolean") {
@@ -238,8 +259,65 @@ public enum JsDataHandler {
         }
 
         @Override
-        public void write(Object[] data, ParseContext context, JsConsumer<Node> addNode, JsConsumer<Uint8Array> addBuffer) {
+        public void write(Object[] data, ParseContext context, JsConsumer<Node> addNode,
+                JsConsumer<Uint8Array> addBuffer) {
+            int nullCount = 0;
+            BitSet nulls = new BitSet(data.length);
+            Int8Array payload = makeBuffer(data.length, Int8Array.BYTES_PER_ELEMENT, Int8Array::new);
+            for (int i = 0; i < data.length; i++) {
+                Object val = data[i];
+                byte boolValue;
+                if (val == null) {
+                    boolValue = NULL_BOOLEAN_AS_BYTE;
+                } else {
+                    String typeof = Js.typeof(val);
+                    switch (typeof) {
+                        case "boolean":
+                            boolValue = Js.isTruthy(val) ? TRUE_BOOLEAN_AS_BYTE : FALSE_BOOLEAN_AS_BYTE;
+                            break;
+                        case "number":
+                            boolValue = Js.asByte(val);// checks the values to ensure it is a byte
+                            break;
+                        case "string":
+                            String str = Js.asString(val);
+                            switch (str.toLowerCase()) {
+                                case "true":
+                                    boolValue = TRUE_BOOLEAN_AS_BYTE;
+                                    break;
+                                case "false":
+                                    boolValue = FALSE_BOOLEAN_AS_BYTE;
+                                    break;
+                                case "null":
+                                    boolValue = NULL_BOOLEAN_AS_BYTE;
+                                    break;
+                                default:
+                                    boolValue = Byte.parseByte(str);
+                                    break;
+                            }
+                            break;
+                        default:
+                            throw new IllegalArgumentException(
+                                    "Unsupported type to handle as a boolean value " + typeof);
+                    }
+                }
 
+                if (boolValue != FALSE_BOOLEAN_AS_BYTE && boolValue != TRUE_BOOLEAN_AS_BYTE
+                        && boolValue != NULL_BOOLEAN_AS_BYTE) {
+                    throw new IllegalArgumentException("Can't handle " + val + " as a boolean value");
+                }
+
+                // write the value, and mark non-null if necessary
+                if (boolValue != NULL_BOOLEAN_AS_BYTE) {
+                    nulls.set(i);
+                }
+                payload.setAt(i, (double) boolValue);
+            }
+
+            // validity, then payload
+            addBuffer.apply(makeValidityBuffer(nullCount, nulls));
+            addBuffer.apply(new Uint8Array(Js.<TypedArray>uncheckedCast(payload).buffer));
+
+            addNode.apply(new Node(data.length, nullCount));
         }
     },
     BIG_DECIMAL(Type.Binary, "java.util.BigDecimal") {
@@ -247,21 +325,11 @@ public enum JsDataHandler {
         public double writeType(Builder builder) {
             return Binary.createBinary(builder);
         }
-
-        @Override
-        public void write(Object[] data, ParseContext context, JsConsumer<Node> addNode, JsConsumer<Uint8Array> addBuffer) {
-
-        }
     },
     BIG_INTEGER(Type.Binary, "java.util.BigInteger") {
         @Override
         public double writeType(Builder builder) {
             return Binary.createBinary(builder);
-        }
-
-        @Override
-        public void write(Object[] data, ParseContext context, JsConsumer<Node> addNode, JsConsumer<Uint8Array> addBuffer) {
-
         }
     },
     LOCAL_DATE(Type.FixedSizeBinary, "java.time.LocalDate") {
@@ -269,24 +337,14 @@ public enum JsDataHandler {
         public double writeType(Builder builder) {
             return FixedSizeBinary.createFixedSizeBinary(builder, 6);
         }
-
-        @Override
-        public void write(Object[] data, ParseContext context, JsConsumer<Node> addNode, JsConsumer<Uint8Array> addBuffer) {
-
-        }
     },
     LOCAL_TIME(Type.FixedSizeBinary, "java.time.LocalTime") {
         @Override
         public double writeType(Builder builder) {
             return FixedSizeBinary.createFixedSizeBinary(builder, 7);
         }
-
-        @Override
-        public void write(Object[] data, ParseContext context, JsConsumer<Node> addNode, JsConsumer<Uint8Array> addBuffer) {
-
-        }
     },
-//    LIST(),
+    // LIST(),
     ;
 
     public static JsDataHandler getHandler(String deephavenType) {
@@ -294,9 +352,8 @@ public enum JsDataHandler {
                 .stream(values())
                 .filter(h -> h.deephavenType().equals(deephavenType))
                 .findFirst()
-                .orElseThrow(() -> {
-                    return new IllegalArgumentException("No support for handling data of type " + deephavenType);
-                });
+                .orElseThrow(
+                        () -> new IllegalArgumentException("No support for handling data of type " + deephavenType));
     }
 
     /**
@@ -309,7 +366,8 @@ public enum JsDataHandler {
      * @param nullValue the value to write in case of null data
      * @param bufferConstructor a constructor to produce a typedarray for the data being created
      */
-    private static void writeSimpleNumbers(Object[] data, JsConsumer<Node> addNode, JsConsumer<Uint8Array> addBuffer, double bytesPerElement, double nullValue, JsFunction<ArrayBuffer, ? extends TypedArray> bufferConstructor) {
+    private static void writeSimpleNumbers(Object[] data, JsConsumer<Node> addNode, JsConsumer<Uint8Array> addBuffer,
+            double bytesPerElement, double nullValue, JsFunction<ArrayBuffer, ? extends TypedArray> bufferConstructor) {
         int nullCount = 0;
         BitSet nulls = new BitSet(data.length);
         JsArrayLike<Double> payload = makeBuffer(data.length, bytesPerElement, bufferConstructor);
@@ -332,8 +390,9 @@ public enum JsDataHandler {
     }
 
     /**
-     * Helper to read some js value as a double, so it can be handled as some type narrower than a js number.
-     * Do not use this to handle wider types, check each possible type and fallback to this.
+     * Helper to read some js value as a double, so it can be handled as some type narrower than a js number. Do not use
+     * this to handle wider types, check each possible type and fallback to this.
+     * 
      * @param data the data to turn into a js number
      * @return null or a java double
      */
@@ -365,24 +424,29 @@ public enum JsDataHandler {
         this.arrowTypeType = arrowTypeType;
         this.deephavenType = deephavenType;
     }
+
     public int typeType() {
         return arrowTypeType;
     }
+
     public String deephavenType() {
         return deephavenType;
     }
 
     public abstract double writeType(Builder builder);
-    public abstract void write(Object[] data, ParseContext context, JsConsumer<Node> addNode, JsConsumer<Uint8Array> addBuffer);
+
+    public void write(Object[] data, ParseContext context, JsConsumer<Node> addNode, JsConsumer<Uint8Array> addBuffer) {
+        throw new UnsupportedOperationException("Can't parse " + name());
+    }
 
     public static class ParseContext {
         public JsTimeZone timeZone;
         public String dateTimePattern = "yyyy-MM-dd'T'HH:mm:ss";
     }
-    public static class Node{
+
+    public static class Node {
         private final int length;
         private final int nullCount;
-
 
         public Node(int length, int nullCount) {
             this.length = length;
@@ -397,6 +461,7 @@ public enum JsDataHandler {
             return length;
         }
     }
+
     private static Uint8Array makeValidityBuffer(int nullCount, BitSet nulls) {
         if (nullCount != 0) {
             byte[] nullsAsByteArray = nulls.toByteArray();
@@ -407,10 +472,12 @@ public enum JsDataHandler {
             return EMPTY;
         }
     }
+
     private static <T> T makeBuffer(int elementCount, double bytesPerElement,
-                                    JsFunction<ArrayBuffer, T> constructor) {
+            JsFunction<ArrayBuffer, T> constructor) {
         return constructor.apply(makeBuffer(elementCount * (int) bytesPerElement).buffer);
     }
+
     private static Uint8Array makeBuffer(int length) {
         int bytesExtended = length & 0x7;
         if (bytesExtended > 0) {

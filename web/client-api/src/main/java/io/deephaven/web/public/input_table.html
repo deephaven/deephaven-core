@@ -5,7 +5,6 @@
   <title>Deephaven Web API table viewport and updates</title>
   <script src="dh-internal.js" type="text/javascript"></script>
   <script src="dh-core.js" type="text/javascript"></script>
-<!--  <script src="init.js" type="text/javascript"></script>-->
   <script src="input_tables.js" type="text/javascript"></script>
   <link href="basic.css" rel="stylesheet" type="text/css" />
   <style>
@@ -19,6 +18,10 @@
   </style>
 </head>
 <body>
+<p>
+  This sample creates a KeyedArrayBackedMutableTable with two columns, an integer "id" column and a String
+  "data" column. If a new row is added with the same ID that a previous row had, it will replace that row.
+</p>
 <h3 id="input_header">Table Inputs</h3>
 <ul id="inputs">
 </ul>
@@ -49,7 +52,7 @@ from deephaven.TableTools import emptyTable
 import jpy
 KeyedArrayBackedMutableTable = jpy.get_type('io.deephaven.db.v2.utils.KeyedArrayBackedMutableTable')
 KeyedArrayBackedMutableTable.make(emptyTable(0).updateView('a=0', 'b=""'), 'a')
-remoteTable = KeyedArrayBackedMutableTable.make(emptyTable(0).updateView('a=0', 'b=""'), 'a')
+remoteTable = KeyedArrayBackedMutableTable.make(emptyTable(0).updateView('id=0', 'data=""'), 'id')
     `)
 
     openTable(await ide.getTable('remoteTable'), simplePagingTable);
@@ -84,7 +87,7 @@ remoteTable = KeyedArrayBackedMutableTable.make(emptyTable(0).updateView('a=0', 
 
   function openTable(t, tableElt) {
     if (!t.hasInputTable) {
-      tableElt.title = 'No input table defined';
+      tableElt.title = 'Specified table is not an input table';
       tableElt.classList.add('disabled');
       console.log('not an input table: ', t);
       return;

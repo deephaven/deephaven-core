@@ -2,7 +2,6 @@ package io.deephaven.web.client.api;
 
 import elemental2.core.Global;
 import elemental2.core.JsArray;
-import elemental2.core.JsString;
 import elemental2.dom.CustomEventInit;
 import elemental2.dom.DomGlobal;
 import elemental2.promise.IThenable.ThenOnFulfilledCallbackFn;
@@ -16,6 +15,8 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.RunC
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.SelectDistinctRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.SnapshotTableRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.runchartdownsamplerequest.ZoomRange;
+import io.deephaven.web.client.api.barrage.def.ColumnDefinition;
+import io.deephaven.web.client.api.barrage.def.TableAttributesDefinition;
 import io.deephaven.web.client.api.batch.RequestBatcher;
 import io.deephaven.web.client.api.filter.FilterCondition;
 import io.deephaven.web.client.api.input.JsInputTable;
@@ -257,8 +258,7 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
         TableAttributesDefinition attrs = lastVisibleState().getTableDef().getAttributes();
         return Stream.concat(
                 Arrays.stream(attrs.getKeys()),
-                attrs.getRemainingAttributeKeys().stream()
-        ).toArray(String[]::new);
+                attrs.getRemainingAttributeKeys().stream()).toArray(String[]::new);
     }
 
     @JsMethod

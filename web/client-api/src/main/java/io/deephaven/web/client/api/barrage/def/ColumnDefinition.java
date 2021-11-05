@@ -1,8 +1,8 @@
-package io.deephaven.web.shared.data;
+package io.deephaven.web.client.api.barrage.def;
 
 import java.io.Serializable;
 
-public class ColumnDefinition implements Serializable {
+public class ColumnDefinition {
     private int columnIndex;
     private String name;
     private String type;

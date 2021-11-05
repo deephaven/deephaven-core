@@ -45,7 +45,8 @@ public class Column {
     }
 
     public Column(int jsIndex, int index, Integer formatColumnIndex, Integer styleColumnIndex, String type, String name,
-                  boolean isPartitionColumn, Integer formatStringColumnIndex, String description, boolean inputTableKeyColumn) {
+            boolean isPartitionColumn, Integer formatStringColumnIndex, String description,
+            boolean inputTableKeyColumn) {
         this.jsIndex = jsIndex;
         this.index = index;
         this.formatColumnIndex = formatColumnIndex;

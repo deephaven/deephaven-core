@@ -1,4 +1,4 @@
-package io.deephaven.web.client.api;
+package io.deephaven.web.client.api.barrage.stream;
 
 import elemental2.core.Function;
 import io.deephaven.javascript.proto.dhinternal.browserheaders.BrowserHeaders;

@@ -67,8 +67,10 @@ public class JsInputTable {
     }
 
     public Promise<JsInputTable> addRows(JsPropertyMap<?>[] rows, @JsOptional String userTimeZone) {
-        String[] names = Arrays.stream(table.lastVisibleState().getColumns()).map(Column::getName).toArray(String[]::new);
-        String[] types = Arrays.stream(table.lastVisibleState().getColumns()).map(Column::getType).toArray(String[]::new);
+        String[] names =
+                Arrays.stream(table.lastVisibleState().getColumns()).map(Column::getName).toArray(String[]::new);
+        String[] types =
+                Arrays.stream(table.lastVisibleState().getColumns()).map(Column::getType).toArray(String[]::new);
 
         Object[][] data = new Object[names.length][];
         for (int i = 0; i < names.length; i++) {
@@ -90,7 +92,7 @@ public class JsInputTable {
 
     public Promise<JsInputTable> addTables(JsTable[] tablesToAdd) {
         if (tablesToAdd.length == 0) {
-            //noinspection unchecked,rawtypes
+            // noinspection unchecked,rawtypes
             return (Promise) Promise.reject("Must provide at least one table");
         }
         final Promise<JsTable> mergePromise;
@@ -102,21 +104,22 @@ public class JsInputTable {
 
         return mergePromise
                 .then(merged -> {
-                    //noinspection CodeBlock2Expr - easier readability for chained then()
+                    // noinspection CodeBlock2Expr - easier readability for chained then()
                     return Callbacks.grpcUnaryPromise(c -> {
                         AddTableRequest addTableRequest = new AddTableRequest();
                         addTableRequest.setInputTable(table.getHeadHandle().makeTicket());
                         addTableRequest.setTableToAdd(merged.getHeadHandle().makeTicket());
-                        table.getConnection().inputTableServiceClient().addTableToInputTable(addTableRequest, table.getConnection().metadata(), c::apply);
+                        table.getConnection().inputTableServiceClient().addTableToInputTable(addTableRequest,
+                                table.getConnection().metadata(), c::apply);
                     }).then(success -> {
                         if (merged != tablesToAdd[0]) {
-                            //this is an intermediate table for the merge, close it
+                            // this is an intermediate table for the merge, close it
                             merged.close();
                         }
                         return Promise.resolve(success);
                     }, failure -> {
                         if (merged != tablesToAdd[0]) {
-                            //this is an intermediate table for the merge, close it
+                            // this is an intermediate table for the merge, close it
                             merged.close();
                         }
                         return Promise.reject(failure);
@@ -151,7 +154,9 @@ public class JsInputTable {
                 view.setSourceId(onlyTable.state().getHandle().makeTableReference());
                 view.setResultId(ticketToDelete);
                 view.setColumnSpecsList(keys);
-                table.getConnection().tableServiceClient().view(view, table.getConnection().metadata(), (fail, success) -> {});
+                table.getConnection().tableServiceClient().view(view, table.getConnection().metadata(),
+                        (fail, success) -> {
+                        });
             }
         } else {
             // there is more than one table here, construct a merge after making a view of each table
@@ -185,7 +190,8 @@ public class JsInputTable {
         deleteRequest.setInputTable(table.getHeadHandle().makeTicket());
         deleteRequest.setTableToRemove(ticketToDelete);
         return Callbacks.grpcUnaryPromise(c -> {
-            table.getConnection().inputTableServiceClient().deleteTableFromInputTable(deleteRequest, table.getConnection().metadata(), c::apply);
+            table.getConnection().inputTableServiceClient().deleteTableFromInputTable(deleteRequest,
+                    table.getConnection().metadata(), c::apply);
         }).then(success -> {
             cleanups.forEach(JsRunnable::run);
             return Promise.resolve(this);

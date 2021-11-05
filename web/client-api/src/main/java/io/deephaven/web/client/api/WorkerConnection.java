@@ -56,7 +56,9 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.Time
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb_service.TableServiceClient;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.Ticket;
 import io.deephaven.web.client.api.barrage.BarrageUtils;
+import io.deephaven.web.client.api.barrage.def.InitialTableDefinition;
 import io.deephaven.web.client.api.barrage.stream.BiDiStream;
+import io.deephaven.web.client.api.barrage.stream.ResponseStreamWrapper;
 import io.deephaven.web.client.api.batch.RequestBatcher;
 import io.deephaven.web.client.api.batch.TableConfig;
 import io.deephaven.web.client.api.console.JsVariableChanges;
@@ -209,7 +211,8 @@ public class WorkerConnection {
                 new ApplicationServiceClient(info.getServerUrl(), JsPropertyMap.of("debug", debugGrpc));
         browserFlightServiceClient =
                 new BrowserFlightServiceClient(info.getServerUrl(), JsPropertyMap.of("debug", debugGrpc));
-        inputTableServiceClient = new InputTableServiceClient(info.getServerUrl(), JsPropertyMap.of("debug", debugGrpc));
+        inputTableServiceClient =
+                new InputTableServiceClient(info.getServerUrl(), JsPropertyMap.of("debug", debugGrpc));
 
         // builder.setConnectionErrorHandler(msg -> info.failureHandled(String.valueOf(msg)));
 

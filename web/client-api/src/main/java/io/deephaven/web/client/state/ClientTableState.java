@@ -13,6 +13,9 @@ import io.deephaven.javascript.proto.dhinternal.browserheaders.BrowserHeaders;
 import io.deephaven.javascript.proto.dhinternal.flatbuffers.ByteBuffer;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.ExportedTableCreationResponse;
 import io.deephaven.web.client.api.*;
+import io.deephaven.web.client.api.barrage.def.ColumnDefinition;
+import io.deephaven.web.client.api.barrage.def.InitialTableDefinition;
+import io.deephaven.web.client.api.barrage.def.TableAttributesDefinition;
 import io.deephaven.web.client.api.batch.TableConfig;
 import io.deephaven.web.client.api.filter.FilterCondition;
 import io.deephaven.web.client.api.lifecycle.HasLifecycle;
@@ -379,7 +382,43 @@ public final class ClientTableState extends TableConfig {
         boolean create = this.tableDef != tableDef;
         this.tableDef = tableDef;
         if (create) {
-            createColumns();
+            ColumnDefinition[] columnDefinitions = tableDef.getColumns();
+
+            // iterate through the columns, combine format columns into the normal model
+            Map<String, ColumnDefinition> byNameMap = Arrays.stream(columnDefinitions)
+                    .collect(columnCollector(false));
+            Column[] columns1 = new Column[0];
+            allColumns = new Column[0];
+            for (ColumnDefinition definition : columnDefinitions) {
+                if (definition.isForRow()) {
+                    // special case for the row format column
+                    setRowFormatColumn(makeColumn(-1, definition, null, null, false, null, null, false));
+                    continue;
+                }
+                String name = definition.getName();
+
+                ColumnDefinition format = byNameMap.get(definition.getFormatColumnName());
+                ColumnDefinition style = byNameMap.get(definition.getStyleColumnName());
+
+                boolean isPartitionColumn = definition.isPartitionColumn();
+
+                // note the use of columns.length as jsIndex is accurate for visible columns
+                allColumns[allColumns.length] = makeColumn(columns1.length,
+                        definition,
+                        format == null || !format.isNumberFormatColumn() ? null : format.getColumnIndex(),
+                        style == null ? null : style.getColumnIndex(),
+                        isPartitionColumn,
+                        format == null || format.isNumberFormatColumn() ? null : format.getColumnIndex(),
+                        definition.getDescription(),
+                        definition.getInputTableKeyColumn());
+
+                if (definition.isVisible()) {
+                    columns1[columns1.length] = allColumns[allColumns.length - 1];
+                }
+            }
+
+            this.columns = JsObject.freeze(columns1);
+            this.columnLookup = resetLookup();
         }
     }
 
@@ -403,48 +442,9 @@ public final class ClientTableState extends TableConfig {
         }
     }
 
-    private void createColumns() {
-        ColumnDefinition[] columnDefinitions = tableDef.getColumns();
-
-        // iterate through the columns, combine format columns into the normal model
-        Map<String, ColumnDefinition> byNameMap = Arrays.stream(columnDefinitions)
-                .collect(columnCollector(false));
-        Column[] columns = new Column[0];
-        allColumns = new Column[0];
-        for (ColumnDefinition definition : columnDefinitions) {
-            if (definition.isForRow()) {
-                // special case for the row format column
-                setRowFormatColumn(makeColumn(-1, definition, null, null, false, null, null, false));
-                continue;
-            }
-            String name = definition.getName();
-
-            ColumnDefinition format = byNameMap.get(definition.getFormatColumnName());
-            ColumnDefinition style = byNameMap.get(definition.getStyleColumnName());
-
-            boolean isPartitionColumn = definition.isPartitionColumn();
-
-            // note the use of columns.length as jsIndex is accurate for visible columns
-            allColumns[allColumns.length] = makeColumn(columns.length,
-                    definition,
-                    format == null || !format.isNumberFormatColumn() ? null : format.getColumnIndex(),
-                    style == null ? null : style.getColumnIndex(),
-                    isPartitionColumn,
-                    format == null || format.isNumberFormatColumn() ? null : format.getColumnIndex(),
-                    definition.getDescription(),
-                    definition.getInputTableKeyColumn());
-
-            if (definition.isVisible()) {
-                columns[columns.length] = allColumns[allColumns.length - 1];
-            }
-        }
-
-        this.columns = JsObject.freeze(columns);
-        this.columnLookup = resetLookup();
-    }
-
     private static Column makeColumn(int jsIndex, ColumnDefinition definition, Integer numberFormatIndex,
-                                     Integer styleIndex, boolean isPartitionColumn, Integer formatStringIndex, String description, boolean inputTableKeyColumn) {
+            Integer styleIndex, boolean isPartitionColumn, Integer formatStringIndex, String description,
+            boolean inputTableKeyColumn) {
         return new Column(jsIndex, definition.getColumnIndex(), numberFormatIndex, styleIndex, definition.getType(),
                 definition.getName(), isPartitionColumn, formatStringIndex, description, inputTableKeyColumn);
     }
@@ -1043,7 +1043,8 @@ public final class ClientTableState extends TableConfig {
         for (int i = 0; i < schema.fieldsLength(); i++) {
             cols[i] = new ColumnDefinition();
             Field f = schema.fields(i);
-            Map<String, String> fieldMetadata = keyValuePairs("deephaven:", f.customMetadataLength(), f::customMetadata);
+            Map<String, String> fieldMetadata =
+                    keyValuePairs("deephaven:", f.customMetadataLength(), f::customMetadata);
             cols[i].setName(f.name().asString());
             cols[i].setColumnIndex(i);
             cols[i].setType(fieldMetadata.get("type"));
@@ -1069,20 +1070,18 @@ public final class ClientTableState extends TableConfig {
 
         TableAttributesDefinition attributes = new TableAttributesDefinition(
                 keyValuePairs("deephaven:attribute.", schema.customMetadataLength(), schema::customMetadata),
-                keyValuePairs("deephaven:unsent.attribute.", schema.customMetadataLength(), schema::customMetadata).keySet()
-        );
+                keyValuePairs("deephaven:unsent.attribute.", schema.customMetadataLength(), schema::customMetadata)
+                        .keySet());
         setTableDef(new InitialTableDefinition()
                 .setAttributes(attributes)
-                .setColumns(cols)
-                .setFlat(false)
-                .setId(null)
-                .setSize(Long.parseLong(def.getSize())));
+                .setColumns(cols));
 
         setResolution(ResolutionState.RUNNING);
         setSize(Long.parseLong(def.getSize()));
     }
 
-    private static Map<String, String> keyValuePairs(String filterPrefix, double count, DoubleFunction<KeyValue> accessor) {
+    private static Map<String, String> keyValuePairs(String filterPrefix, double count,
+            DoubleFunction<KeyValue> accessor) {
         Map<String, String> map = new HashMap<>();
         for (int i = 0; i < count; i++) {
             KeyValue pair = accessor.apply(i);

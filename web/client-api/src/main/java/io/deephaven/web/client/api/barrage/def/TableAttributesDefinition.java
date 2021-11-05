@@ -1,4 +1,6 @@
-package io.deephaven.web.shared.data;
+package io.deephaven.web.client.api.barrage.def;
+
+import io.deephaven.web.shared.data.RollupDefinition;
 
 import java.io.Serializable;
 import java.util.Map;
@@ -8,7 +10,6 @@ public class TableAttributesDefinition {
     public static final String INPUT_TABLE_ATTRIBUTE = "InputTable",
             TOTALS_TABLE_ATTRIBUTE = "TotalsTable",
             TABLE_DESCRIPTION_ATTRIBUTE = "TableDescription",
-            COLUMN_DESCRIPTIONS_ATTRIBUTE = "ColumnDescriptions",
             HIERARCHICAL_SOURCE_TABLE_ATTRIBUTE = "HierarchicalSourceTable",
             HIERARCHICAL_SOURCE_INFO_ATTRIBUTE = "HierarchicalSourceTableInfo",
             LAYOUT_HINTS_ATTRIBUTE = "LayoutHints",
@@ -29,7 +30,8 @@ public class TableAttributesDefinition {
             // marker present for tree table metadata
             rollupDefinition = new RollupDefinition();
             rollupDefinition.setByColumns(map.get(HIERARCHICAL_COLUMN_NAME + "." + "byColumns").split(","));
-            rollupDefinition.setLeafType(RollupDefinition.LeafType.valueOf(map.get(HIERARCHICAL_COLUMN_NAME + "."  + "leafType")));
+            rollupDefinition.setLeafType(
+                    RollupDefinition.LeafType.valueOf(map.get(HIERARCHICAL_COLUMN_NAME + "." + "leafType")));
         }
     }
 
