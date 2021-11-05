@@ -403,8 +403,8 @@ public class IndexIteration {
         bh.consume(result);
         print(sum);
     }
-    // private void fillChunkByIndexIterator(TrackingMutableRowSet.Iterator it, int size, DoubleChunk doubleChunk, int sourceId) {
-    // private int fillChunkByIndexRangeIterator(TrackingMutableRowSet.RangeIterator it, int rangeStart, int size, DoubleChunk
+    // private void fillChunkByIndexIterator(RowSet.Iterator it, int size, DoubleChunk doubleChunk, int sourceId) {
+    // private int fillChunkByIndexRangeIterator(RowSet.RangeIterator it, int rangeStart, int size, DoubleChunk
     // doubleChunk, int sourceId) {
 
     public static void main(String[] args) throws RunnerException {

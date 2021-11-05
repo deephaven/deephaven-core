@@ -577,7 +577,7 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
     }
 
     /**
-     * Intersects this RowSetShiftData against the provided TrackingMutableRowSet.
+     * Intersects this RowSetShiftData against the provided RowSet.
      * 
      * @param rowSet the rowSet to test for intersections (pre-shift keyspace)
      * @return an RowSetShiftData containing only non-empty shifts

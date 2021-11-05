@@ -368,7 +368,7 @@ public class TreeTableOrphanPromoter implements Function.Unary<Table, Table> {
                                 final RowSetBuilderSequential builder = RowSetFactoryImpl.INSTANCE.builderSequential();
                                 // TODO: Modify this such that we don't actually ever add the keys to the builder if
                                 // they exist
-                                // within added; this would be made easier/more efficient if TrackingMutableRowSet.Iterator exposed the
+                                // within added; this would be made easier/more efficient if RowSet.Iterator exposed the
                                 // advance() operation.
                                 modifiedKeys.forEach(x -> {
                                     builder.appendKey(x);

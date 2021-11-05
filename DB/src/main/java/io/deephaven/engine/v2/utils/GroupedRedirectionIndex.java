@@ -13,15 +13,15 @@ import java.util.Arrays;
  * The GroupedRedirectionIndex is intended for situations where you have several Indices that represent contiguous rows
  * of your output table and a flat output rowSet.
  *
- * When sorting a table by it's grouping column, instead of using a large contiguous RedirectionIndex, we simply store
- * the indices for each group and the accumulated cardinality. We then binary search in the accumulated cardinality for
- * a given key; and fetch the corresponding offset from that group's TrackingMutableRowSet.
+ * When sorting a table by its grouping column, instead of using a large contiguous RedirectionIndex, we simply store
+ * the row sets for each group and the accumulated cardinality. We then binary search in the accumulated cardinality for
+ * a given key; and fetch the corresponding offset from that group's row set.
  *
  * This RedirectionIndex does not support mutation.
  */
 public class GroupedRedirectionIndex implements RedirectionIndex {
     /**
-     * The total size of the redirection TrackingMutableRowSet.
+     * The total size of the row redirection.
      */
     private final long size;
     /**

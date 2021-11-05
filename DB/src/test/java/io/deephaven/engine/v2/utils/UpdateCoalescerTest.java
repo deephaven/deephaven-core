@@ -107,9 +107,9 @@ public class UpdateCoalescerTest {
         final RowSet origRowSet = i();
         final Listener.Update agg = validateFinalIndex(origRowSet, up);
         Assert.equals(agg.added, "agg.added", RowSetFactoryImpl.INSTANCE.fromKeys(10),
-                "TrackingMutableRowSet.CURRENT_FACTORY.fromKeys(10)");
+                "RowSetFactoryImpl.INSTANCE.fromKeys(10)");
         Assert.equals(agg.modified, "agg.modified", RowSetFactoryImpl.INSTANCE.empty(),
-                "TrackingMutableRowSet.CURRENT_FACTORY.empty()");
+                "RowSetFactoryImpl.INSTANCE.empty()");
     }
 
     @Test
@@ -135,11 +135,11 @@ public class UpdateCoalescerTest {
         final RowSet origRowSet = i(2);
         final Listener.Update agg = validateFinalIndex(origRowSet, up);
         Assert.equals(agg.added, "agg.added", RowSetFactoryImpl.INSTANCE.fromKeys(2),
-                "TrackingMutableRowSet.CURRENT_FACTORY.fromKeys(2)");
+                "RowSetFactoryImpl.INSTANCE.fromKeys(2)");
         Assert.equals(agg.removed, "agg.removed", RowSetFactoryImpl.INSTANCE.fromKeys(2),
-                "TrackingMutableRowSet.CURRENT_FACTORY.fromKeys(2)");
+                "RowSetFactoryImpl.INSTANCE.fromKeys(2)");
         Assert.equals(agg.modified, "agg.modified", RowSetFactoryImpl.INSTANCE.empty(),
-                "TrackingMutableRowSet.CURRENT_FACTORY.empty()");
+                "RowSetFactoryImpl.INSTANCE.empty()");
     }
 
     @Test
@@ -153,11 +153,11 @@ public class UpdateCoalescerTest {
         final RowSet origRowSet = i();
         final Listener.Update agg = validateFinalIndex(origRowSet, up);
         Assert.equals(agg.added, "agg.added", RowSetFactoryImpl.INSTANCE.empty(),
-                "TrackingMutableRowSet.CURRENT_FACTORY.empty()");
+                "RowSetFactoryImpl.INSTANCE.empty()");
         Assert.equals(agg.removed, "agg.removed", RowSetFactoryImpl.INSTANCE.empty(),
-                "TrackingMutableRowSet.CURRENT_FACTORY.empty()");
+                "RowSetFactoryImpl.INSTANCE.empty()");
         Assert.equals(agg.modified, "agg.modified", RowSetFactoryImpl.INSTANCE.empty(),
-                "TrackingMutableRowSet.CURRENT_FACTORY.empty()");
+                "RowSetFactoryImpl.INSTANCE.empty()");
     }
 
     @Test

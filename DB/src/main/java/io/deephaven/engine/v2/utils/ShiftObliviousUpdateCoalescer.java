@@ -20,7 +20,7 @@ public class ShiftObliviousUpdateCoalescer {
 
     /**
      * The class assumes ownership of one reference to the indices passed; the caller should ensure to
-     * TrackingMutableRowSet.clone() them before passing them if they are shared.
+     * RowSet.clone() them before passing them if they are shared.
      */
     public ShiftObliviousUpdateCoalescer(final TrackingMutableRowSet added, final TrackingMutableRowSet removed,
             final TrackingMutableRowSet modified) {

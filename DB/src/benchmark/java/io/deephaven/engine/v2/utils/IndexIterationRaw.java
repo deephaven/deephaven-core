@@ -30,7 +30,7 @@ public class IndexIterationRaw {
     // - using fetched long chunk range/direct,
     // - iteration over array of indices/ranges with chunk get,
     // - direct iteration over array of indices/ranges
-    // - iteration over TrackingMutableRowSet with by elements or by ranges
+    // - iteration over RowSet by elements or by ranges
     // - Params: spars
 
     @Param({/* 100", "10000", */ "1000000", "10000000"})
