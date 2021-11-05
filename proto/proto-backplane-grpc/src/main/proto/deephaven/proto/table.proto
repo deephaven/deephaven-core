@@ -179,7 +179,8 @@ service TableService {
   rpc RunChartDownsample(RunChartDownsampleRequest) returns (ExportedTableCreationResponse) {}
 
   /**
-   *
+   * Creates a new Table based on the provided configuration. This can be used as a regular table from the other methods
+   * in this interface, or can be interacted with via the InputTableService to modify its contents.
    */
   rpc CreateInputTable(CreateInputTableRequest) returns (ExportedTableCreationResponse) {}
 
