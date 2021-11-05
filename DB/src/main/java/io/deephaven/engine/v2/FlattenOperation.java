@@ -159,9 +159,9 @@ public class FlattenOperation implements QueryTable.MemoizableOperation<QueryTab
         }
 
         if (newSize < prevSize) {
-            resultTable.getRowSet().asMutable().removeRange(newSize, prevSize - 1);
+            resultTable.getRowSet().mutableCast().removeRange(newSize, prevSize - 1);
         } else if (newSize > prevSize) {
-            resultTable.getRowSet().asMutable().insertRange(prevSize, newSize - 1);
+            resultTable.getRowSet().mutableCast().insertRange(prevSize, newSize - 1);
         }
 
         downstream.shifted = outShifted.build();

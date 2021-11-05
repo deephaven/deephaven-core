@@ -231,7 +231,7 @@ public class GenerateTableUpdates {
                 final long blatEnd = delta < 0 ? start - 1 : end + delta;
                 try (final RowSet blattedRows =
                         rowSet.extract(RowSetFactoryImpl.INSTANCE.fromRange(blatStart, blatEnd))) {
-                    update.removed.asMutable().insert(blattedRows);
+                    update.removed.mutableCast().insert(blattedRows);
                 }
             });
             final int numRowsBlattedByShift = preShiftIndexSize - rowSet.intSize();
@@ -273,7 +273,7 @@ public class GenerateTableUpdates {
     static public void generateTableUpdates(final Listener.Update update,
             final Random random, final QueryTable table,
             final TstUtils.ColumnInfo<?, ?>[] columnInfo) {
-        final MutableRowSet rowSet = table.getRowSet().asMutable();
+        final MutableRowSet rowSet = table.getRowSet().mutableCast();
 
         if (LiveTableTestCase.printTableUpdates) {
             System.out.println();

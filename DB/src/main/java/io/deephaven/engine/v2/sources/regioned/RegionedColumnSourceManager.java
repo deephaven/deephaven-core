@@ -442,7 +442,7 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
                 if (current == null) {
                     columnPartitionToIndex.put(columnPartitionValue, locationAddedIndexInTable.clone());
                 } else {
-                    current.asMutable().insert(locationAddedIndexInTable);
+                    current.mutableCast().insert(locationAddedIndexInTable);
                 }
             }
         }

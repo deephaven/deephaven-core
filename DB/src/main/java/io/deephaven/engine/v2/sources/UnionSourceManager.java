@@ -49,7 +49,7 @@ public class UnionSourceManager {
         this.parentDependency = parentDependency;
 
         result = new QueryTable(RowSetFactoryImpl.INSTANCE.empty().convertToTracking(), getColumnSources());
-        rowSet = result.getRowSet().asMutable();
+        rowSet = result.getRowSet().mutableCast();
         modifiedColumnSet = result.newModifiedColumnSet(names);
 
         mergedListener = new MergedUnionListener(listeners, "TableTools.merge()", result);

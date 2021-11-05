@@ -229,9 +229,9 @@ public class SortHelpers {
         }
 
         if (columnsToSortBy.length == 1) {
-            if (indexToSort.isTracking() && indexToSort.asTracking().hasGrouping(columnsToSortBy[0])) {
+            if (indexToSort.isTracking() && indexToSort.trackingCast().hasGrouping(columnsToSortBy[0])) {
                 if (!usePrev || columnsToSortBy[0].isImmutable()) {
-                    return getSortMappingGrouped(order[0], columnsToSortBy[0], indexToSort.asTracking());
+                    return getSortMappingGrouped(order[0], columnsToSortBy[0], indexToSort.trackingCast());
                 } else {
                     return getSortMappingOne(order[0], columnsToSortBy[0], indexToSort, usePrev);
                 }
@@ -550,7 +550,7 @@ public class SortHelpers {
 
         ColumnSource<Comparable<?>> columnSource = columnSources[0];
 
-        if (index.isTracking() && index.asTracking().hasGrouping(columnSources[0])) {
+        if (index.isTracking() && index.trackingCast().hasGrouping(columnSources[0])) {
             final Map<Comparable<?>, RowSet> groupToRange = columnSource.getGroupToRange();
             final Object[] keys = groupToRange.keySet().toArray(
                     (Object[]) Array.newInstance(TypeUtils.getBoxedType(columnSource.getType()), groupToRange.size()));

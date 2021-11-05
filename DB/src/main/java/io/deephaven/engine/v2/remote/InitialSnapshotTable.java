@@ -138,7 +138,7 @@ public class InitialSnapshotTable extends QueryTable {
             }
             populatedRows.insert(newlyPopulated);
         }
-        getRowSet().asMutable().insert(snapshot.rowSet);
+        getRowSet().mutableCast().insert(snapshot.rowSet);
     }
 
     protected RowSet getFreeRows(long size) {

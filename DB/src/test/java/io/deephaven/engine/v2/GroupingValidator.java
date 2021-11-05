@@ -66,7 +66,7 @@ public class GroupingValidator extends InstrumentedListenerAdapter {
         final ColumnSource[] groupColumns = getColumnSources(groupingToCheck, source);
         final TupleSource tupleSource = TupleSourceFactory.makeTupleSource(groupColumns);
         validateGrouping(groupingToCheck, rowSet, source, context,
-                rowSet.isTracking() ? rowSet.asTracking().getGrouping(tupleSource) : Collections.emptyMap());
+                rowSet.isTracking() ? rowSet.trackingCast().getGrouping(tupleSource) : Collections.emptyMap());
     }
 
     public static void validateGrouping(String[] groupingToCheck, RowSet rowSet, DynamicTable source, String context,

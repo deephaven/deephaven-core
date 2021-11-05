@@ -310,7 +310,7 @@ public class TestSyncTableFilter extends LiveTableTestCase {
 
         LiveTableMonitor.DEFAULT.startCycleForUnitTests();
         allowingError(() -> {
-            a.getRowSet().asMutable().remove(1);
+            a.getRowSet().mutableCast().remove(1);
             a.notifyListeners(i(), i(1), i());
             LiveTableMonitor.DEFAULT.completeCycleForUnitTests();
         }, throwables -> {

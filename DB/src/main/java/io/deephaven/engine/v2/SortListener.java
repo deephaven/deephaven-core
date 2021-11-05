@@ -69,7 +69,7 @@ public class SortListener extends BaseTable.ListenerImpl {
         this.result = result;
         this.reverseLookup = reverseLookup;
         this.columnsToSortBy = columnsToSortBy;
-        this.resultRowSet = result.getRowSet().asMutable();
+        this.resultRowSet = result.getRowSet().mutableCast();
         this.order = order;
         this.sortMapping = sortMapping;
         this.sortedColumnsToSortBy = sortedColumnsToSortBy;

@@ -1032,7 +1032,7 @@ public class QueryTableTest extends QueryTableTestBase {
         assertEquals(0, (long) licsr.get(2));
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-            bigTable.getRowSet().asMutable().insert(Long.MAX_VALUE);
+            bigTable.getRowSet().mutableCast().insert(Long.MAX_VALUE);
             bigTable.notifyListeners(i(Long.MAX_VALUE), i(), i());
         });
 

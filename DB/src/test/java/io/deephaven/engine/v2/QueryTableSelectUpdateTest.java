@@ -49,7 +49,7 @@ public class QueryTableSelectUpdateTest {
                 .assertEquals(Arrays.asList(0, 3, 6), Arrays.asList(table1.getColumn("x").get(0, table1.size())));
         TestCase.assertEquals(Arrays.asList("2", "4", "6"), Arrays.asList(table1.getColumn("y").get(0, table1.size())));
 
-        final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6).asTracking(),
+        final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6).trackingCast(),
                 c("x", 1, 2, 3), c("y", 'a', 'b', 'c'));
 
         showWithIndex(table);

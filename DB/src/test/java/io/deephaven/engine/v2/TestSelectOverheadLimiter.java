@@ -29,7 +29,7 @@ public class TestSelectOverheadLimiter extends LiveTableTestCase {
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             final RowSet added = RowSetFactoryImpl.INSTANCE.fromRange(10000, 11000);
-            queryTable.getRowSet().asMutable().insert(added);
+            queryTable.getRowSet().mutableCast().insert(added);
             queryTable.notifyListeners(added, i(), i());
         });
 
@@ -38,7 +38,7 @@ public class TestSelectOverheadLimiter extends LiveTableTestCase {
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             final RowSet added = RowSetFactoryImpl.INSTANCE.fromRange(11001, 11100);
-            queryTable.getRowSet().asMutable().insert(added);
+            queryTable.getRowSet().mutableCast().insert(added);
             queryTable.notifyListeners(added, i(), i());
         });
 
@@ -47,7 +47,7 @@ public class TestSelectOverheadLimiter extends LiveTableTestCase {
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             final RowSet added = RowSetFactoryImpl.INSTANCE.fromRange(20000, 20100);
-            queryTable.getRowSet().asMutable().insert(added);
+            queryTable.getRowSet().mutableCast().insert(added);
             queryTable.notifyListeners(added, i(), i());
         });
 
@@ -56,7 +56,7 @@ public class TestSelectOverheadLimiter extends LiveTableTestCase {
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             final RowSet added = RowSetFactoryImpl.INSTANCE.fromRange(30000, 30100);
-            queryTable.getRowSet().asMutable().insert(added);
+            queryTable.getRowSet().mutableCast().insert(added);
             queryTable.notifyListeners(added, i(), i());
         });
 
@@ -76,7 +76,7 @@ public class TestSelectOverheadLimiter extends LiveTableTestCase {
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             final RowSet removed = RowSetFactoryImpl.INSTANCE.fromRange(0, 100);
             final RowSet added = RowSetFactoryImpl.INSTANCE.fromRange(10000, 10100);
-            queryTable.getRowSet().asMutable().update(added, removed);
+            queryTable.getRowSet().mutableCast().update(added, removed);
             final Listener.Update update = new Listener.Update();
             final RowSetShiftData.Builder builder = new RowSetShiftData.Builder();
             builder.shiftRange(0, 1000, 10000);
@@ -91,7 +91,7 @@ public class TestSelectOverheadLimiter extends LiveTableTestCase {
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             final RowSet removed = RowSetFactoryImpl.INSTANCE.fromRange(10000, 10100);
-            queryTable.getRowSet().asMutable().remove(removed);
+            queryTable.getRowSet().mutableCast().remove(removed);
             queryTable.notifyListeners(i(), removed, i());
         });
     }
@@ -190,7 +190,7 @@ public class TestSelectOverheadLimiter extends LiveTableTestCase {
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             final RowSet added = RowSetFactoryImpl.INSTANCE.fromRange(10000, 11000);
-            queryTable.getRowSet().asMutable().insert(added);
+            queryTable.getRowSet().mutableCast().insert(added);
             queryTable.notifyListeners(added, i(), i());
         });
 
@@ -199,7 +199,7 @@ public class TestSelectOverheadLimiter extends LiveTableTestCase {
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             final RowSet added = RowSetFactoryImpl.INSTANCE.fromRange(11001, 11100);
-            queryTable.getRowSet().asMutable().insert(added);
+            queryTable.getRowSet().mutableCast().insert(added);
             queryTable.notifyListeners(added, i(), i());
         });
 

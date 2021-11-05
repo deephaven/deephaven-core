@@ -99,7 +99,7 @@ public class TstUtils {
             throw new IllegalStateException("Not all columns were populated, missing " + expected);
         }
 
-        table.getRowSet().asMutable().insert(rowSet);
+        table.getRowSet().mutableCast().insert(rowSet);
         if (table.isFlat()) {
             Assert.assertion(table.getRowSet().isFlat(), "table.build().isFlat()", table.getRowSet(),
                     "table.build()", rowSet, "rowSet");
@@ -111,7 +111,7 @@ public class TstUtils {
         if (table instanceof DynamicTable) {
             Require.requirement(((DynamicTable) table).isRefreshing(), "table.isRefreshing()");
         }
-        table.getRowSet().asMutable().remove(rowSet);
+        table.getRowSet().mutableCast().remove(rowSet);
         if (table.isFlat()) {
             Assert.assertion(table.getRowSet().isFlat(), "table.build().isFlat()", table.getRowSet(),
                     "table.build()", rowSet, "rowSet");

@@ -229,7 +229,7 @@ public class BarrageTable extends QueryTable implements LiveTable, BarrageMessag
 
         // make sure that these rowSet updates make some sense compared with each other, and our current view of the
         // table
-        final MutableRowSet currentRowSet = getRowSet().asMutable();
+        final MutableRowSet currentRowSet = getRowSet().mutableCast();
         final boolean mightBeInitialSnapshot = currentRowSet.isEmpty() && update.isSnapshot;
 
         try (final RowSet currRowsFromPrev = currentRowSet.clone();
@@ -409,7 +409,7 @@ public class BarrageTable extends QueryTable implements LiveTable, BarrageMessag
             if (getRowSet().isNonempty()) {
                 // publish one last clear downstream; this data would be stale
                 final RowSet allRows = getRowSet().clone();
-                getRowSet().asMutable().remove(allRows);
+                getRowSet().mutableCast().remove(allRows);
                 notifyListeners(RowSetFactoryImpl.INSTANCE.empty(), allRows, RowSetFactoryImpl.INSTANCE.empty());
             }
             cleanup();

@@ -562,10 +562,10 @@ public final class ByExternalChunkedOperator implements IterativeChunkedAggregat
                     downstream.shifted = RowSetShiftData.EMPTY;
                     downstream.modifiedColumnSet = ModifiedColumnSet.EMPTY;
 
-                    resurrectedTable.getRowSet().asMutable().compact();
+                    resurrectedTable.getRowSet().mutableCast().compact();
 
                     Assert.assertion(resurrectedTable.getRowSet().isEmpty(), "resurrectedTable.build().isEmpty()");
-                    resurrectedTable.getRowSet().asMutable().insert(downstream.added);
+                    resurrectedTable.getRowSet().mutableCast().insert(downstream.added);
                     resurrectedTable.notifyListeners(downstream);
                 });
             }
@@ -678,7 +678,7 @@ public final class ByExternalChunkedOperator implements IterativeChunkedAggregat
                         downstream.shifted = RowSetShiftData.EMPTY;
                         downstream.modifiedColumnSet = ModifiedColumnSet.EMPTY;
 
-                        prepopulatedTable.getRowSet().asMutable().insert(downstream.added);
+                        prepopulatedTable.getRowSet().mutableCast().insert(downstream.added);
                         prepopulatedTable.notifyListeners(downstream);
                     } else if (!allowCreation) {
                         // We will never try to create this table again, or accumulate further state for it.
@@ -737,7 +737,7 @@ public final class ByExternalChunkedOperator implements IterativeChunkedAggregat
         }
         attributeCopier.copyAttributes(parentTable, subTable);
         if (initialRowSetToInsert != null) {
-            subTable.getRowSet().asMutable().insert(initialRowSetToInsert);
+            subTable.getRowSet().mutableCast().insert(initialRowSetToInsert);
             ((TrackingMutableRowSet) subTable.getRowSet()).initializePreviousValue();
         }
         return subTable;
@@ -790,8 +790,8 @@ public final class ByExternalChunkedOperator implements IterativeChunkedAggregat
                     downstream.shifted = RowSetShiftData.EMPTY;
                     downstream.modifiedColumnSet = ModifiedColumnSet.EMPTY;
 
-                    removedTable.getRowSet().asMutable().remove(downstream.removed);
-                    removedTable.getRowSet().asMutable().compact();
+                    removedTable.getRowSet().mutableCast().remove(downstream.removed);
+                    removedTable.getRowSet().mutableCast().compact();
                     Assert.assertion(removedTable.getRowSet().isEmpty(), "removedTable.build().isEmpty()");
                     removedTable.notifyListeners(downstream);
                 });
@@ -871,16 +871,16 @@ public final class ByExternalChunkedOperator implements IterativeChunkedAggregat
                             downstream.modified.isEmpty() ? ModifiedColumnSet.EMPTY : resultModifiedColumnSet;
 
                     if (downstream.removed.isNonempty()) {
-                        modifiedTable.getRowSet().asMutable().remove(downstream.removed);
+                        modifiedTable.getRowSet().mutableCast().remove(downstream.removed);
                     }
                     if (downstream.shifted.nonempty()) {
                         downstream.shifted.apply(((MutableRowSet) modifiedTable.getRowSet()));
                     }
                     if (downstream.added.isNonempty()) {
-                        modifiedTable.getRowSet().asMutable().insert(downstream.added);
+                        modifiedTable.getRowSet().mutableCast().insert(downstream.added);
                     }
 
-                    modifiedTable.getRowSet().asMutable().compact();
+                    modifiedTable.getRowSet().mutableCast().compact();
 
                     modifiedTable.notifyListeners(downstream);
                 });

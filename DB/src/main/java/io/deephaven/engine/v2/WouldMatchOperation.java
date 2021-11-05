@@ -204,7 +204,7 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
                             parent))
                     .filter(Objects::nonNull)
                     .forEach(rs -> {
-                        downstream.modified.asMutable().insert(rs);
+                        downstream.modified.mutableCast().insert(rs);
                         rs.close();
                     });
 
@@ -241,7 +241,7 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
 
                     downstream.modifiedColumnSet.setAll(holder.getColumnName());
                     try (final RowSet recomputed = holder.column.recompute(parent, EMPTY_INDEX)) {
-                        downstream.modified.asMutable().insert(recomputed);
+                        downstream.modified.mutableCast().insert(recomputed);
                     }
                 }
             }

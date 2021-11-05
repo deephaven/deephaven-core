@@ -1110,7 +1110,7 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
                 } else {
                     update.modified =
                             RowSetFactoryImpl.INSTANCE.fromRange(Math.max(0, lastKey - stepSize), lastKey);
-                    update.modified.asMutable().retain(helper.sourceTable.getRowSet());
+                    update.modified.mutableCast().retain(helper.sourceTable.getRowSet());
                 }
                 update.shifted = RowSetShiftData.EMPTY;
                 update.modifiedColumnSet = ModifiedColumnSet.EMPTY;
@@ -1173,7 +1173,7 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
                 } else {
                     update.modified =
                             RowSetFactoryImpl.INSTANCE.fromRange(Math.max(0, lastKey - stepSize), lastKey);
-                    update.modified.asMutable().retain(helper.sourceTable.getRowSet());
+                    update.modified.mutableCast().retain(helper.sourceTable.getRowSet());
                 }
                 update.shifted = RowSetShiftData.EMPTY;
                 update.modifiedColumnSet = ModifiedColumnSet.EMPTY;

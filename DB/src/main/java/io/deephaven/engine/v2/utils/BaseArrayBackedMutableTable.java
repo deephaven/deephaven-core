@@ -76,8 +76,8 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
             }
         }, (e) -> {
         });
-        result.getRowSet().asMutable().insert(builder.build());
-        result.getRowSet().asMutable().initializePreviousValue();
+        result.getRowSet().mutableCast().insert(builder.build());
+        result.getRowSet().mutableCast().initializePreviousValue();
         LiveTableMonitor.DEFAULT.addTable(result);
     }
 

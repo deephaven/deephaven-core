@@ -367,8 +367,8 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
         try (final RowSet added = addBuilder.build();
              final RowSet removed = rmBuilder.build();
              final RowSet postShiftRemoved = rmResultBuilder.build()) {
-            downstream.removed.asMutable().insert(removed);
-            downstream.added.asMutable().insert(added);
+            downstream.removed.mutableCast().insert(removed);
+            downstream.added.mutableCast().insert(added);
             // must remove before adding as removed.intersect(added) may be non-empty
             resultRowSet.remove(postShiftRemoved);
             resultRowSet.insert(added);

@@ -314,7 +314,7 @@ class RegionedColumnSourceWithDictionary<DATA_TYPE>
 
             final RowSet symbolTableAdded = symbolTableAddedBuilder.build();
             if (symbolTableAdded.isNonempty()) {
-                symbolTable.getRowSet().asMutable().insert(symbolTableAdded);
+                symbolTable.getRowSet().mutableCast().insert(symbolTableAdded);
                 symbolTable.notifyListeners(new Update(symbolTableAdded, RowSetFactoryImpl.INSTANCE.empty(),
                         RowSetFactoryImpl.INSTANCE.empty(), RowSetShiftData.EMPTY, emptyModifiedColumns));
             } else {

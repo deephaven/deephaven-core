@@ -518,7 +518,7 @@ public interface RowSet extends RowSequence, LongSizedDataStructure, SafeCloseab
      * @return {@code this} cast to a {@link MutableRowSet}
      * @throws ClassCastException If {@code this} is not a {@link MutableRowSet}
      */
-    default MutableRowSet asMutable() {
+    default MutableRowSet mutableCast() {
         return (MutableRowSet) this;
     }
 
@@ -536,7 +536,7 @@ public interface RowSet extends RowSequence, LongSizedDataStructure, SafeCloseab
      * @return {@code this} cast to a {@link TrackingRowSet}
      * @throws ClassCastException If {@code this} is not a {@link TrackingRowSet}
      */
-    default TrackingRowSet asTracking() {
+    default TrackingRowSet trackingCast() {
         return (TrackingRowSet) this;
     }
 }

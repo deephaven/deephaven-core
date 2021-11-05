@@ -102,7 +102,7 @@ public class StreamTableOperationsTest {
                 final RowSet finalNormalLastInserted = normalLastInserted;
                 LiveTableMonitor.DEFAULT.refreshLiveTableForUnitTests(() -> {
                     if (normalStepInserted.isNonempty() || finalNormalLastInserted.isNonempty()) {
-                        normal.getRowSet().asMutable().update(normalStepInserted, finalNormalLastInserted);
+                        normal.getRowSet().mutableCast().update(normalStepInserted, finalNormalLastInserted);
                         normal.notifyListeners(new Update(normalStepInserted.clone(), finalNormalLastInserted,
                                 RowSetFactoryImpl.INSTANCE.empty(), RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY));
                     }
@@ -114,8 +114,8 @@ public class StreamTableOperationsTest {
                             streamInternalRowSet.clear();
                             streamInternalRowSet.insert(normalStepInserted);
                         }
-                        stream.getRowSet().asMutable().clear();
-                        stream.getRowSet().asMutable().insert(streamStepInserted);
+                        stream.getRowSet().mutableCast().clear();
+                        stream.getRowSet().mutableCast().insert(streamStepInserted);
                         stream.notifyListeners(new Update(streamStepInserted.clone(), finalStreamLastInserted,
                                 RowSetFactoryImpl.INSTANCE.empty(), RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY));
                     }

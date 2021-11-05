@@ -39,7 +39,7 @@ public class ReplayGroupedFullTable extends QueryReplayGroupedTable {
         }
         final RowSet added = rowSetBuilder.build();
         if (added.size() > 0) {
-            getRowSet().asMutable().insert(added);
+            getRowSet().mutableCast().insert(added);
             notifyListeners(added, RowSetFactoryImpl.INSTANCE.empty(), RowSetFactoryImpl.INSTANCE.empty());
         }
     }

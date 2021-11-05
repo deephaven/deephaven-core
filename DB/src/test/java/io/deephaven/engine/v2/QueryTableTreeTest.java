@@ -1430,7 +1430,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             final long key = table.getRowSet().firstRowKey();
-            table.getRowSet().asMutable().remove(key);
+            table.getRowSet().mutableCast().remove(key);
             TstUtils.removeRows(table, i(key));
             table.notifyListeners(i(), i(key), i());
         });

@@ -190,7 +190,7 @@ public class DynamicWhereFilter extends SelectFilterLivenessArtifactImpl impleme
         final ColumnSource[] keyColumns =
                 Arrays.stream(matchPairs).map(mp -> table.getColumnSource(mp.left())).toArray(ColumnSource[]::new);
         final TupleSource tupleSource = TupleSourceFactory.makeTupleSource(keyColumns);
-        final TrackingRowSet trackingSelection = selection.isTracking() ? selection.asTracking() : null;
+        final TrackingRowSet trackingSelection = selection.isTracking() ? selection.trackingCast() : null;
 
         switch (groupStrategy) {
             case DEFAULT: {

@@ -44,7 +44,7 @@ public class TestTailInitializationFilter extends LiveTableTestCase {
             data2[0] = DBTimeUtils.convertDateTime("2020-08-20T07:00:00 NY");
             data2[1] = DBTimeUtils.convertDateTime("2020-08-20T08:30:00 NY");
             final RowSet newRowSet = RowSetFactoryImpl.INSTANCE.fromKeys(100, 101, 1100, 1101);
-            input.getRowSet().asMutable().insert(newRowSet);
+            input.getRowSet().mutableCast().insert(newRowSet);
             ((DateTimeTreeMapSource) input.<DBDateTime>getColumnSource("Timestamp")).add(newRowSet, data2);
             input.notifyListeners(newRowSet, TstUtils.i(), TstUtils.i());
         });

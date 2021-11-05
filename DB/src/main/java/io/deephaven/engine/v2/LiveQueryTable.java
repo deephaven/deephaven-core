@@ -29,7 +29,7 @@ public class LiveQueryTable extends QueryTable implements LiveTable {
             additionsBuilder = RowSetFactoryImpl.INSTANCE.builderRandom();
         }
         final RowSet added = builder.build();
-        getRowSet().asMutable().insert(added);
+        getRowSet().mutableCast().insert(added);
         if (added.size() > 0) {
             notifyListeners(added, RowSetFactoryImpl.INSTANCE.empty(),
                     RowSetFactoryImpl.INSTANCE.empty());

@@ -362,7 +362,7 @@ public class QueryTableSliceTest extends QueryTableTestBase {
                 final int jj = j;
                 LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
                     RowSet added = RowSetFactoryImpl.INSTANCE.fromRange(ii * jj, (ii + 1) * jj - 1);
-                    upTable.getRowSet().asMutable().insert(added);
+                    upTable.getRowSet().mutableCast().insert(added);
                     Listener.Update update =
                             new Listener.Update(added, RowSetFactoryImpl.INSTANCE.empty(),
                                     RowSetFactoryImpl.INSTANCE.empty(), RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY);

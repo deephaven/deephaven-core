@@ -273,7 +273,7 @@ public class RunChartDownsample implements Function.Unary<Table, Table> {
                 final DownsampleKey key) {
             super("downsample listener", sourceTable, resultTable);
             this.sourceTable = sourceTable;
-            this.rowSet = resultTable.getRowSet().asMutable();
+            this.rowSet = resultTable.getRowSet().mutableCast();
             this.resultTable = resultTable;
             this.key = key;
 
@@ -525,7 +525,7 @@ public class RunChartDownsample implements Function.Unary<Table, Table> {
         }
 
         private void handleAdded(final DownsampleChunkContext context, final boolean usePrev, final RowSet addedRowSet) {
-            final RowSet rowSet = usePrev ? addedRowSet.asTracking().getPrevRowSet() : addedRowSet;
+            final RowSet rowSet = usePrev ? addedRowSet.trackingCast().getPrevRowSet() : addedRowSet;
             if (rowSet.isEmpty()) {
                 return;
             }

@@ -125,7 +125,7 @@ public interface MutableRowSet extends RowSet {
     void compact();
 
     @Override
-    default TrackingMutableRowSet asTracking() {
+    default TrackingMutableRowSet trackingCast() {
         return (TrackingMutableRowSet) this;
     }
 
@@ -142,5 +142,5 @@ public interface MutableRowSet extends RowSet {
      *
      * @return A {@link TrackingMutableRowSet} constructed from this MutableRowSet, or {@code this} if already tracking
      */
-    TrackingMutableRowSet convertToTracking(); // TODO-RWC: AUDIT USAGES OF THIS METHOD!!!
+    TrackingMutableRowSet convertToTracking();
 }

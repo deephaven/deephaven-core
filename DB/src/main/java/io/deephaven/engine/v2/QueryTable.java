@@ -907,11 +907,11 @@ public class QueryTable extends BaseTable {
             // columns have changed.
             final MutableRowSet removed = upstreamRemoved == null ? RowSetFactoryImpl.INSTANCE.empty()
                     : upstreamRemoved.intersect(getRowSet());
-            getRowSet().asMutable().remove(removed);
+            getRowSet().mutableCast().remove(removed);
 
             // Update our rowSet and compute removals due to splatting.
             if (shiftData != null) {
-                final MutableRowSet rowSet = getRowSet().asMutable();
+                final MutableRowSet rowSet = getRowSet().mutableCast();
                 shiftData.apply((beginRange, endRange, shiftDelta) -> {
                     final RowSet toShift = rowSet.subSetByKeyRange(beginRange, endRange);
                     rowSet.removeRange(beginRange, endRange);
@@ -968,7 +968,7 @@ public class QueryTable extends BaseTable {
             final MutableRowSet postShiftRemovals = getRowSet().minus(newMapping);
 
             // Update our rowSet in post-shift keyspace.
-            getRowSet().asMutable().update(added, postShiftRemovals);
+            getRowSet().mutableCast().update(added, postShiftRemovals);
 
             // Note that removed must be propagated to listeners in pre-shift keyspace.
             if (shiftData != null) {
@@ -1970,7 +1970,7 @@ public class QueryTable extends BaseTable {
     }
 
     public Table silent() {
-        return new QueryTable(getRowSet().asMutable(), getColumnSourceMap());
+        return new QueryTable(getRowSet().mutableCast(), getColumnSourceMap());
     }
 
     @Override
@@ -2045,7 +2045,7 @@ public class QueryTable extends BaseTable {
         final QueryTable result =
                 new QueryTable(RowSetFactoryImpl.INSTANCE.empty().convertToTracking(), allColumns);
         final SnapshotInternalListener listener = new SnapshotInternalListener(this, lazySnapshot, tableToSnapshot,
-                result, resultLeftColumns, resultRightColumns, result.getRowSet().asMutable());
+                result, resultLeftColumns, resultRightColumns, result.getRowSet().mutableCast());
 
         if (doInitialSnapshot) {
             if (!isRefreshing() && tableToSnapshot.isLive() && !lazySnapshot) {
@@ -2054,7 +2054,7 @@ public class QueryTable extends BaseTable {
                         ConstructSnapshot.makeSnapshotControl(false, (NotificationStepSource) tableToSnapshot),
                         (usePrev, beforeClockUnused) -> {
                             listener.doSnapshot(false, usePrev);
-                            result.getRowSet().asMutable().initializePreviousValue();
+                            result.getRowSet().mutableCast().initializePreviousValue();
                             return true;
                         });
 
@@ -2155,12 +2155,12 @@ public class QueryTable extends BaseTable {
                         }
 
                         startTrackingPrev(resultColumns.values());
-                        resultTable.getRowSet().asMutable().initializePreviousValue();
+                        resultTable.getRowSet().mutableCast().initializePreviousValue();
                     } else if (doInitialSnapshot) {
                         SnapshotIncrementalListener.copyRowsToResult(rightTable.getRowSet(), this, rightTable,
                                 leftColumns, resultColumns);
-                        resultTable.getRowSet().asMutable().insert(rightTable.getRowSet());
-                        resultTable.getRowSet().asMutable().initializePreviousValue();
+                        resultTable.getRowSet().mutableCast().insert(rightTable.getRowSet());
+                        resultTable.getRowSet().mutableCast().initializePreviousValue();
                     } else if (isRefreshing()) {
                         // we are not doing an initial snapshot, but are refreshing so need to take a snapshot of our
                         // (static)
@@ -2171,7 +2171,7 @@ public class QueryTable extends BaseTable {
                                     public void onUpdate(Update upstream) {
                                         SnapshotIncrementalListener.copyRowsToResult(rightTable.getRowSet(),
                                                 QueryTable.this, rightTable, leftColumns, resultColumns);
-                                        resultTable.getRowSet().asMutable().insert(rightTable.getRowSet());
+                                        resultTable.getRowSet().mutableCast().insert(rightTable.getRowSet());
                                         resultTable.notifyListeners(resultTable.getRowSet(),
                                                 RowSetFactoryImpl.INSTANCE.empty(),
                                                 RowSetFactoryImpl.INSTANCE.empty());
@@ -2344,7 +2344,7 @@ public class QueryTable extends BaseTable {
                                     evaluateRemovedIndex(removed, ungroupRemoved);
                                     final RowSet removedRowSet = ungroupRemoved.build();
                                     final RowSet addedRowSet = ungroupAdded.build();
-                                    result.getRowSet().asMutable().update(addedRowSet, removedRowSet);
+                                    result.getRowSet().mutableCast().update(addedRowSet, removedRowSet);
                                     final RowSet modifiedRowSet = ungroupModified.build();
 
                                     if (!modifiedRowSet.subsetOf(result.getRowSet())) {
@@ -2411,7 +2411,7 @@ public class QueryTable extends BaseTable {
                                         computeSize(getRowSet(), arrayColumns, dbArrayColumns, nullFill),
                                         RowSetFactoryImpl.INSTANCE.builderRandom(), newBase, getRowSet())
                                                 .build();
-                                final TrackingMutableRowSet rowSet = result.getRowSet().asMutable();
+                                final TrackingMutableRowSet rowSet = result.getRowSet().mutableCast();
                                 final RowSet added = newRowSet.minus(rowSet);
                                 final RowSet removed = rowSet.minus(newRowSet);
                                 final MutableRowSet modified = newRowSet;
@@ -3122,7 +3122,7 @@ public class QueryTable extends BaseTable {
                     result);
             this.recorder = recorder;
             this.result = result;
-            this.currentMapping = result.getRowSet().asMutable();
+            this.currentMapping = result.getRowSet().mutableCast();
             this.filters = result.filters;
 
             boolean hasColumnArray = false;

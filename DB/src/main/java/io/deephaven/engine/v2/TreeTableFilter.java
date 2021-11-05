@@ -438,11 +438,11 @@ public class TreeTableFilter implements Function.Unary<Table, Table>, MemoizedOp
                     resultRowSet.update(downstream.added, resultRemovals);
 
                     downstream.modified = upstream.modified.intersect(resultRowSet);
-                    downstream.modified.asMutable().remove(downstream.added);
+                    downstream.modified.mutableCast().remove(downstream.added);
 
                     // convert post filter removals into pre-shift space -- note these rows must have previously existed
                     upstream.shifted.unapply(resultRemovals);
-                    downstream.removed.asMutable().insert(resultRemovals);
+                    downstream.removed.mutableCast().insert(resultRemovals);
                 }
 
                 downstream.shifted = upstream.shifted;
