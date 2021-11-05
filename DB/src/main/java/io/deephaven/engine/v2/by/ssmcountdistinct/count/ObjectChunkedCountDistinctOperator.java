@@ -278,7 +278,7 @@ public class ObjectChunkedCountDistinctOperator implements IterativeChunkedAggre
 
             ssms.startTrackingPrevValues();
             prevFlusher = new UpdateCommitter<>(this, ObjectChunkedCountDistinctOperator::flushPrevious);
-            touchedStates = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+            touchedStates = RowSetFactoryImpl.INSTANCE.empty();
         }
     }
 

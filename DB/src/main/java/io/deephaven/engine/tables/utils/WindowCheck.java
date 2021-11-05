@@ -241,8 +241,8 @@ public class WindowCheck {
                 if (modifiedByTime.isNonempty()) {
                     final Listener.Update downstream = new Listener.Update();
                     downstream.modified = modifiedByTime;
-                    downstream.added = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
-                    downstream.removed = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+                    downstream.added = RowSetFactoryImpl.INSTANCE.empty();
+                    downstream.removed = RowSetFactoryImpl.INSTANCE.empty();
                     downstream.shifted = RowSetShiftData.EMPTY;
                     downstream.modifiedColumnSet = reusableModifiedColumnSet;
                     downstream.modifiedColumnSet.clear();
@@ -321,7 +321,7 @@ public class WindowCheck {
         }
 
         private RowSet recomputeModified() {
-            final RowSetBuilderRandom builder = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
+            final RowSetBuilderRandom builder = RowSetFactoryImpl.INSTANCE.builderRandom();
 
             while (true) {
                 final Entry entry = priorityQueue.top();
@@ -345,7 +345,7 @@ public class WindowCheck {
 
         void validateQueue() {
             final RowSet resultRowSet = result.getRowSet();
-            final RowSetBuilderRandom builder = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
+            final RowSetBuilderRandom builder = RowSetFactoryImpl.INSTANCE.builderRandom();
 
             final Entry[] entries = new Entry[priorityQueue.size()];
             priorityQueue.dump(entries, 0);

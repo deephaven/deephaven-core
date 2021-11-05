@@ -16,9 +16,9 @@ public class TestKeyedTableListener extends BaseCachedJMockTestCase {
     private KeyedTableListener keyedTableListener;
     private KeyedTableListener.KeyUpdateListener mockListener;
 
-    private final RowSet noAdded = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
-    private final RowSet noRemoved = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
-    private final RowSet noModified = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+    private final RowSet noAdded = RowSetFactoryImpl.INSTANCE.empty();
+    private final RowSet noRemoved = RowSetFactoryImpl.INSTANCE.empty();
+    private final RowSet noModified = RowSetFactoryImpl.INSTANCE.empty();
 
     private SmartKey aKey;
     private SmartKey bKey;
@@ -29,7 +29,7 @@ public class TestKeyedTableListener extends BaseCachedJMockTestCase {
         LiveTableMonitor.DEFAULT.enableUnitTestMode();
         LiveTableMonitor.DEFAULT.resetForUnitTests(false);
         this.mockListener = mock(KeyedTableListener.KeyUpdateListener.class);
-        this.table = TstUtils.testRefreshingTable(TstUtils.i(0, 1, 2),
+        this.table = TstUtils.testRefreshingTable(TstUtils.i(0, 1, 2).convertToTracking(),
                 TstUtils.c("Key1", "A", "B", "C"),
                 TstUtils.c("Key2", 1, 2, 3),
                 TstUtils.c("Data", 1.0, 2.0, 3.0));

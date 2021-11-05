@@ -500,7 +500,7 @@ public class FloatRollupDistinctOperator implements IterativeChunkedAggregationO
         }
 
         prevFlusher = new UpdateCommitter<>(this, FloatRollupDistinctOperator::flushPrevious);
-        touchedStates = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+        touchedStates = RowSetFactoryImpl.INSTANCE.empty();
         internalResult.startTrackingPrevValues();
     }
 

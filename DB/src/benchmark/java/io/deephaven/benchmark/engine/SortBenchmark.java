@@ -14,6 +14,7 @@ import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
 import io.deephaven.engine.v2.utils.RowSetShiftData;
 import io.deephaven.benchmarking.*;
 import io.deephaven.benchmarking.generator.EnumStringColumnGenerator;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.infra.BenchmarkParams;
@@ -145,8 +146,8 @@ public class SortBenchmark {
 
         rollingSortTable = inputTable.where(rollingReleaseFilter).sort(sortCol);
 
-        rollingInputRowSet = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
-        rollingInputTable = (QueryTable) inputTable.getSubTable(rollingInputRowSet);
+        rollingInputRowSet = RowSetFactoryImpl.INSTANCE.empty().convertToTracking();
+        rollingInputTable = inputTable.getSubTable(rollingInputRowSet);
         rollingInputTable.setRefreshing(true);
         rollingOutputTable = rollingInputTable.sort(sortCol);
 
@@ -177,7 +178,7 @@ public class SortBenchmark {
         return rollingSortTable;
     }
 
-    private MutableRowSet rollingInputRowSet;
+    private TrackingMutableRowSet rollingInputRowSet;
     private QueryTable rollingInputTable;
     private Table rollingOutputTable;
 

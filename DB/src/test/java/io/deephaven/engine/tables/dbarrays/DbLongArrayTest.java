@@ -20,7 +20,7 @@ public class DbLongArrayTest extends TestCase {
         //noinspection unchecked
         DbLongArray dbArray = new DbLongArrayColumnWrapper(
                 ArrayBackedColumnSource.getMemoryColumnSource(new long[]{(long)10, (long)20, (long)30}),
-                RowSetFactoryImpl.INSTANCE.getRowSetByRange(0, 2));
+                RowSetFactoryImpl.INSTANCE.fromRange(0, 2));
         assertEquals(3, dbArray.size());
         assertEquals((long)10, dbArray.get(0));
         assertEquals((long)20, dbArray.get(1));
@@ -108,7 +108,7 @@ public class DbLongArrayTest extends TestCase {
         //noinspection unchecked
         DbLongArray dbArray = new DbLongArrayColumnWrapper(
                 ArrayBackedColumnSource.getMemoryColumnSource(new long[]{(long)10, (long)20, (long)30}),
-                RowSetFactoryImpl.INSTANCE.getRowSetByRange(0, 2));
+                RowSetFactoryImpl.INSTANCE.fromRange(0, 2));
 
         for (int start=-4; start<=4; start++){
             for (int end=-1; end<=7; end++){

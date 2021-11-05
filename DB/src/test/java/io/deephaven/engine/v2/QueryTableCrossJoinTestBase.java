@@ -310,21 +310,21 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
 
         final QueryTable left;
         if (leftTicking) {
-            left = TstUtils.testRefreshingTable(RowSetFactoryImpl.INSTANCE.getFlatRowSet(nextLeftRow),
+            left = TstUtils.testRefreshingTable(RowSetFactoryImpl.INSTANCE.flat(nextLeftRow).convertToTracking(),
                     c("sharedKey", leftKeys.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)),
                     c("leftData", leftData.toArray(new Long[] {})));
         } else {
-            left = TstUtils.testTable(RowSetFactoryImpl.INSTANCE.getFlatRowSet(nextLeftRow),
+            left = TstUtils.testTable(RowSetFactoryImpl.INSTANCE.flat(nextLeftRow).convertToTracking(),
                     c("sharedKey", leftKeys.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)),
                     c("leftData", leftData.toArray(new Long[] {})));
         }
         final QueryTable right;
         if (rightTicking) {
-            right = TstUtils.testRefreshingTable(RowSetFactoryImpl.INSTANCE.getFlatRowSet(nextRightRow),
+            right = TstUtils.testRefreshingTable(RowSetFactoryImpl.INSTANCE.flat(nextRightRow).convertToTracking(),
                     c("sharedKey", rightKeys.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)),
                     c("rightData", rightData.toArray(new Long[] {})));
         } else {
-            right = TstUtils.testTable(RowSetFactoryImpl.INSTANCE.getFlatRowSet(nextRightRow),
+            right = TstUtils.testTable(RowSetFactoryImpl.INSTANCE.flat(nextRightRow).convertToTracking(),
                     c("sharedKey", rightKeys.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)),
                     c("rightData", rightData.toArray(new Long[] {})));
         }
@@ -394,9 +394,11 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
     public void testStaticVsNaturalJoin2() {
         final int size = 10000;
 
-        final QueryTable xqt = new QueryTable(RowSetFactoryImpl.INSTANCE.getFlatRowSet(size), Collections.emptyMap());
+        final QueryTable xqt = new QueryTable(RowSetFactoryImpl.INSTANCE.flat(size).convertToTracking(),
+                Collections.emptyMap());
         xqt.setRefreshing(true);
-        final QueryTable yqt = new QueryTable(RowSetFactoryImpl.INSTANCE.getFlatRowSet(size), Collections.emptyMap());
+        final QueryTable yqt = new QueryTable(RowSetFactoryImpl.INSTANCE.flat(size).convertToTracking(),
+                Collections.emptyMap());
         yqt.setRefreshing(true);
 
         final Table x = xqt.update("Col1=i");
@@ -409,14 +411,14 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             xqt.getRowSet().asMutable().insertRange(size, size * 2);
-            xqt.notifyListeners(RowSetFactoryImpl.INSTANCE.getRowSetByRange(size, size * 2), i(), i());
+            xqt.notifyListeners(RowSetFactoryImpl.INSTANCE.fromRange(size, size * 2), i(), i());
         });
 
         assertTableEquals(z3, z);
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             yqt.getRowSet().asMutable().insertRange(size, size * 2);
-            yqt.notifyListeners(RowSetFactoryImpl.INSTANCE.getRowSetByRange(size, size * 2), i(), i());
+            yqt.notifyListeners(RowSetFactoryImpl.INSTANCE.fromRange(size, size * 2), i(), i());
         });
 
         assertTableEquals(z3, z);
@@ -569,9 +571,9 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
     }
 
     public void testColumnSourceCanReuseContextWithSmallerRowSequence() {
-        final QueryTable t1 = testRefreshingTable(i(0, 1));
+        final QueryTable t1 = testRefreshingTable(i(0, 1).convertToTracking());
         final QueryTable t2 = (QueryTable) t1.update("K=k", "A=1");
-        final QueryTable t3 = (QueryTable) testTable(i(2, 3)).update("I=i", "A=1");
+        final QueryTable t3 = (QueryTable) testTable(i(2, 3).convertToTracking()).update("I=i", "A=1");
         final QueryTable jt = (QueryTable) t2.join(t3, "A", numRightBitsToReserve);
 
         final int CHUNK_SIZE = 4;
@@ -592,8 +594,8 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
         final int maxSteps = 2500;
         final MutableInt numSteps = new MutableInt();
 
-        final QueryTable leftTicking = TstUtils.testRefreshingTable(i(), longCol("intCol"));
-        final QueryTable rightTicking = TstUtils.testRefreshingTable(i(), longCol("intCol"));
+        final QueryTable leftTicking = TstUtils.testRefreshingTable(i().convertToTracking(), longCol("intCol"));
+        final QueryTable rightTicking = TstUtils.testRefreshingTable(i().convertToTracking(), longCol("intCol"));
 
         final JoinControl control = new JoinControl() {
             @Override
@@ -642,7 +644,7 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
                 for (int i = 0; i <= numSteps.getValue(); ++i) {
                     data[i] = i;
                 }
-                addToTable(rightTicking, RowSetFactoryImpl.INSTANCE.getRowSetByRange(rightOffset, rightOffset + numSteps.getValue()),
+                addToTable(rightTicking, RowSetFactoryImpl.INSTANCE.fromRange(rightOffset, rightOffset + numSteps.getValue()),
                         longCol("intCol", data));
                 TstUtils.removeRows(rightTicking, i(rightOffset - 1));
 
@@ -653,9 +655,9 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
                 up.added = i(rightOffset + numSteps.getValue());
                 up.removed = i();
                 if (numSteps.getValue() == 0) {
-                    up.modified = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+                    up.modified = RowSetFactoryImpl.INSTANCE.empty();
                 } else {
-                    up.modified = RowSetFactoryImpl.INSTANCE.getRowSetByRange(rightOffset, rightOffset + numSteps.getValue() - 1);
+                    up.modified = RowSetFactoryImpl.INSTANCE.fromRange(rightOffset, rightOffset + numSteps.getValue() - 1);
                 }
                 up.modifiedColumnSet = ModifiedColumnSet.ALL;
                 rightTicking.notifyListeners(up);

@@ -65,7 +65,7 @@ public class UpdatableTable extends QueryTable implements LiveTable {
     private final TLongSet modifiedSet =
             new TLongHashSet(Constants.DEFAULT_CAPACITY, Constants.DEFAULT_LOAD_FACTOR, NULL_LONG);
 
-    public UpdatableTable(@NotNull final RowSet rowSet,
+    public UpdatableTable(@NotNull final TrackingRowSet rowSet,
             @NotNull final Map<String, ? extends ColumnSource<?>> nameToColumnSource,
             @NotNull final Updater updater) {
         super(rowSet, nameToColumnSource);
@@ -104,7 +104,7 @@ public class UpdatableTable extends QueryTable implements LiveTable {
     }
 
     private static RowSet setToIndex(@NotNull final TLongSet set) {
-        final RowSetBuilderRandom builder = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
+        final RowSetBuilderRandom builder = RowSetFactoryImpl.INSTANCE.builderRandom();
         set.forEach(key -> {
             builder.addKey(key);
             return true;

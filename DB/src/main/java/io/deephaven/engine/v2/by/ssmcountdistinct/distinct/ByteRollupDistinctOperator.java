@@ -500,7 +500,7 @@ public class ByteRollupDistinctOperator implements IterativeChunkedAggregationOp
         }
 
         prevFlusher = new UpdateCommitter<>(this, ByteRollupDistinctOperator::flushPrevious);
-        touchedStates = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+        touchedStates = RowSetFactoryImpl.INSTANCE.empty();
         internalResult.startTrackingPrevValues();
     }
 

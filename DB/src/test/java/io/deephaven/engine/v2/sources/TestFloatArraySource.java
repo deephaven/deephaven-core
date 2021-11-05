@@ -134,20 +134,20 @@ public class TestFloatArraySource {
     @Test
     public void testGetChunk() {
         final Random random = new Random(0);
-        testGetChunkGeneric(new float[0], new float[0], 1, RowSetFactoryImpl.INSTANCE.getRowSetByValues());
-        testGetChunkGeneric(new float[0], new float[0], 16, RowSetFactoryImpl.INSTANCE.getRowSetByValues());
+        testGetChunkGeneric(new float[0], new float[0], 1, RowSetFactoryImpl.INSTANCE.fromKeys());
+        testGetChunkGeneric(new float[0], new float[0], 16, RowSetFactoryImpl.INSTANCE.fromKeys());
 
-        testGetChunkGeneric(ArrayGenerator.randomFloats(random, 16), ArrayGenerator.randomFloats(random, 16), 1, RowSetFactoryImpl.INSTANCE.getRowSetByValues(0));
-        testGetChunkGeneric(ArrayGenerator.randomFloats(random, 16), ArrayGenerator.randomFloats(random, 16), 1, RowSetFactoryImpl.INSTANCE.getRowSetByValues(0, 1));
-        testGetChunkGeneric(ArrayGenerator.randomFloats(random, 16), ArrayGenerator.randomFloats(random, 16), 1, RowSetFactoryImpl.INSTANCE.getRowSetByValues(4));
-        testGetChunkGeneric(ArrayGenerator.randomFloats(random, 16), ArrayGenerator.randomFloats(random, 16), 1, RowSetFactoryImpl.INSTANCE.getRowSetByValues(4, 5, 6));
-        testGetChunkGeneric(ArrayGenerator.randomFloats(random, 16), ArrayGenerator.randomFloats(random, 16), 1, RowSetFactoryImpl.INSTANCE.getRowSetByValues(4,  6));
-        testGetChunkGeneric(ArrayGenerator.randomFloats(random, 16), ArrayGenerator.randomFloats(random, 16), 1, RowSetFactoryImpl.INSTANCE.getRowSetByValues(4, 5, 6, 7, 8));
-        testGetChunkGeneric(ArrayGenerator.randomFloats(random, 16), ArrayGenerator.randomFloats(random, 16), 3, RowSetFactoryImpl.INSTANCE.getRowSetByValues(5, 6, 7));
-        testGetChunkGeneric(ArrayGenerator.randomFloats(random, 16), ArrayGenerator.randomFloats(random, 16), 4, RowSetFactoryImpl.INSTANCE.getRowSetByValues(4, 5, 6, 7));
-        testGetChunkGeneric(ArrayGenerator.randomFloats(random, 16), ArrayGenerator.randomFloats(random, 16), 5, RowSetFactoryImpl.INSTANCE.getRowSetByValues(4, 5, 6, 7, 8));
-        testGetChunkGeneric(ArrayGenerator.randomFloats(random, 512), ArrayGenerator.randomFloats(random, 512), 4, RowSetFactoryImpl.INSTANCE.getRowSetByValues(254, 255, 256, 257));
-        testGetChunkGeneric(ArrayGenerator.randomFloats(random, 512), ArrayGenerator.randomFloats(random, 512), 5, RowSetFactoryImpl.INSTANCE.getRowSetByValues(254, 255, 256, 257, 258));
+        testGetChunkGeneric(ArrayGenerator.randomFloats(random, 16), ArrayGenerator.randomFloats(random, 16), 1, RowSetFactoryImpl.INSTANCE.fromKeys(0));
+        testGetChunkGeneric(ArrayGenerator.randomFloats(random, 16), ArrayGenerator.randomFloats(random, 16), 1, RowSetFactoryImpl.INSTANCE.fromKeys(0, 1));
+        testGetChunkGeneric(ArrayGenerator.randomFloats(random, 16), ArrayGenerator.randomFloats(random, 16), 1, RowSetFactoryImpl.INSTANCE.fromKeys(4));
+        testGetChunkGeneric(ArrayGenerator.randomFloats(random, 16), ArrayGenerator.randomFloats(random, 16), 1, RowSetFactoryImpl.INSTANCE.fromKeys(4, 5, 6));
+        testGetChunkGeneric(ArrayGenerator.randomFloats(random, 16), ArrayGenerator.randomFloats(random, 16), 1, RowSetFactoryImpl.INSTANCE.fromKeys(4,  6));
+        testGetChunkGeneric(ArrayGenerator.randomFloats(random, 16), ArrayGenerator.randomFloats(random, 16), 1, RowSetFactoryImpl.INSTANCE.fromKeys(4, 5, 6, 7, 8));
+        testGetChunkGeneric(ArrayGenerator.randomFloats(random, 16), ArrayGenerator.randomFloats(random, 16), 3, RowSetFactoryImpl.INSTANCE.fromKeys(5, 6, 7));
+        testGetChunkGeneric(ArrayGenerator.randomFloats(random, 16), ArrayGenerator.randomFloats(random, 16), 4, RowSetFactoryImpl.INSTANCE.fromKeys(4, 5, 6, 7));
+        testGetChunkGeneric(ArrayGenerator.randomFloats(random, 16), ArrayGenerator.randomFloats(random, 16), 5, RowSetFactoryImpl.INSTANCE.fromKeys(4, 5, 6, 7, 8));
+        testGetChunkGeneric(ArrayGenerator.randomFloats(random, 512), ArrayGenerator.randomFloats(random, 512), 4, RowSetFactoryImpl.INSTANCE.fromKeys(254, 255, 256, 257));
+        testGetChunkGeneric(ArrayGenerator.randomFloats(random, 512), ArrayGenerator.randomFloats(random, 512), 5, RowSetFactoryImpl.INSTANCE.fromKeys(254, 255, 256, 257, 258));
 
         for (int sourceSize = 32; sourceSize < 4096; sourceSize *= 4) {
             for (int v = -4; v < 5; v++) {
@@ -162,7 +162,7 @@ public class TestFloatArraySource {
     private void testGetChunkGenericLazy(float[] values, int chunkSize, RowSet rowSet) {
         final FloatArraySource sourceOrigin = forArray(values);
         final FormulaColumn formulaColumn = FormulaColumn.createFormulaColumn("Foo", "origin");
-        final RowSetBuilderSequential sequentialBuilder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
+        final RowSetBuilderSequential sequentialBuilder = RowSetFactoryImpl.INSTANCE.builderSequential();
         if (values.length > 0) {
             sequentialBuilder.appendRange(0, values.length - 1);
         }
@@ -192,20 +192,20 @@ public class TestFloatArraySource {
     @Test
     public void testGetChunkLazy() {
         final Random random = new Random(0);
-        testGetChunkGenericLazy(new float[0], 1, RowSetFactoryImpl.INSTANCE.getRowSetByValues());
-        testGetChunkGenericLazy(new float[0], 16, RowSetFactoryImpl.INSTANCE.getRowSetByValues());
+        testGetChunkGenericLazy(new float[0], 1, RowSetFactoryImpl.INSTANCE.fromKeys());
+        testGetChunkGenericLazy(new float[0], 16, RowSetFactoryImpl.INSTANCE.fromKeys());
 
-        testGetChunkGenericLazy(ArrayGenerator.randomFloats(random, 16), 1, RowSetFactoryImpl.INSTANCE.getRowSetByValues(0));
-        testGetChunkGenericLazy(ArrayGenerator.randomFloats(random, 16), 1, RowSetFactoryImpl.INSTANCE.getRowSetByValues(0, 1));
-        testGetChunkGenericLazy(ArrayGenerator.randomFloats(random, 16), 1, RowSetFactoryImpl.INSTANCE.getRowSetByValues(4));
-        testGetChunkGenericLazy(ArrayGenerator.randomFloats(random, 16), 1, RowSetFactoryImpl.INSTANCE.getRowSetByValues(4, 5, 6));
-        testGetChunkGenericLazy(ArrayGenerator.randomFloats(random, 16), 1, RowSetFactoryImpl.INSTANCE.getRowSetByValues(4,  6));
-        testGetChunkGenericLazy(ArrayGenerator.randomFloats(random, 16), 1, RowSetFactoryImpl.INSTANCE.getRowSetByValues(4, 5, 6, 7, 8));
-        testGetChunkGenericLazy(ArrayGenerator.randomFloats(random, 16), 3, RowSetFactoryImpl.INSTANCE.getRowSetByValues(5, 6, 7));
-        testGetChunkGenericLazy(ArrayGenerator.randomFloats(random, 16), 4, RowSetFactoryImpl.INSTANCE.getRowSetByValues(4, 5, 6, 7));
-        testGetChunkGenericLazy(ArrayGenerator.randomFloats(random, 16), 5, RowSetFactoryImpl.INSTANCE.getRowSetByValues(4, 5, 6, 7, 8));
-        testGetChunkGenericLazy(ArrayGenerator.randomFloats(random, 512), 4, RowSetFactoryImpl.INSTANCE.getRowSetByValues(254, 255, 256, 257));
-        testGetChunkGenericLazy(ArrayGenerator.randomFloats(random, 512), 5, RowSetFactoryImpl.INSTANCE.getRowSetByValues(254, 255, 256, 257, 258));
+        testGetChunkGenericLazy(ArrayGenerator.randomFloats(random, 16), 1, RowSetFactoryImpl.INSTANCE.fromKeys(0));
+        testGetChunkGenericLazy(ArrayGenerator.randomFloats(random, 16), 1, RowSetFactoryImpl.INSTANCE.fromKeys(0, 1));
+        testGetChunkGenericLazy(ArrayGenerator.randomFloats(random, 16), 1, RowSetFactoryImpl.INSTANCE.fromKeys(4));
+        testGetChunkGenericLazy(ArrayGenerator.randomFloats(random, 16), 1, RowSetFactoryImpl.INSTANCE.fromKeys(4, 5, 6));
+        testGetChunkGenericLazy(ArrayGenerator.randomFloats(random, 16), 1, RowSetFactoryImpl.INSTANCE.fromKeys(4,  6));
+        testGetChunkGenericLazy(ArrayGenerator.randomFloats(random, 16), 1, RowSetFactoryImpl.INSTANCE.fromKeys(4, 5, 6, 7, 8));
+        testGetChunkGenericLazy(ArrayGenerator.randomFloats(random, 16), 3, RowSetFactoryImpl.INSTANCE.fromKeys(5, 6, 7));
+        testGetChunkGenericLazy(ArrayGenerator.randomFloats(random, 16), 4, RowSetFactoryImpl.INSTANCE.fromKeys(4, 5, 6, 7));
+        testGetChunkGenericLazy(ArrayGenerator.randomFloats(random, 16), 5, RowSetFactoryImpl.INSTANCE.fromKeys(4, 5, 6, 7, 8));
+        testGetChunkGenericLazy(ArrayGenerator.randomFloats(random, 512), 4, RowSetFactoryImpl.INSTANCE.fromKeys(254, 255, 256, 257));
+        testGetChunkGenericLazy(ArrayGenerator.randomFloats(random, 512), 5, RowSetFactoryImpl.INSTANCE.fromKeys(254, 255, 256, 257, 258));
 
         for (int sourceSize = 512; sourceSize < 4096; sourceSize *= 4) {
             for (int v = -2; v < 3; v += 2) {
@@ -229,7 +229,7 @@ public class TestFloatArraySource {
     }
 
     private void testParameterChunkAndIndexLazy(Random random, int sourceSize, float[] values, int indexSize) {
-        final RowSet rowSet = RowSetFactoryImpl.INSTANCE.getRowSetByValues(indexDataGenerator(random, indexSize, .1, sourceSize / indexSize, sourceSize));
+        final RowSet rowSet = RowSetFactoryImpl.INSTANCE.fromKeys(indexDataGenerator(random, indexSize, .1, sourceSize / indexSize, sourceSize));
         for (int chunkSize = 2; chunkSize < sourceSize; chunkSize *= 4) {
             testGetChunkGenericLazy(values, chunkSize, rowSet);
             testGetChunkGenericLazy(values, chunkSize + 1, rowSet);
@@ -253,7 +253,7 @@ public class TestFloatArraySource {
     }
 
     private void testParameterChunkAndIndex(Random random, int sourceSize, float[] values, float[] newvalues, int indexSize) {
-        final RowSet rowSet = RowSetFactoryImpl.INSTANCE.getRowSetByValues(indexDataGenerator(random, indexSize, .1, sourceSize / indexSize, sourceSize));
+        final RowSet rowSet = RowSetFactoryImpl.INSTANCE.fromKeys(indexDataGenerator(random, indexSize, .1, sourceSize / indexSize, sourceSize));
         for (int chunkSize = 2; chunkSize < sourceSize; chunkSize *= 2) {
             testGetChunkGeneric(values, newvalues, chunkSize, rowSet);
             testGetChunkGeneric(values, newvalues, chunkSize + 1, rowSet);
@@ -325,20 +325,20 @@ public class TestFloatArraySource {
     @Test
     public void testFillChunk() {
         final Random random = new Random(0);
-        testFillChunkGeneric(new float[0], new float[0], 1, RowSetFactoryImpl.INSTANCE.getRowSetByValues());
-        testFillChunkGeneric(new float[0], new float[0], 16, RowSetFactoryImpl.INSTANCE.getRowSetByValues());
+        testFillChunkGeneric(new float[0], new float[0], 1, RowSetFactoryImpl.INSTANCE.fromKeys());
+        testFillChunkGeneric(new float[0], new float[0], 16, RowSetFactoryImpl.INSTANCE.fromKeys());
 
-        testFillChunkGeneric(ArrayGenerator.randomFloats(random, 16), ArrayGenerator.randomFloats(random, 16), 1, RowSetFactoryImpl.INSTANCE.getRowSetByValues(0));
-        testFillChunkGeneric(ArrayGenerator.randomFloats(random, 16), ArrayGenerator.randomFloats(random, 16), 1, RowSetFactoryImpl.INSTANCE.getRowSetByValues(0, 1));
-        testFillChunkGeneric(ArrayGenerator.randomFloats(random, 16), ArrayGenerator.randomFloats(random, 16), 1, RowSetFactoryImpl.INSTANCE.getRowSetByValues(4));
-        testFillChunkGeneric(ArrayGenerator.randomFloats(random, 16), ArrayGenerator.randomFloats(random, 16), 1, RowSetFactoryImpl.INSTANCE.getRowSetByValues(4, 5, 6));
-        testFillChunkGeneric(ArrayGenerator.randomFloats(random, 16), ArrayGenerator.randomFloats(random, 16), 1, RowSetFactoryImpl.INSTANCE.getRowSetByValues(4,  6));
-        testFillChunkGeneric(ArrayGenerator.randomFloats(random, 16), ArrayGenerator.randomFloats(random, 16), 1, RowSetFactoryImpl.INSTANCE.getRowSetByValues(4, 5, 6, 7, 8));
-        testFillChunkGeneric(ArrayGenerator.randomFloats(random, 16), ArrayGenerator.randomFloats(random, 16), 3, RowSetFactoryImpl.INSTANCE.getRowSetByValues(5, 6, 7));
-        testFillChunkGeneric(ArrayGenerator.randomFloats(random, 16), ArrayGenerator.randomFloats(random, 16), 4, RowSetFactoryImpl.INSTANCE.getRowSetByValues(4, 5, 6, 7));
-        testFillChunkGeneric(ArrayGenerator.randomFloats(random, 16), ArrayGenerator.randomFloats(random, 16), 5, RowSetFactoryImpl.INSTANCE.getRowSetByValues(4, 5, 6, 7, 8));
-        testFillChunkGeneric(ArrayGenerator.randomFloats(random, 512), ArrayGenerator.randomFloats(random, 512), 4, RowSetFactoryImpl.INSTANCE.getRowSetByValues(254, 255, 256, 257));
-        testFillChunkGeneric(ArrayGenerator.randomFloats(random, 512), ArrayGenerator.randomFloats(random, 512), 5, RowSetFactoryImpl.INSTANCE.getRowSetByValues(254, 255, 256, 257, 258));
+        testFillChunkGeneric(ArrayGenerator.randomFloats(random, 16), ArrayGenerator.randomFloats(random, 16), 1, RowSetFactoryImpl.INSTANCE.fromKeys(0));
+        testFillChunkGeneric(ArrayGenerator.randomFloats(random, 16), ArrayGenerator.randomFloats(random, 16), 1, RowSetFactoryImpl.INSTANCE.fromKeys(0, 1));
+        testFillChunkGeneric(ArrayGenerator.randomFloats(random, 16), ArrayGenerator.randomFloats(random, 16), 1, RowSetFactoryImpl.INSTANCE.fromKeys(4));
+        testFillChunkGeneric(ArrayGenerator.randomFloats(random, 16), ArrayGenerator.randomFloats(random, 16), 1, RowSetFactoryImpl.INSTANCE.fromKeys(4, 5, 6));
+        testFillChunkGeneric(ArrayGenerator.randomFloats(random, 16), ArrayGenerator.randomFloats(random, 16), 1, RowSetFactoryImpl.INSTANCE.fromKeys(4,  6));
+        testFillChunkGeneric(ArrayGenerator.randomFloats(random, 16), ArrayGenerator.randomFloats(random, 16), 1, RowSetFactoryImpl.INSTANCE.fromKeys(4, 5, 6, 7, 8));
+        testFillChunkGeneric(ArrayGenerator.randomFloats(random, 16), ArrayGenerator.randomFloats(random, 16), 3, RowSetFactoryImpl.INSTANCE.fromKeys(5, 6, 7));
+        testFillChunkGeneric(ArrayGenerator.randomFloats(random, 16), ArrayGenerator.randomFloats(random, 16), 4, RowSetFactoryImpl.INSTANCE.fromKeys(4, 5, 6, 7));
+        testFillChunkGeneric(ArrayGenerator.randomFloats(random, 16), ArrayGenerator.randomFloats(random, 16), 5, RowSetFactoryImpl.INSTANCE.fromKeys(4, 5, 6, 7, 8));
+        testFillChunkGeneric(ArrayGenerator.randomFloats(random, 512), ArrayGenerator.randomFloats(random, 512), 4, RowSetFactoryImpl.INSTANCE.fromKeys(254, 255, 256, 257));
+        testFillChunkGeneric(ArrayGenerator.randomFloats(random, 512), ArrayGenerator.randomFloats(random, 512), 5, RowSetFactoryImpl.INSTANCE.fromKeys(254, 255, 256, 257, 258));
 
         for (int sourceSize = 32; sourceSize < 8192; sourceSize *= 4) {
             for (int v = -4; v < 5; v += 2) {
@@ -362,7 +362,7 @@ public class TestFloatArraySource {
     }
 
     private void testParameterFillChunkAndIndex(Random random, int sourceSize, float[] values, float[] newValues, int indexSize) {
-        final RowSet rowSet = RowSetFactoryImpl.INSTANCE.getRowSetByValues(indexDataGenerator(random, indexSize, .1, sourceSize / indexSize, sourceSize));
+        final RowSet rowSet = RowSetFactoryImpl.INSTANCE.fromKeys(indexDataGenerator(random, indexSize, .1, sourceSize / indexSize, sourceSize));
         for (int chunkSize = 2; chunkSize < sourceSize; chunkSize *= 2) {
             testFillChunkGeneric(values, newValues, chunkSize, rowSet);
             testFillChunkGeneric(values, newValues, chunkSize + 1, rowSet);
@@ -374,7 +374,7 @@ public class TestFloatArraySource {
     private void testFillChunkLazyGeneric(float[] values, int chunkSize, RowSet rowSet) {
         final FloatArraySource sourceOrigin = forArray(values);
         final FormulaColumn formulaColumn = FormulaColumn.createFormulaColumn("Foo", "origin");
-        final RowSetBuilderSequential sequentialBuilder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
+        final RowSetBuilderSequential sequentialBuilder = RowSetFactoryImpl.INSTANCE.builderSequential();
         if (values.length > 0) {
             sequentialBuilder.appendRange(0, values.length - 1);
         }
@@ -407,20 +407,20 @@ public class TestFloatArraySource {
     @Test
     public void testFillChunkLazy() {
         final Random random = new Random(0);
-        testFillChunkLazyGeneric(new float[0], 1, RowSetFactoryImpl.INSTANCE.getRowSetByValues());
-        testFillChunkLazyGeneric(new float[0], 16, RowSetFactoryImpl.INSTANCE.getRowSetByValues());
+        testFillChunkLazyGeneric(new float[0], 1, RowSetFactoryImpl.INSTANCE.fromKeys());
+        testFillChunkLazyGeneric(new float[0], 16, RowSetFactoryImpl.INSTANCE.fromKeys());
 
-        testFillChunkLazyGeneric(ArrayGenerator.randomFloats(random, 16), 1, RowSetFactoryImpl.INSTANCE.getRowSetByValues(0));
-        testFillChunkLazyGeneric(ArrayGenerator.randomFloats(random, 16), 1, RowSetFactoryImpl.INSTANCE.getRowSetByValues(0, 1));
-        testFillChunkLazyGeneric(ArrayGenerator.randomFloats(random, 16), 1, RowSetFactoryImpl.INSTANCE.getRowSetByValues(4));
-        testFillChunkLazyGeneric(ArrayGenerator.randomFloats(random, 16), 1, RowSetFactoryImpl.INSTANCE.getRowSetByValues(4, 5, 6));
-        testFillChunkLazyGeneric(ArrayGenerator.randomFloats(random, 16), 1, RowSetFactoryImpl.INSTANCE.getRowSetByValues(4,  6));
-        testFillChunkLazyGeneric(ArrayGenerator.randomFloats(random, 16), 1, RowSetFactoryImpl.INSTANCE.getRowSetByValues(4, 5, 6, 7, 8));
-        testFillChunkLazyGeneric(ArrayGenerator.randomFloats(random, 16), 3, RowSetFactoryImpl.INSTANCE.getRowSetByValues(5, 6, 7));
-        testFillChunkLazyGeneric(ArrayGenerator.randomFloats(random, 16), 4, RowSetFactoryImpl.INSTANCE.getRowSetByValues(4, 5, 6, 7));
-        testFillChunkLazyGeneric(ArrayGenerator.randomFloats(random, 16), 5, RowSetFactoryImpl.INSTANCE.getRowSetByValues(4, 5, 6, 7, 8));
-        testFillChunkLazyGeneric(ArrayGenerator.randomFloats(random, 512), 4, RowSetFactoryImpl.INSTANCE.getRowSetByValues(254, 255, 256, 257));
-        testFillChunkLazyGeneric(ArrayGenerator.randomFloats(random, 512), 5, RowSetFactoryImpl.INSTANCE.getRowSetByValues(254, 255, 256, 257, 258));
+        testFillChunkLazyGeneric(ArrayGenerator.randomFloats(random, 16), 1, RowSetFactoryImpl.INSTANCE.fromKeys(0));
+        testFillChunkLazyGeneric(ArrayGenerator.randomFloats(random, 16), 1, RowSetFactoryImpl.INSTANCE.fromKeys(0, 1));
+        testFillChunkLazyGeneric(ArrayGenerator.randomFloats(random, 16), 1, RowSetFactoryImpl.INSTANCE.fromKeys(4));
+        testFillChunkLazyGeneric(ArrayGenerator.randomFloats(random, 16), 1, RowSetFactoryImpl.INSTANCE.fromKeys(4, 5, 6));
+        testFillChunkLazyGeneric(ArrayGenerator.randomFloats(random, 16), 1, RowSetFactoryImpl.INSTANCE.fromKeys(4,  6));
+        testFillChunkLazyGeneric(ArrayGenerator.randomFloats(random, 16), 1, RowSetFactoryImpl.INSTANCE.fromKeys(4, 5, 6, 7, 8));
+        testFillChunkLazyGeneric(ArrayGenerator.randomFloats(random, 16), 3, RowSetFactoryImpl.INSTANCE.fromKeys(5, 6, 7));
+        testFillChunkLazyGeneric(ArrayGenerator.randomFloats(random, 16), 4, RowSetFactoryImpl.INSTANCE.fromKeys(4, 5, 6, 7));
+        testFillChunkLazyGeneric(ArrayGenerator.randomFloats(random, 16), 5, RowSetFactoryImpl.INSTANCE.fromKeys(4, 5, 6, 7, 8));
+        testFillChunkLazyGeneric(ArrayGenerator.randomFloats(random, 512), 4, RowSetFactoryImpl.INSTANCE.fromKeys(254, 255, 256, 257));
+        testFillChunkLazyGeneric(ArrayGenerator.randomFloats(random, 512), 5, RowSetFactoryImpl.INSTANCE.fromKeys(254, 255, 256, 257, 258));
 
         for (int sourceSize = 512; sourceSize < 4096; sourceSize *= 4) {
             for (int v = -2; v < 3; v++) {
@@ -443,7 +443,7 @@ public class TestFloatArraySource {
     }
 
     private void testParameterFillChunkAndIndexLazy(Random random, int sourceSize, float[] values, int indexSize) {
-        final RowSet rowSet = RowSetFactoryImpl.INSTANCE.getRowSetByValues(indexDataGenerator(random, indexSize, .1, sourceSize / indexSize, sourceSize));
+        final RowSet rowSet = RowSetFactoryImpl.INSTANCE.fromKeys(indexDataGenerator(random, indexSize, .1, sourceSize / indexSize, sourceSize));
         for (int chunkSize = 2; chunkSize < sourceSize; chunkSize *= 4) {
             testFillChunkLazyGeneric(values, chunkSize, rowSet);
             testFillChunkLazyGeneric(values, chunkSize + 1, rowSet);
@@ -497,8 +497,8 @@ public class TestFloatArraySource {
         // super hack
         final float[] peekedBlock = (float[])source.getBlock(0);
 
-        try (RowSet srcKeys = RowSetFactoryImpl.INSTANCE.getRowSetByRange(rangeStart, rangeEnd)) {
-            try (RowSet destKeys = RowSetFactoryImpl.INSTANCE.getRowSetByRange(rangeStart + 1, rangeEnd + 1)) {
+        try (RowSet srcKeys = RowSetFactoryImpl.INSTANCE.fromRange(rangeStart, rangeEnd)) {
+            try (RowSet destKeys = RowSetFactoryImpl.INSTANCE.fromRange(rangeStart + 1, rangeEnd + 1)) {
                 try (ChunkSource.GetContext srcContext = source.makeGetContext(arraySize)) {
                     try (WritableChunkSink.FillFromContext destContext = source.makeFillFromContext(arraySize)) {
                         Chunk chunk = source.getChunk(srcContext, srcKeys);
@@ -526,7 +526,7 @@ public class TestFloatArraySource {
         final FloatArraySource src = new FloatArraySource();
         src.startTrackingPrevValues();
         LiveTableMonitor.DEFAULT.startCycleForUnitTests();
-        try (final RowSet keys = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+        try (final RowSet keys = RowSetFactoryImpl.INSTANCE.empty();
              final WritableFloatChunk<Values> chunk = WritableFloatChunk.makeWritableChunk(0)) {
             // Fill from an empty chunk
             src.fillFromChunkByKeys(keys, chunk);

@@ -642,9 +642,9 @@ public class BarrageStreamGenerator implements
         public IndexShiftDataGenerator(final RowSetShiftData shifted) throws IOException {
             this.original = shifted;
 
-            final RowSetBuilderSequential sRangeBuilder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
-            final RowSetBuilderSequential eRangeBuilder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
-            final RowSetBuilderSequential destBuilder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
+            final RowSetBuilderSequential sRangeBuilder = RowSetFactoryImpl.INSTANCE.builderSequential();
+            final RowSetBuilderSequential eRangeBuilder = RowSetFactoryImpl.INSTANCE.builderSequential();
+            final RowSetBuilderSequential destBuilder = RowSetFactoryImpl.INSTANCE.builderSequential();
 
             if (shifted != null) {
                 for (int i = 0; i < shifted.size(); ++i) {
@@ -775,7 +775,7 @@ public class BarrageStreamGenerator implements
         }
 
         EmptyIndexGenerator() throws IOException {
-            super(RowSetFactoryImpl.INSTANCE.getEmptyRowSet());
+            super(RowSetFactoryImpl.INSTANCE.empty());
         }
 
         @Override

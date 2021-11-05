@@ -64,7 +64,7 @@ public class SnapshotInternalListener extends BaseTable.ListenerImpl {
             final RowSet snapshotRowSet = prevRowSet != null ? prevRowSet : currentRowSet;
             snapshotSize = snapshotRowSet.size();
             if (!snapshotRowSet.isEmpty()) {
-                try (final RowSet destRowSet = RowSetFactoryImpl.INSTANCE.getRowSetByRange(0, snapshotRowSet.size() - 1)) {
+                try (final RowSet destRowSet = RowSetFactoryImpl.INSTANCE.fromRange(0, snapshotRowSet.size() - 1)) {
                     SnapshotUtils.copyDataColumns(snapshotTable.getColumnSourceMap(),
                             snapshotRowSet, resultRightColumns, destRowSet, usePrev);
                 }
@@ -76,24 +76,24 @@ public class SnapshotInternalListener extends BaseTable.ListenerImpl {
             // - modified is (the old rowSet)
             // resultRowSet updated (by including added) for next time
             final RowSet modifiedRange = resultRowSet.clone();
-            final RowSet addedRange = RowSetFactoryImpl.INSTANCE.getRowSetByRange(snapshotPrevLength, snapshotSize - 1);
+            final RowSet addedRange = RowSetFactoryImpl.INSTANCE.fromRange(snapshotPrevLength, snapshotSize - 1);
             resultRowSet.insert(addedRange);
             if (notifyListeners) {
-                result.notifyListeners(addedRange, RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), modifiedRange);
+                result.notifyListeners(addedRange, RowSetFactoryImpl.INSTANCE.empty(), modifiedRange);
             }
         } else if (snapshotPrevLength > snapshotSize) {
             // If the table got smaller, then:
             // - removed is (the suffix)
             // - resultRowSet updated (by removing 'removed') for next time
             // modified is (just use the new rowSet)
-            final RowSet removedRange = RowSetFactoryImpl.INSTANCE.getRowSetByRange(snapshotSize, snapshotPrevLength - 1);
+            final RowSet removedRange = RowSetFactoryImpl.INSTANCE.fromRange(snapshotSize, snapshotPrevLength - 1);
             resultRowSet.remove(removedRange);
             if (notifyListeners) {
-                result.notifyListeners(RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), removedRange, resultRowSet);
+                result.notifyListeners(RowSetFactoryImpl.INSTANCE.empty(), removedRange, resultRowSet);
             }
         } else if (notifyListeners) {
             // If the table stayed the same size, then modified = the rowSet
-            result.notifyListeners(RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), resultRowSet.clone());
+            result.notifyListeners(RowSetFactoryImpl.INSTANCE.empty(), RowSetFactoryImpl.INSTANCE.empty(), resultRowSet.clone());
         }
         snapshotPrevLength = snapshotTable.size();
     }

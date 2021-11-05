@@ -20,7 +20,7 @@ public class DbByteArrayTest extends TestCase {
         //noinspection unchecked
         DbByteArray dbArray = new DbByteArrayColumnWrapper(
                 ArrayBackedColumnSource.getMemoryColumnSource(new byte[]{(byte)10, (byte)20, (byte)30}),
-                RowSetFactoryImpl.INSTANCE.getRowSetByRange(0, 2));
+                RowSetFactoryImpl.INSTANCE.fromRange(0, 2));
         assertEquals(3, dbArray.size());
         assertEquals((byte)10, dbArray.get(0));
         assertEquals((byte)20, dbArray.get(1));
@@ -108,7 +108,7 @@ public class DbByteArrayTest extends TestCase {
         //noinspection unchecked
         DbByteArray dbArray = new DbByteArrayColumnWrapper(
                 ArrayBackedColumnSource.getMemoryColumnSource(new byte[]{(byte)10, (byte)20, (byte)30}),
-                RowSetFactoryImpl.INSTANCE.getRowSetByRange(0, 2));
+                RowSetFactoryImpl.INSTANCE.fromRange(0, 2));
 
         for (int start=-4; start<=4; start++){
             for (int end=-1; end<=7; end++){

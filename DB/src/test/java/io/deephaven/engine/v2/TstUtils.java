@@ -46,11 +46,11 @@ public class TstUtils {
     }
 
     public static MutableRowSet i(long... keys) {
-        return RowSetFactoryImpl.INSTANCE.getRowSetByValues(keys);
+        return RowSetFactoryImpl.INSTANCE.fromKeys(keys);
     }
 
     public static MutableRowSet ir(final long firstKey, final long lastKey) {
-        return RowSetFactoryImpl.INSTANCE.getRowSetByRange(firstKey, lastKey);
+        return RowSetFactoryImpl.INSTANCE.fromRange(firstKey, lastKey);
     }
 
     public static void addToTable(final Table table, final RowSet rowSet, final ColumnHolder... columnHolders) {
@@ -162,7 +162,7 @@ public class TstUtils {
     }
 
     public static MutableRowSet getRandomIndex(long minValue, int size, Random random) {
-        final RowSetBuilderRandom builder = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
+        final RowSetBuilderRandom builder = RowSetFactoryImpl.INSTANCE.builderRandom();
         long previous = minValue;
         for (int i = 0; i < size; i++) {
             previous += (1 + random.nextInt(100));
@@ -373,7 +373,7 @@ public class TstUtils {
     }
 
     static MutableRowSet getInitialIndex(int size, Random random) {
-        final RowSetBuilderRandom builder = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
+        final RowSetBuilderRandom builder = RowSetFactoryImpl.INSTANCE.builderRandom();
         long firstKey = 10;
         for (int i = 0; i < size; i++) {
             builder.addKey(firstKey = firstKey + random.nextInt(3));
@@ -393,7 +393,7 @@ public class TstUtils {
         Collections.shuffle(Arrays.asList(positions), random);
 
         // now create an rowSet with each of our selected positions
-        final RowSetBuilderRandom resultBuilder = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
+        final RowSetBuilderRandom resultBuilder = RowSetFactoryImpl.INSTANCE.builderRandom();
         for (int ii = 0; ii < size; ++ii) {
             resultBuilder.addKey(sourceRowSet.get(positions[ii]));
         }
@@ -410,7 +410,7 @@ public class TstUtils {
 
         final MutableRowSet fillIn =
                 selectSubIndexSet(slotsToFill,
-                        RowSetFactoryImpl.INSTANCE.getRowSetByRange(0, maxKey).minus(sourceRowSet), random);
+                        RowSetFactoryImpl.INSTANCE.fromRange(0, maxKey).minus(sourceRowSet), random);
 
         final int endSlots = targetSize - (int) fillIn.size();
 
@@ -420,7 +420,7 @@ public class TstUtils {
         final long rangeSize = (long) ((1.0 / density) * endSlots);
         final RowSet expansion =
                 selectSubIndexSet(endSlots,
-                        RowSetFactoryImpl.INSTANCE.getRowSetByRange(maxKey + 1, maxKey + rangeSize + 1), random);
+                        RowSetFactoryImpl.INSTANCE.fromRange(maxKey + 1, maxKey + rangeSize + 1), random);
 
         fillIn.insert(expansion);
 
@@ -480,7 +480,7 @@ public class TstUtils {
     }
 
     public static QueryTable getTable(boolean refreshing, int size, Random random, ColumnInfo[] columnInfos) {
-        final MutableRowSet rowSet = getInitialIndex(size, random);
+        final TrackingMutableRowSet rowSet = getInitialIndex(size, random).convertToTracking();
         for (ColumnInfo columnInfo : columnInfos) {
             columnInfo.populateMap(rowSet, random);
         }
@@ -497,11 +497,11 @@ public class TstUtils {
 
     public static QueryTable testTable(ColumnHolder... columnHolders) {
         final Object[] boxedData = ArrayUtils.getBoxedArray(columnHolders[0].data);
-        final RowSet rowSet = RowSetFactoryImpl.INSTANCE.getFlatRowSet(boxedData.length);
+        final TrackingRowSet rowSet = RowSetFactoryImpl.INSTANCE.flat(boxedData.length).convertToTracking();
         return testTable(rowSet, columnHolders);
     }
 
-    public static QueryTable testTable(RowSet rowSet, ColumnHolder... columnHolders) {
+    public static QueryTable testTable(TrackingRowSet rowSet, ColumnHolder... columnHolders) {
         final Map<String, ColumnSource<?>> columns = new LinkedHashMap<>();
         for (ColumnHolder columnHolder : columnHolders) {
             columns.put(columnHolder.name, getTreeMapColumnSource(rowSet, columnHolder));
@@ -509,13 +509,13 @@ public class TstUtils {
         return new QueryTable(rowSet, columns);
     }
 
-    public static QueryTable testRefreshingTable(RowSet rowSet, ColumnHolder... columnHolders) {
+    public static QueryTable testRefreshingTable(TrackingRowSet rowSet, ColumnHolder... columnHolders) {
         final QueryTable queryTable = testTable(rowSet, columnHolders);
         queryTable.setRefreshing(true);
         return queryTable;
     }
 
-    public static QueryTable testFlatRefreshingTable(RowSet rowSet, ColumnHolder... columnHolders) {
+    public static QueryTable testFlatRefreshingTable(TrackingRowSet rowSet, ColumnHolder... columnHolders) {
         Assert.assertion(rowSet.isFlat(), "rowSet.isFlat()", rowSet, "rowSet");
         final QueryTable queryTable = testTable(rowSet, columnHolders);
         queryTable.setRefreshing(true);
@@ -524,8 +524,10 @@ public class TstUtils {
     }
 
     public static QueryTable testRefreshingTable(ColumnHolder... columnHolders) {
-        final RowSet rowSet = columnHolders.length == 0 ? RowSetFactoryImpl.INSTANCE.getEmptyRowSet()
-                : RowSetFactoryImpl.INSTANCE.getFlatRowSet(Array.getLength(columnHolders[0].data));
+        final TrackingMutableRowSet rowSet = (columnHolders.length == 0
+                ? RowSetFactoryImpl.INSTANCE.empty()
+                : RowSetFactoryImpl.INSTANCE.flat(Array.getLength(columnHolders[0].data))
+        ).convertToTracking();
         final Map<String, ColumnSource<?>> columns = new LinkedHashMap<>();
         for (ColumnHolder columnHolder : columnHolders) {
             columns.put(columnHolder.name, getTreeMapColumnSource(rowSet, columnHolder));
@@ -557,7 +559,7 @@ public class TstUtils {
     }
 
     public static Table prevTableColumnSources(Table table) {
-        final RowSet rowSet = table.getRowSet().getPrevRowSet();
+        final TrackingMutableRowSet rowSet = table.getRowSet().getPrevRowSet().convertToTracking();
         final Map<String, ColumnSource<?>> columnSourceMap = new LinkedHashMap<>();
         table.getColumnSourceMap().forEach((k, cs) -> {
             columnSourceMap.put(k, new PrevColumnSource<>(cs));
@@ -1540,7 +1542,7 @@ public class TstUtils {
 
                 if (!ceiling.equals(currentCeiling) || !floor.equals(currentFloor)) {
                     // we're past the end of the last run so we need to generate the values for the map
-                    generateValues(toAdd.intersect(RowSetFactoryImpl.INSTANCE.getRowSetByRange(firstKey, lastKey)),
+                    generateValues(toAdd.intersect(RowSetFactoryImpl.INSTANCE.fromRange(firstKey, lastKey)),
                             currentFloor,
                             currentCeiling, result, random);
                     firstKey = nextKey;
@@ -1550,7 +1552,7 @@ public class TstUtils {
                 lastKey = nextKey;
             }
 
-            generateValues(toAdd.intersect(RowSetFactoryImpl.INSTANCE.getRowSetByRange(firstKey, lastKey)),
+            generateValues(toAdd.intersect(RowSetFactoryImpl.INSTANCE.fromRange(firstKey, lastKey)),
                     currentFloor,
                     currentCeiling, result, random);
 
@@ -1923,7 +1925,7 @@ public class TstUtils {
 
             final RowSetBuilderSequential[] builders = new RowSetBuilderSequential[generators.size()];
             for (int ii = 0; ii < builders.length; ++ii) {
-                builders[ii] = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
+                builders[ii] = RowSetFactoryImpl.INSTANCE.builderSequential();
             }
             toAdd.forAllRowKeys((long ll) -> builders[pickGenerator(random)].appendKey(ll));
 

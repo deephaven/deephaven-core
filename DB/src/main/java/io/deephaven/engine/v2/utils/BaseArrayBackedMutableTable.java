@@ -38,7 +38,7 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
     long nextRow = 0;
     private long pendingProcessed = NULL_NOTIFICATION_STEP;
 
-    public BaseArrayBackedMutableTable(RowSet rowSet, Map<String, ? extends ColumnSource<?>> nameToColumnSource,
+    public BaseArrayBackedMutableTable(TrackingRowSet rowSet, Map<String, ? extends ColumnSource<?>> nameToColumnSource,
                                        Map<String, Object[]> enumValues, ProcessPendingUpdater processPendingUpdater) {
         super(rowSet, nameToColumnSource, processPendingUpdater);
         this.enumValues = enumValues;
@@ -58,7 +58,7 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
     }
 
     static void processInitial(Table initialTable, BaseArrayBackedMutableTable result) {
-        final RowSetBuilderSequential builder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
+        final RowSetBuilderSequential builder = RowSetFactoryImpl.INSTANCE.builderSequential();
         result.processPendingTable(initialTable, true, new IndexChangeRecorder() {
             @Override
             public void addIndex(long key) {
@@ -209,7 +209,7 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
             return pendingChange;
         }
 
-        private Table doSnap(Table newData, RowSet rowSet) {
+        private Table doSnap(Table newData, TrackingRowSet rowSet) {
             return doSnap(newData.getSubTable(rowSet));
         }
 
@@ -224,7 +224,7 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
         }
 
         @Override
-        public void delete(Table table, RowSet rowSet) throws IOException {
+        public void delete(Table table, TrackingRowSet rowSet) throws IOException {
             validateDelete(table);
             final PendingChange pendingChange = new PendingChange(doSnap(table, rowSet), true, false);
             pendingChanges.add(pendingChange);
@@ -315,8 +315,8 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
                 }
             }
 
-            final QueryTable newData =
-                    new QueryTable(getTableDefinition(), RowSetFactoryImpl.INSTANCE.getFlatRowSet(valueArray.length), sources);
+            final QueryTable newData = new QueryTable(getTableDefinition(),
+                    RowSetFactoryImpl.INSTANCE.flat(valueArray.length).convertToTracking(), sources);
             add(newData, true, listener);
         }
 
@@ -334,8 +334,8 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
 
             }
 
-            final QueryTable newData =
-                    new QueryTable(getTableDefinition(), RowSetFactoryImpl.INSTANCE.getFlatRowSet(valueArray.length), sources);
+            final QueryTable newData = new QueryTable(getTableDefinition(),
+                    RowSetFactoryImpl.INSTANCE.flat(valueArray.length).convertToTracking(), sources);
 
             add(newData, allowEdits, listener);
         }

@@ -32,7 +32,7 @@ public class TestStreamTableTools {
         final DBDateTime dt2 = DBTimeUtils.convertDateTime("2021-08-11T8:21:00 NY");
         final DBDateTime dt3 = DBTimeUtils.convertDateTime("2021-08-11T11:22:00 NY");
 
-        final QueryTable streamTable = TstUtils.testRefreshingTable(i(1), intCol("I", 7),
+        final QueryTable streamTable = TstUtils.testRefreshingTable(i(1).convertToTracking(), intCol("I", 7),
                 doubleCol("D", Double.NEGATIVE_INFINITY), dateTimeCol("DT", dt1), col("B", Boolean.TRUE));
         streamTable.setAttribute(Table.STREAM_TABLE_ATTRIBUTE, true);
 

@@ -68,7 +68,7 @@ public class PythonReplayShiftObliviousListenerAdapter extends ShiftObliviousIns
 
     @Override
     public void replay() {
-        final RowSet emptyRowSet = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+        final RowSet emptyRowSet = RowSetFactoryImpl.INSTANCE.empty();
         final boolean isReplay = true;
         pyCallable.call("__call__", isReplay, source.getRowSet(), emptyRowSet, emptyRowSet);
     }

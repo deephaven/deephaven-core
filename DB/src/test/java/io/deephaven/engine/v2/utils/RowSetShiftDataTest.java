@@ -308,7 +308,7 @@ public class RowSetShiftDataTest {
 
     @Test
     public void testSmartCoalescingBuilder6() {
-        testSmartCoalescingBuilder5and6(RowSetFactoryImpl.INSTANCE.getEmptyRowSet());
+        testSmartCoalescingBuilder5and6(RowSetFactoryImpl.INSTANCE.empty());
     }
 
     private void testSmartCoalescingBuilder5and6(RowSet rowSet) {
@@ -336,7 +336,7 @@ public class RowSetShiftDataTest {
 
     @Test
     public void testSmartCoalescingBuilder7() {
-        final RowSet rowSet = RowSetFactoryImpl.INSTANCE.getRowSetByValues(1, 10, 13);
+        final RowSet rowSet = RowSetFactoryImpl.INSTANCE.fromKeys(1, 10, 13);
 
         final RowSetShiftData.Builder dumbBuilder = newBuilder();
         dumbBuilder.shiftRange(1, 2, 2);
@@ -360,7 +360,7 @@ public class RowSetShiftDataTest {
 
     @Test
     public void testSmartCoalescingBuilder8() {
-        final RowSet rowSet = RowSetFactoryImpl.INSTANCE.getRowSetByValues(0, 2, 16, 17, 23, 30, 35, 40);
+        final RowSet rowSet = RowSetFactoryImpl.INSTANCE.fromKeys(0, 2, 16, 17, 23, 30, 35, 40);
 
         final RowSetShiftData.Builder dumbBuilder = newBuilder();
         dumbBuilder.shiftRange(5, 6, 1);
@@ -394,7 +394,7 @@ public class RowSetShiftDataTest {
 
     @Test
     public void testSmartCoalescingBuilder9() {
-        final RowSet rowSet = RowSetFactoryImpl.INSTANCE.getRowSetByValues(0, 1, 6, 13, 20);
+        final RowSet rowSet = RowSetFactoryImpl.INSTANCE.fromKeys(0, 1, 6, 13, 20);
 
         final RowSetShiftData.Builder dumbBuilder = newBuilder();
         dumbBuilder.shiftRange(3, 7, 1);
@@ -420,7 +420,7 @@ public class RowSetShiftDataTest {
 
 
     private RowSet getScbTestIndex() {
-        final RowSetBuilderSequential sequentialBuilder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
+        final RowSetBuilderSequential sequentialBuilder = RowSetFactoryImpl.INSTANCE.builderSequential();
         sequentialBuilder.appendKey(100);
         sequentialBuilder.appendKey(200);
         sequentialBuilder.appendKey(300);

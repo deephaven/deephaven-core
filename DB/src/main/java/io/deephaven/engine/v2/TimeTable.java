@@ -42,7 +42,7 @@ public class TimeTable extends QueryTable implements LiveTable {
     }
 
     public TimeTable(TimeProvider timeProvider, DBDateTime firstTime, long dbPeriod) {
-        super(RowSetFactoryImpl.INSTANCE.getRowSetByValues(), initColumn());
+        super(RowSetFactoryImpl.INSTANCE.fromKeys().convertToTracking(), initColumn());
         if (dbPeriod <= 0) {
             throw new IllegalArgumentException("Invalid time period: " + dbPeriod + " nanoseconds");
         }
@@ -95,10 +95,10 @@ public class TimeTable extends QueryTable implements LiveTable {
                 if (dbPeriod >= 5_000_000_000L) {
                     log.info().append("TimeTable updated to ").append(lastTime.toString()).endl();
                 }
-                final RowSet range = RowSetFactoryImpl.INSTANCE.getRowSetByRange(rangeStart, lastIndex);
+                final RowSet range = RowSetFactoryImpl.INSTANCE.fromRange(rangeStart, lastIndex);
                 getRowSet().asMutable().insert(range);
                 if (notifyListeners) {
-                    notifyListeners(range, RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), RowSetFactoryImpl.INSTANCE.getEmptyRowSet());
+                    notifyListeners(range, RowSetFactoryImpl.INSTANCE.empty(), RowSetFactoryImpl.INSTANCE.empty());
                 }
             }
         } finally {

@@ -1026,7 +1026,8 @@ public class TableTools {
      * @return a Deephaven Table with no columns.
      */
     public static Table emptyTable(long size) {
-        return new QueryTable(RowSetFactoryImpl.INSTANCE.getFlatRowSet(size).convertToTracking(), Collections.emptyMap());
+        return new QueryTable(RowSetFactoryImpl.INSTANCE.flat(size).convertToTracking(),
+                Collections.emptyMap());
     }
 
     @SuppressWarnings("SameParameterValue")
@@ -1055,7 +1056,7 @@ public class TableTools {
      */
     public static DynamicTable newTable(long size, List<String> names, List<ColumnSource<?>> columnSources) {
         // noinspection unchecked
-        return new QueryTable(RowSetFactoryImpl.INSTANCE.getFlatRowSet(size).convertToTracking(),
+        return new QueryTable(RowSetFactoryImpl.INSTANCE.flat(size).convertToTracking(),
                 newMapFromLists(LinkedHashMap.class, names, columnSources));
     }
 
@@ -1067,7 +1068,7 @@ public class TableTools {
      * @return a Deephaven DynamicTable
      */
     public static DynamicTable newTable(long size, Map<String, ColumnSource<?>> columns) {
-        return new QueryTable(RowSetFactoryImpl.INSTANCE.getFlatRowSet(size).convertToTracking(), columns);
+        return new QueryTable(RowSetFactoryImpl.INSTANCE.flat(size).convertToTracking(), columns);
     }
 
     /**
@@ -1082,7 +1083,7 @@ public class TableTools {
             columns.put(columnDefinition.getName(), ArrayBackedColumnSource.getMemoryColumnSource(0,
                     columnDefinition.getDataType(), columnDefinition.getComponentType()));
         }
-        return new QueryTable(definition, RowSetFactoryImpl.INSTANCE.getEmptyRowSet().convertToTracking(), columns);
+        return new QueryTable(definition, RowSetFactoryImpl.INSTANCE.empty().convertToTracking(), columns);
     }
 
     /**
@@ -1116,8 +1117,8 @@ public class TableTools {
     }
 
     private static MutableRowSet getRowSet(ColumnHolder[] columnHolders) {
-        return columnHolders.length == 0 ? RowSetFactoryImpl.INSTANCE.getEmptyRowSet()
-                : RowSetFactoryImpl.INSTANCE.getFlatRowSet(Array.getLength(columnHolders[0].data));
+        return columnHolders.length == 0 ? RowSetFactoryImpl.INSTANCE.empty()
+                : RowSetFactoryImpl.INSTANCE.flat(Array.getLength(columnHolders[0].data));
     }
 
     // region Time tables

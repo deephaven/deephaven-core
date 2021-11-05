@@ -110,7 +110,7 @@ public class TestSimpleSourceTable extends LiveTableTestCase {
             }
         });
 
-        expectedRowSet = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+        expectedRowSet = RowSetFactoryImpl.INSTANCE.empty();
 
         // Since TestPAST covers refreshing SourceTables, let this cover the static case.
         SUT = new SimpleSourceTable(TABLE_DEFINITION, "", componentFactory, locationProvider, null);
@@ -159,7 +159,7 @@ public class TestSimpleSourceTable extends LiveTableTestCase {
         Assert.assertion(!(throwException && !coalesce), "!(throwException && !listen)");
         final TableDataException exception = new TableDataException("test");
         final RowSet toAdd =
-                RowSetFactoryImpl.INSTANCE.getRowSetByRange(expectedRowSet.lastRowKey() + 1,
+                RowSetFactoryImpl.INSTANCE.fromRange(expectedRowSet.lastRowKey() + 1,
                         expectedRowSet.lastRowKey() + INDEX_INCREMENT);
 
         checking(new Expectations() {
@@ -227,7 +227,7 @@ public class TestSimpleSourceTable extends LiveTableTestCase {
                 oneOf(locationProvider).refresh();
                 oneOf(columnSourceManager).addLocation(tableLocation);
                 oneOf(columnSourceManager).refresh();
-                will(returnValue(RowSetFactoryImpl.INSTANCE.getEmptyRowSet()));
+                will(returnValue(RowSetFactoryImpl.INSTANCE.empty()));
                 oneOf(columnSourceManager).getColumnSources();
                 will(returnValue(getIncludedColumnsMap(includedColumnIndices1)));
             }
@@ -260,7 +260,7 @@ public class TestSimpleSourceTable extends LiveTableTestCase {
                 oneOf(locationProvider).refresh();
                 oneOf(columnSourceManager).addLocation(tableLocation);
                 oneOf(columnSourceManager).refresh();
-                will(returnValue(RowSetFactoryImpl.INSTANCE.getEmptyRowSet()));
+                will(returnValue(RowSetFactoryImpl.INSTANCE.empty()));
                 oneOf(columnSourceManager).getColumnSources();
                 will(returnValue(getIncludedColumnsMap(includedColumnIndices2)));
             }
@@ -302,7 +302,7 @@ public class TestSimpleSourceTable extends LiveTableTestCase {
                 oneOf(locationProvider).refresh();
                 oneOf(columnSourceManager).addLocation(tableLocation);
                 oneOf(columnSourceManager).refresh();
-                will(returnValue(RowSetFactoryImpl.INSTANCE.getEmptyRowSet()));
+                will(returnValue(RowSetFactoryImpl.INSTANCE.empty()));
                 oneOf(columnSourceManager).getColumnSources();
                 will(returnValue(getIncludedColumnsMap(includedColumnIndices3)));
             }

@@ -302,7 +302,7 @@ class IncrementalByAggregationUpdateTracker {
                 checkCurrentPassCapacity();
                 currentPassPositions.set(currentPassSize++, position);
             }
-            builders.set(position, builder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder());
+            builders.set(position, builder = RowSetFactoryImpl.INSTANCE.builderSequential());
         } else {
             builder = builders.get(position);
         }
@@ -364,7 +364,7 @@ class IncrementalByAggregationUpdateTracker {
             @NotNull final ObjectArraySource<TrackingMutableRowSet> indexSource,
             @NotNull final ObjectArraySource<TrackingMutableRowSet> overflowIndexSource,
             @NotNull final RedirectionIndex redirectionIndex) {
-        final RowSetBuilderRandom resultBuilder = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
+        final RowSetBuilderRandom resultBuilder = RowSetFactoryImpl.INSTANCE.builderRandom();
         for (long trackerIndex = 0; trackerIndex < size; ++trackerIndex) {
             final long slotAndFlags = updatedStateSlotAndFlags.getLong(trackerIndex);
             final int slot = (int) (slotAndFlags >> FLAG_SHIFT);
@@ -489,7 +489,7 @@ class IncrementalByAggregationUpdateTracker {
             @NotNull final RedirectionIndex redirectionIndex,
             @NotNull final ModifiedColumnSetProducer modifiedColumnSetProducer) {
         // First pass: Removes are handled on their own, because if the key moved to a new state we may reinsert it
-        final RowSetBuilderRandom removedBuilder = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
+        final RowSetBuilderRandom removedBuilder = RowSetFactoryImpl.INSTANCE.builderRandom();
         int numStatesWithShifts = 0;
         for (long ti = 0; ti < size; ++ti) {
             final long slotAndFlags = updatedStateSlotAndFlags.getLong(ti);
@@ -521,8 +521,8 @@ class IncrementalByAggregationUpdateTracker {
         }
 
         // Second pass: Everything else
-        final RowSetBuilderRandom addedBuilder = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
-        final RowSetBuilderRandom modifiedBuilder = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
+        final RowSetBuilderRandom addedBuilder = RowSetFactoryImpl.INSTANCE.builderRandom();
+        final RowSetBuilderRandom modifiedBuilder = RowSetFactoryImpl.INSTANCE.builderRandom();
         boolean someKeyHasAddsOrRemoves = false;
         boolean someKeyHasModifies = false;
         final RowSetShiftData shiftData;

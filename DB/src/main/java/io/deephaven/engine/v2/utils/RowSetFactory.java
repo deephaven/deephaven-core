@@ -12,7 +12,7 @@ public interface RowSetFactory {
      *
      * @return A new {@link MutableRowSet} containing no rows
      */
-    MutableRowSet getEmptyRowSet();
+    MutableRowSet empty();
 
     /**
      * Get a {@link MutableRowSet} containing the specified row keys. Row keys must be nonnegative numbers.
@@ -20,7 +20,7 @@ public interface RowSetFactory {
      * @param rowKeys The row keys to include
      * @return A new {@link MutableRowSet} containing the specified row keys
      */
-    MutableRowSet getRowSetByValues(long... rowKeys);
+    MutableRowSet fromKeys(long... rowKeys);
 
     /**
      * Produce a {@link MutableRowSet} containing a single row key. Row keys must be nonnegative numbers.
@@ -28,7 +28,7 @@ public interface RowSetFactory {
      * @param key The row key to include
      * @return A new {@link MutableRowSet} containing the specified row key
      */
-    MutableRowSet getRowSetByValues(long key);
+    MutableRowSet fromKeys(long key);
 
     /**
      * Get an {@link MutableRowSet} containing the specified keys.
@@ -47,7 +47,7 @@ public interface RowSetFactory {
      * @param rowKeys The row keys to include; note that this list is mutated to ensure sorted order
      * @return A new {@link MutableRowSet} containing the specified row keys
      */
-    RowSet getRowSetByValues(TLongArrayList rowKeys);
+    RowSet fromKeys(TLongArrayList rowKeys);
 
     /**
      * Create a {@link RowSet} containing the continuous range [firstRowKey, lastRowKey]
@@ -56,25 +56,25 @@ public interface RowSetFactory {
      * @param lastRowKey The last row key in the continuous range
      * @return A RowSet containing the specified row key range
      */
-    MutableRowSet getRowSetByRange(long firstRowKey, long lastRowKey);
+    MutableRowSet fromRange(long firstRowKey, long lastRowKey);
 
     /**
-     * Get a flat {@link MutableRowSet} containing the range [0, size), or an {@link #getEmptyRowSet() empty row set} if
+     * Get a flat {@link MutableRowSet} containing the range [0, size), or an {@link #empty() empty row set} if
      * the specified size is <= 0.
      *
      * @param size The size of the RowSet to create
      * @return A flat {@link MutableRowSet} containing the keys [0, size) or an empty {@link MutableRowSet} if the size
      *         is <= 0
      */
-    MutableRowSet getFlatRowSet(long size);
+    MutableRowSet flat(long size);
 
     /**
      * @return A {@link RowSetBuilderRandom} suitable for inserting ranges in no particular order
      */
-    RowSetBuilderRandom getRandomBuilder();
+    RowSetBuilderRandom builderRandom();
 
     /**
      * @return A {@link RowSetBuilderRandom} optimized for inserting ranges sequentially in order
      */
-    RowSetBuilderSequential getSequentialBuilder();
+    RowSetBuilderSequential builderSequential();
 }

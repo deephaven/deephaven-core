@@ -47,7 +47,7 @@ public class HashSetBackedTableFactory {
     private final TLongLongMap indexToPreviousClock = new TLongLongHashMap();
     private long lastIndex = 0;
     private final TLongArrayList freeSet = new TLongArrayList();
-    MutableRowSet rowSet;
+    private TrackingMutableRowSet rowSet;
 
     private HashSetBackedTableFactory(Function.Nullary<HashSet<SmartKey>> setGenerator, int refreshIntervalMs,
             String... colNames) {
@@ -74,8 +74,8 @@ public class HashSetBackedTableFactory {
             String... colNames) {
         HashSetBackedTableFactory factory = new HashSetBackedTableFactory(setGenerator, refreshIntervalMs, colNames);
 
-        RowSetBuilderRandom addedBuilder = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
-        RowSetBuilderRandom removedBuilder = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
+        RowSetBuilderRandom addedBuilder = RowSetFactoryImpl.INSTANCE.builderRandom();
+        RowSetBuilderRandom removedBuilder = RowSetFactoryImpl.INSTANCE.builderRandom();
 
         factory.updateValueSet(addedBuilder, removedBuilder);
 
@@ -145,7 +145,7 @@ public class HashSetBackedTableFactory {
     }
 
     private class HashSetBackedTable extends QueryTable implements LiveTable {
-        HashSetBackedTable(RowSet rowSet, Map<String, ColumnSource<?>> columns) {
+        HashSetBackedTable(TrackingRowSet rowSet, Map<String, ColumnSource<?>> columns) {
             super(rowSet, columns);
             if (refreshIntervalMs >= 0) {
                 setRefreshing(true);
@@ -160,8 +160,8 @@ public class HashSetBackedTableFactory {
             }
             nextRefresh = System.currentTimeMillis() + refreshIntervalMs;
 
-            RowSetBuilderRandom addedBuilder = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
-            RowSetBuilderRandom removedBuilder = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
+            RowSetBuilderRandom addedBuilder = RowSetFactoryImpl.INSTANCE.builderRandom();
+            RowSetBuilderRandom removedBuilder = RowSetFactoryImpl.INSTANCE.builderRandom();
 
             updateValueSet(addedBuilder, removedBuilder);
 

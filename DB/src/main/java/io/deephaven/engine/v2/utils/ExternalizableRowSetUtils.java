@@ -147,7 +147,7 @@ public class ExternalizableRowSetUtils {
 
     public static RowSet readExternalCompressedDelta(@NotNull final DataInput in) throws IOException {
         long offset = 0;
-        final RowSetBuilderSequential builder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
+        final RowSetBuilderSequential builder = RowSetFactoryImpl.INSTANCE.builderSequential();
 
         final MutableLong pending = new MutableLong(-1);
         final LongConsumer consume = v -> {

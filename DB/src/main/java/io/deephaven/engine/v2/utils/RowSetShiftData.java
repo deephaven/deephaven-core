@@ -288,8 +288,8 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
      * @return rowSet
      */
     public MutableRowSet apply(final MutableRowSet rowSet) {
-        final RowSetBuilderSequential toRemove = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
-        final RowSetBuilderSequential toInsert = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
+        final RowSetBuilderSequential toRemove = RowSetFactoryImpl.INSTANCE.builderSequential();
+        final RowSetBuilderSequential toInsert = RowSetFactoryImpl.INSTANCE.builderSequential();
         try (final RowSequence.Iterator rsIt = rowSet.getRowSequenceIterator()) {
             for (int idx = 0; idx < size(); ++idx) {
                 final long beginRange = getBeginRange(idx);
@@ -343,8 +343,8 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
      * @return rowSet
      */
     public RowSet unapply(final MutableRowSet rowSet) {
-        final RowSetBuilderSequential toRemove = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
-        final RowSetBuilderSequential toInsert = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
+        final RowSetBuilderSequential toRemove = RowSetFactoryImpl.INSTANCE.builderSequential();
+        final RowSetBuilderSequential toInsert = RowSetFactoryImpl.INSTANCE.builderSequential();
         try (final RowSequence.Iterator rsIt = rowSet.getRowSequenceIterator()) {
             for (int idx = 0; idx < size(); ++idx) {
                 final long beginRange = getBeginRange(idx);
@@ -1115,12 +1115,12 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
     public SafeCloseablePair<RowSet, RowSet> extractParallelShiftedRowsFromPostShiftIndex(
             final RowSet postShiftIndex) {
         if (empty()) {
-            return SafeCloseablePair.of(RowSetFactoryImpl.INSTANCE.getEmptyRowSet(),
-                    RowSetFactoryImpl.INSTANCE.getEmptyRowSet());
+            return SafeCloseablePair.of(RowSetFactoryImpl.INSTANCE.empty(),
+                    RowSetFactoryImpl.INSTANCE.empty());
         }
 
-        final RowSetBuilderSequential preShiftBuilder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
-        final RowSetBuilderSequential postShiftBuilder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
+        final RowSetBuilderSequential preShiftBuilder = RowSetFactoryImpl.INSTANCE.builderSequential();
+        final RowSetBuilderSequential postShiftBuilder = RowSetFactoryImpl.INSTANCE.builderSequential();
 
         try (final RowSequence.Iterator rsIt = postShiftIndex.getRowSequenceIterator()) {
             for (int idx = 0; idx < size(); ++idx) {

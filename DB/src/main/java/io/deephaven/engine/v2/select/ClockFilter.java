@@ -79,7 +79,7 @@ public abstract class ClockFilter extends SelectFilterLivenessArtifactImpl imple
                         .getColumnSource(columnName);
 
         final MutableRowSet initial = initializeAndGetInitialIndex(selection, fullSet, table);
-        return initial == null ? RowSetFactoryImpl.INSTANCE.getEmptyRowSet() : initial;
+        return initial == null ? RowSetFactoryImpl.INSTANCE.empty() : initial;
     }
 
     @Nullable
@@ -118,8 +118,8 @@ public abstract class ClockFilter extends SelectFilterLivenessArtifactImpl imple
         final RowSet added = updateAndGetAddedIndex();
         if (added != null && !added.isEmpty()) {
             resultTable.getRowSet().asMutable().insert(added);
-            resultTable.notifyListeners(added, RowSetFactoryImpl.INSTANCE.getEmptyRowSet(),
-                    RowSetFactoryImpl.INSTANCE.getEmptyRowSet());
+            resultTable.notifyListeners(added, RowSetFactoryImpl.INSTANCE.empty(),
+                    RowSetFactoryImpl.INSTANCE.empty());
         }
     }
 
@@ -161,7 +161,7 @@ public abstract class ClockFilter extends SelectFilterLivenessArtifactImpl imple
                 return null;
             }
             if (addedBuilder == null) {
-                addedBuilder = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
+                addedBuilder = RowSetFactoryImpl.INSTANCE.builderRandom();
             }
             addedBuilder.addRange(firstKeyAdded, lastKeyAdded);
             return addedBuilder;

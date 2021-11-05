@@ -26,7 +26,7 @@ public class ReplayTable extends QueryTable implements LiveTable {
 
     public ReplayTable(RowSet rowSet, Map<String, ? extends ColumnSource<?>> result, String timeColumn,
                        Replayer replayer) {
-        super(RowSetFactoryImpl.INSTANCE.getRowSetByValues(), result);
+        super(RowSetFactoryImpl.INSTANCE.empty().convertToTracking(), result);
         Require.requirement(replayer != null, "replayer != null");
         // noinspection unchecked
         replayer.registerTimeSource(rowSet, (ColumnSource<DBDateTime>) result.get(timeColumn));
@@ -55,7 +55,7 @@ public class ReplayTable extends QueryTable implements LiveTable {
         if (done || nextTime >= replayer.currentTimeNanos()) {
             return;
         }
-        RowSetBuilderRandom indexBuilder = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
+        RowSetBuilderRandom indexBuilder = RowSetFactoryImpl.INSTANCE.builderRandom();
         while (!done && nextTime < replayer.currentTimeNanos()) {
             indexBuilder.addKey(curr);
             if (indexIterator.hasNext()) {
@@ -68,7 +68,7 @@ public class ReplayTable extends QueryTable implements LiveTable {
         final RowSet added = indexBuilder.build();
         if (added.size() > 0) {
             getRowSet().asMutable().insert(added);
-            notifyListeners(added, RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), RowSetFactoryImpl.INSTANCE.getEmptyRowSet());
+            notifyListeners(added, RowSetFactoryImpl.INSTANCE.empty(), RowSetFactoryImpl.INSTANCE.empty());
         }
     }
 }

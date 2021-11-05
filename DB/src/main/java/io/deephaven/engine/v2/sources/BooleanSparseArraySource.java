@@ -87,7 +87,7 @@ public class BooleanSparseArraySource extends SparseArrayColumnSource<Boolean> i
     }
 
     private void writeObject(java.io.ObjectOutputStream out) throws IOException {
-        final RowSetBuilderSequential sb = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
+        final RowSetBuilderSequential sb = RowSetFactoryImpl.INSTANCE.builderSequential();
         blocks.enumerate(NULL_BOOLEAN_AS_BYTE, sb::appendKey);
         final RowSet rowSet = sb.build();
 

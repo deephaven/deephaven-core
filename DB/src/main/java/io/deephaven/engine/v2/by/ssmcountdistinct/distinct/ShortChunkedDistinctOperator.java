@@ -278,7 +278,7 @@ public class ShortChunkedDistinctOperator implements IterativeChunkedAggregation
             }
 
             prevFlusher = new UpdateCommitter<>(this, ShortChunkedDistinctOperator::flushPrevious);
-            touchedStates = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+            touchedStates = RowSetFactoryImpl.INSTANCE.empty();
         }
     }
 

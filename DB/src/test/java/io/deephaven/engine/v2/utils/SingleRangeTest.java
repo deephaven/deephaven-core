@@ -77,7 +77,7 @@ public class SingleRangeTest {
         assertEquals(end, ix.lastRowKey());
 
         ix = new TrackingMutableRowSetImpl(SingleRange.make(start, end));
-        ix2 = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+        ix2 = RowSetFactoryImpl.INSTANCE.empty();
         ix2.insertRange(10, 10);
         ix2.insertRange(21, 21);
         ix.remove(ix2);
@@ -270,13 +270,13 @@ public class SingleRangeTest {
         final MutableRowSet keys = new TrackingMutableRowSetImpl(rb);
         final RowSet r = ix.invert(keys, 10);
         assertEquals(5, r.size());
-        assertTrue(r.subsetOf(RowSetFactoryImpl.INSTANCE.getRowSetByValues(1, 3, 5, 7, 9)));
+        assertTrue(r.subsetOf(RowSetFactoryImpl.INSTANCE.fromKeys(1, 3, 5, 7, 9)));
 
         keys.clear();
         keys.insertRange(10, 30);
         final RowSet r2 = ix.invert(keys, 10);
         assertEquals(11, r2.size());
-        assertTrue(r.subsetOf(RowSetFactoryImpl.INSTANCE.getRowSetByRange(0, 10)));
+        assertTrue(r.subsetOf(RowSetFactoryImpl.INSTANCE.fromRange(0, 10)));
 
         keys.clear();
         keys.insert(30);
@@ -376,19 +376,19 @@ public class SingleRangeTest {
         final RowSet ix = new TrackingMutableRowSetImpl(SingleRange.make(start, end));
         RowSet r = ix.subSetByKeyRange(5, 15);
         assertEquals(6, r.size());
-        assertTrue(r.overlaps(RowSetFactoryImpl.INSTANCE.getRowSetByRange(10, 15)));
+        assertTrue(r.overlaps(RowSetFactoryImpl.INSTANCE.fromRange(10, 15)));
         r = ix.subSetByKeyRange(5, 15);
         assertEquals(6, r.size());
-        assertTrue(r.overlaps(RowSetFactoryImpl.INSTANCE.getRowSetByRange(10, 15)));
+        assertTrue(r.overlaps(RowSetFactoryImpl.INSTANCE.fromRange(10, 15)));
         r = ix.subSetByKeyRange(15, 20);
         assertEquals(6, r.size());
-        assertTrue(r.overlaps(RowSetFactoryImpl.INSTANCE.getRowSetByRange(15, 20)));
+        assertTrue(r.overlaps(RowSetFactoryImpl.INSTANCE.fromRange(15, 20)));
         r = ix.subSetByKeyRange(25, 35);
         assertEquals(6, r.size());
-        assertTrue(r.overlaps(RowSetFactoryImpl.INSTANCE.getRowSetByRange(25, 30)));
+        assertTrue(r.overlaps(RowSetFactoryImpl.INSTANCE.fromRange(25, 30)));
         r = ix.subSetByKeyRange(11, 29);
         assertEquals(19, r.size());
-        assertTrue(r.overlaps(RowSetFactoryImpl.INSTANCE.getRowSetByRange(11, 29)));
+        assertTrue(r.overlaps(RowSetFactoryImpl.INSTANCE.fromRange(11, 29)));
     }
 
     @Test
@@ -398,16 +398,16 @@ public class SingleRangeTest {
         final RowSet ix = new TrackingMutableRowSetImpl(SingleRange.make(start, end));
         RowSet r = ix.subSetByPositionRange(0, 5 + 1);
         assertEquals(6, r.size());
-        assertTrue(r.overlaps(RowSetFactoryImpl.INSTANCE.getRowSetByRange(10, 15)));
+        assertTrue(r.overlaps(RowSetFactoryImpl.INSTANCE.fromRange(10, 15)));
         r = ix.subSetByPositionRange(5, 10 + 1);
         assertEquals(6, r.size());
-        assertTrue(r.overlaps(RowSetFactoryImpl.INSTANCE.getRowSetByRange(15, 20)));
+        assertTrue(r.overlaps(RowSetFactoryImpl.INSTANCE.fromRange(15, 20)));
         r = ix.subSetByPositionRange(15, 35 + 1);
         assertEquals(6, r.size());
-        assertTrue(r.overlaps(RowSetFactoryImpl.INSTANCE.getRowSetByRange(25, 30)));
+        assertTrue(r.overlaps(RowSetFactoryImpl.INSTANCE.fromRange(25, 30)));
         r = ix.subSetByPositionRange(1, 19 + 1);
         assertEquals(19, r.size());
-        assertTrue(r.overlaps(RowSetFactoryImpl.INSTANCE.getRowSetByRange(11, 29)));
+        assertTrue(r.overlaps(RowSetFactoryImpl.INSTANCE.fromRange(11, 29)));
     }
 
     private static void checkBinarySearch(final RowSet ix) {

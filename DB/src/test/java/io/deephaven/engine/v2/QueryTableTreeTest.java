@@ -138,15 +138,18 @@ public class QueryTableTreeTest extends QueryTableTestBase {
 
         try {
 
-            final QueryTable source = TstUtils.testRefreshingTable(RowSetFactoryImpl.INSTANCE.getFlatRowSet(10),
+            final QueryTable source = TstUtils.testRefreshingTable(
+                    RowSetFactoryImpl.INSTANCE.flat(10).convertToTracking(),
                     col("Sentinel", 1, 2, 3, 4, 5, 6, 7, 8, 9, 10),
                     col("Parent", NULL_INT, NULL_INT, 1, 1, 2, 3, 5, 5, 3, 2),
                     col("Extra", "a", "b", "c", "d", "e", "f", "g", "h", "i", "j"));
-            final QueryTable source2 = TstUtils.testRefreshingTable(RowSetFactoryImpl.INSTANCE.getFlatRowSet(11),
+            final QueryTable source2 = TstUtils.testRefreshingTable(
+                    RowSetFactoryImpl.INSTANCE.flat(11).convertToTracking(),
                     col("Sentinel", 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11),
                     col("Parent", NULL_INT, NULL_INT, 1, 1, 2, 3, 5, 5, 3, 2, NULL_INT),
                     col("Extra", "aa", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k"));
-            final QueryTable source3 = TstUtils.testRefreshingTable(RowSetFactoryImpl.INSTANCE.getFlatRowSet(12),
+            final QueryTable source3 = TstUtils.testRefreshingTable(
+                    RowSetFactoryImpl.INSTANCE.flat(12).convertToTracking(),
                     col("Sentinel", 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12),
                     col("Parent", NULL_INT, NULL_INT, 1, 1, 2, 3, 5, 5, 3, 2, NULL_INT, 11),
                     col("Extra", "aa", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l"));
@@ -331,11 +334,13 @@ public class QueryTableTreeTest extends QueryTableTestBase {
 
         try {
 
-            final QueryTable source = TstUtils.testRefreshingTable(RowSetFactoryImpl.INSTANCE.getFlatRowSet(10),
+            final QueryTable source = TstUtils.testRefreshingTable(
+                    RowSetFactoryImpl.INSTANCE.flat(10).convertToTracking(),
                     col("Sentinel", 1, 2, 3, 4, 5, 6, 7, 8, 9, 10),
                     col("Parent", NULL_INT, NULL_INT, 1, 1, 2, 3, 5, 5, 3, 2),
                     col("Extra", "a", "b", "c", "d", "e", "f", "g", "h", "i", "j"));
-            final QueryTable source2 = TstUtils.testRefreshingTable(RowSetFactoryImpl.INSTANCE.getFlatRowSet(11),
+            final QueryTable source2 = TstUtils.testRefreshingTable(
+                    RowSetFactoryImpl.INSTANCE.flat(11).convertToTracking(),
                     col("Sentinel", 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12),
                     col("Parent", NULL_INT, 1, 1, 2, 3, 5, 5, 3, 2, NULL_INT, 11),
                     col("Extra", "bb", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l"));
@@ -481,7 +486,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
     }
 
     public void testTreeTableSimpleFilter() {
-        final QueryTable source = TstUtils.testRefreshingTable(RowSetFactoryImpl.INSTANCE.getFlatRowSet(10),
+        final QueryTable source = TstUtils.testRefreshingTable(RowSetFactoryImpl.INSTANCE.flat(10).convertToTracking(),
                 col("Sentinel", 1, 2, 3, 4, 5, 6, 7, 8, 9, 10),
                 col("Parent", NULL_INT, NULL_INT, 1, 1, 2, 3, 5, 5, 3, 6));
 
@@ -573,7 +578,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
     }
 
     public void testOrphanPromoterSimple() {
-        final QueryTable source = TstUtils.testRefreshingTable(RowSetFactoryImpl.INSTANCE.getFlatRowSet(4),
+        final QueryTable source = TstUtils.testRefreshingTable(RowSetFactoryImpl.INSTANCE.flat(4).convertToTracking(),
                 col("Sentinel", 1, 2, 3, 4), col("Parent", NULL_INT, NULL_INT, 1, 5));
 
         final Table treed = LiveTableMonitor.DEFAULT.exclusiveLock().computeLocked(() -> TreeTableOrphanPromoter
@@ -623,7 +628,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
     }
 
     public void testTreeTableEdgeCases() {
-        final QueryTable source = TstUtils.testRefreshingTable(RowSetFactoryImpl.INSTANCE.getFlatRowSet(4),
+        final QueryTable source = TstUtils.testRefreshingTable(RowSetFactoryImpl.INSTANCE.flat(4).convertToTracking(),
                 col("Sentinel", 0, 1, 2, 3),
                 col("Filter", 0, 0, 0, 0),
                 col("Parent", NULL_INT, NULL_INT, NULL_INT, NULL_INT));
@@ -1441,8 +1446,10 @@ public class QueryTableTreeTest extends QueryTableTestBase {
     }
 
     public void testRollupScope2() {
-        final QueryTable table = TstUtils.testRefreshingTable(i(), col("USym", CollectionUtil.ZERO_LENGTH_STRING_ARRAY),
-                col("Group", CollectionUtil.ZERO_LENGTH_STRING_ARRAY), intCol("IntCol"), doubleCol("DoubleCol"));
+        final QueryTable table = TstUtils.testRefreshingTable(i().convertToTracking(),
+                col("USym", CollectionUtil.ZERO_LENGTH_STRING_ARRAY),
+                col("Group", CollectionUtil.ZERO_LENGTH_STRING_ARRAY),
+                intCol("IntCol"), doubleCol("DoubleCol"));
 
         final SafeCloseable scopeCloseable = LivenessScopeStack.open();
 
@@ -1548,8 +1555,10 @@ public class QueryTableTreeTest extends QueryTableTestBase {
 
     private void testIncrementalSimple(ComboBy comboBy) {
         final QueryTable table =
-                TstUtils.testRefreshingTable(RowSetFactoryImpl.INSTANCE.getFlatRowSet(6), col("G1", "A", "A", "A", "B", "B", "B"),
-                        col("G2", "C", "C", "D", "D", "E", "E"), col("IntCol", 1, 2, 3, 4, 5, 6));
+                TstUtils.testRefreshingTable(RowSetFactoryImpl.INSTANCE.flat(6).convertToTracking(),
+                        col("G1", "A", "A", "A", "B", "B", "B"),
+                        col("G2", "C", "C", "D", "D", "E", "E"),
+                        col("IntCol", 1, 2, 3, 4, 5, 6));
 
         final Table rollup = LiveTableMonitor.DEFAULT.exclusiveLock()
                 .computeLocked(() -> table.rollup(AggCombo(comboBy), "G1", "G2"));
@@ -1722,8 +1731,9 @@ public class QueryTableTreeTest extends QueryTableTestBase {
         int nextHid = 11;
         long index = 2;
 
-        final QueryTable source = TstUtils.testRefreshingTable(RowSetFactoryImpl.INSTANCE.getFlatRowSet(1), longCol("Sentinel", 1),
-                stringCol("hid", "a"), stringCol("hpos", "1"), col("open", true), doubleCol("rand", 1.0));
+        final QueryTable source = TstUtils.testRefreshingTable(RowSetFactoryImpl.INSTANCE.flat(1).convertToTracking(),
+                longCol("Sentinel", 1), stringCol("hid", "a"), stringCol("hpos", "1"),
+                col("open", true), doubleCol("rand", 1.0));
 
         final List<String> openHid = new ArrayList<>();
         openHid.add("a");
@@ -1746,7 +1756,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
             LiveTableMonitor.DEFAULT.startCycleForUnitTests();
 
             final int numChanges = random.nextInt(100);
-            final RowSetBuilderSequential builder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
+            final RowSetBuilderSequential builder = RowSetFactoryImpl.INSTANCE.builderSequential();
 
             for (int count = 0; count < numChanges; ++count) {
                 assertEquals(openHid.size(), hidToPos.size());
@@ -1835,8 +1845,8 @@ public class QueryTableTreeTest extends QueryTableTestBase {
     }
 
     public void testIds6262() {
-        final QueryTable table = TstUtils.testRefreshingTable(i(1), col("Sym", "A"),
-                col("BigI", new BigInteger[] {null}), col("BigD", new BigDecimal[] {null}));
+        final QueryTable table = TstUtils.testRefreshingTable(i(1).convertToTracking(),
+                col("Sym", "A"), col("BigI", new BigInteger[] {null}), col("BigD", new BigDecimal[] {null}));
 
         final Table rollup = table.rollup(AggCombo(AggVar("BigI", "BigD")), "Sym");
 

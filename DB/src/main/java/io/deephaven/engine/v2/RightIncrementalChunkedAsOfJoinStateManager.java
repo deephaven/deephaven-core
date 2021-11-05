@@ -315,7 +315,7 @@ class RightIncrementalChunkedAsOfJoinStateManager
 
     private static void createBuilder(ObjectArraySource<RowSetBuilderSequential> source, long location, long keyToAdd) {
         final RowSetBuilderSequential builder;
-        source.set(location, builder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder());
+        source.set(location, builder = RowSetFactoryImpl.INSTANCE.builderSequential());
         builder.appendKey(keyToAdd);
     }
 
@@ -1224,7 +1224,7 @@ class RightIncrementalChunkedAsOfJoinStateManager
              final WritableByteChunk stateChunk = WritableByteChunk.makeWritableChunk(maxSize);
              final ChunkSource.FillContext fillContext = stateSource.makeFillContext(maxSize)) {
 
-            stateSource.fillChunk(fillContext, stateChunk, RowSetFactoryImpl.INSTANCE.getFlatRowSet(tableHashPivot));
+            stateSource.fillChunk(fillContext, stateChunk, RowSetFactoryImpl.INSTANCE.flat(tableHashPivot));
 
             ChunkUtils.fillInOrder(positions);
 
@@ -1499,7 +1499,7 @@ class RightIncrementalChunkedAsOfJoinStateManager
     private void addToSequentialBuilder(long slot, @NotNull ObjectArraySource<RowSetBuilderSequential> sequentialBuilders, long indexKey) {
         RowSetBuilderSequential builder = sequentialBuilders.getUnsafe(slot);
         if (builder == null) {
-            builder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
+            builder = RowSetFactoryImpl.INSTANCE.builderSequential();
             sequentialBuilders.set(slot, builder);
         }
         builder.appendKey(indexKey);
@@ -2131,7 +2131,7 @@ class RightIncrementalChunkedAsOfJoinStateManager
                 indexOutput.setValue((MutableRowSet) sideSource.getUnsafe(location));
                 return null;
             case ENTRY_RIGHT_IS_EMPTY: {
-                final MutableRowSet emptyRowSet = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+                final MutableRowSet emptyRowSet = RowSetFactoryImpl.INSTANCE.empty();
                 sideSource.set(location, emptyRowSet);
                 stateSource.set(location, stateValueForIndex);
                 indexOutput.setValue(emptyRowSet);
@@ -2154,7 +2154,7 @@ class RightIncrementalChunkedAsOfJoinStateManager
         final RowSetBuilderSequential builder = (RowSetBuilderSequential) ssaSource.getUnsafe(slot);
         final RowSet rowSet;
         if (builder == null) {
-            rowSet = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+            rowSet = RowSetFactoryImpl.INSTANCE.empty();
         } else {
             rowSet = builder.build();
         }
@@ -2163,7 +2163,7 @@ class RightIncrementalChunkedAsOfJoinStateManager
 
     @Nullable
     private SegmentedSortedArray makeSsaFromEmpty(long slot, Function<RowSet, SegmentedSortedArray> ssaFactory, ObjectArraySource<Object> ssaSource, ByteArraySource stateSource, byte newState) {
-        return makeSsaFromIndex(slot, ssaFactory, ssaSource, stateSource, newState, RowSetFactoryImpl.INSTANCE.getEmptyRowSet());
+        return makeSsaFromIndex(slot, ssaFactory, ssaSource, stateSource, newState, RowSetFactoryImpl.INSTANCE.empty());
     }
 
     @Nullable

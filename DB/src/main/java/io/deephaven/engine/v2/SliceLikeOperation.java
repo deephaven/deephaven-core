@@ -88,9 +88,11 @@ public class SliceLikeOperation implements QueryTable.Operation<QueryTable> {
 
     @Override
     public Result initialize(boolean usePrev, long beforeClock) {
+        final TrackingRowSet resultRowSet;
         final TrackingRowSet parentRowSet = parent.getRowSet();
-        final RowSet resultRowSet = computeSliceIndex(usePrev ? parentRowSet.getPrevRowSet() : parentRowSet);
-
+        try (final MutableRowSet parentPrev = usePrev ? parentRowSet.getPrevRowSet() : null) {
+            resultRowSet = computeSliceIndex(usePrev ? parentPrev : parentRowSet).convertToTracking();
+        }
         // result table must be a sub-table so we can pass ModifiedColumnSet to listeners when possible
         resultTable = parent.getSubTable(resultRowSet);
         if (isFlat) {
@@ -143,7 +145,7 @@ public class SliceLikeOperation implements QueryTable.Operation<QueryTable> {
         resultTable.notifyListeners(downstream);
     }
 
-    private RowSet computeSliceIndex(RowSet useRowSet) {
+    private MutableRowSet computeSliceIndex(RowSet useRowSet) {
         final long size = parent.size();
         long startSlice = getFirstPositionInclusive();
         long endSlice = getLastPositionExclusive();

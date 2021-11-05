@@ -84,19 +84,19 @@ public class RowSequenceIteratorTest {
     public void testAll() {
         Random random = new Random(0);
         for (int chunkSize = 1; chunkSize < 17; chunkSize++) {
-            genericTest(RowSetFactoryImpl.INSTANCE.getRowSetByValues(), chunkSize);
-            genericTest(RowSetFactoryImpl.INSTANCE.getRowSetByValues(0), chunkSize);
-            genericTest(RowSetFactoryImpl.INSTANCE.getRowSetByValues(1), chunkSize);
-            genericTest(RowSetFactoryImpl.INSTANCE.getRowSetByValues(0, 1), chunkSize);
-            genericTest(RowSetFactoryImpl.INSTANCE.getRowSetByValues(2, 3), chunkSize);
-            genericTest(RowSetFactoryImpl.INSTANCE.getRowSetByValues(2, 3, 4), chunkSize);
-            genericTest(RowSetFactoryImpl.INSTANCE.getRowSetByValues(2, 3, 5), chunkSize);
-            genericTest(RowSetFactoryImpl.INSTANCE.getRowSetByValues(2, 3, 50, 51), chunkSize);
+            genericTest(RowSetFactoryImpl.INSTANCE.fromKeys(), chunkSize);
+            genericTest(RowSetFactoryImpl.INSTANCE.fromKeys(0), chunkSize);
+            genericTest(RowSetFactoryImpl.INSTANCE.fromKeys(1), chunkSize);
+            genericTest(RowSetFactoryImpl.INSTANCE.fromKeys(0, 1), chunkSize);
+            genericTest(RowSetFactoryImpl.INSTANCE.fromKeys(2, 3), chunkSize);
+            genericTest(RowSetFactoryImpl.INSTANCE.fromKeys(2, 3, 4), chunkSize);
+            genericTest(RowSetFactoryImpl.INSTANCE.fromKeys(2, 3, 5), chunkSize);
+            genericTest(RowSetFactoryImpl.INSTANCE.fromKeys(2, 3, 50, 51), chunkSize);
         }
         for (int i = 1; i < 25; i++) {
             for (double p = 0; p <= 1.1; p += .1) {
                 long[] d = indexDataGenerator(random, i, p);
-                RowSet rowSet = RowSetFactoryImpl.INSTANCE.getRowSetByValues(d);
+                RowSet rowSet = RowSetFactoryImpl.INSTANCE.fromKeys(d);
                 for (int chunkSize = 1; chunkSize < 17; chunkSize++) {
                     genericTest(rowSet, chunkSize);
                 }
@@ -110,39 +110,39 @@ public class RowSequenceIteratorTest {
         }
 
         for (int chunkSize = 8; chunkSize < 65536; chunkSize *= 2) {
-            genericTest(RowSetFactoryImpl.INSTANCE.getRowSetByValues(), chunkSize);
-            genericTest(RowSetFactoryImpl.INSTANCE.getRowSetByValues(0), chunkSize);
-            genericTest(RowSetFactoryImpl.INSTANCE.getRowSetByValues(1), chunkSize);
-            genericTest(RowSetFactoryImpl.INSTANCE.getRowSetByValues(0, 1), chunkSize);
-            genericTest(RowSetFactoryImpl.INSTANCE.getRowSetByValues(2, 3), chunkSize);
-            genericTest(RowSetFactoryImpl.INSTANCE.getRowSetByValues(2, 3, 4), chunkSize);
-            genericTest(RowSetFactoryImpl.INSTANCE.getRowSetByValues(2, 3, 5), chunkSize);
-            genericTest(RowSetFactoryImpl.INSTANCE.getRowSetByValues(2, 3, 50, 51), chunkSize);
+            genericTest(RowSetFactoryImpl.INSTANCE.fromKeys(), chunkSize);
+            genericTest(RowSetFactoryImpl.INSTANCE.fromKeys(0), chunkSize);
+            genericTest(RowSetFactoryImpl.INSTANCE.fromKeys(1), chunkSize);
+            genericTest(RowSetFactoryImpl.INSTANCE.fromKeys(0, 1), chunkSize);
+            genericTest(RowSetFactoryImpl.INSTANCE.fromKeys(2, 3), chunkSize);
+            genericTest(RowSetFactoryImpl.INSTANCE.fromKeys(2, 3, 4), chunkSize);
+            genericTest(RowSetFactoryImpl.INSTANCE.fromKeys(2, 3, 5), chunkSize);
+            genericTest(RowSetFactoryImpl.INSTANCE.fromKeys(2, 3, 50, 51), chunkSize);
             chunkSize++;
-            genericTest(RowSetFactoryImpl.INSTANCE.getRowSetByValues(), chunkSize);
-            genericTest(RowSetFactoryImpl.INSTANCE.getRowSetByValues(0), chunkSize);
-            genericTest(RowSetFactoryImpl.INSTANCE.getRowSetByValues(1), chunkSize);
-            genericTest(RowSetFactoryImpl.INSTANCE.getRowSetByValues(0, 1), chunkSize);
-            genericTest(RowSetFactoryImpl.INSTANCE.getRowSetByValues(2, 3), chunkSize);
-            genericTest(RowSetFactoryImpl.INSTANCE.getRowSetByValues(2, 3, 4), chunkSize);
-            genericTest(RowSetFactoryImpl.INSTANCE.getRowSetByValues(2, 3, 5), chunkSize);
-            genericTest(RowSetFactoryImpl.INSTANCE.getRowSetByValues(2, 3, 50, 51), chunkSize);
+            genericTest(RowSetFactoryImpl.INSTANCE.fromKeys(), chunkSize);
+            genericTest(RowSetFactoryImpl.INSTANCE.fromKeys(0), chunkSize);
+            genericTest(RowSetFactoryImpl.INSTANCE.fromKeys(1), chunkSize);
+            genericTest(RowSetFactoryImpl.INSTANCE.fromKeys(0, 1), chunkSize);
+            genericTest(RowSetFactoryImpl.INSTANCE.fromKeys(2, 3), chunkSize);
+            genericTest(RowSetFactoryImpl.INSTANCE.fromKeys(2, 3, 4), chunkSize);
+            genericTest(RowSetFactoryImpl.INSTANCE.fromKeys(2, 3, 5), chunkSize);
+            genericTest(RowSetFactoryImpl.INSTANCE.fromKeys(2, 3, 50, 51), chunkSize);
             chunkSize -= 2;
-            genericTest(RowSetFactoryImpl.INSTANCE.getRowSetByValues(), chunkSize);
-            genericTest(RowSetFactoryImpl.INSTANCE.getRowSetByValues(0), chunkSize);
-            genericTest(RowSetFactoryImpl.INSTANCE.getRowSetByValues(1), chunkSize);
-            genericTest(RowSetFactoryImpl.INSTANCE.getRowSetByValues(0, 1), chunkSize);
-            genericTest(RowSetFactoryImpl.INSTANCE.getRowSetByValues(2, 3), chunkSize);
-            genericTest(RowSetFactoryImpl.INSTANCE.getRowSetByValues(2, 3, 4), chunkSize);
-            genericTest(RowSetFactoryImpl.INSTANCE.getRowSetByValues(2, 3, 5), chunkSize);
-            genericTest(RowSetFactoryImpl.INSTANCE.getRowSetByValues(2, 3, 50, 51), chunkSize);
+            genericTest(RowSetFactoryImpl.INSTANCE.fromKeys(), chunkSize);
+            genericTest(RowSetFactoryImpl.INSTANCE.fromKeys(0), chunkSize);
+            genericTest(RowSetFactoryImpl.INSTANCE.fromKeys(1), chunkSize);
+            genericTest(RowSetFactoryImpl.INSTANCE.fromKeys(0, 1), chunkSize);
+            genericTest(RowSetFactoryImpl.INSTANCE.fromKeys(2, 3), chunkSize);
+            genericTest(RowSetFactoryImpl.INSTANCE.fromKeys(2, 3, 4), chunkSize);
+            genericTest(RowSetFactoryImpl.INSTANCE.fromKeys(2, 3, 5), chunkSize);
+            genericTest(RowSetFactoryImpl.INSTANCE.fromKeys(2, 3, 50, 51), chunkSize);
             chunkSize++;
         }
 
         for (int i = 16; i < 6536; i *= 2) {
             for (double p = 0; p <= 1.1; p += .1) {
                 long[] d = indexDataGenerator(random, i, p);
-                RowSet rowSet = RowSetFactoryImpl.INSTANCE.getRowSetByValues(d);
+                RowSet rowSet = RowSetFactoryImpl.INSTANCE.fromKeys(d);
                 for (int chunkSize = 1; chunkSize < 17; chunkSize++) {
                     genericTest(rowSet, chunkSize);
                 }
@@ -154,7 +154,7 @@ public class RowSequenceIteratorTest {
             }
             for (double p = 0; p <= 1.1; p += .1) {
                 long[] d = indexDataGenerator(random, i + 1, p);
-                RowSet rowSet = RowSetFactoryImpl.INSTANCE.getRowSetByValues(d);
+                RowSet rowSet = RowSetFactoryImpl.INSTANCE.fromKeys(d);
                 for (int chunkSize = 1; chunkSize < 17; chunkSize++) {
                     genericTest(rowSet, chunkSize);
                 }
@@ -166,7 +166,7 @@ public class RowSequenceIteratorTest {
             }
             for (double p = 0; p <= 1.1; p += .1) {
                 long[] d = indexDataGenerator(random, i + 1, p);
-                RowSet rowSet = RowSetFactoryImpl.INSTANCE.getRowSetByValues(d);
+                RowSet rowSet = RowSetFactoryImpl.INSTANCE.fromKeys(d);
                 for (int chunkSize = 1; chunkSize < 17; chunkSize++) {
                     genericTest(rowSet, chunkSize);
                 }

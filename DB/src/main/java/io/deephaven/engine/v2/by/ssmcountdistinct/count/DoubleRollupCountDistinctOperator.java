@@ -522,7 +522,7 @@ public class DoubleRollupCountDistinctOperator implements IterativeChunkedAggreg
         }
 
         prevFlusher = new UpdateCommitter<>(this, DoubleRollupCountDistinctOperator::flushPrevious);
-        touchedStates = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+        touchedStates = RowSetFactoryImpl.INSTANCE.empty();
         ssms.startTrackingPrevValues();
         resultColumn.startTrackingPrevValues();
     }

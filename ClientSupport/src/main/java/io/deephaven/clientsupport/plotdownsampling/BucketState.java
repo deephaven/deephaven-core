@@ -21,7 +21,7 @@ import java.util.stream.IntStream;
  * its own offset in those arrays.
  */
 public class BucketState {
-    private final MutableRowSet rowSet = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+    private final MutableRowSet rowSet = RowSetFactoryImpl.INSTANCE.empty();
 
     private RowSet cachedRowSet;
 
@@ -43,7 +43,7 @@ public class BucketState {
         this.values = valueTrackers;
         this.trackNulls = trackNulls;
         if (trackNulls) {
-            this.nulls = IntStream.range(0, valueTrackers.length).mapToObj(ignore -> RowSetFactoryImpl.INSTANCE.getEmptyRowSet())
+            this.nulls = IntStream.range(0, valueTrackers.length).mapToObj(ignore -> RowSetFactoryImpl.INSTANCE.empty())
                     .toArray(MutableRowSet[]::new);
         } else {
             this.nulls = null;
@@ -190,7 +190,7 @@ public class BucketState {
         if (cachedRowSet != null) {
             return cachedRowSet;
         }
-        final RowSetBuilderRandom build = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
+        final RowSetBuilderRandom build = RowSetFactoryImpl.INSTANCE.builderRandom();
         Assert.eqFalse(rowSet.isEmpty(), "rowSet.empty()");
         build.addKey(rowSet.firstRowKey());
         build.addKey(rowSet.lastRowKey());

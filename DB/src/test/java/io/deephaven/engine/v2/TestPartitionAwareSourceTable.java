@@ -143,7 +143,7 @@ public class TestPartitionAwareSourceTable extends LiveTableTestCase {
             }
         });
 
-        expectedRowSet = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+        expectedRowSet = RowSetFactoryImpl.INSTANCE.empty();
 
         SUT = new PartitionAwareSourceTable(TABLE_DEFINITION, "", componentFactory, locationProvider,
                 LiveTableMonitor.DEFAULT);
@@ -229,7 +229,7 @@ public class TestPartitionAwareSourceTable extends LiveTableTestCase {
         Assert.assertion(!(throwException && !coalesceAndListen), "!(throwException && !listen)");
         final TableDataException exception = new TableDataException("test");
         final RowSet toAdd =
-                RowSetFactoryImpl.INSTANCE.getRowSetByRange(expectedRowSet.lastRowKey() + 1,
+                RowSetFactoryImpl.INSTANCE.fromRange(expectedRowSet.lastRowKey() + 1,
                         expectedRowSet.lastRowKey() + INDEX_INCREMENT);
 
         checking(new Expectations() {
@@ -303,7 +303,7 @@ public class TestPartitionAwareSourceTable extends LiveTableTestCase {
 
     private void doRefreshChangedCheck() {
         final RowSet toAdd =
-                RowSetFactoryImpl.INSTANCE.getRowSetByRange(expectedRowSet.lastRowKey() + 1,
+                RowSetFactoryImpl.INSTANCE.fromRange(expectedRowSet.lastRowKey() + 1,
                         expectedRowSet.lastRowKey() + INDEX_INCREMENT);
         checking(new Expectations() {
             {
@@ -318,8 +318,8 @@ public class TestPartitionAwareSourceTable extends LiveTableTestCase {
                                 final Listener.Update update =
                                         (Listener.Update) invocation.getParameter(0);
                                 assertIndexEquals(toAdd, update.added);
-                                assertIndexEquals(RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), update.removed);
-                                assertIndexEquals(RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), update.modified);
+                                assertIndexEquals(RowSetFactoryImpl.INSTANCE.empty(), update.removed);
+                                assertIndexEquals(RowSetFactoryImpl.INSTANCE.empty(), update.modified);
                                 assertTrue(update.shifted.empty());
                                 return notification;
                             }
@@ -348,7 +348,7 @@ public class TestPartitionAwareSourceTable extends LiveTableTestCase {
         checking(new Expectations() {
             {
                 oneOf(columnSourceManager).refresh();
-                will(returnValue(RowSetFactoryImpl.INSTANCE.getEmptyRowSet()));
+                will(returnValue(RowSetFactoryImpl.INSTANCE.empty()));
             }
         });
 
@@ -454,7 +454,7 @@ public class TestPartitionAwareSourceTable extends LiveTableTestCase {
                     }
                 });
                 oneOf(columnSourceManager).refresh();
-                will(returnValue(RowSetFactoryImpl.INSTANCE.getEmptyRowSet()));
+                will(returnValue(RowSetFactoryImpl.INSTANCE.empty()));
                 oneOf(columnSourceManager).getColumnSources();
                 will(returnValue(
                         Arrays.stream(includedColumns1)
@@ -498,7 +498,7 @@ public class TestPartitionAwareSourceTable extends LiveTableTestCase {
                     }
                 });
                 oneOf(columnSourceManager).refresh();
-                will(returnValue(RowSetFactoryImpl.INSTANCE.getEmptyRowSet()));
+                will(returnValue(RowSetFactoryImpl.INSTANCE.empty()));
                 oneOf(columnSourceManager).getColumnSources();
                 will(returnValue(
                         Arrays.stream(includedColumns2)
@@ -551,7 +551,7 @@ public class TestPartitionAwareSourceTable extends LiveTableTestCase {
                     }
                 });
                 oneOf(columnSourceManager).refresh();
-                will(returnValue(RowSetFactoryImpl.INSTANCE.getEmptyRowSet()));
+                will(returnValue(RowSetFactoryImpl.INSTANCE.empty()));
                 oneOf(columnSourceManager).getColumnSources();
                 will(returnValue(
                         Arrays.stream(includedColumns3)

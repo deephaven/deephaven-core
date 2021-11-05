@@ -361,11 +361,11 @@ public class QueryTableSliceTest extends QueryTableTestBase {
                 final int ii = i;
                 final int jj = j;
                 LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-                    RowSet added = RowSetFactoryImpl.INSTANCE.getRowSetByRange(ii * jj, (ii + 1) * jj - 1);
+                    RowSet added = RowSetFactoryImpl.INSTANCE.fromRange(ii * jj, (ii + 1) * jj - 1);
                     upTable.getRowSet().asMutable().insert(added);
                     Listener.Update update =
-                            new Listener.Update(added, RowSetFactoryImpl.INSTANCE.getEmptyRowSet(),
-                                    RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY);
+                            new Listener.Update(added, RowSetFactoryImpl.INSTANCE.empty(),
+                                    RowSetFactoryImpl.INSTANCE.empty(), RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY);
                     upTable.notifyListeners(update);
                 });
 
@@ -381,7 +381,8 @@ public class QueryTableSliceTest extends QueryTableTestBase {
     }
 
     public void testZeroHead() {
-        final QueryTable table = TstUtils.testRefreshingTable(RowSetFactoryImpl.INSTANCE.getRowSetByRange(10, 35),
+        final QueryTable table = TstUtils.testRefreshingTable(
+                RowSetFactoryImpl.INSTANCE.fromRange(10, 35).convertToTracking(),
                 TableTools.charCol("letter", "abcdefghijklmnopqrstuvwxyz".toCharArray()));
         final Table noRows = table.head(0);
         assertEquals(0, noRows.size());
@@ -392,7 +393,8 @@ public class QueryTableSliceTest extends QueryTableTestBase {
     }
 
     public void testSlice() {
-        final QueryTable table = TstUtils.testRefreshingTable(RowSetFactoryImpl.INSTANCE.getRowSetByRange(10, 35),
+        final QueryTable table = TstUtils.testRefreshingTable(
+                RowSetFactoryImpl.INSTANCE.fromRange(10, 35).convertToTracking(),
                 TableTools.charCol("letter", "abcdefghijklmnopqrstuvwxyz".toCharArray()));
 
         doSliceTest(table, "abcdefghij", 0, 10);
@@ -420,16 +422,17 @@ public class QueryTableSliceTest extends QueryTableTestBase {
     }
 
     public void testHeadTailPct() {
-        final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6), c("x", 1, 2, 3), c("y", 'a', 'b', 'c'));
+        final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6).convertToTracking(),
+                c("x", 1, 2, 3), c("y", 'a', 'b', 'c'));
 
         assertEquals("", diff(table.headPct(0.5),
-                TstUtils.testRefreshingTable(i(2, 4), c("x", 1, 2), c("y", 'a', 'b')), 10));
+                TstUtils.testRefreshingTable(i(2, 4).convertToTracking(), c("x", 1, 2), c("y", 'a', 'b')), 10));
         assertEquals("", diff(table.tailPct(0.5),
-                TstUtils.testRefreshingTable(i(4, 6), c("x", 2, 3), c("y", 'b', 'c')), 10));
+                TstUtils.testRefreshingTable(i(4, 6).convertToTracking(), c("x", 2, 3), c("y", 'b', 'c')), 10));
         assertEquals("", diff(table.headPct(0.1),
-                TstUtils.testRefreshingTable(i(2), c("x", 1), c("y", 'a')), 10));
+                TstUtils.testRefreshingTable(i(2).convertToTracking(), c("x", 1), c("y", 'a')), 10));
         assertEquals("", diff(table.tailPct(0.1),
-                TstUtils.testRefreshingTable(i(6), c("x", 3), c("y", 'c')), 10));
+                TstUtils.testRefreshingTable(i(6).convertToTracking(), c("x", 3), c("y", 'c')), 10));
 
     }
 

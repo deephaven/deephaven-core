@@ -11,7 +11,7 @@ import static io.deephaven.engine.v2.TstUtils.i;
 public class TestColumnDescriptionInheritance extends QueryTableTestBase {
 
     private Table genTestTable() {
-        return TstUtils.testRefreshingTable(i(1, 2, 4, 6),
+        return TstUtils.testRefreshingTable(i(1, 2, 4, 6).convertToTracking(),
                 c("Sym", "aa", "bb", "cc", "dd"),
                 c("intCol", 10, 20, 40, 60),
                 c("doubleCol", 0.1, 0.2, 0.4, 0.6));

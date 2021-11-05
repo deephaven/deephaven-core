@@ -1664,7 +1664,7 @@ public class SortedRangesTest {
     public void testInvert0() {
         final SortedRanges sar = makeSortedArray0();
         final long[] vs = vs0;
-        final RowSet ix = RowSetFactoryImpl.INSTANCE.getRowSetByValues(vs);
+        final RowSet ix = RowSetFactoryImpl.INSTANCE.fromKeys(vs);
         for (long maxPosition = 0; maxPosition <= ix.size(); ++maxPosition) { // go one over the last position.
             final RowSet.RangeIterator ixit = ix.rangeIterator();
             checkInvert("", sar, ixit, ix.iterator(), maxPosition);

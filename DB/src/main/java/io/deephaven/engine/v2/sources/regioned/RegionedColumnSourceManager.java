@@ -123,8 +123,8 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
     }
 
     @Override
-    public synchronized RowSet refresh() {
-        final RowSetBuilderSequential addedIndexBuilder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
+    public synchronized MutableRowSet refresh() {
+        final RowSetBuilderSequential addedIndexBuilder = RowSetFactoryImpl.INSTANCE.builderSequential();
         for (final IncludedTableLocationEntry entry : orderedIncludedTableLocations) { // Ordering matters, since we're
                                                                                        // using a sequential builder.
             entry.pollUpdates(addedIndexBuilder);

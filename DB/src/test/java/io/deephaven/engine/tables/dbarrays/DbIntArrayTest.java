@@ -20,7 +20,7 @@ public class DbIntArrayTest extends TestCase {
         //noinspection unchecked
         DbIntArray dbArray = new DbIntArrayColumnWrapper(
                 ArrayBackedColumnSource.getMemoryColumnSource(new int[]{(int)10, (int)20, (int)30}),
-                RowSetFactoryImpl.INSTANCE.getRowSetByRange(0, 2));
+                RowSetFactoryImpl.INSTANCE.fromRange(0, 2));
         assertEquals(3, dbArray.size());
         assertEquals((int)10, dbArray.get(0));
         assertEquals((int)20, dbArray.get(1));
@@ -108,7 +108,7 @@ public class DbIntArrayTest extends TestCase {
         //noinspection unchecked
         DbIntArray dbArray = new DbIntArrayColumnWrapper(
                 ArrayBackedColumnSource.getMemoryColumnSource(new int[]{(int)10, (int)20, (int)30}),
-                RowSetFactoryImpl.INSTANCE.getRowSetByRange(0, 2));
+                RowSetFactoryImpl.INSTANCE.fromRange(0, 2));
 
         for (int start=-4; start<=4; start++){
             for (int end=-1; end<=7; end++){

@@ -23,7 +23,6 @@ import io.deephaven.engine.v2.utils.*;
 import java.util.Arrays;
 import io.deephaven.engine.v2.sort.permute.IntPermuteKernel;
 // @StateChunkTypeEnum@ from \QObject\E
-import io.deephaven.engine.v2.sort.permute.ObjectPermuteKernel;
 import io.deephaven.engine.v2.utils.compact.IntCompactKernel;
 import io.deephaven.engine.v2.utils.compact.LongCompactKernel;
 // endmixin rehash
@@ -617,7 +616,7 @@ class IncrementalChunkedByAggregationStateManager
                     final long currentHashLocation = bc.insertTableLocations.get(ii);
 
                     // region main insert
-                    indexSource.set(currentHashLocation, RowSetFactoryImpl.INSTANCE.getEmptyRowSet().convertToTracking());
+                    indexSource.set(currentHashLocation, RowSetFactoryImpl.INSTANCE.empty().convertToTracking());
                     cookieSource.set(currentHashLocation, trackingCallback.invoke(NULL_COOKIE, (int) currentHashLocation, sourceChunkIndexKeys.get(firstChunkPositionForHashLocation)));
                     // endregion main insert
                     // mixin rehash
@@ -760,7 +759,7 @@ class IncrementalChunkedByAggregationStateManager
                             overflowLocationSource.set(tableLocation, allocatedOverflowLocation);
 
                             // region build overflow insert
-                            overflowIndexSource.set(allocatedOverflowLocation, RowSetFactoryImpl.INSTANCE.getEmptyRowSet().convertToTracking());
+                            overflowIndexSource.set(allocatedOverflowLocation, RowSetFactoryImpl.INSTANCE.empty().convertToTracking());
                             overflowCookieSource.set(allocatedOverflowLocation, trackingCallback.invoke(NULL_COOKIE, overflowLocationToHashLocation(allocatedOverflowLocation), sourceChunkIndexKeys.get(chunkPosition)));
                             // endregion build overflow insert
 
@@ -1041,7 +1040,7 @@ class IncrementalChunkedByAggregationStateManager
              final WritableObjectChunk stateChunk = WritableObjectChunk.makeWritableChunk(maxSize);
              final ChunkSource.FillContext fillContext = indexSource.makeFillContext(maxSize)) {
 
-            indexSource.fillChunk(fillContext, stateChunk, RowSetFactoryImpl.INSTANCE.getFlatRowSet(tableHashPivot));
+            indexSource.fillChunk(fillContext, stateChunk, RowSetFactoryImpl.INSTANCE.flat(tableHashPivot));
 
             ChunkUtils.fillInOrder(positions);
 

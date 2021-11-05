@@ -574,7 +574,7 @@ public abstract class BaseTable extends LivenessArtifact
         }
         if (replayInitialImage && getRowSet().isNonempty()) {
             listener.setInitialImage(getRowSet());
-            listener.onUpdate(getRowSet(), RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), RowSetFactoryImpl.INSTANCE.getEmptyRowSet());
+            listener.onUpdate(getRowSet(), RowSetFactoryImpl.INSTANCE.empty(), RowSetFactoryImpl.INSTANCE.empty());
         }
     }
 

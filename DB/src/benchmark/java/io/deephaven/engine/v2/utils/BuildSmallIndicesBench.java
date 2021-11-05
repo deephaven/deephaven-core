@@ -68,7 +68,7 @@ public class BuildSmallIndicesBench {
     @Benchmark
     public void b03_buildAndPopulateWithIndexBuilder(final Blackhole bh) {
         for (int i = 0; i < sz; ++i) {
-            sbs[i] = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
+            sbs[i] = RowSetFactoryImpl.INSTANCE.builderSequential();
             sbs[i].appendKey(values[i]);
             bh.consume(sbs[i].build());
         }

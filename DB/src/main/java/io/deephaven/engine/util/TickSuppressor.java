@@ -59,7 +59,7 @@ public class TickSuppressor {
                 final Update downstream = upstream.copy();
                 downstream.added = upstream.added.union(upstream.modified);
                 downstream.removed = upstream.removed.union(upstream.getModifiedPreShift());
-                downstream.modified = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+                downstream.modified = RowSetFactoryImpl.INSTANCE.empty();
                 downstream.modifiedColumnSet = ModifiedColumnSet.EMPTY;
                 resultTable.notifyListeners(downstream);
             }
@@ -138,7 +138,7 @@ public class TickSuppressor {
                         final WritableBooleanChunk[] changedCellsArray = new WritableBooleanChunk[columnCount];
                         final boolean[] changedColumns = new boolean[columnCount];
 
-                        final RowSetBuilderSequential builder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
+                        final RowSetBuilderSequential builder = RowSetFactoryImpl.INSTANCE.builderSequential();
 
                         try (final SafeCloseableArray<ChunkSource.GetContext> ignored =
                                 new SafeCloseableArray<>(getContextArray);

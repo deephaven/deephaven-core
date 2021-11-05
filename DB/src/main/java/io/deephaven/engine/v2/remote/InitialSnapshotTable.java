@@ -26,7 +26,7 @@ import java.util.Map;
 public class InitialSnapshotTable extends QueryTable {
     protected final Setter<?>[] setters;
     protected int capacity;
-    protected MutableRowSet freeset = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+    protected MutableRowSet freeset = RowSetFactoryImpl.INSTANCE.empty();
     protected final MutableRowSet populatedRows;
     protected final MutableRowSet[] populatedCells;
     protected WritableSource<?>[] writableSources;
@@ -36,17 +36,17 @@ public class InitialSnapshotTable extends QueryTable {
 
     protected InitialSnapshotTable(Map<String, ? extends ColumnSource<?>> result, WritableSource<?>[] writableSources,
             RedirectionIndex redirectionIndex, BitSet subscribedColumns) {
-        super(RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), result);
+        super(RowSetFactoryImpl.INSTANCE.empty().convertToTracking(), result);
         this.subscribedColumns = subscribedColumns;
         this.writableSources = writableSources;
         this.setters = new Setter[writableSources.length];
         this.populatedCells = new MutableRowSet[writableSources.length];
         for (int ii = 0; ii < writableSources.length; ++ii) {
             setters[ii] = getSetter(writableSources[ii]);
-            this.populatedCells[ii] = RowSetFactoryImpl.INSTANCE.getRowSetByValues();
+            this.populatedCells[ii] = RowSetFactoryImpl.INSTANCE.fromKeys();
         }
         this.redirectionIndex = redirectionIndex;
-        this.populatedRows = RowSetFactoryImpl.INSTANCE.getRowSetByValues();
+        this.populatedRows = RowSetFactoryImpl.INSTANCE.fromKeys();
     }
 
     public BitSet getSubscribedColumns() {
@@ -145,7 +145,7 @@ public class InitialSnapshotTable extends QueryTable {
         boolean needsResizing = false;
         if (capacity == 0) {
             capacity = Integer.highestOneBit((int) Math.max(size * 2, 8));
-            freeset = RowSetFactoryImpl.INSTANCE.getFlatRowSet(capacity);
+            freeset = RowSetFactoryImpl.INSTANCE.flat(capacity);
             needsResizing = true;
         } else if (freeset.size() < size) {
             int allocatedSize = (int) (capacity - freeset.size());

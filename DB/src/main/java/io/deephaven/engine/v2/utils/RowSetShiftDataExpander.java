@@ -58,8 +58,8 @@ public class RowSetShiftDataExpander implements SafeCloseable {
             modified = update.modified.clone();
 
             // Expand shift destinations to paint rows that might need to be considered modified.
-            final RowSetBuilderSequential addedByShiftB = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
-            final RowSetBuilderSequential removedByShiftB = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
+            final RowSetBuilderSequential addedByShiftB = RowSetFactoryImpl.INSTANCE.builderSequential();
+            final RowSetBuilderSequential removedByShiftB = RowSetFactoryImpl.INSTANCE.builderSequential();
 
             for (int idx = 0; idx < update.shifted.size(); ++idx) {
                 final long start = update.shifted.getBeginRange(idx);
@@ -128,12 +128,12 @@ public class RowSetShiftDataExpander implements SafeCloseable {
      */
     public static final RowSetShiftDataExpander EMPTY = new RowSetShiftDataExpander(
             new Listener.Update(
-                    RowSetFactoryImpl.INSTANCE.getEmptyRowSet(),
-                    RowSetFactoryImpl.INSTANCE.getEmptyRowSet(),
-                    RowSetFactoryImpl.INSTANCE.getEmptyRowSet(),
+                    RowSetFactoryImpl.INSTANCE.empty(),
+                    RowSetFactoryImpl.INSTANCE.empty(),
+                    RowSetFactoryImpl.INSTANCE.empty(),
                     RowSetShiftData.EMPTY,
                     ModifiedColumnSet.ALL),
-            RowSetFactoryImpl.INSTANCE.getEmptyRowSet().convertToTracking());
+            RowSetFactoryImpl.INSTANCE.empty().convertToTracking());
 
     /**
      * Perform backwards compatible validation checks.

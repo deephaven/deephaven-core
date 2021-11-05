@@ -12,7 +12,7 @@ import io.deephaven.engine.v2.sources.DateTimeTreeMapSource;
 
 public class TestTailInitializationFilter extends LiveTableTestCase {
     public void testSimple() {
-        final RowSetBuilderSequential builder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
+        final RowSetBuilderSequential builder = RowSetFactoryImpl.INSTANCE.builderSequential();
         builder.appendRange(0, 99);
         builder.appendRange(1000, 1099);
         final long[] data = new long[200];
@@ -25,7 +25,7 @@ public class TestTailInitializationFilter extends LiveTableTestCase {
         final DBDateTime threshold1 = new DBDateTime(data[99] - DBTimeUtils.secondsToNanos(600));
         final DBDateTime threshold2 = new DBDateTime(data[199] - DBTimeUtils.secondsToNanos(600));
 
-        final QueryTable input = TstUtils.testRefreshingTable(builder.build(),
+        final QueryTable input = TstUtils.testRefreshingTable(builder.build().convertToTracking(),
                 ColumnHolder.getDateTimeColumnHolder("Timestamp", false, data));
         final Table filtered = TailInitializationFilter.mostRecent(input, "Timestamp", "00:10:00");
         TableTools.showWithIndex(filtered);
@@ -43,7 +43,7 @@ public class TestTailInitializationFilter extends LiveTableTestCase {
             data2[1] = DBTimeUtils.convertDateTime("2020-08-20T06:30:00 NY");
             data2[0] = DBTimeUtils.convertDateTime("2020-08-20T07:00:00 NY");
             data2[1] = DBTimeUtils.convertDateTime("2020-08-20T08:30:00 NY");
-            final RowSet newRowSet = RowSetFactoryImpl.INSTANCE.getRowSetByValues(100, 101, 1100, 1101);
+            final RowSet newRowSet = RowSetFactoryImpl.INSTANCE.fromKeys(100, 101, 1100, 1101);
             input.getRowSet().asMutable().insert(newRowSet);
             ((DateTimeTreeMapSource) input.<DBDateTime>getColumnSource("Timestamp")).add(newRowSet, data2);
             input.notifyListeners(newRowSet, TstUtils.i(), TstUtils.i());

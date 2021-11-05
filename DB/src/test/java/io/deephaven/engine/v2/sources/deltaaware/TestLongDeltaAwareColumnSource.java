@@ -203,7 +203,7 @@ public class TestLongDeltaAwareColumnSource {
     }
 
     private static RowSet rangesToIndex(long[] ranges) {
-        RowSetBuilderSequential builder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
+        RowSetBuilderSequential builder = RowSetFactoryImpl.INSTANCE.builderSequential();
         for (int ii = 0; ii < ranges.length; ii += 2) {
             builder.appendRange(ranges[ii], ranges[ii + 1] - 1);
         }

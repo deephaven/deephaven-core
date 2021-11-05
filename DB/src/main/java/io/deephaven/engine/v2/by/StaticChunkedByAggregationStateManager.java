@@ -23,7 +23,6 @@ import io.deephaven.engine.v2.utils.*;
 import java.util.Arrays;
 import io.deephaven.engine.v2.sort.permute.IntPermuteKernel;
 // @StateChunkTypeEnum@ from \QObject\E
-import io.deephaven.engine.v2.sort.permute.ObjectPermuteKernel;
 import io.deephaven.engine.v2.utils.compact.IntCompactKernel;
 import io.deephaven.engine.v2.utils.compact.LongCompactKernel;
 // endmixin rehash
@@ -561,7 +560,7 @@ class StaticChunkedByAggregationStateManager
                     final long currentHashLocation = bc.insertTableLocations.get(ii);
 
                     // region main insert
-                    final RowSetBuilderSequential mainSlotBuilder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
+                    final RowSetBuilderSequential mainSlotBuilder = RowSetFactoryImpl.INSTANCE.builderSequential();
                     mainSlotBuilder.appendKey(sourceChunkIndexKeys.get(firstChunkPositionForHashLocation));
                     indexSource.set(currentHashLocation, mainSlotBuilder);
                     statePositionInInsertedHashSlots.set(currentHashLocation, chunkPositionToInsertedHashSlotPosition(firstChunkPositionForHashLocation));
@@ -708,7 +707,7 @@ class StaticChunkedByAggregationStateManager
                             overflowLocationSource.set(tableLocation, allocatedOverflowLocation);
 
                             // region build overflow insert
-                            final RowSetBuilderSequential overflowSlotBuilder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
+                            final RowSetBuilderSequential overflowSlotBuilder = RowSetFactoryImpl.INSTANCE.builderSequential();
                             overflowSlotBuilder.appendKey(sourceChunkIndexKeys.get(chunkPosition));
                             overflowIndexSource.set(allocatedOverflowLocation, overflowSlotBuilder);
                             overflowStatePositionInInsertedHashSlots.set(allocatedOverflowLocation, chunkPositionToInsertedHashSlotPosition(chunkPosition));
@@ -1021,7 +1020,7 @@ class StaticChunkedByAggregationStateManager
              final WritableObjectChunk stateChunk = WritableObjectChunk.makeWritableChunk(maxSize);
              final ChunkSource.FillContext fillContext = indexSource.makeFillContext(maxSize)) {
 
-            indexSource.fillChunk(fillContext, stateChunk, RowSetFactoryImpl.INSTANCE.getFlatRowSet(tableHashPivot));
+            indexSource.fillChunk(fillContext, stateChunk, RowSetFactoryImpl.INSTANCE.flat(tableHashPivot));
 
             ChunkUtils.fillInOrder(positions);
 

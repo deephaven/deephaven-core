@@ -70,7 +70,7 @@ public class DbPrevFloatArrayColumnWrapper extends DbFloatArray.Indirect {
 
     @Override
     public DbFloatArray subArrayByPositions(long[] positions) {
-        RowSetBuilderRandom builder = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
+        RowSetBuilderRandom builder = RowSetFactoryImpl.INSTANCE.builderRandom();
 
         for (long position : positions) {
             final long realPos = position - startPadding;

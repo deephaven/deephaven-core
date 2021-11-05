@@ -42,7 +42,7 @@ public class TestAppendableColumn extends TestCase {
                     .getValuesMapping(tableR.getRowSet().subSetByPositionRange(0, tableR.size())).size());
             final Map mapper = tableR.getColumnSource("v").getGroupToRange();
             for (int i = 0; i < data.length / 4; i++) {
-                assertEquals(mapper.get(i), RowSetFactoryImpl.INSTANCE.getRowSetByRange(i * 4, i * 4 + 3));
+                assertEquals(mapper.get(i), RowSetFactoryImpl.INSTANCE.fromRange(i * 4, i * 4 + 3));
             }
         } finally {
             FileUtils.deleteRecursively(directory);

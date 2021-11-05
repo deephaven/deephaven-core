@@ -15,7 +15,7 @@ import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import java.util.Map;
 
 public class LiveQueryTable extends QueryTable implements LiveTable {
-    private RowSetBuilderRandom additionsBuilder = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
+    private RowSetBuilderRandom additionsBuilder = RowSetFactoryImpl.INSTANCE.builderRandom();
 
     public LiveQueryTable(TrackingMutableRowSet rowSet, Map<String, ? extends ColumnSource<?>> result) {
         super(rowSet, result);
@@ -26,13 +26,13 @@ public class LiveQueryTable extends QueryTable implements LiveTable {
         final RowSetBuilderRandom builder;
         synchronized (this) {
             builder = additionsBuilder;
-            additionsBuilder = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
+            additionsBuilder = RowSetFactoryImpl.INSTANCE.builderRandom();
         }
         final RowSet added = builder.build();
-        getRowSetInternal().insert(added);
+        getRowSet().asMutable().insert(added);
         if (added.size() > 0) {
-            notifyListeners(added, RowSetFactoryImpl.INSTANCE.getEmptyRowSet(),
-                    RowSetFactoryImpl.INSTANCE.getEmptyRowSet());
+            notifyListeners(added, RowSetFactoryImpl.INSTANCE.empty(),
+                    RowSetFactoryImpl.INSTANCE.empty());
         }
     }
 

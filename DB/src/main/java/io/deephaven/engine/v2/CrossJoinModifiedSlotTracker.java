@@ -59,7 +59,7 @@ class CrossJoinModifiedSlotTracker {
         int chunkCapacity = START_SLOT_CHUNK_SIZE;
         final SizedLongChunk<Values> flagChunk = new SizedLongChunk<>();
         final SizedLongChunk<RowKeys> keyChunk = new SizedLongChunk<>();
-        RowSetBuilderRandom indexBuilder = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
+        RowSetBuilderRandom indexBuilder = RowSetFactoryImpl.INSTANCE.builderRandom();
 
         long lastIndex = 0; // if added/removed/modified have been shifted then this is the left-rowSet for the shift
         MutableRowSet rightAdded;
@@ -138,11 +138,11 @@ class CrossJoinModifiedSlotTracker {
             rightChanged = keyChunk.size() > 0;
 
             // finalize right rowSet; transform from right rowSet to downstream offset
-            final RowSetBuilderSequential innerAdded = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
-            final RowSetBuilderSequential innerRemoved = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
+            final RowSetBuilderSequential innerAdded = RowSetFactoryImpl.INSTANCE.builderSequential();
+            final RowSetBuilderSequential innerRemoved = RowSetFactoryImpl.INSTANCE.builderSequential();
 
             // let's accumulate downstream offsets too
-            final RowSetBuilderSequential removedBuilder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
+            final RowSetBuilderSequential removedBuilder = RowSetFactoryImpl.INSTANCE.builderSequential();
 
             try (final RowSequence.Iterator iter = rightRowSet.getRowSequenceIterator()) {
                 final long startRelativePos = iter.getRelativePosition();
@@ -187,8 +187,8 @@ class CrossJoinModifiedSlotTracker {
             }
 
             // now translate added && modified; accumulate them too
-            final RowSetBuilderSequential addedBuilder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
-            final RowSetBuilderSequential modifiedBuilder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
+            final RowSetBuilderSequential addedBuilder = RowSetFactoryImpl.INSTANCE.builderSequential();
+            final RowSetBuilderSequential modifiedBuilder = RowSetFactoryImpl.INSTANCE.builderSequential();
 
             try (final RowSequence.Iterator iter = rightRowSet.getRowSequenceIterator()) {
                 final long startRelativePos = iter.getRelativePosition();
@@ -388,9 +388,9 @@ class CrossJoinModifiedSlotTracker {
 
             if (finishedRightProcessing) {
                 state.finalizedRight = true;
-                state.rightAdded = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
-                state.rightRemoved = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
-                state.rightModified = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+                state.rightAdded = RowSetFactoryImpl.INSTANCE.empty();
+                state.rightRemoved = RowSetFactoryImpl.INSTANCE.empty();
+                state.rightModified = RowSetFactoryImpl.INSTANCE.empty();
                 state.innerShifted = RowSetShiftData.EMPTY;
             }
         } else {
@@ -475,7 +475,7 @@ class CrossJoinModifiedSlotTracker {
     }
 
     void flushLeftRemoves() {
-        final RowSetBuilderRandom builder = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
+        final RowSetBuilderRandom builder = RowSetFactoryImpl.INSTANCE.builderRandom();
         for (int jj = 0; jj < pointer; ++jj) {
             final SlotState slotState = modifiedSlots.get(jj);
             if (slotState == null) {
@@ -484,7 +484,7 @@ class CrossJoinModifiedSlotTracker {
 
             final RowSet leftRemoved = slotState.indexBuilder.build();
             slotState.leftRowSet.remove(leftRemoved);
-            slotState.indexBuilder = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
+            slotState.indexBuilder = RowSetFactoryImpl.INSTANCE.builderRandom();
             long sizePrev = slotState.rightRowSet.sizePrev();
             if (sizePrev > 0) {
                 leftRemoved.forAllRowKeys(ii -> {
@@ -497,7 +497,7 @@ class CrossJoinModifiedSlotTracker {
     }
 
     void flushLeftAdds() {
-        final RowSetBuilderRandom downstreamAdds = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
+        final RowSetBuilderRandom downstreamAdds = RowSetFactoryImpl.INSTANCE.builderRandom();
         for (int jj = 0; jj < pointer; ++jj) {
             final SlotState slotState = modifiedSlots.get(jj);
             if (slotState == null) {
@@ -517,7 +517,7 @@ class CrossJoinModifiedSlotTracker {
                 });
             }
 
-            final RowSetBuilderRandom modifiedAdds = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
+            final RowSetBuilderRandom modifiedAdds = RowSetFactoryImpl.INSTANCE.builderRandom();
             for (int ii = 0; ii < slotState.keyChunk.get().size(); ++ii) {
                 final long key = slotState.keyChunk.get().get(ii);
                 if (slotState.flagChunk.get().get(ii) != FLAG_ADD) {
@@ -548,8 +548,8 @@ class CrossJoinModifiedSlotTracker {
         // Removes accumulate in the slot builder, modifies and adds accumulate in the chunks.
         // We leave the adds to process after left shifts are handled.
 
-        final RowSetBuilderRandom rmBuilder = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
-        final RowSetBuilderRandom modBuilder = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
+        final RowSetBuilderRandom rmBuilder = RowSetFactoryImpl.INSTANCE.builderRandom();
+        final RowSetBuilderRandom modBuilder = RowSetFactoryImpl.INSTANCE.builderRandom();
         for (int jj = 0; jj < pointer; ++jj) {
             final SlotState slotState = modifiedSlots.get(jj);
             if (slotState == null) {
@@ -558,7 +558,7 @@ class CrossJoinModifiedSlotTracker {
             final RowSet leftRemoved = slotState.indexBuilder.build();
             slotState.leftRowSet.remove(leftRemoved);
             jsm.updateLeftRedirectionIndex(leftRemoved, RowSet.NULL_ROW_KEY);
-            slotState.indexBuilder = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
+            slotState.indexBuilder = RowSetFactoryImpl.INSTANCE.builderRandom();
             final long sizePrev = slotState.rightRowSet.sizePrev();
             if (sizePrev > 0) {
                 leftRemoved.forAllRowKeys(ii -> {

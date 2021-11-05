@@ -14,8 +14,6 @@ import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
 import io.deephaven.engine.v2.utils.RowSetBuilderRandom;
-import io.deephaven.engine.v2.utils.TrackingRowSet;
-import io.deephaven.tablelogger.Row;
 import io.deephaven.util.type.TypeUtils;
 import org.jetbrains.annotations.NotNull;
 
@@ -72,7 +70,7 @@ public class DbArrayColumnWrapper<T> extends DbArray.Indirect<T> {
     }
 
     public DbArray<T> subArrayByPositions(long[] positions) {
-        RowSetBuilderRandom builder = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
+        RowSetBuilderRandom builder = RowSetFactoryImpl.INSTANCE.builderRandom();
 
         for (long position : positions) {
             final long realPos = position - startPadding;

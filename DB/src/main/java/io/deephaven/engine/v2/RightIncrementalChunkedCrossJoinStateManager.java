@@ -23,7 +23,6 @@ import io.deephaven.engine.v2.utils.*;
 import java.util.Arrays;
 import io.deephaven.engine.v2.sort.permute.IntPermuteKernel;
 // @StateChunkTypeEnum@ from \QObject\E
-import io.deephaven.engine.v2.sort.permute.ObjectPermuteKernel;
 import io.deephaven.engine.v2.utils.compact.IntCompactKernel;
 import io.deephaven.engine.v2.utils.compact.LongCompactKernel;
 // endmixin rehash
@@ -309,7 +308,7 @@ class RightIncrementalChunkedCrossJoinStateManager
         // how many bits we need for the right indexes.
         validateKeySpaceSize();
 
-        final RowSetBuilderSequential resultIndex = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
+        final RowSetBuilderSequential resultIndex = RowSetFactoryImpl.INSTANCE.builderSequential();
         leftTable.getRowSet().forAllRowKeys(index -> {
             final long regionStart = index << getNumShiftBits();
             final RowSet rightRowSet = getRightIndexFromLeftIndex(index);
@@ -584,7 +583,7 @@ class RightIncrementalChunkedCrossJoinStateManager
 
         final RowSet rowSet = source.getUnsafe(location);
         if (rowSet == null) {
-            source.set(location, RowSetFactoryImpl.INSTANCE.getEmptyRowSet().convertToTracking());
+            source.set(location, RowSetFactoryImpl.INSTANCE.empty().convertToTracking());
         }
     }
 
@@ -606,7 +605,7 @@ class RightIncrementalChunkedCrossJoinStateManager
                 return CrossJoinModifiedSlotTracker.NULL_COOKIE;
             }
 
-            source.set(location, RowSetFactoryImpl.INSTANCE.getRowSetByValues(keyToAdd).convertToTracking());
+            source.set(location, RowSetFactoryImpl.INSTANCE.fromKeys(keyToAdd).convertToTracking());
             size = 1;
         } else {
             rowSet.insert(keyToAdd);
@@ -1482,7 +1481,7 @@ class RightIncrementalChunkedCrossJoinStateManager
              final WritableObjectChunk stateChunk = WritableObjectChunk.makeWritableChunk(maxSize);
              final ChunkSource.FillContext fillContext = rightIndexSource.makeFillContext(maxSize)) {
 
-            rightIndexSource.fillChunk(fillContext, stateChunk, RowSetFactoryImpl.INSTANCE.getFlatRowSet(tableHashPivot));
+            rightIndexSource.fillChunk(fillContext, stateChunk, RowSetFactoryImpl.INSTANCE.flat(tableHashPivot));
 
             ChunkUtils.fillInOrder(positions);
 
@@ -2040,7 +2039,7 @@ class RightIncrementalChunkedCrossJoinStateManager
             retVal = rightIndexSource.get(slot);
         }
         if (retVal == null) {
-            retVal = RowSetFactoryImpl.INSTANCE.getEmptyRowSet().convertToTracking();
+            retVal = RowSetFactoryImpl.INSTANCE.empty().convertToTracking();
         }
         return retVal;
     }
@@ -2053,7 +2052,7 @@ class RightIncrementalChunkedCrossJoinStateManager
             retVal = rightIndexSource.getPrev(prevSlot);
         }
         if (retVal == null) {
-            retVal = RowSetFactoryImpl.INSTANCE.getEmptyRowSet().convertToTracking();
+            retVal = RowSetFactoryImpl.INSTANCE.empty().convertToTracking();
         }
         return retVal;
     }
@@ -2062,7 +2061,7 @@ class RightIncrementalChunkedCrossJoinStateManager
     public TrackingRowSet getRightIndexFromLeftIndex(long leftIndex) {
         long slot = leftIndexToSlot.get(leftIndex);
         if (slot == RowSet.NULL_ROW_KEY) {
-            return RowSetFactoryImpl.INSTANCE.getEmptyRowSet().convertToTracking();
+            return RowSetFactoryImpl.INSTANCE.empty().convertToTracking();
         }
         return getRightIndex(slot);
     }
@@ -2071,7 +2070,7 @@ class RightIncrementalChunkedCrossJoinStateManager
     public TrackingRowSet getRightIndexFromPrevLeftIndex(long leftIndex) {
         long slot = leftIndexToSlot.getPrev(leftIndex);
         if (slot == RowSet.NULL_ROW_KEY) {
-            return RowSetFactoryImpl.INSTANCE.getEmptyRowSet().convertToTracking();
+            return RowSetFactoryImpl.INSTANCE.empty().convertToTracking();
         }
         return getPrevRightIndex(slot);
     }
@@ -2085,7 +2084,7 @@ class RightIncrementalChunkedCrossJoinStateManager
 
         retVal = leftSource.get(slot);
         if (retVal == null) {
-            retVal = RowSetFactoryImpl.INSTANCE.getEmptyRowSet().convertToTracking();
+            retVal = RowSetFactoryImpl.INSTANCE.empty().convertToTracking();
             if (isLeftTicking) {
                 leftSource.set(slot, retVal);
             }

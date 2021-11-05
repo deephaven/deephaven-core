@@ -32,7 +32,7 @@ public class IndexBuilderChunkedBench {
 
     @Benchmark
     public void buildOddIndexViaIndividualValues(final Blackhole bh) {
-        final RowSetBuilderSequential b = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
+        final RowSetBuilderSequential b = RowSetFactoryImpl.INSTANCE.builderSequential();
         for (long v = 1; v <= maxOddValue; v += 2) {
             b.appendKey(v);
         }
@@ -42,7 +42,7 @@ public class IndexBuilderChunkedBench {
 
     @Benchmark
     public void buildOddIndexViaChunks(final Blackhole bh) {
-        final RowSetBuilderSequential b = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
+        final RowSetBuilderSequential b = RowSetFactoryImpl.INSTANCE.builderSequential();
         int ci = 0;
         indicesChunk.setSize(chunkSz);
         for (long v = 1; v <= maxOddValue; v += 2) {
@@ -62,7 +62,7 @@ public class IndexBuilderChunkedBench {
 
     @Benchmark
     public void buildOddIndexViaIterator(final Blackhole bh) {
-        final RowSetBuilderSequential b = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
+        final RowSetBuilderSequential b = RowSetFactoryImpl.INSTANCE.builderSequential();
         b.appendKeys(new PrimitiveIterator.OfLong() {
             long v = 1;
 
@@ -84,7 +84,7 @@ public class IndexBuilderChunkedBench {
 
     @Benchmark
     public void buildOddIndexViaRanges(final Blackhole bh) {
-        final RowSetBuilderSequential b = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
+        final RowSetBuilderSequential b = RowSetFactoryImpl.INSTANCE.builderSequential();
         for (long v = 1; v < maxOddValue; v += 4) {
             b.appendRange(v, v + 2);
         }
@@ -94,7 +94,7 @@ public class IndexBuilderChunkedBench {
 
     @Benchmark
     public void buildOddIndexViaRangeChunks(final Blackhole bh) {
-        final RowSetBuilderSequential b = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
+        final RowSetBuilderSequential b = RowSetFactoryImpl.INSTANCE.builderSequential();
         int ci = 0;
         rangesChunk.setSize(chunkSz);
         for (long v = 1; v < maxOddValue; v += 4) {
@@ -115,7 +115,7 @@ public class IndexBuilderChunkedBench {
 
     @Benchmark
     public void buildOddIndexViaRangeIterator(final Blackhole bh) {
-        final RowSetBuilderSequential b = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
+        final RowSetBuilderSequential b = RowSetFactoryImpl.INSTANCE.builderSequential();
         b.appendRanges(new LongRangeIterator() {
             long v = -3;
 

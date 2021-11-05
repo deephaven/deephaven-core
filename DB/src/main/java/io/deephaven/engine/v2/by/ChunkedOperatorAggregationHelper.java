@@ -170,7 +170,7 @@ public class ChunkedOperatorAggregationHelper {
         ac.getResultColumns(resultColumnSourceMap);
 
         final TrackingMutableRowSet resultRowSet =
-                RowSetFactoryImpl.INSTANCE.getFlatRowSet(outputPosition.intValue()).convertToTracking();
+                RowSetFactoryImpl.INSTANCE.flat(outputPosition.intValue()).convertToTracking();
         if (withView.isRefreshing()) {
             copyKeyColumns(keyColumnsRaw, keyColumnsCopied, resultRowSet);
         }
@@ -246,7 +246,7 @@ public class ChunkedOperatorAggregationHelper {
         if (upstream.removed.isEmpty()) {
             return upstream;
         }
-        return new Update(upstream.added, RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), upstream.modified, upstream.shifted,
+        return new Update(upstream.added, RowSetFactoryImpl.INSTANCE.empty(), upstream.modified, upstream.shifted,
                 upstream.modifiedColumnSet);
     }
 
@@ -377,9 +377,9 @@ public class ChunkedOperatorAggregationHelper {
             final int probeChunkSize = chunkSize(probeSize);
             final int chunkSize = Math.max(buildChunkSize, probeChunkSize);
 
-            emptiedStatesBuilder = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
-            modifiedStatesBuilder = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
-            reincarnatedStatesBuilder = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
+            emptiedStatesBuilder = RowSetFactoryImpl.INSTANCE.builderRandom();
+            modifiedStatesBuilder = RowSetFactoryImpl.INSTANCE.builderRandom();
+            reincarnatedStatesBuilder = RowSetFactoryImpl.INSTANCE.builderRandom();
             modifiedOperators = new boolean[ac.size()];
 
             toClose = new SafeCloseableList();
@@ -953,13 +953,13 @@ public class ChunkedOperatorAggregationHelper {
                     || od.anyOperatorWithoutModifiedInputColumnsRequiresIndices || keysModified);
 
             final RowSetBuilderSequential unshiftedSameSlotIndicesBuilder =
-                    needUnshiftedSameSlotIndices ? RowSetFactoryImpl.INSTANCE.getSequentialBuilder() : null;
+                    needUnshiftedSameSlotIndices ? RowSetFactoryImpl.INSTANCE.builderSequential() : null;
             final RowSetBuilderSequential sameSlotIndicesPreShiftBuilder =
-                    needSameSlotIndicesPreShift ? RowSetFactoryImpl.INSTANCE.getSequentialBuilder() : null;
+                    needSameSlotIndicesPreShift ? RowSetFactoryImpl.INSTANCE.builderSequential() : null;
             final RowSetBuilderSequential sameSlotIndicesPostShiftBuilder =
-                    needSameSlotIndicesPostShift ? RowSetFactoryImpl.INSTANCE.getSequentialBuilder() : null;
+                    needSameSlotIndicesPostShift ? RowSetFactoryImpl.INSTANCE.builderSequential() : null;
             final RowSetBuilderSequential keyChangeIndicesPostShiftBuilder =
-                    RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
+                    RowSetFactoryImpl.INSTANCE.builderSequential();
 
             try (final RowSequence.Iterator modifiedPreShiftIterator =
                     upstream.getModifiedPreShift().getRowSequenceIterator();
@@ -1054,7 +1054,7 @@ public class ChunkedOperatorAggregationHelper {
     }
 
     private static RowSet extractUnshiftedModifiesFromUpstream(@NotNull final Update upstream) {
-        final RowSetBuilderSequential unshiftedModifiesBuilder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
+        final RowSetBuilderSequential unshiftedModifiesBuilder = RowSetFactoryImpl.INSTANCE.builderSequential();
 
         try (final RowSequence.Iterator modifiedPreShiftIterator =
                 upstream.getModifiedPreShift().getRowSequenceIterator();
@@ -1102,7 +1102,7 @@ public class ChunkedOperatorAggregationHelper {
         }
         if (downstream.modifiedColumnSet.empty() && downstream.modified.isNonempty()) {
             downstream.modified.close();
-            downstream.modified = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+            downstream.modified = RowSetFactoryImpl.INSTANCE.empty();
         }
     }
 
@@ -1381,7 +1381,8 @@ public class ChunkedOperatorAggregationHelper {
 
         doGroupedAddition(ac, groupKeyIndexTable, responsiveGroups);
 
-        final QueryTable result = new QueryTable(RowSetFactoryImpl.INSTANCE.getFlatRowSet(responsiveGroups), resultColumnSourceMap);
+        final QueryTable result = new QueryTable(RowSetFactoryImpl.INSTANCE.flat(responsiveGroups).convertToTracking(),
+                resultColumnSourceMap);
         ac.propagateInitialStateToOperators(result);
 
         final ReverseLookupListener rll = ReverseLookupListener.makeReverseLookupListenerWithSnapshot(result, keyName);
@@ -1569,8 +1570,8 @@ public class ChunkedOperatorAggregationHelper {
     }
 
     private static RowSet makeNewStatesIndex(final int first, final int last) {
-        return first > last ? RowSetFactoryImpl.INSTANCE.getEmptyRowSet()
-                : RowSetFactoryImpl.INSTANCE.getRowSetByRange(first, last);
+        return first > last ? RowSetFactoryImpl.INSTANCE.empty()
+                : RowSetFactoryImpl.INSTANCE.fromRange(first, last);
     }
 
     private static void copyKeyColumns(ColumnSource<?>[] keyColumnsRaw, WritableSource<?>[] keyColumnsCopied,
@@ -1629,7 +1630,8 @@ public class ChunkedOperatorAggregationHelper {
             doNoKeyAddition(rowSet, ac, opContexts, allColumns, usePrev, allColumns);
         }
 
-        final QueryTable result = new QueryTable(RowSetFactoryImpl.INSTANCE.getFlatRowSet(initialResultSize), resultColumnSourceMap);
+        final QueryTable result = new QueryTable(RowSetFactoryImpl.INSTANCE.flat(initialResultSize).convertToTracking(),
+                resultColumnSourceMap);
         ac.propagateInitialStateToOperators(result);
 
         if (table.isRefreshing()) {
@@ -1742,22 +1744,22 @@ public class ChunkedOperatorAggregationHelper {
                                 final Update downstream = new Update();
                                 downstream.shifted = RowSetShiftData.EMPTY;
                                 if ((lastSize == 0 && newResultSize == 1)) {
-                                    downstream.added = RowSetFactoryImpl.INSTANCE.getRowSetByValues(0);
-                                    downstream.removed = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
-                                    downstream.modified = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+                                    downstream.added = RowSetFactoryImpl.INSTANCE.fromKeys(0);
+                                    downstream.removed = RowSetFactoryImpl.INSTANCE.empty();
+                                    downstream.modified = RowSetFactoryImpl.INSTANCE.empty();
                                     result.getRowSet().asMutable().insert(0);
                                 } else if (lastSize == 1 && newResultSize == 0) {
-                                    downstream.added = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
-                                    downstream.removed = RowSetFactoryImpl.INSTANCE.getRowSetByValues(0);
-                                    downstream.modified = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+                                    downstream.added = RowSetFactoryImpl.INSTANCE.empty();
+                                    downstream.removed = RowSetFactoryImpl.INSTANCE.fromKeys(0);
+                                    downstream.modified = RowSetFactoryImpl.INSTANCE.empty();
                                     result.getRowSet().asMutable().remove(0);
                                 } else {
                                     if (!anyTrue(BooleanChunk.chunkWrap(modifiedOperators))) {
                                         return;
                                     }
-                                    downstream.added = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
-                                    downstream.removed = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
-                                    downstream.modified = RowSetFactoryImpl.INSTANCE.getRowSetByValues(0);
+                                    downstream.added = RowSetFactoryImpl.INSTANCE.empty();
+                                    downstream.removed = RowSetFactoryImpl.INSTANCE.empty();
+                                    downstream.modified = RowSetFactoryImpl.INSTANCE.fromKeys(0);
                                 }
                                 lastSize = newResultSize;
 

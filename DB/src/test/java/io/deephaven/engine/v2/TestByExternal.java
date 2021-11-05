@@ -136,7 +136,8 @@ public class TestByExternal extends QueryTableTestBase {
     public void testErrorPropagation() {
         try (final ErrorExpectation ee = new ErrorExpectation()) {
             final QueryTable table =
-                    TstUtils.testRefreshingTable(i(2, 4, 6), col("Key", "A", "B", "A"), intCol("Int", 2, 4, 6));
+                    TstUtils.testRefreshingTable(i(2, 4, 6).convertToTracking(),
+                            col("Key", "A", "B", "A"), intCol("Int", 2, 4, 6));
 
             final TableMap byKey = table.byExternal("Key");
 
@@ -177,8 +178,8 @@ public class TestByExternal extends QueryTableTestBase {
     }
 
     public void testNewKeysAfterResultReleased() {
-        final QueryTable table =
-                TstUtils.testRefreshingTable(i(2, 4, 6), col("Key", "A", "B", "A"), intCol("Int", 2, 4, 6));
+        final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6).convertToTracking(),
+                col("Key", "A", "B", "A"), intCol("Int", 2, 4, 6));
 
         final LivenessScope subTablesScope = new LivenessScope();
 
@@ -281,7 +282,8 @@ public class TestByExternal extends QueryTableTestBase {
 
     public void testNewKeysBeforeResultReleased() {
         final QueryTable table =
-                TstUtils.testRefreshingTable(i(2, 4, 6), col("Key", "A", "B", "A"), intCol("Int", 2, 4, 6));
+                TstUtils.testRefreshingTable(i(2, 4, 6).convertToTracking(),
+                        col("Key", "A", "B", "A"), intCol("Int", 2, 4, 6));
 
         try (final SafeCloseable ignored1 = LivenessScopeStack.open()) {
 
@@ -392,8 +394,8 @@ public class TestByExternal extends QueryTableTestBase {
         setExpectError(false);
         final ExecutorService pool = Executors.newFixedThreadPool(1);
 
-        final QueryTable rawTable = TstUtils.testRefreshingTable(i(2, 4, 6), col("Key", "A", "B", "A"),
-                intCol("Int", 2, 4, 6), intCol("I2", 1, 2, 3));
+        final QueryTable rawTable = TstUtils.testRefreshingTable(i(2, 4, 6).convertToTracking(),
+                col("Key", "A", "B", "A"), intCol("Int", 2, 4, 6), intCol("I2", 1, 2, 3));
 
         QueryScope.addParam("sleepHelper", new SleepHelper());
 

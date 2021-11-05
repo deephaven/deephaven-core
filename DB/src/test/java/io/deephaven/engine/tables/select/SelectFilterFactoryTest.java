@@ -344,49 +344,49 @@ public class SelectFilterFactoryTest extends LiveTableTestCase {
         f.init(t.getDefinition());
         RowSet result = f.filter(t.getRowSet().clone(), t.getRowSet(), t, false);
         assertEquals(12, result.size());
-        assertEquals(RowSetFactoryImpl.INSTANCE.getRowSetByValues(0, 1, 2, 3, 4, 6, 7, 8, 9, 10, 11, 13), result);
+        assertEquals(RowSetFactoryImpl.INSTANCE.fromKeys(0, 1, 2, 3, 4, 6, 7, 8, 9, 10, 11, 13), result);
 
         f = SelectFilterFactory.getExpression("Phrase icase includes all `T1`, `T2`, `T3`");
         assertTrue("f instanceof StringContainsFilter", f instanceof StringContainsFilter);
         f.init(t.getDefinition());
         result = f.filter(t.getRowSet().clone(), t.getRowSet(), t, false);
         assertEquals(4, result.size());
-        assertEquals(RowSetFactoryImpl.INSTANCE.getRowSetByValues(7, 9, 10, 11), result);
+        assertEquals(RowSetFactoryImpl.INSTANCE.fromKeys(7, 9, 10, 11), result);
 
         f = SelectFilterFactory.getExpression("Phrase includes any `T1`, `T2`, `T3`");
         assertTrue("f instanceof StringContainsFilter", f instanceof StringContainsFilter);
         f.init(t.getDefinition());
         result = f.filter(t.getRowSet().clone(), t.getRowSet(), t, false);
-        assertEquals(RowSetFactoryImpl.INSTANCE.getRowSetByValues(0, 1, 2, 6, 7, 9, 10, 11), result);
+        assertEquals(RowSetFactoryImpl.INSTANCE.fromKeys(0, 1, 2, 6, 7, 9, 10, 11), result);
 
         f = SelectFilterFactory.getExpression("Phrase includes all `T1`, `t2`, `T3`");
         assertTrue("f instanceof StringContainsFilter", f instanceof StringContainsFilter);
         f.init(t.getDefinition());
         result = f.filter(t.getRowSet().clone(), t.getRowSet(), t, false);
-        assertEquals(RowSetFactoryImpl.INSTANCE.getRowSetByValues(7, 11), result);
+        assertEquals(RowSetFactoryImpl.INSTANCE.fromKeys(7, 11), result);
 
         f = SelectFilterFactory.getExpression("Phrase icase not includes any `T1`, `T2`, `T3`");
         assertTrue("f instanceof StringContainsFilter", f instanceof StringContainsFilter);
         f.init(t.getDefinition());
         result = f.filter(t.getRowSet().clone(), t.getRowSet(), t, false);
-        assertEquals(RowSetFactoryImpl.INSTANCE.getRowSetByValues(0, 1, 2, 3, 4, 5, 6, 8, 12, 13), result);
+        assertEquals(RowSetFactoryImpl.INSTANCE.fromKeys(0, 1, 2, 3, 4, 5, 6, 8, 12, 13), result);
 
         f = SelectFilterFactory.getExpression("Phrase icase not includes all `T1`, `T2`, `T3`");
         assertTrue("f instanceof StringContainsFilter", f instanceof StringContainsFilter);
         f.init(t.getDefinition());
         result = f.filter(t.getRowSet().clone(), t.getRowSet(), t, false);
-        assertEquals(RowSetFactoryImpl.INSTANCE.getRowSetByValues(5, 12), result);
+        assertEquals(RowSetFactoryImpl.INSTANCE.fromKeys(5, 12), result);
 
         f = SelectFilterFactory.getExpression("Phrase not includes any `T1`, `T2`, `T3`");
         assertTrue("f instanceof StringContainsFilter", f instanceof StringContainsFilter);
         f.init(t.getDefinition());
         result = f.filter(t.getRowSet().clone(), t.getRowSet(), t, false);
-        assertEquals(RowSetFactoryImpl.INSTANCE.getRowSetByValues(0, 1, 2, 3, 4, 5, 6, 7, 8, 11, 12, 13), result);
+        assertEquals(RowSetFactoryImpl.INSTANCE.fromKeys(0, 1, 2, 3, 4, 5, 6, 7, 8, 11, 12, 13), result);
 
         f = SelectFilterFactory.getExpression("Phrase not includes all `T1`, `t2`, `T3`");
         assertTrue("f instanceof StringContainsFilter", f instanceof StringContainsFilter);
         f.init(t.getDefinition());
         result = f.filter(t.getRowSet().clone(), t.getRowSet(), t, false);
-        assertEquals(RowSetFactoryImpl.INSTANCE.getRowSetByValues(1, 3, 5, 12), result);
+        assertEquals(RowSetFactoryImpl.INSTANCE.fromKeys(1, 3, 5, 12), result);
     }
 }

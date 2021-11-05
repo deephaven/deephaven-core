@@ -18,7 +18,7 @@ import static io.deephaven.engine.v2.TstUtils.*;
 public class TestReverseLookupListener extends LiveTableTestCase {
     public void testSimple() {
         final BaseTable source = TstUtils.testRefreshingTable(
-                i(2, 4, 6, 8),
+                i(2, 4, 6, 8).convertToTracking(),
                 TstUtils.c("Sentinel", "A", "B", "C", "D"),
                 TstUtils.c("Sentinel2", "H", "I", "J", "K"));
         io.deephaven.engine.tables.utils.TableTools.show(source);
@@ -33,7 +33,7 @@ public class TestReverseLookupListener extends LiveTableTestCase {
         assertEquals(reverseLookupListener.getNoEntryValue(), reverseLookupListener.get("E"));
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-            final RowSet keysToModify = RowSetFactoryImpl.INSTANCE.getRowSetByValues(4);
+            final RowSet keysToModify = RowSetFactoryImpl.INSTANCE.fromKeys(4);
             TstUtils.addToTable(source, keysToModify, TstUtils.c("Sentinel", "E"), TstUtils.c("Sentinel2", "L"));
             source.notifyListeners(i(), i(), keysToModify);
         });
@@ -45,7 +45,7 @@ public class TestReverseLookupListener extends LiveTableTestCase {
         assertEquals(reverseLookupListener.getNoEntryValue(), reverseLookupListener.get("B"));
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-            final RowSet keysToSwap = RowSetFactoryImpl.INSTANCE.getRowSetByValues(4, 6);
+            final RowSet keysToSwap = RowSetFactoryImpl.INSTANCE.fromKeys(4, 6);
             TstUtils.addToTable(source, keysToSwap, TstUtils.c("Sentinel", "C", "E"),
                     TstUtils.c("Sentinel2", "M", "N"));
             source.notifyListeners(i(), i(), keysToSwap);

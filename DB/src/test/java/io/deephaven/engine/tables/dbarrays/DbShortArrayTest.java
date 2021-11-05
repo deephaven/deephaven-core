@@ -20,7 +20,7 @@ public class DbShortArrayTest extends TestCase {
         //noinspection unchecked
         DbShortArray dbArray = new DbShortArrayColumnWrapper(
                 ArrayBackedColumnSource.getMemoryColumnSource(new short[]{(short)10, (short)20, (short)30}),
-                RowSetFactoryImpl.INSTANCE.getRowSetByRange(0, 2));
+                RowSetFactoryImpl.INSTANCE.fromRange(0, 2));
         assertEquals(3, dbArray.size());
         assertEquals((short)10, dbArray.get(0));
         assertEquals((short)20, dbArray.get(1));
@@ -108,7 +108,7 @@ public class DbShortArrayTest extends TestCase {
         //noinspection unchecked
         DbShortArray dbArray = new DbShortArrayColumnWrapper(
                 ArrayBackedColumnSource.getMemoryColumnSource(new short[]{(short)10, (short)20, (short)30}),
-                RowSetFactoryImpl.INSTANCE.getRowSetByRange(0, 2));
+                RowSetFactoryImpl.INSTANCE.fromRange(0, 2));
 
         for (int start=-4; start<=4; start++){
             for (int end=-1; end<=7; end++){

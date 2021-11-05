@@ -34,10 +34,10 @@ public class QueryTableCrossJoinSmallRightBitsTest extends QueryTableCrossJoinTe
     public void testZeroKeyOutOfKeySpace() {
         // idea here is that left uses LARGE keyspace and the right uses SMALL keyspace.
         // (61-bits on the left, 2-bits on the right)
-        final QueryTable ltTable = testRefreshingTable(i(0, (1L << 61) - 1), c("A", 1, 2));
-        final QueryTable lsTable = testTable(i(0, (1L << 61) - 1), c("A", 1, 2));
-        final QueryTable rtTable = testRefreshingTable(i(0, 1, 2, 3), c("B", 1, 2, 3, 4));
-        final QueryTable rsTable = testTable(i(0, 1, 2, 3), c("B", 1, 2, 3, 4));
+        final QueryTable ltTable = testRefreshingTable(i(0, (1L << 61) - 1).convertToTracking(), c("A", 1, 2));
+        final QueryTable lsTable = testTable(i(0, (1L << 61) - 1).convertToTracking(), c("A", 1, 2));
+        final QueryTable rtTable = testRefreshingTable(i(0, 1, 2, 3).convertToTracking(), c("B", 1, 2, 3, 4));
+        final QueryTable rsTable = testTable(i(0, 1, 2, 3).convertToTracking(), c("B", 1, 2, 3, 4));
 
         for (final QueryTable left : new QueryTable[] {ltTable, lsTable}) {
             for (final QueryTable right : new QueryTable[] {rtTable, rsTable}) {
@@ -62,10 +62,10 @@ public class QueryTableCrossJoinSmallRightBitsTest extends QueryTableCrossJoinTe
     public void testKeyColumnOutOfKeySpace() {
         // idea here is that left uses LARGE keyspace and the right uses SMALL keyspace.
         // (62-bits on the left, 1-bit on the right (per group))
-        final QueryTable ltTable = testRefreshingTable(i(0, (1L << 62) - 1), c("A", 1, 2));
-        final QueryTable lsTable = testTable(i(0, (1L << 62) - 1), c("A", 1, 2));
-        final QueryTable rtTable = testRefreshingTable(i(0, 1, 2, 3), c("B", 1, 2, 3, 4));
-        final QueryTable rsTable = testTable(i(0, 1, 2, 3), c("B", 1, 2, 3, 4));
+        final QueryTable ltTable = testRefreshingTable(i(0, (1L << 62) - 1).convertToTracking(), c("A", 1, 2));
+        final QueryTable lsTable = testTable(i(0, (1L << 62) - 1).convertToTracking(), c("A", 1, 2));
+        final QueryTable rtTable = testRefreshingTable(i(0, 1, 2, 3).convertToTracking(), c("B", 1, 2, 3, 4));
+        final QueryTable rsTable = testTable(i(0, 1, 2, 3).convertToTracking(), c("B", 1, 2, 3, 4));
 
         for (final QueryTable left : new QueryTable[] {ltTable, lsTable}) {
             for (final QueryTable right : new QueryTable[] {rtTable, rsTable}) {
@@ -94,15 +94,15 @@ public class QueryTableCrossJoinSmallRightBitsTest extends QueryTableCrossJoinTe
         // - one row to change groups to another of same size (grp 2 -> 3)
         // - one row to change groups to another of larger size (grp 2 -> 4)
         // - one row to not change groups, but group gets larger (grp 5)
-        final QueryTable lTable = testRefreshingTable(i(0, 1, 2, 3, 4), c("A", 0, 2, 2, 2, 5));
-        final QueryTable rTable = testRefreshingTable(i(), intCol("A"));
+        final QueryTable lTable = testRefreshingTable(i(0, 1, 2, 3, 4).convertToTracking(), c("A", 0, 2, 2, 2, 5));
+        final QueryTable rTable = testRefreshingTable(i().convertToTracking(), intCol("A"));
         int numRightBitsToReserve = 1;
 
         int[] sizes = new int[] {2, 1, 3, 3, 4, 4};
         for (int grp = 0; grp < sizes.length; ++grp) {
             int[] data = new int[sizes[grp]];
             Arrays.fill(data, grp);
-            TstUtils.addToTable(rTable, RowSetFactoryImpl.INSTANCE.getRowSetByRange(grp * 10, grp * 10 + data.length - 1),
+            TstUtils.addToTable(rTable, RowSetFactoryImpl.INSTANCE.fromRange(grp * 10, grp * 10 + data.length - 1),
                     intCol("A", data));
         }
 
@@ -149,15 +149,15 @@ public class QueryTableCrossJoinSmallRightBitsTest extends QueryTableCrossJoinTe
         // - one row to change groups to another of same size (grp 2 -> 3)
         // - one row to change groups to another of larger size (grp 2 -> 4)
         // - one row to not change groups, but group gets larger (grp 5)
-        final QueryTable lTable = testRefreshingTable(i(0, 1, 2, 3, 4), c("A", 0, 2, 2, 2, 5));
-        final QueryTable rTable = testRefreshingTable(i(), intCol("A"));
+        final QueryTable lTable = testRefreshingTable(i(0, 1, 2, 3, 4).convertToTracking(), c("A", 0, 2, 2, 2, 5));
+        final QueryTable rTable = testRefreshingTable(i().convertToTracking(), intCol("A"));
         int numRightBitsToReserve = 1;
 
         int[] sizes = new int[] {3, 2, 3, 3, 3, 4};
         for (int grp = 0; grp < sizes.length; ++grp) {
             int[] data = new int[sizes[grp]];
             Arrays.fill(data, grp);
-            TstUtils.addToTable(rTable, RowSetFactoryImpl.INSTANCE.getRowSetByRange(grp * 10, grp * 10 + data.length - 1),
+            TstUtils.addToTable(rTable, RowSetFactoryImpl.INSTANCE.fromRange(grp * 10, grp * 10 + data.length - 1),
                     intCol("A", data));
         }
 
@@ -201,15 +201,15 @@ public class QueryTableCrossJoinSmallRightBitsTest extends QueryTableCrossJoinTe
         // - one row to change groups to another of same size (grp 2 -> 3)
         // - one row to change groups to another of larger size (grp 2 -> 4)
         // - one row to not change groups, but group gets larger (grp 5)
-        final QueryTable lTable = testRefreshingTable(i(0, 1, 2, 3, 4), c("A", 0, 2, 2, 2, 5));
-        final QueryTable rTable = testRefreshingTable(i(), intCol("A"));
+        final QueryTable lTable = testRefreshingTable(i(0, 1, 2, 3, 4).convertToTracking(), c("A", 0, 2, 2, 2, 5));
+        final QueryTable rTable = testRefreshingTable(i().convertToTracking(), intCol("A"));
         int numRightBitsToReserve = 1;
 
         int[] sizes = new int[] {2, 1, 3, 3, 4, 4};
         for (int grp = 0; grp < sizes.length; ++grp) {
             int[] data = new int[sizes[grp]];
             Arrays.fill(data, grp);
-            TstUtils.addToTable(rTable, RowSetFactoryImpl.INSTANCE.getRowSetByRange(grp * 10, grp * 10 + data.length - 1),
+            TstUtils.addToTable(rTable, RowSetFactoryImpl.INSTANCE.fromRange(grp * 10, grp * 10 + data.length - 1),
                     intCol("A", data));
         }
 
@@ -259,15 +259,15 @@ public class QueryTableCrossJoinSmallRightBitsTest extends QueryTableCrossJoinTe
         // - one row to change groups to another of same size (grp 2 -> 3)
         // - one row to change groups to another of larger size (grp 2 -> 4)
         // - one row to not change groups, but group gets larger (grp 5)
-        final QueryTable lTable = testRefreshingTable(i(0, 1, 2, 3, 4), c("A", 0, 2, 2, 2, 5));
-        final QueryTable rTable = testRefreshingTable(i(), intCol("A"));
+        final QueryTable lTable = testRefreshingTable(i(0, 1, 2, 3, 4).convertToTracking(), c("A", 0, 2, 2, 2, 5));
+        final QueryTable rTable = testRefreshingTable(i().convertToTracking(), intCol("A"));
         int numRightBitsToReserve = 1;
 
         int[] sizes = new int[] {2, 1, 3, 3, 4, 4};
         for (int grp = 0; grp < sizes.length; ++grp) {
             int[] data = new int[sizes[grp]];
             Arrays.fill(data, grp);
-            TstUtils.addToTable(rTable, RowSetFactoryImpl.INSTANCE.getRowSetByRange(grp * 10, grp * 10 + data.length - 1),
+            TstUtils.addToTable(rTable, RowSetFactoryImpl.INSTANCE.fromRange(grp * 10, grp * 10 + data.length - 1),
                     intCol("A", data));
         }
 

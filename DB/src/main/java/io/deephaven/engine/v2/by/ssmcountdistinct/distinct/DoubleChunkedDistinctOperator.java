@@ -278,7 +278,7 @@ public class DoubleChunkedDistinctOperator implements IterativeChunkedAggregatio
             }
 
             prevFlusher = new UpdateCommitter<>(this, DoubleChunkedDistinctOperator::flushPrevious);
-            touchedStates = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+            touchedStates = RowSetFactoryImpl.INSTANCE.empty();
         }
     }
 

@@ -73,7 +73,7 @@ public class TailInitializationFilter {
     }
 
     private static Table mostRecentLong(final Table table, final LongUnaryOperator getValue, final long nanos) {
-        final RowSetBuilderSequential builder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
+        final RowSetBuilderSequential builder = RowSetFactoryImpl.INSTANCE.builderSequential();
         // we are going to binary search each partition of this table, because the different partitions have
         // non-contiguous indices, but values within a partition are contiguous indices.
         table.getRowSet().forEachRowKeyRange((s, e) -> {
@@ -101,7 +101,7 @@ public class TailInitializationFilter {
             }
             return true;
         });
-        final MutableRowSet resultRowSet = builder.build().convertToTracking();
+        final TrackingMutableRowSet resultRowSet = builder.build().convertToTracking();
         final QueryTable result = new QueryTable(table.getDefinition(), resultRowSet, table.getColumnSourceMap());
         if (table.isLive()) {
             // TODO: Assert AddOnly in T+, propagate AddOnly in Treasure

@@ -9,7 +9,6 @@ package io.deephaven.engine.v2.by.ssmcountdistinct.unique;
 
 import io.deephaven.engine.v2.sources.BoxedColumnSource;
 import io.deephaven.engine.tables.utils.DBDateTime;
-import io.deephaven.engine.v2.by.ssmcountdistinct.DbDateTimeSsmSourceWrapper;
 
 import io.deephaven.engine.v2.Listener;
 import io.deephaven.engine.v2.by.ComboAggregateFactory;
@@ -296,7 +295,7 @@ public class LongChunkedUniqueOperator implements IterativeChunkedAggregationOpe
 
             ssms.startTrackingPrevValues();
             prevFlusher = new UpdateCommitter<>(this, LongChunkedUniqueOperator::flushPrevious);
-            touchedStates = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+            touchedStates = RowSetFactoryImpl.INSTANCE.empty();
         }
     }
 

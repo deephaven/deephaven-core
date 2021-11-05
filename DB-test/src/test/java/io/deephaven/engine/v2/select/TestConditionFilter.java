@@ -339,8 +339,8 @@ public class TestConditionFilter extends PythonTest {
 
     private void check(String expression, Predicate<Map<String, Object>> testPredicate, boolean testPython,
             boolean testNative) {
-        final RowSetBuilderSequential keepBuilder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
-        final RowSetBuilderSequential dropBuilder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
+        final RowSetBuilderSequential keepBuilder = RowSetFactoryImpl.INSTANCE.builderSequential();
+        final RowSetBuilderSequential dropBuilder = RowSetFactoryImpl.INSTANCE.builderSequential();
 
         final Map<String, ? extends ColumnSource> sourcesMap =
                 testDataTable.updateView("actualI = i", "actualII = ii", "actualK = k").getColumnSourceMap();

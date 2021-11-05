@@ -348,7 +348,7 @@ public interface RowSequence extends SafeCloseable, LongSizedDataStructure {
 
         @Override
         public RowSet asRowSet() {
-            return RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+            return RowSetFactoryImpl.INSTANCE.empty();
         }
 
         @Override

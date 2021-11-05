@@ -60,7 +60,7 @@ public class IntStreamSortedFirstOrLastChunkedOperator extends CopyingPermutedSt
     public void resetForStep(@NotNull final Listener.Update upstream) {
         super.resetForStep(upstream);
         if (isCombo) {
-            changedDestinationsBuilder = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
+            changedDestinationsBuilder = RowSetFactoryImpl.INSTANCE.builderRandom();
         }
     }
 

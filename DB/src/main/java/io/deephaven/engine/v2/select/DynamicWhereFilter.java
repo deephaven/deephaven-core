@@ -238,7 +238,7 @@ public class DynamicWhereFilter extends SelectFilterLivenessArtifactImpl impleme
                 }
             case CREATE_GROUPS:
                 try (final TrackingRowSet rowSetForGrouping =
-                        trackingSelection != null ? null : selection.convertToTrackingMutable()) {
+                        trackingSelection != null ? null : selection.clone().convertToTracking()) {
                     return filterGrouping(
                             trackingSelection != null ? trackingSelection : rowSetForGrouping, table);
                 }
@@ -271,7 +271,7 @@ public class DynamicWhereFilter extends SelectFilterLivenessArtifactImpl impleme
 
     private MutableRowSet filterLinearOne(RowSet selection, ColumnSource keyColumn) {
         if (selection.isEmpty()) {
-            return RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+            return RowSetFactoryImpl.INSTANCE.empty();
         }
 
         if (!kernelValid) {
@@ -279,7 +279,7 @@ public class DynamicWhereFilter extends SelectFilterLivenessArtifactImpl impleme
             kernelValid = true;
         }
 
-        final RowSetBuilderSequential indexBuilder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
+        final RowSetBuilderSequential indexBuilder = RowSetFactoryImpl.INSTANCE.builderSequential();
 
         try (final ColumnSource.GetContext getContext = keyColumn.makeGetContext(CHUNK_SIZE);
                 final RowSequence.Iterator rsIt = selection.getRowSequenceIterator()) {
@@ -309,7 +309,7 @@ public class DynamicWhereFilter extends SelectFilterLivenessArtifactImpl impleme
     }
 
     private MutableRowSet filterLinearTuple(RowSet selection, TupleSource tupleSource) {
-        final RowSetBuilderSequential indexBuilder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
+        final RowSetBuilderSequential indexBuilder = RowSetFactoryImpl.INSTANCE.builderSequential();
 
         for (final RowSet.Iterator it = selection.iterator(); it.hasNext();) {
             final long row = it.nextLong();

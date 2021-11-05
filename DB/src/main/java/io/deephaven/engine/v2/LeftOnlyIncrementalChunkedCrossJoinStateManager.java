@@ -270,7 +270,7 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
         // how many bits we need for the right indexes.
         validateKeySpaceSize();
 
-        final RowSetBuilderRandom resultIndex = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
+        final RowSetBuilderRandom resultIndex = RowSetFactoryImpl.INSTANCE.builderRandom();
         if (!leftTable.isEmpty()) {
             addLeft(leftTable.getRowSet(), (slot, index) -> {
                 final long regionStart = index << getNumShiftBits();
@@ -321,14 +321,14 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
 
     void processLeftModifies(final Listener.Update upstream, final Listener.Update downstream, final MutableRowSet resultRowSet) {
         if (upstream.modified.isEmpty()) {
-            downstream.modified = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+            downstream.modified = RowSetFactoryImpl.INSTANCE.empty();
             return;
         }
         final boolean usePrev = false;
-        final RowSetBuilderSequential addBuilder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
-        final RowSetBuilderSequential rmBuilder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
-        final RowSetBuilderSequential modBuilder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
-        final RowSetBuilderSequential rmResultBuilder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
+        final RowSetBuilderSequential addBuilder = RowSetFactoryImpl.INSTANCE.builderSequential();
+        final RowSetBuilderSequential rmBuilder = RowSetFactoryImpl.INSTANCE.builderSequential();
+        final RowSetBuilderSequential modBuilder = RowSetFactoryImpl.INSTANCE.builderSequential();
+        final RowSetBuilderSequential rmResultBuilder = RowSetFactoryImpl.INSTANCE.builderSequential();
         try (final ProbeContext pc = makeProbeContext(leftKeySources, upstream.modified.size())) {
             final RowSet.Iterator it = upstream.modified.iterator();
             final RowSet.Iterator pit = upstream.getModifiedPreShift().iterator();
@@ -384,7 +384,7 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
                 return;
             }
 
-            source.set(location, RowSetFactoryImpl.INSTANCE.getRowSetByValues(keyToAdd).convertToTracking());
+            source.set(location, RowSetFactoryImpl.INSTANCE.fromKeys(keyToAdd).convertToTracking());
             size = 1;
         } else {
             rowSet.insert(keyToAdd);
@@ -1151,7 +1151,7 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
              final WritableObjectChunk stateChunk = WritableObjectChunk.makeWritableChunk(maxSize);
              final ChunkSource.FillContext fillContext = rightIndexSource.makeFillContext(maxSize)) {
 
-            rightIndexSource.fillChunk(fillContext, stateChunk, RowSetFactoryImpl.INSTANCE.getFlatRowSet(tableHashPivot));
+            rightIndexSource.fillChunk(fillContext, stateChunk, RowSetFactoryImpl.INSTANCE.flat(tableHashPivot));
 
             ChunkUtils.fillInOrder(positions);
 
@@ -1726,7 +1726,7 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
             retVal = rightIndexSource.get(slot);
         }
         if (retVal == null) {
-            retVal = RowSetFactoryImpl.INSTANCE.getEmptyRowSet().convertToTracking();
+            retVal = RowSetFactoryImpl.INSTANCE.empty().convertToTracking();
         }
         return retVal;
     }
@@ -1735,7 +1735,7 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
     public TrackingRowSet getRightIndexFromLeftIndex(long leftIndex) {
         long slot = leftIndexToSlot.get(leftIndex);
         if (slot == RowSet.NULL_ROW_KEY) {
-            return RowSetFactoryImpl.INSTANCE.getEmptyRowSet().convertToTracking();
+            return RowSetFactoryImpl.INSTANCE.empty().convertToTracking();
         }
         return getRightIndex(slot);
     }
@@ -1744,7 +1744,7 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
     public TrackingRowSet getRightIndexFromPrevLeftIndex(long leftIndex) {
         long slot = leftIndexToSlot.getPrev(leftIndex);
         if (slot == RowSet.NULL_ROW_KEY) {
-            return RowSetFactoryImpl.INSTANCE.getEmptyRowSet().convertToTracking();
+            return RowSetFactoryImpl.INSTANCE.empty().convertToTracking();
         }
         return getRightIndex(slot);
     }

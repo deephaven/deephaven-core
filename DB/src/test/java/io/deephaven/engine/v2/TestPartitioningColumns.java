@@ -70,7 +70,7 @@ public class TestPartitioningColumns {
                         recordingLocationKeyFinder,
                         (tk, tlk, rs) -> {
                             final DummyTableLocation tl = new DummyTableLocation(tk, tlk);
-                            tl.handleUpdate(RowSetFactoryImpl.INSTANCE.getFlatRowSet(1), 1L);
+                            tl.handleUpdate(RowSetFactoryImpl.INSTANCE.flat(1), 1L);
                             return tl;
                         },
                         null),

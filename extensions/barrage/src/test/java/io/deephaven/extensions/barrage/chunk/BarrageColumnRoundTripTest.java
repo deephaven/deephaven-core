@@ -346,7 +346,7 @@ public class BarrageColumnRoundTripTest extends LiveTableTestCase {
             final WritableObjectChunk<T, Attributes.Values> computed = unTypedComputed.asWritableObjectChunk();
 
             if (subset == null) {
-                subset = RowSetFactoryImpl.INSTANCE.getFlatRowSet(untypedOriginal.size());
+                subset = RowSetFactoryImpl.INSTANCE.flat(untypedOriginal.size());
             }
             final MutableInt off = new MutableInt();
             subset.forAllRowKeys(key -> {
@@ -377,7 +377,7 @@ public class BarrageColumnRoundTripTest extends LiveTableTestCase {
             final WritableObjectChunk<T, Attributes.Values> original = untypedOriginal.asWritableObjectChunk();
             final WritableObjectChunk<String, Attributes.Values> computed = untypedComputed.asWritableObjectChunk();
             if (subset == null) {
-                subset = RowSetFactoryImpl.INSTANCE.getFlatRowSet(original.size());
+                subset = RowSetFactoryImpl.INSTANCE.flat(original.size());
             }
             final MutableInt off = new MutableInt();
             subset.forAllRowKeys(key -> {
@@ -399,7 +399,7 @@ public class BarrageColumnRoundTripTest extends LiveTableTestCase {
             final WritableObjectChunk<long[], Attributes.Values> original = untypedOriginal.asWritableObjectChunk();
             final WritableObjectChunk<long[], Attributes.Values> computed = unTypedComputed.asWritableObjectChunk();
             if (subset == null) {
-                subset = RowSetFactoryImpl.INSTANCE.getFlatRowSet(original.size());
+                subset = RowSetFactoryImpl.INSTANCE.flat(original.size());
             }
             final MutableInt off = new MutableInt();
             subset.forAllRowKeys(i -> {
@@ -458,7 +458,7 @@ public class BarrageColumnRoundTripTest extends LiveTableTestCase {
             try (final BarrageProtoUtil.ExposedByteArrayOutputStream baos =
                     new BarrageProtoUtil.ExposedByteArrayOutputStream();
                     final ChunkInputStreamGenerator.DrainableColumn column =
-                            generator.getInputStream(options, RowSetFactoryImpl.INSTANCE.getEmptyRowSet());) {
+                            generator.getInputStream(options, RowSetFactoryImpl.INSTANCE.empty());) {
 
                 final ArrayList<ChunkInputStreamGenerator.FieldNodeInfo> fieldNodes = new ArrayList<>();
                 column.visitFieldNodes((numElements, nullCount) -> fieldNodes
@@ -478,7 +478,7 @@ public class BarrageColumnRoundTripTest extends LiveTableTestCase {
 
             // swiss cheese subset
             final Random random = new Random();
-            final RowSetBuilderSequential builder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
+            final RowSetBuilderSequential builder = RowSetFactoryImpl.INSTANCE.builderSequential();
             for (int i = 0; i < data.size(); ++i) {
                 if (random.nextBoolean()) {
                     builder.appendKey(i);

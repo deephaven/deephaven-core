@@ -36,7 +36,7 @@ public class RandomGroupingBuilder<DATA_TYPE> {
         Require.neqNull(groupToIndexBuilder, "groupToIndexBuilder");
 
         final RowSetBuilderRandom indexBuilder =
-                groupToIndexBuilder.computeIfAbsent(value, (k) -> RowSetFactoryImpl.INSTANCE.getRandomBuilder());
+                groupToIndexBuilder.computeIfAbsent(value, (k) -> RowSetFactoryImpl.INSTANCE.builderRandom());
         indexBuilder.addRange(firstKey, lastKey);
     }
 

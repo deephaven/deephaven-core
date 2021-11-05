@@ -74,7 +74,7 @@ public class ReverseOperation implements QueryTable.MemoizableOperation<QueryTab
             resultMap.put(entry.getKey(), new ReversedColumnSource<>(entry.getValue(), this));
         }
 
-        final RowSet rowSet = transform(rowSetToReverse);
+        final TrackingMutableRowSet rowSet = transform(rowSetToReverse).convertToTracking();
         resultSize = rowSet.size();
         Assert.eq(resultSize, "resultSize", rowSetToReverse.size(), "rowSetToReverse.size()");
 
@@ -224,7 +224,7 @@ public class ReverseOperation implements QueryTable.MemoizableOperation<QueryTab
      * @param rowSetToTransform the outer rowSet
      * @return the corresponding inner rowSet
      */
-    public RowSet transform(final RowSet rowSetToTransform) {
+    public MutableRowSet transform(final RowSet rowSetToTransform) {
         return transform(rowSetToTransform, false);
     }
 
@@ -234,13 +234,13 @@ public class ReverseOperation implements QueryTable.MemoizableOperation<QueryTab
      * @param outerRowSet the outer rowSet
      * @return the corresponding inner rowSet
      */
-    public RowSet transformPrev(final RowSet outerRowSet) {
+    public MutableRowSet transformPrev(final RowSet outerRowSet) {
         return transform(outerRowSet, true);
     }
 
-    private RowSet transform(final RowSet outerRowSet, final boolean usePrev) {
+    private MutableRowSet transform(final RowSet outerRowSet, final boolean usePrev) {
         final long pivot = usePrev ? getPivotPrev() : pivotPoint;
-        final RowSetBuilderRandom reversedBuilder = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
+        final RowSetBuilderRandom reversedBuilder = RowSetFactoryImpl.INSTANCE.builderRandom();
 
         for (final RowSet.RangeIterator rangeIterator = outerRowSet.rangeIterator(); rangeIterator.hasNext();) {
             rangeIterator.next();

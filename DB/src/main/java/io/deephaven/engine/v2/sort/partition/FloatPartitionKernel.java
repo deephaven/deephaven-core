@@ -43,7 +43,7 @@ public class FloatPartitionKernel {
                 builders = new RowSetBuilderSequential[numPartitions];
             }
             for (int ii = 0; ii < builders.length; ++ii) {
-                builders[ii] = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
+                builders[ii] = RowSetFactoryImpl.INSTANCE.builderSequential();
                 accumulatedKeys[ii] = WritableLongChunk.makeWritableChunk(chunkSize);
                 accumulatedKeys[ii].setSize(0);
             }
@@ -55,7 +55,7 @@ public class FloatPartitionKernel {
             for (int ii = 0; ii < builders.length; ++ii) {
                 partitions[ii] = builders[ii].build();
                 if (resetBuilders) {
-                    builders[ii] = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
+                    builders[ii] = RowSetFactoryImpl.INSTANCE.builderSequential();
                 } else {
                     builders[ii] = null;
                 }
@@ -106,7 +106,7 @@ public class FloatPartitionKernel {
         final int samplesRequired = pivotsRequired * 3;
         PartitionUtilities.sampleIndexKeys(0, rowSet, samplesRequired, pivotKeys);
 
-        final RowSetBuilderSequential builder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
+        final RowSetBuilderSequential builder = RowSetFactoryImpl.INSTANCE.builderSequential();
         for (int ii = 0; ii < pivotKeys.size(); ++ii) {
             builder.appendKey(pivotKeys.get(ii));
         }

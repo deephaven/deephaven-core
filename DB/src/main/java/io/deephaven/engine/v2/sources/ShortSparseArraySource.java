@@ -78,7 +78,7 @@ public class ShortSparseArraySource extends SparseArrayColumnSource<Short> imple
 
     // region serialization
     private void writeObject(java.io.ObjectOutputStream out) throws IOException {
-        final RowSetBuilderSequential sb = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
+        final RowSetBuilderSequential sb = RowSetFactoryImpl.INSTANCE.builderSequential();
         blocks.enumerate(NULL_SHORT, sb::appendKey);
         final RowSet rowSet = sb.build();
 

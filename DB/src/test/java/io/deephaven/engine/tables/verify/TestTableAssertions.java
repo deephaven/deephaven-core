@@ -47,7 +47,7 @@ public class TestTableAssertions {
 
     @Test
     public void testRefreshing() {
-        final QueryTable test = TstUtils.testRefreshingTable(i(10, 11, 12, 17),
+        final QueryTable test = TstUtils.testRefreshingTable(i(10, 11, 12, 17).convertToTracking(),
                 stringCol("Plant", "Apple", "Banana", "Carrot", "Daffodil"),
                 intCol("Int", 9, 7, 5, 3));
 

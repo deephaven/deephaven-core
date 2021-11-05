@@ -69,7 +69,7 @@ public class LongPartitionKernelBenchmark {
         final Random random = new Random(0);
         final List<LongLongTuple> stuffToSort = generate.generate(random, dataSize);
 
-        final RowSetBuilderSequential sequentialBuilder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
+        final RowSetBuilderSequential sequentialBuilder = RowSetFactoryImpl.INSTANCE.builderSequential();
         stuffToSort.stream().mapToLong(LongLongTuple::getSecondElement).forEach(sequentialBuilder::appendKey);
         final RowSet rowSet = sequentialBuilder.build();
         final int numPartitionsValue;

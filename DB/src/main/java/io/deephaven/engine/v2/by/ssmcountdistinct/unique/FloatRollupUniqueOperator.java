@@ -526,7 +526,7 @@ public class FloatRollupUniqueOperator implements IterativeChunkedAggregationOpe
         }
 
         prevFlusher = new UpdateCommitter<>(this, FloatRollupUniqueOperator::flushPrevious);
-        touchedStates = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+        touchedStates = RowSetFactoryImpl.INSTANCE.empty();
         ssms.startTrackingPrevValues();
         internalResult.startTrackingPrevValues();
     }

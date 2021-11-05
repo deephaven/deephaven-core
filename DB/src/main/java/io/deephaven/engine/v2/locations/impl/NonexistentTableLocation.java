@@ -17,7 +17,7 @@ public final class NonexistentTableLocation extends AbstractTableLocation {
     public NonexistentTableLocation(@NotNull final TableKey tableKey,
             @NotNull final TableLocationKey tableLocationKey) {
         super(tableKey, tableLocationKey, false);
-        handleUpdate(RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), NULL_TIME);
+        handleUpdate(RowSetFactoryImpl.INSTANCE.empty(), NULL_TIME);
     }
 
     @Override

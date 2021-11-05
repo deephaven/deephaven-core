@@ -56,7 +56,7 @@ public class TestLongSparseArraySource {
         final ColumnSource.FillContext fillContext = source.makeFillContext(chunkSize);
         final WritableLongChunk<Values> dest = WritableLongChunk.makeWritableChunk(chunkSize);
 
-        source.fillChunk(fillContext, dest, RowSetFactoryImpl.INSTANCE.getRowSetByRange(0, 1023));
+        source.fillChunk(fillContext, dest, RowSetFactoryImpl.INSTANCE.fromRange(0, 1023));
         for (int ii = 0; ii < 1024; ++ii) {
             checkFromSource("null check: " + ii, NULL_LONG, dest.get(ii));
         }
@@ -111,7 +111,7 @@ public class TestLongSparseArraySource {
         final ColumnSource.GetContext getContext = source.makeGetContext(chunkSize);
 
         // the asChunk is not needed here, but it's needed when replicated to Boolean
-        final LongChunk<Values> result = source.getChunk(getContext, RowSetFactoryImpl.INSTANCE.getRowSetByRange(0, 1023)).asLongChunk();
+        final LongChunk<Values> result = source.getChunk(getContext, RowSetFactoryImpl.INSTANCE.fromRange(0, 1023)).asLongChunk();
         for (int ii = 0; ii < 1024; ++ii) {
             checkFromSource("null check: " + ii, NULL_LONG, result.get(ii));
         }
@@ -151,7 +151,7 @@ public class TestLongSparseArraySource {
     }
 
     private RowSet generateIndex(Random random, int maxsize, int runLength) {
-        final RowSetBuilderSequential builder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
+        final RowSetBuilderSequential builder = RowSetFactoryImpl.INSTANCE.builderSequential();
         int nextKey = random.nextInt(runLength);
         while (nextKey < maxsize) {
             int lastKey;
@@ -190,7 +190,7 @@ public class TestLongSparseArraySource {
     private void checkRangeFill(int chunkSize, LongSparseArraySource source, ColumnSource.FillContext fillContext,
                                 WritableLongChunk<Values> dest, long[] expectations, int firstKey, int lastKey, boolean usePrev) {
         int offset;
-        final RowSet rowSet = RowSetFactoryImpl.INSTANCE.getRowSetByRange(firstKey, lastKey);
+        final RowSet rowSet = RowSetFactoryImpl.INSTANCE.fromRange(firstKey, lastKey);
         offset = firstKey;
         for (final RowSequence.Iterator it = rowSet.getRowSequenceIterator(); it.hasMore(); ) {
             final RowSequence nextOk = it.getNextRowSequenceWithLength(chunkSize);
@@ -207,7 +207,7 @@ public class TestLongSparseArraySource {
 
     private void checkRangeGet(int chunkSize, LongSparseArraySource source, ColumnSource.GetContext getContext, long[] expectations, int firstKey, int lastKey, boolean usePrev) {
         int offset;
-        final RowSet rowSet = RowSetFactoryImpl.INSTANCE.getRowSetByRange(firstKey, lastKey);
+        final RowSet rowSet = RowSetFactoryImpl.INSTANCE.fromRange(firstKey, lastKey);
         offset = firstKey;
         for (final RowSequence.Iterator it = rowSet.getRowSequenceIterator(); it.hasMore(); ) {
             final RowSequence nextOk = it.getNextRowSequenceWithLength(chunkSize);
@@ -273,8 +273,8 @@ public class TestLongSparseArraySource {
         // super hack
         final long[] peekedBlock = source.ensureBlock(0, 0, 0);
 
-        try (RowSet srcKeys = RowSetFactoryImpl.INSTANCE.getRowSetByRange(rangeStart, rangeEnd)) {
-            try (RowSet destKeys = RowSetFactoryImpl.INSTANCE.getRowSetByRange(rangeStart + 1, rangeEnd + 1)) {
+        try (RowSet srcKeys = RowSetFactoryImpl.INSTANCE.fromRange(rangeStart, rangeEnd)) {
+            try (RowSet destKeys = RowSetFactoryImpl.INSTANCE.fromRange(rangeStart + 1, rangeEnd + 1)) {
                 try (ChunkSource.GetContext srcContext = source.makeGetContext(arraySize)) {
                     try (WritableChunkSink.FillFromContext destContext = source.makeFillFromContext(arraySize)) {
                         Chunk chunk = source.getChunk(srcContext, srcKeys);
@@ -305,7 +305,7 @@ public class TestLongSparseArraySource {
         final LongSparseArraySource src = new LongSparseArraySource();
         src.startTrackingPrevValues();
         LiveTableMonitor.DEFAULT.startCycleForUnitTests();
-        try (final RowSet keys = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+        try (final RowSet keys = RowSetFactoryImpl.INSTANCE.empty();
              final WritableLongChunk<Values> chunk = WritableLongChunk.makeWritableChunk(0)) {
             // Fill from an empty chunk
             src.fillFromChunkByKeys(keys, chunk);

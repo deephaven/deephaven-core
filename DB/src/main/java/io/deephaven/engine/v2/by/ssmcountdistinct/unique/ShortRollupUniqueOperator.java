@@ -526,7 +526,7 @@ public class ShortRollupUniqueOperator implements IterativeChunkedAggregationOpe
         }
 
         prevFlusher = new UpdateCommitter<>(this, ShortRollupUniqueOperator::flushPrevious);
-        touchedStates = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+        touchedStates = RowSetFactoryImpl.INSTANCE.empty();
         ssms.startTrackingPrevValues();
         internalResult.startTrackingPrevValues();
     }

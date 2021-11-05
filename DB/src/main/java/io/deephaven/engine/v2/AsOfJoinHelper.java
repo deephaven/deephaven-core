@@ -190,13 +190,13 @@ public class AsOfJoinHelper {
             if (leftGroupedSources == null) {
                 slotCount = asOfJoinStateManager.buildFromLeftSide(leftTable.getRowSet(), leftSources, slots);
             } else {
-                slotCount = asOfJoinStateManager.buildFromLeftSide(RowSetFactoryImpl.INSTANCE.getFlatRowSet(leftGroupingSize),
+                slotCount = asOfJoinStateManager.buildFromLeftSide(RowSetFactoryImpl.INSTANCE.flat(leftGroupingSize),
                         new ColumnSource[] {leftGroupedSources.getFirst()}, slots);
             }
             if (rightGroupedSources == null) {
                 asOfJoinStateManager.probeRight(rightTable.getRowSet(), rightSources);
             } else {
-                asOfJoinStateManager.probeRight(RowSetFactoryImpl.INSTANCE.getFlatRowSet(rightGroupingSize),
+                asOfJoinStateManager.probeRight(RowSetFactoryImpl.INSTANCE.flat(rightGroupingSize),
                         new ColumnSource[] {rightGroupedSources.getFirst()});
             }
         } else {
@@ -204,13 +204,13 @@ public class AsOfJoinHelper {
                 slotCount = asOfJoinStateManager.buildFromRightSide(rightTable.getRowSet(), rightSources, slots);
             } else {
                 slotCount =
-                        asOfJoinStateManager.buildFromRightSide(RowSetFactoryImpl.INSTANCE.getFlatRowSet(rightGroupingSize),
+                        asOfJoinStateManager.buildFromRightSide(RowSetFactoryImpl.INSTANCE.flat(rightGroupingSize),
                                 new ColumnSource[] {rightGroupedSources.getFirst()}, slots);
             }
             if (leftGroupedSources == null) {
                 asOfJoinStateManager.probeLeft(leftTable.getRowSet(), leftSources);
             } else {
-                asOfJoinStateManager.probeLeft(RowSetFactoryImpl.INSTANCE.getFlatRowSet(leftGroupingSize),
+                asOfJoinStateManager.probeLeft(RowSetFactoryImpl.INSTANCE.flat(leftGroupingSize),
                         new ColumnSource[] {leftGroupedSources.getFirst()});
             }
         }
@@ -301,7 +301,7 @@ public class AsOfJoinHelper {
                 }
 
                 if (restampKeys.isNonempty()) {
-                    final RowSetBuilderRandom foundBuilder = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
+                    final RowSetBuilderRandom foundBuilder = RowSetFactoryImpl.INSTANCE.builderRandom();
                     updatedSlots.ensureCapacity(restampKeys.size());
                     final int slotCount =
                             asOfJoinStateManager.probeLeft(restampKeys, leftSources, updatedSlots, foundBuilder);
@@ -466,7 +466,7 @@ public class AsOfJoinHelper {
             if (leftRowSet == null) {
                 leftRowSet = asOfJoinStateManager.getAndClearLeftIndex(slot);
                 if (leftRowSet == null) {
-                    leftRowSet = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+                    leftRowSet = RowSetFactoryImpl.INSTANCE.empty();
                 }
             }
             final int leftSize = leftRowSet.intSize();
@@ -623,15 +623,15 @@ public class AsOfJoinHelper {
             @Override
             public void onUpdate(Update upstream) {
                 final Update downstream = new Update();
-                downstream.added = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
-                downstream.removed = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+                downstream.added = RowSetFactoryImpl.INSTANCE.empty();
+                downstream.removed = RowSetFactoryImpl.INSTANCE.empty();
                 downstream.shifted = RowSetShiftData.EMPTY;
                 downstream.modifiedColumnSet = result.modifiedColumnSet;
 
                 final boolean keysModified = upstream.modifiedColumnSet.containsAny(rightMatchColumns);
                 final boolean stampModified = upstream.modifiedColumnSet.containsAny(rightStampColumn);
 
-                final RowSetBuilderRandom modifiedBuilder = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
+                final RowSetBuilderRandom modifiedBuilder = RowSetFactoryImpl.INSTANCE.builderRandom();
 
                 final RowSet restampRemovals;
                 final RowSet restampAdditions;
@@ -1167,14 +1167,14 @@ public class AsOfJoinHelper {
                     @Override
                     public void onUpdate(Update upstream) {
                         final Update downstream = new Update();
-                        downstream.added = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
-                        downstream.removed = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+                        downstream.added = RowSetFactoryImpl.INSTANCE.empty();
+                        downstream.removed = RowSetFactoryImpl.INSTANCE.empty();
                         downstream.shifted = RowSetShiftData.EMPTY;
                         downstream.modifiedColumnSet = result.modifiedColumnSet;
 
                         final boolean stampModified = upstream.modifiedColumnSet.containsAny(rightStampColumn);
 
-                        final RowSetBuilderRandom modifiedBuilder = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
+                        final RowSetBuilderRandom modifiedBuilder = RowSetFactoryImpl.INSTANCE.builderRandom();
 
                         try (final ColumnSource.FillContext fillContext =
                                 rightStampSource.makeFillContext(rightChunkSize);

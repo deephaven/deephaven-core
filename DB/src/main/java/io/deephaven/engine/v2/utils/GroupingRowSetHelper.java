@@ -243,7 +243,7 @@ public abstract class GroupingRowSetHelper extends MutableRowSetImpl implements 
                 for (final RowSet.Iterator iterator = thisRowSet.iterator(); iterator.hasNext();) {
                     final long next = iterator.nextLong();
                     final Object key = tupleSource.createTuple(next);
-                    resultBuilder.computeIfAbsent(key, k -> RowSetFactoryImpl.INSTANCE.getSequentialBuilder())
+                    resultBuilder.computeIfAbsent(key, k -> RowSetFactoryImpl.INSTANCE.builderSequential())
                             .appendKey(next);
                 }
                 resultBuilder.forEach((k, v) -> resultCollector.accept(k, v.build()));
@@ -328,7 +328,7 @@ public abstract class GroupingRowSetHelper extends MutableRowSetImpl implements 
                 }
 
                 resultBuilder.computeIfAbsent(tupleSource.createTupleFromReinterpretedValues(partialKeyValues),
-                        k -> RowSetFactoryImpl.INSTANCE.getSequentialBuilder()).appendKey(next);
+                        k -> RowSetFactoryImpl.INSTANCE.builderSequential()).appendKey(next);
             }
         }
 
@@ -411,7 +411,7 @@ public abstract class GroupingRowSetHelper extends MutableRowSetImpl implements 
                 }
 
                 final RowSetBuilderSequential indexForKey =
-                        resultBuilder.computeIfAbsent(key, k -> RowSetFactoryImpl.INSTANCE.getSequentialBuilder());
+                        resultBuilder.computeIfAbsent(key, k -> RowSetFactoryImpl.INSTANCE.builderSequential());
                 indexForKey.appendKey(next);
             }
         }
@@ -428,7 +428,7 @@ public abstract class GroupingRowSetHelper extends MutableRowSetImpl implements 
 
     @Override
     public RowSet getSubSetForKeySet(final Set<Object> keys, final TupleSource tupleSource) {
-        final RowSetBuilderRandom rowSetBuilder = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
+        final RowSetBuilderRandom rowSetBuilder = RowSetFactoryImpl.INSTANCE.builderRandom();
         final BiConsumer<Object, RowSet> resultCollector =
                 (key, index) -> rowSetBuilder.addRowSet(index);
         collectGroupingForKeySet(keys, tupleSource, resultCollector);
@@ -467,7 +467,7 @@ public abstract class GroupingRowSetHelper extends MutableRowSetImpl implements 
                     final long next = iterator.nextLong();
                     final Object key = tupleSource.createTuple(next);
                     if (keys.contains(key)) {
-                        resultBuilder.computeIfAbsent(key, k -> RowSetFactoryImpl.INSTANCE.getSequentialBuilder())
+                        resultBuilder.computeIfAbsent(key, k -> RowSetFactoryImpl.INSTANCE.builderSequential())
                                 .appendKey(next);
                     }
                 }
@@ -603,7 +603,7 @@ public abstract class GroupingRowSetHelper extends MutableRowSetImpl implements 
             for (final RowSet.Iterator iterator = this.iterator(); iterator.hasNext();) {
                 final long next = iterator.nextLong();
                 final Object key = tupleSource.createPreviousTuple(next);
-                resultBuilder.computeIfAbsent(key, k -> RowSetFactoryImpl.INSTANCE.getSequentialBuilder())
+                resultBuilder.computeIfAbsent(key, k -> RowSetFactoryImpl.INSTANCE.builderSequential())
                         .appendKey(next);
             }
             result = new LinkedHashMap<>();

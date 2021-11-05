@@ -287,7 +287,7 @@ public class ShortChunkedUniqueOperator implements IterativeChunkedAggregationOp
 
             ssms.startTrackingPrevValues();
             prevFlusher = new UpdateCommitter<>(this, ShortChunkedUniqueOperator::flushPrevious);
-            touchedStates = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+            touchedStates = RowSetFactoryImpl.INSTANCE.empty();
         }
     }
 

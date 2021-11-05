@@ -22,14 +22,14 @@ public class TrackingMutableRowSetImplPrevTest {
 
     @Test
     public void testPrevWithEmptyConstruction() {
-        final TrackingRowSet ix = RowSetFactoryImpl.INSTANCE.getEmptyRowSet().convertToTracking();
+        final TrackingRowSet ix = RowSetFactoryImpl.INSTANCE.empty().convertToTracking();
         assertTrue(ix.isEmpty());
         assertTrue(ix.getPrevRowSet().isEmpty());
     }
 
     @Test
     public void testPrevWithSingleRangeIxOnly() {
-        final TrackingMutableRowSet ix = RowSetFactoryImpl.INSTANCE.getRowSetByValues(1L).convertToTracking();
+        final TrackingMutableRowSet ix = RowSetFactoryImpl.INSTANCE.fromKeys(1L).convertToTracking();
         assertEquals(1L, ix.size());
         assertEquals(1L, ix.firstRowKey());
         assertEquals(1L, ix.getPrevRowSet().size());
@@ -64,7 +64,7 @@ public class TrackingMutableRowSetImplPrevTest {
 
     @Test
     public void testPrevWithRspOnly() {
-        final TrackingMutableRowSet ix = RowSetFactoryImpl.INSTANCE.getRowSetByValues(1, 3).convertToTracking();
+        final TrackingMutableRowSet ix = RowSetFactoryImpl.INSTANCE.fromKeys(1, 3).convertToTracking();
         assertEquals(2L, ix.size());
         assertEquals(1L, ix.firstRowKey());
         assertEquals(3L, ix.lastRowKey());
@@ -111,7 +111,7 @@ public class TrackingMutableRowSetImplPrevTest {
     @Test
     public void testPrevWithSingleThenRspThenEmptyThenSingle() {
         LogicalClock.DEFAULT.resetForUnitTests();
-        final TrackingMutableRowSet ix = RowSetFactoryImpl.INSTANCE.getRowSetByValues(1L).convertToTracking();
+        final TrackingMutableRowSet ix = RowSetFactoryImpl.INSTANCE.fromKeys(1L).convertToTracking();
         assertEquals(1L, ix.size());
         assertEquals(1L, ix.firstRowKey());
         assertEquals(1L, ix.getPrevRowSet().size());

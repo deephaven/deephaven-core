@@ -66,14 +66,14 @@ public class StreamTableTools {
                         }
 
 
-                        final MutableRowSet rowSet;
+                        final TrackingMutableRowSet rowSet;
                         if (usePrev) {
                             try (final RowSet useRowSet = baseStreamTable.getRowSet().getPrevRowSet()) {
-                                rowSet = RowSetFactoryImpl.INSTANCE.getFlatRowSet(useRowSet.size()).convertToTracking();
+                                rowSet = RowSetFactoryImpl.INSTANCE.flat(useRowSet.size()).convertToTracking();
                                 ChunkUtils.copyData(sourceColumns, useRowSet, destColumns, rowSet, usePrev);
                             }
                         } else {
-                            rowSet = RowSetFactoryImpl.INSTANCE.getFlatRowSet(baseStreamTable.getRowSet().size())
+                            rowSet = RowSetFactoryImpl.INSTANCE.flat(baseStreamTable.getRowSet().size())
                                     .convertToTracking();
                             ChunkUtils.copyData(sourceColumns, baseStreamTable.getRowSet(), destColumns, rowSet,
                                     usePrev);
@@ -101,7 +101,7 @@ public class StreamTableTools {
                                 columns.values().forEach(c -> c.ensureCapacity(currentSize + newRows));
 
                                 final RowSet newRange =
-                                        RowSetFactoryImpl.INSTANCE.getRowSetByRange(currentSize,
+                                        RowSetFactoryImpl.INSTANCE.fromRange(currentSize,
                                                 currentSize + newRows - 1);
 
                                 ChunkUtils.copyData(sourceColumns, upstream.added, destColumns, newRange, false);
@@ -109,8 +109,8 @@ public class StreamTableTools {
 
                                 final Update downstream = new Update();
                                 downstream.added = newRange;
-                                downstream.modified = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
-                                downstream.removed = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+                                downstream.modified = RowSetFactoryImpl.INSTANCE.empty();
+                                downstream.removed = RowSetFactoryImpl.INSTANCE.empty();
                                 downstream.modifiedColumnSet = ModifiedColumnSet.EMPTY;
                                 downstream.shifted = RowSetShiftData.EMPTY;
                                 result.notifyListeners(downstream);

@@ -142,7 +142,7 @@ public interface ChunkFilter {
      */
     static MutableRowSet applyChunkFilter(RowSet selection, ColumnSource<?> columnSource, boolean usePrev,
                                           ChunkFilter chunkFilter) {
-        final RowSetBuilderSequential builder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
+        final RowSetBuilderSequential builder = RowSetFactoryImpl.INSTANCE.builderSequential();
 
         final int contextSize = (int) Math.min(FILTER_CHUNK_SIZE, selection.size());
         long chunksBetweenChecks = INITIAL_INTERRUPTION_SIZE / FILTER_CHUNK_SIZE;

@@ -150,7 +150,7 @@ public class ArrowFlightUtil {
                 }
                 final TLongIterator bufferInfoIter = bufferInfo.iterator();
 
-                msg.rowsRemoved = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+                msg.rowsRemoved = RowSetFactoryImpl.INSTANCE.empty();
                 msg.shifted = RowSetShiftData.EMPTY;
 
                 // include all columns as add-columns
@@ -177,7 +177,7 @@ public class ArrowFlightUtil {
                 }
 
                 msg.rowsAdded =
-                        RowSetFactoryImpl.INSTANCE.getRowSetByRange(resultTable.size(), resultTable.size() + numRowsAdded - 1);
+                        RowSetFactoryImpl.INSTANCE.fromRange(resultTable.size(), resultTable.size() + numRowsAdded - 1);
                 msg.rowsIncluded = msg.rowsAdded.clone();
                 msg.modColumnData = ZERO_MOD_COLUMNS;
 

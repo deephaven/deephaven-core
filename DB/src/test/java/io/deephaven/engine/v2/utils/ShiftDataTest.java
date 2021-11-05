@@ -219,7 +219,7 @@ public class ShiftDataTest extends TestCase {
             Long next = iterator.nextLong();
             finalKeys.add(next);
         }
-        RowSetBuilderRandom builder = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
+        RowSetBuilderRandom builder = RowSetFactoryImpl.INSTANCE.builderRandom();
         for (Long finalKey : finalKeys) {
             builder.addKey(finalKey);
         }
@@ -227,7 +227,7 @@ public class ShiftDataTest extends TestCase {
     }
 
     private RowSet getRandomRemoves(RowSet rowSet, int prob) {
-        RowSetBuilderRandom builder = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
+        RowSetBuilderRandom builder = RowSetFactoryImpl.INSTANCE.builderRandom();
         for (RowSet.Iterator iterator = rowSet.iterator(); iterator.hasNext();) {
             long next = iterator.nextLong();
             if (random.nextInt(prob) == 0) {
@@ -239,7 +239,7 @@ public class ShiftDataTest extends TestCase {
 
 
     private RowSet getBaseIndex(int base, int size) {
-        RowSetBuilderSequential builder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
+        RowSetBuilderSequential builder = RowSetFactoryImpl.INSTANCE.builderSequential();
         for (int i = 0; i < size; i++) {
             builder.appendKey(i * size);
         }
@@ -247,7 +247,7 @@ public class ShiftDataTest extends TestCase {
     }
 
     private RowSet getRandomIndex(int base, int offset, int size) {
-        RowSetBuilderRandom builder = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
+        RowSetBuilderRandom builder = RowSetFactoryImpl.INSTANCE.builderRandom();
         for (int i = 0; i < size; i++) {
             if (random.nextInt(2) == 0) {
                 builder.addKey(i * base + offset);
@@ -258,7 +258,7 @@ public class ShiftDataTest extends TestCase {
 
 
     protected RowSet getSortedIndex(long... keys) {
-        RowSetBuilderRandom builder = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
+        RowSetBuilderRandom builder = RowSetFactoryImpl.INSTANCE.builderRandom();
         for (long key : keys) {
             builder.addKey(key);
         }

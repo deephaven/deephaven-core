@@ -82,7 +82,7 @@ public class StreamToTableAdapter implements SafeCloseable, LiveTable, StreamCon
         final LinkedHashMap<String, ColumnSource<?>> visibleSources = new LinkedHashMap<>();
         switchSources = makeSwitchSources(tableDefinition, nullColumnSources, visibleSources);
 
-        rowSet = RowSetFactoryImpl.INSTANCE.getEmptyRowSet().convertToTracking();
+        rowSet = RowSetFactoryImpl.INSTANCE.empty().convertToTracking();
 
         table = new QueryTable(rowSet, visibleSources) {
             {
@@ -329,8 +329,8 @@ public class StreamToTableAdapter implements SafeCloseable, LiveTable, StreamCon
             rowSet.removeRange(newSize, oldSize - 1);
         }
 
-        table.notifyListeners(new Listener.Update(RowSetFactoryImpl.INSTANCE.getFlatRowSet(newSize),
-                RowSetFactoryImpl.INSTANCE.getFlatRowSet(oldSize), RowSetFactoryImpl.INSTANCE.getEmptyRowSet(),
+        table.notifyListeners(new Listener.Update(RowSetFactoryImpl.INSTANCE.flat(newSize),
+                RowSetFactoryImpl.INSTANCE.flat(oldSize), RowSetFactoryImpl.INSTANCE.empty(),
                 RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY));
     }
 

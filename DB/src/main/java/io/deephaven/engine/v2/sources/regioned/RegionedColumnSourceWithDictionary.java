@@ -218,11 +218,11 @@ class RegionedColumnSourceWithDictionary<DATA_TYPE>
         final RegionedColumnSourceBase<DATA_TYPE, Values, ColumnRegionObject<DATA_TYPE, Values>> dictionaryColumn =
                 new AsDictionary();
 
-        final RowSet symbolTableRowSet;
+        final TrackingRowSet symbolTableRowSet;
         if (sourceIndex.isEmpty()) {
-            symbolTableRowSet = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+            symbolTableRowSet = RowSetFactoryImpl.INSTANCE.empty().convertToTracking();
         } else {
-            final RowSetBuilderSequential symbolTableIndexBuilder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
+            final RowSetBuilderSequential symbolTableIndexBuilder = RowSetFactoryImpl.INSTANCE.builderSequential();
             try (final RowSet.SearchIterator keysToVisit = sourceIndex.searchIterator()) {
                 keysToVisit.nextLong(); // Safe, since sourceIndex must be non-empty
                 do {
@@ -230,7 +230,7 @@ class RegionedColumnSourceWithDictionary<DATA_TYPE>
                             RowSequence.Iterator.EMPTY, symbolTableIndexBuilder);
                 } while (keysToVisit.hasNext());
             }
-            symbolTableRowSet = symbolTableIndexBuilder.build();
+            symbolTableRowSet = symbolTableIndexBuilder.build().convertToTracking();
         }
 
         final Map<String, ColumnSource<?>> symbolTableColumnSources = new LinkedHashMap<>();
@@ -298,7 +298,7 @@ class RegionedColumnSourceWithDictionary<DATA_TYPE>
                 return;
             }
 
-            final RowSetBuilderSequential symbolTableAddedBuilder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
+            final RowSetBuilderSequential symbolTableAddedBuilder = RowSetFactoryImpl.INSTANCE.builderSequential();
             final RegionedColumnSourceBase<DATA_TYPE, Values, ColumnRegionObject<DATA_TYPE, Values>> dictionaryColumn =
                     (RegionedColumnSourceBase<DATA_TYPE, Values, ColumnRegionObject<DATA_TYPE, Values>>) symbolTable
                             .getColumnSource(SymbolTableSource.SYMBOL_COLUMN_NAME);
@@ -315,8 +315,10 @@ class RegionedColumnSourceWithDictionary<DATA_TYPE>
             final RowSet symbolTableAdded = symbolTableAddedBuilder.build();
             if (symbolTableAdded.isNonempty()) {
                 symbolTable.getRowSet().asMutable().insert(symbolTableAdded);
-                symbolTable.notifyListeners(new Update(symbolTableAdded, RowSetFactoryImpl.INSTANCE.getEmptyRowSet(),
-                        RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), RowSetShiftData.EMPTY, emptyModifiedColumns));
+                symbolTable.notifyListeners(new Update(symbolTableAdded, RowSetFactoryImpl.INSTANCE.empty(),
+                        RowSetFactoryImpl.INSTANCE.empty(), RowSetShiftData.EMPTY, emptyModifiedColumns));
+            } else {
+                symbolTableAdded.close();
             }
         }
     }

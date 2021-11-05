@@ -278,7 +278,7 @@ public class ByteChunkedDistinctOperator implements IterativeChunkedAggregationO
             }
 
             prevFlusher = new UpdateCommitter<>(this, ByteChunkedDistinctOperator::flushPrevious);
-            touchedStates = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+            touchedStates = RowSetFactoryImpl.INSTANCE.empty();
         }
     }
 

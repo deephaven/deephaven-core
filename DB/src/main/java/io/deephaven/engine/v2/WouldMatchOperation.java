@@ -29,7 +29,7 @@ import java.util.stream.Collectors;
  * the table. It will re-evaluate cell values if any of the underlying filters are dynamic, and change.
  */
 public class WouldMatchOperation implements QueryTable.MemoizableOperation<QueryTable> {
-    private static final RowSet EMPTY_INDEX = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+    private static final RowSet EMPTY_INDEX = RowSetFactoryImpl.INSTANCE.empty();
     private final List<ColumnHolder> matchColumns;
     private final QueryTable parent;
     private QueryTable resultTable;
@@ -232,9 +232,9 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
                 if (holder.column.recomputeRequested()) {
                     if (downstream == null) {
                         downstream =
-                                new io.deephaven.engine.v2.Listener.Update(RowSetFactoryImpl.INSTANCE.getEmptyRowSet(),
-                                        RowSetFactoryImpl.INSTANCE.getEmptyRowSet(),
-                                        RowSetFactoryImpl.INSTANCE.getEmptyRowSet(),
+                                new io.deephaven.engine.v2.Listener.Update(RowSetFactoryImpl.INSTANCE.empty(),
+                                        RowSetFactoryImpl.INSTANCE.empty(),
+                                        RowSetFactoryImpl.INSTANCE.empty(),
                                         RowSetShiftData.EMPTY,
                                         resultTable.modifiedColumnSet);
                     }

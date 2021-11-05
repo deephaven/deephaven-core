@@ -10,7 +10,6 @@ import io.deephaven.engine.v2.parquet.metadata.TableInfo;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 import io.deephaven.engine.v2.sources.regioned.RegionedColumnSource;
 import io.deephaven.engine.v2.sources.regioned.RegionedPageStore;
-import io.deephaven.engine.v2.utils.MutableRowSetImpl;
 import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.engine.v2.utils.RowSetBuilderSequential;
 import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
@@ -150,7 +149,7 @@ class ParquetTableLocation extends AbstractTableLocation {
     }
 
     private RowSet computeIndex() {
-        final RowSetBuilderSequential sequentialBuilder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
+        final RowSetBuilderSequential sequentialBuilder = RowSetFactoryImpl.INSTANCE.builderSequential();
 
         for (int rgi = 0; rgi < rowGroups.length; ++rgi) {
             final long subRegionSize = rowGroups[rgi].getNum_rows();

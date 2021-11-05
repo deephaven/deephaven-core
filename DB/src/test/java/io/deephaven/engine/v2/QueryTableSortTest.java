@@ -138,7 +138,8 @@ public class QueryTableSortTest extends QueryTableTestBase {
     }
 
     public void testSort2() {
-        final QueryTable table = testRefreshingTable(i(10, 20, 30), c("A", 3, 1, 2), c("B", "c", "a", "b"));
+        final QueryTable table = testRefreshingTable(i(10, 20, 30).convertToTracking(),
+                c("A", 3, 1, 2), c("B", "c", "a", "b"));
 
         final QueryTable sorted = (QueryTable) table.sort("A");
         show(sorted);
@@ -189,7 +190,7 @@ public class QueryTableSortTest extends QueryTableTestBase {
     }
 
     public void testGroupedSortRefreshing() {
-        final Table table = testRefreshingTable(RowSetFactoryImpl.INSTANCE.getFlatRowSet(9),
+        final Table table = testRefreshingTable(RowSetFactoryImpl.INSTANCE.flat(9).convertToTracking(),
                 cG("A", "Apple", "Apple", "Apple", "Banana", "Banana", "Banana", "Canteloupe", "Canteloupe",
                         "Canteloupe"),
                 c("Secondary", "C", "A", "B", "C", "A", "B", "C", "A", "B")).update("Sentinel=i");
@@ -223,10 +224,10 @@ public class QueryTableSortTest extends QueryTableTestBase {
             values[ii] = choices[ii % choices.length];
         }
 
-        final Table grouped =
-                testTable(RowSetFactoryImpl.INSTANCE.getFlatRowSet(values.length), cG("Captain", values)).update("Sentinel=i");
-        final Table nogroups =
-                testTable(RowSetFactoryImpl.INSTANCE.getFlatRowSet(values.length), c("Captain", values)).update("Sentinel=i");
+        final Table grouped = testTable(RowSetFactoryImpl.INSTANCE.flat(values.length).convertToTracking(),
+                cG("Captain", values)).update("Sentinel=i");
+        final Table nogroups = testTable(RowSetFactoryImpl.INSTANCE.flat(values.length).convertToTracking(),
+                c("Captain", values)).update("Sentinel=i");
 
         final Table sortedGrouped = grouped.sortDescending("Captain");
         final Table sortedNoGroups = nogroups.sortDescending("Captain");
@@ -236,8 +237,8 @@ public class QueryTableSortTest extends QueryTableTestBase {
     }
 
     public void testSortBool() {
-        final QueryTable table =
-                testRefreshingTable(i(10, 20, 30, 40, 50), c("boolCol", false, true, null, true, false));
+        final QueryTable table = testRefreshingTable(i(10, 20, 30, 40, 50).convertToTracking(),
+                c("boolCol", false, true, null, true, false));
 
         final QueryTable sorted = (QueryTable) table.sort("boolCol");
         show(sorted);
@@ -434,7 +435,7 @@ public class QueryTableSortTest extends QueryTableTestBase {
             values[ii] = generator.applyAsLong(ii);
         }
 
-        final QueryTable queryTable = TstUtils.testRefreshingTable(i(0),
+        final QueryTable queryTable = TstUtils.testRefreshingTable(i(0).convertToTracking(),
                 c("intCol", values[0]));
 
         final QueryTable sorted = (QueryTable) (ascending ? queryTable.sort("intCol")
@@ -479,7 +480,7 @@ public class QueryTableSortTest extends QueryTableTestBase {
     }
 
     public void testSortIncremental() {
-        final QueryTable queryTable = TstUtils.testRefreshingTable(i(1, 2, 4, 6),
+        final QueryTable queryTable = TstUtils.testRefreshingTable(i(1, 2, 4, 6).convertToTracking(),
                 c("Sym", "aa", "bc", "aa", "aa"),
                 c("intCol", 10, 20, 30, 50),
                 c("doubleCol", 0.1, 0.2, 0.3, 0.5));
@@ -558,7 +559,7 @@ public class QueryTableSortTest extends QueryTableTestBase {
     }
 
     public void testGrowingMergeReinterpret() {
-        final QueryTable table = testRefreshingTable(i(1), c("Sentinel", 1));
+        final QueryTable table = testRefreshingTable(i(1).convertToTracking(), c("Sentinel", 1));
         final Table viewed = table.update("Timestamp='2019-04-11T09:30 NY' + (ii * 60L * 1000000000L)");
         final Table sorted = TableTools.merge(viewed, viewed).sortDescending("Timestamp");
 
@@ -702,7 +703,7 @@ public class QueryTableSortTest extends QueryTableTestBase {
         setExpectError(false);
         assertEquals(10, table.size());
 
-        final MutableRowSet rowSet = table.getRowSet().subSetByPositionRange(0, 4);
+        final TrackingMutableRowSet rowSet = table.getRowSet().subSetByPositionRange(0, 4).convertToTracking();
         final QueryTable refreshing = new QueryTable(rowSet, table.getColumnSourceMap());
         refreshing.setRefreshing(true);
 

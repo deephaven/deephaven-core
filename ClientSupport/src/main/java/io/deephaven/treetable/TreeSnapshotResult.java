@@ -146,7 +146,9 @@ public class TreeSnapshotResult {
                 ArrayBackedColumnSource.getImmutableMemoryColumnSource(tableKeyColumn));
         sources.put(TreeTableConstants.CHILD_PRESENCE_COLUMN, new BitSetColumnSource(childPresenceColumn));
 
-        return new QueryTable(RowSetFactoryImpl.INSTANCE.getFlatRowSet((snapshotEnd - snapshotStart) + 1), sources);
+        return new QueryTable(
+                RowSetFactoryImpl.INSTANCE.flat((snapshotEnd - snapshotStart) + 1).convertToTracking(),
+                sources);
     }
 
     public Table getUpdatedSource() {

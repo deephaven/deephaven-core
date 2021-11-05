@@ -185,7 +185,7 @@ public class SelectOverheadLimiter {
                 final Listener.Update downstream = new Listener.Update();
                 downstream.removed = rowSet.getPrevRowSet();
                 downstream.added = rowSet.clone();
-                downstream.modified = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+                downstream.modified = RowSetFactoryImpl.INSTANCE.empty();
                 downstream.modifiedColumnSet = ModifiedColumnSet.EMPTY;
                 downstream.shifted = RowSetShiftData.EMPTY;
 

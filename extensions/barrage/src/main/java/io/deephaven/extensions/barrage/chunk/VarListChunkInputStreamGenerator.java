@@ -89,7 +89,7 @@ public class VarListChunkInputStreamGenerator<T> extends BaseChunkInputStreamGen
             if (subset.size() != offsets.size() - 1) {
                 myOffsets = WritableIntChunk.makeWritableChunk(subset.intSize(DEBUG_NAME) + 1);
                 myOffsets.set(0, 0);
-                final RowSetBuilderSequential myOffsetBuilder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
+                final RowSetBuilderSequential myOffsetBuilder = RowSetFactoryImpl.INSTANCE.builderSequential();
                 final MutableInt off = new MutableInt();
                 subset.forAllRowKeys(key -> {
                     final int startOffset = offsets.get(LongSizedDataStructure.intSize(DEBUG_NAME, key));

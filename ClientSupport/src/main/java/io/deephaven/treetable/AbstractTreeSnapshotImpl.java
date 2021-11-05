@@ -31,7 +31,7 @@ import static io.deephaven.treetable.TreeTableConstants.ROOT_TABLE_KEY;
  * expanded rows at each level.
  */
 public abstract class AbstractTreeSnapshotImpl<INFO_TYPE extends HierarchicalTableInfo, CLIENT_TYPE extends TreeTableClientTableManager.Client<CLIENT_TYPE>> {
-    private static final RowSet EMPTY_ROW_SET = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+    private static final RowSet EMPTY_ROW_SET = RowSetFactoryImpl.INSTANCE.empty();
     private static final boolean DEBUG =
             Configuration.getInstance().getBooleanWithDefault("AbstractTreeSnapshotImpl.debug", false);
 
@@ -601,7 +601,7 @@ public abstract class AbstractTreeSnapshotImpl<INFO_TYPE extends HierarchicalTab
             return;
         }
 
-        RowSetBuilderSequential sequentialBuilder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
+        RowSetBuilderSequential sequentialBuilder = RowSetFactoryImpl.INSTANCE.builderSequential();
         long currentIndexKey = currentIt.currentValue();
 
         while (state.consumed < state.actualViewportSize) {
@@ -611,7 +611,7 @@ public abstract class AbstractTreeSnapshotImpl<INFO_TYPE extends HierarchicalTab
             if (nextExpansion == currentIndexKey) {
                 // Copy everything so far, and start a new rowSet.
                 state.addToSnapshot(usePrev, curTable, current.getKey(), curTableMap, sequentialBuilder.build());
-                sequentialBuilder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
+                sequentialBuilder = RowSetFactoryImpl.INSTANCE.builderSequential();
 
                 final Object tableKey = usePrev ? columnSource.getPrev(nextExpansion) : columnSource.get(nextExpansion);
                 final TableDetails child = tablesByKey.get(tableKey);
@@ -659,7 +659,7 @@ public abstract class AbstractTreeSnapshotImpl<INFO_TYPE extends HierarchicalTab
             return EMPTY_ROW_SET;
         }
 
-        final RowSetBuilderRandom builder = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
+        final RowSetBuilderRandom builder = RowSetFactoryImpl.INSTANCE.builderRandom();
         childKeys.stream().filter(k -> {
             final TableDetails td = tablesByKey.get(k);
             return td != null && !td.isRemoved();

@@ -68,7 +68,7 @@ public class DbShortArrayColumnWrapper extends DbShortArray.Indirect {
 
     @Override
     public DbShortArray subArrayByPositions(long [] positions) {
-        RowSetBuilderRandom builder = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
+        RowSetBuilderRandom builder = RowSetFactoryImpl.INSTANCE.builderRandom();
 
         for (long position : positions) {
             final long realPos = position - startPadding;

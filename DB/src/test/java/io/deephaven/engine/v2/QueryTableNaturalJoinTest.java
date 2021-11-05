@@ -77,13 +77,13 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
 
             final int foffset = offset;
             LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-                final RowSet addRowSet = RowSetFactoryImpl.INSTANCE.getRowSetByRange(foffset, foffset + leftJoinKey.length - 1);
+                final RowSet addRowSet = RowSetFactoryImpl.INSTANCE.fromRange(foffset, foffset + leftJoinKey.length - 1);
                 addToTable(leftTable, addRowSet, stringCol("JoinKey", leftJoinKey),
                         intCol("LeftSentinel", leftSentinel));
                 leftTable.notifyListeners(addRowSet, i(), i());
 
 
-                final RowSetBuilderSequential modIndexBuilder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
+                final RowSetBuilderSequential modIndexBuilder = RowSetFactoryImpl.INSTANCE.builderSequential();
 
                 int slot = random.nextInt(foffset / 100);
                 for (int ii = 0; ii < 100; ++ii) {
@@ -914,12 +914,12 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
     }
 
     public void testNaturalJoinLeftIncrementalRightStaticSimple() {
-        final QueryTable leftQueryTable = TstUtils.testRefreshingTable(i(1, 2, 4, 6),
+        final QueryTable leftQueryTable = TstUtils.testRefreshingTable(i(1, 2, 4, 6).convertToTracking(),
                 c("Sym", "aa", "bc", "aa", "aa"),
                 c("ByteCol", (byte) 10, (byte) 20, (byte) 30, (byte) 50),
                 c("DoubleCol", 0.1, 0.2, 0.3, 0.5));
 
-        final QueryTable rightQueryTable = TstUtils.testTable(i(3, 6),
+        final QueryTable rightQueryTable = TstUtils.testTable(i(3, 6).convertToTracking(),
                 c("RSym", "aa", "bc"),
                 c("ByteCol", (byte) 10, (byte) 20),
                 c("RDoubleCol", 1.1, 2.2));
@@ -944,16 +944,16 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
     }
 
     public void testNaturalJoinIterative() {
-        final QueryTable leftQueryTable = TstUtils.testRefreshingTable(i(1, 2, 4, 6),
+        final QueryTable leftQueryTable = TstUtils.testRefreshingTable(i(1, 2, 4, 6).convertToTracking(),
                 c("Sym", "aa", "bc", "aa", "aa"),
                 c("intCol", 10, 20, 30, 50),
                 c("doubleCol", 0.1, 0.2, 0.3, 0.5));
 
-        final QueryTable rightQueryTable1 = TstUtils.testRefreshingTable(i(3, 6),
+        final QueryTable rightQueryTable1 = TstUtils.testRefreshingTable(i(3, 6).convertToTracking(),
                 c("Sym", "aa", "bc"),
                 c("xCol", 11, 22),
                 c("yCol", 1.1, 2.2));
-        final QueryTable rightQueryTable2 = TstUtils.testRefreshingTable(i(10, 20, 30),
+        final QueryTable rightQueryTable2 = TstUtils.testRefreshingTable(i(10, 20, 30).convertToTracking(),
                 c("Sym", "aa", "bc", "aa"),
                 c("xCol", 11, 20, 20),
                 c("yCol", 1.1, 2.2, 5.5));
@@ -1151,12 +1151,12 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
     }
 
     public void testNaturalJoinIterative2() {
-        final QueryTable leftQueryTable = TstUtils.testRefreshingTable(i(1, 2, 4, 6),
+        final QueryTable leftQueryTable = TstUtils.testRefreshingTable(i(1, 2, 4, 6).convertToTracking(),
                 c("Sym", "aa", "bc", "aa", "aa"),
                 c("intCol", 10, 20, 30, 50),
                 c("doubleCol", 0.1, 0.2, 0.3, 0.5));
 
-        final QueryTable rightQueryTable2 = TstUtils.testRefreshingTable(i(10, 20, 30),
+        final QueryTable rightQueryTable2 = TstUtils.testRefreshingTable(i(10, 20, 30).convertToTracking(),
                 c("Sym", "aa", "bc", "aa"),
                 c("xCol", 11, 20, 20),
                 c("yCol", 1.1, 2.2, 5.5));

@@ -207,7 +207,7 @@ public class FormulaKernelAdapter extends io.deephaven.engine.v2.select.Formula 
     }
 
     private void commonGetLogic(WritableChunk<Values> __dest, final long k, boolean usePrev) {
-        try (final RowSet rs = RowSetFactoryImpl.INSTANCE.getRowSetByValues(k)) {
+        try (final RowSet rs = RowSetFactoryImpl.INSTANCE.fromKeys(k)) {
             try (final AdapterContext context = makeFillContext(1)) {
                 fillChunkHelper(context, __dest, rs, usePrev, true);
             }
@@ -244,7 +244,7 @@ public class FormulaKernelAdapter extends io.deephaven.engine.v2.select.Formula 
         }
         final AdapterContext __typedContext = (AdapterContext) __context;
         final Chunk<? extends Attributes.Values>[] sourceChunks = new Chunk[sourceDescriptor.sources.length];
-        try (final RowSequence flat = RowSetFactoryImpl.INSTANCE.getFlatRowSet(__rowSequence.size())) {
+        try (final RowSequence flat = RowSetFactoryImpl.INSTANCE.flat(__rowSequence.size())) {
             for (int ii = 0; ii < sourceDescriptor.sources.length; ++ii) {
                 final String name = sourceDescriptor.sources[ii];
                 switch (name) {

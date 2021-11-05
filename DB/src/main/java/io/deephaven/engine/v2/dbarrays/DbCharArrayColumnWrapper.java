@@ -65,7 +65,7 @@ public class DbCharArrayColumnWrapper extends DbCharArray.Indirect {
 
     @Override
     public DbCharArray subArrayByPositions(long [] positions) {
-        RowSetBuilderRandom builder = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
+        RowSetBuilderRandom builder = RowSetFactoryImpl.INSTANCE.builderRandom();
 
         for (long position : positions) {
             final long realPos = position - startPadding;

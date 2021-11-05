@@ -434,7 +434,7 @@ public interface RowSet extends RowSequence, LongSizedDataStructure, SafeCloseab
     default MutableRowSet subSetForPositions(RowSet posRowSet) {
         final MutableLong currentOffset = new MutableLong();
         final RowSequence.Iterator iter = getRowSequenceIterator();
-        final RowSetBuilderSequential builder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
+        final RowSetBuilderSequential builder = RowSetFactoryImpl.INSTANCE.builderSequential();
         posRowSet.forEachRowKeyRange((start, end) -> {
             if (currentOffset.longValue() < start) {
                 // skip items until the beginning of this range
@@ -538,30 +538,5 @@ public interface RowSet extends RowSequence, LongSizedDataStructure, SafeCloseab
      */
     default TrackingRowSet asTracking() {
         return (TrackingRowSet) this;
-    }
-
-    /**
-     * <p>
-     * Convert this RowSet to a {@link TrackingMutableRowSet} with the minimal set of casts or
-     * operations. This is really only suitable when the caller "owns" this RowSet. Programming errors may occur if the
-     * any code holds onto references to {@link this} rather than the result, because there may be ambiguity about
-     * resource ownership.
-     * <p>
-     * If {@code this} is a {@link TrackingMutableRowSet}, it will be returned with a cast.
-     * <p>
-     * If {@code rowSet} is a {@link MutableRowSet}, tracking will be {@link MutableRowSet#convertToTracking() enabled}.
-     * <p>
-     * If {@code rowSet} is not mutable, it will be {@link #clone() cloned}.
-     *
-     * @return {@code rowSet}, or a new {@link TrackingMutableRowSet} backed by the same contents as {@code rowSet}
-     */
-    default TrackingMutableRowSet convertToTrackingMutable() {
-        if (this instanceof TrackingMutableRowSet) {
-            return (TrackingMutableRowSet) this;
-        }
-        if (this instanceof MutableRowSet) {
-            return ((MutableRowSet) this).convertToTracking();
-        }
-        return clone().convertToTracking();
     }
 }

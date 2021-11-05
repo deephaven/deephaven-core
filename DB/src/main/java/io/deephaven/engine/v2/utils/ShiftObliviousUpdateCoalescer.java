@@ -71,25 +71,25 @@ public class ShiftObliviousUpdateCoalescer {
 
     public RowSet takeAdded() {
         final RowSet r = added;
-        added = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+        added = RowSetFactoryImpl.INSTANCE.empty();
         return r;
     }
 
     public RowSet takeRemoved() {
         final RowSet r = removed;
-        removed = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+        removed = RowSetFactoryImpl.INSTANCE.empty();
         return r;
     }
 
     public RowSet takeModified() {
         final RowSet r = modified;
-        modified = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+        modified = RowSetFactoryImpl.INSTANCE.empty();
         return r;
     }
 
     public void reset() {
-        added = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
-        modified = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
-        removed = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+        added = RowSetFactoryImpl.INSTANCE.empty();
+        modified = RowSetFactoryImpl.INSTANCE.empty();
+        removed = RowSetFactoryImpl.INSTANCE.empty();
     }
 }

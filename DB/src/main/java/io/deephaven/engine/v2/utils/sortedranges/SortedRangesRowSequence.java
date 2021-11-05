@@ -138,7 +138,7 @@ public class SortedRangesRowSequence extends RowSequenceAsChunkImpl {
             return new TrackingMutableRowSetImpl(sar.deepCopy());
         }
         if (size <= 0) {
-            return RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+            return RowSetFactoryImpl.INSTANCE.empty();
         }
         SortedRanges ans = sar.makeMyTypeAndOffset(Math.min(endIdx - startIdx + 2, sar.count));
         ans.cardinality = size;

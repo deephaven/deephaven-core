@@ -8,6 +8,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.v2.locations.*;
 import io.deephaven.engine.v2.locations.impl.TableLocationSubscriptionBuffer;
+import io.deephaven.engine.v2.utils.MutableRowSet;
 import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.engine.v2.utils.RowSetFactoryImpl;
 import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
@@ -173,7 +174,7 @@ public abstract class SourceTable extends RedefinableTable {
             QueryPerformanceRecorder.withNugget(description + ".initializeLocationSizes()", sizeForInstrumentation(),
                     () -> {
                         Assert.eqNull(rowSet, "rowSet");
-                        rowSet = refreshLocationSizes().convertToTrackingMutable();
+                        rowSet = refreshLocationSizes().convertToTracking();
                         setAttribute(EMPTY_SOURCE_TABLE_ATTRIBUTE, rowSet.isEmpty());
                         if (!isRefreshing()) {
                             return;
@@ -188,7 +189,7 @@ public abstract class SourceTable extends RedefinableTable {
         }
     }
 
-    private RowSet refreshLocationSizes() {
+    private MutableRowSet refreshLocationSizes() {
         try {
             return columnSourceManager.refresh();
         } catch (Exception e) {
@@ -224,7 +225,7 @@ public abstract class SourceTable extends RedefinableTable {
                     setAttribute(EMPTY_SOURCE_TABLE_ATTRIBUTE, false);
                 }
                 rowSet.insert(added);
-                notifyListeners(added, RowSetFactoryImpl.INSTANCE.getEmptyRowSet(), RowSetFactoryImpl.INSTANCE.getEmptyRowSet());
+                notifyListeners(added, RowSetFactoryImpl.INSTANCE.empty(), RowSetFactoryImpl.INSTANCE.empty());
             } catch (Exception e) {
                 // Notify listeners to the SourceTable when we had an issue refreshing available locations.
                 notifyListenersOnError(e, null);

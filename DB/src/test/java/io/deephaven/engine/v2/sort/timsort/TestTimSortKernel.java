@@ -173,7 +173,7 @@ public abstract class TestTimSortKernel {
 
             final List<T> javaTuples = tupleListGenerator.generate(random, dataSize);
 
-            final RowSetBuilderSequential builder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
+            final RowSetBuilderSequential builder = RowSetFactoryImpl.INSTANCE.builderSequential();
             for (int ii = 0; ii < javaTuples.size(); ++ii) {
                 builder.appendKey(ii * 10);
             }

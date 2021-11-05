@@ -226,7 +226,7 @@ public class BarrageStreamReader implements BarrageMessageConsumer.StreamReader<
 
     private static RowSet extractIndex(final ByteBuffer bb) throws IOException {
         if (bb == null) {
-            return RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+            return RowSetFactoryImpl.INSTANCE.empty();
         }
         // noinspection UnstableApiUsage
         try (final LittleEndianDataInputStream is =

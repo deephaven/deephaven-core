@@ -24,8 +24,8 @@ import io.deephaven.engine.v2.sources.ReinterpretUtilities;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.utils.RowSet;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.engine.structures.RowSequence;
+import io.deephaven.engine.v2.utils.TrackingRowSet;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.codec.ObjectCodec;
 import io.deephaven.util.type.TypeUtils;
@@ -341,7 +341,7 @@ public class ParquetTableWriter {
     }
 
     private static <DATA_TYPE> void writeColumnSource(
-            final RowSet tableRowSet,
+            final TrackingRowSet tableRowSet,
             final RowGroupWriter rowGroupWriter,
             final String name,
             final ColumnSource<DATA_TYPE> columnSourceIn,

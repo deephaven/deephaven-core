@@ -73,7 +73,7 @@ public class PythonReplayListenerAdapter extends InstrumentedListenerAdapter
 
     @Override
     public void replay() {
-        final RowSet emptyRowSet = RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+        final RowSet emptyRowSet = RowSetFactoryImpl.INSTANCE.empty();
         final RowSetShiftData emptyShift = RowSetShiftData.EMPTY;
         final ModifiedColumnSet emptyColumnSet = ModifiedColumnSet.EMPTY;
         final Update update = new Update(source.getRowSet(), emptyRowSet, emptyRowSet, emptyShift, emptyColumnSet);

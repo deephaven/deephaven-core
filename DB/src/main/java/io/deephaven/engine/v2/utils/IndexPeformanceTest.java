@@ -11,7 +11,7 @@ public class IndexPeformanceTest {
     private static final int SIZE = (Integer.MAX_VALUE - 1);
 
     public static void main(String[] args) {
-        RowSet rowSet = RowSetFactoryImpl.INSTANCE.getRowSetByRange(0, SIZE);
+        RowSet rowSet = RowSetFactoryImpl.INSTANCE.fromRange(0, SIZE);
         long sum = 0;
         long start = System.currentTimeMillis();
         for (RowSet.Iterator it = rowSet.iterator(); it.hasNext();) {
@@ -20,7 +20,7 @@ public class IndexPeformanceTest {
         System.out.println("Range iteration per item time = " + (System.currentTimeMillis() - start) / (SIZE / 1000000)
                 + "ns " + sum);
         Random random = new Random(0);
-        RowSetBuilderRandom indexBuilder = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
+        RowSetBuilderRandom indexBuilder = RowSetFactoryImpl.INSTANCE.builderRandom();
         long runningValue = 0;// Math.abs(random.nextLong());
         start = System.currentTimeMillis();
         long lastRangeStart = runningValue;

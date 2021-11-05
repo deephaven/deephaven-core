@@ -217,7 +217,7 @@ public class TreeTableFilter implements Function.Unary<Table, Table>, MemoizedOp
                 parentsToProcess = newParentKeys;
             } while (!parentsToProcess.isEmpty());
 
-            final RowSetBuilderRandom builder = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
+            final RowSetBuilderRandom builder = RowSetFactoryImpl.INSTANCE.builderRandom();
 
             parentReferences.forEach((parentValue, set) -> {
                 final TLongSet actualSet = parentReferences.get(parentValue);
@@ -254,7 +254,7 @@ public class TreeTableFilter implements Function.Unary<Table, Table>, MemoizedOp
         private void removeParents(RowSet rowsToRemove) {
             final Map<Object, TLongSet> parents = generateParentReferenceMap(rowsToRemove, parentSource::getPrev);
 
-            final RowSetBuilderRandom builder = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
+            final RowSetBuilderRandom builder = RowSetFactoryImpl.INSTANCE.builderRandom();
             while (!parents.isEmpty()) {
                 final Iterator<Map.Entry<Object, TLongSet>> iterator = parents.entrySet().iterator();
                 final Map.Entry<Object, TLongSet> entry = iterator.next();
@@ -298,7 +298,7 @@ public class TreeTableFilter implements Function.Unary<Table, Table>, MemoizedOp
         }
 
         private RowSet checkForResurrectedParent(RowSet rowsToCheck) {
-            final RowSetBuilderSequential builder = RowSetFactoryImpl.INSTANCE.getSequentialBuilder();
+            final RowSetBuilderSequential builder = RowSetFactoryImpl.INSTANCE.builderSequential();
 
             for (final RowSet.Iterator it = rowsToCheck.iterator(); it.hasNext();) {
                 final long key = it.nextLong();
@@ -316,7 +316,7 @@ public class TreeTableFilter implements Function.Unary<Table, Table>, MemoizedOp
             final Map<Object, TLongSet> parents =
                     generateParentReferenceMap(rowsToParent, usePrev ? parentSource::getPrev : parentSource::get);
 
-            final RowSetBuilderRandom builder = RowSetFactoryImpl.INSTANCE.getRandomBuilder();
+            final RowSetBuilderRandom builder = RowSetFactoryImpl.INSTANCE.builderRandom();
             while (!parents.isEmpty()) {
                 final Iterator<Map.Entry<Object, TLongSet>> iterator = parents.entrySet().iterator();
                 final Map.Entry<Object, TLongSet> entry = iterator.next();

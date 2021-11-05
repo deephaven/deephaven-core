@@ -33,7 +33,7 @@ public class SelectNoneFilter extends SelectFilterImpl {
 
     @Override
     public MutableRowSet filter(RowSet selection, RowSet fullSet, Table table, boolean usePrev) {
-        return RowSetFactoryImpl.INSTANCE.getEmptyRowSet();
+        return RowSetFactoryImpl.INSTANCE.empty();
     }
 
     @Override

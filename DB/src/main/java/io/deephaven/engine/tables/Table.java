@@ -32,7 +32,6 @@ import io.deephaven.engine.v2.select.ReinterpretedColumn;
 import io.deephaven.engine.v2.select.SelectColumn;
 import io.deephaven.engine.v2.select.SelectFilter;
 import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.engine.v2.utils.TrackingRowSet;
 import io.deephaven.qst.table.TableSpec;
 import org.jetbrains.annotations.NotNull;
@@ -564,7 +563,13 @@ public interface Table extends LongSizedDataStructure, LivenessNode, TableOperat
         return where(SelectFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY);
     }
 
-    Table getSubTable(RowSet rowSet);
+    /**
+     * Get a {@link Table} that contains a sub-set of the rows from {@code this}.
+     *
+     * @param rowSet The {@link TrackingRowSet row set} for the result.
+     * @return A new sub-table
+     */
+    Table getSubTable(TrackingRowSet rowSet);
 
     // -----------------------------------------------------------------------------------------------------------------
     // Column Selection Operations

@@ -82,7 +82,7 @@ public class QueryTableHugeSortTest {
                 TableTools.emptyTable(tableSize).updateView("Captain=captains[(int)(ii / segSize)]", "Sentinel=ii");
         final Map<String, RowSet> gtr = new LinkedHashMap<>();
         for (int ii = 0; ii < captains.length; ++ii) {
-            gtr.put(captains[ii], RowSetFactoryImpl.INSTANCE.getRowSetByRange(ii * segSize, (ii + 1) * segSize - 1));
+            gtr.put(captains[ii], RowSetFactoryImpl.INSTANCE.fromRange(ii * segSize, (ii + 1) * segSize - 1));
         }
         System.out.println(gtr);
         ((AbstractColumnSource) (grouped.getColumnSource("Captain"))).setGroupToRange(gtr);

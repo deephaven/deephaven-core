@@ -17,19 +17,19 @@ public class RowSetFactoryImpl implements RowSetFactory {
     private RowSetFactoryImpl() {}
 
     @Override
-    public MutableRowSet getEmptyRowSet() {
+    public MutableRowSet empty() {
         return new MutableRowSetImpl();
     }
 
     @Override
-    public MutableRowSet getRowSetByValues(final long... rowKeys) {
+    public MutableRowSet fromKeys(final long... rowKeys) {
         if (rowKeys.length == 0) {
-            return getEmptyRowSet();
+            return empty();
         }
         if (rowKeys.length == 1) {
-            return getRowSetByRange(rowKeys[0], rowKeys[0]);
+            return fromRange(rowKeys[0], rowKeys[0]);
         }
-        final RowSetBuilderRandom indexBuilder = getRandomBuilder();
+        final RowSetBuilderRandom indexBuilder = builderRandom();
         for (long key : rowKeys) {
             indexBuilder.addKey(key);
         }
@@ -37,30 +37,30 @@ public class RowSetFactoryImpl implements RowSetFactory {
     }
 
     @Override
-    public MutableRowSet getRowSetByValues(final long rowKey) {
-        return getRowSetByRange(rowKey, rowKey);
+    public MutableRowSet fromKeys(final long rowKey) {
+        return fromRange(rowKey, rowKey);
     }
 
     @Override
-    public RowSet getRowSetByValues(final TLongArrayList list) {
+    public RowSet fromKeys(final TLongArrayList list) {
         list.sort();
-        final RowSetBuilderSequential builder = getSequentialBuilder();
+        final RowSetBuilderSequential builder = builderSequential();
         list.forEach(builder);
         return builder.build();
     }
 
     @Override
-    public MutableRowSet getRowSetByRange(final long firstRowKey, final long lastRowKey) {
+    public MutableRowSet fromRange(final long firstRowKey, final long lastRowKey) {
         return new MutableRowSetImpl(SingleRange.make(firstRowKey, lastRowKey));
     }
 
     @Override
-    public MutableRowSet getFlatRowSet(final long size) {
-        return size <= 0 ? getEmptyRowSet() : getRowSetByRange(0, size - 1);
+    public MutableRowSet flat(final long size) {
+        return size <= 0 ? empty() : fromRange(0, size - 1);
     }
 
     @Override
-    public RowSetBuilderRandom getRandomBuilder() {
+    public RowSetBuilderRandom builderRandom() {
         if (USE_PRIORITY_QUEUE_RANDOM_BUILDER) {
             return new AdaptiveRowSetBuilderRandom();
         } else {
@@ -69,7 +69,7 @@ public class RowSetFactoryImpl implements RowSetFactory {
     }
 
     @Override
-    public RowSetBuilderSequential getSequentialBuilder() {
+    public RowSetBuilderSequential builderSequential() {
         return new BasicRowSetBuilderSequential();
     }
 }
