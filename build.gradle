@@ -90,7 +90,7 @@ idea {
 }
 
 ext.versionSource = versionSource
-ext.globalVersion = "0.6.0"
+ext.globalVersion = "0.7.0"
 
 // To set fishlibVersion, go to project-local gradle.properties file
 // (or, use the gradle.properties in $USER_HOME/.gradle for a global override)

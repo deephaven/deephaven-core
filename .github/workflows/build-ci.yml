@@ -50,7 +50,7 @@ jobs:
           tags: |
             type=edge,branch=main
             type=raw,priority=950,enable=${{ startsWith(github.ref, 'refs/heads/release/v') }},value=${{ steps.semver.outputs.semver }}
-            type=raw,enable=${{ startsWith(github.ref, 'refs/heads/release/v0.6') }},value=latest
+            type=raw,enable=${{ startsWith(github.ref, 'refs/heads/release/v0.7') }},value=latest
           labels: |
             org.opencontainers.image.vendor=Deephaven Data Labs
             org.opencontainers.image.title=Deephaven Core
@@ -136,7 +136,7 @@ jobs:
           tags: |
             type=edge,branch=main
             type=raw,priority=950,enable=${{ startsWith(github.ref, 'refs/heads/release/v') }},value=${{ steps.semver.outputs.semver }}
-            type=raw,enable=${{ startsWith(github.ref, 'refs/heads/release/v0.6') }},value=latest
+            type=raw,enable=${{ startsWith(github.ref, 'refs/heads/release/v0.7') }},value=latest
           labels: |
             org.opencontainers.image.vendor=Deephaven Data Labs
             org.opencontainers.image.title=Deephaven gRPC Web Proxy
@@ -218,7 +218,7 @@ jobs:
           tags: |
             type=edge,branch=main
             type=raw,priority=950,enable=${{ startsWith(github.ref, 'refs/heads/release/v') }},value=${{ steps.semver.outputs.semver }}
-            type=raw,enable=${{ startsWith(github.ref, 'refs/heads/release/v0.6') }},value=latest
+            type=raw,enable=${{ startsWith(github.ref, 'refs/heads/release/v0.7') }},value=latest
           labels: |
             org.opencontainers.image.vendor=Deephaven Data Labs
             org.opencontainers.image.title=Deephaven Envoy
@@ -278,7 +278,7 @@ jobs:
           tags: |
             type=edge,branch=main
             type=raw,priority=950,enable=${{ startsWith(github.ref, 'refs/heads/release/v') }},value=${{ steps.semver.outputs.semver }}
-            type=raw,enable=${{ startsWith(github.ref, 'refs/heads/release/v0.6') }},value=latest
+            type=raw,enable=${{ startsWith(github.ref, 'refs/heads/release/v0.7') }},value=latest
           labels: |
             org.opencontainers.image.vendor=Deephaven Data Labs
             org.opencontainers.image.title=Deephaven Web
