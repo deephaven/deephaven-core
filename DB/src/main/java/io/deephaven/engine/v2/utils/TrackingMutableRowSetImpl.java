@@ -12,7 +12,7 @@ import java.io.ObjectInput;
 
 public class TrackingMutableRowSetImpl extends GroupingRowSetHelper {
 
-    private transient OrderedLongSet prevImpl;
+    private transient OrderedLongSet prevInnerSet;
     /**
      * Protects prevImpl. Only updated in checkPrev() and initializePreviousValue() (this later supposed to be used only
      * right after the constructor, in special cases).
@@ -26,7 +26,7 @@ public class TrackingMutableRowSetImpl extends GroupingRowSetHelper {
 
     public TrackingMutableRowSetImpl(final OrderedLongSet impl) {
         super(impl);
-        this.prevImpl = OrderedLongSet.EMPTY;
+        this.prevInnerSet = OrderedLongSet.EMPTY;
         changeTimeStep = -1;
     }
 
@@ -37,17 +37,17 @@ public class TrackingMutableRowSetImpl extends GroupingRowSetHelper {
 
     private OrderedLongSet checkAndGetPrev() {
         if (LogicalClock.DEFAULT.currentStep() == changeTimeStep) {
-            return prevImpl;
+            return prevInnerSet;
         }
         synchronized (this) {
             final long currentClockStep = LogicalClock.DEFAULT.currentStep();
             if (currentClockStep == changeTimeStep) {
-                return prevImpl;
+                return prevInnerSet;
             }
-            prevImpl.ixRelease();
-            prevImpl = getImpl().ixCowRef();
+            prevInnerSet.ixRelease();
+            prevInnerSet = getInnerSet().ixCowRef();
             changeTimeStep = currentClockStep;
-            return prevImpl;
+            return prevInnerSet;
         }
     }
 
@@ -58,16 +58,16 @@ public class TrackingMutableRowSetImpl extends GroupingRowSetHelper {
 
     @Override
     public void close() {
-        prevImpl.ixRelease();
-        prevImpl = null; // Force NPE on use after tracking
+        prevInnerSet.ixRelease();
+        prevInnerSet = null; // Force NPE on use after tracking
         changeTimeStep = -1;
         super.close();
     }
 
     @Override
     public void initializePreviousValue() {
-        prevImpl.ixRelease();
-        prevImpl = OrderedLongSet.EMPTY;
+        prevInnerSet.ixRelease();
+        prevInnerSet = OrderedLongSet.EMPTY;
         changeTimeStep = -1;
     }
 

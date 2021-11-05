@@ -52,26 +52,26 @@ public class SingleRangeTest {
         TrackingMutableRowSetImpl ix = new TrackingMutableRowSetImpl(SingleRange.make(start, end));
         MutableRowSet ix2 = new TrackingMutableRowSetImpl(SingleRange.make(start - 1, end + 1));
         ix.remove(ix2);
-        assertEquals(OrderedLongSet.EMPTY, ix.getImpl());
+        assertEquals(OrderedLongSet.EMPTY, ix.getInnerSet());
 
         ix = new TrackingMutableRowSetImpl(SingleRange.make(start, end));
         ix2 = new TrackingMutableRowSetImpl(SingleRange.make(start - 1, end - 1));
         ix.remove(ix2);
-        assertTrue(ix.getImpl() instanceof SingleRange);
+        assertTrue(ix.getInnerSet() instanceof SingleRange);
         assertEquals(end, ix.firstRowKey());
         assertEquals(end, ix.lastRowKey());
 
         ix = new TrackingMutableRowSetImpl(SingleRange.make(start, end));
         ix2 = new TrackingMutableRowSetImpl(SingleRange.make(start + 1, end + 1));
         ix.remove(ix2);
-        assertTrue(ix.getImpl() instanceof SingleRange);
+        assertTrue(ix.getInnerSet() instanceof SingleRange);
         assertEquals(start, ix.firstRowKey());
         assertEquals(start, ix.lastRowKey());
 
         ix = new TrackingMutableRowSetImpl(SingleRange.make(start, end));
         ix2 = new TrackingMutableRowSetImpl(SingleRange.make(start + 1, end - 1));
         ix.remove(ix2);
-        assertTrue(ix.getImpl() instanceof SortedRanges);
+        assertTrue(ix.getInnerSet() instanceof SortedRanges);
         assertEquals(2, ix.size());
         assertEquals(start, ix.firstRowKey());
         assertEquals(end, ix.lastRowKey());
@@ -91,29 +91,29 @@ public class SingleRangeTest {
         final long end = 21;
         TrackingMutableRowSetImpl ix = new TrackingMutableRowSetImpl(SingleRange.make(start, end));
         ix.remove(9);
-        assertTrue(ix.getImpl() instanceof SingleRange);
+        assertTrue(ix.getInnerSet() instanceof SingleRange);
         assertEquals(10, ix.firstRowKey());
         assertEquals(21, ix.lastRowKey());
         ix.remove(22);
-        assertTrue(ix.getImpl() instanceof SingleRange);
+        assertTrue(ix.getInnerSet() instanceof SingleRange);
         assertEquals(10, ix.firstRowKey());
         assertEquals(21, ix.lastRowKey());
         ix.remove(10);
-        assertTrue(ix.getImpl() instanceof SingleRange);
+        assertTrue(ix.getInnerSet() instanceof SingleRange);
         assertEquals(11, ix.firstRowKey());
         assertEquals(21, ix.lastRowKey());
         ix.remove(21);
-        assertTrue(ix.getImpl() instanceof SingleRange);
+        assertTrue(ix.getInnerSet() instanceof SingleRange);
         assertEquals(11, ix.firstRowKey());
         assertEquals(20, ix.lastRowKey());
         ix.remove(12);
-        assertTrue(ix.getImpl() instanceof SortedRanges);
+        assertTrue(ix.getInnerSet() instanceof SortedRanges);
         assertEquals(9, ix.size());
         assertTrue(ix.containsRange(11, 11));
         assertTrue(ix.containsRange(13, 20));
         TrackingMutableRowSetImpl ix2 = new TrackingMutableRowSetImpl(SingleRange.make(9, 9));
         ix2.remove(9);
-        assertEquals(ix2.getImpl(), OrderedLongSet.EMPTY);
+        assertEquals(ix2.getInnerSet(), OrderedLongSet.EMPTY);
     }
 
     private static void insertResultsInSingle(
@@ -125,7 +125,7 @@ public class SingleRangeTest {
             final long endExpected) {
         final TrackingMutableRowSetImpl ix = new TrackingMutableRowSetImpl(SingleRange.make(start1, end1));
         Runnable check = () -> {
-            assertTrue(ix.getImpl() instanceof SingleRange);
+            assertTrue(ix.getInnerSet() instanceof SingleRange);
             assertEquals(startExpected, ix.firstRowKey());
             assertEquals(endExpected, ix.lastRowKey());
         };
@@ -147,7 +147,7 @@ public class SingleRangeTest {
         TrackingMutableRowSetImpl ix = new TrackingMutableRowSetImpl(SingleRange.make(start, end));
         RowSet ix2 = new TrackingMutableRowSetImpl(SingleRange.make(start - 3, start - 2));
         ix.insert(ix2);
-        assertTrue(ix.getImpl() instanceof SortedRanges);
+        assertTrue(ix.getInnerSet() instanceof SortedRanges);
         assertEquals(ix.size(), end - start + 1 + 2);
         assertEquals(start - 3, ix.firstRowKey());
         assertEquals(-3L, ix.find(start - 1));
@@ -156,7 +156,7 @@ public class SingleRangeTest {
         ix = new TrackingMutableRowSetImpl(SingleRange.make(start, end));
         ix2 = new TrackingMutableRowSetImpl(SingleRange.make(end + 2, end + 3));
         ix.insert(ix2);
-        assertTrue(ix.getImpl() instanceof SortedRanges);
+        assertTrue(ix.getInnerSet() instanceof SortedRanges);
         assertEquals(ix.size(), end - start + 1 + 2);
         assertEquals(start, ix.firstRowKey());
         assertEquals(-12L, ix.find(end + 1));
@@ -192,7 +192,7 @@ public class SingleRangeTest {
         if (start1 < start2 && end2 < end1) {
             // hole.
             check = (final RowSet t) -> {
-                final OrderedLongSet timpl = ((MutableRowSetImpl) t).getImpl();
+                final OrderedLongSet timpl = ((MutableRowSetImpl) t).getInnerSet();
                 assertTrue((timpl instanceof RspBitmap) || (timpl instanceof SortedRanges));
                 int rangeCount = 0;
                 final RowSet.RangeIterator it = t.rangeIterator();
@@ -216,13 +216,13 @@ public class SingleRangeTest {
         } else if (start2 <= start1 && end1 <= end2) {
             // completely removed
             check = (final RowSet t) -> {
-                assertTrue(((MutableRowSetImpl) t).getImpl() == OrderedLongSet.EMPTY);
+                assertTrue(((MutableRowSetImpl) t).getInnerSet() == OrderedLongSet.EMPTY);
                 assertTrue(t.isEmpty());
             };
         } else {
             // results in single range
             check = (final RowSet t) -> {
-                assertTrue(((MutableRowSetImpl) t).getImpl() instanceof SingleRange);
+                assertTrue(((MutableRowSetImpl) t).getInnerSet() instanceof SingleRange);
                 if (start1 < start2) {
                     assertEquals(start1, t.firstRowKey());
                     assertEquals(start2 - 1, t.lastRowKey());
@@ -248,11 +248,11 @@ public class SingleRangeTest {
         TrackingMutableRowSetImpl ix = new TrackingMutableRowSetImpl(SingleRange.make(10, 20));
         RowSet ix2 = new TrackingMutableRowSetImpl(SingleRange.make(10, 20));
         ix.remove(ix2);
-        assertEquals(OrderedLongSet.EMPTY, ix.getImpl());
+        assertEquals(OrderedLongSet.EMPTY, ix.getInnerSet());
         ix.insertRange(10, 20);
         assertEquals(11, ix.size());
         ix.removeRange(10, 20);
-        assertEquals(OrderedLongSet.EMPTY, ix.getImpl());
+        assertEquals(OrderedLongSet.EMPTY, ix.getInnerSet());
         ix.insertRange(10, 20);
         assertEquals(11, ix.size());
         removeResultsCheck(10, 20, 11, 19);

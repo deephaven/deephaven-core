@@ -20,7 +20,7 @@ class BasicRowSetBuilderSequential extends OrderedLongSetBuilderSequential imple
     @Override
     public void appendRowSequenceWithOffset(final RowSequence rowSequence, final long shiftAmount) {
         if (rowSequence instanceof MutableRowSetImpl) {
-            appendTreeIndexImpl(shiftAmount, ((MutableRowSetImpl) rowSequence).getImpl(), false);
+            appendTreeIndexImpl(shiftAmount, ((MutableRowSetImpl) rowSequence).getInnerSet(), false);
             return;
         }
         rowSequence.forAllRowKeyRanges((start, end) -> {
