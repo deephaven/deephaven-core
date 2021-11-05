@@ -2,8 +2,8 @@ package io.deephaven.engine.tables.verify;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.tables.SortingOrder;
+import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.v2.BaseTable;
-import io.deephaven.engine.v2.DynamicTable;
 import io.deephaven.engine.v2.ModifiedColumnSet;
 import io.deephaven.engine.v2.sortcheck.SortCheck;
 import io.deephaven.engine.v2.sources.ColumnSource;
@@ -24,8 +24,8 @@ public class SortedAssertionInstrumentedListenerAdapter extends BaseTable.Listen
     private final SortCheck sortCheck;
 
     public SortedAssertionInstrumentedListenerAdapter(String description,
-            DynamicTable parent,
-            DynamicTable dependent,
+            Table parent,
+            Table dependent,
             String columnName,
             SortingOrder order) {
         super(

@@ -1,8 +1,8 @@
 package io.deephaven.engine.util;
 
+import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.live.LiveTableMonitor;
 import io.deephaven.engine.tables.utils.QueryPerformanceRecorder;
-import io.deephaven.engine.v2.DynamicTable;
 import io.deephaven.engine.v2.InstrumentedListenerAdapter;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.LogicalClock;
@@ -38,41 +38,41 @@ public class ToMapListener<K, V> extends InstrumentedListenerAdapter implements 
     private final LongFunction<V> valueProducer;
     private final LongFunction<V> prevValueProducer;
 
-    public static ToMapListener make(DynamicTable source, String keySourceName) {
+    public static ToMapListener make(Table source, String keySourceName) {
         return QueryPerformanceRecorder.withNugget("ToMapListener(" + keySourceName + ")",
                 () -> new ToMapListener(source, keySourceName, keySourceName));
     }
 
-    public static ToMapListener make(DynamicTable source, String keySourceName, String valueSourceName) {
+    public static ToMapListener make(Table source, String keySourceName, String valueSourceName) {
         return QueryPerformanceRecorder.withNugget("ToMapListener(" + keySourceName + ", " + valueSourceName + ")",
                 () -> new ToMapListener(source, keySourceName, valueSourceName));
     }
 
-    public static <K1, V1> ToMapListener<K1, V1> make(DynamicTable source, ColumnSource<K1> keySource,
-            ColumnSource<V1> valueSource) {
+    public static <K1, V1> ToMapListener<K1, V1> make(Table source, ColumnSource<K1> keySource,
+                                                      ColumnSource<V1> valueSource) {
         // noinspection unchecked
         return QueryPerformanceRecorder.withNugget("ToMapListener",
                 () -> new ToMapListener<>(source, keySource, valueSource));
     }
 
-    public static <K1, V1> ToMapListener<K1, V1> make(DynamicTable source, LongFunction<K1> keyProducer,
-            LongFunction<K1> prevKeyProducer, LongFunction<V1> valueProducer, LongFunction<V1> prevValueProducer) {
+    public static <K1, V1> ToMapListener<K1, V1> make(Table source, LongFunction<K1> keyProducer,
+                                                      LongFunction<K1> prevKeyProducer, LongFunction<V1> valueProducer, LongFunction<V1> prevValueProducer) {
         // noinspection unchecked
         return QueryPerformanceRecorder.withNugget("ToMapListener",
                 () -> new ToMapListener<>(source, keyProducer, prevKeyProducer, valueProducer, prevValueProducer));
     }
 
-    private ToMapListener(DynamicTable source, String keySourceName, String valueSourceName) {
+    private ToMapListener(Table source, String keySourceName, String valueSourceName) {
         // noinspection unchecked
         this(source, source.getColumnSource(keySourceName), source.getColumnSource(valueSourceName));
     }
 
-    private ToMapListener(DynamicTable source, ColumnSource<K> keySource, ColumnSource<V> valueSource) {
+    private ToMapListener(Table source, ColumnSource<K> keySource, ColumnSource<V> valueSource) {
         this(source, keySource::get, keySource::getPrev, valueSource::get, valueSource::getPrev);
     }
 
-    private ToMapListener(DynamicTable source, LongFunction<K> keyProducer, LongFunction<K> prevKeyProducer,
-            LongFunction<V> valueProducer, LongFunction<V> prevValueProducer) {
+    private ToMapListener(Table source, LongFunction<K> keyProducer, LongFunction<K> prevKeyProducer,
+                          LongFunction<V> valueProducer, LongFunction<V> prevValueProducer) {
         super(source, false);
         this.keyProducer = keyProducer;
         this.prevKeyProducer = prevKeyProducer;

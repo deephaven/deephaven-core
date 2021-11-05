@@ -6,11 +6,11 @@ package io.deephaven.modelfarm;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
+import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.process.ProcessEnvironment;
 import io.deephaven.engine.tables.live.LiveTableMonitor;
-import io.deephaven.engine.v2.DynamicTable;
 import io.deephaven.engine.v2.NotificationStepSource;
 import io.deephaven.util.FunctionalInterfaces;
 
@@ -98,7 +98,7 @@ public class ModelFarmOnDemand<KEYTYPE, DATATYPE, ROWDATAMANAGERTYPE extends Row
             return;
         }
 
-        final DynamicTable dataManagerTable = dataManager.table();
+        final Table dataManagerTable = dataManager.table();
 
         final Queue<DATATYPE> dataToEval = new ArrayDeque<>(keys != null ? keys.size() : dataManagerTable.intSize());
         // get data for all keys under the same lock

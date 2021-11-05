@@ -919,7 +919,7 @@ public final class ByExternalChunkedOperator implements IterativeChunkedAggregat
     @Override
     public void propagateFailure(@NotNull final Throwable originalException,
             @NotNull UpdatePerformanceTracker.Entry sourceEntry) {
-        tableMap.values().forEach(st -> ((DynamicTable) st).notifyListenersOnError(originalException, sourceEntry));
+        tableMap.values().forEach(st -> st.notifyListenersOnError(originalException, sourceEntry));
     }
 
     @Override

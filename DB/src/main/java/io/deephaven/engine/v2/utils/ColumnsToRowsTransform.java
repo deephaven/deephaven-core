@@ -198,12 +198,12 @@ public class ColumnsToRowsTransform {
         final QueryTable result = new QueryTable(resultRowSet, resultMap);
 
         if (source.isLive()) {
-            final DynamicTable dynamicSource = (DynamicTable) source;
+            final Table dynamicSource = source;
             final int sourceColumnCount = source.getColumnSourceMap().size();
             final ModifiedColumnSet[] resultColumnSets = new ModifiedColumnSet[sourceColumnCount];
             final String[] sourceColumns = new String[sourceColumnCount];
             final MutableInt columnIndex = new MutableInt();
-            final ModifiedColumnSet modifyAll = ((DynamicTable) source)
+            final ModifiedColumnSet modifyAll = source
                     .newModifiedColumnSet(expandSet.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
             final ModifiedColumnSet[] modifyOneRow = new ModifiedColumnSet[labels.length];
             // noinspection unchecked
@@ -229,7 +229,7 @@ public class ColumnsToRowsTransform {
             });
 
             for (int cc = 0; cc < labels.length; ++cc) {
-                modifyOneRow[cc] = ((DynamicTable) source)
+                modifyOneRow[cc] = source
                         .newModifiedColumnSet(sourcesForRow[cc].toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
             }
 

@@ -441,7 +441,7 @@ public class TreeSnapshotQueryTest extends QueryTableTestBase {
         assertFalse(state.expansionMap.containsKey(bacontownKey));
 
         // We'll delete a child key so that a child table becomes empty. TSQ should eliminate it from the set.
-        final DynamicTable source = (DynamicTable) t.getAttribute(Table.HIERARCHICAL_SOURCE_TABLE_ATTRIBUTE);
+        final Table source = (Table) t.getAttribute(Table.HIERARCHICAL_SOURCE_TABLE_ATTRIBUTE);
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             TstUtils.removeRows(source, i(467));
             source.notifyListeners(i(), i(467), i());
@@ -620,7 +620,7 @@ public class TreeSnapshotQueryTest extends QueryTableTestBase {
 
             // Remove the "Fulton" row
             TstUtils.removeRows(raw, i(475));
-            ((DynamicTable) raw).notifyListeners(i(), i(475), i());
+            raw.notifyListeners(i(), i(475), i());
 
             // Fetch current data while it is concurrently updating
             final Future<?> currentFetch = pool.submit(() -> testViewport(state, 0, halfTableSize, allColumns, true));

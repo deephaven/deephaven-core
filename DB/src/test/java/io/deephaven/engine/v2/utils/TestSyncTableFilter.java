@@ -47,8 +47,8 @@ public class TestSyncTableFilter extends LiveTableTestCase {
         TableTools.show(fa);
         TableTools.show(fb);
 
-        final DynamicTable ex1a = newTable(longCol("ID", 2, 2), intCol("Sentinel", 103, 104), col("Key", "a", "a"));
-        final DynamicTable ex1b = newTable(longCol("ID", 2, 2), intCol("Sentinel", 203, 204), col("Key", "a", "a"));
+        final Table ex1a = newTable(longCol("ID", 2, 2), intCol("Sentinel", 103, 104), col("Key", "a", "a"));
+        final Table ex1b = newTable(longCol("ID", 2, 2), intCol("Sentinel", 203, 204), col("Key", "a", "a"));
 
         assertEquals("", TableTools.diff(fa, ex1a, 10));
         assertEquals("", TableTools.diff(fb, ex1b, 10));
@@ -61,8 +61,8 @@ public class TestSyncTableFilter extends LiveTableTestCase {
         assertEquals("", TableTools.diff(fa, ex1a, 10));
         assertEquals("", TableTools.diff(fb, ex1b, 10));
 
-        final DynamicTable ex2a = newTable(longCol("ID", 5, 5), intCol("Sentinel", 107, 108), col("Key", "b", "b"));
-        final DynamicTable ex2b = newTable(longCol("ID", 5, 5), intCol("Sentinel", 207, 208), col("Key", "a", "a"));
+        final Table ex2a = newTable(longCol("ID", 5, 5), intCol("Sentinel", 107, 108), col("Key", "b", "b"));
+        final Table ex2b = newTable(longCol("ID", 5, 5), intCol("Sentinel", 207, 208), col("Key", "a", "a"));
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(b, i(10, 11), longCol("ID", 5, 5), intCol("Sentinel", 207, 208), col("Key", "a", "a"));
@@ -95,8 +95,8 @@ public class TestSyncTableFilter extends LiveTableTestCase {
         TableTools.show(fa);
         TableTools.show(fb);
 
-        final DynamicTable ex1a = newTable(longCol("ID", 2, 2), intCol("Sentinel", 103, 104), col("Key", "a", "a"));
-        final DynamicTable ex1b = newTable(longCol("ID", 2, 2), intCol("Sentinel", 203, 204), col("Key", "a", "a"));
+        final Table ex1a = newTable(longCol("ID", 2, 2), intCol("Sentinel", 103, 104), col("Key", "a", "a"));
+        final Table ex1b = newTable(longCol("ID", 2, 2), intCol("Sentinel", 203, 204), col("Key", "a", "a"));
 
         assertEquals("", TableTools.diff(fa, ex1a, 10));
         assertEquals("", TableTools.diff(fb, ex1b, 10));
@@ -109,9 +109,9 @@ public class TestSyncTableFilter extends LiveTableTestCase {
         assertEquals("", TableTools.diff(fa, ex1a, 10));
         assertEquals("", TableTools.diff(fb, ex1b, 10));
 
-        final DynamicTable ex2a = newTable(longCol("ID", 5, 5, 5, 5), intCol("Sentinel", 107, 108, 109, 110),
+        final Table ex2a = newTable(longCol("ID", 5, 5, 5, 5), intCol("Sentinel", 107, 108, 109, 110),
                 col("Key", "b", "b", "c", "c"));
-        final DynamicTable ex2b = newTable(longCol("ID", 5, 5), intCol("Sentinel", 207, 208), col("Key", "a", "a"));
+        final Table ex2b = newTable(longCol("ID", 5, 5), intCol("Sentinel", 207, 208), col("Key", "a", "a"));
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(b, i(10, 11), longCol("ID", 5, 5), intCol("Sentinel", 207, 208), col("Key", "a", "a"));
@@ -126,7 +126,7 @@ public class TestSyncTableFilter extends LiveTableTestCase {
         assertEquals("", TableTools.diff(fa, ex2a, 10));
         assertEquals("", TableTools.diff(fb, ex2b, 10));
 
-        final DynamicTable ex3b =
+        final Table ex3b =
                 newTable(longCol("ID", 5, 5, 5), intCol("Sentinel", 207, 208, 209), col("Key", "a", "a", "a"));
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
@@ -149,8 +149,8 @@ public class TestSyncTableFilter extends LiveTableTestCase {
         TableTools.showWithIndex(fa);
         TableTools.showWithIndex(fb);
 
-        final DynamicTable ex4a = newTable(longCol("ID", 6), intCol("Sentinel", 112), col("Key", "a"));
-        final DynamicTable ex4b = newTable(longCol("ID", 6), intCol("Sentinel", 210), col("Key", "a"));
+        final Table ex4a = newTable(longCol("ID", 6), intCol("Sentinel", 112), col("Key", "a"));
+        final Table ex4b = newTable(longCol("ID", 6), intCol("Sentinel", 210), col("Key", "a"));
 
         assertEquals("", TableTools.diff(fa, ex4a, 10));
         assertEquals("", TableTools.diff(fb, ex4b, 10));
@@ -187,14 +187,14 @@ public class TestSyncTableFilter extends LiveTableTestCase {
             a.notifyListeners(i(10, 11), i(), i(2, 3));
         });
 
-        final DynamicTable ex1a = newTable(longCol("ID", 2, 2), intCol("Sentinel", 103, 104), col("Key", "a", "a"));
-        final DynamicTable ex1b = newTable(longCol("ID", 2, 2), intCol("Sentinel", 203, 204), col("Key", "a", "a"));
+        final Table ex1a = newTable(longCol("ID", 2, 2), intCol("Sentinel", 103, 104), col("Key", "a", "a"));
+        final Table ex1b = newTable(longCol("ID", 2, 2), intCol("Sentinel", 203, 204), col("Key", "a", "a"));
 
         assertEquals("", TableTools.diff(fa, ex1a, 10));
         assertEquals("", TableTools.diff(fb, ex1b, 10));
 
-        final DynamicTable ex2a = newTable(longCol("ID", 5, 5), intCol("Sentinel", 107, 108), col("Key", "b", "b"));
-        final DynamicTable ex2b = newTable(longCol("ID", 5, 5), intCol("Sentinel", 207, 208), col("Key", "a", "a"));
+        final Table ex2a = newTable(longCol("ID", 5, 5), intCol("Sentinel", 107, 108), col("Key", "b", "b"));
+        final Table ex2b = newTable(longCol("ID", 5, 5), intCol("Sentinel", 207, 208), col("Key", "a", "a"));
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(b, i(10, 11), longCol("ID", 5, 5), intCol("Sentinel", 207, 208), col("Key", "a", "a"));
@@ -235,9 +235,9 @@ public class TestSyncTableFilter extends LiveTableTestCase {
         TableTools.show(fa);
         TableTools.show(fb);
 
-        final DynamicTable ex1a = newTable(longCol("ID", 2, 2, 4, 4), intCol("Sentinel", 103, 104, 107, 108),
+        final Table ex1a = newTable(longCol("ID", 2, 2, 4, 4), intCol("Sentinel", 103, 104, 107, 108),
                 col("Key", "b", "b", "a", "a"));
-        final DynamicTable ex1b = newTable(longCol("Ego", 2, 2, 4, 4), intCol("Sentinel", 203, 204, 205, 206),
+        final Table ex1b = newTable(longCol("Ego", 2, 2, 4, 4), intCol("Sentinel", 203, 204, 205, 206),
                 col("Klyuch", "b", "b", "a", "a"));
 
         assertEquals("", TableTools.diff(fa, ex1a, 10));
@@ -249,9 +249,9 @@ public class TestSyncTableFilter extends LiveTableTestCase {
             b.notifyListeners(i(10, 11), i(), i());
         });
 
-        final DynamicTable ex2a = newTable(longCol("ID", 4, 4, 5, 5), intCol("Sentinel", 107, 108, 109, 110),
+        final Table ex2a = newTable(longCol("ID", 4, 4, 5, 5), intCol("Sentinel", 107, 108, 109, 110),
                 col("Key", "a", "a", "b", "b"));
-        final DynamicTable ex2b =
+        final Table ex2b =
                 newTable(longCol("Ego", 4, 4, 5), intCol("Sentinel", 205, 206, 207), col("Klyuch", "a", "a", "b"));
 
         assertEquals("", TableTools.diff(fa, ex2a, 10));
@@ -262,9 +262,9 @@ public class TestSyncTableFilter extends LiveTableTestCase {
             a.notifyListeners(i(20, 21), i(), i());
         });
 
-        final DynamicTable ex3a = newTable(longCol("ID", 4, 4, 5, 5, 5, 5),
+        final Table ex3a = newTable(longCol("ID", 4, 4, 5, 5, 5, 5),
                 intCol("Sentinel", 107, 108, 109, 110, 111, 112), col("Key", "a", "a", "b", "b", "c", "c"));
-        final DynamicTable ex3b = newTable(longCol("Ego", 4, 4, 5, 5), intCol("Sentinel", 205, 206, 207, 208),
+        final Table ex3b = newTable(longCol("Ego", 4, 4, 5, 5), intCol("Sentinel", 205, 206, 207, 208),
                 col("Klyuch", "a", "a", "b", "c"));
 
         TableTools.showWithIndex(fa);
@@ -282,7 +282,7 @@ public class TestSyncTableFilter extends LiveTableTestCase {
             a.notifyListeners(i(), i(), i(20, 21));
         });
 
-        final DynamicTable ex4a = newTable(longCol("ID", 4, 4, 5, 5, 5, 5),
+        final Table ex4a = newTable(longCol("ID", 4, 4, 5, 5, 5, 5),
                 intCol("Sentinel", 107, 108, 109, 110, 113, 114), col("Key", "a", "a", "b", "b", "c", "c"));
         assertEquals("", TableTools.diff(fa, ex4a, 10));
     }
@@ -305,8 +305,8 @@ public class TestSyncTableFilter extends LiveTableTestCase {
         fa.setAttribute("NAME", "a");
         fb.setAttribute("NAME", "b");
 
-        final ErrorListener la = new ErrorListener("fa", (DynamicTable) fa);
-        final ErrorListener lb = new ErrorListener("fb", (DynamicTable) fb);
+        final ErrorListener la = new ErrorListener("fa", fa);
+        final ErrorListener lb = new ErrorListener("fb", fb);
 
         LiveTableMonitor.DEFAULT.startCycleForUnitTests();
         allowingError(() -> {
@@ -581,7 +581,7 @@ public class TestSyncTableFilter extends LiveTableTestCase {
     private static class ErrorListener extends ShiftObliviousInstrumentedListenerAdapter {
         Throwable originalException;
 
-        ErrorListener(String description, DynamicTable table) {
+        ErrorListener(String description, Table table) {
             super("Error Checker: " + description, table, false);
             table.listenForUpdates(this, false);
         }

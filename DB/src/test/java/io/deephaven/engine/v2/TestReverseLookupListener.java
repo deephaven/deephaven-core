@@ -1,5 +1,6 @@
 package io.deephaven.engine.v2;
 
+import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.live.LiveTableMonitor;
 import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.v2.sources.ColumnSource;
@@ -62,10 +63,10 @@ public class TestReverseLookupListener extends LiveTableTestCase {
 
     private static class ReverseLookupEvalNugget implements EvalNuggetInterface {
         private final ReverseLookupListener listener;
-        private final DynamicTable source;
+        private final Table source;
         private final ColumnSource[] columnSources;
 
-        ReverseLookupEvalNugget(DynamicTable source, String... columns) {
+        ReverseLookupEvalNugget(Table source, String... columns) {
             listener = ReverseLookupListener.makeReverseLookupListenerWithLock(source, columns);
             this.columnSources = Arrays.stream(columns).map(source::getColumnSource).toArray(ColumnSource[]::new);
             this.source = source;

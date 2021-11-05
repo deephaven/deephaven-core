@@ -1,10 +1,12 @@
 package io.deephaven.engine.v2;
 
+import io.deephaven.engine.tables.Table;
+
 /**
  * A listener for use in unit tests that writes down the update it receives and counts how many it received.
  */
 public class SimpleListener extends InstrumentedListenerAdapter {
-    public SimpleListener(DynamicTable source) {
+    public SimpleListener(Table source) {
         super(source, false);
         reset();
     }

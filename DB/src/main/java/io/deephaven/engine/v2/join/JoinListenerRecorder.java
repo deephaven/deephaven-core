@@ -4,7 +4,7 @@
 
 package io.deephaven.engine.v2.join;
 
-import io.deephaven.engine.v2.DynamicTable;
+import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.v2.ListenerRecorder;
 
 /**
@@ -17,7 +17,7 @@ import io.deephaven.engine.v2.ListenerRecorder;
  */
 public class JoinListenerRecorder extends ListenerRecorder {
 
-    public JoinListenerRecorder(boolean isLeft, final String description, DynamicTable parent, DynamicTable dependent) {
+    public JoinListenerRecorder(boolean isLeft, final String description, Table parent, Table dependent) {
         super(isLeft ? "leftTable: " : "rightTable: " + description, parent, dependent);
     }
 }

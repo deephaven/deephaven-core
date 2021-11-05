@@ -8,6 +8,7 @@ import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
+import io.deephaven.engine.tables.Table;
 import io.deephaven.io.log.LogEntry;
 import io.deephaven.io.log.impl.LogOutputStringImpl;
 import io.deephaven.io.logger.Logger;
@@ -111,8 +112,8 @@ public abstract class InstrumentedListenerBase extends LivenessArtifact
 
     protected abstract void onFailureInternal(Throwable originalException, UpdatePerformanceTracker.Entry sourceEntry);
 
-    protected final void onFailureInternalWithDependent(final DynamicTable dependent, final Throwable originalException,
-            final UpdatePerformanceTracker.Entry sourceEntry) {
+    protected final void onFailureInternalWithDependent(final Table dependent, final Throwable originalException,
+                                                        final UpdatePerformanceTracker.Entry sourceEntry) {
         dependent.notifyListenersOnError(originalException, sourceEntry);
 
         // although we have notified the dependent tables, we should notify the client side as well. In pretty

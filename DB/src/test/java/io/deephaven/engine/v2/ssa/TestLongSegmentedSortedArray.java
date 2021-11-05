@@ -14,7 +14,6 @@ import io.deephaven.engine.v2.sources.chunk.Attributes;
 import io.deephaven.engine.v2.sources.chunk.Attributes.RowKeys;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 import io.deephaven.engine.v2.sources.chunk.LongChunk;
-import io.deephaven.engine.v2.sources.chunk.LongChunk;
 import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.engine.v2.utils.RowSetShiftData;
 import io.deephaven.test.types.ParallelTest;
@@ -90,7 +89,7 @@ public class TestLongSegmentedSortedArray extends LiveTableTestCase {
         checkSsaInitial(asLong, ssa, valueSource, desc);
 
         try (final SafeCloseable ignored = LivenessScopeStack.open(new LivenessScope(true), true)) {
-            final Listener asLongListener = new InstrumentedListenerAdapter((DynamicTable) asLong, false) {
+            final Listener asLongListener = new InstrumentedListenerAdapter(asLong, false) {
                 @Override
                 public void onUpdate(Update upstream) {
                     try (final ColumnSource.GetContext checkContext = valueSource.makeGetContext(asLong.getRowSet().getPrevRowSet().intSize())) {
@@ -152,7 +151,7 @@ public class TestLongSegmentedSortedArray extends LiveTableTestCase {
                     }
                 }
             };
-            ((DynamicTable) asLong).listenForUpdates(asLongListener);
+            asLong.listenForUpdates(asLongListener);
 
             while (desc.advance(50)) {
                 System.out.println();
@@ -182,7 +181,7 @@ public class TestLongSegmentedSortedArray extends LiveTableTestCase {
         checkSsaInitial(asLong, ssa, valueSource, desc);
 
         try (final SafeCloseable ignored = LivenessScopeStack.open(new LivenessScope(true), true)) {
-            final ShiftObliviousListener asLongListener = new ShiftObliviousInstrumentedListenerAdapter((DynamicTable) asLong, false) {
+            final ShiftObliviousListener asLongListener = new ShiftObliviousInstrumentedListenerAdapter(asLong, false) {
                 @Override
                 public void onUpdate(RowSet added, RowSet removed, RowSet modified) {
                     try (final ColumnSource.GetContext getContext = valueSource.makeGetContext(Math.max(added.intSize(), removed.intSize()))) {
@@ -196,7 +195,7 @@ public class TestLongSegmentedSortedArray extends LiveTableTestCase {
                     }
                 }
             };
-            ((DynamicTable) asLong).listenForUpdates(asLongListener);
+            asLong.listenForUpdates(asLongListener);
 
             while (desc.advance(50)) {
                 LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {

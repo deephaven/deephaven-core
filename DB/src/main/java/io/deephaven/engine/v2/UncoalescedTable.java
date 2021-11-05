@@ -30,7 +30,7 @@ public abstract class UncoalescedTable extends BaseTable implements Table {
 
     private final Object coalescingLock = new Object();
 
-    private volatile DynamicTable coalesced;
+    private volatile Table coalesced;
 
     public UncoalescedTable(@NotNull final TableDefinition definition, @NotNull final String description) {
         super(definition, description);
@@ -47,10 +47,10 @@ public abstract class UncoalescedTable extends BaseTable implements Table {
      *
      * @return The coalesced result table, suitable for caching
      */
-    protected abstract DynamicTable doCoalesce();
+    protected abstract Table doCoalesce();
 
     public final Table coalesce() {
-        DynamicTable localCoalesced;
+        Table localCoalesced;
         if (Liveness.verifyCachedObjectForReuse(localCoalesced = coalesced)) {
             return localCoalesced;
         }
@@ -68,7 +68,7 @@ public abstract class UncoalescedTable extends BaseTable implements Table {
      *
      * @param coalesced The coalesced result table, suitable for caching
      */
-    protected final void setCoalesced(final DynamicTable coalesced) {
+    protected final void setCoalesced(final Table coalesced) {
         synchronized (coalescingLock) {
             Assert.eqNull(this.coalesced, "this.coalesced");
             this.coalesced = coalesced;
@@ -81,17 +81,17 @@ public abstract class UncoalescedTable extends BaseTable implements Table {
 
     @Override
     public void listenForUpdates(ShiftObliviousListener listener) {
-        ((DynamicTable) coalesce()).listenForUpdates(listener);
+        coalesce().listenForUpdates(listener);
     }
 
     @Override
     public void listenForUpdates(ShiftObliviousListener listener, boolean replayInitialImage) {
-        ((DynamicTable) coalesce()).listenForUpdates(listener, replayInitialImage);
+        coalesce().listenForUpdates(listener, replayInitialImage);
     }
 
     @Override
     public void listenForUpdates(Listener listener) {
-        ((DynamicTable) coalesce()).listenForUpdates(listener);
+        coalesce().listenForUpdates(listener);
     }
 
     protected final void listenForUpdatesUncoalesced(@NotNull final Listener listener) {
@@ -100,12 +100,12 @@ public abstract class UncoalescedTable extends BaseTable implements Table {
 
     @Override
     public void removeUpdateListener(ShiftObliviousListener listener) {
-        ((DynamicTable) coalesce()).removeUpdateListener(listener);
+        coalesce().removeUpdateListener(listener);
     }
 
     @Override
     public void removeUpdateListener(Listener listener) {
-        ((DynamicTable) coalesce()).removeUpdateListener(listener);
+        coalesce().removeUpdateListener(listener);
     }
 
     protected final void removeUpdateListenerUncoalesced(@NotNull final Listener listener) {
@@ -114,12 +114,12 @@ public abstract class UncoalescedTable extends BaseTable implements Table {
 
     @Override
     public void listenForDirectUpdates(ShiftObliviousListener listener) {
-        ((DynamicTable) coalesce()).listenForDirectUpdates(listener);
+        coalesce().listenForDirectUpdates(listener);
     }
 
     @Override
     public void removeDirectUpdateListener(ShiftObliviousListener listener) {
-        ((DynamicTable) coalesce()).removeUpdateListener(listener);
+        coalesce().removeUpdateListener(listener);
     }
 
     @Override

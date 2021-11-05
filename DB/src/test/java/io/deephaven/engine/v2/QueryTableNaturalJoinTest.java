@@ -525,8 +525,8 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
                 newTable(col("Symbol", "A", "B"), intCol("LeftSentinel", 1, 2), intCol("RightSentinel", 10, NULL_INT)),
                 cj2);
 
-        final ErrorListener listener = new ErrorListener((DynamicTable) cj2);
-        ((DynamicTable) cj2).listenForUpdates(listener);
+        final ErrorListener listener = new ErrorListener(cj2);
+        cj2.listenForUpdates(listener);
 
         try (final ErrorExpectation ignored = new ErrorExpectation()) {
             LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
@@ -559,8 +559,8 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
                 newTable(col("Symbol", "A", "B"), intCol("LeftSentinel", 1, 2), intCol("RightSentinel", 10, NULL_INT)),
                 cj2);
 
-        final ErrorListener listener = new ErrorListener((DynamicTable) cj2);
-        ((DynamicTable) cj2).listenForUpdates(listener);
+        final ErrorListener listener = new ErrorListener(cj2);
+        cj2.listenForUpdates(listener);
 
         try (final ErrorExpectation ignored = new ErrorExpectation()) {
             LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
@@ -617,7 +617,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
 
         final Table cj = c0.naturalJoin(c1, "");
 
-        final DynamicTable emptyRightResult =
+        final Table emptyRightResult =
                 newTable(intCol("Left", 1, 2, 3), intCol("Right", NULL_INT, NULL_INT, NULL_INT));
         assertTableEquals(emptyRightResult, cj);
 
@@ -630,7 +630,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
 
         TableTools.showWithIndex(cj);
 
-        final DynamicTable fourRightResult = newTable(intCol("Left", 1, 2, 3), intCol("Right", 4, 4, 4));
+        final Table fourRightResult = newTable(intCol("Left", 1, 2, 3), intCol("Right", 4, 4, 4));
         assertTableEquals(fourRightResult, cj);
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
@@ -651,7 +651,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
 
         TableTools.showWithIndex(cj);
 
-        final DynamicTable fiveResult = newTable(intCol("Left", 1, 2, 3, 6), intCol("Right", 5, 5, 5, 5));
+        final Table fiveResult = newTable(intCol("Left", 1, 2, 3, 6), intCol("Right", 5, 5, 5, 5));
         assertTableEquals(fiveResult, cj);
 
     }
@@ -694,7 +694,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
 
         final Table cj = c0.naturalJoin(c1, "");
 
-        final DynamicTable emptyRightResult =
+        final Table emptyRightResult =
                 newTable(intCol("Left", 1, 2, 3), intCol("Right", NULL_INT, NULL_INT, NULL_INT));
         assertTableEquals(emptyRightResult, cj);
 
@@ -707,7 +707,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
 
         TableTools.showWithIndex(cj);
 
-        final DynamicTable fourRightResult = newTable(intCol("Left", 1, 2, 3), intCol("Right", 4, 4, 4));
+        final Table fourRightResult = newTable(intCol("Left", 1, 2, 3), intCol("Right", 4, 4, 4));
         assertTableEquals(fourRightResult, cj);
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {

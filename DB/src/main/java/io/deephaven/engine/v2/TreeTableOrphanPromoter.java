@@ -59,10 +59,10 @@ public class TreeTableOrphanPromoter implements Function.Unary<Table, Table> {
         private final ColumnSource<?> parentSource;
         private final ColumnSource<?> idSource;
         private final ReverseLookup reverseLookupListener;
-        private final DynamicTable source;
+        private final Table source;
 
         public State(Table table) {
-            source = (DynamicTable) table;
+            source = table;
             reverseLookupListener = getReverseLookupListener(source, idColumn);
             parentSource = source.getColumnSource(parentColumn);
             idSource = source.getColumnSource(idColumn);
@@ -422,7 +422,7 @@ public class TreeTableOrphanPromoter implements Function.Unary<Table, Table> {
         return table.apply(new TreeTableOrphanPromoter(idColumn, parentColumn));
     }
 
-    static ReverseLookup getReverseLookupListener(DynamicTable source, String idColumn) {
+    static ReverseLookup getReverseLookupListener(Table source, String idColumn) {
         // noinspection unchecked
         Map<String, WeakReference<ReverseLookup>> rllMap = (Map<String, WeakReference<ReverseLookup>>) source
                 .getAttribute(TREE_TABLE_FILTER_REVERSE_LOOKUP_ATTRIBUTE);

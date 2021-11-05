@@ -8,7 +8,6 @@ import io.deephaven.engine.tables.live.LiveTableMonitor;
 import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.util.config.InputTableStatusListener;
 import io.deephaven.engine.util.config.MutableInputTable;
-import io.deephaven.engine.v2.DynamicTable;
 import io.deephaven.engine.v2.FailureListener;
 import io.deephaven.engine.v2.TableUpdateValidator;
 import io.deephaven.test.junit4.EngineCleanup;
@@ -38,7 +37,7 @@ public class TestKeyedArrayBackedMutableTable {
 
         final KeyedArrayBackedMutableTable kabut = KeyedArrayBackedMutableTable.make(input, "Name");
         final TableUpdateValidator validator = TableUpdateValidator.make("kabut", kabut);
-        final DynamicTable validatorResult = validator.getResultTable();
+        final Table validatorResult = validator.getResultTable();
         final FailureListener failureListener = new FailureListener();
         validatorResult.listenForUpdates(failureListener);
 
@@ -96,7 +95,7 @@ public class TestKeyedArrayBackedMutableTable {
 
         final AppendOnlyArrayBackedMutableTable aoabmt = AppendOnlyArrayBackedMutableTable.make(input);
         final TableUpdateValidator validator = TableUpdateValidator.make("aoabmt", aoabmt);
-        final DynamicTable validatorResult = validator.getResultTable();
+        final Table validatorResult = validator.getResultTable();
         final FailureListener failureListener = new FailureListener();
         validatorResult.listenForUpdates(failureListener);
 
@@ -120,7 +119,7 @@ public class TestKeyedArrayBackedMutableTable {
 
         final KeyedArrayBackedMutableTable kabut = KeyedArrayBackedMutableTable.make(input, "Name");
         final TableUpdateValidator validator = TableUpdateValidator.make("kabut", kabut);
-        final DynamicTable validatorResult = validator.getResultTable();
+        final Table validatorResult = validator.getResultTable();
         final FailureListener failureListener = new FailureListener();
         validatorResult.listenForUpdates(failureListener);
 
@@ -144,7 +143,7 @@ public class TestKeyedArrayBackedMutableTable {
 
         final KeyedArrayBackedMutableTable kabut = KeyedArrayBackedMutableTable.make(input, "Name");
         final TableUpdateValidator validator = TableUpdateValidator.make("kabut", kabut);
-        final DynamicTable validatorResult = validator.getResultTable();
+        final Table validatorResult = validator.getResultTable();
         final FailureListener failureListener = new FailureListener();
         validatorResult.listenForUpdates(failureListener);
 
@@ -186,7 +185,7 @@ public class TestKeyedArrayBackedMutableTable {
 
         final KeyedArrayBackedMutableTable kabut = KeyedArrayBackedMutableTable.make(input, "Name");
         final TableUpdateValidator validator = TableUpdateValidator.make("kabut", kabut);
-        final DynamicTable validatorResult = validator.getResultTable();
+        final Table validatorResult = validator.getResultTable();
         final FailureListener failureListener = new FailureListener();
         validatorResult.listenForUpdates(failureListener);
 
@@ -216,7 +215,7 @@ public class TestKeyedArrayBackedMutableTable {
 
         final KeyedArrayBackedMutableTable kabut = KeyedArrayBackedMutableTable.make(input, "Name");
         final TableUpdateValidator validator = TableUpdateValidator.make("kabut", kabut);
-        final DynamicTable validatorResult = validator.getResultTable();
+        final Table validatorResult = validator.getResultTable();
         final FailureListener failureListener = new FailureListener();
         validatorResult.listenForUpdates(failureListener);
 

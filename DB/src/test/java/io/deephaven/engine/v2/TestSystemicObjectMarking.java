@@ -25,8 +25,8 @@ public class TestSystemicObjectMarking extends LiveTableTestCase {
             source.notifyListeners(i(2, 3), i(), i());
         });
 
-        assertFalse(((DynamicTable)updated).isFailed());
-        assertFalse(((DynamicTable)updated2).isFailed());
+        assertFalse(updated.isFailed());
+        assertFalse(updated2.isFailed());
 
         final ErrorListener errorListener2 = new ErrorListener((QueryTable)updated2);
         ((QueryTable) updated2).listenForUpdates(errorListener2);
@@ -36,13 +36,13 @@ public class TestSystemicObjectMarking extends LiveTableTestCase {
             source.notifyListeners(i(4, 5), i(), i());
         });
 
-        assertFalse(((DynamicTable)updated).isFailed());
-        assertTrue(((DynamicTable)updated2).isFailed());
+        assertFalse(updated.isFailed());
+        assertTrue(updated2.isFailed());
         assertNotNull(errorListener2.originalException);
         assertEquals("In formula: LC = Str2.toLowerCase()", errorListener2.originalException.getMessage());
 
         try {
-            ((DynamicTable) updated2).listenForUpdates(new ErrorListener((DynamicTable) updated2));
+            updated2.listenForUpdates(new ErrorListener(updated2));
             TestCase.fail("Should not be allowed to listen to failed table");
         } catch (IllegalStateException ise) {
             assertEquals("Can not listen to failed table QueryTable", ise.getMessage());
@@ -59,8 +59,8 @@ public class TestSystemicObjectMarking extends LiveTableTestCase {
             return null;
         }, TestSystemicObjectMarking::isNpe);
 
-        assertTrue(((DynamicTable)updated).isFailed());
-        assertTrue(((DynamicTable)updated2).isFailed());
+        assertTrue(updated.isFailed());
+        assertTrue(updated2.isFailed());
         assertNotNull(errorListener.originalException);
         assertEquals("In formula: UC = Str.toUpperCase()", errorListener.originalException.getMessage());
 

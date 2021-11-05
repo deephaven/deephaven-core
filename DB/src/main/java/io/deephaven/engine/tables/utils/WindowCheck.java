@@ -50,7 +50,7 @@ public class WindowCheck {
     }
 
     private static class WindowListenerRecorder extends ListenerRecorder {
-        private WindowListenerRecorder(DynamicTable parent, DynamicTable dependent) {
+        private WindowListenerRecorder(Table parent, Table dependent) {
             super("WindowCheck", parent, dependent);
         }
     }
@@ -77,24 +77,18 @@ public class WindowCheck {
         resultColumns.put(inWindowColumn, inWindowColumnSource);
 
         final QueryTable result = new QueryTable(table.getRowSet(), resultColumns);
-
-        if (table instanceof DynamicTable) {
-            final DynamicTable dynamicSource = (DynamicTable) table;
-            final WindowListenerRecorder recorder = new WindowListenerRecorder(dynamicSource, result);
-            final TimeWindowListener timeWindowListener =
-                    new TimeWindowListener(inWindowColumn, inWindowColumnSource, recorder, dynamicSource, result);
-            recorder.setMergedListener(timeWindowListener);
-            dynamicSource.listenForUpdates(recorder);
-            table.getRowSet().forAllRowKeys(timeWindowListener::addIndex);
-            result.addParentReference(timeWindowListener);
-            result.manage(table);
-            if (addToMonitor) {
-                LiveTableMonitor.DEFAULT.addTable(timeWindowListener);
-            }
-            return new Pair<>(result, timeWindowListener);
-        } else {
-            return new Pair<>(result, null);
+        final WindowListenerRecorder recorder = new WindowListenerRecorder(table, result);
+        final TimeWindowListener timeWindowListener =
+                new TimeWindowListener(inWindowColumn, inWindowColumnSource, recorder, table, result);
+        recorder.setMergedListener(timeWindowListener);
+        table.listenForUpdates(recorder);
+        table.getRowSet().forAllRowKeys(timeWindowListener::addIndex);
+        result.addParentReference(timeWindowListener);
+        result.manage(table);
+        if (addToMonitor) {
+            LiveTableMonitor.DEFAULT.addTable(timeWindowListener);
         }
+        return new Pair<>(result, timeWindowListener);
     }
 
     /**
@@ -113,7 +107,7 @@ public class WindowCheck {
         private final ModifiedColumnSet.Transformer mcsTransformer;
         private final ModifiedColumnSet mcsNewColumns;
         private final ModifiedColumnSet reusableModifiedColumnSet;
-        private final DynamicTable source;
+        private final Table source;
         private final ListenerRecorder recorder;
 
         /**
@@ -149,7 +143,7 @@ public class WindowCheck {
          * @param result our initialized result table
          */
         private TimeWindowListener(final String inWindowColumnName, final InWindowColumnSource inWindowColumnSource,
-                final ListenerRecorder recorder, final DynamicTable source, final QueryTable result) {
+                                   final ListenerRecorder recorder, final Table source, final QueryTable result) {
             super(Collections.singleton(recorder), Collections.singleton(source), "WindowCheck", result);
             this.source = source;
             this.recorder = recorder;

@@ -100,7 +100,7 @@ public class PublishToKafka<K, V> extends LivenessArtifact {
 
         // Install a listener to publish subsequent updates
         if (table.isLive()) {
-            ((DynamicTable) table).listenForUpdates(publishListener = new PublishListener(
+            table.listenForUpdates(publishListener = new PublishListener(
                     getModifiedColumnSet(table, keyColumns),
                     getModifiedColumnSet(table, valueColumns)));
             manage(publishListener);
@@ -223,7 +223,7 @@ public class PublishToKafka<K, V> extends LivenessArtifact {
         private PublishListener(
                 @NotNull final ModifiedColumnSet keysModified,
                 @NotNull final ModifiedColumnSet valuesModified) {
-            super("PublishToKafka", (DynamicTable) table, false);
+            super("PublishToKafka", table, false);
             this.keysModified = keysModified;
             this.valuesModified = valuesModified;
             this.isStream = StreamTableTools.isStream(table);

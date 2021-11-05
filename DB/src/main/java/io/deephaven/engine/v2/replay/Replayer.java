@@ -11,7 +11,6 @@ import io.deephaven.engine.tables.live.LiveTable;
 import io.deephaven.engine.tables.live.LiveTableMonitor;
 import io.deephaven.engine.tables.utils.DBDateTime;
 import io.deephaven.engine.tables.utils.DBTimeUtils;
-import io.deephaven.engine.v2.DynamicTable;
 import io.deephaven.engine.v2.ShiftObliviousInstrumentedListener;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.utils.RowSet;
@@ -233,7 +232,7 @@ public class Replayer implements ReplayerInterface, LiveTable {
      * @return dynamic, replayed version of the table.
      */
     @Override
-    public DynamicTable replay(Table dataSource, String timeColumn) {
+    public Table replay(Table dataSource, String timeColumn) {
         final ReplayTable result =
                 new ReplayTable(dataSource.getRowSet(), dataSource.getColumnSourceMap(), timeColumn, this);
         currentTables.add(result);
@@ -253,7 +252,7 @@ public class Replayer implements ReplayerInterface, LiveTable {
      * @return dynamic, replayed version of the table.
      */
     @Override
-    public DynamicTable replayGrouped(Table dataSource, String timeColumn, String groupingColumn) {
+    public Table replayGrouped(Table dataSource, String timeColumn, String groupingColumn) {
         final ReplayGroupedFullTable result = new ReplayGroupedFullTable(dataSource.getRowSet(),
                 dataSource.getColumnSourceMap(), timeColumn, this, groupingColumn);
         currentTables.add(result);
@@ -272,7 +271,7 @@ public class Replayer implements ReplayerInterface, LiveTable {
      * @return dynamic, replayed version of the last-by table.
      */
     @Override
-    public DynamicTable replayGroupedLastBy(Table dataSource, String timeColumn, String... groupingColumns) {
+    public Table replayGroupedLastBy(Table dataSource, String timeColumn, String... groupingColumns) {
         final ReplayLastByGroupedTable result = new ReplayLastByGroupedTable(dataSource.getRowSet(),
                 dataSource.getColumnSourceMap(), timeColumn, this, groupingColumns);
         currentTables.add(result);

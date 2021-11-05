@@ -588,7 +588,7 @@ public class TableMapTest extends LiveTableTestCase {
     }
 
     private void testTableMapScope(boolean refreshing) {
-        final DynamicTable table = TableTools.newTable(TableTools.col("Key", "A", "B"), intCol("Value", 1, 2));
+        final Table table = TableTools.newTable(TableTools.col("Key", "A", "B"), intCol("Value", 1, 2));
         if (refreshing) {
             table.setRefreshing(true);
         }

@@ -182,7 +182,7 @@ public abstract class QueryTableTestBase extends LiveTableTestCase {
         RowSet lastAdded, lastModified, lastRemoved;
         ShiftObliviousUpdateCoalescer indexUpdateCoalescer = new ShiftObliviousUpdateCoalescer();
 
-        protected CoalescingListener(DynamicTable source) {
+        protected CoalescingListener(Table source) {
             super(source, false);
         }
 
@@ -219,12 +219,12 @@ public abstract class QueryTableTestBase extends LiveTableTestCase {
         }
     }
 
-    public ListenerWithGlobals newListenerWithGlobals(DynamicTable source) {
+    public ListenerWithGlobals newListenerWithGlobals(Table source) {
         return new ListenerWithGlobals(source);
     }
 
     protected class ListenerWithGlobals extends ShiftObliviousInstrumentedListenerAdapter {
-        protected ListenerWithGlobals(DynamicTable source) {
+        protected ListenerWithGlobals(Table source) {
             super(source, false);
             reset();
         }

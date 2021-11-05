@@ -53,7 +53,7 @@ public class TickSuppressor {
         ((BaseTable) input).copyAttributes(resultTable, BaseTable.CopyAttributeOperation.Filter);
 
         final BaseTable.ListenerImpl listener = new BaseTable.ListenerImpl(
-                "convertModificationsToAddsAndRemoves", (DynamicTable) input, resultTable) {
+                "convertModificationsToAddsAndRemoves", input, resultTable) {
             @Override
             public void onUpdate(Update upstream) {
                 final Update downstream = upstream.copy();
@@ -64,7 +64,7 @@ public class TickSuppressor {
                 resultTable.notifyListeners(downstream);
             }
         };
-        ((DynamicTable) input).listenForUpdates(listener);
+        input.listenForUpdates(listener);
         return resultTable;
     }
 
@@ -106,7 +106,7 @@ public class TickSuppressor {
         final ColumnSource[] inputSources = new ColumnSource[columnNames.length];
         final ChunkEquals[] equalityKernel = new ChunkEquals[columnNames.length];
         for (int cc = 0; cc < outputModifiedColumnSets.length; ++cc) {
-            inputModifiedColumnSets[cc] = ((DynamicTable) input).newModifiedColumnSet(columnNames[cc]);
+            inputModifiedColumnSets[cc] = input.newModifiedColumnSet(columnNames[cc]);
             outputModifiedColumnSets[cc] = resultTable.newModifiedColumnSet(columnNames[cc]);
             inputSources[cc] = input.getColumnSource(columnNames[cc]);
             equalityKernel[cc] = ChunkEquals.makeEqual(inputSources[cc].getChunkType());
@@ -114,9 +114,9 @@ public class TickSuppressor {
 
 
         final BaseTable.ListenerImpl listener =
-                new BaseTable.ListenerImpl("removeSpuriousModifications", (DynamicTable) input, resultTable) {
+                new BaseTable.ListenerImpl("removeSpuriousModifications", input, resultTable) {
                     final ModifiedColumnSet.Transformer identityTransformer =
-                            ((DynamicTable) input).newModifiedColumnSetIdentityTransformer(resultTable);
+                            input.newModifiedColumnSetIdentityTransformer(resultTable);
 
                     @Override
                     public void onUpdate(Update upstream) {
@@ -220,7 +220,7 @@ public class TickSuppressor {
                         resultTable.notifyListeners(downstream);
                     }
                 };
-        ((DynamicTable) input).listenForUpdates(listener);
+        input.listenForUpdates(listener);
 
         return resultTable;
     }

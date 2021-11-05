@@ -1,7 +1,7 @@
 package io.deephaven.engine.util;
 
+import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.utils.TableTools;
-import io.deephaven.engine.v2.DynamicTable;
 import io.deephaven.engine.v2.InstrumentedListener;
 import io.deephaven.util.annotations.ScriptApi;
 
@@ -24,7 +24,7 @@ import io.deephaven.util.annotations.ScriptApi;
 @ScriptApi
 public class PrintListener extends InstrumentedListener {
     private final String description;
-    private final DynamicTable table;
+    private final Table table;
     private final int rowCount;
 
     /**
@@ -34,7 +34,7 @@ public class PrintListener extends InstrumentedListener {
      * @param table the table to attach to
      */
     @ScriptApi
-    public PrintListener(final String description, final DynamicTable table) {
+    public PrintListener(final String description, final Table table) {
         this(description, table, 0);
     }
 
@@ -46,7 +46,7 @@ public class PrintListener extends InstrumentedListener {
      * @param rowCount how many rows to print out on each update
      */
     @ScriptApi
-    public PrintListener(final String description, final DynamicTable table, final int rowCount) {
+    public PrintListener(final String description, final Table table, final int rowCount) {
         super("PrintListener " + description);
         this.description = description;
         this.table = table;

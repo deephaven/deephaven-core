@@ -4,11 +4,11 @@
 
 package io.deephaven.engine.v2.utils;
 
+import io.deephaven.engine.tables.Table;
 import io.deephaven.qst.column.header.ColumnHeader;
 import io.deephaven.qst.table.TableHeader;
 import io.deephaven.tablelogger.RowSetter;
 import io.deephaven.engine.tables.utils.DBDateTime;
-import io.deephaven.engine.v2.DynamicTable;
 
 import java.io.IOException;
 
@@ -40,7 +40,7 @@ public class AsyncErrorLogger {
     private static final RowSetter<String> workerNameSetter = tableWriter.getSetter("WorkerName");
     private static final RowSetter<String> hostNameSetter = tableWriter.getSetter("HostName");
 
-    public static DynamicTable getErrorLog() {
+    public static Table getErrorLog() {
         return tableWriter.getTable();
     }
 

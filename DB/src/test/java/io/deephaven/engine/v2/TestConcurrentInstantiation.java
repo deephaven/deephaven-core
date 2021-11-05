@@ -847,7 +847,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
                 }
 
                 for (int newResult = lastResultSize; newResult < results.size(); ++newResult) {
-                    final DynamicTable dynamicTable = (DynamicTable) results.get(newResult);
+                    final Table dynamicTable = results.get(newResult);
                     final InstrumentedListenerAdapter listener =
                             new InstrumentedListenerAdapter("errorListener", dynamicTable, false) {
                                 @Override

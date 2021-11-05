@@ -277,7 +277,7 @@ class RegionedColumnSourceWithDictionary<DATA_TYPE>
         private final BaseTable symbolTable;
         private final ModifiedColumnSet emptyModifiedColumns;
 
-        private SymbolTableUpdateListener(@NotNull final String description, @NotNull final DynamicTable sourceTable,
+        private SymbolTableUpdateListener(@NotNull final String description, @NotNull final Table sourceTable,
                 @NotNull final BaseTable symbolTable) {
             super(description, sourceTable, symbolTable);
             this.symbolTable = symbolTable;

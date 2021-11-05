@@ -8,17 +8,18 @@ import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
-import io.deephaven.io.log.impl.LogOutputStringImpl;
-import io.deephaven.io.logger.Logger;
-
 import io.deephaven.engine.tablelogger.UpdatePerformanceLogLogger;
 import io.deephaven.engine.tables.TableDefinition;
 import io.deephaven.engine.tables.live.LiveTableMonitor;
-import io.deephaven.engine.tables.utils.*;
+import io.deephaven.engine.tables.utils.DBTimeUtils;
+import io.deephaven.engine.tables.utils.QueryPerformanceLogThreshold;
+import io.deephaven.engine.tables.utils.QueryPerformanceRecorder;
 import io.deephaven.engine.v2.QueryTable;
+import io.deephaven.internal.log.LoggerFactory;
+import io.deephaven.io.log.impl.LogOutputStringImpl;
+import io.deephaven.io.logger.Logger;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.profiling.ThreadProfiler;
-import io.deephaven.internal.log.LoggerFactory;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
 
@@ -34,7 +35,8 @@ import static io.deephaven.engine.tables.lang.DBLanguageFunctionUtil.plus;
 
 /**
  * This tool is meant to track periodic update events that take place in a LiveTableMonitor. This generally includes (1)
- * LiveTable.refresh() invocations (2) DynamicTable ShiftObliviousListener notifications (see ShiftObliviousInstrumentedListener)
+ * LiveTable.refresh() invocations (2) Table ShiftObliviousListener notifications (see
+ * ShiftObliviousInstrumentedListener)
  *
  * Note: Regarding thread safety, this class interacts with a singleton LiveTableMonitor and expects all calls to
  * getEntry(), Entry.onUpdateStart(), and Entry.onUpdateEnd() to be performed while protected by the LTM's live jobs
@@ -336,7 +338,7 @@ public class UpdatePerformanceTracker {
         }
 
         public final void onUpdateStart(final RowSet added, final RowSet removed, final RowSet modified,
-                                        final RowSetShiftData shifted) {
+                final RowSetShiftData shifted) {
             intervalAdded += added.size();
             intervalRemoved += removed.size();
             intervalModified += modified.size();

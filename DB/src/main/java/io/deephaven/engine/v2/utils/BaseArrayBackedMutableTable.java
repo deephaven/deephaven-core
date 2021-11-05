@@ -243,7 +243,7 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
 
         void waitForSequence(long sequence) {
             if (LiveTableMonitor.DEFAULT.exclusiveLock().isHeldByCurrentThread()) {
-                // We're holding the lock. currentTable had better be a DynamicTable. Wait on its LTM condition
+                // We're holding the lock. currentTable had better be refreshing. Wait on its LTM condition
                 // in order to allow updates.
                 while (processedSequence.longValue() < sequence) {
                     try {

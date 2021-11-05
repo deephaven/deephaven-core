@@ -357,7 +357,7 @@ public class TreeTableFilter implements Function.Unary<Table, Table>, MemoizedOp
         private class TreeTableFilterListener extends BaseTable.ListenerImpl {
             final ModifiedColumnSet inputColumns;
 
-            TreeTableFilterListener(String description, DynamicTable parent, QueryTable dependent) {
+            TreeTableFilterListener(String description, Table parent, QueryTable dependent) {
                 super(description, parent, dependent);
                 inputColumns = source.newModifiedColumnSet(treeTableInfo.idColumn, treeTableInfo.parentColumn);
                 Arrays.stream(filters).forEach(filter -> {

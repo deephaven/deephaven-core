@@ -9,7 +9,6 @@ import io.deephaven.engine.tables.TableDefinition;
 import io.deephaven.engine.tables.live.LiveTable;
 import io.deephaven.engine.tables.live.LiveTableRegistrar;
 import io.deephaven.engine.tables.utils.DBDateTime;
-import io.deephaven.engine.v2.DynamicTable;
 import io.deephaven.engine.v2.Listener;
 import io.deephaven.engine.v2.ModifiedColumnSet;
 import io.deephaven.engine.v2.QueryTable;
@@ -242,7 +241,7 @@ public class StreamToTableAdapter implements SafeCloseable, LiveTable, StreamCon
      *
      * @return the resultant stream table
      */
-    public DynamicTable table() {
+    public Table table() {
         return table;
     }
 

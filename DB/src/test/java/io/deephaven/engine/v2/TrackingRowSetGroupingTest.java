@@ -131,23 +131,23 @@ public class TrackingRowSetGroupingTest extends LiveTableTestCase {
         };
 
         for (int ii = 0; ii < en.length; ++ii) {
-            addGroupingValidator((DynamicTable) en[ii].originalValue, "en[" + ii + "]");
+            addGroupingValidator(en[ii].originalValue, "en[" + ii + "]");
         }
 
         Table by = LiveTableMonitor.DEFAULT.exclusiveLock().computeLocked(() -> queryTable.avgBy("Sym"));
-        addGroupingValidator((DynamicTable) by, "by");
+        addGroupingValidator(by, "by");
         Table avgBy = LiveTableMonitor.DEFAULT.exclusiveLock().computeLocked(() -> queryTable.avgBy("Sym"));
-        addGroupingValidator((DynamicTable) avgBy, "avgBy");
+        addGroupingValidator(avgBy, "avgBy");
         Table avgBy1 = LiveTableMonitor.DEFAULT.exclusiveLock().computeLocked(() -> queryTable.avgBy("Sym", "intCol"));
-        addGroupingValidator((DynamicTable) avgBy1, "avgBy1");
+        addGroupingValidator(avgBy1, "avgBy1");
 
         Table merged = Require.neqNull(
                 LiveTableMonitor.DEFAULT.exclusiveLock().computeLocked(() -> TableTools.merge(queryTable)),
                 "TableTools.merge(queryTable)");
-        addGroupingValidator((DynamicTable) merged, "merged");
+        addGroupingValidator(merged, "merged");
         Table updated = LiveTableMonitor.DEFAULT.exclusiveLock()
                 .computeLocked(() -> merged.update("HiLo = intCol > 50 ? `Hi` : `Lo`"));
-        addGroupingValidator((DynamicTable) updated, "updated");
+        addGroupingValidator(updated, "updated");
 
         final int maxSteps = numSteps.intValue(); // 8;
 
@@ -167,7 +167,7 @@ public class TrackingRowSetGroupingTest extends LiveTableTestCase {
     @SuppressWarnings("MismatchedQueryAndUpdateOfCollection")
     private ArrayList<GroupingValidator> groupingValidators = new ArrayList<>();
 
-    private void addGroupingValidator(DynamicTable originalValue, String context) {
+    private void addGroupingValidator(Table originalValue, String context) {
         ArrayList<ArrayList<String>> columnSets2 = powerSet(originalValue.getColumnSourceMap().keySet());
         ArrayList<String> columnNames = new ArrayList<>();
         columnNames.addAll(originalValue.getColumnSourceMap().keySet());

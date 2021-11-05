@@ -4,10 +4,10 @@
 
 package io.deephaven.integrations.python;
 
+import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.v2.InstrumentedListenerAdapter;
 import io.deephaven.util.annotations.ScriptApi;
 import org.jpy.PyObject;
-import io.deephaven.engine.v2.DynamicTable;
 
 
 /**
@@ -25,13 +25,13 @@ public class PythonListenerAdapter extends InstrumentedListenerAdapter {
      * Creates a Python listener.
      *
      * No description for this listener will be provided. A hard reference to this listener will be maintained to
-     * prevent garbage collection. See {@link #PythonListenerAdapter(String, DynamicTable, boolean, PyObject)}
+     * prevent garbage collection. See {@link #PythonListenerAdapter(String, Table, boolean, PyObject)}
      * if you do not want to prevent garbage collection of this listener.
      *
      * @param source The source table to which this listener will subscribe.
      * @param pyObjectIn Python listener object.
      */
-    public PythonListenerAdapter(DynamicTable source, PyObject pyObjectIn) {
+    public PythonListenerAdapter(Table source, PyObject pyObjectIn) {
         this(null, source, true, pyObjectIn);
     }
 
@@ -39,14 +39,14 @@ public class PythonListenerAdapter extends InstrumentedListenerAdapter {
      * Create a Python listener.
      *
      * A hard reference to this listener will be maintained to prevent garbage collection. See
-     * {@link #PythonListenerAdapter(String, DynamicTable, boolean, PyObject)} if you do not want to prevent
+     * {@link #PythonListenerAdapter(String, Table, boolean, PyObject)} if you do not want to prevent
      * garbage collection of this listener.
      *
      * @param description A description for the UpdatePerformanceTracker to append to its entry description.
      * @param source The source table to which this listener will subscribe.
      * @param pyObjectIn Python listener object.
      */
-    public PythonListenerAdapter(String description, DynamicTable source, PyObject pyObjectIn) {
+    public PythonListenerAdapter(String description, Table source, PyObject pyObjectIn) {
         this(description, source, true, pyObjectIn);
     }
 
@@ -58,7 +58,7 @@ public class PythonListenerAdapter extends InstrumentedListenerAdapter {
      * @param retain Whether a hard reference to this listener should be maintained to prevent it from being collected.
      * @param pyObjectIn Python listener object.
      */
-    public PythonListenerAdapter(String description, DynamicTable source, boolean retain,
+    public PythonListenerAdapter(String description, Table source, boolean retain,
                                  PyObject pyObjectIn) {
         super(description, source, retain);
         pyCallable = PythonUtilities.pyListenerFunc(pyObjectIn);

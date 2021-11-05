@@ -10,6 +10,7 @@ import io.deephaven.configuration.Configuration;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.structures.rowsequence.RowSequenceUtil;
+import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.v2.sources.chunk.Attributes;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.engine.tables.SortingOrder;
@@ -45,7 +46,7 @@ public class SortListener extends BaseTable.ListenerImpl {
     public static final boolean REBALANCE_EFFORT_TRACKER_ENABLED = Configuration.getInstance()
             .getBooleanWithDefault("QueryTable.intradaySort.rebalance.effortTracker.enabled", false);
 
-    private final DynamicTable parent;
+    private final Table parent;
     private final QueryTable result;
     private final HashMapK4V4 reverseLookup;
     private final ColumnSource<Comparable<?>>[] columnsToSortBy;
@@ -60,10 +61,10 @@ public class SortListener extends BaseTable.ListenerImpl {
     private final ModifiedColumnSet.Transformer mcsTransformer;
     private final ModifiedColumnSet sortColumnSet;
 
-    public SortListener(DynamicTable parent, QueryTable result, HashMapK4V4 reverseLookup,
-            ColumnSource<Comparable<?>>[] columnsToSortBy, SortingOrder[] order,
-            RedirectionIndex sortMapping, ColumnSource<Comparable<?>>[] sortedColumnsToSortBy,
-            ModifiedColumnSet.Transformer mcsTransformer, ModifiedColumnSet sortColumnSet) {
+    public SortListener(Table parent, QueryTable result, HashMapK4V4 reverseLookup,
+                        ColumnSource<Comparable<?>>[] columnsToSortBy, SortingOrder[] order,
+                        RedirectionIndex sortMapping, ColumnSource<Comparable<?>>[] sortedColumnsToSortBy,
+                        ModifiedColumnSet.Transformer mcsTransformer, ModifiedColumnSet sortColumnSet) {
         super("sortInternal", parent, result);
         this.parent = parent;
         this.result = result;

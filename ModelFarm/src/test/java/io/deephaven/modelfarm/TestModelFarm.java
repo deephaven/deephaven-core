@@ -6,8 +6,8 @@ package io.deephaven.modelfarm;
 
 import io.deephaven.base.verify.Require;
 import io.deephaven.configuration.Configuration;
+import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.utils.TableTools;
-import io.deephaven.engine.v2.DynamicTable;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import junit.framework.TestCase;
 import org.apache.commons.lang3.mutable.MutableLong;
@@ -167,8 +167,8 @@ public class TestModelFarm extends TestCase {
                 },
                 new RowDataManager<Long, MutableLong>() {
                     @Override
-                    public DynamicTable table() {
-                        return (DynamicTable) TableTools.emptyTable(nKeys).update("Value = ii");
+                    public Table table() {
+                        return TableTools.emptyTable(nKeys).update("Value = ii");
                     }
 
                     @Override

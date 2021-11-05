@@ -268,8 +268,8 @@ public class TableMapProxyHandler extends LivenessArtifact implements Invocation
                 new JoinSanityListener(description, joinKeyToTableKey, tableKey, keyNames, keyTable);
         listener.checkSanity(keyTable.getRowSet());
 
-        if (((DynamicTable) keyTable).isRefreshing()) {
-            ((DynamicTable) keyTable).listenForUpdates(listener);
+        if (keyTable.isRefreshing()) {
+            keyTable.listenForUpdates(listener);
             return listener;
         } else {
             return null;
@@ -443,7 +443,7 @@ public class TableMapProxyHandler extends LivenessArtifact implements Invocation
 
         private JoinSanityListener(String description, Map<Object, Object> joinKeyToTableKey, Object tableKey,
                 String[] keyNames, Table keyTable) {
-            super("TableMapProxy JoinSanityListener-" + description, (DynamicTable) keyTable, false);
+            super("TableMapProxy JoinSanityListener-" + description, keyTable, false);
             this.description = description;
             this.joinKeyToTableKey = joinKeyToTableKey;
             keyColumns = keyTable.getColumnSources().toArray(new ColumnSource[keyNames.length]);

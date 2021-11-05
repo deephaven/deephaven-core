@@ -90,7 +90,7 @@ public class TestObjectSegmentedSortedArray extends LiveTableTestCase {
         checkSsaInitial(asObject, ssa, valueSource, desc);
 
         try (final SafeCloseable ignored = LivenessScopeStack.open(new LivenessScope(true), true)) {
-            final Listener asObjectListener = new InstrumentedListenerAdapter((DynamicTable) asObject, false) {
+            final Listener asObjectListener = new InstrumentedListenerAdapter(asObject, false) {
                 @Override
                 public void onUpdate(Update upstream) {
                     try (final ColumnSource.GetContext checkContext = valueSource.makeGetContext(asObject.getRowSet().getPrevRowSet().intSize())) {
@@ -152,7 +152,7 @@ public class TestObjectSegmentedSortedArray extends LiveTableTestCase {
                     }
                 }
             };
-            ((DynamicTable) asObject).listenForUpdates(asObjectListener);
+            asObject.listenForUpdates(asObjectListener);
 
             while (desc.advance(50)) {
                 System.out.println();
@@ -182,7 +182,7 @@ public class TestObjectSegmentedSortedArray extends LiveTableTestCase {
         checkSsaInitial(asObject, ssa, valueSource, desc);
 
         try (final SafeCloseable ignored = LivenessScopeStack.open(new LivenessScope(true), true)) {
-            final ShiftObliviousListener asObjectListener = new ShiftObliviousInstrumentedListenerAdapter((DynamicTable) asObject, false) {
+            final ShiftObliviousListener asObjectListener = new ShiftObliviousInstrumentedListenerAdapter(asObject, false) {
                 @Override
                 public void onUpdate(RowSet added, RowSet removed, RowSet modified) {
                     try (final ColumnSource.GetContext getContext = valueSource.makeGetContext(Math.max(added.intSize(), removed.intSize()))) {
@@ -196,7 +196,7 @@ public class TestObjectSegmentedSortedArray extends LiveTableTestCase {
                     }
                 }
             };
-            ((DynamicTable) asObject).listenForUpdates(asObjectListener);
+            asObject.listenForUpdates(asObjectListener);
 
             while (desc.advance(50)) {
                 LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {

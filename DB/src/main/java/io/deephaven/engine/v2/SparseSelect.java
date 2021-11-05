@@ -159,7 +159,7 @@ public class SparseSelect {
                                     .getSparseMemoryColumnSource(inputSource.getType(), inputSource.getComponentType());
                             outputSourcesList.add(outputSource);
                             resultColumns.put(columnName, outputSource);
-                            modifiedColumnSets.add(((DynamicTable) source).newModifiedColumnSet(columnName));
+                            modifiedColumnSets.add(source.newModifiedColumnSet(columnName));
                         }
                     }
 
@@ -178,8 +178,8 @@ public class SparseSelect {
                                 outputSourcesList.stream().filter(x -> x instanceof ObjectSparseArraySource)
                                         .map(x -> (ObjectSparseArraySource<?>) x)
                                         .toArray(ObjectSparseArraySource[]::new);
-                        ((DynamicTable) source).listenForUpdates(new BaseTable.ListenerImpl(
-                                "sparseSelect(" + Arrays.toString(columnNames) + ")", (DynamicTable) source,
+                        source.listenForUpdates(new BaseTable.ListenerImpl(
+                                "sparseSelect(" + Arrays.toString(columnNames) + ")", source,
                                 resultTable) {
                             private final ModifiedColumnSet modifiedColumnSetForUpdates =
                                     resultTable.getModifiedColumnSetForUpdates();

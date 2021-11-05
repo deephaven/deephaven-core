@@ -109,8 +109,8 @@ public class SelectOverheadLimiter {
 
 
         final MutableObject<ListenerRecorder> inputRecorder =
-                new MutableObject<>(new ListenerRecorder("clampSelectOverhead.input()", (DynamicTable) input, result));
-        ((DynamicTable) input).listenForUpdates(inputRecorder.getValue());
+                new MutableObject<>(new ListenerRecorder("clampSelectOverhead.input()", input, result));
+        input.listenForUpdates(inputRecorder.getValue());
         final List<ListenerRecorder> recorders = Collections.synchronizedList(new ArrayList<>());
         recorders.add(inputRecorder.getValue());
 
@@ -161,18 +161,18 @@ public class SelectOverheadLimiter {
                 overheadTracker.clear();
                 flatResult = input.flatten();
                 flatRecorder =
-                        new ListenerRecorder("clampSelectOverhead.flatResult()", (DynamicTable) flatResult, result);
+                        new ListenerRecorder("clampSelectOverhead.flatResult()", flatResult, result);
                 flatRecorder.setMergedListener(this);
                 flatTransformer = ((BaseTable) flatResult).newModifiedColumnSetTransformer(result,
                         result.getColumnSourceMap().keySet().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
 
-                ((DynamicTable) flatResult).listenForUpdates(flatRecorder);
+                flatResult.listenForUpdates(flatRecorder);
                 synchronized (recorders) {
                     recorders.clear();
                     recorders.add(flatRecorder);
                     manage(flatRecorder);
                 }
-                ((DynamicTable) input).removeUpdateListener(inputRecorder.getValue());
+                input.removeUpdateListener(inputRecorder.getValue());
                 unmanage(inputRecorder.getValue());
                 inputRecorder.setValue(null);
                 inputTransformer = null;

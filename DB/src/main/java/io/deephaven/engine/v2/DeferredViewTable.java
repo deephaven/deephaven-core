@@ -199,7 +199,7 @@ public class DeferredViewTable extends RedefinableTable {
     }
 
     @Override
-    protected DynamicTable doCoalesce() {
+    protected Table doCoalesce() {
         Table result;
         if (deferredFilters.length > 0) {
             PreAndPostFilters preAndPostFilters = applyFilterRenamings(deferredFilters);

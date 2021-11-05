@@ -48,7 +48,7 @@ public class ReverseLookupListener extends LivenessArtifact
         private final Set<Object> modifiedThisCycle = new THashSet<>();
         private volatile long lastNotificationStep = NULL_NOTIFICATION_STEP;
 
-        InternalListener(String description, DynamicTable source, boolean retain) {
+        InternalListener(String description, Table source, boolean retain) {
             super(description, source, retain);
             prevMap = new TObjectLongHashMap<>(source.isRefreshing() ? 2 * source.intSize() : 0, 0.75f, NO_ENTRY_VALUE);
             modifiedThisCycle.clear();
@@ -196,7 +196,7 @@ public class ReverseLookupListener extends LivenessArtifact
         return resultListenerValue;
     }
 
-    public static ReverseLookupListener makeReverseLookupListenerWithLock(DynamicTable source, String... columns) {
+    public static ReverseLookupListener makeReverseLookupListenerWithLock(Table source, String... columns) {
         LiveTableMonitor.DEFAULT.checkInitiateTableOperation();
         final ReverseLookupListener result = new ReverseLookupListener(source, columns);
         source.listenForUpdates(result.listener);
@@ -222,15 +222,15 @@ public class ReverseLookupListener extends LivenessArtifact
         }
     }
 
-    private ReverseLookupListener(DynamicTable source, String... columns) {
+    private ReverseLookupListener(Table source, String... columns) {
         this(source, false, columns);
     }
 
-    private ReverseLookupListener(DynamicTable source, boolean ignoreNull, String... columns) {
+    private ReverseLookupListener(Table source, boolean ignoreNull, String... columns) {
         this(source, ignoreNull, false, columns);
     }
 
-    private ReverseLookupListener(DynamicTable source, boolean ignoreNull, boolean usePrev, String... columns) {
+    private ReverseLookupListener(Table source, boolean ignoreNull, boolean usePrev, String... columns) {
         this.keyColumnNames = columns;
         this.ignoreNull = ignoreNull;
         this.columns = Arrays.stream(columns).map(source::getColumnSource).toArray(ColumnSource[]::new);

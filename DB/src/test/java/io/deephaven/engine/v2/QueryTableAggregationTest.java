@@ -3155,13 +3155,13 @@ public class QueryTableAggregationTest {
         final Table last = reversedFlat.lastBy();
 
         final InstrumentedListenerAdapter adapter =
-                new InstrumentedListenerAdapter((DynamicTable) reversedFlat, false) {
+                new InstrumentedListenerAdapter(reversedFlat, false) {
                     @Override
                     public void onUpdate(Update upstream) {
                         System.out.println(upstream);
                     }
                 };
-        ((DynamicTable) reversedFlat).listenForUpdates(adapter);
+        reversedFlat.listenForUpdates(adapter);
 
         assertTableEquals(newTable(col("Sentinel", 0)), last);
 
@@ -3344,11 +3344,11 @@ public class QueryTableAggregationTest {
         assertTableEquals(subTable, table);
 
         final FuzzerPrintListener printListener = new FuzzerPrintListener("original", table, 0);
-        ((DynamicTable) table).listenForUpdates(printListener);
+        table.listenForUpdates(printListener);
         final FuzzerPrintListener flatPrintListener = new FuzzerPrintListener("flat", flat, 0);
-        ((DynamicTable) flat).listenForUpdates(flatPrintListener);
+        flat.listenForUpdates(flatPrintListener);
         final FuzzerPrintListener subPrintListener = new FuzzerPrintListener("subTable", subTable, 0);
-        ((DynamicTable) subTable).listenForUpdates(subPrintListener);
+        subTable.listenForUpdates(subPrintListener);
 
         final int newSize = 5;
         final int[] sentinel2 = new int[newSize];
@@ -3521,7 +3521,7 @@ public class QueryTableAggregationTest {
         try {
             for (final boolean substituteForThisIteration : new boolean[] {false, true}) {
                 ChunkedOperatorAggregationHelper.KEY_ONLY_SUBSTITUTION_ENABLED = substituteForThisIteration;
-                final DynamicTable source = (DynamicTable) emptyTable(100).updateView("A=i%10");
+                final Table source = emptyTable(100).updateView("A=i%10");
                 source.getRowSet().mutableCast().removeRange(50, 100);
                 source.setRefreshing(true);
 

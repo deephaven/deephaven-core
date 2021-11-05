@@ -174,12 +174,12 @@ def Config():
     return jpy.get_type("io.deephaven.configuration.Configuration").getInstance()
 
 
-def PythonListenerAdapter(dynamicTable, implementation, description=None, retain=True, replayInitialImage=False):
+def PythonListenerAdapter(table, implementation, description=None, retain=True, replayInitialImage=False):
     """
     Constructs the ShiftObliviousInstrumentedListenerAdapter, implemented in Python, and plugs it into the table's
     listenForUpdates method.
 
-    :param dynamicTable: table to which to listen - NOTE: it will be cast to DynamicTable.
+    :param table: table to which to listen
     :param implementation: the body of the implementation for the ShiftObliviousInstrumentedListenerAdapter.onUpdate method, and
       must either be a class with onUpdate method or a callable.
     :param description: A description for the UpdatePerformanceTracker to append to its entry description.
@@ -188,18 +188,17 @@ def PythonListenerAdapter(dynamicTable, implementation, description=None, retain
       True to process updates for all initial rows in the table PLUS all new row changes.
     """
 
-    dt = jpy.cast(dynamicTable, jpy.get_type('io.deephaven.engine.v2.DynamicTable'))
     jtype = jpy.get_type('io.deephaven.integrations.python.PythonShiftObliviousListenerAdapter')
-    ListenerInstance = jtype(description, dynamicTable, retain, implementation)
-    dt.listenForUpdates(ListenerInstance, replayInitialImage)
+    ListenerInstance = jtype(description, table, retain, implementation)
+    table.listenForUpdates(ListenerInstance, replayInitialImage)
 
 
-def PythonShiftAwareListenerAdapter(dynamicTable, implementation, description=None, retain=True):
+def PythonShiftAwareListenerAdapter(table, implementation, description=None, retain=True):
     """
     Constructs the InstrumentedListenerAdapter, implemented in Python, and plugs it into the table's
     listenForUpdates method.
 
-    :param dynamicTable: table to which to listen - NOTE: it will be cast to DynamicTable.
+    :param table: table to which to listen
     :param implementation: the body of the implementation for the InstrumentedListenerAdapter.onUpdate method, and
       must either be a class with onUpdate method or a callable.
     :param description: A description for the UpdatePerformanceTracker to append to its entry description.
@@ -207,9 +206,8 @@ def PythonShiftAwareListenerAdapter(dynamicTable, implementation, description=No
     """
 
     jtype = jpy.get_type('io.deephaven.integrations.python.PythonListenerAdapter')
-    dt = jpy.cast(dynamicTable, jpy.get_type('io.deephaven.engine.v2.DynamicTable'))
-    ListenerInstance = jtype(description, dt, retain, implementation)
-    dt.listenForUpdates(ListenerInstance)
+    ListenerInstance = jtype(description, table, retain, implementation)
+    table.listenForUpdates(ListenerInstance)
 
 
 def PythonFunction(func, classString):
@@ -237,7 +235,7 @@ class TableListenerHandle:
         """
         Creates a new table listener handle.
 
-        :param t: dynamic table being listened to.
+        :param t: table being listened to.
         :param listener: listener object.
         """
         self.t = t
@@ -303,8 +301,8 @@ def listen(t, listener, description=None, retain=True, ltype="auto", start_liste
     (2) an object which provides an "onUpdate" method.
     In either case, the method must have one of the following signatures.
 
-    * (added, removed, modified): legacy
-    * (isReplay, added, removed, modified): legacy + replay
+    * (added, removed, modified): shift_oblivious or legacy
+    * (isReplay, added, removed, modified): shift_oblivious + replay
     * (update): shift-aware
     * (isReplay, update): shift-aware + replay
 
@@ -317,7 +315,7 @@ def listen(t, listener, description=None, retain=True, ltype="auto", start_liste
     details of the added, removed, and modified indices; rowSet shift information; as well as the details of how to apply
     the update object.  It also has examples on how to access current and previous-tick table values.
 
-    :param t: dynamic table to listen to.
+    :param t: table to listen to.
     :param listener: listener to process changes.
     :param description: description for the UpdatePerformanceTracker to append to the listener's entry description.
     :param retain: whether a hard reference to this listener should be maintained to prevent it from being collected.
@@ -331,29 +329,26 @@ def listen(t, listener, description=None, retain=True, ltype="auto", start_liste
     if replay_initial and not start_listening:
         raise ValueError("Unable to create listener.  Inconsistent arguments.  If the initial snapshot is replayed (replay_initial=True), then the listener must be registered to start listening (start_listening=True).")
 
-    _java_type_DynamicTable = jpy.get_type("io.deephaven.engine.v2.DynamicTable")
-    dt = jpy.cast(t, _java_type_DynamicTable)
-
     nargs = _nargsListener(listener)
 
-    if ltype == None  or ltype == "auto":
+    if ltype == None or ltype == "auto":
         if nargs == 1 or nargs == 2:
             ltype = "shift_aware"
         elif nargs == 3 or nargs == 4:
-            ltype = "legacy"
+            ltype = "shift_oblivious"
         else:
             raise ValueError("Unable to autodetect listener type.  ShiftObliviousListener does not take an expected number of arguments.  args={}".format(nargs))
 
-    if ltype == "legacy":
+    if ltype == "shift_oblivious" or ltype == "legacy":
         if nargs == 3:
             if replay_initial:
                 raise ValueError("ShiftObliviousListener does not support replay: ltype={} nargs={}".format(ltype, nargs))
 
             ListenerAdapter = jpy.get_type("io.deephaven.integrations.python.PythonShiftObliviousListenerAdapter")
-            listener_adapter = ListenerAdapter(description, dt, retain, listener)
+            listener_adapter = ListenerAdapter(description, t, retain, listener)
         elif nargs == 4:
             ListenerAdapter = jpy.get_type("io.deephaven.integrations.python.PythonReplayShiftObliviousListenerAdapter")
-            listener_adapter = ListenerAdapter(description, dt, retain, listener)
+            listener_adapter = ListenerAdapter(description, t, retain, listener)
         else:
             raise ValueError("Legacy listener must take 3 (added, removed, modified) or 4 (isReplay, added, removed, modified) arguments.")
 
@@ -363,17 +358,17 @@ def listen(t, listener, description=None, retain=True, ltype="auto", start_liste
                 raise ValueError("ShiftObliviousListener does not support replay: ltype={} nargs={}".format(ltype, nargs))
 
             ListenerAdapter = jpy.get_type("io.deephaven.integrations.python.PythonListenerAdapter")
-            listener_adapter = ListenerAdapter(description, dt, retain, listener)
+            listener_adapter = ListenerAdapter(description, t, retain, listener)
         elif nargs == 2:
             ListenerAdapter = jpy.get_type("io.deephaven.integrations.python.PythonReplayListenerAdapter")
-            listener_adapter = ListenerAdapter(description, dt, retain, listener)
+            listener_adapter = ListenerAdapter(description, t, retain, listener)
         else:
             raise ValueError("Shift-aware listener must take 1 (update) or 2 (isReplay, update) arguments.")
 
     else:
         raise ValueError("Unsupported listener type: ltype={}".format(ltype))
 
-    handle = TableListenerHandle(dt, listener_adapter)
+    handle = TableListenerHandle(t, listener_adapter)
 
     def start():
         if replay_initial:

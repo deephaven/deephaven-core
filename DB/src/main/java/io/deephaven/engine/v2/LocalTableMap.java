@@ -555,7 +555,7 @@ public class LocalTableMap extends TableMapImpl implements NotificationQueue.Dep
 
     @Override
     public synchronized Table merge() {
-        final DynamicTable merged = (DynamicTable) TableToolsMergeHelper.mergeTableMap(this);
+        final Table merged = TableToolsMergeHelper.mergeTableMap(this);
 
         final Collection<? extends ColumnSource> columnSources = merged.getColumnSources();
         if (columnSources.isEmpty()) {

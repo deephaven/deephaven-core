@@ -1,14 +1,14 @@
 package io.deephaven.engine.tables.verify;
 
+import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.v2.BaseTable;
-import io.deephaven.engine.v2.DynamicTable;
 
 public class AppendOnlyAssertionInstrumentedListenerAdapter extends BaseTable.ListenerImpl {
 
     private final String description;
 
-    public AppendOnlyAssertionInstrumentedListenerAdapter(String description, DynamicTable parent,
-            DynamicTable dependent) {
+    public AppendOnlyAssertionInstrumentedListenerAdapter(String description, Table parent,
+            Table dependent) {
         super(
                 "assertAppendOnly(" + (description == null ? "" : description) + ')',
                 parent, dependent);

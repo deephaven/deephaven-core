@@ -2,7 +2,7 @@ package io.deephaven.benchmark.engine;
 
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.live.LiveTableMonitor;
-import io.deephaven.engine.v2.DynamicTable;
+import io.deephaven.engine.v2.DynamicNode;
 import io.deephaven.engine.v2.InstrumentedListenerAdapter;
 import io.deephaven.engine.v2.select.IncrementalReleaseFilter;
 import io.deephaven.engine.v2.select.RollingReleaseFilter;
@@ -76,9 +76,9 @@ class IncrementalBenchmark {
         final R result = function.apply(filtered1, filtered2);
 
         final InstrumentedListenerAdapter failureListener;
-        if (result instanceof DynamicTable) {
+        if (DynamicNode.isDynamicAndIsRefreshing(result)) {
             failureListener =
-                    new InstrumentedListenerAdapter("Failure ShiftObliviousListener", (DynamicTable) result, false) {
+                    new InstrumentedListenerAdapter("Failure ShiftObliviousListener", (Table) result, false) {
                         @Override
                         public void onUpdate(Update upstream) {}
 
@@ -89,7 +89,7 @@ class IncrementalBenchmark {
                             System.exit(1);
                         }
                     };
-            ((DynamicTable) result).listenForUpdates(failureListener);
+            ((Table) result).listenForUpdates(failureListener);
         } else {
             failureListener = null;
         }
@@ -102,7 +102,7 @@ class IncrementalBenchmark {
         }
 
         if (failureListener != null) {
-            ((DynamicTable) result).removeUpdateListener(failureListener);
+            ((Table) result).removeUpdateListener(failureListener);
         }
 
         return result;

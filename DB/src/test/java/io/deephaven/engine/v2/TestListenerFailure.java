@@ -25,7 +25,7 @@ public class TestListenerFailure extends LiveTableTestCase {
             source.notifyListeners(i(2, 3), i(), i());
         });
 
-        assertFalse(((DynamicTable) updated).isFailed());
+        assertFalse(updated.isFailed());
 
         allowingError(() -> {
             LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
@@ -35,17 +35,17 @@ public class TestListenerFailure extends LiveTableTestCase {
             return null;
         }, TestListenerFailure::isNpe);
 
-        assertTrue(((DynamicTable) updated).isFailed());
+        assertTrue(updated.isFailed());
 
         try {
-            ((DynamicTable) updated).listenForUpdates(new ErrorListener((QueryTable) updated));
+            updated.listenForUpdates(new ErrorListener((QueryTable) updated));
             TestCase.fail("Should not be allowed to listen to failed table");
         } catch (IllegalStateException ise) {
             assertEquals("Can not listen to failed table QueryTable", ise.getMessage());
         }
 
         try {
-            ((DynamicTable) updated)
+            updated
                     .listenForUpdates(new ShiftObliviousInstrumentedListenerAdapter("Dummy", (QueryTable) updated, false) {
                         @Override
                         public void onUpdate(RowSet added, RowSet removed, RowSet modified) {}
@@ -83,7 +83,7 @@ public class TestListenerFailure extends LiveTableTestCase {
             source.notifyListeners(i(2, 3), i(), i());
         });
 
-        assertFalse(((DynamicTable) filtered).isFailed());
+        assertFalse(filtered.isFailed());
 
         final Table filteredAgain = LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> viewed.where("UC=`A`"));
         assertSame(filtered, filteredAgain);
@@ -96,8 +96,8 @@ public class TestListenerFailure extends LiveTableTestCase {
             return null;
         }, TestListenerFailure::isFilterNpe);
 
-        assertTrue(((DynamicTable) filtered).isFailed());
-        assertTrue(((DynamicTable) filteredAgain).isFailed());
+        assertTrue(filtered.isFailed());
+        assertTrue(filteredAgain.isFailed());
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             TstUtils.removeRows(source, i(5));
@@ -107,7 +107,7 @@ public class TestListenerFailure extends LiveTableTestCase {
         final Table filteredYetAgain =
                 LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> viewed.where("UC=`A`"));
         assertNotSame(filtered, filteredYetAgain);
-        assertFalse(((DynamicTable) filteredYetAgain).isFailed());
+        assertFalse(filteredYetAgain.isFailed());
         assertTableEquals(TableTools.newTable(TableTools.col("Str", "A"), TableTools.col("UC", "A")), filteredYetAgain);
     }
 

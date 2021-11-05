@@ -4,10 +4,10 @@
 
 package io.deephaven.integrations.python;
 
+import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.util.annotations.ScriptApi;
 import org.jpy.PyObject;
-import io.deephaven.engine.v2.DynamicTable;
 import io.deephaven.engine.v2.ShiftObliviousInstrumentedListenerAdapter;
 
 
@@ -26,13 +26,13 @@ public class PythonShiftObliviousListenerAdapter extends ShiftObliviousInstrumen
      * Create a Python listener.
      *
      * No description for this listener will be provided. A hard reference to this listener will be maintained to
-     * prevent garbage collection. See {@link #PythonShiftObliviousListenerAdapter(String, DynamicTable, boolean, PyObject)} if you do
+     * prevent garbage collection. See {@link #PythonShiftObliviousListenerAdapter(String, Table, boolean, PyObject)} if you do
      * not want to prevent garbage collection of this listener.
      *
      * @param source The source table to which this listener will subscribe.
      * @param pyObjectIn Python listener object.
      */
-    public PythonShiftObliviousListenerAdapter(DynamicTable source, PyObject pyObjectIn) {
+    public PythonShiftObliviousListenerAdapter(Table source, PyObject pyObjectIn) {
         this(null, source, true, pyObjectIn);
     }
 
@@ -40,14 +40,14 @@ public class PythonShiftObliviousListenerAdapter extends ShiftObliviousInstrumen
      * Create a Python listener.
      *
      * A hard reference to this listener will be maintained to prevent garbage collection. See
-     * {@link #PythonShiftObliviousListenerAdapter(String, DynamicTable, boolean, PyObject)} if you do not want to prevent garbage
+     * {@link #PythonShiftObliviousListenerAdapter(String, Table, boolean, PyObject)} if you do not want to prevent garbage
      * collection of this listener.
      *
      * @param description A description for the UpdatePerformanceTracker to append to its entry description.
      * @param source The source table to which this listener will subscribe.
      * @param pyObjectIn Python listener object.
      */
-    public PythonShiftObliviousListenerAdapter(String description, DynamicTable source, PyObject pyObjectIn) {
+    public PythonShiftObliviousListenerAdapter(String description, Table source, PyObject pyObjectIn) {
         this(description, source, true, pyObjectIn);
     }
 
@@ -59,7 +59,7 @@ public class PythonShiftObliviousListenerAdapter extends ShiftObliviousInstrumen
      * @param retain Whether a hard reference to this listener should be maintained to prevent it from being collected.
      * @param pyObjectIn Python listener object.
      */
-    public PythonShiftObliviousListenerAdapter(String description, DynamicTable source, boolean retain, PyObject pyObjectIn) {
+    public PythonShiftObliviousListenerAdapter(String description, Table source, boolean retain, PyObject pyObjectIn) {
         super(description, source, retain);
         pyCallable = PythonUtilities.pyListenerFunc(pyObjectIn);
     }

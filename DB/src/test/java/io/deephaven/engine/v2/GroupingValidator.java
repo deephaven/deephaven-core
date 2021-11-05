@@ -5,6 +5,7 @@
 package io.deephaven.engine.v2;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.tuples.TupleSource;
 import io.deephaven.engine.v2.tuples.TupleSourceFactory;
@@ -21,12 +22,12 @@ import java.util.*;
  * stale groupings are not left between table updates.
  */
 public class GroupingValidator extends InstrumentedListenerAdapter {
-    private DynamicTable source;
+    private Table source;
     private Collection<String[]> groupingColumns;
     private String context;
     private int validationCount = 0;
 
-    public GroupingValidator(String context, DynamicTable source, ArrayList<ArrayList<String>> groupingColumns) {
+    public GroupingValidator(String context, Table source, ArrayList<ArrayList<String>> groupingColumns) {
         this(context, source, convertListToArray(groupingColumns));
     }
 
@@ -38,7 +39,7 @@ public class GroupingValidator extends InstrumentedListenerAdapter {
         return collectionOfArrays;
     }
 
-    private GroupingValidator(String context, DynamicTable source, Collection<String[]> groupingColumns) {
+    private GroupingValidator(String context, Table source, Collection<String[]> groupingColumns) {
         super("grouping validator " + context, source, false);
         this.context = context;
         this.source = source;
@@ -62,15 +63,15 @@ public class GroupingValidator extends InstrumentedListenerAdapter {
         }
     }
 
-    public static void validateGrouping(String[] groupingToCheck, RowSet rowSet, DynamicTable source, String context) {
+    public static void validateGrouping(String[] groupingToCheck, RowSet rowSet, Table source, String context) {
         final ColumnSource[] groupColumns = getColumnSources(groupingToCheck, source);
         final TupleSource tupleSource = TupleSourceFactory.makeTupleSource(groupColumns);
         validateGrouping(groupingToCheck, rowSet, source, context,
                 rowSet.isTracking() ? rowSet.trackingCast().getGrouping(tupleSource) : Collections.emptyMap());
     }
 
-    public static void validateGrouping(String[] groupingToCheck, RowSet rowSet, DynamicTable source, String context,
-            Map<Object, RowSet> grouping) {
+    public static void validateGrouping(String[] groupingToCheck, RowSet rowSet, Table source, String context,
+                                        Map<Object, RowSet> grouping) {
         final ColumnSource[] groupColumns = getColumnSources(groupingToCheck, source);
         for (Map.Entry<Object, RowSet> objectIndexEntry : grouping.entrySet()) {
             for (RowSet.Iterator it = objectIndexEntry.getValue().iterator(); it.hasNext();) {
@@ -91,7 +92,7 @@ public class GroupingValidator extends InstrumentedListenerAdapter {
         }
     }
 
-    public static void validateRestrictedGrouping(String[] groupingToCheck, RowSet rowSet, DynamicTable source,
+    public static void validateRestrictedGrouping(String[] groupingToCheck, RowSet rowSet, Table source,
             String context, Map<Object, RowSet> grouping, Set<Object> validKeys) {
         ColumnSource[] groupColumns = getColumnSources(groupingToCheck, source);
         for (Map.Entry<Object, RowSet> objectIndexEntry : grouping.entrySet()) {
@@ -144,7 +145,7 @@ public class GroupingValidator extends InstrumentedListenerAdapter {
         }
     }
 
-    private static ColumnSource[] getColumnSources(String[] groupingToCheck, DynamicTable source) {
+    private static ColumnSource[] getColumnSources(String[] groupingToCheck, Table source) {
         return Arrays.stream(groupingToCheck).map(source::getColumnSource).toArray(ColumnSource[]::new);
     }
 

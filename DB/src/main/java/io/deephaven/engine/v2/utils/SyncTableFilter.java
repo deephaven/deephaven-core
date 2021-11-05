@@ -174,8 +174,8 @@ public class SyncTableFilter {
             results[ii] = ((QueryTable) std.table).getSubTable(resultRowSet[ii], null, mergedListener);
 
             final ListenerRecorder listenerRecorder =
-                    new ListenerRecorder("SyncTableFilter(" + std.name + ")", (DynamicTable) std.table, results[ii]);
-            ((DynamicTable) std.table).listenForUpdates(listenerRecorder);
+                    new ListenerRecorder("SyncTableFilter(" + std.name + ")", std.table, results[ii]);
+            std.table.listenForUpdates(listenerRecorder);
             recorders.add(listenerRecorder);
 
             consumeRows(ii, std.table.getRowSet());

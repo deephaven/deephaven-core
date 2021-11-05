@@ -4,7 +4,7 @@
 
 package io.deephaven.modelfarm;
 
-import io.deephaven.engine.v2.DynamicTable;
+import io.deephaven.engine.tables.Table;
 
 /**
  * An interface for accessing and querying data contained in rows of a dynamic table.
@@ -19,7 +19,7 @@ public interface RowDataManager<KEYTYPE, DATATYPE> {
      *
      * @return source table.
      */
-    DynamicTable table();
+    Table table();
 
     /**
      * Creates a new data instance.

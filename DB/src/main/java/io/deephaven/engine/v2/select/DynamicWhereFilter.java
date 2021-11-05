@@ -81,9 +81,9 @@ public class DynamicWhereFilter extends SelectFilterLivenessArtifactImpl impleme
 
         if (DynamicNode.isDynamicAndIsRefreshing(setTable)) {
             final String[] columnNames = Arrays.stream(matchPairs).map(MatchPair::right).toArray(String[]::new);
-            final ModifiedColumnSet modTokenSet = ((DynamicTable) setTable).newModifiedColumnSet(columnNames);
+            final ModifiedColumnSet modTokenSet = setTable.newModifiedColumnSet(columnNames);
             setUpdateListener = new InstrumentedListenerAdapter(
-                    "DynamicWhereFilter(" + Arrays.toString(setColumnsNames) + ")", (DynamicTable) setTable, false) {
+                    "DynamicWhereFilter(" + Arrays.toString(setColumnsNames) + ")", setTable, false) {
 
                 @Override
                 public void onUpdate(final Update upstream) {
@@ -134,7 +134,7 @@ public class DynamicWhereFilter extends SelectFilterLivenessArtifactImpl impleme
                     }
                 }
             };
-            ((DynamicTable) setTable).listenForUpdates(setUpdateListener);
+            setTable.listenForUpdates(setUpdateListener);
 
             manage(setUpdateListener);
         } else {

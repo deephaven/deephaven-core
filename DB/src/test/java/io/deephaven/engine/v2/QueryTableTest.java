@@ -1658,13 +1658,13 @@ public class QueryTableTest extends QueryTableTestBase {
     }
 
     public void testWhereInScope() {
-        final DynamicTable toBeFiltered = TstUtils.testRefreshingTable(
+        final Table toBeFiltered = TstUtils.testRefreshingTable(
                 TableTools.col("Key", "A", "B", "C", "D", "E"),
                 TableTools.intCol("Value", 1, 2, 3, 4, 5));
 
         // The setScope will own the set table. rc == 1
         final SafeCloseable setScope = LivenessScopeStack.open();
-        final DynamicTable setTable = TstUtils.testRefreshingTable(TableTools.stringCol("Key"));
+        final Table setTable = TstUtils.testRefreshingTable(TableTools.stringCol("Key"));
 
         // Owned by setScope, rc == 1
         // It will also manage setTable whose rc == 3 after (1 ShiftObliviousSwapListener, one
@@ -3005,8 +3005,8 @@ public class QueryTableTest extends QueryTableTestBase {
                 "mock un-coalesced table") {
 
             @Override
-            protected DynamicTable doCoalesce() {
-                final DynamicTable table = supplier.get();
+            protected Table doCoalesce() {
+                final Table table = supplier.get();
                 copyAttributes(table, CopyAttributeOperation.Coalesce);
                 return table;
             }

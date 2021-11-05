@@ -150,7 +150,7 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
                 "T, Dividend, 0.15, 300\n" +
                 " Z, Dividend, 0.18, 500";
         try {
-            DynamicTable tableDividends = readCsv(new ByteArrayInputStream(fileDividends.getBytes()));
+            Table tableDividends = readCsv(new ByteArrayInputStream(fileDividends.getBytes()));
             assertEquals(3, tableDividends.size());
             assertEquals(4, tableDividends.getMeta().size());
             assertEquals(0.15, tableDividends.getColumn(2).getDouble(1));
@@ -993,7 +993,7 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
 
         TableTools.showWithIndex(m2);
 
-        final DynamicTable expected = TableTools.newTable(intCol("Sentinel", 1, 3));
+        final Table expected = TableTools.newTable(intCol("Sentinel", 1, 3));
         assertTableEquals(expected, m2);
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {

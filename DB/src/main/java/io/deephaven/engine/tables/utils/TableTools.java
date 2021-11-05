@@ -18,7 +18,6 @@ import io.deephaven.engine.tables.TableDefinition;
 import io.deephaven.engine.tables.live.LiveTableMonitor;
 import io.deephaven.engine.tables.utils.csv.CsvSpecs;
 import io.deephaven.engine.util.caching.C14nUtil;
-import io.deephaven.engine.v2.DynamicTable;
 import io.deephaven.engine.v2.QueryTable;
 import io.deephaven.engine.v2.TimeTable;
 import io.deephaven.engine.v2.replay.Replayer;
@@ -364,14 +363,14 @@ public class TableTools {
      * inferred from the data.
      *
      * @param is an InputStream providing access to the CSV data.
-     * @return a Deephaven DynamicTable object
+     * @return a Deephaven Table
      * @throws IOException if the InputStream cannot be read
      * @deprecated See {@link CsvHelpers#readCsv(InputStream)}
      */
     @ScriptApi
     @Deprecated
-    public static DynamicTable readCsv(InputStream is) throws IOException {
-        return (DynamicTable) CsvHelpers.readCsv(is);
+    public static Table readCsv(InputStream is) throws IOException {
+        return CsvHelpers.readCsv(is);
     }
 
     /**
@@ -380,14 +379,14 @@ public class TableTools {
      *
      * @param is an InputStream providing access to the CSV data.
      * @param separator a char to use as the delimiter value when parsing the file.
-     * @return a Deephaven DynamicTable object
+     * @return a Deephaven Table
      * @throws IOException if the InputStream cannot be read
      * @deprecated See {@link CsvHelpers#readCsv(InputStream, char)}
      */
     @ScriptApi
     @Deprecated
-    public static DynamicTable readCsv(InputStream is, final char separator) throws IOException {
-        return (DynamicTable) CsvHelpers.readCsv(is, separator);
+    public static Table readCsv(InputStream is, final char separator) throws IOException {
+        return CsvHelpers.readCsv(is, separator);
     }
 
     /**
@@ -1047,37 +1046,37 @@ public class TableTools {
     }
 
     /**
-     * Creates a new DynamicTable.
+     * Creates a new Table.
      *
      * @param size the number of rows to allocate
      * @param names a List of column names
      * @param columnSources a List of the ColumnSource(s)
-     * @return a Deephaven DynamicTable
+     * @return a Deephaven Table
      */
-    public static DynamicTable newTable(long size, List<String> names, List<ColumnSource<?>> columnSources) {
+    public static Table newTable(long size, List<String> names, List<ColumnSource<?>> columnSources) {
         // noinspection unchecked
         return new QueryTable(RowSetFactoryImpl.INSTANCE.flat(size).convertToTracking(),
                 newMapFromLists(LinkedHashMap.class, names, columnSources));
     }
 
     /**
-     * Creates a new DynamicTable.
+     * Creates a new Table.
      *
      * @param size the number of rows to allocate
      * @param columns a Map of column names and ColumnSources
-     * @return a Deephaven DynamicTable
+     * @return a Deephaven Table
      */
-    public static DynamicTable newTable(long size, Map<String, ColumnSource<?>> columns) {
+    public static Table newTable(long size, Map<String, ColumnSource<?>> columns) {
         return new QueryTable(RowSetFactoryImpl.INSTANCE.flat(size).convertToTracking(), columns);
     }
 
     /**
-     * Creates a new DynamicTable.
+     * Creates a new Table.
      *
      * @param definition the TableDefinition (column names and properties) to use for the new table
-     * @return an empty Deephaven DynamicTable object
+     * @return an empty Deephaven Table
      */
-    public static DynamicTable newTable(TableDefinition definition) {
+    public static Table newTable(TableDefinition definition) {
         Map<String, ColumnSource<?>> columns = new LinkedHashMap<>();
         for (ColumnDefinition<?> columnDefinition : definition.getColumnList()) {
             columns.put(columnDefinition.getName(), ArrayBackedColumnSource.getMemoryColumnSource(0,
@@ -1087,19 +1086,19 @@ public class TableTools {
     }
 
     /**
-     * Creates a new DynamicTable.
+     * Creates a new Table.
      *
      * @param columnHolders a list of ColumnHolders from which to create the table
-     * @return a Deephaven DynamicTable
+     * @return a Deephaven Table
      */
-    public static DynamicTable newTable(ColumnHolder... columnHolders) {
+    public static Table newTable(ColumnHolder... columnHolders) {
         checkSizes(columnHolders);
         MutableRowSet rowSet = getRowSet(columnHolders);
         Map<String, ColumnSource<?>> columns = Stream.of(columnHolders).collect(COLUMN_HOLDER_LINKEDMAP_COLLECTOR);
         return new QueryTable(rowSet.convertToTracking(), columns);
     }
 
-    public static DynamicTable newTable(TableDefinition definition, ColumnHolder... columnHolders) {
+    public static Table newTable(TableDefinition definition, ColumnHolder... columnHolders) {
         checkSizes(columnHolders);
         MutableRowSet rowSet = getRowSet(columnHolders);
         Map<String, ColumnSource<?>> columns = Stream.of(columnHolders).collect(COLUMN_HOLDER_LINKEDMAP_COLLECTOR);

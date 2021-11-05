@@ -1,5 +1,6 @@
 package io.deephaven.engine.v2;
 
+import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.v2.sources.LogicalClock;
 import io.deephaven.engine.v2.utils.*;
 
@@ -18,7 +19,7 @@ public class ListenerRecorder extends BaseTable.ListenerImpl {
     private long notificationStep = -1;
     private Update update;
 
-    public ListenerRecorder(String description, DynamicTable parent, DynamicTable dependent) {
+    public ListenerRecorder(String description, Table parent, Table dependent) {
         super(description, parent, dependent);
         this.logPrefix = System.identityHashCode(this) + ": " + description + "ShiftObliviousListener Recorder: ";
         this.isRefreshing = parent.isRefreshing();

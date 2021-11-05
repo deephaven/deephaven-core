@@ -142,7 +142,7 @@ public class TestByteSegmentedSortedMultiset extends LiveTableTestCase {
         checkSsmInitial(asByte, ssm, valueSource, countNull, desc);
 
         try (final SafeCloseable ignored = LivenessScopeStack.open(new LivenessScope(true), true)) {
-            final ShiftObliviousListener asByteListener = new ShiftObliviousInstrumentedListenerAdapter((DynamicTable) asByte, false) {
+            final ShiftObliviousListener asByteListener = new ShiftObliviousInstrumentedListenerAdapter(asByte, false) {
                 @Override
                 public void onUpdate(RowSet added, RowSet removed, RowSet modified) {
                     final int maxSize = Math.max(Math.max(added.intSize(), removed.intSize()), modified.intSize());
@@ -167,7 +167,7 @@ public class TestByteSegmentedSortedMultiset extends LiveTableTestCase {
                     }
                 }
             };
-            ((DynamicTable) asByte).listenForUpdates(asByteListener);
+            asByte.listenForUpdates(asByteListener);
 
             while (desc.advance(50)) {
                 LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {

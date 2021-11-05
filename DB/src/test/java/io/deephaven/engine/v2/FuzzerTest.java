@@ -322,7 +322,7 @@ public class FuzzerTest {
         System.out.println();
         if (table.isLive()) {
             final FuzzerPrintListener listener = new FuzzerPrintListener(variable, table);
-            ((DynamicTable) table).listenForUpdates(listener);
+            table.listenForUpdates(listener);
             hardReferences.add(listener);
         }
     }

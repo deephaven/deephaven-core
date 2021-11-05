@@ -7,7 +7,6 @@ import io.deephaven.engine.tables.live.LiveTableMonitor;
 import io.deephaven.engine.tables.utils.DBDateTime;
 import io.deephaven.engine.tables.utils.DBTimeUtils;
 import io.deephaven.engine.tables.utils.TableTools;
-import io.deephaven.engine.v2.DynamicTable;
 import io.deephaven.engine.v2.ModifiedColumnSet;
 import io.deephaven.engine.v2.SimpleListener;
 import io.deephaven.engine.v2.TstUtils;
@@ -42,13 +41,13 @@ public class TestStreamToTableAdapter {
     public void testSimple() {
         final TableDefinition tableDefinition = new TableDefinition(
                 Arrays.asList(String.class, int.class, long.class, double.class), Arrays.asList("S", "I", "L", "D"));
-        final DynamicTable empty = TableTools.newTable(tableDefinition);
+        final Table empty = TableTools.newTable(tableDefinition);
 
         final StreamPublisher streamPublisher = new DummyStreamPublisher();
 
         final StreamToTableAdapter adapter =
                 new StreamToTableAdapter(tableDefinition, streamPublisher, LiveTableMonitor.DEFAULT, "test");
-        final DynamicTable result = adapter.table();
+        final Table result = adapter.table();
         TstUtils.assertTableEquals(empty, result);
 
         final SimpleListener listener = new SimpleListener(result);
@@ -217,13 +216,13 @@ public class TestStreamToTableAdapter {
     public void testWrappedTypes() {
         final TableDefinition tableDefinition = new TableDefinition(
                 Arrays.asList(String.class, Boolean.class, DBDateTime.class), Arrays.asList("S", "B", "D"));
-        final DynamicTable empty = TableTools.newTable(tableDefinition);
+        final Table empty = TableTools.newTable(tableDefinition);
 
         final StreamPublisher streamPublisher = new DummyStreamPublisher();
 
         final StreamToTableAdapter adapter =
                 new StreamToTableAdapter(tableDefinition, streamPublisher, LiveTableMonitor.DEFAULT, "test");
-        final DynamicTable result = adapter.table();
+        final Table result = adapter.table();
         TstUtils.assertTableEquals(empty, result);
 
         final SimpleListener listener = new SimpleListener(result);
@@ -286,13 +285,13 @@ public class TestStreamToTableAdapter {
     public void testArrayTypes() {
         final TableDefinition tableDefinition =
                 new TableDefinition(Arrays.asList(String[].class, int[].class), Arrays.asList("SA", "IA"));
-        final DynamicTable empty = TableTools.newTable(tableDefinition);
+        final Table empty = TableTools.newTable(tableDefinition);
 
         final StreamPublisher streamPublisher = new DummyStreamPublisher();
 
         final StreamToTableAdapter adapter =
                 new StreamToTableAdapter(tableDefinition, streamPublisher, LiveTableMonitor.DEFAULT, "test");
-        final DynamicTable result = adapter.table();
+        final Table result = adapter.table();
         TstUtils.assertTableEquals(empty, result);
 
         final SimpleListener listener = new SimpleListener(result);
@@ -346,13 +345,13 @@ public class TestStreamToTableAdapter {
     public void testBig() {
         final TableDefinition tableDefinition =
                 new TableDefinition(Collections.singletonList(long.class), Arrays.asList("L"));
-        final DynamicTable empty = TableTools.newTable(tableDefinition);
+        final Table empty = TableTools.newTable(tableDefinition);
 
         final StreamPublisher streamPublisher = new DummyStreamPublisher();
 
         final StreamToTableAdapter adapter =
                 new StreamToTableAdapter(tableDefinition, streamPublisher, LiveTableMonitor.DEFAULT, "test");
-        final DynamicTable result = adapter.table();
+        final Table result = adapter.table();
         TstUtils.assertTableEquals(empty, result);
 
         final SimpleListener listener = new SimpleListener(result);
@@ -425,7 +424,7 @@ public class TestStreamToTableAdapter {
 
         final StreamToTableAdapter adapter =
                 new StreamToTableAdapter(tableDefinition, streamPublisher, LiveTableMonitor.DEFAULT, "test");
-        final DynamicTable result = adapter.table();
+        final Table result = adapter.table();
 
         final MutableBoolean listenerFailed = new MutableBoolean();
         final SimpleListener listener = new SimpleListener(result) {

@@ -4,6 +4,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.structures.RowSequence;
+import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.dbarrays.*;
 import io.deephaven.engine.v2.hashing.ChunkEquals;
 import io.deephaven.engine.v2.sources.ColumnSource;
@@ -40,7 +41,7 @@ public class TableUpdateValidator implements QueryTable.Operation {
         return validator;
     }
 
-    private final DynamicTable tableToValidate;
+    private final Table tableToValidate;
     private final ModifiedColumnSet validationMCS;
     private ColumnInfo[] columnInfos;
 
@@ -49,7 +50,7 @@ public class TableUpdateValidator implements QueryTable.Operation {
     private SharedContext sharedContext;
     private final String description;
 
-    private TableUpdateValidator(final String description, final DynamicTable tableToValidate) {
+    private TableUpdateValidator(final String description, final Table tableToValidate) {
         this.description = description == null ? tableToValidate.getDescription() : description;
         this.tableToValidate = tableToValidate;
         this.validationMCS = tableToValidate.newModifiedColumnSet(
@@ -314,7 +315,7 @@ public class TableUpdateValidator implements QueryTable.Operation {
         WritableChunkSink.FillFromContext expectedFillFromContext;
         WritableBooleanChunk equalValuesDest;
 
-        private ColumnInfo(DynamicTable tableToValidate, String columnName) {
+        private ColumnInfo(Table tableToValidate, String columnName) {
             this.name = columnName;
             this.modifiedColumnSet = tableToValidate.newModifiedColumnSet(columnName);
 

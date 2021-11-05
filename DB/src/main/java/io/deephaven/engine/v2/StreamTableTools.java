@@ -87,7 +87,7 @@ public class StreamTableTools {
                         resultHolder.setValue(result);
 
                         swapListener.setListenerAndResult(new BaseTable.ListenerImpl("streamToAppendOnly",
-                                (DynamicTable) streamTable, result) {
+                                streamTable, result) {
                             @Override
                             public void onUpdate(Update upstream) {
                                 if (upstream.modified.isNonempty() || upstream.shifted.nonempty()) {

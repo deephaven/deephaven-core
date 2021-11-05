@@ -90,7 +90,7 @@ public class TestIntSegmentedSortedArray extends LiveTableTestCase {
         checkSsaInitial(asInteger, ssa, valueSource, desc);
 
         try (final SafeCloseable ignored = LivenessScopeStack.open(new LivenessScope(true), true)) {
-            final Listener asIntegerListener = new InstrumentedListenerAdapter((DynamicTable) asInteger, false) {
+            final Listener asIntegerListener = new InstrumentedListenerAdapter(asInteger, false) {
                 @Override
                 public void onUpdate(Update upstream) {
                     try (final ColumnSource.GetContext checkContext = valueSource.makeGetContext(asInteger.getRowSet().getPrevRowSet().intSize())) {
@@ -152,7 +152,7 @@ public class TestIntSegmentedSortedArray extends LiveTableTestCase {
                     }
                 }
             };
-            ((DynamicTable) asInteger).listenForUpdates(asIntegerListener);
+            asInteger.listenForUpdates(asIntegerListener);
 
             while (desc.advance(50)) {
                 System.out.println();
@@ -182,7 +182,7 @@ public class TestIntSegmentedSortedArray extends LiveTableTestCase {
         checkSsaInitial(asInteger, ssa, valueSource, desc);
 
         try (final SafeCloseable ignored = LivenessScopeStack.open(new LivenessScope(true), true)) {
-            final ShiftObliviousListener asIntegerListener = new ShiftObliviousInstrumentedListenerAdapter((DynamicTable) asInteger, false) {
+            final ShiftObliviousListener asIntegerListener = new ShiftObliviousInstrumentedListenerAdapter(asInteger, false) {
                 @Override
                 public void onUpdate(RowSet added, RowSet removed, RowSet modified) {
                     try (final ColumnSource.GetContext getContext = valueSource.makeGetContext(Math.max(added.intSize(), removed.intSize()))) {
@@ -196,7 +196,7 @@ public class TestIntSegmentedSortedArray extends LiveTableTestCase {
                     }
                 }
             };
-            ((DynamicTable) asInteger).listenForUpdates(asIntegerListener);
+            asInteger.listenForUpdates(asIntegerListener);
 
             while (desc.advance(50)) {
                 LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {

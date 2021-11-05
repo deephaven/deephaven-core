@@ -6,7 +6,6 @@ import io.deephaven.engine.tables.utils.DBDateTime;
 import io.deephaven.engine.tables.utils.DBTimeUtils;
 import io.deephaven.engine.tables.utils.QueryPerformanceRecorder;
 import io.deephaven.engine.v2.BaseTable;
-import io.deephaven.engine.v2.DynamicTable;
 import io.deephaven.engine.v2.ShiftObliviousInstrumentedListener;
 import io.deephaven.engine.v2.QueryTable;
 import io.deephaven.engine.v2.sources.ColumnSource;
@@ -106,7 +105,7 @@ public class TailInitializationFilter {
         if (table.isLive()) {
             // TODO: Assert AddOnly in T+, propagate AddOnly in Treasure
             final ShiftObliviousInstrumentedListener listener =
-                    new BaseTable.ShiftObliviousListenerImpl("TailInitializationFilter", (DynamicTable) table, result) {
+                    new BaseTable.ShiftObliviousListenerImpl("TailInitializationFilter", table, result) {
                         @Override
                         public void onUpdate(RowSet added, RowSet removed, RowSet modified) {
                             Assert.assertion(removed.isEmpty(), "removed.empty()");
@@ -115,7 +114,7 @@ public class TailInitializationFilter {
                             result.notifyListeners(added.clone(), removed.clone(), modified.clone());
                         }
                     };
-            ((DynamicTable) table).listenForUpdates(listener, false);
+            table.listenForUpdates(listener, false);
         }
         return result;
     }

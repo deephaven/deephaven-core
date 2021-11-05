@@ -330,7 +330,7 @@ public class QueryTable extends BaseTable {
     }
 
     @Override
-    public ModifiedColumnSet.Transformer newModifiedColumnSetIdentityTransformer(final DynamicTable other) {
+    public ModifiedColumnSet.Transformer newModifiedColumnSetIdentityTransformer(final Table other) {
         if (other instanceof QueryTable) {
             return modifiedColumnSet.newIdentityTransformer(((QueryTable) other).columns);
         }
@@ -1117,13 +1117,11 @@ public class QueryTable extends BaseTable {
                     final DynamicWhereFilter dynamicWhereFilter =
                             new DynamicWhereFilter(groupStrategy, distinctValues, inclusion, columnsToMatch);
                     final Table where = where(dynamicWhereFilter);
-                    if (where instanceof DynamicTable) {
-                        if (distinctValues.isLive()) {
-                            ((DynamicTable) where).addParentReference(distinctValues);
-                        }
-                        if (dynamicWhereFilter.isRefreshing()) {
-                            ((DynamicTable) where).addParentReference(dynamicWhereFilter);
-                        }
+                    if (distinctValues.isLive()) {
+                        where.addParentReference(distinctValues);
+                    }
+                    if (dynamicWhereFilter.isRefreshing()) {
+                        where.addParentReference(dynamicWhereFilter);
                     }
                     return where;
                 });
@@ -3065,7 +3063,7 @@ public class QueryTable extends BaseTable {
         }
 
         private boolean isFailedTable(R cachedResult) {
-            return cachedResult instanceof DynamicTable && ((DynamicTable) cachedResult).isFailed();
+            return cachedResult instanceof Table && ((Table) cachedResult).isFailed();
         }
     }
 

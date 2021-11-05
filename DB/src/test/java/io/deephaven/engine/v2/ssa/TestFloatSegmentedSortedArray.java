@@ -90,7 +90,7 @@ public class TestFloatSegmentedSortedArray extends LiveTableTestCase {
         checkSsaInitial(asFloat, ssa, valueSource, desc);
 
         try (final SafeCloseable ignored = LivenessScopeStack.open(new LivenessScope(true), true)) {
-            final Listener asFloatListener = new InstrumentedListenerAdapter((DynamicTable) asFloat, false) {
+            final Listener asFloatListener = new InstrumentedListenerAdapter(asFloat, false) {
                 @Override
                 public void onUpdate(Update upstream) {
                     try (final ColumnSource.GetContext checkContext = valueSource.makeGetContext(asFloat.getRowSet().getPrevRowSet().intSize())) {
@@ -152,7 +152,7 @@ public class TestFloatSegmentedSortedArray extends LiveTableTestCase {
                     }
                 }
             };
-            ((DynamicTable) asFloat).listenForUpdates(asFloatListener);
+            asFloat.listenForUpdates(asFloatListener);
 
             while (desc.advance(50)) {
                 System.out.println();
@@ -182,7 +182,7 @@ public class TestFloatSegmentedSortedArray extends LiveTableTestCase {
         checkSsaInitial(asFloat, ssa, valueSource, desc);
 
         try (final SafeCloseable ignored = LivenessScopeStack.open(new LivenessScope(true), true)) {
-            final ShiftObliviousListener asFloatListener = new ShiftObliviousInstrumentedListenerAdapter((DynamicTable) asFloat, false) {
+            final ShiftObliviousListener asFloatListener = new ShiftObliviousInstrumentedListenerAdapter(asFloat, false) {
                 @Override
                 public void onUpdate(RowSet added, RowSet removed, RowSet modified) {
                     try (final ColumnSource.GetContext getContext = valueSource.makeGetContext(Math.max(added.intSize(), removed.intSize()))) {
@@ -196,7 +196,7 @@ public class TestFloatSegmentedSortedArray extends LiveTableTestCase {
                     }
                 }
             };
-            ((DynamicTable) asFloat).listenForUpdates(asFloatListener);
+            asFloat.listenForUpdates(asFloatListener);
 
             while (desc.advance(50)) {
                 LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {

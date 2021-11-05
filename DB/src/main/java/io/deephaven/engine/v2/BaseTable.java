@@ -59,7 +59,7 @@ import java.util.stream.Stream;
  * Base abstract class all standard table implementations.
  */
 public abstract class BaseTable extends LivenessArtifact
-        implements DynamicTable, Serializable, NotificationStepReceiver, NotificationStepSource {
+        implements Table, Serializable, NotificationStepReceiver, NotificationStepSource {
 
     private static final long serialVersionUID = 1L;
 
@@ -85,7 +85,7 @@ public abstract class BaseTable extends LivenessArtifact
     // Attribute support
     protected final ConcurrentHashMap<String, Object> attributes = new ConcurrentHashMap<>();
 
-    // Fields for DynamicTable implementation
+    // Fields for DynamicNode implementation and update propagation support
     private transient boolean refreshing;
     private transient Condition liveTableMonitorCondition;
     private transient Collection<Object> parents;
@@ -500,7 +500,7 @@ public abstract class BaseTable extends LivenessArtifact
     }
 
     // ------------------------------------------------------------------------------------------------------------------
-    // DynamicTable Implementation
+    // Implementation for update propagation support
     // ------------------------------------------------------------------------------------------------------------------
 
     @Override
@@ -880,10 +880,10 @@ public abstract class BaseTable extends LivenessArtifact
     public static class ShiftObliviousListenerImpl extends ShiftObliviousInstrumentedListener {
 
         @ReferentialIntegrity
-        private final DynamicTable parent;
-        private final DynamicTable dependent;
+        private final Table parent;
+        private final Table dependent;
 
-        public ShiftObliviousListenerImpl(String description, DynamicTable parent, DynamicTable dependent) {
+        public ShiftObliviousListenerImpl(String description, Table parent, Table dependent) {
             super(description);
             this.parent = parent;
             this.dependent = dependent;
@@ -925,11 +925,11 @@ public abstract class BaseTable extends LivenessArtifact
     public static class ListenerImpl extends InstrumentedListener {
 
         @ReferentialIntegrity
-        private final DynamicTable parent;
-        private final DynamicTable dependent;
+        private final Table parent;
+        private final Table dependent;
         private final boolean canReuseModifiedColumnSet;
 
-        public ListenerImpl(String description, DynamicTable parent, DynamicTable dependent) {
+        public ListenerImpl(String description, Table parent, Table dependent) {
             super(description);
             this.parent = parent;
             this.dependent = dependent;
@@ -976,7 +976,7 @@ public abstract class BaseTable extends LivenessArtifact
             parent.removeUpdateListener(this);
         }
 
-        protected DynamicTable getParent() {
+        protected Table getParent() {
             return parent;
         }
     }

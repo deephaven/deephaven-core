@@ -5,7 +5,6 @@ import io.deephaven.engine.tables.live.LiveTableMonitor;
 import io.deephaven.engine.tables.utils.DBDateTime;
 import io.deephaven.engine.tables.utils.DBTimeUtils;
 import io.deephaven.engine.tables.utils.TableTools;
-import io.deephaven.engine.v2.DynamicTable;
 import io.deephaven.engine.v2.LiveQueryTable;
 import io.deephaven.engine.v2.TstUtils;
 import io.deephaven.test.junit4.EngineCleanup;
@@ -45,7 +44,7 @@ public class TestDynamicTableWriter {
         writer.writeRow();
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(result::refresh);
 
-        final DynamicTable expected1 = newTable(byteCol("BC", (byte) 1),
+        final Table expected1 = newTable(byteCol("BC", (byte) 1),
                 charCol("CC", 'A'),
                 shortCol("SC", (short) 2),
                 intCol("IC", 3),
@@ -109,7 +108,7 @@ public class TestDynamicTableWriter {
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(result::refresh);
 
-        final DynamicTable expected2 = newTable(byteCol("BC", (byte) 1, (byte) 17, (byte) 25),
+        final Table expected2 = newTable(byteCol("BC", (byte) 1, (byte) 17, (byte) 25),
                 charCol("CC", 'A', 'C', 'D'),
                 shortCol("SC", (short) 2, (short) 18, (short) 26),
                 intCol("IC", 3, 19, 27),
@@ -166,7 +165,7 @@ public class TestDynamicTableWriter {
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(result::refresh);
 
-        final DynamicTable expected2 = newTable(byteCol("BC", QueryConstants.NULL_BYTE),
+        final Table expected2 = newTable(byteCol("BC", QueryConstants.NULL_BYTE),
                 charCol("CC", QueryConstants.NULL_CHAR),
                 shortCol("SC", QueryConstants.NULL_SHORT),
                 intCol("IC", QueryConstants.NULL_INT),
@@ -193,7 +192,7 @@ public class TestDynamicTableWriter {
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(result::refresh);
 
-        final DynamicTable lonelyFred =
+        final Table lonelyFred =
                 TableTools.newTable(TableTools.stringCol("A", "Fred"), TableTools.intCol("B", 1));
         TstUtils.assertTableEquals(lonelyFred, result);
 
@@ -209,7 +208,7 @@ public class TestDynamicTableWriter {
         TstUtils.assertTableEquals(lonelyFred, result);
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(result::refresh);
 
-        final DynamicTable withRubbles = TableTools.newTable(
+        final Table withRubbles = TableTools.newTable(
                 TableTools.stringCol("A", "Fred", "Barney", "Betty", "Bam-Bam"), TableTools.intCol("B", 1, 2, 3, 4));
         TstUtils.assertTableEquals(withRubbles, result);
 
@@ -223,7 +222,7 @@ public class TestDynamicTableWriter {
 
         addRow(writer, Row.Flags.EndTransaction, "Wilma", 7);
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(result::refresh);
-        final DynamicTable allTogether =
+        final Table allTogether =
                 TableTools.newTable(TableTools.stringCol("A", "Fred", "Barney", "Betty", "Bam-Bam", "Pebbles", "Wilma"),
                         TableTools.intCol("B", 1, 2, 3, 4, 6, 7));
         TstUtils.assertTableEquals(allTogether, result);

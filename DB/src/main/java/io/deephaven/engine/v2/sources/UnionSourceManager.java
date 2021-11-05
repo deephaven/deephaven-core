@@ -136,7 +136,7 @@ public class UnionSourceManager {
 
         if (table.isLive()) {
             setRefreshing();
-            final DynamicTable dynTable = (DynamicTable) table;
+            final Table dynTable = table;
             final UnionListenerRecorder listener = new UnionListenerRecorder("TableTools.merge",
                     dynTable, tableId);
             listeners.add(listener);
@@ -193,7 +193,7 @@ public class UnionSourceManager {
     class UnionListenerRecorder extends ListenerRecorder {
         final int tableId;
 
-        UnionListenerRecorder(String description, DynamicTable parent, int tableId) {
+        UnionListenerRecorder(String description, Table parent, int tableId) {
             super(description, parent, result);
             this.tableId = tableId;
             setMergedListener(mergedListener);

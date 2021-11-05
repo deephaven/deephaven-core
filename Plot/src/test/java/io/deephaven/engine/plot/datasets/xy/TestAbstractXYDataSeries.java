@@ -12,7 +12,6 @@ import io.deephaven.engine.plot.datasets.data.IndexableDataInteger;
 import io.deephaven.engine.plot.util.PlotUtils;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.utils.TableTools;
-import io.deephaven.engine.v2.DynamicTable;
 import io.deephaven.gui.color.Color;
 import io.deephaven.gui.color.Paint;
 import io.deephaven.gui.shape.JShapes;
@@ -378,14 +377,14 @@ public class TestAbstractXYDataSeries extends BaseArrayTestCase {
         assertEquals(data.getPointShape(1), NamedShape.valueOf("down_triangle".toUpperCase()));
         assertEquals(data.getPointShape(2), NamedShape.valueOf("right_triangle".toUpperCase()));
 
-        final DynamicTable shapeTable = TableTools.newTable(TableTools.col("shapes", "diamond", "circle", "ellipse"));
+        final Table shapeTable = TableTools.newTable(TableTools.col("shapes", "diamond", "circle", "ellipse"));
         data.pointShape(shapeTable, "shapes");
         data.getPointShape(0);
         assertEquals(data.getPointShape(0), NamedShape.valueOf("diamond".toUpperCase()));
         assertEquals(data.getPointShape(1), NamedShape.valueOf("circle".toUpperCase()));
         assertEquals(data.getPointShape(2), NamedShape.valueOf("ellipse".toUpperCase()));
 
-        final DynamicTable shapeObjectTable = TableTools
+        final Table shapeObjectTable = TableTools
                 .newTable(TableTools.col("shapes", NamedShape.DIAMOND, NamedShape.ELLIPSE, NamedShape.UP_TRIANGLE));
         data.pointShape(shapeObjectTable, "shapes");
         data.getPointShape(0);
@@ -440,7 +439,7 @@ public class TestAbstractXYDataSeries extends BaseArrayTestCase {
             assertTrue(iae.getMessage().contains("1"));
         }
 
-        final DynamicTable dt = TableTools.newTable(TableTools.col("shapes", 1, 2, 3));
+        final Table dt = TableTools.newTable(TableTools.col("shapes", 1, 2, 3));
         try {
             data.pointShape(dt, "shapes");
             fail("Shouldn't come here for pointShape(Table t, String columnName)");
@@ -448,7 +447,7 @@ public class TestAbstractXYDataSeries extends BaseArrayTestCase {
             assertTrue(e.getMessage().contains("String"));
         }
 
-        final DynamicTable shapeTable = TableTools.newTable(TableTools.col("shapes", "diamond", "circle", "ellips"));
+        final Table shapeTable = TableTools.newTable(TableTools.col("shapes", "diamond", "circle", "ellips"));
         data.pointShape(shapeTable, "shapes");
         try {
             data.getPointShape(2);

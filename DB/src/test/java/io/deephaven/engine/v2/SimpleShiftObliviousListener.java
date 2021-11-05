@@ -1,9 +1,10 @@
 package io.deephaven.engine.v2;
 
+import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.v2.utils.RowSet;
 
 class SimpleShiftObliviousListener extends ShiftObliviousInstrumentedListenerAdapter {
-    protected SimpleShiftObliviousListener(DynamicTable source) {
+    protected SimpleShiftObliviousListener(Table source) {
         super(source, false);
         reset();
     }

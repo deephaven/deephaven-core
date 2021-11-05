@@ -6,7 +6,6 @@ package io.deephaven.engine.v2.ssms;
 import io.deephaven.base.verify.AssertionFailure;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.live.LiveTableMonitor;
-import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.util.DhObjectComparisons;
 import io.deephaven.engine.util.LongSizedDataStructure;
 import io.deephaven.engine.util.liveness.LivenessScope;
@@ -130,7 +129,7 @@ public class TestObjectSegmentedSortedMultiset extends LiveTableTestCase {
         checkSsmInitial(asObject, ssm, valueSource, countNull, desc);
 
         try (final SafeCloseable ignored = LivenessScopeStack.open(new LivenessScope(true), true)) {
-            final ShiftObliviousListener asObjectListener = new ShiftObliviousInstrumentedListenerAdapter((DynamicTable) asObject, false) {
+            final ShiftObliviousListener asObjectListener = new ShiftObliviousInstrumentedListenerAdapter(asObject, false) {
                 @Override
                 public void onUpdate(RowSet added, RowSet removed, RowSet modified) {
                     final int maxSize = Math.max(Math.max(added.intSize(), removed.intSize()), modified.intSize());
@@ -155,7 +154,7 @@ public class TestObjectSegmentedSortedMultiset extends LiveTableTestCase {
                     }
                 }
             };
-            ((DynamicTable) asObject).listenForUpdates(asObjectListener);
+            asObject.listenForUpdates(asObjectListener);
 
             while (desc.advance(50)) {
                 LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {

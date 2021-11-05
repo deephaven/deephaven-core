@@ -53,7 +53,7 @@ public interface SymbolTableSource<SYMBOL_TYPE> extends ColumnSource<SYMBOL_TYPE
      * {@code long} identifiers to the symbol values in this source.
      *
      * <p>
-     * The result will be refreshing if {@code table} is a refreshing {@link io.deephaven.engine.v2.DynamicTable}.
+     * The result will be refreshing if {@code table} {@link Table#isRefreshing() is refreshing}.
      *
      * @param sourceTable The {@link QueryTable} whose {@link TrackingMutableRowSet} keys must be mappable via the result
      *        {@link Table}'s identifier column

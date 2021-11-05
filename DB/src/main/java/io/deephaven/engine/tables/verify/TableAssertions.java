@@ -6,7 +6,6 @@ import io.deephaven.engine.tables.utils.QueryPerformanceRecorder;
 import io.deephaven.engine.v2.*;
 import io.deephaven.engine.v2.sortcheck.SortCheck;
 import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -50,22 +49,19 @@ public class TableAssertions {
             throw new IllegalArgumentException("The table cannot be null!");
         }
 
-        if (!(table instanceof DynamicTable))
+        if (!table.isRefreshing()) {
             return table;
-
-        DynamicTable dynamicTable = (DynamicTable) table;
-        if (!dynamicTable.isRefreshing())
-            return table;
+        }
 
         return QueryPerformanceRecorder.withNuggetThrowing(
                 "assertAppendOnly(" + (description == null ? "" : description) + ')',
                 () -> {
 
-                    final DynamicTable result = new QueryTable(dynamicTable.getDefinition(), dynamicTable.getRowSet(),
-                            dynamicTable.getColumnSourceMap());
+                    final Table result = new QueryTable(table.getDefinition(), table.getRowSet(),
+                            table.getColumnSourceMap());
                     final Listener listener =
-                            new AppendOnlyAssertionInstrumentedListenerAdapter(description, dynamicTable, result);
-                    dynamicTable.listenForUpdates(listener);
+                            new AppendOnlyAssertionInstrumentedListenerAdapter(description, table, result);
+                    table.listenForUpdates(listener);
 
                     return result;
                 });
@@ -110,12 +106,7 @@ public class TableAssertions {
                 SortCheck.make(columnSource.getChunkType(), order.isDescending()), description, column, order);
 
 
-        if (!(table instanceof DynamicTable)) {
-            SortedColumnsAttribute.setOrderForColumn(table, column, order);
-            return table;
-        }
-        final DynamicTable dynamicTable = (DynamicTable) table;
-        if (!dynamicTable.isRefreshing()) {
+        if (!table.isRefreshing()) {
             SortedColumnsAttribute.setOrderForColumn(table, column, order);
             return table;
         }
@@ -123,12 +114,12 @@ public class TableAssertions {
         return QueryPerformanceRecorder.withNuggetThrowing(
                 "assertSorted(" + (description == null ? "" : description) + ", " + column + ", " + order + ')',
                 () -> {
-                    final DynamicTable result =
-                            new QueryTable(dynamicTable.getRowSet(), dynamicTable.getColumnSourceMap());
+                    final Table result =
+                            new QueryTable(table.getRowSet(), table.getColumnSourceMap());
                     final Listener listener = new SortedAssertionInstrumentedListenerAdapter(description,
-                            dynamicTable, result, column, order);
-                    dynamicTable.listenForUpdates(listener);
-                    ((BaseTable) dynamicTable).copyAttributes(result, s -> true);
+                            table, result, column, order);
+                    table.listenForUpdates(listener);
+                    ((BaseTable) table).copyAttributes(result, s -> true);
                     SortedColumnsAttribute.setOrderForColumn(result, column, order);
                     return result;
                 });

@@ -54,10 +54,7 @@ public class TstUtils {
     }
 
     public static void addToTable(final Table table, final RowSet rowSet, final ColumnHolder... columnHolders) {
-        Require.requirement(table.isLive(), "table.isLive()");
-        if (table instanceof DynamicTable) {
-            Require.requirement(((DynamicTable) table).isRefreshing(), "table.isRefreshing()");
-        }
+        Require.requirement(table.isRefreshing(), "table.isRefreshing()");
         final Set<String> usedNames = new HashSet<>();
         for (ColumnHolder columnHolder : columnHolders) {
             if (!usedNames.add(columnHolder.name)) {
@@ -107,10 +104,7 @@ public class TstUtils {
     }
 
     public static void removeRows(Table table, RowSet rowSet) {
-        Require.requirement(table.isLive(), "table.isLive()");
-        if (table instanceof DynamicTable) {
-            Require.requirement(((DynamicTable) table).isRefreshing(), "table.isRefreshing()");
-        }
+        Require.requirement(table.isRefreshing(), "table.isRefreshing()");
         table.getRowSet().mutableCast().remove(rowSet);
         if (table.isFlat()) {
             Assert.assertion(table.getRowSet().isFlat(), "table.build().isFlat()", table.getRowSet(),

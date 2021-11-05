@@ -2,7 +2,7 @@ package io.deephaven.engine.plot.datasets.categoryerrorbar;
 
 import io.deephaven.engine.plot.errors.PlotInfo;
 import io.deephaven.engine.plot.util.ArgumentValidations;
-import io.deephaven.engine.v2.DynamicTable;
+import io.deephaven.engine.tables.Table;
 import gnu.trove.map.hash.TObjectLongHashMap;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -17,7 +17,7 @@ import java.util.*;
 @SuppressWarnings("rawtypes")
 public class CategoryErrorBarDataSeriesKernel {
     /** The table to which we are currently listening */
-    private transient DynamicTable listenedToTable;
+    private transient Table listenedToTable;
 
     /** The column in the table that defines the category */
     private final String categoryCol;

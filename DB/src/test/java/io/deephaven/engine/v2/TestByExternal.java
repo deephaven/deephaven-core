@@ -159,10 +159,10 @@ public class TestByExternal extends QueryTableTestBase {
                 TstUtils.addToTable(table, i(8), col("Key", "C"), intCol("Int", 10));
             });
 
-            final ErrorListener listenerA = new ErrorListener((DynamicTable) tableA);
-            final ErrorListener listenerB = new ErrorListener((DynamicTable) tableB);
-            ((DynamicTable) tableA).listenForUpdates(listenerA);
-            ((DynamicTable) tableB).listenForUpdates(listenerB);
+            final ErrorListener listenerA = new ErrorListener(tableA);
+            final ErrorListener listenerB = new ErrorListener(tableB);
+            tableA.listenForUpdates(listenerA);
+            tableB.listenForUpdates(listenerB);
 
             assertNull(listenerA.originalException);
             assertNull(listenerB.originalException);
