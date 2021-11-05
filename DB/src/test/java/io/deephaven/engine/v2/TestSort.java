@@ -618,7 +618,7 @@ public class TestSort extends BaseArrayTestCase {
         }
         columns.put("Sentinel", ArrayBackedColumnSource.getMemoryColumnSourceUntyped(sentinels));
 
-        return new QueryTable(RowSetFactory.fromRange(0, size - 1).convertToTracking(), columns);
+        return new QueryTable(RowSetFactory.fromRange(0, size - 1).toTracking(), columns);
     }
 
     private Comparable[][] createBoxedData(Table source, int ncols, int size) {

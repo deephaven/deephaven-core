@@ -108,7 +108,7 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
         }
 
         final RedirectionIndex sortMapping = sortedKeys.makeHistoricalRedirectionIndex();
-        final TrackingRowSet resultRowSet = RowSetFactory.flat(sortedKeys.size()).convertToTracking();
+        final TrackingRowSet resultRowSet = RowSetFactory.flat(sortedKeys.size()).toTracking();
 
         final Map<String, ColumnSource<?>> resultMap = new LinkedHashMap<>();
         for (Map.Entry<String, ColumnSource<?>> stringColumnSourceEntry : this.parent.getColumnSourceMap().entrySet()) {
@@ -140,7 +140,7 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
 
         sortMapping = new ReadOnlyLongColumnSourceRedirectionIndex<>(redirectionSource);
         final TrackingMutableRowSet resultRowSet =
-                RowSetFactory.flat(initialSortedKeys.size()).convertToTracking();
+                RowSetFactory.flat(initialSortedKeys.size()).toTracking();
 
         final Map<String, ColumnSource<?>> resultMap = new LinkedHashMap<>();
         for (Map.Entry<String, ColumnSource<?>> stringColumnSourceEntry : parent.getColumnSourceMap().entrySet()) {
@@ -234,7 +234,7 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
             final long offset = SortListener.REBALANCE_MIDPOINT - sortedKeys.length / 2;
             final TrackingRowSet resultRowSet = (sortedKeys.length == 0
                     ? RowSetFactory.empty()
-                    : RowSetFactory.fromRange(offset, offset + sortedKeys.length - 1)).convertToTracking();
+                    : RowSetFactory.fromRange(offset, offset + sortedKeys.length - 1)).toTracking();
 
             for (int i = 0; i < sortedKeys.length; i++) {
                 reverseLookup.put(sortedKeys[i], i + offset);
@@ -245,7 +245,7 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
             WritableChunkSink.FillFromContext fillFromContext =
                     closer.add(sortMapping.makeFillFromContext(sortedKeys.length));
             sortMapping.fillFromChunk(fillFromContext, LongChunk.chunkWrap(sortedKeys),
-                    closer.add(resultRowSet.clone()));
+                    closer.add(resultRowSet.copy()));
 
             for (Map.Entry<String, ColumnSource<?>> stringColumnSourceEntry : parent.getColumnSourceMap().entrySet()) {
                 resultMap.put(stringColumnSourceEntry.getKey(),

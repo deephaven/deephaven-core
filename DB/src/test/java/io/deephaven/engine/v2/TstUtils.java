@@ -474,7 +474,7 @@ public class TstUtils {
     }
 
     public static QueryTable getTable(boolean refreshing, int size, Random random, ColumnInfo[] columnInfos) {
-        final TrackingMutableRowSet rowSet = getInitialIndex(size, random).convertToTracking();
+        final TrackingMutableRowSet rowSet = getInitialIndex(size, random).toTracking();
         for (ColumnInfo columnInfo : columnInfos) {
             columnInfo.populateMap(rowSet, random);
         }
@@ -491,7 +491,7 @@ public class TstUtils {
 
     public static QueryTable testTable(ColumnHolder... columnHolders) {
         final Object[] boxedData = ArrayUtils.getBoxedArray(columnHolders[0].data);
-        final TrackingRowSet rowSet = RowSetFactory.flat(boxedData.length).convertToTracking();
+        final TrackingRowSet rowSet = RowSetFactory.flat(boxedData.length).toTracking();
         return testTable(rowSet, columnHolders);
     }
 
@@ -520,7 +520,7 @@ public class TstUtils {
     public static QueryTable testRefreshingTable(ColumnHolder... columnHolders) {
         final TrackingMutableRowSet rowSet = (columnHolders.length == 0
                 ? RowSetFactory.empty()
-                : RowSetFactory.flat(Array.getLength(columnHolders[0].data))).convertToTracking();
+                : RowSetFactory.flat(Array.getLength(columnHolders[0].data))).toTracking();
         final Map<String, ColumnSource<?>> columns = new LinkedHashMap<>();
         for (ColumnHolder columnHolder : columnHolders) {
             columns.put(columnHolder.name, getTreeMapColumnSource(rowSet, columnHolder));
@@ -552,7 +552,7 @@ public class TstUtils {
     }
 
     public static Table prevTableColumnSources(Table table) {
-        final TrackingMutableRowSet rowSet = table.getRowSet().getPrevRowSet().convertToTracking();
+        final TrackingMutableRowSet rowSet = table.getRowSet().getPrevRowSet().toTracking();
         final Map<String, ColumnSource<?>> columnSourceMap = new LinkedHashMap<>();
         table.getColumnSourceMap().forEach((k, cs) -> {
             columnSourceMap.put(k, new PrevColumnSource<>(cs));

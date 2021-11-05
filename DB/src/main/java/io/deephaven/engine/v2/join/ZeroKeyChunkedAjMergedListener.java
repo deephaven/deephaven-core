@@ -395,8 +395,8 @@ public class ZeroKeyChunkedAjMergedListener extends MergedListener {
                     downstream.modifiedColumnSet.setAll(allRightColumns);
                     leftRestampAdditions.close();
                 }
-                downstream.added = leftRecorder.getAdded().clone();
-                downstream.removed = leftRecorder.getRemoved().clone();
+                downstream.added = leftRecorder.getAdded().copy();
+                downstream.removed = leftRecorder.getRemoved().copy();
                 downstream.shifted = leftRecorder.getShifted();
             }
 

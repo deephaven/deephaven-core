@@ -10,7 +10,7 @@ import static io.deephaven.engine.v2.TstUtils.i;
 public class TestToMapListener extends LiveTableTestCase {
     public void testToMap() {
         final QueryTable source = TstUtils.testRefreshingTable(
-                i(2, 4, 6, 8).convertToTracking(),
+                i(2, 4, 6, 8).toTracking(),
                 TstUtils.c("Sentinel", "A", "B", "C", "D"),
                 TstUtils.c("Sentinel2", "H", "I", "J", "K"));
         io.deephaven.engine.tables.utils.TableTools.show(source);

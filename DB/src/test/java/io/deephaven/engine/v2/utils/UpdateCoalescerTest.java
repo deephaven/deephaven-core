@@ -588,10 +588,10 @@ public class UpdateCoalescerTest {
         }
         final Listener.Update agg = coalescer.coalesce();
 
-        try (final MutableRowSet perUpdate = rowSet.clone();
-                final MutableRowSet aggUpdate = rowSet.clone();
-                final MutableRowSet perModify = RowSetFactory.empty();
-                final MutableRowSet perAdded = RowSetFactory.empty()) {
+        try (final MutableRowSet perUpdate = rowSet.copy();
+             final MutableRowSet aggUpdate = rowSet.copy();
+             final MutableRowSet perModify = RowSetFactory.empty();
+             final MutableRowSet perAdded = RowSetFactory.empty()) {
 
             for (Listener.Update up : updates) {
                 perAdded.remove(up.removed);
@@ -618,7 +618,7 @@ public class UpdateCoalescerTest {
         }
 
         // verify that the shift does not overwrite data
-        try (final MutableRowSet myindex = rowSet.clone()) {
+        try (final MutableRowSet myindex = rowSet.copy()) {
             myindex.remove(agg.removed);
             agg.shifted.apply(((beginRange, endRange, shiftDelta) -> {
                 if (shiftDelta < 0) {

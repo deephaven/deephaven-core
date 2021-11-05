@@ -44,7 +44,7 @@ public class TableMapTest extends LiveTableTestCase {
     }
 
     public void testMergeSimple() {
-        final QueryTable queryTable = TstUtils.testRefreshingTable(i(1, 2, 4, 6).convertToTracking(),
+        final QueryTable queryTable = TstUtils.testRefreshingTable(i(1, 2, 4, 6).toTracking(),
                 c("Sym", "aa", "bb", "aa", "bb"),
                 c("intCol", 10, 20, 40, 60),
                 c("doubleCol", 0.1, 0.2, 0.4, 0.6));
@@ -77,7 +77,7 @@ public class TableMapTest extends LiveTableTestCase {
     }
 
     public void testMergePopulate() {
-        final QueryTable queryTable = TstUtils.testRefreshingTable(i(1, 2, 4, 6).convertToTracking(),
+        final QueryTable queryTable = TstUtils.testRefreshingTable(i(1, 2, 4, 6).toTracking(),
                 c("Sym", "aa", "bb", "aa", "bb"),
                 c("intCol", 10, 20, 40, 60),
                 c("doubleCol", 0.1, 0.2, 0.4, 0.6));
@@ -225,7 +225,7 @@ public class TableMapTest extends LiveTableTestCase {
     public void testTransformTableMapThenMerge() {
         LiveTableMonitor.DEFAULT.resetForUnitTests(false, true, 0, 4, 10, 5);
 
-        final QueryTable sourceTable = TstUtils.testRefreshingTable(i(1).convertToTracking(),
+        final QueryTable sourceTable = TstUtils.testRefreshingTable(i(1).toTracking(),
                 intCol("Key", 1), intCol("Sentinel", 1), col("Sym", "a"), doubleCol("DoubleCol", 1.1));
 
         final TableMap tableMap = sourceTable.byExternal("Key");
@@ -278,7 +278,7 @@ public class TableMapTest extends LiveTableTestCase {
     }
 
     public void testAttributes() {
-        final QueryTable queryTable = TstUtils.testRefreshingTable(i(1, 2, 4, 6).convertToTracking(),
+        final QueryTable queryTable = TstUtils.testRefreshingTable(i(1, 2, 4, 6).toTracking(),
                 c("Sym", "aa", "bb", "aa", "bb"),
                 c("intCol", 10, 20, 40, 60),
                 c("doubleCol", 0.1, 0.2, 0.4, 0.6));
@@ -342,11 +342,11 @@ public class TableMapTest extends LiveTableTestCase {
     }
 
     public void testJoinSanity() {
-        final QueryTable left = TstUtils.testRefreshingTable(i(1, 2, 4, 6).convertToTracking(),
+        final QueryTable left = TstUtils.testRefreshingTable(i(1, 2, 4, 6).toTracking(),
                 c("USym", "aa", "bb", "aa", "bb"),
                 c("Sym", "aa_1", "bb_1", "aa_2", "bb_2"),
                 c("LeftSentinel", 10, 20, 40, 60));
-        final QueryTable right = TstUtils.testRefreshingTable(i(3, 5, 7, 9).convertToTracking(),
+        final QueryTable right = TstUtils.testRefreshingTable(i(3, 5, 7, 9).toTracking(),
                 c("USym", "aa", "bb", "aa", "bb"),
                 c("Sym", "aa_1", "bb_1", "aa_2", "bb_2"),
                 c("RightSentinel", 30, 50, 70, 90));
@@ -381,7 +381,7 @@ public class TableMapTest extends LiveTableTestCase {
     }
 
     public void testDependencies() {
-        final QueryTable sourceTable = TstUtils.testRefreshingTable(i(1, 2, 4, 6).convertToTracking(),
+        final QueryTable sourceTable = TstUtils.testRefreshingTable(i(1, 2, 4, 6).toTracking(),
                 c("USym", "aa", "bb", "aa", "bb"),
                 c("Sentinel", 10, 20, 40, 60));
 
@@ -446,11 +446,11 @@ public class TableMapTest extends LiveTableTestCase {
     public void testCrossDependencies() {
         LiveTableMonitor.DEFAULT.resetForUnitTests(false, true, 0, 2, 0, 0);
 
-        final QueryTable sourceTable = TstUtils.testRefreshingTable(i(1, 2).convertToTracking(),
+        final QueryTable sourceTable = TstUtils.testRefreshingTable(i(1, 2).toTracking(),
                 c("USym", "aa", "bb"),
                 c("Sentinel", 10, 20));
 
-        final QueryTable sourceTable2 = TstUtils.testRefreshingTable(i(3, 5).convertToTracking(),
+        final QueryTable sourceTable2 = TstUtils.testRefreshingTable(i(3, 5).toTracking(),
                 c("USym2", "aa", "bb"),
                 c("Sentinel2", 30, 50));
 
@@ -532,11 +532,11 @@ public class TableMapTest extends LiveTableTestCase {
     public void testCrossDependencies2() {
         LiveTableMonitor.DEFAULT.resetForUnitTests(false, true, 0, 2, 0, 0);
 
-        final QueryTable sourceTable = TstUtils.testRefreshingTable(i(1, 2).convertToTracking(),
+        final QueryTable sourceTable = TstUtils.testRefreshingTable(i(1, 2).toTracking(),
                 c("USym", "aa", "bb"),
                 c("Sentinel", 10, 20));
 
-        final QueryTable sourceTable2 = TstUtils.testRefreshingTable(i(3, 5, 9).convertToTracking(),
+        final QueryTable sourceTable2 = TstUtils.testRefreshingTable(i(3, 5, 9).toTracking(),
                 c("USym2", "aa", "bb", "dd"),
                 c("Sentinel2", 30, 50, 90));
 
@@ -639,7 +639,7 @@ public class TableMapTest extends LiveTableTestCase {
     }
 
     public void testMemoize() {
-        final QueryTable sourceTable = TstUtils.testRefreshingTable(i(1, 2, 4, 6).convertToTracking(),
+        final QueryTable sourceTable = TstUtils.testRefreshingTable(i(1, 2, 4, 6).toTracking(),
                 c("USym", "aa", "bb", "aa", "bb"),
                 c("Sentinel", 10, 20, 40, 60));
 
@@ -658,7 +658,7 @@ public class TableMapTest extends LiveTableTestCase {
     }
 
     public void testTableMapSupplierListeners() {
-        final QueryTable base = TstUtils.testRefreshingTable(i(0, 1, 2, 3, 4, 5).convertToTracking(),
+        final QueryTable base = TstUtils.testRefreshingTable(i(0, 1, 2, 3, 4, 5).toTracking(),
                 stringCol("Key", "Zero", "Zero", "One", "One", "One", "One"),
                 stringCol("Color", "Red", "Blue", "Red", "Blue", "Red", "Blue"),
                 intCol("Value", -1, 0, 1, 2, 3, 4));

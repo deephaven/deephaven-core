@@ -82,7 +82,7 @@ public class HashSetBackedTableFactory {
         MutableRowSet added = addedBuilder.build();
         RowSet removed = removedBuilder.build();
 
-        factory.rowSet = added.convertToTracking();
+        factory.rowSet = added.toTracking();
         Assert.assertion(removed.size() == 0, "removed.size() == 0");
 
         return factory.getTable();

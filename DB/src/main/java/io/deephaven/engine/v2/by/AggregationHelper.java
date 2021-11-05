@@ -112,7 +112,7 @@ public class AggregationHelper {
                             usePrev ? inputTable.getRowSet().firstRowKeyPrev() == RowSet.NULL_ROW_KEY
                                     : inputTable.isEmpty();
                     final QueryTable resultTable = new QueryTable(
-                            RowSetFactory.flat(empty ? 0 : 1).convertToTracking(),
+                            RowSetFactory.flat(empty ? 0 : 1).toTracking(),
                             inputTable.getColumnSourceMap().entrySet().stream().collect(Collectors.toMap(
                                     Map.Entry::getKey,
                                     (final Map.Entry<String, ColumnSource<?>> columnNameToSourceEntry) -> {
@@ -197,7 +197,7 @@ public class AggregationHelper {
         final ArrayBackedColumnSource<?> resultKeyColumnSource = flatResultColumnSources.getFirst();
         final ObjectArraySource<TrackingMutableRowSet> resultIndexColumnSource = flatResultColumnSources.getSecond();
 
-        final TrackingMutableRowSet resultRowSet = RowSetFactory.flat(groupToIndex.size()).convertToTracking();
+        final TrackingMutableRowSet resultRowSet = RowSetFactory.flat(groupToIndex.size()).toTracking();
         final Map<String, ColumnSource<?>> resultColumnSourceMap = new LinkedHashMap<>();
         resultColumnSourceMap.put(keyColumnName, resultKeyColumnSource);
         existingColumnSourceMap.entrySet().stream()
@@ -236,7 +236,7 @@ public class AggregationHelper {
         // TODO: Consider selecting the hash inputTable sources, in order to truncate them to size and improve density
 
         // Compute result rowSet and redirection to hash slots
-        final TrackingRowSet resultRowSet = RowSetFactory.flat(numGroups).convertToTracking();
+        final TrackingRowSet resultRowSet = RowSetFactory.flat(numGroups).toTracking();
         final RedirectionIndex resultIndexToHashSlot = new IntColumnSourceRedirectionIndex(groupIndexToHashSlot);
 
         // Construct result column sources
@@ -471,7 +471,7 @@ public class AggregationHelper {
             final LocalTableMap staticGroupedResult = new LocalTableMap(null, inputTable.getDefinition());
             AbstractColumnSource.forEachResponsiveGroup(groupingForAggregation, inputTable.getRowSet(),
                     (final Object key, final MutableRowSet rowSet) -> staticGroupedResult.put(key,
-                            subTableSource.getSubTable(rowSet.convertToTracking())));
+                            subTableSource.getSubTable(rowSet.toTracking())));
             return staticGroupedResult;
         }
 

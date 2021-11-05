@@ -23,7 +23,6 @@ import io.deephaven.engine.v2.utils.*;
 import java.util.Arrays;
 import io.deephaven.engine.v2.sort.permute.IntPermuteKernel;
 // @StateChunkTypeEnum@ from \QObject\E
-import io.deephaven.engine.v2.sort.permute.ObjectPermuteKernel;
 import io.deephaven.engine.v2.utils.compact.IntCompactKernel;
 import io.deephaven.engine.v2.utils.compact.LongCompactKernel;
 // endmixin rehash
@@ -584,7 +583,7 @@ class RightIncrementalChunkedCrossJoinStateManager
 
         final RowSet rowSet = source.getUnsafe(location);
         if (rowSet == null) {
-            source.set(location, RowSetFactory.empty().convertToTracking());
+            source.set(location, RowSetFactory.empty().toTracking());
         }
     }
 
@@ -606,7 +605,7 @@ class RightIncrementalChunkedCrossJoinStateManager
                 return CrossJoinModifiedSlotTracker.NULL_COOKIE;
             }
 
-            source.set(location, RowSetFactory.fromKeys(keyToAdd).convertToTracking());
+            source.set(location, RowSetFactory.fromKeys(keyToAdd).toTracking());
             size = 1;
         } else {
             rowSet.insert(keyToAdd);
@@ -2040,7 +2039,7 @@ class RightIncrementalChunkedCrossJoinStateManager
             retVal = rightIndexSource.get(slot);
         }
         if (retVal == null) {
-            retVal = RowSetFactory.empty().convertToTracking();
+            retVal = RowSetFactory.empty().toTracking();
         }
         return retVal;
     }
@@ -2053,7 +2052,7 @@ class RightIncrementalChunkedCrossJoinStateManager
             retVal = rightIndexSource.getPrev(prevSlot);
         }
         if (retVal == null) {
-            retVal = RowSetFactory.empty().convertToTracking();
+            retVal = RowSetFactory.empty().toTracking();
         }
         return retVal;
     }
@@ -2062,7 +2061,7 @@ class RightIncrementalChunkedCrossJoinStateManager
     public TrackingRowSet getRightIndexFromLeftIndex(long leftIndex) {
         long slot = leftIndexToSlot.get(leftIndex);
         if (slot == RowSet.NULL_ROW_KEY) {
-            return RowSetFactory.empty().convertToTracking();
+            return RowSetFactory.empty().toTracking();
         }
         return getRightIndex(slot);
     }
@@ -2071,7 +2070,7 @@ class RightIncrementalChunkedCrossJoinStateManager
     public TrackingRowSet getRightIndexFromPrevLeftIndex(long leftIndex) {
         long slot = leftIndexToSlot.getPrev(leftIndex);
         if (slot == RowSet.NULL_ROW_KEY) {
-            return RowSetFactory.empty().convertToTracking();
+            return RowSetFactory.empty().toTracking();
         }
         return getPrevRightIndex(slot);
     }
@@ -2085,7 +2084,7 @@ class RightIncrementalChunkedCrossJoinStateManager
 
         retVal = leftSource.get(slot);
         if (retVal == null) {
-            retVal = RowSetFactory.empty().convertToTracking();
+            retVal = RowSetFactory.empty().toTracking();
             if (isLeftTicking) {
                 leftSource.set(slot, retVal);
             }

@@ -176,8 +176,8 @@ public class GroupingValidator extends InstrumentedListenerAdapter {
         validateGroupings(groupingColumns, source.getRowSet());
         // NB: This would normally be inappropriate: we don't expect grouping support on the non-tracking row sets we
         // use for updates. Forcing support by cloning and making the result tracking.
-        validateGroupings(groupingColumns, upstream.added.clone().convertToTracking());
-        validateGroupings(groupingColumns, upstream.modified.clone().convertToTracking());
+        validateGroupings(groupingColumns, upstream.added.copy().toTracking());
+        validateGroupings(groupingColumns, upstream.modified.copy().toTracking());
         validationCount++;
         System.out.println("Validation Count for " + context + ": " + validationCount);
     }

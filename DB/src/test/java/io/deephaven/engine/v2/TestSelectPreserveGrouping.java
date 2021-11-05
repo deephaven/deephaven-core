@@ -75,7 +75,7 @@ public class TestSelectPreserveGrouping extends QueryTableTestBase {
             final ColumnHolder sentinelHolder = intCol("Sentinel", 1, 2, 3, 4, 5, 6);
 
             final Map<String, ColumnSource<?>> columns = new LinkedHashMap<>();
-            final TrackingRowSet rowSet = RowSetFactory.flat(6).convertToTracking();
+            final TrackingRowSet rowSet = RowSetFactory.flat(6).toTracking();
             columns.put("Sym", TstUtils.getTreeMapColumnSource(rowSet, symHolder));
             columns.put("Sentinel", TstUtils.getTreeMapColumnSource(rowSet, sentinelHolder));
             final TableDefinition definition = TableDefinition.of(

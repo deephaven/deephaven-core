@@ -35,17 +35,17 @@ public class InMemoryTable extends QueryTable {
         }
         return new InMemoryTable(
                 TableDefinition.from(table.header()),
-                RowSetFactory.flat(table.size()).convertToTracking(),
+                RowSetFactory.flat(table.size()).toTracking(),
                 columns);
     }
 
     public InMemoryTable(String[] columnNames, Object[] arrayValues) {
-        super(RowSetFactory.flat(Array.getLength(arrayValues[0])).convertToTracking(),
+        super(RowSetFactory.flat(Array.getLength(arrayValues[0])).toTracking(),
                 createColumnsMap(columnNames, arrayValues));
     }
 
     public InMemoryTable(TableDefinition definition, final int size) {
-        super(RowSetFactory.flat(size).convertToTracking(),
+        super(RowSetFactory.flat(size).toTracking(),
                 createColumnsMap(
                         definition.getColumnNames().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY),
                         Arrays.stream(definition.getColumns()).map(

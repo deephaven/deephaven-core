@@ -145,7 +145,7 @@ public class SortBenchmark {
 
         rollingSortTable = inputTable.where(rollingReleaseFilter).sort(sortCol);
 
-        rollingInputRowSet = RowSetFactory.empty().convertToTracking();
+        rollingInputRowSet = RowSetFactory.empty().toTracking();
         rollingInputTable = inputTable.getSubTable(rollingInputRowSet);
         rollingInputTable.setRefreshing(true);
         rollingOutputTable = rollingInputTable.sort(sortCol);

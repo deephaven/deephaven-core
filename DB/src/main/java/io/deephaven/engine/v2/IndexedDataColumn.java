@@ -90,7 +90,7 @@ public class IndexedDataColumn<TYPE> implements DataColumn<TYPE> {
     // ------------------------------------------------------------------------------------------------------------------
 
     private RowSet getSubIndexByPos(final long startPosInclusive, final long endPosExclusive) {
-        return startPosInclusive == 0 && endPosExclusive == rowSet.size() ? rowSet.clone()
+        return startPosInclusive == 0 && endPosExclusive == rowSet.size() ? rowSet.copy()
                 : rowSet.subSetByPositionRange(startPosInclusive, endPosExclusive);
     }
 

@@ -128,7 +128,7 @@ public class TestReadOnlyRedirectedColumnSource {
         QueryScope.addParam("ids6196_values", ids6196_values);
 
         final QueryTable qt =
-                TstUtils.testRefreshingTable(RowSetFactory.flat(6).convertToTracking(),
+                TstUtils.testRefreshingTable(RowSetFactory.flat(6).toTracking(),
                         intCol("IntVal", 0, 1, 2, 3, 4, 5));
 
         final Table a = LiveTableMonitor.DEFAULT.sharedLock().computeLocked(

@@ -74,7 +74,7 @@ public class ReverseOperation implements QueryTable.MemoizableOperation<QueryTab
             resultMap.put(entry.getKey(), new ReversedColumnSource<>(entry.getValue(), this));
         }
 
-        final TrackingMutableRowSet rowSet = transform(rowSetToReverse).convertToTracking();
+        final TrackingMutableRowSet rowSet = transform(rowSetToReverse).toTracking();
         resultSize = rowSet.size();
         Assert.eq(resultSize, "resultSize", rowSetToReverse.size(), "rowSetToReverse.size()");
 

@@ -384,7 +384,7 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
                 return;
             }
 
-            source.set(location, RowSetFactory.fromKeys(keyToAdd).convertToTracking());
+            source.set(location, RowSetFactory.fromKeys(keyToAdd).toTracking());
             size = 1;
         } else {
             rowSet.insert(keyToAdd);
@@ -1726,7 +1726,7 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
             retVal = rightIndexSource.get(slot);
         }
         if (retVal == null) {
-            retVal = RowSetFactory.empty().convertToTracking();
+            retVal = RowSetFactory.empty().toTracking();
         }
         return retVal;
     }
@@ -1735,7 +1735,7 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
     public TrackingRowSet getRightIndexFromLeftIndex(long leftIndex) {
         long slot = leftIndexToSlot.get(leftIndex);
         if (slot == RowSet.NULL_ROW_KEY) {
-            return RowSetFactory.empty().convertToTracking();
+            return RowSetFactory.empty().toTracking();
         }
         return getRightIndex(slot);
     }
@@ -1744,7 +1744,7 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
     public TrackingRowSet getRightIndexFromPrevLeftIndex(long leftIndex) {
         long slot = leftIndexToSlot.getPrev(leftIndex);
         if (slot == RowSet.NULL_ROW_KEY) {
-            return RowSetFactory.empty().convertToTracking();
+            return RowSetFactory.empty().toTracking();
         }
         return getRightIndex(slot);
     }

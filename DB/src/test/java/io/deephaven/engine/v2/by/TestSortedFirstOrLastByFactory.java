@@ -87,7 +87,7 @@ public class TestSortedFirstOrLastByFactory extends LiveTableTestCase {
 
     public void testIds6445() {
         final QueryTable source =
-                TstUtils.testRefreshingTable(RowSetFactory.flat(5).convertToTracking(),
+                TstUtils.testRefreshingTable(RowSetFactory.flat(5).toTracking(),
                         intCol("SFB", 2, 1, 2, 1, 2), intCol("Sentinel", 1, 2, 3, 4, 5),
                         col("DummyBucket", "A", "A", "A", "A", "A"));
         // final FuzzerPrintListener pl = new FuzzerPrintListener("source", source);

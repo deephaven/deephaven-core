@@ -43,7 +43,7 @@ public class TestLiveness extends TestCase {
     public void testRecursion() {
         // noinspection AutoBoxing
         final Table input = TstUtils.testRefreshingTable(
-                TstUtils.i(2, 3, 6, 7, 8, 10, 12, 15, 16).convertToTracking(),
+                TstUtils.i(2, 3, 6, 7, 8, 10, 12, 15, 16).toTracking(),
                 TstUtils.c("GroupedInts", 1, 1, 2, 2, 2, 3, 3, 3, 3));
         Table result = null;
         for (int ii = 0; ii < 4096; ++ii) {

@@ -104,7 +104,7 @@ public class BarrageStreamReader implements BarrageMessageConsumer.StreamReader<
                         msg.shifted = extractIndexShiftData(metadata.shiftDataAsByteBuffer());
 
                         final ByteBuffer rowsIncluded = metadata.addedRowsIncludedAsByteBuffer();
-                        msg.rowsIncluded = rowsIncluded != null ? extractIndex(rowsIncluded) : msg.rowsAdded.clone();
+                        msg.rowsIncluded = rowsIncluded != null ? extractIndex(rowsIncluded) : msg.rowsAdded.copy();
                         msg.addColumnData = new BarrageMessage.AddColumnData[columnTypes.length];
                         for (int ci = 0; ci < msg.addColumnData.length; ++ci) {
                             msg.addColumnData[ci] = new BarrageMessage.AddColumnData();

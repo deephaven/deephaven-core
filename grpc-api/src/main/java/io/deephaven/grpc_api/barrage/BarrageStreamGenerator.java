@@ -566,7 +566,7 @@ public class BarrageStreamGenerator implements
         public final RowSet original;
 
         public IndexGenerator(final RowSet rowSet) throws IOException {
-            this.original = rowSet.clone();
+            this.original = rowSet.copy();
             // noinspection UnstableApiUsage
             try (final ExposedByteArrayOutputStream baos = new ExposedByteArrayOutputStream();
                     final LittleEndianDataOutputStream oos = new LittleEndianDataOutputStream(baos)) {

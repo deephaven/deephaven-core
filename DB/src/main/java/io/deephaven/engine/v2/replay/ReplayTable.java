@@ -26,7 +26,7 @@ public class ReplayTable extends QueryTable implements LiveTable {
 
     public ReplayTable(RowSet rowSet, Map<String, ? extends ColumnSource<?>> result, String timeColumn,
             Replayer replayer) {
-        super(RowSetFactory.empty().convertToTracking(), result);
+        super(RowSetFactory.empty().toTracking(), result);
         Require.requirement(replayer != null, "replayer != null");
         // noinspection unchecked
         replayer.registerTimeSource(rowSet, (ColumnSource<DBDateTime>) result.get(timeColumn));

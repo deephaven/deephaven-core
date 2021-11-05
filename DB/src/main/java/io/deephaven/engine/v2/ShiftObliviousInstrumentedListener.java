@@ -35,7 +35,7 @@ public abstract class ShiftObliviousInstrumentedListener extends InstrumentedLis
     public class Notification extends NotificationBase {
 
         Notification(final RowSet added, final RowSet removed, final RowSet modified) {
-            super(new Listener.Update(added.clone(), removed.clone(), modified.clone(),
+            super(new Listener.Update(added.copy(), removed.copy(), modified.copy(),
                     RowSetShiftData.EMPTY, ModifiedColumnSet.ALL));
             update.release(); // NotificationBase assumes it does not own the provided update.
         }
@@ -57,6 +57,6 @@ public abstract class ShiftObliviousInstrumentedListener extends InstrumentedLis
     @Override
     public void setInitialImage(final RowSet initialImage) {
         this.initialImage = initialImage;
-        this.initialImageClone = initialImage.clone();
+        this.initialImageClone = initialImage.copy();
     }
 }

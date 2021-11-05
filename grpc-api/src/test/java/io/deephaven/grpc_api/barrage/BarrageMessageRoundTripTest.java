@@ -193,7 +193,7 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
                     .useDeephavenNulls(useDeephavenNulls)
                     .build();
             barrageMessageProducer.addSubscription(dummyObserver, options, subscribedColumns,
-                    viewport == null ? null : viewport.clone());
+                    viewport == null ? null : viewport.copy());
         }
 
         public void validate(final String msg, QueryTable expected) {
@@ -205,8 +205,8 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
 
             QueryTable toCheck = barrageTable;
             if (viewport != null) {
-                expected = expected.getSubTable(expected.getRowSet().subSetForPositions(viewport).convertToTracking());
-                toCheck = toCheck.getSubTable(toCheck.getRowSet().subSetForPositions(viewport).convertToTracking());
+                expected = expected.getSubTable(expected.getRowSet().subSetForPositions(viewport).toTracking());
+                toCheck = toCheck.getSubTable(toCheck.getRowSet().subSetForPositions(viewport).toTracking());
             }
             if (subscribedColumns.cardinality() != expected.getColumns().length) {
                 final List<Selectable> columns = new ArrayList<>();
@@ -234,8 +234,8 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
         public void show(QueryTable expected) {
             QueryTable toCheck = barrageTable;
             if (viewport != null) {
-                expected = expected.getSubTable(expected.getRowSet().subSetForPositions(viewport).convertToTracking());
-                toCheck = toCheck.getSubTable(toCheck.getRowSet().subSetForPositions(viewport).convertToTracking());
+                expected = expected.getSubTable(expected.getRowSet().subSetForPositions(viewport).toTracking());
+                toCheck = toCheck.getSubTable(toCheck.getRowSet().subSetForPositions(viewport).toTracking());
             }
             if (subscribedColumns.cardinality() != expected.getColumns().length) {
                 final List<Selectable> columns = new ArrayList<>();
@@ -768,7 +768,7 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
 
                                     for (final RemoteNugget nugget : nuggets) {
                                         final RemoteClient client = nugget.clients.get(nugget.clients.size() - 1);
-                                        final MutableRowSet viewport = client.viewport.clone();
+                                        final MutableRowSet viewport = client.viewport.copy();
                                         viewport.shiftInPlace(Math.max(size / 25, 1));
                                         client.setViewport(viewport);
                                     }
@@ -909,7 +909,7 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
 
                                     for (final RemoteNugget nugget : nuggets) {
                                         final RemoteClient client = nugget.clients.get(nugget.clients.size() - 1);
-                                        final MutableRowSet viewport = client.viewport.clone();
+                                        final MutableRowSet viewport = client.viewport.copy();
                                         viewport.shiftInPlace(size / 5);
                                         client.setViewport(viewport);
                                     }
@@ -957,7 +957,7 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
     }
 
     public void testUsePrevOnSnapshot() {
-        final QueryTable queryTable = TstUtils.testRefreshingTable(i(10, 12).convertToTracking(), c("intCol", 10, 12));
+        final QueryTable queryTable = TstUtils.testRefreshingTable(i(10, 12).toTracking(), c("intCol", 10, 12));
         final RemoteNugget remoteNugget = new RemoteNugget(() -> queryTable);
         final MutableObject<RemoteClient> remoteClient = new MutableObject<>();
 
@@ -1007,7 +1007,7 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
         final BitSet allColumns = new BitSet(1);
         allColumns.set(0);
 
-        final QueryTable queryTable = TstUtils.testRefreshingTable(i(5, 10, 12).convertToTracking(),
+        final QueryTable queryTable = TstUtils.testRefreshingTable(i(5, 10, 12).toTracking(),
                 c("intCol", 5, 10, 12));
         final RemoteNugget remoteNugget = new RemoteNugget(() -> queryTable);
 

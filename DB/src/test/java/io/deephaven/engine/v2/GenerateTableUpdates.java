@@ -146,7 +146,7 @@ public class GenerateTableUpdates {
             final TstUtils.ColumnInfo<?, ?>[] columnInfo) {
         profile.validate();
 
-        try (final MutableRowSet rowSet = table.getRowSet().clone()) {
+        try (final MutableRowSet rowSet = table.getRowSet().copy()) {
             final TstUtils.ColumnInfo<?, ?>[] mutableColumns =
                     Arrays.stream(columnInfo).filter(ci -> !ci.immutable).toArray(TstUtils.ColumnInfo[]::new);
             final boolean hasImmutableColumns = columnInfo.length > mutableColumns.length;

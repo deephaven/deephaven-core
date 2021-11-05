@@ -441,7 +441,7 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
                         location.getTableLocation().getKey().getPartitionValue(definition.getName());
                 final RowSet current = columnPartitionToIndex.get(columnPartitionValue);
                 if (current == null) {
-                    columnPartitionToIndex.put(columnPartitionValue, locationAddedIndexInTable.clone());
+                    columnPartitionToIndex.put(columnPartitionValue, locationAddedIndexInTable.copy());
                 } else {
                     current.mutableCast().insert(locationAddedIndexInTable);
                 }

@@ -286,7 +286,7 @@ public abstract class AbstractColumnSource<T> implements ColumnSource<T>, Serial
         groupToIndex.entrySet().stream()
                 .filter(kie -> kie.getValue().isNonempty())
                 .sorted(java.util.Comparator.comparingLong(kie -> kie.getValue().firstRowKey()))
-                .forEachOrdered(kie -> groupConsumer.accept(kie.getKey(), kie.getValue().clone()));
+                .forEachOrdered(kie -> groupConsumer.accept(kie.getKey(), kie.getValue().copy()));
     }
 
     /**
@@ -312,7 +312,7 @@ public abstract class AbstractColumnSource<T> implements ColumnSource<T>, Serial
         forEachGroup(groupToIndex, (final TYPE key, final MutableRowSet rowSet) -> {
             final long groupIndex = processedGroupCount.longValue();
             resultKeyColumnSource.set(groupIndex, key);
-            resultIndexColumnSource.set(groupIndex, rowSet.convertToTracking());
+            resultIndexColumnSource.set(groupIndex, rowSet.toTracking());
             processedGroupCount.increment();
         });
         Assert.eq(processedGroupCount.intValue(), "processedGroupCount.intValue()", numGroups, "numGroups");
@@ -333,7 +333,7 @@ public abstract class AbstractColumnSource<T> implements ColumnSource<T>, Serial
                 .map(kie -> new Pair<>(kie.getKey(), kie.getValue().intersect(intersect)))
                 .filter(kip -> kip.getSecond().isNonempty())
                 .sorted(java.util.Comparator.comparingLong(kip -> kip.getSecond().firstRowKey()))
-                .forEachOrdered(kip -> groupConsumer.accept(kip.getFirst(), kip.getSecond().clone()));
+                .forEachOrdered(kip -> groupConsumer.accept(kip.getFirst(), kip.getSecond().copy()));
     }
 
     /**
@@ -363,7 +363,7 @@ public abstract class AbstractColumnSource<T> implements ColumnSource<T>, Serial
         forEachResponsiveGroup(groupToIndex, intersect, (final TYPE key, final MutableRowSet rowSet) -> {
             final long groupIndex = responsiveGroups.longValue();
             resultKeyColumnSource.set(groupIndex, key);
-            resultIndexColumnSource.set(groupIndex, rowSet.convertToTracking());
+            resultIndexColumnSource.set(groupIndex, rowSet.toTracking());
             responsiveGroups.increment();
         });
 

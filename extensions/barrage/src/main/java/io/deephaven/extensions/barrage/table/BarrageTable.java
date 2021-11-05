@@ -116,7 +116,7 @@ public class BarrageTable extends QueryTable implements LiveTable, BarrageMessag
             final WritableSource<?>[] writableSources,
             final RedirectionIndex redirectionIndex,
             final boolean isViewPort) {
-        super(RowSetFactory.empty().convertToTracking(), columns);
+        super(RowSetFactory.empty().toTracking(), columns);
         this.registrar = registrar;
         this.notificationQueue = notificationQueue;
 
@@ -223,7 +223,7 @@ public class BarrageTable extends QueryTable implements LiveTable, BarrageMessag
         }
 
         if (update.isSnapshot) {
-            serverViewport = update.snapshotRowSet == null ? null : update.snapshotRowSet.clone();
+            serverViewport = update.snapshotRowSet == null ? null : update.snapshotRowSet.copy();
             serverColumns = update.snapshotColumns == null ? null : (BitSet) update.snapshotColumns.clone();
         }
 
@@ -232,8 +232,8 @@ public class BarrageTable extends QueryTable implements LiveTable, BarrageMessag
         final MutableRowSet currentRowSet = getRowSet().mutableCast();
         final boolean mightBeInitialSnapshot = currentRowSet.isEmpty() && update.isSnapshot;
 
-        try (final RowSet currRowsFromPrev = currentRowSet.clone();
-                final MutableRowSet populatedRows =
+        try (final RowSet currRowsFromPrev = currentRowSet.copy();
+             final MutableRowSet populatedRows =
                         (serverViewport != null ? currentRowSet.subSetForPositions(serverViewport) : null)) {
 
             // removes
@@ -322,7 +322,7 @@ public class BarrageTable extends QueryTable implements LiveTable, BarrageMessag
             }
 
             final Listener.Update downstream = new Listener.Update(
-                    update.rowsAdded.clone(), update.rowsRemoved.clone(), totalMods, update.shifted, modifiedColumnSet);
+                    update.rowsAdded.copy(), update.rowsRemoved.copy(), totalMods, update.shifted, modifiedColumnSet);
             return (coalescer == null) ? new UpdateCoalescer(currRowsFromPrev, downstream)
                     : coalescer.update(downstream);
         }
@@ -408,7 +408,7 @@ public class BarrageTable extends QueryTable implements LiveTable, BarrageMessag
         if (unsubscribed) {
             if (getRowSet().isNonempty()) {
                 // publish one last clear downstream; this data would be stale
-                final RowSet allRows = getRowSet().clone();
+                final RowSet allRows = getRowSet().copy();
                 getRowSet().mutableCast().remove(allRows);
                 notifyListeners(RowSetFactory.empty(), allRows, RowSetFactory.empty());
             }

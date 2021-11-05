@@ -205,15 +205,15 @@ public abstract class QueryTableTestBase extends LiveTableTestCase {
             if (lastAdded != null) {
                 lastAdded.close();
             }
-            lastAdded = added.clone();
+            lastAdded = added.copy();
             if (lastRemoved != null) {
                 lastRemoved.close();
             }
-            lastRemoved = removed.clone();
+            lastRemoved = removed.copy();
             if (lastModified != null) {
                 lastModified.close();
             }
-            lastModified = modified.clone();
+            lastModified = modified.copy();
             indexUpdateCoalescer.update(lastAdded, lastRemoved, lastModified);
             ++count;
         }
@@ -244,9 +244,9 @@ public abstract class QueryTableTestBase extends LiveTableTestCase {
 
         @Override
         public void onUpdate(final RowSet added, final RowSet removed, final RowSet modified) {
-            QueryTableTestBase.this.added = added.clone();
-            QueryTableTestBase.this.removed = removed.clone();
-            QueryTableTestBase.this.modified = modified.clone();
+            QueryTableTestBase.this.added = added.copy();
+            QueryTableTestBase.this.removed = removed.copy();
+            QueryTableTestBase.this.modified = modified.copy();
             ++count;
         }
     }

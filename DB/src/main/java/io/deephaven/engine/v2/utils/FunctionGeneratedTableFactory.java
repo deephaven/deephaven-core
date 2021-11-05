@@ -95,7 +95,7 @@ public class FunctionGeneratedTableFactory {
         // enable prev tracking after columns are initialized
         columns.values().forEach(ColumnSource::startTrackingPrevValues);
 
-        rowSet = RowSetFactory.flat(initialTable.size()).convertToTracking();
+        rowSet = RowSetFactory.flat(initialTable.size()).toTracking();
     }
 
     private FunctionBackedTable getTable() {
@@ -157,20 +157,20 @@ public class FunctionGeneratedTableFactory {
             if (newSize < size) {
                 final RowSet removed = RowSetFactory.fromRange(newSize, size - 1);
                 rowSet.remove(removed);
-                final RowSet modified = rowSet.clone();
+                final RowSet modified = rowSet.copy();
                 notifyListeners(RowSetFactory.empty(), removed, modified);
                 return;
             }
             if (newSize > size) {
                 final RowSet added = RowSetFactory.fromRange(size, newSize - 1);
-                final RowSet modified = rowSet.clone();
+                final RowSet modified = rowSet.copy();
                 rowSet.insert(added);
                 notifyListeners(added, RowSetFactory.empty(), modified);
                 return;
             }
             if (size > 0) {
                 // no size change, just modified
-                final RowSet modified = rowSet.clone();
+                final RowSet modified = rowSet.copy();
                 notifyListeners(RowSetFactory.empty(), RowSetFactory.empty(), modified);
             }
         }

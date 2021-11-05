@@ -20,7 +20,7 @@ import static io.deephaven.engine.v2.TstUtils.*;
 public class TestSelectOverheadLimiter extends LiveTableTestCase {
     public void testSelectOverheadLimiter() {
         final QueryTable queryTable = TstUtils.testRefreshingTable(
-                RowSetFactory.fromRange(0, 100).convertToTracking());
+                RowSetFactory.fromRange(0, 100).toTracking());
         final Table sentinelTable = queryTable.updateView("Sentinel=k");
         final Table densified = LiveTableMonitor.DEFAULT.sharedLock()
                 .computeLocked(() -> SelectOverheadLimiter.clampSelectOverhead(sentinelTable, 3.0));
@@ -66,7 +66,7 @@ public class TestSelectOverheadLimiter extends LiveTableTestCase {
 
     public void testShift() {
         final QueryTable queryTable = TstUtils.testRefreshingTable(
-                RowSetFactory.fromRange(0, 100).convertToTracking());
+                RowSetFactory.fromRange(0, 100).toTracking());
         final Table sentinelTable = queryTable.updateView("Sentinel=ii");
         final Table densified = LiveTableMonitor.DEFAULT.sharedLock()
                 .computeLocked(() -> SelectOverheadLimiter.clampSelectOverhead(sentinelTable, 3.0));
@@ -176,7 +176,7 @@ public class TestSelectOverheadLimiter extends LiveTableTestCase {
 
     public void testScope() {
         final QueryTable queryTable = TstUtils.testRefreshingTable(
-                RowSetFactory.fromRange(0, 100).convertToTracking());
+                RowSetFactory.fromRange(0, 100).toTracking());
 
         final SafeCloseable scopeCloseable = LivenessScopeStack.open();
 

@@ -171,7 +171,7 @@ public abstract class SourceTable extends RedefinableTable {
             QueryPerformanceRecorder.withNugget(description + ".initializeLocationSizes()", sizeForInstrumentation(),
                     () -> {
                         Assert.eqNull(rowSet, "rowSet");
-                        rowSet = refreshLocationSizes().convertToTracking();
+                        rowSet = refreshLocationSizes().toTracking();
                         setAttribute(EMPTY_SOURCE_TABLE_ATTRIBUTE, rowSet.isEmpty());
                         if (!isRefreshing()) {
                             return;

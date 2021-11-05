@@ -216,7 +216,7 @@ public abstract class GroupingRowSetHelper extends MutableRowSetImpl implements 
             final TupleSource tupleSource,
             final List<ColumnSource> keyColumns) {
         if (keyColumns.isEmpty()) {
-            resultCollector.accept(EmptyTuple.INSTANCE, thisRowSet.clone());
+            resultCollector.accept(EmptyTuple.INSTANCE, thisRowSet.copy());
         } else if (keyColumns.size() == 1 && keyColumns.get(0).getGroupToRange() != null) {
             @SuppressWarnings("unchecked")
             final Map<Object, RowSet> sourceGrouping = keyColumns.get(0).getGroupToRange();
@@ -440,7 +440,7 @@ public abstract class GroupingRowSetHelper extends MutableRowSetImpl implements 
         // noinspection unchecked
         final List<ColumnSource> keyColumns = tupleSource.getColumnSources();
         if (keyColumns.isEmpty()) {
-            resultCollector.accept(EmptyTuple.INSTANCE, this.clone());
+            resultCollector.accept(EmptyTuple.INSTANCE, this.copy());
         } else if (keyColumns.size() == 1 && keyColumns.get(0).getGroupToRange() != null) {
             @SuppressWarnings("unchecked")
             final Map<Object, RowSet> sourceGrouping = keyColumns.get(0).getGroupToRange();
@@ -597,7 +597,7 @@ public abstract class GroupingRowSetHelper extends MutableRowSetImpl implements 
         }
         result = new LinkedHashMap<>();
         if (sourcesKey.isEmpty()) {
-            result.put(EmptyTuple.INSTANCE, this.clone());
+            result.put(EmptyTuple.INSTANCE, this.copy());
         } else {
             final Map<Object, RowSetBuilderSequential> resultBuilder = new LinkedHashMap<>();
             for (final RowSet.Iterator iterator = this.iterator(); iterator.hasNext();) {

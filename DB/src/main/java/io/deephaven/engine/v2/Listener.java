@@ -123,7 +123,7 @@ public interface Listener extends ListenerBase {
                 newMCS = new ModifiedColumnSet(modifiedColumnSet);
                 newMCS.setAll(modifiedColumnSet);
             }
-            return new Update(added.clone(), removed.clone(), modified.clone(), shifted, newMCS);
+            return new Update(added.copy(), removed.copy(), modified.copy(), shifted, newMCS);
         }
 
         /**
@@ -138,7 +138,7 @@ public interface Listener extends ListenerBase {
                 synchronized (this) {
                     localPrevModified = prevModified;
                     if (localPrevModified == null) {
-                        localPrevModified = modified.clone();
+                        localPrevModified = modified.copy();
                         shifted.unapply(localPrevModified);
                         // this volatile write ensures prevModified is visible only after it is shifted
                         prevModified = localPrevModified;

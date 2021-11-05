@@ -42,7 +42,7 @@ public class FlattenOperation implements QueryTable.MemoizableOperation<QueryTab
             resultColumns.put(entry.getKey(), new ReadOnlyRedirectedColumnSource<>(redirectionIndex, entry.getValue()));
         }
 
-        resultTable = new QueryTable(RowSetFactory.flat(size).convertToTracking(), resultColumns);
+        resultTable = new QueryTable(RowSetFactory.flat(size).toTracking(), resultColumns);
         resultTable.setFlat();
         parent.copyAttributes(resultTable, BaseTable.CopyAttributeOperation.Flatten);
 

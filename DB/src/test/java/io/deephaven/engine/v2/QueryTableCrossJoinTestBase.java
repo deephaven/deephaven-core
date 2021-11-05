@@ -317,21 +317,21 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
 
         final QueryTable left;
         if (leftTicking) {
-            left = TstUtils.testRefreshingTable(RowSetFactory.flat(nextLeftRow).convertToTracking(),
+            left = TstUtils.testRefreshingTable(RowSetFactory.flat(nextLeftRow).toTracking(),
                     c("sharedKey", leftKeys.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)),
                     c("leftData", leftData.toArray(new Long[] {})));
         } else {
-            left = TstUtils.testTable(RowSetFactory.flat(nextLeftRow).convertToTracking(),
+            left = TstUtils.testTable(RowSetFactory.flat(nextLeftRow).toTracking(),
                     c("sharedKey", leftKeys.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)),
                     c("leftData", leftData.toArray(new Long[] {})));
         }
         final QueryTable right;
         if (rightTicking) {
-            right = TstUtils.testRefreshingTable(RowSetFactory.flat(nextRightRow).convertToTracking(),
+            right = TstUtils.testRefreshingTable(RowSetFactory.flat(nextRightRow).toTracking(),
                     c("sharedKey", rightKeys.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)),
                     c("rightData", rightData.toArray(new Long[] {})));
         } else {
-            right = TstUtils.testTable(RowSetFactory.flat(nextRightRow).convertToTracking(),
+            right = TstUtils.testTable(RowSetFactory.flat(nextRightRow).toTracking(),
                     c("sharedKey", rightKeys.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)),
                     c("rightData", rightData.toArray(new Long[] {})));
         }
@@ -401,10 +401,10 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
     public void testStaticVsNaturalJoin2() {
         final int size = 10000;
 
-        final QueryTable xqt = new QueryTable(RowSetFactory.flat(size).convertToTracking(),
+        final QueryTable xqt = new QueryTable(RowSetFactory.flat(size).toTracking(),
                 Collections.emptyMap());
         xqt.setRefreshing(true);
-        final QueryTable yqt = new QueryTable(RowSetFactory.flat(size).convertToTracking(),
+        final QueryTable yqt = new QueryTable(RowSetFactory.flat(size).toTracking(),
                 Collections.emptyMap());
         yqt.setRefreshing(true);
 
@@ -578,9 +578,9 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
     }
 
     public void testColumnSourceCanReuseContextWithSmallerRowSequence() {
-        final QueryTable t1 = testRefreshingTable(i(0, 1).convertToTracking());
+        final QueryTable t1 = testRefreshingTable(i(0, 1).toTracking());
         final QueryTable t2 = (QueryTable) t1.update("K=k", "A=1");
-        final QueryTable t3 = (QueryTable) testTable(i(2, 3).convertToTracking()).update("I=i", "A=1");
+        final QueryTable t3 = (QueryTable) testTable(i(2, 3).toTracking()).update("I=i", "A=1");
         final QueryTable jt = (QueryTable) t2.join(t3, "A", numRightBitsToReserve);
 
         final int CHUNK_SIZE = 4;
@@ -601,8 +601,8 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
         final int maxSteps = 2500;
         final MutableInt numSteps = new MutableInt();
 
-        final QueryTable leftTicking = TstUtils.testRefreshingTable(i().convertToTracking(), longCol("intCol"));
-        final QueryTable rightTicking = TstUtils.testRefreshingTable(i().convertToTracking(), longCol("intCol"));
+        final QueryTable leftTicking = TstUtils.testRefreshingTable(i().toTracking(), longCol("intCol"));
+        final QueryTable rightTicking = TstUtils.testRefreshingTable(i().toTracking(), longCol("intCol"));
 
         final JoinControl control = new JoinControl() {
             @Override

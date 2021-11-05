@@ -1434,7 +1434,7 @@ public class MutableRowSetImplTest extends TestCase {
         // we've got {3163,3200} now, each of them are in their own nodes
         System.out.println("Idx: " + idx);
 
-        final MutableRowSet idx2 = idx.clone();
+        final MutableRowSet idx2 = idx.copy();
 
         final RowSet rowSetToAdd = RowSetFactory.fromKeys(3164);
         idx.insert(rowSetToAdd);
@@ -2137,12 +2137,12 @@ public class MutableRowSetImplTest extends TestCase {
     public void testSimpleOpsRefCounts() {
         final RowSet ix0 = singleRangeIndex(10, 1000);
         assertEquals(1, getRefCount(ix0));
-        final MutableRowSet ix1 = ix0.clone();
+        final MutableRowSet ix1 = ix0.copy();
         assertEquals(1, getRefCount(ix0));
         assertEquals(1, getRefCount(ix1));
         final RowSet ix2 = singleRangeIndex(100, 900);
         assertEquals(1, getRefCount(ix2));
-        final MutableRowSet ix3 = ix2.clone();
+        final MutableRowSet ix3 = ix2.copy();
         assertEquals(1, getRefCount(ix2));
         assertEquals(1, getRefCount(ix3));
         ix3.remove(101);
@@ -2473,7 +2473,7 @@ public class MutableRowSetImplTest extends TestCase {
         final RowSet ix3 = ix.subSetByPositionRange(9_999_999L, ix.size());
         ix3.validate();
         assertFalse(ix2.overlaps(ix3));
-        final MutableRowSet ix4 = ix2.clone();
+        final MutableRowSet ix4 = ix2.copy();
         ix4.insert(ix3);
         assertEquals(ix.size(), ix4.size());
         assertTrue(ix.subsetOf(ix4));
@@ -2567,14 +2567,14 @@ public class MutableRowSetImplTest extends TestCase {
     public void testOneRangeIndexMinus() {
         final RowSet ix = RowSetFactory.fromRange(1000, 5000);
         final RowSet r = ix.minus(RowSetFactory.fromRange(1001, 4999));
-        final MutableRowSet c = ix.clone();
+        final MutableRowSet c = ix.copy();
         c.removeRange(1001, 4999);
     }
 
     private void releaseReleasedRegression0case0(final MutableRowSet ix) {
         ix.insertRange(1, 2);
         ix.insertRange(5, 6);
-        final RowSet ix2 = ix.clone();
+        final RowSet ix2 = ix.copy();
         assertEquals(2, getRefCount(ix));
         assertEquals(2, getRefCount(ix2));
         ix.removeRange(1, 6);
@@ -2593,7 +2593,7 @@ public class MutableRowSetImplTest extends TestCase {
     private void releaseReleasedRegression0case1(final MutableRowSet ix) {
         ix.insertRange(1, 2);
         ix.insertRange(5, 6);
-        final RowSet ix2 = ix.clone();
+        final RowSet ix2 = ix.copy();
         assertEquals(2, getRefCount(ix));
         assertEquals(2, getRefCount(ix2));
         ix.remove(ix2);
@@ -2612,7 +2612,7 @@ public class MutableRowSetImplTest extends TestCase {
     private static void releaseReleasedRegression0case2(final MutableRowSet ix) {
         ix.insertRange(1, 2);
         ix.insertRange(5, 6);
-        final RowSet ix2 = ix.clone();
+        final RowSet ix2 = ix.copy();
         assertEquals(2, getRefCount(ix));
         assertEquals(2, getRefCount(ix2));
         ix.update(RowSetFactory.empty(), ix2);
@@ -2837,7 +2837,7 @@ public class MutableRowSetImplTest extends TestCase {
             ix1.insert(i * 6 + 4);
         }
         final int initialRefCount = getRefCount(ix0);
-        final RowSet ix2 = ix0.clone();
+        final RowSet ix2 = ix0.copy();
         assertEquals(initialRefCount + 1, getRefCount(ix2));
         assertEquals(initialRefCount + 1, getRefCount(ix0));
         ix0.insert(ix1);
@@ -2870,14 +2870,14 @@ public class MutableRowSetImplTest extends TestCase {
                 final long start = it1.currentRangeStart();
                 final long end = it1.currentRangeEnd();
                 for (long v : new long[] {pendingStart, start - bkSz, start - 1}) {
-                    final MutableRowSet ix2 = ix1.clone();
+                    final MutableRowSet ix2 = ix1.copy();
                     ix2.insert(v);
                     assertFalse("v==" + v, ix2.subsetOf(ix0));
                 }
                 pendingStart = end + 1;
             }
             for (long v : new long[] {pendingStart, pendingStart + 3}) {
-                final MutableRowSet ix2 = ix1.clone();
+                final MutableRowSet ix2 = ix1.copy();
                 ix2.insert(v);
                 assertFalse("v==" + v, ix2.subsetOf(ix0));
             }
@@ -2933,7 +2933,7 @@ public class MutableRowSetImplTest extends TestCase {
         rvs2ix(ix1, new long[] {24, 28, 31, 38, 51, 57, 59, 61, 74, 90, 93, 107, -108, 110});
         final RowSet ix3 = ix0.minus(ix1);
         final RowSet intersect = ix0.intersect(ix1);
-        final MutableRowSet ix4 = ix0.clone();
+        final MutableRowSet ix4 = ix0.copy();
         ix4.remove(intersect);
         assertEquals(ix4.size(), ix3.size());
         assertTrue(ix4.subsetOf(ix3));
@@ -3031,7 +3031,7 @@ public class MutableRowSetImplTest extends TestCase {
         sr = sr.add(18);
         sr = sr.add(20);
         final MutableRowSet ix2 = new MutableRowSetImpl(sr);
-        final RowSet clone = ix2.clone();
+        final RowSet clone = ix2.copy();
         ix2.retain(ix1);
         assertEquals(1, getRefCount(ix2));
         assertEquals(1, getRefCount(clone));
@@ -3045,7 +3045,7 @@ public class MutableRowSetImplTest extends TestCase {
         sr = sr.add(18);
         sr = sr.add(20);
         final MutableRowSet ix2 = new MutableRowSetImpl(sr);
-        final RowSet clone = ix2.clone();
+        final RowSet clone = ix2.copy();
         ix2.retainRange(20, 24);
         assertEquals(1, getRefCount(ix2));
         assertEquals(1, getRefCount(clone));
@@ -3084,7 +3084,7 @@ public class MutableRowSetImplTest extends TestCase {
                     new MutableRowSetImpl(SortedRanges.makeSingleRange(start1, end1))}) {
                 int ia = 0;
                 for (long shiftAmount : new long[] {2 * BLOCK_SIZE, 2 * BLOCK_SIZE + 1}) {
-                    final MutableRowSet ix2 = ix0.clone();
+                    final MutableRowSet ix2 = ix0.copy();
                     ix2.insertWithShift(shiftAmount, ix1);
                     final String m = "i0==" + i0 + " && i1==" + i1 + " && ia==" + ia;
                     assertEquals(m, end1 - start1 + 1 + end0 - start0 + 1, ix2.size());

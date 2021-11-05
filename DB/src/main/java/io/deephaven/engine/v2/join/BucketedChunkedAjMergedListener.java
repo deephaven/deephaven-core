@@ -725,8 +725,8 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
             if (leftKeysModified || leftStampModified) {
                 downstream.modifiedColumnSet.setAll(allRightColumns);
             }
-            downstream.added = leftRecorder.getAdded().clone();
-            downstream.removed = leftRecorder.getRemoved().clone();
+            downstream.added = leftRecorder.getAdded().copy();
+            downstream.removed = leftRecorder.getRemoved().copy();
             downstream.shifted = leftRecorder.getShifted();
         }
 

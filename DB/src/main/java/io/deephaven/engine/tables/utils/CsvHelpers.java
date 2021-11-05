@@ -395,7 +395,7 @@ public class CsvHelpers {
     public static void writeToMultipleFiles(Table table, String path, String filename, long startLine,
             boolean nullsAsEmpty) throws IOException {
         Table part = table.getSubTable(
-                table.getRowSet().subSetByPositionRange(startLine, startLine + MAX_CSV_LINE_COUNT).convertToTracking());
+                table.getRowSet().subSetByPositionRange(startLine, startLine + MAX_CSV_LINE_COUNT).toTracking());
         String partFilename = path + filename + "-" + startLine + ".csv";
         TableTools.writeCsv(part, partFilename, nullsAsEmpty);
     }

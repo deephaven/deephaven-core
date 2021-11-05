@@ -19,7 +19,7 @@ import static io.deephaven.engine.v2.TstUtils.*;
 public class TestReverseLookupListener extends LiveTableTestCase {
     public void testSimple() {
         final BaseTable source = TstUtils.testRefreshingTable(
-                i(2, 4, 6, 8).convertToTracking(),
+                i(2, 4, 6, 8).toTracking(),
                 TstUtils.c("Sentinel", "A", "B", "C", "D"),
                 TstUtils.c("Sentinel2", "H", "I", "J", "K"));
         io.deephaven.engine.tables.utils.TableTools.show(source);

@@ -101,7 +101,7 @@ public class SelectOverheadLimiter {
 
         // we are refreshing, and within the permitted overhead
 
-        final TrackingMutableRowSet rowSet = input.getRowSet().clone().convertToTracking();
+        final TrackingMutableRowSet rowSet = input.getRowSet().copy().toTracking();
         final Map<String, SwitchColumnSource<?>> resultColumns = new LinkedHashMap<>();
         input.getColumnSourceMap().forEach((name, cs) -> resultColumns.put(name, new SwitchColumnSource<>(cs)));
         final QueryTable result = new QueryTable(rowSet, resultColumns);
@@ -184,7 +184,7 @@ public class SelectOverheadLimiter {
 
                 final Listener.Update downstream = new Listener.Update();
                 downstream.removed = rowSet.getPrevRowSet();
-                downstream.added = rowSet.clone();
+                downstream.added = rowSet.copy();
                 downstream.modified = RowSetFactory.empty();
                 downstream.modifiedColumnSet = ModifiedColumnSet.EMPTY;
                 downstream.shifted = RowSetShiftData.EMPTY;

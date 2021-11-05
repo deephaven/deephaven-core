@@ -170,7 +170,7 @@ public class ChunkedOperatorAggregationHelper {
         ac.getResultColumns(resultColumnSourceMap);
 
         final TrackingMutableRowSet resultRowSet =
-                RowSetFactory.flat(outputPosition.intValue()).convertToTracking();
+                RowSetFactory.flat(outputPosition.intValue()).toTracking();
         if (withView.isRefreshing()) {
             copyKeyColumns(keyColumnsRaw, keyColumnsCopied, resultRowSet);
         }
@@ -500,7 +500,7 @@ public class ChunkedOperatorAggregationHelper {
                                         final RowSet shiftedSameSlotModifiesPost = upstream.modified
                                                 .minus(removeIndex == null ? unshiftedSameSlotModifies : removeIndex);
                                         final MutableRowSet shiftedSameSlotModifiesPre =
-                                                shiftedSameSlotModifiesPost.clone()) {
+                                                shiftedSameSlotModifiesPost.copy()) {
                                     upstream.shifted.unapply(shiftedSameSlotModifiesPre);
                                     doSameSlotModifies(shiftedSameSlotModifiesPre, shiftedSameSlotModifiesPost, true,
                                             od.operatorsWithModifiedInputColumnsThatIgnoreIndices,
@@ -1383,7 +1383,7 @@ public class ChunkedOperatorAggregationHelper {
 
         doGroupedAddition(ac, groupKeyIndexTable, responsiveGroups);
 
-        final QueryTable result = new QueryTable(RowSetFactory.flat(responsiveGroups).convertToTracking(),
+        final QueryTable result = new QueryTable(RowSetFactory.flat(responsiveGroups).toTracking(),
                 resultColumnSourceMap);
         ac.propagateInitialStateToOperators(result);
 
@@ -1632,7 +1632,7 @@ public class ChunkedOperatorAggregationHelper {
             doNoKeyAddition(rowSet, ac, opContexts, allColumns, usePrev, allColumns);
         }
 
-        final QueryTable result = new QueryTable(RowSetFactory.flat(initialResultSize).convertToTracking(),
+        final QueryTable result = new QueryTable(RowSetFactory.flat(initialResultSize).toTracking(),
                 resultColumnSourceMap);
         ac.propagateInitialStateToOperators(result);
 
@@ -1704,7 +1704,7 @@ public class ChunkedOperatorAggregationHelper {
                                                 try (final RowSet shiftedModifiesPost =
                                                         upstream.modified.minus(unshiftedModifies);
                                                         final MutableRowSet shiftedModifiesPre =
-                                                                shiftedModifiesPost.clone()) {
+                                                                shiftedModifiesPost.copy()) {
                                                     upstream.shifted.unapply(shiftedModifiesPre);
                                                     doNoKeyModifications(shiftedModifiesPre, shiftedModifiesPost, ac,
                                                             opContexts, true,

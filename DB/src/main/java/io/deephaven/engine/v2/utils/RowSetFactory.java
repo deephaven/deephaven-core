@@ -12,7 +12,7 @@ import javax.validation.constraints.NotNull;
 public abstract class RowSetFactory {
 
     private static final boolean USE_PRIORITY_QUEUE_RANDOM_BUILDER =
-            Configuration.getInstance().getBooleanWithDefault("RowSetFactory.usePriorityQueueRandomBuilder", true);
+            Configuration.getInstance().getBooleanWithDefault("RowSetFactory.usePriorityQueueRandomBuilder", true); // TODO-RWC: Ask Cristian if I can delete this.
 
     private RowSetFactory() {}
 

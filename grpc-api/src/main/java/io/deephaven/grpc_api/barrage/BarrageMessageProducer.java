@@ -512,7 +512,7 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
         return findAndUpdateSubscription(listener, sub -> {
             sub.pendingColumns = (BitSet) newSubscribedColumns.clone();
             if (sub.isViewport() && sub.pendingViewport == null) {
-                sub.pendingViewport = sub.viewport.clone();
+                sub.pendingViewport = sub.viewport.copy();
             }
             log.info().append(logPrefix).append(sub.logPrefix)
                     .append("scheduling update immediately, for column updates.").endl();
@@ -525,7 +525,7 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
             if (sub.pendingViewport != null) {
                 sub.pendingViewport.close();
             }
-            sub.pendingViewport = newViewport.clone();
+            sub.pendingViewport = newViewport.copy();
             if (sub.pendingColumns == null) {
                 sub.pendingColumns = (BitSet) sub.subscribedColumns.clone();
             }
@@ -540,7 +540,7 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
             if (sub.pendingViewport != null) {
                 sub.pendingViewport.close();
             }
-            sub.pendingViewport = newViewport.clone();
+            sub.pendingViewport = newViewport.copy();
             sub.pendingColumns = (BitSet) columnsToSubscribe.clone();
             log.info().append(logPrefix).append(sub.logPrefix)
                     .append("scheduling update immediately, for viewport and column updates.").endl();
@@ -653,8 +653,8 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
         final TrackingRowSet rowSet = parent.getRowSet();
 
         if (numFullSubscriptions > 0) {
-            addsToRecord = upstream.added.clone();
-            modsToRecord = upstream.modified.clone();
+            addsToRecord = upstream.added.copy();
+            modsToRecord = upstream.modified.copy();
         } else if (activeViewport != null) {
             try (final MutableRowSet deltaViewport = rowSet.subSetForPositions(activeViewport)) {
                 addsToRecord = deltaViewport.intersect(upstream.added);
@@ -1024,7 +1024,7 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
 
             if (!firstSubscription && deltaSplitIdx > 0) {
                 preSnapshot = aggregateUpdatesInRange(0, deltaSplitIdx);
-                preSnapRowSet = propagationRowSet.clone();
+                preSnapRowSet = propagationRowSet.copy();
             }
 
             if (firstSubscription) {
@@ -1230,10 +1230,10 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
             addColumnSet = firstDelta.recordedAdds.isEmpty() ? new BitSet() : firstDelta.subscribedColumns;
             modColumnSet = firstDelta.modifiedColumns;
 
-            downstream.rowsAdded = firstDelta.update.added.clone();
-            downstream.rowsRemoved = firstDelta.update.removed.clone();
+            downstream.rowsAdded = firstDelta.update.added.copy();
+            downstream.rowsRemoved = firstDelta.update.removed.copy();
             downstream.shifted = firstDelta.update.shifted;
-            downstream.rowsIncluded = firstDelta.recordedAdds.clone();
+            downstream.rowsIncluded = firstDelta.recordedAdds.copy();
             downstream.addColumnData = new BarrageMessage.AddColumnData[sourceColumns.length];
             downstream.modColumnData = new BarrageMessage.ModColumnData[sourceColumns.length];
 
@@ -1264,7 +1264,7 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
                 downstream.modColumnData[ci] = modifications;
 
                 if (modColumnSet.get(ci)) {
-                    modifications.rowsModified = firstDelta.recordedMods.clone();
+                    modifications.rowsModified = firstDelta.recordedMods.copy();
 
                     final int chunkCapacity = localModified.intSize("serializeItems");
                     final WritableChunk<Attributes.Values> chunk =
@@ -1373,8 +1373,8 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
                 final MutableRowSet unfilledMods = retval.recordedMods.isEmpty() ? RowSetFactory.empty()
                         : RowSetFactory.fromRange(0, retval.modifiedMapping.length - 1);
 
-                final MutableRowSet addedRemaining = localAdded.clone();
-                final MutableRowSet modifiedRemaining = retval.recordedMods.clone();
+                final MutableRowSet addedRemaining = localAdded.copy();
+                final MutableRowSet modifiedRemaining = retval.recordedMods.copy();
                 for (int i = endDelta - 1; i >= startDelta; --i) {
                     if (addedRemaining.isEmpty() && modifiedRemaining.isEmpty()) {
                         break;
@@ -1471,7 +1471,7 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
 
                 if (modColumnSet.get(i)) {
                     final ColumnInfo info = getColumnInfo.apply(i);
-                    modifications.rowsModified = info.recordedMods.clone();
+                    modifications.rowsModified = info.recordedMods.copy();
 
                     final WritableChunk<Attributes.Values> chunk =
                             sourceColumn.getChunkType().makeWritableChunk(info.modifiedMapping.length);

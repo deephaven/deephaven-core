@@ -33,9 +33,9 @@ public final class ByExternalChunkedOperator implements IterativeChunkedAggregat
 
     private static final MutableRowSet NONEXISTENT_TABLE_ROW_SET = RowSetFactory.empty();
     private static final RowSetShiftData.SmartCoalescingBuilder NONEXISTENT_TABLE_SHIFT_BUILDER =
-            new RowSetShiftData.SmartCoalescingBuilder(NONEXISTENT_TABLE_ROW_SET.clone());
+            new RowSetShiftData.SmartCoalescingBuilder(NONEXISTENT_TABLE_ROW_SET.copy());
     private static final QueryTable NONEXISTENT_TABLE =
-            new QueryTable(NONEXISTENT_TABLE_ROW_SET.convertToTracking(), Collections.emptyMap());
+            new QueryTable(NONEXISTENT_TABLE_ROW_SET.toTracking(), Collections.emptyMap());
 
     private static final int WRITE_THROUGH_CHUNK_SIZE = ArrayBackedColumnSource.BLOCK_SIZE;
 
@@ -335,7 +335,7 @@ public final class ByExternalChunkedOperator implements IterativeChunkedAggregat
             final RowSet removedRowSet = removedRowSets.getUnsafe(destination);
             final RowSet preShiftKeys;
             if (removedRowSet == null) {
-                preShiftKeys = tableRowSet.clone();
+                preShiftKeys = tableRowSet.copy();
             } else {
                 preShiftKeys = tableRowSet.minus(removedRowSet);
             }
@@ -443,7 +443,7 @@ public final class ByExternalChunkedOperator implements IterativeChunkedAggregat
                         }
 
                         final MutableRowSet initialRowSet =
-                                extractAndClearIndex(addedRowSetsBackingChunk, backingChunkOffset).convertToTracking();
+                                extractAndClearIndex(addedRowSetsBackingChunk, backingChunkOffset).toTracking();
                         initialRowSet.compact();
                         final QueryTable newTable = makeSubTable(initialRowSet);
                         tablesBackingChunk.set(backingChunkOffset, newTable);
@@ -651,7 +651,7 @@ public final class ByExternalChunkedOperator implements IterativeChunkedAggregat
                         final QueryTable newOrPrepopulatedTable =
                                 (QueryTable) tableMap.computeIfAbsent(tableMapKey, (unused) -> {
                                     final MutableRowSet newRowSet = extractAndClearIndex(
-                                            addedRowSetsBackingChunk, backingChunkOffset).convertToTracking();
+                                            addedRowSetsBackingChunk, backingChunkOffset).toTracking();
                                     newRowSet.compact();
                                     final QueryTable newTable = makeSubTable(newRowSet);
                                     tablesBackingChunk.set(backingChunkOffset, newTable);
@@ -730,7 +730,7 @@ public final class ByExternalChunkedOperator implements IterativeChunkedAggregat
     private QueryTable makeSubTable(@Nullable final RowSet initialRowSetToInsert) {
         // We don't start from initialRowSetToInsert because it is expected to be a MutableRowSetImpl.
         final QueryTable subTable =
-                parentTable.getSubTable(RowSetFactory.empty().convertToTracking(), resultModifiedColumnSet);
+                parentTable.getSubTable(RowSetFactory.empty().toTracking(), resultModifiedColumnSet);
         subTable.setRefreshing(parentTable.isRefreshing());
         if (aggregationUpdateListener != null) {
             subTable.addParentReference(aggregationUpdateListener);

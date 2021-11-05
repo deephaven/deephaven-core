@@ -215,7 +215,7 @@ public class WindowCheck {
                 // now add the new timestamps
                 upstream.added.forAllRowKeys(this::addIndex);
 
-                final MutableRowSet downstreamModified = upstream.modified.clone();
+                final MutableRowSet downstreamModified = upstream.modified.copy();
                 try (final RowSet modifiedByTime = recomputeModified()) {
                     if (modifiedByTime.isNonempty()) {
                         downstreamModified.insert(modifiedByTime);
@@ -229,7 +229,7 @@ public class WindowCheck {
                 } else {
                     reusableModifiedColumnSet.clear();
                 }
-                result.notifyListeners(new Listener.Update(upstream.added.clone(), upstream.removed.clone(),
+                result.notifyListeners(new Listener.Update(upstream.added.copy(), upstream.removed.copy(),
                         downstreamModified, upstream.shifted, reusableModifiedColumnSet));
             } else {
                 final RowSet modifiedByTime = recomputeModified();

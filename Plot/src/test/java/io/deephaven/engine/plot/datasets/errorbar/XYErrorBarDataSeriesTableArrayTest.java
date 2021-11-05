@@ -86,7 +86,7 @@ public class XYErrorBarDataSeriesTableArrayTest extends BaseArrayTestCase {
         final BaseFigureImpl figure = new BaseFigureImpl();
         final ChartImpl chart = figure.newChart();
 
-        final QueryTable liveTable = TstUtils.testRefreshingTable(i(2, 4, 6).convertToTracking(),
+        final QueryTable liveTable = TstUtils.testRefreshingTable(i(2, 4, 6).toTracking(),
                 c("x", 1, 2, 3), c("y", 1, 2, 3), c("yLow", 0, 1, 2), c("yHigh", 11, 22, 33));
 
         final TableHandle h = new TableHandle(liveTable, "x", "y", "yLow", "yHigh");

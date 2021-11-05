@@ -140,7 +140,7 @@ class NaturalJoinHelper {
                         indexSource = flatResultColumnSources.getSecond();
 
                         final Table leftTableGrouped = new QueryTable(
-                                RowSetFactory.flat(groupingSize.intValue()).convertToTracking(),
+                                RowSetFactory.flat(groupingSize.intValue()).toTracking(),
                                 Collections.singletonMap(columnsToMatch[0].left(), groupSource));
 
                         final ColumnSource<?>[] groupedSourceArray = {groupSource};
@@ -189,7 +189,7 @@ class NaturalJoinHelper {
                     final ObjectArraySource<RowSet> indexSource = flatResultColumnSources.getSecond();
 
                     final Table leftTableGrouped = new QueryTable(
-                            RowSetFactory.flat(groupingSize.intValue()).convertToTracking(),
+                            RowSetFactory.flat(groupingSize.intValue()).toTracking(),
                             Collections.singletonMap(columnsToMatch[0].left(), groupSource));
 
                     final ColumnSource<?>[] groupedSourceArray = {groupSource};
@@ -296,16 +296,16 @@ class NaturalJoinHelper {
                             if (rightChanged) {
                                 modified = result.getRowSet().minus(leftRecorder.getAdded());
                             } else {
-                                modified = leftRecorder.getModified().clone();
+                                modified = leftRecorder.getModified().copy();
                             }
                             leftTransformer.transform(leftRecorder.getModifiedColumnSet(), result.modifiedColumnSet);
                             result.notifyListeners(new Listener.Update(
-                                    leftRecorder.getAdded().clone(), leftRecorder.getRemoved().clone(), modified,
+                                    leftRecorder.getAdded().copy(), leftRecorder.getRemoved().copy(), modified,
                                     leftRecorder.getShifted(), result.modifiedColumnSet));
                         } else if (rightChanged) {
                             result.notifyListeners(new Listener.Update(
                                     RowSetFactory.empty(), RowSetFactory.empty(),
-                                    result.getRowSet().clone(), RowSetShiftData.EMPTY, result.modifiedColumnSet));
+                                    result.getRowSet().copy(), RowSetShiftData.EMPTY, result.modifiedColumnSet));
                         }
                     }
 
@@ -344,7 +344,7 @@ class NaturalJoinHelper {
                                 }
                                 result.notifyListeners(
                                         new Update(RowSetFactory.empty(), RowSetFactory.empty(),
-                                                result.getRowSet().clone(), RowSetShiftData.EMPTY,
+                                                result.getRowSet().copy(), RowSetShiftData.EMPTY,
                                                 changed ? allRightColumns : result.modifiedColumnSet));
                             }
                         });
@@ -885,7 +885,7 @@ class NaturalJoinHelper {
                     final RowSet leftModifiedPreShift;
                     if (leftKeyModifications) {
                         if (leftShifted.nonempty()) {
-                            leftModifiedPreShift = leftShifted.unapply(leftModified.clone());
+                            leftModifiedPreShift = leftShifted.unapply(leftModified.copy());
                         } else {
                             leftModifiedPreShift = leftModified;
                         }
@@ -962,7 +962,7 @@ class NaturalJoinHelper {
             modifiedLeft.retain(result.getRowSet());
             modifiedLeft.remove(leftRecorder.getAdded());
 
-            result.notifyListeners(new Listener.Update(leftAdded.clone(), leftRemoved.clone(), modifiedLeft,
+            result.notifyListeners(new Listener.Update(leftAdded.copy(), leftRemoved.copy(), modifiedLeft,
                     leftShifted, result.modifiedColumnSet));
         }
 

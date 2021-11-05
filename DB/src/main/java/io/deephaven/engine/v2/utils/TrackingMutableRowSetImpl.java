@@ -24,8 +24,8 @@ public class TrackingMutableRowSetImpl extends GroupingRowSetHelper {
         this(OrderedLongSet.EMPTY);
     }
 
-    public TrackingMutableRowSetImpl(final OrderedLongSet impl) {
-        super(impl);
+    public TrackingMutableRowSetImpl(final OrderedLongSet innerSet) {
+        super(innerSet);
         this.prevInnerSet = OrderedLongSet.EMPTY;
         changeTimeStep = -1;
     }
@@ -52,8 +52,8 @@ public class TrackingMutableRowSetImpl extends GroupingRowSetHelper {
     }
 
     @Override
-    public TrackingMutableRowSet convertToTracking() {
-        throw new UnsupportedOperationException("Already tracking! You must clone() before convertToTracking()");
+    public TrackingMutableRowSet toTracking() {
+        throw new UnsupportedOperationException("Already tracking! You must copy() before toTracking()");
     }
 
     @Override

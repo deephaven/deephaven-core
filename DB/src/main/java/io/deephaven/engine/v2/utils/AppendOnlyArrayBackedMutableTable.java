@@ -51,7 +51,7 @@ public class AppendOnlyArrayBackedMutableTable extends BaseArrayBackedMutableTab
      */
     public static AppendOnlyArrayBackedMutableTable make(@NotNull TableDefinition definition,
             final Map<String, Object[]> enumValues) {
-        return make(new QueryTable(definition, RowSetFactory.empty().convertToTracking(),
+        return make(new QueryTable(definition, RowSetFactory.empty().toTracking(),
                 NullValueColumnSource.createColumnSourceMap(definition)), enumValues);
     }
 
@@ -86,7 +86,7 @@ public class AppendOnlyArrayBackedMutableTable extends BaseArrayBackedMutableTab
 
     private AppendOnlyArrayBackedMutableTable(@NotNull TableDefinition definition,
             final Map<String, Object[]> enumValues, final ProcessPendingUpdater processPendingUpdater) {
-        super(RowSetFactory.empty().convertToTracking(), makeColumnSourceMap(definition),
+        super(RowSetFactory.empty().toTracking(), makeColumnSourceMap(definition),
                 enumValues, processPendingUpdater);
     }
 

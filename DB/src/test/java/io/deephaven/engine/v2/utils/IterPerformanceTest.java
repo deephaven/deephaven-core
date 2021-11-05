@@ -40,7 +40,7 @@ public final class IterPerformanceTest {
         ValuesBuilder builder();
 
         // Since tests will run multiple times, and creation time is high (higher than individual operations),
-        // we create the base rowSet one and clone it before every run of update.
+        // we create the base rowSet one and copy it before every run of update.
         long getBaseCrc32(long toBeOred);
 
         long size();

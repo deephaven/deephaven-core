@@ -33,7 +33,7 @@ public class InitialSnapshotTable extends QueryTable {
 
     protected InitialSnapshotTable(Map<String, ? extends ColumnSource<?>> result, WritableSource<?>[] writableSources,
             RedirectionIndex redirectionIndex, BitSet subscribedColumns) {
-        super(RowSetFactory.empty().convertToTracking(), result);
+        super(RowSetFactory.empty().toTracking(), result);
         this.subscribedColumns = subscribedColumns;
         this.writableSources = writableSources;
         this.setters = new Setter[writableSources.length];
@@ -84,7 +84,7 @@ public class InitialSnapshotTable extends QueryTable {
         final RowSet viewPort = snapshot.viewport;
         final RowSet addedRowSet = snapshot.rowsIncluded;
         try (final MutableRowSet newlyPopulated =
-                viewPort == null ? addedRowSet.clone() : snapshot.rowSet.subSetForPositions(viewPort)) {
+                viewPort == null ? addedRowSet.copy() : snapshot.rowSet.subSetForPositions(viewPort)) {
             if (viewPort != null) {
                 newlyPopulated.retain(addedRowSet);
             }

@@ -64,7 +64,7 @@ public abstract class BaseChunkInputStreamGenerator<T extends Chunk<Attributes.V
 
         BaseChunkInputStream(final T chunk, final BarrageSubscriptionOptions options, final RowSet subset) {
             this.options = options;
-            this.subset = chunk.size() == 0 ? RowSequence.EMPTY : subset != null ? subset.clone() : RowSequenceUtil.forRange(0, chunk.size() - 1);
+            this.subset = chunk.size() == 0 ? RowSequence.EMPTY : subset != null ? subset.copy() : RowSequenceUtil.forRange(0, chunk.size() - 1);
             REFERENCE_COUNT_UPDATER.incrementAndGet(BaseChunkInputStreamGenerator.this);
             Assert.leq(this.subset.lastRowKey(), "this.subset.lastRowKey()", Integer.MAX_VALUE, "Integer.MAX_VALUE");
         }

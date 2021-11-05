@@ -41,7 +41,7 @@ public class KeyedArrayBackedMutableTable extends BaseArrayBackedMutableTable {
      */
     public static KeyedArrayBackedMutableTable make(@NotNull TableDefinition definition,
             final String... keyColumnNames) {
-        return make(new QueryTable(definition, RowSetFactory.empty().convertToTracking(),
+        return make(new QueryTable(definition, RowSetFactory.empty().toTracking(),
                 NullValueColumnSource.createColumnSourceMap(definition)), keyColumnNames);
     }
 
@@ -56,7 +56,7 @@ public class KeyedArrayBackedMutableTable extends BaseArrayBackedMutableTable {
      */
     public static KeyedArrayBackedMutableTable make(@NotNull TableDefinition definition,
             final Map<String, Object[]> enumValues, final String... keyColumnNames) {
-        return make(new QueryTable(definition, RowSetFactory.empty().convertToTracking(),
+        return make(new QueryTable(definition, RowSetFactory.empty().toTracking(),
                 NullValueColumnSource.createColumnSourceMap(definition)), enumValues, keyColumnNames);
     }
 
@@ -98,7 +98,7 @@ public class KeyedArrayBackedMutableTable extends BaseArrayBackedMutableTable {
 
     private KeyedArrayBackedMutableTable(@NotNull TableDefinition definition, final String[] keyColumnNames,
             final Map<String, Object[]> enumValues, final ProcessPendingUpdater processPendingUpdater) {
-        super(RowSetFactory.empty().convertToTracking(), makeColumnSourceMap(definition),
+        super(RowSetFactory.empty().toTracking(), makeColumnSourceMap(definition),
                 enumValues, processPendingUpdater);
         final List<String> missingKeyColumns = new ArrayList<>(Arrays.asList(keyColumnNames));
         missingKeyColumns.removeAll(definition.getColumnNames());

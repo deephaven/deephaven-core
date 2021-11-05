@@ -79,7 +79,7 @@ public class QueryTableFlattenTest extends QueryTableTestBase {
         data[8] = 102;
         data[9] = 104;
         final QueryTable queryTable =
-                TstUtils.testRefreshingTable(i(data).convertToTracking(), longCol("intCol", data));
+                TstUtils.testRefreshingTable(i(data).toTracking(), longCol("intCol", data));
 
         final TestHelper helper = new TestHelper<>(queryTable.flatten(), SimpleShiftObliviousListener::new);
 
@@ -100,7 +100,7 @@ public class QueryTableFlattenTest extends QueryTableTestBase {
         for (int ii = 0; ii < data.length; ++ii) {
             data[ii] = ii * 10;
         }
-        final QueryTable queryTable = TstUtils.testRefreshingTable(indexByRange(0, 9).convertToTracking(),
+        final QueryTable queryTable = TstUtils.testRefreshingTable(indexByRange(0, 9).toTracking(),
                 c("intCol", data));
 
         final TestHelper helper = new TestHelper<>(queryTable.flatten(), SimpleListener::new);
@@ -118,7 +118,7 @@ public class QueryTableFlattenTest extends QueryTableTestBase {
         for (int ii = 0; ii < data.length; ++ii) {
             data[ii] = ii * 10;
         }
-        final QueryTable queryTable = TstUtils.testRefreshingTable(indexByRange(0, 9).convertToTracking(),
+        final QueryTable queryTable = TstUtils.testRefreshingTable(indexByRange(0, 9).toTracking(),
                 c("intCol", data));
 
         final TestHelper helper = new TestHelper<>(queryTable.flatten(), SimpleShiftObliviousListener::new);
@@ -136,7 +136,7 @@ public class QueryTableFlattenTest extends QueryTableTestBase {
         for (int ii = 0; ii < data.length; ++ii) {
             data[ii] = ii * 10;
         }
-        final QueryTable queryTable = TstUtils.testRefreshingTable(indexByRange(0, 9).convertToTracking(),
+        final QueryTable queryTable = TstUtils.testRefreshingTable(indexByRange(0, 9).toTracking(),
                 c("intCol", data));
 
         final TestHelper helper = new TestHelper<>(queryTable.flatten(), SimpleListener::new);
@@ -155,7 +155,7 @@ public class QueryTableFlattenTest extends QueryTableTestBase {
         for (int ii = 0; ii < data.length; ++ii) {
             data[ii] = ii * 10;
         }
-        final QueryTable queryTable = TstUtils.testRefreshingTable(indexByRange(0, 9).convertToTracking(),
+        final QueryTable queryTable = TstUtils.testRefreshingTable(indexByRange(0, 9).toTracking(),
                 c("intCol", data));
 
         final TestHelper helper = new TestHelper<>(queryTable.flatten(), SimpleShiftObliviousListener::new);
@@ -181,7 +181,7 @@ public class QueryTableFlattenTest extends QueryTableTestBase {
         data[8] = 102;
         data[9] = 104;
         final QueryTable queryTable =
-                TstUtils.testRefreshingTable(i(data).convertToTracking(), longCol("intCol", data));
+                TstUtils.testRefreshingTable(i(data).toTracking(), longCol("intCol", data));
 
         final TestHelper helper = new TestHelper<>(queryTable.flatten(), SimpleListener::new);
 
@@ -194,7 +194,7 @@ public class QueryTableFlattenTest extends QueryTableTestBase {
 
     @Test
     public void testFlattenModifications() {
-        final QueryTable queryTable = TstUtils.testRefreshingTable(i(1, 2, 4, 6).convertToTracking(),
+        final QueryTable queryTable = TstUtils.testRefreshingTable(i(1, 2, 4, 6).toTracking(),
                 c("intCol", 10, 20, 40, 60));
 
         final TestHelper helper = new TestHelper<>(queryTable.flatten(), SimpleListener::new);
@@ -333,7 +333,7 @@ public class QueryTableFlattenTest extends QueryTableTestBase {
 
     public void testFlattenFollowedBySumBy() {
         // TODO: Write a test that just makes a RedirectedColumnSource with a wrapper, and fill/query it.
-        final QueryTable upstream = TstUtils.testRefreshingTable(ir(0, 100_000).convertToTracking());
+        final QueryTable upstream = TstUtils.testRefreshingTable(ir(0, 100_000).toTracking());
         final Table input = upstream.updateView("A=ii", "B=ii % 1000", "C=ii % 2 == 0");
         final Table odds = input.where("!C");
         final Table expected = odds.sumBy("B");

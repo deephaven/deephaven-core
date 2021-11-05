@@ -117,7 +117,7 @@ public class TickSuppressorTest extends QueryTableTestBase {
     }
 
     public void testRemoveSpuriousModifications() {
-        final QueryTable input = TstUtils.testRefreshingTable(i(5, 10, 15).convertToTracking(),
+        final QueryTable input = TstUtils.testRefreshingTable(i(5, 10, 15).toTracking(),
                 intCol("SentinelA", 5, 10, 15),
                 intCol("SentinelB", 20, 30, 40));
 

@@ -170,7 +170,7 @@ public class SyncTableFilter {
             objectToState.add(new HashMap<>());
             keySources[ii] = TupleSourceFactory.makeTupleSource(sources);
             idSources.add(std.table.getColumnSource(std.idColumn, long.class));
-            resultRowSet[ii] = RowSetFactory.empty().convertToTracking();
+            resultRowSet[ii] = RowSetFactory.empty().toTracking();
             results[ii] = ((QueryTable) std.table).getSubTable(resultRowSet[ii], null, mergedListener);
 
             final ListenerRecorder listenerRecorder =

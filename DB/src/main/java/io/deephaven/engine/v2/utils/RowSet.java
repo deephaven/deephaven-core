@@ -23,7 +23,14 @@ public interface RowSet extends RowSequence, LongSizedDataStructure, SafeCloseab
 
     void close();
 
-    MutableRowSet clone();
+    /**
+     * Make a new {@link MutableRowSet} with the same row keys as {@code this} that is safe for further mutation.
+     * The result will never be a {@link TrackingRowSet}; use {@link MutableRowSet#toTracking()} on the result
+     * as needed.
+     *
+     * @return The copied {@link MutableRowSet}
+     */
+    MutableRowSet copy();
 
     /**
      * How many keys are in this RowSet.

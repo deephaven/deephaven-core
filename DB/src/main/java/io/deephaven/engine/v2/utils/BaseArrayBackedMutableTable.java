@@ -316,7 +316,7 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
             }
 
             final QueryTable newData = new QueryTable(getTableDefinition(),
-                    RowSetFactory.flat(valueArray.length).convertToTracking(), sources);
+                    RowSetFactory.flat(valueArray.length).toTracking(), sources);
             add(newData, true, listener);
         }
 
@@ -335,7 +335,7 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
             }
 
             final QueryTable newData = new QueryTable(getTableDefinition(),
-                    RowSetFactory.flat(valueArray.length).convertToTracking(), sources);
+                    RowSetFactory.flat(valueArray.length).toTracking(), sources);
 
             add(newData, allowEdits, listener);
         }

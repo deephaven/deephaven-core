@@ -94,9 +94,9 @@ public class TableUpdateValidator implements QueryTable.Operation {
 
     @Override
     public Result initialize(boolean usePrev, long beforeClock) {
-        rowSet = usePrev ? tableToValidate.getRowSet().getPrevRowSet() : tableToValidate.getRowSet().clone();
+        rowSet = usePrev ? tableToValidate.getRowSet().getPrevRowSet() : tableToValidate.getRowSet().copy();
 
-        resultTable = new QueryTable(RowSetFactory.empty().convertToTracking(),
+        resultTable = new QueryTable(RowSetFactory.empty().toTracking(),
                 Collections.emptyMap());
         resultTable.setFlat();
 

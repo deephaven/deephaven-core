@@ -70,7 +70,7 @@ public class ExportTableUpdateListenerTest {
         expectNoMessage(); // the refresh is empty
 
         // create and export the table
-        final QueryTable src = TstUtils.testTable(RowSetFactory.flat(100).convertToTracking());
+        final QueryTable src = TstUtils.testTable(RowSetFactory.flat(100).toTracking());
         final SessionState.ExportObject<QueryTable> t1 = session.newServerSideExport(src);
 
         // validate we receive an initial table size update
@@ -84,7 +84,7 @@ public class ExportTableUpdateListenerTest {
     @Test
     public void testRefreshStaticTable() {
         // create and export the table
-        final QueryTable src = TstUtils.testTable(RowSetFactory.flat(1024).convertToTracking());
+        final QueryTable src = TstUtils.testTable(RowSetFactory.flat(1024).toTracking());
         final SessionState.ExportObject<QueryTable> t1 = session.newServerSideExport(src);
 
         // now add the listener
@@ -110,7 +110,7 @@ public class ExportTableUpdateListenerTest {
         expectNoMessage(); // the refresh is empty
 
         // create and export the table
-        final QueryTable src = TstUtils.testRefreshingTable(RowSetFactory.flat(42).convertToTracking());
+        final QueryTable src = TstUtils.testRefreshingTable(RowSetFactory.flat(42).toTracking());
         final SessionState.ExportObject<QueryTable> t1;
         try (final SafeCloseable scope = LivenessScopeStack.open()) {
             t1 = session.newServerSideExport(src);
@@ -132,7 +132,7 @@ public class ExportTableUpdateListenerTest {
     @Test
     public void testRefreshTickingTable() {
         // create and export the table
-        final QueryTable src = TstUtils.testRefreshingTable(RowSetFactory.flat(42).convertToTracking());
+        final QueryTable src = TstUtils.testRefreshingTable(RowSetFactory.flat(42).toTracking());
         final SessionState.ExportObject<QueryTable> t1;
         try (final SafeCloseable scope = LivenessScopeStack.open()) {
             t1 = session.newServerSideExport(src);
@@ -160,7 +160,7 @@ public class ExportTableUpdateListenerTest {
     @Test
     public void testSessionClose() {
         // create and export the table
-        final QueryTable src = TstUtils.testRefreshingTable(RowSetFactory.flat(42).convertToTracking());
+        final QueryTable src = TstUtils.testRefreshingTable(RowSetFactory.flat(42).toTracking());
         // create t1 in global query scope
         final SessionState.ExportObject<QueryTable> t1 = session.newServerSideExport(src);
 
@@ -191,7 +191,7 @@ public class ExportTableUpdateListenerTest {
     @Test
     public void testPropagatesError() {
         // create and export the table
-        final QueryTable src = TstUtils.testRefreshingTable(RowSetFactory.flat(42).convertToTracking());
+        final QueryTable src = TstUtils.testRefreshingTable(RowSetFactory.flat(42).toTracking());
         final SessionState.ExportObject<QueryTable> t1;
         try (final SafeCloseable scope = LivenessScopeStack.open()) {
             t1 = session.newServerSideExport(src);
@@ -224,7 +224,7 @@ public class ExportTableUpdateListenerTest {
     @Test
     public void testListenerClosed() {
         // create and export the table
-        final QueryTable src = TstUtils.testRefreshingTable(RowSetFactory.flat(42).convertToTracking());
+        final QueryTable src = TstUtils.testRefreshingTable(RowSetFactory.flat(42).toTracking());
         final SessionState.ExportObject<QueryTable> t1;
         try (final SafeCloseable scope = LivenessScopeStack.open()) {
             t1 = session.newServerSideExport(src);
@@ -261,7 +261,7 @@ public class ExportTableUpdateListenerTest {
     @Test
     public void testTableSizeUsesPrev() {
         // create and export the table
-        final QueryTable src = TstUtils.testRefreshingTable(RowSetFactory.flat(42).convertToTracking());
+        final QueryTable src = TstUtils.testRefreshingTable(RowSetFactory.flat(42).toTracking());
         final MutableObject<SessionState.ExportObject<QueryTable>> t1 = new MutableObject<>();
 
         // now add the listener

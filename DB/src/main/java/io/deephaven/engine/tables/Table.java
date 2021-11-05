@@ -2701,7 +2701,7 @@ public interface Table extends
      *
      * @param update the set of table changes to propagate The caller gives this update object away; the invocation of
      *        {@code notifyListeners} takes ownership, and will call {@code release} on it once it is not used anymore;
-     *        callers should pass a {@code clone} for updates they intend to further use.
+     *        callers should pass a {@code copy} for updates they intend to further use.
      */
     void notifyListeners(Listener.Update update);
 

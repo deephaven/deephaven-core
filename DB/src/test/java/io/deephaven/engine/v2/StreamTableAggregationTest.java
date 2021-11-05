@@ -50,7 +50,7 @@ public class StreamTableAggregationTest {
      *        {@code false})
      */
     private void doOperatorTest(@NotNull final UnaryOperator<Table> operator, final boolean windowed) {
-        final QueryTable normal = new QueryTable(RowSetFactory.empty().convertToTracking(),
+        final QueryTable normal = new QueryTable(RowSetFactory.empty().toTracking(),
                 source.getColumnSourceMap());
         normal.setRefreshing(true);
 
@@ -64,7 +64,7 @@ public class StreamTableAggregationTest {
             streamSources = source.getColumnSourceMap();
         } else {
             // Redirecting so we can present a zero-based TrackingMutableRowSet from the stream table
-            streamInternalRowSet = RowSetFactory.empty().convertToTracking();
+            streamInternalRowSet = RowSetFactory.empty().toTracking();
             final RedirectionIndex streamRedirections = new WrappedIndexRedirectionIndexImpl(streamInternalRowSet);
             streamSources = source.getColumnSourceMap().entrySet().stream().collect(Collectors.toMap(
                     Map.Entry::getKey,
@@ -72,7 +72,7 @@ public class StreamTableAggregationTest {
                     Assert::neverInvoked,
                     LinkedHashMap::new));
         }
-        final QueryTable stream = new QueryTable(RowSetFactory.empty().convertToTracking(), streamSources);
+        final QueryTable stream = new QueryTable(RowSetFactory.empty().toTracking(), streamSources);
         stream.setRefreshing(true);
         stream.setAttribute(Table.STREAM_TABLE_ATTRIBUTE, true);
 
@@ -97,7 +97,7 @@ public class StreamTableAggregationTest {
             final RowSet normalStepInserted = refreshSize == 0
                     ? RowSetFactory.empty()
                     : RowSetFactory.fromRange(usedSize, usedSize + refreshSize - 1);
-            final RowSet streamStepInserted = streamInternalRowSet == null ? normalStepInserted.clone()
+            final RowSet streamStepInserted = streamInternalRowSet == null ? normalStepInserted.copy()
                     : refreshSize == 0
                             ? RowSetFactory.empty()
                             : RowSetFactory.fromRange(0, refreshSize - 1);
@@ -122,7 +122,7 @@ public class StreamTableAggregationTest {
                         }
                         stream.getRowSet().mutableCast().clear();
                         stream.getRowSet().mutableCast().insert(streamStepInserted);
-                        stream.notifyListeners(new Update(streamStepInserted.clone(), finalStreamLastInserted,
+                        stream.notifyListeners(new Update(streamStepInserted.copy(), finalStreamLastInserted,
                                 RowSetFactory.empty(), RowSetShiftData.EMPTY,
                                 ModifiedColumnSet.EMPTY));
                     }

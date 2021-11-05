@@ -238,7 +238,7 @@ public class DynamicWhereFilter extends SelectFilterLivenessArtifactImpl impleme
                 }
             case CREATE_GROUPS:
                 try (final TrackingRowSet rowSetForGrouping =
-                        trackingSelection != null ? null : selection.clone().convertToTracking()) {
+                        trackingSelection != null ? null : selection.copy().toTracking()) {
                     return filterGrouping(
                             trackingSelection != null ? trackingSelection : rowSetForGrouping, table);
                 }
@@ -251,7 +251,7 @@ public class DynamicWhereFilter extends SelectFilterLivenessArtifactImpl impleme
 
     private MutableRowSet filterGrouping(TrackingRowSet selection, TupleSource tupleSource) {
         final RowSet matchingKeys = selection.getSubSetForKeySet(liveValues, tupleSource);
-        return (inclusion ? matchingKeys.clone() : selection.minus(matchingKeys));
+        return (inclusion ? matchingKeys.copy() : selection.minus(matchingKeys));
     }
 
     private MutableRowSet filterGrouping(TrackingRowSet selection, Table table) {

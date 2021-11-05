@@ -220,7 +220,7 @@ class RegionedColumnSourceWithDictionary<DATA_TYPE>
 
         final TrackingRowSet symbolTableRowSet;
         if (sourceIndex.isEmpty()) {
-            symbolTableRowSet = RowSetFactory.empty().convertToTracking();
+            symbolTableRowSet = RowSetFactory.empty().toTracking();
         } else {
             final RowSetBuilderSequential symbolTableIndexBuilder = RowSetFactory.builderSequential();
             try (final RowSet.SearchIterator keysToVisit = sourceIndex.searchIterator()) {
@@ -230,7 +230,7 @@ class RegionedColumnSourceWithDictionary<DATA_TYPE>
                             RowSequence.Iterator.EMPTY, symbolTableIndexBuilder);
                 } while (keysToVisit.hasNext());
             }
-            symbolTableRowSet = symbolTableIndexBuilder.build().convertToTracking();
+            symbolTableRowSet = symbolTableIndexBuilder.build().toTracking();
         }
 
         final Map<String, ColumnSource<?>> symbolTableColumnSources = new LinkedHashMap<>();

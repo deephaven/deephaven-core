@@ -42,7 +42,7 @@ public class TimeTable extends QueryTable implements LiveTable {
     }
 
     public TimeTable(TimeProvider timeProvider, DBDateTime firstTime, long dbPeriod) {
-        super(RowSetFactory.fromKeys().convertToTracking(), initColumn());
+        super(RowSetFactory.fromKeys().toTracking(), initColumn());
         if (dbPeriod <= 0) {
             throw new IllegalArgumentException("Invalid time period: " + dbPeriod + " nanoseconds");
         }

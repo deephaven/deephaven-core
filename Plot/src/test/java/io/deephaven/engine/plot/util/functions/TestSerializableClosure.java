@@ -37,15 +37,15 @@ public class TestSerializableClosure extends BaseArrayTestCase {
 
         // testing serialization is too hard
         /*
-         * Object clone = null; try { ByteArrayOutputStream bos = new ByteArrayOutputStream(); ObjectOutputStream oos =
+         * Object copy = null; try { ByteArrayOutputStream bos = new ByteArrayOutputStream(); ObjectOutputStream oos =
          * new ObjectOutputStream(bos); oos.writeObject(serializableClosure); oos.flush(); byte[] obis =
          * bos.toByteArray(); oos.close(); bos.close();
          * 
          * ByteArrayInputStream bis = new ByteArrayInputStream(obis); ObjectInputStream ois = new
-         * ObjectInputStream(bis); clone = ois.readObject(); ois.close(); bis.close(); } catch (IOException |
+         * ObjectInputStream(bis); copy = ois.readObject(); ois.close(); bis.close(); } catch (IOException |
          * ClassNotFoundException e) { e.printStackTrace(); }
          * 
-         * serializableClosure = (SerializableClosure) clone; if(serializableClosure == null) {
+         * serializableClosure = (SerializableClosure) copy; if(serializableClosure == null) {
          * TestCase.fail("Null return from serialization"); }
          * 
          * assertEquals(value, serializableClosure.getClosure().call());

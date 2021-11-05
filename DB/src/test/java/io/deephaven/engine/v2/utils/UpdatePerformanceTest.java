@@ -34,7 +34,7 @@ public class UpdatePerformanceTest {
         Factory getFactory();
 
         // Since tests will run multiple times, and creation time is high (higher than individual operations),
-        // we create the base rowSet one and clone it before every run of update.
+        // we create the base rowSet one and copy it before every run of update.
         void cloneBase();
 
         TestValues.Builder baseBuilder();
@@ -94,7 +94,7 @@ public class UpdatePerformanceTest {
 
         @Override
         public void cloneBase() {
-            ix[0] = ix[3].clone();
+            ix[0] = ix[3].copy();
         }
 
         @Override

@@ -233,7 +233,7 @@ public final class ByChunkedOperator implements IterativeChunkedAggregationOpera
         MutableRowSet rowSet = rowSets.getUnsafe(destination);
         if (rowSet == null) {
             final MutableRowSet empty = RowSetFactory.empty();
-            rowSets.set(destination, rowSet = live ? empty.convertToTracking() : empty);
+            rowSets.set(destination, rowSet = live ? empty.toTracking() : empty);
         }
         return rowSet;
     }

@@ -48,7 +48,7 @@ public class UnionSourceManager {
         names = tableDefinition.getColumnList().stream().map(ColumnDefinition::getName).toArray(String[]::new);
         this.parentDependency = parentDependency;
 
-        result = new QueryTable(RowSetFactory.empty().convertToTracking(), getColumnSources());
+        result = new QueryTable(RowSetFactory.empty().toTracking(), getColumnSources());
         rowSet = result.getRowSet().mutableCast();
         modifiedColumnSet = result.newModifiedColumnSet(names);
 
@@ -147,7 +147,7 @@ public class UnionSourceManager {
             if (onNewTableMapKey) {
                 // synthetically invoke onUpdate lest our MergedUnionListener#process never fires.
                 final Listener.Update update = new Listener.Update(
-                        table.getRowSet().clone(), RowSetFactory.empty(), RowSetFactory.empty(),
+                        table.getRowSet().copy(), RowSetFactory.empty(), RowSetFactory.empty(),
                         RowSetShiftData.EMPTY, ModifiedColumnSet.ALL);
                 listener.onUpdate(update);
                 update.release();

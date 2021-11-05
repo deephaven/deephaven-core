@@ -69,12 +69,12 @@ public class StreamTableTools {
                         final TrackingMutableRowSet rowSet;
                         if (usePrev) {
                             try (final RowSet useRowSet = baseStreamTable.getRowSet().getPrevRowSet()) {
-                                rowSet = RowSetFactory.flat(useRowSet.size()).convertToTracking();
+                                rowSet = RowSetFactory.flat(useRowSet.size()).toTracking();
                                 ChunkUtils.copyData(sourceColumns, useRowSet, destColumns, rowSet, usePrev);
                             }
                         } else {
                             rowSet = RowSetFactory.flat(baseStreamTable.getRowSet().size())
-                                    .convertToTracking();
+                                    .toTracking();
                             ChunkUtils.copyData(sourceColumns, baseStreamTable.getRowSet(), destColumns, rowSet,
                                     usePrev);
                         }

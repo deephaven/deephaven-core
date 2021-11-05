@@ -895,7 +895,7 @@ public abstract class BaseTable extends LivenessArtifact
 
         @Override
         public void onUpdate(RowSet added, RowSet removed, RowSet modified) {
-            dependent.notifyListeners(new Listener.Update(added.clone(), removed.clone(), modified.clone(),
+            dependent.notifyListeners(new Listener.Update(added.copy(), removed.copy(), modified.copy(),
                     RowSetShiftData.EMPTY, ModifiedColumnSet.ALL));
         }
 

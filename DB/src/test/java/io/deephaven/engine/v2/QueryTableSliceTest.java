@@ -382,7 +382,7 @@ public class QueryTableSliceTest extends QueryTableTestBase {
 
     public void testZeroHead() {
         final QueryTable table = TstUtils.testRefreshingTable(
-                RowSetFactory.fromRange(10, 35).convertToTracking(),
+                RowSetFactory.fromRange(10, 35).toTracking(),
                 TableTools.charCol("letter", "abcdefghijklmnopqrstuvwxyz".toCharArray()));
         final Table noRows = table.head(0);
         assertEquals(0, noRows.size());
@@ -394,7 +394,7 @@ public class QueryTableSliceTest extends QueryTableTestBase {
 
     public void testSlice() {
         final QueryTable table = TstUtils.testRefreshingTable(
-                RowSetFactory.fromRange(10, 35).convertToTracking(),
+                RowSetFactory.fromRange(10, 35).toTracking(),
                 TableTools.charCol("letter", "abcdefghijklmnopqrstuvwxyz".toCharArray()));
 
         doSliceTest(table, "abcdefghij", 0, 10);
@@ -422,17 +422,17 @@ public class QueryTableSliceTest extends QueryTableTestBase {
     }
 
     public void testHeadTailPct() {
-        final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6).convertToTracking(),
+        final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6).toTracking(),
                 c("x", 1, 2, 3), c("y", 'a', 'b', 'c'));
 
         assertEquals("", diff(table.headPct(0.5),
-                TstUtils.testRefreshingTable(i(2, 4).convertToTracking(), c("x", 1, 2), c("y", 'a', 'b')), 10));
+                TstUtils.testRefreshingTable(i(2, 4).toTracking(), c("x", 1, 2), c("y", 'a', 'b')), 10));
         assertEquals("", diff(table.tailPct(0.5),
-                TstUtils.testRefreshingTable(i(4, 6).convertToTracking(), c("x", 2, 3), c("y", 'b', 'c')), 10));
+                TstUtils.testRefreshingTable(i(4, 6).toTracking(), c("x", 2, 3), c("y", 'b', 'c')), 10));
         assertEquals("", diff(table.headPct(0.1),
-                TstUtils.testRefreshingTable(i(2).convertToTracking(), c("x", 1), c("y", 'a')), 10));
+                TstUtils.testRefreshingTable(i(2).toTracking(), c("x", 1), c("y", 'a')), 10));
         assertEquals("", diff(table.tailPct(0.1),
-                TstUtils.testRefreshingTable(i(6).convertToTracking(), c("x", 3), c("y", 'c')), 10));
+                TstUtils.testRefreshingTable(i(6).toTracking(), c("x", 3), c("y", 'c')), 10));
 
     }
 

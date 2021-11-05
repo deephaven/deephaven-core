@@ -494,7 +494,7 @@ public class RowSetShiftDataExpanderTest {
      */
     private static class Context {
         public final TrackingMutableRowSet sourceRowSet =
-                RowSetFactory.empty().convertToTracking();
+                RowSetFactory.empty().toTracking();
         public final MutableRowSet added = RowSetFactory.empty();
         public final MutableRowSet removed = RowSetFactory.empty();
         public final MutableRowSet modified = RowSetFactory.empty();

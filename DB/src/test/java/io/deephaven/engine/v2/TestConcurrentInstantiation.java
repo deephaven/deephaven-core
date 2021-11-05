@@ -52,7 +52,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
     private final ExecutorService dualPool = Executors.newFixedThreadPool(2);
 
     public void testTreeTableFilter() throws ExecutionException, InterruptedException {
-        final QueryTable source = TstUtils.testRefreshingTable(RowSetFactory.flat(10).convertToTracking(),
+        final QueryTable source = TstUtils.testRefreshingTable(RowSetFactory.flat(10).toTracking(),
                 col("Sentinel", 1, 2, 3, 4, 5, 6, 7, 8, 9, 10),
                 col("Parent", NULL_INT, NULL_INT, 1, 1, 2, 3, 5, 5, 3, 2));
         final Table treed =
@@ -104,9 +104,9 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
 
 
     public void testFlatten() throws ExecutionException, InterruptedException {
-        final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6).convertToTracking(),
+        final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6).toTracking(),
                 c("x", 1, 2, 3), c("y", "a", "b", "c"));
-        final Table tableStart = TstUtils.testRefreshingTable(i(2, 4, 6).convertToTracking(),
+        final Table tableStart = TstUtils.testRefreshingTable(i(2, 4, 6).toTracking(),
                 c("x", 1, 2, 3), c("y", "a", "b", "c"));
 
         LiveTableMonitor.DEFAULT.startCycleForUnitTests();
@@ -138,12 +138,12 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
     }
 
     public void testUpdateView() throws ExecutionException, InterruptedException {
-        final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6).convertToTracking(),
+        final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6).toTracking(),
                 c("x", 1, 2, 3), c("y", "a", "b", "c"));
         final Table tableStart =
-                TstUtils.testRefreshingTable(i(2, 4, 6).convertToTracking(),
+                TstUtils.testRefreshingTable(i(2, 4, 6).toTracking(),
                         c("x", 1, 2, 3), c("y", "a", "b", "c"), c("z", 4, 8, 12));
-        final Table tableUpdate = TstUtils.testRefreshingTable(i(2, 3, 4, 6).convertToTracking(),
+        final Table tableUpdate = TstUtils.testRefreshingTable(i(2, 3, 4, 6).toTracking(),
                 c("x", 1, 4, 2, 3), c("y", "a", "d", "b", "c"), c("z", 4, 16, 8, 12));
 
         final Callable<Table> callable = () -> table.updateView("z=x*4");
@@ -176,11 +176,11 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
     }
 
     public void testView() throws ExecutionException, InterruptedException {
-        final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6).convertToTracking(),
+        final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6).toTracking(),
                 c("x", 1, 2, 3), c("y", "a", "b", "c"));
-        final Table tableStart = TstUtils.testRefreshingTable(i(2, 4, 6).convertToTracking(),
+        final Table tableStart = TstUtils.testRefreshingTable(i(2, 4, 6).toTracking(),
                 c("y", "a", "b", "c"), c("z", 4, 8, 12));
-        final Table tableUpdate = TstUtils.testRefreshingTable(i(2, 3, 4, 6).convertToTracking(),
+        final Table tableUpdate = TstUtils.testRefreshingTable(i(2, 3, 4, 6).toTracking(),
                 c("y", "a", "d", "b", "c"), c("z", 4, 16, 8, 12));
 
         final Callable<Table> callable = () -> table.view("y", "z=x*4");
@@ -214,11 +214,11 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
 
     public void testDropColumns() throws ExecutionException, InterruptedException {
         final QueryTable table =
-                TstUtils.testRefreshingTable(i(2, 4, 6).convertToTracking(),
+                TstUtils.testRefreshingTable(i(2, 4, 6).toTracking(),
                         c("x", 1, 2, 3), c("y", "a", "b", "c"), c("z", 4, 8, 12));
-        final Table tableStart = TstUtils.testRefreshingTable(i(2, 4, 6).convertToTracking(),
+        final Table tableStart = TstUtils.testRefreshingTable(i(2, 4, 6).toTracking(),
                 c("x", 1, 2, 3), c("y", "a", "b", "c"));
-        final Table tableUpdate = TstUtils.testRefreshingTable(i(2, 3, 4, 6).convertToTracking(),
+        final Table tableUpdate = TstUtils.testRefreshingTable(i(2, 3, 4, 6).toTracking(),
                 c("x", 1, 4, 2, 3), c("y", "a", "d", "b", "c"));
 
         final Callable<Table> callable = () -> table.dropColumns("z");
@@ -251,12 +251,12 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
     }
 
     public void testWhere() throws ExecutionException, InterruptedException {
-        final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6).convertToTracking(),
+        final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6).toTracking(),
                 c("x", 1, 2, 3), c("y", "a", "b", "c"), c("z", true, false, true));
         final Table tableStart =
-                TstUtils.testRefreshingTable(i(2, 6).convertToTracking(),
+                TstUtils.testRefreshingTable(i(2, 6).toTracking(),
                         c("x", 1, 3), c("y", "a", "c"), c("z", true, true));
-        final Table tableUpdate = TstUtils.testRefreshingTable(i(2, 3, 6).convertToTracking(),
+        final Table tableUpdate = TstUtils.testRefreshingTable(i(2, 3, 6).toTracking(),
                 c("x", 1, 4, 3), c("y", "a", "d", "c"), c("z", true, true, true));
 
         LiveTableMonitor.DEFAULT.startCycleForUnitTests();
@@ -287,11 +287,11 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
     }
 
     public void testWhere2() throws ExecutionException, InterruptedException {
-        final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6).convertToTracking(),
+        final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6).toTracking(),
                 c("x", 1, 2, 3), c("y", "a", "b", "c"), c("z", true, false, true));
-        final Table tableStart = TstUtils.testRefreshingTable(i(2, 6).convertToTracking(),
+        final Table tableStart = TstUtils.testRefreshingTable(i(2, 6).toTracking(),
                 c("x", 1, 3), c("y", "a", "c"), c("z", true, true));
-        final Table testUpdate = TstUtils.testRefreshingTable(i(3, 6).convertToTracking(),
+        final Table testUpdate = TstUtils.testRefreshingTable(i(3, 6).toTracking(),
                 c("x", 4, 3), c("y", "d", "c"), c("z", true, true));
 
         LiveTableMonitor.DEFAULT.startCycleForUnitTests();
@@ -328,13 +328,13 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
 
     public void testWhereDynamic() throws ExecutionException, InterruptedException {
 
-        final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6).convertToTracking(),
+        final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6).toTracking(),
                 c("x", 1, 2, 3), c("y", "a", "b", "c"), c("z", true, false, true));
-        final Table tableStart = TstUtils.testRefreshingTable(i(2, 6).convertToTracking(),
+        final Table tableStart = TstUtils.testRefreshingTable(i(2, 6).toTracking(),
                 c("x", 1, 3), c("y", "a", "c"), c("z", true, true));
-        final Table testUpdate = TstUtils.testRefreshingTable(i(3, 6).convertToTracking(),
+        final Table testUpdate = TstUtils.testRefreshingTable(i(3, 6).toTracking(),
                 c("x", 4, 3), c("y", "d", "c"), c("z", true, true));
-        final Table whereTable = TstUtils.testRefreshingTable(i(0).convertToTracking(), c("z", true));
+        final Table whereTable = TstUtils.testRefreshingTable(i(0).toTracking(), c("z", true));
 
         final DynamicWhereFilter filter = LiveTableMonitor.DEFAULT.exclusiveLock()
                 .computeLocked(() -> new DynamicWhereFilter(whereTable, true, MatchPairFactory.getExpressions("z")));
@@ -362,11 +362,11 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
     }
 
     public void testSort() throws ExecutionException, InterruptedException {
-        final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6).convertToTracking(),
+        final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6).toTracking(),
                 c("x", 1, 2, 3), c("y", "a", "b", "c"));
-        final Table tableStart = TstUtils.testRefreshingTable(i(1, 2, 3).convertToTracking(),
+        final Table tableStart = TstUtils.testRefreshingTable(i(1, 2, 3).toTracking(),
                 c("x", 3, 2, 1), c("y", "c", "b", "a"));
-        final Table tableUpdate = TstUtils.testRefreshingTable(i(1, 2, 3, 4).convertToTracking(),
+        final Table tableUpdate = TstUtils.testRefreshingTable(i(1, 2, 3, 4).toTracking(),
                 c("x", 4, 3, 2, 1), c("y", "d", "c", "b", "a"));
 
         LiveTableMonitor.DEFAULT.startCycleForUnitTests();
@@ -397,15 +397,15 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
     }
 
     public void testReverse() throws ExecutionException, InterruptedException {
-        final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6).convertToTracking(),
+        final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6).toTracking(),
                 c("x", 1, 2, 3), c("y", "a", "b", "c"));
-        final Table tableStart = TstUtils.testRefreshingTable(i(1, 2, 3).convertToTracking(),
+        final Table tableStart = TstUtils.testRefreshingTable(i(1, 2, 3).toTracking(),
                 c("x", 3, 2, 1), c("y", "c", "b", "a"));
-        final Table tableUpdate = TstUtils.testRefreshingTable(i(1, 2, 3, 4).convertToTracking(),
+        final Table tableUpdate = TstUtils.testRefreshingTable(i(1, 2, 3, 4).toTracking(),
                 c("x", 4, 3, 2, 1), c("y", "d", "c", "b", "a"));
-        final Table tableUpdate2 = TstUtils.testRefreshingTable(i(1, 2, 3, 4, 5).convertToTracking(),
+        final Table tableUpdate2 = TstUtils.testRefreshingTable(i(1, 2, 3, 4, 5).toTracking(),
                 c("x", 5, 4, 3, 2, 1), c("y", "e", "d", "c", "b", "a"));
-        final Table tableUpdate3 = TstUtils.testRefreshingTable(i(1, 2, 3, 4, 5, 6).convertToTracking(),
+        final Table tableUpdate3 = TstUtils.testRefreshingTable(i(1, 2, 3, 4, 5, 6).toTracking(),
                 c("x", 6, 5, 4, 3, 2, 1), c("y", "f", "e", "d", "c", "b", "a"));
 
         LiveTableMonitor.DEFAULT.startCycleForUnitTests();
@@ -459,7 +459,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
 
 
     public void testSortOfByExternal() throws ExecutionException, InterruptedException {
-        final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6).convertToTracking(),
+        final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6).toTracking(),
                 c("x", 1, 2, 3), c("y", "a", "a", "a"));
         final TableMap tm = table.byExternal("y");
 
@@ -493,12 +493,12 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
 
 
     public void testChain() throws ExecutionException, InterruptedException {
-        final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6).convertToTracking(),
+        final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6).toTracking(),
                 c("x", 1, 2, 3), c("y", "a", "b", "c"), c("z", true, false, true));
-        final Table tableStart = TstUtils.testRefreshingTable(i(1, 3).convertToTracking(),
+        final Table tableStart = TstUtils.testRefreshingTable(i(1, 3).toTracking(),
                 c("x", 3, 1), c("y", "c", "a"), c("z", true, true), c("u", 12, 4));
 
-        final Table tableUpdate = TstUtils.testRefreshingTable(i(1, 2, 4).convertToTracking(),
+        final Table tableUpdate = TstUtils.testRefreshingTable(i(1, 2, 4).toTracking(),
                 c("x", 4, 3, 1), c("y", "d", "c", "a"), c("z", true, true, true), c("u", 16, 12, 4));
 
         final Callable<Table> callable = () -> table.updateView("u=x*4").where("z").sortDescending("x");
@@ -533,7 +533,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
     }
 
     public void testReverseLookupListener() throws ExecutionException, InterruptedException {
-        final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6).convertToTracking(),
+        final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6).toTracking(),
                 c("x", 1, 2, 3), c("y", "a", "b", "c"));
 
         LiveTableMonitor.DEFAULT.startCycleForUnitTests();
@@ -998,7 +998,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
     }
 
     public void testSelectDistinct() throws ExecutionException, InterruptedException {
-        final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6, 8).convertToTracking(),
+        final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6, 8).toTracking(),
                 c("y", "a", "b", "a", "c"));
         final Table expected1 = newTable(c("y", "a", "b", "c"));
         final Table expected2 = newTable(c("y", "a", "d", "b", "c"));
@@ -1082,7 +1082,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         QueryScope.addParam("barrierFunction", barrierFunction);
 
         try {
-            final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6, 8).convertToTracking(),
+            final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6, 8).toTracking(),
                     c("y", "a", "b", "a", "c"));
             final Table slowed = table.updateView("z=barrierFunction.apply(y)");
             final Table expected1 = newTable(c("z", "a", "b"));
@@ -1436,7 +1436,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         }
 
 
-        return TstUtils.testRefreshingTable(i(2, 4, 6, 8).convertToTracking(),
+        return TstUtils.testRefreshingTable(i(2, 4, 6, 8).toTracking(),
                 columnHolders.toArray(ColumnHolder.ZERO_LENGTH_COLUMN_HOLDER_ARRAY));
     }
 
@@ -1491,7 +1491,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
     }
 
     public void testConstructSnapshotException() throws ExecutionException, InterruptedException {
-        final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6, 8).convertToTracking(),
+        final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6, 8).toTracking(),
                 c("y", "a", "b", "c", "d"));
 
 
@@ -1545,7 +1545,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
     public void testStaticSnapshot() throws ExecutionException, InterruptedException {
         final Table emptyTable = TableTools.emptyTable(0);
 
-        final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6).convertToTracking(),
+        final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6).toTracking(),
                 c("x", 1, 2, 3), c("y", "a", "b", "c"), c("z", true, false, true));
         final Table tableStart = TableTools.newTable(c("x", 1, 2, 3), c("y", "a", "b", "c"), c("z", true, false, true));
         final Table tableUpdate =
@@ -1581,8 +1581,8 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
     public void testSnapshotLiveness() {
         final QueryTable left, right, snap;
         try (final SafeCloseable ignored = LivenessScopeStack.open()) {
-            right = TstUtils.testRefreshingTable(i(0).convertToTracking(), c("x", 1));
-            left = TstUtils.testRefreshingTable(i().convertToTracking());
+            right = TstUtils.testRefreshingTable(i(0).toTracking(), c("x", 1));
+            left = TstUtils.testRefreshingTable(i().toTracking());
             snap = (QueryTable) left.snapshot(right);
             snap.retainReference();
         }

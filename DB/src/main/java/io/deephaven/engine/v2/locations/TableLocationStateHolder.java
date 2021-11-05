@@ -34,7 +34,7 @@ public class TableLocationStateHolder implements TableLocationState {
 
     @Override
     public final synchronized RowSet getIndex() {
-        return index.clone();
+        return index.copy();
     }
 
     @Override
@@ -61,7 +61,7 @@ public class TableLocationStateHolder implements TableLocationState {
     /**
      * Set all state values.
      *
-     * @param index The new rowSet. Ownership passes to this holder; callers should {@link RowSet#clone() clone} it if
+     * @param index The new rowSet. Ownership passes to this holder; callers should {@link RowSet#copy() copy} it if
      *        necessary.
      * @param lastModifiedTimeMillis The new modification time
      * @return Whether any of the values changed

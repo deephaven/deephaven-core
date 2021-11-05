@@ -75,7 +75,7 @@ public class SnapshotInternalListener extends BaseTable.ListenerImpl {
             final RowSet addedRange = RowSetFactory.fromRange(snapshotPrevLength, snapshotSize - 1);
             resultRowSet.insert(addedRange);
             if (notifyListeners) {
-                result.notifyListeners(addedRange, RowSetFactory.empty(), resultRowSet.clone());
+                result.notifyListeners(addedRange, RowSetFactory.empty(), resultRowSet.copy());
             }
         } else if (snapshotPrevLength > snapshotSize) {
             // If the table got smaller, then:
@@ -85,12 +85,12 @@ public class SnapshotInternalListener extends BaseTable.ListenerImpl {
             final RowSet removedRange = RowSetFactory.fromRange(snapshotSize, snapshotPrevLength - 1);
             resultRowSet.remove(removedRange);
             if (notifyListeners) {
-                result.notifyListeners(RowSetFactory.empty(), removedRange, resultRowSet.clone());
+                result.notifyListeners(RowSetFactory.empty(), removedRange, resultRowSet.copy());
             }
         } else if (notifyListeners) {
             // If the table stayed the same size, then modified = the rowSet
             result.notifyListeners(RowSetFactory.empty(), RowSetFactory.empty(),
-                    resultRowSet.clone());
+                    resultRowSet.copy());
         }
         snapshotPrevLength = snapshotTable.size();
     }

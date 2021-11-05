@@ -61,7 +61,7 @@ public class DateTimeRangeFilter extends LongRangeFilter {
     @Override
     MutableRowSet binarySearch(RowSet selection, ColumnSource columnSource, boolean usePrev, boolean reverse) {
         if (selection.isEmpty()) {
-            return selection.clone();
+            return selection.copy();
         }
 
         // noinspection unchecked

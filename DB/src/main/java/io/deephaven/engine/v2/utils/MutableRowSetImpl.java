@@ -44,14 +44,13 @@ public class MutableRowSetImpl extends RowSequenceAsChunkImpl implements Mutable
         return innerSet;
     }
 
-    @SuppressWarnings("MethodDoesntCallSuperMethod")
     @Override
-    public final MutableRowSet clone() {
+    public final MutableRowSet copy() {
         return new MutableRowSetImpl(innerSet.ixCowRef());
     }
 
     @Override
-    public TrackingMutableRowSet convertToTracking() {
+    public TrackingMutableRowSet toTracking() {
         final TrackingMutableRowSet result = new TrackingMutableRowSetImpl(innerSet);
         innerSet = null; // Force NPE on use after tracking
         closeRowSequenceAsChunkImpl();
@@ -233,7 +232,7 @@ public class MutableRowSetImpl extends RowSequenceAsChunkImpl implements Mutable
 
     @Override
     public final RowSet asRowSet() {
-        return clone();
+        return copy();
     }
 
     @Override
@@ -278,7 +277,7 @@ public class MutableRowSetImpl extends RowSequenceAsChunkImpl implements Mutable
     @Override
     public final MutableRowSet union(final RowSet indexToAdd) {
         if (indexToAdd == this) {
-            return clone();
+            return copy();
         }
         return new MutableRowSetImpl(innerSet.ixUnionOnNew(getInnerSet(indexToAdd)));
     }

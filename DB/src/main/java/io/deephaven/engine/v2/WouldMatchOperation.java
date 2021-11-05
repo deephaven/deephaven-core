@@ -96,7 +96,7 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
                 filter.init(parent.getDefinition());
                 final MutableRowSet result = filter.filter(fullRowSet, fullRowSet, parent, usePrev);
                 holder.column = new IndexWrapperColumnSource(
-                        holder.getColumnName(), parent, result.convertToTracking(), filter);
+                        holder.getColumnName(), parent, result.toTracking(), filter);
 
                 if (newColumns.put(holder.getColumnName(), holder.column) != null) {
                     // This should never happen or the check in the constructor has failed.
@@ -182,9 +182,9 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
         @Override
         protected void process() {
             final io.deephaven.engine.v2.Listener.Update downstream = new io.deephaven.engine.v2.Listener.Update(
-                    recorder.getAdded().clone(),
-                    recorder.getRemoved().clone(),
-                    recorder.getModified().clone(),
+                    recorder.getAdded().copy(),
+                    recorder.getRemoved().copy(),
+                    recorder.getModified().copy(),
                     recorder.getShifted(),
                     resultTable.modifiedColumnSet);
 
@@ -458,7 +458,7 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
             final RowSet rowsChanged;
             try (final SafeCloseableList toClose = new SafeCloseableList()) {
                 final MutableRowSet refiltered =
-                        toClose.add(filter.filter(table.getRowSet().clone(), table.getRowSet(), table, false));
+                        toClose.add(filter.filter(table.getRowSet().copy(), table.getRowSet(), table, false));
 
                 // This is just Xor, but there is no TrackingMutableRowSet op for that
                 final RowSet newlySet = toClose.add(refiltered.minus(source));

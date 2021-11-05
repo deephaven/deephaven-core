@@ -90,7 +90,7 @@ public class CrossJoinHelper {
                     // we only have the redirection rowSet when building left and no way to reverse the lookup.
                     final TrackingMutableRowSet resultRowSet = jsm.buildFromRight(leftTable,
                             bucketingContext.leftSources, rightTable, bucketingContext.rightSources)
-                            .convertToTracking();
+                            .toTracking();
 
                     return makeResult(leftTable, rightTable, columnsToAdd, jsm, resultRowSet,
                             cs -> new CrossJoinRightColumnSource<>(jsm, cs, rightTable.isLive()));
@@ -104,7 +104,7 @@ public class CrossJoinHelper {
                 jsm.setTargetLoadFactor(control.getTargetLoadFactor());
 
                 final TrackingMutableRowSet resultRowSet =
-                        jsm.buildLeftTicking(leftTable, rightTable, bucketingContext.rightSources).convertToTracking();
+                        jsm.buildLeftTicking(leftTable, rightTable, bucketingContext.rightSources).toTracking();
                 final QueryTable resultTable = makeResult(leftTable, rightTable, columnsToAdd, jsm, resultRowSet,
                         cs -> new CrossJoinRightColumnSource<>(jsm, cs, rightTable.isLive()));
 
@@ -193,7 +193,7 @@ public class CrossJoinHelper {
             jsm.setMaximumLoadFactor(control.getMaximumLoadFactor());
             jsm.setTargetLoadFactor(control.getTargetLoadFactor());
 
-            final TrackingMutableRowSet resultRowSet = jsm.build(leftTable, rightTable).convertToTracking();
+            final TrackingMutableRowSet resultRowSet = jsm.build(leftTable, rightTable).toTracking();
 
             final QueryTable resultTable = makeResult(leftTable, rightTable, columnsToAdd, jsm, resultRowSet,
                     cs -> new CrossJoinRightColumnSource<>(jsm, cs, rightTable.isLive()));
@@ -382,7 +382,7 @@ public class CrossJoinHelper {
                                     rowsToShift = leftChanged ? leftTable.getRowSet().minus(upstreamLeft.added)
                                             : leftTable.getRowSet();
                                 } else {
-                                    rowsToShift = leftIndexesToVisitForAdds.clone();
+                                    rowsToShift = leftIndexesToVisitForAdds.copy();
                                 }
                             }
 
@@ -417,7 +417,7 @@ public class CrossJoinHelper {
 
                             try (final RowSequence.Iterator rsIt =
                                     allRowsShift ? null : resultRowSet.getRowSequenceIterator();
-                                    final MutableRowSet unshiftedRowsToShift = rowsToShift.clone()) {
+                                    final MutableRowSet unshiftedRowsToShift = rowsToShift.copy()) {
                                 upstreamLeft.shifted.unapply(unshiftedRowsToShift);
                                 final RowSet.SearchIterator prevIter = unshiftedRowsToShift.searchIterator();
 
@@ -869,7 +869,7 @@ public class CrossJoinHelper {
         final CrossJoinShiftState crossJoinState =
                 new CrossJoinShiftState(Math.max(numRightBitsToReserve, CrossJoinShiftState.getMinBits(rightTable)));
 
-        final TrackingMutableRowSet resultRowSet = RowSetFactory.empty().convertToTracking();
+        final TrackingMutableRowSet resultRowSet = RowSetFactory.empty().toTracking();
         final QueryTable result = makeResult(leftTable, rightTable, columnsToAdd, crossJoinState, resultRowSet,
                 cs -> new BitMaskingColumnSource<>(crossJoinState, cs));
         final ModifiedColumnSet.Transformer leftTransformer =
@@ -908,7 +908,7 @@ public class CrossJoinHelper {
                 }
 
                 long currRightShift = 0; // how far currRight has been shifted
-                final MutableRowSet currRight = closer.add(rightTable.getRowSet().clone());
+                final MutableRowSet currRight = closer.add(rightTable.getRowSet().copy());
 
                 if (rightChanged) {
                     // Must touch every left row. (Note: this code is accessible iff right changed.)
@@ -919,13 +919,13 @@ public class CrossJoinHelper {
                     final MutableRowSet prevRight = closer.add(rightTable.getRowSet().getPrevRowSet());
 
                     long rmRightShift = 0; // how far rmRight has been shifted
-                    final MutableRowSet rmRight = closer.add(rightUpdate.removed.clone());
+                    final MutableRowSet rmRight = closer.add(rightUpdate.removed.copy());
 
                     long addRightShift = 0; // how far addRight has been shifted
-                    final MutableRowSet addRight = closer.add(rightUpdate.added.clone());
+                    final MutableRowSet addRight = closer.add(rightUpdate.added.copy());
 
                     long modRightShift = 0; // how far modRight has been shifted
-                    final MutableRowSet modRight = closer.add(rightUpdate.modified.clone());
+                    final MutableRowSet modRight = closer.add(rightUpdate.modified.copy());
 
                     long existingRightShift = 0; // how far existingRight has been shifted
                     final MutableRowSet existingRight = closer.add(currRight.minus(rightUpdate.added));
@@ -1113,7 +1113,7 @@ public class CrossJoinHelper {
         }
 
         // Initialize result table.
-        try (final MutableRowSet currRight = rightTable.getRowSet().clone()) {
+        try (final MutableRowSet currRight = rightTable.getRowSet().copy()) {
             final MutableLong currRightShift = new MutableLong();
             leftTable.getRowSet().forAllRowKeys((currIdx) -> {
                 final long currResultIdx = currIdx << crossJoinState.getNumShiftBits();

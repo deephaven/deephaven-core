@@ -86,10 +86,10 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
         // noinspection ResultOfMethodCallIgnored
         TEST_ROOT_FILE.mkdirs();
 
-        table1 = testRefreshingTable(TstUtils.i(2, 3, 6, 7, 8, 10, 12, 15, 16).convertToTracking(),
+        table1 = testRefreshingTable(TstUtils.i(2, 3, 6, 7, 8, 10, 12, 15, 16).toTracking(),
                 TstUtils.c("StringKeys", "key1", "key1", "key1", "key1", "key2", "key2", "key2", "key2", "key2"),
                 TstUtils.c("GroupedInts", 1, 1, 2, 2, 2, 3, 3, 3, 3));
-        table2 = testRefreshingTable(TstUtils.i(1, 3, 5, 10, 20, 30, 31, 32, 33).convertToTracking(),
+        table2 = testRefreshingTable(TstUtils.i(1, 3, 5, 10, 20, 30, 31, 32, 33).toTracking(),
                 TstUtils.c("StringKeys1", "key1", "key1", "key1", "key1", "key2", "key2", "key2", "key2", "key2"),
                 TstUtils.c("GroupedInts1", 1, 1, 2, 2, 2, 3, 3, 3, 3));
         table3 = new InMemoryTable(
@@ -618,17 +618,17 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
     public void testMerge2() {
         Random random = new Random(0);
         int size = random.nextInt(10);
-        final QueryTable table1 = TstUtils.testRefreshingTable(getRandomIndex(0, size, random).convertToTracking(),
+        final QueryTable table1 = TstUtils.testRefreshingTable(getRandomIndex(0, size, random).toTracking(),
                 getRandomStringCol("Sym", size, random),
                 getRandomIntCol("intCol", size, random),
                 getRandomDoubleCol("doubleCol", size, random));
         size = random.nextInt(10);
-        final QueryTable table2 = TstUtils.testRefreshingTable(getRandomIndex(0, size, random).convertToTracking(),
+        final QueryTable table2 = TstUtils.testRefreshingTable(getRandomIndex(0, size, random).toTracking(),
                 getRandomStringCol("Sym", size, random),
                 getRandomIntCol("intCol", size, random),
                 getRandomDoubleCol("doubleCol", size, random));
         size = random.nextInt(10);
-        final QueryTable table3 = TstUtils.testRefreshingTable(getRandomIndex(0, size, random).convertToTracking(),
+        final QueryTable table3 = TstUtils.testRefreshingTable(getRandomIndex(0, size, random).toTracking(),
                 getRandomStringCol("Sym", size, random),
                 getRandomIntCol("intCol", size, random),
                 getRandomDoubleCol("doubleCol", size, random));
@@ -644,22 +644,22 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
     public void testMergeIterative() {
         Random random = new Random(0);
         int size = 3;
-        final QueryTable table1 = TstUtils.testRefreshingTable(getRandomIndex(0, size, random).convertToTracking(),
+        final QueryTable table1 = TstUtils.testRefreshingTable(getRandomIndex(0, size, random).toTracking(),
                 getRandomStringCol("Sym", size, random),
                 getRandomIntCol("intCol", size, random),
                 getRandomDoubleCol("doubleCol", size, random));
         size = 3;
-        final QueryTable table2 = TstUtils.testRefreshingTable(getRandomIndex(0, size, random).convertToTracking(),
+        final QueryTable table2 = TstUtils.testRefreshingTable(getRandomIndex(0, size, random).toTracking(),
                 getRandomStringCol("Sym", size, random),
                 getRandomIntCol("intCol", size, random),
                 getRandomDoubleCol("doubleCol", size, random));
         size = 3;
-        final QueryTable table3 = TstUtils.testRefreshingTable(getRandomIndex(0, size, random).convertToTracking(),
+        final QueryTable table3 = TstUtils.testRefreshingTable(getRandomIndex(0, size, random).toTracking(),
                 getRandomStringCol("Sym", size, random),
                 getRandomIntCol("intCol", size, random),
                 getRandomDoubleCol("doubleCol", size, random));
         size = 50;
-        final QueryTable staticTable = TstUtils.testTable(getRandomIndex(0, size, random).convertToTracking(),
+        final QueryTable staticTable = TstUtils.testTable(getRandomIndex(0, size, random).toTracking(),
                 getRandomStringCol("Sym", size, random),
                 getRandomIntCol("intCol", size, random),
                 getRandomDoubleCol("doubleCol", size, random));
@@ -896,7 +896,7 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
     @Test
     public void testMergeWithNestedShift() {
         // Test that an outer shift properly shifts rowSet when inner shifts are also propagated to the rowSet.
-        final QueryTable table = testRefreshingTable(i(1).convertToTracking(), c("Sentinel", 1));
+        final QueryTable table = testRefreshingTable(i(1).toTracking(), c("Sentinel", 1));
         // must be uncollapsable s.t. inner table shifts at the same time as outer table
         final Table m2 = TableTools.merge(table, table).updateView("Sentinel=Sentinel+1");
         final Table result = TableTools.merge(table, m2);
@@ -920,8 +920,8 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
     public void testMergeWithShiftBoundary() {
         // Test that an outer shift properly shifts rowSet when inner shifts are also propagated to the rowSet.
         final int ONE_MILLION = 1024 * 1024;
-        final QueryTable table = testRefreshingTable(i(ONE_MILLION - 1).convertToTracking(), c("Sentinel", 1));
-        final QueryTable table2 = testRefreshingTable(i(0).convertToTracking(), c("Sentinel", 2));
+        final QueryTable table = testRefreshingTable(i(ONE_MILLION - 1).toTracking(), c("Sentinel", 1));
+        final QueryTable table2 = testRefreshingTable(i(0).toTracking(), c("Sentinel", 2));
         final Table result = TableTools.merge(table, table2);
 
         TableTools.showWithIndex(result);
@@ -946,8 +946,8 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
     @Test
     public void testMergeShiftsEmptyTable() {
         // Test that an outer shift properly shifts rowSet when inner shifts are also propagated to the rowSet.
-        final QueryTable table = testRefreshingTable(i(1).convertToTracking(), c("Sentinel", 1));
-        final QueryTable emptyTable = testRefreshingTable(i().convertToTracking(), TstUtils.<Integer>c("Sentinel"));
+        final QueryTable table = testRefreshingTable(i(1).toTracking(), c("Sentinel", 1));
+        final QueryTable emptyTable = testRefreshingTable(i().toTracking(), TstUtils.<Integer>c("Sentinel"));
         final Table m2 = TableTools.merge(table, emptyTable, emptyTable).updateView("Sentinel=Sentinel+1");
 
         final EvalNugget[] ev = new EvalNugget[] {
@@ -986,8 +986,8 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
         // Test that when our inner table has a shift that is begins beyond the last key for our subtable (because
         // it has been filtered and the reserved address space is less than the address space of the full unfiltered
         // table) we do not remove elements that should not be removed. This is distilled from a broken fuzzer test.
-        final QueryTable table1 = testRefreshingTable(i(10000, 65538).convertToTracking(), c("Sentinel", 1, 2));
-        final QueryTable table2 = testRefreshingTable(i(2).convertToTracking(), c("Sentinel", 3));
+        final QueryTable table1 = testRefreshingTable(i(10000, 65538).toTracking(), c("Sentinel", 1, 2));
+        final QueryTable table2 = testRefreshingTable(i(2).toTracking(), c("Sentinel", 3));
         final Table table1Filtered = table1.where("Sentinel == 1");
         final Table m2 = TableTools.merge(table1Filtered, table2);
 
@@ -1019,8 +1019,8 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
     @Test
     public void testMergeDeepShifts() {
         // Test that an outer shift properly shifts rowSet when inner shifts are also propagated to the rowSet.
-        final QueryTable table = testRefreshingTable(i(1).convertToTracking(), c("Sentinel", 1));
-        final QueryTable emptyTable = testRefreshingTable(i().convertToTracking(), TstUtils.<Integer>c("Sentinel"));
+        final QueryTable table = testRefreshingTable(i(1).toTracking(), c("Sentinel", 1));
+        final QueryTable emptyTable = testRefreshingTable(i().toTracking(), TstUtils.<Integer>c("Sentinel"));
         final Table m2 = TableTools.merge(table, emptyTable, emptyTable, emptyTable, emptyTable, emptyTable)
                 .updateView("Sentinel=Sentinel+1");
 
@@ -1088,9 +1088,9 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
 
     @Test
     public void testMergeSorted() throws IOException {
-        Table table1 = testTable(i(1, 3, 5, 6, 7).convertToTracking(), c("Key", "a", "c", "d", "e", "f"))
+        Table table1 = testTable(i(1, 3, 5, 6, 7).toTracking(), c("Key", "a", "c", "d", "e", "f"))
                 .updateView("Sentinel=k");
-        Table table2 = testTable(i(2, 4, 8, 9).convertToTracking(), c("Key", "b", "c", "g", "h"))
+        Table table2 = testTable(i(2, 4, 8, 9).toTracking(), c("Key", "b", "c", "g", "h"))
                 .updateView("Sentinel=k");
         Table merged = TableTools.mergeSorted("Key", table1, table2);
         io.deephaven.engine.tables.utils.TableTools.showWithIndex(merged);
@@ -1127,7 +1127,7 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
 
     @Test
     public void testMergeGetChunk() {
-        final QueryTable table = testRefreshingTable(i(1).convertToTracking(), c("Sentinel", 1));
+        final QueryTable table = testRefreshingTable(i(1).toTracking(), c("Sentinel", 1));
         final Table m2 = TableTools.merge(table, table).updateView("Sentinel=Sentinel+1");
         final QueryTable result = (QueryTable) TableTools.merge(table, m2);
 
@@ -1187,7 +1187,7 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
 
     @Test
     public void testMergeGetChunkEmpty() {
-        final QueryTable table = testRefreshingTable(i(1).convertToTracking(), c("Sentinel", 1));
+        final QueryTable table = testRefreshingTable(i(1).toTracking(), c("Sentinel", 1));
         final Table m2 = TableTools.merge(table, table).updateView("Sentinel=Sentinel+1");
         final QueryTable result = (QueryTable) TableTools.merge(table, m2);
 
@@ -1244,7 +1244,7 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
     @Test
     public void testMergeIndexShiftingPerformance() {
         final QueryTable testRefreshingTable =
-                TstUtils.testRefreshingTable(i(0).convertToTracking(), intCol("IntCol", 0), charCol("CharCol", 'a'));
+                TstUtils.testRefreshingTable(i(0).toTracking(), intCol("IntCol", 0), charCol("CharCol", 'a'));
 
         final Table joined = testRefreshingTable.view("CharCol").join(testRefreshingTable, "CharCol", "IntCol");
         final TableMap map = joined.byExternal("IntCol");

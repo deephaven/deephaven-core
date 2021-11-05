@@ -25,7 +25,7 @@ public class TestTailInitializationFilter extends LiveTableTestCase {
         final DBDateTime threshold1 = new DBDateTime(data[99] - DBTimeUtils.secondsToNanos(600));
         final DBDateTime threshold2 = new DBDateTime(data[199] - DBTimeUtils.secondsToNanos(600));
 
-        final QueryTable input = TstUtils.testRefreshingTable(builder.build().convertToTracking(),
+        final QueryTable input = TstUtils.testRefreshingTable(builder.build().toTracking(),
                 ColumnHolder.getDateTimeColumnHolder("Timestamp", false, data));
         final Table filtered = TailInitializationFilter.mostRecent(input, "Timestamp", "00:10:00");
         TableTools.showWithIndex(filtered);

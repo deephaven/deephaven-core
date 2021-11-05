@@ -27,10 +27,10 @@ class SimpleShiftObliviousListener extends ShiftObliviousInstrumentedListenerAda
     @Override
     public void onUpdate(RowSet added, RowSet removed, RowSet modified) {
         freeResources();
-        // Need to clone to save RowSetShiftDataExpander indices that are destroyed at the end of the LTM cycle.
-        this.added = added.clone();
-        this.removed = removed.clone();
-        this.modified = modified.clone();
+        // Need to copy to save RowSetShiftDataExpander indices that are destroyed at the end of the LTM cycle.
+        this.added = added.copy();
+        this.removed = removed.copy();
+        this.modified = modified.copy();
         ++count;
     }
 

@@ -29,7 +29,7 @@ public class TestKeyedTableListener extends BaseCachedJMockTestCase {
         LiveTableMonitor.DEFAULT.enableUnitTestMode();
         LiveTableMonitor.DEFAULT.resetForUnitTests(false);
         this.mockListener = mock(KeyedTableListener.KeyUpdateListener.class);
-        this.table = TstUtils.testRefreshingTable(TstUtils.i(0, 1, 2).convertToTracking(),
+        this.table = TstUtils.testRefreshingTable(TstUtils.i(0, 1, 2).toTracking(),
                 TstUtils.c("Key1", "A", "B", "C"),
                 TstUtils.c("Key2", 1, 2, 3),
                 TstUtils.c("Data", 1.0, 2.0, 3.0));
@@ -75,7 +75,7 @@ public class TestKeyedTableListener extends BaseCachedJMockTestCase {
         keyedTableListener.subscribe(cKey, mockListener);
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(
-                () -> table.notifyListeners(noAdded.clone(), noRemoved.clone(), noModified.clone()));
+                () -> table.notifyListeners(noAdded.copy(), noRemoved.copy(), noModified.copy()));
 
         keyedTableListener.unsubscribe(aKey, mockListener);
         keyedTableListener.unsubscribe(bKey, mockListener);
@@ -95,7 +95,7 @@ public class TestKeyedTableListener extends BaseCachedJMockTestCase {
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             final RowSet newAdd = TstUtils.i(3);
             TstUtils.addToTable(table, newAdd, TstUtils.c("Key1", "D"), TstUtils.c("Key2", 4), TstUtils.c("Data", 4.0));
-            table.notifyListeners(newAdd, noRemoved.clone(), noModified.clone());
+            table.notifyListeners(newAdd, noRemoved.copy(), noModified.copy());
         });
 
         // Check that the new values are available
@@ -117,7 +117,7 @@ public class TestKeyedTableListener extends BaseCachedJMockTestCase {
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             final RowSet newRemove = TstUtils.i(2);
             TstUtils.removeRows(table, newRemove);
-            table.notifyListeners(noAdded.clone(), newRemove, noModified.clone());
+            table.notifyListeners(noAdded.copy(), newRemove, noModified.copy());
         });
 
         // Check the values are missing
@@ -144,7 +144,7 @@ public class TestKeyedTableListener extends BaseCachedJMockTestCase {
             final RowSet newModified = TstUtils.i(2);
             TstUtils.addToTable(table, newModified, TstUtils.c("Key1", "C"), TstUtils.c("Key2", 3),
                     TstUtils.c("Data", 6.0));
-            table.notifyListeners(noAdded.clone(), noRemoved.clone(), newModified);
+            table.notifyListeners(noAdded.copy(), noRemoved.copy(), newModified);
         });
 
         // Check the value has changed
@@ -174,7 +174,7 @@ public class TestKeyedTableListener extends BaseCachedJMockTestCase {
             // Add to table on an existing rowSet is a modify
             TstUtils.addToTable(table, newModified, TstUtils.c("Key1", "C"), TstUtils.c("Key2", 4),
                     TstUtils.c("Data", 6.0));
-            table.notifyListeners(noAdded.clone(), noRemoved.clone(), newModified);
+            table.notifyListeners(noAdded.copy(), noRemoved.copy(), newModified);
         });
 
         // Check that the old key returns null now
@@ -215,7 +215,7 @@ public class TestKeyedTableListener extends BaseCachedJMockTestCase {
             // Add to table on an existing rowSet is a modify
             TstUtils.addToTable(table, newModified, TstUtils.c("Key1", "C", "D"), TstUtils.c("Key2", 3, 4),
                     TstUtils.c("Data", 3.0, 4.0));
-            table.notifyListeners(noAdded.clone(), noRemoved.clone(), newModified);
+            table.notifyListeners(noAdded.copy(), noRemoved.copy(), newModified);
         });
 
         // Check that the old key returns null now
@@ -255,7 +255,7 @@ public class TestKeyedTableListener extends BaseCachedJMockTestCase {
             final RowSet newModified = TstUtils.i(1, 2);
             TstUtils.addToTable(table, newModified, TstUtils.c("Key1", "C", "B"), TstUtils.c("Key2", 3, 2),
                     TstUtils.c("Data", 3.0, 2.0));
-            table.notifyListeners(noAdded.clone(), noRemoved.clone(), newModified);
+            table.notifyListeners(noAdded.copy(), noRemoved.copy(), newModified);
         });
 
         // Check that the keys still return the correct values
@@ -346,7 +346,7 @@ public class TestKeyedTableListener extends BaseCachedJMockTestCase {
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             final RowSet newRemoved = TstUtils.i(2);
             TstUtils.removeRows(table, newRemoved);
-            table.notifyListeners(noAdded.clone(), newRemoved, noModified.clone());
+            table.notifyListeners(noAdded.copy(), newRemoved, noModified.copy());
         });
 
         // Now add
@@ -354,7 +354,7 @@ public class TestKeyedTableListener extends BaseCachedJMockTestCase {
             final RowSet newAdded = TstUtils.i(2);
             TstUtils.addToTable(table, newAdded, TstUtils.c("Key1", "D"), TstUtils.c("Key2", 4),
                     TstUtils.c("Data", 4.0));
-            table.notifyListeners(newAdded, noRemoved.clone(), noModified.clone());
+            table.notifyListeners(newAdded, noRemoved.copy(), noModified.copy());
         });
 
         // Check cKey is removed

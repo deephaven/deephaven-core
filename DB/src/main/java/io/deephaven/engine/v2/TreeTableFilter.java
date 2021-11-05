@@ -143,7 +143,7 @@ public class TreeTableFilter implements Function.Unary<Table, Table>, MemoizedOp
 
             parentReferences = new HashMap<>(valuesRowSet.intSize("parentReferenceMap"));
             parentRowSet = computeParents(usePrev, valuesRowSet);
-            resultRowSet = valuesRowSet.union(parentRowSet).convertToTracking();
+            resultRowSet = valuesRowSet.union(parentRowSet).toTracking();
 
             validateState(usePrev);
 
@@ -289,7 +289,7 @@ public class TreeTableFilter implements Function.Unary<Table, Table>, MemoizedOp
         }
 
         private MutableRowSet doValueFilter(boolean usePrev, RowSet rowsToFilter) {
-            MutableRowSet matched = rowsToFilter.clone();
+            MutableRowSet matched = rowsToFilter.copy();
             for (final SelectFilter filter : filters) {
                 try (final SafeCloseable ignored = matched) { // Ensure we close old matched
                     matched = filter.filter(matched, source.getRowSet(), source, usePrev);

@@ -42,7 +42,7 @@ public class QueryTableSelectUpdateTest {
     @Test
     public void testSelectAndUpdate() {
         final QueryTable table1 =
-                (QueryTable) TstUtils.testRefreshingTable(i(2, 4, 6).convertToTracking())
+                (QueryTable) TstUtils.testRefreshingTable(i(2, 4, 6).toTracking())
                         .select("x = i*3", "y = \"\" + k");
         TestCase.assertEquals(3, table1.size());
         TestCase
@@ -140,7 +140,7 @@ public class QueryTableSelectUpdateTest {
         TestCase
                 .assertEquals(Arrays.asList(-2, 0, 2), Arrays.asList(table5.getColumn("t").get(0, table5.size())));
 
-        final QueryTable table6 = TstUtils.testRefreshingTable(i(2, 4, 6).convertToTracking(),
+        final QueryTable table6 = TstUtils.testRefreshingTable(i(2, 4, 6).toTracking(),
                 c("x", 1, 2, 3), c("y", 'a', 'b', 'c'));
         table2 = (QueryTable) table6.update("z = x", "x = z + 1", "t = x - 3");
         final ShiftObliviousListener table2Listener2 = base.newListenerWithGlobals(table2);
@@ -218,7 +218,7 @@ public class QueryTableSelectUpdateTest {
 
         QueryLibrary.importStatic(QueryTableSelectUpdateTest.class);
 
-        QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6).convertToTracking(), c("A", 1, 2, 3));
+        QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6).toTracking(), c("A", 1, 2, 3));
         table = (QueryTable) table
                 .lazyUpdate("B=" + QueryTableSelectUpdateTest.class.getCanonicalName() + ".callCounter(A)");
         TestCase.assertEquals(3, table.size());
@@ -231,7 +231,7 @@ public class QueryTableSelectUpdateTest {
         TestCase.assertEquals(3, callCount);
 
         callCount = 0;
-        QueryTable table2 = TstUtils.testRefreshingTable(i(2, 4, 6, 8, 10, 12).convertToTracking(),
+        QueryTable table2 = TstUtils.testRefreshingTable(i(2, 4, 6, 8, 10, 12).toTracking(),
                 c("A", 1, 2, 3, 2, 3, 1));
         table2 = (QueryTable) table2
                 .lazyUpdate("B=" + QueryTableSelectUpdateTest.class.getCanonicalName() + ".callCounter(A)");
@@ -271,9 +271,9 @@ public class QueryTableSelectUpdateTest {
 
             @Override
             public void onUpdate(RowSet added, RowSet removed, RowSet modified) {
-                this.added = added.clone();
-                this.removed = removed.clone();
-                this.modified = modified.clone();
+                this.added = added.copy();
+                this.removed = removed.copy();
+                this.modified = modified.copy();
             }
 
             @Override
@@ -370,7 +370,7 @@ public class QueryTableSelectUpdateTest {
                 }
             }
 
-            MutableRowSet rowSetToCheck = listener1.added.clone();
+            MutableRowSet rowSetToCheck = listener1.added.copy();
             rowSetToCheck.insert(listener1.modified);
             RowSet checkInvert = sourceTable.getRowSet().invert(rowSetToCheck);
 
@@ -383,9 +383,9 @@ public class QueryTableSelectUpdateTest {
                 checkInvert.forAllRowKeys(x -> recomputedBuilder.appendKey(recomputedValue.getRowSet().get(x)));
 
                 System.out.println("Original Sub Table: " + checkInvert);
-                TableTools.showWithIndex(originalValue.getSubTable(originalBuilder.build().convertToTracking()));
+                TableTools.showWithIndex(originalValue.getSubTable(originalBuilder.build().toTracking()));
                 System.out.println("Recomputed Sub Table: " + checkInvert);
-                TableTools.showWithIndex(recomputedValue.getSubTable(recomputedBuilder.build().convertToTracking()));
+                TableTools.showWithIndex(recomputedValue.getSubTable(recomputedBuilder.build().toTracking()));
             }
 
             Map<String, ? extends ColumnSource<?>> originalColumns = originalValue.getColumnSourceMap();
@@ -451,10 +451,10 @@ public class QueryTableSelectUpdateTest {
     private void doTestSparseRedirectedUpdate() {
         System.gc();
 
-        final QueryTable leftTable = new QueryTable(RowSetFactory.flat(99).convertToTracking(),
+        final QueryTable leftTable = new QueryTable(RowSetFactory.flat(99).toTracking(),
                 Collections.emptyMap());
         leftTable.setRefreshing(true);
-        final QueryTable rightTable = new QueryTable(RowSetFactory.flat(1).convertToTracking(),
+        final QueryTable rightTable = new QueryTable(RowSetFactory.flat(1).toTracking(),
                 Collections.emptyMap());
         rightTable.setRefreshing(true);
 
@@ -649,7 +649,7 @@ public class QueryTableSelectUpdateTest {
 
     @Test
     public void testUpdateEmptyTable() {
-        QueryTable table = TstUtils.testRefreshingTable(i().convertToTracking());
+        QueryTable table = TstUtils.testRefreshingTable(i().toTracking());
         QueryTable table2 = (QueryTable) table.update("x = i*3", "y = \"\" + k");
         ListenerWithGlobals listener = base.newListenerWithGlobals(table2);
         table2.listenForUpdates(listener);
@@ -680,7 +680,7 @@ public class QueryTableSelectUpdateTest {
 
     @Test
     public void testUpdateIndex() {
-        QueryTable table = TstUtils.testRefreshingTable(i().convertToTracking());
+        QueryTable table = TstUtils.testRefreshingTable(i().toTracking());
         QueryTable table2 = (QueryTable) table.update("Position=i", "Key=\"\" + k");
         ListenerWithGlobals listener = base.newListenerWithGlobals(table2);
         table2.listenForUpdates(listener);
@@ -720,7 +720,7 @@ public class QueryTableSelectUpdateTest {
 
     @Test
     public void testUpdateArrayColumns() throws IOException {
-        QueryTable table = TstUtils.testRefreshingTable(i().convertToTracking());
+        QueryTable table = TstUtils.testRefreshingTable(i().toTracking());
         QueryTable table2 = (QueryTable) table.update("Position=i", "PrevI=Position_[i-1]");
         // QueryTable table2 = (QueryTable) table.update("Position=i", "Key=\"\" + k", "PrevI=Position_[i-1]");
         ListenerWithGlobals listener = base.newListenerWithGlobals(table2);
@@ -809,7 +809,7 @@ public class QueryTableSelectUpdateTest {
 
     @Test
     public void testSelectReuse() {
-        final QueryTable table = TstUtils.testRefreshingTable(i(1, 1L << 20 + 1).convertToTracking(),
+        final QueryTable table = TstUtils.testRefreshingTable(i(1, 1L << 20 + 1).toTracking(),
                 longCol("Value", 1, 2));
 
         final Table selected = table.select();
@@ -965,7 +965,7 @@ public class QueryTableSelectUpdateTest {
             builder.appendKey(1L << ii);
             intVals[ii] = ii;
         }
-        final QueryTable table = TstUtils.testRefreshingTable(builder.build().convertToTracking(),
+        final QueryTable table = TstUtils.testRefreshingTable(builder.build().toTracking(),
                 intCol("Value", intVals));
         final Table selected = SparseSelect.sparseSelect(table);
         final String diff = TableTools.diff(selected, table, 10);
@@ -975,7 +975,7 @@ public class QueryTableSelectUpdateTest {
     @Test
     public void testSparseSelectSkipMemoryColumns() {
         final int[] intVals = {1, 2, 3, 4, 5};
-        final Table table = TstUtils.testRefreshingTable(RowSetFactory.flat(5).convertToTracking(),
+        final Table table = TstUtils.testRefreshingTable(RowSetFactory.flat(5).toTracking(),
                 intCol("Value", intVals))
                 .update("V2=Value*2");
         final Table selected = SparseSelect.sparseSelect(table);
@@ -993,7 +993,7 @@ public class QueryTableSelectUpdateTest {
     @Test
     public void testSparseSelectReuse() {
 
-        final QueryTable table = TstUtils.testRefreshingTable(i(1, 1L << 20 + 1).convertToTracking(),
+        final QueryTable table = TstUtils.testRefreshingTable(i(1, 1L << 20 + 1).toTracking(),
                 longCol("Value", 1, 2));
 
 
@@ -1059,7 +1059,7 @@ public class QueryTableSelectUpdateTest {
     @Test
     public void testEagerParamBinding() {
         QueryScope.addParam("scale", 12);
-        final QueryTable table = TstUtils.testRefreshingTable(i().convertToTracking());
+        final QueryTable table = TstUtils.testRefreshingTable(i().toTracking());
         final QueryTable table2 = (QueryTable) table.update("A = i * scale");
         QueryScope.addParam("scale", "Multiplying i by this string will not compile");
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
@@ -1074,7 +1074,7 @@ public class QueryTableSelectUpdateTest {
     public void testExpectedParamFailure() {
         try {
             QueryScope.addParam("scale2", 12);
-            final QueryTable table = TstUtils.testRefreshingTable(i().convertToTracking());
+            final QueryTable table = TstUtils.testRefreshingTable(i().toTracking());
             table.update("A = i * scale");
             TestCase.fail("Bad formula failed to throw exception");
         } catch (FormulaCompilationException fce) {

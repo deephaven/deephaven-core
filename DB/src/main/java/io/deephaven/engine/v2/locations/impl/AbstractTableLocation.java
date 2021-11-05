@@ -93,7 +93,7 @@ public abstract class AbstractTableLocation
     /**
      * See TableLocationState for documentation of values.
      *
-     * @param index The new rowSet. Ownership passes to this location; callers should {@link RowSet#clone() clone} it if
+     * @param index The new rowSet. Ownership passes to this location; callers should {@link RowSet#copy() copy} it if
      *        necessary.
      * @param lastModifiedTimeMillis The new lastModificationTimeMillis
      */

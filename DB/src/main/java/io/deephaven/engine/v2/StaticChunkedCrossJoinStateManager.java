@@ -299,7 +299,7 @@ class StaticChunkedCrossJoinStateManager
                     }
 
                     if (source.getUnsafe(slot) == EMPTY_RIGHT_VALUE) {
-                        source.set(slot, RowSetFactory.empty().convertToTracking());
+                        source.set(slot, RowSetFactory.empty().toTracking());
                     }
                 });
             }
@@ -342,7 +342,7 @@ class StaticChunkedCrossJoinStateManager
                 return;
             }
 
-            source.set(location, RowSetFactory.fromKeys(keyToAdd).convertToTracking());
+            source.set(location, RowSetFactory.fromKeys(keyToAdd).toTracking());
             size = 1;
         } else {
             rowSet.insert(keyToAdd);
@@ -1629,7 +1629,7 @@ class StaticChunkedCrossJoinStateManager
             retVal = rightIndexSource.get(slot);
         }
         if (retVal == null) {
-            retVal = RowSetFactory.empty().convertToTracking();
+            retVal = RowSetFactory.empty().toTracking();
         }
         return retVal;
     }
@@ -1638,7 +1638,7 @@ class StaticChunkedCrossJoinStateManager
     public TrackingRowSet getRightIndexFromLeftIndex(long leftIndex) {
         long slot = leftIndexToSlot.get(leftIndex);
         if (slot == RowSet.NULL_ROW_KEY) {
-            return RowSetFactory.empty().convertToTracking();
+            return RowSetFactory.empty().toTracking();
         }
         return getRightIndex(slot);
     }

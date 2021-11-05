@@ -91,7 +91,7 @@ public class SliceLikeOperation implements QueryTable.Operation<QueryTable> {
         final TrackingRowSet resultRowSet;
         final TrackingRowSet parentRowSet = parent.getRowSet();
         try (final MutableRowSet parentPrev = usePrev ? parentRowSet.getPrevRowSet() : null) {
-            resultRowSet = computeSliceIndex(usePrev ? parentPrev : parentRowSet).convertToTracking();
+            resultRowSet = computeSliceIndex(usePrev ? parentPrev : parentRowSet).toTracking();
         }
         // result table must be a sub-table so we can pass ModifiedColumnSet to listeners when possible
         resultTable = parent.getSubTable(resultRowSet);

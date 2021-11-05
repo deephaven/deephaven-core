@@ -26,7 +26,7 @@ public interface TableLocationState {
      *         unknown or does not exist for this table location.
      * @implNote This rowSet must not have any key larger than
      *           {@link RegionedColumnSource#ELEMENT_INDEX_TO_SUB_REGION_ELEMENT_INDEX_MASK the region mask}.
-     * @apiNote The returned rowSet will be a "clone", meaning the caller must {@link RowSet#close()} it when finished.
+     * @apiNote The returned rowSet will be a "copy", meaning the caller must {@link RowSet#close()} it when finished.
      */
     RowSet getIndex();
 

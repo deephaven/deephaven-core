@@ -25,12 +25,12 @@ public class UpdateCoalescer {
     private final MutableRowSet rowSet;
 
     public UpdateCoalescer(final RowSet rowSet, final Listener.Update update) {
-        this.rowSet = rowSet.clone();
+        this.rowSet = rowSet.copy();
         this.rowSet.remove(update.removed);
 
-        this.added = update.added.clone();
-        this.removed = update.removed.clone();
-        this.modified = update.modified.clone();
+        this.added = update.added.copy();
+        this.removed = update.removed.copy();
+        this.modified = update.modified.copy();
         this.shifted = update.shifted;
 
         if (modified.isEmpty()) {

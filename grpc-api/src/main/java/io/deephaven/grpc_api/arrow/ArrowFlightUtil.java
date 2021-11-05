@@ -178,7 +178,7 @@ public class ArrowFlightUtil {
 
                 msg.rowsAdded =
                         RowSetFactory.fromRange(resultTable.size(), resultTable.size() + numRowsAdded - 1);
-                msg.rowsIncluded = msg.rowsAdded.clone();
+                msg.rowsIncluded = msg.rowsAdded.copy();
                 msg.modColumnData = ZERO_MOD_COLUMNS;
 
                 resultTable.handleBarrageMessage(msg);

@@ -1129,7 +1129,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
         void search(Comparator comp);
 
         /**
-         * Saner clone.
+         * Saner copy.
          *
          * @returns a SpanCursorForward that is a copy of this one.
          */

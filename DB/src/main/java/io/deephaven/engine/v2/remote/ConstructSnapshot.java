@@ -1210,7 +1210,7 @@ public class ConstructSnapshot {
             Object logIdentityObject,
             BitSet columnsToSerialize,
             RowSet keysToSnapshot) {
-        snapshot.rowSet = (usePrev ? table.getRowSet().getPrevRowSet() : table.getRowSet()).clone();
+        snapshot.rowSet = (usePrev ? table.getRowSet().getPrevRowSet() : table.getRowSet()).copy();
 
         if (keysToSnapshot != null) {
             snapshot.rowsIncluded = snapshot.rowSet.intersect(keysToSnapshot);
@@ -1278,7 +1278,7 @@ public class ConstructSnapshot {
             final Object logIdentityObject,
             final BitSet columnsToSerialize,
             final RowSet keysToSnapshot) {
-        snapshot.rowsAdded = (usePrev ? table.getRowSet().getPrevRowSet() : table.getRowSet()).clone();
+        snapshot.rowsAdded = (usePrev ? table.getRowSet().getPrevRowSet() : table.getRowSet()).copy();
         snapshot.rowsRemoved = RowSetFactory.empty();
         snapshot.addColumnData = new BarrageMessage.AddColumnData[table.getColumnSources().size()];
 
@@ -1288,7 +1288,7 @@ public class ConstructSnapshot {
         if (keysToSnapshot != null) {
             snapshot.rowsIncluded = snapshot.rowsAdded.intersect(keysToSnapshot);
         } else {
-            snapshot.rowsIncluded = snapshot.rowsAdded.clone();
+            snapshot.rowsIncluded = snapshot.rowsAdded.copy();
         }
 
         LongSizedDataStructure.intSize("construct snapshot", snapshot.rowsIncluded.size());

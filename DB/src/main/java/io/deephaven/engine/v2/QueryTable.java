@@ -186,7 +186,7 @@ public class QueryTable extends BaseTable {
     /**
      * Creates a new abstract table, inferring a definition but creating a new column source map.
      *
-     * @param rowSet The rowSet of the new table. Callers may need to {@link MutableRowSet#convertToTracking() convert}.
+     * @param rowSet The rowSet of the new table. Callers may need to {@link MutableRowSet#toTracking() convert}.
      * @param columns The column source map for the table, which will be copied into a new column source map
      */
     public QueryTable(TrackingRowSet rowSet, Map<String, ? extends ColumnSource<?>> columns) {
@@ -197,7 +197,7 @@ public class QueryTable extends BaseTable {
      * Creates a new abstract table, reusing a definition but creating a new column source map.
      *
      * @param definition The definition to use for this table
-     * @param rowSet The rowSet of the new table. Callers may need to {@link MutableRowSet#convertToTracking() convert}.
+     * @param rowSet The rowSet of the new table. Callers may need to {@link MutableRowSet#toTracking() convert}.
      * @param columns The column source map for the table, which will be copied into a new column source map
      */
     public QueryTable(TableDefinition definition, TrackingRowSet rowSet,
@@ -209,7 +209,7 @@ public class QueryTable extends BaseTable {
      * Creates a new abstract table, reusing a definition and column source map.
      *
      * @param definition The definition to use for this table
-     * @param rowSet The rowSet of the new table. Callers may need to {@link MutableRowSet#convertToTracking() convert}.
+     * @param rowSet The rowSet of the new table. Callers may need to {@link MutableRowSet#toTracking() convert}.
      * @param columns The column source map for the table, which is not copied.
      * @param modifiedColumnSet Optional {@link ModifiedColumnSet} that should be re-used if supplied
      */
@@ -455,7 +455,7 @@ public class QueryTable extends BaseTable {
     @Override
     public Table slice(final long firstPositionInclusive, final long lastPositionExclusive) {
         if (firstPositionInclusive == lastPositionExclusive) {
-            return getSubTable(RowSetFactory.empty().convertToTracking());
+            return getSubTable(RowSetFactory.empty().toTracking());
         }
         return getResult(SliceLikeOperation.slice(this, firstPositionInclusive, lastPositionExclusive, "slice"));
     }
@@ -668,7 +668,7 @@ public class QueryTable extends BaseTable {
             } else if (isSelectDistinct) {
                 if (getColumnSourceMap().isEmpty()) {
                     // if we have no input columns, then the only thing we can do is have an empty result
-                    return new QueryTable(RowSetFactory.empty().convertToTracking(),
+                    return new QueryTable(RowSetFactory.empty().toTracking(),
                             Collections.emptyMap());
                 }
                 return ChunkedOperatorAggregationHelper.aggregation(new KeyOnlyAggregationFactory(), this,
@@ -935,7 +935,7 @@ public class QueryTable extends BaseTable {
                     newMapping = whereInternal(unmatchedRows, unmatchedRows, false, filters);
                 }
                 // add back what we previously matched, but for modifications and removals
-                try (final MutableRowSet previouslyMatched = getRowSet().clone()) {
+                try (final MutableRowSet previouslyMatched = getRowSet().copy()) {
                     if (upstreamAdded != null) {
                         previouslyMatched.remove(upstreamAdded);
                     }
@@ -949,7 +949,7 @@ public class QueryTable extends BaseTable {
             } else if (refilterMatchedRequested) {
                 // we need to take removed rows out of our rowSet so we do not read them, and also examine added or
                 // modified rows
-                try (final MutableRowSet matchedRows = getRowSet().clone()) {
+                try (final MutableRowSet matchedRows = getRowSet().copy()) {
                     if (upstreamAdded != null) {
                         matchedRows.insert(upstreamAdded);
                     }
@@ -1040,7 +1040,7 @@ public class QueryTable extends BaseTable {
                                     try (final RowSet prevIfNeeded = usePrev ? rowSet.getPrevRowSet() : null) {
                                         final RowSet rowSetToUpdate = usePrev ? prevIfNeeded : rowSet;
                                         final TrackingRowSet currentMapping = whereInternal(rowSetToUpdate,
-                                                rowSetToUpdate, usePrev, filters).convertToTracking();
+                                                rowSetToUpdate, usePrev, filters).toTracking();
                                         filteredTable = new FilteredTable(currentMapping, this, filters);
                                     }
 
@@ -1092,7 +1092,7 @@ public class QueryTable extends BaseTable {
     @SuppressWarnings("WeakerAccess")
     protected MutableRowSet whereInternal(RowSet currentMapping, RowSet fullSet, boolean usePrev,
             SelectFilter... filters) {
-        MutableRowSet matched = currentMapping.clone();
+        MutableRowSet matched = currentMapping.copy();
 
         for (SelectFilter filter : filters) {
             if (Thread.interrupted()) {
@@ -1246,7 +1246,7 @@ public class QueryTable extends BaseTable {
 
                     // Init all the rows by cooking up a fake Update
                     final Listener.Update fakeUpdate =
-                            new Listener.Update(rowSet.clone(),
+                            new Listener.Update(rowSet.copy(),
                                     RowSetFactory.empty(), RowSetFactory.empty(),
                                     RowSetShiftData.EMPTY, ModifiedColumnSet.ALL);
                     try (final RowSet emptyRowSet = RowSetFactory.empty();
@@ -1928,7 +1928,7 @@ public class QueryTable extends BaseTable {
                     rightTable.getColumnSourceMap(), rightTable.getRowSet(),
                     resultColumns, 0);
             final TrackingMutableRowSet resultRowSet =
-                    RowSetFactory.flat(initialSize).convertToTracking();
+                    RowSetFactory.flat(initialSize).toTracking();
             final QueryTable result = new QueryTable(resultRowSet, resultColumns);
             if (isRefreshing()) {
                 listenForUpdates(new ShiftObliviousListenerImpl("snapshotHistory" + resultColumns.keySet().toString(),
@@ -2042,7 +2042,7 @@ public class QueryTable extends BaseTable {
         }
 
         final QueryTable result =
-                new QueryTable(RowSetFactory.empty().convertToTracking(), allColumns);
+                new QueryTable(RowSetFactory.empty().toTracking(), allColumns);
         final SnapshotInternalListener listener = new SnapshotInternalListener(this, lazySnapshot, tableToSnapshot,
                 result, resultLeftColumns, resultRightColumns, result.getRowSet().mutableCast());
 
@@ -2119,7 +2119,7 @@ public class QueryTable extends BaseTable {
                     }
 
                     final QueryTable resultTable =
-                            new QueryTable(RowSetFactory.empty().convertToTracking(),
+                            new QueryTable(RowSetFactory.empty().toTracking(),
                                     resultColumns);
 
                     if (isRefreshing() && rightTable.isRefreshing()) {
@@ -2171,7 +2171,7 @@ public class QueryTable extends BaseTable {
                                         SnapshotIncrementalListener.copyRowsToResult(rightTable.getRowSet(),
                                                 QueryTable.this, rightTable, leftColumns, resultColumns);
                                         resultTable.getRowSet().mutableCast().insert(rightTable.getRowSet());
-                                        resultTable.notifyListeners(resultTable.getRowSet().clone(),
+                                        resultTable.notifyListeners(resultTable.getRowSet().copy(),
                                                 RowSetFactory.empty(),
                                                 RowSetFactory.empty());
                                         removeUpdateListener(this);
@@ -2317,7 +2317,7 @@ public class QueryTable extends BaseTable {
                     }
                     final QueryTable result = new QueryTable(
                             getUngroupIndex(sizes, RowSetFactory.builderRandom(), initialBase, rowSet)
-                                    .build().convertToTracking(),
+                                    .build().toTracking(),
                             resultMap);
                     if (isRefreshing()) {
                         startTrackingPrev(resultMap.values());
@@ -3158,12 +3158,12 @@ public class QueryTable extends BaseTable {
 
             // compute added against filters
             final MutableRowSet added =
-                    whereInternal(recorder.getAdded().clone().convertToTracking(), rowSet, false, filters);
+                    whereInternal(recorder.getAdded().copy().toTracking(), rowSet, false, filters);
 
             // check which modified keys match filters (Note: filterColumns will be null if we must always check)
             final boolean runFilters = filterColumns == null || sourceModColumns.containsAny(filterColumns);
             final RowSet matchingModifies = !runFilters ? RowSetFactory.empty()
-                    : whereInternal(recorder.getModified().clone().convertToTracking(), rowSet, false, filters);
+                    : whereInternal(recorder.getModified().copy().toTracking(), rowSet, false, filters);
 
             // which propagate as mods?
             final MutableRowSet modified =

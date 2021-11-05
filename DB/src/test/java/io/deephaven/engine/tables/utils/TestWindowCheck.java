@@ -116,7 +116,7 @@ public class TestWindowCheck {
         timeProvider.now = startTime.getNanos();
 
         final DBDateTime[] emptyDateTimeArray = new DBDateTime[0];
-        final Table tableToCheck = testRefreshingTable(i().convertToTracking(),
+        final Table tableToCheck = testRefreshingTable(i().toTracking(),
                 c("Timestamp", emptyDateTimeArray), intCol("Sentinel"));
 
         final Pair<Table, WindowCheck.TimeWindowListener> windowed = LiveTableMonitor.DEFAULT.sharedLock()

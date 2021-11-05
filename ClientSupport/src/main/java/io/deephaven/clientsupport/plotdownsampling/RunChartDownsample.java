@@ -222,7 +222,7 @@ public class RunChartDownsample implements Function.Unary<Table, Table> {
         }
 
         public static DownsamplerListener of(final QueryTable sourceTable, final DownsampleKey key) {
-            final TrackingRowSet rowSet = RowSetFactory.empty().convertToTracking();
+            final TrackingRowSet rowSet = RowSetFactory.empty().toTracking();
             final QueryTable resultTable = sourceTable.getSubTable(rowSet);
             return new DownsamplerListener(sourceTable, resultTable, key);
         }

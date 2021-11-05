@@ -516,7 +516,7 @@ public class QueryTableJoinTest {
 
 
     public void testSelfAj() {
-        final QueryTable table = TstUtils.testRefreshingTable(i(1, 2, 3, 4, 5, 6, 7, 8).convertToTracking(),
+        final QueryTable table = TstUtils.testRefreshingTable(i(1, 2, 3, 4, 5, 6, 7, 8).toTracking(),
                 c("Primary", "A", "A", "A", "A", "A", "A", "A", "A"),
                 c("Secondary", "A", "C", "D", "D", "F", "G", "H", "H"));
 
@@ -546,11 +546,11 @@ public class QueryTableJoinTest {
     }
 
     public void testAjNull() {
-        final QueryTable left = TstUtils.testRefreshingTable(i(1, 2, 3, 4).convertToTracking(),
+        final QueryTable left = TstUtils.testRefreshingTable(i(1, 2, 3, 4).toTracking(),
                 c("LInt", 2, 4, 6, 8),
                 c("LSentinel", "a", "b", "c", "d"));
 
-        final QueryTable right = TstUtils.testRefreshingTable(i(1, 2, 3, 4, 5, 6, 7, 8).convertToTracking(),
+        final QueryTable right = TstUtils.testRefreshingTable(i(1, 2, 3, 4, 5, 6, 7, 8).toTracking(),
                 c("RInt", null, null, 3, 4, 5, 6, 7, 8),
                 c("RSentinel", "C1", "E2", "A3", "D4", "F5", "G6", "I7", "H8"));
 
@@ -575,12 +575,12 @@ public class QueryTableJoinTest {
     }
 
     public void testAjEmptyRight() {
-        final QueryTable left = TstUtils.testRefreshingTable(i(1, 2, 3, 4).convertToTracking(),
+        final QueryTable left = TstUtils.testRefreshingTable(i(1, 2, 3, 4).toTracking(),
                 c("Group", "g", "g", "g", "g"),
                 c("LInt", 2, 4, 6, 8),
                 c("LSentinel", "a", "b", "c", "d"));
 
-        final QueryTable right = TstUtils.testRefreshingTable(i().convertToTracking(),
+        final QueryTable right = TstUtils.testRefreshingTable(i().toTracking(),
                 col("Group", CollectionUtil.ZERO_LENGTH_STRING_ARRAY),
                 intCol("RInt"),
                 c("RSentinel"));
@@ -780,13 +780,13 @@ public class QueryTableJoinTest {
 
     public void testAjRegression0() {
         final QueryTable rightQueryTable = TstUtils.testRefreshingTable(
-                i(28, 36, 39, 42, 46, 49, 50, 51, 55, 56, 58, 64, 65, 66, 92, 96).convertToTracking(),
+                i(28, 36, 39, 42, 46, 49, 50, 51, 55, 56, 58, 64, 65, 66, 92, 96).toTracking(),
                 c("C1", "a", "a", "c", "a", "b", "a", "c", "b", "c", "a", "a", "c", "c", "a", "c", "c"),
                 c("I1", 168, 851, 255, 142, 884, 841, 877, 248, 191, 207, 163, 250, 982, 432, 466, 139),
                 c("Sentinel", 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160));
 
 
-        final QueryTable leftQueryTable = TstUtils.testRefreshingTable(i(10, 11, 12, 14, 16, 22).convertToTracking(),
+        final QueryTable leftQueryTable = TstUtils.testRefreshingTable(i(10, 11, 12, 14, 16, 22).toTracking(),
                 c("C1", "b", "a", "a", "a", "a", "b"),
                 c("I1", 78, 85, 96, 263, 474, 876));
 
@@ -805,13 +805,13 @@ public class QueryTableJoinTest {
 
     public void testAjRegression1() {
         final QueryTable rightQueryTable =
-                TstUtils.testRefreshingTable(i(1, 27, 28, 35, 41, 46, 49, 50, 51, 55, 56, 65).convertToTracking(),
+                TstUtils.testRefreshingTable(i(1, 27, 28, 35, 41, 46, 49, 50, 51, 55, 56, 65).toTracking(),
                         c("C1", "b", "c", "b", "b", "c", "b", "a", "b", "c", "c", "c", "b"),
                         c("I1", 591, 5, 952, 43, 102, 18, 475, 821, 676, 191, 657, 982),
                         c("Sentinel", 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120));
 
 
-        final QueryTable leftQueryTable = TstUtils.testRefreshingTable(i(10, 11, 12, 14, 16, 22).convertToTracking(),
+        final QueryTable leftQueryTable = TstUtils.testRefreshingTable(i(10, 11, 12, 14, 16, 22).toTracking(),
                 c("C1", "b", "a", "a", "a", "a", "b"),
                 c("I1", 78, 85, 96, 263, 474, 876));
 

@@ -147,7 +147,7 @@ public class TreeSnapshotResult {
         sources.put(TreeTableConstants.CHILD_PRESENCE_COLUMN, new BitSetColumnSource(childPresenceColumn));
 
         return new QueryTable(
-                RowSetFactory.flat((snapshotEnd - snapshotStart) + 1).convertToTracking(),
+                RowSetFactory.flat((snapshotEnd - snapshotStart) + 1).toTracking(),
                 sources);
     }
 

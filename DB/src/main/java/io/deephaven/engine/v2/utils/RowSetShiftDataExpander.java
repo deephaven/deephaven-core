@@ -35,9 +35,9 @@ public class RowSetShiftDataExpander implements SafeCloseable {
     public RowSetShiftDataExpander(final Listener.Update update, final TrackingRowSet sourceRowSet) {
         // do we even need changes?
         if (update.shifted.empty() && !update.added.overlaps(update.removed)) {
-            added = update.added.clone();
-            removed = update.removed.clone();
-            modified = update.modified.clone();
+            added = update.added.copy();
+            removed = update.removed.copy();
+            modified = update.modified.copy();
             return;
         }
 
@@ -55,7 +55,7 @@ public class RowSetShiftDataExpander implements SafeCloseable {
             // If it did not exist last cycle then it is accounted for in `this.update.added`. The is one more group of
             // modified rows. These are rows that existed in both previous and current indexes but were shifted.
             // Thus we need to add mods for shifted rows and remove any rows that are added (by old definition).
-            modified = update.modified.clone();
+            modified = update.modified.copy();
 
             // Expand shift destinations to paint rows that might need to be considered modified.
             final RowSetBuilderSequential addedByShiftB = RowSetFactory.builderSequential();
@@ -133,7 +133,7 @@ public class RowSetShiftDataExpander implements SafeCloseable {
                     RowSetFactory.empty(),
                     RowSetShiftData.EMPTY,
                     ModifiedColumnSet.ALL),
-            RowSetFactory.empty().convertToTracking());
+            RowSetFactory.empty().toTracking());
 
     /**
      * Perform backwards compatible validation checks.

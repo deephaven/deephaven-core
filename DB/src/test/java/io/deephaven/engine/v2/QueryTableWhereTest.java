@@ -61,19 +61,19 @@ public class QueryTableWhereTest {
     public void testWhere() {
 
         java.util.function.Function<String, SelectFilter> filter = ConditionFilter::createConditionFilter;
-        final QueryTable table = testRefreshingTable(i(2, 4, 6).convertToTracking(),
+        final QueryTable table = testRefreshingTable(i(2, 4, 6).toTracking(),
                 c("x", 1, 2, 3), c("y", 'a', 'b', 'c'));
 
         assertEquals("", diff(table.where(filter.apply("k%2 == 0")), table, 10));
-        assertEquals("", diff(table.where(filter.apply("i%2 == 0")), testRefreshingTable(i(2, 6).convertToTracking(),
+        assertEquals("", diff(table.where(filter.apply("i%2 == 0")), testRefreshingTable(i(2, 6).toTracking(),
                 c("x", 1, 3), c("y", 'a', 'c')), 10));
-        assertEquals("", diff(table.where(filter.apply("(y-'a') = 2")), testRefreshingTable(i(2).convertToTracking(),
+        assertEquals("", diff(table.where(filter.apply("(y-'a') = 2")), testRefreshingTable(i(2).toTracking(),
                 c("x", 3), c("y", 'c')), 10));
         final QueryTable whereResult = (QueryTable) table.where(filter.apply("x%2 == 1"));
         final ShiftObliviousListener whereResultListener = base.newListenerWithGlobals(whereResult);
         whereResult.listenForUpdates(whereResultListener);
         assertEquals("", diff(whereResult,
-                testRefreshingTable(i(2, 6).convertToTracking(), c("x", 1, 3), c("y", 'a', 'c')), 10));
+                testRefreshingTable(i(2, 6).toTracking(), c("x", 1, 3), c("y", 'a', 'c')), 10));
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(table, i(7, 9), c("x", 4, 5), c("y", 'd', 'e'));
@@ -81,7 +81,7 @@ public class QueryTableWhereTest {
         });
 
         assertEquals("", diff(whereResult,
-                testRefreshingTable(i(2, 6, 9).convertToTracking(), c("x", 1, 3, 5), c("y", 'a', 'c', 'e')), 10));
+                testRefreshingTable(i(2, 6, 9).toTracking(), c("x", 1, 3, 5), c("y", 'a', 'c', 'e')), 10));
         assertEquals(base.added, i(9));
         assertEquals(base.removed, i());
         assertEquals(base.modified, i());
@@ -92,7 +92,7 @@ public class QueryTableWhereTest {
         });
 
         assertEquals("", diff(whereResult,
-                testRefreshingTable(i(2, 6, 7).convertToTracking(), c("x", 1, 3, 3), c("y", 'a', 'c', 'e')), 10));
+                testRefreshingTable(i(2, 6, 7).toTracking(), c("x", 1, 3, 3), c("y", 'a', 'c', 'e')), 10));
 
         assertEquals(base.added, i(7));
         assertEquals(base.removed, i(9));
@@ -103,7 +103,7 @@ public class QueryTableWhereTest {
             table.notifyListeners(i(), i(2, 6, 7), i());
         });
 
-        assertTableEquals(testRefreshingTable(i().convertToTracking(), intCol("x"), charCol("y")), whereResult);
+        assertTableEquals(testRefreshingTable(i().toTracking(), intCol("x"), charCol("y")), whereResult);
 
         assertEquals(base.added, i());
         assertEquals(base.removed, i(2, 6, 7));
@@ -116,7 +116,7 @@ public class QueryTableWhereTest {
         });
 
         assertEquals("", diff(whereResult,
-                testRefreshingTable(i(2, 4, 6).convertToTracking(), c("x", 1, 21, 3), c("y", 'a', 'x', 'c')), 10));
+                testRefreshingTable(i(2, 4, 6).toTracking(), c("x", 1, 21, 3), c("y", 'a', 'x', 'c')), 10));
 
         assertEquals(base.added, i(2, 4, 6));
         assertEquals(base.removed, i());
@@ -134,7 +134,7 @@ public class QueryTableWhereTest {
 
     @Test
     public void testIandK() {
-        final Table table = testRefreshingTable(i(2, 4, 6).convertToTracking(), intCol("x", 1, 2, 3));
+        final Table table = testRefreshingTable(i(2, 4, 6).toTracking(), intCol("x", 1, 2, 3));
 
         assertTableEquals(newTable(intCol("x", 2)), table.where("k=4"));
         assertTableEquals(newTable(intCol("x", 2, 3)), table.where("ii > 0"));
@@ -145,20 +145,20 @@ public class QueryTableWhereTest {
     // this has no changes from the original testWhere, it is just to make sure that we still work as a single clause
     @Test
     public void testWhereOneOfSingle() {
-        final QueryTable table = testRefreshingTable(i(2, 4, 6).convertToTracking(),
+        final QueryTable table = testRefreshingTable(i(2, 4, 6).toTracking(),
                 c("x", 1, 2, 3), c("y", 'a', 'b', 'c'));
 
         assertEquals("", diff(table.whereOneOf(whereClause("k%2 == 0")), table, 10));
         assertEquals("", diff(table.whereOneOf(whereClause("i%2 == 0")),
-                testRefreshingTable(i(2, 6).convertToTracking(), c("x", 1, 3), c("y", 'a', 'c')), 10));
+                testRefreshingTable(i(2, 6).toTracking(), c("x", 1, 3), c("y", 'a', 'c')), 10));
         assertEquals("", diff(table.whereOneOf(whereClause("(y-'a') = 2")),
-                testRefreshingTable(i(2).convertToTracking(), c("x", 3), c("y", 'c')), 10));
+                testRefreshingTable(i(2).toTracking(), c("x", 3), c("y", 'c')), 10));
 
         final QueryTable whereResult = (QueryTable) table.whereOneOf(whereClause("x%2 == 1"));
         final ShiftObliviousListener whereResultListener = base.newListenerWithGlobals(whereResult);
         whereResult.listenForUpdates(whereResultListener);
         assertEquals("", diff(whereResult,
-                testRefreshingTable(i(2, 6).convertToTracking(), c("x", 1, 3), c("y", 'a', 'c')), 10));
+                testRefreshingTable(i(2, 6).toTracking(), c("x", 1, 3), c("y", 'a', 'c')), 10));
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(table, i(7, 9), c("x", 4, 5), c("y", 'd', 'e'));
@@ -166,7 +166,7 @@ public class QueryTableWhereTest {
         });
 
         assertEquals("", diff(whereResult,
-                testRefreshingTable(i(2, 6, 9).convertToTracking(), c("x", 1, 3, 5), c("y", 'a', 'c', 'e')), 10));
+                testRefreshingTable(i(2, 6, 9).toTracking(), c("x", 1, 3, 5), c("y", 'a', 'c', 'e')), 10));
         assertEquals(base.added, i(9));
         assertEquals(base.removed, i());
         assertEquals(base.modified, i());
@@ -177,7 +177,7 @@ public class QueryTableWhereTest {
         });
 
         assertEquals("", diff(whereResult,
-                testRefreshingTable(i(2, 6, 7).convertToTracking(), c("x", 1, 3, 3), c("y", 'a', 'c', 'e')), 10));
+                testRefreshingTable(i(2, 6, 7).toTracking(), c("x", 1, 3, 3), c("y", 'a', 'c', 'e')), 10));
 
         assertEquals(base.added, i(7));
         assertEquals(base.removed, i(9));
@@ -188,7 +188,7 @@ public class QueryTableWhereTest {
             table.notifyListeners(i(), i(2, 6, 7), i());
         });
 
-        assertTableEquals(testRefreshingTable(i().convertToTracking(), intCol("x"), charCol("y")), whereResult);
+        assertTableEquals(testRefreshingTable(i().toTracking(), intCol("x"), charCol("y")), whereResult);
 
         assertEquals(base.added, i());
         assertEquals(base.removed, i(2, 6, 7));
@@ -201,7 +201,7 @@ public class QueryTableWhereTest {
         });
 
         assertEquals("", diff(whereResult,
-                testRefreshingTable(i(2, 4, 6).convertToTracking(), c("x", 1, 21, 3), c("y", 'a', 'x', 'c')), 10));
+                testRefreshingTable(i(2, 4, 6).toTracking(), c("x", 1, 21, 3), c("y", 'a', 'x', 'c')), 10));
 
         assertEquals(base.added, i(2, 4, 6));
         assertEquals(base.removed, i());
@@ -212,20 +212,20 @@ public class QueryTableWhereTest {
     // adds a second clause
     @Test
     public void testWhereOneOfTwo() {
-        final QueryTable table = testRefreshingTable(i(2, 4, 6, 8).convertToTracking(),
+        final QueryTable table = testRefreshingTable(i(2, 4, 6, 8).toTracking(),
                 c("x", 1, 2, 3, 4), c("y", 'a', 'b', 'c', 'f'));
 
         assertEquals("", diff(table.whereOneOf(whereClause("k%2 == 0")), table, 10));
         assertEquals("", diff(table.whereOneOf(whereClause("i%2 == 0")),
-                testRefreshingTable(i(2, 6).convertToTracking(), c("x", 1, 3), c("y", 'a', 'c')), 10));
+                testRefreshingTable(i(2, 6).toTracking(), c("x", 1, 3), c("y", 'a', 'c')), 10));
         assertEquals("", diff(table.whereOneOf(whereClause("(y-'a') = 2")),
-                testRefreshingTable(i(2).convertToTracking(), c("x", 3), c("y", 'c')), 10));
+                testRefreshingTable(i(2).toTracking(), c("x", 3), c("y", 'c')), 10));
 
         final QueryTable whereResult = (QueryTable) table.whereOneOf(whereClause("x%2 == 1"), whereClause("y=='f'"));
         final ShiftObliviousListener whereResultListener = base.newListenerWithGlobals(whereResult);
         whereResult.listenForUpdates(whereResultListener);
         assertEquals("", diff(whereResult,
-                testRefreshingTable(i(2, 6, 8).convertToTracking(), c("x", 1, 3, 4), c("y", 'a', 'c', 'f')), 10));
+                testRefreshingTable(i(2, 6, 8).toTracking(), c("x", 1, 3, 4), c("y", 'a', 'c', 'f')), 10));
 
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
@@ -233,7 +233,7 @@ public class QueryTableWhereTest {
             table.notifyListeners(i(7, 9), i(), i());
         });
 
-        assertEquals("", diff(whereResult, testRefreshingTable(i(2, 6, 8, 9).convertToTracking(),
+        assertEquals("", diff(whereResult, testRefreshingTable(i(2, 6, 8, 9).toTracking(),
                 c("x", 1, 3, 4, 5), c("y", 'a', 'c', 'f', 'e')), 10));
         assertEquals(base.added, i(9));
         assertEquals(base.removed, i());
@@ -244,7 +244,7 @@ public class QueryTableWhereTest {
             table.notifyListeners(i(), i(), i(7, 9));
         });
 
-        assertEquals("", diff(whereResult, testRefreshingTable(i(2, 6, 7, 8).convertToTracking(),
+        assertEquals("", diff(whereResult, testRefreshingTable(i(2, 6, 7, 8).toTracking(),
                 c("x", 1, 3, 3, 4), c("y", 'a', 'c', 'e', 'f')), 10));
 
         assertEquals(base.added, i(7));
@@ -256,7 +256,7 @@ public class QueryTableWhereTest {
             table.notifyListeners(i(), i(2, 6, 7), i());
         });
 
-        assertEquals("", diff(whereResult, testRefreshingTable(i(8).convertToTracking(), c("x", 4), c("y", 'f')), 10));
+        assertEquals("", diff(whereResult, testRefreshingTable(i(8).toTracking(), c("x", 4), c("y", 'f')), 10));
 
         assertEquals(base.added, i());
         assertEquals(base.removed, i(2, 6, 7));
@@ -268,7 +268,7 @@ public class QueryTableWhereTest {
             table.notifyListeners(i(2, 6), i(9), i(4));
         });
 
-        assertEquals("", diff(whereResult, testRefreshingTable(i(2, 4, 6, 8).convertToTracking(),
+        assertEquals("", diff(whereResult, testRefreshingTable(i(2, 4, 6, 8).toTracking(),
                 c("x", 1, 21, 3, 4), c("y", 'a', 'x', 'c', 'f')), 10));
 
         assertEquals(base.added, i(2, 4, 6));
@@ -277,16 +277,16 @@ public class QueryTableWhereTest {
 
         TableTools.showWithIndex(table);
         final Table usingStringArray = table.whereOneOf("x%3 == 0", "y=='f'");
-        assertEquals("", diff(usingStringArray, testRefreshingTable(i(4, 6, 8).convertToTracking(),
+        assertEquals("", diff(usingStringArray, testRefreshingTable(i(4, 6, 8).toTracking(),
                 c("x", 21, 3, 4), c("y", 'x', 'c', 'f')), 10));
     }
 
     @Test
     public void testWhereInDependency() {
-        final QueryTable tableToFilter = testRefreshingTable(i(10, 11, 12, 13, 14, 15).convertToTracking(),
+        final QueryTable tableToFilter = testRefreshingTable(i(10, 11, 12, 13, 14, 15).toTracking(),
                 c("A", 1, 2, 3, 4, 5, 6), c("B", 2, 4, 6, 8, 10, 12), c("C", 'a', 'b', 'c', 'd', 'e', 'f'));
 
-        final QueryTable setTable = testRefreshingTable(i(100, 101, 102).convertToTracking(),
+        final QueryTable setTable = testRefreshingTable(i(100, 101, 102).toTracking(),
                 c("A", 1, 2, 3), c("B", 2, 4, 6));
         final Table setTable1 = setTable.where("A > 2");
         final Table setTable2 = setTable.where("B > 6");
@@ -385,8 +385,8 @@ public class QueryTableWhereTest {
 
     @Test
     public void testWhereDynamicIn() {
-        final QueryTable setTable = testRefreshingTable(i(2, 4, 6, 8).convertToTracking(), c("X", "A", "B", "C", "B"));
-        final QueryTable filteredTable = testRefreshingTable(i(1, 2, 3, 4, 5).convertToTracking(),
+        final QueryTable setTable = testRefreshingTable(i(2, 4, 6, 8).toTracking(), c("X", "A", "B", "C", "B"));
+        final QueryTable filteredTable = testRefreshingTable(i(1, 2, 3, 4, 5).toTracking(),
                 c("X", "A", "B", "C", "D", "E"));
 
         final Table result =
@@ -553,7 +553,7 @@ public class QueryTableWhereTest {
 
     @Test
     public void testWhereInDiamond2() {
-        final QueryTable table = testRefreshingTable(i(1, 2, 3).convertToTracking(), c("x", 1, 2, 3), c("y", 2, 4, 6));
+        final QueryTable table = testRefreshingTable(i(1, 2, 3).toTracking(), c("x", 1, 2, 3), c("y", 2, 4, 6));
         final Table setTable = table.where("x % 2 == 0").dropColumns("y");
         final Table filteredTable =
                 LiveTableMonitor.DEFAULT.exclusiveLock().computeLocked(() -> table.whereIn(setTable, "y=x"));
@@ -662,7 +662,7 @@ public class QueryTableWhereTest {
         final int filteredSize = 500;
         final Random random = new Random(0);
 
-        final QueryTable growingTable = testRefreshingTable(i(1).convertToTracking(), c("intCol", 1));
+        final QueryTable growingTable = testRefreshingTable(i(1).toTracking(), c("intCol", 1));
         final QueryTable randomTable = getTable(setSize, random, filteredInfo = initColumnInfos(new String[] {"intCol"},
                 new IntGenerator(0, 1 << 8)));
         final Table m2 = TableTools.merge(growingTable, randomTable).updateView("intCol=intCol*53");
@@ -686,7 +686,7 @@ public class QueryTableWhereTest {
 
     @Test
     public void testEmptyWhere() {
-        final QueryTable source = testRefreshingTable(i(2, 4, 6, 8).convertToTracking(),
+        final QueryTable source = testRefreshingTable(i(2, 4, 6, 8).toTracking(),
                 c("X", "A", "B", "C", "B"), c("I", 1, 2, 4, 8));
         final Table filtered = source.where();
 
@@ -694,7 +694,7 @@ public class QueryTableWhereTest {
             Listener.Update update = new Listener.Update();
             update.added = i();
             update.removed = i();
-            update.modified = source.getRowSet().clone();
+            update.modified = source.getRowSet().copy();
             update.modifiedColumnSet = source.newModifiedColumnSet("X");
             update.shifted = RowSetShiftData.EMPTY;
             source.notifyListeners(update);

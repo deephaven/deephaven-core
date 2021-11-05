@@ -98,7 +98,7 @@ public class TableBuilder {
             }
             col++;
         }
-        return new QueryTable(def, RowSetFactory.flat(rows.size()).convertToTracking(), map);
+        return new QueryTable(def, RowSetFactory.flat(rows.size()).toTracking(), map);
     }
 
     /**

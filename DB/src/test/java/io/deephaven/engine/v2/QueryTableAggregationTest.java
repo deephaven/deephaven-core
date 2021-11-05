@@ -448,7 +448,7 @@ public class QueryTableAggregationTest {
         TestCase.assertEquals(1, table.by("j=i").getColumns().length);
         TestCase.assertEquals(int.class, table.by("j=i").getColumn("j").getType());
 
-        table = TstUtils.testRefreshingTable(RowSetFactory.fromRange(0, 2).convertToTracking(),
+        table = TstUtils.testRefreshingTable(RowSetFactory.fromRange(0, 2).toTracking(),
                 c("S", "c", "e", "g"), c("I", 2, 4, 6));
 
         TestCase.assertEquals(3, table.by("S").size());
@@ -465,7 +465,7 @@ public class QueryTableAggregationTest {
         TestCase.assertEquals(4, intGroups[1].get(0));
         TestCase.assertEquals(6, intGroups[2].get(0));
 
-        table = TstUtils.testRefreshingTable(RowSetFactory.fromRange(0, 2).convertToTracking(),
+        table = TstUtils.testRefreshingTable(RowSetFactory.fromRange(0, 2).toTracking(),
                 c("S", "e", "c", "g"),
                 c("I", 4, 2, 6));
 
@@ -483,7 +483,7 @@ public class QueryTableAggregationTest {
         TestCase.assertEquals(2, intGroups[1].get(0));
         TestCase.assertEquals(6, intGroups[2].get(0));
 
-        table = TstUtils.testRefreshingTable(RowSetFactory.fromRange(0, 2).convertToTracking(),
+        table = TstUtils.testRefreshingTable(RowSetFactory.fromRange(0, 2).toTracking(),
                 c("S", "e", "c", "g"),
                 c("X", 4, 2, 6),
                 c("Y", 1, 2, 3));
@@ -602,11 +602,11 @@ public class QueryTableAggregationTest {
 
     @Test
     public void testLastByIterative() {
-        final QueryTable queryTable = TstUtils.testRefreshingTable(i(1, 2, 4, 6).convertToTracking(),
+        final QueryTable queryTable = TstUtils.testRefreshingTable(i(1, 2, 4, 6).toTracking(),
                 c("Sym", "aa", "bc", "aa", "aa"),
                 c("intCol", 10, 20, 30, 50),
                 c("doubleCol", 0.1, 0.2, 0.3, 0.5));
-        final QueryTable queryTableGrouped = TstUtils.testRefreshingTable(i(1, 2, 4, 6).convertToTracking(),
+        final QueryTable queryTableGrouped = TstUtils.testRefreshingTable(i(1, 2, 4, 6).toTracking(),
                 c("Sym", "aa", "bc", "aa", "aa"),
                 c("intCol", 10, 20, 30, 50),
                 c("doubleCol", 0.1, 0.2, 0.3, 0.5));
@@ -823,7 +823,7 @@ public class QueryTableAggregationTest {
 
     @Test
     public void testLastBySumByIterative() {
-        final QueryTable queryTable = TstUtils.testRefreshingTable(i(1, 2, 4, 6).convertToTracking(),
+        final QueryTable queryTable = TstUtils.testRefreshingTable(i(1, 2, 4, 6).toTracking(),
                 c("Sym", "aa", "bc", "ab", "bc"),
                 c("USym", "a", "b", "a", "b"),
                 c("intCol", 10, 20, 40, 60));
@@ -860,7 +860,7 @@ public class QueryTableAggregationTest {
 
     @Test
     public void testAddOnlyLastAttribute() {
-        final QueryTable queryTable = TstUtils.testRefreshingTable(i(1, 2, 4, 6).convertToTracking(),
+        final QueryTable queryTable = TstUtils.testRefreshingTable(i(1, 2, 4, 6).toTracking(),
                 c("USym", "a", "b", "a", "b"),
                 c("intCol", 10, 20, 40, 60));
 
@@ -889,7 +889,7 @@ public class QueryTableAggregationTest {
 
     @Test
     public void testIncrementalBy() {
-        final QueryTable queryTable = TstUtils.testRefreshingTable(i(1, 2, 4, 6).convertToTracking(),
+        final QueryTable queryTable = TstUtils.testRefreshingTable(i(1, 2, 4, 6).toTracking(),
                 c("Sym", "aa", "bc", "aa", "aa"),
                 c("intCol", 10, 20, 30, 50),
                 c("doubleCol", 0.1, 0.2, 0.3, 0.5));
@@ -1114,7 +1114,7 @@ public class QueryTableAggregationTest {
 
     @Test
     public void testApplyToAllBy() {
-        final Table table = TstUtils.testRefreshingTable(i(1, 5, 7, 8).convertToTracking(),
+        final Table table = TstUtils.testRefreshingTable(i(1, 5, 7, 8).toTracking(),
                 c("Sym", "aa", "bc", "aa", "aa"),
                 c("intCol", 10, 20, 30, 50),
                 c("doubleCol", 0.1, 0.2, 0.3, 0.5));
@@ -1623,7 +1623,7 @@ public class QueryTableAggregationTest {
 
     @Test
     public void testAbsSumBySimple() {
-        final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6).convertToTracking(),
+        final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6).toTracking(),
                 col("BigI", BigInteger.valueOf(-1), BigInteger.valueOf(2), BigInteger.valueOf(-3)),
                 col("DoubleCol", -1.0, 2.0, -3.0), col("BoolCol", new Boolean[] {null, null, null}));
 
@@ -1713,7 +1713,7 @@ public class QueryTableAggregationTest {
 
     @Test
     public void testAbsSumByNull() {
-        final QueryTable table = TstUtils.testRefreshingTable(i(2).convertToTracking(),
+        final QueryTable table = TstUtils.testRefreshingTable(i(2).toTracking(),
                 intCol("IntCol", QueryConstants.NULL_INT),
                 floatCol("FloatCol", QueryConstants.NULL_FLOAT));
 
@@ -1748,7 +1748,7 @@ public class QueryTableAggregationTest {
 
     @Test
     public void testAvgInfinities() {
-        final QueryTable table = TstUtils.testRefreshingTable(i(2).convertToTracking(),
+        final QueryTable table = TstUtils.testRefreshingTable(i(2).toTracking(),
                 intCol("IntCol", QueryConstants.NULL_INT),
                 floatCol("FloatCol", QueryConstants.NULL_FLOAT));
 
@@ -1826,7 +1826,7 @@ public class QueryTableAggregationTest {
 
     @Test
     public void testVarInfinities() {
-        final QueryTable table = TstUtils.testRefreshingTable(i(2).convertToTracking(),
+        final QueryTable table = TstUtils.testRefreshingTable(i(2).toTracking(),
                 intCol("IntCol", QueryConstants.NULL_INT),
                 floatCol("FloatCol", QueryConstants.NULL_FLOAT));
 
@@ -2033,7 +2033,7 @@ public class QueryTableAggregationTest {
 
     @Test
     public void testWeightedAvgByLong() {
-        final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6).convertToTracking(),
+        final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6).toTracking(),
                 col("Long1", 2L, 4L, 6L), col("Long2", 1L, 2L, 3L));
         final Table result = table.wavgBy("Long2");
         TableTools.show(result);
@@ -2986,7 +2986,7 @@ public class QueryTableAggregationTest {
 
     @Test
     public void testSelectDistinctUpdates() {
-        final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6, 8).convertToTracking(), c("x", 1, 2, 3, 2));
+        final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6, 8).toTracking(), c("x", 1, 2, 3, 2));
         final QueryTable result = (QueryTable) (table.selectDistinct("x"));
         final io.deephaven.engine.v2.QueryTableTestBase.ListenerWithGlobals listener;
         result.listenForUpdates(listener = base.newListenerWithGlobals(result));
@@ -3151,7 +3151,7 @@ public class QueryTableAggregationTest {
 
     @Test
     public void testLastByNoKeyShift() {
-        final QueryTable table = TstUtils.testRefreshingTable(i(0, 1).convertToTracking(), intCol("Sentinel", 0, 1));
+        final QueryTable table = TstUtils.testRefreshingTable(i(0, 1).toTracking(), intCol("Sentinel", 0, 1));
         final Table reversedFlat = table.reverse().flatten().where("Sentinel != 2");
         final Table last = reversedFlat.lastBy();
 
@@ -3182,7 +3182,7 @@ public class QueryTableAggregationTest {
 
     @Test
     public void testFirstByShift() {
-        final QueryTable table = TstUtils.testRefreshingTable(i(1, 2, 4097).convertToTracking(),
+        final QueryTable table = TstUtils.testRefreshingTable(i(1, 2, 4097).toTracking(),
                 intCol("Sentinel", 1, 2, 4097),
                 col("Bucket", "A", "B", "A"));
 
@@ -3314,7 +3314,7 @@ public class QueryTableAggregationTest {
     @Test
     public void testIds6220() {
         final QueryTable table = TstUtils.testRefreshingTable(
-                RowSetFactory.fromRange(0, 2).convertToTracking(),
+                RowSetFactory.fromRange(0, 2).toTracking(),
                 cG("Key", "a", "b", "c"), c("I", 2, 4, 6));
         final IncrementalReleaseFilter filter = new IncrementalReleaseFilter(0, 10);
         final Table byTable = table.where(filter).by("Key");
@@ -3336,7 +3336,7 @@ public class QueryTableAggregationTest {
             sentinels[ii] = ii;
         }
         final QueryTable table = TstUtils.testRefreshingTable(
-                RowSetFactory.fromRange(100, 100 + keyValues.length - 1).convertToTracking(),
+                RowSetFactory.fromRange(100, 100 + keyValues.length - 1).toTracking(),
                 stringCol("Key", keyValues), intCol("IntCol", sentinels));
 
         final Table flat = table.flatten();
@@ -3449,7 +3449,7 @@ public class QueryTableAggregationTest {
 
     @Test
     public void testIds6321() {
-        final QueryTable source = TstUtils.testRefreshingTable(i(9, 10).convertToTracking(),
+        final QueryTable source = TstUtils.testRefreshingTable(i(9, 10).toTracking(),
                 col("Key", "A", "A"), intCol("Sentinel", 9, 10));
         final FuzzerPrintListener soucePrinter = new FuzzerPrintListener("source", source);
         source.listenForUpdates(soucePrinter);
@@ -3497,7 +3497,7 @@ public class QueryTableAggregationTest {
 
     @Test
     public void testIds6332() {
-        final QueryTable source = TstUtils.testRefreshingTable(RowSetFactory.flat(10).convertToTracking(),
+        final QueryTable source = TstUtils.testRefreshingTable(RowSetFactory.flat(10).toTracking(),
                 col("Value", BigInteger.valueOf(0), new BigInteger("100"), BigInteger.valueOf(100),
                         new BigInteger("100"), new BigInteger("100"), new BigInteger("100"), new BigInteger("100"),
                         new BigInteger("100"), new BigInteger("100"), BigInteger.valueOf(200)));
