@@ -16,7 +16,7 @@ import org.apache.commons.lang3.mutable.MutableObject;
 import java.util.PrimitiveIterator;
 import java.util.function.LongConsumer;
 
-public abstract class SortedRanges extends RefCountedCow<SortedRanges> implements TreeIndexImpl {
+public abstract class SortedRanges extends RefCountedCow<SortedRanges> implements OrderedLongSet {
     private static final IntCounterMetric sortedRangesToRspConversions =
             new IntCounterMetric("sortedRangesToRspConversions");
 
@@ -1354,7 +1354,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
         return true;
     }
 
-    private static TreeIndexImpl makeRspBitmapFromLongRangesArray(final long[] ranges, final int count) {
+    private static OrderedLongSet makeRspBitmapFromLongRangesArray(final long[] ranges, final int count) {
         final RspBitmapBuilderSequential builder = new RspBitmapBuilderSequential();
         forEachLongRangeFromLongRangesArray(ranges, count, (final long start, final long end) -> {
             builder.appendRange(start, end);
@@ -1399,10 +1399,10 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
         return !isDense();
     }
 
-    private static TreeIndexImpl makeTreeIndexImplFromLongRangesArray(
+    private static OrderedLongSet makeTreeIndexImplFromLongRangesArray(
             final long[] ranges, final int count, final long card, final SortedRanges out) {
         if (count == 0) {
-            return TreeIndexImpl.EMPTY;
+            return OrderedLongSet.EMPTY;
         }
         if (count == 1) {
             return SingleRange.make(ranges[0], ranges[0]);
@@ -1469,14 +1469,14 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
     // Neither argument can be empty.
     private static SortedRangesLong intersect(
             final SortedRanges sr,
-            final TreeIndexImpl tix) {
+            final OrderedLongSet tix) {
         return intersect(sr, tix, false);
     }
 
     // Neither argument can be empty.
     private static SortedRangesLong intersect(
             final SortedRanges sr,
-            final TreeIndexImpl tix,
+            final OrderedLongSet tix,
             final boolean takeComplement) {
         final SortedRangesLong res = workSortedRangesLongPerThread.get();
         res.reset();
@@ -1710,7 +1710,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
         }
     }
 
-    final TreeIndexImpl retain(final TreeIndexImpl tix) {
+    final OrderedLongSet retain(final OrderedLongSet tix) {
         if (!USE_RANGES_ARRAY) {
             final MutableObject<SortedRanges> sarOut = new MutableObject<>(this);
             final boolean valid = retainLegacy(sarOut, tix);
@@ -1719,7 +1719,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
             }
             final SortedRanges sr = sarOut.getValue();
             if (sr.isEmpty()) {
-                return TreeIndexImpl.EMPTY;
+                return OrderedLongSet.EMPTY;
             }
             return sr;
         }
@@ -1730,7 +1730,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
         return makeTreeIndexImplFromLongRangesArray(sr.data, sr.count, sr.cardinality, this);
     }
 
-    private static boolean retainLegacy(final MutableObject<SortedRanges> sarOut, final TreeIndexImpl tix) {
+    private static boolean retainLegacy(final MutableObject<SortedRanges> sarOut, final OrderedLongSet tix) {
         try (RowSet.RangeIterator rangeIter = tix.ixRangeIterator()) {
             SortedRanges sar = sarOut.getValue();
             final long first = sar.first();
@@ -1783,7 +1783,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
     // would immediately imply an empty return have already been done by the caller;
     // if we are here it is not obvious that the intersection would be empty and we need
     // to actually visit the respective elements to find out.
-    public final TreeIndexImpl intersectOnNewImpl(final TreeIndexImpl other) {
+    public final OrderedLongSet intersectOnNewImpl(final OrderedLongSet other) {
         final SortedRangesLong sr = intersect(this, other);
         if (sr == null) {
             return null;
@@ -1817,7 +1817,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
         }
     }
 
-    final TreeIndexImpl minusOnNew(final TreeIndexImpl other) {
+    final OrderedLongSet minusOnNew(final OrderedLongSet other) {
         if (!USE_RANGES_ARRAY) {
             return minusOnNewLegacy(other.ixRangeIterator());
         }
@@ -1944,7 +1944,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
     }
 
     // !sar.isEmpty() && !otherSar.isEmpty() true on entry.
-    public static TreeIndexImpl unionOnNew(final SortedRanges sar, final SortedRanges otherSar) {
+    public static OrderedLongSet unionOnNew(final SortedRanges sar, final SortedRanges otherSar) {
         if (!USE_RANGES_ARRAY) {
             return unionOnNewLegacy(sar, otherSar);
         }
@@ -2054,11 +2054,11 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
         }
     }
 
-    public final TreeIndexImpl insertImpl(final SortedRanges other) {
+    public final OrderedLongSet insertImpl(final SortedRanges other) {
         return insertImpl(other, true);
     }
 
-    public final TreeIndexImpl insertImpl(final SortedRanges other, final boolean writeCheck) {
+    public final OrderedLongSet insertImpl(final SortedRanges other, final boolean writeCheck) {
         if (!USE_RANGES_ARRAY) {
             final MutableObject<SortedRanges> holder = new MutableObject<>(this);
             boolean valid = insertInternal(holder, other, writeCheck);
@@ -2081,7 +2081,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
     // Assumption: none of the provided SortedRanges are empty.
     // We can't offer a guarantee of returning false means we didn't modify out;
     // we /can/ offer the guarantee that, under a false return, the partial result
-    // left in sarHolder can be used to repeat the operation (presumably on a different TreeIndexImpl type)
+    // left in sarHolder can be used to repeat the operation (presumably on a different OrderedLongSet type)
     // to produce the correct result.
     private static boolean insertInternal(final MutableObject<SortedRanges> sarHolder, final SortedRanges other,
             final boolean writeCheckArg) {
@@ -2160,7 +2160,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
 
     // We can't offer a guarantee of returning null means we didn't modify sar;
     // we /can/ offer the guarantee that, under a false return, the partial result
-    // left in sarOut can be used to repeat the operation (presumably on a different TreeIndexImpl type)
+    // left in sarOut can be used to repeat the operation (presumably on a different OrderedLongSet type)
     // to produce the correct result.
     // !isEmpty() && rit.hasNext() true on entry.
     static boolean removeLegacy(final MutableObject<SortedRanges> sarOut, final RowSet.RangeIterator rit) {
@@ -2210,7 +2210,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
     }
 
     // !isEmpty() on entry.
-    public final TreeIndexImpl invertRangeOnNew(final long start, final long end, final long maxPosition) {
+    public final OrderedLongSet invertRangeOnNew(final long start, final long end, final long maxPosition) {
         final long packedStart = pack(start);
         int i = 0;
         long pos = 0;
@@ -2228,7 +2228,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
                     final long rangeOffsetPos = pos - 1;
                     final long resultStart = rangeOffsetPos + packedStart - pendingStart;
                     if (resultStart > maxPosition) {
-                        return TreeIndexImpl.EMPTY;
+                        return OrderedLongSet.EMPTY;
                     }
                     final long resultEnd = Math.min(rangeOffsetPos + packedEnd - pendingStart, maxPosition);
                     return SingleRange.make(resultStart, resultEnd);
@@ -2261,7 +2261,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
                 pendingStart = data;
             }
             if (pos > maxPosition) {
-                return TreeIndexImpl.EMPTY;
+                return OrderedLongSet.EMPTY;
             }
             ++i;
             if (i >= count) {
@@ -2275,7 +2275,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
     // !isEmpty() && rit.hasNext() true on entry.
     public final boolean invertOnNew(
             final RowSet.RangeIterator rit,
-            final TreeIndexImplBuilderSequential builder,
+            final OrderedLongSetBuilderSequential builder,
             final long maxPosition) {
         rit.next();
         long start = rit.currentRangeStart();
@@ -4385,14 +4385,14 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
     }
 
     //
-    // TreeIndexImpl methods.
+    // OrderedLongSet methods.
     //
 
-    static void checkEquals(final TreeIndexImpl expected, final TreeIndexImpl ans) {
+    static void checkEquals(final OrderedLongSet expected, final OrderedLongSet ans) {
         checkEquals(expected, ans, null);
     }
 
-    static void checkEquals(final TreeIndexImpl expected, final TreeIndexImpl ans, final TreeIndexImpl orig) {
+    static void checkEquals(final OrderedLongSet expected, final OrderedLongSet ans, final OrderedLongSet orig) {
         ans.ixValidate();
         final long expCard = expected.ixCardinality();
         final long ansCard = ans.ixCardinality();
@@ -4425,7 +4425,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
     }
 
     @Override
-    public final TreeIndexImpl ixInsert(final long key) {
+    public final OrderedLongSet ixInsert(final long key) {
         final SortedRanges ans = add(key);
         if (ans != null) {
             return ans;
@@ -4437,7 +4437,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
     }
 
     @Override
-    public final TreeIndexImpl ixInsertRange(final long startKey, final long endKey) {
+    public final OrderedLongSet ixInsertRange(final long startKey, final long endKey) {
         final SortedRanges ans = addRange(startKey, endKey);
         if (ans != null) {
             return ans;
@@ -4449,19 +4449,19 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
     }
 
     @Override
-    public final TreeIndexImpl ixInsertSecondHalf(final LongChunk<Attributes.OrderedRowKeys> keys, final int offset,
-            final int length) {
-        return ixInsert(TreeIndexImpl.fromChunk(keys, offset, length, true));
+    public final OrderedLongSet ixInsertSecondHalf(final LongChunk<Attributes.OrderedRowKeys> keys, final int offset,
+                                                   final int length) {
+        return ixInsert(OrderedLongSet.fromChunk(keys, offset, length, true));
     }
 
     @Override
-    public final TreeIndexImpl ixRemoveSecondHalf(final LongChunk<Attributes.OrderedRowKeys> keys, final int offset,
-            final int length) {
-        return ixRemove(TreeIndexImpl.fromChunk(keys, offset, length, true));
+    public final OrderedLongSet ixRemoveSecondHalf(final LongChunk<Attributes.OrderedRowKeys> keys, final int offset,
+                                                   final int length) {
+        return ixRemove(OrderedLongSet.fromChunk(keys, offset, length, true));
     }
 
     @Override
-    public final TreeIndexImpl ixAppendRange(final long startKey, final long endKey) {
+    public final OrderedLongSet ixAppendRange(final long startKey, final long endKey) {
         final SortedRanges ans = appendRange(startKey, endKey);
         if (ans != null) {
             return ans;
@@ -4473,14 +4473,14 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
     }
 
     @Override
-    public final TreeIndexImpl ixRemove(final long key) {
+    public final OrderedLongSet ixRemove(final long key) {
         if (isEmpty()) {
-            return TreeIndexImpl.EMPTY;
+            return OrderedLongSet.EMPTY;
         }
         final SortedRanges ans = remove(key);
         if (ans != null) {
             if (ans.isEmpty()) {
-                return TreeIndexImpl.EMPTY;
+                return OrderedLongSet.EMPTY;
             }
             return ans;
         }
@@ -4511,9 +4511,9 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
     }
 
     @Override
-    public final TreeIndexImpl ixSubindexByPosOnNew(final long startPos, final long endPosExclusive) {
+    public final OrderedLongSet ixSubindexByPosOnNew(final long startPos, final long endPosExclusive) {
         if (endPosExclusive <= startPos || endPosExclusive <= 0 || startPos >= getCardinality()) {
-            return TreeIndexImpl.EMPTY;
+            return OrderedLongSet.EMPTY;
         }
         if (startPos == 0 && endPosExclusive >= getCardinality()) {
             return this.cowRef();
@@ -4523,10 +4523,10 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
     }
 
     @Override
-    public final TreeIndexImpl ixSubindexByKeyOnNew(final long startKey, final long endKey) {
+    public final OrderedLongSet ixSubindexByKeyOnNew(final long startKey, final long endKey) {
         final SortedRanges ans = subRangesByKey(startKey, endKey);
         if (ans == null) {
-            return TreeIndexImpl.EMPTY;
+            return OrderedLongSet.EMPTY;
         }
         return ans;
     }
@@ -4578,16 +4578,16 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
     }
 
     @Override
-    public final TreeIndexImpl ixUpdate(final TreeIndexImpl added, final TreeIndexImpl removed) {
+    public final OrderedLongSet ixUpdate(final OrderedLongSet added, final OrderedLongSet removed) {
         if (isEmpty()) {
             return added.ixCowRef();
         }
         if (!removed.ixIsEmpty()) {
             if (removed instanceof SingleRange) {
-                final TreeIndexImpl removeResult = ixRemoveRange(removed.ixFirstKey(), removed.ixLastKey());
+                final OrderedLongSet removeResult = ixRemoveRange(removed.ixFirstKey(), removed.ixLastKey());
                 return removeResult.ixInsert(added);
             }
-            final TreeIndexImpl ans = remove(removed);
+            final OrderedLongSet ans = remove(removed);
             if (ans == null) {
                 return ixToRspOnNew().ixUpdateNoWriteCheck(added, removed);
             }
@@ -4608,9 +4608,9 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
     }
 
     @Override
-    public final TreeIndexImpl ixRemove(final TreeIndexImpl removed) {
+    public final OrderedLongSet ixRemove(final OrderedLongSet removed) {
         if (isEmpty()) {
-            return TreeIndexImpl.EMPTY;
+            return OrderedLongSet.EMPTY;
         }
         if (removed.ixIsEmpty()) {
             return this;
@@ -4618,14 +4618,14 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
         if (removed instanceof SingleRange) {
             return ixRemoveRange(removed.ixFirstKey(), removed.ixLastKey());
         }
-        final TreeIndexImpl ans = remove(removed);
+        final OrderedLongSet ans = remove(removed);
         if (ans != null) {
             return ans;
         }
         return toRsp().ixRemoveNoWriteCheck(removed);
     }
 
-    public final TreeIndexImpl remove(final TreeIndexImpl removed) {
+    public final OrderedLongSet remove(final OrderedLongSet removed) {
         if (!USE_RANGES_ARRAY) {
             try (final RowSet.RangeIterator removedIter = removed.ixRangeIterator()) {
                 final MutableObject<SortedRanges> holder = new MutableObject<>(this);
@@ -4635,7 +4635,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
                 }
                 final SortedRanges ans = holder.getValue();
                 if (ans.isEmpty()) {
-                    return TreeIndexImpl.EMPTY;
+                    return OrderedLongSet.EMPTY;
                 }
                 return ans;
             }
@@ -4648,9 +4648,9 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
     }
 
     @Override
-    public final TreeIndexImpl ixRemoveRange(final long startKey, final long endKey) {
+    public final OrderedLongSet ixRemoveRange(final long startKey, final long endKey) {
         if (isEmpty()) {
-            return TreeIndexImpl.EMPTY;
+            return OrderedLongSet.EMPTY;
         }
         final SortedRanges ans = removeRange(startKey, endKey);
         if (ans == null) {
@@ -4660,21 +4660,21 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
             return rb;
         }
         if (ans.isEmpty()) {
-            return TreeIndexImpl.EMPTY;
+            return OrderedLongSet.EMPTY;
         }
         return ans;
     }
 
     @Override
-    public final TreeIndexImpl ixRetain(final TreeIndexImpl toIntersect) {
+    public final OrderedLongSet ixRetain(final OrderedLongSet toIntersect) {
         if (toIntersect.ixIsEmpty() ||
                 isEmpty() ||
                 toIntersect.ixLastKey() < first() ||
                 last() < toIntersect.ixFirstKey()) {
-            return TreeIndexImpl.EMPTY;
+            return OrderedLongSet.EMPTY;
         }
         if (!canWrite()) {
-            final TreeIndexImpl ix = ixIntersectOnNew(toIntersect);
+            final OrderedLongSet ix = ixIntersectOnNew(toIntersect);
             return ix;
         }
         if (toIntersect instanceof SingleRange) {
@@ -4687,41 +4687,41 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
     }
 
     @Override
-    public final TreeIndexImpl ixRetainRange(final long start, final long end) {
+    public final OrderedLongSet ixRetainRange(final long start, final long end) {
         if (isEmpty()) {
-            return TreeIndexImpl.EMPTY;
+            return OrderedLongSet.EMPTY;
         }
         final long first = first();
         if (end < first) {
-            return TreeIndexImpl.EMPTY;
+            return OrderedLongSet.EMPTY;
         }
         final long last = last();
         if (last < start) {
-            return TreeIndexImpl.EMPTY;
+            return OrderedLongSet.EMPTY;
         }
         final SortedRanges ans = retainRange(Math.max(start, first), Math.min(end, last));
         if (ans == null) {
             return ixToRspOnNew().ixRetainRangeNoWriteCheck(start, end);
         }
         if (ans.isEmpty()) {
-            return TreeIndexImpl.EMPTY;
+            return OrderedLongSet.EMPTY;
         }
         return ans;
     }
 
     @Override
-    public final TreeIndexImpl ixIntersectOnNew(final TreeIndexImpl toIntersect) {
+    public final OrderedLongSet ixIntersectOnNew(final OrderedLongSet toIntersect) {
         if (toIntersect instanceof SingleRange) {
             return ixSubindexByKeyOnNew(toIntersect.ixFirstKey(), toIntersect.ixLastKey());
         }
         return intersectOnNew(toIntersect);
     }
 
-    public final TreeIndexImpl intersectOnNew(final TreeIndexImpl toIntersect) {
+    public final OrderedLongSet intersectOnNew(final OrderedLongSet toIntersect) {
         if (isEmpty() || toIntersect.ixIsEmpty() ||
                 last() < toIntersect.ixFirstKey() ||
                 toIntersect.ixLastKey() < first()) {
-            return TreeIndexImpl.EMPTY;
+            return OrderedLongSet.EMPTY;
         }
         if (!USE_RANGES_ARRAY) {
             final RowSet.RangeIterator rangeIter = toIntersect.ixRangeIterator();
@@ -4732,7 +4732,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
                 return sr;
             }
         } else {
-            final TreeIndexImpl ans = intersectOnNewImpl(toIntersect);
+            final OrderedLongSet ans = intersectOnNewImpl(toIntersect);
             if (ans != null) {
                 return ans;
             }
@@ -4746,7 +4746,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
     }
 
     @Override
-    public final boolean ixOverlaps(final TreeIndexImpl impl) {
+    public final boolean ixOverlaps(final OrderedLongSet impl) {
         if (impl.ixIsEmpty()) {
             return false;
         }
@@ -4766,7 +4766,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
     }
 
     @Override
-    public final boolean ixSubsetOf(final TreeIndexImpl other) {
+    public final boolean ixSubsetOf(final OrderedLongSet other) {
         if (isEmpty()) {
             return true;
         }
@@ -4794,9 +4794,9 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
     }
 
     @Override
-    public final TreeIndexImpl ixMinusOnNew(final TreeIndexImpl other) {
+    public final OrderedLongSet ixMinusOnNew(final OrderedLongSet other) {
         if (isEmpty()) {
-            return TreeIndexImpl.EMPTY;
+            return OrderedLongSet.EMPTY;
         }
         if (other.ixIsEmpty() ||
                 last() < other.ixFirstKey() ||
@@ -4810,7 +4810,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
                 return ans;
             }
         } else {
-            final TreeIndexImpl ans = minusOnNew(other);
+            final OrderedLongSet ans = minusOnNew(other);
             if (ans != null) {
                 return ans;
             }
@@ -4819,10 +4819,10 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
     }
 
     @Override
-    public final TreeIndexImpl ixUnionOnNew(final TreeIndexImpl other) {
+    public final OrderedLongSet ixUnionOnNew(final OrderedLongSet other) {
         if (other.ixIsEmpty()) {
             if (isEmpty()) {
-                return TreeIndexImpl.EMPTY;
+                return OrderedLongSet.EMPTY;
             }
             return cowRef();
         }
@@ -4844,7 +4844,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
         }
         if (other instanceof SortedRanges) {
             final SortedRanges otherSar = (SortedRanges) other;
-            final TreeIndexImpl out = SortedRanges.unionOnNew(this, otherSar);
+            final OrderedLongSet out = SortedRanges.unionOnNew(this, otherSar);
             if (out != null) {
                 return out;
             }
@@ -4853,7 +4853,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
     }
 
     @Override
-    public final TreeIndexImpl ixShiftOnNew(final long shiftAmount) {
+    public final OrderedLongSet ixShiftOnNew(final long shiftAmount) {
         final SortedRanges ans = applyShiftOnNew(shiftAmount);
         if (ans != null) {
             return ans;
@@ -4862,7 +4862,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
     }
 
     @Override
-    public final TreeIndexImpl ixShiftInPlace(final long shiftAmount) {
+    public final OrderedLongSet ixShiftInPlace(final long shiftAmount) {
         final SortedRanges ans = applyShift(shiftAmount);
         if (ans != null) {
             return ans;
@@ -4871,7 +4871,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
     }
 
     @Override
-    public final TreeIndexImpl ixInsertWithShift(final long shiftAmount, final TreeIndexImpl other) {
+    public final OrderedLongSet ixInsertWithShift(final long shiftAmount, final OrderedLongSet other) {
         if (other.ixIsEmpty()) {
             return this;
         }
@@ -4902,15 +4902,15 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
         return rsp;
     }
 
-    private TreeIndexImpl ixInsertImpl(final SortedRanges addedSar) {
+    private OrderedLongSet ixInsertImpl(final SortedRanges addedSar) {
         return insertImpl(addedSar);
     }
 
     @Override
-    public final TreeIndexImpl ixInsert(final TreeIndexImpl added) {
+    public final OrderedLongSet ixInsert(final OrderedLongSet added) {
         if (added.ixIsEmpty()) {
             if (isEmpty()) {
-                return TreeIndexImpl.EMPTY;
+                return OrderedLongSet.EMPTY;
             }
             return this;
         }
@@ -4979,18 +4979,18 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
     }
 
     @Override
-    public final TreeIndexImpl ixInvertOnNew(final TreeIndexImpl keys, final long maxPosition) {
+    public final OrderedLongSet ixInvertOnNew(final OrderedLongSet keys, final long maxPosition) {
         if (keys.ixIsEmpty()) {
-            return TreeIndexImpl.EMPTY;
+            return OrderedLongSet.EMPTY;
         }
         if (keys instanceof SingleRange) {
-            final TreeIndexImpl r = invertRangeOnNew(keys.ixFirstKey(), keys.ixLastKey(), maxPosition);
+            final OrderedLongSet r = invertRangeOnNew(keys.ixFirstKey(), keys.ixLastKey(), maxPosition);
             if (r != null) {
                 return r;
             }
         } else {
             final RowSet.RangeIterator rit = keys.ixRangeIterator();
-            final TreeIndexImplBuilderSequential builder = new TreeIndexImplBuilderSequential();
+            final OrderedLongSetBuilderSequential builder = new OrderedLongSetBuilderSequential();
             if (invertOnNew(rit, builder, maxPosition)) {
                 return builder.getTreeIndexImpl();
             }
@@ -4999,9 +4999,9 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
     }
 
     @Override
-    public final TreeIndexImpl ixCompact() {
+    public final OrderedLongSet ixCompact() {
         if (isEmpty()) {
-            return TreeIndexImpl.EMPTY;
+            return OrderedLongSet.EMPTY;
         }
         if (!hasMoreThanOneRange()) {
             return SingleRange.make(first(), last());

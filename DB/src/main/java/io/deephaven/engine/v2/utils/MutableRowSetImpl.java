@@ -29,18 +29,18 @@ public class MutableRowSetImpl extends RowSequenceAsChunkImpl implements Mutable
 
     private static final long serialVersionUID = 1L;
 
-    private TreeIndexImpl impl;
+    private OrderedLongSet impl;
 
     @SuppressWarnings("WeakerAccess") // Mandatory for Externalizable
     public MutableRowSetImpl() {
-        this(TreeIndexImpl.EMPTY);
+        this(OrderedLongSet.EMPTY);
     }
 
-    public MutableRowSetImpl(final TreeIndexImpl impl) {
+    public MutableRowSetImpl(final OrderedLongSet impl) {
         this.impl = Objects.requireNonNull(impl);
     }
 
-    protected final TreeIndexImpl getImpl() {
+    protected final OrderedLongSet getImpl() {
         return impl;
     }
 
@@ -75,7 +75,7 @@ public class MutableRowSetImpl extends RowSequenceAsChunkImpl implements Mutable
 
     protected void postMutationHook() {}
 
-    private void assign(final TreeIndexImpl maybeNewImpl) {
+    private void assign(final OrderedLongSet maybeNewImpl) {
         invalidateRowSequenceAsChunkImpl();
         if (maybeNewImpl == impl) {
             return;
@@ -166,7 +166,7 @@ public class MutableRowSetImpl extends RowSequenceAsChunkImpl implements Mutable
     @Override
     public final void clear() {
         preMutationHook();
-        assign(TreeIndexImpl.EMPTY);
+        assign(OrderedLongSet.EMPTY);
         postMutationHook();
     }
 
@@ -430,7 +430,7 @@ public class MutableRowSetImpl extends RowSequenceAsChunkImpl implements Mutable
         out.writeObject(impl);
     }
 
-    public static void addToBuilderFromImpl(final TreeIndexImpl.BuilderRandom builder, final MutableRowSetImpl rowSet) {
+    public static void addToBuilderFromImpl(final OrderedLongSet.BuilderRandom builder, final MutableRowSetImpl rowSet) {
         if (rowSet.impl instanceof SingleRange) {
             builder.add((SingleRange) rowSet.impl);
             return;
@@ -443,7 +443,7 @@ public class MutableRowSetImpl extends RowSequenceAsChunkImpl implements Mutable
         builder.add(idxImpl, true);
     }
 
-    protected static TreeIndexImpl getImpl(final RowSet rowSet) {
+    protected static OrderedLongSet getImpl(final RowSet rowSet) {
         if (rowSet instanceof MutableRowSetImpl) {
             return ((MutableRowSetImpl) rowSet).getImpl();
         }

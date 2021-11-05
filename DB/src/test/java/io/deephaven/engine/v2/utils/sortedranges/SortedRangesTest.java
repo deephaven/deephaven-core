@@ -1423,7 +1423,7 @@ public class SortedRangesTest {
         other.addRange(28, 32);
         other.addRange(41, 42);
         other.add(60);
-        TreeIndexImpl tix = sar.retain(other);
+        OrderedLongSet tix = sar.retain(other);
         assertTrue(tix instanceof SortedRanges);
         assertTrue(sar == tix);
         sar = (SortedRanges) tix;
@@ -1531,7 +1531,7 @@ public class SortedRangesTest {
         other.addRange(41, 42);
         other.add(60);
         final SortedRanges sarCopy = sar.deepCopy();
-        final TreeIndexImpl intersect = sarCopy.intersectOnNew(other);
+        final OrderedLongSet intersect = sarCopy.intersectOnNew(other);
         // Ensure sarCopy wasn't modified.
         assertEquals(sar.getCardinality(), sarCopy.getCardinality());
         try (final RowSet.Iterator sarIter = sar.getIterator();
@@ -1614,7 +1614,7 @@ public class SortedRangesTest {
                                 continue;
                             }
                             final String m3 = m2 + " && maxPos==" + maxPos;
-                            final TreeIndexImpl r = sar.invertRangeOnNew(s, e, maxPos);
+                            final OrderedLongSet r = sar.invertRangeOnNew(s, e, maxPos);
                             if (maxPos < spos) {
                                 assertTrue(m3, r.ixIsEmpty());
                                 continue;
@@ -1641,7 +1641,7 @@ public class SortedRangesTest {
     private static void checkInvert(
             final String prefixMsg, final SortedRanges sar, final RowSet.RangeIterator ixrit, final RowSet.Iterator ixit,
             final long maxPosition) {
-        final TreeIndexImplBuilderSequential b = new TreeIndexImplBuilderSequential();
+        final OrderedLongSetBuilderSequential b = new OrderedLongSetBuilderSequential();
         final boolean r = sar.invertOnNew(ixrit, b, maxPosition);
         final String m = "maxPosition==" + maxPosition;
         assertTrue(m, r);
@@ -1737,9 +1737,9 @@ public class SortedRangesTest {
 
     private static void doTestInsertOrUnion(final String m2, final boolean isInsert, final SortedRanges orig,
             final SortedRanges op1, final SortedRanges op2) {
-        final TreeIndexImpl result;
+        final OrderedLongSet result;
         if (isInsert) {
-            final TreeIndexImpl tix = op1.insertImpl(op2);
+            final OrderedLongSet tix = op1.insertImpl(op2);
             assertTrue(m2, tix instanceof SortedRanges);
             result = tix;
         } else {
@@ -1794,7 +1794,7 @@ public class SortedRangesTest {
                 } else {
                     op1 = orig;
                 }
-                final TreeIndexImpl result;
+                final OrderedLongSet result;
                 if (isRetain) {
                     result = op1.retain(op2);
                     assertTrue(m2, result.ixIsEmpty() ||
@@ -1858,12 +1858,12 @@ public class SortedRangesTest {
                 }
                 final SortedRanges result;
                 if (isRemove) {
-                    final TreeIndexImpl r = op1.remove(op2);
+                    final OrderedLongSet r = op1.remove(op2);
                     assertNotNull(r);
                     assertTrue(r instanceof SortedRanges);
                     result = (SortedRanges) r;
                 } else {
-                    TreeIndexImpl r = op1.minusOnNew(op2);
+                    OrderedLongSet r = op1.minusOnNew(op2);
                     if (r == null) {
                         continue;
                     }
@@ -2098,7 +2098,7 @@ public class SortedRangesTest {
                     assertTrue(m2 + " && i==" + i, sr2.subsetOf(sr.getRangeIterator()));
                     ++i;
                 }
-                final TreeIndexImpl r = sr.ixMinusOnNew(
+                final OrderedLongSet r = sr.ixMinusOnNew(
                         SingleRange.make(
                                 sr2.first() - 2, sr2.last() + 2));
                 assertNotNull(r);
@@ -2128,7 +2128,7 @@ public class SortedRangesTest {
             sr2 = sr2.add(offset2 + 3 * i);
         }
         assertEquals(nelems, sr2.getCardinality());
-        final TreeIndexImpl r = sr1.minusOnNew(sr2);
+        final OrderedLongSet r = sr1.minusOnNew(sr2);
         assertNotNull(r);
         assertTrue(r instanceof SortedRangesShort);
         final SortedRanges sr3 = (SortedRanges) r;
@@ -2166,7 +2166,7 @@ public class SortedRangesTest {
                     msr2 = msr2.tryCompact(4);
                 }
                 final SortedRanges sr2 = msr2;
-                final TreeIndexImpl union = SortedRanges.unionOnNew(sr1, sr2);
+                final OrderedLongSet union = SortedRanges.unionOnNew(sr1, sr2);
                 for (SortedRanges sr : new SortedRanges[] {sr1, sr2}) {
                     sr.forEachLongRange((final long start, final long end) -> {
                         assertTrue(m2 + " && start==" + start + " && end==" + end, union.ixContainsRange(start, end));
@@ -2212,7 +2212,7 @@ public class SortedRangesTest {
                 }
                 final SortedRanges sr2 = msr2;
                 final SortedRanges sr1cp = sr1.deepCopy();
-                final TreeIndexImpl result = sr1cp.insertImpl(sr2);
+                final OrderedLongSet result = sr1cp.insertImpl(sr2);
                 if (result instanceof SortedRanges) {
                     sr1cp.validate();
                     continue;
@@ -2261,7 +2261,7 @@ public class SortedRangesTest {
                     msr2 = msr2.tryCompact(4);
                 }
                 final SortedRanges sr2 = msr2;
-                final TreeIndexImpl intersect = sr1.intersectOnNew(sr2);
+                final OrderedLongSet intersect = sr1.intersectOnNew(sr2);
                 intersect.ixValidate();
                 final MutableLong card = new MutableLong(0);
                 sr1.forEachLong((final long v) -> {
@@ -2419,7 +2419,7 @@ public class SortedRangesTest {
                 if (rand.nextBoolean()) {
                     sr2 = sr2.tryCompact(4);
                 }
-                final TreeIndexImpl result = SortedRanges.unionOnNew(sr1, sr2);
+                final OrderedLongSet result = SortedRanges.unionOnNew(sr1, sr2);
                 for (RowSet.RangeIterator rit = result.ixRangeIterator(); rit.hasNext();) {
                     rit.next();
                     final long s = rit.currentRangeStart();
@@ -2825,7 +2825,7 @@ public class SortedRangesTest {
     public void testMinusRegression0() {
         final SortedRanges sr0 = rvs2sr(rvs0);
         final SortedRanges sr1 = rvs2sr(rvs1);
-        final TreeIndexImpl r2 = sr1.minusOnNew(sr0);
+        final OrderedLongSet r2 = sr1.minusOnNew(sr0);
         assertTrue(r2.ixIsEmpty());
     }
 
@@ -2833,9 +2833,9 @@ public class SortedRangesTest {
     public void testIntersectsCase0() {
         final SortedRanges sr0 = rvs2sr(rvs0);
         final SortedRanges sr1 = rvs2sr(rvs1);
-        final TreeIndexImpl sr2 = sr0.intersectOnNew(sr1);
+        final OrderedLongSet sr2 = sr0.intersectOnNew(sr1);
         assertEquals(sr1.getCardinality(), sr2.ixCardinality());
-        final TreeIndexImpl r3 = sr1.minusOnNew(sr2);
+        final OrderedLongSet r3 = sr1.minusOnNew(sr2);
         assertTrue(r3.ixIsEmpty());
     }
 
@@ -2860,7 +2860,7 @@ public class SortedRangesTest {
                 1073741776, -1073741798, 1073741805, -1073741812, 1073741824, -1073741860});
         final SortedRanges sr1 = rvs2sr(new long[] {
                 1073741793, -1073741816, 1073741818, 1073741821, -1073741822, 1073741824, -1073741854});
-        final TreeIndexImpl sr2 = sr0.intersectOnNew(sr1);
+        final OrderedLongSet sr2 = sr0.intersectOnNew(sr1);
         sr2.ixValidate();
     }
 
@@ -2870,7 +2870,7 @@ public class SortedRangesTest {
                 rvs2sr(new long[] {0, -5, 8, 16, -19, 22, 27, 29, 34, -35, 38, 40, 45, 48, -50, 53, -55, 60, -106});
         final SortedRanges sr1 =
                 rvs2sr(new long[] {5, 16, 29, 34, -35, 40, 45, 50, 54, 62, 66, 77, 80, -81, 83, -85, 88, -96, 98, 105});
-        final TreeIndexImpl r = sr0.deepCopy().remove(sr1);
+        final OrderedLongSet r = sr0.deepCopy().remove(sr1);
         assertNotNull(r);
         final SortedRanges sr2 = (SortedRanges) r;
         checkMinus(sr0, sr1, sr2);
@@ -2934,7 +2934,7 @@ public class SortedRangesTest {
         sr0 = sr0.appendRange(60, 63);
         SortedRanges sr1 = SortedRanges.makeSingleRange(30, 31);
         sr1 = sr1.addRange(34, 34);
-        final TreeIndexImpl r = sr0.ixRemove(sr1);
+        final OrderedLongSet r = sr0.ixRemove(sr1);
         assertEquals(7, r.ixCardinality());
     }
 
@@ -3032,7 +3032,7 @@ public class SortedRangesTest {
                 } else {
                     sr1 = sr1.addRange(base + 1, base + 3);
                 }
-                final TreeIndexImpl result = mu.getValue().insertImpl(sr1);
+                final OrderedLongSet result = mu.getValue().insertImpl(sr1);
                 if (result instanceof SingleRange) {
                     mu.setValue(SortedRanges.makeSingleRange(result.ixFirstKey(), result.ixLastKey()));
                 } else {
@@ -3046,7 +3046,7 @@ public class SortedRangesTest {
             final long start = offset + 4 * Short.MAX_VALUE + 1 + 1;
             final long end = offset + 4 * Short.MAX_VALUE + 1 + 3;
             SortedRanges sr2 = SortedRanges.makeSingleRange(start, end);
-            final TreeIndexImpl result = mu.getValue().insertImpl(sr2);
+            final OrderedLongSet result = mu.getValue().insertImpl(sr2);
             assertFalse(result instanceof SortedRanges);
             assertEquals(sr0.getCardinality() + 3, result.ixCardinality());
             assertTrue(result.ixContainsRange(start, end));
@@ -3112,7 +3112,7 @@ public class SortedRangesTest {
                     if (sr.getCardinality() == sr.last() - sr.first() + 1) {
                         break;
                     }
-                    final TreeIndexImpl complement =
+                    final OrderedLongSet complement =
                             SortedRanges.makeSingleRange(sr.first(), sr.last()).ixMinusOnNew(sr);
                     final RowSet.RangeIterator riter = complement.ixRangeIterator();
                     while (riter.hasNext()) {
@@ -3174,7 +3174,7 @@ public class SortedRangesTest {
         SortedRanges sr1 = SortedRanges.makeSingleRange(10, 20).addRange(30, 40);
         for (SortedRanges arg : new SortedRanges[] {sr0, sr1}) {
             SortedRanges tis = (arg == sr0) ? sr1 : sr0;
-            final TreeIndexImpl r = tis.ixUnionOnNew(arg);
+            final OrderedLongSet r = tis.ixUnionOnNew(arg);
             assertNotNull(r);
             r.ixValidate();
             assertEquals(11 + 11 + 1 + 2, r.ixCardinality());
@@ -3193,7 +3193,7 @@ public class SortedRangesTest {
                         sr0.intersectOnNew(sr1).ixCardinality();
         for (SortedRanges arg : new SortedRanges[] {sr0, sr1}) {
             SortedRanges tis = (arg == sr0) ? sr1 : sr0;
-            final TreeIndexImpl r = tis.ixUnionOnNew(arg);
+            final OrderedLongSet r = tis.ixUnionOnNew(arg);
             r.ixValidate();
             assertNotNull(r);
             assertEquals(expectedCard, r.ixCardinality());
@@ -3212,7 +3212,7 @@ public class SortedRangesTest {
                         sr0.intersectOnNew(sr1).ixCardinality();
         for (SortedRanges arg : new SortedRanges[] {sr0, sr1}) {
             SortedRanges tis = (arg == sr0) ? sr1 : sr0;
-            final TreeIndexImpl r = tis.ixUnionOnNew(arg);
+            final OrderedLongSet r = tis.ixUnionOnNew(arg);
             r.ixValidate();
             assertNotNull(r);
             assertEquals(expectedCard, r.ixCardinality());
@@ -3231,7 +3231,7 @@ public class SortedRangesTest {
                         sr0.ixUnionOnNew(sr1).ixCardinality();
         for (SortedRanges arg : new SortedRanges[] {sr0, sr1}) {
             SortedRanges tis = (arg == sr0) ? sr1 : sr0;
-            final TreeIndexImpl r = tis.intersectOnNew(arg);
+            final OrderedLongSet r = tis.intersectOnNew(arg);
             r.ixValidate();
             assertNotNull(r);
             assertEquals(expectedCard, r.ixCardinality());
@@ -3299,7 +3299,7 @@ public class SortedRangesTest {
     public void testRemoveSinglesLeavesEmpty() {
         final SortedRanges sr0 = vs2sar(new long[] {10, 20, 30, 40});
         final SortedRanges sr1 = vs2sar(new long[] {8, 10, 15, 20, 30, 40});
-        final TreeIndexImpl tix = sr0.ixRemove(sr1);
+        final OrderedLongSet tix = sr0.ixRemove(sr1);
         assertTrue(tix.ixIsEmpty());
     }
 

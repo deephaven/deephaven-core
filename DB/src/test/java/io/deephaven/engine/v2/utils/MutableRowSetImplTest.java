@@ -93,8 +93,8 @@ public class MutableRowSetImplTest extends TestCase {
     }
 
     @NotNull
-    protected final MutableRowSet fromTreeIndexImpl(@NotNull final TreeIndexImpl treeIndexImpl) {
-        return new MutableRowSetImpl(treeIndexImpl);
+    protected final MutableRowSet fromTreeIndexImpl(@NotNull final OrderedLongSet orderedLongSet) {
+        return new MutableRowSetImpl(orderedLongSet);
     }
 
     @NotNull
@@ -1143,8 +1143,8 @@ public class MutableRowSetImplTest extends TestCase {
 
     public void testChunkInsertAndRemove() {
         // noinspection unchecked
-        final Supplier<TreeIndexImpl>[] suppliers = new Supplier[] {
-                () -> TreeIndexImpl.EMPTY
+        final Supplier<OrderedLongSet>[] suppliers = new Supplier[] {
+                () -> OrderedLongSet.EMPTY
 
                 , () -> SingleRange.make(0, 0), () -> SingleRange.make(4_000_000_000L, 4_000_000_000L),
                 () -> SingleRange.make(RspArray.BLOCK_SIZE, 2 * RspArray.BLOCK_SIZE - 1),
@@ -1159,14 +1159,14 @@ public class MutableRowSetImplTest extends TestCase {
                 () -> SortedRanges.makeSingleRange(RspArray.BLOCK_SIZE, 4 * RspArray.BLOCK_SIZE - 1),
                 () -> SortedRanges.makeSingleRange(0, 9_999),
                 () -> SortedRanges.makeSingleRange(4_000_000_000L, 4_000_009_999L), () -> {
-                    final TreeIndexImpl r = SortedRanges.tryMakeForKnownRangeKnownCount(100, 10, 10_010);
+                    final OrderedLongSet r = SortedRanges.tryMakeForKnownRangeKnownCount(100, 10, 10_010);
                     r.ixInsertRange(0, 100);
                     r.ixInsert(256);
                     r.ixInsertRange(1024, 9000);
                     return r;
-                }, () -> TreeIndexImpl.fromChunk(LongChunk.chunkWrap(new long[] {}), 0, 0, true),
-                () -> TreeIndexImpl.fromChunk(LongChunk.chunkWrap(new long[] {0, 1, 2, 3}), 0, 4, true),
-                () -> TreeIndexImpl.fromChunk(LongChunk.chunkWrap(new long[] {0, 1, 2, 3, 4, 5, 6}), 2, 3, true)
+                }, () -> OrderedLongSet.fromChunk(LongChunk.chunkWrap(new long[] {}), 0, 0, true),
+                () -> OrderedLongSet.fromChunk(LongChunk.chunkWrap(new long[] {0, 1, 2, 3}), 0, 4, true),
+                () -> OrderedLongSet.fromChunk(LongChunk.chunkWrap(new long[] {0, 1, 2, 3, 4, 5, 6}), 2, 3, true)
 
                 , RspBitmap::makeEmpty, () -> RspBitmap.makeSingleRange(0, 0),
                 () -> RspBitmap.makeSingleRange(4_000_000_000L, 4_000_000_000L),
@@ -1177,19 +1177,19 @@ public class MutableRowSetImplTest extends TestCase {
                 () -> RspBitmap.makeEmpty().ixInsert(4_000_000_000L).ixInsert(4_000_000_002L),
                 () -> RspBitmap.makeSingleRange(0, 9_999),
                 () -> RspBitmap.makeSingleRange(4_000_000_000L, 4_000_009_999L), () -> {
-                    final TreeIndexImpl r = RspBitmap.makeEmpty();
+                    final OrderedLongSet r = RspBitmap.makeEmpty();
                     r.ixInsertRange(0, 100);
                     r.ixInsert(256);
                     r.ixInsertRange(1024, 2048);
                     return r;
                 }, () -> {
-                    final TreeIndexImpl r = RspBitmap.makeEmpty();
+                    final OrderedLongSet r = RspBitmap.makeEmpty();
                     r.ixInsertRange(0, 100);
                     r.ixInsert(256);
                     r.ixInsertRange(1024, 9000);
                     return r;
                 }, () -> {
-                    final TreeIndexImpl r = RspBitmap.makeEmpty();
+                    final OrderedLongSet r = RspBitmap.makeEmpty();
                     LongStream
                             .rangeClosed(RspArray.BLOCK_SIZE * 4,
                                     RspArray.BLOCK_SIZE * 4 + ArrayContainer.SWITCH_CONTAINER_CARDINALITY_THRESHOLD * 2)
@@ -1199,8 +1199,8 @@ public class MutableRowSetImplTest extends TestCase {
         };
 
         int step = 0;
-        for (final Supplier<TreeIndexImpl> lhs : suppliers) {
-            for (final Supplier<TreeIndexImpl> rhs : suppliers) {
+        for (final Supplier<OrderedLongSet> lhs : suppliers) {
+            for (final Supplier<OrderedLongSet> rhs : suppliers) {
                 ++step;
                 final String m = "step=" + step;
                 final RowSet rowSet = fromTreeIndexImpl(rhs.get());
@@ -1244,17 +1244,17 @@ public class MutableRowSetImplTest extends TestCase {
                 assertEquals(m, expectedAfterRemove, actualAfterRemove2);
             }
         }
-        for (final Supplier<TreeIndexImpl> lhs : suppliers) {
-            for (final Supplier<TreeIndexImpl> rhs : suppliers) {
-                final TreeIndexImpl lhsTreeIndexImpl = lhs.get();
-                if (lhsTreeIndexImpl instanceof RspBitmap) {
+        for (final Supplier<OrderedLongSet> lhs : suppliers) {
+            for (final Supplier<OrderedLongSet> rhs : suppliers) {
+                final OrderedLongSet lhsOrderedLongSet = lhs.get();
+                if (lhsOrderedLongSet instanceof RspBitmap) {
                     final MutableRowSet lhsRowSet = fromTreeIndexImpl(lhs.get());
                     final RowSet rhsRowSet = fromTreeIndexImpl(rhs.get());
 
                     lhsRowSet.insert(rhsRowSet);
-                    lhsTreeIndexImpl.ixInsertSecondHalf(rhsRowSet.asRowKeyChunk(), 0, rhsRowSet.intSize());
+                    lhsOrderedLongSet.ixInsertSecondHalf(rhsRowSet.asRowKeyChunk(), 0, rhsRowSet.intSize());
 
-                    assertEquals(lhsRowSet, fromTreeIndexImpl(lhsTreeIndexImpl));
+                    assertEquals(lhsRowSet, fromTreeIndexImpl(lhsOrderedLongSet));
                 }
             }
         }
@@ -1815,7 +1815,7 @@ public class MutableRowSetImplTest extends TestCase {
     //
     // public void testDeserializeIt() throws IOException, ClassNotFoundException {
     // try (BufferedReader br = new BufferedReader(new FileReader("/home/cwright/b64.txt"))) {
-    // ArrayList<TreeIndexImpl> readImpls = new ArrayList<>();
+    // ArrayList<OrderedLongSet> readImpls = new ArrayList<>();
     // String line;
     // while ((line = br.readLine()) != null) {
     // if (line.isEmpty())
@@ -1825,8 +1825,8 @@ public class MutableRowSetImplTest extends TestCase {
     // ByteArrayInputStream bis = new ByteArrayInputStream(decoded);
     // ObjectInputStream ois = new ObjectInputStream(bis);
     // Object read = ois.readObject();
-    // if (read instanceof TreeIndexImpl) {
-    // readImpls.add((TreeIndexImpl) read);
+    // if (read instanceof OrderedLongSet) {
+    // readImpls.add((OrderedLongSet) read);
     // }
     // }
     //
@@ -1862,8 +1862,8 @@ public class MutableRowSetImplTest extends TestCase {
     // ByteArrayInputStream bis = new ByteArrayInputStream(decoded);
     // ObjectInputStream ois = new ObjectInputStream(bis);
     // Object read = ois.readObject();
-    // if (read instanceof TreeIndexImpl) {
-    // readIndices.put(name, new MutableRowSetImpl((TreeIndexImpl) read));
+    // if (read instanceof OrderedLongSet) {
+    // readIndices.put(name, new MutableRowSetImpl((OrderedLongSet) read));
     // }
     // }
     // }
@@ -3000,7 +3000,7 @@ public class MutableRowSetImplTest extends TestCase {
         if (!ImmutableContainer.ENABLED) {
             return;
         }
-        final TreeIndexImpl.BuilderSequential b = new TreeIndexImplBuilderSequential();
+        final OrderedLongSet.BuilderSequential b = new OrderedLongSetBuilderSequential();
         final int nblocks = SortedRanges.INT_SPARSE_MAX_CAPACITY + 1;
         for (long block = 0; block < nblocks; ++block) {
             final long blockKey = block * BLOCK_SIZE;
@@ -3015,7 +3015,7 @@ public class MutableRowSetImplTest extends TestCase {
                 b.appendKey(blockKey + 20);
             }
         }
-        final TreeIndexImpl impl = b.getTreeIndexImpl();
+        final OrderedLongSet impl = b.getTreeIndexImpl();
         assertTrue(impl instanceof RspBitmap);
         final RspBitmap rsp = (RspBitmap) impl;
         assertEquals(0.0, rsp.containerOverhead());
@@ -3142,7 +3142,7 @@ public class MutableRowSetImplTest extends TestCase {
         final long card = 5 * BLOCK_SIZE;
         final RspBitmap rb = new RspBitmap(0, card - 1);
         assertEquals(card, rb.getCardinality());
-        final TreeIndexImpl result = rb.ixRemove(sr);
+        final OrderedLongSet result = rb.ixRemove(sr);
         assertEquals(card - sr.getCardinality(), result.ixCardinality());
     }
 
@@ -3158,7 +3158,7 @@ public class MutableRowSetImplTest extends TestCase {
         SortedRanges sr1 = new SortedRangesInt(6, offset);
         sr1 = sr1.add(offset);
         sr1 = sr1.add(offset + 10000);
-        final TreeIndexImpl result = sr0.ixInsert(sr1);
+        final OrderedLongSet result = sr0.ixInsert(sr1);
         result.ixValidate();
         assertEquals(cap + sr1.getCardinality(), result.ixCardinality());
     }
@@ -3189,21 +3189,21 @@ public class MutableRowSetImplTest extends TestCase {
     }
 
     public void testSequentialBuilderMakesSortedRanges() {
-        final TreeIndexImplBuilderSequential builder = new TreeIndexImplBuilderSequential();
+        final OrderedLongSetBuilderSequential builder = new OrderedLongSetBuilderSequential();
         builder.appendRange(10, 20);
         builder.appendRange(30, 40);
-        final TreeIndexImpl tix = builder.getTreeIndexImpl();
+        final OrderedLongSet tix = builder.getTreeIndexImpl();
         assertTrue(tix instanceof SortedRanges);
     }
 
     public void testSequentialBuilderMakesSparseSortedRangesLong() {
         for (int j = 0; j < 2; ++j) {
             final int max = SortedRanges.LONG_SPARSE_MAX_CAPACITY + ((j == 0) ? 0 : 1);
-            final TreeIndexImplBuilderSequential builder = new TreeIndexImplBuilderSequential();
+            final OrderedLongSetBuilderSequential builder = new OrderedLongSetBuilderSequential();
             for (int i = 0; i < max; ++i) {
                 builder.appendKey(Integer.MAX_VALUE * (long) i);
             }
-            TreeIndexImpl tix = builder.getTreeIndexImpl();
+            OrderedLongSet tix = builder.getTreeIndexImpl();
             assertTrue((j == 0) ? tix instanceof SortedRanges : tix instanceof RspBitmap);
         }
     }
@@ -3211,12 +3211,12 @@ public class MutableRowSetImplTest extends TestCase {
     public void testSequentialBuilderMakesSparseSortedRangesInt() {
         for (int j = 0; j < 2; ++j) {
             final int max = SortedRanges.INT_SPARSE_MAX_CAPACITY + ((j == 0) ? 0 : 1);
-            final TreeIndexImplBuilderSequential builder = new TreeIndexImplBuilderSequential();
+            final OrderedLongSetBuilderSequential builder = new OrderedLongSetBuilderSequential();
             final int step = BLOCK_SIZE / (SortedRanges.ELEMENTS_PER_BLOCK_DENSE_THRESHOLD - 2);
             for (int i = 0; i < max; ++i) {
                 builder.appendKey(i * (long) step);
             }
-            TreeIndexImpl tix = builder.getTreeIndexImpl();
+            OrderedLongSet tix = builder.getTreeIndexImpl();
             assertTrue((j == 0) ? tix instanceof SortedRanges : tix instanceof RspBitmap);
         }
     }
@@ -3224,12 +3224,12 @@ public class MutableRowSetImplTest extends TestCase {
     public void testSequentialBuilderMakesDenseSortedRangesInt() {
         for (int j = 0; j < 2; ++j) {
             final int max = SortedRanges.INT_DENSE_MAX_CAPACITY + ((j == 0) ? 0 : 1);
-            final TreeIndexImplBuilderSequential builder = new TreeIndexImplBuilderSequential();
+            final OrderedLongSetBuilderSequential builder = new OrderedLongSetBuilderSequential();
             final int step = BLOCK_SIZE / (SortedRanges.ELEMENTS_PER_BLOCK_DENSE_THRESHOLD + 2);
             for (int i = 0; i < max; ++i) {
                 builder.appendKey(i * (long) step);
             }
-            TreeIndexImpl tix = builder.getTreeIndexImpl();
+            OrderedLongSet tix = builder.getTreeIndexImpl();
             assertTrue((j == 0) ? tix instanceof SortedRanges : tix instanceof RspBitmap);
         }
     }
@@ -3251,7 +3251,7 @@ public class MutableRowSetImplTest extends TestCase {
         final long card = 5 * BLOCK_SIZE;
         final RspBitmap rb = new RspBitmap(0, card - 1);
         assertEquals(card, rb.getCardinality());
-        final TreeIndexImpl result = rb.ixRemove(sr);
+        final OrderedLongSet result = rb.ixRemove(sr);
         assertEquals(card - sr.getCardinality(), result.ixCardinality());
     }
 }

@@ -5,21 +5,21 @@ import io.deephaven.engine.v2.utils.sortedranges.SortedRanges;
 import io.deephaven.engine.v2.utils.rsp.RspBitmap;
 import io.deephaven.util.annotations.TestUseOnly;
 
-public class TreeIndexImplBuilderSequential extends RspBitmapBuilderSequential {
+public class OrderedLongSetBuilderSequential extends RspBitmapBuilderSequential {
     private SortedRanges pendingSr;
 
     private static final IndexCounts indexCounts = new IndexCounts("sequentialBuilder");
 
-    public TreeIndexImplBuilderSequential() {
+    public OrderedLongSetBuilderSequential() {
         this(false);
     }
 
-    public TreeIndexImplBuilderSequential(final boolean disposable) {
+    public OrderedLongSetBuilderSequential(final boolean disposable) {
         super(disposable);
     }
 
     @Override
-    public TreeIndexImpl getTreeIndexImpl() {
+    public OrderedLongSet getTreeIndexImpl() {
         if (pendingStart != -1) {
             if (pendingSr == null && pendingContainerKey == -1 && rb == null) {
                 final SingleRange r = SingleRange.make(pendingStart, pendingEnd);
@@ -38,7 +38,7 @@ public class TreeIndexImplBuilderSequential extends RspBitmapBuilderSequential {
         }
         if (rb == null) {
             indexCounts.sampleEmpty();
-            return TreeIndexImpl.EMPTY;
+            return OrderedLongSet.EMPTY;
         }
         rb.tryCompactUnsafe(4);
         rb.finishMutations();
@@ -70,7 +70,7 @@ public class TreeIndexImplBuilderSequential extends RspBitmapBuilderSequential {
     }
 
     @Override
-    public void appendTreeIndexImpl(final long shiftAmount, final TreeIndexImpl ix, final boolean acquire) {
+    public void appendTreeIndexImpl(final long shiftAmount, final OrderedLongSet ix, final boolean acquire) {
         if (ix.ixIsEmpty()) {
             return;
         }

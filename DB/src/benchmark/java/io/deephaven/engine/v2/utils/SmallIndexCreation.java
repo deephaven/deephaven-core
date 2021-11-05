@@ -70,7 +70,7 @@ public class SmallIndexCreation {
 
     @Benchmark
     public void createTreeIndexImplViaBuilder(Blackhole bh) {
-        TreeIndexImplBuilderSequential builder = new TreeIndexImplBuilderSequential();
+        OrderedLongSetBuilderSequential builder = new OrderedLongSetBuilderSequential();
         for (long v : values) {
             builder.appendKey(v);
         }

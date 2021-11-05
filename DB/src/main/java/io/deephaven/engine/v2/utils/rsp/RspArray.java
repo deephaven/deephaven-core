@@ -4879,9 +4879,9 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
     }
 
     // Returns null if we can't compact.
-    protected final TreeIndexImpl tryCompact() {
+    protected final OrderedLongSet tryCompact() {
         if (size == 0) {
-            return TreeIndexImpl.EMPTY;
+            return OrderedLongSet.EMPTY;
         }
         final long card = getCardinality();
         final long last = lastValue();

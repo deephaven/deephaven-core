@@ -18,21 +18,25 @@ import io.deephaven.util.annotations.VisibleForTesting;
 import java.util.PrimitiveIterator;
 import java.util.function.LongConsumer;
 
-public interface TreeIndexImpl {
-    TreeIndexImpl ixCowRef();
+/**
+ * An ordered sequence of {@code long} values with set operations.
+ */
+public interface OrderedLongSet {
+
+    OrderedLongSet ixCowRef();
 
     void ixRelease();
 
     @VisibleForTesting
     int ixRefCount();
 
-    TreeIndexImpl ixInsert(long key);
+    OrderedLongSet ixInsert(long key);
 
-    TreeIndexImpl ixInsertRange(long startKey, long endKey);
+    OrderedLongSet ixInsertRange(long startKey, long endKey);
 
     @FinalDefault
-    default TreeIndexImpl ixInsert(final LongChunk<Attributes.OrderedRowKeys> keys, final int offset,
-            final int length) {
+    default OrderedLongSet ixInsert(final LongChunk<Attributes.OrderedRowKeys> keys, final int offset,
+                                    final int length) {
         if (length <= 1) {
             if (length == 0) {
                 return this;
@@ -50,19 +54,19 @@ public interface TreeIndexImpl {
         return ixInsertSecondHalf(keys, offset, length);
     }
 
-    TreeIndexImpl ixInsertSecondHalf(LongChunk<OrderedRowKeys> keys, int offset, int length);
+    OrderedLongSet ixInsertSecondHalf(LongChunk<OrderedRowKeys> keys, int offset, int length);
 
-    TreeIndexImpl ixInsert(TreeIndexImpl added);
+    OrderedLongSet ixInsert(OrderedLongSet added);
 
-    TreeIndexImpl ixAppendRange(long startKey, long endKey);
+    OrderedLongSet ixAppendRange(long startKey, long endKey);
 
-    TreeIndexImpl ixRemove(long key);
+    OrderedLongSet ixRemove(long key);
 
-    TreeIndexImpl ixRemoveRange(long startKey, long endKey);
+    OrderedLongSet ixRemoveRange(long startKey, long endKey);
 
     @FinalDefault
-    default TreeIndexImpl ixRemove(final LongChunk<Attributes.OrderedRowKeys> keys, final int offset,
-            final int length) {
+    default OrderedLongSet ixRemove(final LongChunk<Attributes.OrderedRowKeys> keys, final int offset,
+                                    final int length) {
         if (ixIsEmpty()) {
             return this;
         }
@@ -84,9 +88,9 @@ public interface TreeIndexImpl {
         return ixRemoveSecondHalf(keys, offset, length);
     }
 
-    TreeIndexImpl ixRemoveSecondHalf(LongChunk<Attributes.OrderedRowKeys> keys, int offset, int length);
+    OrderedLongSet ixRemoveSecondHalf(LongChunk<Attributes.OrderedRowKeys> keys, int offset, int length);
 
-    TreeIndexImpl ixRemove(TreeIndexImpl removed);
+    OrderedLongSet ixRemove(OrderedLongSet removed);
 
     long ixLastKey();
 
@@ -96,9 +100,9 @@ public interface TreeIndexImpl {
 
     boolean ixForEachLongRange(LongRangeAbortableConsumer larc);
 
-    TreeIndexImpl ixSubindexByPosOnNew(long startPos, long endPosExclusive);
+    OrderedLongSet ixSubindexByPosOnNew(long startPos, long endPosExclusive);
 
-    TreeIndexImpl ixSubindexByKeyOnNew(long startKey, long endKey);
+    OrderedLongSet ixSubindexByKeyOnNew(long startKey, long endKey);
 
     long ixGet(long pos);
 
@@ -118,31 +122,31 @@ public interface TreeIndexImpl {
 
     boolean ixIsEmpty();
 
-    TreeIndexImpl ixUpdate(TreeIndexImpl added, TreeIndexImpl removed);
+    OrderedLongSet ixUpdate(OrderedLongSet added, OrderedLongSet removed);
 
-    TreeIndexImpl ixRetain(TreeIndexImpl toIntersect);
+    OrderedLongSet ixRetain(OrderedLongSet toIntersect);
 
-    TreeIndexImpl ixRetainRange(long start, long end);
+    OrderedLongSet ixRetainRange(long start, long end);
 
-    TreeIndexImpl ixIntersectOnNew(TreeIndexImpl range);
+    OrderedLongSet ixIntersectOnNew(OrderedLongSet range);
 
     boolean ixContainsRange(long start, long end);
 
-    boolean ixOverlaps(TreeIndexImpl impl);
+    boolean ixOverlaps(OrderedLongSet impl);
 
     boolean ixOverlapsRange(long start, long end);
 
-    boolean ixSubsetOf(TreeIndexImpl impl);
+    boolean ixSubsetOf(OrderedLongSet impl);
 
-    TreeIndexImpl ixMinusOnNew(TreeIndexImpl set);
+    OrderedLongSet ixMinusOnNew(OrderedLongSet set);
 
-    TreeIndexImpl ixUnionOnNew(TreeIndexImpl set);
+    OrderedLongSet ixUnionOnNew(OrderedLongSet set);
 
-    TreeIndexImpl ixShiftOnNew(long shiftAmount);
+    OrderedLongSet ixShiftOnNew(long shiftAmount);
 
-    TreeIndexImpl ixShiftInPlace(long shiftAmount);
+    OrderedLongSet ixShiftInPlace(long shiftAmount);
 
-    TreeIndexImpl ixInsertWithShift(long shiftAmount, TreeIndexImpl other);
+    OrderedLongSet ixInsertWithShift(long shiftAmount, OrderedLongSet other);
 
     RowSequence ixGetRowSequenceByPosition(long startPositionInclusive, long length);
 
@@ -159,14 +163,14 @@ public interface TreeIndexImpl {
     /**
      * Invert the given rowSet.
      *
-     * @param keys TreeIndexImpl of keys to invert
+     * @param keys OrderedLongSet of keys to invert
      * @param maximumPosition the largest position to add to indexBuilder, inclusive
      *
      * @return the inverse of rowSet
      */
-    TreeIndexImpl ixInvertOnNew(TreeIndexImpl keys, long maximumPosition);
+    OrderedLongSet ixInvertOnNew(OrderedLongSet keys, long maximumPosition);
 
-    TreeIndexImpl ixCompact();
+    OrderedLongSet ixCompact();
 
     void ixValidate(String failMsg);
 
@@ -175,15 +179,15 @@ public interface TreeIndexImpl {
     }
 
     /**
-     * Produce a {@link TreeIndexImpl} from a slice of a {@link LongChunk} of {@link Attributes.OrderedRowKeys}.
+     * Produce a {@link OrderedLongSet} from a slice of a {@link LongChunk} of {@link Attributes.OrderedRowKeys}.
      *
      * @param keys The {@link LongChunk} of {@link OrderedRowKeys} to build from
      * @param offset The offset in {@code keys} to begin building from
      * @param length The number of keys to include
-     * @return A new {@link TreeIndexImpl} containing the specified slice of {@code keys}
+     * @return A new {@link OrderedLongSet} containing the specified slice of {@code keys}
      */
-    static TreeIndexImpl fromChunk(final LongChunk<Attributes.OrderedRowKeys> keys, final int offset, final int length,
-            final boolean disposable) {
+    static OrderedLongSet fromChunk(final LongChunk<Attributes.OrderedRowKeys> keys, final int offset, final int length,
+                                    final boolean disposable) {
         if (length == 0) {
             return EMPTY;
         }
@@ -195,7 +199,7 @@ public interface TreeIndexImpl {
             return SingleRange.make(first, last);
         }
 
-        final TreeIndexImplBuilderSequential builder = new TreeIndexImplBuilderSequential(disposable);
+        final OrderedLongSetBuilderSequential builder = new OrderedLongSetBuilderSequential(disposable);
         builder.appendKey(first);
         for (int ki = offset + 1; ki < lastOffsetInclusive; ++ki) {
             builder.appendKey(keys.get(ki));
@@ -204,9 +208,9 @@ public interface TreeIndexImpl {
         return builder.getTreeIndexImpl();
     }
 
-    TreeIndexImpl EMPTY = new TreeIndexImpl() {
+    OrderedLongSet EMPTY = new OrderedLongSet() {
         @Override
-        public TreeIndexImpl ixCowRef() {
+        public OrderedLongSet ixCowRef() {
             return this;
         }
 
@@ -219,34 +223,34 @@ public interface TreeIndexImpl {
         }
 
         @Override
-        public TreeIndexImpl ixInsert(final long key) {
+        public OrderedLongSet ixInsert(final long key) {
             return SingleRange.make(key, key);
         }
 
         @Override
-        public TreeIndexImpl ixInsertRange(final long startKey, final long endKey) {
+        public OrderedLongSet ixInsertRange(final long startKey, final long endKey) {
             return SingleRange.make(startKey, endKey);
         }
 
         @Override
-        public TreeIndexImpl ixInsertSecondHalf(final LongChunk<Attributes.OrderedRowKeys> keys, final int offset,
-                final int length) {
+        public OrderedLongSet ixInsertSecondHalf(final LongChunk<Attributes.OrderedRowKeys> keys, final int offset,
+                                                 final int length) {
             return fromChunk(keys, offset, length, false);
         }
 
         @Override
-        public TreeIndexImpl ixRemoveSecondHalf(final LongChunk<Attributes.OrderedRowKeys> keys, final int offset,
-                final int length) {
+        public OrderedLongSet ixRemoveSecondHalf(final LongChunk<Attributes.OrderedRowKeys> keys, final int offset,
+                                                 final int length) {
             throw new IllegalStateException();
         }
 
         @Override
-        public TreeIndexImpl ixAppendRange(final long startKey, final long endKey) {
+        public OrderedLongSet ixAppendRange(final long startKey, final long endKey) {
             return ixInsertRange(startKey, endKey);
         }
 
         @Override
-        public TreeIndexImpl ixRemove(long key) {
+        public OrderedLongSet ixRemove(long key) {
             return this;
         }
 
@@ -271,12 +275,12 @@ public interface TreeIndexImpl {
         }
 
         @Override
-        public TreeIndexImpl ixSubindexByPosOnNew(long startPos, long endPos) {
+        public OrderedLongSet ixSubindexByPosOnNew(long startPos, long endPos) {
             return this;
         }
 
         @Override
-        public TreeIndexImpl ixSubindexByKeyOnNew(long startKey, long endKey) {
+        public OrderedLongSet ixSubindexByKeyOnNew(long startKey, long endKey) {
             return this;
         }
 
@@ -329,7 +333,7 @@ public interface TreeIndexImpl {
         }
 
         @Override
-        public TreeIndexImpl ixUpdate(TreeIndexImpl added, TreeIndexImpl removed) {
+        public OrderedLongSet ixUpdate(OrderedLongSet added, OrderedLongSet removed) {
             if (added.ixIsEmpty()) {
                 return this;
             }
@@ -337,27 +341,27 @@ public interface TreeIndexImpl {
         }
 
         @Override
-        public TreeIndexImpl ixRemove(TreeIndexImpl removed) {
+        public OrderedLongSet ixRemove(OrderedLongSet removed) {
             return this;
         }
 
         @Override
-        public TreeIndexImpl ixRemoveRange(long startKey, long endKey) {
+        public OrderedLongSet ixRemoveRange(long startKey, long endKey) {
             return this;
         }
 
         @Override
-        public TreeIndexImpl ixRetain(TreeIndexImpl toIntersect) {
+        public OrderedLongSet ixRetain(OrderedLongSet toIntersect) {
             return this;
         }
 
         @Override
-        public TreeIndexImpl ixRetainRange(final long start, final long end) {
+        public OrderedLongSet ixRetainRange(final long start, final long end) {
             return this;
         }
 
         @Override
-        public TreeIndexImpl ixIntersectOnNew(TreeIndexImpl range) {
+        public OrderedLongSet ixIntersectOnNew(OrderedLongSet range) {
             return this;
         }
 
@@ -367,7 +371,7 @@ public interface TreeIndexImpl {
         }
 
         @Override
-        public boolean ixOverlaps(TreeIndexImpl impl) {
+        public boolean ixOverlaps(OrderedLongSet impl) {
             return false;
         }
 
@@ -377,37 +381,37 @@ public interface TreeIndexImpl {
         }
 
         @Override
-        public boolean ixSubsetOf(TreeIndexImpl impl) {
+        public boolean ixSubsetOf(OrderedLongSet impl) {
             return true;
         }
 
         @Override
-        public TreeIndexImpl ixMinusOnNew(TreeIndexImpl set) {
+        public OrderedLongSet ixMinusOnNew(OrderedLongSet set) {
             return this;
         }
 
         @Override
-        public TreeIndexImpl ixUnionOnNew(final TreeIndexImpl set) {
+        public OrderedLongSet ixUnionOnNew(final OrderedLongSet set) {
             return set.ixCowRef();
         }
 
         @Override
-        public TreeIndexImpl ixShiftOnNew(final long shiftAmount) {
+        public OrderedLongSet ixShiftOnNew(final long shiftAmount) {
             return this;
         }
 
         @Override
-        public TreeIndexImpl ixShiftInPlace(final long shiftAmount) {
+        public OrderedLongSet ixShiftInPlace(final long shiftAmount) {
             return this;
         }
 
         @Override
-        public TreeIndexImpl ixInsert(final TreeIndexImpl added) {
+        public OrderedLongSet ixInsert(final OrderedLongSet added) {
             return added.ixCowRef();
         }
 
         @Override
-        public TreeIndexImpl ixInsertWithShift(final long shiftAmount, final TreeIndexImpl other) {
+        public OrderedLongSet ixInsertWithShift(final long shiftAmount, final OrderedLongSet other) {
             return other.ixShiftOnNew(shiftAmount);
         }
 
@@ -437,12 +441,12 @@ public interface TreeIndexImpl {
         }
 
         @Override
-        public TreeIndexImpl ixInvertOnNew(TreeIndexImpl keys, long maximumPosition) {
+        public OrderedLongSet ixInvertOnNew(OrderedLongSet keys, long maximumPosition) {
             return this;
         }
 
         @Override
-        public TreeIndexImpl ixCompact() {
+        public OrderedLongSet ixCompact() {
             return this;
         }
 
@@ -463,19 +467,19 @@ public interface TreeIndexImpl {
     interface BuilderSequential extends LongRangeConsumer {
         boolean check =
                 Configuration.getInstance().getBooleanForClassWithDefault(
-                        TreeIndexImpl.class, "sequentialBuilderCheck", true);
+                        OrderedLongSet.class, "sequentialBuilderCheck", true);
 
         String outOfOrderKeyErrorMsg = "Out of order key(s) in sequential builder: ";
 
         default void setDomain(long minKey, long maxKey) {}
 
-        TreeIndexImpl getTreeIndexImpl();
+        OrderedLongSet getTreeIndexImpl();
 
         void appendKey(long key);
 
         void appendRange(long firstKey, long lastKey);
 
-        default void appendTreeIndexImpl(final long shiftAmount, final TreeIndexImpl ix, final boolean acquire) {
+        default void appendTreeIndexImpl(final long shiftAmount, final OrderedLongSet ix, final boolean acquire) {
             ix.ixForEachLongRange((final long start, final long last) -> {
                 appendRange(start + shiftAmount, last + shiftAmount);
                 return true;
@@ -515,7 +519,7 @@ public interface TreeIndexImpl {
         }
     }
 
-    static TreeIndexImpl twoRanges(final long s1, final long e1, final long s2, final long e2) {
+    static OrderedLongSet twoRanges(final long s1, final long e1, final long s2, final long e2) {
         SortedRanges sr = SortedRanges.tryMakeForKnownRangeKnownCount(4, s1, e2);
         if (sr != null) {
             sr = sr.appendRangeUnsafe(s1, e1)
@@ -533,7 +537,7 @@ public interface TreeIndexImpl {
     // so it should not release. This method is intended for cases where ixRspOnNew
     // is not desirable since that will increment the refcount for objects that
     // are of type RspBitmap already.
-    static RspBitmap asRspBitmap(final TreeIndexImpl t) {
+    static RspBitmap asRspBitmap(final OrderedLongSet t) {
         return (t instanceof RspBitmap)
                 ? (RspBitmap) t
                 : t.ixToRspOnNew();

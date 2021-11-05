@@ -3,9 +3,9 @@ package io.deephaven.engine.v2.utils;
 import io.deephaven.engine.structures.RowSequence;
 
 /**
- * {@link RowSetBuilderRandom} implementation that uses an {@link TreeIndexImplBuilderSequential} internally.
+ * {@link RowSetBuilderRandom} implementation that uses an {@link OrderedLongSetBuilderSequential} internally.
  */
-class BasicRowSetBuilderSequential extends TreeIndexImplBuilderSequential implements RowSetBuilderSequential {
+class BasicRowSetBuilderSequential extends OrderedLongSetBuilderSequential implements RowSetBuilderSequential {
 
     @Override
     public MutableRowSet build() {

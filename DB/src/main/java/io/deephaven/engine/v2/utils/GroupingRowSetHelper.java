@@ -44,7 +44,7 @@ public abstract class GroupingRowSetHelper extends MutableRowSetImpl implements 
      */
     private transient WeakHashMap<List<ColumnSource>, MappingInfo> ephemeralPrevMappings = null;
 
-    protected GroupingRowSetHelper(final TreeIndexImpl impl) {
+    protected GroupingRowSetHelper(final OrderedLongSet impl) {
         super(impl);
     }
 

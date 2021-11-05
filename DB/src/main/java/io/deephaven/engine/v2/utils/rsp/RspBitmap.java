@@ -19,7 +19,7 @@ import java.util.function.Supplier;
 /**
  * See header comment on RspArray for explanation on space partitioning.
  */
-public class RspBitmap extends RspArray<RspBitmap> implements TreeIndexImpl {
+public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
     public RspBitmap() {
         super();
     }
@@ -1319,7 +1319,7 @@ public class RspBitmap extends RspArray<RspBitmap> implements TreeIndexImpl {
 
     /*
      *
-     * ============= TreeIndexImpl =============
+     * ============= OrderedLongSet =============
      *
      */
 
@@ -1350,17 +1350,17 @@ public class RspBitmap extends RspArray<RspBitmap> implements TreeIndexImpl {
     }
 
     @Override
-    public final TreeIndexImpl ixInsertSecondHalf(final LongChunk<Attributes.OrderedRowKeys> values,
-            final int offset, final int length) {
+    public final OrderedLongSet ixInsertSecondHalf(final LongChunk<Attributes.OrderedRowKeys> values,
+                                                   final int offset, final int length) {
         final RspBitmap ans = addValuesUnsafe(values, offset, length);
         ans.finishMutations();
         return ans;
     }
 
     @Override
-    public final TreeIndexImpl ixRemoveSecondHalf(final LongChunk<OrderedRowKeys> values,
-            final int offset, final int length) {
-        return ixRemove(TreeIndexImpl.fromChunk(values, offset, length, true));
+    public final OrderedLongSet ixRemoveSecondHalf(final LongChunk<OrderedRowKeys> values,
+                                                   final int offset, final int length) {
+        return ixRemove(OrderedLongSet.fromChunk(values, offset, length, true));
     }
 
     @Override
@@ -1412,9 +1412,9 @@ public class RspBitmap extends RspArray<RspBitmap> implements TreeIndexImpl {
     }
 
     @Override
-    public TreeIndexImpl ixInvertOnNew(final TreeIndexImpl keys, final long maximumPosition) {
+    public OrderedLongSet ixInvertOnNew(final OrderedLongSet keys, final long maximumPosition) {
         if (keys.ixIsEmpty()) {
-            return TreeIndexImpl.EMPTY;
+            return OrderedLongSet.EMPTY;
         }
         if (keys instanceof SingleRange) {
             final long pos = ixFind(keys.ixFirstKey());
@@ -1422,12 +1422,12 @@ public class RspBitmap extends RspArray<RspBitmap> implements TreeIndexImpl {
                 throw new IllegalArgumentException("invert for non-existing key:" + keys.ixFirstKey());
             }
             if (pos > maximumPosition) {
-                return TreeIndexImpl.EMPTY;
+                return OrderedLongSet.EMPTY;
             }
             return SingleRange.make(pos, Math.min(pos + keys.ixCardinality() - 1, maximumPosition));
         }
         try (final RowSet.RangeIterator rit = keys.ixRangeIterator()) {
-            final BuilderSequential builder = new TreeIndexImplBuilderSequential();
+            final BuilderSequential builder = new OrderedLongSetBuilderSequential();
             invert(builder, rit, maximumPosition);
             return builder.getTreeIndexImpl();
         }
@@ -1445,29 +1445,29 @@ public class RspBitmap extends RspArray<RspBitmap> implements TreeIndexImpl {
 
     // the range [startPos, endPosExclusive) is closed on the left and open on the right.
     @Override
-    public TreeIndexImpl ixSubindexByPosOnNew(final long startPos, final long endPosExclusive) {
+    public OrderedLongSet ixSubindexByPosOnNew(final long startPos, final long endPosExclusive) {
         final long endPos = endPosExclusive - 1; // make inclusive.
         if (endPos < startPos || endPos < 0) {
-            return TreeIndexImpl.EMPTY;
+            return OrderedLongSet.EMPTY;
         }
         long effectiveStartPos = Math.max(0, startPos);
         final RspBitmap result = subrangeByPos(effectiveStartPos, endPos, true);
         if (result == null) {
-            return TreeIndexImpl.EMPTY;
+            return OrderedLongSet.EMPTY;
         }
         // subSetByPositionRange tends to create small indices, it pays off to check for compacting the result.
         return result.ixCompact();
     }
 
     @Override
-    public TreeIndexImpl ixSubindexByKeyOnNew(long startKey, final long endKey) {
+    public OrderedLongSet ixSubindexByKeyOnNew(long startKey, final long endKey) {
         if (endKey < startKey || endKey < 0) {
-            return TreeIndexImpl.EMPTY;
+            return OrderedLongSet.EMPTY;
         }
         startKey = Math.max(0, startKey);
         final RspBitmap result = subrangeByValue(startKey, endKey, true);
         if (result == null) {
-            return TreeIndexImpl.EMPTY;
+            return OrderedLongSet.EMPTY;
         }
         // subSetByKeyRange tends to create small indices, it pays off to check for compacting the result.
         return result.ixCompact();
@@ -1475,7 +1475,7 @@ public class RspBitmap extends RspArray<RspBitmap> implements TreeIndexImpl {
 
     // API assumption: added and removed are disjoint.
     @Override
-    public TreeIndexImpl ixUpdate(final TreeIndexImpl added, final TreeIndexImpl removed) {
+    public OrderedLongSet ixUpdate(final OrderedLongSet added, final OrderedLongSet removed) {
         if (added.ixIsEmpty()) {
             if (removed.ixIsEmpty()) {
                 return this;
@@ -1488,7 +1488,7 @@ public class RspBitmap extends RspArray<RspBitmap> implements TreeIndexImpl {
         return getWriteRef().ixUpdateNoWriteCheck(added, removed);
     }
 
-    public TreeIndexImpl ixUpdateNoWriteCheck(final TreeIndexImpl added, final TreeIndexImpl removed) {
+    public OrderedLongSet ixUpdateNoWriteCheck(final OrderedLongSet added, final OrderedLongSet removed) {
         if (added instanceof SingleRange) {
             addRangeUnsafeNoWriteCheck(added.ixFirstKey(), added.ixLastKey());
             if (removed instanceof SingleRange) {
@@ -1508,11 +1508,11 @@ public class RspBitmap extends RspArray<RspBitmap> implements TreeIndexImpl {
         } else if (added instanceof RspBitmap && removed instanceof RspBitmap) {
             updateUnsafeNoWriteCheck((RspBitmap) added, (RspBitmap) removed);
         } else {
-            final TreeIndexImpl ans = ixRemoveNoWriteCheck(removed);
+            final OrderedLongSet ans = ixRemoveNoWriteCheck(removed);
             return ans.ixInsert(added);
         }
         if (isEmpty()) {
-            return TreeIndexImpl.EMPTY;
+            return OrderedLongSet.EMPTY;
         }
         finishMutations();
         return this;
@@ -1520,14 +1520,14 @@ public class RspBitmap extends RspArray<RspBitmap> implements TreeIndexImpl {
 
 
     @Override
-    public RspBitmap ixInsert(final TreeIndexImpl other) {
+    public RspBitmap ixInsert(final OrderedLongSet other) {
         if (other.ixIsEmpty()) {
             return this;
         }
         return getWriteRef().ixInsertNoWriteCheck(other);
     }
 
-    public RspBitmap ixInsertNoWriteCheck(final TreeIndexImpl other) {
+    public RspBitmap ixInsertNoWriteCheck(final OrderedLongSet other) {
         if (other instanceof SingleRange) {
             insertTreeIndexUnsafeNoWriteCheck((SingleRange) other);
         } else if (other instanceof SortedRanges) {
@@ -1552,9 +1552,9 @@ public class RspBitmap extends RspArray<RspBitmap> implements TreeIndexImpl {
     }
 
     @Override
-    public TreeIndexImpl ixRemove(final TreeIndexImpl other) {
+    public OrderedLongSet ixRemove(final OrderedLongSet other) {
         if (isEmpty()) {
-            return TreeIndexImpl.EMPTY;
+            return OrderedLongSet.EMPTY;
         }
         if (other.ixIsEmpty()) {
             return this;
@@ -1562,7 +1562,7 @@ public class RspBitmap extends RspArray<RspBitmap> implements TreeIndexImpl {
         return getWriteRef().ixRemoveNoWriteCheck(other);
     }
 
-    public TreeIndexImpl ixRemoveNoWriteCheck(final TreeIndexImpl other) {
+    public OrderedLongSet ixRemoveNoWriteCheck(final OrderedLongSet other) {
         if (other instanceof SingleRange) {
             removeRangeUnsafeNoWriteCheck(other.ixFirstKey(), other.ixLastKey());
         } else if (other instanceof SortedRanges) {
@@ -1571,56 +1571,56 @@ public class RspBitmap extends RspArray<RspBitmap> implements TreeIndexImpl {
             andNotEqualsUnsafeNoWriteCheck((RspBitmap) other);
         }
         if (isEmpty()) {
-            return TreeIndexImpl.EMPTY;
+            return OrderedLongSet.EMPTY;
         }
         finishMutations();
         return this;
     }
 
     @Override
-    public TreeIndexImpl ixRetain(final TreeIndexImpl other) {
+    public OrderedLongSet ixRetain(final OrderedLongSet other) {
         return retainImpl(other, this::getWriteRef);
     }
 
-    public TreeIndexImpl ixRetainNoWriteCheck(final TreeIndexImpl other) {
+    public OrderedLongSet ixRetainNoWriteCheck(final OrderedLongSet other) {
         return retainImpl(other, () -> this);
     }
 
-    private TreeIndexImpl retainImpl(final TreeIndexImpl other, Supplier<RspBitmap> refSupplier) {
+    private OrderedLongSet retainImpl(final OrderedLongSet other, Supplier<RspBitmap> refSupplier) {
         if (isEmpty() || other.ixIsEmpty() || last() < other.ixFirstKey() || other.ixLastKey() < first()) {
-            return TreeIndexImpl.EMPTY;
+            return OrderedLongSet.EMPTY;
         }
         if (other instanceof SingleRange) {
             return refSupplier.get().ixRetainRange(other.ixFirstKey(), other.ixLastKey());
         }
         if (other instanceof SortedRanges) {
             final SortedRanges sr = (SortedRanges) other;
-            final TreeIndexImpl ans = sr.intersectOnNew(this);
+            final OrderedLongSet ans = sr.intersectOnNew(this);
             return (ans != null) ? ans : retainImpl(sr.toRsp(), refSupplier);
         }
         final RspBitmap o = (RspBitmap) other;
         return retainImpl(o, refSupplier);
     }
 
-    private static TreeIndexImpl retainImpl(final RspBitmap other, Supplier<RspBitmap> refSupplier) {
+    private static OrderedLongSet retainImpl(final RspBitmap other, Supplier<RspBitmap> refSupplier) {
         final RspBitmap ans = refSupplier.get();
         ans.andEqualsUnsafeNoWriteCheck(other);
         if (ans.isEmpty()) {
-            return TreeIndexImpl.EMPTY;
+            return OrderedLongSet.EMPTY;
         }
         ans.finishMutations();
         return ans;
     }
 
     @Override
-    public TreeIndexImpl ixRetainRange(final long start, final long end) {
+    public OrderedLongSet ixRetainRange(final long start, final long end) {
         if (ixIsEmpty()) {
-            return TreeIndexImpl.EMPTY;
+            return OrderedLongSet.EMPTY;
         }
         final long myFirstKey = ixFirstKey();
         final long myLastKey = ixLastKey();
         if (myLastKey < start || end < myFirstKey) {
-            return TreeIndexImpl.EMPTY;
+            return OrderedLongSet.EMPTY;
         }
         boolean mayHaveChanged = false;
         RspBitmap ans = this;
@@ -1639,7 +1639,7 @@ public class RspBitmap extends RspArray<RspBitmap> implements TreeIndexImpl {
         }
         if (mayHaveChanged) {
             if (ans.isEmpty()) {
-                return TreeIndexImpl.EMPTY;
+                return OrderedLongSet.EMPTY;
             }
             ans.finishMutations();
             return ans;
@@ -1647,7 +1647,7 @@ public class RspBitmap extends RspArray<RspBitmap> implements TreeIndexImpl {
         return this;
     }
 
-    public TreeIndexImpl ixRetainRangeNoWriteCheck(final long start, final long end) {
+    public OrderedLongSet ixRetainRangeNoWriteCheck(final long start, final long end) {
         boolean mayHaveChanged = false;
         if (end < ixLastKey()) {
             mayHaveChanged = true;
@@ -1660,7 +1660,7 @@ public class RspBitmap extends RspArray<RspBitmap> implements TreeIndexImpl {
         }
         if (mayHaveChanged) {
             if (isEmpty()) {
-                return TreeIndexImpl.EMPTY;
+                return OrderedLongSet.EMPTY;
             }
             finishMutations();
         }
@@ -1668,22 +1668,22 @@ public class RspBitmap extends RspArray<RspBitmap> implements TreeIndexImpl {
     }
 
     @Override
-    public TreeIndexImpl ixRemoveRange(final long startKey, final long endKey) {
+    public OrderedLongSet ixRemoveRange(final long startKey, final long endKey) {
         if (isEmpty()) {
-            return TreeIndexImpl.EMPTY;
+            return OrderedLongSet.EMPTY;
         }
         final RspBitmap rb = removeRangeUnsafe(startKey, endKey);
         if (rb.isEmpty()) {
-            return TreeIndexImpl.EMPTY;
+            return OrderedLongSet.EMPTY;
         }
         rb.finishMutations();
         return rb;
     }
 
     @Override
-    public TreeIndexImpl ixIntersectOnNew(final TreeIndexImpl other) {
+    public OrderedLongSet ixIntersectOnNew(final OrderedLongSet other) {
         if (other.ixIsEmpty()) {
-            return TreeIndexImpl.EMPTY;
+            return OrderedLongSet.EMPTY;
         }
         if (other instanceof SingleRange) {
             return ixSubindexByKeyOnNew(other.ixFirstKey(), other.ixLastKey());
@@ -1701,7 +1701,7 @@ public class RspBitmap extends RspArray<RspBitmap> implements TreeIndexImpl {
     }
 
     @Override
-    public boolean ixOverlaps(final TreeIndexImpl other) {
+    public boolean ixOverlaps(final OrderedLongSet other) {
         if (other.ixIsEmpty()) {
             return false;
         }
@@ -1752,7 +1752,7 @@ public class RspBitmap extends RspArray<RspBitmap> implements TreeIndexImpl {
     }
 
     @Override
-    public boolean ixSubsetOf(final TreeIndexImpl other) {
+    public boolean ixSubsetOf(final OrderedLongSet other) {
         if (ixIsEmpty()) {
             return true;
         }
@@ -1769,13 +1769,13 @@ public class RspBitmap extends RspArray<RspBitmap> implements TreeIndexImpl {
     }
 
     @Override
-    public TreeIndexImpl ixMinusOnNew(final TreeIndexImpl other) {
+    public OrderedLongSet ixMinusOnNew(final OrderedLongSet other) {
         if (other.ixIsEmpty()) {
             return cowRef();
         }
         if (other instanceof SingleRange) {
             if (other.ixFirstKey() <= ixFirstKey() && ixLastKey() <= other.ixLastKey()) {
-                return TreeIndexImpl.EMPTY;
+                return OrderedLongSet.EMPTY;
             }
             final RspBitmap ans = deepCopy();
             ans.removeRangeUnsafeNoWriteCheck(other.ixFirstKey(), other.ixLastKey());
@@ -1793,7 +1793,7 @@ public class RspBitmap extends RspArray<RspBitmap> implements TreeIndexImpl {
     }
 
     @Override
-    public TreeIndexImpl ixUnionOnNew(final TreeIndexImpl other) {
+    public OrderedLongSet ixUnionOnNew(final OrderedLongSet other) {
         if (isEmpty()) {
             return other.ixCowRef();
         }
@@ -1825,7 +1825,7 @@ public class RspBitmap extends RspArray<RspBitmap> implements TreeIndexImpl {
         return applyOffset(shiftAmount);
     }
 
-    public TreeIndexImpl ixInsertWithShift(final long shiftAmount, final SortedRanges sr) {
+    public OrderedLongSet ixInsertWithShift(final long shiftAmount, final SortedRanges sr) {
         final RspBitmap ans = getWriteRef();
         int i = 0;
         try (final RowSet.RangeIterator rit = sr.getRangeIterator()) {
@@ -1841,7 +1841,7 @@ public class RspBitmap extends RspArray<RspBitmap> implements TreeIndexImpl {
     }
 
     @Override
-    public TreeIndexImpl ixInsertWithShift(final long shiftAmount, final TreeIndexImpl other) {
+    public OrderedLongSet ixInsertWithShift(final long shiftAmount, final OrderedLongSet other) {
         if (other.ixIsEmpty()) {
             return this;
         }
@@ -2083,8 +2083,8 @@ public class RspBitmap extends RspArray<RspBitmap> implements TreeIndexImpl {
     }
 
     @Override
-    public TreeIndexImpl ixCompact() {
-        final TreeIndexImpl timpl = tryCompact();
+    public OrderedLongSet ixCompact() {
+        final OrderedLongSet timpl = tryCompact();
         if (timpl != null) {
             return timpl;
         }
@@ -2131,7 +2131,7 @@ public class RspBitmap extends RspArray<RspBitmap> implements TreeIndexImpl {
         return valuesToString();
     }
 
-    public static class BuilderRandom implements TreeIndexImpl.BuilderRandom {
+    public static class BuilderRandom implements OrderedLongSet.BuilderRandom {
         public RspBitmap rb;
         public IndexCounts indexCounts;
 

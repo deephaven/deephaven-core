@@ -12,7 +12,7 @@ import java.io.ObjectInput;
 
 public class TrackingMutableRowSetImpl extends GroupingRowSetHelper {
 
-    private transient TreeIndexImpl prevImpl;
+    private transient OrderedLongSet prevImpl;
     /**
      * Protects prevImpl. Only updated in checkPrev() and initializePreviousValue() (this later supposed to be used only
      * right after the constructor, in special cases).
@@ -21,12 +21,12 @@ public class TrackingMutableRowSetImpl extends GroupingRowSetHelper {
 
 
     public TrackingMutableRowSetImpl() {
-        this(TreeIndexImpl.EMPTY);
+        this(OrderedLongSet.EMPTY);
     }
 
-    public TrackingMutableRowSetImpl(final TreeIndexImpl impl) {
+    public TrackingMutableRowSetImpl(final OrderedLongSet impl) {
         super(impl);
-        this.prevImpl = TreeIndexImpl.EMPTY;
+        this.prevImpl = OrderedLongSet.EMPTY;
         changeTimeStep = -1;
     }
 
@@ -35,7 +35,7 @@ public class TrackingMutableRowSetImpl extends GroupingRowSetHelper {
         checkAndGetPrev();
     }
 
-    private TreeIndexImpl checkAndGetPrev() {
+    private OrderedLongSet checkAndGetPrev() {
         if (LogicalClock.DEFAULT.currentStep() == changeTimeStep) {
             return prevImpl;
         }
@@ -67,7 +67,7 @@ public class TrackingMutableRowSetImpl extends GroupingRowSetHelper {
     @Override
     public void initializePreviousValue() {
         prevImpl.ixRelease();
-        prevImpl = TreeIndexImpl.EMPTY;
+        prevImpl = OrderedLongSet.EMPTY;
         changeTimeStep = -1;
     }
 

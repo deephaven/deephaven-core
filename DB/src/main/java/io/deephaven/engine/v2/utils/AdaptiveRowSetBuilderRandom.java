@@ -5,7 +5,7 @@ package io.deephaven.engine.v2.utils;
  */
 class AdaptiveRowSetBuilderRandom implements RowSetBuilderRandom {
 
-    private final AdaptiveTreeIndexImplBuilderRandom builder = new AdaptiveTreeIndexImplBuilderRandom();
+    private final AdaptiveOrderedLongSetBuilderRandom builder = new AdaptiveOrderedLongSetBuilderRandom();
 
     @Override
     public MutableRowSet build() {

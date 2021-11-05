@@ -52,7 +52,7 @@ public class SingleRangeTest {
         TrackingMutableRowSetImpl ix = new TrackingMutableRowSetImpl(SingleRange.make(start, end));
         MutableRowSet ix2 = new TrackingMutableRowSetImpl(SingleRange.make(start - 1, end + 1));
         ix.remove(ix2);
-        assertEquals(TreeIndexImpl.EMPTY, ix.getImpl());
+        assertEquals(OrderedLongSet.EMPTY, ix.getImpl());
 
         ix = new TrackingMutableRowSetImpl(SingleRange.make(start, end));
         ix2 = new TrackingMutableRowSetImpl(SingleRange.make(start - 1, end - 1));
@@ -113,7 +113,7 @@ public class SingleRangeTest {
         assertTrue(ix.containsRange(13, 20));
         TrackingMutableRowSetImpl ix2 = new TrackingMutableRowSetImpl(SingleRange.make(9, 9));
         ix2.remove(9);
-        assertEquals(ix2.getImpl(), TreeIndexImpl.EMPTY);
+        assertEquals(ix2.getImpl(), OrderedLongSet.EMPTY);
     }
 
     private static void insertResultsInSingle(
@@ -192,7 +192,7 @@ public class SingleRangeTest {
         if (start1 < start2 && end2 < end1) {
             // hole.
             check = (final RowSet t) -> {
-                final TreeIndexImpl timpl = ((MutableRowSetImpl) t).getImpl();
+                final OrderedLongSet timpl = ((MutableRowSetImpl) t).getImpl();
                 assertTrue((timpl instanceof RspBitmap) || (timpl instanceof SortedRanges));
                 int rangeCount = 0;
                 final RowSet.RangeIterator it = t.rangeIterator();
@@ -216,7 +216,7 @@ public class SingleRangeTest {
         } else if (start2 <= start1 && end1 <= end2) {
             // completely removed
             check = (final RowSet t) -> {
-                assertTrue(((MutableRowSetImpl) t).getImpl() == TreeIndexImpl.EMPTY);
+                assertTrue(((MutableRowSetImpl) t).getImpl() == OrderedLongSet.EMPTY);
                 assertTrue(t.isEmpty());
             };
         } else {
@@ -248,11 +248,11 @@ public class SingleRangeTest {
         TrackingMutableRowSetImpl ix = new TrackingMutableRowSetImpl(SingleRange.make(10, 20));
         RowSet ix2 = new TrackingMutableRowSetImpl(SingleRange.make(10, 20));
         ix.remove(ix2);
-        assertEquals(TreeIndexImpl.EMPTY, ix.getImpl());
+        assertEquals(OrderedLongSet.EMPTY, ix.getImpl());
         ix.insertRange(10, 20);
         assertEquals(11, ix.size());
         ix.removeRange(10, 20);
-        assertEquals(TreeIndexImpl.EMPTY, ix.getImpl());
+        assertEquals(OrderedLongSet.EMPTY, ix.getImpl());
         ix.insertRange(10, 20);
         assertEquals(11, ix.size());
         removeResultsCheck(10, 20, 11, 19);

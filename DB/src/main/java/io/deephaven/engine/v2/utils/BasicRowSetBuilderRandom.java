@@ -5,7 +5,7 @@ import io.deephaven.engine.v2.utils.rsp.RspBitmap;
 /**
  * {@link RowSetBuilderRandom} implementation that uses a {@link RspBitmap.BuilderRandom} internally.
  */
-class BasicRowSetBuilderRandom extends AbstractTreeIndexImplBuilderRandom
+class BasicRowSetBuilderRandom extends AbstractOrderedLongSetBuilderRandom
         implements RowSetBuilderRandom {
 
     private RspBitmap.BuilderRandom builder;
@@ -16,7 +16,7 @@ class BasicRowSetBuilderRandom extends AbstractTreeIndexImplBuilderRandom
     }
 
     @Override
-    protected TreeIndexImpl.BuilderRandom innerBuilder() {
+    protected OrderedLongSet.BuilderRandom innerBuilder() {
         return builder;
     }
 

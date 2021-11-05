@@ -196,7 +196,7 @@ public final class ByExternalChunkedOperator implements IterativeChunkedAggregat
             @NotNull final IntChunk<ChunkLengths> length, @NotNull final WritableBooleanChunk<Values> stateModified) {
         Assert.eqNull(previousValues, "previousValues");
         Assert.eqNull(newValues, "newValues");
-        final TreeIndexImplBuilderSequential chunkDestinationBuilder = new TreeIndexImplBuilderSequential(true);
+        final OrderedLongSetBuilderSequential chunkDestinationBuilder = new OrderedLongSetBuilderSequential(true);
         for (int ii = 0; ii < startPositions.size(); ++ii) {
             final int startPosition = startPositions.get(ii);
             final int runLength = length.get(ii);
@@ -300,7 +300,7 @@ public final class ByExternalChunkedOperator implements IterativeChunkedAggregat
         }
         if (rowSet == null) {
             indexColumn.set(destination,
-                    new MutableRowSetImpl(TreeIndexImpl.fromChunk(rowKeysToAdd, start, length, false)));
+                    new MutableRowSetImpl(OrderedLongSet.fromChunk(rowKeysToAdd, start, length, false)));
         } else {
             rowSet.insert(rowKeysToAdd, start, length);
         }

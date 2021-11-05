@@ -12,7 +12,7 @@ import io.deephaven.engine.v2.utils.sortedranges.SortedRanges;
 import java.util.PrimitiveIterator;
 import java.util.function.LongConsumer;
 
-public abstract class SingleRange implements TreeIndexImpl {
+public abstract class SingleRange implements OrderedLongSet {
     public abstract long rangeStart();
 
     public abstract long rangeEnd();
@@ -126,12 +126,12 @@ public abstract class SingleRange implements TreeIndexImpl {
     }
 
     @Override
-    public final TreeIndexImpl ixInsert(final long key) {
+    public final OrderedLongSet ixInsert(final long key) {
         if (rangeStart() <= key && key <= rangeEnd()) {
             return this;
         }
         if (key + 1 < rangeStart()) {
-            return TreeIndexImpl.twoRanges(key, key, rangeStart(), rangeEnd());
+            return OrderedLongSet.twoRanges(key, key, rangeStart(), rangeEnd());
         }
         if (key + 1 == rangeStart()) {
             return make(key, rangeEnd());
@@ -139,11 +139,11 @@ public abstract class SingleRange implements TreeIndexImpl {
         if (rangeEnd() + 1 == key) {
             return make(rangeStart(), key);
         }
-        return TreeIndexImpl.twoRanges(rangeStart(), rangeEnd(), key, key);
+        return OrderedLongSet.twoRanges(rangeStart(), rangeEnd(), key, key);
     }
 
     @Override
-    public final TreeIndexImpl ixInsertRange(final long startKey, final long endKey) {
+    public final OrderedLongSet ixInsertRange(final long startKey, final long endKey) {
         if (rangeStart() <= startKey && endKey <= rangeEnd()) {
             return this;
         }
@@ -153,27 +153,27 @@ public abstract class SingleRange implements TreeIndexImpl {
                     Math.max(endKey, rangeEnd()));
         }
         if (startKey < rangeStart()) {
-            return TreeIndexImpl.twoRanges(startKey, endKey, rangeStart(), rangeEnd());
+            return OrderedLongSet.twoRanges(startKey, endKey, rangeStart(), rangeEnd());
         }
-        return TreeIndexImpl.twoRanges(rangeStart(), rangeEnd(), startKey, endKey);
+        return OrderedLongSet.twoRanges(rangeStart(), rangeEnd(), startKey, endKey);
     }
 
     @Override
-    public final TreeIndexImpl ixInsertSecondHalf(final LongChunk<Attributes.OrderedRowKeys> keys, final int offset,
-            final int length) {
-        return TreeIndexImpl.fromChunk(keys, offset, length, false).ixInsertRange(rangeStart(), rangeEnd());
+    public final OrderedLongSet ixInsertSecondHalf(final LongChunk<Attributes.OrderedRowKeys> keys, final int offset,
+                                                   final int length) {
+        return OrderedLongSet.fromChunk(keys, offset, length, false).ixInsertRange(rangeStart(), rangeEnd());
     }
 
     @Override
-    public final TreeIndexImpl ixRemoveSecondHalf(final LongChunk<Attributes.OrderedRowKeys> keys, final int offset,
-            final int length) {
-        return ixRemove(TreeIndexImpl.fromChunk(keys, offset, length, true));
+    public final OrderedLongSet ixRemoveSecondHalf(final LongChunk<Attributes.OrderedRowKeys> keys, final int offset,
+                                                   final int length) {
+        return ixRemove(OrderedLongSet.fromChunk(keys, offset, length, true));
     }
 
     @Override
-    public final TreeIndexImpl ixAppendRange(final long startKey, final long endKey) {
+    public final OrderedLongSet ixAppendRange(final long startKey, final long endKey) {
         if (rangeEnd() + 1 < startKey) {
-            return TreeIndexImpl.twoRanges(rangeStart(), rangeEnd(), startKey, endKey);
+            return OrderedLongSet.twoRanges(rangeStart(), rangeEnd(), startKey, endKey);
         }
         if (rangeEnd() + 1 == startKey) {
             return make(rangeStart(), endKey);
@@ -182,31 +182,31 @@ public abstract class SingleRange implements TreeIndexImpl {
     }
 
     @Override
-    public final TreeIndexImpl ixRemove(final long key) {
+    public final OrderedLongSet ixRemove(final long key) {
         if (key < rangeStart() || key > rangeEnd()) {
             return this;
         }
         if (key == rangeStart()) {
             if (rangeEnd() == rangeStart()) {
-                return TreeIndexImpl.EMPTY;
+                return OrderedLongSet.EMPTY;
             }
             return make(key + 1, rangeEnd());
         }
         if (key == rangeEnd()) {
             return make(rangeStart(), key - 1);
         }
-        return TreeIndexImpl.twoRanges(rangeStart(), key - 1, key + 1, rangeEnd());
+        return OrderedLongSet.twoRanges(rangeStart(), key - 1, key + 1, rangeEnd());
     }
 
     @Override
-    public final TreeIndexImpl ixSubindexByPosOnNew(final long startPos, final long endPosExclusive) {
+    public final OrderedLongSet ixSubindexByPosOnNew(final long startPos, final long endPosExclusive) {
         final long endPos = endPosExclusive - 1; // make inclusive.
         if (endPos < startPos || endPos < 0) {
-            return TreeIndexImpl.EMPTY;
+            return OrderedLongSet.EMPTY;
         }
         final long sz = ixCardinality();
         if (startPos >= sz) {
-            return TreeIndexImpl.EMPTY;
+            return OrderedLongSet.EMPTY;
         }
         final long len = endPos - startPos + 1;
         if (startPos == 0 && len >= sz) {
@@ -218,9 +218,9 @@ public abstract class SingleRange implements TreeIndexImpl {
     }
 
     @Override
-    public final TreeIndexImpl ixSubindexByKeyOnNew(final long startKey, final long endKey) {
+    public final OrderedLongSet ixSubindexByKeyOnNew(final long startKey, final long endKey) {
         if (startKey > rangeEnd() || endKey < rangeStart()) {
-            return TreeIndexImpl.EMPTY;
+            return OrderedLongSet.EMPTY;
         }
         if (startKey == rangeStart() && endKey == rangeEnd()) {
             return ixCowRef();
@@ -454,7 +454,7 @@ public abstract class SingleRange implements TreeIndexImpl {
     }
 
     @Override
-    public final TreeIndexImpl ixUpdate(final TreeIndexImpl added, final TreeIndexImpl removed) {
+    public final OrderedLongSet ixUpdate(final OrderedLongSet added, final OrderedLongSet removed) {
         if (removed.ixIsEmpty() || removed.ixLastKey() < rangeStart() || removed.ixFirstKey() > rangeEnd()) {
             if (added.ixIsEmpty()) {
                 return this;
@@ -465,7 +465,7 @@ public abstract class SingleRange implements TreeIndexImpl {
             if (removed.ixFirstKey() <= ixFirstKey() && ixLastKey() <= removed.ixLastKey()) {
                 return added.ixCowRef();
             }
-            final TreeIndexImpl t = ixRemoveRange(removed.ixFirstKey(), removed.ixLastKey());
+            final OrderedLongSet t = ixRemoveRange(removed.ixFirstKey(), removed.ixLastKey());
             return t.ixInsert(added);
         }
         if (added.ixIsEmpty()) {
@@ -480,55 +480,55 @@ public abstract class SingleRange implements TreeIndexImpl {
         }
         final RspBitmap ans = toRsp();
         ans.updateUnsafeNoWriteCheck(
-                TreeIndexImpl.asRspBitmap(added),
-                TreeIndexImpl.asRspBitmap(removed));
+                OrderedLongSet.asRspBitmap(added),
+                OrderedLongSet.asRspBitmap(removed));
         if (ans.isEmpty()) {
-            return TreeIndexImpl.EMPTY;
+            return OrderedLongSet.EMPTY;
         }
         ans.finishMutations();
         return ans;
     }
 
     @Override
-    public final TreeIndexImpl ixRemove(final TreeIndexImpl removed) {
+    public final OrderedLongSet ixRemove(final OrderedLongSet removed) {
         return minus(removed);
     }
 
-    private TreeIndexImpl minus(final TreeIndexImpl removed) {
+    private OrderedLongSet minus(final OrderedLongSet removed) {
         if (removed.ixIsEmpty() || removed.ixLastKey() < rangeStart() || removed.ixFirstKey() > rangeEnd()) {
             return this;
         }
         if (ixSubsetOf(removed)) {
-            return TreeIndexImpl.EMPTY;
+            return OrderedLongSet.EMPTY;
         }
         if (removed instanceof SingleRange) {
             return ixRemoveRange(removed.ixFirstKey(), removed.ixLastKey());
         }
         final SortedRanges sr = toSortedRanges();
-        final TreeIndexImpl r = sr.remove(removed);
+        final OrderedLongSet r = sr.remove(removed);
         if (r != null) {
             return r;
         }
         final RspBitmap ans = toRsp();
-        ans.andNotEqualsUnsafeNoWriteCheck(TreeIndexImpl.asRspBitmap(removed));
+        ans.andNotEqualsUnsafeNoWriteCheck(OrderedLongSet.asRspBitmap(removed));
         if (ans.isEmpty()) {
-            return TreeIndexImpl.EMPTY;
+            return OrderedLongSet.EMPTY;
         }
         ans.finishMutations();
         return ans;
     }
 
     @Override
-    public final TreeIndexImpl ixRemoveRange(final long startKey, final long endKey) {
+    public final OrderedLongSet ixRemoveRange(final long startKey, final long endKey) {
         if (endKey < rangeStart() || startKey > rangeEnd()) {
             return this;
         }
         if (startKey <= rangeStart() && rangeEnd() <= endKey) {
-            return TreeIndexImpl.EMPTY;
+            return OrderedLongSet.EMPTY;
         }
         if (rangeStart() < startKey && endKey < rangeEnd()) {
             // creates a hole.
-            return TreeIndexImpl.twoRanges(rangeStart(), startKey - 1, endKey + 1, rangeEnd());
+            return OrderedLongSet.twoRanges(rangeStart(), startKey - 1, endKey + 1, rangeEnd());
         }
         if (endKey < rangeEnd()) {
             return make(endKey + 1, rangeEnd());
@@ -537,21 +537,21 @@ public abstract class SingleRange implements TreeIndexImpl {
     }
 
     @Override
-    public final TreeIndexImpl ixRetain(final TreeIndexImpl other) {
+    public final OrderedLongSet ixRetain(final OrderedLongSet other) {
         return intersect(other);
     }
 
-    private TreeIndexImpl intersect(final TreeIndexImpl other) {
+    private OrderedLongSet intersect(final OrderedLongSet other) {
         if (other.ixIsEmpty()) {
-            return TreeIndexImpl.EMPTY;
+            return OrderedLongSet.EMPTY;
         }
         final long otherFirstKey = other.ixFirstKey();
         if (rangeEnd() < otherFirstKey) {
-            return TreeIndexImpl.EMPTY;
+            return OrderedLongSet.EMPTY;
         }
         final long otherLastKey = other.ixLastKey();
         if (otherLastKey < rangeStart()) {
-            return TreeIndexImpl.EMPTY;
+            return OrderedLongSet.EMPTY;
         }
         if (other instanceof SingleRange) {
             return make(Math.max(rangeStart(), otherFirstKey), Math.min(rangeEnd(), otherLastKey));
@@ -560,18 +560,18 @@ public abstract class SingleRange implements TreeIndexImpl {
     }
 
     @Override
-    public final TreeIndexImpl ixRetainRange(final long start, final long end) {
+    public final OrderedLongSet ixRetainRange(final long start, final long end) {
         if (rangeEnd() < start) {
-            return TreeIndexImpl.EMPTY;
+            return OrderedLongSet.EMPTY;
         }
         if (end < rangeStart()) {
-            return TreeIndexImpl.EMPTY;
+            return OrderedLongSet.EMPTY;
         }
         return make(Math.max(rangeStart(), start), Math.min(rangeEnd(), end));
     }
 
     @Override
-    public final TreeIndexImpl ixIntersectOnNew(final TreeIndexImpl intersected) {
+    public final OrderedLongSet ixIntersectOnNew(final OrderedLongSet intersected) {
         return intersect(intersected);
     }
 
@@ -581,7 +581,7 @@ public abstract class SingleRange implements TreeIndexImpl {
     }
 
     @Override
-    public final boolean ixOverlaps(final TreeIndexImpl impl) {
+    public final boolean ixOverlaps(final OrderedLongSet impl) {
         if (impl.ixIsEmpty()) {
             return false;
         }
@@ -601,7 +601,7 @@ public abstract class SingleRange implements TreeIndexImpl {
     }
 
     @Override
-    public final boolean ixSubsetOf(final TreeIndexImpl impl) {
+    public final boolean ixSubsetOf(final OrderedLongSet impl) {
         if (impl.ixIsEmpty()) {
             return false;
         }
@@ -612,16 +612,16 @@ public abstract class SingleRange implements TreeIndexImpl {
     }
 
     @Override
-    public final TreeIndexImpl ixMinusOnNew(final TreeIndexImpl set) {
+    public final OrderedLongSet ixMinusOnNew(final OrderedLongSet set) {
         return minus(set);
     }
 
     @Override
-    public final TreeIndexImpl ixUnionOnNew(final TreeIndexImpl set) {
+    public final OrderedLongSet ixUnionOnNew(final OrderedLongSet set) {
         return union(set);
     }
 
-    private TreeIndexImpl union(TreeIndexImpl set) {
+    private OrderedLongSet union(OrderedLongSet set) {
         if (set.ixIsEmpty()) {
             return ixCowRef();
         }
@@ -649,17 +649,17 @@ public abstract class SingleRange implements TreeIndexImpl {
     }
 
     @Override
-    public final TreeIndexImpl ixShiftOnNew(final long shiftAmount) {
+    public final OrderedLongSet ixShiftOnNew(final long shiftAmount) {
         return make(rangeStart() + shiftAmount, rangeEnd() + shiftAmount);
     }
 
     @Override
-    public final TreeIndexImpl ixShiftInPlace(final long shiftAmount) {
+    public final OrderedLongSet ixShiftInPlace(final long shiftAmount) {
         return ixShiftOnNew(shiftAmount);
     }
 
     @Override
-    public final TreeIndexImpl ixInsert(final TreeIndexImpl added) {
+    public final OrderedLongSet ixInsert(final OrderedLongSet added) {
         if (added.ixIsEmpty() ||
                 (rangeStart() <= added.ixFirstKey() && added.ixLastKey() <= rangeEnd())) {
             return this;
@@ -667,12 +667,12 @@ public abstract class SingleRange implements TreeIndexImpl {
         if (added instanceof SingleRange) {
             return ixInsertRange(added.ixFirstKey(), added.ixLastKey());
         }
-        final TreeIndexImpl ix = added.ixCowRef();
+        final OrderedLongSet ix = added.ixCowRef();
         return ix.ixInsertRange(rangeStart(), rangeEnd());
     }
 
     @Override
-    public final TreeIndexImpl ixInsertWithShift(final long shiftAmount, final TreeIndexImpl other) {
+    public final OrderedLongSet ixInsertWithShift(final long shiftAmount, final OrderedLongSet other) {
         if (other.ixIsEmpty()) {
             return this;
         }
@@ -725,8 +725,8 @@ public abstract class SingleRange implements TreeIndexImpl {
     }
 
     @Override
-    public final TreeIndexImpl ixInvertOnNew(final TreeIndexImpl keys, final long maximumPosition) {
-        final BuilderSequential b = new TreeIndexImplBuilderSequential();
+    public final OrderedLongSet ixInvertOnNew(final OrderedLongSet keys, final long maximumPosition) {
+        final BuilderSequential b = new OrderedLongSetBuilderSequential();
         final RowSet.RangeIterator it = keys.ixRangeIterator();
         final String exStr = "invert for non-existing key:";
         while (it.hasNext()) {

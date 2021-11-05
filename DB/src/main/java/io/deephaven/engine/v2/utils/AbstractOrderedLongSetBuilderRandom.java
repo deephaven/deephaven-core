@@ -7,7 +7,7 @@ import io.deephaven.engine.v2.utils.sortedranges.SortedRanges;
 import java.util.PrimitiveIterator;
 import java.util.function.LongConsumer;
 
-abstract class AbstractTreeIndexImplBuilderRandom implements TreeIndexImpl.BuilderRandom {
+abstract class AbstractOrderedLongSetBuilderRandom implements OrderedLongSet.BuilderRandom {
 
     protected static final IndexCounts indexCounts = new IndexCounts("randomIndexBuilder");
 
@@ -15,7 +15,7 @@ abstract class AbstractTreeIndexImplBuilderRandom implements TreeIndexImpl.Build
     private long pendingRangeStart = -1;
     private long pendingRangeEnd = -1;
 
-    protected abstract TreeIndexImpl.BuilderRandom innerBuilder();
+    protected abstract OrderedLongSet.BuilderRandom innerBuilder();
 
     protected abstract void setupInnerBuilderForRange(final long start, final long end);
 
@@ -101,12 +101,12 @@ abstract class AbstractTreeIndexImplBuilderRandom implements TreeIndexImpl.Build
     }
 
     @Override
-    public TreeIndexImpl getTreeIndexImpl() {
-        final TreeIndexImpl ans;
+    public OrderedLongSet getTreeIndexImpl() {
+        final OrderedLongSet ans;
         if (innerBuilder() == null && pendingSr == null) {
             if (pendingRangeStart == -1) {
                 indexCounts.emptyCount.sample(1);
-                ans = TreeIndexImpl.EMPTY;
+                ans = OrderedLongSet.EMPTY;
             } else {
                 final SingleRange sr = SingleRange.make(pendingRangeStart, pendingRangeEnd);
                 indexCounts.sampleSingleRange(sr);
@@ -167,7 +167,7 @@ abstract class AbstractTreeIndexImplBuilderRandom implements TreeIndexImpl.Build
     public void add(final SortedRanges other, final boolean acquire) {
         flushPendingRange();
         if (pendingSr != null) {
-            final TreeIndexImpl tix = pendingSr.insertImpl(other, false);
+            final OrderedLongSet tix = pendingSr.insertImpl(other, false);
             if (tix instanceof SortedRanges) {
                 pendingSr = (SortedRanges) tix;
                 return;

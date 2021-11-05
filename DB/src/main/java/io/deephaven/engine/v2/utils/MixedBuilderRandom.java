@@ -4,9 +4,9 @@ import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.v2.utils.rsp.RspBitmap;
 import io.deephaven.engine.v2.utils.sortedranges.SortedRanges;
 
-public class MixedBuilderRandom implements TreeIndexImpl.BuilderRandom {
+public class MixedBuilderRandom implements OrderedLongSet.BuilderRandom {
     protected RangePriorityQueueBuilder pqb;
-    private TreeIndexImpl accumIndex;
+    private OrderedLongSet accumIndex;
 
     private static final int pqSizeThreshold = Configuration.getInstance().getIntegerForClassWithDefault(
             MixedBuilderRandom.class, "pqSizeThreshold", 2 * 1024 * 1024);
@@ -19,7 +19,7 @@ public class MixedBuilderRandom implements TreeIndexImpl.BuilderRandom {
         pqb = new RangePriorityQueueBuilder(pqInitialCapacity);
     }
 
-    private void merge(final TreeIndexImpl ix) {
+    private void merge(final OrderedLongSet ix) {
         if (accumIndex == null) {
             accumIndex = ix;
             return;
@@ -36,7 +36,7 @@ public class MixedBuilderRandom implements TreeIndexImpl.BuilderRandom {
         if (pqb.size() < pqSizeThreshold) {
             return;
         }
-        final TreeIndexImpl ix = pqb.getTreeIndexImplAndReset();
+        final OrderedLongSet ix = pqb.getTreeIndexImplAndReset();
         merge(ix);
         newPq();
     }
@@ -53,7 +53,7 @@ public class MixedBuilderRandom implements TreeIndexImpl.BuilderRandom {
         pqb.addRange(startKey, endKey);
     }
 
-    private void addTreeIndexImpl(final TreeIndexImpl ix) {
+    private void addTreeIndexImpl(final OrderedLongSet ix) {
         if (ix.ixCardinality() >= addAsIndexThreshold) {
             merge(ix.ixCowRef());
             return;
@@ -75,11 +75,11 @@ public class MixedBuilderRandom implements TreeIndexImpl.BuilderRandom {
     }
 
     @Override
-    public TreeIndexImpl getTreeIndexImpl() {
-        final TreeIndexImpl ix = pqb.getTreeIndexImpl();
+    public OrderedLongSet getTreeIndexImpl() {
+        final OrderedLongSet ix = pqb.getTreeIndexImpl();
         pqb = null;
         merge(ix);
-        final TreeIndexImpl ans = accumIndex;
+        final OrderedLongSet ans = accumIndex;
         accumIndex = null;
         return ans;
     }

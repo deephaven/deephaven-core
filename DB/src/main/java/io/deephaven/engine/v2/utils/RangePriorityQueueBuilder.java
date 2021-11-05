@@ -226,7 +226,7 @@ public class RangePriorityQueueBuilder {
         }
     }
 
-    private void populateSequentialBuilder(final TreeIndexImpl.BuilderSequential sequentialBuilder) {
+    private void populateSequentialBuilder(final OrderedLongSet.BuilderSequential sequentialBuilder) {
         long lastEnd = -1;
         while (!isEmpty()) {
             long firstKey = topStart();
@@ -246,20 +246,20 @@ public class RangePriorityQueueBuilder {
         reset();
     }
 
-    private TreeIndexImpl getTreeIndexImplInternal() {
-        final TreeIndexImpl.BuilderSequential sequentialBuilder = new TreeIndexImplBuilderSequential();
+    private OrderedLongSet getTreeIndexImplInternal() {
+        final OrderedLongSet.BuilderSequential sequentialBuilder = new OrderedLongSetBuilderSequential();
         populateSequentialBuilder(sequentialBuilder);
         return sequentialBuilder.getTreeIndexImpl();
     }
 
-    public TreeIndexImpl getTreeIndexImpl() {
-        final TreeIndexImpl ix = getTreeIndexImplInternal();
+    public OrderedLongSet getTreeIndexImpl() {
+        final OrderedLongSet ix = getTreeIndexImplInternal();
         start = end = null;
         return ix;
     }
 
-    public TreeIndexImpl getTreeIndexImplAndReset() {
-        final TreeIndexImpl ix = getTreeIndexImplInternal();
+    public OrderedLongSet getTreeIndexImplAndReset() {
+        final OrderedLongSet ix = getTreeIndexImplInternal();
         reset();
         return ix;
     }

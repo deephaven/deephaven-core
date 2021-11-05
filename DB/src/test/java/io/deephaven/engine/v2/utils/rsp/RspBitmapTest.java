@@ -3509,7 +3509,7 @@ public class RspBitmapTest {
 
     @Test
     public void testRspSequentialBuilderAccumulatesFullBlockSpans() {
-        final TreeIndexImplBuilderSequential b = new TreeIndexImplBuilderSequential();
+        final OrderedLongSetBuilderSequential b = new OrderedLongSetBuilderSequential();
         b.appendKey(3);
         b.appendRange(BLOCK_SIZE, BLOCK_SIZE + BLOCK_LAST);
         b.appendKey(2 * BLOCK_SIZE);
@@ -3521,7 +3521,7 @@ public class RspBitmapTest {
 
     @Test
     public void testRspSequentialBuilderAccumulatesFullBlockSpans2() {
-        final TreeIndexImplBuilderSequential b = new TreeIndexImplBuilderSequential();
+        final OrderedLongSetBuilderSequential b = new OrderedLongSetBuilderSequential();
         b.appendKey(3);
         b.appendRange(BLOCK_SIZE, BLOCK_SIZE + BLOCK_LAST);
         b.appendKey(2 * BLOCK_SIZE);
@@ -3684,9 +3684,9 @@ public class RspBitmapTest {
         rb = rb.addRange(BLOCK_SIZE, BLOCK_SIZE + BLOCK_LAST);
         rb = rb.add(2 * BLOCK_SIZE + BLOCK_LAST);
         rb = rb.addRange(3 * BLOCK_SIZE, 3 * BLOCK_SIZE + BLOCK_LAST);
-        final TreeIndexImpl.BuilderSequential b = new TreeIndexImplBuilderSequential();
+        final OrderedLongSet.BuilderSequential b = new OrderedLongSetBuilderSequential();
         rb.invert(b, new TrackingMutableRowSetImpl(rb).rangeIterator(), rb.getCardinality());
-        final TreeIndexImpl timpl = b.getTreeIndexImpl();
+        final OrderedLongSet timpl = b.getTreeIndexImpl();
         assertEquals(rb.getCardinality(), timpl.ixCardinality());
         assertTrue(timpl.ixContainsRange(0, rb.getCardinality() - 1));
     }
@@ -4300,7 +4300,7 @@ public class RspBitmapTest {
         b.appendKey(1);
         b.appendKey(BLOCK_SIZE);
         b.appendRange(BLOCK_SIZE + BLOCK_LAST - 1, BLOCK_SIZE + BLOCK_SIZE);
-        final TreeIndexImpl t = b.getTreeIndexImpl();
+        final OrderedLongSet t = b.getTreeIndexImpl();
         t.ixValidate();
         assertEquals(5, t.ixCardinality());
     }

@@ -26,7 +26,7 @@ public class BuildSortedRangesBench {
     private static final int step = 10;
     private static final float rangeP = 0.5F;
 
-    private static final TreeIndexImpl[] tixs = new TreeIndexImpl[count];
+    private static final OrderedLongSet[] tixs = new OrderedLongSet[count];
 
     @Setup(Level.Trial)
     public void setup() {
