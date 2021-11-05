@@ -1,5 +1,6 @@
 package io.deephaven.engine.v2.sources.aggregate;
 
+import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.tables.dbarrays.DbCharArray;
 import io.deephaven.engine.v2.dbarrays.DbCharArrayColumnWrapper;
 import io.deephaven.engine.v2.dbarrays.DbPrevCharArrayColumnWrapper;
@@ -8,9 +9,7 @@ import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 import io.deephaven.engine.v2.sources.chunk.ObjectChunk;
 import io.deephaven.engine.v2.sources.chunk.WritableChunk;
 import io.deephaven.engine.v2.sources.chunk.WritableObjectChunk;
-import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.v2.utils.RowSet;
-import io.deephaven.engine.v2.utils.TrackingRowSet;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -19,44 +18,52 @@ import org.jetbrains.annotations.NotNull;
 public final class CharAggregateColumnSource extends BaseAggregateColumnSource<DbCharArray, Character> {
 
     CharAggregateColumnSource(@NotNull final ColumnSource<Character> aggregatedSource,
-                              @NotNull final ColumnSource<? extends TrackingRowSet> indexSource) {
-        super(DbCharArray.class, aggregatedSource, indexSource);
+            @NotNull final ColumnSource<? extends RowSet> groupRowSetSource) {
+        super(DbCharArray.class, aggregatedSource, groupRowSetSource);
     }
 
     @Override
-    public final DbCharArray get(final long index) {
-        if (index == RowSet.NULL_ROW_KEY) {
+    public DbCharArray get(final long rowKey) {
+        if (rowKey == RowSet.NULL_ROW_KEY) {
             return null;
         }
-        return new DbCharArrayColumnWrapper(aggregatedSource, indexSource.get(index));
+        return new DbCharArrayColumnWrapper(aggregatedSource, groupRowSetSource.get(rowKey));
     }
 
     @Override
-    public final DbCharArray getPrev(final long index) {
-        if (index == RowSet.NULL_ROW_KEY) {
+    public DbCharArray getPrev(final long rowKey) {
+        if (rowKey == RowSet.NULL_ROW_KEY) {
             return null;
         }
-        return new DbPrevCharArrayColumnWrapper(aggregatedSource, indexSource.getPrev(index).getPrevRowSet());
+        return new DbPrevCharArrayColumnWrapper(aggregatedSource, getPrevGroupRowSet(rowKey));
     }
 
     @Override
-    public final void fillChunk(@NotNull final FillContext context, @NotNull final WritableChunk<? super Values> destination, @NotNull final RowSequence rowSequence) {
-        final ObjectChunk<RowSet, ? extends Values> indexChunk = indexSource.getChunk(((AggregateFillContext) context).indexGetContext, rowSequence).asObjectChunk();
+    public void fillChunk(@NotNull final FillContext context, @NotNull final WritableChunk<? super Values> destination,
+            @NotNull final RowSequence rowSequence) {
+        final ObjectChunk<RowSet, ? extends Values> groupRowSetChunk = groupRowSetSource
+                .getChunk(((AggregateFillContext) context).groupRowSetGetContext, rowSequence).asObjectChunk();
         final WritableObjectChunk<DbCharArray, ? super Values> typedDestination = destination.asWritableObjectChunk();
         final int size = rowSequence.intSize();
         for (int di = 0; di < size; ++di) {
-            typedDestination.set(di, new DbCharArrayColumnWrapper(aggregatedSource, indexChunk.get(di)));
+            typedDestination.set(di, new DbCharArrayColumnWrapper(aggregatedSource, groupRowSetChunk.get(di)));
         }
         typedDestination.setSize(size);
     }
 
     @Override
-    public final void fillPrevChunk(@NotNull final FillContext context, @NotNull final WritableChunk<? super Values> destination, @NotNull final RowSequence rowSequence) {
-        final ObjectChunk<TrackingRowSet, ? extends Values> indexChunk = indexSource.getPrevChunk(((AggregateFillContext) context).indexGetContext, rowSequence).asObjectChunk();
+    public void fillPrevChunk(@NotNull final FillContext context,
+            @NotNull final WritableChunk<? super Values> destination, @NotNull final RowSequence rowSequence) {
+        final ObjectChunk<RowSet, ? extends Values> groupRowSetPrevChunk = groupRowSetSource
+                .getPrevChunk(((AggregateFillContext) context).groupRowSetGetContext, rowSequence).asObjectChunk();
         final WritableObjectChunk<DbCharArray, ? super Values> typedDestination = destination.asWritableObjectChunk();
         final int size = rowSequence.intSize();
         for (int di = 0; di < size; ++di) {
-            typedDestination.set(di, new DbPrevCharArrayColumnWrapper(aggregatedSource, indexChunk.get(di).getPrevRowSet()));
+            final RowSet groupRowSetPrev = groupRowSetPrevChunk.get(di);
+            final RowSet groupRowSetToUse = groupRowSetPrev.isTracking()
+                    ? groupRowSetPrev.trackingCast().getPrevRowSet()
+                    : groupRowSetPrev;
+            typedDestination.set(di, new DbPrevCharArrayColumnWrapper(aggregatedSource, groupRowSetToUse));
         }
         typedDestination.setSize(size);
     }

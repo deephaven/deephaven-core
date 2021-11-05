@@ -32,7 +32,8 @@ public final class ByChunkedOperator implements IterativeChunkedAggregationOpera
 
     private final QueryTable inputTable;
     private final boolean registeredWithHelper;
-    private final ObjectArraySource<TrackingMutableRowSet> rowSets;
+    private final boolean live;
+    private final ObjectArraySource<MutableRowSet> rowSets;
     private final String[] inputColumnNames;
     private final Map<String, AggregateColumnSource<?, ?>> resultColumns;
     private final ModifiedColumnSet resultInputsModifiedColumnSet;
@@ -45,13 +46,14 @@ public final class ByChunkedOperator implements IterativeChunkedAggregationOpera
             @NotNull final MatchPair... resultColumnPairs) {
         this.inputTable = inputTable;
         this.registeredWithHelper = registeredWithHelper;
-        rowSets = new ObjectArraySource<>(TrackingMutableRowSet.class);
+        live = inputTable.isRefreshing();
+        rowSets = new ObjectArraySource<>(MutableRowSet.class);
         resultColumns = Arrays.stream(resultColumnPairs).collect(Collectors.toMap(MatchPair::left,
                 matchPair -> AggregateColumnSource
                         .make(inputTable.getColumnSource(matchPair.right()), rowSets),
                 Assert::neverInvoked, LinkedHashMap::new));
         inputColumnNames = MatchPair.getRightColumns(resultColumnPairs);
-        if (inputTable.isRefreshing()) {
+        if (live) {
             resultInputsModifiedColumnSet = inputTable.newModifiedColumnSet(inputColumnNames);
         } else {
             resultInputsModifiedColumnSet = null;
@@ -155,7 +157,7 @@ public final class ByChunkedOperator implements IterativeChunkedAggregationOpera
     @Override
     public boolean addIndex(SingletonContext context, RowSet rowSet, long destination) {
         someKeyHasAddsOrRemoves |= rowSet.isNonempty();
-        addIndex(rowSet, destination);
+        addRowsToSlot(rowSet, destination);
         return true;
     }
 
@@ -205,32 +207,33 @@ public final class ByChunkedOperator implements IterativeChunkedAggregationOpera
 
     private void addChunk(@NotNull final LongChunk<OrderedRowKeys> indices, final int start, final int length,
             final long destination) {
-        final MutableRowSet rowSet = indexForSlot(destination);
+        final MutableRowSet rowSet = rowSetForSlot(destination);
         rowSet.insert(indices, start, length);
     }
 
-    private void addIndex(@NotNull final RowSet addRowSet, final long destination) {
-        indexForSlot(destination).insert(addRowSet);
+    private void addRowsToSlot(@NotNull final RowSet addRowSet, final long destination) {
+        rowSetForSlot(destination).insert(addRowSet);
     }
 
     private void removeChunk(@NotNull final LongChunk<OrderedRowKeys> indices, final int start, final int length,
             final long destination) {
-        final MutableRowSet rowSet = indexForSlot(destination);
+        final MutableRowSet rowSet = rowSetForSlot(destination);
         rowSet.remove(indices, start, length);
     }
 
     private void doShift(@NotNull final LongChunk<OrderedRowKeys> preShiftIndices,
             @NotNull final LongChunk<OrderedRowKeys> postShiftIndices,
             final int startPosition, final int runLength, final long destination) {
-        final MutableRowSet rowSet = indexForSlot(destination);
+        final MutableRowSet rowSet = rowSetForSlot(destination);
         rowSet.remove(preShiftIndices, startPosition, runLength);
         rowSet.insert(postShiftIndices, startPosition, runLength);
     }
 
-    private MutableRowSet indexForSlot(final long destination) {
-        TrackingMutableRowSet rowSet = rowSets.getUnsafe(destination);
+    private MutableRowSet rowSetForSlot(final long destination) {
+        MutableRowSet rowSet = rowSets.getUnsafe(destination);
         if (rowSet == null) {
-            rowSets.set(destination, rowSet = RowSetFactoryImpl.INSTANCE.empty().convertToTracking());
+            final MutableRowSet empty = RowSetFactoryImpl.INSTANCE.empty();
+            rowSets.set(destination, rowSet = live ? empty.convertToTracking() : empty);
         }
         return rowSet;
     }

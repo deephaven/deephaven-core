@@ -19,29 +19,29 @@ import org.jetbrains.annotations.NotNull;
 public final class ObjectAggregateColumnSource<COMPONENT_TYPE> extends BaseAggregateColumnSource<DbArray, COMPONENT_TYPE> {
 
     ObjectAggregateColumnSource(@NotNull final ColumnSource<COMPONENT_TYPE> aggregatedSource,
-                                @NotNull final ColumnSource<? extends TrackingRowSet> indexSource) {
-        super(DbArray.class, aggregatedSource, indexSource);
+                                @NotNull final ColumnSource<? extends RowSet> groupRowSetSource) {
+        super(DbArray.class, aggregatedSource, groupRowSetSource);
     }
 
     @Override
-    public final DbArray<COMPONENT_TYPE> get(final long index) {
-        if (index == RowSet.NULL_ROW_KEY) {
+    public final DbArray<COMPONENT_TYPE> get(final long rowKey) {
+        if (rowKey == RowSet.NULL_ROW_KEY) {
             return null;
         }
-        return new DbArrayColumnWrapper<>(aggregatedSource, indexSource.get(index));
+        return new DbArrayColumnWrapper<>(aggregatedSource, groupRowSetSource.get(rowKey));
     }
 
     @Override
-    public final DbArray<COMPONENT_TYPE> getPrev(final long index) {
-        if (index == RowSet.NULL_ROW_KEY) {
+    public final DbArray<COMPONENT_TYPE> getPrev(final long rowKey) {
+        if (rowKey == RowSet.NULL_ROW_KEY) {
             return null;
         }
-        return new DbPrevArrayColumnWrapper<>(aggregatedSource, indexSource.getPrev(index).getPrevRowSet());
+        return new DbPrevArrayColumnWrapper<>(aggregatedSource, getPrevGroupRowSet(rowKey));
     }
 
     @Override
     public final void fillChunk(@NotNull final FillContext context, @NotNull final WritableChunk<? super Values> destination, @NotNull final RowSequence rowSequence) {
-        final ObjectChunk<TrackingRowSet, ? extends Values> indexChunk = indexSource.getChunk(((AggregateFillContext) context).indexGetContext, rowSequence).asObjectChunk();
+        final ObjectChunk<RowSet, ? extends Values> indexChunk = groupRowSetSource.getChunk(((AggregateFillContext) context).groupRowSetGetContext, rowSequence).asObjectChunk();
         final WritableObjectChunk<DbArray<COMPONENT_TYPE>, ? super Values> typedDestination = destination.asWritableObjectChunk();
         final int size = rowSequence.intSize();
         for (int di = 0; di < size; ++di) {
@@ -52,11 +52,15 @@ public final class ObjectAggregateColumnSource<COMPONENT_TYPE> extends BaseAggre
 
     @Override
     public final void fillPrevChunk(@NotNull final FillContext context, @NotNull final WritableChunk<? super Values> destination, @NotNull final RowSequence rowSequence) {
-        final ObjectChunk<TrackingRowSet, ? extends Values> indexChunk = indexSource.getPrevChunk(((AggregateFillContext) context).indexGetContext, rowSequence).asObjectChunk();
+        final ObjectChunk<RowSet, ? extends Values> groupRowSetPrevChunk = groupRowSetSource.getPrevChunk(((AggregateFillContext) context).groupRowSetGetContext, rowSequence).asObjectChunk();
         final WritableObjectChunk<DbArray<COMPONENT_TYPE>, ? super Values> typedDestination = destination.asWritableObjectChunk();
         final int size = rowSequence.intSize();
         for (int di = 0; di < size; ++di) {
-            typedDestination.set(di, new DbPrevArrayColumnWrapper<>(aggregatedSource, indexChunk.get(di).getPrevRowSet()));
+            final RowSet groupRowSetPrev = groupRowSetPrevChunk.get(di);
+            final RowSet groupRowSetToUse = groupRowSetPrev.isTracking()
+                    ? groupRowSetPrev.trackingCast().getPrevRowSet()
+                    : groupRowSetPrev;
+            typedDestination.set(di, new DbPrevArrayColumnWrapper<>(aggregatedSource, groupRowSetToUse));
         }
         typedDestination.setSize(size);
     }

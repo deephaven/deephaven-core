@@ -7,7 +7,6 @@ import io.deephaven.engine.v2.sources.UngroupableColumnSource;
 import io.deephaven.engine.v2.sources.UngroupedColumnSource;
 import io.deephaven.engine.v2.sources.chunk.util.SimpleTypeMap;
 import io.deephaven.engine.v2.utils.RowSet;
-import io.deephaven.engine.v2.utils.TrackingRowSet;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.function.BiFunction;
@@ -22,10 +21,10 @@ public interface AggregateColumnSource<DB_ARRAY_TYPE extends DbArrayBase, COMPON
 
     static <DB_ARRAY_TYPE extends DbArrayBase, DATA_TYPE> AggregateColumnSource<DB_ARRAY_TYPE, DATA_TYPE> make(
             @NotNull final ColumnSource<DATA_TYPE> aggregatedSource,
-            @NotNull final ColumnSource<? extends TrackingRowSet> indexSource) {
+            @NotNull final ColumnSource<? extends RowSet> groupRowSetSource) {
         // noinspection unchecked
         return (AggregateColumnSource<DB_ARRAY_TYPE, DATA_TYPE>) FactoryHelper.TYPE_TO_CONSTRUCTOR
-                .get(aggregatedSource.getType()).apply(aggregatedSource, indexSource);
+                .get(aggregatedSource.getType()).apply(aggregatedSource, groupRowSetSource);
     }
 
     final class FactoryHelper {
@@ -33,20 +32,20 @@ public interface AggregateColumnSource<DB_ARRAY_TYPE extends DbArrayBase, COMPON
         private FactoryHelper() {}
 
         @SuppressWarnings({"unchecked", "AutoUnboxing"})
-        private static final SimpleTypeMap<BiFunction<ColumnSource<?>, ColumnSource<? extends TrackingRowSet>, AggregateColumnSource<?, ?>>> TYPE_TO_CONSTRUCTOR =
+        private static final SimpleTypeMap<BiFunction<ColumnSource<?>, ColumnSource<? extends RowSet>, AggregateColumnSource<?, ?>>> TYPE_TO_CONSTRUCTOR =
                 SimpleTypeMap.create(
                 // @formatter:off
-                (final ColumnSource<?> aggregatedSource, final ColumnSource<? extends TrackingRowSet> indexSource) -> {
+                (final ColumnSource<?> aggregatedSource, final ColumnSource<? extends RowSet> groupRowSetSource) -> {
                     throw new UnsupportedOperationException("Cannot create a primitive boolean ColumnSource");
                 },
-                (final ColumnSource<?> aggregatedSource, final ColumnSource<? extends TrackingRowSet> indexSource) -> new     CharAggregateColumnSource((ColumnSource<Character>) aggregatedSource, indexSource),
-                (final ColumnSource<?> aggregatedSource, final ColumnSource<? extends TrackingRowSet> indexSource) -> new     ByteAggregateColumnSource((ColumnSource<Byte>     ) aggregatedSource, indexSource),
-                (final ColumnSource<?> aggregatedSource, final ColumnSource<? extends TrackingRowSet> indexSource) -> new    ShortAggregateColumnSource((ColumnSource<Short>    ) aggregatedSource, indexSource),
-                (final ColumnSource<?> aggregatedSource, final ColumnSource<? extends TrackingRowSet> indexSource) -> new      IntAggregateColumnSource((ColumnSource<Integer>  ) aggregatedSource, indexSource),
-                (final ColumnSource<?> aggregatedSource, final ColumnSource<? extends TrackingRowSet> indexSource) -> new     LongAggregateColumnSource((ColumnSource<Long>     ) aggregatedSource, indexSource),
-                (final ColumnSource<?> aggregatedSource, final ColumnSource<? extends TrackingRowSet> indexSource) -> new    FloatAggregateColumnSource((ColumnSource<Float>    ) aggregatedSource, indexSource),
-                (final ColumnSource<?> aggregatedSource, final ColumnSource<? extends TrackingRowSet> indexSource) -> new   DoubleAggregateColumnSource((ColumnSource<Double>   ) aggregatedSource, indexSource),
-                (final ColumnSource<?> aggregatedSource, final ColumnSource<? extends TrackingRowSet> indexSource) -> new ObjectAggregateColumnSource<>((ColumnSource<?>        ) aggregatedSource, indexSource)
+                (final ColumnSource<?> aggregatedSource, final ColumnSource<? extends RowSet> groupRowSetSource) -> new     CharAggregateColumnSource((ColumnSource<Character>) aggregatedSource, groupRowSetSource),
+                (final ColumnSource<?> aggregatedSource, final ColumnSource<? extends RowSet> groupRowSetSource) -> new     ByteAggregateColumnSource((ColumnSource<Byte>     ) aggregatedSource, groupRowSetSource),
+                (final ColumnSource<?> aggregatedSource, final ColumnSource<? extends RowSet> groupRowSetSource) -> new    ShortAggregateColumnSource((ColumnSource<Short>    ) aggregatedSource, groupRowSetSource),
+                (final ColumnSource<?> aggregatedSource, final ColumnSource<? extends RowSet> groupRowSetSource) -> new      IntAggregateColumnSource((ColumnSource<Integer>  ) aggregatedSource, groupRowSetSource),
+                (final ColumnSource<?> aggregatedSource, final ColumnSource<? extends RowSet> groupRowSetSource) -> new     LongAggregateColumnSource((ColumnSource<Long>     ) aggregatedSource, groupRowSetSource),
+                (final ColumnSource<?> aggregatedSource, final ColumnSource<? extends RowSet> groupRowSetSource) -> new    FloatAggregateColumnSource((ColumnSource<Float>    ) aggregatedSource, groupRowSetSource),
+                (final ColumnSource<?> aggregatedSource, final ColumnSource<? extends RowSet> groupRowSetSource) -> new   DoubleAggregateColumnSource((ColumnSource<Double>   ) aggregatedSource, groupRowSetSource),
+                (final ColumnSource<?> aggregatedSource, final ColumnSource<? extends RowSet> groupRowSetSource) -> new ObjectAggregateColumnSource<>((ColumnSource<?>        ) aggregatedSource, groupRowSetSource)
                 // @formatter:on
                 );
     }

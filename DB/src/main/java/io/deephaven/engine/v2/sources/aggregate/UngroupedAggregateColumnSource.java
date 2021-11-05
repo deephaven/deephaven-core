@@ -31,193 +31,193 @@ final class UngroupedAggregateColumnSource<DATA_TYPE> extends UngroupedColumnSou
     }
 
     @Override
-    public final DATA_TYPE get(final long keyIndex) {
-        if (keyIndex == NULL_ROW_KEY) {
+    public DATA_TYPE get(final long rowKey) {
+        if (rowKey == NULL_ROW_KEY) {
             return null;
         }
-        final long groupIndexKey = getGroupIndexKey(keyIndex, base);
-        final long offsetInGroup = getOffsetInGroup(keyIndex, base);
+        final long groupIndexKey = getGroupIndexKey(rowKey, base);
+        final long offsetInGroup = getOffsetInGroup(rowKey, base);
         // noinspection unchecked
         return (DATA_TYPE) aggregateColumnSource.getUngrouped(groupIndexKey, (int) offsetInGroup);
     }
 
     @Override
-    public final Boolean getBoolean(final long keyIndex) {
-        if (keyIndex == NULL_ROW_KEY) {
+    public Boolean getBoolean(final long rowKey) {
+        if (rowKey == NULL_ROW_KEY) {
             return NULL_BOOLEAN;
         }
-        final long groupIndexKey = getGroupIndexKey(keyIndex, base);
-        final long offsetInGroup = getOffsetInGroup(keyIndex, base);
+        final long groupIndexKey = getGroupIndexKey(rowKey, base);
+        final long offsetInGroup = getOffsetInGroup(rowKey, base);
         return aggregateColumnSource.getUngroupedBoolean(groupIndexKey, (int) offsetInGroup);
     }
 
     @Override
-    public final byte getByte(final long keyIndex) {
-        if (keyIndex == NULL_ROW_KEY) {
+    public byte getByte(final long rowKey) {
+        if (rowKey == NULL_ROW_KEY) {
             return NULL_BYTE;
         }
-        final long groupIndexKey = getGroupIndexKey(keyIndex, base);
-        final long offsetInGroup = getOffsetInGroup(keyIndex, base);
+        final long groupIndexKey = getGroupIndexKey(rowKey, base);
+        final long offsetInGroup = getOffsetInGroup(rowKey, base);
         return aggregateColumnSource.getUngroupedByte(groupIndexKey, (int) offsetInGroup);
     }
 
     @Override
-    public final char getChar(final long keyIndex) {
-        if (keyIndex == NULL_ROW_KEY) {
+    public char getChar(final long rowKey) {
+        if (rowKey == NULL_ROW_KEY) {
             return NULL_CHAR;
         }
-        final long groupIndexKey = getGroupIndexKey(keyIndex, base);
-        final long offsetInGroup = getOffsetInGroup(keyIndex, base);
+        final long groupIndexKey = getGroupIndexKey(rowKey, base);
+        final long offsetInGroup = getOffsetInGroup(rowKey, base);
         return aggregateColumnSource.getUngroupedChar(groupIndexKey, (int) offsetInGroup);
     }
 
     @Override
-    public final double getDouble(final long keyIndex) {
-        if (keyIndex == NULL_ROW_KEY) {
+    public double getDouble(final long rowKey) {
+        if (rowKey == NULL_ROW_KEY) {
             return NULL_DOUBLE;
         }
-        final long groupIndexKey = getGroupIndexKey(keyIndex, base);
-        final long offsetInGroup = getOffsetInGroup(keyIndex, base);
+        final long groupIndexKey = getGroupIndexKey(rowKey, base);
+        final long offsetInGroup = getOffsetInGroup(rowKey, base);
         return aggregateColumnSource.getUngroupedDouble(groupIndexKey, (int) offsetInGroup);
     }
 
     @Override
-    public final float getFloat(final long keyIndex) {
-        if (keyIndex == NULL_ROW_KEY) {
+    public float getFloat(final long rowKey) {
+        if (rowKey == NULL_ROW_KEY) {
             return NULL_FLOAT;
         }
-        final long groupIndexKey = getGroupIndexKey(keyIndex, base);
-        final long offsetInGroup = getOffsetInGroup(keyIndex, base);
+        final long groupIndexKey = getGroupIndexKey(rowKey, base);
+        final long offsetInGroup = getOffsetInGroup(rowKey, base);
         return aggregateColumnSource.getUngroupedFloat(groupIndexKey, (int) offsetInGroup);
     }
 
     @Override
-    public final int getInt(final long keyIndex) {
-        if (keyIndex == NULL_ROW_KEY) {
+    public int getInt(final long rowKey) {
+        if (rowKey == NULL_ROW_KEY) {
             return NULL_INT;
         }
-        final long groupIndexKey = getGroupIndexKey(keyIndex, base);
-        final long offsetInGroup = getOffsetInGroup(keyIndex, base);
+        final long groupIndexKey = getGroupIndexKey(rowKey, base);
+        final long offsetInGroup = getOffsetInGroup(rowKey, base);
         return aggregateColumnSource.getUngroupedInt(groupIndexKey, (int) offsetInGroup);
     }
 
     @Override
-    public final long getLong(final long keyIndex) {
-        if (keyIndex == NULL_ROW_KEY) {
+    public long getLong(final long rowKey) {
+        if (rowKey == NULL_ROW_KEY) {
             return NULL_LONG;
         }
-        final long groupIndexKey = getGroupIndexKey(keyIndex, base);
-        final long offsetInGroup = getOffsetInGroup(keyIndex, base);
+        final long groupIndexKey = getGroupIndexKey(rowKey, base);
+        final long offsetInGroup = getOffsetInGroup(rowKey, base);
         return aggregateColumnSource.getUngroupedLong(groupIndexKey, (int) offsetInGroup);
     }
 
     @Override
-    public final short getShort(final long keyIndex) {
-        if (keyIndex == NULL_ROW_KEY) {
+    public short getShort(final long rowKey) {
+        if (rowKey == NULL_ROW_KEY) {
             return NULL_SHORT;
         }
-        final long groupIndexKey = getGroupIndexKey(keyIndex, base);
-        final long offsetInGroup = getOffsetInGroup(keyIndex, base);
+        final long groupIndexKey = getGroupIndexKey(rowKey, base);
+        final long offsetInGroup = getOffsetInGroup(rowKey, base);
         return aggregateColumnSource.getUngroupedShort(groupIndexKey, (int) offsetInGroup);
     }
 
     @Override
-    public final DATA_TYPE getPrev(final long keyIndex) {
-        if (keyIndex == NULL_ROW_KEY) {
+    public DATA_TYPE getPrev(final long rowKey) {
+        if (rowKey == NULL_ROW_KEY) {
             return null;
         }
         final long prevBase = getPrevBase();
-        final long groupIndexKey = getGroupIndexKey(keyIndex, prevBase);
-        final long offsetInGroup = getOffsetInGroup(keyIndex, prevBase);
+        final long groupIndexKey = getGroupIndexKey(rowKey, prevBase);
+        final long offsetInGroup = getOffsetInGroup(rowKey, prevBase);
         // noinspection unchecked
         return (DATA_TYPE) aggregateColumnSource.getUngroupedPrev(groupIndexKey, (int) offsetInGroup);
     }
 
     @Override
-    public final Boolean getPrevBoolean(final long keyIndex) {
-        if (keyIndex == NULL_ROW_KEY) {
+    public Boolean getPrevBoolean(final long rowKey) {
+        if (rowKey == NULL_ROW_KEY) {
             return NULL_BOOLEAN;
         }
         final long prevBase = getPrevBase();
-        final long groupIndexKey = getGroupIndexKey(keyIndex, prevBase);
-        final long offsetInGroup = getOffsetInGroup(keyIndex, prevBase);
+        final long groupIndexKey = getGroupIndexKey(rowKey, prevBase);
+        final long offsetInGroup = getOffsetInGroup(rowKey, prevBase);
         return aggregateColumnSource.getUngroupedPrevBoolean(groupIndexKey, (int) offsetInGroup);
     }
 
     @Override
-    public final byte getPrevByte(final long keyIndex) {
-        if (keyIndex == NULL_ROW_KEY) {
+    public byte getPrevByte(final long rowKey) {
+        if (rowKey == NULL_ROW_KEY) {
             return NULL_BYTE;
         }
         final long prevBase = getPrevBase();
-        final long groupIndexKey = getGroupIndexKey(keyIndex, prevBase);
-        final long offsetInGroup = getOffsetInGroup(keyIndex, prevBase);
+        final long groupIndexKey = getGroupIndexKey(rowKey, prevBase);
+        final long offsetInGroup = getOffsetInGroup(rowKey, prevBase);
         return aggregateColumnSource.getUngroupedPrevByte(groupIndexKey, (int) offsetInGroup);
     }
 
     @Override
-    public final char getPrevChar(final long keyIndex) {
-        if (keyIndex == NULL_ROW_KEY) {
+    public char getPrevChar(final long rowKey) {
+        if (rowKey == NULL_ROW_KEY) {
             return NULL_CHAR;
         }
         final long prevBase = getPrevBase();
-        final long groupIndexKey = getGroupIndexKey(keyIndex, prevBase);
-        final long offsetInGroup = getOffsetInGroup(keyIndex, prevBase);
+        final long groupIndexKey = getGroupIndexKey(rowKey, prevBase);
+        final long offsetInGroup = getOffsetInGroup(rowKey, prevBase);
         return aggregateColumnSource.getUngroupedPrevChar(groupIndexKey, (int) offsetInGroup);
     }
 
     @Override
-    public final double getPrevDouble(final long keyIndex) {
-        if (keyIndex == NULL_ROW_KEY) {
+    public double getPrevDouble(final long rowKey) {
+        if (rowKey == NULL_ROW_KEY) {
             return NULL_DOUBLE;
         }
         final long prevBase = getPrevBase();
-        final long groupIndexKey = getGroupIndexKey(keyIndex, prevBase);
-        final long offsetInGroup = getOffsetInGroup(keyIndex, prevBase);
+        final long groupIndexKey = getGroupIndexKey(rowKey, prevBase);
+        final long offsetInGroup = getOffsetInGroup(rowKey, prevBase);
         return aggregateColumnSource.getUngroupedPrevDouble(groupIndexKey, (int) offsetInGroup);
     }
 
     @Override
-    public final float getPrevFloat(final long keyIndex) {
-        if (keyIndex == NULL_ROW_KEY) {
+    public float getPrevFloat(final long rowKey) {
+        if (rowKey == NULL_ROW_KEY) {
             return NULL_FLOAT;
         }
         final long prevBase = getPrevBase();
-        final long groupIndexKey = getGroupIndexKey(keyIndex, prevBase);
-        final long offsetInGroup = getOffsetInGroup(keyIndex, prevBase);
+        final long groupIndexKey = getGroupIndexKey(rowKey, prevBase);
+        final long offsetInGroup = getOffsetInGroup(rowKey, prevBase);
         return aggregateColumnSource.getUngroupedPrevFloat(groupIndexKey, (int) offsetInGroup);
     }
 
     @Override
-    public final int getPrevInt(final long keyIndex) {
-        if (keyIndex == NULL_ROW_KEY) {
+    public int getPrevInt(final long rowKey) {
+        if (rowKey == NULL_ROW_KEY) {
             return NULL_INT;
         }
         final long prevBase = getPrevBase();
-        final long groupIndexKey = getGroupIndexKey(keyIndex, prevBase);
-        final long offsetInGroup = getOffsetInGroup(keyIndex, prevBase);
+        final long groupIndexKey = getGroupIndexKey(rowKey, prevBase);
+        final long offsetInGroup = getOffsetInGroup(rowKey, prevBase);
         return aggregateColumnSource.getUngroupedPrevInt(groupIndexKey, (int) offsetInGroup);
     }
 
     @Override
-    public final long getPrevLong(final long keyIndex) {
-        if (keyIndex == NULL_ROW_KEY) {
+    public long getPrevLong(final long rowKey) {
+        if (rowKey == NULL_ROW_KEY) {
             return NULL_LONG;
         }
         final long prevBase = getPrevBase();
-        final long groupIndexKey = getGroupIndexKey(keyIndex, prevBase);
-        final long offsetInGroup = getOffsetInGroup(keyIndex, prevBase);
+        final long groupIndexKey = getGroupIndexKey(rowKey, prevBase);
+        final long offsetInGroup = getOffsetInGroup(rowKey, prevBase);
         return aggregateColumnSource.getUngroupedPrevLong(groupIndexKey, (int) offsetInGroup);
     }
 
     @Override
-    public final short getPrevShort(final long keyIndex) {
-        if (keyIndex == NULL_ROW_KEY) {
+    public short getPrevShort(final long rowKey) {
+        if (rowKey == NULL_ROW_KEY) {
             return NULL_SHORT;
         }
         final long prevBase = getPrevBase();
-        final long groupIndexKey = getGroupIndexKey(keyIndex, prevBase);
-        final long offsetInGroup = getOffsetInGroup(keyIndex, prevBase);
+        final long groupIndexKey = getGroupIndexKey(rowKey, prevBase);
+        final long offsetInGroup = getOffsetInGroup(rowKey, prevBase);
         return aggregateColumnSource.getUngroupedPrevShort(groupIndexKey, (int) offsetInGroup);
     }
 
@@ -231,12 +231,12 @@ final class UngroupedAggregateColumnSource<DATA_TYPE> extends UngroupedColumnSou
         private UngroupedFillContext(@NotNull final BaseAggregateColumnSource<?, ?> aggregateColumnSource,
                 final int chunkCapacity,
                 final SharedContext sharedContext) {
-            final ColumnSource<? extends RowSet> indexSource = aggregateColumnSource.indexSource;
+            final ColumnSource<? extends RowSet> groupRowSetSource = aggregateColumnSource.groupRowSetSource;
             final ColumnSource<?> aggregatedSource = aggregateColumnSource.aggregatedSource;
 
-            shareable = sharedContext == null ? new Shareable(false, indexSource, chunkCapacity)
-                    : sharedContext.getOrCreate(new SharingKey(indexSource),
-                            () -> new Shareable(true, indexSource, chunkCapacity));
+            shareable = sharedContext == null ? new Shareable(false, groupRowSetSource, chunkCapacity)
+                    : sharedContext.getOrCreate(new SharingKey(groupRowSetSource),
+                            () -> new Shareable(true, groupRowSetSource, chunkCapacity));
 
             // NB: There's no reason to use a shared context for the values source. We'd have to reset it between each
             // sub-fill.
@@ -246,8 +246,8 @@ final class UngroupedAggregateColumnSource<DATA_TYPE> extends UngroupedColumnSou
 
         private static final class SharingKey extends SharedContext.ExactReferenceSharingKey<Shareable> {
 
-            private SharingKey(@NotNull final ColumnSource indexSource) {
-                super(indexSource);
+            private SharingKey(@NotNull final ColumnSource groupRowSetSource) {
+                super(groupRowSetSource);
             }
         }
 
@@ -266,18 +266,18 @@ final class UngroupedAggregateColumnSource<DATA_TYPE> extends UngroupedColumnSou
             private int currentIndexPosition;
 
             private Shareable(final boolean shared,
-                    @NotNull final ColumnSource<? extends RowSet> indexSource,
+                    @NotNull final ColumnSource<? extends RowSet> groupRowSetSource,
                     final int chunkCapacity) {
                 this.shared = shared;
 
-                indexGetContext = indexSource.makeGetContext(chunkCapacity, this);
+                indexGetContext = groupRowSetSource.makeGetContext(chunkCapacity, this);
                 indexKeyIndices = WritableLongChunk.makeWritableChunk(chunkCapacity);
                 sameIndexRunLengths = WritableIntChunk.makeWritableChunk(chunkCapacity);
                 componentKeyIndices = WritableLongChunk.makeWritableChunk(chunkCapacity);
                 componentKeyIndicesSlice = ResettableWritableLongChunk.makeResettableChunk();
             }
 
-            private void extractFillChunkInformation(@NotNull final ColumnSource<? extends RowSet> indexSource,
+            private void extractFillChunkInformation(@NotNull final ColumnSource<? extends RowSet> groupRowSetSource,
                     final long base, final boolean usePrev, @NotNull final RowSequence rowSequence) {
                 if (stateReusable) {
                     return;
@@ -288,18 +288,18 @@ final class UngroupedAggregateColumnSource<DATA_TYPE> extends UngroupedColumnSou
 
                 currentIndexPosition = -1;
                 componentKeyIndices.setSize(0);
-                rowSequence.forAllRowKeys((final long keyIndex) -> {
-                    final long indexKeyIndex = getGroupIndexKey(keyIndex, base);
-                    if (currentIndexPosition == -1 || indexKeyIndex != indexKeyIndices.get(currentIndexPosition)) {
+                rowSequence.forAllRowKeys((final long rowKey) -> {
+                    final long indexrowKey = getGroupIndexKey(rowKey, base);
+                    if (currentIndexPosition == -1 || indexrowKey != indexKeyIndices.get(currentIndexPosition)) {
                         ++currentIndexPosition;
-                        indexKeyIndices.set(currentIndexPosition, indexKeyIndex);
+                        indexKeyIndices.set(currentIndexPosition, indexrowKey);
                         sameIndexRunLengths.set(currentIndexPosition, 1);
                     } else {
                         sameIndexRunLengths.set(currentIndexPosition,
                                 sameIndexRunLengths.get(currentIndexPosition) + 1);
                     }
-                    final long componentKeyIndex = getOffsetInGroup(keyIndex, base);
-                    componentKeyIndices.add(componentKeyIndex);
+                    final long componentrowKey = getOffsetInGroup(rowKey, base);
+                    componentKeyIndices.add(componentrowKey);
                 });
                 indexKeyIndices.setSize(currentIndexPosition + 1);
                 sameIndexRunLengths.setSize(currentIndexPosition + 1);
@@ -308,9 +308,9 @@ final class UngroupedAggregateColumnSource<DATA_TYPE> extends UngroupedColumnSou
                 try (final RowSequence indexRowSequence =
                         RowSequenceUtil.wrapRowKeysChunkAsRowSequence(indexKeyIndices)) {
                     if (usePrev) {
-                        indexes = indexSource.getPrevChunk(indexGetContext, indexRowSequence).asObjectChunk();
+                        indexes = groupRowSetSource.getPrevChunk(indexGetContext, indexRowSequence).asObjectChunk();
                     } else {
-                        indexes = indexSource.getChunk(indexGetContext, indexRowSequence).asObjectChunk();
+                        indexes = groupRowSetSource.getChunk(indexGetContext, indexRowSequence).asObjectChunk();
                     }
                 }
 
@@ -341,13 +341,13 @@ final class UngroupedAggregateColumnSource<DATA_TYPE> extends UngroupedColumnSou
             }
 
             @Override
-            public final void reset() {
+            public void reset() {
                 stateReusable = false;
                 super.reset();
             }
 
             @Override
-            public final void close() {
+            public void close() {
                 indexGetContext.close();
                 indexKeyIndices.close();
                 sameIndexRunLengths.close();
@@ -384,7 +384,7 @@ final class UngroupedAggregateColumnSource<DATA_TYPE> extends UngroupedColumnSou
         }
 
         @Override
-        public final void close() {
+        public void close() {
             aggregatedFillContext.close();
             destinationSlice.close();
 
@@ -395,44 +395,44 @@ final class UngroupedAggregateColumnSource<DATA_TYPE> extends UngroupedColumnSou
     }
 
     @Override
-    public final FillContext makeFillContext(final int chunkCapacity, final SharedContext sharedContext) {
+    public FillContext makeFillContext(final int chunkCapacity, final SharedContext sharedContext) {
         return new UngroupedFillContext(aggregateColumnSource, chunkCapacity, sharedContext);
     }
 
     @Override
-    public final void fillChunk(@NotNull final FillContext context,
+    public void fillChunk(@NotNull final FillContext context,
             @NotNull final WritableChunk<? super Values> destination, @NotNull final RowSequence rowSequence) {
         destination.setSize(rowSequence.intSize());
         if (destination.size() == 0) {
             return;
         }
         final UngroupedFillContext tc = (UngroupedFillContext) context;
-        tc.shareable.extractFillChunkInformation(aggregateColumnSource.indexSource, base, false, rowSequence);
+        tc.shareable.extractFillChunkInformation(aggregateColumnSource.groupRowSetSource, base, false, rowSequence);
         tc.doFillChunk(aggregateColumnSource.aggregatedSource, false, destination);
     }
 
     @Override
-    public final void fillPrevChunk(@NotNull final FillContext context,
+    public void fillPrevChunk(@NotNull final FillContext context,
             @NotNull final WritableChunk<? super Values> destination, @NotNull final RowSequence rowSequence) {
         destination.setSize(rowSequence.intSize());
         if (destination.size() == 0) {
             return;
         }
         final UngroupedFillContext tc = (UngroupedFillContext) context;
-        tc.shareable.extractFillChunkInformation(aggregateColumnSource.indexSource, getPrevBase(), true, rowSequence);
+        tc.shareable.extractFillChunkInformation(aggregateColumnSource.groupRowSetSource, getPrevBase(), true, rowSequence);
         tc.doFillChunk(aggregateColumnSource.aggregatedSource, true, destination);
     }
 
     @Override
-    public final boolean isImmutable() {
+    public boolean isImmutable() {
         return aggregateColumnSource.isImmutable();
     }
 
-    private static long getGroupIndexKey(final long keyIndex, final long base) {
-        return keyIndex >> base;
+    private static long getGroupIndexKey(final long rowKey, final long base) {
+        return rowKey >> base;
     }
 
-    private static long getOffsetInGroup(final long keyIndex, final long base) {
-        return keyIndex & ((1 << base) - 1);
+    private static long getOffsetInGroup(final long rowKey, final long base) {
+        return rowKey & ((1L << base) - 1);
     }
 }
