@@ -1,7 +1,6 @@
 package io.deephaven.engine.v2.tuples.generated;
 
 import io.deephaven.datastructures.util.SmartKey;
-import io.deephaven.util.BooleanUtils;
 import io.deephaven.engine.util.tuples.generated.ByteByteByteTuple;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.WritableSource;
@@ -13,6 +12,7 @@ import io.deephaven.engine.v2.sources.chunk.WritableObjectChunk;
 import io.deephaven.engine.v2.tuples.AbstractTupleSource;
 import io.deephaven.engine.v2.tuples.ThreeColumnTupleSourceFactory;
 import io.deephaven.engine.v2.tuples.TupleSource;
+import io.deephaven.util.BooleanUtils;
 import org.jetbrains.annotations.NotNull;
 
 

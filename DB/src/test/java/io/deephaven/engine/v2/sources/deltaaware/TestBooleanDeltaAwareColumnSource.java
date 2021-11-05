@@ -10,6 +10,7 @@ import io.deephaven.util.BooleanUtils;
 import io.deephaven.engine.tables.live.LiveTableMonitor;
 import io.deephaven.engine.v2.sources.ArrayGenerator;
 import io.deephaven.engine.v2.sources.chunk.ChunkSource;
+import io.deephaven.engine.v2.sources.chunk.BooleanChunk;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.engine.v2.utils.RowSetBuilderSequential;
@@ -23,6 +24,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 
+import static io.deephaven.util.QueryConstants.*;
 import static junit.framework.TestCase.*;
 
 public class TestBooleanDeltaAwareColumnSource {
