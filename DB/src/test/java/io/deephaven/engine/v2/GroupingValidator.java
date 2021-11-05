@@ -174,8 +174,10 @@ public class GroupingValidator extends InstrumentedListenerAdapter {
     @Override
     public void onUpdate(final Update upstream) {
         validateGroupings(groupingColumns, source.getRowSet());
-        validateGroupings(groupingColumns, upstream.added);
-        validateGroupings(groupingColumns, upstream.modified);
+        // NB: This would normally be inappropriate: we don't expect grouping support on the non-tracking row sets we
+        //     use for updates. Forcing support by cloning and making the result tracking.
+        validateGroupings(groupingColumns, upstream.added.clone().convertToTracking());
+        validateGroupings(groupingColumns, upstream.modified.clone().convertToTracking());
         validationCount++;
         System.out.println("Validation Count for " + context + ": " + validationCount);
     }
