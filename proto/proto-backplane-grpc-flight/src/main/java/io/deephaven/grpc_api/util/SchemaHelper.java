@@ -33,6 +33,7 @@ public class SchemaHelper {
 
     /**
      * Creates a flatbuf Schema from raw bytes of a Message.
+     * 
      * @param bb a bytebuffer that contains a schema in a message
      * @return a flatbuf schema
      */
