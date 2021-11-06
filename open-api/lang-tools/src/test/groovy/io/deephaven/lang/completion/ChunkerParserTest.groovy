@@ -122,7 +122,7 @@ val = {
         CompletionParser p = new CompletionParser()
         String src =
 """
-t = engine.timeTable(${q}0:00:01$q)
+t = db.timeTable(${q}0:00:01$q)
 g = t.update(${q}Day = Timestamp - 100000000$q) // whatever...
 """
         doc = p.parse(src)
@@ -138,7 +138,7 @@ g = t.update(${q}Day = Timestamp - 100000000$q) // whatever...
 
         testSearch 5, ChunkerIdent,  '', 'd', 'b'
         testSearch 6, ChunkerIdent,  'd', 'b', ''
-        testSearch 7, ChunkerInvoke,  'engine', '.', "timeTable(${q}0:00:01$q)"
+        testSearch 7, ChunkerInvoke,  'db', '.', "timeTable(${q}0:00:01$q)"
 
         testSearch 8, ChunkerMethodName,  '', 't', "imeTable("
         testSearch 9, ChunkerMethodName,  't', 'i', "meTable("
@@ -154,7 +154,7 @@ g = t.update(${q}Day = Timestamp - 100000000$q) // whatever...
         testSearch 25, ChunkerString,  "${q}0:00:0", '1', q
         testSearch 26, ChunkerString,  "${q}0:00:01", q, ''
 
-        testSearch 27, ChunkerInvoke,  "engine.timeTable(${q}0:00:01$q", ')', ''
+        testSearch 27, ChunkerInvoke,  "db.timeTable(${q}0:00:01$q", ')', ''
 
         testSearch 28, ChunkerNewline,  '', '\n', ''
 
@@ -177,7 +177,7 @@ g = t.update(${q}Day = Timestamp - 100000000$q) // whatever...
         src.length().times{
             i ->
                 Node n = doc.findNode(i)
-                assert n : "No node found at rowSet $i"
+                assert n : "No node found at index $i"
                 assert ! (n instanceof ChunkerDocument) : "Should never findNode() the root document"
         }
         1 + q == "1$q"
@@ -192,7 +192,7 @@ g = t.update(${q}Day = Timestamp - 100000000$q) // whatever...
         CompletionParser p = new CompletionParser()
         String src =
 """
-t = engine.
+t = db.
 """
         doc = p.parse(src)
 
@@ -206,13 +206,13 @@ t = engine.
         testSearch 4, ChunkerAssign, 't =', ' ', ''
         testSearch 5, ChunkerIdent, '', 'd', 'b'
         testSearch 6, ChunkerIdent, 'd', 'b', ''
-        testSearch 7, ChunkerBinaryExpression, 'engine', '.', ''
+        testSearch 7, ChunkerBinaryExpression, 'db', '.', ''
         testSearch 8, ChunkerNewline, '', '\n', ''
 
         src.length().times{
             i ->
                 Node n = doc.findNode(i)
-                assert n : "No node found at rowSet $i"
+                assert n : "No node found at index $i"
                 assert ! (n instanceof ChunkerDocument) : "Should never findNode() the root document"
         }
         1 + q == "1$q"
