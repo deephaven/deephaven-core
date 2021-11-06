@@ -3,7 +3,7 @@ package io.deephaven.engine.v2;
 import io.deephaven.base.Function;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.live.LiveTableMonitor;
+import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.v2.remote.WrappedDelegatingTable;
 import io.deephaven.engine.v2.sources.AbstractColumnSource;
 import io.deephaven.engine.v2.sources.ColumnSource;
@@ -48,8 +48,8 @@ public class TreeTableOrphanPromoter implements Function.Unary<Table, Table> {
     @WrappedDelegatingTable.DoNotWrap
     @Override
     public Table call(Table table) {
-        if (table.isLive()) {
-            LiveTableMonitor.DEFAULT.checkInitiateTableOperation();
+        if (table.isRefreshing()) {
+            UpdateGraphProcessor.DEFAULT.checkInitiateTableOperation();
         }
 
         return new State(table).invoke();

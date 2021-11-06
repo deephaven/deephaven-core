@@ -8,7 +8,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.TableDefinition;
 import io.deephaven.engine.tables.live.LiveTable;
-import io.deephaven.engine.tables.live.LiveTableMonitor;
+import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.v2.utils.MutableRowSet;
 import io.deephaven.engine.v2.utils.RowSet;
 
@@ -29,7 +29,7 @@ public abstract class BaseIncrementalReleaseFilter extends SelectFilterLivenessA
     private RecomputeListener listener;
     private boolean releaseMoreEntries = false;
 
-    transient private boolean addedToLiveTableMonitor = false;
+    transient private boolean addedToUpdateGraphProcessor = false;
 
     BaseIncrementalReleaseFilter(long initialSize) {
         releasedSize = this.initialSize = initialSize;
@@ -47,9 +47,9 @@ public abstract class BaseIncrementalReleaseFilter extends SelectFilterLivenessA
 
     @Override
     public void init(TableDefinition tableDefinition) {
-        if (!addedToLiveTableMonitor) {
-            LiveTableMonitor.DEFAULT.addTable(this);
-            addedToLiveTableMonitor = true;
+        if (!addedToUpdateGraphProcessor) {
+            UpdateGraphProcessor.DEFAULT.addTable(this);
+            addedToUpdateGraphProcessor = true;
         }
     }
 
@@ -112,7 +112,7 @@ public abstract class BaseIncrementalReleaseFilter extends SelectFilterLivenessA
     }
 
     @Override
-    public void refresh() {
+    public void run() {
         releaseMoreEntries = true;
         listener.requestRecompute();
     }
@@ -120,6 +120,6 @@ public abstract class BaseIncrementalReleaseFilter extends SelectFilterLivenessA
     @Override
     protected void destroy() {
         super.destroy();
-        LiveTableMonitor.DEFAULT.removeTable(this);
+        UpdateGraphProcessor.DEFAULT.removeTable(this);
     }
 }

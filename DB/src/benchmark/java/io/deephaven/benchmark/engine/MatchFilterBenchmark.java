@@ -1,7 +1,7 @@
 package io.deephaven.benchmark.engine;
 
 import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.live.LiveTableMonitor;
+import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.tables.utils.DBDateTime;
 import io.deephaven.engine.tables.utils.DBTimeUtils;
 import io.deephaven.engine.v2.select.*;
@@ -51,7 +51,7 @@ public class MatchFilterBenchmark {
 
     @Setup(Level.Trial)
     public void setupEnv(BenchmarkParams params) {
-        LiveTableMonitor.DEFAULT.enableUnitTestMode();
+        UpdateGraphProcessor.DEFAULT.enableUnitTestMode();
 
         final BenchmarkTableBuilder builder;
         final int actualSize = BenchmarkTools.sizeWithSparsity(tableSize, sparsity);
@@ -140,10 +140,10 @@ public class MatchFilterBenchmark {
 
         final R result = function.apply(filtered);
 
-        LiveTableMonitor.DEFAULT.enableUnitTestMode();
+        UpdateGraphProcessor.DEFAULT.enableUnitTestMode();
 
         while (filtered.size() < inputTable.size()) {
-            LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(incrementalReleaseFilter::refresh);
+            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(incrementalReleaseFilter::run);
         }
 
         return result;

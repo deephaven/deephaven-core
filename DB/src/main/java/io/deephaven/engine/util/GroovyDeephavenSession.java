@@ -14,7 +14,7 @@ import io.deephaven.base.StringUtils;
 import io.deephaven.compilertools.CompilerTools;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.exceptions.QueryCancellationException;
-import io.deephaven.engine.tables.live.LiveTableMonitor;
+import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.tables.select.QueryScope;
 import io.deephaven.engine.tables.utils.NameValidator;
 import io.deephaven.engine.util.scripts.ScriptPathLoader;
@@ -242,7 +242,7 @@ public class GroovyDeephavenSession extends AbstractScriptSession implements Scr
             updateClassloader(lastCommand);
 
             try {
-                LiveTableMonitor.DEFAULT.exclusiveLock().doLockedInterruptibly(() -> evaluateCommand(lastCommand));
+                UpdateGraphProcessor.DEFAULT.exclusiveLock().doLockedInterruptibly(() -> evaluateCommand(lastCommand));
             } catch (InterruptedException e) {
                 throw new QueryCancellationException(e.getMessage() != null ? e.getMessage() : "Query interrupted",
                         maybeRewriteStackTrace(scriptName, currentScriptName, e, lastCommand, commandPrefix));

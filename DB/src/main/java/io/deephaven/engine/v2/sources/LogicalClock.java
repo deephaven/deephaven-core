@@ -5,6 +5,7 @@
 package io.deephaven.engine.v2.sources;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.util.process.ProcessEnvironment;
 import io.deephaven.util.annotations.TestUseOnly;
 
@@ -35,13 +36,13 @@ public enum LogicalClock {
 
         /**
          * Clock state for logical timestamps when the associated
-         * {@link io.deephaven.engine.tables.live.LiveTableMonitor} is propagating updates.
+         * {@link UpdateGraphProcessor} is propagating updates.
          */
         Updating,
 
         /**
          * Clock state for logical timestamps when the associated
-         * {@link io.deephaven.engine.tables.live.LiveTableMonitor} is <em>not</em> propagating updates.
+         * {@link UpdateGraphProcessor} is <em>not</em> propagating updates.
          */
         Idle
     }
@@ -123,7 +124,7 @@ public enum LogicalClock {
     }
 
     /**
-     * After we complete a table refresh, we must ensure that the logical clock is idle.
+     * After we complete a table run, we must ensure that the logical clock is idle.
      *
      * <p>
      * The only valid possibilities are (1) we have completed the cycle, in which case we return; or (2) we have

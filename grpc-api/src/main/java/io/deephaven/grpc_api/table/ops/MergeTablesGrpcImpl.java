@@ -3,7 +3,7 @@ package io.deephaven.grpc_api.table.ops;
 import io.deephaven.base.verify.Assert;
 import com.google.rpc.Code;
 import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.live.LiveTableMonitor;
+import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.grpc_api.session.SessionState;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
@@ -19,13 +19,13 @@ import java.util.stream.Collectors;
 @Singleton
 public class MergeTablesGrpcImpl extends GrpcTableOperation<MergeTablesRequest> {
 
-    private final LiveTableMonitor liveTableMonitor;
+    private final UpdateGraphProcessor updateGraphProcessor;
 
     @Inject
-    public MergeTablesGrpcImpl(final LiveTableMonitor liveTableMonitor) {
+    public MergeTablesGrpcImpl(final UpdateGraphProcessor updateGraphProcessor) {
         super(BatchTableRequest.Operation::getMerge, MergeTablesRequest::getResultId,
                 MergeTablesRequest::getSourceIdsList);
-        this.liveTableMonitor = liveTableMonitor;
+        this.updateGraphProcessor = updateGraphProcessor;
     }
 
     @Override
@@ -45,10 +45,10 @@ public class MergeTablesGrpcImpl extends GrpcTableOperation<MergeTablesRequest> 
                 .collect(Collectors.toList());
 
         Table result;
-        if (tables.stream().noneMatch(Table::isLive)) {
+        if (tables.stream().noneMatch(table -> table.isRefreshing())) {
             result = keyColumn.isEmpty() ? TableTools.merge(tables) : TableTools.mergeSorted(keyColumn, tables);
         } else {
-            result = liveTableMonitor.sharedLock().computeLocked(() -> TableTools.merge(tables));
+            result = updateGraphProcessor.sharedLock().computeLocked(() -> TableTools.merge(tables));
             if (!keyColumn.isEmpty()) {
                 result = result.sort(keyColumn);
             }

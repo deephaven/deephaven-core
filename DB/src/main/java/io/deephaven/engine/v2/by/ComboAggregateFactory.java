@@ -1354,7 +1354,7 @@ public class ComboAggregateFactory implements AggregationStateFactory {
                                 exposeRedirectionAs = null;
                             }
 
-                            if (table.isLive()) {
+                            if (table.isRefreshing()) {
                                 if (isStream) {
                                     operators.add(isFirst ? new StreamFirstChunkedOperator(comboMatchPairs, table)
                                             : new StreamLastChunkedOperator(comboMatchPairs, table));

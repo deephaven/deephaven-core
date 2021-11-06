@@ -2,7 +2,7 @@ package io.deephaven.engine.v2;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.live.LiveTableMonitor;
+import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.util.SortedBy;
 import io.deephaven.engine.v2.Listener.Update;
 import io.deephaven.engine.v2.sources.ColumnSource;
@@ -102,9 +102,9 @@ public class StreamTableAggregationTest {
                             ? RowSetFactory.empty()
                             : RowSetFactory.fromRange(0, refreshSize - 1);
 
-            LiveTableMonitor.DEFAULT.startCycleForUnitTests();
+            UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
             try {
-                LiveTableMonitor.DEFAULT.refreshLiveTableForUnitTests(() -> {
+                UpdateGraphProcessor.DEFAULT.refreshLiveTableForUnitTests(() -> {
                     if (normalStepInserted.isNonempty()) {
                         normal.getRowSet().mutableCast().insert(normalStepInserted);
                         normal.notifyListeners(
@@ -114,7 +114,7 @@ public class StreamTableAggregationTest {
                     }
                 });
                 final RowSet finalStreamLastInserted = streamLastInserted;
-                LiveTableMonitor.DEFAULT.refreshLiveTableForUnitTests(() -> {
+                UpdateGraphProcessor.DEFAULT.refreshLiveTableForUnitTests(() -> {
                     if (streamStepInserted.isNonempty() || finalStreamLastInserted.isNonempty()) {
                         if (streamInternalRowSet != null) {
                             streamInternalRowSet.clear();
@@ -128,7 +128,7 @@ public class StreamTableAggregationTest {
                     }
                 });
             } finally {
-                LiveTableMonitor.DEFAULT.completeCycleForUnitTests();
+                UpdateGraphProcessor.DEFAULT.completeCycleForUnitTests();
             }
             try {
                 TstUtils.assertTableEquals(expected, addOnlyExpected);

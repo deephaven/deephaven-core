@@ -1,6 +1,6 @@
 package io.deephaven.engine.v2;
 
-import io.deephaven.engine.tables.live.LiveTableMonitor;
+import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.IntegerSparseArraySource;
 import io.deephaven.engine.v2.sources.regioned.SymbolTableSource;
@@ -85,7 +85,7 @@ public class TestSymbolTableCombiner extends LiveTableTestCase {
             if (LiveTableTestCase.printTableUpdates) {
                 System.out.println("Step = " + step + ", size=" + symbolTable.size());
             }
-            LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
                 final RowSet[] updates = GenerateTableUpdates.computeTableUpdates(size / 10, random, symbolTable,
                         columnInfo, true, false, false);
                 symbolTable.notifyListeners(updates[0], updates[1], updates[2]);

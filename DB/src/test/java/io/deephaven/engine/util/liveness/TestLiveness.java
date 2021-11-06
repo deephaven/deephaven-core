@@ -1,7 +1,7 @@
 package io.deephaven.engine.util.liveness;
 
 import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.live.LiveTableMonitor;
+import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.v2.TstUtils;
 import junit.framework.TestCase;
@@ -21,9 +21,9 @@ public class TestLiveness extends TestCase {
     @Override
     public void setUp() throws Exception {
         super.setUp();
-        LiveTableMonitor.DEFAULT.enableUnitTestMode();
-        LiveTableMonitor.DEFAULT.resetForUnitTests(false);
-        oldCheckLtm = LiveTableMonitor.DEFAULT.setCheckTableOperations(false);
+        UpdateGraphProcessor.DEFAULT.enableUnitTestMode();
+        UpdateGraphProcessor.DEFAULT.resetForUnitTests(false);
+        oldCheckLtm = UpdateGraphProcessor.DEFAULT.setCheckTableOperations(false);
         scope = new LivenessScope();
         LivenessScopeStack.push(scope);
     }
@@ -34,8 +34,8 @@ public class TestLiveness extends TestCase {
         super.tearDown();
         LivenessScopeStack.pop(scope);
         scope.release();
-        LiveTableMonitor.DEFAULT.setCheckTableOperations(oldCheckLtm);
-        LiveTableMonitor.DEFAULT.resetForUnitTests(true);
+        UpdateGraphProcessor.DEFAULT.setCheckTableOperations(oldCheckLtm);
+        UpdateGraphProcessor.DEFAULT.resetForUnitTests(true);
     }
 
     @SuppressWarnings("JUnit4AnnotatedMethodInJUnit3TestCase")

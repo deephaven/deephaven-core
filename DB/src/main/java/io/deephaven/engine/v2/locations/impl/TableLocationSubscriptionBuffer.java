@@ -13,7 +13,7 @@ import org.jetbrains.annotations.NotNull;
 import java.util.*;
 
 /**
- * Intermediates between push-based subscription to a TableLocationProvider and polling on LiveTable refresh.
+ * Intermediates between push-based subscription to a TableLocationProvider and polling on LiveTable run.
  */
 public class TableLocationSubscriptionBuffer implements TableLocationProvider.Listener {
 
@@ -45,7 +45,7 @@ public class TableLocationSubscriptionBuffer implements TableLocationProvider.Li
             if (tableLocationProvider.supportsSubscriptions()) {
                 tableLocationProvider.subscribe(this);
             } else {
-                // NB: Providers that don't support subscriptions don't tick - this single call to refresh is
+                // NB: Providers that don't support subscriptions don't tick - this single call to run is
                 // sufficient.
                 tableLocationProvider.refresh();
                 tableLocationProvider.getTableLocationKeys().forEach(this::handleTableLocationKey);

@@ -3,7 +3,7 @@ package io.deephaven.kafka.publish;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.live.LiveTableMonitor;
+import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.util.liveness.LivenessArtifact;
 import io.deephaven.engine.util.liveness.LivenessScope;
 import io.deephaven.engine.v2.*;
@@ -49,8 +49,8 @@ public class PublishToKafka<K, V> extends LivenessArtifact {
      * The new publisher will produce records for existing {@code table} data at construction.
      * <p>
      * If {@code table} is a dynamic, refreshing table ({@link Table#isLive()}), the calling thread must block the
-     * {@link LiveTableMonitor#DEFAULT LiveTableMonitor} by holding either its {@link LiveTableMonitor#exclusiveLock()
-     * exclusive lock} or its {@link LiveTableMonitor#sharedLock() shared lock}. The publisher will install a listener
+     * {@link UpdateGraphProcessor#DEFAULT UpdateGraphProcessor} by holding either its {@link UpdateGraphProcessor#exclusiveLock()
+     * exclusive lock} or its {@link UpdateGraphProcessor#sharedLock() shared lock}. The publisher will install a listener
      * in order to produce new records as updates become available. Callers must be sure to maintain a reference to the
      * publisher and ensure that it remains {@link io.deephaven.engine.util.liveness.LivenessReferent live}. The easiest
      * way to do this may be to construct the publisher enclosed by a
@@ -99,7 +99,7 @@ public class PublishToKafka<K, V> extends LivenessArtifact {
         }
 
         // Install a listener to publish subsequent updates
-        if (table.isLive()) {
+        if (table.isRefreshing()) {
             table.listenForUpdates(publishListener = new PublishListener(
                     getModifiedColumnSet(table, keyColumns),
                     getModifiedColumnSet(table, valueColumns)));

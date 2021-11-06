@@ -23,12 +23,12 @@ public class FixedStepReplayer extends Replayer {
     }
 
     @Override
-    public void refresh() {
+    public void run() {
         currentTime = DBTimeUtils.plus(currentTime, incrementNanos);
         if (currentTime.getNanos() > endTime.getNanos()) {
             currentTime = endTime;
         }
-        super.refresh();
+        super.run();
     }
 
     @Override

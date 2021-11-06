@@ -9,7 +9,7 @@ import io.deephaven.grpc_api.util.ExportTicketHelper;
 import io.deephaven.io.log.LogEntry;
 import io.deephaven.io.logger.Logger;
 import com.google.protobuf.ByteString;
-import io.deephaven.engine.tables.live.LiveTableMonitor;
+import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.tables.utils.DBTimeUtils;
 import io.deephaven.grpc_api.runner.DeephavenApiServerModule;
 import io.deephaven.grpc_api.util.Scheduler;
@@ -89,7 +89,7 @@ public class ConsoleClient {
     }
 
     private void start() {
-        LiveTableMonitor.DEFAULT.start();
+        UpdateGraphProcessor.DEFAULT.start();
 
         // no payload in this simple server auth
         sessionService.newSession(HandshakeRequest.newBuilder().setAuthProtocol(1).build(),
@@ -233,7 +233,7 @@ public class ConsoleClient {
                 .append(this.sessionHeader).append("', token: '")
                 .append(this.session.toString()).append("}").endl();
 
-        // Guess a good time to do the next refresh.
+        // Guess a good time to do the next run.
         final long refreshDelayMs = Math.min(
                 scheduler.currentTime().getMillis() + result.getTokenExpirationDelayMillis() / 3,
                 result.getTokenDeadlineTimeMillis() - result.getTokenExpirationDelayMillis() / 10);

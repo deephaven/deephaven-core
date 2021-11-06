@@ -371,7 +371,7 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
         return ExportedTableCreationResponse.newBuilder()
                 .setSuccess(true)
                 .setResultId(tableRef)
-                .setIsStatic(!table.isLive())
+                .setIsStatic(!table.isRefreshing())
                 .setSize(table.size())
                 .setSchemaHeader(BarrageUtil.schemaBytesFromTable(table))
                 .build();

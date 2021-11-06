@@ -1,7 +1,7 @@
 package io.deephaven.engine.v2.sources.chunkcolumnsource;
 
 import gnu.trove.list.array.TLongArrayList;
-import io.deephaven.engine.tables.live.LiveTableMonitor;
+import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.tables.utils.DBDateTime;
 import io.deephaven.engine.tables.utils.DBTimeUtils;
 import io.deephaven.engine.v2.hashing.IntChunkEquals;
@@ -21,13 +21,13 @@ import org.junit.Test;
 public class TestChunkColumnSource {
     @Before
     public void setUp() throws Exception {
-        LiveTableMonitor.DEFAULT.enableUnitTestMode();
-        LiveTableMonitor.DEFAULT.resetForUnitTests(false);
+        UpdateGraphProcessor.DEFAULT.enableUnitTestMode();
+        UpdateGraphProcessor.DEFAULT.resetForUnitTests(false);
     }
 
     @After
     public void tearDown() throws Exception {
-        LiveTableMonitor.DEFAULT.resetForUnitTests(true);
+        UpdateGraphProcessor.DEFAULT.resetForUnitTests(true);
     }
 
     @Test

@@ -5,7 +5,7 @@
 package io.deephaven.engine.util;
 
 import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.live.LiveTableMonitor;
+import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.v2.*;
 import io.deephaven.engine.v2.hashing.ChunkEquals;
 import io.deephaven.engine.v2.sources.ColumnSource;
@@ -42,11 +42,11 @@ public class TickSuppressor {
      * @return an output table that will produce no modified rows, but rather adds and removes instead
      */
     public static Table convertModificationsToAddsAndRemoves(Table input) {
-        if (!input.isLive()) {
+        if (!input.isRefreshing()) {
             return input;
         }
 
-        LiveTableMonitor.DEFAULT.checkInitiateTableOperation();
+        UpdateGraphProcessor.DEFAULT.checkInitiateTableOperation();
 
         final QueryTable resultTable =
                 new QueryTable(input.getDefinition(), input.getRowSet(), input.getColumnSourceMap());
@@ -90,11 +90,11 @@ public class TickSuppressor {
      *         previous values are not identical
      */
     public static Table removeSpuriousModifications(Table input) {
-        if (!input.isLive()) {
+        if (!input.isRefreshing()) {
             return input;
         }
 
-        LiveTableMonitor.DEFAULT.checkInitiateTableOperation();
+        UpdateGraphProcessor.DEFAULT.checkInitiateTableOperation();
 
         final QueryTable resultTable =
                 new QueryTable(input.getDefinition(), input.getRowSet(), input.getColumnSourceMap());

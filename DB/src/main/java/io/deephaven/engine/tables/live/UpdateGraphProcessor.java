@@ -57,26 +57,26 @@ import java.util.function.Supplier;
  * <p>
  * This class contains a thread which periodically updates a set of monitored {@link LiveTable LiveTables} at a
  * specified target cycle time. The target cycle time can be {@link #setTargetCycleTime(long) configured} to reduce or
- * increase the refresh rate of the monitored tables.
+ * increase the run rate of the monitored tables.
  * </p>
  *
  * <p>
  * This class can be configured via the following {@link Configuration} property
  * </p>
  * <ul>
- * <li><b>LiveTableMonitor.targetcycletime</b> <i>(optional)</i> - The default target cycle time in ms (1000 if not
+ * <li><b>UpdateGraphProcessor.targetcycletime</b> <i>(optional)</i> - The default target cycle time in ms (1000 if not
  * defined)</li>
  * </ul>
  */
-public enum LiveTableMonitor implements LiveTableRegistrar, NotificationQueue, NotificationQueue.Dependency {
+public enum UpdateGraphProcessor implements UpdateRootRegistrar, NotificationQueue, NotificationQueue.Dependency {
     DEFAULT;
 
-    private final Logger log = LoggerFactory.getLogger(LiveTableMonitor.class);
+    private final Logger log = LoggerFactory.getLogger(UpdateGraphProcessor.class);
 
     /**
-     * {@link LiveTable}s that are part of this LiveTableMonitor.
+     * {@link LiveTable}s that are part of this UpdateGraphProcessor.
      */
-    private final SimpleReferenceManager<LiveTable, LiveTableRefreshNotification> tables =
+    private final SimpleReferenceManager<Runnable, LiveTableRefreshNotification> tables =
             new SimpleReferenceManager<>(LiveTableRefreshNotification::new);
 
     /**
@@ -104,21 +104,21 @@ public enum LiveTableMonitor implements LiveTableRegistrar, NotificationQueue, N
     private final Thread refreshThread;
 
     /**
-     * If this is set to a positive value, then we will call the {@link #watchDogTimeoutProcedure} if any single refresh
+     * If this is set to a positive value, then we will call the {@link #watchDogTimeoutProcedure} if any single run
      * loop takes longer than this value. The intention is to use this for strategies, or other queries, where a
-     * LiveTableMonitor loop that is "stuck" is the equivalent of an error. Set the value with
+     * UpdateGraphProcessor loop that is "stuck" is the equivalent of an error. Set the value with
      * {@link #setWatchDogMillis(int)}.
      */
     private int watchDogMillis = 0;
     /**
      * If a timeout time has been {@link #setWatchDogMillis(int) set}, this procedure will be called if any single
-     * refresh loop takes longer than the value specified. Set the value with
+     * run loop takes longer than the value specified. Set the value with
      * {@link #setWatchDogTimeoutProcedure(LongConsumer)}.
      */
     private LongConsumer watchDogTimeoutProcedure = null;
 
     private final boolean allowUnitTestMode =
-            Configuration.getInstance().getBooleanWithDefault("LiveTableMonitor.allowUnitTestMode", false);
+            Configuration.getInstance().getBooleanWithDefault("UpdateGraphProcessor.allowUnitTestMode", false);
     private int notificationAdditionDelay = 0;
     private Random notificationRandomizer = new Random(0);
     private boolean unitTestMode = false;
@@ -126,10 +126,10 @@ public enum LiveTableMonitor implements LiveTableRegistrar, NotificationQueue, N
     private ExecutorService unitTestRefreshThreadPool;
 
     private final long defaultTargetCycleTime =
-            Configuration.getInstance().getIntegerWithDefault("LiveTableMonitor.targetcycletime", 1000);
+            Configuration.getInstance().getIntegerWithDefault("UpdateGraphProcessor.targetcycletime", 1000);
     private volatile long targetCycleTime = defaultTargetCycleTime;
     private final long minimumCycleLogNanos = TimeUnit.MILLISECONDS
-            .toNanos(Configuration.getInstance().getIntegerWithDefault("LiveTableMonitor.minimumCycleLogTime", 25));
+            .toNanos(Configuration.getInstance().getIntegerWithDefault("UpdateGraphProcessor.minimumCycleLogTime", 25));
 
     /**
      * How many cycles we have not logged, but were non-zero.
@@ -157,50 +157,50 @@ public enum LiveTableMonitor implements LiveTableRegistrar, NotificationQueue, N
     private NotificationProcessor notificationProcessor;
 
     /**
-     * The {@link LivenessScope} that should be on top of the {@link LivenessScopeStack} for all refresh and
+     * The {@link LivenessScope} that should be on top of the {@link LivenessScopeStack} for all run and
      * notification processing. Only non-null while some thread is in {@link #doRefresh(Runnable)}.
      */
     private volatile LivenessScope refreshScope;
 
     /**
      * The number of threads in our executor service for dispatching notifications. If 1, then we don't actually use the
-     * executor service; but instead dispatch all the notifications on the LiveTableMonitor refresh thread.
+     * executor service; but instead dispatch all the notifications on the UpdateGraphProcessor run thread.
      */
     private final int updateThreads = Require.geq(
-            Configuration.getInstance().getIntegerWithDefault("LiveTableMonitor.updateThreads", 1), "updateThreads", 1);
+            Configuration.getInstance().getIntegerWithDefault("UpdateGraphProcessor.updateThreads", 1), "updateThreads", 1);
 
     /**
-     * Is this one of the threads engaged in notification processing? (Either the solitary refresh thread, or one of the
+     * Is this one of the threads engaged in notification processing? (Either the solitary run thread, or one of the
      * pooled threads it uses in some configurations)
      */
     private final ThreadLocal<Boolean> isRefreshThread = ThreadLocal.withInitial(() -> false);
 
     private final boolean CHECK_TABLE_OPERATIONS =
-            Configuration.getInstance().getBooleanWithDefault("LiveTableMonitor.checkTableOperations", false);
+            Configuration.getInstance().getBooleanWithDefault("UpdateGraphProcessor.checkTableOperations", false);
     private final ThreadLocal<Boolean> checkTableOperations = ThreadLocal.withInitial(() -> CHECK_TABLE_OPERATIONS);
 
     private final long minimumInterCycleSleep =
-            Configuration.getInstance().getIntegerWithDefault("LiveTableMonitor.minimumInterCycleSleep", 0);
+            Configuration.getInstance().getIntegerWithDefault("UpdateGraphProcessor.minimumInterCycleSleep", 0);
     private final boolean interCycleYield =
-            Configuration.getInstance().getBooleanWithDefault("LiveTableMonitor.interCycleYield", false);
+            Configuration.getInstance().getBooleanWithDefault("UpdateGraphProcessor.interCycleYield", false);
 
     /**
      * Encapsulates locking support.
      */
-    private final LiveTableMonitorLock lock = new LiveTableMonitorLock(LogicalClock.DEFAULT, allowUnitTestMode);
+    private final UpdateGraphLock lock = new UpdateGraphLock(LogicalClock.DEFAULT, allowUnitTestMode);
 
     /**
-     * When LiveTableMonitor.printDependencyInformation is set to true, the LiveTableMonitor will print debug
+     * When UpdateGraphProcessor.printDependencyInformation is set to true, the UpdateGraphProcessor will print debug
      * information for each notification that has dependency information; as well as which notifications have been
      * completed and are outstanding.
      */
     private final boolean printDependencyInformation =
-            Configuration.getInstance().getBooleanWithDefault("LiveTableMonitor.printDependencyInformation", false);
+            Configuration.getInstance().getBooleanWithDefault("UpdateGraphProcessor.printDependencyInformation", false);
 
-    LiveTableMonitor() {
+    UpdateGraphProcessor() {
         notificationProcessor = makeNotificationProcessor();
 
-        refreshThread = new Thread("LiveTableMonitor." + name() + ".refreshThread") {
+        refreshThread = new Thread("UpdateGraphProcessor." + name() + ".refreshThread") {
             @Override
             public void run() {
                 configureRefreshThread();
@@ -216,7 +216,7 @@ public enum LiveTableMonitor implements LiveTableRegistrar, NotificationQueue, N
 
     @Override
     public LogOutput append(@NotNull final LogOutput logOutput) {
-        return logOutput.append("LiveTableMonitor-").append(name());
+        return logOutput.append("UpdateGraphProcessor-").append(name());
     }
 
     @Override
@@ -227,8 +227,8 @@ public enum LiveTableMonitor implements LiveTableRegistrar, NotificationQueue, N
     @NotNull
     private NotificationProcessor makeNotificationProcessor() {
         if (updateThreads > 1) {
-            final ThreadFactory threadFactory = new LiveTableMonitorThreadFactory(
-                    new ThreadGroup("LiveTableMonitor-updateExecutors"), "updateExecutor");
+            final ThreadFactory threadFactory = new UpdateGraphProcessorThreadFactory(
+                    new ThreadGroup("UpdateGraphProcessor-updateExecutors"), "updateExecutor");
             return new ConcurrentNotificationProcessor(threadFactory, updateThreads);
         } else {
             return new QueueNotificationProcessor();
@@ -238,8 +238,8 @@ public enum LiveTableMonitor implements LiveTableRegistrar, NotificationQueue, N
     @TestUseOnly
     private NotificationProcessor makeRandomizedNotificationProcessor(final Random random, final int nThreads,
             final int notificationStartDelay) {
-        final LiveTableMonitorThreadFactory threadFactory = new LiveTableMonitorThreadFactory(
-                new ThreadGroup("LiveTableMonitor-randomizedUpdatedExecutors"), "randomizedUpdateExecutor");
+        final UpdateGraphProcessorThreadFactory threadFactory = new UpdateGraphProcessorThreadFactory(
+                new ThreadGroup("UpdateGraphProcessor-randomizedUpdatedExecutors"), "randomizedUpdateExecutor");
         return new ConcurrentNotificationProcessor(threadFactory, nThreads) {
 
             private Notification addRandomDelay(@NotNull final Notification notification) {
@@ -282,7 +282,7 @@ public enum LiveTableMonitor implements LiveTableRegistrar, NotificationQueue, N
      * Retrieve the number of update threads.
      *
      * <p>
-     * The LiveTableMonitor has a configurable number of update processing threads. The number of threads is exposed in
+     * The UpdateGraphProcessor has a configurable number of update processing threads. The number of threads is exposed in
      * your method to enable you to partition a query based on the number of threads.
      * </p>
      *
@@ -297,17 +297,17 @@ public enum LiveTableMonitor implements LiveTableRegistrar, NotificationQueue, N
 
     /**
      * <p>
-     * Get the shared lock for this {@link LiveTableMonitor}.
+     * Get the shared lock for this {@link UpdateGraphProcessor}.
      * <p>
-     * Using this lock will prevent refresh processing from proceeding concurrently, but will allow other read-only
+     * Using this lock will prevent run processing from proceeding concurrently, but will allow other read-only
      * processing to proceed.
      * <p>
      * The shared lock implementation is expected to support reentrance.
      * <p>
      * This lock does <em>not</em> support {@link java.util.concurrent.locks.Lock#newCondition()}. Use the exclusive
-     * lock if you need to wait on events that are driven by refresh processing.
+     * lock if you need to wait on events that are driven by run processing.
      *
-     * @return The shared lock for this {@link LiveTableMonitor}
+     * @return The shared lock for this {@link UpdateGraphProcessor}
      */
     public AwareFunctionalLock sharedLock() {
         return lock.sharedLock();
@@ -315,9 +315,9 @@ public enum LiveTableMonitor implements LiveTableRegistrar, NotificationQueue, N
 
     /**
      * <p>
-     * Get the exclusive lock for this {@link LiveTableMonitor}.
+     * Get the exclusive lock for this {@link UpdateGraphProcessor}.
      * <p>
-     * Using this lock will prevent refresh or read-only processing from proceeding concurrently.
+     * Using this lock will prevent run or read-only processing from proceeding concurrently.
      * <p>
      * The exclusive lock implementation is expected to support reentrance.
      * <p>
@@ -326,7 +326,7 @@ public enum LiveTableMonitor implements LiveTableRegistrar, NotificationQueue, N
      * <p>
      * This lock does support {@link java.util.concurrent.locks.Lock#newCondition()}.
      *
-     * @return The exclusive lock for this {@link LiveTableMonitor}
+     * @return The exclusive lock for this {@link UpdateGraphProcessor}
      */
     public AwareFunctionalLock exclusiveLock() {
         return lock.exclusiveLock();
@@ -335,9 +335,9 @@ public enum LiveTableMonitor implements LiveTableRegistrar, NotificationQueue, N
     // endregion Accessors for the shared and exclusive locks
 
     /**
-     * Test if this thread is part of our refresh thread executor service.
+     * Test if this thread is part of our run thread executor service.
      *
-     * @return whether this is one of our refresh threads.
+     * @return whether this is one of our run threads.
      */
     public boolean isRefreshThread() {
         return isRefreshThread.get();
@@ -345,15 +345,15 @@ public enum LiveTableMonitor implements LiveTableRegistrar, NotificationQueue, N
 
     /**
      * <p>
-     * If we are establishing a new table operation, on a refreshing table without the LiveTableMonitor lock; then we
+     * If we are establishing a new table operation, on a refreshing table without the UpdateGraphProcessor lock; then we
      * are likely committing a grievous error, but one that will only occasionally result in us getting the wrong answer
      * or if we are lucky an assertion. This method is called from various query operations that should not be
      * established without the LTM lock.
      * </p>
      *
      * <p>
-     * The refresh thread pool threads are allowed to instantiate operations, even though that thread does not have the
-     * lock; because they are protected by the main refresh thread and dependency tracking.
+     * The run thread pool threads are allowed to instantiate operations, even though that thread does not have the
+     * lock; because they are protected by the main run thread and dependency tracking.
      * </p>
      *
      * <p>
@@ -432,7 +432,7 @@ public enum LiveTableMonitor implements LiveTableRegistrar, NotificationQueue, N
 
     /**
      * <p>
-     * Set the target clock time between refresh cycles.
+     * Set the target clock time between run cycles.
      * </p>
      *
      * <p>
@@ -448,7 +448,7 @@ public enum LiveTableMonitor implements LiveTableRegistrar, NotificationQueue, N
     }
 
     /**
-     * Get the target period between refresh cycles.
+     * Get the target period between run cycles.
      *
      * @return The {@link #setTargetCycleTime(long) current} minimum cycle time
      */
@@ -458,9 +458,9 @@ public enum LiveTableMonitor implements LiveTableRegistrar, NotificationQueue, N
     }
 
     /**
-     * Resets the refresh cycle time to the default target configured via the LiveTableMonitor.targetcycletime property.
+     * Resets the run cycle time to the default target configured via the UpdateGraphProcessor.targetcycletime property.
      *
-     * @implNote If the LiveTableMonitor.targetcycletime property is not set, this value defaults to 1000ms.
+     * @implNote If the UpdateGraphProcessor.targetcycletime property is not set, this value defaults to 1000ms.
      */
     @SuppressWarnings("unused")
     public void resetCycleTime() {
@@ -473,7 +473,7 @@ public enum LiveTableMonitor implements LiveTableRegistrar, NotificationQueue, N
      * </p>
      *
      * <p>
-     * In this mode calls to {@link #addTable(LiveTable)} will only mark tables as
+     * In this mode calls to {@link #addTable(Runnable)} will only mark tables as
      * {@link DynamicNode#setRefreshing(boolean) refreshing}. Additionally {@link #start()} may not be called.
      * </p>
      */
@@ -482,10 +482,10 @@ public enum LiveTableMonitor implements LiveTableRegistrar, NotificationQueue, N
             return;
         }
         if (!allowUnitTestMode) {
-            throw new IllegalStateException("LiveTableMonitor.allowUnitTestMode=false");
+            throw new IllegalStateException("UpdateGraphProcessor.allowUnitTestMode=false");
         }
         if (refreshThread.isAlive()) {
-            throw new IllegalStateException("LiveTableMonitor.refreshThread is executing!");
+            throw new IllegalStateException("UpdateGraphProcessor.refreshThread is executing!");
         }
         assertLockAvailable("enabling unit test mode");
         unitTestMode = true;
@@ -494,16 +494,16 @@ public enum LiveTableMonitor implements LiveTableRegistrar, NotificationQueue, N
     }
 
     private void assertLockAvailable(@NotNull final String action) {
-        if (!LiveTableMonitor.DEFAULT.exclusiveLock().tryLock()) {
+        if (!UpdateGraphProcessor.DEFAULT.exclusiveLock().tryLock()) {
             log.error().append("Lock is held when ").append(action).append(", with previous holder: ")
                     .append(unitTestModeHolder).endl();
             ThreadDump.threadDump(System.err);
-            LiveTableMonitorLock.DebugAwareFunctionalLock lock =
-                    (LiveTableMonitorLock.DebugAwareFunctionalLock) LiveTableMonitor.DEFAULT.exclusiveLock();
+            UpdateGraphLock.DebugAwareFunctionalLock lock =
+                    (UpdateGraphLock.DebugAwareFunctionalLock) UpdateGraphProcessor.DEFAULT.exclusiveLock();
             throw new IllegalStateException(
                     "Lock is held when " + action + ", with previous holder: " + lock.getDebugMessage());
         }
-        LiveTableMonitor.DEFAULT.exclusiveLock().unlock();
+        UpdateGraphProcessor.DEFAULT.exclusiveLock().unlock();
     }
 
     /**
@@ -535,17 +535,17 @@ public enum LiveTableMonitor implements LiveTableRegistrar, NotificationQueue, N
         this.watchDogTimeoutProcedure = procedure;
     }
 
-    public void requestSignal(Condition liveTableMonitorCondition) {
-        if (LiveTableMonitor.DEFAULT.exclusiveLock().isHeldByCurrentThread()) {
-            liveTableMonitorCondition.signalAll();
+    public void requestSignal(Condition updateGraphProcessorCondition) {
+        if (UpdateGraphProcessor.DEFAULT.exclusiveLock().isHeldByCurrentThread()) {
+            updateGraphProcessorCondition.signalAll();
         } else {
             // terminal notifications always run on the LTM thread
             final Notification terminalNotification = new TerminalNotification() {
                 @Override
                 public void run() {
-                    Assert.assertion(LiveTableMonitor.DEFAULT.exclusiveLock().isHeldByCurrentThread(),
-                            "LiveTableMonitor.DEFAULT.isHeldByCurrentThread()");
-                    liveTableMonitorCondition.signalAll();
+                    Assert.assertion(UpdateGraphProcessor.DEFAULT.exclusiveLock().isHeldByCurrentThread(),
+                            "UpdateGraphProcessor.DEFAULT.isHeldByCurrentThread()");
+                    updateGraphProcessorCondition.signalAll();
                 }
 
                 @Override
@@ -556,7 +556,7 @@ public enum LiveTableMonitor implements LiveTableRegistrar, NotificationQueue, N
                 @Override
                 public LogOutput append(LogOutput output) {
                     return output.append("SignalNotification(")
-                            .append(System.identityHashCode(liveTableMonitorCondition)).append(")");
+                            .append(System.identityHashCode(updateGraphProcessorCondition)).append(")");
                 }
             };
             synchronized (terminalNotifications) {
@@ -575,7 +575,7 @@ public enum LiveTableMonitor implements LiveTableRegistrar, NotificationQueue, N
     }
 
     /**
-     * Start the table refresh thread.
+     * Start the table run thread.
      *
      * @implNote Must not be in {@link #enableUnitTestMode() unit test} mode.
      */
@@ -584,7 +584,7 @@ public enum LiveTableMonitor implements LiveTableRegistrar, NotificationQueue, N
         Assert.eqFalse(allowUnitTestMode, "allowUnitTestMode");
         synchronized (refreshThread) {
             if (!refreshThread.isAlive()) {
-                log.info().append("LiveTableMonitor starting with ").append(updateThreads)
+                log.info().append("UpdateGraphProcessor starting with ").append(updateThreads)
                         .append(" notification processing threads").endl();
                 refreshThread.start();
             }
@@ -592,15 +592,15 @@ public enum LiveTableMonitor implements LiveTableRegistrar, NotificationQueue, N
     }
 
     /**
-     * Add a table to the list of tables to refresh and mark it as {@link DynamicNode#setRefreshing(boolean) refreshing}
+     * Add a table to the list of tables to run and mark it as {@link DynamicNode#setRefreshing(boolean) refreshing}
      * if it was a {@link DynamicNode}.
      *
      * @implNote This will do nothing in {@link #enableUnitTestMode() unit test} mode other than mark the table as
      *           refreshing.
-     * @param table The table to be added to the refresh list
+     * @param table The table to be added to the run list
      */
     @Override
-    public void addTable(@NotNull final LiveTable table) {
+    public void addTable(@NotNull final Runnable table) {
         if (table instanceof DynamicNode) {
             ((DynamicNode) table).setRefreshing(true);
         }
@@ -613,8 +613,8 @@ public enum LiveTableMonitor implements LiveTableRegistrar, NotificationQueue, N
     }
 
     @Override
-    public void removeTable(@NotNull final LiveTable liveTable) {
-        tables.remove(liveTable);
+    public void removeTable(@NotNull final Runnable updateRoot) {
+        tables.remove(updateRoot);
     }
 
     /**
@@ -623,14 +623,14 @@ public enum LiveTableMonitor implements LiveTableRegistrar, NotificationQueue, N
      * @implNote This will <i>not</i> set the tables as {@link DynamicNode#setRefreshing(boolean) non-refreshing}.
      * @param tablesToRemove The tables to remove from the list of refreshing tables
      */
-    public void removeTables(final Collection<LiveTable> tablesToRemove) {
+    public void removeTables(final Collection<Runnable> tablesToRemove) {
         tables.removeAll(tablesToRemove);
     }
 
     /**
      * Enqueue a notification to be flushed according to its priority. Non-terminal notifications should only be
      * enqueued during the updating phase of a cycle. That is, they should be enqueued from a
-     * {@link LiveTable#refresh()} or subsequent notification delivery.
+     * {@link LiveTable#run()} or subsequent notification delivery.
      *
      * @param notification The notification to enqueue
      * @see NotificationQueue.Notification#isTerminal()
@@ -709,11 +709,11 @@ public enum LiveTableMonitor implements LiveTableRegistrar, NotificationQueue, N
     /**
      * Refresh {@code liveTable} on this thread if it is registered.
      *
-     * @param liveTable The {@link LiveTable} that we would like to refresh
+     * @param updateRoot The {@link LiveTable} that we would like to run
      */
-    private void maybeRefreshTable(@NotNull final LiveTable liveTable) {
+    private void maybeRefreshTable(@NotNull final Runnable updateRoot) {
         final LiveTableRefreshNotification liveTableRefreshNotification =
-                tables.getFirstReference((final LiveTable found) -> found == liveTable);
+                tables.getFirstReference((final Runnable found) -> found == updateRoot);
         if (liveTableRefreshNotification == null) {
             return;
         }
@@ -721,34 +721,34 @@ public enum LiveTableMonitor implements LiveTableRegistrar, NotificationQueue, N
     }
 
     /**
-     * Acquire the exclusive lock if necessary and do a refresh of {@code liveTable} on this thread if it is registered
+     * Acquire the exclusive lock if necessary and do a run of {@code liveTable} on this thread if it is registered
      * with this LTM.
      *
-     * @param liveTable The {@link LiveTable} that we would like to refresh
+     * @param updateRoot The {@link LiveTable} that we would like to run
      * @param onlyIfHaveLock If true, check that the lock is held first and do nothing if it is not
      */
     @Override
-    public void maybeRefreshTable(@NotNull final LiveTable liveTable, final boolean onlyIfHaveLock) {
+    public void maybeRefreshTable(@NotNull final Runnable updateRoot, final boolean onlyIfHaveLock) {
         if (!onlyIfHaveLock || exclusiveLock().isHeldByCurrentThread()) {
-            maybeRefreshTable(liveTable);
+            maybeRefreshTable(updateRoot);
         }
     }
 
     /**
      * <p>
-     * Request a refresh for a single {@link LiveTable live table}, which must already be registered with this
-     * LiveTableMonitor.
+     * Request a run for a single {@link LiveTable live table}, which must already be registered with this
+     * UpdateGraphProcessor.
      * </p>
      * <p>
      * The update will occur on the LTM thread, but will not necessarily wait for the next scheduled cycle.
      * </p>
      *
-     * @param liveTable The {@link LiveTable live table} to refresh
+     * @param updateRoot The {@link LiveTable live table} to run
      */
     @Override
-    public void requestRefresh(@NotNull final LiveTable liveTable) {
+    public void requestRefresh(@NotNull final Runnable updateRoot) {
         final LiveTableRefreshNotification liveTableRefreshNotification =
-                tables.getFirstReference((final LiveTable found) -> found == liveTable);
+                tables.getFirstReference((final Runnable found) -> found == updateRoot);
         if (liveTableRefreshNotification == null) {
             return;
         }
@@ -821,17 +821,17 @@ public enum LiveTableMonitor implements LiveTableRegistrar, NotificationQueue, N
         }
 
         try {
-            unitTestRefreshThreadPool.submit(() -> ensureUnlocked("unit test refresh pool thread", errors)).get();
+            unitTestRefreshThreadPool.submit(() -> ensureUnlocked("unit test run pool thread", errors)).get();
         } catch (InterruptedException | ExecutionException e) {
-            errors.add("Failed to ensure LTM unlocked from unit test refresh thread pool: " + e.toString());
+            errors.add("Failed to ensure LTM unlocked from unit test run thread pool: " + e.toString());
         }
         unitTestRefreshThreadPool.shutdownNow();
         try {
             if (!unitTestRefreshThreadPool.awaitTermination(1, TimeUnit.SECONDS)) {
-                errors.add("Failed to cleanup jobs in unit test refresh thread pool");
+                errors.add("Failed to cleanup jobs in unit test run thread pool");
             }
         } catch (InterruptedException e) {
-            errors.add("Interrupted while trying to cleanup jobs in unit test refresh thread pool");
+            errors.add("Interrupted while trying to cleanup jobs in unit test run thread pool");
         }
         unitTestRefreshThreadPool = makeUnitTestRefreshExecutor();
 
@@ -848,7 +848,7 @@ public enum LiveTableMonitor implements LiveTableRegistrar, NotificationQueue, N
 
     /**
      * Begin the next {@link LogicalClock#startUpdateCycle() update cycle} while in {@link #enableUnitTestMode()
-     * unit-test} mode. Note that this happens on a simulated LTM refresh thread, rather than this thread.
+     * unit-test} mode. Note that this happens on a simulated LTM run thread, rather than this thread.
      */
     @TestUseOnly
     public void startCycleForUnitTests() {
@@ -864,7 +864,7 @@ public enum LiveTableMonitor implements LiveTableRegistrar, NotificationQueue, N
     private void startCycleForUnitTestsInternal() {
         // noinspection AutoBoxing
         isRefreshThread.set(true);
-        LiveTableMonitor.DEFAULT.exclusiveLock().lock();
+        UpdateGraphProcessor.DEFAULT.exclusiveLock().lock();
 
         Assert.eqNull(refreshScope, "refreshScope");
         refreshScope = new LivenessScope();
@@ -877,7 +877,7 @@ public enum LiveTableMonitor implements LiveTableRegistrar, NotificationQueue, N
     /**
      * Do the second half of the update cycle, including flushing notifications, and completing the
      * {@link LogicalClock#completeUpdateCycle() LogicalClock} update cycle. Note that this happens on a simulated LTM
-     * refresh thread, rather than this thread.
+     * run thread, rather than this thread.
      */
     @TestUseOnly
     public void completeCycleForUnitTests() {
@@ -898,7 +898,7 @@ public enum LiveTableMonitor implements LiveTableRegistrar, NotificationQueue, N
                 refreshScope = null;
             }
 
-            LiveTableMonitor.DEFAULT.exclusiveLock().unlock();
+            UpdateGraphProcessor.DEFAULT.exclusiveLock().unlock();
             isRefreshThread.remove();
         }) {
             flushNotificationsAndCompleteCycle();
@@ -923,22 +923,22 @@ public enum LiveTableMonitor implements LiveTableRegistrar, NotificationQueue, N
     }
 
     /**
-     * Refresh a {@link LiveTable} on a simulated LTM refresh thread, rather than this thread.
+     * Refresh a {@link LiveTable} on a simulated LTM run thread, rather than this thread.
      *
-     * @param liveTable The {@link LiveTable} to refresh
+     * @param updateRoot The {@link LiveTable} to run
      */
     @TestUseOnly
-    public void refreshLiveTableForUnitTests(@NotNull final LiveTable liveTable) {
+    public void refreshLiveTableForUnitTests(@NotNull final Runnable updateRoot) {
         Assert.assertion(unitTestMode, "unitTestMode");
         try {
-            unitTestRefreshThreadPool.submit(liveTable::refresh).get();
+            unitTestRefreshThreadPool.submit(updateRoot::run).get();
         } catch (InterruptedException | ExecutionException e) {
             throw new UncheckedDeephavenException(e);
         }
     }
 
     /**
-     * Flush a single notification from the LTM queue. Note that this happens on a simulated LTM refresh thread, rather
+     * Flush a single notification from the LTM queue. Note that this happens on a simulated LTM run thread, rather
      * than this thread.
      *
      * @return whether a notification was found in the queue
@@ -994,7 +994,7 @@ public enum LiveTableMonitor implements LiveTableRegistrar, NotificationQueue, N
     }
 
     /**
-     * Flush all the normal notifications from the LTM queue. Note that the flushing happens on a simulated LTM refresh
+     * Flush all the normal notifications from the LTM queue. Note that the flushing happens on a simulated LTM run
      * thread, rather than this thread.
      */
     @TestUseOnly
@@ -1004,7 +1004,7 @@ public enum LiveTableMonitor implements LiveTableRegistrar, NotificationQueue, N
 
     /**
      * Flush all the normal notifications from the LTM queue, continuing until {@code done} returns {@code true}. Note
-     * that the flushing happens on a simulated LTM refresh thread, rather than this thread.
+     * that the flushing happens on a simulated LTM run thread, rather than this thread.
      *
      * @param done Function to determine when we can stop waiting for new notifications
      * @return A Runnable that may be used to wait for the concurrent flush job to complete
@@ -1043,7 +1043,7 @@ public enum LiveTableMonitor implements LiveTableRegistrar, NotificationQueue, N
     }
 
     /**
-     * If the refresh thread is waiting in {@link #flushNormalNotificationsAndCompleteCycle()} or
+     * If the run thread is waiting in {@link #flushNormalNotificationsAndCompleteCycle()} or
      * {@link #flushAllNormalNotificationsForUnitTests(BooleanSupplier, long)}, wake it up.
      */
     @TestUseOnly
@@ -1057,7 +1057,7 @@ public enum LiveTableMonitor implements LiveTableRegistrar, NotificationQueue, N
      * notifications.
      */
     private void flushNotificationsAndCompleteCycle() {
-        // We cannot proceed with normal notifications, nor are we satisfied, until all LiveTable refresh notifications
+        // We cannot proceed with normal notifications, nor are we satisfied, until all LiveTable run notifications
         // have been processed. Note that non-LiveTable notifications that require dependency satisfaction are delivered
         // first to the pendingNormalNotifications queue, and hence will not be processed until we advance to the flush*
         // methods.
@@ -1233,11 +1233,11 @@ public enum LiveTableMonitor implements LiveTableRegistrar, NotificationQueue, N
         final boolean releaseScopeOnClose;
         if (notification.isTerminal()) {
             // Terminal notifications can't create new notifications, so they have no need to participate in a shared
-            // refresh scope.
+            // run scope.
             scope = new LivenessScope();
             releaseScopeOnClose = true;
         } else {
-            // Non-terminal notifications must use a shared refresh scope.
+            // Non-terminal notifications must use a shared run scope.
             Assert.neqNull(refreshScope, "refreshScope");
             scope = refreshScope == LivenessScopeStack.peek() ? null : refreshScope;
             releaseScopeOnClose = false;
@@ -1249,10 +1249,10 @@ public enum LiveTableMonitor implements LiveTableRegistrar, NotificationQueue, N
                     .endl();
         } catch (final Exception e) {
             log.error().append(Thread.currentThread().getName())
-                    .append(": Exception while executing LiveTableMonitor notification: ").append(notification)
+                    .append(": Exception while executing UpdateGraphProcessor notification: ").append(notification)
                     .append(": ").append(e).endl();
             ProcessEnvironment.getGlobalFatalErrorReporter()
-                    .report("Exception while processing LiveTableMonitor notification", e);
+                    .report("Exception while processing UpdateGraphProcessor notification", e);
         }
     }
 
@@ -1481,7 +1481,7 @@ public enum LiveTableMonitor implements LiveTableRegistrar, NotificationQueue, N
     }
 
     /**
-     * Iterate over all monitored tables and refresh them. This method also ensures that the loop runs no faster than
+     * Iterate over all monitored tables and run them. This method also ensures that the loop runs no faster than
      * {@link #getTargetCycleTime() minimum cycle time}.
      */
     private void refreshTablesAndFlushNotifications() {
@@ -1547,8 +1547,8 @@ public enum LiveTableMonitor implements LiveTableRegistrar, NotificationQueue, N
      * </p>
      *
      * <p>
-     * If the delay is interrupted by a {@link #requestRefresh(LiveTable) request} to refresh a single table this task
-     * will drain the queue of single refresh requests, then continue to wait for a complete period if necessary.
+     * If the delay is interrupted by a {@link #requestRefresh(Runnable) request} to run a single table this task
+     * will drain the queue of single run requests, then continue to wait for a complete period if necessary.
      * </p>
      *
      * <p>
@@ -1556,7 +1556,7 @@ public enum LiveTableMonitor implements LiveTableRegistrar, NotificationQueue, N
      * wait the remaining period.
      * </p>
      *
-     * @param startTime The start time of the last refresh cycle
+     * @param startTime The start time of the last run cycle
      * @param timeSource The source of time that startTime was based on
      */
     private void waitForNextCycle(final long startTime, final Scheduler timeSource) {
@@ -1573,8 +1573,8 @@ public enum LiveTableMonitor implements LiveTableRegistrar, NotificationQueue, N
      * </p>
      *
      * <p>
-     * If the delay is interrupted by a {@link #requestRefresh(LiveTable) request} to refresh a single table this task
-     * will drain the queue of single refresh requests, then continue to wait for a complete period if necessary.
+     * If the delay is interrupted by a {@link #requestRefresh(Runnable) request} to run a single table this task
+     * will drain the queue of single run requests, then continue to wait for a complete period if necessary.
      * </p>
      *
      * <p>
@@ -1609,7 +1609,7 @@ public enum LiveTableMonitor implements LiveTableRegistrar, NotificationQueue, N
 
     /**
      * <p>
-     * Drain the single update queue from the front and refresh each of the tables.
+     * Drain the single update queue from the front and run each of the tables.
      * </p>
      *
      * @implNote If the table is not monitored by the LTM it may not be refreshed
@@ -1635,10 +1635,10 @@ public enum LiveTableMonitor implements LiveTableRegistrar, NotificationQueue, N
      * Refresh a single {@link LiveTable live table} within an {@link LogicalClock update cycle} after the LTM has been
      * locked. At the end of the update all {@link Notification notifications} will be flushed.
      *
-     * @param liveTableNotification The enclosing notification for the {@link LiveTable} to refresh
+     * @param liveTableNotification The enclosing notification for the {@link LiveTable} to run
      */
     private void refreshOneTable(@NotNull final LiveTableRefreshNotification liveTableNotification) {
-        // We're refreshing this table already, we should not prioritize its refresh again.
+        // We're refreshing this table already, we should not prioritize its run again.
         synchronized (singleUpdateQueue) {
             singleUpdateQueue.removeIf((final LiveTableRefreshNotification found) -> found == liveTableNotification);
         }
@@ -1650,19 +1650,19 @@ public enum LiveTableMonitor implements LiveTableRegistrar, NotificationQueue, N
      * locked. At the end of the updates all {@link Notification notifications} will be flushed.
      */
     private void refreshAllTables() {
-        // We're refreshing all tables already, we should not prioritize refresh for any of them again.
+        // We're refreshing all tables already, we should not prioritize run for any of them again.
         synchronized (singleUpdateQueue) {
             singleUpdateQueue.clear();
         }
         doRefresh(() -> tables.forEach((final LiveTableRefreshNotification liveTableNotification,
-                final LiveTable unused) -> notificationProcessor.submit(liveTableNotification)));
+                final Runnable unused) -> notificationProcessor.submit(liveTableNotification)));
     }
 
     /**
-     * Perform a refresh cycle, using {@code refreshFunction} to ensure the desired {@link LiveTable live tables} are
+     * Perform a run cycle, using {@code refreshFunction} to ensure the desired {@link LiveTable live tables} are
      * refreshed at the start.
      *
-     * @param refreshFunction Function to submit one or more {@link LiveTableRefreshNotification live table refresh
+     * @param refreshFunction Function to submit one or more {@link LiveTableRefreshNotification live table run
      *        notifications} to the {@link NotificationProcessor notification processor} or run them directly.
      */
     private void doRefresh(@NotNull final Runnable refreshFunction) {
@@ -1689,15 +1689,15 @@ public enum LiveTableMonitor implements LiveTableRegistrar, NotificationQueue, N
      * Re-usable class for adapting {@link LiveTable}s to {@link Notification}s.
      */
     private static final class LiveTableRefreshNotification extends AbstractNotification
-            implements SimpleReference<LiveTable> {
+            implements SimpleReference<Runnable> {
 
-        private final WeakReference<LiveTable> liveTableRef;
+        private final WeakReference<Runnable> liveTableRef;
 
         private int singleUpdateQueueSlot;
 
-        private LiveTableRefreshNotification(@NotNull final LiveTable liveTable) {
+        private LiveTableRefreshNotification(@NotNull final Runnable updateRoot) {
             super(false);
-            liveTableRef = new WeakReference<>(liveTable);
+            liveTableRef = new WeakReference<>(updateRoot);
         }
 
         @Override
@@ -1713,15 +1713,15 @@ public enum LiveTableMonitor implements LiveTableRegistrar, NotificationQueue, N
 
         @Override
         public void run() {
-            final LiveTable liveTable = liveTableRef.get();
-            if (liveTable == null) {
+            final Runnable updateRoot = liveTableRef.get();
+            if (updateRoot == null) {
                 return;
             }
-            liveTable.refresh();
+            updateRoot.run();
         }
 
         @Override
-        public LiveTable get() {
+        public Runnable get() {
             // NB: Arguably we should make get() and clear() synchronized.
             return liveTableRef.get();
         }
@@ -1759,9 +1759,9 @@ public enum LiveTableMonitor implements LiveTableRegistrar, NotificationQueue, N
         }
     }
 
-    private class LiveTableMonitorThreadFactory extends NamingThreadFactory {
-        private LiveTableMonitorThreadFactory(@NotNull final ThreadGroup threadGroup, @NotNull final String name) {
-            super(threadGroup, LiveTableMonitor.class, name, true);
+    private class UpdateGraphProcessorThreadFactory extends NamingThreadFactory {
+        private UpdateGraphProcessorThreadFactory(@NotNull final ThreadGroup threadGroup, @NotNull final String name) {
+            super(threadGroup, UpdateGraphProcessor.class, name, true);
         }
 
         @Override
@@ -1801,7 +1801,7 @@ public enum LiveTableMonitor implements LiveTableRegistrar, NotificationQueue, N
     private class UnitTestRefreshThreadFactory extends NamingThreadFactory {
 
         private UnitTestRefreshThreadFactory() {
-            super(LiveTableMonitor.class, "unitTestRefresh", true);
+            super(UpdateGraphProcessor.class, "unitTestRefresh", true);
         }
 
         @Override
@@ -1809,7 +1809,7 @@ public enum LiveTableMonitor implements LiveTableRegistrar, NotificationQueue, N
             final Thread thread = super.newThread(runnable);
             final Thread.UncaughtExceptionHandler existing = thread.getUncaughtExceptionHandler();
             thread.setUncaughtExceptionHandler((final Thread errorThread, final Throwable throwable) -> {
-                ensureUnlocked("unit test refresh pool thread exception handler", null);
+                ensureUnlocked("unit test run pool thread exception handler", null);
                 existing.uncaughtException(errorThread, throwable);
             });
             return thread;
@@ -1817,7 +1817,7 @@ public enum LiveTableMonitor implements LiveTableRegistrar, NotificationQueue, N
     }
 
     /**
-     * Configure the primary LTM thread or one of the auxiliary refresh threads.
+     * Configure the primary LTM thread or one of the auxiliary run threads.
      */
     private void configureRefreshThread() {
         SystemicObjectTracker.markThreadSystemic();

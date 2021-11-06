@@ -387,7 +387,7 @@ def listen(t, listener, description=None, retain=True, ltype="auto", start_liste
 
 def doLocked(f, lock_type="shared"):
     """
-    Executes a function while holding the LiveTableMonitor (LTM) lock.  Holding the LTM lock
+    Executes a function while holding the UpdateGraphProcessor (LTM) lock.  Holding the LTM lock
     ensures that the contents of a table will not change during a computation, but holding
     the lock also prevents table updates from happening.  The lock should be held for as little
     time as possible.
@@ -396,11 +396,11 @@ def doLocked(f, lock_type="shared"):
     :param lock_type: LTM lock type.  Valid values are "exclusive" and "shared".  "exclusive" allows only a single reader or writer to hold the lock.  "shared" allows multiple readers or a single writer to hold the lock.
     """
     ThrowingRunnable = jpy.get_type("io.deephaven.integrations.python.PythonThrowingRunnable")
-    LiveTableMonitor = jpy.get_type("io.deephaven.engine.tables.live.LiveTableMonitor")
+    UpdateGraphProcessor = jpy.get_type("io.deephaven.engine.tables.live.UpdateGraphProcessor")
 
     if lock_type == "exclusive":
-        LiveTableMonitor.DEFAULT.exclusiveLock().doLocked(ThrowingRunnable(f))
+        UpdateGraphProcessor.DEFAULT.exclusiveLock().doLocked(ThrowingRunnable(f))
     elif lock_type == "shared":
-        LiveTableMonitor.DEFAULT.sharedLock().doLocked(ThrowingRunnable(f))
+        UpdateGraphProcessor.DEFAULT.sharedLock().doLocked(ThrowingRunnable(f))
     else:
         raise ValueError("Unsupported lock type: lock_type={}".format(lock_type))

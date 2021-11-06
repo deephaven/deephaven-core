@@ -1030,7 +1030,7 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
             if (firstSubscription) {
                 Assert.neqNull(snapshot, "snapshot");
 
-                // propagationRowSet is only updated when we have listeners; let's "refresh" it if needed
+                // propagationRowSet is only updated when we have listeners; let's "run" it if needed
                 propagationRowSet.clear();
                 propagationRowSet.insert(snapshot.rowsAdded);
             }

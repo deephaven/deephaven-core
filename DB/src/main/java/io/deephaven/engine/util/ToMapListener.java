@@ -1,7 +1,7 @@
 package io.deephaven.engine.util;
 
 import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.live.LiveTableMonitor;
+import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.tables.utils.QueryPerformanceRecorder;
 import io.deephaven.engine.v2.InstrumentedListenerAdapter;
 import io.deephaven.engine.v2.sources.ColumnSource;
@@ -103,7 +103,7 @@ public class ToMapListener<K, V> extends InstrumentedListenerAdapter implements 
         upstream.modified.forAllRowKeys(adder);
 
         currentMap = newMap;
-        LiveTableMonitor.DEFAULT.addNotification(new Flusher());
+        UpdateGraphProcessor.DEFAULT.addNotification(new Flusher());
     }
 
     @Override

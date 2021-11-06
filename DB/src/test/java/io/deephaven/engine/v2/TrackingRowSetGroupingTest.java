@@ -7,7 +7,7 @@ package io.deephaven.engine.v2;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.live.LiveTableMonitor;
+import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.tuples.TupleSource;
@@ -84,47 +84,47 @@ public class TrackingRowSetGroupingTest extends LiveTableTestCase {
         final EvalNugget[] en = new EvalNugget[] {
                 new EvalNugget() {
                     public Table e() {
-                        return LiveTableMonitor.DEFAULT.exclusiveLock().computeLocked(() -> queryTable.head(0));
+                        return UpdateGraphProcessor.DEFAULT.exclusiveLock().computeLocked(() -> queryTable.head(0));
                     }
                 },
                 new EvalNugget() {
                     public Table e() {
-                        return LiveTableMonitor.DEFAULT.exclusiveLock().computeLocked(() -> queryTable.head(1));
+                        return UpdateGraphProcessor.DEFAULT.exclusiveLock().computeLocked(() -> queryTable.head(1));
                     }
                 },
                 new EvalNugget() {
                     public Table e() {
-                        return LiveTableMonitor.DEFAULT.exclusiveLock()
+                        return UpdateGraphProcessor.DEFAULT.exclusiveLock()
                                 .computeLocked(() -> queryTable.update("intCol2 = intCol + 1"));
                     }
                 },
                 new EvalNugget() {
                     public Table e() {
-                        return LiveTableMonitor.DEFAULT.exclusiveLock()
+                        return UpdateGraphProcessor.DEFAULT.exclusiveLock()
                                 .computeLocked(() -> queryTable.update("intCol2 = intCol + 1").select());
                     }
                 },
                 new EvalNugget() {
                     public Table e() {
-                        return LiveTableMonitor.DEFAULT.exclusiveLock()
+                        return UpdateGraphProcessor.DEFAULT.exclusiveLock()
                                 .computeLocked(() -> queryTable.view("Sym", "intCol2 = intCol + 1"));
                     }
                 },
                 new EvalNugget() {
                     public Table e() {
-                        return LiveTableMonitor.DEFAULT.exclusiveLock()
+                        return UpdateGraphProcessor.DEFAULT.exclusiveLock()
                                 .computeLocked(() -> queryTable.avgBy("Sym").sort("Sym"));
                     }
                 },
                 new EvalNugget() {
                     public Table e() {
-                        return LiveTableMonitor.DEFAULT.exclusiveLock().computeLocked(() -> queryTable
+                        return UpdateGraphProcessor.DEFAULT.exclusiveLock().computeLocked(() -> queryTable
                                 .by("Sym", "intCol").sort("Sym", "intCol").view("doubleCol=max(doubleCol)"));
                     }
                 },
                 new EvalNugget() {
                     public Table e() {
-                        return LiveTableMonitor.DEFAULT.exclusiveLock().computeLocked(() -> queryTable
+                        return UpdateGraphProcessor.DEFAULT.exclusiveLock().computeLocked(() -> queryTable
                                 .avgBy("Sym", "doubleCol").sort("Sym", "doubleCol").view("intCol=min(intCol)"));
                     }
                 },
@@ -134,18 +134,18 @@ public class TrackingRowSetGroupingTest extends LiveTableTestCase {
             addGroupingValidator(en[ii].originalValue, "en[" + ii + "]");
         }
 
-        Table by = LiveTableMonitor.DEFAULT.exclusiveLock().computeLocked(() -> queryTable.avgBy("Sym"));
+        Table by = UpdateGraphProcessor.DEFAULT.exclusiveLock().computeLocked(() -> queryTable.avgBy("Sym"));
         addGroupingValidator(by, "by");
-        Table avgBy = LiveTableMonitor.DEFAULT.exclusiveLock().computeLocked(() -> queryTable.avgBy("Sym"));
+        Table avgBy = UpdateGraphProcessor.DEFAULT.exclusiveLock().computeLocked(() -> queryTable.avgBy("Sym"));
         addGroupingValidator(avgBy, "avgBy");
-        Table avgBy1 = LiveTableMonitor.DEFAULT.exclusiveLock().computeLocked(() -> queryTable.avgBy("Sym", "intCol"));
+        Table avgBy1 = UpdateGraphProcessor.DEFAULT.exclusiveLock().computeLocked(() -> queryTable.avgBy("Sym", "intCol"));
         addGroupingValidator(avgBy1, "avgBy1");
 
         Table merged = Require.neqNull(
-                LiveTableMonitor.DEFAULT.exclusiveLock().computeLocked(() -> TableTools.merge(queryTable)),
+                UpdateGraphProcessor.DEFAULT.exclusiveLock().computeLocked(() -> TableTools.merge(queryTable)),
                 "TableTools.merge(queryTable)");
         addGroupingValidator(merged, "merged");
-        Table updated = LiveTableMonitor.DEFAULT.exclusiveLock()
+        Table updated = UpdateGraphProcessor.DEFAULT.exclusiveLock()
                 .computeLocked(() -> merged.update("HiLo = intCol > 50 ? `Hi` : `Lo`"));
         addGroupingValidator(updated, "updated");
 

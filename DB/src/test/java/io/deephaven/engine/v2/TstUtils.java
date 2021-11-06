@@ -2097,7 +2097,7 @@ public class TstUtils {
         }
 
         @Override
-        public void refresh() {
+        public void run() {
             step = Math.min(step + 1, nanoTimes.length - 1);
         }
 

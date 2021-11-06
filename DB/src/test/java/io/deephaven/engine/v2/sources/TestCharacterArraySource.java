@@ -1,6 +1,6 @@
 package io.deephaven.engine.v2.sources;
 
-import io.deephaven.engine.tables.live.LiveTableMonitor;
+import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.v2.select.FormulaColumn;
 import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedRowKeyRanges;
@@ -42,31 +42,31 @@ public class TestCharacterArraySource {
 
     @Before
     public void setUp() throws Exception {
-        LiveTableMonitor.DEFAULT.enableUnitTestMode();
-        LiveTableMonitor.DEFAULT.resetForUnitTests(false);
+        UpdateGraphProcessor.DEFAULT.enableUnitTestMode();
+        UpdateGraphProcessor.DEFAULT.resetForUnitTests(false);
     }
 
     @After
     public void tearDown() throws Exception {
-        LiveTableMonitor.DEFAULT.resetForUnitTests(true);
+        UpdateGraphProcessor.DEFAULT.resetForUnitTests(true);
     }
 
     private void testGetChunkGeneric(char[] values, char[] newValues, int chunkSize, RowSet rowSet) {
         final CharacterArraySource source;
-        LiveTableMonitor.DEFAULT.startCycleForUnitTests();
+        UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
         try {
             source = forArray(values);
             validateValues(chunkSize, values, rowSet, source);
         } finally {
-            LiveTableMonitor.DEFAULT.completeCycleForUnitTests();
+            UpdateGraphProcessor.DEFAULT.completeCycleForUnitTests();
         }
-        LiveTableMonitor.DEFAULT.startCycleForUnitTests();
+        UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
         try {
             updateFromArray(source, newValues);
             validateValues(chunkSize, newValues, rowSet, source);
             validatePrevValues(chunkSize, values, rowSet, source);
         } finally {
-            LiveTableMonitor.DEFAULT.completeCycleForUnitTests();
+            UpdateGraphProcessor.DEFAULT.completeCycleForUnitTests();
         }
     }
 
@@ -257,20 +257,20 @@ public class TestCharacterArraySource {
 
     private void testFillChunkGeneric(char[] values, char[] newValues, int chunkSize, RowSet rowSet) {
         final CharacterArraySource source;
-        LiveTableMonitor.DEFAULT.startCycleForUnitTests();
+        UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
         try {
             source = forArray(values);
             validateValuesWithFill(chunkSize, values, rowSet, source);
         } finally {
-            LiveTableMonitor.DEFAULT.completeCycleForUnitTests();
+            UpdateGraphProcessor.DEFAULT.completeCycleForUnitTests();
         }
-        LiveTableMonitor.DEFAULT.startCycleForUnitTests();
+        UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
         try {
             updateFromArray(source, newValues);
             validateValuesWithFill(chunkSize, newValues, rowSet, source);
             validatePrevValuesWithFill(chunkSize, values, rowSet, source);
         } finally {
-            LiveTableMonitor.DEFAULT.completeCycleForUnitTests();
+            UpdateGraphProcessor.DEFAULT.completeCycleForUnitTests();
         }
     }
 
@@ -519,14 +519,14 @@ public class TestCharacterArraySource {
     public void testFillEmptyChunkWithPrev() {
         final CharacterArraySource src = new CharacterArraySource();
         src.startTrackingPrevValues();
-        LiveTableMonitor.DEFAULT.startCycleForUnitTests();
+        UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
         try (final RowSet keys = RowSetFactory.empty();
              final WritableCharChunk<Values> chunk = WritableCharChunk.makeWritableChunk(0)) {
             // Fill from an empty chunk
             src.fillFromChunkByKeys(keys, chunk);
         }
         // NullPointerException in CharacterSparseArraySource.commitUpdates()
-        LiveTableMonitor.DEFAULT.completeCycleForUnitTests();
+        UpdateGraphProcessor.DEFAULT.completeCycleForUnitTests();
     }
 
     @Test

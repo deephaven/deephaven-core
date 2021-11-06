@@ -2,11 +2,11 @@ package io.deephaven.engine.v2;
 
 import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.datastructures.util.CollectionUtil;
+import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.io.logger.StreamLoggerImpl;
 import io.deephaven.engine.tables.SortingOrder;
 import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.live.LiveTableMonitor;
 import io.deephaven.engine.tables.select.AjMatchPairFactory;
 import io.deephaven.engine.tables.select.MatchPairFactory;
 import io.deephaven.engine.tables.select.QueryScope;
@@ -439,7 +439,7 @@ public class QueryTableAjTest {
             final io.deephaven.engine.v2.ErrorListener listener = new io.deephaven.engine.v2.ErrorListener(result1);
             result1.listenForUpdates(listener);
 
-            LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
                 addToTable(right, i(4, 5, 6),
                         stringCol("SingleKey", "Key", "Key", "Key"),
                         byteCol("ByteCol", (byte) 4, (byte) 6, (byte) 5),

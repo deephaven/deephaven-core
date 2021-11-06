@@ -1,7 +1,7 @@
 package io.deephaven.engine.v2.utils;
 
 import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.live.LiveTableMonitor;
+import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.tables.select.QueryScope;
 import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.v2.*;
@@ -176,7 +176,7 @@ public class TestColumnsToRowsTransform extends LiveTableTestCase {
                         .updateView("MappedVal=nameMap.get(Name)").where("MappedVal in `EyeOne` || Value > 50000")),
                 new QueryTableTestBase.TableComparator(
                         ColumnsToRowsTransform.columnsToRows(queryTable, "Name", "Value", "I1", "I2", "I3"),
-                        LiveTableMonitor.DEFAULT.sharedLock()
+                        UpdateGraphProcessor.DEFAULT.sharedLock()
                                 .computeLocked(() -> queryTable
                                         .update("Name=new String[]{`I1`, `I2`, `I3`}", "Value=new int[]{I1, I2, I3}")
                                         .dropColumns("I1", "I2", "I3").ungroup())),
@@ -184,7 +184,7 @@ public class TestColumnsToRowsTransform extends LiveTableTestCase {
                         ColumnsToRowsTransform.columnsToRows(queryTable, "Name", "Value", "I1", "I2", "I3")
                                 .updateView("MappedVal=nameMap.get(Name)")
                                 .where("MappedVal in `EyeOne` || Value > 50000"),
-                        LiveTableMonitor.DEFAULT.sharedLock()
+                        UpdateGraphProcessor.DEFAULT.sharedLock()
                                 .computeLocked(() -> queryTable
                                         .update("Name=new String[]{`I1`, `I2`, `I3`}", "Value=new int[]{I1, I2, I3}")
                                         .dropColumns("I1", "I2", "I3").ungroup())
@@ -193,7 +193,7 @@ public class TestColumnsToRowsTransform extends LiveTableTestCase {
                 new QueryTableTestBase.TableComparator(
                         ColumnsToRowsTransform.columnsToRows(queryTable, "Name", "Value", "I1", "I2", "I3")
                                 .updateView("MappedVal=nameMap.get(Name)").where("MappedVal in `EyeOne`"),
-                        LiveTableMonitor.DEFAULT.sharedLock()
+                        UpdateGraphProcessor.DEFAULT.sharedLock()
                                 .computeLocked(() -> queryTable
                                         .update("Name=new String[]{`I1`, `I2`, `I3`}", "Value=new int[]{I1, I2, I3}")
                                         .dropColumns("I1", "I2", "I3").ungroup())
@@ -207,7 +207,7 @@ public class TestColumnsToRowsTransform extends LiveTableTestCase {
                         ColumnsToRowsTransform.columnsToRows(queryTable, "Name", new String[] {"IV", "DV"},
                                 new String[] {"First", "Second", "Third"},
                                 new String[][] {new String[] {"I1", "I2", "I3"}, new String[] {"D1", "D2", "D3"}}),
-                        LiveTableMonitor.DEFAULT.sharedLock()
+                        UpdateGraphProcessor.DEFAULT.sharedLock()
                                 .computeLocked(() -> queryTable
                                         .update("Name=new String[]{`First`, `Second`, `Third`}",
                                                 "IV=new int[]{I1, I2, I3}", "DV=new double[]{D1, D2, D3}")
@@ -219,7 +219,7 @@ public class TestColumnsToRowsTransform extends LiveTableTestCase {
                                         new String[][] {new String[] {"I1", "I2", "I3"},
                                                 new String[] {"D1", "D2", "D3"}})
                                 .updateView("MappedVal=nameMap.get(Name)").where("MappedVal in `AiTwo`"),
-                        LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> queryTable
+                        UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> queryTable
                                 .update("Name=new String[]{`First`, `Second`, `Third`}", "IV=new int[]{I1, I2, I3}",
                                         "DV=new double[]{D1, D2, D3}")
                                 .dropColumns("I1", "I2", "I3", "D1", "D2", "D3").ungroup()

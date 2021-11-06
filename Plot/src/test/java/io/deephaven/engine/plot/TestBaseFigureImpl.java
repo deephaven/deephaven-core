@@ -5,7 +5,7 @@
 package io.deephaven.engine.plot;
 
 import io.deephaven.base.testing.BaseArrayTestCase;
-import io.deephaven.engine.tables.live.LiveTableMonitor;
+import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.gui.color.Color;
 import junit.framework.TestCase;
 
@@ -13,14 +13,14 @@ public class TestBaseFigureImpl extends BaseArrayTestCase {
     @Override
     public void setUp() throws Exception {
         super.setUp();
-        LiveTableMonitor.DEFAULT.enableUnitTestMode();
-        LiveTableMonitor.DEFAULT.resetForUnitTests(false);
+        UpdateGraphProcessor.DEFAULT.enableUnitTestMode();
+        UpdateGraphProcessor.DEFAULT.resetForUnitTests(false);
     }
 
     @Override
     protected void tearDown() throws Exception {
         super.tearDown();
-        LiveTableMonitor.DEFAULT.resetForUnitTests(true);
+        UpdateGraphProcessor.DEFAULT.resetForUnitTests(true);
     }
 
     public void testSubplot() {

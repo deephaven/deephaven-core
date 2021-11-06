@@ -10,6 +10,7 @@ import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.datastructures.util.CollectionUtil;
+import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.v2.ShiftObliviousInstrumentedListener;
 import io.deephaven.engine.v2.sources.ReinterpretUtilities;
 import io.deephaven.engine.v2.utils.*;
@@ -18,7 +19,6 @@ import io.deephaven.engine.tables.ColumnDefinition;
 import io.deephaven.engine.exceptions.QueryCancellationException;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.TableDefinition;
-import io.deephaven.engine.tables.live.LiveTableMonitor;
 import io.deephaven.engine.tables.live.NotificationQueue;
 import io.deephaven.engine.tables.live.WaitNotification;
 import io.deephaven.engine.tables.utils.DBDateTime;
@@ -63,14 +63,14 @@ public class ConstructSnapshot {
             LoggerFactory.getLogger(ShiftObliviousInstrumentedListener.class);
 
     /**
-     * The maximum number of allowed attempts to construct a snapshot concurrently with {@link LiveTableMonitor} refresh
+     * The maximum number of allowed attempts to construct a snapshot concurrently with {@link UpdateGraphProcessor} run
      * processing. After this many attempts, we fall back and wait until we can block refreshes.
      */
     private static final int MAX_CONCURRENT_ATTEMPTS =
             Configuration.getInstance().getIntegerWithDefault("ConstructSnapshot.maxConcurrentAttempts", 2);
 
     /**
-     * The maximum duration of an attempt to construct a snapshot concurrently with {@link LiveTableMonitor} refresh
+     * The maximum duration of an attempt to construct a snapshot concurrently with {@link UpdateGraphProcessor} run
      * processing. If an unsuccessful attempt takes longer than this timeout, we will fall back and wait until we can
      * block refreshes.
      */
@@ -311,8 +311,8 @@ public class ConstructSnapshot {
          * @return Whether this thread currently holds a lock on the LTM
          */
         private boolean locked() {
-            return LiveTableMonitor.DEFAULT.sharedLock().isHeldByCurrentThread()
-                    || LiveTableMonitor.DEFAULT.exclusiveLock().isHeldByCurrentThread();
+            return UpdateGraphProcessor.DEFAULT.sharedLock().isHeldByCurrentThread()
+                    || UpdateGraphProcessor.DEFAULT.exclusiveLock().isHeldByCurrentThread();
         }
 
         /**
@@ -322,7 +322,7 @@ public class ConstructSnapshot {
             if (locked()) {
                 return;
             }
-            LiveTableMonitor.DEFAULT.sharedLock().lock();
+            UpdateGraphProcessor.DEFAULT.sharedLock().lock();
             acquiredLock = true;
         }
 
@@ -331,7 +331,7 @@ public class ConstructSnapshot {
          */
         private void maybeReleaseLock() {
             if (acquiredLock && concurrentSnapshotDepth == 0 && lockedSnapshotDepth == 0) {
-                LiveTableMonitor.DEFAULT.sharedLock().unlock();
+                UpdateGraphProcessor.DEFAULT.sharedLock().unlock();
                 acquiredLock = false;
             }
         }
@@ -1047,8 +1047,8 @@ public class ConstructSnapshot {
             if (LogicalClock.getState(beforeClockValue) == LogicalClock.State.Idle && usePrev) {
                 Assert.statementNeverExecuted("Previous values requested while not updating: " + beforeClockValue);
             }
-            if (LiveTableMonitor.DEFAULT.isRefreshThread() && usePrev) {
-                Assert.statementNeverExecuted("Previous values requested from a refresh thread: " + beforeClockValue);
+            if (UpdateGraphProcessor.DEFAULT.isRefreshThread() && usePrev) {
+                Assert.statementNeverExecuted("Previous values requested from a run thread: " + beforeClockValue);
             }
 
             final long attemptDurationMillis;
@@ -1141,7 +1141,7 @@ public class ConstructSnapshot {
                 log.info().append(logPrefix).append(" Already held lock, proceeding to locked snapshot").endl();
             } else {
                 log.info().append(logPrefix)
-                        .append(" Failed to obtain clean execution without blocking refresh processing").endl();
+                        .append(" Failed to obtain clean execution without blocking run processing").endl();
             }
 
             state.startLockedSnapshot();
@@ -1151,7 +1151,7 @@ public class ConstructSnapshot {
                 final Boolean previousValuesRequested = control.usePreviousValues(beforeClockValue);
                 if (!Boolean.FALSE.equals(previousValuesRequested)) {
                     Assert.statementNeverExecuted(
-                            "Previous values requested or inconsistent while blocking refresh processing: beforeClockValue="
+                            "Previous values requested or inconsistent while blocking run processing: beforeClockValue="
                                     + beforeClockValue + ", previousValuesRequested=" + previousValuesRequested);
                 }
 
@@ -1166,7 +1166,7 @@ public class ConstructSnapshot {
                 final boolean consistent = control.snapshotCompletedConsistently(afterClockValue, false);
                 if (!consistent) {
                     Assert.statementNeverExecuted(
-                            "Consistent snapshot not generated despite blocking refresh processing!");
+                            "Consistent snapshot not generated despite blocking run processing!");
                 }
 
                 log.info().append(logPrefix).append(" non-concurrent Snapshot Function took ")

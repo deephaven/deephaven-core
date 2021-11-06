@@ -12,7 +12,7 @@ public class BooleanUtils {
     /**
      * The byte encoding of null booleans.
      */
-    public static final byte NULL_BOOLEAN_AS_BYTE = (byte) -1;
+    public static final byte NULL_BOOLEAN_AS_BYTE = QueryConstants.NULL_BYTE;
 
     /**
      * The byte encoding of true booleans.
@@ -37,8 +37,7 @@ public class BooleanUtils {
      * @return the boxed boolean represented by byteValue
      */
     public static Boolean byteAsBoolean(final byte byteValue) {
-        // noinspection AutoBoxing
-        return byteValue == NULL_BOOLEAN_AS_BYTE ? null : (byteValue != FALSE_BOOLEAN_AS_BYTE);
+        return byteValue == FALSE_BOOLEAN_AS_BYTE ? Boolean.FALSE : byteValue > 0 ? Boolean.TRUE : null;
     }
 
     /**
@@ -49,7 +48,6 @@ public class BooleanUtils {
      * @return booleanValue represented as a byte
      */
     public static byte booleanAsByte(final Boolean booleanValue) {
-        return booleanValue == null ? NULL_BOOLEAN_AS_BYTE
-                : booleanValue ? TRUE_BOOLEAN_AS_BYTE : FALSE_BOOLEAN_AS_BYTE;
+        return booleanValue == null ? NULL_BOOLEAN_AS_BYTE : booleanValue ? TRUE_BOOLEAN_AS_BYTE : FALSE_BOOLEAN_AS_BYTE;
     }
 }

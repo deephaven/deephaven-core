@@ -4,7 +4,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.tables.ColumnDefinition;
 import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.live.LiveTableMonitor;
+import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.tables.live.NotificationQueue;
 import io.deephaven.engine.tables.utils.QueryPerformanceRecorder;
 import io.deephaven.engine.util.liveness.LivenessReferent;
@@ -709,7 +709,7 @@ public final class ByExternalChunkedOperator implements IterativeChunkedAggregat
      * @param key The key for the new sub-table
      */
     private void populate(final Object key) {
-        LiveTableMonitor.DEFAULT.checkInitiateTableOperation();
+        UpdateGraphProcessor.DEFAULT.checkInitiateTableOperation();
         populateInternal(key);
     }
 

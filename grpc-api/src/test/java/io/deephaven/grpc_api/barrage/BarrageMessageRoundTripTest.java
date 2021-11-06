@@ -12,8 +12,8 @@ import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.client.impl.BarrageSubscriptionImpl;
 import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.live.LiveTableMonitor;
-import io.deephaven.engine.tables.live.LiveTableRefreshCombiner;
+import io.deephaven.engine.tables.live.UpdateGraphProcessor;
+import io.deephaven.engine.tables.live.UpdateRootCombiner;
 import io.deephaven.engine.tables.utils.DBTimeUtils;
 import io.deephaven.engine.tables.utils.TableDiff;
 import io.deephaven.engine.tables.utils.TableTools;
@@ -51,7 +51,7 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
 
     private TestControlledScheduler scheduler;
     private Deque<Throwable> exceptions;
-    private LiveTableRefreshCombiner liveTableRegistrar;
+    private UpdateRootCombiner liveTableRegistrar;
     private boolean useDeephavenNulls;
 
     private TestComponent daggerRoot;
@@ -75,7 +75,7 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
     @Override
     protected void setUp() throws Exception {
         super.setUp();
-        liveTableRegistrar = new LiveTableRefreshCombiner();
+        liveTableRegistrar = new UpdateRootCombiner();
         scheduler = new TestControlledScheduler();
         exceptions = new ArrayDeque<>();
         useDeephavenNulls = true;
@@ -159,7 +159,7 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
             this.name = name;
             this.barrageMessageProducer = barrageMessageProducer;
 
-            this.barrageTable = BarrageTable.make(liveTableRegistrar, LiveTableMonitor.DEFAULT,
+            this.barrageTable = BarrageTable.make(liveTableRegistrar, UpdateGraphProcessor.DEFAULT,
                     barrageMessageProducer.getTableDefinition(), viewport != null);
 
             final BarrageSubscriptionOptions options = BarrageSubscriptionOptions.builder()
@@ -198,7 +198,7 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
 
         public void validate(final String msg, QueryTable expected) {
             if (!subscribed) {
-                return; // no subscription implies no refresh implies no data -- so we're valid
+                return; // no subscription implies no run implies no data -- so we're valid
             }
 
             // We expect all messages from original table to have been propagated to the replicated table at this point.
@@ -411,7 +411,7 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
                 for (final RemoteNugget nugget : nuggets) {
                     nugget.flushClientEvents();
                 }
-                LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(liveTableRegistrar::refresh);
+                UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(liveTableRegistrar::run);
 
                 TstUtils.validate("", nuggetsToValidate);
 
@@ -500,7 +500,7 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
                 update.shifted = RowSetShiftData.EMPTY;
                 update.modifiedColumnSet = ModifiedColumnSet.EMPTY;
 
-                LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> GenerateTableUpdates.generateTableUpdates(update,
+                UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> GenerateTableUpdates.generateTableUpdates(update,
                         helper.random, helper.sourceTable, helper.columnInfo));
             });
         };
@@ -535,7 +535,7 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
                 }
                 update.shifted = shifted.build();
 
-                LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> GenerateTableUpdates.generateTableUpdates(update,
+                UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> GenerateTableUpdates.generateTableUpdates(update,
                         helper.random, helper.sourceTable, helper.columnInfo));
             });
         };
@@ -552,7 +552,7 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
 
     public void testRoundTripIncremental() {
         final Consumer<TestHelper> runOne = helper -> {
-            helper.runTest(() -> LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(
+            helper.runTest(() -> UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(
                     () -> GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE,
                             helper.size, helper.random, helper.sourceTable, helper.columnInfo)));
         };
@@ -583,7 +583,7 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
                 update.shifted = RowSetShiftData.EMPTY;
                 update.modifiedColumnSet = ModifiedColumnSet.EMPTY;
 
-                LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> GenerateTableUpdates.generateTableUpdates(update,
+                UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> GenerateTableUpdates.generateTableUpdates(update,
                         helper.random, helper.sourceTable, helper.columnInfo));
             });
         };
@@ -618,7 +618,7 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
                 }
                 update.shifted = shifted.build();
 
-                LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> GenerateTableUpdates.generateTableUpdates(update,
+                UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> GenerateTableUpdates.generateTableUpdates(update,
                         helper.random, helper.sourceTable, helper.columnInfo));
             });
         };
@@ -635,7 +635,7 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
 
     public void testRoundTripIncrementalSharedProducer() {
         final Consumer<TestHelper> runOne = helper -> {
-            helper.runTest(() -> LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(
+            helper.runTest(() -> UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(
                     () -> GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE,
                             helper.size, helper.random, helper.sourceTable, helper.columnInfo)));
         };
@@ -669,7 +669,7 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
                     for (int pt = 0; pt < numProducerCoalesce; ++pt) {
                         maybeChangeSub(numSteps.intValue(), rt, pt);
 
-                        LiveTableMonitor.DEFAULT
+                        UpdateGraphProcessor.DEFAULT
                                 .runWithinUnitTestCycle(() -> GenerateTableUpdates.generateShiftAwareTableUpdates(
                                         GenerateTableUpdates.DEFAULT_PROFILE, size, random, sourceTable, columnInfo));
                     }
@@ -682,7 +682,7 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
                 for (final RemoteNugget nugget : nuggets) {
                     nugget.flushClientEvents();
                 }
-                LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(liveTableRegistrar::refresh);
+                UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(liveTableRegistrar::run);
 
                 TstUtils.validate("", nuggetsToValidate);
             }
@@ -853,7 +853,7 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
                             final RemoteNugget nugget = new RemoteNugget(makeTable) {
                                 @Override
                                 public void onGetSnapshot() {
-                                    LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> GenerateTableUpdates
+                                    UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> GenerateTableUpdates
                                             .generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE, size,
                                                     random, sourceTable, columnInfo));
                                 }
@@ -961,7 +961,7 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
         final RemoteNugget remoteNugget = new RemoteNugget(() -> queryTable);
         final MutableObject<RemoteClient> remoteClient = new MutableObject<>();
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             TstUtils.removeRows(queryTable, i(10, 12));
             TstUtils.addToTable(queryTable, i(5, 7), c("intCol", 10, 12));
 
@@ -997,7 +997,7 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
         // We expect two pending messages for our client: snapshot in prev and the shift update
         Assert.equals(remoteClient.getValue().commandQueue.size(), "remoteClient.getValue().commandQueue.size()", 2);
         remoteNugget.flushClientEvents();
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(liveTableRegistrar::refresh);
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(liveTableRegistrar::run);
 
         // validate
         remoteNugget.validate("post flush");
@@ -1018,14 +1018,14 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
         // Obtain snapshot of original viewport.
         flushProducerTable();
         remoteNugget.flushClientEvents();
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(liveTableRegistrar::refresh);
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(liveTableRegistrar::run);
         remoteNugget.validate("original viewport");
 
         // Change viewport without overlap.
         remoteClient.setViewport(RowSetFactory.fromRange(0, 1));
 
         // Modify row that is outside of new viewport but in original.
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(queryTable, i(12), c("intCol", 13));
 
             queryTable.notifyListeners(new Listener.Update(
@@ -1040,7 +1040,7 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
         flushProducerTable();
 
         // Add rows to shift modified row into new viewport.
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             TstUtils.removeRows(queryTable, i(5));
 
             queryTable.notifyListeners(new Listener.Update(
@@ -1055,7 +1055,7 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
         Assert.equals(remoteClient.commandQueue.size(), "remoteClient.getValue().commandQueue.size()", 3); // mod, add,
                                                                                                            // snaphot
         remoteNugget.flushClientEvents();
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(liveTableRegistrar::refresh);
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(liveTableRegistrar::run);
         remoteNugget.validate("new viewport with modification");
     }
 
@@ -1115,7 +1115,7 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
                 update.shifted = RowSetShiftData.EMPTY;
                 update.modifiedColumnSet = ModifiedColumnSet.EMPTY;
 
-                LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> GenerateTableUpdates.generateTableUpdates(update,
+                UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> GenerateTableUpdates.generateTableUpdates(update,
                         helper.random, helper.sourceTable, helper.columnInfo));
             });
         }
@@ -1178,7 +1178,7 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
                 update.shifted = RowSetShiftData.EMPTY;
                 update.modifiedColumnSet = ModifiedColumnSet.EMPTY;
 
-                LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> GenerateTableUpdates.generateTableUpdates(update,
+                UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> GenerateTableUpdates.generateTableUpdates(update,
                         helper.random, helper.sourceTable, helper.columnInfo));
             });
         }

@@ -3,7 +3,7 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.v2.sources;
 
-import io.deephaven.engine.tables.live.LiveTableMonitor;
+import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 import io.deephaven.engine.v2.sources.chunk.ShortChunk;
@@ -32,13 +32,13 @@ import static junit.framework.TestCase.*;
 public class TestShortSparseArraySource {
     @Before
     public void setUp() throws Exception {
-        LiveTableMonitor.DEFAULT.enableUnitTestMode();
-        LiveTableMonitor.DEFAULT.resetForUnitTests(false);
+        UpdateGraphProcessor.DEFAULT.enableUnitTestMode();
+        UpdateGraphProcessor.DEFAULT.resetForUnitTests(false);
     }
 
     @After
     public void tearDown() throws Exception {
-        LiveTableMonitor.DEFAULT.resetForUnitTests(true);
+        UpdateGraphProcessor.DEFAULT.resetForUnitTests(true);
     }
 
     @Test
@@ -304,14 +304,14 @@ public class TestShortSparseArraySource {
     public void testFilllEmptyChunkWithPrev() {
         final ShortSparseArraySource src = new ShortSparseArraySource();
         src.startTrackingPrevValues();
-        LiveTableMonitor.DEFAULT.startCycleForUnitTests();
+        UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
         try (final RowSet keys = RowSetFactory.empty();
              final WritableShortChunk<Values> chunk = WritableShortChunk.makeWritableChunk(0)) {
             // Fill from an empty chunk
             src.fillFromChunkByKeys(keys, chunk);
         }
         // NullPointerException in ShortSparseArraySource.commitUpdates()
-        LiveTableMonitor.DEFAULT.completeCycleForUnitTests();
+        UpdateGraphProcessor.DEFAULT.completeCycleForUnitTests();
     }
 
     @Test

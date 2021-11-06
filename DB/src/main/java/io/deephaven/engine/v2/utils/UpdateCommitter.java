@@ -4,7 +4,7 @@
 
 package io.deephaven.engine.v2.utils;
 
-import io.deephaven.engine.tables.live.LiveTableMonitor;
+import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 
 import java.lang.ref.WeakReference;
 import java.util.function.Consumer;
@@ -34,6 +34,6 @@ public class UpdateCommitter<T> extends TerminalNotification {
             return;
         }
         active = true;
-        LiveTableMonitor.DEFAULT.addNotification(this);
+        UpdateGraphProcessor.DEFAULT.addNotification(this);
     }
 }

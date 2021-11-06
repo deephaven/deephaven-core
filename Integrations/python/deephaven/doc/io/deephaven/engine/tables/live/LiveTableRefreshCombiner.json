@@ -9,6 +9,6 @@
   "requestRefresh": ":param table: io.deephaven.engine.tables.live.LiveTable"
  },
  "path": "io.deephaven.engine.tables.live.LiveTableRefreshCombiner",
- "text": "Combines multiple LiveTables into a single one, in order to allow for update parallelization within the\n LiveTableMonitor.",
+ "text": "Combines multiple LiveTables into a single one, in order to allow for update parallelization within the\n UpdateGraphProcessor.",
  "typeName": "class"
 }

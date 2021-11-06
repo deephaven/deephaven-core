@@ -4,10 +4,10 @@
 
 package io.deephaven.engine.v2.select;
 
+import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.clock.RealTimeClock;
 import io.deephaven.util.process.ProcessEnvironment;
-import io.deephaven.engine.tables.live.LiveTableMonitor;
 import io.deephaven.engine.tables.utils.DBDateTime;
 import io.deephaven.engine.v2.utils.ClockTimeProvider;
 import io.deephaven.engine.v2.utils.TerminalNotification;
@@ -223,7 +223,7 @@ public class AutoTuningIncrementalReleaseFilter extends BaseIncrementalReleaseFi
     }
 
     @Override
-    public void refresh() {
+    public void run() {
         if (releasedAll) {
             return;
         }
@@ -233,7 +233,7 @@ public class AutoTuningIncrementalReleaseFilter extends BaseIncrementalReleaseFi
             nextSize = initialRelease;
         } else {
             final long cycleDuration = (cycleEnd.getNanos() - lastRefresh.getNanos());
-            final long targetCycle = LiveTableMonitor.DEFAULT.getTargetCycleTime() * 1000 * 1000;
+            final long targetCycle = UpdateGraphProcessor.DEFAULT.getTargetCycleTime() * 1000 * 1000;
             final double rowsPerNanoSecond = ((double) nextSize) / cycleDuration;
             nextSize = Math.max((long) (rowsPerNanoSecond * targetCycle * targetFactor), 1L);
             if (verbose) {
@@ -251,7 +251,7 @@ public class AutoTuningIncrementalReleaseFilter extends BaseIncrementalReleaseFi
                         .append(decimalFormat.format(eta)).append(" sec").endl();
             }
         }
-        LiveTableMonitor.DEFAULT.addNotification(new TerminalNotification() {
+        UpdateGraphProcessor.DEFAULT.addNotification(new TerminalNotification() {
             final boolean captureReleasedAll = releasedAll;
 
             @Override
@@ -270,7 +270,7 @@ public class AutoTuningIncrementalReleaseFilter extends BaseIncrementalReleaseFi
             }
         });
         lastRefresh = now;
-        super.refresh();
+        super.run();
     }
 
     @Override

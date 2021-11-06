@@ -78,8 +78,8 @@ import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyExecuteLocked;
  * SessionState::exportListeners' purpose is to keep a list of active subscribers -
  * SessionState::exportListenerVersion's purpose is to know whether or not a subscriber has already seen a status
  *
- * A listener will receive an export notification for export id NON_EXPORT_ID (a zero) to indicate that the refresh has
- * completed. A listener may see an update for an export before receiving the "refresh has completed" message. A
+ * A listener will receive an export notification for export id NON_EXPORT_ID (a zero) to indicate that the run has
+ * completed. A listener may see an update for an export before receiving the "run has completed" message. A
  * listener should be prepared to receive duplicate/redundant updates.
  */
 public class SessionState {
@@ -1039,7 +1039,7 @@ public class SessionState {
         }
 
         /**
-         * Perform the refresh and send initial export state to the listener.
+         * Perform the run and send initial export state to the listener.
          */
         private void initialize(final int versionId) {
             final String id = Integer.toHexString(System.identityHashCode(this));
@@ -1075,13 +1075,13 @@ public class SessionState {
                 }
             }
 
-            // notify that the refresh has completed
+            // notify that the run has completed
             notify(ExportNotification.newBuilder()
                     .setTicket(ExportTicketHelper.wrapExportIdInTicket(NON_EXPORT_ID))
                     .setExportState(ExportNotification.State.EXPORTED)
-                    .setContext("refresh is complete")
+                    .setContext("run is complete")
                     .build());
-            log.info().append(logPrefix).append("refresh complete for listener ").append(id).endl();
+            log.info().append(logPrefix).append("run complete for listener ").append(id).endl();
         }
 
         protected void onRemove() {

@@ -228,7 +228,7 @@ public class TicketRouter {
                 .addEndpoint(Flight.FlightEndpoint.newBuilder()
                         .setTicket(ticket)
                         .build())
-                .setTotalRecords(table.isLive() ? -1 : table.size())
+                .setTotalRecords(table.isRefreshing() ? -1 : table.size())
                 .setTotalBytes(-1)
                 .build();
     }

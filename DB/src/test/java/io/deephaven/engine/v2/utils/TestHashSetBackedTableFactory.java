@@ -6,8 +6,7 @@ package io.deephaven.engine.v2.utils;
 
 import io.deephaven.datastructures.util.SmartKey;
 import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.live.LiveTable;
-import io.deephaven.engine.tables.live.LiveTableMonitor;
+import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.v2.EvalNuggetInterface;
 import io.deephaven.engine.v2.QueryTable;
 import io.deephaven.engine.v2.EvalNugget;
@@ -53,7 +52,7 @@ public class TestHashSetBackedTableFactory extends LiveTableTestCase {
         final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
                 new EvalNugget() {
                     public Table e() {
-                        return LiveTableMonitor.DEFAULT.exclusiveLock()
+                        return UpdateGraphProcessor.DEFAULT.exclusiveLock()
                                 .computeLocked(() -> result.update("Arg0=Arg.substring(0, 1)"));
                     }
                 },
@@ -62,7 +61,7 @@ public class TestHashSetBackedTableFactory extends LiveTableTestCase {
 
 
         for (int ii = 0; ii < 1000; ++ii) {
-            LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
                 final int additions = random.nextInt(4);
                 final int removals = random.nextInt(4);
                 for (int jj = 0; jj < removals; ++jj) {
@@ -81,7 +80,7 @@ public class TestHashSetBackedTableFactory extends LiveTableTestCase {
                     set.add(new SmartKey(generator.nextValue(null, 0, random)));
                 }
 
-                ((LiveTable) result).refresh();
+                ((Runnable) result).run();
             });
 
             final HashSet<SmartKey> tableAsSet = tableToSet(result);

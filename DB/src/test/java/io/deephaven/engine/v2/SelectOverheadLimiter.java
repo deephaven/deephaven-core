@@ -3,7 +3,7 @@ package io.deephaven.engine.v2;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.live.LiveTableMonitor;
+import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.tables.live.NotificationQueue;
 import io.deephaven.engine.v2.sources.SwitchColumnSource;
 import io.deephaven.engine.v2.sources.sparse.SparseConstants;
@@ -86,11 +86,11 @@ public class SelectOverheadLimiter {
     }
 
     public static Table clampSelectOverhead(Table input, double permittedOverhead) {
-        if (!input.isLive()) {
+        if (!input.isRefreshing()) {
             return input.flatten();
         }
 
-        LiveTableMonitor.DEFAULT.checkInitiateTableOperation();
+        UpdateGraphProcessor.DEFAULT.checkInitiateTableOperation();
 
         // now we know we are refreshing, so should update our overhead structure
         final OverheadTracker overheadTracker = new OverheadTracker();

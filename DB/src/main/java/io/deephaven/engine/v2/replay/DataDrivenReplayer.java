@@ -59,7 +59,7 @@ public class DataDrivenReplayer extends Replayer {
     }
 
     @Override
-    public void refresh() {
+    public void run() {
         long currentTimeNanos = -1;
         while (pos < allTimestamp.size()) {
             currentTimeNanos = allTimestamp.get(pos);
@@ -74,7 +74,7 @@ public class DataDrivenReplayer extends Replayer {
             currentTime = new DBDateTime(currentTimeNanos);
         }
         lastTime = currentTimeNanos;
-        super.refresh();
+        super.run();
     }
 
     @Override

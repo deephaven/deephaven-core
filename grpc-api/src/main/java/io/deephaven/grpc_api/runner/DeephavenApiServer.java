@@ -1,6 +1,6 @@
 package io.deephaven.grpc_api.runner;
 
-import io.deephaven.engine.tables.live.LiveTableMonitor;
+import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.util.AbstractScriptSession;
 import io.deephaven.engine.v2.utils.MemoryTableLoggers;
 import io.deephaven.engine.v2.utils.ProcessMemoryTracker;
@@ -31,7 +31,7 @@ public class DeephavenApiServer {
     private static final Logger log = LoggerFactory.getLogger(DeephavenApiServer.class);
 
     private final Server server;
-    private final LiveTableMonitor ltm;
+    private final UpdateGraphProcessor ltm;
     private final LogInit logInit;
     private final ConsoleServiceGrpcImpl consoleService;
     private final ApplicationInjector applicationInjector;
@@ -41,7 +41,7 @@ public class DeephavenApiServer {
     @Inject
     public DeephavenApiServer(
             final Server server,
-            final LiveTableMonitor ltm,
+            final UpdateGraphProcessor ltm,
             final LogInit logInit,
             final ConsoleServiceGrpcImpl consoleService,
             final ApplicationInjector applicationInjector,

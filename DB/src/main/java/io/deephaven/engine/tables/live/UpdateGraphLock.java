@@ -20,14 +20,14 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
- * Lock class to support {@link LiveTableMonitor}.
+ * Lock class to support {@link UpdateGraphProcessor}.
  */
-class LiveTableMonitorLock {
+class UpdateGraphLock {
 
-    private static final Logger log = LoggerFactory.getLogger(LiveTableMonitorLock.class);
+    private static final Logger log = LoggerFactory.getLogger(UpdateGraphLock.class);
 
     private static final boolean STACK_DUMP_LOCKS =
-            Configuration.getInstance().getBooleanWithDefault("LiveTableMonitor.stackDumpLocks", false);
+            Configuration.getInstance().getBooleanWithDefault("UpdateGraphProcessor.stackDumpLocks", false);
 
     /**
      * The {@link LogicalClock} used for instrumentation and assertions.
@@ -62,21 +62,21 @@ class LiveTableMonitorLock {
     private final boolean allowUnitTestMode;
 
     /**
-     * Construct a lock for a new {@link LiveTableMonitor} instance.
+     * Construct a lock for a new {@link UpdateGraphProcessor} instance.
      *
      * @param logicalClock The {@link LogicalClock} instance to use
      */
-    LiveTableMonitorLock(@NotNull final LogicalClock logicalClock) {
+    UpdateGraphLock(@NotNull final LogicalClock logicalClock) {
         this(logicalClock, false);
     }
 
     /**
-     * Construct a lock for a new {@link LiveTableMonitor} instance.
+     * Construct a lock for a new {@link UpdateGraphProcessor} instance.
      *
      * @param logicalClock The {@link LogicalClock} instance to use
      * @param allowUnitTestMode for unit tests only
      */
-    LiveTableMonitorLock(@NotNull final LogicalClock logicalClock, final boolean allowUnitTestMode) {
+    UpdateGraphLock(@NotNull final LogicalClock logicalClock, final boolean allowUnitTestMode) {
         this.logicalClock = logicalClock;
         // TODO: Consider whether using a fair lock causes unacceptable performance degradation under significant
         // contention, and determine an alternative policy (maybe relying on Thread.yield() if so.
@@ -95,7 +95,7 @@ class LiveTableMonitorLock {
 
     /**
      * Get the shared lock (similar to {@link java.util.concurrent.locks.ReadWriteLock#readLock()}, but with
-     * LTM-specific instrumentation). See {@link LiveTableMonitor#sharedLock()} for user-facing documentation.
+     * LTM-specific instrumentation). See {@link UpdateGraphProcessor#sharedLock()} for user-facing documentation.
      *
      * @return The shared lock
      */
@@ -105,7 +105,7 @@ class LiveTableMonitorLock {
 
     /**
      * Get the exclusive lock (similar to {@link java.util.concurrent.locks.ReadWriteLock#writeLock()} ()}, but with
-     * LTM-specific instrumentation). See {@link LiveTableMonitor#exclusiveLock()} for user-facing documentation.
+     * LTM-specific instrumentation). See {@link UpdateGraphProcessor#exclusiveLock()} for user-facing documentation.
      *
      * @return The exclusive lock
      */
@@ -126,7 +126,7 @@ class LiveTableMonitorLock {
         public final void lock() {
             final MutableBoolean lockSucceeded = new MutableBoolean(false);
             try {
-                QueryPerformanceRecorder.withNugget("Acquire LiveTableMonitor readLock", () -> {
+                QueryPerformanceRecorder.withNugget("Acquire UpdateGraphProcessor readLock", () -> {
                     readLock.lock();
                     lockSucceeded.setValue(true);
                 });
@@ -145,7 +145,7 @@ class LiveTableMonitorLock {
         public final void lockInterruptibly() throws InterruptedException {
             final MutableBoolean lockSucceeded = new MutableBoolean(false);
             try {
-                QueryPerformanceRecorder.withNuggetThrowing("Acquire LiveTableMonitor readLock interruptibly", () -> {
+                QueryPerformanceRecorder.withNuggetThrowing("Acquire UpdateGraphProcessor readLock interruptibly", () -> {
                     readLock.lockInterruptibly();
                     lockSucceeded.setValue(true);
                 });
@@ -207,7 +207,7 @@ class LiveTableMonitorLock {
             checkForUpgradeAttempt();
             final MutableBoolean lockSucceeded = new MutableBoolean(false);
             try {
-                QueryPerformanceRecorder.withNugget("Acquire LiveTableMonitor writeLock", () -> {
+                QueryPerformanceRecorder.withNugget("Acquire UpdateGraphProcessor writeLock", () -> {
                     writeLock.lock();
                     lockSucceeded.setValue(true);
                 });
@@ -228,7 +228,7 @@ class LiveTableMonitorLock {
             checkForUpgradeAttempt();
             final MutableBoolean lockSucceeded = new MutableBoolean(false);
             try {
-                QueryPerformanceRecorder.withNuggetThrowing("Acquire LiveTableMonitor writeLock interruptibly", () -> {
+                QueryPerformanceRecorder.withNuggetThrowing("Acquire UpdateGraphProcessor writeLock interruptibly", () -> {
                     writeLock.lockInterruptibly();
                     lockSucceeded.setValue(true);
                 });

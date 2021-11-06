@@ -1,7 +1,7 @@
 package io.deephaven.engine.v2.utils;
 
 import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.live.LiveTableMonitor;
+import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.tables.utils.DBDateTime;
 import io.deephaven.engine.tables.utils.DBTimeUtils;
 import io.deephaven.engine.tables.utils.TableTools;
@@ -33,11 +33,11 @@ public class TestTailInitializationFilter extends LiveTableTestCase {
 
         final Table slice0_100_filtered = input.slice(0, 100).where("Timestamp >= '" + threshold1 + "'");
         final Table slice100_200_filtered = input.slice(100, 200).where("Timestamp >= '" + threshold2 + "'");
-        final Table expected = LiveTableMonitor.DEFAULT.sharedLock()
+        final Table expected = UpdateGraphProcessor.DEFAULT.sharedLock()
                 .computeLocked(() -> TableTools.merge(slice0_100_filtered, slice100_200_filtered));
         assertEquals("", TableTools.diff(filtered, expected, 10));
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             final DBDateTime[] data2 = new DBDateTime[4];
             data2[0] = DBTimeUtils.convertDateTime("2020-08-20T06:00:00 NY");
             data2[1] = DBTimeUtils.convertDateTime("2020-08-20T06:30:00 NY");
@@ -52,7 +52,7 @@ public class TestTailInitializationFilter extends LiveTableTestCase {
         final Table slice100_102 = input.slice(100, 102);
         final Table slice102_202_filtered = input.slice(102, 202).where("Timestamp >= '" + threshold2 + "'");
         final Table slice202_204 = input.slice(202, 204);
-        final Table expected2 = LiveTableMonitor.DEFAULT.sharedLock().computeLocked(
+        final Table expected2 = UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(
                 () -> TableTools.merge(slice0_100_filtered, slice100_102, slice102_202_filtered, slice202_204));
         assertEquals("", TableTools.diff(filtered, expected2, 10));
 

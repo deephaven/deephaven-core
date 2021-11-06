@@ -293,7 +293,7 @@ public class ApplicationServiceGrpcImpl extends ApplicationServiceGrpc.Applicati
             final Table table = (Table) obj;
             return FieldInfo.FieldType.newBuilder().setTable(TableInfo.newBuilder()
                     .setSchemaHeader(BarrageUtil.schemaBytesFromTable(table))
-                    .setIsStatic(!table.isLive())
+                    .setIsStatic(!table.isRefreshing())
                     .setSize(table.size())
                     .build()).build();
         }

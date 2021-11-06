@@ -6,7 +6,7 @@ import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.tables.ColumnDefinition;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.TableDefinition;
-import io.deephaven.engine.tables.live.LiveTableMonitor;
+import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.util.config.InputTableStatusListener;
 import io.deephaven.engine.util.config.MutableInputTable;
@@ -33,7 +33,7 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
     private final Map<String, Object[]> enumValues;
 
     private String description = getDefaultDescription();
-    private Runnable onPendingChange = () -> LiveTableMonitor.DEFAULT.requestRefresh(this);
+    private Runnable onPendingChange = () -> UpdateGraphProcessor.DEFAULT.requestRefresh(this);
 
     long nextRow = 0;
     private long pendingProcessed = NULL_NOTIFICATION_STEP;
@@ -78,7 +78,7 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
         });
         result.getRowSet().mutableCast().insert(builder.build());
         result.getRowSet().mutableCast().initializePreviousValue();
-        LiveTableMonitor.DEFAULT.addTable(result);
+        UpdateGraphProcessor.DEFAULT.addTable(result);
     }
 
     public BaseArrayBackedMutableTable setDescription(String newDescription) {
@@ -95,7 +95,7 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
     @TestUseOnly
     void setOnPendingChange(final Runnable onPendingChange) {
         this.onPendingChange =
-                onPendingChange == null ? () -> LiveTableMonitor.DEFAULT.requestRefresh(this) : onPendingChange;
+                onPendingChange == null ? () -> UpdateGraphProcessor.DEFAULT.requestRefresh(this) : onPendingChange;
     }
 
     private void processPending(IndexChangeRecorder indexChangeRecorder) {
@@ -114,8 +114,8 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
     }
 
     @Override
-    public void refresh() {
-        super.refresh();
+    public void run() {
+        super.run();
         synchronized (pendingChanges) {
             processedSequence.set(pendingProcessed);
             pendingProcessed = NULL_NOTIFICATION_STEP;
@@ -202,7 +202,7 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
         private PendingChange enqueueAddition(Table newData, boolean allowEdits) {
             validateAddOrModify(newData);
             // we want to get a clean copy of the table; that can not change out from under us or result in long reads
-            // during our LTM refresh
+            // during our LTM run
             final PendingChange pendingChange = new PendingChange(doSnap(newData), false, allowEdits);
             pendingChanges.add(pendingChange);
             onPendingChange.run();
@@ -215,7 +215,7 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
 
         private Table doSnap(Table newData) {
             Table addTable;
-            if (newData.isLive()) {
+            if (newData.isRefreshing()) {
                 addTable = TableTools.emptyTable(1).snapshot(newData);
             } else {
                 addTable = newData.select();
@@ -242,7 +242,7 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
         }
 
         void waitForSequence(long sequence) {
-            if (LiveTableMonitor.DEFAULT.exclusiveLock().isHeldByCurrentThread()) {
+            if (UpdateGraphProcessor.DEFAULT.exclusiveLock().isHeldByCurrentThread()) {
                 // We're holding the lock. currentTable had better be refreshing. Wait on its LTM condition
                 // in order to allow updates.
                 while (processedSequence.longValue() < sequence) {
@@ -252,7 +252,7 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
                     }
                 }
             } else {
-                // we are not holding the lock, so should wait for the next refresh
+                // we are not holding the lock, so should wait for the next run
                 synchronized (pendingChanges) {
                     while (processedSequence.longValue() < sequence) {
                         try {
@@ -268,8 +268,8 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
         public void setRows(@NotNull Table defaultValues, int[] rowArray, Map<String, Object>[] valueArray,
                 InputTableStatusListener listener) {
             Assert.neqNull(defaultValues, "defaultValues");
-            if (defaultValues.isLive()) {
-                LiveTableMonitor.DEFAULT.checkInitiateTableOperation();
+            if (defaultValues.isRefreshing()) {
+                UpdateGraphProcessor.DEFAULT.checkInitiateTableOperation();
             }
 
             final List<ColumnDefinition<?>> columnDefinitions = getTableDefinition().getColumnList();

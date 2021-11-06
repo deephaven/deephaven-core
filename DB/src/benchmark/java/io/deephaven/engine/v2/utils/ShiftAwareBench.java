@@ -2,7 +2,7 @@ package io.deephaven.engine.v2.utils;
 
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.live.LiveTableMonitor;
+import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.v2.select.IncrementalReleaseFilter;
 import io.deephaven.benchmarking.BenchmarkTable;
@@ -53,7 +53,7 @@ public class ShiftAwareBench {
     public void setupEnv(BenchmarkParams params) {
         Configuration.getInstance().setProperty("QueryTable.memoizeResults", "false");
 
-        LiveTableMonitor.DEFAULT.enableUnitTestMode();
+        UpdateGraphProcessor.DEFAULT.enableUnitTestMode();
 
         final BenchmarkTableBuilder builder = BenchmarkTools.inMemoryTableBuilder("ShiftAwareBench",
                 BenchmarkTools.sizeWithSparsity(tableSize, sparsity));
@@ -89,10 +89,10 @@ public class ShiftAwareBench {
 
         final R result = function.apply(filtered);
 
-        LiveTableMonitor.DEFAULT.enableUnitTestMode();
+        UpdateGraphProcessor.DEFAULT.enableUnitTestMode();
 
         while (filtered.size() < inputTable.size()) {
-            LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(incrementalReleaseFilter::refresh);
+            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(incrementalReleaseFilter::run);
         }
 
         return result;

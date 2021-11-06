@@ -1,6 +1,6 @@
 package io.deephaven.grpc_api.runner;
 
-import io.deephaven.engine.tables.live.LiveTableMonitor;
+import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.util.liveness.LivenessScope;
 import io.deephaven.engine.util.liveness.LivenessScopeStack;
 import io.deephaven.grpc_api.DeephavenChannel;
@@ -32,8 +32,8 @@ public abstract class DeephavenApiServerTestBase {
 
     @Before
     public void setUp() throws Exception {
-        LiveTableMonitor.DEFAULT.enableUnitTestMode();
-        LiveTableMonitor.DEFAULT.resetForUnitTests(false);
+        UpdateGraphProcessor.DEFAULT.enableUnitTestMode();
+        UpdateGraphProcessor.DEFAULT.resetForUnitTests(false);
 
         logBuffer = new LogBuffer(128);
         LogBufferGlobal.setInstance(logBuffer);
@@ -62,7 +62,7 @@ public abstract class DeephavenApiServerTestBase {
             }
         } finally {
             LogBufferGlobal.clear(logBuffer);
-            LiveTableMonitor.DEFAULT.resetForUnitTests(true);
+            UpdateGraphProcessor.DEFAULT.resetForUnitTests(true);
         }
     }
 

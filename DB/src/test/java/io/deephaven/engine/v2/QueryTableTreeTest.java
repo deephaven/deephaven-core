@@ -5,6 +5,7 @@ import io.deephaven.base.Function;
 import io.deephaven.base.verify.Require;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.datastructures.util.SmartKey;
+import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.engine.v2.utils.RowSetBuilderSequential;
 import io.deephaven.engine.v2.utils.RowSetFactory;
@@ -12,7 +13,6 @@ import io.deephaven.io.log.LogLevel;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.io.logger.StreamLoggerImpl;
 import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.live.LiveTableMonitor;
 import io.deephaven.engine.tables.utils.DBTimeUtils;
 import io.deephaven.engine.tables.utils.TableDiff;
 import io.deephaven.engine.tables.utils.TableTools;
@@ -104,7 +104,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
                 col("Parent", NULL_INT, NULL_INT, 1, 1, 2, 3, 5, 5, 3, 2));
 
         final Table treed =
-                LiveTableMonitor.DEFAULT.exclusiveLock().computeLocked(() -> source.treeTable("Sentinel", "Parent"));
+                UpdateGraphProcessor.DEFAULT.exclusiveLock().computeLocked(() -> source.treeTable("Sentinel", "Parent"));
         final String hierarchicalColumnName = getHierarchicalColumnName(treed);
         TableTools.showWithIndex(treed);
 
@@ -159,15 +159,15 @@ public class QueryTableTreeTest extends QueryTableTestBase {
             final Table rootExpected3 = source3.where("isNull(Parent)");
 
             final Supplier<Table> doTree = () -> source.treeTable("Sentinel", "Parent");
-            final Table expect = LiveTableMonitor.DEFAULT.exclusiveLock().computeLocked(doTree::get);
-            final Table expectOriginal = LiveTableMonitor.DEFAULT.exclusiveLock()
+            final Table expect = UpdateGraphProcessor.DEFAULT.exclusiveLock().computeLocked(doTree::get);
+            final Table expectOriginal = UpdateGraphProcessor.DEFAULT.exclusiveLock()
                     .computeLocked(() -> makeStatic(source).treeTable("Sentinel", "Parent"));
-            final Table expect2 = LiveTableMonitor.DEFAULT.exclusiveLock()
+            final Table expect2 = UpdateGraphProcessor.DEFAULT.exclusiveLock()
                     .computeLocked(() -> source2.treeTable("Sentinel", "Parent"));
 
             final String hierarchicalColumnName = getHierarchicalColumnName(expect);
 
-            LiveTableMonitor.DEFAULT.startCycleForUnitTests();
+            UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
 
             final Table treed1 = pool.submit(doTree::get).get();
 
@@ -227,7 +227,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
             doCompareWithChildrenForTrees("testConcurrentInstantiation", expect2, treed3, 0, 4, hierarchicalColumnName,
                     CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
 
-            LiveTableMonitor.DEFAULT.completeCycleForUnitTests();
+            UpdateGraphProcessor.DEFAULT.completeCycleForUnitTests();
 
             doCompareWithChildrenForTrees("testConcurrentInstantiation", expect2, treed1, 0, 4, hierarchicalColumnName,
                     CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
@@ -247,7 +247,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
             final Table eleven1a = map1.get(11);
             assertNull(eleven1a);
 
-            LiveTableMonitor.DEFAULT.startCycleForUnitTests();
+            UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
 
             final Table backwards1 =
                     pool.submit(() -> TreeTableFilter.rawFilterTree(treed1, "!isNull(Extra)").sortDescending("Extra"))
@@ -278,7 +278,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
             source.notifyListeners(i(12), i(), i());
 
             final Table treed6 = pool.submit(doTree::get).get();
-            LiveTableMonitor.DEFAULT.flushAllNormalNotificationsForUnitTests();
+            UpdateGraphProcessor.DEFAULT.flushAllNormalNotificationsForUnitTests();
 
             final Table backwardsTree1c = pool.submit(() -> backwards1.treeTable("Sentinel", "Parent")).get();
             final Table backwardsTree2b = pool.submit(() -> backwards2.treeTable("Sentinel", "Parent")).get();
@@ -294,7 +294,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
             assertTableEquals(root2a, rootExpected3);
             assertTableEquals(root3a, rootExpected3);
 
-            LiveTableMonitor.DEFAULT.completeCycleForUnitTests();
+            UpdateGraphProcessor.DEFAULT.completeCycleForUnitTests();
 
             final Table eleven1c = map1.get(11);
             assertNotNull(eleven1c);
@@ -315,7 +315,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
                         hierarchicalColumnName, CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
             }
 
-            final Table backwardsExpected = LiveTableMonitor.DEFAULT.exclusiveLock()
+            final Table backwardsExpected = UpdateGraphProcessor.DEFAULT.exclusiveLock()
                     .computeLocked(() -> source.sortDescending("Extra").treeTable("Sentinel", "Parent"));
             ii = 1;
             for (Table treed : Arrays.asList(backwardsTree1a, backwardsTree1b, backwardsTree1c, backwardsTree2a,
@@ -350,10 +350,10 @@ public class QueryTableTreeTest extends QueryTableTestBase {
             final java.util.function.Function<Table, Table> doSortAndTree = doSort.andThen(doTree);
 
             final Table expect =
-                    LiveTableMonitor.DEFAULT.exclusiveLock().computeLocked(() -> doSortAndTree.apply(source));
-            final Table expectOriginal = LiveTableMonitor.DEFAULT.exclusiveLock()
+                    UpdateGraphProcessor.DEFAULT.exclusiveLock().computeLocked(() -> doSortAndTree.apply(source));
+            final Table expectOriginal = UpdateGraphProcessor.DEFAULT.exclusiveLock()
                     .computeLocked(() -> doSortAndTree.apply(makeStatic(source)));
-            final Table expect2 = LiveTableMonitor.DEFAULT.exclusiveLock()
+            final Table expect2 = UpdateGraphProcessor.DEFAULT.exclusiveLock()
                     .computeLocked(() -> doSortAndTree.apply(makeStatic(source2)));
 
             final String hierarchicalColumnName = getHierarchicalColumnName(expect);
@@ -362,7 +362,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
             final Table sorted0Original = doSort.apply(makeStatic(source));
             final Table sorted2 = doSort.apply(makeStatic(source2));
 
-            LiveTableMonitor.DEFAULT.startCycleForUnitTests();
+            UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
 
             final Table treed1 = pool.submit(() -> doSortAndTree.apply(source)).get();
             final Table sorted1 = pool.submit(() -> doSort.apply(source)).get();
@@ -389,7 +389,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
 
             source.notifyListeners(i(11, 12), i(0), i(1));
 
-            LiveTableMonitor.DEFAULT.flushAllNormalNotificationsForUnitTests();
+            UpdateGraphProcessor.DEFAULT.flushAllNormalNotificationsForUnitTests();
 
             // everything should have current values now
             doCompareWithChildrenForTrees("testConcurrentInstantiation", treed1, expect2, false, false, 0, 4,
@@ -436,7 +436,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
             assertTableEquals(sorted2, sorted0);
             assertTableEquals(sorted2, sorted1);
 
-            LiveTableMonitor.DEFAULT.completeCycleForUnitTests();
+            UpdateGraphProcessor.DEFAULT.completeCycleForUnitTests();
 
             doCompareWithChildrenForTrees("testConcurrentInstantiation", expect2, treed1, 0, 4, hierarchicalColumnName,
                     CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
@@ -467,7 +467,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
                 col("Parent", NULL_INT, NULL_INT, 1, 1, 2, 3, 5, 5, 3, 6));
 
         final Table treed =
-                LiveTableMonitor.DEFAULT.exclusiveLock().computeLocked(() -> source.treeTable("Sentinel", "Parent"));
+                UpdateGraphProcessor.DEFAULT.exclusiveLock().computeLocked(() -> source.treeTable("Sentinel", "Parent"));
         TableTools.showWithIndex(treed);
 
         final String hierarchicalColumnName = getHierarchicalColumnName(treed);
@@ -491,7 +491,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
                 col("Parent", NULL_INT, NULL_INT, 1, 1, 2, 3, 5, 5, 3, 6));
 
         final Table treed =
-                LiveTableMonitor.DEFAULT.exclusiveLock().computeLocked(() -> source.treeTable("Sentinel", "Parent"));
+                UpdateGraphProcessor.DEFAULT.exclusiveLock().computeLocked(() -> source.treeTable("Sentinel", "Parent"));
         TableTools.showWithIndex(treed);
 
         final String hierarchicalColumnName = getHierarchicalColumnName(treed);
@@ -516,61 +516,61 @@ public class QueryTableTreeTest extends QueryTableTestBase {
 
         assertNull(getChildTable(filtered, child2, hierarchicalColumnName, 0));
 
-        LiveTableMonitor.DEFAULT.startCycleForUnitTests();
+        UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
         addToTable(source, i(10), col("Sentinel", 11), col("Parent", 2));
         source.notifyListeners(i(10), i(), i());
-        LiveTableMonitor.DEFAULT.completeCycleForUnitTests();
+        UpdateGraphProcessor.DEFAULT.completeCycleForUnitTests();
         System.out.println("Modified.");
         TableTools.showWithIndex(filtered);
         assertEquals(2, filtered.size());
 
-        LiveTableMonitor.DEFAULT.startCycleForUnitTests();
+        UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
         addToTable(source, i(10), col("Sentinel", 12), col("Parent", 2));
         source.notifyListeners(i(), i(), i(10));
-        LiveTableMonitor.DEFAULT.completeCycleForUnitTests();
+        UpdateGraphProcessor.DEFAULT.completeCycleForUnitTests();
         System.out.println("Modified.");
         TableTools.showWithIndex(filtered);
         assertEquals(1, filtered.size());
 
 
-        LiveTableMonitor.DEFAULT.startCycleForUnitTests();
+        UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
         addToTable(source, i(10, 11), col("Sentinel", 12, 11), col("Parent", 2, 12));
         source.notifyListeners(i(11), i(), i(10));
-        LiveTableMonitor.DEFAULT.completeCycleForUnitTests();
+        UpdateGraphProcessor.DEFAULT.completeCycleForUnitTests();
         System.out.println("Grand parent.");
         TableTools.showWithIndex(filtered);
         assertEquals(2, filtered.size());
 
-        LiveTableMonitor.DEFAULT.startCycleForUnitTests();
+        UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
         addToTable(source, i(11), col("Sentinel", 13), col("Parent", 12));
         source.notifyListeners(i(), i(), i(11));
-        LiveTableMonitor.DEFAULT.completeCycleForUnitTests();
+        UpdateGraphProcessor.DEFAULT.completeCycleForUnitTests();
         System.out.println("Grand parent disappear.");
         TableTools.showWithIndex(filtered);
         assertEquals(1, filtered.size());
 
-        LiveTableMonitor.DEFAULT.startCycleForUnitTests();
+        UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
         addToTable(source, i(12), col("Sentinel", 14), col("Parent", 13));
         source.notifyListeners(i(12), i(), i());
-        LiveTableMonitor.DEFAULT.completeCycleForUnitTests();
+        UpdateGraphProcessor.DEFAULT.completeCycleForUnitTests();
         showWithIndex(source, 15);
         System.out.println("Great grand parent appear.");
         TableTools.showWithIndex(filtered);
         assertEquals(2, filtered.size());
 
-        LiveTableMonitor.DEFAULT.startCycleForUnitTests();
+        UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
         removeRows(source, i(1));
         source.notifyListeners(i(), i(1), i());
-        LiveTableMonitor.DEFAULT.completeCycleForUnitTests();
+        UpdateGraphProcessor.DEFAULT.completeCycleForUnitTests();
         showWithIndex(source, 15);
         System.out.println("2 removed.");
         TableTools.showWithIndex(filtered);
         assertEquals(1, filtered.size());
 
-        LiveTableMonitor.DEFAULT.startCycleForUnitTests();
+        UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
         addToTable(source, i(1), col("Sentinel", 2), col("Parent", NULL_INT));
         source.notifyListeners(i(1), i(), i());
-        LiveTableMonitor.DEFAULT.completeCycleForUnitTests();
+        UpdateGraphProcessor.DEFAULT.completeCycleForUnitTests();
         showWithIndex(source, 15);
         System.out.println("2 resurrected.");
         TableTools.showWithIndex(filtered);
@@ -581,32 +581,32 @@ public class QueryTableTreeTest extends QueryTableTestBase {
         final QueryTable source = TstUtils.testRefreshingTable(RowSetFactory.flat(4).toTracking(),
                 col("Sentinel", 1, 2, 3, 4), col("Parent", NULL_INT, NULL_INT, 1, 5));
 
-        final Table treed = LiveTableMonitor.DEFAULT.exclusiveLock().computeLocked(() -> TreeTableOrphanPromoter
+        final Table treed = UpdateGraphProcessor.DEFAULT.exclusiveLock().computeLocked(() -> TreeTableOrphanPromoter
                 .promoteOrphans(source, "Sentinel", "Parent").treeTable("Sentinel", "Parent"));
         TableTools.showWithIndex(treed);
         assertEquals(3, treed.size());
 
         // add a parent, which will make something not an orphan
-        LiveTableMonitor.DEFAULT.startCycleForUnitTests();
+        UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
         addToTable(source, i(5), col("Sentinel", 5), col("Parent", 1));
         source.notifyListeners(i(5), i(), i());
-        LiveTableMonitor.DEFAULT.completeCycleForUnitTests();
+        UpdateGraphProcessor.DEFAULT.completeCycleForUnitTests();
         showWithIndex(treed);
         assertEquals(2, treed.size());
 
         // swap two things
-        LiveTableMonitor.DEFAULT.startCycleForUnitTests();
+        UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
         addToTable(source, i(0, 1), col("Sentinel", 2, 1), col("Parent", NULL_INT, NULL_INT));
         source.notifyListeners(i(), i(), i(0, 1));
-        LiveTableMonitor.DEFAULT.completeCycleForUnitTests();
+        UpdateGraphProcessor.DEFAULT.completeCycleForUnitTests();
         showWithIndex(treed);
         assertEquals(2, treed.size());
 
         // now remove a parent
-        LiveTableMonitor.DEFAULT.startCycleForUnitTests();
+        UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
         removeRows(source, i(0, 1));
         source.notifyListeners(i(), i(0, 1), i());
-        LiveTableMonitor.DEFAULT.completeCycleForUnitTests();
+        UpdateGraphProcessor.DEFAULT.completeCycleForUnitTests();
         showWithIndex(treed);
         assertEquals(2, treed.size());
     }
@@ -637,7 +637,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
                 new EvalNugget() {
                     @Override
                     protected Table e() {
-                        return LiveTableMonitor.DEFAULT.exclusiveLock().computeLocked(() -> {
+                        return UpdateGraphProcessor.DEFAULT.exclusiveLock().computeLocked(() -> {
                             final Table treed = source.treeTable("Sentinel", "Parent");
                             return TreeTableFilter.rawFilterTree(treed, "Filter in 1");
                         });
@@ -649,35 +649,35 @@ public class QueryTableTreeTest extends QueryTableTestBase {
         Assert.assertEquals(0, en[0].originalValue.size());
 
         // modify child to have parent
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(source, i(0), c("Sentinel", 0), c("Filter", 1), c("Parent", 1));
             source.notifyListeners(i(), i(), i(0));
         });
         Assert.assertEquals(i(0, 1), en[0].originalValue.getRowSet());
 
         // modify parent to have grandparent
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(source, i(1), c("Sentinel", 1), c("Filter", 0), c("Parent", 2));
             source.notifyListeners(i(), i(), i(1));
         });
         Assert.assertEquals(i(0, 1, 2), en[0].originalValue.getRowSet());
 
         // modify parent's id to orphan child
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(source, i(1), c("Sentinel", -1), c("Filter", 0), c("Parent", 2));
             source.notifyListeners(i(), i(), i(1));
         });
         Assert.assertEquals(i(0), en[0].originalValue.getRowSet());
 
         // revert parent's id and adopt child
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(source, i(1), c("Sentinel", 1), c("Filter", 0), c("Parent", 2));
             source.notifyListeners(i(), i(), i(1));
         });
         Assert.assertEquals(i(0, 1, 2), en[0].originalValue.getRowSet());
 
         // remove child, resurrect parent
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             TstUtils.removeRows(source, i(0));
             TstUtils.addToTable(source, i(3), c("Sentinel", 3), c("Filter", 1), c("Parent", 1));
             source.notifyListeners(i(), i(0), i(3));
@@ -1022,21 +1022,21 @@ public class QueryTableTreeTest extends QueryTableTestBase {
                 new TreeTableEvalNugget(prepared) {
                     @Override
                     protected Table e() {
-                        return LiveTableMonitor.DEFAULT.exclusiveLock()
+                        return UpdateGraphProcessor.DEFAULT.exclusiveLock()
                                 .computeLocked(() -> prepared.treeTable("ID", "Parent"));
                     }
                 },
                 new TreeTableEvalNugget(prepared) {
                     @Override
                     protected Table e() {
-                        return LiveTableMonitor.DEFAULT.exclusiveLock()
+                        return UpdateGraphProcessor.DEFAULT.exclusiveLock()
                                 .computeLocked(() -> prepared.sort("Sym").treeTable("ID", "Parent"));
                     }
                 },
                 new TreeTableEvalNugget(prepared) {
                     @Override
                     protected Table e() {
-                        return LiveTableMonitor.DEFAULT.exclusiveLock()
+                        return UpdateGraphProcessor.DEFAULT.exclusiveLock()
                                 .computeLocked(() -> prepared.sort("Sentinel").treeTable("ID", "Parent"));
                     }
                 },
@@ -1091,21 +1091,21 @@ public class QueryTableTreeTest extends QueryTableTestBase {
                 new EvalNugget() {
                     @Override
                     protected Table e() {
-                        return LiveTableMonitor.DEFAULT.exclusiveLock()
+                        return UpdateGraphProcessor.DEFAULT.exclusiveLock()
                                 .computeLocked(() -> TreeTableOrphanPromoter.promoteOrphans(prepared, "ID", "Parent"));
                     }
                 },
                 new EvalNugget() {
                     @Override
                     protected Table e() {
-                        return LiveTableMonitor.DEFAULT.exclusiveLock().computeLocked(() -> TreeTableOrphanPromoter
+                        return UpdateGraphProcessor.DEFAULT.exclusiveLock().computeLocked(() -> TreeTableOrphanPromoter
                                 .promoteOrphans(prepared.where("Sentinel % 2 == 0"), "ID", "Parent"));
                     }
                 },
                 new TreeTableEvalNugget(prepared) {
                     @Override
                     protected Table e() {
-                        return LiveTableMonitor.DEFAULT.exclusiveLock()
+                        return UpdateGraphProcessor.DEFAULT.exclusiveLock()
                                 .computeLocked(() -> TreeTableOrphanPromoter
                                         .promoteOrphans(prepared.where("Sentinel % 2 == 0"), "ID", "Parent")
                                         .treeTable("ID", "Parent"));
@@ -1209,16 +1209,16 @@ public class QueryTableTreeTest extends QueryTableTestBase {
         System.out.println("Source Data:");
         TableTools.showWithIndex(table);
 
-        final Table rollup = LiveTableMonitor.DEFAULT.exclusiveLock()
+        final Table rollup = UpdateGraphProcessor.DEFAULT.exclusiveLock()
                 .computeLocked(() -> table.rollup(comboAgg, "USym", "DateTime", "BoolCol", "BigIntCol", "BigDecCol"));
         verifyReverseLookup(rollup);
 
         verifyReverseLookup(
-                LiveTableMonitor.DEFAULT.exclusiveLock().computeLocked(() -> table.rollup(comboAgg, "USym")));
+                UpdateGraphProcessor.DEFAULT.exclusiveLock().computeLocked(() -> table.rollup(comboAgg, "USym")));
         verifyReverseLookup(
-                LiveTableMonitor.DEFAULT.exclusiveLock().computeLocked(() -> table.rollup(comboAgg, "DateTime")));
+                UpdateGraphProcessor.DEFAULT.exclusiveLock().computeLocked(() -> table.rollup(comboAgg, "DateTime")));
         verifyReverseLookup(
-                LiveTableMonitor.DEFAULT.exclusiveLock().computeLocked(() -> table.rollup(comboAgg, "BoolCol")));
+                UpdateGraphProcessor.DEFAULT.exclusiveLock().computeLocked(() -> table.rollup(comboAgg, "BoolCol")));
     }
 
     private void verifyReverseLookup(Table rollup) {
@@ -1324,9 +1324,9 @@ public class QueryTableTreeTest extends QueryTableTestBase {
         TableTools.showWithIndex(table);
 
         final Table rollup =
-                LiveTableMonitor.DEFAULT.exclusiveLock().computeLocked(() -> table.rollup(comboAgg, "USym", "Group"));
+                UpdateGraphProcessor.DEFAULT.exclusiveLock().computeLocked(() -> table.rollup(comboAgg, "USym", "Group"));
 
-        final Table fullBy = LiveTableMonitor.DEFAULT.exclusiveLock().computeLocked(() -> table.by(comboAgg));
+        final Table fullBy = UpdateGraphProcessor.DEFAULT.exclusiveLock().computeLocked(() -> table.by(comboAgg));
         System.out.println("Full By:");
         TableTools.showWithIndex(fullBy);
 
@@ -1365,7 +1365,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
 
         final SafeCloseable scopeCloseable = LivenessScopeStack.open();
 
-        final Table rollup = LiveTableMonitor.DEFAULT.exclusiveLock()
+        final Table rollup = UpdateGraphProcessor.DEFAULT.exclusiveLock()
                 .computeLocked(() -> table.rollup(AggCombo(AggSum("IntCol", "DoubleCol")), "USym", "Group"));
         final TableMap rootMap = (TableMap) rollup.getAttribute(Table.HIERARCHICAL_CHILDREN_TABLE_MAP_ATTRIBUTE);
         final Table nextLevel = rootMap.get(SmartKey.EMPTY);
@@ -1376,7 +1376,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
 
         final SingletonLivenessManager rollupManager = new SingletonLivenessManager(rollup);
 
-        LiveTableMonitor.DEFAULT.exclusiveLock().doLocked(scopeCloseable::close);
+        UpdateGraphProcessor.DEFAULT.exclusiveLock().doLocked(scopeCloseable::close);
 
         Assert.assertTrue(rollup.tryRetainReference());
         Assert.assertTrue(rootMap.tryRetainReference());
@@ -1386,7 +1386,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
         rootMap.dropReference();
         nextLevel.dropReference();
 
-        LiveTableMonitor.DEFAULT.exclusiveLock().doLocked(rollupManager::release);
+        UpdateGraphProcessor.DEFAULT.exclusiveLock().doLocked(rollupManager::release);
 
         // we should not be able to retainReference the rollup, because closing the scope should have decremented it to
         // zero
@@ -1418,7 +1418,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
 
         final SingletonLivenessManager treeManager = new SingletonLivenessManager(treed);
 
-        LiveTableMonitor.DEFAULT.exclusiveLock().doLocked(scopeCloseable::close);
+        UpdateGraphProcessor.DEFAULT.exclusiveLock().doLocked(scopeCloseable::close);
 
         Assert.assertTrue(treed.tryRetainReference());
         Assert.assertTrue(promoted.tryRetainReference());
@@ -1429,7 +1429,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
 
         assertTableEquals(table, treed);
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             final long key = table.getRowSet().firstRowKey();
             table.getRowSet().mutableCast().remove(key);
             TstUtils.removeRows(table, i(key));
@@ -1438,7 +1438,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
 
         assertTableEquals(table, treed);
 
-        LiveTableMonitor.DEFAULT.exclusiveLock().doLocked(treeManager::release);
+        UpdateGraphProcessor.DEFAULT.exclusiveLock().doLocked(treeManager::release);
 
         // we should not be able to retainReference the tree table, because closing the scope should have decremented it
         // to zero
@@ -1454,13 +1454,13 @@ public class QueryTableTreeTest extends QueryTableTestBase {
 
         final SafeCloseable scopeCloseable = LivenessScopeStack.open();
 
-        final Table rollup = LiveTableMonitor.DEFAULT.exclusiveLock()
+        final Table rollup = UpdateGraphProcessor.DEFAULT.exclusiveLock()
                 .computeLocked(() -> table.rollup(AggCombo(AggSum("IntCol", "DoubleCol")), "USym", "Group"));
         final TableMap rootMap = (TableMap) rollup.getAttribute(Table.HIERARCHICAL_CHILDREN_TABLE_MAP_ATTRIBUTE);
 
         final SingletonLivenessManager rollupManager = new SingletonLivenessManager(rollup);
 
-        LiveTableMonitor.DEFAULT.exclusiveLock().doLocked(scopeCloseable::close);
+        UpdateGraphProcessor.DEFAULT.exclusiveLock().doLocked(scopeCloseable::close);
 
         // dumpRollup(rollup, getHierarchicalColumnName(rollup), "USym", "Group");
 
@@ -1470,11 +1470,11 @@ public class QueryTableTreeTest extends QueryTableTestBase {
         rollup.dropReference();
         rootMap.dropReference();
 
-        LiveTableMonitor.DEFAULT.startCycleForUnitTests();
+        UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
         addToTable(table, i(0, 1), col("USym", "AAPL", "TSLA"), col("Group", "Terran", "Vulcan"),
                 intCol("IntCol", 1, 2), doubleCol("DoubleCol", .1, .2));
         table.notifyListeners(i(0, 1), i(), i());
-        LiveTableMonitor.DEFAULT.completeCycleForUnitTests();
+        UpdateGraphProcessor.DEFAULT.completeCycleForUnitTests();
 
         final SafeCloseable getScope = LivenessScopeStack.open();
         final Table nextLevel = rootMap.get(SmartKey.EMPTY);
@@ -1488,8 +1488,8 @@ public class QueryTableTreeTest extends QueryTableTestBase {
         rootMap.dropReference();
         nextLevel.dropReference();
 
-        LiveTableMonitor.DEFAULT.exclusiveLock().doLocked(getScope::close);
-        LiveTableMonitor.DEFAULT.exclusiveLock().doLocked(rollupManager::release);
+        UpdateGraphProcessor.DEFAULT.exclusiveLock().doLocked(getScope::close);
+        UpdateGraphProcessor.DEFAULT.exclusiveLock().doLocked(rollupManager::release);
 
         // we should not be able to retainReference the rollup, because closing the scope should have decremented it to
         // zero
@@ -1514,7 +1514,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
                         new TstUtils.DoubleGenerator(-100, 100),
                         new TstUtils.SetGenerator<>("A", "B", "C", "D")));
 
-        final Table rollup = LiveTableMonitor.DEFAULT.exclusiveLock().computeLocked(
+        final Table rollup = UpdateGraphProcessor.DEFAULT.exclusiveLock().computeLocked(
                 () -> table.rollup(AggCombo(AggSum("DoubleCol"), AggFirst("StringCol")), "USym", "Group", "IntCol"));
         TestCase.assertEquals(String.class, rollup.getColumnSource("USym").getType());
         TestCase.assertEquals(String.class, rollup.getColumnSource("Group").getType());
@@ -1561,12 +1561,12 @@ public class QueryTableTreeTest extends QueryTableTestBase {
                         col("G2", "C", "C", "D", "D", "E", "E"),
                         col("IntCol", 1, 2, 3, 4, 5, 6));
 
-        final Table rollup = LiveTableMonitor.DEFAULT.exclusiveLock()
+        final Table rollup = UpdateGraphProcessor.DEFAULT.exclusiveLock()
                 .computeLocked(() -> table.rollup(AggCombo(comboBy), "G1", "G2"));
 
         dumpRollup(rollup, "G1", "G2");
 
-        final Table fullBy = LiveTableMonitor.DEFAULT.exclusiveLock().computeLocked(() -> table.by(AggCombo(comboBy)));
+        final Table fullBy = UpdateGraphProcessor.DEFAULT.exclusiveLock().computeLocked(() -> table.by(AggCombo(comboBy)));
 
         final Table rollupClean = getDiffableTable(rollup).view("IntCol");
 
@@ -1574,10 +1574,10 @@ public class QueryTableTreeTest extends QueryTableTestBase {
 
         assertEquals("", diff);
 
-        LiveTableMonitor.DEFAULT.startCycleForUnitTests();
+        UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
         removeRows(table, i(2));
         table.notifyListeners(i(), i(2), i());
-        LiveTableMonitor.DEFAULT.completeCycleForUnitTests();
+        UpdateGraphProcessor.DEFAULT.completeCycleForUnitTests();
 
         System.out.println("Removed Row 2, Rollup:");
         dumpRollup(rollup, "G1", "G2");
@@ -1587,10 +1587,10 @@ public class QueryTableTreeTest extends QueryTableTestBase {
         final String diff2 = TableTools.diff(fullBy, rollupClean, 10, EnumSet.of(TableDiff.DiffItems.DoublesExact));
         assertEquals("", diff2);
 
-        LiveTableMonitor.DEFAULT.startCycleForUnitTests();
+        UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
         removeRows(table, i(0, 1));
         table.notifyListeners(i(), i(0, 1), i());
-        LiveTableMonitor.DEFAULT.completeCycleForUnitTests();
+        UpdateGraphProcessor.DEFAULT.completeCycleForUnitTests();
 
         dumpRollup(rollup, "G1", "G2");
 
@@ -1687,7 +1687,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
                 new RollupEvalNugget(3, "USym", "Group") {
                     @Override
                     protected Table e() {
-                        return LiveTableMonitor.DEFAULT.exclusiveLock()
+                        return UpdateGraphProcessor.DEFAULT.exclusiveLock()
                                 .computeLocked(() -> table.rollup(rollupDefinition, "USym", "Group"));
                     }
 
@@ -1754,7 +1754,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
 
         for (int step = 0; step < 100; ++step) {
             System.out.println("step = " + step);
-            LiveTableMonitor.DEFAULT.startCycleForUnitTests();
+            UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
 
             final int numChanges = random.nextInt(100);
             final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
@@ -1833,7 +1833,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
 
             // TableTools.showWithIndex(source.getSubTable(newRowSet));
 
-            LiveTableMonitor.DEFAULT.completeCycleForUnitTests();
+            UpdateGraphProcessor.DEFAULT.completeCycleForUnitTests();
 
             final String hierarchicalColumnName = getHierarchicalColumnName(ordersFiltered);
             doCompareWithChildrenForTrees("step = " + step, ordersFiltered,
@@ -1856,7 +1856,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
         assertNull(rollup.getColumn("BigI").get(0));
         assertNull(rollup.getColumn("BigD").get(0));
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(table, i(2, 3), col("Sym", "A", "A"), col("BigI", BigInteger.ZERO, BigInteger.ZERO),
                     col("BigD", BigDecimal.ZERO, BigDecimal.ZERO));
             table.notifyListeners(i(2, 3), i(), i());
@@ -1887,7 +1887,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
         assertNotNull(aTable);
 
         // Start with Nulls and make sure we get NaN
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(dataTable, i(1, 2),
                     stringCol("USym", "A", "A"),
                     doubleCol("Value", NULL_DOUBLE, NULL_DOUBLE),
@@ -1915,7 +1915,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
         assertEquals(Double.NaN, aTable.getColumn("LValue").getDouble(0));
 
         // Add a real value 0, which used to be broken because the default value was 0 and resulted in a no change
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(dataTable, i(3),
                     stringCol("USym", "A"),
                     doubleCol("Value", 0.0d),
@@ -1943,7 +1943,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
         assertEquals(0.0d, aTable.getColumn("LValue").getDouble(0));
 
         // Delete the real value to make sure we go back to NaN
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             removeRows(dataTable, i(3));
 
             dataTable.notifyListeners(i(), i(3), i());
@@ -1964,7 +1964,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
         assertEquals(Double.NaN, aTable.getColumn("LValue").getDouble(0));
 
         // Add a couple of real 0's and make sure we get a 0
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(dataTable, i(3, 4, 5),
                     stringCol("USym", "A", "A", "A"),
                     doubleCol("Value", 0.0d, 0.0d, 0.0d),
@@ -1991,7 +1991,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
         assertEquals(0.0d, aTable.getColumn("IValue").getDouble(0));
         assertEquals(0.0d, aTable.getColumn("LValue").getDouble(0));
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(dataTable, i(6),
                     stringCol("USym", "A"),
                     doubleCol("Value", 1.0d),

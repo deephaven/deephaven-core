@@ -3,7 +3,7 @@ package io.deephaven.engine.v2;
 import io.deephaven.engine.tables.SortPair;
 import io.deephaven.engine.tables.SortingOrder;
 import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.live.LiveTableMonitor;
+import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.test.types.SerialTest;
 import io.deephaven.benchmarking.BenchmarkTable;
 import io.deephaven.benchmarking.BenchmarkTableBuilder;
@@ -25,13 +25,13 @@ import static io.deephaven.engine.v2.TstUtils.initColumnInfos;
 public class MultiColumnSortTest {
     @Before
     public void setUp() {
-        LiveTableMonitor.DEFAULT.enableUnitTestMode();
-        LiveTableMonitor.DEFAULT.resetForUnitTests(false);
+        UpdateGraphProcessor.DEFAULT.enableUnitTestMode();
+        UpdateGraphProcessor.DEFAULT.resetForUnitTests(false);
     }
 
     @After
     public void teardown() {
-        LiveTableMonitor.DEFAULT.resetForUnitTests(true);
+        UpdateGraphProcessor.DEFAULT.resetForUnitTests(true);
     }
 
     @Test

@@ -2,7 +2,7 @@ package io.deephaven.benchmark.engine;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.live.LiveTableMonitor;
+import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.v2.SparseSelect;
 import io.deephaven.benchmarking.BenchUtil;
 import io.deephaven.benchmarking.BenchmarkTable;
@@ -40,7 +40,7 @@ public class SparseSelectBenchmark {
 
     @Setup(Level.Trial)
     public void setupEnv(BenchmarkParams params) {
-        LiveTableMonitor.DEFAULT.enableUnitTestMode();
+        UpdateGraphProcessor.DEFAULT.enableUnitTestMode();
 
         final int actualSize = BenchmarkTools.sizeWithSparsity(tableSize, sparsity);
 
@@ -87,7 +87,7 @@ public class SparseSelectBenchmark {
 
     @Benchmark
     public Table incrementalSparseSelect() {
-        final Table result = LiveTableMonitor.DEFAULT.exclusiveLock().computeLocked(
+        final Table result = UpdateGraphProcessor.DEFAULT.exclusiveLock().computeLocked(
                 () -> IncrementalBenchmark.incrementalBenchmark(SparseSelect::sparseSelect, inputTable, 10));
         Assert.eq(result.size(), "result.size()", inputTable.size(), "inputTable.size()");
         return state.setResult(result);
@@ -96,7 +96,7 @@ public class SparseSelectBenchmark {
     @Benchmark
     public Table sparseSelect() {
         return state.setResult(
-                LiveTableMonitor.DEFAULT.exclusiveLock().computeLocked(() -> SparseSelect.sparseSelect(inputTable)));
+                UpdateGraphProcessor.DEFAULT.exclusiveLock().computeLocked(() -> SparseSelect.sparseSelect(inputTable)));
     }
 
     public static void main(final String[] args) {

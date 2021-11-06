@@ -4,13 +4,12 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.tables.ColumnDefinition;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.TableDefinition;
-import io.deephaven.engine.tables.live.LiveTableMonitor;
+import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.tables.live.NotificationQueue;
 import io.deephaven.engine.v2.*;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.UnionColumnSource;
 import io.deephaven.engine.v2.sources.UnionSourceManager;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
@@ -45,7 +44,7 @@ public class TableToolsMergeHelper {
             final TableDefinition definition = tables.get(ti).getDefinition();
             final Set<String> columnNames =
                     definition.getColumnStream().map(ColumnDefinition::getName).collect(Collectors.toSet());
-            isStatic &= !tables.get(ti).isLive();
+            isStatic &= !tables.get(ti).isRefreshing();
 
             if (!targetColumnNames.containsAll(columnNames) || !columnNames.containsAll(targetColumnNames)) {
                 final Set<String> missingTargets = new HashSet<>(targetColumnNames);
@@ -73,7 +72,7 @@ public class TableToolsMergeHelper {
         }
 
         if (!isStatic) {
-            LiveTableMonitor.DEFAULT.checkInitiateTableOperation();
+            UpdateGraphProcessor.DEFAULT.checkInitiateTableOperation();
         }
 
         final UnionSourceManager unionSourceManager = new UnionSourceManager(tableDef, parentDependency);

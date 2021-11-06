@@ -23,7 +23,7 @@ public class ReplayGroupedFullTable extends QueryReplayGroupedTable {
     }
 
     @Override
-    public void refresh() {
+    public void run() {
         if (allIterators.isEmpty()) {
             return;
         }

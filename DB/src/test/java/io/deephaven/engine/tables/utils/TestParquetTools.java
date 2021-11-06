@@ -13,7 +13,7 @@ import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.TableDefinition;
 import io.deephaven.engine.tables.libs.QueryLibrary;
 import io.deephaven.engine.tables.libs.StringSet;
-import io.deephaven.engine.tables.live.LiveTableMonitor;
+import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.v2.InMemoryTable;
 import io.deephaven.engine.v2.TstUtils;
 import io.deephaven.engine.v2.locations.TableDataException;
@@ -76,8 +76,8 @@ public class TestParquetTools {
 
     @Before
     public void setUp() {
-        LiveTableMonitor.DEFAULT.enableUnitTestMode();
-        LiveTableMonitor.DEFAULT.resetForUnitTests(false);
+        UpdateGraphProcessor.DEFAULT.enableUnitTestMode();
+        UpdateGraphProcessor.DEFAULT.resetForUnitTests(false);
 
         testRootFile.mkdirs();
     }
@@ -100,7 +100,7 @@ public class TestParquetTools {
                 TestCase.assertTrue(success);
             }
         } finally {
-            LiveTableMonitor.DEFAULT.resetForUnitTests(true);
+            UpdateGraphProcessor.DEFAULT.resetForUnitTests(true);
         }
     }
 

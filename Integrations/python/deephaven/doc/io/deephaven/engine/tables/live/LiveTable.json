@@ -4,6 +4,6 @@
   "refresh": "Refresh this LiveTable."
  },
  "path": "io.deephaven.engine.tables.live.LiveTable",
- "text": "An object that should be refreshed by the LiveTableMonitor.",
+ "text": "An object that should be refreshed by the UpdateGraphProcessor.",
  "typeName": "interface"
 }

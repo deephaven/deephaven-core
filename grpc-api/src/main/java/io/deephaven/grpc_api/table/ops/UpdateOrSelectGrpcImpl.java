@@ -3,7 +3,7 @@ package io.deephaven.grpc_api.table.ops;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.live.LiveTableMonitor;
+import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.tables.select.SelectColumnFactory;
 import io.deephaven.engine.v2.select.SelectColumn;
 import io.deephaven.grpc_api.session.SessionState;
@@ -43,8 +43,8 @@ public abstract class UpdateOrSelectGrpcImpl extends GrpcTableOperation<SelectOr
         final SelectColumn[] expressions = SelectColumnFactory.getExpressions(columnSpecs);
         ColumnExpressionValidator.validateColumnExpressions(expressions, columnSpecs, parent);
 
-        if (parent.isLive() && requiresSharedLock) {
-            return LiveTableMonitor.DEFAULT.sharedLock()
+        if (parent.isRefreshing() && requiresSharedLock) {
+            return UpdateGraphProcessor.DEFAULT.sharedLock()
                     .computeLocked(() -> realTableOperation.apply(parent, expressions));
         }
 

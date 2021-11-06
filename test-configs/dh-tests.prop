@@ -58,8 +58,8 @@ WorkerPythonEnvironment.defaultScriptPath=<devroot>/DB/python
 
 Comm.fatalErrorHandlerFactoryClass=io.deephaven.console.utils.ProcessEnvironmentRedirectFactory
 
-LiveTableMonitor.checkTableOperations=true
-LiveTableMonitor.allowUnitTestMode=true
+UpdateGraphProcessor.checkTableOperations=true
+UpdateGraphProcessor.allowUnitTestMode=true
 
 QueryPerformanceRecorder.packageFilter.internal=defaultPackageFilters.qpr
 

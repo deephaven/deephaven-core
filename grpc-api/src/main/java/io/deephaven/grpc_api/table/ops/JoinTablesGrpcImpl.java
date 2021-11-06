@@ -5,7 +5,7 @@ import com.google.common.collect.Lists;
 import com.google.rpc.Code;
 import io.deephaven.engine.exceptions.ExpressionException;
 import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.live.LiveTableMonitor;
+import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.tables.select.MatchPair;
 import io.deephaven.engine.tables.select.MatchPairFactory;
 import io.deephaven.grpc_api.session.SessionState;
@@ -32,10 +32,10 @@ public abstract class JoinTablesGrpcImpl<T> extends GrpcTableOperation<T> {
 
     private final Function<T, List<String>> getColMatchList;
     private final Function<T, List<String>> getColAddList;
-    private final LiveTableMonitor liveTableMonitor;
+    private final UpdateGraphProcessor updateGraphProcessor;
     private final RealTableOperation<T> realTableOperation;
 
-    protected JoinTablesGrpcImpl(final LiveTableMonitor liveTableMonitor,
+    protected JoinTablesGrpcImpl(final UpdateGraphProcessor updateGraphProcessor,
             final Function<BatchTableRequest.Operation, T> getRequest,
             final Function<T, Ticket> getTicket,
             final MultiDependencyFunction<T> getDependencies,
@@ -43,7 +43,7 @@ public abstract class JoinTablesGrpcImpl<T> extends GrpcTableOperation<T> {
             final Function<T, List<String>> getColAddList,
             final RealTableOperation<T> realTableOperation) {
         super(getRequest, getTicket, getDependencies);
-        this.liveTableMonitor = liveTableMonitor;
+        this.updateGraphProcessor = updateGraphProcessor;
         this.getColMatchList = getColMatchList;
         this.getColAddList = getColAddList;
         this.realTableOperation = realTableOperation;
@@ -79,10 +79,10 @@ public abstract class JoinTablesGrpcImpl<T> extends GrpcTableOperation<T> {
         final Table rhs = sourceTables.get(1).get();
 
         final Table result;
-        if (!lhs.isLive() && !rhs.isLive()) {
+        if (!lhs.isRefreshing() && !rhs.isRefreshing()) {
             result = realTableOperation.apply(lhs, rhs, columnsToMatch, columnsToAdd, request);
         } else {
-            result = liveTableMonitor.sharedLock().computeLocked(
+            result = updateGraphProcessor.sharedLock().computeLocked(
                     () -> realTableOperation.apply(lhs, rhs, columnsToMatch, columnsToAdd, request));
         }
         return result;
@@ -95,8 +95,8 @@ public abstract class JoinTablesGrpcImpl<T> extends GrpcTableOperation<T> {
                 (request) -> Lists.newArrayList(request.getLeftId(), request.getRightId());
 
         @Inject
-        protected AsOfJoinTablesGrpcImpl(LiveTableMonitor liveTableMonitor) {
-            super(liveTableMonitor, BatchTableRequest.Operation::getAsOfJoin, AsOfJoinTablesRequest::getResultId,
+        protected AsOfJoinTablesGrpcImpl(UpdateGraphProcessor updateGraphProcessor) {
+            super(updateGraphProcessor, BatchTableRequest.Operation::getAsOfJoin, AsOfJoinTablesRequest::getResultId,
                     EXTRACT_DEPS,
                     AsOfJoinTablesRequest::getColumnsToMatchList, AsOfJoinTablesRequest::getColumnsToAddList,
                     AsOfJoinTablesGrpcImpl::doJoin);
@@ -135,8 +135,8 @@ public abstract class JoinTablesGrpcImpl<T> extends GrpcTableOperation<T> {
                 (request) -> Lists.newArrayList(request.getLeftId(), request.getRightId());
 
         @Inject
-        public CrossJoinTablesGrpcImpl(final LiveTableMonitor liveTableMonitor) {
-            super(liveTableMonitor, BatchTableRequest.Operation::getCrossJoin, CrossJoinTablesRequest::getResultId,
+        public CrossJoinTablesGrpcImpl(final UpdateGraphProcessor updateGraphProcessor) {
+            super(updateGraphProcessor, BatchTableRequest.Operation::getCrossJoin, CrossJoinTablesRequest::getResultId,
                     EXTRACT_DEPS,
                     CrossJoinTablesRequest::getColumnsToMatchList, CrossJoinTablesRequest::getColumnsToAddList,
                     CrossJoinTablesGrpcImpl::doJoin);
@@ -161,8 +161,8 @@ public abstract class JoinTablesGrpcImpl<T> extends GrpcTableOperation<T> {
                 (request) -> Lists.newArrayList(request.getLeftId(), request.getRightId());
 
         @Inject
-        public ExactJoinTablesGrpcImpl(final LiveTableMonitor liveTableMonitor) {
-            super(liveTableMonitor, BatchTableRequest.Operation::getExactJoin, ExactJoinTablesRequest::getResultId,
+        public ExactJoinTablesGrpcImpl(final UpdateGraphProcessor updateGraphProcessor) {
+            super(updateGraphProcessor, BatchTableRequest.Operation::getExactJoin, ExactJoinTablesRequest::getResultId,
                     EXTRACT_DEPS,
                     ExactJoinTablesRequest::getColumnsToMatchList, ExactJoinTablesRequest::getColumnsToAddList,
                     ExactJoinTablesGrpcImpl::doJoin);
@@ -182,8 +182,8 @@ public abstract class JoinTablesGrpcImpl<T> extends GrpcTableOperation<T> {
                 (request) -> Lists.newArrayList(request.getLeftId(), request.getRightId());
 
         @Inject
-        public LeftJoinTablesGrpcImpl(final LiveTableMonitor liveTableMonitor) {
-            super(liveTableMonitor, BatchTableRequest.Operation::getLeftJoin, LeftJoinTablesRequest::getResultId,
+        public LeftJoinTablesGrpcImpl(final UpdateGraphProcessor updateGraphProcessor) {
+            super(updateGraphProcessor, BatchTableRequest.Operation::getLeftJoin, LeftJoinTablesRequest::getResultId,
                     EXTRACT_DEPS,
                     LeftJoinTablesRequest::getColumnsToMatchList, LeftJoinTablesRequest::getColumnsToAddList,
                     LeftJoinTablesGrpcImpl::doJoin);
@@ -203,8 +203,8 @@ public abstract class JoinTablesGrpcImpl<T> extends GrpcTableOperation<T> {
                 (request) -> Lists.newArrayList(request.getLeftId(), request.getRightId());
 
         @Inject
-        public NaturalJoinTablesGrpcImpl(final LiveTableMonitor liveTableMonitor) {
-            super(liveTableMonitor, BatchTableRequest.Operation::getNaturalJoin, NaturalJoinTablesRequest::getResultId,
+        public NaturalJoinTablesGrpcImpl(final UpdateGraphProcessor updateGraphProcessor) {
+            super(updateGraphProcessor, BatchTableRequest.Operation::getNaturalJoin, NaturalJoinTablesRequest::getResultId,
                     EXTRACT_DEPS,
                     NaturalJoinTablesRequest::getColumnsToMatchList, NaturalJoinTablesRequest::getColumnsToAddList,
                     NaturalJoinTablesGrpcImpl::doJoin);

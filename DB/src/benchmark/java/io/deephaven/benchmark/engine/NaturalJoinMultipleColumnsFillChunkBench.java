@@ -1,7 +1,7 @@
 package io.deephaven.benchmark.engine;
 
 import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.live.LiveTableMonitor;
+import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.v2.select.IncrementalReleaseFilter;
 import io.deephaven.engine.v2.sources.chunk.WritableLongChunk;
 import io.deephaven.benchmarking.BenchUtil;
@@ -101,7 +101,7 @@ public class NaturalJoinMultipleColumnsFillChunkBench extends RedirectionBenchBa
         final String joinColsStr = String.join(",", joinCols);
         final String joinColumnsToAddStr = String.join(",", joinColumnsToAdd);
         if (doSelect) {
-            live = LiveTableMonitor.DEFAULT.exclusiveLock().computeLocked(
+            live = UpdateGraphProcessor.DEFAULT.exclusiveLock().computeLocked(
                     () -> t1Released.select(t1Cols).sort(sortCol).naturalJoin(t2, joinColsStr, joinColumnsToAddStr));
         } else {
             live = t1Released.sort(sortCol).naturalJoin(t2, joinColsStr, joinColumnsToAddStr);

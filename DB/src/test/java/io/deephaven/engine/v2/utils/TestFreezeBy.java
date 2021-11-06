@@ -2,7 +2,7 @@ package io.deephaven.engine.v2.utils;
 
 import io.deephaven.api.Selectable;
 import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.live.LiveTableMonitor;
+import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.tables.select.QueryScope;
 import io.deephaven.engine.tables.utils.DBDateTime;
 import io.deephaven.engine.tables.utils.DBTimeUtils;
@@ -48,7 +48,7 @@ public class TestFreezeBy extends LiveTableTestCase {
         assertEquals(DBDateTime.class, frozen.getColumn("SDateTime").getType());
         assertEquals(Boolean.class, frozen.getColumn("SBoolean").getType());
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             TstUtils.removeRows(input, i(0));
             TstUtils.addToTable(input, i(2), stringCol("Key", "C"), intCol("Sentinel", 4));
             input.notifyListeners(i(), i(0), i(2));
@@ -58,7 +58,7 @@ public class TestFreezeBy extends LiveTableTestCase {
         assertTableEquals(TableTools.newTable(stringCol("Key", "B", "C"), intCol("Sentinel", 2, 3))
                 .updateView(Selectable.from(updates)), frozen);
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(input, i(3, 4), stringCol("Key", "D", "A"), intCol("Sentinel", 5, 6));
             input.notifyListeners(i(3, 4), i(), i());
         });
@@ -68,7 +68,7 @@ public class TestFreezeBy extends LiveTableTestCase {
                 .updateView(Selectable.from(updates)), frozen);
 
         // swap two keys
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(input, i(3, 4), stringCol("Key", "A", "D"), intCol("Sentinel", 7, 8));
             input.notifyListeners(i(), i(), i(4, 3));
         });
@@ -93,7 +93,7 @@ public class TestFreezeBy extends LiveTableTestCase {
         assertTableEquals(input, frozen);
 
         // swap two keys
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(input, i(0, 4), stringCol("Key", "A", "D"), intCol("Key2", 101, 101),
                     intCol("Sentinel", 4, 5));
             input.notifyListeners(i(4), i(), i(0));
@@ -110,7 +110,7 @@ public class TestFreezeBy extends LiveTableTestCase {
         TableTools.showWithIndex(frozen);
 
         final Table originalExpect =
-                LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> TableTools.emptyTable(1).snapshot(input));
+                UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> TableTools.emptyTable(1).snapshot(input));
         assertTableEquals(input, originalExpect);
 
         final TableUpdateValidator tuv = TableUpdateValidator.make("frozen", (QueryTable) frozen);
@@ -118,7 +118,7 @@ public class TestFreezeBy extends LiveTableTestCase {
         tuv.getResultTable().listenForUpdates(failureListener);
         assertTableEquals(input, frozen);
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             TstUtils.removeRows(input, i(0));
             TstUtils.addToTable(input, i(2), stringCol("Key", "C"), intCol("Sentinel", 4));
             input.notifyListeners(i(2), i(0), i());
@@ -126,38 +126,38 @@ public class TestFreezeBy extends LiveTableTestCase {
         TableTools.showWithIndex(frozen);
         assertTableEquals(originalExpect, frozen);
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(input, i(2), stringCol("Key", "D"), intCol("Sentinel", 5));
             input.notifyListeners(i(), i(), i(2));
         });
         TableTools.showWithIndex(frozen);
         assertTableEquals(originalExpect, frozen);
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             TstUtils.removeRows(input, i(2));
             input.notifyListeners(i(), i(2), i());
         });
         TableTools.showWithIndex(frozen);
         assertTableEquals(originalExpect.head(0), frozen);
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(input, i(2), stringCol("Key", "E"), intCol("Sentinel", 6));
             input.notifyListeners(i(2), i(), i());
         });
         TableTools.showWithIndex(frozen);
         final Table newExpect =
-                LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> TableTools.emptyTable(1).snapshot(input));
+                UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> TableTools.emptyTable(1).snapshot(input));
         assertTableEquals(input, newExpect);
         assertTableEquals(newExpect, frozen);
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(input, i(3), stringCol("Key", "F"), intCol("Sentinel", 7));
             TstUtils.removeRows(input, i(2));
             input.notifyListeners(i(3), i(2), i());
         });
         assertTableEquals(newExpect, frozen);
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(input, i(3), stringCol("Key", "G"), intCol("Sentinel", 8));
             input.notifyListeners(i(), i(), i(3));
         });
@@ -177,7 +177,7 @@ public class TestFreezeBy extends LiveTableTestCase {
         final Table frozen = FreezeBy.freezeBy(input, "Key");
         assertTableEquals(input, frozen);
         allowingError(() -> {
-            LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
                 addToTable(input, i(3), stringCol("Key", "A"), intCol("Sentinel", 4));
                 input.notifyListeners(i(3), i(), i());
             });

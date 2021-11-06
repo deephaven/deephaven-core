@@ -182,7 +182,7 @@ abstract class ArraySourceHelper<T, UArray> extends ArrayBackedColumnSource<T> {
         if (prevFlusher == null) {
             return false;
         }
-        // If we want to track previous values, we make sure we are registered with the LiveTableMonitor.
+        // If we want to track previous values, we make sure we are registered with the UpdateGraphProcessor.
         prevFlusher.maybeActivate();
 
         final int block = (int) (key >> LOG_BLOCK_SIZE);

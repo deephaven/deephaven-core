@@ -7,7 +7,7 @@ package io.deephaven.engine.v2.select;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.TableDefinition;
 import io.deephaven.engine.tables.live.LiveTable;
-import io.deephaven.engine.tables.live.LiveTableMonitor;
+import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.v2.utils.MutableRowSet;
 import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
@@ -16,7 +16,7 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * This will filter a table starting off with the first N rows, and then adding new rows to the table on each refresh.
+ * This will filter a table starting off with the first N rows, and then adding new rows to the table on each run.
  */
 public class RollingReleaseFilter extends SelectFilterLivenessArtifactImpl implements LiveTable {
     private final long workingSize;
@@ -26,7 +26,7 @@ public class RollingReleaseFilter extends SelectFilterLivenessArtifactImpl imple
     private RecomputeListener listener;
     private boolean releaseMoreEntries = false;
 
-    transient private boolean addedToLiveTableMonitor = false;
+    transient private boolean addedToUpdateGraphProcessor = false;
 
     public RollingReleaseFilter(long workingSize, long rollingSize) {
         this.workingSize = workingSize;
@@ -45,9 +45,9 @@ public class RollingReleaseFilter extends SelectFilterLivenessArtifactImpl imple
 
     @Override
     public void init(TableDefinition tableDefinition) {
-        if (!addedToLiveTableMonitor) {
-            LiveTableMonitor.DEFAULT.addTable(this);
-            addedToLiveTableMonitor = true;
+        if (!addedToUpdateGraphProcessor) {
+            UpdateGraphProcessor.DEFAULT.addTable(this);
+            addedToUpdateGraphProcessor = true;
         }
     }
 
@@ -99,7 +99,7 @@ public class RollingReleaseFilter extends SelectFilterLivenessArtifactImpl imple
     }
 
     @Override
-    public void refresh() {
+    public void run() {
         releaseMoreEntries = true;
         listener.requestRecompute();
     }
@@ -107,6 +107,6 @@ public class RollingReleaseFilter extends SelectFilterLivenessArtifactImpl imple
     @Override
     protected void destroy() {
         super.destroy();
-        LiveTableMonitor.DEFAULT.removeTable(this);
+        UpdateGraphProcessor.DEFAULT.removeTable(this);
     }
 }

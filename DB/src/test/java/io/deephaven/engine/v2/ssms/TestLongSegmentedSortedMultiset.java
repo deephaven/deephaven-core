@@ -5,7 +5,7 @@ package io.deephaven.engine.v2.ssms;
 
 import io.deephaven.base.verify.AssertionFailure;
 import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.live.LiveTableMonitor;
+import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.util.DhLongComparisons;
 import io.deephaven.engine.util.LongSizedDataStructure;
@@ -170,7 +170,7 @@ public class TestLongSegmentedSortedMultiset extends LiveTableTestCase {
             asLong.listenForUpdates(asLongListener);
 
             while (desc.advance(50)) {
-                LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+                UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
                     final RowSet[] notify = GenerateTableUpdates.computeTableUpdates(desc.tableSize(), random, table, columnInfo, allowAddition, allowRemoval, false);
                     assertTrue(notify[2].isEmpty());
                     table.notifyListeners(notify[0], notify[1], notify[2]);

@@ -10,7 +10,7 @@ import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.TableDefinition;
 import io.deephaven.engine.tables.lang.DBLanguageFunctionUtil;
 import io.deephaven.engine.tables.live.LiveTable;
-import io.deephaven.engine.tables.live.LiveTableMonitor;
+import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.tables.utils.DBDateTime;
 import io.deephaven.engine.v2.DynamicNode;
 import io.deephaven.engine.v2.QueryTable;
@@ -99,7 +99,7 @@ public abstract class ClockFilter extends SelectFilterLivenessArtifactImpl imple
         if (!live) {
             return;
         }
-        LiveTableMonitor.DEFAULT.addTable(this);
+        UpdateGraphProcessor.DEFAULT.addTable(this);
         this.resultTable = listener.getTable();
         listener.setIsRefreshing(true);
     }
@@ -107,11 +107,11 @@ public abstract class ClockFilter extends SelectFilterLivenessArtifactImpl imple
     @Override
     protected void destroy() {
         super.destroy();
-        LiveTableMonitor.DEFAULT.removeTable(this);
+        UpdateGraphProcessor.DEFAULT.removeTable(this);
     }
 
     @Override
-    public final void refresh() {
+    public final void run() {
         final RowSet added = updateAndGetAddedIndex();
         if (added != null && !added.isEmpty()) {
             resultTable.getRowSet().mutableCast().insert(added);

@@ -13,7 +13,7 @@ import io.deephaven.tablelogger.RowSetter;
 import io.deephaven.tablelogger.TableWriter;
 import io.deephaven.engine.tables.DataColumn;
 import io.deephaven.engine.tables.TableDefinition;
-import io.deephaven.engine.tables.live.LiveTableMonitor;
+import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.v2.LiveQueryTable;
 import io.deephaven.engine.v2.sources.ArrayBackedColumnSource;
@@ -129,7 +129,7 @@ public class DynamicTableWriter implements TableWriter {
     /**
      * Gets the table created by this DynamicTableWriter.
      * <p>
-     * The returned table is registered with the LiveTableMonitor, and new rows become visible within the refresh loop.
+     * The returned table is registered with the UpdateGraphProcessor, and new rows become visible within the run loop.
      *
      * @return a live table with the output of this log
      */
@@ -179,7 +179,7 @@ public class DynamicTableWriter implements TableWriter {
     /**
      * Writes the current row created with the {@code getSetter} call, and advances the current row by one.
      * <p>
-     * The row will be made visible in the table after the LiveTableMonitor refresh cycle completes.
+     * The row will be made visible in the table after the UpdateGraphProcessor run cycle completes.
      */
     @Override
     public void writeRow() {
@@ -353,7 +353,7 @@ public class DynamicTableWriter implements TableWriter {
                     (currentRow) -> createRowSetter(columns[index].getType(), arrayColumnSources[index]));
             ++ii;
         }
-        LiveTableMonitor.DEFAULT.addTable(table);
+        UpdateGraphProcessor.DEFAULT.addTable(table);
     }
 
     private RowSetterImpl createRowSetter(Class type, ArrayBackedColumnSource buffer) {

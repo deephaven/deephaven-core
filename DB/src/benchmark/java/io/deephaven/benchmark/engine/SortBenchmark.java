@@ -2,7 +2,7 @@ package io.deephaven.benchmark.engine;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.live.LiveTableMonitor;
+import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.v2.ModifiedColumnSet;
 import io.deephaven.engine.v2.QueryTable;
 import io.deephaven.engine.v2.Listener;
@@ -75,7 +75,7 @@ public class SortBenchmark {
         Assert.eqTrue(workingSize % sizePerStep == 0, "Cannot evenly divide working size by step size.");
         workingSizeInSteps = workingSize / sizePerStep;
 
-        LiveTableMonitor.DEFAULT.enableUnitTestMode();
+        UpdateGraphProcessor.DEFAULT.enableUnitTestMode();
 
         final int nVals = (int) (enumSize < 1 ? enumSize * tableSize : enumSize);
         System.out.println("String Values: " + nVals);
@@ -150,7 +150,7 @@ public class SortBenchmark {
         rollingInputTable.setRefreshing(true);
         rollingOutputTable = rollingInputTable.sort(sortCol);
 
-        LiveTableMonitor.DEFAULT.enableUnitTestMode();
+        UpdateGraphProcessor.DEFAULT.enableUnitTestMode();
     }
 
     private long currStep = 0;
@@ -165,7 +165,7 @@ public class SortBenchmark {
         }
         currStep = (currStep + 1) % numSteps;
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(incrementalReleaseFilter::refresh);
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(incrementalReleaseFilter::run);
 
         return incrementalTable;
     }
@@ -173,7 +173,7 @@ public class SortBenchmark {
     @Benchmark
     public Table rollingSort() {
         Assert.eq(rollingSortTable.size(), "result.size()", workingSize, "inputTable.size()");
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(rollingReleaseFilter::refresh);
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(rollingReleaseFilter::run);
         return rollingSortTable;
     }
 
@@ -197,7 +197,7 @@ public class SortBenchmark {
         update.modifiedColumnSet = mcsWithoutSortColumn;
         update.shifted = RowSetShiftData.EMPTY;
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             rollingInputRowSet.update(update.added, update.removed);
             rollingInputTable.notifyListeners(update);
         });
@@ -223,7 +223,7 @@ public class SortBenchmark {
         update.modifiedColumnSet = mcsWithSortColumn;
         update.shifted = RowSetShiftData.EMPTY;
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             rollingInputRowSet.update(update.added, update.removed);
             rollingInputTable.notifyListeners(update);
         });

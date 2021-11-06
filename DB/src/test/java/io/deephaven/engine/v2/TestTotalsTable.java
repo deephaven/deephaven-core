@@ -4,7 +4,7 @@ import io.deephaven.compilertools.CompilerTools;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.dbarrays.DbDoubleArrayDirect;
-import io.deephaven.engine.tables.live.LiveTableMonitor;
+import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.utils.UpdatePerformanceTracker;
 import io.deephaven.libs.primitives.*;
@@ -54,7 +54,7 @@ public class TestTotalsTable extends LiveTableTestCase {
                         new TstUtils.ShortGenerator()));
 
         final TotalsTableBuilder builder = new TotalsTableBuilder();
-        final Table totals = LiveTableMonitor.DEFAULT.exclusiveLock()
+        final Table totals = UpdateGraphProcessor.DEFAULT.exclusiveLock()
                 .computeLocked(() -> TotalsTableBuilder.makeTotalsTable(queryTable.setTotalsTable(builder)));
         final Map<String, ? extends ColumnSource> resultColumns = totals.getColumnSourceMap();
         assertEquals(1, totals.size());
@@ -77,7 +77,7 @@ public class TestTotalsTable extends LiveTableTestCase {
         builder.setOperation("Sym", "first");
         builder.setOperation("intCol2", "last");
 
-        final Table totals2 = LiveTableMonitor.DEFAULT.exclusiveLock()
+        final Table totals2 = UpdateGraphProcessor.DEFAULT.exclusiveLock()
                 .computeLocked(() -> TotalsTableBuilder.makeTotalsTable(queryTable, builder));
         assertEquals(new LinkedHashSet<>(Arrays.asList("Sym", "intCol2", "byteCol")),
                 totals2.getColumnSourceMap().keySet());
@@ -95,7 +95,7 @@ public class TestTotalsTable extends LiveTableTestCase {
 
         final boolean old = QueryTable.setMemoizeResults(true);
         try {
-            final Table totals3 = LiveTableMonitor.DEFAULT.exclusiveLock()
+            final Table totals3 = UpdateGraphProcessor.DEFAULT.exclusiveLock()
                     .computeLocked(() -> TotalsTableBuilder.makeTotalsTable(queryTable, builder));
             assertEquals(
                     new LinkedHashSet<>(Arrays.asList("Sym", "intCol2", "doubleCol", "doubleNullCol__Std",
@@ -118,7 +118,7 @@ public class TestTotalsTable extends LiveTableTestCase {
                     totals3.getColumn("doubleCol2").get(0));
             assertEquals(queryTable.size(), (long) totals3.getColumn("shortCol").get(0));
 
-            final Table totals4 = LiveTableMonitor.DEFAULT.exclusiveLock()
+            final Table totals4 = UpdateGraphProcessor.DEFAULT.exclusiveLock()
                     .computeLocked(() -> TotalsTableBuilder.makeTotalsTable(queryTable, builder));
             assertTrue(totals3 == totals4);
         } finally {
@@ -145,21 +145,21 @@ public class TestTotalsTable extends LiveTableTestCase {
                 new EvalNugget() {
                     public Table e() {
                         final TotalsTableBuilder totalsTableBuilder = new TotalsTableBuilder();
-                        return LiveTableMonitor.DEFAULT.exclusiveLock()
+                        return UpdateGraphProcessor.DEFAULT.exclusiveLock()
                                 .computeLocked(() -> queryTable.setTotalsTable(totalsTableBuilder));
                     }
                 },
                 new EvalNugget() {
                     public Table e() {
                         final TotalsTableBuilder totalsTableBuilder = new TotalsTableBuilder();
-                        return LiveTableMonitor.DEFAULT.exclusiveLock().computeLocked(() -> TotalsTableBuilder
+                        return UpdateGraphProcessor.DEFAULT.exclusiveLock().computeLocked(() -> TotalsTableBuilder
                                 .makeTotalsTable(queryTable.setTotalsTable(totalsTableBuilder)));
                     }
                 },
                 new EvalNugget() {
                     public Table e() {
                         final TotalsTableBuilder totalsTableBuilder = new TotalsTableBuilder();
-                        return LiveTableMonitor.DEFAULT.exclusiveLock().computeLocked(() -> TotalsTableBuilder
+                        return UpdateGraphProcessor.DEFAULT.exclusiveLock().computeLocked(() -> TotalsTableBuilder
                                 .makeTotalsTable(queryTable.setTotalsTable(totalsTableBuilder)));
                     }
                 },

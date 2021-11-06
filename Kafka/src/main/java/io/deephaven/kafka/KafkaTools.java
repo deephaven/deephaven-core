@@ -15,9 +15,9 @@ import io.deephaven.engine.tables.ColumnDefinition;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.TableDefinition;
 import io.deephaven.engine.tables.live.LiveTable;
-import io.deephaven.engine.tables.live.LiveTableMonitor;
-import io.deephaven.engine.tables.live.LiveTableRefreshCombiner;
-import io.deephaven.engine.tables.live.LiveTableRegistrar;
+import io.deephaven.engine.tables.live.UpdateGraphProcessor;
+import io.deephaven.engine.tables.live.UpdateRootCombiner;
+import io.deephaven.engine.tables.live.UpdateRootRegistrar;
 import io.deephaven.engine.tables.utils.DBDateTime;
 import io.deephaven.engine.util.liveness.LivenessScope;
 import io.deephaven.engine.util.liveness.LivenessScopeStack;
@@ -992,13 +992,13 @@ public class KafkaTools {
         final TableDefinition tableDefinition = new TableDefinition(columnDefinitions);
 
         final StreamTableMap streamTableMap = resultType.isMap ? new StreamTableMap(tableDefinition) : null;
-        final LiveTableRegistrar liveTableRegistrar =
-                streamTableMap == null ? LiveTableMonitor.DEFAULT : streamTableMap.refreshCombiner;
+        final UpdateRootRegistrar updateRootRegistrar =
+                streamTableMap == null ? UpdateGraphProcessor.DEFAULT : streamTableMap.refreshCombiner;
 
         final Supplier<Pair<StreamToTableAdapter, ConsumerRecordToStreamPublisherAdapter>> adapterFactory = () -> {
             final StreamPublisherImpl streamPublisher = new StreamPublisherImpl();
             final StreamToTableAdapter streamToTableAdapter =
-                    new StreamToTableAdapter(tableDefinition, streamPublisher, liveTableRegistrar,
+                    new StreamToTableAdapter(tableDefinition, streamPublisher, updateRootRegistrar,
                             "Kafka-" + topic + '-' + partitionFilter);
             streamPublisher.setChunkFactory(() -> streamToTableAdapter.makeChunksForDefinition(CHUNK_SIZE),
                     streamToTableAdapter::chunkTypeForIndex);
@@ -1146,11 +1146,11 @@ public class KafkaTools {
             @NotNull final Produce.KeyOrValueSpec keySpec,
             @NotNull final Produce.KeyOrValueSpec valueSpec,
             final boolean lastByKeyColumns) {
-        if (table.isLive()
-                && !LiveTableMonitor.DEFAULT.exclusiveLock().isHeldByCurrentThread()
-                && !LiveTableMonitor.DEFAULT.sharedLock().isHeldByCurrentThread()) {
+        if (table.isRefreshing()
+                && !UpdateGraphProcessor.DEFAULT.exclusiveLock().isHeldByCurrentThread()
+                && !UpdateGraphProcessor.DEFAULT.sharedLock().isHeldByCurrentThread()) {
             throw new KafkaPublisherException(
-                    "Calling thread must hold an exclusive or shared LiveTableMonitor lock to publish live sources");
+                    "Calling thread must hold an exclusive or shared UpdateGraphProcessor lock to publish live sources");
         }
 
         final boolean ignoreKey = keySpec.dataFormat() == DataFormat.IGNORE;
@@ -1243,17 +1243,17 @@ public class KafkaTools {
 
     private static class StreamTableMap extends LocalTableMap implements LiveTable {
 
-        private final LiveTableRefreshCombiner refreshCombiner = new LiveTableRefreshCombiner();
+        private final UpdateRootCombiner refreshCombiner = new UpdateRootCombiner();
         private final Queue<Runnable> deferredUpdates = new ConcurrentLinkedQueue<>();
 
         private StreamTableMap(@NotNull final TableDefinition constituentDefinition) {
             super(null, constituentDefinition);
             refreshCombiner.addTable(this); // Results in managing the refreshCombiner
-            LiveTableMonitor.DEFAULT.addTable(refreshCombiner);
+            UpdateGraphProcessor.DEFAULT.addTable(refreshCombiner);
         }
 
         @Override
-        public void refresh() {
+        public void run() {
             Runnable deferredUpdate;
             while ((deferredUpdate = deferredUpdates.poll()) != null) {
                 deferredUpdate.run();

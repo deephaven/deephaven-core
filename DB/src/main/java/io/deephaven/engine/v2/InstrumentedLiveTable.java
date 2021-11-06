@@ -16,7 +16,7 @@ public abstract class InstrumentedLiveTable implements LiveTable {
     }
 
     @Override
-    public final void refresh() {
+    public final void run() {
         entry.onUpdateStart();
         try {
             instrumentedRefresh();

@@ -46,7 +46,7 @@ public class FirstOrLastByAggregationFactory implements AggregationContextFactor
         final MatchPair[] matchPairs = table.getDefinition().getColumnNames().stream()
                 .filter(col -> !groupBySet.contains(col)).map(col -> new MatchPair(col, col)).toArray(MatchPair[]::new);
 
-        if (table.isLive()) {
+        if (table.isRefreshing()) {
             if (((BaseTable) table).isStream()) {
                 operator[0] = isFirst ? new StreamFirstChunkedOperator(matchPairs, table)
                         : new StreamLastChunkedOperator(matchPairs, table);

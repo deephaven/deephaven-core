@@ -1,7 +1,7 @@
 package io.deephaven.engine.v2;
 
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.tables.live.LiveTableMonitor;
+import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.v2.utils.RowSetFactory;
 import io.deephaven.engine.v2.utils.RowSetShiftData;
 import io.deephaven.engine.v2.utils.OutOfKeySpaceException;
@@ -41,7 +41,7 @@ public class QueryTableCrossJoinSmallRightBitsTest extends QueryTableCrossJoinTe
 
         for (final QueryTable left : new QueryTable[] {ltTable, lsTable}) {
             for (final QueryTable right : new QueryTable[] {rtTable, rsTable}) {
-                if (left.isLive() || right.isLive()) {
+                if (left.isRefreshing() || right.isRefreshing()) {
                     boolean thrown = false;
                     try {
                         left.join(right);
@@ -69,7 +69,7 @@ public class QueryTableCrossJoinSmallRightBitsTest extends QueryTableCrossJoinTe
 
         for (final QueryTable left : new QueryTable[] {ltTable, lsTable}) {
             for (final QueryTable right : new QueryTable[] {rtTable, rsTable}) {
-                if (left.isLive() || right.isLive()) {
+                if (left.isRefreshing() || right.isRefreshing()) {
                     boolean thrown = false;
                     try {
                         left.join(right, "A=B");
@@ -115,7 +115,7 @@ public class QueryTableCrossJoinSmallRightBitsTest extends QueryTableCrossJoinTe
         final io.deephaven.engine.v2.SimpleListener listener = new io.deephaven.engine.v2.SimpleListener(jt);
         jt.listenForUpdates(listener);
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(lTable, i(1, 2, 3), c("A", 1, 3, 4));
 
             final Listener.Update lUpdate = new Listener.Update();
@@ -171,7 +171,7 @@ public class QueryTableCrossJoinSmallRightBitsTest extends QueryTableCrossJoinTe
         final io.deephaven.engine.v2.SimpleListener listener = new io.deephaven.engine.v2.SimpleListener(jt);
         jt.listenForUpdates(listener);
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(lTable, i(1, 2, 3), c("A", 1, 3, 4));
 
             final Listener.Update lUpdate = new Listener.Update();
@@ -224,7 +224,7 @@ public class QueryTableCrossJoinSmallRightBitsTest extends QueryTableCrossJoinTe
         final io.deephaven.engine.v2.SimpleListener listener = new io.deephaven.engine.v2.SimpleListener(jt);
         jt.listenForUpdates(listener);
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             TstUtils.removeRows(lTable, i(0));
             TstUtils.addToTable(lTable, i(1, 2, 3, 4, 5), c("A", 0, 1, 3, 4, 5));
 
@@ -283,7 +283,7 @@ public class QueryTableCrossJoinSmallRightBitsTest extends QueryTableCrossJoinTe
         final io.deephaven.engine.v2.SimpleListener listener = new io.deephaven.engine.v2.SimpleListener(jt);
         jt.listenForUpdates(listener);
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             TstUtils.removeRows(lTable, i(0));
             TstUtils.addToTable(lTable, i(1, 2, 3, 4, 5), c("A", 0, 1, 3, 4, 5));
 

@@ -2,7 +2,7 @@ package io.deephaven.benchmark.engine;
 
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.live.LiveTableMonitor;
+import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.v2.QueryTable;
 import io.deephaven.engine.v2.by.ComboAggregateFactory;
@@ -61,7 +61,7 @@ public class SumByBenchmark {
 
     @Setup(Level.Trial)
     public void setupEnv(BenchmarkParams params) {
-        LiveTableMonitor.DEFAULT.enableUnitTestMode();
+        UpdateGraphProcessor.DEFAULT.enableUnitTestMode();
         QueryTable.setMemoizeResults(false);
 
         final BenchmarkTableBuilder builder;
@@ -184,7 +184,7 @@ public class SumByBenchmark {
 
     @Benchmark
     public Table sumByStatic(@NotNull final Blackhole bh) {
-        final Table result = LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> table.sumBy(keyColumnNames));
+        final Table result = UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> table.sumBy(keyColumnNames));
         bh.consume(result);
         return state.setResult(TableTools.emptyTable(0));
     }
@@ -192,7 +192,7 @@ public class SumByBenchmark {
     @Benchmark
     public Table sumByIncremental(@NotNull final Blackhole bh) {
         final Table result = IncrementalBenchmark.incrementalBenchmark(
-                (t) -> LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> t.sumBy(keyColumnNames)), table);
+                (t) -> UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> t.sumBy(keyColumnNames)), table);
         bh.consume(result);
         return state.setResult(TableTools.emptyTable(0));
     }
@@ -200,14 +200,14 @@ public class SumByBenchmark {
     @Benchmark
     public Table sumByRolling(@NotNull final Blackhole bh) {
         final Table result = IncrementalBenchmark.rollingBenchmark(
-                (t) -> LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> t.sumBy(keyColumnNames)), table);
+                (t) -> UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> t.sumBy(keyColumnNames)), table);
         bh.consume(result);
         return state.setResult(TableTools.emptyTable(0));
     }
 
     @Benchmark
     public Table minByStatic(@NotNull final Blackhole bh) {
-        final Table result = LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> table.minBy(keyColumnNames));
+        final Table result = UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> table.minBy(keyColumnNames));
         bh.consume(result);
         return state.setResult(TableTools.emptyTable(0));
     }
@@ -215,7 +215,7 @@ public class SumByBenchmark {
     @Benchmark
     public Table minByIncremental(@NotNull final Blackhole bh) {
         final Table result = IncrementalBenchmark.incrementalBenchmark(
-                (t) -> LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> t.minBy(keyColumnNames)), table);
+                (t) -> UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> t.minBy(keyColumnNames)), table);
         bh.consume(result);
         return state.setResult(TableTools.emptyTable(0));
     }
@@ -223,7 +223,7 @@ public class SumByBenchmark {
     @Benchmark
     public Table minByRolling(@NotNull final Blackhole bh) {
         final Table result = IncrementalBenchmark.rollingBenchmark(
-                (t) -> LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> t.minBy(keyColumnNames)), table);
+                (t) -> UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> t.minBy(keyColumnNames)), table);
         bh.consume(result);
         return state.setResult(TableTools.emptyTable(0));
     }
@@ -236,7 +236,7 @@ public class SumByBenchmark {
                 .mapToObj(ii -> "Max" + ii + "=ValueToSum" + ii).toArray(String[]::new));
 
         final Table result = IncrementalBenchmark.rollingBenchmark(
-                (t) -> LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> t.by(AggCombo(minCols, maxCols))),
+                (t) -> UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> t.by(AggCombo(minCols, maxCols))),
                 table);
         bh.consume(result);
         return state.setResult(TableTools.emptyTable(0));
@@ -250,7 +250,7 @@ public class SumByBenchmark {
                 .mapToObj(ii -> "Max" + ii + "=ValueToSum" + ii).toArray(String[]::new));
 
         final Table result = IncrementalBenchmark.rollingBenchmark(
-                (t) -> LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> t.by(AggCombo(minCols, maxCols))),
+                (t) -> UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> t.by(AggCombo(minCols, maxCols))),
                 table);
         bh.consume(result);
         return state.setResult(TableTools.emptyTable(0));
@@ -264,7 +264,7 @@ public class SumByBenchmark {
                 .mapToObj(ii -> "Max" + ii + "=ValueToSum" + ii).toArray(String[]::new));
 
         final Table result = IncrementalBenchmark.rollingBenchmark(
-                (t) -> LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> t.by(AggCombo(minCols, maxCols))),
+                (t) -> UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> t.by(AggCombo(minCols, maxCols))),
                 table);
         bh.consume(result);
         return state.setResult(TableTools.emptyTable(0));
@@ -272,7 +272,7 @@ public class SumByBenchmark {
 
     @Benchmark
     public Table varByStatic(@NotNull final Blackhole bh) {
-        final Table result = LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> table.varBy(keyColumnNames));
+        final Table result = UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> table.varBy(keyColumnNames));
         bh.consume(result);
         return state.setResult(TableTools.emptyTable(0));
     }
@@ -280,14 +280,14 @@ public class SumByBenchmark {
     @Benchmark
     public Table varByIncremental(@NotNull final Blackhole bh) {
         final Table result = IncrementalBenchmark.incrementalBenchmark(
-                (t) -> LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> t.varBy(keyColumnNames)), table);
+                (t) -> UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> t.varBy(keyColumnNames)), table);
         bh.consume(result);
         return state.setResult(TableTools.emptyTable(0));
     }
 
     @Benchmark
     public Table avgByStatic(@NotNull final Blackhole bh) {
-        final Table result = LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> table.avgBy(keyColumnNames));
+        final Table result = UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> table.avgBy(keyColumnNames));
         bh.consume(result);
         return state.setResult(TableTools.emptyTable(0));
     }
@@ -295,7 +295,7 @@ public class SumByBenchmark {
     @Benchmark
     public Table avgByIncremental(@NotNull final Blackhole bh) {
         final Table result = IncrementalBenchmark.incrementalBenchmark(
-                (t) -> LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> t.avgBy(keyColumnNames)), table);
+                (t) -> UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> t.avgBy(keyColumnNames)), table);
         bh.consume(result);
         return state.setResult(TableTools.emptyTable(0));
     }

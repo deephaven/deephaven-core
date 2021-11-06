@@ -389,7 +389,7 @@ public class TestRegionedColumnSourceManager extends LiveTableTestCase {
         assertEquals(Arrays.stream(tableLocations).collect(Collectors.toList()), SUT.allLocations());
         assertTrue(SUT.includedLocations().isEmpty());
 
-        // Test refresh
+        // Test run
         expectPartitioningColumnInitialGrouping();
         expectGroupingColumnInitialGrouping();
         setSizeExpectations(false, NULL_SIZE, 100, 0, REGION_CAPACITY_IN_ELEMENTS);
@@ -407,7 +407,7 @@ public class TestRegionedColumnSourceManager extends LiveTableTestCase {
         assertEquals(Collections.singletonList(tableLocation0A), SUT.allLocations());
         assertTrue(SUT.includedLocations().isEmpty());
 
-        // Test refresh with an overflow
+        // Test run with an overflow
         lastSizes[0] = REGION_CAPACITY_IN_ELEMENTS + 1;
         checking(new Expectations() {
             {
@@ -445,7 +445,7 @@ public class TestRegionedColumnSourceManager extends LiveTableTestCase {
         SUT.disableGrouping();
         assertIsSatisfied();
 
-        // Check refresh with no locations
+        // Check run with no locations
         checkIndexes(SUT.refresh());
 
         // Add a few locations
@@ -494,29 +494,29 @@ public class TestRegionedColumnSourceManager extends LiveTableTestCase {
         assertEquals(Arrays.stream(tableLocations).collect(Collectors.toList()), SUT.allLocations());
         assertEquals(Arrays.asList(tableLocation0A, tableLocation1A), SUT.includedLocations());
 
-        // Test refresh with new locations included
+        // Test run with new locations included
         setSizeExpectations(true, 5, REGION_CAPACITY_IN_ELEMENTS, 5003, NULL_SIZE);
         checkIndexes(SUT.refresh());
         assertEquals(Arrays.asList(tableLocation0A, tableLocation1A, tableLocation0B), SUT.includedLocations());
 
-        // Test no-op refresh
+        // Test no-op run
         setSizeExpectations(true, 5, REGION_CAPACITY_IN_ELEMENTS, 5003, NULL_SIZE);
         checkIndexes(SUT.refresh());
         assertEquals(Arrays.asList(tableLocation0A, tableLocation1A, tableLocation0B), SUT.includedLocations());
 
-        // Test refresh with a location updated from null to not
+        // Test run with a location updated from null to not
         setSizeExpectations(true, 5, REGION_CAPACITY_IN_ELEMENTS, 5003, 2);
         checkIndexes(SUT.refresh());
         assertEquals(Arrays.asList(tableLocation0A, tableLocation1A, tableLocation0B, tableLocation1B),
                 SUT.includedLocations());
 
-        // Test refresh with a location updated
+        // Test run with a location updated
         setSizeExpectations(true, 5, REGION_CAPACITY_IN_ELEMENTS, 5003, 10000002);
         checkIndexes(SUT.refresh());
         assertEquals(Arrays.asList(tableLocation0A, tableLocation1A, tableLocation0B, tableLocation1B),
                 SUT.includedLocations());
 
-        // Test refresh with a size decrease
+        // Test run with a size decrease
         setSizeExpectations(true, 5, REGION_CAPACITY_IN_ELEMENTS, 5003, 2);
         try {
             checkIndexes(SUT.refresh());
@@ -527,7 +527,7 @@ public class TestRegionedColumnSourceManager extends LiveTableTestCase {
         assertEquals(Arrays.asList(tableLocation0A, tableLocation1A, tableLocation0B, tableLocation1B),
                 SUT.includedLocations());
 
-        // Test refresh with a location truncated
+        // Test run with a location truncated
         setSizeExpectations(true, 5, REGION_CAPACITY_IN_ELEMENTS, 5003, NULL_SIZE);
         try {
             checkIndexes(SUT.refresh());
@@ -538,7 +538,7 @@ public class TestRegionedColumnSourceManager extends LiveTableTestCase {
         assertEquals(Arrays.asList(tableLocation0A, tableLocation1A, tableLocation0B, tableLocation1B),
                 SUT.includedLocations());
 
-        // Test refresh with an overflow
+        // Test run with an overflow
         setSizeExpectations(true, 5, REGION_CAPACITY_IN_ELEMENTS, 5003, REGION_CAPACITY_IN_ELEMENTS + 1);
         try {
             checkIndexes(SUT.refresh());
@@ -549,7 +549,7 @@ public class TestRegionedColumnSourceManager extends LiveTableTestCase {
         assertEquals(Arrays.asList(tableLocation0A, tableLocation1A, tableLocation0B, tableLocation1B),
                 SUT.includedLocations());
 
-        // Test refresh with an exception
+        // Test run with an exception
         subscriptionBuffers[3].handleException(new TableDataException("TEST"));
         try {
             checkIndexes(SUT.refresh());

@@ -9,7 +9,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.datastructures.util.SmartKey;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.live.LiveTable;
-import io.deephaven.engine.tables.live.LiveTableMonitor;
+import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.v2.QueryTable;
 import io.deephaven.engine.v2.sources.AbstractColumnSource;
 import io.deephaven.engine.v2.sources.ColumnSource;
@@ -32,7 +32,7 @@ import java.util.Map;
  * An abstract table that represents a hashset of smart keys. Since we are representing a set, there we are not defining
  * an order to our output. Whatever order the table happens to end up in, is fine.
  *
- * The table will refresh by regenerating the full hashset (using the setGenerator Function passed in); and then
+ * The table will run by regenerating the full hashset (using the setGenerator Function passed in); and then
  * comparing that to the existing hash set.
  */
 public class HashSetBackedTableFactory {
@@ -66,7 +66,7 @@ public class HashSetBackedTableFactory {
      * Create a ticking table based on a setGenerator.
      *
      * @param setGenerator a function that returns a HashSet of SmartKeys, each SmartKey is a row in the output.
-     * @param refreshIntervalMs how often to refresh the table, if less than or equal to 0 the table does not tick.
+     * @param refreshIntervalMs how often to run the table, if less than or equal to 0 the table does not tick.
      * @param colNames the column names for the output table, must match the number of elements in each SmartKey.
      * @return a table representing the Set returned by the setGenerator
      */
@@ -149,12 +149,12 @@ public class HashSetBackedTableFactory {
             super(rowSet, columns);
             if (refreshIntervalMs >= 0) {
                 setRefreshing(true);
-                LiveTableMonitor.DEFAULT.addTable(this);
+                UpdateGraphProcessor.DEFAULT.addTable(this);
             }
         }
 
         @Override
-        public void refresh() {
+        public void run() {
             if (System.currentTimeMillis() < nextRefresh) {
                 return;
             }
@@ -182,7 +182,7 @@ public class HashSetBackedTableFactory {
         public void destroy() {
             super.destroy();
             if (refreshIntervalMs >= 0) {
-                LiveTableMonitor.DEFAULT.removeTable(this);
+                UpdateGraphProcessor.DEFAULT.removeTable(this);
             }
         }
     }

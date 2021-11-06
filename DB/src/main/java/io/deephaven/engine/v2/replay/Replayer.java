@@ -8,7 +8,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.exceptions.QueryCancellationException;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.live.LiveTable;
-import io.deephaven.engine.tables.live.LiveTableMonitor;
+import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.tables.utils.DBDateTime;
 import io.deephaven.engine.tables.utils.DBTimeUtils;
 import io.deephaven.engine.v2.ShiftObliviousInstrumentedListener;
@@ -37,7 +37,7 @@ public class Replayer implements ReplayerInterface, LiveTable {
     protected DBDateTime startTime;
     protected DBDateTime endTime;
     private long delta = Long.MAX_VALUE;
-    private CopyOnWriteArrayList<LiveTable> currentTables = new CopyOnWriteArrayList<>();
+    private CopyOnWriteArrayList<Runnable> currentTables = new CopyOnWriteArrayList<>();
     private volatile boolean done;
     private boolean lastLap;
     private final ReplayerHandle handle = new ReplayerHandle() {
@@ -47,8 +47,8 @@ public class Replayer implements ReplayerInterface, LiveTable {
         }
     };
 
-    // Condition variable for use with LiveTableMonitor lock - the object monitor is no longer used
-    private final Condition ltmCondition = LiveTableMonitor.DEFAULT.exclusiveLock().newCondition();
+    // Condition variable for use with UpdateGraphProcessor lock - the object monitor is no longer used
+    private final Condition ltmCondition = UpdateGraphProcessor.DEFAULT.exclusiveLock().newCondition();
 
     /**
      * Creates a new replayer.
@@ -68,8 +68,8 @@ public class Replayer implements ReplayerInterface, LiveTable {
     @Override
     public void start() {
         delta = nanosToTime(millisToNanos(System.currentTimeMillis())).getNanos() - startTime.getNanos();
-        for (LiveTable currentTable : currentTables) {
-            LiveTableMonitor.DEFAULT.addTable(currentTable);
+        for (Runnable currentTable : currentTables) {
+            UpdateGraphProcessor.DEFAULT.addTable(currentTable);
         }
     }
 
@@ -94,12 +94,12 @@ public class Replayer implements ReplayerInterface, LiveTable {
         if (done) {
             return;
         }
-        LiveTableMonitor.DEFAULT.removeTables(currentTables);
+        UpdateGraphProcessor.DEFAULT.removeTables(currentTables);
         currentTables = null;
-        if (LiveTableMonitor.DEFAULT.exclusiveLock().isHeldByCurrentThread()) {
+        if (UpdateGraphProcessor.DEFAULT.exclusiveLock().isHeldByCurrentThread()) {
             shutdownInternal();
-        } else if (LiveTableMonitor.DEFAULT.isRefreshThread()) {
-            LiveTableMonitor.DEFAULT.addNotification(new TerminalNotification() {
+        } else if (UpdateGraphProcessor.DEFAULT.isRefreshThread()) {
+            UpdateGraphProcessor.DEFAULT.addNotification(new TerminalNotification() {
                 @Override
                 public boolean mustExecuteWithLtmLock() {
                     return true;
@@ -111,13 +111,13 @@ public class Replayer implements ReplayerInterface, LiveTable {
                 }
             });
         } else {
-            LiveTableMonitor.DEFAULT.exclusiveLock().doLocked(this::shutdownInternal);
+            UpdateGraphProcessor.DEFAULT.exclusiveLock().doLocked(this::shutdownInternal);
         }
     }
 
     private void shutdownInternal() {
-        Assert.assertion(LiveTableMonitor.DEFAULT.exclusiveLock().isHeldByCurrentThread(),
-                "LiveTableMonitor.DEFAULT.exclusiveLock().isHeldByCurrentThread()");
+        Assert.assertion(UpdateGraphProcessor.DEFAULT.exclusiveLock().isHeldByCurrentThread(),
+                "UpdateGraphProcessor.DEFAULT.exclusiveLock().isHeldByCurrentThread()");
         done = true;
         ltmCondition.signalAll();
     }
@@ -135,7 +135,7 @@ public class Replayer implements ReplayerInterface, LiveTable {
         if (done) {
             return;
         }
-        LiveTableMonitor.DEFAULT.exclusiveLock().doLocked(() -> {
+        UpdateGraphProcessor.DEFAULT.exclusiveLock().doLocked(() -> {
             while (!done && expiryTime > System.currentTimeMillis()) {
                 try {
                     ltmCondition.await(expiryTime - System.currentTimeMillis(), TimeUnit.MILLISECONDS);
@@ -237,7 +237,7 @@ public class Replayer implements ReplayerInterface, LiveTable {
                 new ReplayTable(dataSource.getRowSet(), dataSource.getColumnSourceMap(), timeColumn, this);
         currentTables.add(result);
         if (delta < Long.MAX_VALUE) {
-            LiveTableMonitor.DEFAULT.addTable(result);
+            UpdateGraphProcessor.DEFAULT.addTable(result);
         }
         return result;
     }
@@ -257,7 +257,7 @@ public class Replayer implements ReplayerInterface, LiveTable {
                 dataSource.getColumnSourceMap(), timeColumn, this, groupingColumn);
         currentTables.add(result);
         if (delta < Long.MAX_VALUE) {
-            LiveTableMonitor.DEFAULT.addTable(result);
+            UpdateGraphProcessor.DEFAULT.addTable(result);
         }
         return result;
     }
@@ -276,7 +276,7 @@ public class Replayer implements ReplayerInterface, LiveTable {
                 dataSource.getColumnSourceMap(), timeColumn, this, groupingColumns);
         currentTables.add(result);
         if (delta < Long.MAX_VALUE) {
-            LiveTableMonitor.DEFAULT.addTable(result);
+            UpdateGraphProcessor.DEFAULT.addTable(result);
         }
         return result;
     }
@@ -296,7 +296,7 @@ public class Replayer implements ReplayerInterface, LiveTable {
      * Refresh the simulated live tables.
      */
     @Override
-    public void refresh() {
+    public void run() {
         for (PeriodicTask timerTask : timerTasks) {
             timerTask.next(currentTime());
         }

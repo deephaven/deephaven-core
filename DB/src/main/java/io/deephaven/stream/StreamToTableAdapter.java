@@ -7,7 +7,7 @@ import io.deephaven.engine.tables.ColumnDefinition;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.TableDefinition;
 import io.deephaven.engine.tables.live.LiveTable;
-import io.deephaven.engine.tables.live.LiveTableRegistrar;
+import io.deephaven.engine.tables.live.UpdateRootRegistrar;
 import io.deephaven.engine.tables.utils.DBDateTime;
 import io.deephaven.engine.v2.Listener;
 import io.deephaven.engine.v2.ModifiedColumnSet;
@@ -40,7 +40,7 @@ public class StreamToTableAdapter implements SafeCloseable, LiveTable, StreamCon
 
     private final TableDefinition tableDefinition;
     private final StreamPublisher streamPublisher;
-    private final LiveTableRegistrar liveTableRegistrar;
+    private final UpdateRootRegistrar updateRootRegistrar;
     private final String name;
 
     private final QueryTable table;
@@ -65,16 +65,16 @@ public class StreamToTableAdapter implements SafeCloseable, LiveTable, StreamCon
 
     public StreamToTableAdapter(@NotNull final TableDefinition tableDefinition,
             @NotNull final StreamPublisher streamPublisher,
-            @NotNull final LiveTableRegistrar liveTableRegistrar,
+            @NotNull final UpdateRootRegistrar updateRootRegistrar,
             @NotNull final String name) {
         this.tableDefinition = tableDefinition;
         this.streamPublisher = streamPublisher;
-        this.liveTableRegistrar = liveTableRegistrar;
+        this.updateRootRegistrar = updateRootRegistrar;
         this.name = name;
         streamPublisher.register(this);
         log.info().append("Registering ").append(StreamToTableAdapter.class.getSimpleName()).append('-').append(name)
                 .endl();
-        liveTableRegistrar.addTable(this);
+        updateRootRegistrar.addTable(this);
 
         nullColumnSources = makeNullColumnSources(tableDefinition);
 
@@ -258,7 +258,7 @@ public class StreamToTableAdapter implements SafeCloseable, LiveTable, StreamCon
             log.info().append("Deregistering ").append(StreamToTableAdapter.class.getSimpleName()).append('-')
                     .append(name)
                     .endl();
-            liveTableRegistrar.removeTable(this);
+            updateRootRegistrar.removeTable(this);
             final Runnable localShutdownCallback = shutdownCallback;
             if (localShutdownCallback != null) {
                 localShutdownCallback.run();
@@ -267,14 +267,14 @@ public class StreamToTableAdapter implements SafeCloseable, LiveTable, StreamCon
     }
 
     @Override
-    public void refresh() {
+    public void run() {
         try {
             doRefresh();
         } catch (Exception e) {
             log.error().append("Error refreshing ").append(StreamToTableAdapter.class.getSimpleName()).append('-')
                     .append(name).append(": ").append(e).endl();
             table.notifyListenersOnError(e, null);
-            liveTableRegistrar.removeTable(this);
+            updateRootRegistrar.removeTable(this);
         }
     }
 

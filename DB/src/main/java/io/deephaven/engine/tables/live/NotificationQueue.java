@@ -28,7 +28,7 @@ public interface NotificationQueue {
 
         /**
          * If a terminal notification must be executed on the main LTM thread, it must override this method, so that the
-         * notification is not executed on the refresh pool.
+         * notification is not executed on the run pool.
          *
          * It is an error to return true if this notification is not terminal
          *
@@ -52,7 +52,7 @@ public interface NotificationQueue {
          * @param step The step for which we are testing satisfaction
          * @return Whether the dependency is satisfied on {@code step} (and will not fire subsequent notifications)
          * @implNote For all practical purposes, all implementations should consider whether the
-         *           {@link LiveTableMonitor} itself is satisfied if they have no other dependencies.
+         *           {@link UpdateGraphProcessor} itself is satisfied if they have no other dependencies.
          */
         boolean satisfied(long step);
     }

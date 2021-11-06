@@ -1,7 +1,7 @@
 package io.deephaven.engine.v2;
 
 import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.live.LiveTableMonitor;
+import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.utils.RowSet;
@@ -33,7 +33,7 @@ public class TestReverseLookupListener extends LiveTableTestCase {
         assertEquals(8, reverseLookupListener.get("D"));
         assertEquals(reverseLookupListener.getNoEntryValue(), reverseLookupListener.get("E"));
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             final RowSet keysToModify = RowSetFactory.fromKeys(4);
             TstUtils.addToTable(source, keysToModify, TstUtils.c("Sentinel", "E"), TstUtils.c("Sentinel2", "L"));
             source.notifyListeners(i(), i(), keysToModify);
@@ -45,7 +45,7 @@ public class TestReverseLookupListener extends LiveTableTestCase {
         assertEquals(8, reverseLookupListener.get("D"));
         assertEquals(reverseLookupListener.getNoEntryValue(), reverseLookupListener.get("B"));
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             final RowSet keysToSwap = RowSetFactory.fromKeys(4, 6);
             TstUtils.addToTable(source, keysToSwap, TstUtils.c("Sentinel", "C", "E"),
                     TstUtils.c("Sentinel2", "M", "N"));
@@ -149,7 +149,7 @@ public class TestReverseLookupListener extends LiveTableTestCase {
                     new TstUtils.UniqueStringGenerator(),
                     new TstUtils.UniqueIntGenerator(1, 1000)));
 
-            final EvalNuggetInterface en[] = LiveTableMonitor.DEFAULT.exclusiveLock()
+            final EvalNuggetInterface en[] = UpdateGraphProcessor.DEFAULT.exclusiveLock()
                     .computeLocked(() -> new EvalNuggetInterface[] {
                             new ReverseLookupEvalNugget(table, "C1"),
                             new ReverseLookupEvalNugget(table, "C2"),

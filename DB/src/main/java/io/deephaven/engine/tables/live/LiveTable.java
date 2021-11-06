@@ -5,13 +5,13 @@
 package io.deephaven.engine.tables.live;
 
 /**
- * An object that should be refreshed by the LiveTableMonitor.
+ * An object that should be refreshed by the UpdateGraphProcessor.
  *
  * @apiNote although the interface is called LiveTable, it need not be a Table.
  */
-public interface LiveTable {
+public interface LiveTable extends Runnable { // TODO-RWC: Finish deleting live table. Replace with Runnable/updateRoot. isLive->isRefreshing
     /**
      * Refresh this LiveTable.
      */
-    void refresh();
+    void run();
 }

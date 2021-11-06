@@ -10,7 +10,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.tablelogger.UpdatePerformanceLogLogger;
 import io.deephaven.engine.tables.TableDefinition;
-import io.deephaven.engine.tables.live.LiveTableMonitor;
+import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.tables.utils.DBTimeUtils;
 import io.deephaven.engine.tables.utils.QueryPerformanceLogThreshold;
 import io.deephaven.engine.tables.utils.QueryPerformanceRecorder;
@@ -34,11 +34,11 @@ import static io.deephaven.engine.tables.lang.DBLanguageFunctionUtil.minus;
 import static io.deephaven.engine.tables.lang.DBLanguageFunctionUtil.plus;
 
 /**
- * This tool is meant to track periodic update events that take place in a LiveTableMonitor. This generally includes (1)
- * LiveTable.refresh() invocations (2) Table ShiftObliviousListener notifications (see
+ * This tool is meant to track periodic update events that take place in a UpdateGraphProcessor. This generally includes (1)
+ * LiveTable.run() invocations (2) Table ShiftObliviousListener notifications (see
  * ShiftObliviousInstrumentedListener)
  *
- * Note: Regarding thread safety, this class interacts with a singleton LiveTableMonitor and expects all calls to
+ * Note: Regarding thread safety, this class interacts with a singleton UpdateGraphProcessor and expects all calls to
  * getEntry(), Entry.onUpdateStart(), and Entry.onUpdateEnd() to be performed while protected by the LTM's live jobs
  * synchronizer.
  */
@@ -113,7 +113,7 @@ public class UpdatePerformanceTracker {
                     // should log, but no logger handy
                     // ignore
                 }
-                LiveTableMonitor.DEFAULT.sharedLock().doLocked(
+                UpdateGraphProcessor.DEFAULT.sharedLock().doLocked(
                         () -> finishInterval(intervalStartTimeMillis,
                                 System.currentTimeMillis(),
                                 System.nanoTime() - intervalStartTimeNanos));
@@ -159,7 +159,7 @@ public class UpdatePerformanceTracker {
 
     /**
      * Do entry maintenance, generate an interval performance report table for all active entries, and reset for the
-     * next interval. <b>Note:</b> This method is only called under the LiveTableMonitor instance's lock. This ensures
+     * next interval. <b>Note:</b> This method is only called under the UpdateGraphProcessor instance's lock. This ensures
      * exclusive access to the entries, and also prevents any other thread from removing from entries.
      * 
      * @param intervalStartTimeMillis interval start time in millis

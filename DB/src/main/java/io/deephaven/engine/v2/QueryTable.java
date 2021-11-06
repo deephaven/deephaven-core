@@ -13,7 +13,7 @@ import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.exceptions.QueryCancellationException;
 import io.deephaven.engine.tables.*;
 import io.deephaven.engine.tables.dbarrays.DbArrayBase;
-import io.deephaven.engine.tables.live.LiveTableMonitor;
+import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.tables.live.NotificationQueue;
 import io.deephaven.engine.tables.select.MatchPair;
 import io.deephaven.engine.tables.select.WouldMatchPair;
@@ -1117,7 +1117,7 @@ public class QueryTable extends BaseTable {
                     final DynamicWhereFilter dynamicWhereFilter =
                             new DynamicWhereFilter(groupStrategy, distinctValues, inclusion, columnsToMatch);
                     final Table where = where(dynamicWhereFilter);
-                    if (distinctValues.isLive()) {
+                    if (distinctValues.isRefreshing()) {
                         where.addParentReference(distinctValues);
                     }
                     if (dynamicWhereFilter.isRefreshing()) {
@@ -2005,8 +2005,8 @@ public class QueryTable extends BaseTable {
         // distribution systems and similar integrations.
 
         // If this table provides a lazy snapshot version, we should use that instead for the snapshot, this allows us
-        // to refresh the table only immediately before the snapshot occurs. Because we know that we are uninterested
-        // in things like previous values, it can save a significant amount of CPU to only refresh the table when
+        // to run the table only immediately before the snapshot occurs. Because we know that we are uninterested
+        // in things like previous values, it can save a significant amount of CPU to only run the table when
         // needed.
         final boolean lazySnapshot = tableToSnapshot instanceof LazySnapshotTableProvider;
         if (lazySnapshot) {
@@ -2047,7 +2047,7 @@ public class QueryTable extends BaseTable {
                 result, resultLeftColumns, resultRightColumns, result.getRowSet().mutableCast());
 
         if (doInitialSnapshot) {
-            if (!isRefreshing() && tableToSnapshot.isLive() && !lazySnapshot) {
+            if (!isRefreshing() && tableToSnapshot.isRefreshing() && !lazySnapshot) {
                 // if we are making a static copy of the table, we must ensure that it does not change out from under us
                 ConstructSnapshot.callDataSnapshotFunction("snapshotInternal",
                         ConstructSnapshot.makeSnapshotControl(false, (NotificationStepSource) tableToSnapshot),
@@ -3216,13 +3216,13 @@ public class QueryTable extends BaseTable {
 
     private void checkInitiateOperation() {
         if (isRefreshing()) {
-            LiveTableMonitor.DEFAULT.checkInitiateTableOperation();
+            UpdateGraphProcessor.DEFAULT.checkInitiateTableOperation();
         }
     }
 
     static void checkInitiateOperation(Table other) {
-        if (other.isLive()) {
-            LiveTableMonitor.DEFAULT.checkInitiateTableOperation();
+        if (other.isRefreshing()) {
+            UpdateGraphProcessor.DEFAULT.checkInitiateTableOperation();
         }
     }
 

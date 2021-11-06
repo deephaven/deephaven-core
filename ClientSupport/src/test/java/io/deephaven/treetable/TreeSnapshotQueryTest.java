@@ -5,7 +5,7 @@ import io.deephaven.datastructures.util.SmartKey;
 import io.deephaven.engine.tables.ColumnDefinition;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.libs.QueryLibrary;
-import io.deephaven.engine.tables.live.LiveTableMonitor;
+import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.tables.select.SelectFilterFactory;
 import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.v2.*;
@@ -442,7 +442,7 @@ public class TreeSnapshotQueryTest extends QueryTableTestBase {
 
         // We'll delete a child key so that a child table becomes empty. TSQ should eliminate it from the set.
         final Table source = (Table) t.getAttribute(Table.HIERARCHICAL_SOURCE_TABLE_ATTRIBUTE);
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             TstUtils.removeRows(source, i(467));
             source.notifyListeners(i(), i(467), i());
         });
@@ -613,7 +613,7 @@ public class TreeSnapshotQueryTest extends QueryTableTestBase {
         // Expand another row
         state.addExpanded(ROOT_TABLE_KEY, fultonKey);
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             // Fetch previous data
             pool.submit(() -> testViewport(state, 0, halfTableSize, allColumns, true)).get();
             assertNotNull(state.expansionMap.get(fultonKey));
@@ -628,14 +628,14 @@ public class TreeSnapshotQueryTest extends QueryTableTestBase {
             // Flush the changes
             final AtomicBoolean done = new AtomicBoolean(false);
             final Runnable awaitFlushJob =
-                    LiveTableMonitor.DEFAULT.flushAllNormalNotificationsForUnitTests(done::get, 60_000L);
+                    UpdateGraphProcessor.DEFAULT.flushAllNormalNotificationsForUnitTests(done::get, 60_000L);
 
             // Fetch current data
             currentFetch.get();
 
             // Tell the flush to stop busy-waiting and wait for it
             done.set(true);
-            LiveTableMonitor.DEFAULT.wakeRefreshThreadForUnitTests();
+            UpdateGraphProcessor.DEFAULT.wakeRefreshThreadForUnitTests();
             awaitFlushJob.run();
 
             // Check that we don't have "Fulton" anymore
@@ -673,7 +673,7 @@ public class TreeSnapshotQueryTest extends QueryTableTestBase {
         testViewport(treeState, 0, 9, allCols, true);
 
         // Reparent 1-0 to root
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(dataTable, i(10), c("ID", "1-0"), c("Parent", "Root"), c("Name", "1-0"));
             dataTable.notifyListeners(i(10), i(), i());
         });
@@ -684,7 +684,7 @@ public class TreeSnapshotQueryTest extends QueryTableTestBase {
         testViewport(treeState, 0, 9, allCols, true);
 
         // Reparent 1-0 to 1
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(dataTable, i(11), c("ID", "1-0"), c("Parent", "1"), c("Name", "1-0"));
             dataTable.notifyListeners(i(11), i(), i());
         });

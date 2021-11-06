@@ -11,7 +11,7 @@ import io.deephaven.engine.exceptions.OperationException;
 import io.deephaven.engine.exceptions.QueryCancellationException;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.libs.QueryLibrary;
-import io.deephaven.engine.tables.live.LiveTableMonitor;
+import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.tables.select.QueryScope;
 import io.deephaven.engine.tables.utils.LiveWidget;
 import io.deephaven.engine.util.jpy.JpyInit;
@@ -174,7 +174,7 @@ public class PythonDeephavenSession extends AbstractScriptSession implements Scr
     protected void evaluate(String command, String scriptName) {
         log.info().append("Evaluating command: " + command).endl();
         try {
-            LiveTableMonitor.DEFAULT.exclusiveLock().doLockedInterruptibly(() -> {
+            UpdateGraphProcessor.DEFAULT.exclusiveLock().doLockedInterruptibly(() -> {
                 evaluator.evalScript(command);
             });
         } catch (InterruptedException e) {

@@ -4,7 +4,7 @@ import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.libs.QueryLibrary;
-import io.deephaven.engine.tables.live.LiveTableMonitor;
+import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.tables.select.QueryScope;
 import io.deephaven.engine.tables.utils.DBDateTime;
 import io.deephaven.engine.tables.utils.DBTimeUtils;
@@ -49,7 +49,7 @@ public class QueryTableSelectUpdateTest {
                 .assertEquals(Arrays.asList(0, 3, 6), Arrays.asList(table1.getColumn("x").get(0, table1.size())));
         TestCase.assertEquals(Arrays.asList("2", "4", "6"), Arrays.asList(table1.getColumn("y").get(0, table1.size())));
 
-        final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6).trackingCast(),
+        final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6).toTracking(),
                 c("x", 1, 2, 3), c("y", 'a', 'b', 'c'));
 
         showWithIndex(table);
@@ -62,7 +62,7 @@ public class QueryTableSelectUpdateTest {
         TestCase
                 .assertEquals(Arrays.asList(2, 4, 6), Arrays.asList(table2.getColumn("x").get(0, table2.size())));
         TestCase.assertEquals(Arrays.asList('a', 'b', 'c'), Arrays.asList(table2.getColumn("z").get(0, table2.size())));
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             show(table3);
             addToTable(table, i(7, 9), c("x", 4, 5), c("y", 'd', 'e'));
             table.notifyListeners(i(7, 9), i(), i());
@@ -83,7 +83,7 @@ public class QueryTableSelectUpdateTest {
         TestCase.assertEquals(i(), base.removed);
         TestCase.assertEquals(i(), base.modified);
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(table, i(7, 9), c("x", 3, 10), c("y", 'e', 'd'));
             table.notifyListeners(i(), i(), i(7, 9));
         });
@@ -98,7 +98,7 @@ public class QueryTableSelectUpdateTest {
         TestCase.assertEquals(i(), base.removed);
         TestCase.assertEquals(i(7, 9), base.modified);
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             TstUtils.removeRows(table, i(2, 6, 7));
             table.notifyListeners(i(), i(2, 6, 7), i());
         });
@@ -113,7 +113,7 @@ public class QueryTableSelectUpdateTest {
         TestCase.assertEquals(i(2, 6, 7), base.removed);
         TestCase.assertEquals(i(), base.modified);
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             TstUtils.removeRows(table, i(9));
             addToTable(table, i(2, 4, 6), c("x", 1, 22, 3), c("y", 'a', 'x', 'c'));
             table.notifyListeners(i(2, 6), i(9), i(4));
@@ -146,7 +146,7 @@ public class QueryTableSelectUpdateTest {
         final ShiftObliviousListener table2Listener2 = base.newListenerWithGlobals(table2);
         table2.listenForUpdates(table2Listener2);
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(table6, i(7, 9), c("x", 4, 5), c("y", 'd', 'e'));
             table6.notifyListeners(i(7, 9), i(), i());
         });
@@ -159,7 +159,7 @@ public class QueryTableSelectUpdateTest {
         TestCase.assertEquals(i(), base.removed);
 
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(table6, i(7, 9), c("x", 3, 10), c("y", 'e', 'd'));
             table6.notifyListeners(i(), i(), i(7, 9));
         });
@@ -171,7 +171,7 @@ public class QueryTableSelectUpdateTest {
         TestCase.assertEquals(i(7, 9), base.modified);
         TestCase.assertEquals(i(), base.removed);
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             TstUtils.removeRows(table6, i(2, 6, 7));
             table6.notifyListeners(i(), i(2, 6, 7), i());
         });
@@ -186,7 +186,7 @@ public class QueryTableSelectUpdateTest {
         TestCase.assertEquals(i(), base.modified);
 
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             TstUtils.removeRows(table6, i(9));
             addToTable(table6, i(2, 4, 6), c("x", 1, 22, 3), c("y", 'a', 'x', 'c'));
             table6.notifyListeners(i(2, 6), i(9), i(4));
@@ -475,7 +475,7 @@ public class QueryTableSelectUpdateTest {
         for (int step = 0; step < 10000; ++step) {
             final int fstep = step;
 
-            LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
                 final long keyToAdd = fstep + 1;
                 final RowSet addedRowSet = i(keyToAdd);
                 final RowSet removedRowSet = (fstep % 2 == 0) ? i(fstep) : i();
@@ -657,7 +657,7 @@ public class QueryTableSelectUpdateTest {
         TestCase.assertEquals(0, table.size());
         TestCase.assertEquals(0, table2.size());
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             show(table2);
             addToTable(table, i(7, 9));
             table.notifyListeners(i(7, 9), i(), i());
@@ -674,7 +674,7 @@ public class QueryTableSelectUpdateTest {
         TestCase.assertEquals(base.removed, i());
         TestCase.assertEquals(base.modified, i());
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
         });
     }
 
@@ -688,7 +688,7 @@ public class QueryTableSelectUpdateTest {
         TestCase.assertEquals(0, table.size());
         TestCase.assertEquals(0, table2.size());
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             show(table2);
             addToTable(table, i(7, 9));
             table.notifyListeners(i(7, 9), i(), i());
@@ -704,7 +704,7 @@ public class QueryTableSelectUpdateTest {
         TestCase.assertEquals(base.removed, i());
         TestCase.assertEquals(base.modified, i());
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             table.notifyListeners(i(), i(), i(9));
         });
 
@@ -729,7 +729,7 @@ public class QueryTableSelectUpdateTest {
         TestCase.assertEquals(0, table.size());
         TestCase.assertEquals(0, table2.size());
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             show(table2);
             addToTable(table, i(7, 9));
             table.notifyListeners(i(7, 9), i(), i());
@@ -746,7 +746,7 @@ public class QueryTableSelectUpdateTest {
         TestCase.assertEquals(i(), base.removed);
         TestCase.assertEquals(i(), base.modified);
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             table.notifyListeners(i(), i(), i(9));
         });
 
@@ -824,7 +824,7 @@ public class QueryTableSelectUpdateTest {
 
         assertTableEquals(prevTable(table), prevTable(selected));
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(table, i(2), longCol("Value", 3));
             table.notifyListeners(i(2), i(), i());
         });
@@ -836,7 +836,7 @@ public class QueryTableSelectUpdateTest {
         TableTools.show(selected);
 
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(table, i(1L << 20 + 2), longCol("Value", 4));
             table.notifyListeners(i(1L << 20 + 2), i(), i());
         });
@@ -1004,7 +1004,7 @@ public class QueryTableSelectUpdateTest {
         final String diffPrev = TableTools.diff(prevTable(selected), prevTable(table), 10);
         TestCase.assertEquals("", diffPrev);
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(table, i(2), longCol("Value", 3));
             table.notifyListeners(i(2), i(), i());
         });
@@ -1019,7 +1019,7 @@ public class QueryTableSelectUpdateTest {
         TableTools.show(selected);
 
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(table, i(1L << 20 + 2), longCol("Value", 4));
             table.notifyListeners(i(1L << 20 + 2), i(), i());
         });
@@ -1062,7 +1062,7 @@ public class QueryTableSelectUpdateTest {
         final QueryTable table = TstUtils.testRefreshingTable(i().toTracking());
         final QueryTable table2 = (QueryTable) table.update("A = i * scale");
         QueryScope.addParam("scale", "Multiplying i by this string will not compile");
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             show(table);
             addToTable(table, i(10, 20));
             table.notifyListeners(i(10, 20), i(), i());

@@ -141,7 +141,7 @@ public class ColumnExpressionValidator extends GenericVisitorAdapter<Void, Void>
             throw new IllegalStateException("Error occurred while re-compiling formula for whitelist", e);
         }
         final boolean isAddOnly = table instanceof BaseTable && ((BaseTable) table).isAddOnly();
-        if (table.isLive() && !(isAddOnly && table.isFlat())) {
+        if (table.isRefreshing() && !(isAddOnly && table.isFlat())) {
             final Set<String> disallowedVariables = new HashSet<>();
             disallowedVariables.add("i");
             disallowedVariables.add("ii");

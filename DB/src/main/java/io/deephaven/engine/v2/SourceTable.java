@@ -6,6 +6,7 @@ package io.deephaven.engine.v2;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
+import io.deephaven.engine.tables.live.UpdateRootRegistrar;
 import io.deephaven.engine.v2.locations.*;
 import io.deephaven.engine.v2.locations.impl.TableLocationSubscriptionBuffer;
 import io.deephaven.engine.v2.utils.*;
@@ -13,8 +14,6 @@ import io.deephaven.io.logger.Logger;
 import io.deephaven.util.process.ProcessEnvironment;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.TableDefinition;
-import io.deephaven.engine.tables.live.LiveTable;
-import io.deephaven.engine.tables.live.LiveTableRegistrar;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.tables.utils.QueryPerformanceRecorder;
 import io.deephaven.engine.v2.sources.LogicalClock;
@@ -55,7 +54,7 @@ public abstract class SourceTable extends RedefinableTable {
     /**
      * Registration function for LiveTables that need to be refreshed.
      */
-    final LiveTableRegistrar liveTableRegistrar;
+    final UpdateRootRegistrar updateRootRegistrar;
 
     /**
      * Whether we've done our initial location fetch.
@@ -75,7 +74,7 @@ public abstract class SourceTable extends RedefinableTable {
     /**
      * The LiveTable object for refreshing locations and location sizes.
      */
-    private LiveTable locationChangePoller;
+    private Runnable locationChangePoller;
 
     /**
      * Construct a new disk-backed table.
@@ -84,20 +83,20 @@ public abstract class SourceTable extends RedefinableTable {
      * @param description A human-readable description for this table
      * @param componentFactory A component factory for creating column source managers
      * @param locationProvider A TableLocationProvider, for use in discovering the locations that compose this table
-     * @param liveTableRegistrar Callback for registering live tables for refreshes, null if this table is not live
+     * @param updateRootRegistrar Callback for registering live tables for refreshes, null if this table is not live
      */
     SourceTable(@NotNull final TableDefinition tableDefinition,
             @NotNull final String description,
             @NotNull final SourceTableComponentFactory componentFactory,
             @NotNull final TableLocationProvider locationProvider,
-            final LiveTableRegistrar liveTableRegistrar) {
+            final UpdateRootRegistrar updateRootRegistrar) {
         super(tableDefinition, description);
 
         this.componentFactory = Require.neqNull(componentFactory, "componentFactory");
         this.locationProvider = Require.neqNull(locationProvider, "locationProvider");
-        this.liveTableRegistrar = liveTableRegistrar;
+        this.updateRootRegistrar = updateRootRegistrar;
 
-        final boolean isLive = liveTableRegistrar != null;
+        final boolean isLive = updateRootRegistrar != null;
         columnSourceManager = componentFactory.createColumnSourceManager(isLive, ColumnToCodecMappings.EMPTY, definition
                 .getColumns() /* NB: this is the *re-written* definition passed to the super-class constructor. */);
         if (isLive) {
@@ -123,7 +122,7 @@ public abstract class SourceTable extends RedefinableTable {
     @TestUseOnly
     public final void refresh() {
         if (locationChangePoller != null) {
-            locationChangePoller.refresh();
+            locationChangePoller.run();
         }
     }
 
@@ -141,7 +140,7 @@ public abstract class SourceTable extends RedefinableTable {
                     final TableLocationSubscriptionBuffer locationBuffer =
                             new TableLocationSubscriptionBuffer(locationProvider);
                     maybeAddLocations(locationBuffer.processPending());
-                    liveTableRegistrar.addTable(locationChangePoller = new LocationChangePoller(locationBuffer));
+                    updateRootRegistrar.addTable(locationChangePoller = new LocationChangePoller(locationBuffer));
                 } else {
                     locationProvider.refresh();
                     maybeAddLocations(locationProvider.getTableLocationKeys());
@@ -320,9 +319,9 @@ public abstract class SourceTable extends RedefinableTable {
     @Override
     protected void destroy() {
         super.destroy();
-        if (liveTableRegistrar != null) {
+        if (updateRootRegistrar != null) {
             if (locationChangePoller != null) {
-                liveTableRegistrar.removeTable(locationChangePoller);
+                updateRootRegistrar.removeTable(locationChangePoller);
             }
         }
     }

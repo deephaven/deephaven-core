@@ -11,7 +11,7 @@ import io.deephaven.engine.plot.datasets.xyerrorbar.XYErrorBarDataSeriesInternal
 import io.deephaven.engine.plot.datasets.xyerrorbar.XYErrorBarDataSeriesTableArray;
 import io.deephaven.engine.plot.util.tables.TableHandle;
 import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.live.LiveTableMonitor;
+import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.v2.QueryTable;
 import io.deephaven.engine.v2.TstUtils;
@@ -24,14 +24,14 @@ public class XYErrorBarDataSeriesTableArrayTest extends BaseArrayTestCase {
     @Override
     public void setUp() throws Exception {
         super.setUp();
-        LiveTableMonitor.DEFAULT.enableUnitTestMode();
-        LiveTableMonitor.DEFAULT.resetForUnitTests(false);
+        UpdateGraphProcessor.DEFAULT.enableUnitTestMode();
+        UpdateGraphProcessor.DEFAULT.resetForUnitTests(false);
     }
 
     @Override
     protected void tearDown() throws Exception {
         super.tearDown();
-        LiveTableMonitor.DEFAULT.resetForUnitTests(true);
+        UpdateGraphProcessor.DEFAULT.resetForUnitTests(true);
     }
 
     public void testXYErrorBarDataSeriesTableArray() {
@@ -96,7 +96,7 @@ public class XYErrorBarDataSeriesTableArrayTest extends BaseArrayTestCase {
 
         assertEquals(series.getX(4), Double.NaN);
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(liveTable, i(7, 9), c("x", 4, 5), c("y", 4, 5), c("yLow", 3, 4), c("yHigh", 5, 6));
             liveTable.notifyListeners(i(7, 9), i(), i());
         });

@@ -10,7 +10,7 @@ import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.TableDefinition;
-import io.deephaven.engine.tables.live.LiveTableMonitor;
+import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.tables.live.NotificationQueue;
 import io.deephaven.engine.tables.select.MatchPair;
 import io.deephaven.engine.v2.*;
@@ -64,8 +64,8 @@ public class DynamicWhereFilter extends SelectFilterLivenessArtifactImpl impleme
 
     public DynamicWhereFilter(final Table.GroupStrategy groupStrategy, final Table setTable, final boolean inclusion,
             final MatchPair... setColumnsNames) {
-        if (setTable.isLive()) {
-            LiveTableMonitor.DEFAULT.checkInitiateTableOperation();
+        if (setTable.isRefreshing()) {
+            UpdateGraphProcessor.DEFAULT.checkInitiateTableOperation();
         }
 
         this.groupStrategy = groupStrategy;
@@ -330,7 +330,7 @@ public class DynamicWhereFilter extends SelectFilterLivenessArtifactImpl impleme
 
     @Override
     public boolean isRefreshing() {
-        return setTable.isLive();
+        return setTable.isRefreshing();
     }
 
     @Override

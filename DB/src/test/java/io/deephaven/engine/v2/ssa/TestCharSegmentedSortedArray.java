@@ -2,7 +2,7 @@ package io.deephaven.engine.v2.ssa;
 
 import io.deephaven.base.verify.AssertionFailure;
 import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.live.LiveTableMonitor;
+import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.util.liveness.LivenessScope;
 import io.deephaven.engine.util.liveness.LivenessScopeStack;
 import io.deephaven.engine.v2.*;
@@ -153,7 +153,7 @@ public class TestCharSegmentedSortedArray extends LiveTableTestCase {
 
             while (desc.advance(50)) {
                 System.out.println();
-                LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() ->
+                UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() ->
                         GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE, desc.tableSize(), random, table, columnInfo));
 
                 try (final ColumnSource.GetContext getContext = valueSource.makeGetContext(asCharacter.intSize())) {
@@ -196,7 +196,7 @@ public class TestCharSegmentedSortedArray extends LiveTableTestCase {
             asCharacter.listenForUpdates(asCharacterListener);
 
             while (desc.advance(50)) {
-                LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+                UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
                     final RowSet[] notify = GenerateTableUpdates.computeTableUpdates(desc.tableSize(), random, table, columnInfo, allowAddition, allowRemoval, false);
                     assertTrue(notify[2].isEmpty());
                     table.notifyListeners(notify[0], notify[1], notify[2]);

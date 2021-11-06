@@ -195,7 +195,7 @@ public class InitialSnapshotTable extends QueryTable {
             finalColumns.put(columns[i].getName(),
                     new RedirectedColumnSource<>(redirectionIndex, writableSources[i], 0));
         }
-        // This table does not refresh, so we don't need to tell our redirection rowSet or column source to start
+        // This table does not run, so we don't need to tell our redirection rowSet or column source to start
         // tracking
         // prev values.
 

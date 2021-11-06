@@ -2,7 +2,7 @@ package io.deephaven.benchmark.engine;
 
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.live.LiveTableMonitor;
+import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.v2.QueryTable;
 import io.deephaven.engine.v2.by.ComboAggregateFactory;
@@ -62,7 +62,7 @@ public class LastByBenchmark {
 
     @Setup(Level.Trial)
     public void setupEnv(BenchmarkParams params) {
-        LiveTableMonitor.DEFAULT.enableUnitTestMode();
+        UpdateGraphProcessor.DEFAULT.enableUnitTestMode();
         QueryTable.setMemoizeResults(false);
 
         final BenchmarkTableBuilder builder;
@@ -187,7 +187,7 @@ public class LastByBenchmark {
 
     @Benchmark
     public Table lastByStatic(@NotNull final Blackhole bh) {
-        final Table result = LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> table.lastBy(keyColumnNames));
+        final Table result = UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> table.lastBy(keyColumnNames));
         bh.consume(result);
         return state.setResult(TableTools.emptyTable(0));
     }
@@ -195,7 +195,7 @@ public class LastByBenchmark {
     @Benchmark
     public Table lastByIncremental(@NotNull final Blackhole bh) {
         final Table result = IncrementalBenchmark.incrementalBenchmark(
-                (t) -> LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> t.lastBy(keyColumnNames)), table);
+                (t) -> UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> t.lastBy(keyColumnNames)), table);
         bh.consume(result);
         return state.setResult(TableTools.emptyTable(0));
     }
@@ -203,7 +203,7 @@ public class LastByBenchmark {
     @Benchmark
     public Table lastByRolling(@NotNull final Blackhole bh) {
         final Table result = IncrementalBenchmark.rollingBenchmark(
-                (t) -> LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> t.lastBy(keyColumnNames)), table);
+                (t) -> UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> t.lastBy(keyColumnNames)), table);
         bh.consume(result);
         return state.setResult(TableTools.emptyTable(0));
     }
@@ -216,7 +216,7 @@ public class LastByBenchmark {
                 .mapToObj(ii -> "First" + ii + "=ValueToSum" + ii).toArray(String[]::new));
 
         final Table result = IncrementalBenchmark.rollingBenchmark(
-                (t) -> LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> t.by(AggCombo(lastCols, firstCols))),
+                (t) -> UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> t.by(AggCombo(lastCols, firstCols))),
                 table);
         bh.consume(result);
         return state.setResult(TableTools.emptyTable(0));
@@ -230,7 +230,7 @@ public class LastByBenchmark {
                 .mapToObj(ii -> "First" + ii + "=ValueToSum" + ii).toArray(String[]::new));
 
         final Table result = IncrementalBenchmark.rollingBenchmark(
-                (t) -> LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> t.by(AggCombo(lastCols, firstCols))),
+                (t) -> UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> t.by(AggCombo(lastCols, firstCols))),
                 table);
         bh.consume(result);
         return state.setResult(TableTools.emptyTable(0));
@@ -244,7 +244,7 @@ public class LastByBenchmark {
                 .mapToObj(ii -> "First" + ii + "=ValueToSum" + ii).toArray(String[]::new));
 
         final Table result = IncrementalBenchmark.rollingBenchmark(
-                (t) -> LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> t.by(AggCombo(lastCols, firstCols))),
+                (t) -> UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> t.by(AggCombo(lastCols, firstCols))),
                 table);
         bh.consume(result);
         return state.setResult(TableTools.emptyTable(0));

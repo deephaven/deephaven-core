@@ -9,7 +9,7 @@ import io.deephaven.base.log.LogOutput;
 import io.deephaven.engine.exceptions.UncheckedTableException;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.TableDefinition;
-import io.deephaven.engine.tables.live.LiveTableMonitor;
+import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.tables.live.NotificationQueue;
 import io.deephaven.engine.tables.utils.QueryPerformanceRecorder;
 import io.deephaven.engine.tables.utils.SystemicObjectTracker;
@@ -185,7 +185,7 @@ public class LocalTableMap extends TableMapImpl implements NotificationQueue.Dep
             }
         }
 
-        if (table.isLive()) {
+        if (table.isRefreshing()) {
             setRefreshing(true);
             // We need to keep our members around and updating as long as we are in use.
             manage(table);
@@ -193,7 +193,7 @@ public class LocalTableMap extends TableMapImpl implements NotificationQueue.Dep
 
         final Table result = internalMap.put(key, table);
 
-        if (result != null && result.isLive()) {
+        if (result != null && result.isRefreshing()) {
             // Don't change the order of these operations.
             LivenessScopeStack.peek().manage(result);
             unmanage(result);
@@ -219,7 +219,7 @@ public class LocalTableMap extends TableMapImpl implements NotificationQueue.Dep
     @Override
     public synchronized Table get(Object key) {
         final Table result = internalMap.get(key);
-        if (result != null && result.isLive()) {
+        if (result != null && result.isRefreshing()) {
             LivenessScopeStack.peek().manage(result);
         }
         return result;
@@ -266,7 +266,7 @@ public class LocalTableMap extends TableMapImpl implements NotificationQueue.Dep
     public synchronized void removeKeys(Object... keys) {
         for (final Object key : keys) {
             final Table removed = internalMap.remove(key);
-            if (removed != null && removed.isLive()) {
+            if (removed != null && removed.isRefreshing()) {
                 unmanage(removed);
             }
         }
@@ -328,18 +328,18 @@ public class LocalTableMap extends TableMapImpl implements NotificationQueue.Dep
             final ExecutorService executorService = getTransformationExecutorService();
 
             if (executorService != null) {
-                final boolean doCheck = LiveTableMonitor.DEFAULT.getCheckTableOperations();
-                final boolean hasLtm = LiveTableMonitor.DEFAULT.sharedLock().isHeldByCurrentThread()
-                        || LiveTableMonitor.DEFAULT.exclusiveLock().isHeldByCurrentThread();
+                final boolean doCheck = UpdateGraphProcessor.DEFAULT.getCheckTableOperations();
+                final boolean hasLtm = UpdateGraphProcessor.DEFAULT.sharedLock().isHeldByCurrentThread()
+                        || UpdateGraphProcessor.DEFAULT.exclusiveLock().isHeldByCurrentThread();
                 final Map<Object, Future<Table>> futures = new LinkedHashMap<>();
                 for (final Map.Entry<Object, Table> entry : entrySet()) {
                     futures.put(entry.getKey(), executorService.submit(() -> {
                         if (hasLtm || !doCheck) {
-                            final boolean oldCheck = LiveTableMonitor.DEFAULT.setCheckTableOperations(false);
+                            final boolean oldCheck = UpdateGraphProcessor.DEFAULT.setCheckTableOperations(false);
                             try {
                                 return function.apply(entry.getKey(), entry.getValue());
                             } finally {
-                                LiveTableMonitor.DEFAULT.setCheckTableOperations(oldCheck);
+                                UpdateGraphProcessor.DEFAULT.setCheckTableOperations(oldCheck);
                             }
                         } else {
                             return function.apply(entry.getKey(), entry.getValue());
@@ -424,10 +424,10 @@ public class LocalTableMap extends TableMapImpl implements NotificationQueue.Dep
             final ExecutorService executorService = getTransformationExecutorService();
 
             if (executorService != null) {
-                final boolean doCheck = LiveTableMonitor.DEFAULT.setCheckTableOperations(true);
-                LiveTableMonitor.DEFAULT.setCheckTableOperations(doCheck);
-                final boolean hasLtm = LiveTableMonitor.DEFAULT.sharedLock().isHeldByCurrentThread()
-                        || LiveTableMonitor.DEFAULT.exclusiveLock().isHeldByCurrentThread();
+                final boolean doCheck = UpdateGraphProcessor.DEFAULT.setCheckTableOperations(true);
+                UpdateGraphProcessor.DEFAULT.setCheckTableOperations(doCheck);
+                final boolean hasLtm = UpdateGraphProcessor.DEFAULT.sharedLock().isHeldByCurrentThread()
+                        || UpdateGraphProcessor.DEFAULT.exclusiveLock().isHeldByCurrentThread();
                 final Map<Object, Future<Table>> futures = new LinkedHashMap<>();
 
 
@@ -436,11 +436,11 @@ public class LocalTableMap extends TableMapImpl implements NotificationQueue.Dep
                     if (otherTable != null) {
                         futures.put(entry.getKey(), executorService.submit(() -> {
                             if (hasLtm || !doCheck) {
-                                final boolean oldCheck = LiveTableMonitor.DEFAULT.setCheckTableOperations(false);
+                                final boolean oldCheck = UpdateGraphProcessor.DEFAULT.setCheckTableOperations(false);
                                 try {
                                     return function.apply(entry.getValue(), otherTable);
                                 } finally {
-                                    LiveTableMonitor.DEFAULT.setCheckTableOperations(oldCheck);
+                                    UpdateGraphProcessor.DEFAULT.setCheckTableOperations(oldCheck);
                                 }
                             } else {
                                 return function.apply(otherTable, entry.getValue());
@@ -687,12 +687,12 @@ public class LocalTableMap extends TableMapImpl implements NotificationQueue.Dep
         }
 
         void addNotification(Runnable runnable, NotificationQueue.Dependency other) {
-            if (!LiveTableMonitor.DEFAULT.isRefreshThread()) {
+            if (!UpdateGraphProcessor.DEFAULT.isRefreshThread()) {
                 runnable.run();
                 return;
             }
             outstandingNotifications.incrementAndGet();
-            LiveTableMonitor.DEFAULT.addNotification(new AbstractNotification(false) {
+            UpdateGraphProcessor.DEFAULT.addNotification(new AbstractNotification(false) {
                 @Override
                 public void run() {
                     try {

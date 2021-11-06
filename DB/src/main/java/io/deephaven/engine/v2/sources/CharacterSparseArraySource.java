@@ -397,7 +397,7 @@ public class CharacterSparseArraySource extends SparseArrayColumnSource<Characte
         if (prevFlusher == null) {
             return null;
         }
-        // If we want to track previous values, we make sure we are registered with the LiveTableMonitor.
+        // If we want to track previous values, we make sure we are registered with the UpdateGraphProcessor.
         prevFlusher.maybeActivate();
 
         final int block0 = (int) (key >> BLOCK0_SHIFT) & BLOCK0_MASK;

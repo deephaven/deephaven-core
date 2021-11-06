@@ -2,7 +2,7 @@ package io.deephaven.engine.tables.utils;
 
 import io.deephaven.base.Pair;
 import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.live.LiveTableMonitor;
+import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.v2.*;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.utils.RowSet;
@@ -57,13 +57,13 @@ public class TestWindowCheck {
         timeProvider.now = startTime.getNanos();
 
         final WindowEvalNugget[] en;
-        LiveTableMonitor.DEFAULT.exclusiveLock().lock();
+        UpdateGraphProcessor.DEFAULT.exclusiveLock().lock();
         try {
             en = new WindowEvalNugget[] {
                     new WindowEvalNugget(timeProvider, table)
             };
         } finally {
-            LiveTableMonitor.DEFAULT.exclusiveLock().unlock();
+            UpdateGraphProcessor.DEFAULT.exclusiveLock().unlock();
         }
 
         final int stepsPerTick = 1;
@@ -75,14 +75,14 @@ public class TestWindowCheck {
             final boolean combined = combinedRandom.nextBoolean();
 
             if (combined) {
-                LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+                UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
                     advanceTime(timeProvider, en);
                     GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE, size,
                             random, table, columnInfo);
                 });
                 TstUtils.validate("Step " + step, en);
             } else {
-                LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> advanceTime(timeProvider, en));
+                UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> advanceTime(timeProvider, en));
                 if (LiveTableTestCase.printTableUpdates) {
                     TstUtils.validate("Step = " + step + " time = " + new DBDateTime(timeProvider.now), en);
                 }
@@ -103,7 +103,7 @@ public class TestWindowCheck {
             System.out.println("Ticking time to " + new DBDateTime(timeProvider.now));
         }
         for (final WindowEvalNugget wen : en) {
-            wen.windowed.second.refresh();
+            wen.windowed.second.run();
         }
     }
 
@@ -119,13 +119,13 @@ public class TestWindowCheck {
         final Table tableToCheck = testRefreshingTable(i().toTracking(),
                 c("Timestamp", emptyDateTimeArray), intCol("Sentinel"));
 
-        final Pair<Table, WindowCheck.TimeWindowListener> windowed = LiveTableMonitor.DEFAULT.sharedLock()
+        final Pair<Table, WindowCheck.TimeWindowListener> windowed = UpdateGraphProcessor.DEFAULT.sharedLock()
                 .computeLocked(() -> WindowCheck.addTimeWindowInternal(timeProvider, tableToCheck, "Timestamp",
                         DBTimeUtils.SECOND * 60, "InWindow", false));
 
         TableTools.showWithIndex(windowed.first);
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(windowed.second::refresh);
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(windowed.second::run);
 
     }
 

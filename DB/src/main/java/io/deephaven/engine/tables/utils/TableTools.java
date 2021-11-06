@@ -15,7 +15,7 @@ import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.tables.ColumnDefinition;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.TableDefinition;
-import io.deephaven.engine.tables.live.LiveTableMonitor;
+import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.tables.utils.csv.CsvSpecs;
 import io.deephaven.engine.util.caching.C14nUtil;
 import io.deephaven.engine.v2.QueryTable;
@@ -1211,7 +1211,7 @@ public class TableTools {
      */
     public static Table timeTable(long periodNanos, ReplayerInterface replayer) {
         final TimeTable timeTable = new TimeTable(Replayer.getTimeProvider(replayer), null, periodNanos);
-        LiveTableMonitor.DEFAULT.addTable(timeTable);
+        UpdateGraphProcessor.DEFAULT.addTable(timeTable);
         return timeTable;
     }
 
@@ -1224,7 +1224,7 @@ public class TableTools {
      */
     public static Table timeTable(DBDateTime startTime, long periodNanos) {
         final TimeTable timeTable = new TimeTable(Replayer.getTimeProvider(null), startTime, periodNanos);
-        LiveTableMonitor.DEFAULT.addTable(timeTable);
+        UpdateGraphProcessor.DEFAULT.addTable(timeTable);
         return timeTable;
     }
 
@@ -1238,7 +1238,7 @@ public class TableTools {
      */
     public static Table timeTable(DBDateTime startTime, long periodNanos, ReplayerInterface replayer) {
         final TimeTable timeTable = new TimeTable(Replayer.getTimeProvider(replayer), startTime, periodNanos);
-        LiveTableMonitor.DEFAULT.addTable(timeTable);
+        UpdateGraphProcessor.DEFAULT.addTable(timeTable);
         return timeTable;
     }
 
@@ -1275,7 +1275,7 @@ public class TableTools {
      */
     public static Table timeTable(TimeProvider timeProvider, DBDateTime startTime, long periodNanos) {
         final TimeTable timeTable = new TimeTable(timeProvider, startTime, periodNanos);
-        LiveTableMonitor.DEFAULT.addTable(timeTable);
+        UpdateGraphProcessor.DEFAULT.addTable(timeTable);
         return timeTable;
     }
 

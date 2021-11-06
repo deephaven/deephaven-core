@@ -99,7 +99,7 @@ public class ExecutorTableDataRefreshService implements TableDataRefreshService 
         }
 
         /**
-         * Type-specific refresh processing.
+         * Type-specific run processing.
          */
         protected abstract void refresh();
 

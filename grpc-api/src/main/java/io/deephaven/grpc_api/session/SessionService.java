@@ -72,7 +72,7 @@ public class SessionService {
             throw new IllegalArgumentException("session.tokenExpireMs is set too high.");
         }
 
-        // Protect ourselves from rotation spam, but be loose enough that any reasonable refresh strategy works.
+        // Protect ourselves from rotation spam, but be loose enough that any reasonable run strategy works.
         this.tokenRotateMs = tokenExpireMs / 5;
 
         if (ProcessEnvironment.tryGet() != null) {
@@ -148,9 +148,9 @@ public class SessionService {
     }
 
     /**
-     * If enough time has passed since the last token refresh, rotate to a new token and reset the expiration deadline.
+     * If enough time has passed since the last token run, rotate to a new token and reset the expiration deadline.
      *
-     * @param session the session to refresh
+     * @param session the session to run
      * @return the most recent token expiration
      */
     public TokenExpiration refreshToken(final SessionState session) {

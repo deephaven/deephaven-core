@@ -11,7 +11,7 @@ import io.deephaven.engine.v2.locations.TableLocationState;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Intermediates between push-based subscription to a TableLocation and polling on LiveTable refresh.
+ * Intermediates between push-based subscription to a TableLocation and polling on LiveTable run.
  */
 public class TableLocationUpdateSubscriptionBuffer implements TableLocation.Listener {
 
@@ -40,7 +40,7 @@ public class TableLocationUpdateSubscriptionBuffer implements TableLocation.List
             if (tableLocation.supportsSubscriptions()) {
                 tableLocation.subscribe(this);
             } else {
-                // NB: Locations that don't support subscriptions don't tick - this single call to refresh is
+                // NB: Locations that don't support subscriptions don't tick - this single call to run is
                 // sufficient.
                 tableLocation.refresh();
                 handleUpdate();

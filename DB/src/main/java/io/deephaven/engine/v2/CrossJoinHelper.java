@@ -66,7 +66,7 @@ public class CrossJoinHelper {
             // if (!rightTable.isLive() && control.useUniqueTable(uniqueValues, maximumUniqueValue, minumumUniqueValue))
             // { (etc)
             if (bucketingContext.keyColumnCount == 0) {
-                if (!leftTable.isLive() && !rightTable.isLive()) {
+                if (!leftTable.isRefreshing() && !rightTable.isRefreshing()) {
                     numRightBitsToReserve = 1; // tight computation of this is efficient and appropriate
                 }
                 return zeroKeyColumnsJoin(leftTable, rightTable, columnsToAdd, numRightBitsToReserve,
@@ -78,9 +78,9 @@ public class CrossJoinHelper {
             final ModifiedColumnSet leftKeyColumns =
                     leftTable.newModifiedColumnSet(MatchPair.getLeftColumns(columnsToMatch));
 
-            if (!rightTable.isLive()) {
+            if (!rightTable.isRefreshing()) {
                 // TODO: use grouping
-                if (!leftTable.isLive()) {
+                if (!leftTable.isRefreshing()) {
                     final StaticChunkedCrossJoinStateManager jsm = new StaticChunkedCrossJoinStateManager(
                             bucketingContext.leftSources, control.initialBuildSize(), control, leftTable);
                     jsm.setMaximumLoadFactor(control.getMaximumLoadFactor());
@@ -93,7 +93,7 @@ public class CrossJoinHelper {
                             .toTracking();
 
                     return makeResult(leftTable, rightTable, columnsToAdd, jsm, resultRowSet,
-                            cs -> new CrossJoinRightColumnSource<>(jsm, cs, rightTable.isLive()));
+                            cs -> new CrossJoinRightColumnSource<>(jsm, cs, rightTable.isRefreshing()));
                 }
 
                 final LeftOnlyIncrementalChunkedCrossJoinStateManager jsm =
@@ -106,7 +106,7 @@ public class CrossJoinHelper {
                 final TrackingMutableRowSet resultRowSet =
                         jsm.buildLeftTicking(leftTable, rightTable, bucketingContext.rightSources).toTracking();
                 final QueryTable resultTable = makeResult(leftTable, rightTable, columnsToAdd, jsm, resultRowSet,
-                        cs -> new CrossJoinRightColumnSource<>(jsm, cs, rightTable.isLive()));
+                        cs -> new CrossJoinRightColumnSource<>(jsm, cs, rightTable.isRefreshing()));
 
                 jsm.startTrackingPrevValues();
                 final ModifiedColumnSet.Transformer leftTransformer = leftTable.newModifiedColumnSetTransformer(
@@ -196,12 +196,12 @@ public class CrossJoinHelper {
             final TrackingMutableRowSet resultRowSet = jsm.build(leftTable, rightTable).toTracking();
 
             final QueryTable resultTable = makeResult(leftTable, rightTable, columnsToAdd, jsm, resultRowSet,
-                    cs -> new CrossJoinRightColumnSource<>(jsm, cs, rightTable.isLive()));
+                    cs -> new CrossJoinRightColumnSource<>(jsm, cs, rightTable.isRefreshing()));
 
             final ModifiedColumnSet.Transformer rightTransformer =
                     rightTable.newModifiedColumnSetTransformer(resultTable, columnsToAdd);
 
-            if (leftTable.isLive()) {
+            if (leftTable.isRefreshing()) {
                 // LeftIndexToSlot needs prev value tracking
                 jsm.startTrackingPrevValues();
 
@@ -1077,7 +1077,7 @@ public class CrossJoinHelper {
             result.notifyListeners(downstream);
         };
 
-        if (leftTable.isLive() && rightTable.isLive()) {
+        if (leftTable.isRefreshing() && rightTable.isRefreshing()) {
             final JoinListenerRecorder leftRecorder =
                     new JoinListenerRecorder(true, listenerDescription, leftTable, result);
             final JoinListenerRecorder rightRecorder =
@@ -1096,14 +1096,14 @@ public class CrossJoinHelper {
             leftTable.listenForUpdates(leftRecorder);
             rightTable.listenForUpdates(rightRecorder);
             result.addParentReference(mergedListener);
-        } else if (leftTable.isLive() && rightTable.size() > 0) {
+        } else if (leftTable.isRefreshing() && rightTable.size() > 0) {
             leftTable.listenForUpdates(new BaseTable.ListenerImpl(listenerDescription, leftTable, result) {
                 @Override
                 public void onUpdate(final Update upstream) {
                     onUpdate.accept(upstream, null);
                 }
             });
-        } else if (rightTable.isLive() && leftTable.size() > 0) {
+        } else if (rightTable.isRefreshing() && leftTable.size() > 0) {
             rightTable.listenForUpdates(new BaseTable.ListenerImpl(listenerDescription, rightTable, result) {
                 @Override
                 public void onUpdate(final Update upstream) {

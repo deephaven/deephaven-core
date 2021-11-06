@@ -3,7 +3,7 @@ package io.deephaven.engine.v2.sources.chunk;
 import static io.deephaven.engine.v2.TstUtils.getTable;
 
 import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.live.LiveTableMonitor;
+import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.v2.QueryTable;
 import io.deephaven.engine.v2.TstUtils;
 import joptsimple.internal.Strings;
@@ -90,7 +90,7 @@ public class TestSharedContext {
         final String condition = Strings.join(conditions, " && ");
         final QueryTable t0 = getTable(size, random, initColumnInfos(cols, gs));
         final String sortCol = "TS";
-        LiveTableMonitor.DEFAULT.exclusiveLock().doLocked(() -> {
+        UpdateGraphProcessor.DEFAULT.exclusiveLock().doLocked(() -> {
             final Table t1 = t0.update(sortCol + "=i").reverse();
             final Table t1Filtered = t1.where(condition);
             final Table t2 = t1.sort(sortCol);
@@ -136,7 +136,7 @@ public class TestSharedContext {
         final QueryTable t0 = getTable(size, random, initColumnInfos(cols, gs));
         final String sortCol = "TS";
         final String formulaCol = "F";
-        LiveTableMonitor.DEFAULT.exclusiveLock().doLocked(() -> {
+        UpdateGraphProcessor.DEFAULT.exclusiveLock().doLocked(() -> {
             final Table t1 = t0.update(sortCol + "=i", formulaCol + "=" + cols[0] + "+" + cols[1]).reverse();
             final Table t1Filtered = t1.where(condition);
             final Table t2 = t1.sort(sortCol).naturalJoin(t1, sortCol, Strings.join(joinColumnsToAdd, ","));

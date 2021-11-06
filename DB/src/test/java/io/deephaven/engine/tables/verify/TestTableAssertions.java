@@ -2,7 +2,7 @@ package io.deephaven.engine.tables.verify;
 
 import io.deephaven.engine.tables.SortingOrder;
 import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.live.LiveTableMonitor;
+import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.v2.*;
 import io.deephaven.test.junit4.EngineCleanup;
@@ -57,7 +57,7 @@ public class TestTableAssertions {
         assertTableEquals(test, testPlant);
         assertTableEquals(test, testInt);
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             removeRows(test, i(11));
             addToTable(test, i(11), stringCol("Plant", "Berry"), intCol("Int", 6));
             test.notifyListeners(i(11), i(11), i());
@@ -66,7 +66,7 @@ public class TestTableAssertions {
         assertTableEquals(test, testInt);
         assertTableEquals(test, testPlant);
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(test, i(9, 13, 18), stringCol("Plant", "Aaple", "DAFODIL", "Forsythia"),
                     intCol("Int", 10, 4, 0));
             TableTools.showWithIndex(test);
@@ -98,7 +98,7 @@ public class TestTableAssertions {
         // final Random random1 = new Random(0);
         // QueryScope.addParam("random1", random);
 
-        // final Table badTable = LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() ->
+        // final Table badTable = UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() ->
         // table.update("RV=random1.nextDouble() < 0.00001 ? -1L : SortValue"));
 
         final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
@@ -124,7 +124,7 @@ public class TestTableAssertions {
         };
 
         for (int step = 0; step < maxSteps; step++) {
-            LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> GenerateTableUpdates.generateShiftAwareTableUpdates(
+            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> GenerateTableUpdates.generateShiftAwareTableUpdates(
                     GenerateTableUpdates.DEFAULT_PROFILE, size, random, table, columnInfo));
             validate(en);
         }

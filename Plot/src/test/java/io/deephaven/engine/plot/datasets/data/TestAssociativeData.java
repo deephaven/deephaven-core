@@ -8,7 +8,7 @@ import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.engine.plot.errors.PlotIllegalArgumentException;
 import io.deephaven.engine.plot.util.tables.TableHandle;
 import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.live.LiveTableMonitor;
+import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.tables.utils.TableTools;
 import junit.framework.TestCase;
 
@@ -28,8 +28,8 @@ public class TestAssociativeData extends BaseArrayTestCase {
     @Override
     public void setUp() throws Exception {
         super.setUp();
-        LiveTableMonitor.DEFAULT.enableUnitTestMode();
-        LiveTableMonitor.DEFAULT.resetForUnitTests(false);
+        UpdateGraphProcessor.DEFAULT.enableUnitTestMode();
+        UpdateGraphProcessor.DEFAULT.resetForUnitTests(false);
 
         // prime the listeners
         associativeDataTable.get(null);
@@ -38,7 +38,7 @@ public class TestAssociativeData extends BaseArrayTestCase {
     @Override
     public void tearDown() throws Exception {
         super.tearDown();
-        LiveTableMonitor.DEFAULT.resetForUnitTests(true);
+        UpdateGraphProcessor.DEFAULT.resetForUnitTests(true);
     }
 
     public void testAssociativeDataHashMap() {

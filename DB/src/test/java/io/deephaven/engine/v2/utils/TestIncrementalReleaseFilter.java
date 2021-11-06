@@ -4,9 +4,9 @@
 
 package io.deephaven.engine.v2.utils;
 
+import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.util.clock.RealTimeClock;
 import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.live.LiveTableMonitor;
 import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.v2.LiveTableTestCase;
 import io.deephaven.engine.v2.select.AutoTuningIncrementalReleaseFilter;
@@ -30,7 +30,7 @@ public class TestIncrementalReleaseFilter extends LiveTableTestCase {
         assertEquals(2, filtered.size());
 
         for (int ii = 0; ii <= 10; ++ii) {
-            LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(incrementalReleaseFilter::refresh);
+            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(incrementalReleaseFilter::run);
 
             TableTools.show(filtered);
             assertEquals(Math.min(3 + ii, 10), filtered.size());
@@ -51,7 +51,7 @@ public class TestIncrementalReleaseFilter extends LiveTableTestCase {
 
         int cycles = 0;
         while (filtered.size() < source.size()) {
-            LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(incrementalReleaseFilter::refresh);
+            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(incrementalReleaseFilter::run);
             cycles++;
         }
         assertTableEquals(source, filtered);
@@ -84,7 +84,7 @@ public class TestIncrementalReleaseFilter extends LiveTableTestCase {
 
     public void testAutoTune2() {
         // I just want to see commas in the output
-        LiveTableMonitor.DEFAULT.setTargetCycleTime(100);
+        UpdateGraphProcessor.DEFAULT.setTargetCycleTime(100);
         final Table source = TableTools.emptyTable(1_000_000);
         TableTools.show(source);
 
@@ -92,17 +92,17 @@ public class TestIncrementalReleaseFilter extends LiveTableTestCase {
                 new AutoTuningIncrementalReleaseFilter(0, 100, 1.1, true, new ClockTimeProvider(new RealTimeClock()));
         final Table filtered = source.where(incrementalReleaseFilter);
 
-        final Table updated = LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> filtered.update("I=ii"));
+        final Table updated = UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> filtered.update("I=ii"));
 
         while (filtered.size() < source.size()) {
-            LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(incrementalReleaseFilter::refresh);
+            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(incrementalReleaseFilter::run);
         }
 
         TableTools.show(updated);
     }
 
     private int testAutoTuneCycle(int cycleTime) {
-        LiveTableMonitor.DEFAULT.setTargetCycleTime(cycleTime);
+        UpdateGraphProcessor.DEFAULT.setTargetCycleTime(cycleTime);
         final Table source = TableTools.emptyTable(10_000);
         TableTools.show(source);
 
@@ -110,12 +110,12 @@ public class TestIncrementalReleaseFilter extends LiveTableTestCase {
                 new AutoTuningIncrementalReleaseFilter(0, 100, 1.1, true, new ClockTimeProvider(new RealTimeClock()));
         final Table filtered = source.where(incrementalReleaseFilter);
 
-        final Table updated = LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> filtered
+        final Table updated = UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> filtered
                 .update("I=io.deephaven.engine.v2.utils.TestIncrementalReleaseFilter.sleepValue(100000, ii)"));
 
         int cycles = 0;
         while (filtered.size() < source.size()) {
-            LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(incrementalReleaseFilter::refresh);
+            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(incrementalReleaseFilter::run);
             System.out.println(filtered.size() + " / " + updated.size());
             cycles++;
         }

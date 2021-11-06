@@ -17,7 +17,7 @@ public class TableBackedBenchmarkTableBuilder extends AbstractBenchmarkTableBuil
     public TableBackedBenchmarkTableBuilder(String name, @NotNull Table fromTable) {
         super(name, (int) fromTable.size());
 
-        if (fromTable.isLive()) {
+        if (fromTable.isRefreshing()) {
             throw new IllegalArgumentException("Live source tables are not supported right now.");
         }
 

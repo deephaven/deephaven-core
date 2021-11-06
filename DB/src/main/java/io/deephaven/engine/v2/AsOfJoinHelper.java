@@ -51,7 +51,7 @@ public class AsOfJoinHelper {
 
         checkColumnConflicts(leftTable, columnsToAdd);
 
-        if (!leftTable.isLive() && leftTable.size() == 0) {
+        if (!leftTable.isRefreshing() && leftTable.size() == 0) {
             return makeResult(leftTable, rightTable, new StaticSingleValueRedirectionIndexImpl(RowSet.NULL_ROW_KEY),
                     columnsToAdd, false);
         }
@@ -89,8 +89,8 @@ public class AsOfJoinHelper {
                     originalRightStampSource, rightStampSource, order, disallowExactMatch, redirectionIndex);
         }
 
-        if (rightTable.isLive()) {
-            if (leftTable.isLive()) {
+        if (rightTable.isRefreshing()) {
+            if (leftTable.isRefreshing()) {
                 return bothIncrementalAj(control, leftTable, rightTable, columnsToMatch, columnsToAdd, order,
                         disallowExactMatch, stampPair,
                         leftSources, rightSources, leftStampSource, rightStampSource, redirectionIndex);
@@ -149,10 +149,10 @@ public class AsOfJoinHelper {
             leftGrouping = null;
 
             final int rightSize = rightGrouping.size();
-            buildLeft = !leftTable.isLive() && leftTable.size() < rightSize;
+            buildLeft = !leftTable.isRefreshing() && leftTable.size() < rightSize;
             size = control.tableSize(Math.min(leftTable.size(), rightSize));
         } else {
-            buildLeft = !leftTable.isLive() && control.buildLeft(leftTable, rightTable);
+            buildLeft = !leftTable.isRefreshing() && control.buildLeft(leftTable, rightTable);
             size = control.initialBuildSize();
             leftGrouping = rightGrouping = null;
         }
@@ -216,7 +216,7 @@ public class AsOfJoinHelper {
         }
 
         final ArrayValuesCache arrayValuesCache;
-        if (leftTable.isLive()) {
+        if (leftTable.isRefreshing()) {
             if (rightGroupedSources != null) {
                 asOfJoinStateManager.convertRightGrouping(slots, slotCount, rightGroupedSources.getSecond());
             } else {
@@ -497,10 +497,10 @@ public class AsOfJoinHelper {
             MatchPair[] columnsToAdd, MatchPair stampPair, ColumnSource<?> leftStampSource,
             ColumnSource<?> originalRightStampSource, ColumnSource<?> rightStampSource, SortingOrder order,
             boolean disallowExactMatch, final RedirectionIndex redirectionIndex) {
-        if (rightTable.isLive() && leftTable.isLive()) {
+        if (rightTable.isRefreshing() && leftTable.isRefreshing()) {
             return zeroKeyAjBothIncremental(control, leftTable, rightTable, columnsToAdd, stampPair, leftStampSource,
                     rightStampSource, order, disallowExactMatch, redirectionIndex);
-        } else if (rightTable.isLive()) {
+        } else if (rightTable.isRefreshing()) {
             return zeroKeyAjRightIncremental(control, leftTable, rightTable, columnsToAdd, stampPair, leftStampSource,
                     rightStampSource, order, disallowExactMatch, redirectionIndex);
         } else {

@@ -197,7 +197,7 @@ public class ColumnsToRowsTransform {
 
         final QueryTable result = new QueryTable(resultRowSet, resultMap);
 
-        if (source.isLive()) {
+        if (source.isRefreshing()) {
             final Table dynamicSource = source;
             final int sourceColumnCount = source.getColumnSourceMap().size();
             final ModifiedColumnSet[] resultColumnSets = new ModifiedColumnSet[sourceColumnCount];

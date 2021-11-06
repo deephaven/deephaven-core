@@ -1,7 +1,7 @@
 package io.deephaven.engine.v2.utils;
 
 import io.deephaven.engine.structures.RowSequence;
-import io.deephaven.engine.tables.live.LiveTableMonitor;
+import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.tables.select.QueryScope;
 import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.util.BooleanUtils;
@@ -103,7 +103,7 @@ public class TestReadOnlyRedirectedColumnSource {
         final int chunkSz = stepSz - 7;
         try (final WritableObjectChunk<String, Values> chunk = WritableObjectChunk.makeWritableChunk(chunkSz)) {
             while (live.size() < t.size()) {
-                LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(incFilter::refresh);
+                UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(incFilter::run);
                 doFillAndCheck(live, "StringsCol", chunk, chunkSz);
             }
         }
@@ -131,10 +131,10 @@ public class TestReadOnlyRedirectedColumnSource {
                 TstUtils.testRefreshingTable(RowSetFactory.flat(6).toTracking(),
                         intCol("IntVal", 0, 1, 2, 3, 4, 5));
 
-        final Table a = LiveTableMonitor.DEFAULT.sharedLock().computeLocked(
+        final Table a = UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(
                 () -> qt.update("I2=3+IntVal", "BoolVal=ids6196_values[IntVal % ids6196_values.length]"));
         TableTools.showWithIndex(a);
-        final Table b = LiveTableMonitor.DEFAULT.sharedLock()
+        final Table b = UpdateGraphProcessor.DEFAULT.sharedLock()
                 .computeLocked(() -> a.naturalJoin(a, "I2=IntVal", "BoolVal2=BoolVal"));
         TableTools.showWithIndex(b);
 
@@ -160,7 +160,7 @@ public class TestReadOnlyRedirectedColumnSource {
             assertArrayEquals(expecteds, chunkResult);
         }
 
-        final Table c = LiveTableMonitor.DEFAULT.sharedLock()
+        final Table c = UpdateGraphProcessor.DEFAULT.sharedLock()
                 .computeLocked(() -> a.naturalJoin(b, "I2=IntVal", "BoolVal3=BoolVal2"));
         TableTools.showWithIndex(c);
         final ColumnSource reinterpretedC = c.getColumnSource("BoolVal3").reinterpret(byte.class);
@@ -198,14 +198,14 @@ public class TestReadOnlyRedirectedColumnSource {
         }
 
         final Table captured =
-                LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> TableTools.emptyTable(1).snapshot(c));
+                UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> TableTools.emptyTable(1).snapshot(c));
         TableTools.showWithIndex(captured);
 
-        LiveTableMonitor.DEFAULT.startCycleForUnitTests();
+        UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
         TstUtils.addToTable(qt, RowSetFactory.flat(3), intCol("IntVal", 1, 2, 3));
         qt.notifyListeners(RowSetFactory.empty(), RowSetFactory.empty(), RowSetFactory.flat(3));
 
-        LiveTableMonitor.DEFAULT.flushAllNormalNotificationsForUnitTests();
+        UpdateGraphProcessor.DEFAULT.flushAllNormalNotificationsForUnitTests();
 
         System.out.println("A:");
         TableTools.showWithIndex(a);
@@ -227,6 +227,6 @@ public class TestReadOnlyRedirectedColumnSource {
         });
         assertArrayEquals(expecteds, byteList.toArray());
 
-        LiveTableMonitor.DEFAULT.completeCycleForUnitTests();
+        UpdateGraphProcessor.DEFAULT.completeCycleForUnitTests();
     }
 }

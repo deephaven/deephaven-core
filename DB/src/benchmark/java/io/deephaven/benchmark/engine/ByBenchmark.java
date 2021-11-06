@@ -1,7 +1,7 @@
 package io.deephaven.benchmark.engine;
 
 import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.live.LiveTableMonitor;
+import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.v2.QueryTable;
 import io.deephaven.engine.v2.TableMap;
@@ -54,7 +54,7 @@ public class ByBenchmark {
 
     @Setup(Level.Trial)
     public void setupEnv(BenchmarkParams params) {
-        LiveTableMonitor.DEFAULT.enableUnitTestMode();
+        UpdateGraphProcessor.DEFAULT.enableUnitTestMode();
         QueryTable.setMemoizeResults(false);
 
         final BenchmarkTableBuilder builder;
@@ -151,7 +151,7 @@ public class ByBenchmark {
     @Benchmark
     public Table byStatic(@NotNull final Blackhole bh) {
         final Table result =
-                LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> table.by(keyName.split("[, ]+")));
+                UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> table.by(keyName.split("[, ]+")));
         bh.consume(result);
         return state.setResult(TableTools.emptyTable(0));
     }
@@ -159,7 +159,7 @@ public class ByBenchmark {
     @Benchmark
     public Table byIncremental(@NotNull final Blackhole bh) {
         final Table result = IncrementalBenchmark.incrementalBenchmark(
-                (t) -> LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> t.by(keyName.split("[, ]+"))), table);
+                (t) -> UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> t.by(keyName.split("[, ]+"))), table);
         bh.consume(result);
         return state.setResult(TableTools.emptyTable(0));
     }
@@ -167,7 +167,7 @@ public class ByBenchmark {
     @Benchmark
     public Table byExternalStatic(@NotNull final Blackhole bh) {
         final TableMap result =
-                LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> table.byExternal(keyName.split("[, ]+")));
+                UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> table.byExternal(keyName.split("[, ]+")));
         bh.consume(result);
         return state.setResult(TableTools.emptyTable(0));
     }
@@ -175,7 +175,7 @@ public class ByBenchmark {
     @Benchmark
     public Table byExternalIncremental(@NotNull final Blackhole bh) {
         final TableMap result = IncrementalBenchmark.incrementalBenchmark(
-                (t) -> LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> t.byExternal(keyName.split("[, ]+"))),
+                (t) -> UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> t.byExternal(keyName.split("[, ]+"))),
                 table);
         bh.consume(result);
         return state.setResult(TableTools.emptyTable(0));

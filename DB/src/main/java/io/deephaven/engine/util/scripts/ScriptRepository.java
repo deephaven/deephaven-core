@@ -620,11 +620,11 @@ public class ScriptRepository implements ScriptPathLoader {
                 consistencyLock.writeLock().unlock();
             }
 
-            log.info().append(logPrefix).append("Successful git refresh after ")
+            log.info().append(logPrefix).append("Successful git run after ")
                     .append(System.currentTimeMillis() - lastGitRefresh).append("ms").endl();
             lastGitRefresh = System.currentTimeMillis();
         } catch (Exception e) {
-            // We are overly cautious here, to make sure that a failure to refresh the repository doesn't crash
+            // We are overly cautious here, to make sure that a failure to run the repository doesn't crash
             // the running process (in particular if it's the Controller).
             log.error().append(logPrefix).append("error refreshing repository: ").append(e).endl();
         }

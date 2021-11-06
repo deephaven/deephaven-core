@@ -10,7 +10,7 @@ import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.NotSortableException;
 import io.deephaven.engine.tables.DataColumn;
 import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.live.LiveTableMonitor;
+import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.tables.utils.DBDateTime;
 import io.deephaven.engine.v2.utils.RowSetFactory;
 import io.deephaven.test.types.OutOfBandTest;
@@ -40,8 +40,8 @@ public class TestSort extends BaseArrayTestCase {
     @Override
     protected void setUp() throws Exception {
         super.setUp();
-        LiveTableMonitor.DEFAULT.enableUnitTestMode();
-        LiveTableMonitor.DEFAULT.resetForUnitTests(false);
+        UpdateGraphProcessor.DEFAULT.enableUnitTestMode();
+        UpdateGraphProcessor.DEFAULT.resetForUnitTests(false);
         lastMemoize = QueryTable.setMemoizeResults(false);
         oldCompilerToolsLogEnabled = CompilerTools.setLogEnabled(ENABLE_COMPILER_TOOLS_LOGGING);
     }
@@ -51,7 +51,7 @@ public class TestSort extends BaseArrayTestCase {
         super.tearDown();
         CompilerTools.setLogEnabled(oldCompilerToolsLogEnabled);
         QueryTable.setMemoizeResults(lastMemoize);
-        LiveTableMonitor.DEFAULT.resetForUnitTests(true);
+        UpdateGraphProcessor.DEFAULT.resetForUnitTests(true);
     }
 
     @FunctionalInterface

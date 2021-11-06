@@ -5,7 +5,7 @@
 package io.deephaven.engine.v2.by;
 
 import io.deephaven.configuration.Configuration;
-import io.deephaven.engine.tables.live.LiveTableMonitor;
+import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.util.SortedBy;
 import io.deephaven.engine.v2.*;
@@ -115,7 +115,7 @@ public class TestSortedFirstOrLastByFactory extends LiveTableTestCase {
 
         // this part is the original bug, if we didn't change the actual value of the redirection rowSet; because the
         // shift modify combination left it at the same rowSet; we would not notice the mdoification
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             final Listener.Update update = new Listener.Update();
             update.added = RowSetFactory.fromKeys(0);
             update.removed = RowSetFactory.empty();
@@ -140,7 +140,7 @@ public class TestSortedFirstOrLastByFactory extends LiveTableTestCase {
 
         // i'm concerned that if we really modify a row, but we don't detect it in the shift, so here we are just
         // shifting without modifications
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             final Listener.Update update = new Listener.Update();
             update.added = RowSetFactory.fromKeys(0);
             update.removed = RowSetFactory.empty();
@@ -166,7 +166,7 @@ public class TestSortedFirstOrLastByFactory extends LiveTableTestCase {
         TestCase.assertEquals(1, bucketed.getColumn("Sentinel").get(0));
 
         // here we are shifting, but not modifying the SFB column (but are modifying sentinel)
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             final Listener.Update update = new Listener.Update();
             update.added = RowSetFactory.fromKeys(0);
             update.removed = RowSetFactory.empty();
@@ -193,7 +193,7 @@ public class TestSortedFirstOrLastByFactory extends LiveTableTestCase {
         TestCase.assertEquals(9, bucketed.getColumn("Sentinel").get(0));
 
         // we are shifting, and claiming to modify SFB but not actually doing it
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             final Listener.Update update = new Listener.Update();
             update.added = RowSetFactory.fromKeys(0);
             update.removed = RowSetFactory.empty();
@@ -220,7 +220,7 @@ public class TestSortedFirstOrLastByFactory extends LiveTableTestCase {
         TestCase.assertEquals(9, bucketed.getColumn("Sentinel").get(0));
 
         // here we are shifting, and modifying SFB but not actually doing it
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             final Listener.Update update = new Listener.Update();
             update.added = RowSetFactory.fromKeys(0);
             update.removed = RowSetFactory.empty();
@@ -247,7 +247,7 @@ public class TestSortedFirstOrLastByFactory extends LiveTableTestCase {
         TestCase.assertEquals(6, bucketed.getColumn("Sentinel").get(0));
 
         // claim to modify sfb, but don't really. Actually modify sentinel.
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             final Listener.Update update = new Listener.Update();
             update.added = RowSetFactory.fromKeys(0);
             update.removed = RowSetFactory.empty();

@@ -6,7 +6,7 @@ import io.deephaven.base.verify.Require;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.live.LiveTable;
-import io.deephaven.engine.tables.live.LiveTableMonitor;
+import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.v2.*;
 import io.deephaven.engine.v2.sources.AbstractColumnSource;
 import io.deephaven.engine.v2.sources.ColumnSource;
@@ -59,7 +59,7 @@ public class WindowCheck {
      * See {@link WindowCheck#addTimeWindow(Table, String, long, String)} for a description, the internal version gives
      * you access to the TimeWindowListener for unit testing purposes.
      *
-     * @param addToMonitor should we add this to the LiveTableMonitor
+     * @param addToMonitor should we add this to the UpdateGraphProcessor
      * @return a pair of the result table and the TimeWindowListener that drives it
      */
     static Pair<Table, TimeWindowListener> addTimeWindowInternal(TimeProvider timeProvider, Table table,
@@ -86,7 +86,7 @@ public class WindowCheck {
         result.addParentReference(timeWindowListener);
         result.manage(table);
         if (addToMonitor) {
-            LiveTableMonitor.DEFAULT.addTable(timeWindowListener);
+            UpdateGraphProcessor.DEFAULT.addTable(timeWindowListener);
         }
         return new Pair<>(result, timeWindowListener);
     }
@@ -95,7 +95,7 @@ public class WindowCheck {
      * The TimeWindowListener maintains a priority queue of rows that are within a configured window, when they pass out
      * of the window, the InWindow column is set to false and a modification tick happens.
      *
-     * It implements LiveTable, so that we can be inserted into the LiveTableMonitor.
+     * It implements LiveTable, so that we can be inserted into the UpdateGraphProcessor.
      */
     static class TimeWindowListener extends MergedListener implements LiveTable {
         private final InWindowColumnSource inWindowColumnSource;
@@ -310,7 +310,7 @@ public class WindowCheck {
          * Send a modification to the resulting table.
          */
         @Override
-        public void refresh() {
+        public void run() {
             inWindowColumnSource.captureTime();
             notifyChanges();
         }
@@ -359,7 +359,7 @@ public class WindowCheck {
         @Override
         public void destroy() {
             super.destroy();
-            LiveTableMonitor.DEFAULT.removeTable(this);
+            UpdateGraphProcessor.DEFAULT.removeTable(this);
         }
     }
 

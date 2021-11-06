@@ -132,7 +132,7 @@ public class StreamTableTools {
      * @see Table#STREAM_TABLE_ATTRIBUTE
      */
     public static boolean isStream(Table table) {
-        if (!table.isLive()) {
+        if (!table.isRefreshing()) {
             return false;
         }
         return Boolean.TRUE.equals(table.getAttribute(Table.STREAM_TABLE_ATTRIBUTE));

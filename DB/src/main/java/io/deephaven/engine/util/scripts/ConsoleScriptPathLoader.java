@@ -12,7 +12,7 @@ import java.io.IOException;
 import java.util.Set;
 
 /**
- * This loader loads *only* using {@link GroovyDeephavenSession#findScript(String)}. Consistency locking and refresh
+ * This loader loads *only* using {@link GroovyDeephavenSession#findScript(String)}. Consistency locking and run
  * methods are no-ops.
  */
 public class ConsoleScriptPathLoader implements ScriptPathLoader {

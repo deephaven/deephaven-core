@@ -32,18 +32,18 @@ public class TestConstructSnapshot extends LiveTableTestCase {
 
         changed.setValue(0);
         final Thread t = new Thread(snapshot_test);
-        LiveTableMonitor.DEFAULT.startCycleForUnitTests();
+        UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
         t.start();
         t.join();
-        LiveTableMonitor.DEFAULT.completeCycleForUnitTests();
+        UpdateGraphProcessor.DEFAULT.completeCycleForUnitTests();
         assertEquals(0, changed.longValue());
 
         changed.setValue(0);
         final Thread t2 = new Thread(snapshot_test);
-        LiveTableMonitor.DEFAULT.startCycleForUnitTests();
+        UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
         t2.start();
         SleepUtil.sleep(100);
-        LiveTableMonitor.DEFAULT.completeCycleForUnitTests();
+        UpdateGraphProcessor.DEFAULT.completeCycleForUnitTests();
         t2.join();
         assertEquals(1, changed.longValue());
     }

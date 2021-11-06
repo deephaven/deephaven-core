@@ -2,9 +2,8 @@ package io.deephaven.engine.v2;
 
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.TableDefinition;
-import io.deephaven.engine.tables.live.LiveTable;
-import io.deephaven.engine.tables.live.LiveTableMonitor;
-import io.deephaven.engine.tables.live.LiveTableRefreshCombiner;
+import io.deephaven.engine.tables.live.UpdateGraphProcessor;
+import io.deephaven.engine.tables.live.UpdateRootCombiner;
 import io.deephaven.engine.v2.locations.*;
 import io.deephaven.engine.v2.locations.impl.SingleTableLocationProvider;
 import io.deephaven.engine.v2.locations.impl.TableLocationSubscriptionBuffer;
@@ -34,12 +33,12 @@ public class SourceTableMap extends LocalTableMap {
     private final boolean refreshSizes;
     private final Predicate<ImmutableTableLocationKey> locationKeyMatcher;
 
-    private final LiveTableRefreshCombiner refreshCombiner;
+    private final UpdateRootCombiner refreshCombiner;
     private final TableLocationSubscriptionBuffer subscriptionBuffer;
     private final IntrusiveDoublyLinkedQueue<PendingLocationState> pendingLocationStates;
     private final IntrusiveDoublyLinkedQueue<PendingLocationState> readyLocationStates;
     @SuppressWarnings("FieldCanBeLocal") // We need to hold onto this reference for reachability purposes.
-    private final LiveTable processNewLocationsLiveTable;
+    private final Runnable processNewLocationsUpdateRoot;
 
     /**
      * <p>
@@ -73,7 +72,7 @@ public class SourceTableMap extends LocalTableMap {
 
         if (needToRefreshLocations || refreshSizes) {
             setRefreshing(true);
-            refreshCombiner = new LiveTableRefreshCombiner();
+            refreshCombiner = new UpdateRootCombiner();
             manage(refreshCombiner);
         } else {
             refreshCombiner = null;
@@ -85,7 +84,7 @@ public class SourceTableMap extends LocalTableMap {
                     IntrusiveDoublyLinkedNode.Adapter.<PendingLocationState>getInstance());
             readyLocationStates = new IntrusiveDoublyLinkedQueue<>(
                     IntrusiveDoublyLinkedNode.Adapter.<PendingLocationState>getInstance());
-            processNewLocationsLiveTable = new InstrumentedLiveTable(
+            processNewLocationsUpdateRoot = new InstrumentedLiveTable(
                     SourceTableMap.class.getSimpleName() + '[' + tableLocationProvider + ']'
                             + "-processPendingLocations") {
                 @Override
@@ -93,13 +92,13 @@ public class SourceTableMap extends LocalTableMap {
                     processPendingLocations();
                 }
             };
-            refreshCombiner.addTable(processNewLocationsLiveTable);
+            refreshCombiner.addTable(processNewLocationsUpdateRoot);
             processPendingLocations();
         } else {
             subscriptionBuffer = null;
             pendingLocationStates = null;
             readyLocationStates = null;
-            processNewLocationsLiveTable = null;
+            processNewLocationsUpdateRoot = null;
             tableLocationProvider.refresh();
             sortAndAddLocations(tableLocationProvider.getTableLocationKeys().stream().filter(locationKeyMatcher)
                     .map(tableLocationProvider::getTableLocation));
@@ -107,7 +106,7 @@ public class SourceTableMap extends LocalTableMap {
 
         if (isRefreshing()) {
             // noinspection ConstantConditions
-            LiveTableMonitor.DEFAULT.addTable(refreshCombiner);
+            UpdateGraphProcessor.DEFAULT.addTable(refreshCombiner);
         }
     }
 

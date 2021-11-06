@@ -1,7 +1,7 @@
 package io.deephaven.engine.v2.ssa;
 
 import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.live.LiveTableMonitor;
+import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.v2.QueryTable;
 import io.deephaven.engine.v2.TstUtils;
 import org.jetbrains.annotations.NotNull;
@@ -77,7 +77,7 @@ public class SsaTestHelpers {
 
     public static Table prepareTestTableForObject(QueryTable table) {
         // an update might be faster, but updateView ensures we break when object equality is not the same as ==
-        return LiveTableMonitor.DEFAULT.sharedLock()
+        return UpdateGraphProcessor.DEFAULT.sharedLock()
                 .computeLocked(() -> table.updateView("Value=String.format(`%06d`, Value)"));
     }
 

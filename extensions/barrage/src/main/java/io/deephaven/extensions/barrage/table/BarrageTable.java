@@ -13,8 +13,8 @@ import io.deephaven.engine.tables.ColumnDefinition;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.TableDefinition;
 import io.deephaven.engine.tables.live.LiveTable;
-import io.deephaven.engine.tables.live.LiveTableMonitor;
-import io.deephaven.engine.tables.live.LiveTableRegistrar;
+import io.deephaven.engine.tables.live.UpdateGraphProcessor;
+import io.deephaven.engine.tables.live.UpdateRootRegistrar;
 import io.deephaven.engine.tables.live.NotificationQueue;
 import io.deephaven.engine.v2.Listener;
 import io.deephaven.engine.v2.QueryTable;
@@ -52,7 +52,7 @@ public class BarrageTable extends QueryTable implements LiveTable, BarrageMessag
 
     private static final Logger log = LoggerFactory.getLogger(BarrageTable.class);
 
-    private final LiveTableRegistrar registrar;
+    private final UpdateRootRegistrar registrar;
     private final NotificationQueue notificationQueue;
 
     private final UpdatePerformanceTracker.Entry refreshEntry;
@@ -93,7 +93,7 @@ public class BarrageTable extends QueryTable implements LiveTable, BarrageMessag
     /** synchronize access to pendingUpdates */
     private final Object pendingUpdatesLock = new Object();
 
-    /** accumulate pending updates until we refresh this LiveTable */
+    /** accumulate pending updates until we run this LiveTable */
     private ArrayDeque<BarrageMessage> pendingUpdates = new ArrayDeque<>();
 
     /** alternative pendingUpdates container to avoid allocating, and resizing, a new instance */
@@ -110,7 +110,7 @@ public class BarrageTable extends QueryTable implements LiveTable, BarrageMessag
     private static final AtomicIntegerFieldUpdater<BarrageTable> PREV_TRACKING_UPDATER =
             AtomicIntegerFieldUpdater.newUpdater(BarrageTable.class, "prevTrackingEnabled");
 
-    protected BarrageTable(final LiveTableRegistrar registrar,
+    protected BarrageTable(final UpdateRootRegistrar registrar,
             final NotificationQueue notificationQueue,
             final LinkedHashMap<String, ColumnSource<?>> columns,
             final WritableSource<?>[] writableSources,
@@ -122,7 +122,7 @@ public class BarrageTable extends QueryTable implements LiveTable, BarrageMessag
 
         this.redirectionIndex = redirectionIndex;
         this.refreshEntry = UpdatePerformanceTracker.getInstance()
-                .getEntry("BarrageTable refresh " + System.identityHashCode(this));
+                .getEntry("BarrageTable run " + System.identityHashCode(this));
 
         if (isViewPort) {
             serverViewport = RowSetFactory.empty();
@@ -386,12 +386,12 @@ public class BarrageTable extends QueryTable implements LiveTable, BarrageMessag
     }
 
     @Override
-    public void refresh() {
+    public void run() {
         refreshEntry.onUpdateStart();
         try {
             realRefresh();
         } catch (Exception e) {
-            beginLog(LogLevel.ERROR).append(": Failure during BarrageTable refresh: ").append(e).endl();
+            beginLog(LogLevel.ERROR).append(": Failure during BarrageTable run: ").append(e).endl();
             notifyListenersOnError(e, null);
         } finally {
             refreshEntry.onUpdateEnd();
@@ -424,7 +424,7 @@ public class BarrageTable extends QueryTable implements LiveTable, BarrageMessag
             shadowPendingUpdates = localPendingUpdates;
 
             // we should allow the next pass to start fresh, so we make sure that the queues were actually drained
-            // on the last refresh
+            // on the last run
             Assert.eqZero(pendingUpdates.size(), "pendingUpdates.size()");
         }
 
@@ -457,7 +457,7 @@ public class BarrageTable extends QueryTable implements LiveTable, BarrageMessag
             // release any pending snapshots, as we will never process them
             pendingUpdates.clear();
         }
-        // we are quite certain the shadow copies should have been drained on the last refresh
+        // we are quite certain the shadow copies should have been drained on the last run
         Assert.eqZero(shadowPendingUpdates.size(), "shadowPendingUpdates.size()");
 
         if (onSealFailure != null) {
@@ -486,7 +486,7 @@ public class BarrageTable extends QueryTable implements LiveTable, BarrageMessag
     }
 
     /**
-     * Enqueue an error to be reported on the next refresh cycle.
+     * Enqueue an error to be reported on the next run cycle.
      *
      * @param e The error
      */
@@ -507,11 +507,11 @@ public class BarrageTable extends QueryTable implements LiveTable, BarrageMessag
      */
     @InternalUseOnly
     public static BarrageTable make(final TableDefinition tableDefinition, final boolean isViewPort) {
-        return make(LiveTableMonitor.DEFAULT, LiveTableMonitor.DEFAULT, tableDefinition, isViewPort);
+        return make(UpdateGraphProcessor.DEFAULT, UpdateGraphProcessor.DEFAULT, tableDefinition, isViewPort);
     }
 
     @VisibleForTesting
-    public static BarrageTable make(final LiveTableRegistrar registrar,
+    public static BarrageTable make(final UpdateRootRegistrar registrar,
             final NotificationQueue queue,
             final TableDefinition tableDefinition,
             final boolean isViewPort) {

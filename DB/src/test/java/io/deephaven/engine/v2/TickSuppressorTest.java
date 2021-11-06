@@ -5,7 +5,7 @@
 package io.deephaven.engine.v2;
 
 import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.live.LiveTableMonitor;
+import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.util.TickSuppressor;
 import io.deephaven.engine.v2.utils.RowSetShiftData;
@@ -128,11 +128,11 @@ public class TickSuppressorTest extends QueryTableTestBase {
 
         assertEquals(0, listener.getCount());
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> input.notifyListeners(i(), i(), i(5)));
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> input.notifyListeners(i(), i(), i(5)));
 
         assertEquals(0, listener.getCount());
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(input, i(2, 5), intCol("SentinelA", 2, 5), intCol("SentinelB", 8, 11));
             input.notifyListeners(i(2), i(), i(5));
         });
@@ -145,7 +145,7 @@ public class TickSuppressorTest extends QueryTableTestBase {
         assertFalse(listener.update.modifiedColumnSet.containsAny(suppressed.newModifiedColumnSet("SentinelA")));
         assertTrue(listener.update.modifiedColumnSet.containsAny(suppressed.newModifiedColumnSet("SentinelB")));
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(input, i(10, 15), intCol("SentinelA", 12, 15), intCol("SentinelB", 30, 40));
             removeRows(input, i(5));
             input.notifyListeners(i(), i(5), i(10, 15));
@@ -159,7 +159,7 @@ public class TickSuppressorTest extends QueryTableTestBase {
         assertTrue(listener.update.modifiedColumnSet.containsAny(suppressed.newModifiedColumnSet("SentinelA")));
         assertFalse(listener.update.modifiedColumnSet.containsAny(suppressed.newModifiedColumnSet("SentinelB")));
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(input, i(20), intCol("SentinelA", 20), intCol("SentinelB", 50));
             input.notifyListeners(i(20), i(), i());
         });

@@ -4,7 +4,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.datastructures.util.CollectionUtil;
 import com.google.common.collect.Maps;
 import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.live.LiveTableMonitor;
+import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.tables.select.MatchPair;
 import io.deephaven.engine.tables.select.MatchPairFactory;
 import io.deephaven.engine.tables.utils.TableTools;
@@ -57,7 +57,7 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
         final io.deephaven.engine.v2.SimpleListener listener = new io.deephaven.engine.v2.SimpleListener(jt);
         jt.listenForUpdates(listener);
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(rTable, i(1 << 16), longCol("Y", 3));
             final Listener.Update update = new Listener.Update();
             update.added = i(1 << 16);
@@ -92,7 +92,7 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
         final io.deephaven.engine.v2.SimpleListener listener = new io.deephaven.engine.v2.SimpleListener(jt);
         jt.listenForUpdates(listener);
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             removeRows(rTable, i(origIndex));
             addToTable(rTable, i(newIndex), longCol("Y", 2));
             final Listener.Update update = new Listener.Update();
@@ -130,7 +130,7 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
         final io.deephaven.engine.v2.SimpleListener listener = new io.deephaven.engine.v2.SimpleListener(jt);
         jt.listenForUpdates(listener);
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             removeRows(rTable, i(128));
             addToTable(rTable, i(129, 1 << 16), longCol("Y", 2, 4));
             final Listener.Update update = new Listener.Update();
@@ -162,7 +162,7 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
         };
         TstUtils.validate(en);
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             // left table
             removeRows(lTable, i(0, 1, 2, 3));
             addToTable(lTable, i(2, 4, 5, 7), c("X", "a", "b", "c", "d"));
@@ -226,7 +226,7 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
         };
 
         for (numSteps.setValue(0); numSteps.intValue() < maxSteps; numSteps.increment()) {
-            LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
                 final int stepInstructions = random.nextInt();
                 if (stepInstructions % 4 != 1) {
                     GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE, leftSize,
@@ -416,14 +416,14 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
 
         assertTableEquals(z3, z);
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             xqt.getRowSet().mutableCast().insertRange(size, size * 2);
             xqt.notifyListeners(RowSetFactory.fromRange(size, size * 2), i(), i());
         });
 
         assertTableEquals(z3, z);
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             yqt.getRowSet().mutableCast().insertRange(size, size * 2);
             yqt.notifyListeners(RowSetFactory.fromRange(size, size * 2), i(), i());
         });
@@ -500,7 +500,7 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
         shiftingProfile.SHIFT_AGGRESSIVELY = 85;
 
         for (numSteps.setValue(0); numSteps.intValue() < maxSteps; numSteps.increment()) {
-            LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
                 final int stepInstructions = random.nextInt();
                 if (stepInstructions % 4 != 1) {
                     GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE,
@@ -561,7 +561,7 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
         }
 
         for (numSteps.setValue(0); numSteps.intValue() < maxSteps; numSteps.increment()) {
-            LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
                 final int stepInstructions = random.nextInt();
                 if (stepInstructions % 4 != 1) {
                     GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE,
@@ -637,7 +637,7 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
         for (numSteps.setValue(0); numSteps.intValue() < maxSteps; numSteps.increment()) {
             final long rightOffset = numSteps.getValue();
 
-            LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
                 addToTable(leftTicking, i(numSteps.getValue()), longCol("intCol", numSteps.getValue()));
                 Listener.Update up = new Listener.Update();
                 up.shifted = RowSetShiftData.EMPTY;

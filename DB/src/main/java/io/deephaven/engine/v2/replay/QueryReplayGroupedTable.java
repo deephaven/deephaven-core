@@ -96,6 +96,6 @@ public abstract class QueryReplayGroupedTable extends QueryTable implements Live
         Require.requirement(replayer != null, "replayer != null");
         setRefreshing(true);
         this.replayer = replayer;
-        refresh();
+        run();
     }
 }

@@ -1,7 +1,7 @@
 package io.deephaven.engine.v2;
 
 import io.deephaven.engine.tables.live.LiveTable;
-import io.deephaven.engine.tables.live.LiveTableMonitor;
+import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.utils.*;
 import gnu.trove.impl.Constants;
@@ -76,7 +76,7 @@ public class UpdatableTable extends QueryTable implements LiveTable {
 
         @Override
         public void addIndex(final long key) {
-            // if a key is removed and then added back before a refresh, it looks like it was modified
+            // if a key is removed and then added back before a run, it looks like it was modified
             if (removedSet.remove(key)) {
                 modifiedSet.add(key);
             } else {
@@ -114,7 +114,7 @@ public class UpdatableTable extends QueryTable implements LiveTable {
     }
 
     @Override
-    public void refresh() {
+    public void run() {
         updater.accept(indexChangeRecorder);
 
         final RowSet added = setToIndex(addedSet);
@@ -143,6 +143,6 @@ public class UpdatableTable extends QueryTable implements LiveTable {
     @Override
     public void destroy() {
         super.destroy();
-        LiveTableMonitor.DEFAULT.removeTable(this);
+        UpdateGraphProcessor.DEFAULT.removeTable(this);
     }
 }

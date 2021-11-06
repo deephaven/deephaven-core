@@ -10,7 +10,7 @@ import io.deephaven.engine.plot.FigureImpl;
 import io.deephaven.engine.plot.datasets.xy.XYDataSeriesInternal;
 import io.deephaven.engine.plot.filters.SelectableDataSetOneClick;
 import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.live.LiveTableMonitor;
+import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.v2.utils.ColumnHolder;
 import junit.framework.TestCase;
@@ -26,19 +26,19 @@ public class TestScatterPlotMatrix extends BaseArrayTestCase {
     @Override
     public void setUp() throws Exception {
         super.setUp();
-        LiveTableMonitor.DEFAULT.enableUnitTestMode();
-        LiveTableMonitor.DEFAULT.resetForUnitTests(false);
+        UpdateGraphProcessor.DEFAULT.enableUnitTestMode();
+        UpdateGraphProcessor.DEFAULT.resetForUnitTests(false);
     }
 
     @Override
     protected void tearDown() throws Exception {
         super.tearDown();
-        LiveTableMonitor.DEFAULT.resetForUnitTests(true);
+        UpdateGraphProcessor.DEFAULT.resetForUnitTests(true);
     }
 
     public void testScatterPlotMatrix() {
-        LiveTableMonitor.DEFAULT.enableUnitTestMode();
-        LiveTableMonitor.DEFAULT.startCycleForUnitTests();
+        UpdateGraphProcessor.DEFAULT.enableUnitTestMode();
+        UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
         final int[][] ints = new int[length][length];
         final double[][] doubles = new double[length][length];
         final long[][] longs = new long[length][length];
@@ -114,7 +114,7 @@ public class TestScatterPlotMatrix extends BaseArrayTestCase {
         } catch (IllegalStateException e) {
             assertTrue(e.getMessage().contains("dimension"));
         }
-        LiveTableMonitor.DEFAULT.completeCycleForUnitTests();
+        UpdateGraphProcessor.DEFAULT.completeCycleForUnitTests();
     }
 
     public void testPointSize() {

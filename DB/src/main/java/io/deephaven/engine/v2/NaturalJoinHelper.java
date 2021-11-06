@@ -43,7 +43,7 @@ class NaturalJoinHelper {
 
             // if we have a single column of unique values, and the range is small, we can use a simplified table
             // TODO: SimpleUniqueStaticNaturalJoinManager, but not static!
-            if (!rightTable.isLive() && control.useUniqueTable(bucketingContext.uniqueValues,
+            if (!rightTable.isRefreshing() && control.useUniqueTable(bucketingContext.uniqueValues,
                     bucketingContext.maximumUniqueValue, bucketingContext.minimumUniqueValue)) {
                 Assert.neqNull(bucketingContext.uniqueFunctor, "uniqueFunctor");
                 final SimpleUniqueStaticNaturalJoinStateManager jsm = new SimpleUniqueStaticNaturalJoinStateManager(
@@ -74,8 +74,8 @@ class NaturalJoinHelper {
 
             final RedirectionIndex redirectionIndex;
 
-            if (rightTable.isLive()) {
-                if (leftTable.isLive()) {
+            if (rightTable.isRefreshing()) {
+                if (leftTable.isRefreshing()) {
                     if (bucketingContext.useLeftGrouping) {
                         throw new UnsupportedOperationException(
                                 "Grouping is not supported with ticking chunked naturalJoin!");
@@ -263,8 +263,8 @@ class NaturalJoinHelper {
                 rightTable.newModifiedColumnSetTransformer(result, columnsToAdd);
         final ModifiedColumnSet allRightColumns = result.newModifiedColumnSet(MatchPair.getLeftColumns(columnsToAdd));
 
-        if (leftTable.isLive()) {
-            if (rightTable.isLive()) {
+        if (leftTable.isRefreshing()) {
+            if (rightTable.isRefreshing()) {
                 final JoinListenerRecorder leftRecorder =
                         new JoinListenerRecorder(true, listenerDescription, leftTable, result);
                 final JoinListenerRecorder rightRecorder =
@@ -330,7 +330,7 @@ class NaturalJoinHelper {
                             }
                         });
             }
-        } else if (rightTable.isLive()) {
+        } else if (rightTable.isRefreshing()) {
             if (leftTable.size() > 0) {
                 rightTable.listenForUpdates(
                         new BaseTable.ListenerImpl(listenerDescription, rightTable, result) {

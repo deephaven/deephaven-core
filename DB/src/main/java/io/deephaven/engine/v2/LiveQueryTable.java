@@ -5,7 +5,7 @@
 package io.deephaven.engine.v2;
 
 import io.deephaven.engine.tables.live.LiveTable;
-import io.deephaven.engine.tables.live.LiveTableMonitor;
+import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.utils.*;
 
@@ -19,7 +19,7 @@ public class LiveQueryTable extends QueryTable implements LiveTable {
     }
 
     @Override
-    public void refresh() {
+    public void run() {
         final RowSetBuilderRandom builder;
         synchronized (this) {
             builder = additionsBuilder;
@@ -44,6 +44,6 @@ public class LiveQueryTable extends QueryTable implements LiveTable {
     @Override
     public void destroy() {
         super.destroy();
-        LiveTableMonitor.DEFAULT.removeTable(this);
+        UpdateGraphProcessor.DEFAULT.removeTable(this);
     }
 }

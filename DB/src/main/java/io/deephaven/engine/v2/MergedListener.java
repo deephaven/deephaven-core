@@ -6,9 +6,9 @@ package io.deephaven.engine.v2;
 
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
-import io.deephaven.engine.tables.live.LiveTableMonitor;
 import io.deephaven.engine.tables.live.NotificationQueue;
 import io.deephaven.engine.tables.utils.SystemicObjectTracker;
 import io.deephaven.engine.util.liveness.LivenessArtifact;
@@ -86,7 +86,7 @@ public abstract class MergedListener extends LivenessArtifact implements Notific
             queuedNotificationClock = currentStep;
         }
 
-        LiveTableMonitor.DEFAULT.addNotification(new AbstractNotification(false) {
+        UpdateGraphProcessor.DEFAULT.addNotification(new AbstractNotification(false) {
             @Override
             public void run() {
                 try {
@@ -121,7 +121,7 @@ public abstract class MergedListener extends LivenessArtifact implements Notific
                             notificationClock = queuedNotificationClock;
                         }
                         process();
-                        LiveTableMonitor.DEFAULT.logDependencies().append("MergedListener has completed execution ")
+                        UpdateGraphProcessor.DEFAULT.logDependencies().append("MergedListener has completed execution ")
                                 .append(this).endl();
                     } finally {
                         entry.onUpdateEnd();
@@ -184,17 +184,17 @@ public abstract class MergedListener extends LivenessArtifact implements Notific
     @Override
     public boolean satisfied(final long step) {
         if (lastCompletedStep == step) {
-            LiveTableMonitor.DEFAULT.logDependencies().append("MergedListener has previously been completed ")
+            UpdateGraphProcessor.DEFAULT.logDependencies().append("MergedListener has previously been completed ")
                     .append(this).endl();
             return true;
         }
         if (queuedNotificationClock == step) {
-            LiveTableMonitor.DEFAULT.logDependencies().append("MergedListener has queued notification ").append(this)
+            UpdateGraphProcessor.DEFAULT.logDependencies().append("MergedListener has queued notification ").append(this)
                     .endl();
             return false;
         }
         if (canExecute(step)) {
-            LiveTableMonitor.DEFAULT.logDependencies().append("MergedListener has dependencies satisfied ").append(this)
+            UpdateGraphProcessor.DEFAULT.logDependencies().append("MergedListener has dependencies satisfied ").append(this)
                     .endl();
             // mark this node as completed, because both our parents have been satisfied; but we are not enqueued; so we
             // can never actually execute

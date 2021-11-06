@@ -11,7 +11,7 @@ import io.deephaven.engine.tables.ColumnDefinition;
 import io.deephaven.engine.tables.DataColumn;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.TableDefinition;
-import io.deephaven.engine.tables.live.LiveTableMonitor;
+import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.v2.locations.*;
 import io.deephaven.engine.v2.locations.impl.SimpleTableLocationKey;
 import io.deephaven.engine.v2.locations.impl.TableLocationSubscriptionBuffer;
@@ -146,7 +146,7 @@ public class TestPartitionAwareSourceTable extends LiveTableTestCase {
         expectedRowSet = RowSetFactory.empty();
 
         SUT = new PartitionAwareSourceTable(TABLE_DEFINITION, "", componentFactory, locationProvider,
-                LiveTableMonitor.DEFAULT);
+                UpdateGraphProcessor.DEFAULT);
         assertIsSatisfied();
     }
 
@@ -263,7 +263,7 @@ public class TestPartitionAwareSourceTable extends LiveTableTestCase {
         if (coalesceAndListen) {
             if (ciType == ConcurrentInstantiationType.UpdatingClosed
                     || ciType == ConcurrentInstantiationType.UpdatingOpen) {
-                LiveTableMonitor.DEFAULT.startCycleForUnitTests();
+                UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
             }
             try {
                 coalesced = SUT.coalesce();
@@ -282,7 +282,7 @@ public class TestPartitionAwareSourceTable extends LiveTableTestCase {
             assertIsSatisfied();
             assertIndexEquals(expectedRowSet, SUT.getRowSet());
             if (ciType == ConcurrentInstantiationType.UpdatingClosed) {
-                LiveTableMonitor.DEFAULT.completeCycleForUnitTests();
+                UpdateGraphProcessor.DEFAULT.completeCycleForUnitTests();
             }
         }
     }
@@ -331,12 +331,12 @@ public class TestPartitionAwareSourceTable extends LiveTableTestCase {
 
         notification.reset();
         if (LogicalClock.DEFAULT.currentState() == LogicalClock.State.Idle) {
-            LiveTableMonitor.DEFAULT.startCycleForUnitTests();
+            UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
         }
         try {
             SUT.refresh();
         } finally {
-            LiveTableMonitor.DEFAULT.completeCycleForUnitTests();
+            UpdateGraphProcessor.DEFAULT.completeCycleForUnitTests();
         }
         assertIsSatisfied();
         notification.assertInvoked();
@@ -353,7 +353,7 @@ public class TestPartitionAwareSourceTable extends LiveTableTestCase {
         });
 
         notification.reset();
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(SUT::refresh);
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(SUT::refresh);
         assertIsSatisfied();
         notification.assertNotInvoked();
 
@@ -379,7 +379,7 @@ public class TestPartitionAwareSourceTable extends LiveTableTestCase {
         });
 
         notification.reset();
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(SUT::refresh);
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(SUT::refresh);
         assertIsSatisfied();
         notification.assertInvoked();
 
@@ -401,7 +401,7 @@ public class TestPartitionAwareSourceTable extends LiveTableTestCase {
 
     @Test
     public void testRedefinition() {
-        LiveTableMonitor.DEFAULT.exclusiveLock().doLocked(this::doTestRedefinition);
+        UpdateGraphProcessor.DEFAULT.exclusiveLock().doLocked(this::doTestRedefinition);
     }
 
     private void doTestRedefinition() {

@@ -9,10 +9,10 @@ import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.tables.Table;
+import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.io.log.LogEntry;
 import io.deephaven.io.log.impl.LogOutputStringImpl;
 import io.deephaven.io.logger.Logger;
-import io.deephaven.engine.tables.live.LiveTableMonitor;
 import io.deephaven.engine.tables.live.NotificationQueue;
 import io.deephaven.engine.tables.utils.DBTimeUtils;
 import io.deephaven.engine.tables.utils.SystemicObjectTracker;
@@ -80,29 +80,29 @@ public abstract class InstrumentedListenerBase extends LivenessArtifact
     }
 
     public boolean canExecute(final long step) {
-        return LiveTableMonitor.DEFAULT.satisfied(step);
+        return UpdateGraphProcessor.DEFAULT.satisfied(step);
     }
 
     @Override
     public boolean satisfied(final long step) {
         if (lastCompletedStep == step) {
-            LiveTableMonitor.DEFAULT.logDependencies().append("Already completed notification for ").append(this)
+            UpdateGraphProcessor.DEFAULT.logDependencies().append("Already completed notification for ").append(this)
                     .endl();
             return true;
         }
 
         if (lastEnqueuedStep == step) {
-            LiveTableMonitor.DEFAULT.logDependencies().append("Enqueued notification for ").append(this).endl();
+            UpdateGraphProcessor.DEFAULT.logDependencies().append("Enqueued notification for ").append(this).endl();
             return false;
         }
 
         if (canExecute(step)) {
-            LiveTableMonitor.DEFAULT.logDependencies().append("Dependencies satisfied for ").append(this).endl();
+            UpdateGraphProcessor.DEFAULT.logDependencies().append("Dependencies satisfied for ").append(this).endl();
             lastCompletedStep = step;
             return true;
         }
 
-        LiveTableMonitor.DEFAULT.logDependencies().append("Dependencies not yet satisfied for ").append(this).endl();
+        UpdateGraphProcessor.DEFAULT.logDependencies().append("Dependencies not yet satisfied for ").append(this).endl();
         return false;
     }
 

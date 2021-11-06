@@ -1,6 +1,6 @@
 package io.deephaven.engine.v2;
 
-import io.deephaven.engine.tables.live.LiveTableMonitor;
+import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.tables.select.MatchPair;
 import io.deephaven.engine.tables.select.WouldMatchPair;
 import io.deephaven.engine.v2.select.DynamicWhereFilter;
@@ -37,7 +37,7 @@ public class QueryTableWouldMatchTest extends QueryTableTestBase {
                 Arrays.asList(t1Matched.getColumn("Compound").get(0, 6)));
 
         // Add
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(t1, i(7, 9), c("Text", "Cake", "Zips For Fun"),
                     c("Number", 6, 1),
                     c("Bool", false, false));
@@ -55,7 +55,7 @@ public class QueryTableWouldMatchTest extends QueryTableTestBase {
                 Arrays.asList(t1Matched.getColumn("Compound").get(0, 8)));
 
         // Remove
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             removeRows(t1, i(1, 3));
             t1.notifyListeners(i(), i(1, 3), i());
         });
@@ -71,7 +71,7 @@ public class QueryTableWouldMatchTest extends QueryTableTestBase {
                 Arrays.asList(t1Matched.getColumn("Compound").get(0, 8)));
 
         // Modify
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(t1, i(4, 5),
                     c("Text", "Kittie", "Bacon"),
                     c("Number", 2, 1),
@@ -90,7 +90,7 @@ public class QueryTableWouldMatchTest extends QueryTableTestBase {
                 Arrays.asList(t1Matched.getColumn("Compound").get(0, 8)));
 
         // All 3
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(t1, i(0, 1, 4, 11),
                     c("Text", "Apple", "Bagel", "Boat", "YAY"),
                     c("Number", 100, -200, 300, 400),
@@ -139,7 +139,7 @@ public class QueryTableWouldMatchTest extends QueryTableTestBase {
                 Arrays.asList(t1Matched.getColumn("InNum").get(0, 6)));
 
         // Tick one filter table
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(textTable, i(0, 2), c("Text", "Cheese", "Yo"));
             textTable.notifyListeners(i(2), i(), i(0));
         });
@@ -150,7 +150,7 @@ public class QueryTableWouldMatchTest extends QueryTableTestBase {
                 Arrays.asList(t1Matched.getColumn("InNum").get(0, 6)));
 
         // Tick both of them
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(textTable, i(0, 2), c("Text", "Lets go", "Hey"));
             textTable.notifyListeners(i(), i(), i(0, 2));
 
@@ -166,7 +166,7 @@ public class QueryTableWouldMatchTest extends QueryTableTestBase {
 
         if (isLive) {
             // Tick both of them, and the table itself
-            LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
                 addToTable(textTable, i(0, 2), c("Text", "Dog", "Yo"));
                 textTable.notifyListeners(i(), i(), i(0, 2));
 
@@ -233,9 +233,9 @@ public class QueryTableWouldMatchTest extends QueryTableTestBase {
                 getTable(setSize, random, numSetInfo = initColumnInfos(new String[] {"intCol"},
                         new IntGenerator(0, 100)));
 
-        final QueryTable symSetTable = (QueryTable) LiveTableMonitor.DEFAULT.exclusiveLock()
+        final QueryTable symSetTable = (QueryTable) UpdateGraphProcessor.DEFAULT.exclusiveLock()
                 .computeLocked(() -> symSetTableBase.selectDistinct("Sym"));
-        final QueryTable numSetTable = (QueryTable) LiveTableMonitor.DEFAULT.exclusiveLock()
+        final QueryTable numSetTable = (QueryTable) UpdateGraphProcessor.DEFAULT.exclusiveLock()
                 .computeLocked(() -> numSetTableBase.selectDistinct("intCol"));
 
         final QueryTable matchTable = getTable(filteredSize, random,
@@ -260,7 +260,7 @@ public class QueryTableWouldMatchTest extends QueryTableTestBase {
                 final boolean modFiltered = random.nextBoolean();
 
                 final int doit = i & 0x3;
-                LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+                UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
                     if (modSet) {
                         if (doit == 0 || doit == 2) {
                             GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE,
@@ -275,7 +275,7 @@ public class QueryTableWouldMatchTest extends QueryTableTestBase {
                 });
                 validate(en);
 
-                LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+                UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
                     if (modFiltered) {
                         GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE,
                                 filteredSize, random, matchTable, filteredInfo);

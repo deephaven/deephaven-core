@@ -3,8 +3,7 @@ package io.deephaven.engine.v2.select;
 import io.deephaven.base.clock.Clock;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
-import io.deephaven.engine.tables.live.LiveTable;
-import io.deephaven.engine.tables.live.LiveTableMonitor;
+import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.tables.utils.DBDateTime;
 import io.deephaven.engine.tables.utils.DBTimeUtils;
 import org.jetbrains.annotations.NotNull;
@@ -21,14 +20,14 @@ public class SimulationClock implements Clock {
     private final DBDateTime endTime;
     private final long stepNanos;
 
-    private final LiveTable refreshTask = this::advance; // Save this in a reference so we can deregister it.
+    private final Runnable refreshTask = this::advance; // Save this in a reference so we can deregister it.
 
     private enum State {
         NOT_STARTED, STARTED, DONE
     }
 
     private final AtomicReference<State> state = new AtomicReference<>(State.NOT_STARTED);
-    private final Condition ltmCondition = LiveTableMonitor.DEFAULT.exclusiveLock().newCondition();
+    private final Condition ltmCondition = UpdateGraphProcessor.DEFAULT.exclusiveLock().newCondition();
 
     private DBDateTime now;
 
@@ -37,7 +36,7 @@ public class SimulationClock implements Clock {
      * 
      * @param startTime The initial time that will be returned by this clock, before it is started
      * @param endTime The final time that will be returned by this clock, when the simulation has completed
-     * @param stepSize The time to "elapse" in each refresh loop
+     * @param stepSize The time to "elapse" in each run loop
      */
     public SimulationClock(@NotNull final String startTime,
             @NotNull final String endTime,
@@ -51,7 +50,7 @@ public class SimulationClock implements Clock {
      *
      * @param startTime The initial time that will be returned by this clock, before it is started
      * @param endTime The final time that will be returned by this clock, when the simulation has completed
-     * @param stepNanos The number of nanoseconds to "elapse" in each refresh loop
+     * @param stepNanos The number of nanoseconds to "elapse" in each run loop
      */
     public SimulationClock(@NotNull final DBDateTime startTime,
             @NotNull final DBDateTime endTime,
@@ -87,12 +86,12 @@ public class SimulationClock implements Clock {
      */
     public void start(final boolean maxSpeed) {
         if (maxSpeed) {
-            LiveTableMonitor.DEFAULT.setTargetCycleTime(0);
+            UpdateGraphProcessor.DEFAULT.setTargetCycleTime(0);
         }
         if (!state.compareAndSet(State.NOT_STARTED, State.STARTED)) {
             throw new IllegalStateException(this + " already started");
         }
-        LiveTableMonitor.DEFAULT.addTable(refreshTask);
+        UpdateGraphProcessor.DEFAULT.addTable(refreshTask);
     }
 
     /**
@@ -103,8 +102,8 @@ public class SimulationClock implements Clock {
         if (now.getNanos() == endTime.getNanos()) {
             Assert.assertion(state.compareAndSet(State.STARTED, State.DONE),
                     "state.compareAndSet(State.STARTED, State.DONE)");
-            LiveTableMonitor.DEFAULT.removeTable(refreshTask);
-            LiveTableMonitor.DEFAULT.requestSignal(ltmCondition);
+            UpdateGraphProcessor.DEFAULT.removeTable(refreshTask);
+            UpdateGraphProcessor.DEFAULT.requestSignal(ltmCondition);
             return; // This return is not strictly necessary, but it seems clearer this way.
         }
         final DBDateTime incremented = DBTimeUtils.plus(now, stepNanos);
@@ -125,7 +124,7 @@ public class SimulationClock implements Clock {
      */
     public void awaitDoneUninterruptibly() {
         while (!done()) {
-            LiveTableMonitor.DEFAULT.exclusiveLock().doLocked(ltmCondition::awaitUninterruptibly);
+            UpdateGraphProcessor.DEFAULT.exclusiveLock().doLocked(ltmCondition::awaitUninterruptibly);
         }
     }
 
@@ -134,7 +133,7 @@ public class SimulationClock implements Clock {
      */
     public void awaitDone() throws InterruptedException {
         while (!done()) {
-            LiveTableMonitor.DEFAULT.exclusiveLock().doLocked(ltmCondition::await);
+            UpdateGraphProcessor.DEFAULT.exclusiveLock().doLocked(ltmCondition::await);
         }
     }
 }

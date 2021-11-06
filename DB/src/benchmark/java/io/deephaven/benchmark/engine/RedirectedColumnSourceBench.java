@@ -1,7 +1,7 @@
 package io.deephaven.benchmark.engine;
 
 import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.live.LiveTableMonitor;
+import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.v2.select.IncrementalReleaseFilter;
 import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.benchmarking.BenchUtil;
@@ -110,7 +110,7 @@ public class RedirectedColumnSourceBench extends RedirectionBenchBase {
                 new IncrementalReleaseFilter(sizePerStep, sizePerStep);
         final Table live;
         if (doSelect) {
-            live = LiveTableMonitor.DEFAULT.exclusiveLock()
+            live = UpdateGraphProcessor.DEFAULT.exclusiveLock()
                     .computeLocked(() -> t.where(incrementalReleaseFilter).select(selectCols).sort(sortCol));
         } else {
             live = t.where(incrementalReleaseFilter).sort(sortCol);

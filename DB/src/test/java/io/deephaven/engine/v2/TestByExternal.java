@@ -6,7 +6,7 @@ package io.deephaven.engine.v2;
 
 import io.deephaven.datastructures.util.SmartKey;
 import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.live.LiveTableMonitor;
+import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.tables.select.QueryScope;
 import io.deephaven.engine.tables.utils.TableDiff;
 import io.deephaven.engine.tables.utils.TableTools;
@@ -147,7 +147,7 @@ public class TestByExternal extends QueryTableTestBase {
             assertEquals("", TableTools.diff(tableA, table.where("Key=`A`"), 10));
             assertEquals("", TableTools.diff(tableB, table.where("Key=`B`"), 10));
 
-            LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
                 TstUtils.addToTable(table, i(8), col("Key", "B"), intCol("Int", 8));
                 table.notifyListeners(i(8), i(), i());
             });
@@ -155,7 +155,7 @@ public class TestByExternal extends QueryTableTestBase {
             assertEquals("", TableTools.diff(tableA, table.where("Key=`A`"), 10));
             assertEquals("", TableTools.diff(tableB, table.where("Key=`B`"), 10));
 
-            LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
                 TstUtils.addToTable(table, i(8), col("Key", "C"), intCol("Int", 10));
             });
 
@@ -167,7 +167,7 @@ public class TestByExternal extends QueryTableTestBase {
             assertNull(listenerA.originalException);
             assertNull(listenerB.originalException);
 
-            LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
                 TstUtils.removeRows(table, i(8));
                 table.notifyListeners(i(), i(8), i());
             });
@@ -200,7 +200,7 @@ public class TestByExternal extends QueryTableTestBase {
             assertEquals("", TableTools.diff(tableA, table.where("Key=`A`"), 10));
             assertEquals("", TableTools.diff(tableB, table.where("Key=`B`"), 10));
 
-            LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
                 TstUtils.addToTable(table, i(8), col("Key", "B"), intCol("Int", 8));
                 table.notifyListeners(i(8), i(), i());
             });
@@ -208,7 +208,7 @@ public class TestByExternal extends QueryTableTestBase {
             assertEquals("", TableTools.diff(tableA, table.where("Key=`A`"), 10));
             assertEquals("", TableTools.diff(tableB, table.where("Key=`B`"), 10));
 
-            LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
                 TstUtils.addToTable(table, i(9), col("Key", "C"), intCol("Int", 10)); // Added row, wants to make new
                                                                                       // state
                 table.notifyListeners(i(9), i(), i());
@@ -218,7 +218,7 @@ public class TestByExternal extends QueryTableTestBase {
             assertEquals("", TableTools.diff(tableB, table.where("Key=`B`"), 10));
             assertNull(byKey.get("C"));
 
-            LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
                 TstUtils.addToTable(table, i(8), col("Key", "C"), intCol("Int", 11)); // Modified row, wants to move
                                                                                       // from existent state to
                                                                                       // nonexistent state
@@ -229,7 +229,7 @@ public class TestByExternal extends QueryTableTestBase {
             assertEquals("", TableTools.diff(tableB, table.where("Key=`B`"), 10));
             assertNull(byKey.get("C"));
 
-            LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
                 TstUtils.addToTable(table, i(8), col("Key", "C"), intCol("Int", 12)); // Modified row, staying in
                                                                                       // nonexistent state
                 table.notifyListeners(i(), i(), i(8));
@@ -239,7 +239,7 @@ public class TestByExternal extends QueryTableTestBase {
             assertEquals("", TableTools.diff(tableB, table.where("Key=`B`"), 10));
             assertNull(byKey.get("C"));
 
-            LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
                 TstUtils.addToTable(table, i(8), col("Key", "B"), intCol("Int", 13)); // Modified row, wants to move
                                                                                       // from nonexistent state to
                                                                                       // existent state
@@ -250,7 +250,7 @@ public class TestByExternal extends QueryTableTestBase {
             assertEquals("", TableTools.diff(tableB, table.where("Key=`B`"), 10));
             assertNull(byKey.get("C"));
 
-            LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
                 TstUtils.addToTable(table, i(8), col("Key", "B"), intCol("Int", 14)); // Modified row, staying in
                                                                                       // existent state
                 table.notifyListeners(i(), i(), i(8));
@@ -260,7 +260,7 @@ public class TestByExternal extends QueryTableTestBase {
             assertEquals("", TableTools.diff(tableB, table.where("Key=`B`"), 10));
             assertNull(byKey.get("C"));
 
-            LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
                 TstUtils.removeRows(table, i(9)); // Removed row from a nonexistent state
                 table.notifyListeners(i(), i(9), i());
             });
@@ -269,7 +269,7 @@ public class TestByExternal extends QueryTableTestBase {
             assertEquals("", TableTools.diff(tableB, table.where("Key=`B`"), 10));
             assertNull(byKey.get("C"));
 
-            LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
                 TstUtils.removeRows(table, i(8)); // Removed row from an existent state
                 table.notifyListeners(i(), i(8), i());
             });
@@ -295,7 +295,7 @@ public class TestByExternal extends QueryTableTestBase {
             assertEquals("", TableTools.diff(tableB, table.where("Key=`B`"), 10));
             assertNull(byKey.get("C"));
 
-            LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
                 TstUtils.addToTable(table, i(8), col("Key", "B"), intCol("Int", 8));
                 table.notifyListeners(i(8), i(), i());
             });
@@ -304,7 +304,7 @@ public class TestByExternal extends QueryTableTestBase {
             assertEquals("", TableTools.diff(tableB, table.where("Key=`B`"), 10));
             assertNull(byKey.get("C"));
 
-            LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
                 TstUtils.addToTable(table, i(9), col("Key", "C"), intCol("Int", 10)); // Added row, makes new state
                 table.notifyListeners(i(9), i(), i());
             });
@@ -314,7 +314,7 @@ public class TestByExternal extends QueryTableTestBase {
             assertEquals("", TableTools.diff(tableB, table.where("Key=`B`"), 10));
             assertEquals("", TableTools.diff(tableC, table.where("Key=`C`"), 10));
 
-            LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
                 TstUtils.addToTable(table, i(8), col("Key", "C"), intCol("Int", 11)); // Modified row, wants to move
                                                                                       // from original state to new
                                                                                       // state
@@ -325,7 +325,7 @@ public class TestByExternal extends QueryTableTestBase {
             assertEquals("", TableTools.diff(tableB, table.where("Key=`B`"), 10));
             assertEquals("", TableTools.diff(tableC, table.where("Key=`C`"), 10));
 
-            LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
                 TstUtils.addToTable(table, i(8), col("Key", "C"), intCol("Int", 12)); // Modified row, staying in new
                                                                                       // state
                 table.notifyListeners(i(), i(), i(8));
@@ -335,7 +335,7 @@ public class TestByExternal extends QueryTableTestBase {
             assertEquals("", TableTools.diff(tableB, table.where("Key=`B`"), 10));
             assertEquals("", TableTools.diff(tableC, table.where("Key=`C`"), 10));
 
-            LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
                 TstUtils.addToTable(table, i(8), col("Key", "B"), intCol("Int", 13)); // Modified row, wants to move
                                                                                       // from new state to original
                                                                                       // state
@@ -346,7 +346,7 @@ public class TestByExternal extends QueryTableTestBase {
             assertEquals("", TableTools.diff(tableB, table.where("Key=`B`"), 10));
             assertEquals("", TableTools.diff(tableC, table.where("Key=`C`"), 10));
 
-            LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
                 TstUtils.addToTable(table, i(8), col("Key", "B"), intCol("Int", 14)); // Modified row, staying in
                                                                                       // original state
                 table.notifyListeners(i(), i(), i(8));
@@ -356,7 +356,7 @@ public class TestByExternal extends QueryTableTestBase {
             assertEquals("", TableTools.diff(tableB, table.where("Key=`B`"), 10));
             assertEquals("", TableTools.diff(tableC, table.where("Key=`C`"), 10));
 
-            LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
                 TstUtils.removeRows(table, i(9)); // Removed row from a new state
                 table.notifyListeners(i(), i(9), i());
             });
@@ -365,7 +365,7 @@ public class TestByExternal extends QueryTableTestBase {
             assertEquals("", TableTools.diff(tableB, table.where("Key=`B`"), 10));
             assertEquals("", TableTools.diff(tableC, table.where("Key=`C`"), 10));
 
-            LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
                 TstUtils.removeRows(table, i(8)); // Removed row from an original state
                 table.notifyListeners(i(), i(8), i());
             });
@@ -413,7 +413,7 @@ public class TestByExternal extends QueryTableTestBase {
         }
 
         final MutableLong start = new MutableLong();
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(rawTable, i(8), col("Key", "C"), intCol("Int", 8), intCol("I2", 5));
             rawTable.notifyListeners(i(8), i(), i());
             start.setValue(System.currentTimeMillis());
@@ -422,7 +422,7 @@ public class TestByExternal extends QueryTableTestBase {
 
         final MutableObject<Future<?>> mutableFuture = new MutableObject<>();
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(rawTable, i(10, 11, 12), col("Key", "C", "D", "E"), intCol("Int", 8, 9, 10),
                     intCol("I2", 6, 7, 8));
             rawTable.notifyListeners(i(10, 11, 12), i(), i());
@@ -492,9 +492,9 @@ public class TestByExternal extends QueryTableTestBase {
         final Table source = TableTools.merge(simpleTable, queryTable.updateView("K=k")).flatten();
 
         final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
-                EvalNugget.Sorted.from(() -> LiveTableMonitor.DEFAULT.sharedLock()
+                EvalNugget.Sorted.from(() -> UpdateGraphProcessor.DEFAULT.sharedLock()
                         .computeLocked(() -> source.byExternal("Sym").merge()), "Sym"),
-                EvalNugget.Sorted.from(() -> LiveTableMonitor.DEFAULT.sharedLock()
+                EvalNugget.Sorted.from(() -> UpdateGraphProcessor.DEFAULT.sharedLock()
                         .computeLocked(() -> source.where("Sym=`a`").byExternal("Sym").merge()), "Sym"),
         };
 

@@ -13,7 +13,7 @@ public interface DynamicNode {
     boolean isRefreshing();
 
     /**
-     * Change the node's refresh mode.
+     * Change the node's run mode.
      *
      * @param refreshing true to cause the node to update; false otherwise.
      * @return new refreshing state

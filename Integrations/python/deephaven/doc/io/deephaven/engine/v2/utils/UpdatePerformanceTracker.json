@@ -6,6 +6,6 @@
   "getQueryTable": ":return: io.deephaven.engine.v2.QueryTable"
  },
  "path": "io.deephaven.engine.v2.utils.UpdatePerformanceTracker",
- "text": "This tool is meant to track periodic update events that take place in a LiveTableMonitor. This generally includes (1)\n LiveTable.refresh() invocations (2) Table ShiftObliviousListener notifications (see\n ShiftObliviousInstrumentedListener)\n\n Note: Regarding thread safety, this class interacts with a singleton LiveTableMonitor and expects all calls to\n getEntry(), Entry.onUpdateStart(), and Entry.onUpdateEnd() to be performed while protected by the LTM's live jobs\n synchronizer.",
+ "text": "This tool is meant to track periodic update events that take place in a UpdateGraphProcessor. This generally includes (1)\n LiveTable.refresh() invocations (2) Table ShiftObliviousListener notifications (see\n ShiftObliviousInstrumentedListener)\n\n Note: Regarding thread safety, this class interacts with a singleton UpdateGraphProcessor and expects all calls to\n getEntry(), Entry.onUpdateStart(), and Entry.onUpdateEnd() to be performed while protected by the LTM's live jobs\n synchronizer.",
  "typeName": "class"
 }

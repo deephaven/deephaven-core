@@ -7,7 +7,7 @@ package io.deephaven.engine.v2.utils;
 import io.deephaven.base.Function;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.live.LiveTable;
-import io.deephaven.engine.tables.live.LiveTableMonitor;
+import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.v2.QueryTable;
 import io.deephaven.engine.v2.BaseTable;
 import io.deephaven.engine.v2.sources.*;
@@ -18,7 +18,7 @@ import java.util.Map;
 /**
  * An abstract table that represents the result of a function.
  *
- * The table will refresh by regenerating the full values (using the tableGenerator Function passed in). The resultant
+ * The table will run by regenerating the full values (using the tableGenerator Function passed in). The resultant
  * table's values are copied into the result table and appropriate listener notifications are fired.
  *
  * All of the rows in the output table are modified on every tick, even if no actual changes occurred. The output table
@@ -134,13 +134,13 @@ public class FunctionGeneratedTableFactory {
             if (refreshIntervalMs >= 0) {
                 setRefreshing(true);
                 if (refreshIntervalMs > 0) {
-                    LiveTableMonitor.DEFAULT.addTable(this);
+                    UpdateGraphProcessor.DEFAULT.addTable(this);
                 }
             }
         }
 
         @Override
-        public void refresh() {
+        public void run() {
             if (System.currentTimeMillis() < nextRefresh) {
                 return;
             }
@@ -179,7 +179,7 @@ public class FunctionGeneratedTableFactory {
         public void destroy() {
             super.destroy();
             if (refreshIntervalMs > 0) {
-                LiveTableMonitor.DEFAULT.removeTable(this);
+                UpdateGraphProcessor.DEFAULT.removeTable(this);
             }
         }
     }

@@ -52,7 +52,7 @@ public interface TableLocationProvider extends NamedImplementation {
      * <b>must not</b> hold any lock that prevents notification delivery while subscribing. Callers <b>must</b> guard
      * against duplicate notifications.
      * <p>
-     * This method only guarantees eventually consistent state. To force a state update, use refresh() after
+     * This method only guarantees eventually consistent state. To force a state update, use run() after
      * subscription completes.
      *
      * @param listener A listener.
@@ -67,7 +67,7 @@ public interface TableLocationProvider extends NamedImplementation {
     void unsubscribe(@NotNull Listener listener);
 
     /**
-     * Initialize or refresh state information about the list of existing locations.
+     * Initialize or run state information about the list of existing locations.
      */
     void refresh();
 

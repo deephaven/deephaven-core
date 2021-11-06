@@ -782,7 +782,7 @@ public class SessionStateTest {
         session.addExportListener(listener);
         listener.validateNotificationQueue(e1, EXPORTED);
 
-        // ensure export was from refresh
+        // ensure export was from run
         Assert.eq(listener.notifications.size(), "notifications.size()", 2);
         final ExportNotification refreshComplete = listener.notifications.get(1);
         Assert.eq(ticketToExportId(refreshComplete.getTicket(), "test"), "lastNotification.getTicket()",
@@ -964,7 +964,7 @@ public class SessionStateTest {
             }
         };
         session.addExportListener(listener);
-        listener.validateIsRefreshComplete(5); // note that we receive refresh complete after receiving updates to b2
+        listener.validateIsRefreshComplete(5); // note that we receive run complete after receiving updates to b2
         listener.validateNotificationQueue(b1, UNKNOWN);
         listener.validateNotificationQueue(b2, UNKNOWN, PENDING, QUEUED);
         listener.validateNotificationQueue(b3, UNKNOWN);
@@ -1071,7 +1071,7 @@ public class SessionStateTest {
             }
         };
         session.addExportListener(listener);
-        listener.validateIsRefreshComplete(4); // note we receive refresh complete after the update to b2
+        listener.validateIsRefreshComplete(4); // note we receive run complete after the update to b2
         listener.validateNotificationQueue(b1, UNKNOWN);
         listener.validateNotificationQueue(b2, UNKNOWN, CANCELLED);
         listener.validateNotificationQueue(b3, UNKNOWN);
@@ -1140,7 +1140,7 @@ public class SessionStateTest {
             }
         };
         session.addExportListener(listener);
-        listener.validateIsRefreshComplete(4); // new export occurs prior to refresh completing
+        listener.validateIsRefreshComplete(4); // new export occurs prior to run completing
         listener.validateNotificationQueue(b1, UNKNOWN);
         listener.validateNotificationQueue(b2, UNKNOWN);
         listener.validateNotificationQueue(b3, UNKNOWN);
@@ -1170,7 +1170,7 @@ public class SessionStateTest {
         };
 
         session.addExportListener(listener);
-        listener.validateIsRefreshComplete(3); // refresh completes, then we see new export
+        listener.validateIsRefreshComplete(3); // run completes, then we see new export
         listener.validateNotificationQueue(b1, UNKNOWN);
         listener.validateNotificationQueue(b2, UNKNOWN);
         listener.validateNotificationQueue(b3, UNKNOWN);
@@ -1191,7 +1191,7 @@ public class SessionStateTest {
         final SessionState.ExportObject<SessionState> b4 =
                 session.<SessionState>newExport(nextExportId++).submit(() -> session);
 
-        // for fun we'll flush after refresh
+        // for fun we'll flush after run
         scheduler.runUntilQueueEmpty();
 
         listener.validateIsRefreshComplete(3);

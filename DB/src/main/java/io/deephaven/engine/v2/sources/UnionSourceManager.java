@@ -58,7 +58,7 @@ public class UnionSourceManager {
     /**
      * Ensure that this UnionSourceManager will be refreshing. Should be called proactively if it is expected that
      * refreshing DynamicTables may be added *after* the initial set, in order to ensure that children of the result
-     * table are correctly setup to listen and refresh.
+     * table are correctly setup to listen and run.
      */
     public void setRefreshing() {
         if (refreshing) {
@@ -134,7 +134,7 @@ public class UnionSourceManager {
             throw new IllegalStateException("Can not add new tables when reinterpretation is enabled!");
         }
 
-        if (table.isLive()) {
+        if (table.isRefreshing()) {
             setRefreshing();
             final Table dynTable = table;
             final UnionListenerRecorder listener = new UnionListenerRecorder("TableTools.merge",

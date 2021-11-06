@@ -11,7 +11,7 @@ import io.deephaven.io.logger.StreamLoggerImpl;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.process.ProcessEnvironment;
 import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.live.LiveTableMonitor;
+import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.tables.select.QueryScope;
 import io.deephaven.engine.tables.utils.SystemicObjectTracker;
 import io.deephaven.engine.tables.utils.TableTools;
@@ -62,7 +62,7 @@ public class TableMapTest extends LiveTableTestCase {
 
         assertEquals("", TableTools.diff(mergedByK, withK, 10));
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(queryTable, i(3, 9), c("Sym", "cc", "cc"), c("intCol", 30, 90), c("doubleCol", 2.3, 2.9));
             queryTable.notifyListeners(i(3, 9), i(), i());
         });
@@ -97,7 +97,7 @@ public class TableMapTest extends LiveTableTestCase {
 
         assertEquals("", TableTools.diff(mergedByK, withK, 10));
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(queryTable, i(3, 9), c("Sym", "cc", "cc"), c("intCol", 30, 90), c("doubleCol", 2.3, 2.9));
             queryTable.notifyListeners(i(3, 9), i(), i());
         });
@@ -223,7 +223,7 @@ public class TableMapTest extends LiveTableTestCase {
     }
 
     public void testTransformTableMapThenMerge() {
-        LiveTableMonitor.DEFAULT.resetForUnitTests(false, true, 0, 4, 10, 5);
+        UpdateGraphProcessor.DEFAULT.resetForUnitTests(false, true, 0, 4, 10, 5);
 
         final QueryTable sourceTable = TstUtils.testRefreshingTable(i(1).toTracking(),
                 intCol("Key", 1), intCol("Sentinel", 1), col("Sym", "a"), doubleCol("DoubleCol", 1.1));
@@ -259,7 +259,7 @@ public class TableMapTest extends LiveTableTestCase {
 
         for (int ii = 0; ii < 100; ++ii) {
             final int iteration = ii + 1;
-            LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
                 final long baseLocation = iteration * 10;
                 final RowSet addRowSet = RowSetFactory.fromRange(baseLocation, baseLocation + 4);
                 final int[] sentinels =
@@ -362,12 +362,12 @@ public class TableMapTest extends LiveTableTestCase {
         final Table mergedResult = ((TransformableTableMap) result).merge();
         TableTools.show(mergedResult);
 
-        LiveTableMonitor.DEFAULT.startCycleForUnitTests();
+        UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
         addToTable(left, i(8), c("USym", "bb"), c("Sym", "aa_1"), c("LeftSentinel", 80));
 
         allowingError(() -> {
             left.notifyListeners(i(8), i(), i());
-            LiveTableMonitor.DEFAULT.completeCycleForUnitTests();
+            UpdateGraphProcessor.DEFAULT.completeCycleForUnitTests();
         }, throwables -> {
             TestCase.assertEquals(1, getUpdateErrors().size());
             final Throwable throwable = throwables.get(0);
@@ -390,16 +390,16 @@ public class TableMapTest extends LiveTableTestCase {
         final Table aa2 = aa.update("S2=Sentinel * 2");
         TableTools.show(aa2);
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(
                 () -> TestCase.assertTrue(((QueryTable) aa2).satisfied(LogicalClock.DEFAULT.currentStep())));
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(sourceTable, i(8), c("USym", "bb"), c("Sentinel", 80));
             sourceTable.notifyListeners(i(8), i(), i());
             TestCase.assertFalse(((QueryTable) aa2).satisfied(LogicalClock.DEFAULT.currentStep()));
             // We need to flush one notification: one for the source table because we do not require an intermediate
             // view table in this case
-            final boolean flushed = LiveTableMonitor.DEFAULT.flushOneNotificationForUnitTests();
+            final boolean flushed = UpdateGraphProcessor.DEFAULT.flushOneNotificationForUnitTests();
             TestCase.assertTrue(flushed);
             TestCase.assertTrue(((QueryTable) aa2).satisfied(LogicalClock.DEFAULT.currentStep()));
         });
@@ -444,7 +444,7 @@ public class TableMapTest extends LiveTableTestCase {
     }
 
     public void testCrossDependencies() {
-        LiveTableMonitor.DEFAULT.resetForUnitTests(false, true, 0, 2, 0, 0);
+        UpdateGraphProcessor.DEFAULT.resetForUnitTests(false, true, 0, 2, 0, 0);
 
         final QueryTable sourceTable = TstUtils.testRefreshingTable(i(1, 2).toTracking(),
                 c("USym", "aa", "bb"),
@@ -476,7 +476,7 @@ public class TableMapTest extends LiveTableTestCase {
         });
         final Table merged = joined.merge();
 
-        LiveTableMonitor.DEFAULT.startCycleForUnitTests();
+        UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
         addToTable(sourceTable, i(3), c("USym", "cc"), c("Sentinel", 30));
         addToTable(sourceTable2, i(7, 9), c("USym2", "cc", "dd"), c("Sentinel2", 70, 90));
         System.out.println("Launching Notifications");
@@ -494,7 +494,7 @@ public class TableMapTest extends LiveTableTestCase {
             System.out.println("Released.");
         }).start();
 
-        LiveTableMonitor.DEFAULT.completeCycleForUnitTests();
+        UpdateGraphProcessor.DEFAULT.completeCycleForUnitTests();
 
         pauseHelper2.pause();
 
@@ -502,7 +502,7 @@ public class TableMapTest extends LiveTableTestCase {
         TableTools.showWithIndex(sourceTable);
         TableTools.showWithIndex(sourceTable2);
 
-        LiveTableMonitor.DEFAULT.startCycleForUnitTests();
+        UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
         addToTable(sourceTable, i(4, 5), c("USym", "cc", "dd"), c("Sentinel", 40, 50));
         addToTable(sourceTable2, i(8, 10), c("USym2", "cc", "dd"), c("Sentinel2", 80, 100));
         removeRows(sourceTable2, i(7, 9));
@@ -522,7 +522,7 @@ public class TableMapTest extends LiveTableTestCase {
             System.out.println("Released.");
         }).start();
 
-        LiveTableMonitor.DEFAULT.completeCycleForUnitTests();
+        UpdateGraphProcessor.DEFAULT.completeCycleForUnitTests();
 
 
 
@@ -530,7 +530,7 @@ public class TableMapTest extends LiveTableTestCase {
     }
 
     public void testCrossDependencies2() {
-        LiveTableMonitor.DEFAULT.resetForUnitTests(false, true, 0, 2, 0, 0);
+        UpdateGraphProcessor.DEFAULT.resetForUnitTests(false, true, 0, 2, 0, 0);
 
         final QueryTable sourceTable = TstUtils.testRefreshingTable(i(1, 2).toTracking(),
                 c("USym", "aa", "bb"),
@@ -558,7 +558,7 @@ public class TableMapTest extends LiveTableTestCase {
 
 
         pauseHelper.pause();
-        LiveTableMonitor.DEFAULT.startCycleForUnitTests();
+        UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
         addToTable(sourceTable, i(5), c("USym", "dd"), c("Sentinel", 50));
         addToTable(sourceTable2, i(10), c("USym2", "dd"), c("Sentinel2", 100));
         removeRows(sourceTable2, i(9));
@@ -577,7 +577,7 @@ public class TableMapTest extends LiveTableTestCase {
             System.out.println("Released.");
         }).start();
 
-        LiveTableMonitor.DEFAULT.completeCycleForUnitTests();
+        UpdateGraphProcessor.DEFAULT.completeCycleForUnitTests();
 
         TableTools.showWithIndex(merged);
     }
@@ -601,7 +601,7 @@ public class TableMapTest extends LiveTableTestCase {
 
         final SingletonLivenessManager mapManager = new SingletonLivenessManager(map);
 
-        LiveTableMonitor.DEFAULT.exclusiveLock().doLocked(scopeCloseable::close);
+        UpdateGraphProcessor.DEFAULT.exclusiveLock().doLocked(scopeCloseable::close);
 
         if (refreshing) {
             org.junit.Assert.assertTrue(map.tryRetainReference());
@@ -614,9 +614,9 @@ public class TableMapTest extends LiveTableTestCase {
         final SafeCloseable scopeCloseable2 = LivenessScopeStack.open();
         final Table valueAgain = map.get("A");
         assertSame(value, valueAgain);
-        LiveTableMonitor.DEFAULT.exclusiveLock().doLocked(scopeCloseable2::close);
+        UpdateGraphProcessor.DEFAULT.exclusiveLock().doLocked(scopeCloseable2::close);
 
-        LiveTableMonitor.DEFAULT.exclusiveLock().doLocked(mapManager::release);
+        UpdateGraphProcessor.DEFAULT.exclusiveLock().doLocked(mapManager::release);
 
         org.junit.Assert.assertFalse(value.tryRetainReference());
         org.junit.Assert.assertFalse(map.tryRetainReference());
@@ -673,7 +673,7 @@ public class TableMapTest extends LiveTableTestCase {
 
         supplier.addListener((key, table) -> listenerResults.put((String) key, table));
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             final RowSet idx = i(6, 7, 8, 9);
             addToTable(base, idx,
                     stringCol("Key", "Two", "Two", "Two", "Two"),
@@ -682,7 +682,7 @@ public class TableMapTest extends LiveTableTestCase {
             base.notifyListeners(idx, i(), i());
         });
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             final RowSet idx = i(10, 11, 12, 13);
             addToTable(base, idx,
                     stringCol("Key", "Three", "Three", "Three", "Three"),
@@ -691,7 +691,7 @@ public class TableMapTest extends LiveTableTestCase {
             base.notifyListeners(idx, i(), i());
         });
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             final RowSet idx = i(14, 15, 16, 17);
             addToTable(base, idx,
                     stringCol("Key", "Four", "Four", "Four", "Four"),
@@ -700,7 +700,7 @@ public class TableMapTest extends LiveTableTestCase {
             base.notifyListeners(idx, i(), i());
         });
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             final RowSet idx = i(18, 19, 20, 21);
             addToTable(base, idx,
                     stringCol("Key", "Four", "Four", "Four", "Four"),

@@ -5,7 +5,7 @@
 package io.deephaven.engine.v2.utils;
 
 import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.live.LiveTableMonitor;
+import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.tables.utils.DBDateTime;
 import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.v2.EvalNugget;
@@ -42,25 +42,25 @@ public class TestTimeSeriesFilter extends LiveTableTestCase {
         io.deephaven.engine.tables.utils.TableTools.show(filtered);
         assertEquals(10, filtered.size());
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             timeSeriesFilter.incrementNow(5000);
-            timeSeriesFilter.refresh();
+            timeSeriesFilter.run();
         });
 
         io.deephaven.engine.tables.utils.TableTools.show(filtered);
         assertEquals(10, filtered.size());
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             timeSeriesFilter.incrementNow(5000);
-            timeSeriesFilter.refresh();
+            timeSeriesFilter.run();
         });
 
         io.deephaven.engine.tables.utils.TableTools.show(filtered);
         assertEquals(5, filtered.size());
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             timeSeriesFilter.incrementNow(2000);
-            timeSeriesFilter.refresh();
+            timeSeriesFilter.run();
         });
 
         io.deephaven.engine.tables.utils.TableTools.show(filtered);
@@ -90,7 +90,7 @@ public class TestTimeSeriesFilter extends LiveTableTestCase {
                         UnitTestTimeSeriesFilter unitTestTimeSeriesFilter1 =
                                 new UnitTestTimeSeriesFilter(unitTestTimeSeriesFilter);
                         filtersToRefresh.add(new WeakReference<>(unitTestTimeSeriesFilter1));
-                        return LiveTableMonitor.DEFAULT.exclusiveLock()
+                        return UpdateGraphProcessor.DEFAULT.exclusiveLock()
                                 .computeLocked(() -> table.update("Date=new DBDateTime(Date.getTime() * 1000000L)")
                                         .where(unitTestTimeSeriesFilter1));
                     }
@@ -103,7 +103,7 @@ public class TestTimeSeriesFilter extends LiveTableTestCase {
             if (ii % (updatesPerTick + 1) > 0) {
                 simulateShiftAwareStep(size, random, table, columnInfo, en);
             } else {
-                LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+                UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
                     unitTestTimeSeriesFilter.incrementNow(3600 * 1000);
 
                     final ArrayList<WeakReference<UnitTestTimeSeriesFilter>> collectedRefs = new ArrayList<>();
@@ -113,7 +113,7 @@ public class TestTimeSeriesFilter extends LiveTableTestCase {
                             collectedRefs.add(ref);
                         } else {
                             refreshFilter.setNow(unitTestTimeSeriesFilter.getNowLong());
-                            refreshFilter.refresh();
+                            refreshFilter.run();
                         }
                     }
                     filtersToRefresh.removeAll(collectedRefs);

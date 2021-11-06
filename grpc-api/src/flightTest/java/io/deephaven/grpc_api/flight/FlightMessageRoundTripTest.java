@@ -7,7 +7,7 @@ import dagger.Provides;
 import dagger.multibindings.IntoSet;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.live.LiveTableMonitor;
+import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.tables.utils.TableDiff;
 import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.util.AbstractScriptSession;
@@ -318,7 +318,7 @@ public class FlightMessageRoundTripTest {
         final String tickingTableName = "flightInfoTestTicking";
         final Table table = TableTools.emptyTable(10).update("I = i");
 
-        final Table tickingTable = LiveTableMonitor.DEFAULT.sharedLock()
+        final Table tickingTable = UpdateGraphProcessor.DEFAULT.sharedLock()
                 .computeLocked(() -> TableTools.timeTable(1_000_000).update("I = i"));
 
         // stuff table into the scope
@@ -349,7 +349,7 @@ public class FlightMessageRoundTripTest {
         final String tickingTableName = "flightInfoTestTicking";
         final Table table = TableTools.emptyTable(10).update("I = i");
 
-        final Table tickingTable = LiveTableMonitor.DEFAULT.sharedLock()
+        final Table tickingTable = UpdateGraphProcessor.DEFAULT.sharedLock()
                 .computeLocked(() -> TableTools.timeTable(1_000_000).update("I = i"));
 
         try (final SafeCloseable ignored = LivenessScopeStack.open(scriptSession, false)) {
@@ -402,7 +402,7 @@ public class FlightMessageRoundTripTest {
     }
 
     private void assertInfoMatchesTable(FlightInfo info, Table table) {
-        if (table.isLive()) {
+        if (table.isRefreshing()) {
             Assert.eq(info.getRecords(), "info.getRecords()", -1);
         } else {
             Assert.eq(info.getRecords(), "info.getRecords()", table.size(), "table.size()");

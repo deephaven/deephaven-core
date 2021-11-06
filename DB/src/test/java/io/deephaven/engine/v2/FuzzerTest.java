@@ -3,7 +3,7 @@ package io.deephaven.engine.v2;
 import io.deephaven.base.FileUtils;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.live.LiveTableMonitor;
+import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.tables.select.QueryScope;
 import io.deephaven.engine.tables.utils.DBDateTime;
 import io.deephaven.engine.tables.utils.DBTimeUtils;
@@ -144,9 +144,9 @@ public class FuzzerTest {
 
         for (int step = 0; step < 100; ++step) {
             final int fstep = step;
-            LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
                 System.out.println("Step = " + fstep);
-                timeTable.refresh();
+                timeTable.run();
             });
             if (realtime) {
                 Thread.sleep(1000);
@@ -179,9 +179,9 @@ public class FuzzerTest {
             final TimeTable timeTable = (TimeTable) session.getVariable("tt");
             for (int step = 0; step < fuzzDescriptor.steps; ++step) {
                 final int fstep = step;
-                LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+                UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
                     System.out.println("Step = " + fstep);
-                    timeTable.refresh();
+                    timeTable.run();
                 });
                 Thread.sleep(fuzzDescriptor.sleepPerStep);
             }
@@ -192,7 +192,7 @@ public class FuzzerTest {
     // public void testLargeFuzzerSeed() throws IOException, InterruptedException {
     // final int segmentSize = 50;
     // for (int firstRun = 0; firstRun < 100; firstRun += segmentSize) {
-    // LiveTableMonitor.DEFAULT.resetForUnitTests(false);
+    // UpdateGraphProcessor.DEFAULT.resetForUnitTests(false);
     // final int lastRun = firstRun + segmentSize - 1;
     // System.out.println("Performing runs " + firstRun + " to " + lastRun);
     //// runLargeFuzzerSetWithSeed(1583849877513833000L, firstRun, lastRun);
@@ -212,7 +212,7 @@ public class FuzzerTest {
         final long seed1 = DBDateTime.now().getNanos();
         for (long iteration = 0; iteration < 5; ++iteration) {
             for (int segment = 0; segment < 10; segment++) {
-                LiveTableMonitor.DEFAULT.resetForUnitTests(false);
+                UpdateGraphProcessor.DEFAULT.resetForUnitTests(false);
                 try (final SafeCloseable ignored = LivenessScopeStack.open()) {
                     System.out.println("// Segment: " + segment);
                     final int firstRun = segment * 10;
@@ -274,7 +274,7 @@ public class FuzzerTest {
         final RuntimeMemory.Sample sample = new RuntimeMemory.Sample();
         for (int step = 0; step < stepsToRun; ++step) {
             final int fstep = step;
-            LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(timeTable::refresh);
+            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(timeTable::run);
 
             RuntimeMemory.getInstance().read(sample);
             final long totalMemory = sample.totalMemory;
@@ -320,7 +320,7 @@ public class FuzzerTest {
         System.out.println(variable);
         TableTools.showWithIndex(table);
         System.out.println();
-        if (table.isLive()) {
+        if (table.isRefreshing()) {
             final FuzzerPrintListener listener = new FuzzerPrintListener(variable, table);
             table.listenForUpdates(listener);
             hardReferences.add(listener);

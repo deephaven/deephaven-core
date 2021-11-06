@@ -5,7 +5,7 @@ import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.dbarrays.DbArray;
 import io.deephaven.engine.tables.dbarrays.DbIntArray;
-import io.deephaven.engine.tables.live.LiveTableMonitor;
+import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.tables.select.QueryScope;
 import io.deephaven.engine.tables.select.SelectColumnFactory;
 import io.deephaven.engine.tables.utils.DBDateTime;
@@ -303,37 +303,37 @@ public class QueryTableAggregationTest {
                 }
         };
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             inputs[0].getRowSet().mutableCast().insertRange(mergeChunkMultiple, 2 * mergeChunkMultiple - 1);
             inputs[0].notifyListeners(ir(mergeChunkMultiple, 2 * mergeChunkMultiple - 1), i(), i());
         });
         TstUtils.validate(ens);
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             inputs[1].getRowSet().mutableCast().removeRange(mergeChunkMultiple - 1_000, mergeChunkMultiple - 1);
             inputs[1].notifyListeners(i(), ir(mergeChunkMultiple - 1_000, mergeChunkMultiple - 1), i());
         });
         TstUtils.validate(ens);
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             inputs[2].getRowSet().mutableCast().insertRange(mergeChunkMultiple, 2 * mergeChunkMultiple - 1);
             inputs[2].notifyListeners(ir(mergeChunkMultiple, 2 * mergeChunkMultiple - 1), i(), i());
         });
         TstUtils.validate(ens);
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             inputs[0].getRowSet().mutableCast().removeRange(mergeChunkMultiple, 2 * mergeChunkMultiple - 1);
             inputs[0].notifyListeners(i(), ir(mergeChunkMultiple, 2 * mergeChunkMultiple - 1), i());
         });
         TstUtils.validate(ens);
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             inputs[0].getRowSet().mutableCast().removeRange(0, mergeChunkMultiple - 1);
             inputs[0].notifyListeners(i(), ir(0, mergeChunkMultiple - 1), i());
         });
         TstUtils.validate(ens);
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             inputs[4].modifiedColumnSet.clear();
             inputs[4].modifiedColumnSet.setAll("StrCol");
             inputs[4].notifyListeners(new Listener.Update(i(), i(), ir(0, mergeChunkMultiple / 2),
@@ -341,7 +341,7 @@ public class QueryTableAggregationTest {
         });
         TstUtils.validate(ens);
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             inputs[4].modifiedColumnSet.clear();
             inputs[4].modifiedColumnSet.setAll("IntCol");
             inputs[4].notifyListeners(new Listener.Update(i(), i(), ir(0, mergeChunkMultiple / 2),
@@ -349,7 +349,7 @@ public class QueryTableAggregationTest {
         });
         TstUtils.validate(ens);
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             inputs[4].modifiedColumnSet.clear();
             inputs[4].modifiedColumnSet.setAll("TimeCol");
             inputs[4].notifyListeners(new Listener.Update(i(), i(), ir(0, mergeChunkMultiple / 2),
@@ -379,43 +379,43 @@ public class QueryTableAggregationTest {
                 }
         };
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             input1.getRowSet().mutableCast().removeRange(50, 99);
             input1.notifyListeners(i(), ir(50, 99), i());
         });
         TstUtils.validate(ens);
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             input1.getRowSet().mutableCast().removeRange(0, 49);
             input1.notifyListeners(i(), ir(0, 49), i());
         });
         TstUtils.validate(ens);
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             input2.getRowSet().mutableCast().insertRange(0, 49);
             input2.notifyListeners(ir(0, 49), i(), i());
         });
         TstUtils.validate(ens);
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             input2.getRowSet().mutableCast().insertRange(50, 99);
             input2.notifyListeners(ir(50, 99), i(), i());
         });
         TstUtils.validate(ens);
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             input2.notifyListeners(new Listener.Update(i(0, 1), i(0, 1), i(), RowSetShiftData.EMPTY,
                     ModifiedColumnSet.EMPTY));
         });
         TstUtils.validate(ens);
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             input2.notifyListeners(
                     new Listener.Update(i(), i(), i(2, 3), RowSetShiftData.EMPTY, ModifiedColumnSet.ALL));
         });
         TstUtils.validate(ens);
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             input2.notifyListeners(
                     new Listener.Update(i(), i(), i(), RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY));
         });
@@ -663,7 +663,7 @@ public class QueryTableAggregationTest {
                         return tableGrouped.lastBy("Sym");
                     }
                 }};
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(queryTable, i(7, 9), c("Sym", "aa", "aa"), c("intCol", 20, 10), c("doubleCol", 2.1, 2.2));
             queryTable.notifyListeners(i(7, 9), i(), i());
         });
@@ -845,7 +845,7 @@ public class QueryTableAggregationTest {
                 },
         };
         TstUtils.validate(en);
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(queryTable, i(7, 9),
                     c("Sym", "aa", "bc"),
                     c("USym", "a", "b"),
@@ -871,14 +871,14 @@ public class QueryTableAggregationTest {
         final Table expected = newTable(col("USym", "a", "b"), intCol("intCol", 40, 60));
         assertTableEquals(expected, lastBy);
 
-        LiveTableMonitor.DEFAULT.startCycleForUnitTests();
+        UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
 
         addToTable(queryTable, i(7, 9),
                 c("USym", "a", "b"),
                 c("intCol", 70, 90));
 
         queryTable.notifyListeners(i(7, 9), i(), i());
-        LiveTableMonitor.DEFAULT.completeCycleForUnitTests();
+        UpdateGraphProcessor.DEFAULT.completeCycleForUnitTests();
 
         final Table expected2 = newTable(col("USym", "a", "b"), intCol("intCol", 70, 90));
 
@@ -976,25 +976,25 @@ public class QueryTableAggregationTest {
                     }
                 }
         };
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(queryTable, i(7, 9), c("Sym", "aa", "aa"), c("intCol", 20, 10), c("doubleCol", 2.1, 2.2));
             queryTable.notifyListeners(i(7, 9), i(), i());
         });
 
         TstUtils.validate(en);
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(queryTable, i(7, 9), c("Sym", "bc", "bc"), c("intCol", 21, 11), c("doubleCol", 2.2, 2.3));
             queryTable.notifyListeners(i(), i(), i(7, 9));
         });
         TstUtils.validate(en);
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(queryTable, i(7, 9), c("Sym", "aa", "bc"), c("intCol", 20, 15), c("doubleCol", 2.1, 2.3));
             queryTable.notifyListeners(i(), i(), i(7, 9));
         });
         TstUtils.validate(en);
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(queryTable, i(7, 9), c("Sym", "aa", "bc"), c("intCol", 20, 15),
                     c("doubleCol", Double.NEGATIVE_INFINITY,
                             Double.POSITIVE_INFINITY));
@@ -1002,20 +1002,20 @@ public class QueryTableAggregationTest {
         });
         TstUtils.validate(en);
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(queryTable, i(7, 9), c("Sym", "aa", "bc"), c("intCol", 20, 15),
                     c("doubleCol", Double.POSITIVE_INFINITY, Double.NaN));
             queryTable.notifyListeners(i(), i(), i(7, 9));
         });
         TstUtils.validate(en);
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(queryTable, i(7, 9), c("Sym", "aa", "bc"), c("intCol", 20, 15), c("doubleCol", 1.2, 2.2));
             queryTable.notifyListeners(i(), i(), i(7, 9));
         });
         TstUtils.validate(en);
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             TstUtils.removeRows(queryTable, i(2, 9));
             queryTable.notifyListeners(i(), i(2, 9), i());
         });
@@ -1637,7 +1637,7 @@ public class QueryTableAggregationTest {
         TestCase.assertEquals(expected.doubleValue(), absSumDouble);
         TestCase.assertEquals(QueryConstants.NULL_LONG, result.getColumn("BoolCol").getLong(0));
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(table, i(8), col("BigI", BigInteger.valueOf(5)), col("DoubleCol", 5.0),
                     col("BoolCol", true));
             table.notifyListeners(i(8), i(), i());
@@ -1651,7 +1651,7 @@ public class QueryTableAggregationTest {
         TestCase.assertEquals(expected, absSum);
         TestCase.assertEquals(expected.doubleValue(), absSumDouble);
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             TstUtils.removeRows(table, i(2));
             table.notifyListeners(i(), i(2), i());
         });
@@ -1663,7 +1663,7 @@ public class QueryTableAggregationTest {
         TestCase.assertEquals(expected, absSum);
         TestCase.assertEquals(expected.doubleValue(), absSumDouble);
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(table, i(8), col("BigI", BigInteger.valueOf(4)), col("DoubleCol", 4.0),
                     col("BoolCol", false));
             table.notifyListeners(i(), i(), i(8));
@@ -1677,7 +1677,7 @@ public class QueryTableAggregationTest {
         TestCase.assertEquals(expected, absSum);
         TestCase.assertEquals(expected.doubleValue(), absSumDouble);
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(table, i(10), col("BigI", BigInteger.valueOf(0)), col("DoubleCol", Double.NaN),
                     col("BoolCol", true));
             table.notifyListeners(i(10), i(), i());
@@ -1690,7 +1690,7 @@ public class QueryTableAggregationTest {
         TestCase.assertEquals(Double.NaN, absSumDouble);
         TestCase.assertEquals(1L, result.getColumn("BoolCol").getLong(0));
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             TstUtils.removeRows(table, i(10));
             table.notifyListeners(i(), i(10), i());
         });
@@ -1702,7 +1702,7 @@ public class QueryTableAggregationTest {
         TestCase.assertEquals(expected.doubleValue(), absSumDouble);
         TestCase.assertEquals(0L, result.getColumn("BoolCol").getLong(0));
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(table, i(12, 14), col("BigI", BigInteger.valueOf(0), BigInteger.valueOf(0)),
                     doubleCol("DoubleCol", 0.0, 0.0), col("BoolCol", true, true));
             table.notifyListeners(i(12, 14), i(), i());
@@ -1725,7 +1725,7 @@ public class QueryTableAggregationTest {
         float absSumF = result.getColumn("FloatCol").getFloat(0);
         TestCase.assertEquals(QueryConstants.NULL_FLOAT, absSumF);
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(table, i(8), col("IntCol", 5), floatCol("FloatCol", -5.5f));
             table.notifyListeners(i(8), i(), i());
         });
@@ -1735,7 +1735,7 @@ public class QueryTableAggregationTest {
         TestCase.assertEquals(5L, absSum);
         TestCase.assertEquals(5.5f, absSumF);
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             TstUtils.removeRows(table, i(8));
             table.notifyListeners(i(), i(8), i());
         });
@@ -1761,7 +1761,7 @@ public class QueryTableAggregationTest {
         double avgF = result.getColumn("FloatCol").getDouble(0);
         TestCase.assertEquals(Double.NaN, avgF);
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(table, i(8), col("IntCol", 5), floatCol("FloatCol", 5f));
             table.notifyListeners(i(8), i(), i());
         });
@@ -1771,7 +1771,7 @@ public class QueryTableAggregationTest {
         TestCase.assertEquals(5.0, avg);
         TestCase.assertEquals(5.0, avgF);
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(table, i(9), col("IntCol", 6), floatCol("FloatCol", Float.POSITIVE_INFINITY));
             table.notifyListeners(i(9), i(), i());
         });
@@ -1781,7 +1781,7 @@ public class QueryTableAggregationTest {
         TestCase.assertEquals(5.5, avg);
         TestCase.assertEquals(Double.POSITIVE_INFINITY, avgF);
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(table, i(10), col("IntCol", 7), floatCol("FloatCol", Float.NEGATIVE_INFINITY));
             table.notifyListeners(i(10), i(), i());
         });
@@ -1791,7 +1791,7 @@ public class QueryTableAggregationTest {
         TestCase.assertEquals(6.0, avg);
         TestCase.assertEquals(Double.NaN, avgF);
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             TstUtils.removeRows(table, i(9));
             table.notifyListeners(i(), i(9), i());
         });
@@ -1801,7 +1801,7 @@ public class QueryTableAggregationTest {
         TestCase.assertEquals(6.0, avg);
         TestCase.assertEquals(Double.NEGATIVE_INFINITY, avgF);
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             TstUtils.removeRows(table, i(10));
             TstUtils.addToTable(table, i(11), col("IntCol", 6), floatCol("FloatCol", Float.NaN));
             table.notifyListeners(i(11), i(10), i());
@@ -1812,7 +1812,7 @@ public class QueryTableAggregationTest {
         TestCase.assertEquals(5.5, avg);
         TestCase.assertEquals(Double.NaN, avgF);
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             TstUtils.removeRows(table, i(11));
             table.notifyListeners(i(), i(11), i());
         });
@@ -1839,7 +1839,7 @@ public class QueryTableAggregationTest {
         double varF = result.getColumn("FloatCol").getDouble(0);
         TestCase.assertEquals(Double.NaN, varF);
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(table, i(7, 8), col("IntCol", 4, 5), floatCol("FloatCol", 4f, 5f));
             table.notifyListeners(i(7, 8), i(), i());
         });
@@ -1849,7 +1849,7 @@ public class QueryTableAggregationTest {
         TestCase.assertEquals(0.5, var);
         TestCase.assertEquals(0.5, varF);
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(table, i(9), col("IntCol", 6), floatCol("FloatCol", Float.POSITIVE_INFINITY));
             table.notifyListeners(i(9), i(), i());
         });
@@ -1859,7 +1859,7 @@ public class QueryTableAggregationTest {
         TestCase.assertEquals(1.0, var);
         TestCase.assertEquals(Double.NaN, varF);
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(table, i(10), col("IntCol", 7), floatCol("FloatCol", Float.NEGATIVE_INFINITY));
             table.notifyListeners(i(10), i(), i());
         });
@@ -1869,7 +1869,7 @@ public class QueryTableAggregationTest {
         TestCase.assertEquals(1.0 + 2.0 / 3.0, var, 0.001);
         TestCase.assertEquals(Double.NaN, varF);
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             TstUtils.removeRows(table, i(9));
             table.notifyListeners(i(), i(9), i());
         });
@@ -1879,7 +1879,7 @@ public class QueryTableAggregationTest {
         TestCase.assertEquals(2.0 + 1.0 / 3.0, var, 0.001);
         TestCase.assertEquals(Double.NaN, varF);
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             TstUtils.removeRows(table, i(10));
             TstUtils.addToTable(table, i(11), col("IntCol", 6), floatCol("FloatCol", Float.NaN));
             table.notifyListeners(i(11), i(10), i());
@@ -1890,7 +1890,7 @@ public class QueryTableAggregationTest {
         TestCase.assertEquals(1.0, var);
         TestCase.assertEquals(Double.NaN, varF);
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             TstUtils.removeRows(table, i(11));
             table.notifyListeners(i(), i(11), i());
         });
@@ -2044,7 +2044,7 @@ public class QueryTableAggregationTest {
         double expected = (double) wsum / (double) sumw;
         TestCase.assertEquals(expected, wavg);
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(table, i(8), col("Long1", (long) Integer.MAX_VALUE), col("Long2", 7L));
             table.notifyListeners(i(8), i(), i());
         });
@@ -2391,7 +2391,7 @@ public class QueryTableAggregationTest {
                         queryTable.applyToAllBy("min(each)", "Sym").sort("Sym")),
         };
         for (int step = 0; step < 50; step++) {
-            LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
                 final RowSet keysToAdd =
                         TstUtils.newIndex(random.nextInt(size / 2 + 1), queryTable.getRowSet(), random);
                 final ColumnHolder[] columnAdditions = new ColumnHolder[columnInfo.length];
@@ -2704,7 +2704,7 @@ public class QueryTableAggregationTest {
 
             System.out.println("Step = " + step);
 
-            LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
                 final RowSet added = RowSetFactory.fromRange(size * (fstep + 1), size * (fstep + 2) - 1);
                 queryTable.getRowSet().mutableCast().insert(added);
 
@@ -2789,7 +2789,7 @@ public class QueryTableAggregationTest {
         final Table refreshing = updated.medianBy();
         final Table refreshingKeys = updated.medianBy("KeyCol");
         TableTools.show(updated);
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(incrementalReleaseFilter::refresh);
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(incrementalReleaseFilter::run);
         TableTools.show(updated);
         TableTools.show(refreshing);
 
@@ -2993,7 +2993,7 @@ public class QueryTableAggregationTest {
 
         // this should result in an new output row
         System.out.println("Adding key 4.");
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(table, i(7), c("x", 4));
             table.notifyListeners(i(7), i(), i());
         });
@@ -3009,7 +3009,7 @@ public class QueryTableAggregationTest {
 
         // we're going to add a duplicate key, which should result in no changes.
         System.out.println("Adding duplicate 1.");
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             listener.reset();
             addToTable(table, i(9), c("x", 1));
             table.notifyListeners(i(9), i(), i());
@@ -3022,7 +3022,7 @@ public class QueryTableAggregationTest {
 
         // now let's remove one of our rows, but not the last one with a given value, also expecting no changes
         System.out.println("Removing original 1.");
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             listener.reset();
             TstUtils.removeRows(table, i(2));
             table.notifyListeners(i(), i(2), i());
@@ -3035,7 +3035,7 @@ public class QueryTableAggregationTest {
 
         // remove the last instance of 1, which should remove it from the output table
         System.out.println("Removing last 1.");
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             listener.reset();
             TstUtils.removeRows(table, i(9));
             table.notifyListeners(i(), i(9), i());
@@ -3052,7 +3052,7 @@ public class QueryTableAggregationTest {
 
         // add it back
         System.out.println("Putting 1 back at place 9.");
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             listener.reset();
             addToTable(table, i(9), c("x", 1));
             table.notifyListeners(i(9), i(), i());
@@ -3069,7 +3069,7 @@ public class QueryTableAggregationTest {
 
         // and modify something, but keep the key the same
         System.out.println("False churn of key 1 (at 9).");
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             listener.reset();
             addToTable(table, i(9), c("x", 1));
             table.notifyListeners(i(), i(), i(9));
@@ -3084,7 +3084,7 @@ public class QueryTableAggregationTest {
         // now modify it so that we generate a new key, but don't change the existing key's existence
         // and modify something, but keep the key the same
         System.out.println("Adding a 5, but not deleting what was at rowSet.");
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             listener.reset();
             addToTable(table, i(4), c("x", 5));
             table.notifyListeners(i(), i(), i(4));
@@ -3101,7 +3101,7 @@ public class QueryTableAggregationTest {
 
         // now modify it so that we remove an existing key
         System.out.println("Adding 5 in a way that deletes 2.");
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             listener.reset();
             addToTable(table, i(8), c("x", 5));
             table.notifyListeners(i(), i(), i(8));
@@ -3169,7 +3169,7 @@ public class QueryTableAggregationTest {
         TableTools.showWithIndex(reversedFlat);
         TableTools.showWithIndex(last);
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(table, i(2), intCol("Sentinel", 2));
             table.notifyListeners(i(2), i(), i());
         });
@@ -3202,7 +3202,7 @@ public class QueryTableAggregationTest {
         TestCase.assertEquals(4097, lastResult.getColumn("Sentinel").getInt(0));
         TestCase.assertEquals(2, lastResult.getColumn("Sentinel").getInt(1));
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(table, i(0), intCol("Sentinel", 0), col("Bucket", "C"));
             table.notifyListeners(i(0), i(), i());
         });
@@ -3219,7 +3219,7 @@ public class QueryTableAggregationTest {
         TestCase.assertEquals(2, lastResult.getColumn("Sentinel").getInt(1));
         TestCase.assertEquals(0, lastResult.getColumn("Sentinel").getInt(2));
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             for (int idx = 3; idx < 4097; ++idx) {
                 TstUtils.addToTable(table, i(idx), intCol("Sentinel", idx), col("Bucket", "C"));
             }
@@ -3238,7 +3238,7 @@ public class QueryTableAggregationTest {
         TestCase.assertEquals(2, lastResult.getColumn("Sentinel").getInt(1));
         TestCase.assertEquals(4096, lastResult.getColumn("Sentinel").getInt(2));
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             ((TreeMapSource) table.getColumnSourceMap().get("Sentinel")).shift(0, 4097, 4096);
             ((TreeMapSource) table.getColumnSourceMap().get("Bucket")).shift(0, 4097, 4096);
             table.getRowSet().mutableCast().removeRange(0, 4095);
@@ -3320,7 +3320,7 @@ public class QueryTableAggregationTest {
         final Table byTable = table.where(filter).by("Key");
         TableTools.showWithIndex(byTable);
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(filter::refresh);
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(filter::run);
 
         TableTools.showWithIndex(byTable);
 
@@ -3359,7 +3359,7 @@ public class QueryTableAggregationTest {
         final String[] keys2 = new String[newSize];
         Arrays.fill(keys2, "Key");
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             final RowSet additions = RowSetFactory.fromRange(0, newSize - 1);
             TstUtils.addToTable(table, additions, col("Key", keys2), intCol("IntCol", sentinel2));
             table.notifyListeners(additions, i(), i());
@@ -3368,7 +3368,7 @@ public class QueryTableAggregationTest {
         assertTableEquals(table, flat);
         assertTableEquals(table, subTable);
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             final RowSet removals = RowSetFactory.fromRange(100, 100 + newSize - 1);
             TstUtils.removeRows(table, removals);
             table.notifyListeners(i(), removals, i());
@@ -3381,7 +3381,7 @@ public class QueryTableAggregationTest {
         }
 
         // changed delta
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             final RowSet additions = RowSetFactory.fromRange(newSize, newSize + newSize - 1);
             final RowSet removals = RowSetFactory.fromRange(6000, 6000 + newSize - 3);
             TstUtils.addToTable(table, additions, col("Key", keys2), intCol("IntCol", sentinel2));
@@ -3392,7 +3392,7 @@ public class QueryTableAggregationTest {
         assertTableEquals(table, subTable);
 
         // polarity reversal
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             final RowSet additions = RowSetFactory.fromRange(newSize * 2, newSize * 3 - 1);
             final RowSet removals = RowSetFactory.fromRange(6000 + newSize, 6000 + newSize * 3);
             TstUtils.addToTable(table, additions, col("Key", keys2), intCol("IntCol", sentinel2));
@@ -3403,7 +3403,7 @@ public class QueryTableAggregationTest {
         assertTableEquals(table, subTable);
 
         // prepare a hole
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             final RowSet removals = RowSetFactory.fromRange(7000, 7100);
             TstUtils.removeRows(table, removals);
             table.notifyListeners(i(), removals, i());
@@ -3416,7 +3416,7 @@ public class QueryTableAggregationTest {
         }
 
         // intervening keys
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             final RowSet additions1 = RowSetFactory.fromRange(newSize * 3, newSize * 4 - 1);
             final RowSet additions2 = RowSetFactory.fromRange(7000, 7000 + newSize - 1);
             final RowSet removals = RowSetFactory.fromRange(6000 + newSize * 4, 6000 + newSize * 5 - 1);
@@ -3433,7 +3433,7 @@ public class QueryTableAggregationTest {
         }
 
         // intervening keys without reversed polarity
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             final RowSet removals1 = RowSetFactory.fromRange(0, newSize - 1);
             final RowSet removals2 = RowSetFactory.fromRange(7000, 7000 + newSize - 1);
             final RowSet allRemovals = removals1.union(removals2);
@@ -3467,7 +3467,7 @@ public class QueryTableAggregationTest {
         System.out.println("Starting:");
         TableTools.showWithIndex(exposedLastBy);
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(source, i(20), col("Key", "A"), col("Sentinel", 10));
             removeRows(source, i(10));
             final Listener.Update update = new Listener.Update();
@@ -3484,7 +3484,7 @@ public class QueryTableAggregationTest {
         System.out.println("Shifted:");
         TableTools.showWithIndex(exposedLastBy);
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(source, i(20), col("Key", "A"), intCol("Sentinel", 20));
             source.notifyListeners(i(), i(), i(20));
         });
@@ -3505,7 +3505,7 @@ public class QueryTableAggregationTest {
         TableTools.show(percentile);
         TestCase.assertEquals(BigInteger.valueOf(100), percentile.getColumn("Value").get(0));
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             final RowSet removeRowSet = RowSetFactory.fromRange(2, 6);
             removeRows(source, removeRowSet);
             source.notifyListeners(i(), removeRowSet, i());
@@ -3535,7 +3535,7 @@ public class QueryTableAggregationTest {
                         source.varBy("A")
                 };
 
-                LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+                UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
                     source.getRowSet().mutableCast().insertRange(50, 100);
                     source.notifyListeners(new Listener.Update(ir(50, 100), i(), i(), RowSetShiftData.EMPTY,
                             ModifiedColumnSet.EMPTY));

@@ -1,7 +1,7 @@
 package io.deephaven.engine.v2;
 
 import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.live.LiveTableMonitor;
+import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.v2.select.FormulaEvaluationException;
 import io.deephaven.engine.v2.utils.RowSet;
@@ -16,11 +16,11 @@ public class TestListenerFailure extends LiveTableTestCase {
     public void testListenerFailure() {
         final QueryTable source = TstUtils.testRefreshingTable(TstUtils.c("Str", "A", "B"));
         final Table updated =
-                LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> source.update("UC=Str.toUpperCase()"));
+                UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> source.update("UC=Str.toUpperCase()"));
 
         TableTools.showWithIndex(updated);
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(source, i(2, 3), TstUtils.c("Str", "C", "D"));
             source.notifyListeners(i(2, 3), i(), i());
         });
@@ -28,7 +28,7 @@ public class TestListenerFailure extends LiveTableTestCase {
         assertFalse(updated.isFailed());
 
         allowingError(() -> {
-            LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
                 TstUtils.addToTable(source, i(4, 5), TstUtils.c("Str", "E", null));
                 source.notifyListeners(i(4, 5), i(), i());
             });
@@ -75,22 +75,22 @@ public class TestListenerFailure extends LiveTableTestCase {
 
         final QueryTable source = TstUtils.testRefreshingTable(TstUtils.c("Str", "A", "B"));
         final QueryTable viewed = (QueryTable) source.updateView("UC=Str.toUpperCase()");
-        final Table filtered = LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> viewed.where("UC=`A`"));
+        final Table filtered = UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> viewed.where("UC=`A`"));
 
         TableTools.showWithIndex(filtered);
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(source, i(2, 3), TstUtils.c("Str", "C", "D"));
             source.notifyListeners(i(2, 3), i(), i());
         });
 
         assertFalse(filtered.isFailed());
 
-        final Table filteredAgain = LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> viewed.where("UC=`A`"));
+        final Table filteredAgain = UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> viewed.where("UC=`A`"));
         assertSame(filtered, filteredAgain);
 
         allowingError(() -> {
-            LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
                 TstUtils.addToTable(source, i(4, 5), TstUtils.c("Str", "E", null));
                 source.notifyListeners(i(4, 5), i(), i());
             });
@@ -100,13 +100,13 @@ public class TestListenerFailure extends LiveTableTestCase {
         assertTrue(filtered.isFailed());
         assertTrue(filteredAgain.isFailed());
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             TstUtils.removeRows(source, i(5));
             source.notifyListeners(i(), i(5), i());
         });
 
         final Table filteredYetAgain =
-                LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> viewed.where("UC=`A`"));
+                UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> viewed.where("UC=`A`"));
         assertNotSame(filtered, filteredYetAgain);
         assertFalse(filteredYetAgain.isFailed());
         assertTableEquals(TableTools.newTable(TableTools.col("Str", "A"), TableTools.col("UC", "A")), filteredYetAgain);

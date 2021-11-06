@@ -5,7 +5,7 @@
 package io.deephaven.engine.v2;
 
 import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.live.LiveTableMonitor;
+import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.v2.utils.*;
 import junit.framework.TestCase;
 import org.junit.Assert;
@@ -264,7 +264,7 @@ public class QueryTableFlattenTest extends QueryTableTestBase {
                 final RowSetShiftData shifted) {
             ++updateCount;
 
-            LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(modTable::run);
+            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(modTable::run);
             showWithIndex(sourceTable);
 
             if (listener instanceof SimpleShiftObliviousListener) {
@@ -339,7 +339,7 @@ public class QueryTableFlattenTest extends QueryTableTestBase {
         final Table expected = odds.sumBy("B");
         final Table actual = odds.flatten().sumBy("B");
         assertTableEquals(expected, actual);
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(upstream, ir(100_001, 200_000));
             upstream.notifyListeners(ir(100_001, 200_000), i(), ir(0, 100_000));
         });

@@ -10,12 +10,12 @@ import java.util.concurrent.locks.Condition;
 import java.util.function.Consumer;
 
 /**
- * Unit tests for {@link LiveTableMonitorLock}.
+ * Unit tests for {@link UpdateGraphLock}.
  */
-public class TestLiveTableMonitorLock extends LiveTableTestCase {
+public class TestUpdateGraphLock extends LiveTableTestCase {
 
     public void testUpgradeFailures() throws InterruptedException {
-        final LiveTableMonitorLock lock = new LiveTableMonitorLock(LogicalClock.DEFAULT);
+        final UpdateGraphLock lock = new UpdateGraphLock(LogicalClock.DEFAULT);
 
         lock.sharedLock().doLocked(() -> {
             try {
@@ -51,7 +51,7 @@ public class TestLiveTableMonitorLock extends LiveTableTestCase {
     }
 
     public void testDowngradeSuccess() throws InterruptedException {
-        final LiveTableMonitorLock lock = new LiveTableMonitorLock(LogicalClock.DEFAULT);
+        final UpdateGraphLock lock = new UpdateGraphLock(LogicalClock.DEFAULT);
 
         lock.exclusiveLock().doLocked(() -> {
             final MutableBoolean success = new MutableBoolean(false);
@@ -104,7 +104,7 @@ public class TestLiveTableMonitorLock extends LiveTableTestCase {
     }
 
     public void testSharedLockHeld() {
-        final LiveTableMonitorLock lock = new LiveTableMonitorLock(LogicalClock.DEFAULT);
+        final UpdateGraphLock lock = new UpdateGraphLock(LogicalClock.DEFAULT);
         final Consumer<Runnable> checkHeld = (r) -> {
             TestCase.assertTrue(lock.sharedLock().isHeldByCurrentThread());
             lock.sharedLock().doLocked(r::run);
@@ -119,7 +119,7 @@ public class TestLiveTableMonitorLock extends LiveTableTestCase {
     }
 
     public void testExclusiveLockHeld() {
-        final LiveTableMonitorLock lock = new LiveTableMonitorLock(LogicalClock.DEFAULT);
+        final UpdateGraphLock lock = new UpdateGraphLock(LogicalClock.DEFAULT);
         final Consumer<Runnable> checkHeld = (r) -> {
             TestCase.assertTrue(lock.exclusiveLock().isHeldByCurrentThread());
             lock.exclusiveLock().doLocked(r::run);
@@ -133,7 +133,7 @@ public class TestLiveTableMonitorLock extends LiveTableTestCase {
     }
 
     public void testConditions() throws InterruptedException {
-        final LiveTableMonitorLock lock = new LiveTableMonitorLock(LogicalClock.DEFAULT);
+        final UpdateGraphLock lock = new UpdateGraphLock(LogicalClock.DEFAULT);
         try {
             lock.sharedLock().newCondition();
             TestCase.fail("Unexpectedly got shard lock condition successfully");

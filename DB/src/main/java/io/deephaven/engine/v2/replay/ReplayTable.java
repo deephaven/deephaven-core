@@ -39,13 +39,13 @@ public class ReplayTable extends QueryTable implements LiveTable {
         }
         timeSource = getColumnSource(timeColumn);
         this.replayer = replayer;
-        refresh();
+        run();
     }
 
     long nextTime = -1;
 
     @Override
-    public void refresh() {
+    public void run() {
         if (done) {
             return;
         }

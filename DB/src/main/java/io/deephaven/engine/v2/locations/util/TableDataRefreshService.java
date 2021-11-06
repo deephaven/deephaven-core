@@ -29,7 +29,7 @@ public interface TableDataRefreshService {
     void submitOneTimeAsyncTask(@NotNull Runnable task);
 
     /**
-     * Schedule refresh for an AbstractTableLocationProvider.
+     * Schedule run for an AbstractTableLocationProvider.
      *
      * @param tableLocationProvider The table location provider
      * @return A subscription token to be used for matching, which also supports cancellation
@@ -38,7 +38,7 @@ public interface TableDataRefreshService {
             @NotNull AbstractTableLocationProvider tableLocationProvider);
 
     /**
-     * Schedule refresh for an AbstractTableLocation.
+     * Schedule run for an AbstractTableLocation.
      *
      * @param tableLocation The table location
      * @return A subscription token to be used for matching, which also supports cancellation

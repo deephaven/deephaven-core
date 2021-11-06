@@ -8,7 +8,7 @@ import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.compilertools.CompilerTools;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.tables.UpdateErrorReporter;
-import io.deephaven.engine.tables.live.LiveTableMonitor;
+import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.tables.select.QueryScope;
 import io.deephaven.engine.tables.utils.SystemicObjectTracker;
 import io.deephaven.engine.util.liveness.LivenessScope;
@@ -49,8 +49,8 @@ abstract public class LiveTableTestCase extends BaseArrayTestCase implements Upd
     protected void setUp() throws Exception {
         super.setUp();
 
-        LiveTableMonitor.DEFAULT.enableUnitTestMode();
-        LiveTableMonitor.DEFAULT.resetForUnitTests(false);
+        UpdateGraphProcessor.DEFAULT.enableUnitTestMode();
+        UpdateGraphProcessor.DEFAULT.resetForUnitTests(false);
         SystemicObjectTracker.markThreadSystemic();
         oldMemoize = QueryTable.setMemoizeResults(false);
         oldReporter = AsyncClientErrorNotifier.setReporter(this);
@@ -59,7 +59,7 @@ abstract public class LiveTableTestCase extends BaseArrayTestCase implements Upd
         originalQueryScope = QueryScope.getScope();
 
         oldLogEnabled = CompilerTools.setLogEnabled(ENABLE_COMPILER_TOOLS_LOGGING);
-        oldCheckLtm = LiveTableMonitor.DEFAULT.setCheckTableOperations(false);
+        oldCheckLtm = UpdateGraphProcessor.DEFAULT.setCheckTableOperations(false);
         UpdatePerformanceTracker.getInstance().enableUnitTestMode();
         ChunkPoolReleaseTracking.enableStrict();
     }
@@ -67,14 +67,14 @@ abstract public class LiveTableTestCase extends BaseArrayTestCase implements Upd
     @Override
     protected void tearDown() throws Exception {
         ChunkPoolReleaseTracking.checkAndDisable();
-        LiveTableMonitor.DEFAULT.setCheckTableOperations(oldCheckLtm);
+        UpdateGraphProcessor.DEFAULT.setCheckTableOperations(oldCheckLtm);
         CompilerTools.setLogEnabled(oldLogEnabled);
 
         QueryScope.setScope(originalQueryScope);
         livenessScopeCloseable.close();
         AsyncClientErrorNotifier.setReporter(oldReporter);
         QueryTable.setMemoizeResults(oldMemoize);
-        LiveTableMonitor.DEFAULT.resetForUnitTests(true);
+        UpdateGraphProcessor.DEFAULT.resetForUnitTests(true);
 
         super.tearDown();
     }
@@ -142,7 +142,7 @@ abstract public class LiveTableTestCase extends BaseArrayTestCase implements Upd
     protected static void simulateShiftAwareStep(final GenerateTableUpdates.SimulationProfile simulationProfile,
             final String ctxt, int targetUpdateSize, Random random, QueryTable table, TstUtils.ColumnInfo[] columnInfo,
             EvalNuggetInterface[] en) {
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> GenerateTableUpdates
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> GenerateTableUpdates
                 .generateShiftAwareTableUpdates(simulationProfile, targetUpdateSize, random, table, columnInfo));
         TstUtils.validate(ctxt, en);
         // The EvalNugget test cases end up generating very big listener DAGs, for at each step we create a brand new

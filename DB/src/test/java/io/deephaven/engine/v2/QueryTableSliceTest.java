@@ -2,7 +2,7 @@ package io.deephaven.engine.v2;
 
 import io.deephaven.base.Procedure;
 import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.live.LiveTableMonitor;
+import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.engine.v2.utils.RowSetFactory;
@@ -360,7 +360,7 @@ public class QueryTableSliceTest extends QueryTableTestBase {
             for (int i = 0; i < steps; ++i) {
                 final int ii = i;
                 final int jj = j;
-                LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+                UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
                     RowSet added = RowSetFactory.fromRange(ii * jj, (ii + 1) * jj - 1);
                     upTable.getRowSet().mutableCast().insert(added);
                     Listener.Update update =
@@ -386,10 +386,10 @@ public class QueryTableSliceTest extends QueryTableTestBase {
                 TableTools.charCol("letter", "abcdefghijklmnopqrstuvwxyz".toCharArray()));
         final Table noRows = table.head(0);
         assertEquals(0, noRows.size());
-        assertFalse(noRows.isLive());
+        assertFalse(noRows.isRefreshing());
         final Table oneRow = table.head(1);
         assertEquals(1, oneRow.size());
-        assertTrue(oneRow.isLive());
+        assertTrue(oneRow.isRefreshing());
     }
 
     public void testSlice() {

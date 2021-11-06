@@ -3,7 +3,7 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.v2.sources.deltaaware;
 
-import io.deephaven.engine.tables.live.LiveTableMonitor;
+import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.v2.sources.ArrayGenerator;
 import io.deephaven.engine.v2.sources.chunk.ChunkSource;
 import io.deephaven.engine.v2.sources.chunk.ObjectChunk;
@@ -25,13 +25,13 @@ import static junit.framework.TestCase.*;
 public class TestObjectDeltaAwareColumnSource {
     @Before
     public void setUp() throws Exception {
-        LiveTableMonitor.DEFAULT.enableUnitTestMode();
-        LiveTableMonitor.DEFAULT.resetForUnitTests(false);
+        UpdateGraphProcessor.DEFAULT.enableUnitTestMode();
+        UpdateGraphProcessor.DEFAULT.resetForUnitTests(false);
     }
 
     @After
     public void tearDown() throws Exception {
-        LiveTableMonitor.DEFAULT.resetForUnitTests(true);
+        UpdateGraphProcessor.DEFAULT.resetForUnitTests(true);
     }
 
     @Test
@@ -41,7 +41,7 @@ public class TestObjectDeltaAwareColumnSource {
         final long key1 = 6;
         final Object expected1 = ArrayGenerator.randomObjects(rng, 1)[0];
 
-        LiveTableMonitor.DEFAULT.startCycleForUnitTests();
+        UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
         final DeltaAwareColumnSource<Object> source = new DeltaAwareColumnSource<>(Object.class);
         source.ensureCapacity(10);
 
@@ -50,7 +50,7 @@ public class TestObjectDeltaAwareColumnSource {
         final Object actual1 = source.get(key1);
         assertEquals(null, actual0);
         assertEquals(expected1, actual1);
-        LiveTableMonitor.DEFAULT.completeCycleForUnitTests();
+        UpdateGraphProcessor.DEFAULT.completeCycleForUnitTests();
     }
 
     @Test
@@ -62,15 +62,15 @@ public class TestObjectDeltaAwareColumnSource {
         final Object expected0_0 = values[0];
         final Object expected0_1 = values[1];
         final Object expected1 = values[2];
-        LiveTableMonitor.DEFAULT.startCycleForUnitTests();
+        UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
         final DeltaAwareColumnSource<Object> source = new DeltaAwareColumnSource<>(Object.class);
         source.ensureCapacity(10);
         source.set(key0, expected0_0);
-        LiveTableMonitor.DEFAULT.completeCycleForUnitTests();
+        UpdateGraphProcessor.DEFAULT.completeCycleForUnitTests();
 
         source.startTrackingPrevValues();
 
-        LiveTableMonitor.DEFAULT.startCycleForUnitTests();
+        UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
         source.set(key0, expected0_1);
         source.set(key1, expected1);
 
@@ -84,7 +84,7 @@ public class TestObjectDeltaAwareColumnSource {
         assertEquals(null, actual1_0);
         assertEquals(expected1, actual1_1);
 
-        LiveTableMonitor.DEFAULT.completeCycleForUnitTests();
+        UpdateGraphProcessor.DEFAULT.completeCycleForUnitTests();
     }
 
     /**
@@ -107,7 +107,7 @@ public class TestObjectDeltaAwareColumnSource {
         final Object[] valuesPhase2 = ArrayGenerator.randomObjects(rng, length);
         final HashMap<Long, Object> expectedPrev = new HashMap<>();
         final HashMap<Long, Object> expectedCurrent = new HashMap<>();
-        LiveTableMonitor.DEFAULT.startCycleForUnitTests();
+        UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
         final DeltaAwareColumnSource<Object> source = new DeltaAwareColumnSource<>(Object.class);
         source.ensureCapacity(length);
         for (long ii = 0; ii < length; ++ii) {
@@ -126,10 +126,10 @@ public class TestObjectDeltaAwareColumnSource {
         // Check some subranges using three ranges.
         final long[] threeRanges = {10, 30, 45, 55, 70, 90};
         checkUsingChunk(source, expectedCurrent, expectedPrev, threeRanges);
-        LiveTableMonitor.DEFAULT.completeCycleForUnitTests();
+        UpdateGraphProcessor.DEFAULT.completeCycleForUnitTests();
 
         // Now start the second cycle so we have different current and prev values.
-        LiveTableMonitor.DEFAULT.startCycleForUnitTests();
+        UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
         for (long ii = 20; ii < 40; ++ii) {
             final Object value = valuesPhase2[(int)ii];
             source.set(ii, value);
@@ -143,7 +143,7 @@ public class TestObjectDeltaAwareColumnSource {
         checkUsingGet(source, expectedCurrent, expectedPrev, 0, length);
         checkUsingChunk(source, expectedCurrent, expectedPrev, singleRange);
         checkUsingChunk(source, expectedCurrent, expectedPrev, threeRanges);
-        LiveTableMonitor.DEFAULT.completeCycleForUnitTests();
+        UpdateGraphProcessor.DEFAULT.completeCycleForUnitTests();
     }
 
     private static void checkUsingGet(DeltaAwareColumnSource<Object> source, Map<Long, Object> expectedCurrent,

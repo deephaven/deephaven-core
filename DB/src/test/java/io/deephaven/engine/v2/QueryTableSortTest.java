@@ -4,7 +4,7 @@ import io.deephaven.base.FileUtils;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.tables.ColumnDefinition;
 import io.deephaven.engine.tables.*;
-import io.deephaven.engine.tables.live.LiveTableMonitor;
+import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.tables.select.QueryScope;
 import io.deephaven.engine.tables.utils.DBDateTime;
 import io.deephaven.engine.tables.utils.DBTimeUtils;
@@ -146,7 +146,7 @@ public class QueryTableSortTest extends QueryTableTestBase {
         assertTableEquals(testTable(c("A", 1, 2, 3), c("B", "a", "b", "c")), sorted);
         assertTrue(SortedColumnsAttribute.isSortedBy(sorted, "A", SortingOrder.Ascending));
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(table, i(20), c("A", 1), c("B", "A"));
             table.notifyListeners(i(), i(), i(20));
         });
@@ -154,7 +154,7 @@ public class QueryTableSortTest extends QueryTableTestBase {
 
         assertTableEquals(testTable(c("A", 1, 2, 3), c("B", "A", "b", "c")), sorted);
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(table, i(20), c("A", 1), c("B", "A2"));
             addToTable(table, i(25), c("A", 1), c("B", "A2'"));
             table.notifyListeners(i(25), i(), i(20));
@@ -163,7 +163,7 @@ public class QueryTableSortTest extends QueryTableTestBase {
 
         assertTableEquals(testTable(c("A", 1, 1, 2, 3), c("B", "A2", "A2'", "b", "c")), sorted);
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(table, i(20, 25), c("A", 1, 3), c("B", "A3", "C2"));
             table.notifyListeners(i(), i(), i(20, 25));
         });
@@ -448,7 +448,7 @@ public class QueryTableSortTest extends QueryTableTestBase {
 
         for (int ii = 1; ii < values.length; ++ii) {
             final int fii = ii;
-            LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
                 addToTable(queryTable, i(fii), c("intCol", values[fii]));
                 queryTable.notifyListeners(i(fii), i(), i());
             });
@@ -502,19 +502,19 @@ public class QueryTableSortTest extends QueryTableTestBase {
                         "Double Sort")
         };
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(queryTable, i(3, 9), c("Sym", "aa", "aa"), c("intCol", 20, 10), c("doubleCol", 2.1, 2.2));
             queryTable.notifyListeners(i(3, 9), i(), i());
         });
         TstUtils.validate(en);
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(queryTable, i(1, 9), c("Sym", "bc", "aa"), c("intCol", 30, 11), c("doubleCol", 2.1, 2.2));
             queryTable.notifyListeners(i(), i(), i(1, 9));
         });
         TstUtils.validate(en);
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             TstUtils.removeRows(queryTable, i(9));
             queryTable.notifyListeners(i(), i(9), i());
         });
@@ -566,7 +566,7 @@ public class QueryTableSortTest extends QueryTableTestBase {
         for (int ii = 2; ii < 10000; ++ii) {
             // Use large enough indices that we blow beyond merge's initially reserved 64k key-space.
             final int fii = 8059 * ii;
-            LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
                 addToTable(table, i(fii), c("Sentinel", fii));
                 table.notifyListeners(i(fii), i(), i());
             });
@@ -633,7 +633,7 @@ public class QueryTableSortTest extends QueryTableTestBase {
         final Table boolInverseSorted = boolSorted.sortDescending("Timestamp");
 
         while (filtered.size() < merged.size()) {
-            LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(filter::refresh);
+            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(filter::run);
         }
 
         final TIntList sentinels = new TIntArrayList();
@@ -710,7 +710,7 @@ public class QueryTableSortTest extends QueryTableTestBase {
         final Table symbolSorted = refreshing.sort("Symbol");
         TableTools.showWithIndex(symbolSorted);
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             final RowSet added = table.getRowSet().subSetByPositionRange(4, 10);
             rowSet.insert(added);
             refreshing.notifyListeners(added, i(), i());

@@ -32,8 +32,8 @@ import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyExecute;
 /**
  * Manage the lifecycle of exports that are Tables.
  *
- * Initially we receive a refresh of exports from the session state. This allows us to timely notify the observer of
- * existing table sizes for both static tables and tables that won't tick frequently. When the refresh is complete we
+ * Initially we receive a run of exports from the session state. This allows us to timely notify the observer of
+ * existing table sizes for both static tables and tables that won't tick frequently. When the run is complete we
  * are sent a notification for exportId == 0 (which is otherwise an invalid export id).
  */
 public class ExportedTableUpdateListener implements StreamObserver<ExportNotification> {
@@ -113,14 +113,14 @@ public class ExportedTableUpdateListener implements StreamObserver<ExportNotific
 
     /**
      * Initialize the listener for a newly exported table. This method is synchronized to prevent a race from the table
-     * ticking before we append the initial refresh msg.
+     * ticking before we append the initial run msg.
      *
      * @param ticket of the table being exported
      * @param exportId the export id of the table being exported
      * @param table the table that was just exported
      */
     private synchronized void onNewTableExport(final Ticket ticket, final int exportId, final BaseTable table) {
-        if (!table.isLive()) {
+        if (!table.isRefreshing()) {
             sendUpdateMessage(ticket, table.size(), null);
             return;
         }

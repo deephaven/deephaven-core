@@ -270,7 +270,7 @@ public class DeferredViewTable extends RedefinableTable {
     public static abstract class TableReference extends LivenessArtifact implements SimpleReference<Table> {
 
         TableReference(Table t) {
-            if (t.isLive()) {
+            if (t.isRefreshing()) {
                 manage(t);
             }
         }

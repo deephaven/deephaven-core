@@ -9,7 +9,7 @@ import io.deephaven.configuration.Configuration;
 import io.deephaven.compilertools.CompilerTools;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.tables.*;
-import io.deephaven.engine.tables.live.LiveTableMonitor;
+import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.util.liveness.LivenessScope;
 import io.deephaven.engine.util.liveness.LivenessScopeStack;
 import io.deephaven.engine.v2.*;
@@ -72,10 +72,10 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
     public void setUp() throws Exception {
         super.setUp();
 
-        oldCheckLtm = LiveTableMonitor.DEFAULT.setCheckTableOperations(false);
+        oldCheckLtm = UpdateGraphProcessor.DEFAULT.setCheckTableOperations(false);
         oldLogEnabled = CompilerTools.setLogEnabled(ENABLE_COMPILER_TOOLS_LOGGING);
-        LiveTableMonitor.DEFAULT.enableUnitTestMode();
-        LiveTableMonitor.DEFAULT.resetForUnitTests(false);
+        UpdateGraphProcessor.DEFAULT.enableUnitTestMode();
+        UpdateGraphProcessor.DEFAULT.resetForUnitTests(false);
         UpdatePerformanceTracker.getInstance().enableUnitTestMode();
 
         scope = new LivenessScope();
@@ -113,11 +113,11 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
         LivenessScopeStack.pop(scope);
         scope.release();
         CompilerTools.setLogEnabled(oldLogEnabled);
-        LiveTableMonitor.DEFAULT.setCheckTableOperations(oldCheckLtm);
+        UpdateGraphProcessor.DEFAULT.setCheckTableOperations(oldCheckLtm);
         AsyncClientErrorNotifier.setReporter(oldReporter);
 
         try {
-            LiveTableMonitor.DEFAULT.resetForUnitTests(true);
+            UpdateGraphProcessor.DEFAULT.resetForUnitTests(true);
         } finally {
             if (TEST_ROOT_FILE.exists()) {
                 int tries = 0;
@@ -708,20 +708,20 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
 
         for (int i = 0; i < 20; i++) {
             System.out.println("Step = " + i);
-            LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> addRows(random, table1));
+            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> addRows(random, table1));
             TstUtils.validate(en);
 
-            LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> addRows(random, table2));
+            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> addRows(random, table2));
             TstUtils.validate(en);
 
-            LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> addRows(random, table3));
+            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> addRows(random, table3));
             TstUtils.validate(en);
 
-            LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> addRows(random, table1));
+            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> addRows(random, table1));
 
-            LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> addRows(random, table2));
+            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> addRows(random, table2));
 
-            LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> addRows(random, table3));
+            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> addRows(random, table3));
 
             TstUtils.validate(en);
         }
@@ -801,7 +801,7 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
                 boolean mod3 = random.nextBoolean();
 
                 if (mod1) {
-                    LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(
+                    UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(
                             () -> GenerateTableUpdates.generateTableUpdates(size, random, table1, info1));
                 } else {
                     clock.startUpdateCycle();
@@ -809,7 +809,7 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
                 }
 
                 if (mod2) {
-                    LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(
+                    UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(
                             () -> GenerateTableUpdates.generateTableUpdates(size, random, table2, info2));
                 } else {
                     clock.startUpdateCycle();
@@ -817,7 +817,7 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
                 }
 
                 if (mod3) {
-                    LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(
+                    UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(
                             () -> GenerateTableUpdates.generateTableUpdates(size, random, table3, info3));
                 } else {
                     clock.startUpdateCycle();
@@ -907,7 +907,7 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
 
         for (int ii = 1; ii < 10; ++ii) {
             final int fii = PRIME * ii;
-            LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
                 addToTable(table, i(fii), c("Sentinel", fii));
                 table.notifyListeners(i(fii), i(), i());
             });
@@ -926,7 +926,7 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
 
         TableTools.showWithIndex(result);
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(table, i(ONE_MILLION - 11), c("Sentinel", 1));
             removeRows(table, i(ONE_MILLION - 1));
             final Listener.Update update = new Listener.Update();
@@ -963,7 +963,7 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
 
         for (int ii = 1; ii < 10; ++ii) {
             final int fii = 2 * PRIME * ii + 1;
-            LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
                 final long currKey = table.getRowSet().lastRowKey();
                 removeRows(table, i(currKey));
                 addToTable(table, i(fii), c("Sentinel", 1));
@@ -996,7 +996,7 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
         final Table expected = TableTools.newTable(intCol("Sentinel", 1, 3));
         assertTableEquals(expected, m2);
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             removeRows(table1, i(65538));
             addToTable(table1, i(65537), c("Sentinel", 2));
 
@@ -1039,7 +1039,7 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
 
         for (int ii = 1; ii < 10; ++ii) {
             final int fii = SHIFT_SIZE * ii + 1;
-            LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
                 final long currKey = table.getRowSet().lastRowKey();
                 // Manually apply shift.
                 removeRows(table, i(currKey));
@@ -1178,7 +1178,7 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
 
         for (int ii = 1; ii < 100; ++ii) {
             final int fii = PRIME * ii;
-            LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
                 addToTable(table, i(fii), c("Sentinel", fii));
                 table.notifyListeners(i(fii), i(), i());
             });
@@ -1257,7 +1257,7 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
             final int stepSize = 20;
             final int firstNextIdx = (step * stepSize) + 1;
             final int lastNextIdx = ((step + 1) * stepSize);
-            LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
                 final RowSet addRowSet = RowSetFactory.fromRange(firstNextIdx, lastNextIdx);
 
                 final int[] addInts = new int[stepSize];

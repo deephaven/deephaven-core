@@ -4,10 +4,10 @@
 
 package io.deephaven.engine.v2;
 
+import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.v2.utils.*;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.live.LiveTableMonitor;
 import io.deephaven.libs.primitives.LongNumericPrimitives;
 import io.deephaven.engine.tables.live.LiveTable;
 import io.deephaven.engine.tables.utils.DBDateTime;
@@ -64,7 +64,7 @@ public class TimeTable extends QueryTable implements LiveTable {
     }
 
     @Override
-    public void refresh() {
+    public void run() {
         refresh(true);
     }
 
@@ -109,6 +109,6 @@ public class TimeTable extends QueryTable implements LiveTable {
     @Override
     protected void destroy() {
         super.destroy();
-        LiveTableMonitor.DEFAULT.removeTable(this);
+        UpdateGraphProcessor.DEFAULT.removeTable(this);
     }
 }

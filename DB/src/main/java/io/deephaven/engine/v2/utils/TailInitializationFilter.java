@@ -102,7 +102,7 @@ public class TailInitializationFilter {
         });
         final TrackingMutableRowSet resultRowSet = builder.build().toTracking();
         final QueryTable result = new QueryTable(table.getDefinition(), resultRowSet, table.getColumnSourceMap());
-        if (table.isLive()) {
+        if (table.isRefreshing()) {
             // TODO: Assert AddOnly in T+, propagate AddOnly in Treasure
             final ShiftObliviousInstrumentedListener listener =
                     new BaseTable.ShiftObliviousListenerImpl("TailInitializationFilter", table, result) {

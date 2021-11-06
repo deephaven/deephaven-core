@@ -5,7 +5,7 @@ import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.dbarrays.DbArray;
 import io.deephaven.engine.tables.dbarrays.DbDoubleArray;
 import io.deephaven.engine.tables.dbarrays.DbIntArray;
-import io.deephaven.engine.tables.live.LiveTableMonitor;
+import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.tables.select.QueryScope;
 import io.deephaven.engine.tables.utils.ArrayUtils;
 import io.deephaven.test.junit4.EngineCleanup;
@@ -529,15 +529,15 @@ public class QueryTableJoinTest {
                 }
         };
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> table.notifyListeners(i(), i(), i()));
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> table.notifyListeners(i(), i(), i()));
         TstUtils.validate(en);
 
         System.out.println("Notifying listeners of modification.");
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> table.notifyListeners(i(), i(), i(4, 5)));
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> table.notifyListeners(i(), i(), i(4, 5)));
         System.out.println("Finished notifying listeners of modification.");
         TstUtils.validate(en);
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             TstUtils.removeRows(table, i(4));
             table.notifyListeners(i(), i(4), i());
         });
@@ -596,7 +596,7 @@ public class QueryTableJoinTest {
 
         assertEquals(asList(null, null, null, null), asList((Object[]) aj.getColumn("RSentinel").getDirect()));
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(left, i(2), c("Group", "h"), c("LInt", 4), c("LSentinel", "b"));
             left.notifyListeners(i(), i(), i(2));
         });

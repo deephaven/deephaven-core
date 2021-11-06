@@ -116,7 +116,7 @@ public interface SelectFilter {
      * @param table the table to filter
      * @param usePrev true if previous values should be used. Implementing previous value filtering is optional, and a
      *        {@link PreviousFilteringNotSupported} exception may be thrown. If a PreviousFiltering exception is thrown,
-     *        then the caller must acquire the LiveTableMonitor lock.
+     *        then the caller must acquire the UpdateGraphProcessor lock.
      *
      * @return The subset of selection accepted by this filter; ownership passes to the caller
      */

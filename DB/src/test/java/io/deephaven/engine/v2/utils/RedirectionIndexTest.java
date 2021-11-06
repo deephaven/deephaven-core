@@ -4,8 +4,8 @@
 
 package io.deephaven.engine.v2.utils;
 
+import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.io.logger.Logger;
-import io.deephaven.engine.tables.live.LiveTableMonitor;
 import io.deephaven.engine.v2.LiveTableTestCase;
 import io.deephaven.internal.log.LoggerFactory;
 
@@ -27,7 +27,7 @@ public class RedirectionIndexTest extends LiveTableTestCase {
         }
         redirectionIndex.startTrackingPrevValues();
         redirectionIndex1.startTrackingPrevValues();
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             for (int i = 0; i < 3; i++) {
                 redirectionIndex1.put(i * 2, i * 3);
             }
@@ -40,7 +40,7 @@ public class RedirectionIndexTest extends LiveTableTestCase {
             }
         });
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             for (int i = 0; i < 3; i++) {
                 redirectionIndex.put((i + 1) % 3, i * 2);
             }
@@ -66,7 +66,7 @@ public class RedirectionIndexTest extends LiveTableTestCase {
         // As of startTrackingPrevValues, get() and getPrev() should both be returning 100 + ii * 2
         redirectionIndex.startTrackingPrevValues();
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             for (int ii = 0; ii < 100; ++ii) {
                 assertEquals(100 + ii * 2, redirectionIndex.get(ii));
             }

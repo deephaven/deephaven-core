@@ -33,7 +33,7 @@ public interface ColumnSourceManager {
     void disableGrouping();
 
     /**
-     * Add a table location to the list to be checked in refresh().
+     * Add a table location to the list to be checked in run().
      * 
      * @param tableLocation The table location to be added
      */

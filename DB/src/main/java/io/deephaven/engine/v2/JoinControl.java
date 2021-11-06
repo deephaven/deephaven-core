@@ -39,7 +39,7 @@ public class JoinControl {
     }
 
     boolean useGrouping(Table leftTable, ColumnSource<?>[] leftSources) {
-        return !leftTable.isLive() && leftSources.length == 1 && leftTable.getRowSet().hasGrouping(leftSources[0]);
+        return !leftTable.isRefreshing() && leftSources.length == 1 && leftTable.getRowSet().hasGrouping(leftSources[0]);
     }
 
     boolean buildLeft(QueryTable leftTable, Table rightTable) {
@@ -73,7 +73,7 @@ public class JoinControl {
 
     RedirectionType getRedirectionType(Table leftTable) {
         if (leftTable.isFlat() && leftTable.size() < Integer.MAX_VALUE) {
-            if (leftTable.isLive()) {
+            if (leftTable.isRefreshing()) {
                 return RedirectionType.Sparse;
             } else {
                 return RedirectionType.Contiguous;

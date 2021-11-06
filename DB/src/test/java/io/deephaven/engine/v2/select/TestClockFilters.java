@@ -1,7 +1,7 @@
 package io.deephaven.engine.v2.select;
 
 import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.live.LiveTableMonitor;
+import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.v2.LiveTableTestCase;
 
 import static io.deephaven.engine.tables.utils.TableTools.col;
@@ -42,15 +42,15 @@ public class TestClockFilters extends LiveTableTestCase {
         final Table result = testInput1.sort("Timestamp").where(filter);
         assertEquals(new int[] {1, 1, 1, 1, 1, 1}, (int[]) result.getColumn("Int").getDirect());
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-            clock.refresh();
-            filter.refresh();
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+            clock.run();
+            filter.run();
         });
         assertEquals(new int[] {1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2}, (int[]) result.getColumn("Int").getDirect());
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-            clock.refresh();
-            filter.refresh();
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+            clock.run();
+            filter.run();
         });
         assertEquals(new int[] {1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3},
                 (int[]) result.getColumn("Int").getDirect());
@@ -63,15 +63,15 @@ public class TestClockFilters extends LiveTableTestCase {
         final Table result = testInput1.where(filter);
         assertEquals(new int[] {1, 1, 1, 1, 1, 1}, (int[]) result.getColumn("Int").getDirect());
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-            clock.refresh();
-            filter.refresh();
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+            clock.run();
+            filter.run();
         });
         assertEquals(new int[] {1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2}, (int[]) result.getColumn("Int").getDirect());
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-            clock.refresh();
-            filter.refresh();
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+            clock.run();
+            filter.run();
         });
         assertEquals(new int[] {1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3},
                 (int[]) result.getColumn("Int").getDirect());
@@ -84,15 +84,15 @@ public class TestClockFilters extends LiveTableTestCase {
         final Table result = testInput2.sort("Timestamp").where(filter);
         assertEquals(new int[] {1, 1, 1, 1}, (int[]) result.getColumn("Int").getDirect());
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-            clock.refresh();
-            filter.refresh();
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+            clock.run();
+            filter.run();
         });
         assertEquals(new int[] {1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2}, (int[]) result.getColumn("Int").getDirect());
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-            clock.refresh();
-            filter.refresh();
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+            clock.run();
+            filter.run();
         });
         assertEquals(new int[] {1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3},
                 (int[]) result.getColumn("Int").getDirect());
@@ -105,15 +105,15 @@ public class TestClockFilters extends LiveTableTestCase {
         final Table result = testInput2.where(filter);
         assertEquals(new int[] {1, 1, 1, 1}, (int[]) result.getColumn("Int").getDirect());
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-            clock.refresh();
-            filter.refresh();
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+            clock.run();
+            filter.run();
         });
         assertEquals(new int[] {1, 2, 1, 2, 2, 2, 2, 2, 1, 2, 1, 2}, (int[]) result.getColumn("Int").getDirect());
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-            clock.refresh();
-            filter.refresh();
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+            clock.run();
+            filter.run();
         });
         assertEquals(new int[] {1, 2, 3, 1, 2, 3, 2, 2, 3, 2, 2, 3, 1, 2, 3, 1, 2, 3},
                 (int[]) result.getColumn("Int").getDirect());
@@ -126,15 +126,15 @@ public class TestClockFilters extends LiveTableTestCase {
         final Table result = testInput3.sort("Timestamp").where(filter);
         assertEquals(new int[] {1, 1}, (int[]) result.getColumn("Int").getDirect());
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-            clock.refresh();
-            filter.refresh();
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+            clock.run();
+            filter.run();
         });
         assertEquals(new int[] {1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2}, (int[]) result.getColumn("Int").getDirect());
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-            clock.refresh();
-            filter.refresh();
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+            clock.run();
+            filter.run();
         });
         assertEquals(new int[] {1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3},
                 (int[]) result.getColumn("Int").getDirect());
@@ -147,15 +147,15 @@ public class TestClockFilters extends LiveTableTestCase {
         final Table result = testInput3.where(filter);
         assertEquals(new int[] {1, 1}, (int[]) result.getColumn("Int").getDirect());
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-            clock.refresh();
-            filter.refresh();
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+            clock.run();
+            filter.run();
         });
         assertEquals(new int[] {1, 2, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2}, (int[]) result.getColumn("Int").getDirect());
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-            clock.refresh();
-            filter.refresh();
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+            clock.run();
+            filter.run();
         });
         assertEquals(new int[] {1, 2, 3, 1, 2, 3, 2, 2, 3, 2, 2, 3, 2, 2, 3, 2, 2, 3},
                 (int[]) result.getColumn("Int").getDirect());

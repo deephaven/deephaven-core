@@ -3,7 +3,7 @@ package io.deephaven.grpc_api.runner;
 import dagger.Module;
 import dagger.Provides;
 import dagger.multibindings.ElementsIntoSet;
-import io.deephaven.engine.tables.live.LiveTableMonitor;
+import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.v2.sources.chunk.util.pools.MultiChunkPool;
 import io.deephaven.grpc_api.appmode.AppMode;
 import io.deephaven.grpc_api.appmode.AppModeModule;
@@ -140,8 +140,8 @@ public class DeephavenApiServerModule {
 
     @Provides
     @Singleton
-    public static LiveTableMonitor provideLiveTableMonitor() {
-        return LiveTableMonitor.DEFAULT;
+    public static UpdateGraphProcessor provideUpdateGraphProcessor() {
+        return UpdateGraphProcessor.DEFAULT;
     }
 
     private static class ThreadFactory extends NamingThreadFactory {

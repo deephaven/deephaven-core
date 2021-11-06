@@ -1,7 +1,7 @@
 package io.deephaven.benchmark.engine;
 
 import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.live.LiveTableMonitor;
+import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.v2.utils.metrics.MetricsManager;
 import io.deephaven.benchmarking.*;
 import io.deephaven.benchmarking.generator.ColumnGenerator;
@@ -47,7 +47,7 @@ public class NaturalJoinBenchmark {
 
     @Setup(Level.Trial)
     public void setupEnv(BenchmarkParams params) {
-        LiveTableMonitor.DEFAULT.enableUnitTestMode();
+        UpdateGraphProcessor.DEFAULT.enableUnitTestMode();
 
         final BenchmarkTableBuilder rightBuilder;
         final BenchmarkTableBuilder leftBuilder;
@@ -156,7 +156,7 @@ public class NaturalJoinBenchmark {
 
     @Benchmark
     public Table naturalJoinStatic() {
-        final Table result = LiveTableMonitor.DEFAULT.sharedLock()
+        final Table result = UpdateGraphProcessor.DEFAULT.sharedLock()
                 .computeLocked(() -> leftTable.naturalJoin(rightTable, joinKeyName));
         return state.setResult(result);
     }
@@ -164,7 +164,7 @@ public class NaturalJoinBenchmark {
     @Benchmark
     public Table naturalJoinIncremental() {
         final Table result = IncrementalBenchmark.incrementalBenchmark(
-                (lt, rt) -> LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> lt.naturalJoin(rt, joinKeyName)),
+                (lt, rt) -> UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> lt.naturalJoin(rt, joinKeyName)),
                 leftTable, rightTable);
         return state.setResult(result);
     }

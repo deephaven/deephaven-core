@@ -3,7 +3,7 @@ package io.deephaven.grpc_api.table.ops;
 import io.deephaven.base.verify.Assert;
 import com.google.rpc.Code;
 import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.live.LiveTableMonitor;
+import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.tables.utils.DBTimeUtils;
 import io.deephaven.engine.v2.TimeTable;
 import io.deephaven.grpc_api.session.SessionState;
@@ -21,13 +21,13 @@ import java.util.List;
 public class TimeTableGrpcImpl extends GrpcTableOperation<TimeTableRequest> {
 
     private final Scheduler scheduler;
-    private final LiveTableMonitor liveTableMonitor;
+    private final UpdateGraphProcessor updateGraphProcessor;
 
     @Inject()
-    public TimeTableGrpcImpl(final Scheduler scheduler, final LiveTableMonitor liveTableMonitor) {
+    public TimeTableGrpcImpl(final Scheduler scheduler, final UpdateGraphProcessor updateGraphProcessor) {
         super(BatchTableRequest.Operation::getTimeTable, TimeTableRequest::getResultId);
         this.scheduler = scheduler;
-        this.liveTableMonitor = liveTableMonitor;
+        this.updateGraphProcessor = updateGraphProcessor;
     }
 
     @Override
@@ -46,7 +46,7 @@ public class TimeTableGrpcImpl extends GrpcTableOperation<TimeTableRequest> {
         final long periodValue = request.getPeriodNanos();
         final TimeTable timeTable =
                 new TimeTable(scheduler, startTime <= 0 ? null : DBTimeUtils.nanosToTime(startTime), periodValue);
-        liveTableMonitor.addTable(timeTable);
+        updateGraphProcessor.addTable(timeTable);
         return timeTable;
     }
 }

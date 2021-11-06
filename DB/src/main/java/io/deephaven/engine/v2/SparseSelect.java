@@ -4,7 +4,7 @@ import io.deephaven.configuration.Configuration;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.exceptions.QueryCancellationException;
 import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.live.LiveTableMonitor;
+import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.tables.utils.QueryPerformanceRecorder;
 import io.deephaven.engine.v2.sources.*;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
@@ -133,8 +133,8 @@ public class SparseSelect {
     private static Table sparseSelect(Table source, String[] preserveColumns, String[] columnNames) {
         return QueryPerformanceRecorder.withNugget("sparseSelect(" + Arrays.toString(columnNames) + ")",
                 source.sizeForInstrumentation(), () -> {
-                    if (source.isLive()) {
-                        LiveTableMonitor.DEFAULT.checkInitiateTableOperation();
+                    if (source.isRefreshing()) {
+                        UpdateGraphProcessor.DEFAULT.checkInitiateTableOperation();
                     }
 
                     final Map<String, ColumnSource<?>> resultColumns = new LinkedHashMap<>();
@@ -172,7 +172,7 @@ public class SparseSelect {
 
                     final QueryTable resultTable = new QueryTable(source.getRowSet(), resultColumns);
 
-                    if (source.isLive()) {
+                    if (source.isRefreshing()) {
                         outputSourcesList.forEach(ColumnSource::startTrackingPrevValues);
                         final ObjectSparseArraySource<?>[] sparseObjectSources =
                                 outputSourcesList.stream().filter(x -> x instanceof ObjectSparseArraySource)

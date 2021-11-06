@@ -3,7 +3,7 @@ package io.deephaven.grpc_api.table.ops;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.live.LiveTableMonitor;
+import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.tables.select.SelectColumnFactory;
 import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.v2.select.SelectColumn;
@@ -22,7 +22,7 @@ import java.util.List;
 @Singleton
 public class SnapshotTableGrpcImpl extends GrpcTableOperation<SnapshotTableRequest> {
 
-    private final LiveTableMonitor liveTableMonitor;
+    private final UpdateGraphProcessor updateGraphProcessor;
 
     private static final MultiDependencyFunction<SnapshotTableRequest> EXTRACT_DEPS =
             (request) -> {
@@ -33,9 +33,9 @@ public class SnapshotTableGrpcImpl extends GrpcTableOperation<SnapshotTableReque
             };
 
     @Inject
-    public SnapshotTableGrpcImpl(final LiveTableMonitor liveTableMonitor) {
+    public SnapshotTableGrpcImpl(final UpdateGraphProcessor updateGraphProcessor) {
         super(BatchTableRequest.Operation::getSnapshot, SnapshotTableRequest::getResultId, EXTRACT_DEPS);
-        this.liveTableMonitor = liveTableMonitor;
+        this.updateGraphProcessor = updateGraphProcessor;
     }
 
     @Override
@@ -60,10 +60,10 @@ public class SnapshotTableGrpcImpl extends GrpcTableOperation<SnapshotTableReque
                 () -> lhs.snapshot(rhs, request.getDoInitialSnapshot(), stampColumns);
 
         final Table result;
-        if (!lhs.isLive() && !rhs.isLive()) {
+        if (!lhs.isRefreshing() && !rhs.isRefreshing()) {
             result = doSnapshot.get();
         } else {
-            result = liveTableMonitor.sharedLock().computeLocked(doSnapshot);
+            result = updateGraphProcessor.sharedLock().computeLocked(doSnapshot);
         }
         return result;
     }

@@ -1,6 +1,6 @@
 package io.deephaven.engine.util;
 
-import io.deephaven.engine.tables.live.LiveTableMonitor;
+import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.v2.*;
 import io.deephaven.engine.v2.sources.ColumnSource;
 
@@ -28,7 +28,7 @@ public class TestToMapListener extends LiveTableTestCase {
         assertEquals("K", tml.get("D"));
         assertNull(tml.get("E"));
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(source, i(10), TstUtils.c("Sentinel", "E"), c("Sentinel2", "L"));
             source.notifyListeners(i(10), i(), i());
 
@@ -45,7 +45,7 @@ public class TestToMapListener extends LiveTableTestCase {
         assertEquals("K", tml.get("D"));
         assertEquals("L", tml.get("E"));
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(source, i(10), TstUtils.c("Sentinel", "E"), c("Sentinel2", "M"));
             TstUtils.removeRows(source, i(2));
             source.notifyListeners(i(), i(2), i(10));

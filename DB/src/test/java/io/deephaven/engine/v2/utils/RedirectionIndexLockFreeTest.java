@@ -4,7 +4,7 @@
 
 package io.deephaven.engine.v2.utils;
 
-import io.deephaven.engine.tables.live.LiveTableMonitor;
+import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.v2.LiveTableTestCase;
 import io.deephaven.engine.v2.sources.LogicalClock;
 import gnu.trove.list.array.TLongArrayList;
@@ -195,7 +195,7 @@ public class RedirectionIndexLockFreeTest extends LiveTableTestCase {
         @Override
         protected final void doOneIteration() {
             final MutableInt keysInThisGeneration = new MutableInt();
-            LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
                 final long step = LogicalClock.DEFAULT.currentStep();
                 keysInThisGeneration.setValue((int) ((step - initialStep) * 1000 + 1000));
                 final Random rng = new Random(step);

@@ -138,7 +138,7 @@ public enum TreeTableClientTableManager {
 
         private TableState(@NotNull final Table table) {
             this.table = table;
-            if (table.isLive()) {
+            if (table.isRefreshing()) {
                 manage(table);
             }
         }

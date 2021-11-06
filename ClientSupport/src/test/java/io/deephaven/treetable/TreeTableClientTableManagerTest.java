@@ -21,7 +21,7 @@ public class TreeTableClientTableManagerTest extends QueryTableTestBase {
 
     static class DelayingReleaseProxy implements InvocationHandler {
         private static Method RELEASE_METHOD;
-        private static Method IS_LIVE;
+        private static Method IS_REFRESHING;
         private static Method TRY_RETAIN;
         private static Method GET_WEAK_REFERENCE;
 
@@ -29,7 +29,7 @@ public class TreeTableClientTableManagerTest extends QueryTableTestBase {
             try {
                 RELEASE_METHOD = LivenessReferent.class.getMethod("dropReference");
                 TRY_RETAIN = LivenessReferent.class.getMethod("tryRetainReference");
-                IS_LIVE = Table.class.getMethod("isLive");
+                IS_REFRESHING = Table.class.getMethod("isRefreshing");
                 GET_WEAK_REFERENCE = LivenessReferent.class.getMethod("getWeakReference");
             } catch (NoSuchMethodException e) {
                 e.printStackTrace();
@@ -41,7 +41,7 @@ public class TreeTableClientTableManagerTest extends QueryTableTestBase {
             if (method.equals(RELEASE_METHOD)) {
                 // Sleep for a bit so we can generate CMEs
                 Thread.sleep(250);
-            } else if (method.equals(IS_LIVE)) {
+            } else if (method.equals(IS_REFRESHING)) {
                 return true;
             } else if (method.equals(TRY_RETAIN)) {
                 return true;

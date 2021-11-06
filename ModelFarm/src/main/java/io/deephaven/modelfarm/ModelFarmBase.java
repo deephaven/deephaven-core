@@ -7,7 +7,7 @@ package io.deephaven.modelfarm;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.exceptions.QueryCancellationException;
-import io.deephaven.engine.tables.live.LiveTableMonitor;
+import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.v2.NotificationStepSource;
 import io.deephaven.engine.v2.remote.ConstructSnapshot;
 import io.deephaven.internal.log.LoggerFactory;
@@ -201,10 +201,10 @@ public abstract class ModelFarmBase<DATATYPE> implements ModelFarm {
 
     /**
      * Returns a {@code ThrowingConsumer} that takes a {@link QueryDataRetrievalOperation}, acquires a
-     * {@link LiveTableMonitor} lock based on the specified {@code lockType}, then executes the {@code FitDataPopulator}
+     * {@link UpdateGraphProcessor} lock based on the specified {@code lockType}, then executes the {@code FitDataPopulator}
      * with the appropriate value for usePrev.
      *
-     * @param lockType The way of acquiring the {@code LiveTableMonitor} lock.
+     * @param lockType The way of acquiring the {@code UpdateGraphProcessor} lock.
      * @return A function that runs a {@link }
      */
     @SuppressWarnings("WeakerAccess")
@@ -214,10 +214,10 @@ public abstract class ModelFarmBase<DATATYPE> implements ModelFarm {
             case LTM_LOCK_ALREADY_HELD:
                 return (queryDataRetrievalOperation, source) -> queryDataRetrievalOperation.retrieveData(false);
             case LTM_LOCK:
-                return (queryDataRetrievalOperation, source) -> LiveTableMonitor.DEFAULT.exclusiveLock()
+                return (queryDataRetrievalOperation, source) -> UpdateGraphProcessor.DEFAULT.exclusiveLock()
                         .doLocked(() -> queryDataRetrievalOperation.retrieveData(false));
             case LTM_READ_LOCK:
-                return (queryDataRetrievalOperation, source) -> LiveTableMonitor.DEFAULT.sharedLock()
+                return (queryDataRetrievalOperation, source) -> UpdateGraphProcessor.DEFAULT.sharedLock()
                         .doLocked(() -> queryDataRetrievalOperation.retrieveData(false));
             case SNAPSHOT:
                 return (queryDataRetrievalOperation, source) -> {

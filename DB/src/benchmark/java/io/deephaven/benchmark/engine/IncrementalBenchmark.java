@@ -1,7 +1,7 @@
 package io.deephaven.benchmark.engine;
 
 import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.live.LiveTableMonitor;
+import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.v2.DynamicNode;
 import io.deephaven.engine.v2.InstrumentedListenerAdapter;
 import io.deephaven.engine.v2.select.IncrementalReleaseFilter;
@@ -20,10 +20,10 @@ class IncrementalBenchmark {
 
         final R result = function.apply(filtered);
 
-        LiveTableMonitor.DEFAULT.enableUnitTestMode();
+        UpdateGraphProcessor.DEFAULT.enableUnitTestMode();
 
         while (filtered.size() < inputTable.size()) {
-            LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(incrementalReleaseFilter::refresh);
+            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(incrementalReleaseFilter::run);
         }
 
         return result;
@@ -36,10 +36,10 @@ class IncrementalBenchmark {
 
         final R result = function.apply(filtered);
 
-        LiveTableMonitor.DEFAULT.enableUnitTestMode();
+        UpdateGraphProcessor.DEFAULT.enableUnitTestMode();
 
         for (int currentStep = 0; currentStep <= steps; currentStep++) {
-            LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(incrementalReleaseFilter::refresh);
+            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(incrementalReleaseFilter::run);
         }
 
         return result;
@@ -94,11 +94,11 @@ class IncrementalBenchmark {
             failureListener = null;
         }
 
-        LiveTableMonitor.DEFAULT.enableUnitTestMode();
+        UpdateGraphProcessor.DEFAULT.enableUnitTestMode();
 
         while (filtered1.size() < inputTable1.size() || filtered2.size() < inputTable2.size()) {
-            LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(incrementalReleaseFilter1::refresh);
-            LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(incrementalReleaseFilter2::refresh);
+            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(incrementalReleaseFilter1::run);
+            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(incrementalReleaseFilter2::run);
         }
 
         if (failureListener != null) {

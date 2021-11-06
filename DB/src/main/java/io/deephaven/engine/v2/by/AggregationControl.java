@@ -34,7 +34,7 @@ public class AggregationControl {
     }
 
     public boolean considerGrouping(@NotNull final Table inputTable, @NotNull final ColumnSource<?>[] sources) {
-        return !inputTable.isLive() && sources.length == 1;
+        return !inputTable.isRefreshing() && sources.length == 1;
     }
 
     public boolean shouldProbeShift(final long shiftSize, final int numStates) {

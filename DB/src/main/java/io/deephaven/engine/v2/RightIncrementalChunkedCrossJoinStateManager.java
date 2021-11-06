@@ -230,7 +230,7 @@ class RightIncrementalChunkedCrossJoinStateManager
         this.rightIndexToSlot = RedirectionIndex.FACTORY.createRedirectionIndex(tableSize);
         this.leftKeySources = tableKeySources;
         this.rightKeySources = rightKeySources;
-        this.isLeftTicking = leftTable.isLive();
+        this.isLeftTicking = leftTable.isRefreshing();
         this.leftTable = leftTable;
         this.modifiedTrackerCookieSource = new LongArraySource();
         this.overflowModifiedTrackerCookieSource = new LongArraySource();
@@ -277,7 +277,7 @@ class RightIncrementalChunkedCrossJoinStateManager
     MutableRowSet build(@NotNull final QueryTable leftTable,
                         @NotNull final QueryTable rightTable) {
         // This state manager assumes right side is ticking.
-        Assert.eqTrue(rightTable.isLive(), "rightTable.isLive()");
+        Assert.eqTrue(rightTable.isRefreshing(), "rightTable.isLive()");
         if (!leftTable.isEmpty()) {
             try (final BuildContext bc = makeBuildContext(leftKeySources, leftTable.getRowSet().size())) {
                 final boolean isLeft = true;

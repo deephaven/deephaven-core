@@ -14,7 +14,7 @@ import io.deephaven.configuration.Configuration;
 import io.deephaven.datastructures.util.SmartKey;
 import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.live.LiveTableMonitor;
+import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.tables.live.NotificationQueue;
 import io.deephaven.engine.tables.utils.SystemicObjectTracker;
 import io.deephaven.engine.v2.*;
@@ -129,8 +129,8 @@ public class SyncTableFilter {
             throw new IllegalArgumentException("No tables specified!");
         }
 
-        if (tables.stream().anyMatch(t -> t.table.isLive())) {
-            LiveTableMonitor.DEFAULT.checkInitiateTableOperation();
+        if (tables.stream().anyMatch(t -> t.table.isRefreshing())) {
+            UpdateGraphProcessor.DEFAULT.checkInitiateTableOperation();
         }
 
         // through the builder only
@@ -535,7 +535,7 @@ public class SyncTableFilter {
                         this, "MergedListener");
 
                 queuedNotificationClock = currentStep;
-                LiveTableMonitor.DEFAULT.addNotification(this);
+                UpdateGraphProcessor.DEFAULT.addNotification(this);
             }
         }
 
@@ -590,7 +590,7 @@ public class SyncTableFilter {
     }
 
     private static TableMap createTableMapAdapter(List<SyncTableMapDescription> descriptions) {
-        LiveTableMonitor.DEFAULT.checkInitiateTableOperation();
+        UpdateGraphProcessor.DEFAULT.checkInitiateTableOperation();
 
         final int mapCount = descriptions.size();
 
@@ -767,7 +767,7 @@ public class SyncTableFilter {
         /**
          * Instantiate the TableMap of synchronized tables.
          *
-         * This must be called under the LiveTableMonitor lock.
+         * This must be called under the UpdateGraphProcessor lock.
          *
          * @return a TableMap with one entry for each input table
          */

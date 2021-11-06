@@ -1,7 +1,7 @@
 package io.deephaven.engine.v2;
 
 import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.live.LiveTableMonitor;
+import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.util.liveness.LivenessScopeStack;
 import io.deephaven.engine.util.liveness.SingletonLivenessManager;
@@ -22,12 +22,12 @@ public class TestSelectOverheadLimiter extends LiveTableTestCase {
         final QueryTable queryTable = TstUtils.testRefreshingTable(
                 RowSetFactory.fromRange(0, 100).toTracking());
         final Table sentinelTable = queryTable.updateView("Sentinel=k");
-        final Table densified = LiveTableMonitor.DEFAULT.sharedLock()
+        final Table densified = UpdateGraphProcessor.DEFAULT.sharedLock()
                 .computeLocked(() -> SelectOverheadLimiter.clampSelectOverhead(sentinelTable, 3.0));
         assertEquals(densified.getRowSet(), sentinelTable.getRowSet());
         assertTableEquals(sentinelTable, densified);
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             final RowSet added = RowSetFactory.fromRange(10000, 11000);
             queryTable.getRowSet().mutableCast().insert(added);
             queryTable.notifyListeners(added, i(), i());
@@ -36,7 +36,7 @@ public class TestSelectOverheadLimiter extends LiveTableTestCase {
         assertEquals(sentinelTable.getRowSet(), densified.getRowSet());
         assertTableEquals(sentinelTable, densified);
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             final RowSet added = RowSetFactory.fromRange(11001, 11100);
             queryTable.getRowSet().mutableCast().insert(added);
             queryTable.notifyListeners(added, i(), i());
@@ -45,7 +45,7 @@ public class TestSelectOverheadLimiter extends LiveTableTestCase {
         assertEquals(sentinelTable.getRowSet(), densified.getRowSet());
         assertTableEquals(sentinelTable, densified);
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             final RowSet added = RowSetFactory.fromRange(20000, 20100);
             queryTable.getRowSet().mutableCast().insert(added);
             queryTable.notifyListeners(added, i(), i());
@@ -54,7 +54,7 @@ public class TestSelectOverheadLimiter extends LiveTableTestCase {
         assertEquals(sentinelTable.getRowSet(), densified.getRowSet());
         assertTableEquals(sentinelTable, densified);
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             final RowSet added = RowSetFactory.fromRange(30000, 30100);
             queryTable.getRowSet().mutableCast().insert(added);
             queryTable.notifyListeners(added, i(), i());
@@ -68,12 +68,12 @@ public class TestSelectOverheadLimiter extends LiveTableTestCase {
         final QueryTable queryTable = TstUtils.testRefreshingTable(
                 RowSetFactory.fromRange(0, 100).toTracking());
         final Table sentinelTable = queryTable.updateView("Sentinel=ii");
-        final Table densified = LiveTableMonitor.DEFAULT.sharedLock()
+        final Table densified = UpdateGraphProcessor.DEFAULT.sharedLock()
                 .computeLocked(() -> SelectOverheadLimiter.clampSelectOverhead(sentinelTable, 3.0));
         assertEquals(densified.getRowSet(), sentinelTable.getRowSet());
         assertTableEquals(sentinelTable, densified);
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             final RowSet removed = RowSetFactory.fromRange(0, 100);
             final RowSet added = RowSetFactory.fromRange(10000, 10100);
             queryTable.getRowSet().mutableCast().update(added, removed);
@@ -91,7 +91,7 @@ public class TestSelectOverheadLimiter extends LiveTableTestCase {
         assertEquals(sentinelTable.getRowSet(), densified.getRowSet());
         assertTableEquals(sentinelTable, densified);
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             final RowSet removed = RowSetFactory.fromRange(10000, 10100);
             queryTable.getRowSet().mutableCast().remove(removed);
             queryTable.notifyListeners(i(), removed, i());
@@ -127,39 +127,39 @@ public class TestSelectOverheadLimiter extends LiveTableTestCase {
         final QueryTable queryTable = getTable(size, random, columnInfo);
         final Table simpleTable = TableTools.newTable(TableTools.col("Sym", "a"), TableTools.intCol("intCol", 30),
                 TableTools.doubleCol("doubleCol", 40.1)).updateView("K=-2L");
-        final Table source = LiveTableMonitor.DEFAULT.sharedLock()
+        final Table source = UpdateGraphProcessor.DEFAULT.sharedLock()
                 .computeLocked(() -> TableTools.merge(simpleTable, queryTable.updateView("K=k")).flatten());
 
         final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
                 EvalNugget.Sorted.from(
-                        () -> LiveTableMonitor.DEFAULT.sharedLock().computeLocked(
+                        () -> UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(
                                 () -> SelectOverheadLimiter.clampSelectOverhead(source.byExternal("Sym").merge(), 2.0)),
                         "Sym"),
-                EvalNugget.Sorted.from(() -> LiveTableMonitor.DEFAULT.sharedLock()
+                EvalNugget.Sorted.from(() -> UpdateGraphProcessor.DEFAULT.sharedLock()
                         .computeLocked(() -> SelectOverheadLimiter
                                 .clampSelectOverhead(source.byExternal("Sym").merge(), 2.0).select()),
                         "Sym"),
                 EvalNugget.Sorted.from(
-                        () -> LiveTableMonitor.DEFAULT.sharedLock().computeLocked(
+                        () -> UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(
                                 () -> SelectOverheadLimiter.clampSelectOverhead(source.byExternal("Sym").merge(), 4.0)),
                         "Sym"),
                 EvalNugget.Sorted.from(
-                        () -> LiveTableMonitor.DEFAULT.sharedLock().computeLocked(
+                        () -> UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(
                                 () -> SelectOverheadLimiter.clampSelectOverhead(source.byExternal("Sym").merge(), 4.5)),
                         "Sym"),
-                EvalNugget.Sorted.from(() -> LiveTableMonitor.DEFAULT.sharedLock()
+                EvalNugget.Sorted.from(() -> UpdateGraphProcessor.DEFAULT.sharedLock()
                         .computeLocked(() -> SelectOverheadLimiter
                                 .clampSelectOverhead(source.byExternal("Sym").merge(), 4.5).select()),
                         "Sym"),
                 EvalNugget.Sorted.from(
-                        () -> LiveTableMonitor.DEFAULT.sharedLock().computeLocked(
+                        () -> UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(
                                 () -> SelectOverheadLimiter.clampSelectOverhead(source.byExternal("Sym").merge(), 5.0)),
                         "Sym"),
-                EvalNugget.Sorted.from(() -> LiveTableMonitor.DEFAULT.sharedLock()
+                EvalNugget.Sorted.from(() -> UpdateGraphProcessor.DEFAULT.sharedLock()
                         .computeLocked(() -> SelectOverheadLimiter
                                 .clampSelectOverhead(source.byExternal("Sym").merge(), 10.0).select()),
                         "Sym"),
-                EvalNugget.Sorted.from(() -> LiveTableMonitor.DEFAULT.sharedLock()
+                EvalNugget.Sorted.from(() -> UpdateGraphProcessor.DEFAULT.sharedLock()
                         .computeLocked(() -> SelectOverheadLimiter
                                 .clampSelectOverhead(source.byExternal("Sym").merge(), 10.0).select()),
                         "Sym"),
@@ -181,16 +181,16 @@ public class TestSelectOverheadLimiter extends LiveTableTestCase {
         final SafeCloseable scopeCloseable = LivenessScopeStack.open();
 
         final Table sentinelTable = queryTable.updateView("Sentinel=k");
-        final Table densified = LiveTableMonitor.DEFAULT.sharedLock()
+        final Table densified = UpdateGraphProcessor.DEFAULT.sharedLock()
                 .computeLocked(() -> SelectOverheadLimiter.clampSelectOverhead(sentinelTable, 3.0));
         assertEquals(densified.getRowSet(), sentinelTable.getRowSet());
         assertTableEquals(sentinelTable, densified);
 
         final SingletonLivenessManager densifiedManager = new SingletonLivenessManager(densified);
 
-        LiveTableMonitor.DEFAULT.exclusiveLock().doLocked(scopeCloseable::close);
+        UpdateGraphProcessor.DEFAULT.exclusiveLock().doLocked(scopeCloseable::close);
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             final RowSet added = RowSetFactory.fromRange(10000, 11000);
             queryTable.getRowSet().mutableCast().insert(added);
             queryTable.notifyListeners(added, i(), i());
@@ -199,7 +199,7 @@ public class TestSelectOverheadLimiter extends LiveTableTestCase {
         assertEquals(sentinelTable.getRowSet(), densified.getRowSet());
         assertTableEquals(sentinelTable, densified);
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             final RowSet added = RowSetFactory.fromRange(11001, 11100);
             queryTable.getRowSet().mutableCast().insert(added);
             queryTable.notifyListeners(added, i(), i());
@@ -214,7 +214,7 @@ public class TestSelectOverheadLimiter extends LiveTableTestCase {
         densified.dropReference();
         sentinelTable.dropReference();
 
-        LiveTableMonitor.DEFAULT.exclusiveLock().doLocked(densifiedManager::release);
+        UpdateGraphProcessor.DEFAULT.exclusiveLock().doLocked(densifiedManager::release);
 
         org.junit.Assert.assertFalse(densified.tryRetainReference());
         org.junit.Assert.assertFalse(sentinelTable.tryRetainReference());

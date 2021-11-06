@@ -9,7 +9,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.tables.ColumnDefinition;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.TableDefinition;
-import io.deephaven.engine.tables.live.LiveTableMonitor;
+import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.v2.locations.TableDataException;
 import io.deephaven.engine.v2.locations.TableLocation;
 import io.deephaven.engine.v2.locations.TableLocationProvider;
@@ -198,7 +198,7 @@ public class TestSimpleSourceTable extends LiveTableTestCase {
 
     @Test
     public void testRedefinition() {
-        LiveTableMonitor.DEFAULT.exclusiveLock().doLocked(this::doTestRedefinition);
+        UpdateGraphProcessor.DEFAULT.exclusiveLock().doLocked(this::doTestRedefinition);
     }
 
     private void doTestRedefinition() {

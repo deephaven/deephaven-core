@@ -5,7 +5,7 @@
 package io.deephaven.engine.v2.utils;
 
 import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.live.LiveTableMonitor;
+import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.tables.utils.TableDiff;
 import io.deephaven.engine.v2.*;
 import org.junit.Assert;
@@ -36,7 +36,7 @@ public class TestFunctionBackedTableFactory extends LiveTableTestCase {
                 new QueryTableTest.TableComparator(functionBacked, queryTable),
                 // Note: disable update validation since the function backed table's prev values will always be
                 // incorrect
-                EvalNugget.from(() -> LiveTableMonitor.DEFAULT.exclusiveLock()
+                EvalNugget.from(() -> UpdateGraphProcessor.DEFAULT.exclusiveLock()
                         .computeLocked(() -> functionBacked.update("Mult=intCol * doubleCol"))),
         };
 

@@ -262,10 +262,9 @@ public interface Table extends
     @AsyncMethod
     Map<String, Object> getAttributes(Collection<String> excluded);
 
+    @Override
     @AsyncMethod
-    default boolean isLive() {
-        return isRefreshing();
-    }
+    boolean isRefreshing();
 
     /**
      * Explicitly ensure that any work needed to make a table indexable, iterable, or queryable has been done, and
@@ -2626,7 +2625,7 @@ public interface Table extends
     boolean awaitUpdate(long timeout) throws InterruptedException;
 
     /**
-     * Subscribe for updates to this table. ShiftObliviousListener will be invoked via the LiveTableMonitor notification
+     * Subscribe for updates to this table. ShiftObliviousListener will be invoked via the UpdateGraphProcessor notification
      * queue associated with this Table.
      *
      * @param listener listener for updates
@@ -2637,7 +2636,7 @@ public interface Table extends
 
     /**
      * Subscribe for updates to this table. After the optional initial image, listener will be invoked via the
-     * LiveTableMonitor notification queue associated with this Table.
+     * UpdateGraphProcessor notification queue associated with this Table.
      *
      * @param listener listener for updates
      * @param replayInitialImage true to process updates for all initial rows in the table plus all new row changes;
@@ -2646,7 +2645,7 @@ public interface Table extends
     void listenForUpdates(ShiftObliviousListener listener, boolean replayInitialImage);
 
     /**
-     * Subscribe for updates to this table. ShiftObliviousListener will be invoked via the LiveTableMonitor notification
+     * Subscribe for updates to this table. ShiftObliviousListener will be invoked via the UpdateGraphProcessor notification
      * queue associated with this Table.
      *
      * @param listener listener for updates
@@ -2655,7 +2654,7 @@ public interface Table extends
 
     /**
      * Subscribe for updates to this table. Direct listeners are invoked immediately when changes are published, rather
-     * than via a LiveTableMonitor notification queue.
+     * than via a UpdateGraphProcessor notification queue.
      *
      * @param listener listener for updates
      */

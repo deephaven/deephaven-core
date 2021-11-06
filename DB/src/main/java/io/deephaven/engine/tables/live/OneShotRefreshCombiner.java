@@ -6,46 +6,46 @@ import java.util.ArrayDeque;
 import java.util.Deque;
 
 /**
- * On refresh, each of the enqueued runnables is executed.
+ * On run, each of the enqueued runnables is executed.
  */
-public class OneShotRefreshCombiner implements LiveTable, LiveTableRegistrar {
-    private final Deque<LiveTable> runnables = new ArrayDeque<>();
+public class OneShotRefreshCombiner implements LiveTable, UpdateRootRegistrar {
+    private final Deque<Runnable> runnables = new ArrayDeque<>();
 
     @Override
-    public void refresh() {
+    public void run() {
         while (true) {
-            final LiveTable oneshot;
+            final Runnable oneshot;
             synchronized (runnables) {
                 oneshot = runnables.pollFirst();
             }
             if (oneshot == null) {
                 return;
             }
-            oneshot.refresh();
+            oneshot.run();
         }
     }
 
     @Override
-    public void addTable(@NotNull LiveTable liveTable) {
+    public void addTable(@NotNull Runnable updateRoot) {
         synchronized (runnables) {
-            runnables.add(liveTable);
+            runnables.add(updateRoot);
         }
     }
 
     @Override
-    public void removeTable(@NotNull LiveTable runnable) {
+    public void removeTable(@NotNull Runnable runnable) {
         synchronized (runnables) {
             runnables.remove(runnable);
         }
     }
 
     @Override
-    public void requestRefresh(@NotNull LiveTable table) {
-        LiveTableMonitor.DEFAULT.requestRefresh(table);
+    public void requestRefresh(@NotNull Runnable table) {
+        UpdateGraphProcessor.DEFAULT.requestRefresh(table);
     }
 
     @Override
-    public void maybeRefreshTable(@NotNull LiveTable table, boolean onlyIfHaveLock) {
-        LiveTableMonitor.DEFAULT.maybeRefreshTable(table, onlyIfHaveLock);
+    public void maybeRefreshTable(@NotNull Runnable table, boolean onlyIfHaveLock) {
+        UpdateGraphProcessor.DEFAULT.maybeRefreshTable(table, onlyIfHaveLock);
     }
 }

@@ -9,7 +9,7 @@ import io.deephaven.base.verify.Require;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.TableDefinition;
 import io.deephaven.engine.tables.live.LiveTable;
-import io.deephaven.engine.tables.live.LiveTableMonitor;
+import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.tables.utils.DBDateTime;
 import io.deephaven.engine.tables.utils.DBTimeUtils;
 import io.deephaven.engine.v2.sources.ColumnSource;
@@ -54,7 +54,7 @@ public class TimeSeriesFilter extends SelectFilterLivenessArtifactImpl implement
             return;
         }
 
-        LiveTableMonitor.DEFAULT.addTable(this);
+        UpdateGraphProcessor.DEFAULT.addTable(this);
         initialized = true;
     }
 
@@ -111,13 +111,13 @@ public class TimeSeriesFilter extends SelectFilterLivenessArtifactImpl implement
     }
 
     @Override
-    public void refresh() {
+    public void run() {
         listener.requestRecomputeMatched();
     }
 
     @Override
     protected void destroy() {
         super.destroy();
-        LiveTableMonitor.DEFAULT.removeTable(this);
+        UpdateGraphProcessor.DEFAULT.removeTable(this);
     }
 }

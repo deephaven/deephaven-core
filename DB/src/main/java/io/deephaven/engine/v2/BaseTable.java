@@ -6,6 +6,7 @@ package io.deephaven.engine.v2;
 
 import io.deephaven.base.Base64;
 import io.deephaven.base.StringUtils;
+import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.hash.KeyedObjectHashSet;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.reference.WeakSimpleReference;
@@ -20,7 +21,6 @@ import io.deephaven.engine.tables.ColumnDefinition;
 import io.deephaven.engine.NotSortableException;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.TableDefinition;
-import io.deephaven.engine.tables.live.LiveTableMonitor;
 import io.deephaven.engine.tables.live.NotificationQueue;
 import io.deephaven.engine.tables.select.MatchPair;
 import io.deephaven.engine.tables.utils.QueryPerformanceRecorder;
@@ -87,7 +87,7 @@ public abstract class BaseTable extends LivenessArtifact
 
     // Fields for DynamicNode implementation and update propagation support
     private transient boolean refreshing;
-    private transient Condition liveTableMonitorCondition;
+    private transient Condition updateGraphProcessorCondition;
     private transient Collection<Object> parents;
     private transient SimpleReferenceManager<ShiftObliviousListener, WeakSimpleReference<ShiftObliviousListener>> childListenerReferences;
     private transient SimpleReferenceManager<ShiftObliviousListener, WeakSimpleReference<ShiftObliviousListener>> directChildListenerReferences;
@@ -112,7 +112,7 @@ public abstract class BaseTable extends LivenessArtifact
     private void initializeTransientFields() {
         refreshing = false;
         isFailed = false;
-        liveTableMonitorCondition = LiveTableMonitor.DEFAULT.exclusiveLock().newCondition();
+        updateGraphProcessorCondition = UpdateGraphProcessor.DEFAULT.exclusiveLock().newCondition();
         parents = new KeyedObjectHashSet<>(IdentityKeyedObjectKey.getInstance());
         childListenerReferences = new SimpleReferenceManager<>(WeakSimpleReference::new, true);
         directChildListenerReferences = new SimpleReferenceManager<>(WeakSimpleReference::new, true);
@@ -472,7 +472,7 @@ public abstract class BaseTable extends LivenessArtifact
      * @return true if this table does not produce modifications, shifts, or removals
      */
     public boolean isAddOnly() {
-        if (!isLive()) {
+        if (!isRefreshing()) {
             return true;
         }
         return Boolean.TRUE.equals(getAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE));
@@ -525,8 +525,8 @@ public abstract class BaseTable extends LivenessArtifact
             // If we have no parents whatsoever then we are a source, and have no dependency chain other than the LTM
             // itself
             if (parents.isEmpty()) {
-                if (LiveTableMonitor.DEFAULT.satisfied(step)) {
-                    LiveTableMonitor.DEFAULT.logDependencies().append("Root node satisfied ").append(this).endl();
+                if (UpdateGraphProcessor.DEFAULT.satisfied(step)) {
+                    UpdateGraphProcessor.DEFAULT.logDependencies().append("Root node satisfied ").append(this).endl();
                     return true;
                 }
                 return false;
@@ -535,7 +535,7 @@ public abstract class BaseTable extends LivenessArtifact
             for (Object parent : parents) {
                 if (parent instanceof NotificationQueue.Dependency) {
                     if (!((NotificationQueue.Dependency) parent).satisfied(step)) {
-                        LiveTableMonitor.DEFAULT.logDependencies().append("Parents dependencies not satisfied for ")
+                        UpdateGraphProcessor.DEFAULT.logDependencies().append("Parents dependencies not satisfied for ")
                                 .append(this).append(", parent=").append((NotificationQueue.Dependency) parent).endl();
                         return false;
                     }
@@ -543,7 +543,7 @@ public abstract class BaseTable extends LivenessArtifact
             }
         }
 
-        LiveTableMonitor.DEFAULT.logDependencies().append("All parents dependencies satisfied ").append(this).endl();
+        UpdateGraphProcessor.DEFAULT.logDependencies().append("All parents dependencies satisfied ").append(this).endl();
 
         lastSatisfiedStep = step;
 
@@ -552,14 +552,14 @@ public abstract class BaseTable extends LivenessArtifact
 
     @Override
     public void awaitUpdate() throws InterruptedException {
-        LiveTableMonitor.DEFAULT.exclusiveLock().doLocked(liveTableMonitorCondition::await);
+        UpdateGraphProcessor.DEFAULT.exclusiveLock().doLocked(updateGraphProcessorCondition::await);
     }
 
     @Override
     public boolean awaitUpdate(long timeout) throws InterruptedException {
         final MutableBoolean result = new MutableBoolean(false);
-        LiveTableMonitor.DEFAULT.exclusiveLock()
-                .doLocked(() -> result.setValue(liveTableMonitorCondition.await(timeout, TimeUnit.MILLISECONDS)));
+        UpdateGraphProcessor.DEFAULT.exclusiveLock()
+                .doLocked(() -> result.setValue(updateGraphProcessorCondition.await(timeout, TimeUnit.MILLISECONDS)));
 
         return result.booleanValue();
     }
@@ -617,7 +617,7 @@ public abstract class BaseTable extends LivenessArtifact
     public final void notifyListenersOnError(final Throwable e,
             @Nullable final UpdatePerformanceTracker.Entry sourceEntry) {
         isFailed = true;
-        LiveTableMonitor.DEFAULT.requestSignal(liveTableMonitorCondition);
+        UpdateGraphProcessor.DEFAULT.requestSignal(updateGraphProcessorCondition);
 
         // Notify Legacy Listeners
         directChildListenerReferences.forEach((listenerRef, listener) -> {
@@ -627,11 +627,11 @@ public abstract class BaseTable extends LivenessArtifact
 
         lastNotificationStep = LogicalClock.DEFAULT.currentStep();
 
-        childListenerReferences.forEach((listenerRef, listener) -> LiveTableMonitor.DEFAULT
+        childListenerReferences.forEach((listenerRef, listener) -> UpdateGraphProcessor.DEFAULT
                 .addNotification(listener.getErrorNotification(e, sourceEntry)));
 
         // Notify ShiftAwareListeners
-        childShiftAwareListenerReferences.forEach((listenerRef, listener) -> LiveTableMonitor.DEFAULT
+        childShiftAwareListenerReferences.forEach((listenerRef, listener) -> UpdateGraphProcessor.DEFAULT
                 .addNotification(listener.getErrorNotification(e, sourceEntry)));
     }
 
@@ -663,7 +663,7 @@ public abstract class BaseTable extends LivenessArtifact
             return;
         }
 
-        LiveTableMonitor.DEFAULT.requestSignal(liveTableMonitorCondition);
+        UpdateGraphProcessor.DEFAULT.requestSignal(updateGraphProcessorCondition);
 
         final boolean hasNoListeners = !hasListeners();
         if (hasNoListeners) {
@@ -842,12 +842,12 @@ public abstract class BaseTable extends LivenessArtifact
     /**
      * Get the notification queue to insert notifications into as they are generated by listeners during
      * {@link #notifyListeners(RowSet, RowSet, RowSet)}. This method may be overridden to provide a different
-     * notification queue than the {@link LiveTableMonitor#DEFAULT} instance for more complex behavior.
+     * notification queue than the {@link UpdateGraphProcessor#DEFAULT} instance for more complex behavior.
      *
      * @return The {@link NotificationQueue} to add to.
      */
     protected NotificationQueue getNotificationQueue() {
-        return LiveTableMonitor.DEFAULT;
+        return UpdateGraphProcessor.DEFAULT;
     }
 
     @Override
