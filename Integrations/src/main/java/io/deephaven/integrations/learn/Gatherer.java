@@ -5,7 +5,7 @@ import io.deephaven.db.v2.sources.ColumnSource;
 public class Gatherer {
 
     /**
-     * Copy data from a table into a 2d tensor of floats.
+     * Copy data from a table into a 2d tensor of Booleans.
      *
      * @param indexSet indices of the rows of the table to put into the tensor
      * @param columnSources columns of data to put into the tensor

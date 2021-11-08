@@ -161,7 +161,7 @@ def table_to_numpy_double(idx, cols):
     :return: A NumPy ndarray
     """
 
-    buffer = gatherer.boolearnTensorBuffer2D(idx, cols)
+    buffer = gatherer.doubleTensorBuffer2D(idx, cols)
     
     tensor = np.frombuffer(buffer, dtype = np.double)
     tensor.shape = (idx.getSize(), len(cols))
