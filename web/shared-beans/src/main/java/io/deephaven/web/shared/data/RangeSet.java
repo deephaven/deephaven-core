@@ -89,6 +89,11 @@ public class RangeSet implements Serializable {
                     end = i - 1;
                     break;
                 }
+                if (overlap.equals(existing)) {
+                    // the entire range to be added existed within an existing range, we're done
+                    return;
+                }
+
                 // grow the region used for replacing
                 merged = overlap;
             }
