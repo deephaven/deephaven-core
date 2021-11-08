@@ -53,13 +53,20 @@ def table_to_numpy_2d(idx, cols, np_dtype = None):
     :return: A NumPy ndarray
     """
 
-    if np_dtype == np.bool_ or np_dtype == bool:
+    if np_dtype == bool:
+        np_dtype = np.bool_
+    elif np_dtype == float:
+        np_dtype = np.double
+    elif np_dtype == int:
+        np_dtype = np.intc
+
+    if np_dtype == np.bool_:
         buffer = gatherer.booleanTensorBuffer2D(idx, cols)
     elif np_dtype == np.byte:
         buffer = gatherer.byteTensorBuffer2D(idx, cols)
-    elif np_dtype == np.double or np_dtype == float:
+    elif np_dtype == np.double:
         buffer = gatherer.doubleTensorBuffer2D(idx, cols)
-    elif np_dtype == np.intc or np_dtype == int:
+    elif np_dtype == np.intc:
         buffer = gatherer.intTensorBuffer2D(idx, cols)
     elif np_dtype == np.int_:
         buffer = gatherer.longTensorBuffer2D(idx, cols)
