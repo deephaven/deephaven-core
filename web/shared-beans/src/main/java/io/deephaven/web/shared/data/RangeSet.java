@@ -101,7 +101,7 @@ public class RangeSet implements Serializable {
             }
             newArray[index] = merged;
             if (end < sortedRanges.length - 1) {
-                System.arraycopy(sortedRanges, end, newArray, index + 1, sortedRanges.length - end);
+                System.arraycopy(sortedRanges, end + 1, newArray, index + 1, sortedRanges.length - 1 - end);
             }
             sortedRanges = newArray;
         } else {

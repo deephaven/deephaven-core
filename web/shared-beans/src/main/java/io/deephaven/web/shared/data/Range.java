@@ -48,9 +48,7 @@ public class Range implements Serializable, Comparable<Range> {
 
     public Range overlap(Range range) {
         if (range.first > last + 1 || range.last < first - 1) {
-            // no overlap at all
-
-            // TODO should actually check adjacency too
+            // no overlap at all; note that adjacent ranges overlap/merge
             return null;
         }
 

@@ -78,6 +78,14 @@ public class RangeSetTest {
         rangeSet.addRange(new Range(0, 1));
         assertEquals(26, rangeSet.size());
         assertEquals(Collections.singletonList(new Range(0, 25)), asList(rangeSet));
+
+        rangeSet = new RangeSet();
+        rangeSet.addRange(new Range(1, 1));
+        rangeSet.addRange(new Range(20, 21));
+
+        // shared start; ranges follow
+        rangeSet.addRange(new Range(1, 10));
+        assertEquals(12, rangeSet.size());
     }
 
     @Test
