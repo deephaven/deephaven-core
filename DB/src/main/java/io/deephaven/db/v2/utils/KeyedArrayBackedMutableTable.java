@@ -4,7 +4,6 @@ import io.deephaven.db.tables.ColumnDefinition;
 import io.deephaven.db.exceptions.ArgumentException;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.TableDefinition;
-import io.deephaven.db.tables.utils.TableTools;
 import io.deephaven.db.v2.QueryTable;
 import io.deephaven.db.v2.sources.*;
 import io.deephaven.db.v2.sources.chunk.*;
@@ -16,8 +15,6 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * An in-memory table that has keys for each row, which can be updated on the LTM.
@@ -27,7 +24,7 @@ import java.util.stream.Stream;
 public class KeyedArrayBackedMutableTable extends BaseArrayBackedMutableTable {
     static final String DEFAULT_DESCRIPTION = "In-Memory Input Table";
 
-    private final String[] keyColumnNames;
+    private final List<String> keyColumnNames;
     private final Set<String> keyColumnSet;
     protected final ObjectArraySource<?>[] arrayValueSources;
 
@@ -109,15 +106,16 @@ public class KeyedArrayBackedMutableTable extends BaseArrayBackedMutableTable {
                     + ", available columns: " + definition.getColumnNames());
         }
 
-        this.keyColumnNames = keyColumnNames;
+        this.keyColumnNames = Collections.unmodifiableList(new ArrayList<>(Arrays.asList(keyColumnNames)));
         this.keyColumnSet = new HashSet<>(Arrays.asList(keyColumnNames));
-        inputTableDefinition.setKeys(keyColumnNames);
-        inputTableDefinition.setValues(
-                definition.getColumnNames().stream().filter(n -> !keyColumnSet.contains(n)).toArray(String[]::new));
-        final Stream<ObjectArraySource<?>> objectArraySourceStream =
-                Arrays.stream(inputTableDefinition.getValues()).map(this::getColumnSource)
-                        .filter(cs -> cs instanceof ObjectArraySource).map(cs -> (ObjectArraySource<?>) cs);
-        arrayValueSources = objectArraySourceStream.toArray(ObjectArraySource[]::new);
+        this.arrayValueSources =
+                definition.getColumnStream()
+                        .map(ColumnDefinition::getName)
+                        .filter(n -> !keyColumnSet.contains(n))
+                        .map(this::getColumnSource)
+                        .filter(cs -> cs instanceof ObjectArraySource)
+                        .map(cs -> (ObjectArraySource<?>) cs)
+                        .toArray(ObjectArraySource[]::new);
     }
 
     private void startTrackingPrev() {
@@ -237,7 +235,7 @@ public class KeyedArrayBackedMutableTable extends BaseArrayBackedMutableTable {
     private ChunkSource<Attributes.Values> makeKeySource(Table table) {
         // noinspection unchecked
         return TupleSourceFactory.makeTupleSource(
-                Arrays.stream(keyColumnNames).map(table::getColumnSource).toArray(ColumnSource[]::new));
+                keyColumnNames.stream().map(table::getColumnSource).toArray(ColumnSource[]::new));
     }
 
     @Override
@@ -246,26 +244,8 @@ public class KeyedArrayBackedMutableTable extends BaseArrayBackedMutableTable {
     }
 
     @Override
-    void validateDelete(final TableDefinition keyDefinition) {
-        final TableDefinition thisDefinition = getDefinition();
-        final StringBuilder error = new StringBuilder();
-        for (String keyColumn : keyColumnNames) {
-            final ColumnDefinition<?> colDef = keyDefinition.getColumn(keyColumn);
-            final ColumnDefinition<?> thisColDef = thisDefinition.getColumn(keyColumn);
-            if (colDef == null) {
-                error.append("Key Column \"").append(keyColumn).append("\" does not exist.\n");
-            } else if (!colDef.isCompatible(thisColDef)) {
-                error.append("Key Column \"").append(keyColumn).append("\" is not compatible.\n");
-            }
-        }
-        final List<String> extraKeys = keyDefinition.getColumnNames().stream().filter(kd -> !keyColumnSet.contains(kd))
-                .collect(Collectors.toList());
-        if (!extraKeys.isEmpty()) {
-            error.append("Unknown key columns: ").append(extraKeys);
-        }
-        if (error.length() > 0) {
-            throw new ArgumentException("Invalid Key Table Definition: " + error.toString());
-        }
+    protected List<String> getKeyNames() {
+        return keyColumnNames;
     }
 
     /**

@@ -234,6 +234,7 @@ public class TableDefinition implements Externalizable, LogOutputAppendable, Cop
      *
      * @param other the other definition
      * @return {@code this} table definition, but in the the column order of {@code other}
+     * @throws IncompatibleTableDefinitionException if the definitions are not compatible
      */
     public TableDefinition checkMutualCompatibility(@NotNull final TableDefinition other) {
         TableDefinition result = checkCompatibility(other, false);

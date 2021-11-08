@@ -28,7 +28,16 @@ public class SchemaHelper {
      * @return the flatbuf schema
      */
     public static org.apache.arrow.flatbuf.Schema flatbufSchema(ExportedTableCreationResponse response) {
-        final ByteBuffer bb = response.getSchemaHeader().asReadOnlyByteBuffer();
+        return flatbufSchema(response.getSchemaHeader().asReadOnlyByteBuffer());
+    }
+
+    /**
+     * Creates a flatbuf Schema from raw bytes of a Message.
+     * 
+     * @param bb a bytebuffer that contains a schema in a message
+     * @return a flatbuf schema
+     */
+    public static org.apache.arrow.flatbuf.Schema flatbufSchema(ByteBuffer bb) {
         if (bb.remaining() < MESSAGE_OFFSET) {
             throw new IllegalArgumentException("Not enough bytes for Message/Schema");
         }
