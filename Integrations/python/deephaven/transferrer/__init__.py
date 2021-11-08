@@ -57,7 +57,7 @@ def table_to_numpy_2d(idx, cols, np_dtype = None):
         buffer = gatherer.booleanTensorBuffer2D(idx, cols)
     elif np_dtype == np.byte:
         buffer = gatherer.byteTensorBuffer2D(idx, cols)
-    elif np_dtype == np.double or np_dtype = float:
+    elif np_dtype == np.double or np_dtype == float:
         buffer = gatherer.doubleTensorBuffer2D(idx, cols)
     elif np_dtype == np.intc or np_dtype == int:
         buffer = gatherer.intTensorBuffer2D(idx, cols)
