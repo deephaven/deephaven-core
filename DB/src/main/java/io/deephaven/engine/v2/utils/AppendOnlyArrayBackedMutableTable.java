@@ -23,7 +23,7 @@ import java.util.Map;
 import java.util.function.Consumer;
 
 /**
- * An in-memory table that allows you to add rows as if it were an InputTable, which can be updated on the LTM.
+ * An in-memory table that allows you to add rows as if it were an InputTable, which can be updated on the UGP.
  *
  * The table is not keyed, all rows are added to the end of the table. Deletions and edits are not permitted.
  */

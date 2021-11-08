@@ -17,7 +17,7 @@ import org.junit.experimental.categories.Category;
 import static io.deephaven.engine.v2.TstUtils.*;
 
 @Category(OutOfBandTest.class)
-public class TestSymbolTableCombiner extends LiveTableTestCase {
+public class TestSymbolTableCombiner extends RefreshingTableTestCase {
     public void testSymbolTableCombiner() {
         for (int seed = 0; seed < 3; ++seed) {
             testSymbolTableCombiner(seed);
@@ -82,7 +82,7 @@ public class TestSymbolTableCombiner extends LiveTableTestCase {
         symbolTable.listenForUpdates(symbolTableListener);
 
         for (int step = 0; step < 750; step++) {
-            if (LiveTableTestCase.printTableUpdates) {
+            if (RefreshingTableTestCase.printTableUpdates) {
                 System.out.println("Step = " + step + ", size=" + symbolTable.size());
             }
             UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {

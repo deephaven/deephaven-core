@@ -522,7 +522,7 @@ public abstract class BaseTable extends LivenessArtifact
 
         // noinspection SynchronizeOnNonFinalField
         synchronized (parents) {
-            // If we have no parents whatsoever then we are a source, and have no dependency chain other than the LTM
+            // If we have no parents whatsoever then we are a source, and have no dependency chain other than the UGP
             // itself
             if (parents.isEmpty()) {
                 if (UpdateGraphProcessor.DEFAULT.satisfied(step)) {

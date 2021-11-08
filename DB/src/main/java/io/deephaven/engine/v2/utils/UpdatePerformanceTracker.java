@@ -9,12 +9,15 @@ import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.tablelogger.UpdatePerformanceLogLogger;
+import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.TableDefinition;
 import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.tables.utils.DBTimeUtils;
 import io.deephaven.engine.tables.utils.QueryPerformanceLogThreshold;
 import io.deephaven.engine.tables.utils.QueryPerformanceRecorder;
 import io.deephaven.engine.v2.QueryTable;
+import io.deephaven.engine.v2.ShiftObliviousInstrumentedListener;
+import io.deephaven.engine.v2.ShiftObliviousListener;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.log.impl.LogOutputStringImpl;
 import io.deephaven.io.logger.Logger;
@@ -34,13 +37,18 @@ import static io.deephaven.engine.tables.lang.DBLanguageFunctionUtil.minus;
 import static io.deephaven.engine.tables.lang.DBLanguageFunctionUtil.plus;
 
 /**
- * This tool is meant to track periodic update events that take place in a UpdateGraphProcessor. This generally includes (1)
- * LiveTable.run() invocations (2) Table ShiftObliviousListener notifications (see
- * ShiftObliviousInstrumentedListener)
+ * <p>
+ * This tool is meant to track periodic update events that take place in an {@link UpdateGraphProcessor}.
+ * This generally includes:
+ * <ol>
+ *     <li>Update source {@code run()} invocations</li>
+ *     <li>{@link Table} {@link ShiftObliviousListener} notifications (see {@link ShiftObliviousInstrumentedListener})</li>
+ *     <li>{@link Table} {@link io.deephaven.engine.v2.Listener} notifications (see {@link io.deephaven.engine.v2.InstrumentedListener})</li>
+ * </ol>(1)
  *
- * Note: Regarding thread safety, this class interacts with a singleton UpdateGraphProcessor and expects all calls to
- * getEntry(), Entry.onUpdateStart(), and Entry.onUpdateEnd() to be performed while protected by the LTM's live jobs
- * synchronizer.
+ * @apiNote Regarding thread safety, this class interacts with a singleton UpdateGraphProcessor and expects all calls to
+ * {@link #getEntry(String)}, {@link Entry#onUpdateStart()}, and {@link Entry#onUpdateEnd()} to be performed while
+ * protected by the UGP's lock.
  */
 public class UpdatePerformanceTracker {
 

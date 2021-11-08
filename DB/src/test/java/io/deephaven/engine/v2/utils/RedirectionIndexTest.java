@@ -5,11 +5,11 @@
 package io.deephaven.engine.v2.utils;
 
 import io.deephaven.engine.tables.live.UpdateGraphProcessor;
+import io.deephaven.engine.v2.RefreshingTableTestCase;
 import io.deephaven.io.logger.Logger;
-import io.deephaven.engine.v2.LiveTableTestCase;
 import io.deephaven.internal.log.LoggerFactory;
 
-public class RedirectionIndexTest extends LiveTableTestCase {
+public class RedirectionIndexTest extends RefreshingTableTestCase {
     private final Logger log = LoggerFactory.getLogger(RedirectionIndexTest.class);
 
     public void testBasic() {

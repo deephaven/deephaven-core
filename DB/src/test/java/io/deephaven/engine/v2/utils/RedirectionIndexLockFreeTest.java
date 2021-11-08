@@ -5,7 +5,7 @@
 package io.deephaven.engine.v2.utils;
 
 import io.deephaven.engine.tables.live.UpdateGraphProcessor;
-import io.deephaven.engine.v2.LiveTableTestCase;
+import io.deephaven.engine.v2.RefreshingTableTestCase;
 import io.deephaven.engine.v2.sources.LogicalClock;
 import gnu.trove.list.array.TLongArrayList;
 import io.deephaven.test.types.OutOfBandTest;
@@ -18,7 +18,7 @@ import org.junit.experimental.categories.Category;
 import static io.deephaven.base.ArrayUtil.swap;
 
 @Category(OutOfBandTest.class)
-public class RedirectionIndexLockFreeTest extends LiveTableTestCase {
+public class RedirectionIndexLockFreeTest extends RefreshingTableTestCase {
     private static final long oneBillion = 1000000000L;
     private static final int testDurationInSeconds = 15;
 

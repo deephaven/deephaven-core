@@ -42,7 +42,7 @@ import static org.junit.Assert.assertArrayEquals;
  * Tests for {@link PartitionAwareSourceTable}.
  */
 @SuppressWarnings({"AutoBoxing", "JUnit4AnnotatedMethodInJUnit3TestCase", "AnonymousInnerClassMayBeStatic"})
-public class TestPartitionAwareSourceTable extends LiveTableTestCase {
+public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
 
     private static final int NUM_COLUMNS = 5;
     private static final ColumnDefinition<String> PARTITIONING_COLUMN_DEFINITION =

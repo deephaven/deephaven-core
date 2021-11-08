@@ -16,7 +16,7 @@ import java.util.Random;
 
 import static io.deephaven.engine.v2.TstUtils.*;
 
-public class TestReverseLookupListener extends LiveTableTestCase {
+public class TestReverseLookupListener extends RefreshingTableTestCase {
     public void testSimple() {
         final BaseTable source = TstUtils.testRefreshingTable(
                 i(2, 4, 6, 8).toTracking(),
@@ -158,7 +158,7 @@ public class TestReverseLookupListener extends LiveTableTestCase {
 
             final int updateSize = (int) Math.ceil(Math.sqrt(size));
             for (int step = 0; step < 100; ++step) {
-                if (LiveTableTestCase.printTableUpdates) {
+                if (RefreshingTableTestCase.printTableUpdates) {
                     System.out.println("step = " + step);
                 }
                 simulateShiftAwareStep(updateSize, random, table, columnInfo, en);

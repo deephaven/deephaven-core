@@ -7,7 +7,6 @@ package io.deephaven.engine.v2.select;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.TableDefinition;
-import io.deephaven.engine.tables.live.LiveTable;
 import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.v2.utils.MutableRowSet;
 import io.deephaven.engine.v2.utils.RowSet;
@@ -16,12 +15,12 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * Base class for filters that will release more rows of a table on each LTM cycle.
+ * Base class for filters that will release more rows of a table on each UGP cycle.
  *
  * The use case is for benchmarks that want to replay a table in order to better understand incremental processing
  * capacity.
  */
-public abstract class BaseIncrementalReleaseFilter extends SelectFilterLivenessArtifactImpl implements LiveTable {
+public abstract class BaseIncrementalReleaseFilter extends SelectFilterLivenessArtifactImpl implements Runnable {
     private final long initialSize;
     private long releasedSize;
     private long expectedSize;

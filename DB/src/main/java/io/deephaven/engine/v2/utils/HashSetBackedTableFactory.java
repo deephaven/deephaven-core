@@ -8,7 +8,6 @@ import io.deephaven.base.Function;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.datastructures.util.SmartKey;
 import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.live.LiveTable;
 import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.v2.QueryTable;
 import io.deephaven.engine.v2.sources.AbstractColumnSource;
@@ -144,7 +143,7 @@ public class HashSetBackedTableFactory {
         }
     }
 
-    private class HashSetBackedTable extends QueryTable implements LiveTable {
+    private class HashSetBackedTable extends QueryTable implements Runnable {
         HashSetBackedTable(TrackingRowSet rowSet, Map<String, ColumnSource<?>> columns) {
             super(rowSet, columns);
             if (refreshIntervalMs >= 0) {

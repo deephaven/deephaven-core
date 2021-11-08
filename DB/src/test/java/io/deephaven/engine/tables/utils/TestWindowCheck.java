@@ -83,15 +83,15 @@ public class TestWindowCheck {
                 TstUtils.validate("Step " + step, en);
             } else {
                 UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> advanceTime(timeProvider, en));
-                if (LiveTableTestCase.printTableUpdates) {
+                if (RefreshingTableTestCase.printTableUpdates) {
                     TstUtils.validate("Step = " + step + " time = " + new DBDateTime(timeProvider.now), en);
                 }
 
                 for (int ii = 0; ii < stepsPerTick; ++ii) {
-                    if (LiveTableTestCase.printTableUpdates) {
+                    if (RefreshingTableTestCase.printTableUpdates) {
                         System.out.println("Step " + step + "-" + ii);
                     }
-                    LiveTableTestCase.simulateShiftAwareStep(step + "-" + ii, stepSize, random, table, columnInfo, en);
+                    RefreshingTableTestCase.simulateShiftAwareStep(step + "-" + ii, stepSize, random, table, columnInfo, en);
                 }
             }
         }
@@ -99,7 +99,7 @@ public class TestWindowCheck {
 
     private void advanceTime(TestTimeProvider timeProvider, WindowEvalNugget[] en) {
         timeProvider.now += 5 * DBTimeUtils.SECOND;
-        if (LiveTableTestCase.printTableUpdates) {
+        if (RefreshingTableTestCase.printTableUpdates) {
             System.out.println("Ticking time to " + new DBDateTime(timeProvider.now));
         }
         for (final WindowEvalNugget wen : en) {

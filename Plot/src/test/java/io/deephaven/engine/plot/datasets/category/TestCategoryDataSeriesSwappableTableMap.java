@@ -34,7 +34,7 @@ public class TestCategoryDataSeriesSwappableTableMap extends BaseArrayTestCase {
         // todo test oneClick
     }
 
-    public void testLiveTable() {
+    public void testRefreshingTable() {
         final BaseFigureImpl figure = new BaseFigureImpl();
         figure.newChart().newAxes();
         final String[] dataX = new String[500];

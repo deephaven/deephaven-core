@@ -15,7 +15,7 @@ import java.util.*;
 import static io.deephaven.engine.tables.utils.TableTools.*;
 import static io.deephaven.engine.v2.TstUtils.*;
 
-public class TestColumnsToRowsTransform extends LiveTableTestCase {
+public class TestColumnsToRowsTransform extends RefreshingTableTestCase {
     public void testStatic() {
         final Table in = TableTools.newTable(stringCol("Sym", "AAPL", "SPY"), intCol("Val1", 1, 2),
                 intCol("Val2", 3, 4), intCol("Val3", 5, 6));

@@ -38,7 +38,7 @@ public interface Scheduler extends TimeProvider {
     void runImmediately(@NotNull Runnable command);
 
     /**
-     * Schedule this task to run immediately, under the exclusive LTM lock.
+     * Schedule this task to run immediately, under the exclusive UGP lock.
      *
      * @param command the task to run
      */

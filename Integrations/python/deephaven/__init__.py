@@ -322,7 +322,7 @@ def listen(t, listener, description=None, retain=True, ltype="auto", start_liste
     :param ltype: listener type.  Valid values are "auto", "legacy", and "shift_aware".  "auto" (default) uses inspection to automatically determine the type of input listener.  "legacy" is for a legacy listener, which takes three (added, removed, modified) or four (isReplay, added, removed, modified) arguments.  "shift_aware" is for a shift-aware listener, which takes one (update) or two (isReplay, update) arguments.
     :param start_listening: True to create the listener and register the listener with the table.  The listener will see updates.  False to create the listener, but do not register the listener with the table.  The listener will not see updates.
     :param replay_initial: True to replay the initial table contents to the listener.  False to only listen to new table changes.  To replay the initial image, the listener must support replay.
-    :param lock_type: LTM lock type.  Used when replay_initial=True.  See :func:`doLocked` for valid values.
+    :param lock_type: UGP lock type.  Used when replay_initial=True.  See :func:`doLocked` for valid values.
     :return: table listener handle.
     """
 
@@ -387,13 +387,13 @@ def listen(t, listener, description=None, retain=True, ltype="auto", start_liste
 
 def doLocked(f, lock_type="shared"):
     """
-    Executes a function while holding the UpdateGraphProcessor (LTM) lock.  Holding the LTM lock
+    Executes a function while holding the UpdateGraphProcessor (UGP) lock.  Holding the UGP lock
     ensures that the contents of a table will not change during a computation, but holding
     the lock also prevents table updates from happening.  The lock should be held for as little
     time as possible.
 
-    :param f: function to execute while holding the LTM lock.  f must be callable or have an apply attribute which is callable.
-    :param lock_type: LTM lock type.  Valid values are "exclusive" and "shared".  "exclusive" allows only a single reader or writer to hold the lock.  "shared" allows multiple readers or a single writer to hold the lock.
+    :param f: function to execute while holding the UGP lock.  f must be callable or have an apply attribute which is callable.
+    :param lock_type: UGP lock type.  Valid values are "exclusive" and "shared".  "exclusive" allows only a single reader or writer to hold the lock.  "shared" allows multiple readers or a single writer to hold the lock.
     """
     ThrowingRunnable = jpy.get_type("io.deephaven.integrations.python.PythonThrowingRunnable")
     UpdateGraphProcessor = jpy.get_type("io.deephaven.engine.tables.live.UpdateGraphProcessor")

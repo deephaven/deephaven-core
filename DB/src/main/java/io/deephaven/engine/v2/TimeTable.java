@@ -9,7 +9,6 @@ import io.deephaven.engine.v2.utils.*;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.libs.primitives.LongNumericPrimitives;
-import io.deephaven.engine.tables.live.LiveTable;
 import io.deephaven.engine.tables.utils.DBDateTime;
 import io.deephaven.engine.tables.utils.DBTimeUtils;
 import io.deephaven.engine.v2.sources.ColumnSource;
@@ -25,7 +24,7 @@ import java.util.Map;
  * To create a TimeTable, you should use the {@link io.deephaven.engine.tables.utils.TableTools#timeTable} family of
  * methods.
  */
-public class TimeTable extends QueryTable implements LiveTable {
+public class TimeTable extends QueryTable implements Runnable {
     private static final Logger log = LoggerFactory.getLogger(TimeTable.class);
 
     private static final String TIMESTAMP = "Timestamp";

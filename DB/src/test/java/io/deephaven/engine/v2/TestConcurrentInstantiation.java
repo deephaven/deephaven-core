@@ -344,7 +344,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         final Future<Table> future1 = dualPool.submit(() -> table.where(filter));
         try {
             future1.get(1000, TimeUnit.MILLISECONDS);
-            fail("Filtering should be blocked on LTM");
+            fail("Filtering should be blocked on UGP");
         } catch (TimeoutException ignored) {
         }
         TstUtils.addToTable(table, i(2, 3), c("x", 1, 4), c("y", "a", "d"), c("z", false, true));
@@ -701,14 +701,14 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         int lastResultSize = 0;
 
         try {
-            if (LiveTableTestCase.printTableUpdates) {
+            if (RefreshingTableTestCase.printTableUpdates) {
                 System.out.println("Input Table:\n");
                 TableTools.showWithIndex(table);
             }
 
             for (numSteps.setValue(0); numSteps.intValue() < maxSteps; numSteps.increment()) {
                 final int i = numSteps.intValue();
-                if (LiveTableTestCase.printTableUpdates) {
+                if (RefreshingTableTestCase.printTableUpdates) {
                     System.out.println("Step = " + i);
                 }
 
@@ -969,7 +969,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
                     results.addAll(beforeAndAfterCycleSplitResults);
                 }
 
-                if (LiveTableTestCase.printTableUpdates) {
+                if (RefreshingTableTestCase.printTableUpdates) {
                     System.out.println("Input Table: (" + Objects.hashCode(table) + ")");
                     TableTools.showWithIndex(table);
                     System.out.println("Standard Table: (" + Objects.hashCode(standard) + ")");
@@ -980,7 +980,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
                 // now verify all the outstanding results
                 for (Table checkTable : results) {
                     String diff = diff(checkTable, standard, 10);
-                    if (!diff.isEmpty() && LiveTableTestCase.printTableUpdates) {
+                    if (!diff.isEmpty() && RefreshingTableTestCase.printTableUpdates) {
                         System.out.println("Check Table: " + checkTable.getAttribute("Step") + ", " +
                                 checkTable.getAttribute("Type") +
                                 ", splitIndex=" + checkTable.getAttribute("SplitIndex") +

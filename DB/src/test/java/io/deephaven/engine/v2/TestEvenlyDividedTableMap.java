@@ -8,7 +8,7 @@ import io.deephaven.engine.v2.utils.RowSetFactory;
 
 import static io.deephaven.engine.v2.TstUtils.i;
 
-public class TestEvenlyDividedTableMap extends LiveTableTestCase {
+public class TestEvenlyDividedTableMap extends RefreshingTableTestCase {
     public void testStatic() {
         final Table t = TableTools.emptyTable(1000000).update("K=k");
         final TableMap tm = EvenlyDividedTableMap.makeEvenlyDividedTableMap(t, 16, 100000);

@@ -2540,7 +2540,7 @@ public class QueryTableTest extends QueryTableTestBase {
 
         final int stepSize = (int) Math.ceil(Math.sqrt(tableSize));
         for (int i = 0; i < 100; i++) {
-            if (LiveTableTestCase.printTableUpdates) {
+            if (RefreshingTableTestCase.printTableUpdates) {
                 System.out.println("Step == " + i);
             }
             simulateShiftAwareStep(stepSize, random, table, columnInfo, en);
@@ -2991,7 +2991,7 @@ public class QueryTableTest extends QueryTableTestBase {
         // was a regression inside of BaseTable#notifyListeners that would invoke build() and cause this table to be
         // coalesced and for the new result table to receive and propagate that update. IDS-7153 made it explicitly
         // illegal
-        // to publish an update on a table's very first cycle if it was initiated under the LTM lock. It's also not
+        // to publish an update on a table's very first cycle if it was initiated under the UGP lock. It's also not
         // great
         // to coalesce a table and immediately make it garbage.
 

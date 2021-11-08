@@ -1151,7 +1151,7 @@ public class SessionState {
 
         /**
          * Some exports must happen serially w.r.t. other exports. For example, an export that acquires the exclusive
-         * LTM lock. We enqueue these dependencies independently of the otherwise regularly concurrent exports.
+         * UGP lock. We enqueue these dependencies independently of the otherwise regularly concurrent exports.
          *
          * @return this builder
          */

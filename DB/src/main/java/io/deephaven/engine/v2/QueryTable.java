@@ -1997,7 +1997,7 @@ public class QueryTable extends BaseTable {
     }
 
     private Table snapshotInternal(Table tableToSnapshot, boolean doInitialSnapshot, String... stampColumns) {
-        // TODO: we would like to make this operation LTM safe, instead of requiring the lock here; there are two tables
+        // TODO: we would like to make this operation UGP safe, instead of requiring the lock here; there are two tables
         // but we do only need to listen to one of them; however we are dependent on two of them
         checkInitiateOperation();
 

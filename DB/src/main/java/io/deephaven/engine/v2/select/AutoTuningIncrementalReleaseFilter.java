@@ -18,18 +18,18 @@ import org.jetbrains.annotations.NotNull;
 import java.text.DecimalFormat;
 
 /**
- * Filter that releases the required number of rows from a table to saturate the LTM cycle.
+ * Filter that releases the required number of rows from a table to saturate the UGP cycle.
  * <p>
  * The table has an initial size, which can be thought of as the size during query initialization. There is an initial
  * number of rows that are released, which is then used to tune the number of rows to release on the subsequent cycle.
  * <p>
- * The targetFactor parameter is multiplied by the LTM's targetCycle. This allows you to determine how busy you want the
- * LTM to be. For example a factor of 1, will attempt to hit the target cycle exactly. A target of 0.5 should result an
- * LTM ratio of about 50%. A factor of 10 would mean that the system will extend beyond the target cycle time, coalesce
+ * The targetFactor parameter is multiplied by the UGP's targetCycle. This allows you to determine how busy you want the
+ * UGP to be. For example a factor of 1, will attempt to hit the target cycle exactly. A target of 0.5 should result an
+ * UGP ratio of about 50%. A factor of 10 would mean that the system will extend beyond the target cycle time, coalesce
  * updates accordingly and have a ratio that is nearly 100%.
  * <p>
  * The time the rows are released is recorded, and a terminal notification is enqueued to record the end of the cycle.
- * On each cycle, the number of rows per second is computed; and then the number of rows released is the LTM's target
+ * On each cycle, the number of rows per second is computed; and then the number of rows released is the UGP's target
  * cycle multiplied by the rows per second multiplied by the target factor.
  *
  *
@@ -116,7 +116,7 @@ public class AutoTuningIncrementalReleaseFilter extends BaseIncrementalReleaseFi
      * @param initialSize the initial table size
      * @param initialRelease the initial incremental update; after the first cycle the rows per second is calculated
      *        based on the duration of the last cycle and the number of rows released by this filter
-     * @param targetFactor the multiple of the LTM cycle we should aim for
+     * @param targetFactor the multiple of the UGP cycle we should aim for
      */
     @ScriptApi
     public AutoTuningIncrementalReleaseFilter(long initialSize, long initialRelease, double targetFactor) {
@@ -130,7 +130,7 @@ public class AutoTuningIncrementalReleaseFilter extends BaseIncrementalReleaseFi
      * @param initialSize the initial table size
      * @param initialRelease the initial incremental update; after the first cycle the rows per second is calculated
      *        based on the duration of the last cycle and the number of rows released by this filter
-     * @param targetFactor the multiple of the LTM cycle we should aim for
+     * @param targetFactor the multiple of the UGP cycle we should aim for
      */
     @ScriptApi
     public AutoTuningIncrementalReleaseFilter(Logger logger, long initialSize, long initialRelease,
@@ -144,8 +144,8 @@ public class AutoTuningIncrementalReleaseFilter extends BaseIncrementalReleaseFi
      * @param initialSize the initial table size
      * @param initialRelease the initial incremental update; after the first cycle the rows per second is calculated
      *        based on the duration of the last cycle and the number of rows released by this filter
-     * @param targetFactor the multiple of the LTM cycle we should aim for
-     * @param verbose whether information should be printed on each LTM cycle describing the current rate and number of
+     * @param targetFactor the multiple of the UGP cycle we should aim for
+     * @param verbose whether information should be printed on each UGP cycle describing the current rate and number of
      *        rows released
      */
     @ScriptApi
@@ -161,8 +161,8 @@ public class AutoTuningIncrementalReleaseFilter extends BaseIncrementalReleaseFi
      * @param initialSize the initial table size
      * @param initialRelease the initial incremental update; after the first cycle the rows per second is calculated
      *        based on the duration of the last cycle and the number of rows released by this filter
-     * @param targetFactor the multiple of the LTM cycle we should aim for
-     * @param verbose whether information should be printed on each LTM cycle describing the current rate and number of
+     * @param targetFactor the multiple of the UGP cycle we should aim for
+     * @param verbose whether information should be printed on each UGP cycle describing the current rate and number of
      *        rows released
      */
     @ScriptApi
@@ -182,8 +182,8 @@ public class AutoTuningIncrementalReleaseFilter extends BaseIncrementalReleaseFi
      * @param initialSize the initial table size
      * @param initialRelease the initial incremental update; after the first cycle the rows per second is calculated
      *        based on the duration of the last cycle and the number of rows released by this filter
-     * @param targetFactor the multiple of the LTM cycle we should aim for
-     * @param verbose whether information should be printed on each LTM cycle describing the current rate and number of
+     * @param targetFactor the multiple of the UGP cycle we should aim for
+     * @param verbose whether information should be printed on each UGP cycle describing the current rate and number of
      *        rows released
      * @param timeProvider the time provider, which is used to determine the start and end of each cycle
      */
@@ -200,8 +200,8 @@ public class AutoTuningIncrementalReleaseFilter extends BaseIncrementalReleaseFi
      * @param initialSize the initial table size
      * @param initialRelease the initial incremental update; after the first cycle the rows per second is calculated
      *        based on the duration of the last cycle and the number of rows released by this filter
-     * @param targetFactor the multiple of the LTM cycle we should aim for
-     * @param verbose whether information should be printed on each LTM cycle describing the current rate and number of
+     * @param targetFactor the multiple of the UGP cycle we should aim for
+     * @param verbose whether information should be printed on each UGP cycle describing the current rate and number of
      *        rows released
      * @param timeProvider the time provider, which is used to determine the start and end of each cycle
      */
@@ -233,7 +233,7 @@ public class AutoTuningIncrementalReleaseFilter extends BaseIncrementalReleaseFi
             nextSize = initialRelease;
         } else {
             final long cycleDuration = (cycleEnd.getNanos() - lastRefresh.getNanos());
-            final long targetCycle = UpdateGraphProcessor.DEFAULT.getTargetCycleTime() * 1000 * 1000;
+            final long targetCycle = UpdateGraphProcessor.DEFAULT.getTargetCycleIntervalMillis() * 1000 * 1000;
             final double rowsPerNanoSecond = ((double) nextSize) / cycleDuration;
             nextSize = Math.max((long) (rowsPerNanoSecond * targetCycle * targetFactor), 1L);
             if (verbose) {

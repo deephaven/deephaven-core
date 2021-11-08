@@ -25,7 +25,7 @@ import java.util.Random;
 import static io.deephaven.engine.v2.TstUtils.*;
 
 @Category(ParallelTest.class)
-public class TestCharSegmentedSortedArray extends LiveTableTestCase {
+public class TestCharSegmentedSortedArray extends RefreshingTableTestCase {
 
     public void testInsertion() {
         final SsaTestHelpers.TestDescriptor desc = new SsaTestHelpers.TestDescriptor();

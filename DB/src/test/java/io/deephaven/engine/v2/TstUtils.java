@@ -12,7 +12,6 @@ import io.deephaven.datastructures.util.SmartKey;
 import io.deephaven.engine.tables.StringSetWrapper;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.libs.StringSet;
-import io.deephaven.engine.tables.live.LiveTable;
 import io.deephaven.engine.tables.utils.ArrayUtils;
 import io.deephaven.engine.tables.utils.DBDateTime;
 import io.deephaven.engine.tables.utils.TableDiff;
@@ -344,13 +343,13 @@ public class TstUtils {
     }
 
     public static void validate(final String ctxt, final EvalNuggetInterface[] en) {
-        if (LiveTableTestCase.printTableUpdates) {
+        if (RefreshingTableTestCase.printTableUpdates) {
             System.out.println();
             System.out.println("================ NEXT ITERATION ================");
         }
         for (int i = 0; i < en.length; i++) {
             try (final SafeCloseable ignored = LivenessScopeStack.open()) {
-                if (LiveTableTestCase.printTableUpdates) {
+                if (RefreshingTableTestCase.printTableUpdates) {
                     if (i != 0) {
                         System.out.println("================ NUGGET (" + i + ") ================");
                     }
@@ -2075,7 +2074,7 @@ public class TstUtils {
         }
     }
 
-    public static class StepClock implements Clock, LiveTable {
+    public static class StepClock implements Clock, Runnable {
 
         private final long nanoTimes[];
 
@@ -2207,10 +2206,10 @@ public class TstUtils {
      * @param initialSteps Number of steps to start with.
      * @param runner A method whose first param is the random seed to use, and second parameter is the number of steps.
      */
-    public static void findMinimalTestCase(final LiveTableTestCase test, final int initialSeed, final int maxSeed,
-            final int initialSteps, final BiConsumer<Integer, MutableInt> runner) {
-        final boolean origPrintTableUpdates = LiveTableTestCase.printTableUpdates;
-        LiveTableTestCase.printTableUpdates = false;
+    public static void findMinimalTestCase(final RefreshingTableTestCase test, final int initialSeed, final int maxSeed,
+                                           final int initialSteps, final BiConsumer<Integer, MutableInt> runner) {
+        final boolean origPrintTableUpdates = RefreshingTableTestCase.printTableUpdates;
+        RefreshingTableTestCase.printTableUpdates = false;
 
         int bestSeed = initialSeed;
         int bestSteps = initialSteps;
@@ -2248,7 +2247,7 @@ public class TstUtils {
             }
         }
 
-        LiveTableTestCase.printTableUpdates = origPrintTableUpdates;
+        RefreshingTableTestCase.printTableUpdates = origPrintTableUpdates;
         if (failed) {
             throw new RuntimeException("Debug candidate: seed=" + bestSeed + " steps=" + bestSteps);
         }

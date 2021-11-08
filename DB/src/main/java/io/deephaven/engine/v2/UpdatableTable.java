@@ -1,6 +1,5 @@
 package io.deephaven.engine.v2;
 
-import io.deephaven.engine.tables.live.LiveTable;
 import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.utils.*;
@@ -17,7 +16,7 @@ import static io.deephaven.util.QueryConstants.NULL_LONG;
 /**
  * A live table that allows add, remove, and modify.
  */
-public class UpdatableTable extends QueryTable implements LiveTable {
+public class UpdatableTable extends QueryTable implements Runnable {
 
     /**
      * Interface provided to updater functions that allows rowSet changes to be recorded for propagation.

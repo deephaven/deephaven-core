@@ -147,7 +147,7 @@ public class ExportedTableUpdateListener implements StreamObserver<ExportNotific
     }
 
     /**
-     * Append an update message to the batch being built this cycle. If this is the first update on this LTM cycle then
+     * Append an update message to the batch being built this cycle. If this is the first update on this UGP cycle then
      * this also adds the terminal notification to flush the outstanding updates.
      *
      * @param ticket ticket of the table that has updated

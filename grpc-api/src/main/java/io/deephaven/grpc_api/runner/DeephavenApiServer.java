@@ -104,7 +104,7 @@ public class DeephavenApiServer {
         log.info().append("Initializing Script Session...").endl();
         consoleService.initializeGlobalScriptSession();
 
-        log.info().append("Starting LTM...").endl();
+        log.info().append("Starting UGP...").endl();
         ltm.start();
 
         log.info().append("Starting Performance Trackers...").endl();

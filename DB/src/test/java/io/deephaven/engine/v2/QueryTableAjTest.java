@@ -875,7 +875,7 @@ public class QueryTableAjTest {
 
         final QueryTable rightSorted = sortRight ? (QueryTable) rightTable.sort("RightStamp") : rightTable;
 
-        if (LiveTableTestCase.printTableUpdates) {
+        if (RefreshingTableTestCase.printTableUpdates) {
             System.out.println("Left: ");
             TableTools.showWithIndex(leftTable);
             System.out.println("Right: ");
@@ -967,7 +967,7 @@ public class QueryTableAjTest {
             System.out.println("Step = " + step + (leftNodeSize > 0 ? ", leftNodeSize=" + leftNodeSize : "")
                     + ", rightNodeSize=" + rightNodeSize + ", leftSize=" + leftSize + ", rightSize=" + rightSize
                     + ", seed = " + seed + ", joinIncrement=" + joinIncrement);
-            if (LiveTableTestCase.printTableUpdates) {
+            if (RefreshingTableTestCase.printTableUpdates) {
                 System.out.println("Left Table:" + leftTable.size());
                 showWithIndex(leftTable, 100);
                 System.out.println("Left Table (sorted):");
@@ -994,7 +994,7 @@ public class QueryTableAjTest {
         final Table staticResult =
                 reverse ? leftTable.silent().raj(rightTable.silent(), columnsToMatch, "RightSentinel")
                         : leftTable.silent().aj(rightTable.silent(), columnsToMatch, "RightSentinel");
-        if (LiveTableTestCase.printTableUpdates) {
+        if (RefreshingTableTestCase.printTableUpdates) {
             System.out.println("Static: ");
             TableTools.showWithIndex(staticResult);
         }
@@ -1006,7 +1006,7 @@ public class QueryTableAjTest {
                     MatchPairFactory.getExpressions("RightStamp", "RightSentinel"),
                     reverse ? SortingOrder.Descending : SortingOrder.Ascending, disallowMatch);
 
-            if (LiveTableTestCase.printTableUpdates) {
+            if (RefreshingTableTestCase.printTableUpdates) {
                 System.out.println("Refreshing: ");
                 TableTools.showWithIndex(refreshingResult);
             }
@@ -1113,7 +1113,7 @@ public class QueryTableAjTest {
         for (int step = 0; step < maxSteps; step++) {
             System.out.println("Step = " + step + ", leftSize=" + leftSize + ", rightSize=" + rightSize + ", seed = "
                     + seed + ", joinIncrement=" + joinIncrement);
-            if (LiveTableTestCase.printTableUpdates) {
+            if (RefreshingTableTestCase.printTableUpdates) {
                 System.out.println("Left Table:" + leftTable.size());
                 showWithIndex(leftTable, 100);
                 System.out.println("Right Table:" + rightTable.size());
@@ -1161,7 +1161,7 @@ public class QueryTableAjTest {
         for (int step = 0; step < maxSteps; step++) {
             System.out.println("Step = " + step + ", leftSize=" + leftSize + ", rightSize=" + rightSize + ", seed = "
                     + seed + ", joinIncrement=" + joinIncrement);
-            if (LiveTableTestCase.printTableUpdates) {
+            if (RefreshingTableTestCase.printTableUpdates) {
                 System.out.println("Left Table:" + leftTable.size());
                 showWithIndex(leftTable, 100);
                 System.out.println("Right Table:" + rightTable.size());
@@ -1245,7 +1245,7 @@ public class QueryTableAjTest {
         final Table expected = leftTable.update("RightStamp=__rightStampExpected.get(i)",
                 "RightSentinel=__rightSentinelExpected.get(i)");
 
-        if (LiveTableTestCase.printTableUpdates) {
+        if (RefreshingTableTestCase.printTableUpdates) {
             System.out.println("Left:");
             TableTools.showWithIndex(leftTable);
             System.out.println("Right:");
@@ -1368,7 +1368,7 @@ public class QueryTableAjTest {
             for (int step = 0; step < maxSteps; step++) {
                 System.out.println("Step = " + step + ", leftSize=" + leftSize + ", rightSize=" + rightSize
                         + ", seed = " + seed + ", joinIncrement=" + joinIncrement);
-                if (LiveTableTestCase.printTableUpdates) {
+                if (RefreshingTableTestCase.printTableUpdates) {
                     System.out.println("Left Table:" + leftTable.size());
                     showWithIndex(leftTable, 100);
                     System.out.println("Right Table:" + rightTable.size());

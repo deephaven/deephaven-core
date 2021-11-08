@@ -202,7 +202,7 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
         private PendingChange enqueueAddition(Table newData, boolean allowEdits) {
             validateAddOrModify(newData);
             // we want to get a clean copy of the table; that can not change out from under us or result in long reads
-            // during our LTM run
+            // during our UGP run
             final PendingChange pendingChange = new PendingChange(doSnap(newData), false, allowEdits);
             pendingChanges.add(pendingChange);
             onPendingChange.run();
@@ -243,7 +243,7 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
 
         void waitForSequence(long sequence) {
             if (UpdateGraphProcessor.DEFAULT.exclusiveLock().isHeldByCurrentThread()) {
-                // We're holding the lock. currentTable had better be refreshing. Wait on its LTM condition
+                // We're holding the lock. currentTable had better be refreshing. Wait on its UGP condition
                 // in order to allow updates.
                 while (processedSequence.longValue() < sequence) {
                     try {

@@ -59,7 +59,7 @@ public abstract class HeadOrTailByGrpcImpl extends GrpcTableOperation<HeadOrTail
         ColumnExpressionValidator.validateColumnExpressions(expressions, columnSpecs, parent);
 
 
-        // note that headBy/tailBy use ungroup which currently requires the LTM lock
+        // note that headBy/tailBy use ungroup which currently requires the UGP lock
         return updateGraphProcessor.sharedLock()
                 .computeLocked(() -> realTableOperation.apply(parent, request.getNumRows(), columnSpecs));
     }

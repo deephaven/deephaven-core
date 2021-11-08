@@ -59,7 +59,7 @@ public abstract class BarrageSubscriptionOptions {
      * {@code io.deephaven.grpc_api.arrow.ArrowFlightUtil#DEFAULT_UPDATE_INTERVAL_MS}, or
      * {@code -Dbarrage.minUpdateInterval=1000}.
      *
-     * Related, when shortening the minUpdateInterval, you typically want to shorten the server's LTM cycle enough to
+     * Related, when shortening the minUpdateInterval, you typically want to shorten the server's UGP cycle enough to
      * update at least as quickly. This can be done on the server with the flag
      * {@code io.deephaven.engine.tables.live.UpdateGraphProcessor#defaultTargetCycleTime}, or
      * {@code -DUpdateGraphProcessor.targetcycletime=1000}.

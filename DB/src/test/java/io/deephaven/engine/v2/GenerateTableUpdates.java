@@ -36,11 +36,11 @@ public class GenerateTableUpdates {
         for (int i = 0; i < columnAdditions.length; i++) {
             columnAdditions[i] = columnInfos[i].populateMapAndC(keysToAdd, random);
         }
-        if (LiveTableTestCase.printTableUpdates) {
+        if (RefreshingTableTestCase.printTableUpdates) {
             System.out.println();
         }
         TstUtils.addToTable(table, keysToAdd, columnAdditions);
-        if (LiveTableTestCase.printTableUpdates) {
+        if (RefreshingTableTestCase.printTableUpdates) {
             System.out.println("Add: " + keysToAdd);
             try {
                 System.out.println("Updated Table:" + table.size());
@@ -94,11 +94,11 @@ public class GenerateTableUpdates {
         for (int i = 0; i < columnAdditions.length; i++) {
             columnAdditions[i] = columnInfo[i].populateMapAndC(keysToAdd, random);
         }
-        if (LiveTableTestCase.printTableUpdates) {
+        if (RefreshingTableTestCase.printTableUpdates) {
             System.out.println();
         }
         TstUtils.addToTable(table, keysToAdd, columnAdditions);
-        if (LiveTableTestCase.printTableUpdates) {
+        if (RefreshingTableTestCase.printTableUpdates) {
             System.out.println("Add: " + keysToAdd);
             System.out.println("Remove: " + keysToRemove);
             System.out.println("Modify: " + keysToModify);
@@ -278,7 +278,7 @@ public class GenerateTableUpdates {
             final TstUtils.ColumnInfo<?, ?>[] columnInfo) {
         final MutableRowSet rowSet = table.getRowSet().mutableCast();
 
-        if (LiveTableTestCase.printTableUpdates) {
+        if (RefreshingTableTestCase.printTableUpdates) {
             System.out.println();
             System.out.println("TrackingMutableRowSet: " + rowSet);
         }
@@ -336,7 +336,7 @@ public class GenerateTableUpdates {
         TstUtils.addToTable(table, update.modified, cModsOnly);
         rowSet.insert(update.added);
 
-        if (LiveTableTestCase.printTableUpdates) {
+        if (RefreshingTableTestCase.printTableUpdates) {
             System.out.println("Add: " + update.added);
             System.out.println("Remove: " + update.removed);
             System.out.println("Modify: " + update.modified);

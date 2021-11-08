@@ -7,7 +7,7 @@ import io.deephaven.engine.v2.sources.ColumnSource;
 import static io.deephaven.engine.v2.TstUtils.c;
 import static io.deephaven.engine.v2.TstUtils.i;
 
-public class TestToMapListener extends LiveTableTestCase {
+public class TestToMapListener extends RefreshingTableTestCase {
     public void testToMap() {
         final QueryTable source = TstUtils.testRefreshingTable(
                 i(2, 4, 6, 8).toTracking(),

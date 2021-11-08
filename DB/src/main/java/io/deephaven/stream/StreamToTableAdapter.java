@@ -6,7 +6,6 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.tables.ColumnDefinition;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.TableDefinition;
-import io.deephaven.engine.tables.live.LiveTable;
 import io.deephaven.engine.tables.live.UpdateSourceRegistrar;
 import io.deephaven.engine.tables.utils.DBDateTime;
 import io.deephaven.engine.v2.Listener;
@@ -34,7 +33,7 @@ import java.util.Map;
 /**
  * Adapter for converting streams of data into columnar Deephaven {@link Table tables}.
  */
-public class StreamToTableAdapter implements SafeCloseable, LiveTable, StreamConsumer {
+public class StreamToTableAdapter implements SafeCloseable, StreamConsumer, Runnable {
 
     private static final Logger log = LoggerFactory.getLogger(StreamToTableAdapter.class);
 
@@ -50,7 +49,7 @@ public class StreamToTableAdapter implements SafeCloseable, LiveTable, StreamCon
     /** To start out when we have no data, we use null value column sources which are cheap and singletons. */
     private final NullValueColumnSource<?>[] nullColumnSources;
 
-    // we accumulate data into buffer from the ingester thread; capture it into current on the LTM thread; move it into
+    // we accumulate data into buffer from the ingester thread; capture it into current on the UGP thread; move it into
     // prev after one cycle, and then then the cycle after that we clear out the chunks and reuse them for the buffers
     // they all start out null in the constructor
     private ChunkColumnSource<?>[] bufferChunkSources;

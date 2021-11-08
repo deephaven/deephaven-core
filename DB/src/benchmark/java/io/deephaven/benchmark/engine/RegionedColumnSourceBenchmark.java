@@ -91,7 +91,7 @@ public class RegionedColumnSourceBenchmark {
 
     @Setup(Level.Trial)
     public void setupEnv(BenchmarkParams params) {
-        Configuration.getInstance().setProperty("UpdateGraphProcessor.allowUnitTestMode", "true");
+        Configuration.getInstance().setProperty(UpdateGraphProcessor.ALLOW_UNIT_TEST_MODE_PROP, "true");
 
         UpdateGraphProcessor.DEFAULT.enableUnitTestMode();
 

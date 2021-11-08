@@ -337,7 +337,7 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
         }
 
         final Table chunkedCrossJoin = left.join(right, "sharedKey", numRightBitsToReserve);
-        if (LiveTableTestCase.printTableUpdates) {
+        if (RefreshingTableTestCase.printTableUpdates) {
             System.out.println("Left Table (" + left.size() + " rows): ");
             TableTools.showWithIndex(left, 100);
             System.out.println("\nRight Table (" + right.size() + " rows): ");
@@ -487,7 +487,7 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
 
         final int updateSize = (int) Math.ceil(Math.sqrt(numGroups));
 
-        if (LiveTableTestCase.printTableUpdates) {
+        if (RefreshingTableTestCase.printTableUpdates) {
             System.out.println("Left Ticking:");
             TableTools.showWithIndex(leftTicking);
             System.out.println("Right Ticking:");
@@ -549,7 +549,7 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
 
         final int updateSize = (int) Math.ceil(Math.sqrt(initialSize));
 
-        if (LiveTableTestCase.printTableUpdates) {
+        if (RefreshingTableTestCase.printTableUpdates) {
             System.out.println("Left Ticking:");
             TableTools.showWithIndex(leftTicking);
             System.out.println("Right Ticking:");
@@ -627,7 +627,7 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
                                 MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY, numRightBitsToReserve, control)),
         };
 
-        if (LiveTableTestCase.printTableUpdates) {
+        if (RefreshingTableTestCase.printTableUpdates) {
             System.out.println("Left Ticking:");
             TableTools.showWithIndex(leftTicking);
             System.out.println("Right Ticking:");

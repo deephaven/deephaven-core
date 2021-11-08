@@ -104,7 +104,7 @@ public class StreamTableAggregationTest {
 
             UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
             try {
-                UpdateGraphProcessor.DEFAULT.refreshLiveTableForUnitTests(() -> {
+                UpdateGraphProcessor.DEFAULT.refreshUpdateSourceForUnitTests(() -> {
                     if (normalStepInserted.isNonempty()) {
                         normal.getRowSet().mutableCast().insert(normalStepInserted);
                         normal.notifyListeners(
@@ -114,7 +114,7 @@ public class StreamTableAggregationTest {
                     }
                 });
                 final RowSet finalStreamLastInserted = streamLastInserted;
-                UpdateGraphProcessor.DEFAULT.refreshLiveTableForUnitTests(() -> {
+                UpdateGraphProcessor.DEFAULT.refreshUpdateSourceForUnitTests(() -> {
                     if (streamStepInserted.isNonempty() || finalStreamLastInserted.isNonempty()) {
                         if (streamInternalRowSet != null) {
                             streamInternalRowSet.clear();

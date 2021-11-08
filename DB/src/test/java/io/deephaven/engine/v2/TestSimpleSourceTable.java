@@ -35,7 +35,7 @@ import static io.deephaven.engine.v2.TstUtils.assertIndexEquals;
  * Tests for {@link SimpleSourceTable}.
  */
 @SuppressWarnings({"AutoBoxing", "JUnit4AnnotatedMethodInJUnit3TestCase"})
-public class TestSimpleSourceTable extends LiveTableTestCase {
+public class TestSimpleSourceTable extends RefreshingTableTestCase {
 
     private static final int NUM_COLUMNS = 4;
     private static final ColumnDefinition<Boolean> BOOLEAN_COLUMN_DEFINITION = ColumnDefinition.ofBoolean("Active");

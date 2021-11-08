@@ -40,7 +40,7 @@ import static io.deephaven.util.QueryConstants.*;
 import static org.junit.Assert.assertArrayEquals;
 
 @Category(OutOfBandTest.class)
-public class TestComboBy extends LiveTableTestCase {
+public class TestComboBy extends RefreshingTableTestCase {
 
     @Override
     protected void setUp() throws Exception {
@@ -181,7 +181,7 @@ public class TestComboBy extends LiveTableTestCase {
         };
         final int steps = 100; // 8;
         for (int step = 0; step < steps; step++) {
-            if (LiveTableTestCase.printTableUpdates) {
+            if (RefreshingTableTestCase.printTableUpdates) {
                 System.out.println("Step = " + step);
             }
             simulateShiftAwareStep("step == " + step, size, random, queryTable, columnInfo, en);
@@ -371,7 +371,7 @@ public class TestComboBy extends LiveTableTestCase {
         };
         final int steps = 100; // 8;
         for (int step = 0; step < steps; step++) {
-            if (LiveTableTestCase.printTableUpdates) {
+            if (RefreshingTableTestCase.printTableUpdates) {
                 System.out.println("Step = " + step);
             }
             simulateShiftAwareStep(ctxt + " step == " + step, size, random, queryTable, columnInfo, en);

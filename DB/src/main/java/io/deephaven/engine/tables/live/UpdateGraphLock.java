@@ -95,7 +95,7 @@ class UpdateGraphLock {
 
     /**
      * Get the shared lock (similar to {@link java.util.concurrent.locks.ReadWriteLock#readLock()}, but with
-     * LTM-specific instrumentation). See {@link UpdateGraphProcessor#sharedLock()} for user-facing documentation.
+     * UGP-specific instrumentation). See {@link UpdateGraphProcessor#sharedLock()} for user-facing documentation.
      *
      * @return The shared lock
      */
@@ -105,7 +105,7 @@ class UpdateGraphLock {
 
     /**
      * Get the exclusive lock (similar to {@link java.util.concurrent.locks.ReadWriteLock#writeLock()} ()}, but with
-     * LTM-specific instrumentation). See {@link UpdateGraphProcessor#exclusiveLock()} for user-facing documentation.
+     * UGP-specific instrumentation). See {@link UpdateGraphProcessor#exclusiveLock()} for user-facing documentation.
      *
      * @return The exclusive lock
      */

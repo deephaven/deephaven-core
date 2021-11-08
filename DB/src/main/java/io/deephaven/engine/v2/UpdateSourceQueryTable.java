@@ -4,17 +4,21 @@
 
 package io.deephaven.engine.v2;
 
-import io.deephaven.engine.tables.live.LiveTable;
 import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.utils.*;
 
 import java.util.Map;
 
-public class LiveQueryTable extends QueryTable implements LiveTable {
+/**
+ * A {@link QueryTable} that acts as an update source within the {@link UpdateGraphProcessor}, with {@link RowSet}
+ * changes queued externally by a single producer.
+ */
+public class UpdateSourceQueryTable extends QueryTable implements Runnable {
+
     private RowSetBuilderRandom additionsBuilder = RowSetFactory.builderRandom();
 
-    public LiveQueryTable(TrackingMutableRowSet rowSet, Map<String, ? extends ColumnSource<?>> result) {
+    public UpdateSourceQueryTable(TrackingMutableRowSet rowSet, Map<String, ? extends ColumnSource<?>> result) {
         super(rowSet, result);
     }
 
@@ -33,12 +37,12 @@ public class LiveQueryTable extends QueryTable implements LiveTable {
         }
     }
 
-    public synchronized void addIndex(long key) {
-        additionsBuilder.addKey(key);
+    public synchronized void addRowKey(final long rowKey) {
+        additionsBuilder.addKey(rowKey);
     }
 
-    public synchronized void addRange(long firstKey, long lastKey) {
-        additionsBuilder.addRange(firstKey, lastKey);
+    public synchronized void addRowKeyRange(final long firstRowKey, final long lastRowKey) {
+        additionsBuilder.addRange(firstRowKey, lastRowKey);
     }
 
     @Override

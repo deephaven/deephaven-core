@@ -5,7 +5,6 @@
 package io.deephaven.engine.v2.replay;
 
 import io.deephaven.base.verify.Require;
-import io.deephaven.engine.tables.live.LiveTable;
 import io.deephaven.engine.tables.utils.DBDateTime;
 import io.deephaven.engine.v2.QueryTable;
 import io.deephaven.engine.v2.sources.ColumnSource;
@@ -15,7 +14,7 @@ import io.deephaven.engine.v2.utils.RowSetFactory;
 
 import java.util.Map;
 
-public class ReplayTable extends QueryTable implements LiveTable {
+public class ReplayTable extends QueryTable implements Runnable {
 
 
     private final RowSet.Iterator indexIterator;

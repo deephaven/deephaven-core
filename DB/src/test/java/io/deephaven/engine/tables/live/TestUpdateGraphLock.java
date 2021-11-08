@@ -1,6 +1,6 @@
 package io.deephaven.engine.tables.live;
 
-import io.deephaven.engine.v2.LiveTableTestCase;
+import io.deephaven.engine.v2.RefreshingTableTestCase;
 import io.deephaven.engine.v2.sources.LogicalClock;
 import junit.framework.TestCase;
 import org.apache.commons.lang3.mutable.MutableBoolean;
@@ -12,7 +12,7 @@ import java.util.function.Consumer;
 /**
  * Unit tests for {@link UpdateGraphLock}.
  */
-public class TestUpdateGraphLock extends LiveTableTestCase {
+public class TestUpdateGraphLock extends RefreshingTableTestCase {
 
     public void testUpgradeFailures() throws InterruptedException {
         final UpdateGraphLock lock = new UpdateGraphLock(LogicalClock.DEFAULT);

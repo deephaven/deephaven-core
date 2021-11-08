@@ -16,7 +16,7 @@ import java.util.Random;
 
 import static io.deephaven.engine.tables.utils.TableTools.intCol;
 
-public class TestUngroupRebase extends LiveTableTestCase {
+public class TestUngroupRebase extends RefreshingTableTestCase {
     public void testUngroupAgnosticRebase() throws IOException {
         int oldMinimumUngroupBase = QueryTable.setMinimumUngroupBase(2);
         try {

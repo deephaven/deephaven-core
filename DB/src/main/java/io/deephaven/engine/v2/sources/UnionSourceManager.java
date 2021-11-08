@@ -130,7 +130,7 @@ public class UnionSourceManager {
 
         if (onNewTableMapKey && !disallowReinterpret) {
             // if we allow new tables to be added, then we have concurrency concerns about doing reinterpretations off
-            // of the LTM thread
+            // of the UGP thread
             throw new IllegalStateException("Can not add new tables when reinterpretation is enabled!");
         }
 

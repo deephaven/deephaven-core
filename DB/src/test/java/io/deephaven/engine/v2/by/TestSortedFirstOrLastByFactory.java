@@ -25,10 +25,12 @@ import static io.deephaven.engine.v2.by.ComboAggregateFactory.AggCombo;
 import static io.deephaven.engine.v2.by.ComboAggregateFactory.AggSortedLast;
 
 @Category(OutOfBandTest.class)
-public class TestSortedFirstOrLastByFactory extends LiveTableTestCase {
+public class TestSortedFirstOrLastByFactory extends RefreshingTableTestCase {
+
     private static final String[] colNames = new String[] {"Sym", "intCol", "doubleCol", "Indices"};
+
     private static final boolean printTableUpdates = Configuration.getInstance()
-            .getBooleanForClassWithDefault(LiveTableTestCase.class, "printTableUpdates", false);
+            .getBooleanForClassWithDefault(RefreshingTableTestCase.class, "printTableUpdates", false);
 
     public void testSortedFirstOrLastBy() {
         final int[] sizes = {10, 50, 200};
@@ -76,7 +78,7 @@ public class TestSortedFirstOrLastByFactory extends LiveTableTestCase {
                                 .sort("Sym"))
         };
         for (int step = 0; step < 100; step++) {
-            if (LiveTableTestCase.printTableUpdates) {
+            if (RefreshingTableTestCase.printTableUpdates) {
                 System.out.println("Size = " + size + ", Seed = " + seed + ", Step = " + step + ", sortColumns="
                         + Arrays.toString(sortColumns));
             }

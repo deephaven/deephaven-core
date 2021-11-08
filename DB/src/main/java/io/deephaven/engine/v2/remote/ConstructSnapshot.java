@@ -44,7 +44,7 @@ import java.util.stream.Stream;
 import static io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 
 /**
- * A Set of static utilities for computing values from a table while avoiding the use of the LTM lock. This class
+ * A Set of static utilities for computing values from a table while avoiding the use of the UGP lock. This class
  * supports snapshots in both position space and key space.
  */
 public class ConstructSnapshot {
@@ -132,20 +132,20 @@ public class ConstructSnapshot {
         private ConcurrentAttemptParameters activeConcurrentAttempt;
 
         /**
-         * The depth of nested concurrent snapshots. Used to avoid releasing the LTM lock if it's acquired by a nested
+         * The depth of nested concurrent snapshots. Used to avoid releasing the UGP lock if it's acquired by a nested
          * snapshot. Zero if there are no concurrent snapshots in progress.
          */
         private int concurrentSnapshotDepth;
 
         /**
          * The depth of nested locked snapshots. Used to treat nested locked snapshots as non-concurrent for purposes of
-         * consistency checks and to avoid releasing the LTM lock if it's acquired by a nested snapshot. Zero if there
+         * consistency checks and to avoid releasing the UGP lock if it's acquired by a nested snapshot. Zero if there
          * are no concurrent snapshots in progress.
          */
         private int lockedSnapshotDepth;
 
         /**
-         * Whether this thread currently has a permit on the shared LTM lock.
+         * Whether this thread currently has a permit on the shared UGP lock.
          */
         private boolean acquiredLock;
 
@@ -188,7 +188,7 @@ public class ConstructSnapshot {
         }
 
         /**
-         * Called before starting a locked snapshot in order to increase depth and acquire the LTM lock if needed.
+         * Called before starting a locked snapshot in order to increase depth and acquire the UGP lock if needed.
          */
         private void startLockedSnapshot() {
             ++lockedSnapshotDepth;
@@ -196,7 +196,7 @@ public class ConstructSnapshot {
         }
 
         /**
-         * Called after finishing a concurrent snapshot in order to decrease depth and release the LTM lock if needed.
+         * Called after finishing a concurrent snapshot in order to decrease depth and release the UGP lock if needed.
          */
         private void endLockedSnapshot() {
             --lockedSnapshotDepth;
@@ -306,9 +306,9 @@ public class ConstructSnapshot {
         }
 
         /**
-         * Check whether this thread currently holds a lock on the LTM.
+         * Check whether this thread currently holds a lock on the UGP.
          *
-         * @return Whether this thread currently holds a lock on the LTM
+         * @return Whether this thread currently holds a lock on the UGP
          */
         private boolean locked() {
             return UpdateGraphProcessor.DEFAULT.sharedLock().isHeldByCurrentThread()
@@ -316,7 +316,7 @@ public class ConstructSnapshot {
         }
 
         /**
-         * Acquire a shared LTM lock if necessary.
+         * Acquire a shared UGP lock if necessary.
          */
         private void maybeAcquireLock() {
             if (locked()) {
@@ -327,7 +327,7 @@ public class ConstructSnapshot {
         }
 
         /**
-         * Release a shared LTM lock if necessary.
+         * Release a shared UGP lock if necessary.
          */
         private void maybeReleaseLock() {
             if (acquiredLock && concurrentSnapshotDepth == 0 && lockedSnapshotDepth == 0) {
@@ -995,7 +995,7 @@ public class ConstructSnapshot {
     /**
      * Invokes the snapshot function in a loop until it succeeds with provably consistent results, or until
      * {@code MAX_CONCURRENT_ATTEMPTS} or {@code MAX_CONCURRENT_ATTEMPT_DURATION_MILLIS} are exceeded. Falls back to
-     * acquiring a shared LTM lock for a final attempt.
+     * acquiring a shared UGP lock for a final attempt.
      *
      * @param logPrefix A prefix for our log messages
      * @param control A {@link SnapshotControl} to define the parameters and consistency for this snapshot
@@ -1011,7 +1011,7 @@ public class ConstructSnapshot {
     /**
      * Invokes the snapshot function in a loop until it succeeds with provably consistent results, or until
      * {@code MAX_CONCURRENT_ATTEMPTS} or {@code MAX_CONCURRENT_ATTEMPT_DURATION_MILLIS} are exceeded. Falls back to
-     * acquiring a shared LTM lock for a final attempt.
+     * acquiring a shared UGP lock for a final attempt.
      *
      * @param logPrefix A prefix for our log messages
      * @param control A {@link SnapshotControl} to define the parameters and consistency for this snapshot
@@ -1059,11 +1059,11 @@ public class ConstructSnapshot {
                 try {
                     functionSuccessful = function.call(usePrev, beforeClockValue);
                 } catch (NoSnapshotAllowedException ex) {
-                    // Breaking here will force an LTM acquire.
+                    // Breaking here will force an UGP acquire.
                     // TODO: Optimization. If this exception is only used for cases when we can't use previous values,
                     // then we could simply wait for the source to become satisfied on this cycle, rather than
-                    // waiting for the LTM lock. Likely requires work for all code that uses this pattern.
-                    log.debug().append(logPrefix).append(" Disallowed LTM-less Snapshot Function took ")
+                    // waiting for the UGP lock. Likely requires work for all code that uses this pattern.
+                    log.debug().append(logPrefix).append(" Disallowed UGP-less Snapshot Function took ")
                             .append(System.currentTimeMillis() - attemptStart).append("ms")
                             .append(", beforeClockValue=").append(beforeClockValue)
                             .append(", afterClockValue=").append(LogicalClock.DEFAULT.currentValue())
@@ -1093,7 +1093,7 @@ public class ConstructSnapshot {
                     }
                 }
                 attemptDurationMillis = System.currentTimeMillis() - attemptStart;
-                log.debug().append(logPrefix).append(" LTM-less Snapshot Function took ")
+                log.debug().append(logPrefix).append(" UGP-less Snapshot Function took ")
                         .append(attemptDurationMillis).append("ms")
                         .append(", snapshotSuccessful=").append(snapshotSuccessful)
                         .append(", functionSuccessful=").append(functionSuccessful)

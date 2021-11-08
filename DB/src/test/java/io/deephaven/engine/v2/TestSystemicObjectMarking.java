@@ -12,7 +12,7 @@ import java.util.List;
 import static io.deephaven.engine.v2.TstUtils.c;
 import static io.deephaven.engine.v2.TstUtils.i;
 
-public class TestSystemicObjectMarking extends LiveTableTestCase {
+public class TestSystemicObjectMarking extends RefreshingTableTestCase {
     public void testSystemicObjectMarking() {
         final QueryTable source = TstUtils.testRefreshingTable(c("Str", "a", "b"), c("Str2", "A", "B"));
         final Table updated = UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> source.update("UC=Str.toUpperCase()"));

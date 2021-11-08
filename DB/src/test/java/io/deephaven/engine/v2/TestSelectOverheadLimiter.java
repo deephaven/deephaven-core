@@ -17,7 +17,7 @@ import org.junit.experimental.categories.Category;
 import static io.deephaven.engine.v2.TstUtils.*;
 
 @Category(OutOfBandTest.class)
-public class TestSelectOverheadLimiter extends LiveTableTestCase {
+public class TestSelectOverheadLimiter extends RefreshingTableTestCase {
     public void testSelectOverheadLimiter() {
         final QueryTable queryTable = TstUtils.testRefreshingTable(
                 RowSetFactory.fromRange(0, 100).toTracking());

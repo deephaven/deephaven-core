@@ -182,7 +182,7 @@ public interface SelectFilter {
 
     /**
      * This exception is thrown when a where() filter is incapable of handling previous values, and thus needs to be
-     * executed while under the LTM lock.
+     * executed while under the UGP lock.
      */
     class PreviousFilteringNotSupported extends ConstructSnapshot.NoSnapshotAllowedException {
         public PreviousFilteringNotSupported() {

@@ -12,7 +12,7 @@ import java.util.List;
 import static io.deephaven.engine.v2.TstUtils.assertTableEquals;
 import static io.deephaven.engine.v2.TstUtils.i;
 
-public class TestListenerFailure extends LiveTableTestCase {
+public class TestListenerFailure extends RefreshingTableTestCase {
     public void testListenerFailure() {
         final QueryTable source = TstUtils.testRefreshingTable(TstUtils.c("Str", "A", "B"));
         final Table updated =

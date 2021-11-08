@@ -997,14 +997,14 @@ public class QueryTableTreeTest extends QueryTableTestBase {
         // noinspection unchecked
         final QueryTable table = getTable(size, random, columnInfo);
 
-        if (LiveTableTestCase.printTableUpdates) {
+        if (RefreshingTableTestCase.printTableUpdates) {
             System.out.println("Original:");
             TableTools.showWithIndex(table);
         }
 
         final Table prepared = table.update("ID=IDPair.getId()", "Parent=IDPair.getParent()").dropColumns("IDPair");
 
-        if (LiveTableTestCase.printTableUpdates) {
+        if (RefreshingTableTestCase.printTableUpdates) {
             System.out.println("Original Prepared:");
             TableTools.showWithIndex(prepared);
         }
@@ -1052,7 +1052,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
 
         final int maxSteps = numSteps.intValue();
         for (numSteps.setValue(0); numSteps.intValue() < maxSteps; numSteps.increment()) {
-            if (LiveTableTestCase.printTableUpdates) {
+            if (RefreshingTableTestCase.printTableUpdates) {
                 System.out.println("Step = " + numSteps.intValue());
             }
             simulateShiftAwareStep(size, random, table, columnInfo, en);
@@ -1114,7 +1114,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
         };
 
         for (numSteps.setValue(0); numSteps.intValue() < maxSteps; numSteps.increment()) {
-            if (LiveTableTestCase.printTableUpdates) {
+            if (RefreshingTableTestCase.printTableUpdates) {
                 System.out.println("Step = " + numSteps.intValue());
             }
             simulateShiftAwareStep(size, random, table, columnInfo, en);

@@ -35,7 +35,7 @@ import static io.deephaven.engine.v2.TstUtils.initColumnInfos;
 import static org.junit.Assert.assertArrayEquals;
 
 @Category(ParallelTest.class)
-public class TestObjectSegmentedSortedMultiset extends LiveTableTestCase {
+public class TestObjectSegmentedSortedMultiset extends RefreshingTableTestCase {
 
     public void testInsertion() {
         final SsaTestHelpers.TestDescriptor desc = new SsaTestHelpers.TestDescriptor();

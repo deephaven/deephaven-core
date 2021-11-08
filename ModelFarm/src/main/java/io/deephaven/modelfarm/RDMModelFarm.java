@@ -131,7 +131,7 @@ public abstract class RDMModelFarm<KEYTYPE, DATATYPE, ROWDATAMANAGERTYPE extends
      */
     private boolean loadData(final DATATYPE data, final KEYTYPE key, final boolean usePrev) {
         // if this is called in the update loop, keyIndex should be updated and accessed in the same thread.
-        // if this is called outside the update loop, the access should be in the LTM lock, and the update should be in
+        // if this is called outside the update loop, the access should be in the UGP lock, and the update should be in
         // the update loop
         // therefore, keyIndex does not need synchronization.
 

@@ -46,12 +46,12 @@ import java.util.function.Supplier;
 import static io.deephaven.engine.v2.TstUtils.*;
 
 @Category(OutOfBandTest.class)
-public class BarrageMessageRoundTripTest extends LiveTableTestCase {
+public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
     private static final long UPDATE_INTERVAL = 1000; // arbitrary; we enforce coalescing on both sides
 
     private TestControlledScheduler scheduler;
     private Deque<Throwable> exceptions;
-    private UpdateSourceCombiner liveTableRegistrar;
+    private UpdateSourceCombiner updateSourceCombiner;
     private boolean useDeephavenNulls;
 
     private TestComponent daggerRoot;
@@ -75,7 +75,7 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
     @Override
     protected void setUp() throws Exception {
         super.setUp();
-        liveTableRegistrar = new UpdateSourceCombiner();
+        updateSourceCombiner = new UpdateSourceCombiner();
         scheduler = new TestControlledScheduler();
         exceptions = new ArrayDeque<>();
         useDeephavenNulls = true;
@@ -88,7 +88,7 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
 
     @Override
     protected void tearDown() throws Exception {
-        liveTableRegistrar = null;
+        updateSourceCombiner = null;
         scheduler = null;
         exceptions = null;
         super.tearDown();
@@ -109,7 +109,7 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
 
         @Override
         public void onUpdate(final Update upstream) {
-            if (LiveTableTestCase.printTableUpdates) {
+            if (RefreshingTableTestCase.printTableUpdates) {
                 System.out.println("Incremental Table Update: (" + tableName + ")");
                 System.out.println(upstream);
             }
@@ -159,7 +159,7 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
             this.name = name;
             this.barrageMessageProducer = barrageMessageProducer;
 
-            this.barrageTable = BarrageTable.make(liveTableRegistrar, UpdateGraphProcessor.DEFAULT,
+            this.barrageTable = BarrageTable.make(updateSourceCombiner, UpdateGraphProcessor.DEFAULT,
                     barrageMessageProducer.getTableDefinition(), viewport != null);
 
             final BarrageSubscriptionOptions options = BarrageSubscriptionOptions.builder()
@@ -411,7 +411,7 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
                 for (final RemoteNugget nugget : nuggets) {
                     nugget.flushClientEvents();
                 }
-                UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(liveTableRegistrar::run);
+                UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(updateSourceCombiner::run);
 
                 TstUtils.validate("", nuggetsToValidate);
 
@@ -682,7 +682,7 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
                 for (final RemoteNugget nugget : nuggets) {
                     nugget.flushClientEvents();
                 }
-                UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(liveTableRegistrar::run);
+                UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(updateSourceCombiner::run);
 
                 TstUtils.validate("", nuggetsToValidate);
             }
@@ -997,7 +997,7 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
         // We expect two pending messages for our client: snapshot in prev and the shift update
         Assert.equals(remoteClient.getValue().commandQueue.size(), "remoteClient.getValue().commandQueue.size()", 2);
         remoteNugget.flushClientEvents();
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(liveTableRegistrar::run);
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(updateSourceCombiner::run);
 
         // validate
         remoteNugget.validate("post flush");
@@ -1018,7 +1018,7 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
         // Obtain snapshot of original viewport.
         flushProducerTable();
         remoteNugget.flushClientEvents();
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(liveTableRegistrar::run);
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(updateSourceCombiner::run);
         remoteNugget.validate("original viewport");
 
         // Change viewport without overlap.
@@ -1055,7 +1055,7 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
         Assert.equals(remoteClient.commandQueue.size(), "remoteClient.getValue().commandQueue.size()", 3); // mod, add,
                                                                                                            // snaphot
         remoteNugget.flushClientEvents();
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(liveTableRegistrar::run);
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(updateSourceCombiner::run);
         remoteNugget.validate("new viewport with modification");
     }
 

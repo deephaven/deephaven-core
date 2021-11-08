@@ -10,7 +10,7 @@ import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.v2.EvalNuggetInterface;
 import io.deephaven.engine.v2.QueryTable;
 import io.deephaven.engine.v2.EvalNugget;
-import io.deephaven.engine.v2.LiveTableTestCase;
+import io.deephaven.engine.v2.RefreshingTableTestCase;
 import io.deephaven.engine.v2.TstUtils;
 import io.deephaven.engine.v2.UpdateValidatorNugget;
 import io.deephaven.engine.v2.sources.ColumnSource;
@@ -20,7 +20,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Random;
 
-public class TestHashSetBackedTableFactory extends LiveTableTestCase {
+public class TestHashSetBackedTableFactory extends RefreshingTableTestCase {
     public void testSimple() {
         final HashSet<SmartKey> set = new HashSet<>();
         set.add(new SmartKey("Raylan", "USMS"));

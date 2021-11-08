@@ -16,7 +16,7 @@ import org.jetbrains.annotations.NotNull;
 /**
  * Watch for ticks and when initialization is complete forward to the eventual listener.
  *
- * The SwapListenerBase is attached to a table so that we can listen for updates during the LTM cycle; and if any
+ * The SwapListenerBase is attached to a table so that we can listen for updates during the UGP cycle; and if any
  * updates occur, we'll be able to notice them and retry initialization. If no ticks were received before the result is
  * ready, then we should forward all calls to our eventual listener.
  *

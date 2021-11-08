@@ -1,12 +1,12 @@
 package io.deephaven.engine.tables.live;
 
 import io.deephaven.base.SleepUtil;
-import io.deephaven.engine.v2.LiveTableTestCase;
+import io.deephaven.engine.v2.RefreshingTableTestCase;
 import io.deephaven.engine.v2.remote.ConstructSnapshot;
 import io.deephaven.engine.v2.sources.LogicalClock;
 import org.apache.commons.lang3.mutable.MutableLong;
 
-public class TestConstructSnapshot extends LiveTableTestCase {
+public class TestConstructSnapshot extends RefreshingTableTestCase {
     public void testClockChange() throws InterruptedException {
         final MutableLong changed = new MutableLong(0);
         final ConstructSnapshot.SnapshotControl control = new ConstructSnapshot.SnapshotControl() {

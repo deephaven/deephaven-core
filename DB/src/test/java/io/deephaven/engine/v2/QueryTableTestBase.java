@@ -12,7 +12,7 @@ import java.util.*;
 /**
  * QueryTable tests can extend this to get convenient EvalNuggets, JoinIncrementors, etc.
  */
-public abstract class QueryTableTestBase extends LiveTableTestCase {
+public abstract class QueryTableTestBase extends RefreshingTableTestCase {
     protected final SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd");
 
     private static final GenerateTableUpdates.SimulationProfile NO_SHIFT_PROFILE =

@@ -322,7 +322,7 @@ public class QueryTableSelectUpdateTest {
             }
 
             Table recomputedValue = e();
-            if (LiveTableTestCase.printTableUpdates) {
+            if (RefreshingTableTestCase.printTableUpdates) {
                 try {
                     System.out.println("Recomputed Value:");
                     io.deephaven.engine.tables.utils.TableTools.showWithIndex(recomputedValue, 100);
@@ -374,7 +374,7 @@ public class QueryTableSelectUpdateTest {
             rowSetToCheck.insert(listener1.modified);
             RowSet checkInvert = sourceTable.getRowSet().invert(rowSetToCheck);
 
-            if (LiveTableTestCase.printTableUpdates) {
+            if (RefreshingTableTestCase.printTableUpdates) {
                 System.out.println("Positions to validate: " + checkInvert);
 
                 final RowSetBuilderSequential originalBuilder = RowSetFactory.builderSequential();
@@ -614,10 +614,10 @@ public class QueryTableSelectUpdateTest {
 
         final int maxSteps = numSteps.intValue();
         for (numSteps.setValue(0); numSteps.intValue() < maxSteps; numSteps.increment()) {
-            if (LiveTableTestCase.printTableUpdates) {
+            if (RefreshingTableTestCase.printTableUpdates) {
                 System.out.println("Step = " + numSteps.intValue());
             }
-            LiveTableTestCase.simulateShiftAwareStep(size, random, queryTable, columnInfo, en);
+            RefreshingTableTestCase.simulateShiftAwareStep(size, random, queryTable, columnInfo, en);
         }
     }
 
@@ -642,7 +642,7 @@ public class QueryTableSelectUpdateTest {
         };
 
         for (int i = 0; i < 50; i++) {
-            LiveTableTestCase.simulateShiftAwareStep(size, random, queryTable, columnInfo, en);
+            RefreshingTableTestCase.simulateShiftAwareStep(size, random, queryTable, columnInfo, en);
         }
 
     }
@@ -950,10 +950,10 @@ public class QueryTableSelectUpdateTest {
         };
 
         for (int step = 0; step < 25; step++) {
-            if (LiveTableTestCase.printTableUpdates) {
+            if (RefreshingTableTestCase.printTableUpdates) {
                 System.out.println("Step: " + step);
             }
-            LiveTableTestCase.simulateShiftAwareStep(size, random, queryTable, columnInfo, en);
+            RefreshingTableTestCase.simulateShiftAwareStep(size, random, queryTable, columnInfo, en);
         }
     }
 

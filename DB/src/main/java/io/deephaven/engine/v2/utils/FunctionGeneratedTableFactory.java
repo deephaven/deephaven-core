@@ -6,7 +6,6 @@ package io.deephaven.engine.v2.utils;
 
 import io.deephaven.base.Function;
 import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.live.LiveTable;
 import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.v2.QueryTable;
 import io.deephaven.engine.v2.BaseTable;
@@ -128,7 +127,7 @@ public class FunctionGeneratedTableFactory {
         }
     }
 
-    private class FunctionBackedTable extends QueryTable implements LiveTable {
+    private class FunctionBackedTable extends QueryTable implements Runnable {
         FunctionBackedTable(TrackingRowSet rowSet, Map<String, ColumnSource<?>> columns) {
             super(rowSet, columns);
             if (refreshIntervalMs >= 0) {

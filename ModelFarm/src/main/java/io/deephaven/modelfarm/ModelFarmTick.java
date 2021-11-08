@@ -66,7 +66,7 @@ public class ModelFarmTick<KEYTYPE, DATATYPE, ROWDATAMANAGERTYPE extends RowData
         super(nThreads, model, dataManager);
         this.maxQueueSize = maxQueueSize;
         this.queue = new ArrayDeque<>(this.maxQueueSize);
-        this.mostRecentDataGetter = getMostRecentDataFactory(GetDataLockType.LTM_LOCK_ALREADY_HELD);
+        this.mostRecentDataGetter = getMostRecentDataFactory(GetDataLockType.UGP_LOCK_ALREADY_HELD);
     }
 
     @Override

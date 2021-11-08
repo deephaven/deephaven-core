@@ -2469,7 +2469,7 @@ public interface Table extends
      * This is useful if you have a reference to a table or a proxy and want to run a series of operations against the
      * table without each individual operation resulting in an RMI.
      *
-     * @implNote If the LTM is not required the {@link Function.Unary#call(Object)} method should be annotated with
+     * @implNote If the UGP is not required the {@link Function.Unary#call(Object)} method should be annotated with
      *           {@link AsyncMethod}.
      *
      * @param function the function to run, its single argument will be this table

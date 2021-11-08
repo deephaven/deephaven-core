@@ -13,7 +13,7 @@ import org.jetbrains.annotations.NotNull;
 import java.util.*;
 
 /**
- * Intermediates between push-based subscription to a TableLocationProvider and polling on LiveTable run.
+ * Intermediates between push-based subscription to a TableLocationProvider and polling on update source refresh.
  */
 public class TableLocationSubscriptionBuffer implements TableLocationProvider.Listener {
 

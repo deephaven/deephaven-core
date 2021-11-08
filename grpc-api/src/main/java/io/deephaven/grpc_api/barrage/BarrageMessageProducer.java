@@ -74,7 +74,7 @@ import java.util.function.IntFunction;
  * assuming that the client has been respecting the existing subscription. Practically, this means that the server may
  * omit some data if the client's viewport change overlaps the currently recognized viewport.
  *
- * It is possible to use this replication source to create subscriptions that propagate changes from one LTM to another
+ * It is possible to use this replication source to create subscriptions that propagate changes from one UGP to another
  * inside the same JVM.
  *
  * The client-side counterpart of this is the {@link BarrageMessageConsumer}.
@@ -267,7 +267,7 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
     private final WritableSource<?>[] deltaColumns;
 
     /**
-     * This is the last step on which the LTM-synced rowSet was updated. This is used only for consistency checking
+     * This is the last step on which the UGP-synced rowSet was updated. This is used only for consistency checking
      * between our initial creation and subsequent updates.
      */
     private long lastIndexClockStep = 0;
@@ -1035,7 +1035,7 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
                 propagationRowSet.insert(snapshot.rowsAdded);
             }
 
-            // flip back for the LTM thread's processing before releasing the lock
+            // flip back for the UGP thread's processing before releasing the lock
             if (snapshot != null && deltaSplitIdx > 0) {
                 flipSnapshotStateForSubscriptions(updatedSubscriptions);
             }
@@ -1108,7 +1108,7 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
                 // - pre-snapshot: snapshotViewport/snapshotColumn values apply during this phase
                 // - snapshot: here we close and clear the snapshotViewport/snapshotColumn values; officially we
                 // recognize the subscription change
-                // - post-snapshot: now we use the viewport/subscribedColumn values (these are the values the LTM
+                // - post-snapshot: now we use the viewport/subscribedColumn values (these are the values the UGP
                 // listener uses)
                 final RowSet vp =
                         subscription.snapshotViewport != null ? subscription.snapshotViewport : subscription.viewport;

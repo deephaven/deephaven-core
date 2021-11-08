@@ -87,7 +87,7 @@ class TableInterface(ABC):
         return self.table_op_handler(table_op)
 
     def update_view(self, formulas: List[str]):
-        """ Perform a update-view operation on the table and return the result table.
+        """ Perform an update-view operation on the table and return the result table.
 
         Args:
             formulas (List[str]): the column formulas

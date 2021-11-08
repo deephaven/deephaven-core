@@ -21,7 +21,7 @@ import static io.deephaven.engine.tables.utils.TableTools.*;
 import static io.deephaven.engine.v2.TstUtils.*;
 
 @Category(OutOfBandTest.class)
-public class TestSyncTableFilter extends LiveTableTestCase {
+public class TestSyncTableFilter extends RefreshingTableTestCase {
     @Override
     protected void setUp() throws Exception {
         super.setUp();
@@ -542,7 +542,7 @@ public class TestSyncTableFilter extends LiveTableTestCase {
         assertTableEquals(s2fKeyed, s2KeyedMergedSorted);
 
         for (int step = 0; step < 100; ++step) {
-            if (LiveTableTestCase.printTableUpdates) {
+            if (RefreshingTableTestCase.printTableUpdates) {
                 System.out.println("Seed = " + seed + ", step=" + step);
             }
             UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {

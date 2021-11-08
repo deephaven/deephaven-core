@@ -21,7 +21,7 @@ import java.util.Random;
 import static io.deephaven.engine.v2.TstUtils.getTable;
 import static io.deephaven.engine.v2.TstUtils.initColumnInfos;
 
-public class TestTotalsTable extends LiveTableTestCase {
+public class TestTotalsTable extends RefreshingTableTestCase {
 
     private long shortSum(short[] values) {
         long sum = 0;

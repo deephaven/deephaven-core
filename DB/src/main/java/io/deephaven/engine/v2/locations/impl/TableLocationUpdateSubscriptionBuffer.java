@@ -11,7 +11,7 @@ import io.deephaven.engine.v2.locations.TableLocationState;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Intermediates between push-based subscription to a TableLocation and polling on LiveTable run.
+ * Intermediates between push-based subscription to a TableLocation and polling on update source refresh.
  */
 public class TableLocationUpdateSubscriptionBuffer implements TableLocation.Listener {
 

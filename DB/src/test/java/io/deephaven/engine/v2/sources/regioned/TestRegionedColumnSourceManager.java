@@ -3,7 +3,7 @@ package io.deephaven.engine.v2.sources.regioned;
 import io.deephaven.base.verify.AssertionFailure;
 import io.deephaven.engine.tables.ColumnDefinition;
 import io.deephaven.engine.v2.ColumnToCodecMappings;
-import io.deephaven.engine.v2.LiveTableTestCase;
+import io.deephaven.engine.v2.RefreshingTableTestCase;
 import io.deephaven.engine.v2.locations.*;
 import io.deephaven.engine.v2.locations.impl.SimpleTableLocationKey;
 import io.deephaven.engine.v2.locations.impl.TableLocationUpdateSubscriptionBuffer;
@@ -35,7 +35,7 @@ import static io.deephaven.engine.v2.sources.regioned.RegionedColumnSource.REGIO
  */
 @SuppressWarnings({"JUnit4AnnotatedMethodInJUnit3TestCase", "AutoBoxing", "unchecked",
         "AnonymousInnerClassMayBeStatic"})
-public class TestRegionedColumnSourceManager extends LiveTableTestCase {
+public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
 
     private static final int NUM_COLUMNS = 3;
     private static final int NUM_LOCATIONS = 4;

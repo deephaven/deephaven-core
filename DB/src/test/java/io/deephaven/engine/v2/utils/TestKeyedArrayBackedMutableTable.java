@@ -165,7 +165,7 @@ public class TestKeyedArrayBackedMutableTable {
         listener.waitForCompletion();
         listener.assertSuccess();
 
-        // TODO: should we throw the exception from the initial palce, should we defer edit checking to the LTM which
+        // TODO: should we throw the exception from the initial palce, should we defer edit checking to the UGP which
         // would make it consistent, but also slower to produce errors and uglier for reporting?
         final TestStatusListener listener2 = new TestStatusListener();
         final Map<String, Object> randyMap2 =

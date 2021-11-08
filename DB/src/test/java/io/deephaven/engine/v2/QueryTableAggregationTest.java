@@ -711,7 +711,7 @@ public class QueryTableAggregationTest {
 
 
         for (int i = 0; i < 100; i++) {
-            LiveTableTestCase.simulateShiftAwareStep(size, random, table, columnInfo, en);
+            RefreshingTableTestCase.simulateShiftAwareStep(size, random, table, columnInfo, en);
         }
     }
 
@@ -1095,10 +1095,10 @@ public class QueryTableAggregationTest {
         };
 
         for (int step = 0; step < 100; ++step) {
-            if (LiveTableTestCase.printTableUpdates) {
+            if (RefreshingTableTestCase.printTableUpdates) {
                 System.out.println("Seed = " + seed + ", step=" + step);
             }
-            LiveTableTestCase.simulateShiftAwareStep(size, random, table, columnInfo, en);
+            RefreshingTableTestCase.simulateShiftAwareStep(size, random, table, columnInfo, en);
         }
     }
 
@@ -1260,7 +1260,7 @@ public class QueryTableAggregationTest {
                 new BigIntegerGenerator(0.1),
                 new BigDecimalGenerator(0.1)));
 
-        if (LiveTableTestCase.printTableUpdates) {
+        if (RefreshingTableTestCase.printTableUpdates) {
             TableTools.showWithIndex(queryTable);
         }
 
@@ -1335,7 +1335,7 @@ public class QueryTableAggregationTest {
                         DBTimeUtils.convertDateTime("2019-12-17T23:59:59 NY"), 0.1),
                 new BooleanGenerator(0.4, 0.1)));
 
-        if (LiveTableTestCase.printTableUpdates) {
+        if (RefreshingTableTestCase.printTableUpdates) {
             TableTools.showWithIndex(queryTable);
         }
 
@@ -1402,7 +1402,7 @@ public class QueryTableAggregationTest {
                 new BigIntegerGenerator(0.1),
                 new BigDecimalGenerator(0.1)));
 
-        if (LiveTableTestCase.printTableUpdates) {
+        if (RefreshingTableTestCase.printTableUpdates) {
             TableTools.showWithIndex(queryTable);
         }
 
@@ -1457,7 +1457,7 @@ public class QueryTableAggregationTest {
                 new BigIntegerGenerator(0.1),
                 new BigDecimalGenerator(0.1)));
 
-        if (LiveTableTestCase.printTableUpdates) {
+        if (RefreshingTableTestCase.printTableUpdates) {
             TableTools.showWithIndex(queryTable);
         }
 
@@ -1507,7 +1507,7 @@ public class QueryTableAggregationTest {
                 new BigIntegerGenerator(0.1),
                 new BigDecimalGenerator(0.1)));
 
-        if (LiveTableTestCase.printTableUpdates) {
+        if (RefreshingTableTestCase.printTableUpdates) {
             TableTools.showWithIndex(queryTable);
         }
 
@@ -1582,7 +1582,7 @@ public class QueryTableAggregationTest {
                 new DoubleGenerator(-100000.0, 100000.0, 0.01, 0.001),
                 new BooleanGenerator(0.5, 0.1)));
 
-        if (LiveTableTestCase.printTableUpdates) {
+        if (RefreshingTableTestCase.printTableUpdates) {
             TableTools.showWithIndex(queryTable);
         }
 
@@ -1614,10 +1614,10 @@ public class QueryTableAggregationTest {
         };
 
         for (int step = 0; step < 50; step++) {
-            if (LiveTableTestCase.printTableUpdates) {
+            if (RefreshingTableTestCase.printTableUpdates) {
                 System.out.println("Seed = " + seed + ", step=" + step);
             }
-            LiveTableTestCase.simulateShiftAwareStep(size, random, queryTable, columnInfo, en);
+            RefreshingTableTestCase.simulateShiftAwareStep(size, random, queryTable, columnInfo, en);
         }
     }
 
@@ -1936,7 +1936,7 @@ public class QueryTableAggregationTest {
                 EvalNugget.from(() -> queryTable.sort("Sym", "intCol").update("x=intCol+1").avgBy("Sym").sort("Sym")),
         };
         for (int i = 0; i < 50; i++) {
-            LiveTableTestCase.simulateShiftAwareStep(size, random, queryTable, columnInfo, en);
+            RefreshingTableTestCase.simulateShiftAwareStep(size, random, queryTable, columnInfo, en);
         }
 
     }
@@ -1967,7 +1967,7 @@ public class QueryTableAggregationTest {
                         new TstUtils.BigIntegerGenerator(),
                         new TstUtils.BigDecimalGenerator()));
 
-        if (LiveTableTestCase.printTableUpdates) {
+        if (RefreshingTableTestCase.printTableUpdates) {
             TableTools.showWithIndex(queryTable);
         }
 
@@ -2026,7 +2026,7 @@ public class QueryTableAggregationTest {
                 }
         };
         for (int i = 0; i < 50; i++) {
-            LiveTableTestCase.simulateShiftAwareStep(size, random, queryTable, columnInfo, en);
+            RefreshingTableTestCase.simulateShiftAwareStep(size, random, queryTable, columnInfo, en);
         }
 
     }
@@ -2085,7 +2085,7 @@ public class QueryTableAggregationTest {
                         new ByteGenerator(),
                         new ShortGenerator()));
 
-        if (LiveTableTestCase.printTableUpdates) {
+        if (RefreshingTableTestCase.printTableUpdates) {
             System.out.println("Original Source Table:");
             TableTools.showWithIndex(queryTable);
         }
@@ -2110,10 +2110,10 @@ public class QueryTableAggregationTest {
                         "update"),
         };
         for (int step = 0; step < 50; step++) {
-            if (LiveTableTestCase.printTableUpdates) {
+            if (RefreshingTableTestCase.printTableUpdates) {
                 System.out.println("Seed = " + seed + ", Step = " + step);
             }
-            LiveTableTestCase.simulateShiftAwareStep(size, random, queryTable, columnInfo, en);
+            RefreshingTableTestCase.simulateShiftAwareStep(size, random, queryTable, columnInfo, en);
         }
 
     }
@@ -2146,7 +2146,7 @@ public class QueryTableAggregationTest {
                         new ByteGenerator(),
                         new ShortGenerator()));
 
-        if (LiveTableTestCase.printTableUpdates) {
+        if (RefreshingTableTestCase.printTableUpdates) {
             System.out.println("Original Source Table:");
             TableTools.showWithIndex(queryTable);
         }
@@ -2180,10 +2180,10 @@ public class QueryTableAggregationTest {
                         "update"),
         };
         for (int step = 0; step < 50; step++) {
-            if (LiveTableTestCase.printTableUpdates) {
+            if (RefreshingTableTestCase.printTableUpdates) {
                 System.out.println("Seed = " + seed + ", Step = " + step);
             }
-            LiveTableTestCase.simulateShiftAwareStep(size, random, queryTable, columnInfo, en);
+            RefreshingTableTestCase.simulateShiftAwareStep(size, random, queryTable, columnInfo, en);
         }
 
     }
@@ -2214,7 +2214,7 @@ public class QueryTableAggregationTest {
         };
 
         for (int i = 0; i < 100; i++) {
-            LiveTableTestCase.simulateShiftAwareStep(size, random, queryTable, columnInfo, en);
+            RefreshingTableTestCase.simulateShiftAwareStep(size, random, queryTable, columnInfo, en);
         }
 
     }
@@ -2246,7 +2246,7 @@ public class QueryTableAggregationTest {
                         new BooleanGenerator(0.4, 0.2),
                         new DoubleGenerator(Double.MIN_NORMAL, Double.MIN_NORMAL, 0.05, 0.05),
                         new FloatGenerator(Float.MIN_NORMAL, Float.MIN_NORMAL, 0.05, 0.05)));
-        if (LiveTableTestCase.printTableUpdates) {
+        if (RefreshingTableTestCase.printTableUpdates) {
             showWithIndex(queryTable);
         }
         final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
@@ -2276,10 +2276,10 @@ public class QueryTableAggregationTest {
                         queryTable.applyToAllBy("min(each)", "Sym").sort("Sym")),
         };
         for (int step = 0; step < 50; step++) {
-            if (LiveTableTestCase.printTableUpdates) {
+            if (RefreshingTableTestCase.printTableUpdates) {
                 System.out.println("Seed = " + seed + ", step=" + step);
             }
-            LiveTableTestCase.simulateShiftAwareStep(size, random, queryTable, columnInfo, en);
+            RefreshingTableTestCase.simulateShiftAwareStep(size, random, queryTable, columnInfo, en);
         }
     }
 
@@ -2299,7 +2299,7 @@ public class QueryTableAggregationTest {
                         new SetGenerator<>("a", "b", "c", "d"),
                         new IntGenerator(10, 100, 0.1),
                         new SetGenerator<>(10.1, 20.1, 30.1)));
-        if (LiveTableTestCase.printTableUpdates) {
+        if (RefreshingTableTestCase.printTableUpdates) {
             showWithIndex(queryTable);
         }
         final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
@@ -2424,7 +2424,7 @@ public class QueryTableAggregationTest {
                         new SetGenerator<>(10.1, 20.1, 30.1),
                         new FloatGenerator(0, 100.0f)));
         final Table withoutFloats = queryTable.dropColumns("floatCol");
-        if (LiveTableTestCase.printTableUpdates) {
+        if (RefreshingTableTestCase.printTableUpdates) {
             showWithIndex(queryTable);
         }
         final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
@@ -2440,10 +2440,10 @@ public class QueryTableAggregationTest {
                         .sort("Sym"))
         };
         for (int step = 0; step < 50; step++) {
-            if (LiveTableTestCase.printTableUpdates) {
+            if (RefreshingTableTestCase.printTableUpdates) {
                 System.out.println("size=" + size + ", step=" + step);
             }
-            LiveTableTestCase.simulateShiftAwareStep(size, random, queryTable, columnInfo, en);
+            RefreshingTableTestCase.simulateShiftAwareStep(size, random, queryTable, columnInfo, en);
         }
     }
 
@@ -2980,7 +2980,7 @@ public class QueryTableAggregationTest {
                 new SelectDistinctEvalNugget(table, "C1", "C2"),
         };
         for (int i = 0; i < 100; i++) {
-            LiveTableTestCase.simulateShiftAwareStep(size, random, table, columnInfo, en);
+            RefreshingTableTestCase.simulateShiftAwareStep(size, random, table, columnInfo, en);
         }
     }
 

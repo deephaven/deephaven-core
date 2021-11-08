@@ -4,22 +4,13 @@
 
 package io.deephaven.engine.tables.live;
 
+import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.base.SleepUtil;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.reference.SimpleReference;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.configuration.Configuration;
-import io.deephaven.io.log.LogEntry;
-import io.deephaven.io.log.impl.LogOutputStringImpl;
-import io.deephaven.io.logger.Logger;
-import io.deephaven.io.sched.Scheduler;
-import io.deephaven.io.sched.TimedJob;
-import io.deephaven.net.CommBase;
-import io.deephaven.util.process.ProcessEnvironment;
-import io.deephaven.engine.v2.utils.AbstractNotification;
-import io.deephaven.util.datastructures.SimpleReferenceManager;
-import io.deephaven.util.thread.ThreadDump;
 import io.deephaven.engine.tables.utils.SystemicObjectTracker;
 import io.deephaven.engine.util.liveness.LivenessManager;
 import io.deephaven.engine.util.liveness.LivenessScope;
@@ -29,16 +20,25 @@ import io.deephaven.engine.v2.DynamicNode;
 import io.deephaven.engine.v2.ShiftObliviousInstrumentedListener;
 import io.deephaven.engine.v2.sources.LogicalClock;
 import io.deephaven.engine.v2.sources.chunk.util.pools.MultiChunkPool;
+import io.deephaven.engine.v2.utils.AbstractNotification;
 import io.deephaven.engine.v2.utils.TerminalNotification;
+import io.deephaven.internal.log.LoggerFactory;
+import io.deephaven.io.log.LogEntry;
+import io.deephaven.io.log.impl.LogOutputStringImpl;
+import io.deephaven.io.logger.Logger;
+import io.deephaven.io.sched.Scheduler;
+import io.deephaven.io.sched.TimedJob;
+import io.deephaven.net.CommBase;
 import io.deephaven.util.FunctionalInterfaces;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.TestUseOnly;
+import io.deephaven.util.datastructures.SimpleReferenceManager;
 import io.deephaven.util.datastructures.linked.IntrusiveDoublyLinkedNode;
 import io.deephaven.util.datastructures.linked.IntrusiveDoublyLinkedQueue;
 import io.deephaven.util.locks.AwareFunctionalLock;
+import io.deephaven.util.process.ProcessEnvironment;
 import io.deephaven.util.thread.NamingThreadFactory;
-import io.deephaven.internal.log.LoggerFactory;
-import io.deephaven.UncheckedDeephavenException;
+import io.deephaven.util.thread.ThreadDump;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -55,17 +55,14 @@ import java.util.function.Supplier;
 
 /**
  * <p>
- * This class contains a thread which periodically updates a set of monitored {@link LiveTable LiveTables} at a
- * specified target cycle time. The target cycle time can be {@link #setTargetCycleTime(long) configured} to reduce or
- * increase the run rate of the monitored tables.
- * </p>
- *
+ * This class uses a thread (or pool of threads) to periodically update a set of monitored update sources at a specified
+ * target cycle interval. The target cycle interval can be {@link #setTargetCycleIntervalMillis(long) configured} to
+ * reduce or increase the run rate of the monitored sources.
  * <p>
  * This class can be configured via the following {@link Configuration} property
- * </p>
  * <ul>
- * <li><b>UpdateGraphProcessor.targetcycletime</b> <i>(optional)</i> - The default target cycle time in ms (1000 if not
- * defined)</li>
+ * <li>{@value DEFAULT_TARGET_CYCLE_INTERVAL_MILLIS_PROP}(optional)</i> - The default target cycle time in ms (1000 if
+ * not defined)</li>
  * </ul>
  */
 public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQueue, NotificationQueue.Dependency {
@@ -74,15 +71,15 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
     private final Logger log = LoggerFactory.getLogger(UpdateGraphProcessor.class);
 
     /**
-     * {@link LiveTable}s that are part of this UpdateGraphProcessor.
+     * Update sources that are part of this UpdateGraphProcessor.
      */
-    private final SimpleReferenceManager<Runnable, LiveTableRefreshNotification> tables =
-            new SimpleReferenceManager<>(LiveTableRefreshNotification::new);
+    private final SimpleReferenceManager<Runnable, UpdateSourceRefreshNotification> sources =
+            new SimpleReferenceManager<>(UpdateSourceRefreshNotification::new);
 
     /**
-     * Recorder for live table satisfaction as a phase of notification processing.
+     * Recorder for updates source satisfaction as a phase of notification processing.
      */
-    private volatile long tablesLastSatisfiedStep;
+    private volatile long sourcesLastSatisfiedStep;
 
     /**
      * The queue of non-terminal notifications to process.
@@ -111,25 +108,30 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
      */
     private int watchDogMillis = 0;
     /**
-     * If a timeout time has been {@link #setWatchDogMillis(int) set}, this procedure will be called if any single
-     * run loop takes longer than the value specified. Set the value with
+     * If a timeout time has been {@link #setWatchDogMillis(int) set}, this procedure will be called if any single run
+     * loop takes longer than the value specified. Set the value with
      * {@link #setWatchDogTimeoutProcedure(LongConsumer)}.
      */
     private LongConsumer watchDogTimeoutProcedure = null;
 
+    public static final String ALLOW_UNIT_TEST_MODE_PROP = "UpdateGraphProcessor.allowUnitTestMode";
     private final boolean allowUnitTestMode =
-            Configuration.getInstance().getBooleanWithDefault("UpdateGraphProcessor.allowUnitTestMode", false);
+            Configuration.getInstance().getBooleanWithDefault(ALLOW_UNIT_TEST_MODE_PROP, false);
     private int notificationAdditionDelay = 0;
     private Random notificationRandomizer = new Random(0);
     private boolean unitTestMode = false;
     private String unitTestModeHolder = "none";
     private ExecutorService unitTestRefreshThreadPool;
 
-    private final long defaultTargetCycleTime =
-            Configuration.getInstance().getIntegerWithDefault("UpdateGraphProcessor.targetcycletime", 1000);
-    private volatile long targetCycleTime = defaultTargetCycleTime;
-    private final long minimumCycleLogNanos = TimeUnit.MILLISECONDS
-            .toNanos(Configuration.getInstance().getIntegerWithDefault("UpdateGraphProcessor.minimumCycleLogTime", 25));
+    private static final String DEFAULT_TARGET_CYCLE_INTERVAL_MILLIS_PROP =
+            "UpdateGraphProcessor.targetCycleDurationMillis";
+    private static final String MINIMUM_CYCLE_DURATION_TO_LOG_MILLIS_PROP =
+            "UpdateGraphProcessor.minimumCycleDurationToLogMillis";
+    private final long DEFAULT_TARGET_CYCLE_INTERVAL_MILLIS =
+            Configuration.getInstance().getIntegerWithDefault(DEFAULT_TARGET_CYCLE_INTERVAL_MILLIS_PROP, 1000);
+    private volatile long targetCycleIntervalMillis = DEFAULT_TARGET_CYCLE_INTERVAL_MILLIS;
+    private final long minimumCycleDurationToLogNanos = TimeUnit.MILLISECONDS.toNanos(
+            Configuration.getInstance().getIntegerWithDefault(MINIMUM_CYCLE_DURATION_TO_LOG_MILLIS_PROP, 25));
 
     /**
      * How many cycles we have not logged, but were non-zero.
@@ -138,7 +140,7 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
     private long suppressedCyclesTotalNanos = 0;
 
     /**
-     * Accumulated LTM exclusive lock waits for the current cycle (or previous, if idle).
+     * Accumulated UGP exclusive lock waits for the current cycle (or previous, if idle).
      */
     private long currentCycleLockWaitTotalNanos = 0;
     /**
@@ -157,8 +159,8 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
     private NotificationProcessor notificationProcessor;
 
     /**
-     * The {@link LivenessScope} that should be on top of the {@link LivenessScopeStack} for all run and
-     * notification processing. Only non-null while some thread is in {@link #doRefresh(Runnable)}.
+     * The {@link LivenessScope} that should be on top of the {@link LivenessScopeStack} for all run and notification
+     * processing. Only non-null while some thread is in {@link #doRefresh(Runnable)}.
      */
     private volatile LivenessScope refreshScope;
 
@@ -167,7 +169,8 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
      * executor service; but instead dispatch all the notifications on the UpdateGraphProcessor run thread.
      */
     private final int updateThreads = Require.geq(
-            Configuration.getInstance().getIntegerWithDefault("UpdateGraphProcessor.updateThreads", 1), "updateThreads", 1);
+            Configuration.getInstance().getIntegerWithDefault("UpdateGraphProcessor.updateThreads", 1), "updateThreads",
+            1);
 
     /**
      * Is this one of the threads engaged in notification processing? (Either the solitary run thread, or one of the
@@ -260,9 +263,12 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
 
             @Override
             public void submit(@NotNull Notification notification) {
-                if (notification instanceof LiveTableRefreshNotification) {
+                if (notification instanceof UpdateSourceRefreshNotification) {
                     super.submit(notification);
-                } else if (notification instanceof ShiftObliviousInstrumentedListener.ErrorNotification) {
+                } else if (notification instanceof ShiftObliviousInstrumentedListener.ErrorNotification) { // TODO-RWC
+                                                                                                           // refactor
+                                                                                                           // this
+                                                                                                           // nonsense
                     // NB: The previous implementation of this concept was more rigorous about ensuring that errors
                     // would be next, but this is likely good enough.
                     submitAt(notification, 0);
@@ -282,8 +288,8 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
      * Retrieve the number of update threads.
      *
      * <p>
-     * The UpdateGraphProcessor has a configurable number of update processing threads. The number of threads is exposed in
-     * your method to enable you to partition a query based on the number of threads.
+     * The UpdateGraphProcessor has a configurable number of update processing threads. The number of threads is exposed
+     * in your method to enable you to partition a query based on the number of threads.
      * </p>
      *
      * @return the number of update threads configured.
@@ -345,10 +351,10 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
 
     /**
      * <p>
-     * If we are establishing a new table operation, on a refreshing table without the UpdateGraphProcessor lock; then we
-     * are likely committing a grievous error, but one that will only occasionally result in us getting the wrong answer
-     * or if we are lucky an assertion. This method is called from various query operations that should not be
-     * established without the LTM lock.
+     * If we are establishing a new table operation, on a refreshing table without the UpdateGraphProcessor lock; then
+     * we are likely committing a grievous error, but one that will only occasionally result in us getting the wrong
+     * answer or if we are lucky an assertion. This method is called from various query operations that should not be
+     * established without the UGP lock.
      * </p>
      *
      * <p>
@@ -367,7 +373,7 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
             return;
         }
         throw new IllegalStateException(
-                "May not initiate table operations: LTM exclusiveLockHeld=" + exclusiveLock().isHeldByCurrentThread()
+                "May not initiate table operations: UGP exclusiveLockHeld=" + exclusiveLock().isHeldByCurrentThread()
                         + ", sharedLockHeld=" + sharedLock().isHeldByCurrentThread()
                         + ", refreshThread=" + isRefreshThread());
     }
@@ -422,7 +428,7 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
     }
 
     /**
-     * Should this thread check table operations?
+     * Should this thread check table operations for safety with respect to the update lock?
      * 
      * @return if we should check table operations.
      */
@@ -432,39 +438,38 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
 
     /**
      * <p>
-     * Set the target clock time between run cycles.
-     * </p>
-     *
+     * Set the target clock interval between run cycle starts.
      * <p>
-     * Can be reset to default via {@link #resetCycleTime()}
-     * </p>
+     * Can be reset to default via {@link #resetCycleInterval()}
      *
-     * @implNote Any cycle time < 0 will be clamped to 0.
+     * @implNote Any cycle interval < 0 will be clamped to 0.
      *
-     * @param cycleTime The target time between refreshes in milliseconds
+     * @param cycleTime The target interval between refreshes in milliseconds
      */
-    public void setTargetCycleTime(long cycleTime) {
-        targetCycleTime = Math.max(cycleTime, 0);
+    public void setTargetCycleIntervalMillis(long cycleTime) {
+        targetCycleIntervalMillis = Math.max(cycleTime, 0);
     }
 
     /**
      * Get the target period between run cycles.
      *
-     * @return The {@link #setTargetCycleTime(long) current} minimum cycle time
+     * @return The {@link #setTargetCycleIntervalMillis(long) current} minimum cycle time
      */
     @SuppressWarnings("unused")
-    public long getTargetCycleTime() {
-        return targetCycleTime;
+    public long getTargetCycleIntervalMillis() {
+        return targetCycleIntervalMillis;
     }
 
     /**
-     * Resets the run cycle time to the default target configured via the UpdateGraphProcessor.targetcycletime property.
+     * Resets the run cycle time to the default target configured via the
+     * {@value #DEFAULT_TARGET_CYCLE_INTERVAL_MILLIS_PROP} property.
      *
-     * @implNote If the UpdateGraphProcessor.targetcycletime property is not set, this value defaults to 1000ms.
+     * @implNote If the {@value #DEFAULT_TARGET_CYCLE_INTERVAL_MILLIS_PROP} property is not set, this value defaults to
+     *           1000ms.
      */
     @SuppressWarnings("unused")
-    public void resetCycleTime() {
-        targetCycleTime = defaultTargetCycleTime;
+    public void resetCycleInterval() {
+        targetCycleIntervalMillis = DEFAULT_TARGET_CYCLE_INTERVAL_MILLIS;
     }
 
     /**
@@ -539,7 +544,7 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
         if (UpdateGraphProcessor.DEFAULT.exclusiveLock().isHeldByCurrentThread()) {
             updateGraphProcessorCondition.signalAll();
         } else {
-            // terminal notifications always run on the LTM thread
+            // terminal notifications always run on the UGP thread
             final Notification terminalNotification = new TerminalNotification() {
                 @Override
                 public void run() {
@@ -592,8 +597,8 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
     }
 
     /**
-     * Add a table to the list of tables to run and mark it as {@link DynamicNode#setRefreshing(boolean) refreshing}
-     * if it was a {@link DynamicNode}.
+     * Add a table to the list of tables to run and mark it as {@link DynamicNode#setRefreshing(boolean) refreshing} if
+     * it was a {@link DynamicNode}.
      *
      * @implNote This will do nothing in {@link #enableUnitTestMode() unit test} mode other than mark the table as
      *           refreshing.
@@ -606,15 +611,15 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
         }
 
         if (!allowUnitTestMode) {
-            // if we are in unit test mode we never want to start the LTM
-            tables.add(updateSource);
+            // if we are in unit test mode we never want to start the UGP
+            sources.add(updateSource);
             start();
         }
     }
 
     @Override
     public void removeSource(@NotNull final Runnable updateSource) {
-        tables.remove(updateSource);
+        sources.remove(updateSource);
     }
 
     /**
@@ -624,13 +629,13 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
      * @param tablesToRemove The tables to remove from the list of refreshing tables
      */
     public void removeTables(final Collection<Runnable> tablesToRemove) {
-        tables.removeAll(tablesToRemove);
+        sources.removeAll(tablesToRemove);
     }
 
     /**
      * Enqueue a notification to be flushed according to its priority. Non-terminal notifications should only be
-     * enqueued during the updating phase of a cycle. That is, they should be enqueued from a
-     * {@link LiveTable#run()} or subsequent notification delivery.
+     * enqueued during the updating phase of a cycle. That is, they should be enqueued from an update source or
+     * subsequent notification delivery.
      *
      * @param notification The notification to enqueue
      * @see NotificationQueue.Notification#isTerminal()
@@ -688,7 +693,7 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
 
     @Override
     public boolean satisfied(final long step) {
-        return tablesLastSatisfiedStep == step;
+        return sourcesLastSatisfiedStep == step;
     }
 
     /**
@@ -747,7 +752,7 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
         this.notificationRandomizer = new Random(seed);
         this.notificationAdditionDelay = notificationAdditionDelay;
         Assert.assertion(unitTestMode, "unitTestMode");
-        tables.clear();
+        sources.clear();
         notificationProcessor.shutdown();
         synchronized (pendingNormalNotifications) {
             pendingNormalNotifications.clear();
@@ -763,7 +768,7 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
             terminalNotifications.clear();
         }
         LogicalClock.DEFAULT.resetForUnitTests();
-        tablesLastSatisfiedStep = LogicalClock.DEFAULT.currentStep();
+        sourcesLastSatisfiedStep = LogicalClock.DEFAULT.currentStep();
 
         refreshScope = null;
         if (after) {
@@ -777,13 +782,13 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
         ensureUnlocked("unit test reset thread", errors);
 
         if (refreshThread.isAlive()) {
-            errors.add("LTM refreshThread isAlive");
+            errors.add("UGP refreshThread isAlive");
         }
 
         try {
             unitTestRefreshThreadPool.submit(() -> ensureUnlocked("unit test run pool thread", errors)).get();
         } catch (InterruptedException | ExecutionException e) {
-            errors.add("Failed to ensure LTM unlocked from unit test run thread pool: " + e.toString());
+            errors.add("Failed to ensure UGP unlocked from unit test run thread pool: " + e.toString());
         }
         unitTestRefreshThreadPool.shutdownNow();
         try {
@@ -796,7 +801,7 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
         unitTestRefreshThreadPool = makeUnitTestRefreshExecutor();
 
         if (!errors.isEmpty()) {
-            final String message = "LTM reset for unit tests reported errors:\n\t" + String.join("\n\t", errors);
+            final String message = "UGP reset for unit tests reported errors:\n\t" + String.join("\n\t", errors);
             System.err.println(message);
             if (after) {
                 throw new IllegalStateException(message);
@@ -808,7 +813,7 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
 
     /**
      * Begin the next {@link LogicalClock#startUpdateCycle() update cycle} while in {@link #enableUnitTestMode()
-     * unit-test} mode. Note that this happens on a simulated LTM run thread, rather than this thread.
+     * unit-test} mode. Note that this happens on a simulated UGP run thread, rather than this thread.
      */
     @TestUseOnly
     public void startCycleForUnitTests() {
@@ -831,12 +836,12 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
         LivenessScopeStack.push(refreshScope);
 
         LogicalClock.DEFAULT.startUpdateCycle();
-        tablesLastSatisfiedStep = LogicalClock.DEFAULT.currentStep();
+        sourcesLastSatisfiedStep = LogicalClock.DEFAULT.currentStep();
     }
 
     /**
      * Do the second half of the update cycle, including flushing notifications, and completing the
-     * {@link LogicalClock#completeUpdateCycle() LogicalClock} update cycle. Note that this happens on a simulated LTM
+     * {@link LogicalClock#completeUpdateCycle() LogicalClock} update cycle. Note that this happens on a simulated UGP
      * run thread, rather than this thread.
      */
     @TestUseOnly
@@ -883,23 +888,23 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
     }
 
     /**
-     * Refresh a {@link LiveTable} on a simulated LTM run thread, rather than this thread.
+     * Refresh an update source on a simulated UGP run thread, rather than this thread.
      *
-     * @param updateRoot The {@link LiveTable} to run
+     * @param updateSource The update source to run
      */
     @TestUseOnly
-    public void refreshLiveTableForUnitTests(@NotNull final Runnable updateRoot) {
+    public void refreshUpdateSourceForUnitTests(@NotNull final Runnable updateSource) {
         Assert.assertion(unitTestMode, "unitTestMode");
         try {
-            unitTestRefreshThreadPool.submit(updateRoot::run).get();
+            unitTestRefreshThreadPool.submit(updateSource::run).get();
         } catch (InterruptedException | ExecutionException e) {
             throw new UncheckedDeephavenException(e);
         }
     }
 
     /**
-     * Flush a single notification from the LTM queue. Note that this happens on a simulated LTM run thread, rather
-     * than this thread.
+     * Flush a single notification from the UGP queue. Note that this happens on a simulated UGP run thread, rather than
+     * this thread.
      *
      * @return whether a notification was found in the queue
      */
@@ -954,7 +959,7 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
     }
 
     /**
-     * Flush all the normal notifications from the LTM queue. Note that the flushing happens on a simulated LTM run
+     * Flush all the normal notifications from the UGP queue. Note that the flushing happens on a simulated UGP run
      * thread, rather than this thread.
      */
     @TestUseOnly
@@ -963,8 +968,8 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
     }
 
     /**
-     * Flush all the normal notifications from the LTM queue, continuing until {@code done} returns {@code true}. Note
-     * that the flushing happens on a simulated LTM run thread, rather than this thread.
+     * Flush all the normal notifications from the UGP queue, continuing until {@code done} returns {@code true}. Note
+     * that the flushing happens on a simulated UGP run thread, rather than this thread.
      *
      * @param done Function to determine when we can stop waiting for new notifications
      * @return A Runnable that may be used to wait for the concurrent flush job to complete
@@ -1017,16 +1022,17 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
      * notifications.
      */
     private void flushNotificationsAndCompleteCycle() {
-        // We cannot proceed with normal notifications, nor are we satisfied, until all LiveTable run notifications
-        // have been processed. Note that non-LiveTable notifications that require dependency satisfaction are delivered
-        // first to the pendingNormalNotifications queue, and hence will not be processed until we advance to the flush*
-        // methods.
-        // TODO: If and when we properly integrate LiveTables into the dependency tracking system, we can
-        // discontinue this distinct phase, along with the requirement to treat the LTM itself as a Dependency.
-        // Until then, we must delay the beginning of "normal" notification processing until all LiveTables are
+        // We cannot proceed with normal notifications, nor are we satisfied, until all update source refresh
+        // notifications
+        // have been processed. Note that non-update source notifications that require dependency satisfaction are
+        // delivered first to the pendingNormalNotifications queue, and hence will not be processed until we advance to
+        // the flush* methods.
+        // TODO: If and when we properly integrate update sources into the dependency tracking system, we can
+        // discontinue this distinct phase, along with the requirement to treat the UGP itself as a Dependency.
+        // Until then, we must delay the beginning of "normal" notification processing until all update sources are
         // done. See IDS-8039.
         notificationProcessor.doAllWork();
-        tablesLastSatisfiedStep = LogicalClock.DEFAULT.currentStep();
+        sourcesLastSatisfiedStep = LogicalClock.DEFAULT.currentStep();
 
         flushNormalNotificationsAndCompleteCycle();
         flushTerminalNotifications();
@@ -1066,7 +1072,7 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
                 Assert.eqFalse(notification.isTerminal(), "notification.isTerminal()");
                 Assert.eqFalse(notification.mustExecuteWithLtmLock(), "notification.mustExecuteWithLtmLock()");
 
-                final boolean satisfied = notification.canExecute(tablesLastSatisfiedStep);
+                final boolean satisfied = notification.canExecute(sourcesLastSatisfiedStep);
                 if (satisfied) {
                     nothingBecameSatisfied = false;
                     it.remove();
@@ -1442,14 +1448,14 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
 
     /**
      * Iterate over all monitored tables and run them. This method also ensures that the loop runs no faster than
-     * {@link #getTargetCycleTime() minimum cycle time}.
+     * {@link #getTargetCycleIntervalMillis() minimum cycle time}.
      */
     private void refreshTablesAndFlushNotifications() {
         final Scheduler sched = CommBase.getScheduler();
         final long startTime = sched.currentTimeMillis();
         final long startTimeNanos = System.nanoTime();
 
-        if (tables.isEmpty()) {
+        if (sources.isEmpty()) {
             exclusiveLock().doLocked(this::flushTerminalNotifications);
         } else {
             currentCycleLockWaitTotalNanos = currentCycleYieldTotalNanos = currentCycleSleepTotalNanos = 0L;
@@ -1467,7 +1473,7 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
                 sched.cancelJob(watchdogJob);
             }
             final long cycleTime = System.nanoTime() - startTimeNanos;
-            if (cycleTime >= minimumCycleLogNanos) {
+            if (cycleTime >= minimumCycleDurationToLogNanos) {
                 if (suppressedCycles > 0) {
                     logSuppressedCycles();
                 }
@@ -1479,7 +1485,7 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
             } else if (cycleTime > 0) {
                 suppressedCycles++;
                 suppressedCyclesTotalNanos += cycleTime;
-                if (suppressedCyclesTotalNanos >= minimumCycleLogNanos) {
+                if (suppressedCyclesTotalNanos >= minimumCycleDurationToLogNanos) {
                     logSuppressedCycles();
                 }
             }
@@ -1503,12 +1509,12 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
 
     /**
      * <p>
-     * Ensure that at least {@link #getTargetCycleTime() minCycleTime} has passed before returning.
+     * Ensure that at least {@link #getTargetCycleIntervalMillis() minCycleTime} has passed before returning.
      * </p>
      *
      * <p>
-     * If the delay is interrupted by a {@link UpdateSourceRegistrar#requestRefresh() request} to run a single table this task
-     * will drain the queue of single run requests, then continue to wait for a complete period if necessary.
+     * If the delay is interrupted by a {@link UpdateSourceRegistrar#requestRefresh() request} to run a single table
+     * this task will drain the queue of single run requests, then continue to wait for a complete period if necessary.
      * </p>
      *
      * <p>
@@ -1520,7 +1526,7 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
      * @param timeSource The source of time that startTime was based on
      */
     private void waitForNextCycle(final long startTime, final Scheduler timeSource) {
-        long expectedEndTime = startTime + targetCycleTime;
+        long expectedEndTime = startTime + targetCycleIntervalMillis;
         if (minimumInterCycleSleep > 0) {
             expectedEndTime = Math.max(expectedEndTime, timeSource.currentTimeMillis() + minimumInterCycleSleep);
         }
@@ -1562,21 +1568,21 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
     }
 
     /**
-     * Refresh all the {@link LiveTable live tables} within an {@link LogicalClock update cycle} after the LTM has been
-     * locked. At the end of the updates all {@link Notification notifications} will be flushed.
+     * Refresh all the update sources within an {@link LogicalClock update cycle} after the UGP has been locked. At the
+     * end of the updates all {@link Notification notifications} will be flushed.
      */
     private void refreshAllTables() {
         refreshRequested.set(true);
-        doRefresh(() -> tables.forEach((final LiveTableRefreshNotification liveTableNotification,
-                final Runnable unused) -> notificationProcessor.submit(liveTableNotification)));
+        doRefresh(() -> sources.forEach((final UpdateSourceRefreshNotification updateSourceNotification,
+                final Runnable unused) -> notificationProcessor.submit(updateSourceNotification)));
     }
 
     /**
-     * Perform a run cycle, using {@code refreshFunction} to ensure the desired {@link LiveTable live tables} are
-     * refreshed at the start.
+     * Perform a run cycle, using {@code refreshFunction} to ensure the desired update sources are refreshed at the
+     * start.
      *
-     * @param refreshFunction Function to submit one or more {@link LiveTableRefreshNotification live table run
-     *        notifications} to the {@link NotificationProcessor notification processor} or run them directly.
+     * @param refreshFunction Function to submit one or more {@link UpdateSourceRefreshNotification update source
+     *        refresh notifications} to the {@link NotificationProcessor notification processor} or run them directly.
      */
     private void doRefresh(@NotNull final Runnable refreshFunction) {
         final long lockStartTimeNanos = System.nanoTime();
@@ -1599,22 +1605,22 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
     }
 
     /**
-     * Re-usable class for adapting {@link LiveTable}s to {@link Notification}s.
+     * Re-usable class for adapting update sources to {@link Notification}s.
      */
-    private static final class LiveTableRefreshNotification extends AbstractNotification
+    private static final class UpdateSourceRefreshNotification extends AbstractNotification
             implements SimpleReference<Runnable> {
 
-        private final WeakReference<Runnable> liveTableRef;
+        private final WeakReference<Runnable> updateSourceRef;
 
-        private LiveTableRefreshNotification(@NotNull final Runnable updateRoot) {
+        private UpdateSourceRefreshNotification(@NotNull final Runnable updateSource) {
             super(false);
-            liveTableRef = new WeakReference<>(updateRoot);
+            updateSourceRef = new WeakReference<>(updateSource);
         }
 
         @Override
         public LogOutput append(@NotNull final LogOutput logOutput) {
-            return logOutput.append("LiveTableRefreshNotification{").append(System.identityHashCode(this))
-                    .append(", for LiveTable{").append(System.identityHashCode(get())).append("}}");
+            return logOutput.append("UpdateSourceRefreshNotification{").append(System.identityHashCode(this))
+                    .append(", for UpdateSource{").append(System.identityHashCode(get())).append("}}");
         }
 
         @Override
@@ -1624,22 +1630,22 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
 
         @Override
         public void run() {
-            final Runnable updateRoot = liveTableRef.get();
-            if (updateRoot == null) {
+            final Runnable updateSource = updateSourceRef.get();
+            if (updateSource == null) {
                 return;
             }
-            updateRoot.run();
+            updateSource.run();
         }
 
         @Override
         public Runnable get() {
             // NB: Arguably we should make get() and clear() synchronized.
-            return liveTableRef.get();
+            return updateSourceRef.get();
         }
 
         @Override
         public void clear() {
-            liveTableRef.clear();
+            updateSourceRef.clear();
         }
     }
 
@@ -1669,7 +1675,7 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
     private void ensureUnlocked(@NotNull final String callerDescription, @Nullable final List<String> errors) {
         if (exclusiveLock().isHeldByCurrentThread()) {
             if (errors != null) {
-                errors.add(callerDescription + ": LTM exclusive lock is still held");
+                errors.add(callerDescription + ": UGP exclusive lock is still held");
             }
             while (exclusiveLock().isHeldByCurrentThread()) {
                 exclusiveLock().unlock();
@@ -1677,7 +1683,7 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
         }
         if (sharedLock().isHeldByCurrentThread()) {
             if (errors != null) {
-                errors.add(callerDescription + ": LTM shared lock is still held");
+                errors.add(callerDescription + ": UGP shared lock is still held");
             }
             while (sharedLock().isHeldByCurrentThread()) {
                 sharedLock().unlock();
@@ -1709,7 +1715,7 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
     }
 
     /**
-     * Configure the primary LTM thread or one of the auxiliary run threads.
+     * Configure the primary UGP thread or one of the auxiliary run threads.
      */
     private void configureRefreshThread() {
         SystemicObjectTracker.markThreadSystemic();

@@ -34,7 +34,7 @@ public abstract class EvalNugget implements EvalNuggetInterface {
 
     public EvalNugget(String description) {
         this.description = description;
-        if (LiveTableTestCase.printTableUpdates) {
+        if (RefreshingTableTestCase.printTableUpdates) {
             showResult("Original Table:", originalValue);
             System.out.println();
         }
@@ -53,7 +53,7 @@ public abstract class EvalNugget implements EvalNuggetInterface {
 
         @Override
         public void onUpdate(final Update upstream) {
-            if (LiveTableTestCase.printTableUpdates) {
+            if (RefreshingTableTestCase.printTableUpdates) {
                 System.out.println("Incremental Table Update:");
                 System.out.println(upstream);
             }

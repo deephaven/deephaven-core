@@ -7,7 +7,6 @@ package io.deephaven.engine.v2.replay;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.exceptions.QueryCancellationException;
 import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.live.LiveTable;
 import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.tables.utils.DBDateTime;
 import io.deephaven.engine.tables.utils.DBTimeUtils;
@@ -31,7 +30,7 @@ import static io.deephaven.engine.tables.utils.DBTimeUtils.nanosToTime;
 /**
  * Replay historical data as simulated real-time data.
  */
-public class Replayer implements ReplayerInterface, LiveTable {
+public class Replayer implements ReplayerInterface, Runnable {
     private static final Logger log = LoggerFactory.getLogger(ShiftObliviousInstrumentedListener.class);
 
     protected DBDateTime startTime;

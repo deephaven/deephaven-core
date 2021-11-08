@@ -17,7 +17,7 @@ import java.util.*;
 import java.util.function.Consumer;
 
 /**
- * An in-memory table that has keys for each row, which can be updated on the LTM.
+ * An in-memory table that has keys for each row, which can be updated on the UGP.
  *
  * This is used to implement in-memory editable table columns from web plugins.
  */

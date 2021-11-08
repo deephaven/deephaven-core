@@ -2,7 +2,7 @@ package io.deephaven.engine.v2.select;
 
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.live.UpdateGraphProcessor;
-import io.deephaven.engine.v2.LiveTableTestCase;
+import io.deephaven.engine.v2.RefreshingTableTestCase;
 
 import static io.deephaven.engine.tables.utils.TableTools.col;
 import static io.deephaven.engine.tables.utils.TableTools.intCol;
@@ -14,7 +14,7 @@ import static io.deephaven.engine.v2.TstUtils.StepClock;
 /**
  * Test for Sorted and Unsorted ClockFilter implementations.
  */
-public class TestClockFilters extends LiveTableTestCase {
+public class TestClockFilters extends RefreshingTableTestCase {
 
     private final Table testInput1;
     private final Table testInput2;

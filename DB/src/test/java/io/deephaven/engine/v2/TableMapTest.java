@@ -31,7 +31,7 @@ import static io.deephaven.engine.v2.TstUtils.c;
 import static io.deephaven.engine.v2.TstUtils.i;
 
 @Category(OutOfBandTest.class)
-public class TableMapTest extends LiveTableTestCase {
+public class TableMapTest extends RefreshingTableTestCase {
 
     @Override
     protected void setUp() throws Exception {

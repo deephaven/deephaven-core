@@ -361,7 +361,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         assertTableEquals(ungroupedResult, resultFlat);
 
         for (int step = 0; step < steps; ++step) {
-            if (LiveTableTestCase.printTableUpdates) {
+            if (RefreshingTableTestCase.printTableUpdates) {
                 System.out.println("Step = " + step);
             }
 
@@ -370,7 +370,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
                         random, rightTable, rightColumnInfos);
             });
 
-            if (LiveTableTestCase.printTableUpdates) {
+            if (RefreshingTableTestCase.printTableUpdates) {
                 System.out.println("Expected");
                 TableTools.showWithIndex(result);
                 System.out.println("Result");

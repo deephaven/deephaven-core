@@ -17,7 +17,7 @@ import static io.deephaven.engine.tables.utils.TableTools.intCol;
 import static io.deephaven.engine.tables.utils.TableTools.stringCol;
 import static io.deephaven.engine.v2.TstUtils.*;
 
-public class TestFreezeBy extends LiveTableTestCase {
+public class TestFreezeBy extends RefreshingTableTestCase {
     public void testSimpleTypes() {
         final DBDateTime timeBase = DBTimeUtils.convertDateTime("2020-09-10T09:00:00 NY");
         QueryScope.addParam("freezeByTimeBase", timeBase);

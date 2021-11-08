@@ -4,14 +4,13 @@
 
 package io.deephaven.engine.v2;
 
-import io.deephaven.engine.tables.live.LiveTable;
 import io.deephaven.engine.v2.utils.UpdatePerformanceTracker;
 
-public abstract class InstrumentedLiveTable implements LiveTable {
+public abstract class InstrumentedUpdateSource implements Runnable {
 
     protected final UpdatePerformanceTracker.Entry entry;
 
-    public InstrumentedLiveTable(String description) {
+    public InstrumentedUpdateSource(String description) {
         this.entry = UpdatePerformanceTracker.getInstance().getEntry(description);
     }
 

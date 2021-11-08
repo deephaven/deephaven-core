@@ -35,7 +35,7 @@ public class ModelFarmRealTime<KEYTYPE, DATATYPE, ROWDATAMANAGERTYPE extends Row
             Configuration.getInstance().getBooleanWithDefault("ModelFarm.logModelFarmRealTimePerformance", false);
 
     private final ModelFarmBase.GetDataLockType GETDATA_LOCK_TYPE = ModelFarmBase.GetDataLockType.valueOf(Configuration
-            .getInstance().getStringWithDefault("ModelFarm.ModelFarmRealTime.getDataLockType", "LTM_READ_LOCK"));
+            .getInstance().getStringWithDefault("ModelFarm.ModelFarmRealTime.getDataLockType", "UGP_READ_LOCK"));
     private final KeyedPriorityBlockingQueue<KEYTYPE> execQueue = new KeyedPriorityBlockingQueue<>();
     private final ExecPrioritizer<KEYTYPE, DATATYPE, ROWDATAMANAGERTYPE> prioritizer;
     private final ModelFarmBase.MostRecentDataGetter<KEYTYPE, DATATYPE> mostRecentDataGetter;

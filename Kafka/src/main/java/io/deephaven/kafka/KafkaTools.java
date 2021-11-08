@@ -14,7 +14,6 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.tables.ColumnDefinition;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.TableDefinition;
-import io.deephaven.engine.tables.live.LiveTable;
 import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.tables.live.UpdateSourceCombiner;
 import io.deephaven.engine.tables.live.UpdateSourceRegistrar;
@@ -1241,7 +1240,7 @@ public class KafkaTools {
                         "and can't automatically set it for type " + dataType);
     }
 
-    private static class StreamTableMap extends LocalTableMap implements LiveTable {
+    private static class StreamTableMap extends LocalTableMap implements Runnable {
 
         private final UpdateSourceCombiner refreshCombiner = new UpdateSourceCombiner();
         private final Queue<Runnable> deferredUpdates = new ConcurrentLinkedQueue<>();

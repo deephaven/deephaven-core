@@ -84,7 +84,7 @@ public class SourceTableMap extends LocalTableMap {
                     IntrusiveDoublyLinkedNode.Adapter.<PendingLocationState>getInstance());
             readyLocationStates = new IntrusiveDoublyLinkedQueue<>(
                     IntrusiveDoublyLinkedNode.Adapter.<PendingLocationState>getInstance());
-            processNewLocationsUpdateRoot = new InstrumentedLiveTable(
+            processNewLocationsUpdateRoot = new InstrumentedUpdateSource(
                     SourceTableMap.class.getSimpleName() + '[' + tableLocationProvider + ']'
                             + "-processPendingLocations") {
                 @Override

@@ -5,10 +5,10 @@
 package io.deephaven.engine.v2.utils;
 
 import io.deephaven.engine.tables.live.UpdateGraphProcessor;
+import io.deephaven.engine.v2.RefreshingTableTestCase;
 import io.deephaven.util.clock.RealTimeClock;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.utils.TableTools;
-import io.deephaven.engine.v2.LiveTableTestCase;
 import io.deephaven.engine.v2.select.AutoTuningIncrementalReleaseFilter;
 import io.deephaven.engine.v2.select.IncrementalReleaseFilter;
 
@@ -18,7 +18,7 @@ import java.util.stream.IntStream;
 
 import static io.deephaven.engine.v2.TstUtils.assertTableEquals;
 
-public class TestIncrementalReleaseFilter extends LiveTableTestCase {
+public class TestIncrementalReleaseFilter extends RefreshingTableTestCase {
     public void testSimple() {
         final Table source = TableTools.newTable(TableTools.intCol("Sentinel", 1, 2, 3, 4, 5, 6, 7, 8, 9, 10));
         TableTools.show(source);
@@ -84,7 +84,7 @@ public class TestIncrementalReleaseFilter extends LiveTableTestCase {
 
     public void testAutoTune2() {
         // I just want to see commas in the output
-        UpdateGraphProcessor.DEFAULT.setTargetCycleTime(100);
+        UpdateGraphProcessor.DEFAULT.setTargetCycleIntervalMillis(100);
         final Table source = TableTools.emptyTable(1_000_000);
         TableTools.show(source);
 
@@ -102,7 +102,7 @@ public class TestIncrementalReleaseFilter extends LiveTableTestCase {
     }
 
     private int testAutoTuneCycle(int cycleTime) {
-        UpdateGraphProcessor.DEFAULT.setTargetCycleTime(cycleTime);
+        UpdateGraphProcessor.DEFAULT.setTargetCycleIntervalMillis(cycleTime);
         final Table source = TableTools.emptyTable(10_000);
         TableTools.show(source);
 

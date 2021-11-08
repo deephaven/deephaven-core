@@ -27,12 +27,12 @@ public interface NotificationQueue {
         boolean isTerminal();
 
         /**
-         * If a terminal notification must be executed on the main LTM thread, it must override this method, so that the
+         * If a terminal notification must be executed on the main UGP thread, it must override this method, so that the
          * notification is not executed on the run pool.
          *
          * It is an error to return true if this notification is not terminal
          *
-         * @return true if this notification must be executed directly under the protection of the LTM lock
+         * @return true if this notification must be executed directly under the protection of the UGP lock
          */
         boolean mustExecuteWithLtmLock();
 

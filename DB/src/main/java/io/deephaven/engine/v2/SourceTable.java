@@ -6,19 +6,24 @@ package io.deephaven.engine.v2;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
-import io.deephaven.engine.tables.live.UpdateSourceRegistrar;
-import io.deephaven.engine.v2.locations.*;
-import io.deephaven.engine.v2.locations.impl.TableLocationSubscriptionBuffer;
-import io.deephaven.engine.v2.utils.*;
-import io.deephaven.io.logger.Logger;
-import io.deephaven.util.process.ProcessEnvironment;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.TableDefinition;
-import io.deephaven.util.QueryConstants;
+import io.deephaven.engine.tables.live.UpdateSourceRegistrar;
 import io.deephaven.engine.tables.utils.QueryPerformanceRecorder;
+import io.deephaven.engine.v2.locations.ImmutableTableLocationKey;
+import io.deephaven.engine.v2.locations.TableDataException;
+import io.deephaven.engine.v2.locations.TableLocationProvider;
+import io.deephaven.engine.v2.locations.impl.TableLocationSubscriptionBuffer;
 import io.deephaven.engine.v2.sources.LogicalClock;
-import io.deephaven.util.annotations.TestUseOnly;
+import io.deephaven.engine.v2.utils.MutableRowSet;
+import io.deephaven.engine.v2.utils.RowSet;
+import io.deephaven.engine.v2.utils.RowSetFactory;
+import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import io.deephaven.internal.log.LoggerFactory;
+import io.deephaven.io.logger.Logger;
+import io.deephaven.util.QueryConstants;
+import io.deephaven.util.annotations.TestUseOnly;
+import io.deephaven.util.process.ProcessEnvironment;
 import org.apache.commons.lang3.mutable.Mutable;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
@@ -52,7 +57,7 @@ public abstract class SourceTable extends RedefinableTable {
     final TableLocationProvider locationProvider;
 
     /**
-     * Registration function for LiveTables that need to be refreshed.
+     * Registrar for update sources that need to be refreshed.
      */
     final UpdateSourceRegistrar updateSourceRegistrar;
 
@@ -72,7 +77,7 @@ public abstract class SourceTable extends RedefinableTable {
     private TrackingMutableRowSet rowSet;
 
     /**
-     * The LiveTable object for refreshing locations and location sizes.
+     * The update source object for refreshing locations and location sizes.
      */
     private Runnable locationChangePoller;
 
@@ -83,7 +88,8 @@ public abstract class SourceTable extends RedefinableTable {
      * @param description A human-readable description for this table
      * @param componentFactory A component factory for creating column source managers
      * @param locationProvider A TableLocationProvider, for use in discovering the locations that compose this table
-     * @param updateSourceRegistrar Callback for registering live tables for refreshes, null if this table is not live
+     * @param updateSourceRegistrar Callback for registering update sources for refreshes, null if this table is not
+     *        refreshing
      */
     SourceTable(@NotNull final TableDefinition tableDefinition,
             @NotNull final String description,
@@ -98,10 +104,11 @@ public abstract class SourceTable extends RedefinableTable {
 
         final boolean isRefreshing = updateSourceRegistrar != null;
         columnSourceManager = componentFactory.createColumnSourceManager(isRefreshing, ColumnToCodecMappings.EMPTY,
-                definition.getColumns() // NB: this is the *re-written* definition passed to the super-class constructor.
+                definition.getColumns() // NB: this is the *re-written* definition passed to the super-class
+                                        // constructor.
         );
         if (isRefreshing) {
-            // NB: There's no reason to start out trying to group, if this is a live table.
+            // NB: There's no reason to start out trying to group, if this is a refreshing table.
             columnSourceManager.disableGrouping();
         }
 
@@ -194,12 +201,12 @@ public abstract class SourceTable extends RedefinableTable {
         }
     }
 
-    private class LocationChangePoller extends InstrumentedLiveTable {
+    private class LocationChangePoller extends InstrumentedUpdateSource {
 
         private final TableLocationSubscriptionBuffer locationBuffer;
 
         private LocationChangePoller(@NotNull final TableLocationSubscriptionBuffer locationBuffer) {
-            super(description + ".indexUpdateLiveTable");
+            super(description + ".rowSetUpdateSource");
             this.locationBuffer = locationBuffer;
         }
 
@@ -207,8 +214,8 @@ public abstract class SourceTable extends RedefinableTable {
         protected void instrumentedRefresh() {
             try {
                 maybeAddLocations(locationBuffer.processPending());
-                // NB: The availableLocationsLiveTable previously had functionality to notify
-                // "location listeners", but it was never used - resurrect from git history if needed.
+                // NB: This class previously had functionality to notify "location listeners", but it was never used.
+                // Resurrect from git history if needed.
                 if (!locationSizesInitialized) {
                     // We don't want to start polling size changes until the initial TrackingMutableRowSet has been
                     // computed.

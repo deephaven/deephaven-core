@@ -3,12 +3,12 @@ package io.deephaven.engine.v2.select;
 import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.tables.utils.DBDateTime;
 import io.deephaven.engine.tables.utils.DBTimeUtils;
-import io.deephaven.engine.v2.LiveTableTestCase;
+import io.deephaven.engine.v2.RefreshingTableTestCase;
 
 /**
  * Quick unit test for {@link SimulationClock}.
  */
-public class TestSimulationClock extends LiveTableTestCase {
+public class TestSimulationClock extends RefreshingTableTestCase {
 
     public void testSignal() {
         final DBDateTime start = DBDateTime.now();

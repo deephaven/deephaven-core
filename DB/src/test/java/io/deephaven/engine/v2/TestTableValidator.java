@@ -10,7 +10,7 @@ import java.util.Random;
 import static io.deephaven.engine.v2.TstUtils.getTable;
 import static io.deephaven.engine.v2.TstUtils.initColumnInfos;
 
-public class TestTableValidator extends LiveTableTestCase {
+public class TestTableValidator extends RefreshingTableTestCase {
     public void testValidator() {
         ChunkPoolReleaseTracking.enableStrict();
 

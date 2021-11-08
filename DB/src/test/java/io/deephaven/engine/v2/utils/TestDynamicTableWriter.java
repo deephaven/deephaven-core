@@ -5,7 +5,7 @@ import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.tables.utils.DBDateTime;
 import io.deephaven.engine.tables.utils.DBTimeUtils;
 import io.deephaven.engine.tables.utils.TableTools;
-import io.deephaven.engine.v2.LiveQueryTable;
+import io.deephaven.engine.v2.UpdateSourceQueryTable;
 import io.deephaven.engine.v2.TstUtils;
 import io.deephaven.test.junit4.EngineCleanup;
 import io.deephaven.util.QueryConstants;
@@ -28,7 +28,7 @@ public class TestDynamicTableWriter {
         final Class[] types = new Class[] {byte.class, char.class, short.class, int.class, long.class, float.class,
                 double.class, String.class, Boolean.class, DBDateTime.class, BigInteger.class};
         final DynamicTableWriter writer = new DynamicTableWriter(names, types);
-        final LiveQueryTable result = writer.getTable();
+        final UpdateSourceQueryTable result = writer.getTable();
 
         writer.getSetter("BC").setByte((byte) 1);
         writer.getSetter("CC").setChar('A');
@@ -131,7 +131,7 @@ public class TestDynamicTableWriter {
         final Class[] types = new Class[] {byte.class, char.class, short.class, int.class, long.class, float.class,
                 double.class, String.class, Boolean.class, DBDateTime.class, BigInteger.class};
         final DynamicTableWriter writer = new DynamicTableWriter(names, types);
-        final LiveQueryTable result = writer.getTable();
+        final UpdateSourceQueryTable result = writer.getTable();
 
         writer.getSetter("BC").setByte((byte) 1);
         writer.getSetter("CC").setChar('A');
@@ -185,7 +185,7 @@ public class TestDynamicTableWriter {
         final String[] columnNames = new String[] {"A", "B"};
         final Class[] columnTypes = new Class[] {String.class, int.class};
         final DynamicTableWriter writer = new DynamicTableWriter(columnNames, columnTypes);
-        final LiveQueryTable result = writer.getTable();
+        final UpdateSourceQueryTable result = writer.getTable();
         TstUtils.assertTableEquals(TableTools.newTable(TableTools.stringCol("A"), TableTools.intCol("B")), result);
 
         addRow(writer, Row.Flags.SingleRow, "Fred", 1);

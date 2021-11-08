@@ -9,7 +9,7 @@ import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.tables.utils.DBDateTime;
 import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.v2.EvalNugget;
-import io.deephaven.engine.v2.LiveTableTestCase;
+import io.deephaven.engine.v2.RefreshingTableTestCase;
 import io.deephaven.engine.v2.QueryTable;
 import io.deephaven.engine.v2.TstUtils;
 import io.deephaven.engine.v2.select.TimeSeriesFilter;
@@ -24,7 +24,7 @@ import java.util.Random;
 import static io.deephaven.engine.v2.TstUtils.getTable;
 import static io.deephaven.engine.v2.TstUtils.initColumnInfos;
 
-public class TestTimeSeriesFilter extends LiveTableTestCase {
+public class TestTimeSeriesFilter extends RefreshingTableTestCase {
     public void testSimple() {
         DBDateTime[] times = new DBDateTime[10];
 

@@ -25,7 +25,7 @@ import static io.deephaven.engine.v2.TstUtils.getTable;
 
 @SuppressWarnings("ClassInitializerMayBeStatic")
 @Category(OutOfBandTest.class)
-public class TrackingRowSetGroupingTest extends LiveTableTestCase {
+public class TrackingRowSetGroupingTest extends RefreshingTableTestCase {
 
     private static ArrayList<ArrayList<String>> powerSet(Set<String> originalSet) {
         return powerSet(originalSet.stream().collect(Collectors.toList()));
@@ -151,7 +151,7 @@ public class TrackingRowSetGroupingTest extends LiveTableTestCase {
 
         final int maxSteps = numSteps.intValue(); // 8;
 
-        if (LiveTableTestCase.printTableUpdates) {
+        if (RefreshingTableTestCase.printTableUpdates) {
             System.out.println("Initial QueryTable: ");
             TableTools.showWithIndex(queryTable);
         }

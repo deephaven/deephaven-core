@@ -47,7 +47,7 @@ public final class Liveness {
      * Will not log unless such logs are enabled, at least {@value OUTSTANDING_COUNT_LOG_INTERVAL_MILLIS}ms have
      * elapsed, and the count has changed since the last time it was logged.
      * <p>
-     * Note that this should be guarded by the LTM lock or similar.
+     * Note that this should be guarded by the UGP lock or similar.
      */
     private static void maybeLogOutstandingCount() {
         if (!Liveness.COUNT_LOG_ENABLED) {

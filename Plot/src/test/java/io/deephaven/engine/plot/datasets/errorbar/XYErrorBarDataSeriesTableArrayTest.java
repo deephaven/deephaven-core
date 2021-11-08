@@ -82,14 +82,14 @@ public class XYErrorBarDataSeriesTableArrayTest extends BaseArrayTestCase {
         assertEquals(series.getEndY(100), 10 + series.getY(100));
     }
 
-    public void testLiveTable() {
+    public void testRefreshingTable() {
         final BaseFigureImpl figure = new BaseFigureImpl();
         final ChartImpl chart = figure.newChart();
 
-        final QueryTable liveTable = TstUtils.testRefreshingTable(i(2, 4, 6).toTracking(),
+        final QueryTable refreshingTable = TstUtils.testRefreshingTable(i(2, 4, 6).toTracking(),
                 c("x", 1, 2, 3), c("y", 1, 2, 3), c("yLow", 0, 1, 2), c("yHigh", 11, 22, 33));
 
-        final TableHandle h = new TableHandle(liveTable, "x", "y", "yLow", "yHigh");
+        final TableHandle h = new TableHandle(refreshingTable, "x", "y", "yLow", "yHigh");
         final XYErrorBarDataSeriesTableArray series = new XYErrorBarDataSeriesTableArray(chart.newAxes(), 1, "Test", h,
                 "x", null, null, "y", "yLow", "yHigh", false, true);
 
@@ -97,8 +97,8 @@ public class XYErrorBarDataSeriesTableArrayTest extends BaseArrayTestCase {
         assertEquals(series.getX(4), Double.NaN);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            addToTable(liveTable, i(7, 9), c("x", 4, 5), c("y", 4, 5), c("yLow", 3, 4), c("yHigh", 5, 6));
-            liveTable.notifyListeners(i(7, 9), i(), i());
+            addToTable(refreshingTable, i(7, 9), c("x", 4, 5), c("y", 4, 5), c("yLow", 3, 4), c("yHigh", 5, 6));
+            refreshingTable.notifyListeners(i(7, 9), i(), i());
         });
 
         assertEquals(5.0, series.getX(4));

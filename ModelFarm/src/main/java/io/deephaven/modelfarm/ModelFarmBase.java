@@ -68,17 +68,17 @@ public abstract class ModelFarmBase<DATATYPE> implements ModelFarm {
      */
     public enum GetDataLockType {
         /**
-         * The LTM lock is already held.
+         * The UGP lock is already held.
          */
-        LTM_LOCK_ALREADY_HELD,
+        UGP_LOCK_ALREADY_HELD,
         /**
-         * Acquire the LTM lock.
+         * Acquire the UGP lock.
          */
-        LTM_LOCK,
+        UGP_LOCK,
         /**
-         * Acquire an LTM read lock.
+         * Acquire an UGP read lock.
          */
-        LTM_READ_LOCK,
+        UGP_READ_LOCK,
         /**
          * Use the (usually) lock-free snapshotting mechanism.
          */
@@ -211,12 +211,12 @@ public abstract class ModelFarmBase<DATATYPE> implements ModelFarm {
     protected static FunctionalInterfaces.ThrowingBiConsumer<QueryDataRetrievalOperation, NotificationStepSource, RuntimeException> getDoLockedConsumer(
             final GetDataLockType lockType) {
         switch (lockType) {
-            case LTM_LOCK_ALREADY_HELD:
+            case UGP_LOCK_ALREADY_HELD:
                 return (queryDataRetrievalOperation, source) -> queryDataRetrievalOperation.retrieveData(false);
-            case LTM_LOCK:
+            case UGP_LOCK:
                 return (queryDataRetrievalOperation, source) -> UpdateGraphProcessor.DEFAULT.exclusiveLock()
                         .doLocked(() -> queryDataRetrievalOperation.retrieveData(false));
-            case LTM_READ_LOCK:
+            case UGP_READ_LOCK:
                 return (queryDataRetrievalOperation, source) -> UpdateGraphProcessor.DEFAULT.sharedLock()
                         .doLocked(() -> queryDataRetrievalOperation.retrieveData(false));
             case SNAPSHOT:

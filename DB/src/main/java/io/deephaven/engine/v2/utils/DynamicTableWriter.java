@@ -15,7 +15,7 @@ import io.deephaven.engine.tables.DataColumn;
 import io.deephaven.engine.tables.TableDefinition;
 import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.util.QueryConstants;
-import io.deephaven.engine.v2.LiveQueryTable;
+import io.deephaven.engine.v2.UpdateSourceQueryTable;
 import io.deephaven.engine.v2.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.SingleValueColumnSource;
@@ -33,7 +33,7 @@ import java.util.stream.Collectors;
  * This class is not thread safe, you must synchronize externally.
  */
 public class DynamicTableWriter implements TableWriter {
-    private final LiveQueryTable table;
+    private final UpdateSourceQueryTable table;
     private final ArrayBackedColumnSource[] arrayColumnSources;
 
     private final String[] columnNames;
@@ -133,7 +133,7 @@ public class DynamicTableWriter implements TableWriter {
      *
      * @return a live table with the output of this log
      */
-    public LiveQueryTable getTable() {
+    public UpdateSourceQueryTable getTable() {
         return table;
     }
 
@@ -188,7 +188,7 @@ public class DynamicTableWriter implements TableWriter {
     }
 
     private void addRangeToTableIndex(int first, int last) {
-        table.addRange(first, last);
+        table.addRowKeyRange(first, last);
     }
 
     private void ensureCapacity(int row) {
@@ -333,7 +333,7 @@ public class DynamicTableWriter implements TableWriter {
     private DynamicTableWriter(final Map<String, ColumnSource<?>> sources, final Map<String, Object> constantValues,
             final int allocatedSize) {
         this.allocatedSize = 256;
-        this.table = new LiveQueryTable(RowSetFactory.fromKeys().toTracking(), sources);
+        this.table = new UpdateSourceQueryTable(RowSetFactory.fromKeys().toTracking(), sources);
         final int nCols = sources.size();;
         this.columnNames = new String[nCols];
         this.arrayColumnSources = new ArrayBackedColumnSource[nCols];

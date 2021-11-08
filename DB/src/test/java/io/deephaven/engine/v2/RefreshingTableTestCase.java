@@ -29,11 +29,11 @@ import java.util.Random;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
-abstract public class LiveTableTestCase extends BaseArrayTestCase implements UpdateErrorReporter {
+abstract public class RefreshingTableTestCase extends BaseArrayTestCase implements UpdateErrorReporter {
     static public boolean printTableUpdates = Configuration.getInstance()
-            .getBooleanForClassWithDefault(LiveTableTestCase.class, "printTableUpdates", false);
+            .getBooleanForClassWithDefault(RefreshingTableTestCase.class, "printTableUpdates", false);
     private static final boolean ENABLE_COMPILER_TOOLS_LOGGING = Configuration.getInstance()
-            .getBooleanForClassWithDefault(QueryTableTestBase.class, "CompilerTools.logEnabled", false);
+            .getBooleanForClassWithDefault(RefreshingTableTestCase.class, "CompilerTools.logEnabled", false);
 
     private boolean oldMemoize;
     private UpdateErrorReporter oldReporter;

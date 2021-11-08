@@ -12,7 +12,6 @@ import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.tables.ColumnDefinition;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.TableDefinition;
-import io.deephaven.engine.tables.live.LiveTable;
 import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.tables.live.UpdateSourceRegistrar;
 import io.deephaven.engine.tables.live.NotificationQueue;
@@ -45,7 +44,7 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
  *
  * Note that <b>viewport</b>s are defined in row positions of the upstream table.
  */
-public class BarrageTable extends QueryTable implements LiveTable, BarrageMessage.Listener {
+public class BarrageTable extends QueryTable implements BarrageMessage.Listener, Runnable {
 
     public static final boolean DEBUG_ENABLED =
             Configuration.getInstance().getBooleanWithDefault("BarrageTable.debug", false);
@@ -93,7 +92,7 @@ public class BarrageTable extends QueryTable implements LiveTable, BarrageMessag
     /** synchronize access to pendingUpdates */
     private final Object pendingUpdatesLock = new Object();
 
-    /** accumulate pending updates until we run this LiveTable */
+    /** accumulate pending updates until we're refreshed in {@link #run()} */
     private ArrayDeque<BarrageMessage> pendingUpdates = new ArrayDeque<>();
 
     /** alternative pendingUpdates container to avoid allocating, and resizing, a new instance */

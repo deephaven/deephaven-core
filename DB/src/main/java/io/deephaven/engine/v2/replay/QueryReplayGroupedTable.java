@@ -6,7 +6,6 @@ package io.deephaven.engine.v2.replay;
 
 
 import io.deephaven.base.verify.Require;
-import io.deephaven.engine.tables.live.LiveTable;
 import io.deephaven.engine.tables.utils.DBDateTime;
 import io.deephaven.engine.v2.QueryTable;
 import io.deephaven.engine.v2.sources.ColumnSource;
@@ -20,7 +19,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.PriorityQueue;
 
-public abstract class QueryReplayGroupedTable extends QueryTable implements LiveTable {
+public abstract class QueryReplayGroupedTable extends QueryTable implements Runnable {
 
 
     protected final RedirectionIndex redirectionIndex;

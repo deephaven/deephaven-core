@@ -45,7 +45,7 @@ public class UnionRedirection implements Serializable {
     // the start of our outer prev rowSet for this entry, the end of the current entry (+ 1) is in the next table
     long[] prevStartOfIndices = new long[INITIAL_SIZE];
 
-    // copy of prevStartOfIndices to be updated during the LTM cycle and swapped as a terminal notification
+    // copy of prevStartOfIndices to be updated during the UGP cycle and swapped as a terminal notification
     long[] prevStartOfIndicesAlt = new long[INITIAL_SIZE];
 
     /**

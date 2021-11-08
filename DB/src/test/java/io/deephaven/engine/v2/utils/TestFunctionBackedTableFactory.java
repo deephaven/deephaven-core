@@ -16,7 +16,7 @@ import static io.deephaven.engine.tables.utils.TableTools.diff;
 import static io.deephaven.engine.v2.TstUtils.getTable;
 import static io.deephaven.engine.v2.TstUtils.initColumnInfos;
 
-public class TestFunctionBackedTableFactory extends LiveTableTestCase {
+public class TestFunctionBackedTableFactory extends RefreshingTableTestCase {
     public void testIterative() {
         Random random = new Random(0);
         TstUtils.ColumnInfo columnInfo[];

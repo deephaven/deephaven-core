@@ -5,7 +5,6 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.live.LiveTable;
 import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.v2.*;
 import io.deephaven.engine.v2.sources.AbstractColumnSource;
@@ -95,9 +94,9 @@ public class WindowCheck {
      * The TimeWindowListener maintains a priority queue of rows that are within a configured window, when they pass out
      * of the window, the InWindow column is set to false and a modification tick happens.
      *
-     * It implements LiveTable, so that we can be inserted into the UpdateGraphProcessor.
+     * It implements {@link Runnable}, so that we can be inserted into the {@link UpdateGraphProcessor}.
      */
-    static class TimeWindowListener extends MergedListener implements LiveTable {
+    static class TimeWindowListener extends MergedListener implements Runnable {
         private final InWindowColumnSource inWindowColumnSource;
         private final QueryTable result;
         /** a priority queue of InWindow entries, with the least recent timestamps getting pulled out first. */

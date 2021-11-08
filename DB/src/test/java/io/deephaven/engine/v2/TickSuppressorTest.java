@@ -109,7 +109,7 @@ public class TickSuppressorTest extends QueryTableTestBase {
         };
 
         for (int step = 0; step < maxSteps; step++) {
-            if (LiveTableTestCase.printTableUpdates) {
+            if (RefreshingTableTestCase.printTableUpdates) {
                 System.out.println("Seed = " + seed + ", Step = " + step);
             }
             simulateShiftAwareStep(size, random, queryTable, columnInfo, en);

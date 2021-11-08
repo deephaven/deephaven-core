@@ -8,11 +8,11 @@ import com.google.common.io.LittleEndianDataInputStream;
 import gnu.trove.list.array.TLongArrayList;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.structures.RowSequence;
+import io.deephaven.engine.v2.RefreshingTableTestCase;
 import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.engine.v2.utils.RowSetBuilderSequential;
 import io.deephaven.engine.v2.utils.RowSetFactory;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
-import io.deephaven.engine.v2.LiveTableTestCase;
 import io.deephaven.engine.v2.sources.chunk.Attributes;
 import io.deephaven.engine.v2.sources.chunk.ChunkType;
 import io.deephaven.engine.v2.sources.chunk.WritableByteChunk;
@@ -37,7 +37,7 @@ import java.util.Random;
 import java.util.function.Consumer;
 import java.util.function.IntFunction;
 
-public class BarrageColumnRoundTripTest extends LiveTableTestCase {
+public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
 
     private static final BarrageSubscriptionOptions OPT_DEFAULT_DH_NULLS =
             BarrageSubscriptionOptions.builder()

@@ -9,7 +9,7 @@ import java.util.Queue;
  * Update source that combines multiple sources. Each registered source is invoked exactly once on the next
  * {@link #run()} and then automatically de-registered.
  */
-public class OneShotUpdateCombiner implements LiveTable, UpdateSourceRegistrar {
+public class OneShotUpdateCombiner implements Runnable, UpdateSourceRegistrar {
 
     private final Queue<Runnable> sources = new ArrayDeque<>();
 
