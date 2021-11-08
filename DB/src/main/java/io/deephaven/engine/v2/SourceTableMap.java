@@ -3,7 +3,7 @@ package io.deephaven.engine.v2;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.TableDefinition;
 import io.deephaven.engine.tables.live.UpdateGraphProcessor;
-import io.deephaven.engine.tables.live.UpdateRootCombiner;
+import io.deephaven.engine.tables.live.UpdateSourceCombiner;
 import io.deephaven.engine.v2.locations.*;
 import io.deephaven.engine.v2.locations.impl.SingleTableLocationProvider;
 import io.deephaven.engine.v2.locations.impl.TableLocationSubscriptionBuffer;
@@ -33,7 +33,7 @@ public class SourceTableMap extends LocalTableMap {
     private final boolean refreshSizes;
     private final Predicate<ImmutableTableLocationKey> locationKeyMatcher;
 
-    private final UpdateRootCombiner refreshCombiner;
+    private final UpdateSourceCombiner refreshCombiner;
     private final TableLocationSubscriptionBuffer subscriptionBuffer;
     private final IntrusiveDoublyLinkedQueue<PendingLocationState> pendingLocationStates;
     private final IntrusiveDoublyLinkedQueue<PendingLocationState> readyLocationStates;
@@ -72,7 +72,7 @@ public class SourceTableMap extends LocalTableMap {
 
         if (needToRefreshLocations || refreshSizes) {
             setRefreshing(true);
-            refreshCombiner = new UpdateRootCombiner();
+            refreshCombiner = new UpdateSourceCombiner();
             manage(refreshCombiner);
         } else {
             refreshCombiner = null;
@@ -92,7 +92,7 @@ public class SourceTableMap extends LocalTableMap {
                     processPendingLocations();
                 }
             };
-            refreshCombiner.addTable(processNewLocationsUpdateRoot);
+            refreshCombiner.addSource(processNewLocationsUpdateRoot);
             processPendingLocations();
         } else {
             subscriptionBuffer = null;
@@ -106,7 +106,7 @@ public class SourceTableMap extends LocalTableMap {
 
         if (isRefreshing()) {
             // noinspection ConstantConditions
-            UpdateGraphProcessor.DEFAULT.addTable(refreshCombiner);
+            UpdateGraphProcessor.DEFAULT.addSource(refreshCombiner);
         }
     }
 

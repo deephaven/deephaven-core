@@ -14,7 +14,7 @@ import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.TableDefinition;
 import io.deephaven.engine.tables.live.LiveTable;
 import io.deephaven.engine.tables.live.UpdateGraphProcessor;
-import io.deephaven.engine.tables.live.UpdateRootRegistrar;
+import io.deephaven.engine.tables.live.UpdateSourceRegistrar;
 import io.deephaven.engine.tables.live.NotificationQueue;
 import io.deephaven.engine.v2.Listener;
 import io.deephaven.engine.v2.QueryTable;
@@ -52,7 +52,7 @@ public class BarrageTable extends QueryTable implements LiveTable, BarrageMessag
 
     private static final Logger log = LoggerFactory.getLogger(BarrageTable.class);
 
-    private final UpdateRootRegistrar registrar;
+    private final UpdateSourceRegistrar registrar;
     private final NotificationQueue notificationQueue;
 
     private final UpdatePerformanceTracker.Entry refreshEntry;
@@ -110,7 +110,7 @@ public class BarrageTable extends QueryTable implements LiveTable, BarrageMessag
     private static final AtomicIntegerFieldUpdater<BarrageTable> PREV_TRACKING_UPDATER =
             AtomicIntegerFieldUpdater.newUpdater(BarrageTable.class, "prevTrackingEnabled");
 
-    protected BarrageTable(final UpdateRootRegistrar registrar,
+    protected BarrageTable(final UpdateSourceRegistrar registrar,
             final NotificationQueue notificationQueue,
             final LinkedHashMap<String, ColumnSource<?>> columns,
             final WritableSource<?>[] writableSources,
@@ -141,7 +141,7 @@ public class BarrageTable extends QueryTable implements LiveTable, BarrageMessag
                 ? LogicalClock.getStep(currentClockValue) - 1
                 : LogicalClock.getStep(currentClockValue));
 
-        registrar.addTable(this);
+        registrar.addSource(this);
 
         setAttribute(Table.DO_NOT_MAKE_REMOTE_ATTRIBUTE, true);
 
@@ -452,7 +452,7 @@ public class BarrageTable extends QueryTable implements LiveTable, BarrageMessag
 
     private void cleanup() {
         unsubscribed = true;
-        registrar.removeTable(this);
+        registrar.removeSource(this);
         synchronized (pendingUpdatesLock) {
             // release any pending snapshots, as we will never process them
             pendingUpdates.clear();
@@ -511,7 +511,7 @@ public class BarrageTable extends QueryTable implements LiveTable, BarrageMessag
     }
 
     @VisibleForTesting
-    public static BarrageTable make(final UpdateRootRegistrar registrar,
+    public static BarrageTable make(final UpdateSourceRegistrar registrar,
             final NotificationQueue queue,
             final TableDefinition tableDefinition,
             final boolean isViewPort) {
@@ -563,7 +563,7 @@ public class BarrageTable extends QueryTable implements LiveTable, BarrageMessag
     }
 
     private void doWakeup() {
-        registrar.requestRefresh(this);
+        registrar.requestRefresh();
     }
 
     @Override

@@ -44,6 +44,6 @@ public class LiveQueryTable extends QueryTable implements LiveTable {
     @Override
     public void destroy() {
         super.destroy();
-        UpdateGraphProcessor.DEFAULT.removeTable(this);
+        UpdateGraphProcessor.DEFAULT.removeSource(this);
     }
 }

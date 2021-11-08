@@ -115,12 +115,12 @@ public class QueryTableWouldMatchTest extends QueryTableTestBase {
         doTestMatchRefilter(true);
     }
 
-    private void doTestMatchRefilter(boolean isLive) {
+    private void doTestMatchRefilter(boolean isRefreshing) {
         final QueryTable t1 = testRefreshingTable(
                 c("Text", "Hey", "Yo", "Lets go", "Dog", "Cat", "Cheese"),
                 c("Number", 0, 1, 2, 3, 4, 5),
                 c("Bool", true, false, true, true, false, false));
-        t1.setRefreshing(isLive);
+        t1.setRefreshing(isRefreshing);
 
         final QueryTable textTable = testRefreshingTable(c("Text", "Dog", "Cat"));
         final QueryTable numberTable = testRefreshingTable(c("Number", 0, 5));
@@ -164,7 +164,7 @@ public class QueryTableWouldMatchTest extends QueryTableTestBase {
         assertEquals(Arrays.asList(false, false, true, false, false, true),
                 Arrays.asList(t1Matched.getColumn("InNum").get(0, 6)));
 
-        if (isLive) {
+        if (isRefreshing) {
             // Tick both of them, and the table itself
             UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
                 addToTable(textTable, i(0, 2), c("Text", "Dog", "Yo"));

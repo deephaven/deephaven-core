@@ -321,7 +321,7 @@ def createCategoricalSeries(table, columnName, convertNulls=NULL_CONVERSION.ERRO
         or other undesirable behavior.
     """
 
-    if table.isLive():
+    if table.isRefreshing():
         table = freezeTable(table)
 
     # construct query determining categorical mapping - what are the pluses and the minuses of this?
@@ -420,7 +420,7 @@ def columnToNumpyArray(table, columnName, convertNulls=NULL_CONVERSION.ERROR, fo
 
     """
 
-    if table.isLive():
+    if table.isRefreshing():
         table = freezeTable(table)
 
     convertNulls = NULL_CONVERSION.validateValue(convertNulls)
@@ -451,7 +451,7 @@ def columnToSeries(table, columnName, convertNulls=NULL_CONVERSION.ERROR):
         or other undesirable behavior.
     """
 
-    if table.isLive():
+    if table.isRefreshing():
         table = freezeTable(table)
 
     convertNulls = NULL_CONVERSION.validateValue(convertNulls)
@@ -539,7 +539,7 @@ def tableToDataFrame(table, convertNulls=NULL_CONVERSION.ERROR, categoricals=Non
 
     """
 
-    if table.isLive():
+    if table.isRefreshing():
         table = freezeTable(table)
 
     convertNulls = NULL_CONVERSION.validateValue(convertNulls)

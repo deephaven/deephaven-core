@@ -86,7 +86,7 @@ public class WindowCheck {
         result.addParentReference(timeWindowListener);
         result.manage(table);
         if (addToMonitor) {
-            UpdateGraphProcessor.DEFAULT.addTable(timeWindowListener);
+            UpdateGraphProcessor.DEFAULT.addSource(timeWindowListener);
         }
         return new Pair<>(result, timeWindowListener);
     }
@@ -359,7 +359,7 @@ public class WindowCheck {
         @Override
         public void destroy() {
             super.destroy();
-            UpdateGraphProcessor.DEFAULT.removeTable(this);
+            UpdateGraphProcessor.DEFAULT.removeSource(this);
         }
     }
 

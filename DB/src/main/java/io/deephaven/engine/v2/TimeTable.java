@@ -109,6 +109,6 @@ public class TimeTable extends QueryTable implements LiveTable {
     @Override
     protected void destroy() {
         super.destroy();
-        UpdateGraphProcessor.DEFAULT.removeTable(this);
+        UpdateGraphProcessor.DEFAULT.removeSource(this);
     }
 }

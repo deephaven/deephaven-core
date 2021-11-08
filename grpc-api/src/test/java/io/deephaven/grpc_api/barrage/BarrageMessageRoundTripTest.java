@@ -13,7 +13,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.client.impl.BarrageSubscriptionImpl;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.live.UpdateGraphProcessor;
-import io.deephaven.engine.tables.live.UpdateRootCombiner;
+import io.deephaven.engine.tables.live.UpdateSourceCombiner;
 import io.deephaven.engine.tables.utils.DBTimeUtils;
 import io.deephaven.engine.tables.utils.TableDiff;
 import io.deephaven.engine.tables.utils.TableTools;
@@ -51,7 +51,7 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
 
     private TestControlledScheduler scheduler;
     private Deque<Throwable> exceptions;
-    private UpdateRootCombiner liveTableRegistrar;
+    private UpdateSourceCombiner liveTableRegistrar;
     private boolean useDeephavenNulls;
 
     private TestComponent daggerRoot;
@@ -75,7 +75,7 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
     @Override
     protected void setUp() throws Exception {
         super.setUp();
-        liveTableRegistrar = new UpdateRootCombiner();
+        liveTableRegistrar = new UpdateSourceCombiner();
         scheduler = new TestControlledScheduler();
         exceptions = new ArrayDeque<>();
         useDeephavenNulls = true;

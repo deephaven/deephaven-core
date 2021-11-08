@@ -48,7 +48,7 @@ public class PublishToKafka<K, V> extends LivenessArtifact {
      * <p>
      * The new publisher will produce records for existing {@code table} data at construction.
      * <p>
-     * If {@code table} is a dynamic, refreshing table ({@link Table#isLive()}), the calling thread must block the
+     * If {@code table} is a dynamic, refreshing table ({@link Table#isRefreshing()}), the calling thread must block the
      * {@link UpdateGraphProcessor#DEFAULT UpdateGraphProcessor} by holding either its {@link UpdateGraphProcessor#exclusiveLock()
      * exclusive lock} or its {@link UpdateGraphProcessor#sharedLock() shared lock}. The publisher will install a listener
      * in order to produce new records as updates become available. Callers must be sure to maintain a reference to the

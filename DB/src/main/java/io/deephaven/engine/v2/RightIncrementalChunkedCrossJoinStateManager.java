@@ -277,7 +277,7 @@ class RightIncrementalChunkedCrossJoinStateManager
     MutableRowSet build(@NotNull final QueryTable leftTable,
                         @NotNull final QueryTable rightTable) {
         // This state manager assumes right side is ticking.
-        Assert.eqTrue(rightTable.isRefreshing(), "rightTable.isLive()");
+        Assert.eqTrue(rightTable.isRefreshing(), "rightTable.isRefreshing()");
         if (!leftTable.isEmpty()) {
             try (final BuildContext bc = makeBuildContext(leftKeySources, leftTable.getRowSet().size())) {
                 final boolean isLeft = true;

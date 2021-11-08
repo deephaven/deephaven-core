@@ -6,7 +6,7 @@ package io.deephaven.engine.v2;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
-import io.deephaven.engine.tables.live.UpdateRootRegistrar;
+import io.deephaven.engine.tables.live.UpdateSourceRegistrar;
 import io.deephaven.engine.v2.locations.*;
 import io.deephaven.engine.v2.locations.impl.TableLocationSubscriptionBuffer;
 import io.deephaven.engine.v2.utils.*;
@@ -54,7 +54,7 @@ public abstract class SourceTable extends RedefinableTable {
     /**
      * Registration function for LiveTables that need to be refreshed.
      */
-    final UpdateRootRegistrar updateRootRegistrar;
+    final UpdateSourceRegistrar updateSourceRegistrar;
 
     /**
      * Whether we've done our initial location fetch.
@@ -83,28 +83,29 @@ public abstract class SourceTable extends RedefinableTable {
      * @param description A human-readable description for this table
      * @param componentFactory A component factory for creating column source managers
      * @param locationProvider A TableLocationProvider, for use in discovering the locations that compose this table
-     * @param updateRootRegistrar Callback for registering live tables for refreshes, null if this table is not live
+     * @param updateSourceRegistrar Callback for registering live tables for refreshes, null if this table is not live
      */
     SourceTable(@NotNull final TableDefinition tableDefinition,
             @NotNull final String description,
             @NotNull final SourceTableComponentFactory componentFactory,
             @NotNull final TableLocationProvider locationProvider,
-            final UpdateRootRegistrar updateRootRegistrar) {
+            final UpdateSourceRegistrar updateSourceRegistrar) {
         super(tableDefinition, description);
 
         this.componentFactory = Require.neqNull(componentFactory, "componentFactory");
         this.locationProvider = Require.neqNull(locationProvider, "locationProvider");
-        this.updateRootRegistrar = updateRootRegistrar;
+        this.updateSourceRegistrar = updateSourceRegistrar;
 
-        final boolean isLive = updateRootRegistrar != null;
-        columnSourceManager = componentFactory.createColumnSourceManager(isLive, ColumnToCodecMappings.EMPTY, definition
-                .getColumns() /* NB: this is the *re-written* definition passed to the super-class constructor. */);
-        if (isLive) {
+        final boolean isRefreshing = updateSourceRegistrar != null;
+        columnSourceManager = componentFactory.createColumnSourceManager(isRefreshing, ColumnToCodecMappings.EMPTY,
+                definition.getColumns() // NB: this is the *re-written* definition passed to the super-class constructor.
+        );
+        if (isRefreshing) {
             // NB: There's no reason to start out trying to group, if this is a live table.
             columnSourceManager.disableGrouping();
         }
 
-        setRefreshing(isLive);
+        setRefreshing(isRefreshing);
         setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, Boolean.TRUE);
     }
 
@@ -140,7 +141,7 @@ public abstract class SourceTable extends RedefinableTable {
                     final TableLocationSubscriptionBuffer locationBuffer =
                             new TableLocationSubscriptionBuffer(locationProvider);
                     maybeAddLocations(locationBuffer.processPending());
-                    updateRootRegistrar.addTable(locationChangePoller = new LocationChangePoller(locationBuffer));
+                    updateSourceRegistrar.addSource(locationChangePoller = new LocationChangePoller(locationBuffer));
                 } else {
                     locationProvider.refresh();
                     maybeAddLocations(locationProvider.getTableLocationKeys());
@@ -319,9 +320,9 @@ public abstract class SourceTable extends RedefinableTable {
     @Override
     protected void destroy() {
         super.destroy();
-        if (updateRootRegistrar != null) {
+        if (updateSourceRegistrar != null) {
             if (locationChangePoller != null) {
-                updateRootRegistrar.removeTable(locationChangePoller);
+                updateSourceRegistrar.removeSource(locationChangePoller);
             }
         }
     }

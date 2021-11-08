@@ -69,7 +69,7 @@ public class Replayer implements ReplayerInterface, LiveTable {
     public void start() {
         delta = nanosToTime(millisToNanos(System.currentTimeMillis())).getNanos() - startTime.getNanos();
         for (Runnable currentTable : currentTables) {
-            UpdateGraphProcessor.DEFAULT.addTable(currentTable);
+            UpdateGraphProcessor.DEFAULT.addSource(currentTable);
         }
     }
 
@@ -237,7 +237,7 @@ public class Replayer implements ReplayerInterface, LiveTable {
                 new ReplayTable(dataSource.getRowSet(), dataSource.getColumnSourceMap(), timeColumn, this);
         currentTables.add(result);
         if (delta < Long.MAX_VALUE) {
-            UpdateGraphProcessor.DEFAULT.addTable(result);
+            UpdateGraphProcessor.DEFAULT.addSource(result);
         }
         return result;
     }
@@ -257,7 +257,7 @@ public class Replayer implements ReplayerInterface, LiveTable {
                 dataSource.getColumnSourceMap(), timeColumn, this, groupingColumn);
         currentTables.add(result);
         if (delta < Long.MAX_VALUE) {
-            UpdateGraphProcessor.DEFAULT.addTable(result);
+            UpdateGraphProcessor.DEFAULT.addSource(result);
         }
         return result;
     }
@@ -276,7 +276,7 @@ public class Replayer implements ReplayerInterface, LiveTable {
                 dataSource.getColumnSourceMap(), timeColumn, this, groupingColumns);
         currentTables.add(result);
         if (delta < Long.MAX_VALUE) {
-            UpdateGraphProcessor.DEFAULT.addTable(result);
+            UpdateGraphProcessor.DEFAULT.addSource(result);
         }
         return result;
     }

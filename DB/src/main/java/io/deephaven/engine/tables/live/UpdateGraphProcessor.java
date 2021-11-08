@@ -19,7 +19,6 @@ import io.deephaven.net.CommBase;
 import io.deephaven.util.process.ProcessEnvironment;
 import io.deephaven.engine.v2.utils.AbstractNotification;
 import io.deephaven.util.datastructures.SimpleReferenceManager;
-import io.deephaven.util.datastructures.intrusive.IntrusiveArraySet;
 import io.deephaven.util.thread.ThreadDump;
 import io.deephaven.engine.tables.utils.SystemicObjectTracker;
 import io.deephaven.engine.util.liveness.LivenessManager;
@@ -47,6 +46,7 @@ import org.jetbrains.annotations.Nullable;
 import java.lang.ref.WeakReference;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Condition;
 import java.util.function.BooleanSupplier;
@@ -68,7 +68,7 @@ import java.util.function.Supplier;
  * defined)</li>
  * </ul>
  */
-public enum UpdateGraphProcessor implements UpdateRootRegistrar, NotificationQueue, NotificationQueue.Dependency {
+public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQueue, NotificationQueue.Dependency {
     DEFAULT;
 
     private final Logger log = LoggerFactory.getLogger(UpdateGraphProcessor.class);
@@ -96,10 +96,10 @@ public enum UpdateGraphProcessor implements UpdateRootRegistrar, NotificationQue
     private final IntrusiveDoublyLinkedQueue<Notification> terminalNotifications =
             new IntrusiveDoublyLinkedQueue<>(IntrusiveDoublyLinkedNode.Adapter.<Notification>getInstance());
 
-    // Specifically not using a ConcurrentListDeque here because we don't want to create wasteful garbage
-    // when we know this collection is going to constantly grow and shrink.
-    private final IntrusiveArraySet<LiveTableRefreshNotification> singleUpdateQueue =
-            new IntrusiveArraySet<>(SingleUpdateSlotAdapter.INSTANCE, LiveTableRefreshNotification.class);
+    /**
+     * A flag indicating that an accelerated cycle has been requested.
+     */
+    private final AtomicBoolean refreshRequested = new AtomicBoolean();
 
     private final Thread refreshThread;
 
@@ -473,7 +473,7 @@ public enum UpdateGraphProcessor implements UpdateRootRegistrar, NotificationQue
      * </p>
      *
      * <p>
-     * In this mode calls to {@link #addTable(Runnable)} will only mark tables as
+     * In this mode calls to {@link #addSource(Runnable)} will only mark tables as
      * {@link DynamicNode#setRefreshing(boolean) refreshing}. Additionally {@link #start()} may not be called.
      * </p>
      */
@@ -597,24 +597,24 @@ public enum UpdateGraphProcessor implements UpdateRootRegistrar, NotificationQue
      *
      * @implNote This will do nothing in {@link #enableUnitTestMode() unit test} mode other than mark the table as
      *           refreshing.
-     * @param table The table to be added to the run list
+     * @param updateSource The table to be added to the run list
      */
     @Override
-    public void addTable(@NotNull final Runnable table) {
-        if (table instanceof DynamicNode) {
-            ((DynamicNode) table).setRefreshing(true);
+    public void addSource(@NotNull final Runnable updateSource) {
+        if (updateSource instanceof DynamicNode) {
+            ((DynamicNode) updateSource).setRefreshing(true);
         }
 
         if (!allowUnitTestMode) {
             // if we are in unit test mode we never want to start the LTM
-            tables.add(table);
+            tables.add(updateSource);
             start();
         }
     }
 
     @Override
-    public void removeTable(@NotNull final Runnable updateRoot) {
-        tables.remove(updateRoot);
+    public void removeSource(@NotNull final Runnable updateSource) {
+        tables.remove(updateSource);
     }
 
     /**
@@ -707,54 +707,14 @@ public enum UpdateGraphProcessor implements UpdateRootRegistrar, NotificationQue
     }
 
     /**
-     * Refresh {@code liveTable} on this thread if it is registered.
-     *
-     * @param updateRoot The {@link LiveTable} that we would like to run
-     */
-    private void maybeRefreshTable(@NotNull final Runnable updateRoot) {
-        final LiveTableRefreshNotification liveTableRefreshNotification =
-                tables.getFirstReference((final Runnable found) -> found == updateRoot);
-        if (liveTableRefreshNotification == null) {
-            return;
-        }
-        refreshOneTable(liveTableRefreshNotification);
-    }
-
-    /**
-     * Acquire the exclusive lock if necessary and do a run of {@code liveTable} on this thread if it is registered
-     * with this LTM.
-     *
-     * @param updateRoot The {@link LiveTable} that we would like to run
-     * @param onlyIfHaveLock If true, check that the lock is held first and do nothing if it is not
+     * Request that the next update cycle begin as soon as practicable. This "hurry-up" cycle happens through normal
+     * means using the refresh thread and its workers.
      */
     @Override
-    public void maybeRefreshTable(@NotNull final Runnable updateRoot, final boolean onlyIfHaveLock) {
-        if (!onlyIfHaveLock || exclusiveLock().isHeldByCurrentThread()) {
-            maybeRefreshTable(updateRoot);
-        }
-    }
-
-    /**
-     * <p>
-     * Request a run for a single {@link LiveTable live table}, which must already be registered with this
-     * UpdateGraphProcessor.
-     * </p>
-     * <p>
-     * The update will occur on the LTM thread, but will not necessarily wait for the next scheduled cycle.
-     * </p>
-     *
-     * @param updateRoot The {@link LiveTable live table} to run
-     */
-    @Override
-    public void requestRefresh(@NotNull final Runnable updateRoot) {
-        final LiveTableRefreshNotification liveTableRefreshNotification =
-                tables.getFirstReference((final Runnable found) -> found == updateRoot);
-        if (liveTableRefreshNotification == null) {
-            return;
-        }
-        synchronized (singleUpdateQueue) {
-            singleUpdateQueue.add(liveTableRefreshNotification);
-            singleUpdateQueue.notify();
+    public void requestRefresh() {
+        refreshRequested.set(true);
+        synchronized (refreshRequested) {
+            refreshRequested.notify();
         }
     }
 
@@ -1547,7 +1507,7 @@ public enum UpdateGraphProcessor implements UpdateRootRegistrar, NotificationQue
      * </p>
      *
      * <p>
-     * If the delay is interrupted by a {@link #requestRefresh(Runnable) request} to run a single table this task
+     * If the delay is interrupted by a {@link UpdateSourceRegistrar#requestRefresh() request} to run a single table this task
      * will drain the queue of single run requests, then continue to wait for a complete period if necessary.
      * </p>
      *
@@ -1569,80 +1529,36 @@ public enum UpdateGraphProcessor implements UpdateRootRegistrar, NotificationQue
 
     /**
      * <p>
-     * Ensure the current time is past expectedEndTime before returning.
-     * </p>
-     *
-     * <p>
-     * If the delay is interrupted by a {@link #requestRefresh(Runnable) request} to run a single table this task
-     * will drain the queue of single run requests, then continue to wait for a complete period if necessary.
-     * </p>
-     *
+     * Ensure the current time is past {@code expectedEndTime} before returning, or return early if an immediate refresh
+     * is requested.
      * <p>
      * If the delay is interrupted for any other {@link InterruptedException reason}, it will be logged and continue to
      * wait the remaining period.
-     * </p>
      *
      * @param expectedEndTime The time which we should sleep until
      * @param timeSource The source of time that startTime was based on
      */
     private void waitForEndTime(final long expectedEndTime, final Scheduler timeSource) {
         while (timeSource.currentTimeMillis() < expectedEndTime) {
-            drainSingleUpdateQueue();
-
             final long currentDelay = expectedEndTime - timeSource.currentTimeMillis();
             if (currentDelay <= 0) {
                 return;
             }
-
-            try {
-                synchronized (singleUpdateQueue) {
-                    if (singleUpdateQueue.isEmpty()) {
-                        singleUpdateQueue.wait(currentDelay);
-                    }
-                }
-            } catch (InterruptedException logAndIgnore) {
-                log.warn().append("Interrupted while waiting on singleUpdateQueue.  Ignoring: ").append(logAndIgnore)
-                        .endl();
-            }
-        }
-    }
-
-    /**
-     * <p>
-     * Drain the single update queue from the front and run each of the tables.
-     * </p>
-     *
-     * @implNote If the table is not monitored by the LTM it may not be refreshed
-     */
-    private void drainSingleUpdateQueue() {
-        // NB: This is called while we're waiting for the next LTM cycle to start, thus blocking the next cycle even
-        // though it doesn't hold the LTM lock. The only race is with single updates, which are not submitted to
-        // the notification processor (and hence have no conflict over next/prev pointers).
-        final IntrusiveDoublyLinkedQueue<Notification> liveTableNotifications;
-        synchronized (singleUpdateQueue) {
-            if (singleUpdateQueue.isEmpty()) {
+            if (refreshRequested.get()) {
                 return;
             }
-            liveTableNotifications =
-                    new IntrusiveDoublyLinkedQueue<>(IntrusiveDoublyLinkedNode.Adapter.<Notification>getInstance());
-            singleUpdateQueue.forEach(liveTableNotifications::offer);
-            singleUpdateQueue.clear();
+            synchronized (refreshRequested) {
+                if (refreshRequested.get()) {
+                    return;
+                }
+                try {
+                    refreshRequested.wait(currentDelay);
+                } catch (final InterruptedException logAndIgnore) {
+                    log.warn().append("Interrupted while waiting on refreshRequested. Ignoring: ").append(logAndIgnore)
+                            .endl();
+                }
+            }
         }
-        doRefresh(() -> notificationProcessor.submitAll(liveTableNotifications));
-    }
-
-    /**
-     * Refresh a single {@link LiveTable live table} within an {@link LogicalClock update cycle} after the LTM has been
-     * locked. At the end of the update all {@link Notification notifications} will be flushed.
-     *
-     * @param liveTableNotification The enclosing notification for the {@link LiveTable} to run
-     */
-    private void refreshOneTable(@NotNull final LiveTableRefreshNotification liveTableNotification) {
-        // We're refreshing this table already, we should not prioritize its run again.
-        synchronized (singleUpdateQueue) {
-            singleUpdateQueue.removeIf((final LiveTableRefreshNotification found) -> found == liveTableNotification);
-        }
-        doRefresh(() -> runNotification(liveTableNotification));
     }
 
     /**
@@ -1650,10 +1566,7 @@ public enum UpdateGraphProcessor implements UpdateRootRegistrar, NotificationQue
      * locked. At the end of the updates all {@link Notification notifications} will be flushed.
      */
     private void refreshAllTables() {
-        // We're refreshing all tables already, we should not prioritize run for any of them again.
-        synchronized (singleUpdateQueue) {
-            singleUpdateQueue.clear();
-        }
+        refreshRequested.set(true);
         doRefresh(() -> tables.forEach((final LiveTableRefreshNotification liveTableNotification,
                 final Runnable unused) -> notificationProcessor.submit(liveTableNotification)));
     }
@@ -1693,8 +1606,6 @@ public enum UpdateGraphProcessor implements UpdateRootRegistrar, NotificationQue
 
         private final WeakReference<Runnable> liveTableRef;
 
-        private int singleUpdateQueueSlot;
-
         private LiveTableRefreshNotification(@NotNull final Runnable updateRoot) {
             super(false);
             liveTableRef = new WeakReference<>(updateRoot);
@@ -1729,25 +1640,6 @@ public enum UpdateGraphProcessor implements UpdateRootRegistrar, NotificationQue
         @Override
         public void clear() {
             liveTableRef.clear();
-        }
-    }
-
-    private static final class SingleUpdateSlotAdapter
-            implements IntrusiveArraySet.Adapter<LiveTableRefreshNotification> {
-
-        private static final IntrusiveArraySet.Adapter<LiveTableRefreshNotification> INSTANCE =
-                new SingleUpdateSlotAdapter();
-
-        private SingleUpdateSlotAdapter() {}
-
-        @Override
-        public int getSlot(@NotNull final LiveTableRefreshNotification element) {
-            return element.singleUpdateQueueSlot;
-        }
-
-        @Override
-        public void setSlot(@NotNull final LiveTableRefreshNotification element, final int slot) {
-            element.singleUpdateQueueSlot = slot;
         }
     }
 

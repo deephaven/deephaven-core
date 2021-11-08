@@ -6,7 +6,7 @@ package io.deephaven.engine.v2;
 
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.TableDefinition;
-import io.deephaven.engine.tables.live.UpdateRootRegistrar;
+import io.deephaven.engine.tables.live.UpdateSourceRegistrar;
 import io.deephaven.engine.v2.locations.TableLocationProvider;
 import io.deephaven.engine.v2.select.SelectColumn;
 
@@ -23,23 +23,23 @@ public class SimpleSourceTable extends SourceTable {
      * @param description A human-readable description for this table
      * @param componentFactory A component factory for creating column source managers
      * @param locationProvider A TableLocationProvider, for use in discovering the locations that compose this table
-     * @param updateRootRegistrar Callback for registering live tables for refreshes, null if this table is not live
+     * @param updateSourceRegistrar Callback for registering live tables for refreshes, null if this table is not live
      */
     public SimpleSourceTable(TableDefinition tableDefinition,
             String description,
             SourceTableComponentFactory componentFactory,
             TableLocationProvider locationProvider,
-            UpdateRootRegistrar updateRootRegistrar) {
-        super(tableDefinition, description, componentFactory, locationProvider, updateRootRegistrar);
+            UpdateSourceRegistrar updateSourceRegistrar) {
+        super(tableDefinition, description, componentFactory, locationProvider, updateSourceRegistrar);
     }
 
     protected SimpleSourceTable newInstance(TableDefinition tableDefinition,
             String description,
             SourceTableComponentFactory componentFactory,
             TableLocationProvider locationProvider,
-            UpdateRootRegistrar updateRootRegistrar) {
+            UpdateSourceRegistrar updateSourceRegistrar) {
         return new SimpleSourceTable(tableDefinition, description, componentFactory, locationProvider,
-                updateRootRegistrar);
+                updateSourceRegistrar);
     }
 
     @Override
@@ -49,7 +49,7 @@ public class SimpleSourceTable extends SourceTable {
             return this;
         }
         return newInstance(newDefinition, description + "-retainColumns", componentFactory, locationProvider,
-                updateRootRegistrar);
+                updateSourceRegistrar);
     }
 
     @Override

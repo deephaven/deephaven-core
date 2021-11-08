@@ -33,7 +33,7 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
     private final Map<String, Object[]> enumValues;
 
     private String description = getDefaultDescription();
-    private Runnable onPendingChange = () -> UpdateGraphProcessor.DEFAULT.requestRefresh(this);
+    private Runnable onPendingChange = () -> UpdateGraphProcessor.DEFAULT.requestRefresh();
 
     long nextRow = 0;
     private long pendingProcessed = NULL_NOTIFICATION_STEP;
@@ -78,7 +78,7 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
         });
         result.getRowSet().mutableCast().insert(builder.build());
         result.getRowSet().mutableCast().initializePreviousValue();
-        UpdateGraphProcessor.DEFAULT.addTable(result);
+        UpdateGraphProcessor.DEFAULT.addSource(result);
     }
 
     public BaseArrayBackedMutableTable setDescription(String newDescription) {
@@ -95,7 +95,7 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
     @TestUseOnly
     void setOnPendingChange(final Runnable onPendingChange) {
         this.onPendingChange =
-                onPendingChange == null ? () -> UpdateGraphProcessor.DEFAULT.requestRefresh(this) : onPendingChange;
+                onPendingChange == null ? () -> UpdateGraphProcessor.DEFAULT.requestRefresh() : onPendingChange;
     }
 
     private void processPending(IndexChangeRecorder indexChangeRecorder) {

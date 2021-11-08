@@ -48,7 +48,7 @@ public abstract class BaseIncrementalReleaseFilter extends SelectFilterLivenessA
     @Override
     public void init(TableDefinition tableDefinition) {
         if (!addedToUpdateGraphProcessor) {
-            UpdateGraphProcessor.DEFAULT.addTable(this);
+            UpdateGraphProcessor.DEFAULT.addSource(this);
             addedToUpdateGraphProcessor = true;
         }
     }
@@ -120,6 +120,6 @@ public abstract class BaseIncrementalReleaseFilter extends SelectFilterLivenessA
     @Override
     protected void destroy() {
         super.destroy();
-        UpdateGraphProcessor.DEFAULT.removeTable(this);
+        UpdateGraphProcessor.DEFAULT.removeSource(this);
     }
 }

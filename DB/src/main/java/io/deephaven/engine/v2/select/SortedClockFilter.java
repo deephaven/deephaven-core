@@ -26,13 +26,13 @@ public class SortedClockFilter extends ClockFilter {
 
     public SortedClockFilter(@NotNull final String columnName,
             @NotNull final Clock clock,
-            final boolean live) {
-        super(columnName, clock, live);
+            final boolean refreshing) {
+        super(columnName, clock, refreshing);
     }
 
     @Override
     public SortedClockFilter copy() {
-        return new SortedClockFilter(columnName, clock, isLive());
+        return new SortedClockFilter(columnName, clock, isRefreshing());
     }
 
     @Override

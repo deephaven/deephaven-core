@@ -91,7 +91,7 @@ public class SimulationClock implements Clock {
         if (!state.compareAndSet(State.NOT_STARTED, State.STARTED)) {
             throw new IllegalStateException(this + " already started");
         }
-        UpdateGraphProcessor.DEFAULT.addTable(refreshTask);
+        UpdateGraphProcessor.DEFAULT.addSource(refreshTask);
     }
 
     /**
@@ -102,7 +102,7 @@ public class SimulationClock implements Clock {
         if (now.getNanos() == endTime.getNanos()) {
             Assert.assertion(state.compareAndSet(State.STARTED, State.DONE),
                     "state.compareAndSet(State.STARTED, State.DONE)");
-            UpdateGraphProcessor.DEFAULT.removeTable(refreshTask);
+            UpdateGraphProcessor.DEFAULT.removeSource(refreshTask);
             UpdateGraphProcessor.DEFAULT.requestSignal(ltmCondition);
             return; // This return is not strictly necessary, but it seems clearer this way.
         }

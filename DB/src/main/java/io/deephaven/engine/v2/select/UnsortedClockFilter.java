@@ -31,8 +31,8 @@ public class UnsortedClockFilter extends ClockFilter {
 
     public UnsortedClockFilter(@NotNull final String columnName,
             @NotNull final Clock clock,
-            final boolean live) {
-        super(columnName, clock, live);
+            final boolean refreshing) {
+        super(columnName, clock, refreshing);
     }
 
     @Override
@@ -50,7 +50,7 @@ public class UnsortedClockFilter extends ClockFilter {
 
     @Override
     public UnsortedClockFilter copy() {
-        return new UnsortedClockFilter(columnName, clock, isLive());
+        return new UnsortedClockFilter(columnName, clock, isRefreshing());
     }
 
     private class RangeComparator implements Comparator<Range> {

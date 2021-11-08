@@ -29,16 +29,16 @@ public abstract class ClockFilter extends SelectFilterLivenessArtifactImpl imple
 
     protected final String columnName;
     protected final Clock clock;
-    private final boolean live;
+    private final boolean refreshing;
 
     ColumnSource<Long> nanosColumnSource;
     private QueryTable resultTable;
 
     @SuppressWarnings("WeakerAccess")
-    public ClockFilter(@NotNull final String columnName, @NotNull final Clock clock, final boolean live) {
+    public ClockFilter(@NotNull final String columnName, @NotNull final Clock clock, final boolean refreshing) {
         this.columnName = columnName;
         this.clock = clock;
-        this.live = live;
+        this.refreshing = refreshing;
     }
 
     @Override
@@ -96,10 +96,10 @@ public abstract class ClockFilter extends SelectFilterLivenessArtifactImpl imple
 
     @Override
     public final void setRecomputeListener(@NotNull final RecomputeListener listener) {
-        if (!live) {
+        if (!refreshing) {
             return;
         }
-        UpdateGraphProcessor.DEFAULT.addTable(this);
+        UpdateGraphProcessor.DEFAULT.addSource(this);
         this.resultTable = listener.getTable();
         listener.setIsRefreshing(true);
     }
@@ -107,7 +107,7 @@ public abstract class ClockFilter extends SelectFilterLivenessArtifactImpl imple
     @Override
     protected void destroy() {
         super.destroy();
-        UpdateGraphProcessor.DEFAULT.removeTable(this);
+        UpdateGraphProcessor.DEFAULT.removeSource(this);
     }
 
     @Override
@@ -123,8 +123,8 @@ public abstract class ClockFilter extends SelectFilterLivenessArtifactImpl imple
     @Nullable
     protected abstract MutableRowSet updateAndGetAddedIndex();
 
-    boolean isLive() {
-        return live;
+    boolean isRefreshing() {
+        return refreshing;
     }
 
     /**

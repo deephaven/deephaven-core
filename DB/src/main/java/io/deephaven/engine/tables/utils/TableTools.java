@@ -1211,7 +1211,7 @@ public class TableTools {
      */
     public static Table timeTable(long periodNanos, ReplayerInterface replayer) {
         final TimeTable timeTable = new TimeTable(Replayer.getTimeProvider(replayer), null, periodNanos);
-        UpdateGraphProcessor.DEFAULT.addTable(timeTable);
+        UpdateGraphProcessor.DEFAULT.addSource(timeTable);
         return timeTable;
     }
 
@@ -1224,7 +1224,7 @@ public class TableTools {
      */
     public static Table timeTable(DBDateTime startTime, long periodNanos) {
         final TimeTable timeTable = new TimeTable(Replayer.getTimeProvider(null), startTime, periodNanos);
-        UpdateGraphProcessor.DEFAULT.addTable(timeTable);
+        UpdateGraphProcessor.DEFAULT.addSource(timeTable);
         return timeTable;
     }
 
@@ -1238,7 +1238,7 @@ public class TableTools {
      */
     public static Table timeTable(DBDateTime startTime, long periodNanos, ReplayerInterface replayer) {
         final TimeTable timeTable = new TimeTable(Replayer.getTimeProvider(replayer), startTime, periodNanos);
-        UpdateGraphProcessor.DEFAULT.addTable(timeTable);
+        UpdateGraphProcessor.DEFAULT.addSource(timeTable);
         return timeTable;
     }
 
@@ -1275,7 +1275,7 @@ public class TableTools {
      */
     public static Table timeTable(TimeProvider timeProvider, DBDateTime startTime, long periodNanos) {
         final TimeTable timeTable = new TimeTable(timeProvider, startTime, periodNanos);
-        UpdateGraphProcessor.DEFAULT.addTable(timeTable);
+        UpdateGraphProcessor.DEFAULT.addSource(timeTable);
         return timeTable;
     }
 

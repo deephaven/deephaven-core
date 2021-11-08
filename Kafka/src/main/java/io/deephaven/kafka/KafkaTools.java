@@ -16,8 +16,8 @@ import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.TableDefinition;
 import io.deephaven.engine.tables.live.LiveTable;
 import io.deephaven.engine.tables.live.UpdateGraphProcessor;
-import io.deephaven.engine.tables.live.UpdateRootCombiner;
-import io.deephaven.engine.tables.live.UpdateRootRegistrar;
+import io.deephaven.engine.tables.live.UpdateSourceCombiner;
+import io.deephaven.engine.tables.live.UpdateSourceRegistrar;
 import io.deephaven.engine.tables.utils.DBDateTime;
 import io.deephaven.engine.util.liveness.LivenessScope;
 import io.deephaven.engine.util.liveness.LivenessScopeStack;
@@ -992,13 +992,13 @@ public class KafkaTools {
         final TableDefinition tableDefinition = new TableDefinition(columnDefinitions);
 
         final StreamTableMap streamTableMap = resultType.isMap ? new StreamTableMap(tableDefinition) : null;
-        final UpdateRootRegistrar updateRootRegistrar =
+        final UpdateSourceRegistrar updateSourceRegistrar =
                 streamTableMap == null ? UpdateGraphProcessor.DEFAULT : streamTableMap.refreshCombiner;
 
         final Supplier<Pair<StreamToTableAdapter, ConsumerRecordToStreamPublisherAdapter>> adapterFactory = () -> {
             final StreamPublisherImpl streamPublisher = new StreamPublisherImpl();
             final StreamToTableAdapter streamToTableAdapter =
-                    new StreamToTableAdapter(tableDefinition, streamPublisher, updateRootRegistrar,
+                    new StreamToTableAdapter(tableDefinition, streamPublisher, updateSourceRegistrar,
                             "Kafka-" + topic + '-' + partitionFilter);
             streamPublisher.setChunkFactory(() -> streamToTableAdapter.makeChunksForDefinition(CHUNK_SIZE),
                     streamToTableAdapter::chunkTypeForIndex);
@@ -1243,13 +1243,13 @@ public class KafkaTools {
 
     private static class StreamTableMap extends LocalTableMap implements LiveTable {
 
-        private final UpdateRootCombiner refreshCombiner = new UpdateRootCombiner();
+        private final UpdateSourceCombiner refreshCombiner = new UpdateSourceCombiner();
         private final Queue<Runnable> deferredUpdates = new ConcurrentLinkedQueue<>();
 
         private StreamTableMap(@NotNull final TableDefinition constituentDefinition) {
             super(null, constituentDefinition);
-            refreshCombiner.addTable(this); // Results in managing the refreshCombiner
-            UpdateGraphProcessor.DEFAULT.addTable(refreshCombiner);
+            refreshCombiner.addSource(this); // Results in managing the refreshCombiner
+            UpdateGraphProcessor.DEFAULT.addSource(refreshCombiner);
         }
 
         @Override

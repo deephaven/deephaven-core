@@ -46,7 +46,7 @@ public class RollingReleaseFilter extends SelectFilterLivenessArtifactImpl imple
     @Override
     public void init(TableDefinition tableDefinition) {
         if (!addedToUpdateGraphProcessor) {
-            UpdateGraphProcessor.DEFAULT.addTable(this);
+            UpdateGraphProcessor.DEFAULT.addSource(this);
             addedToUpdateGraphProcessor = true;
         }
     }
@@ -107,6 +107,6 @@ public class RollingReleaseFilter extends SelectFilterLivenessArtifactImpl imple
     @Override
     protected void destroy() {
         super.destroy();
-        UpdateGraphProcessor.DEFAULT.removeTable(this);
+        UpdateGraphProcessor.DEFAULT.removeSource(this);
     }
 }

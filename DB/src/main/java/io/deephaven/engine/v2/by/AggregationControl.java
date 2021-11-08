@@ -43,7 +43,11 @@ public class AggregationControl {
 
     // boolean considerSymbolTables(@NotNull final Table inputTable, final boolean useGrouping, @NotNull final
     // ColumnSource<?>[] sources) {
-    // return !inputTable.isLive() && !useGrouping && sources.length == 1 && sources[0] instanceof SymbolTableSource;
+    // return !inputTable.refreshing()
+    // && !useGrouping
+    // && sources.length == 1
+    // && sources[0] instanceof SymbolTableSource
+    // && ((SymbolTableSource) sources[0]).hasSymbolTable(inputTable.getRowSet());
     // }
     //
     // boolean useSymbolTableLookupCaching() {

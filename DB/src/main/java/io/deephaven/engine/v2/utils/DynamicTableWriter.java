@@ -353,7 +353,7 @@ public class DynamicTableWriter implements TableWriter {
                     (currentRow) -> createRowSetter(columns[index].getType(), arrayColumnSources[index]));
             ++ii;
         }
-        UpdateGraphProcessor.DEFAULT.addTable(table);
+        UpdateGraphProcessor.DEFAULT.addSource(table);
     }
 
     private RowSetterImpl createRowSetter(Class type, ArrayBackedColumnSource buffer) {

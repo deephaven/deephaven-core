@@ -46,7 +46,7 @@ public class TimeTableGrpcImpl extends GrpcTableOperation<TimeTableRequest> {
         final long periodValue = request.getPeriodNanos();
         final TimeTable timeTable =
                 new TimeTable(scheduler, startTime <= 0 ? null : DBTimeUtils.nanosToTime(startTime), periodValue);
-        updateGraphProcessor.addTable(timeTable);
+        updateGraphProcessor.addSource(timeTable);
         return timeTable;
     }
 }

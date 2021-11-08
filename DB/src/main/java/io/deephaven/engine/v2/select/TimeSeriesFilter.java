@@ -54,7 +54,7 @@ public class TimeSeriesFilter extends SelectFilterLivenessArtifactImpl implement
             return;
         }
 
-        UpdateGraphProcessor.DEFAULT.addTable(this);
+        UpdateGraphProcessor.DEFAULT.addSource(this);
         initialized = true;
     }
 
@@ -118,6 +118,6 @@ public class TimeSeriesFilter extends SelectFilterLivenessArtifactImpl implement
     @Override
     protected void destroy() {
         super.destroy();
-        UpdateGraphProcessor.DEFAULT.removeTable(this);
+        UpdateGraphProcessor.DEFAULT.removeSource(this);
     }
 }

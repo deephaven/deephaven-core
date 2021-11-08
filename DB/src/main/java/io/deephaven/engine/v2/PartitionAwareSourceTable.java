@@ -8,7 +8,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.tables.ColumnDefinition;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.TableDefinition;
-import io.deephaven.engine.tables.live.UpdateRootRegistrar;
+import io.deephaven.engine.tables.live.UpdateSourceRegistrar;
 import io.deephaven.engine.tables.utils.QueryPerformanceRecorder;
 import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.v2.locations.ImmutableTableLocationKey;
@@ -43,18 +43,18 @@ public class PartitionAwareSourceTable extends SourceTable {
      * @param description A human-readable description for this table
      * @param componentFactory A component factory for creating column source managers
      * @param locationProvider A TableLocationProvider, for use in discovering the locations that compose this table
-     * @param updateRootRegistrar Callback for registering live tables for refreshes, null if this table is not live
+     * @param updateSourceRegistrar Callback for registering live tables for refreshes, null if this table is not live
      */
     public PartitionAwareSourceTable(@NotNull final TableDefinition tableDefinition,
             @NotNull final String description,
             @NotNull final SourceTableComponentFactory componentFactory,
             @NotNull final TableLocationProvider locationProvider,
-            @Nullable final UpdateRootRegistrar updateRootRegistrar) {
+            @Nullable final UpdateSourceRegistrar updateSourceRegistrar) {
         this(tableDefinition,
                 description,
                 componentFactory,
                 locationProvider,
-                updateRootRegistrar,
+                updateSourceRegistrar,
                 extractPartitioningColumnDefinitions(tableDefinition));
     }
 
@@ -62,10 +62,10 @@ public class PartitionAwareSourceTable extends SourceTable {
             @NotNull final String description,
             @NotNull final SourceTableComponentFactory componentFactory,
             @NotNull final TableLocationProvider locationProvider,
-            @Nullable final UpdateRootRegistrar updateRootRegistrar,
+            @Nullable final UpdateSourceRegistrar updateSourceRegistrar,
             @NotNull final Map<String, ColumnDefinition<?>> partitioningColumnDefinitions,
             @Nullable final SelectFilter... partitioningColumnFilters) {
-        super(tableDefinition, description, componentFactory, locationProvider, updateRootRegistrar);
+        super(tableDefinition, description, componentFactory, locationProvider, updateSourceRegistrar);
         this.partitioningColumnDefinitions = partitioningColumnDefinitions;
         this.partitioningColumnFilters = partitioningColumnFilters;
     }
@@ -74,11 +74,11 @@ public class PartitionAwareSourceTable extends SourceTable {
             @NotNull final String description,
             @NotNull final SourceTableComponentFactory componentFactory,
             @NotNull final TableLocationProvider locationProvider,
-            @Nullable final UpdateRootRegistrar updateRootRegistrar,
+            @Nullable final UpdateSourceRegistrar updateSourceRegistrar,
             @NotNull final Map<String, ColumnDefinition<?>> partitioningColumnDefinitions,
             @Nullable final SelectFilter... partitioningColumnFilters) {
         return new PartitionAwareSourceTable(tableDefinition, description, componentFactory, locationProvider,
-                updateRootRegistrar, partitioningColumnDefinitions, partitioningColumnFilters);
+                updateSourceRegistrar, partitioningColumnDefinitions, partitioningColumnFilters);
     }
 
     private PartitionAwareSourceTable getFilteredTable(
@@ -91,7 +91,7 @@ public class PartitionAwareSourceTable extends SourceTable {
                 partitioningColumnFilters.length, additionalPartitioningColumnFilters.length);
         return newInstance(definition,
                 description + ".where(" + Arrays.deepToString(additionalPartitioningColumnFilters) + ')',
-                componentFactory, locationProvider, updateRootRegistrar, partitioningColumnDefinitions,
+                componentFactory, locationProvider, updateSourceRegistrar, partitioningColumnDefinitions,
                 resultPartitioningColumnFilters);
     }
 
@@ -178,7 +178,7 @@ public class PartitionAwareSourceTable extends SourceTable {
             // Nothing changed except ordering, *or* some columns were dropped but the partitioning column was retained.
             return newInstance(newDefinition,
                     description + "-retainColumns",
-                    componentFactory, locationProvider, updateRootRegistrar, partitioningColumnDefinitions,
+                    componentFactory, locationProvider, updateSourceRegistrar, partitioningColumnDefinitions,
                     partitioningColumnFilters);
         }
         // Some partitioning columns are gone - defer dropping them.
@@ -192,7 +192,7 @@ public class PartitionAwareSourceTable extends SourceTable {
         newColumnDefinitions.addAll(droppedPartitioningColumnDefinitions);
         final PartitionAwareSourceTable redefined = newInstance(new TableDefinition(newColumnDefinitions),
                 description + "-retainColumns",
-                componentFactory, locationProvider, updateRootRegistrar, partitioningColumnDefinitions,
+                componentFactory, locationProvider, updateSourceRegistrar, partitioningColumnDefinitions,
                 partitioningColumnFilters);
         final DeferredViewTable deferredViewTable = new DeferredViewTable(newDefinition, description + "-retainColumns",
                 new PartitionAwareQueryTableReference(redefined),

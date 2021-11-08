@@ -149,7 +149,7 @@ public class HashSetBackedTableFactory {
             super(rowSet, columns);
             if (refreshIntervalMs >= 0) {
                 setRefreshing(true);
-                UpdateGraphProcessor.DEFAULT.addTable(this);
+                UpdateGraphProcessor.DEFAULT.addSource(this);
             }
         }
 
@@ -182,7 +182,7 @@ public class HashSetBackedTableFactory {
         public void destroy() {
             super.destroy();
             if (refreshIntervalMs >= 0) {
-                UpdateGraphProcessor.DEFAULT.removeTable(this);
+                UpdateGraphProcessor.DEFAULT.removeSource(this);
             }
         }
     }
