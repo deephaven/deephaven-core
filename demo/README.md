@@ -503,3 +503,8 @@ Shell into it, and run prepare-snapshot.sh
 
 
 gcloud compute images create deephaven-app-0-0-4 --source-disk=snapshot-root     --source-disk-zone=us-central1-a
+
+
+
+# Make sure to reserve enough instances that we don't run out prematurely
+gcloud compute reservations create demo-reservation --machine-type=n2d-standard-4 --zone=us-central1-f --vm-count=15 --project=deephaven-oss

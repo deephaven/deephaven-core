@@ -931,7 +931,7 @@ public class ClusterController {
      * @param reserve Whether or not to actually claim the machine, or just turn it on and let it idle.
      */
     void moveToRunningState(final Machine machine, final boolean reserve) {
-        LOG.info("Moving machine " + machine.toStringShort() + " to a running state");
+        LOG.infof("Moving machine %s to a running state. Reserved? %s", machine.toStringShort(), reserve);
         if (reserve) {
             machines.expireInMillis(machine, getSessionTtl());
             machine.setInUse(true);
