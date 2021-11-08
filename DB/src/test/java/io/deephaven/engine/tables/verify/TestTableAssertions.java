@@ -124,8 +124,9 @@ public class TestTableAssertions {
         };
 
         for (int step = 0; step < maxSteps; step++) {
-            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> GenerateTableUpdates.generateShiftAwareTableUpdates(
-                    GenerateTableUpdates.DEFAULT_PROFILE, size, random, table, columnInfo));
+            UpdateGraphProcessor.DEFAULT
+                    .runWithinUnitTestCycle(() -> GenerateTableUpdates.generateShiftAwareTableUpdates(
+                            GenerateTableUpdates.DEFAULT_PROFILE, size, random, table, columnInfo));
             validate(en);
         }
         // } finally {

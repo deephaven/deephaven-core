@@ -8,7 +8,7 @@
   "getSize": ":return: (long) The size of a table location: \nNULL_SIZE: Size information is unknown or does not exist for this location \n>= 0: The table location exists and has (possibly empty) data",
   "getStateLock": ":return: (java.lang.Object) The Object that accessors should synchronize on if they want to invoke multiple getters with consistent\n         results.",
   "getTableKey": ":return: (io.deephaven.engine.v2.locations.ImmutableTableKey) An ImmutableTableKey instance for the enclosing table",
-  "handleUpdate": "**Incompatible overloads text - text from the first overload:**\n\nSee TableLocationState for documentation of values.\n\n*Overload 1*  \n  :param index: (io.deephaven.engine.v2.utils.RowSet) - The new rowSet. Ownership passes to this location; callers should clone it if\n          necessary.\n  :param lastModifiedTimeMillis: (long) - The new lastModificationTimeMillis\n  \n*Overload 2*  \n  :param source: (io.deephaven.engine.v2.locations.TableLocationState) - The source to copy state values from",
+  "handleUpdate": "**Incompatible overloads text - text from the first overload:**\n\nSee TableLocationState for documentation of values.\n\n*Overload 1*  \n  :param index: (io.deephaven.engine.v2.utils.RowSet) - The new rowSet. Ownership passes to this location; callers should copy it if\n          necessary.\n  :param lastModifiedTimeMillis: (long) - The new lastModificationTimeMillis\n  \n*Overload 2*  \n  :param source: (io.deephaven.engine.v2.locations.TableLocationState) - The source to copy state values from",
   "toString": ":return: java.lang.String"
  },
  "path": "io.deephaven.engine.v2.locations.impl.AbstractTableLocation",

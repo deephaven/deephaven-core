@@ -2,7 +2,7 @@
  "className": "io.deephaven.engine.v2.replay.FixedStepReplayer",
  "methods": {
   "currentTime": "Simulated time.\n\n:return: (io.deephaven.engine.tables.utils.DBDateTime) simulated time.",
-  "refresh": "Refresh the simulated live tables.",
+  "run": "Refresh the simulated live tables.",
   "setTime": "Sets the current replay time.\n\n:param updatedTime: (long) - new replay time."
  },
  "path": "io.deephaven.engine.v2.replay.FixedStepReplayer",

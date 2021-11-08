@@ -187,7 +187,8 @@ public class LastByBenchmark {
 
     @Benchmark
     public Table lastByStatic(@NotNull final Blackhole bh) {
-        final Table result = UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> table.lastBy(keyColumnNames));
+        final Table result =
+                UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> table.lastBy(keyColumnNames));
         bh.consume(result);
         return state.setResult(TableTools.emptyTable(0));
     }
@@ -216,7 +217,8 @@ public class LastByBenchmark {
                 .mapToObj(ii -> "First" + ii + "=ValueToSum" + ii).toArray(String[]::new));
 
         final Table result = IncrementalBenchmark.rollingBenchmark(
-                (t) -> UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> t.by(AggCombo(lastCols, firstCols))),
+                (t) -> UpdateGraphProcessor.DEFAULT.sharedLock()
+                        .computeLocked(() -> t.by(AggCombo(lastCols, firstCols))),
                 table);
         bh.consume(result);
         return state.setResult(TableTools.emptyTable(0));
@@ -230,7 +232,8 @@ public class LastByBenchmark {
                 .mapToObj(ii -> "First" + ii + "=ValueToSum" + ii).toArray(String[]::new));
 
         final Table result = IncrementalBenchmark.rollingBenchmark(
-                (t) -> UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> t.by(AggCombo(lastCols, firstCols))),
+                (t) -> UpdateGraphProcessor.DEFAULT.sharedLock()
+                        .computeLocked(() -> t.by(AggCombo(lastCols, firstCols))),
                 table);
         bh.consume(result);
         return state.setResult(TableTools.emptyTable(0));
@@ -244,7 +247,8 @@ public class LastByBenchmark {
                 .mapToObj(ii -> "First" + ii + "=ValueToSum" + ii).toArray(String[]::new));
 
         final Table result = IncrementalBenchmark.rollingBenchmark(
-                (t) -> UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> t.by(AggCombo(lastCols, firstCols))),
+                (t) -> UpdateGraphProcessor.DEFAULT.sharedLock()
+                        .computeLocked(() -> t.by(AggCombo(lastCols, firstCols))),
                 table);
         bh.consume(result);
         return state.setResult(TableTools.emptyTable(0));

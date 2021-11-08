@@ -589,9 +589,9 @@ public class UpdateCoalescerTest {
         final Listener.Update agg = coalescer.coalesce();
 
         try (final MutableRowSet perUpdate = rowSet.copy();
-             final MutableRowSet aggUpdate = rowSet.copy();
-             final MutableRowSet perModify = RowSetFactory.empty();
-             final MutableRowSet perAdded = RowSetFactory.empty()) {
+                final MutableRowSet aggUpdate = rowSet.copy();
+                final MutableRowSet perModify = RowSetFactory.empty();
+                final MutableRowSet perAdded = RowSetFactory.empty()) {
 
             for (Listener.Update up : updates) {
                 perAdded.remove(up.removed);

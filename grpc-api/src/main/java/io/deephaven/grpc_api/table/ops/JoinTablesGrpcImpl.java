@@ -204,7 +204,8 @@ public abstract class JoinTablesGrpcImpl<T> extends GrpcTableOperation<T> {
 
         @Inject
         public NaturalJoinTablesGrpcImpl(final UpdateGraphProcessor updateGraphProcessor) {
-            super(updateGraphProcessor, BatchTableRequest.Operation::getNaturalJoin, NaturalJoinTablesRequest::getResultId,
+            super(updateGraphProcessor, BatchTableRequest.Operation::getNaturalJoin,
+                    NaturalJoinTablesRequest::getResultId,
                     EXTRACT_DEPS,
                     NaturalJoinTablesRequest::getColumnsToMatchList, NaturalJoinTablesRequest::getColumnsToAddList,
                     NaturalJoinTablesGrpcImpl::doJoin);

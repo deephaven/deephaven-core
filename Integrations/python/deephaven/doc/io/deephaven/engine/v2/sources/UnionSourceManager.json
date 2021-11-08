@@ -9,7 +9,7 @@
   "isUsingComponentsSafe": "Determine whether using the component tables directly in a subsequent merge will affect the correctness of the\n merge.\n\n:return: (boolean) If using the component tables is allowed.",
   "noteUsingComponentsIsUnsafe": "Note that this UnionSourceManager might have tables added dynamically throughout its lifetime.",
   "setDisallowReinterpret": "Specify that columns sources using this manager should not allow reinterpret.",
-  "setRefreshing": "Ensure that this UnionSourceManager will be refreshing. Should be called proactively if it is expected that\n refreshing DynamicTables may be added *after* the initial set, in order to ensure that children of the result\n table are correctly setup to listen and refresh."
+  "setRefreshing": "Ensure that this UnionSourceManager will be refreshing. Should be called proactively if it is expected that\n refreshing DynamicTables may be added *after* the initial set, in order to ensure that children of the result\n table are correctly setup to listen and run."
  },
  "path": "io.deephaven.engine.v2.sources.UnionSourceManager",
  "typeName": "class"

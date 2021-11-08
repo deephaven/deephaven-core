@@ -500,8 +500,9 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
                 update.shifted = RowSetShiftData.EMPTY;
                 update.modifiedColumnSet = ModifiedColumnSet.EMPTY;
 
-                UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> GenerateTableUpdates.generateTableUpdates(update,
-                        helper.random, helper.sourceTable, helper.columnInfo));
+                UpdateGraphProcessor.DEFAULT
+                        .runWithinUnitTestCycle(() -> GenerateTableUpdates.generateTableUpdates(update,
+                                helper.random, helper.sourceTable, helper.columnInfo));
             });
         };
 
@@ -535,8 +536,9 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
                 }
                 update.shifted = shifted.build();
 
-                UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> GenerateTableUpdates.generateTableUpdates(update,
-                        helper.random, helper.sourceTable, helper.columnInfo));
+                UpdateGraphProcessor.DEFAULT
+                        .runWithinUnitTestCycle(() -> GenerateTableUpdates.generateTableUpdates(update,
+                                helper.random, helper.sourceTable, helper.columnInfo));
             });
         };
 
@@ -583,8 +585,9 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
                 update.shifted = RowSetShiftData.EMPTY;
                 update.modifiedColumnSet = ModifiedColumnSet.EMPTY;
 
-                UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> GenerateTableUpdates.generateTableUpdates(update,
-                        helper.random, helper.sourceTable, helper.columnInfo));
+                UpdateGraphProcessor.DEFAULT
+                        .runWithinUnitTestCycle(() -> GenerateTableUpdates.generateTableUpdates(update,
+                                helper.random, helper.sourceTable, helper.columnInfo));
             });
         };
 
@@ -618,8 +621,9 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
                 }
                 update.shifted = shifted.build();
 
-                UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> GenerateTableUpdates.generateTableUpdates(update,
-                        helper.random, helper.sourceTable, helper.columnInfo));
+                UpdateGraphProcessor.DEFAULT
+                        .runWithinUnitTestCycle(() -> GenerateTableUpdates.generateTableUpdates(update,
+                                helper.random, helper.sourceTable, helper.columnInfo));
             });
         };
 
@@ -1115,8 +1119,9 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
                 update.shifted = RowSetShiftData.EMPTY;
                 update.modifiedColumnSet = ModifiedColumnSet.EMPTY;
 
-                UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> GenerateTableUpdates.generateTableUpdates(update,
-                        helper.random, helper.sourceTable, helper.columnInfo));
+                UpdateGraphProcessor.DEFAULT
+                        .runWithinUnitTestCycle(() -> GenerateTableUpdates.generateTableUpdates(update,
+                                helper.random, helper.sourceTable, helper.columnInfo));
             });
         }
     }
@@ -1178,8 +1183,9 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
                 update.shifted = RowSetShiftData.EMPTY;
                 update.modifiedColumnSet = ModifiedColumnSet.EMPTY;
 
-                UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> GenerateTableUpdates.generateTableUpdates(update,
-                        helper.random, helper.sourceTable, helper.columnInfo));
+                UpdateGraphProcessor.DEFAULT
+                        .runWithinUnitTestCycle(() -> GenerateTableUpdates.generateTableUpdates(update,
+                                helper.random, helper.sourceTable, helper.columnInfo));
             });
         }
     }

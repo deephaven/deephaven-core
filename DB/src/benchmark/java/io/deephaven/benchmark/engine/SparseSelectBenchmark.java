@@ -96,7 +96,8 @@ public class SparseSelectBenchmark {
     @Benchmark
     public Table sparseSelect() {
         return state.setResult(
-                UpdateGraphProcessor.DEFAULT.exclusiveLock().computeLocked(() -> SparseSelect.sparseSelect(inputTable)));
+                UpdateGraphProcessor.DEFAULT.exclusiveLock()
+                        .computeLocked(() -> SparseSelect.sparseSelect(inputTable)));
     }
 
     public static void main(final String[] args) {

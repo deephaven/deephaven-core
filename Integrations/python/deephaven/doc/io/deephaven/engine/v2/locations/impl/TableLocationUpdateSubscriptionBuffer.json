@@ -7,6 +7,6 @@
   "reset": "Unsubscribe and clear any state pending processing."
  },
  "path": "io.deephaven.engine.v2.locations.impl.TableLocationUpdateSubscriptionBuffer",
- "text": "Intermediates between push-based subscription to a TableLocation and polling on LiveTable refresh.",
+ "text": "Intermediates between push-based subscription to a TableLocation and polling on update source refresh.",
  "typeName": "class"
 }

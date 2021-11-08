@@ -543,7 +543,8 @@ public abstract class BaseTable extends LivenessArtifact
             }
         }
 
-        UpdateGraphProcessor.DEFAULT.logDependencies().append("All parents dependencies satisfied ").append(this).endl();
+        UpdateGraphProcessor.DEFAULT.logDependencies().append("All parents dependencies satisfied ").append(this)
+                .endl();
 
         lastSatisfiedStep = step;
 

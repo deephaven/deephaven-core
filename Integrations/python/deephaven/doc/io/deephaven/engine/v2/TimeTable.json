@@ -1,8 +1,6 @@
 {
  "className": "io.deephaven.engine.v2.TimeTable",
- "methods": {
-  "refresh": "Refresh this LiveTable."
- },
+ "methods": {},
  "path": "io.deephaven.engine.v2.TimeTable",
  "text": "A TimeTable adds rows at a fixed interval with a single column named \"Timestamp\".\n\n To create a TimeTable, you should use the TableTools.timeTable(java.lang.String) family of\n methods.",
  "typeName": "class"

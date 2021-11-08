@@ -91,7 +91,8 @@ public class TestWindowCheck {
                     if (RefreshingTableTestCase.printTableUpdates) {
                         System.out.println("Step " + step + "-" + ii);
                     }
-                    RefreshingTableTestCase.simulateShiftAwareStep(step + "-" + ii, stepSize, random, table, columnInfo, en);
+                    RefreshingTableTestCase.simulateShiftAwareStep(step + "-" + ii, stepSize, random, table, columnInfo,
+                            en);
                 }
             }
         }

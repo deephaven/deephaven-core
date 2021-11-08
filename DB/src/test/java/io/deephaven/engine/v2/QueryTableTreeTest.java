@@ -104,7 +104,8 @@ public class QueryTableTreeTest extends QueryTableTestBase {
                 col("Parent", NULL_INT, NULL_INT, 1, 1, 2, 3, 5, 5, 3, 2));
 
         final Table treed =
-                UpdateGraphProcessor.DEFAULT.exclusiveLock().computeLocked(() -> source.treeTable("Sentinel", "Parent"));
+                UpdateGraphProcessor.DEFAULT.exclusiveLock()
+                        .computeLocked(() -> source.treeTable("Sentinel", "Parent"));
         final String hierarchicalColumnName = getHierarchicalColumnName(treed);
         TableTools.showWithIndex(treed);
 
@@ -467,7 +468,8 @@ public class QueryTableTreeTest extends QueryTableTestBase {
                 col("Parent", NULL_INT, NULL_INT, 1, 1, 2, 3, 5, 5, 3, 6));
 
         final Table treed =
-                UpdateGraphProcessor.DEFAULT.exclusiveLock().computeLocked(() -> source.treeTable("Sentinel", "Parent"));
+                UpdateGraphProcessor.DEFAULT.exclusiveLock()
+                        .computeLocked(() -> source.treeTable("Sentinel", "Parent"));
         TableTools.showWithIndex(treed);
 
         final String hierarchicalColumnName = getHierarchicalColumnName(treed);
@@ -491,7 +493,8 @@ public class QueryTableTreeTest extends QueryTableTestBase {
                 col("Parent", NULL_INT, NULL_INT, 1, 1, 2, 3, 5, 5, 3, 6));
 
         final Table treed =
-                UpdateGraphProcessor.DEFAULT.exclusiveLock().computeLocked(() -> source.treeTable("Sentinel", "Parent"));
+                UpdateGraphProcessor.DEFAULT.exclusiveLock()
+                        .computeLocked(() -> source.treeTable("Sentinel", "Parent"));
         TableTools.showWithIndex(treed);
 
         final String hierarchicalColumnName = getHierarchicalColumnName(treed);
@@ -1324,7 +1327,8 @@ public class QueryTableTreeTest extends QueryTableTestBase {
         TableTools.showWithIndex(table);
 
         final Table rollup =
-                UpdateGraphProcessor.DEFAULT.exclusiveLock().computeLocked(() -> table.rollup(comboAgg, "USym", "Group"));
+                UpdateGraphProcessor.DEFAULT.exclusiveLock()
+                        .computeLocked(() -> table.rollup(comboAgg, "USym", "Group"));
 
         final Table fullBy = UpdateGraphProcessor.DEFAULT.exclusiveLock().computeLocked(() -> table.by(comboAgg));
         System.out.println("Full By:");
@@ -1566,7 +1570,8 @@ public class QueryTableTreeTest extends QueryTableTestBase {
 
         dumpRollup(rollup, "G1", "G2");
 
-        final Table fullBy = UpdateGraphProcessor.DEFAULT.exclusiveLock().computeLocked(() -> table.by(AggCombo(comboBy)));
+        final Table fullBy =
+                UpdateGraphProcessor.DEFAULT.exclusiveLock().computeLocked(() -> table.by(AggCombo(comboBy)));
 
         final Table rollupClean = getDiffableTable(rollup).view("IntCol");
 

@@ -497,8 +497,9 @@ public class TestSyncTableFilter extends RefreshingTableTestCase {
         final TableMap sm2 = source2.updateView("SK2=k").byExternal("Partition");
 
         final TableMap bykey =
-                UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> new SyncTableFilter.Builder("ID", "Partition")
-                        .addTable("source1", source1).addTable("source2", source2).build());
+                UpdateGraphProcessor.DEFAULT.sharedLock()
+                        .computeLocked(() -> new SyncTableFilter.Builder("ID", "Partition")
+                                .addTable("source1", source1).addTable("source2", source2).build());
         final Table s1f = bykey.get("source1");
         final Table s2f = bykey.get("source2");
 
@@ -512,8 +513,9 @@ public class TestSyncTableFilter extends RefreshingTableTestCase {
                 UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> new SyncTableFilter.Builder("ID")
                         .addTableMap("source1", sm1).addTableMap("source2", sm2).build());
         final TableMap filteredByPartitionKeyed =
-                UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> new SyncTableFilter.Builder("ID", "Truthy")
-                        .addTableMap("source1", sm1).addTableMap("source2", sm2).build());
+                UpdateGraphProcessor.DEFAULT.sharedLock()
+                        .computeLocked(() -> new SyncTableFilter.Builder("ID", "Truthy")
+                                .addTableMap("source1", sm1).addTableMap("source2", sm2).build());
 
         final TableMap s1tm = new FilteredTableMap(filteredByPartition, sk -> ((SmartKey) sk).get(1).equals("source1"),
                 sk -> ((SmartKey) sk).get(0));

@@ -1,9 +1,9 @@
 {
  "className": "io.deephaven.engine.v2.utils.RowSet",
  "methods": {
-  "clone": ":return: io.deephaven.engine.v2.utils.MutableRowSet",
   "close": "Free any resources associated with this object.\n \n Using any RowSequence methods after close() is an error and may produce exceptions or undefined\n results.",
   "containsRange": "Queries whether this RowSet contains every element in the range provided.\n\n:param start: (long) - Start of the range, inclusive.\n:param end: (long) - End of the range, inclusive.\n:return: (boolean) true if this RowSet contains every element x in start <= x <= end.",
+  "copy": "Make a new MutableRowSet with the same row keys as this that is safe for further mutation. The\n result will never be a TrackingRowSet; use MutableRowSet.toTracking() on the result as needed.\n\n:return: (io.deephaven.engine.v2.utils.MutableRowSet) The copied MutableRowSet",
   "find": "Returns the position in [0..(size-1)] where the key is found. If not found, then return (-(position it would be)\n - 1), a la Array.binarySearch.\n\n:param key: (long) - the key to search for\n:return: (long) a position from [0..(size-1)] if the key was found. If the key was not found, then (-position - 1) as in\n         Array.binarySearch.",
   "findMissing": "For the given keys RowSet, under the assertion that none of them are present in the current RowSet, return the\n tentative insertion points in the current RowSet with the count for each of them\n\n:param keys: (io.deephaven.engine.v2.utils.RowSet) - the keys to identify insertion locations\n:return: (gnu.trove.list.array.TLongArrayList[]) two TLongArrayLists; [0] contains the positions, [1] contains the counts.",
   "firstRowKey": "Get the first row key in this RowSet.\n\n:return: (long) The first row key, or NULL_ROW_KEY if there is none.",

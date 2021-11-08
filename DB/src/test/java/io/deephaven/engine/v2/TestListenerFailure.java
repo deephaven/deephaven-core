@@ -86,7 +86,8 @@ public class TestListenerFailure extends RefreshingTableTestCase {
 
         assertFalse(filtered.isFailed());
 
-        final Table filteredAgain = UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> viewed.where("UC=`A`"));
+        final Table filteredAgain =
+                UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> viewed.where("UC=`A`"));
         assertSame(filtered, filteredAgain);
 
         allowingError(() -> {

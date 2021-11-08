@@ -201,8 +201,8 @@ public abstract class ModelFarmBase<DATATYPE> implements ModelFarm {
 
     /**
      * Returns a {@code ThrowingConsumer} that takes a {@link QueryDataRetrievalOperation}, acquires a
-     * {@link UpdateGraphProcessor} lock based on the specified {@code lockType}, then executes the {@code FitDataPopulator}
-     * with the appropriate value for usePrev.
+     * {@link UpdateGraphProcessor} lock based on the specified {@code lockType}, then executes the
+     * {@code FitDataPopulator} with the appropriate value for usePrev.
      *
      * @param lockType The way of acquiring the {@code UpdateGraphProcessor} lock.
      * @return A function that runs a {@link }

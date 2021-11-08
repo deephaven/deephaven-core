@@ -939,7 +939,8 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         });
         TstUtils.validate(en);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> leftQueryTable.notifyListeners(i(), i(), i(1, 2, 4, 6)));
+        UpdateGraphProcessor.DEFAULT
+                .runWithinUnitTestCycle(() -> leftQueryTable.notifyListeners(i(), i(), i(1, 2, 4, 6)));
         TstUtils.validate(en);
     }
 

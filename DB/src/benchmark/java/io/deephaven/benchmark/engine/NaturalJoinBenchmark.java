@@ -164,7 +164,8 @@ public class NaturalJoinBenchmark {
     @Benchmark
     public Table naturalJoinIncremental() {
         final Table result = IncrementalBenchmark.incrementalBenchmark(
-                (lt, rt) -> UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> lt.naturalJoin(rt, joinKeyName)),
+                (lt, rt) -> UpdateGraphProcessor.DEFAULT.sharedLock()
+                        .computeLocked(() -> lt.naturalJoin(rt, joinKeyName)),
                 leftTable, rightTable);
         return state.setResult(result);
     }

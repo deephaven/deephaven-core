@@ -392,7 +392,8 @@ public class QueryTableWhereTest {
         final Table result =
                 UpdateGraphProcessor.DEFAULT.exclusiveLock().computeLocked(() -> filteredTable.whereIn(setTable, "X"));
         final Table resultInverse =
-                UpdateGraphProcessor.DEFAULT.exclusiveLock().computeLocked(() -> filteredTable.whereNotIn(setTable, "X"));
+                UpdateGraphProcessor.DEFAULT.exclusiveLock()
+                        .computeLocked(() -> filteredTable.whereNotIn(setTable, "X"));
         show(result);
         assertEquals(3, result.size());
         assertEquals(asList("A", "B", "C"), asList((String[]) result.getColumn("X").getDirect()));

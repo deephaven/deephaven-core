@@ -79,8 +79,8 @@ import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyExecuteLocked;
  * SessionState::exportListenerVersion's purpose is to know whether or not a subscriber has already seen a status
  *
  * A listener will receive an export notification for export id NON_EXPORT_ID (a zero) to indicate that the run has
- * completed. A listener may see an update for an export before receiving the "run has completed" message. A
- * listener should be prepared to receive duplicate/redundant updates.
+ * completed. A listener may see an update for an export before receiving the "run has completed" message. A listener
+ * should be prepared to receive duplicate/redundant updates.
  */
 public class SessionState {
     // Some work items will be dependent on other exports, but do not export anything themselves.

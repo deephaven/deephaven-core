@@ -1,0 +1,6 @@
+{
+ "className": "io.deephaven.engine.v2.InstrumentedUpdateSource",
+ "methods": {},
+ "path": "io.deephaven.engine.v2.InstrumentedUpdateSource",
+ "typeName": "class"
+}

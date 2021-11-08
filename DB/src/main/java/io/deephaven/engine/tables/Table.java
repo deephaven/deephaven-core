@@ -2625,8 +2625,8 @@ public interface Table extends
     boolean awaitUpdate(long timeout) throws InterruptedException;
 
     /**
-     * Subscribe for updates to this table. ShiftObliviousListener will be invoked via the UpdateGraphProcessor notification
-     * queue associated with this Table.
+     * Subscribe for updates to this table. ShiftObliviousListener will be invoked via the UpdateGraphProcessor
+     * notification queue associated with this Table.
      *
      * @param listener listener for updates
      */
@@ -2645,8 +2645,8 @@ public interface Table extends
     void listenForUpdates(ShiftObliviousListener listener, boolean replayInitialImage);
 
     /**
-     * Subscribe for updates to this table. ShiftObliviousListener will be invoked via the UpdateGraphProcessor notification
-     * queue associated with this Table.
+     * Subscribe for updates to this table. ShiftObliviousListener will be invoked via the UpdateGraphProcessor
+     * notification queue associated with this Table.
      *
      * @param listener listener for updates
      */

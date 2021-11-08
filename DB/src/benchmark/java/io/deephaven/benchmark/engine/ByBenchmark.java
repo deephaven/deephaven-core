@@ -159,7 +159,8 @@ public class ByBenchmark {
     @Benchmark
     public Table byIncremental(@NotNull final Blackhole bh) {
         final Table result = IncrementalBenchmark.incrementalBenchmark(
-                (t) -> UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> t.by(keyName.split("[, ]+"))), table);
+                (t) -> UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> t.by(keyName.split("[, ]+"))),
+                table);
         bh.consume(result);
         return state.setResult(TableTools.emptyTable(0));
     }
@@ -175,7 +176,8 @@ public class ByBenchmark {
     @Benchmark
     public Table byExternalIncremental(@NotNull final Blackhole bh) {
         final TableMap result = IncrementalBenchmark.incrementalBenchmark(
-                (t) -> UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> t.byExternal(keyName.split("[, ]+"))),
+                (t) -> UpdateGraphProcessor.DEFAULT.sharedLock()
+                        .computeLocked(() -> t.byExternal(keyName.split("[, ]+"))),
                 table);
         bh.consume(result);
         return state.setResult(TableTools.emptyTable(0));

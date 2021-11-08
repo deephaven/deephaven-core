@@ -38,17 +38,19 @@ import static io.deephaven.engine.tables.lang.DBLanguageFunctionUtil.plus;
 
 /**
  * <p>
- * This tool is meant to track periodic update events that take place in an {@link UpdateGraphProcessor}.
- * This generally includes:
+ * This tool is meant to track periodic update events that take place in an {@link UpdateGraphProcessor}. This generally
+ * includes:
  * <ol>
- *     <li>Update source {@code run()} invocations</li>
- *     <li>{@link Table} {@link ShiftObliviousListener} notifications (see {@link ShiftObliviousInstrumentedListener})</li>
- *     <li>{@link Table} {@link io.deephaven.engine.v2.Listener} notifications (see {@link io.deephaven.engine.v2.InstrumentedListener})</li>
- * </ol>(1)
+ * <li>Update source {@code run()} invocations</li>
+ * <li>{@link Table} {@link ShiftObliviousListener} notifications (see {@link ShiftObliviousInstrumentedListener})</li>
+ * <li>{@link Table} {@link io.deephaven.engine.v2.Listener} notifications (see
+ * {@link io.deephaven.engine.v2.InstrumentedListener})</li>
+ * </ol>
+ * (1)
  *
  * @apiNote Regarding thread safety, this class interacts with a singleton UpdateGraphProcessor and expects all calls to
- * {@link #getEntry(String)}, {@link Entry#onUpdateStart()}, and {@link Entry#onUpdateEnd()} to be performed while
- * protected by the UGP's lock.
+ *          {@link #getEntry(String)}, {@link Entry#onUpdateStart()}, and {@link Entry#onUpdateEnd()} to be performed
+ *          while protected by the UGP's lock.
  */
 public class UpdatePerformanceTracker {
 
@@ -167,8 +169,8 @@ public class UpdatePerformanceTracker {
 
     /**
      * Do entry maintenance, generate an interval performance report table for all active entries, and reset for the
-     * next interval. <b>Note:</b> This method is only called under the UpdateGraphProcessor instance's lock. This ensures
-     * exclusive access to the entries, and also prevents any other thread from removing from entries.
+     * next interval. <b>Note:</b> This method is only called under the UpdateGraphProcessor instance's lock. This
+     * ensures exclusive access to the entries, and also prevents any other thread from removing from entries.
      * 
      * @param intervalStartTimeMillis interval start time in millis
      * @param intervalEndTimeMillis interval end time in millis

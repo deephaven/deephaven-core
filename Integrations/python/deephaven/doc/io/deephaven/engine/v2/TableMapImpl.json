@@ -7,7 +7,7 @@
   "isRefreshing": "Is the node updating?\n\n:return: (boolean) true if the node is updating; false otherwise.",
   "removeKeyListener": "Removes a key change listener.\n\n:param listener: (io.deephaven.engine.v2.TableMap.KeyListener) - key change listener to remove",
   "removeListener": "Removes a map change listener.\n\n:param listener: (io.deephaven.engine.v2.TableMap.Listener) - map change listener.",
-  "setRefreshing": "Change the node's refresh mode.\n\n:param refreshing: (boolean) - true to cause the node to update; false otherwise.\n:return: (boolean) new refreshing state"
+  "setRefreshing": "Change the node's run mode.\n\n:param refreshing: (boolean) - true to cause the node to update; false otherwise.\n:return: (boolean) new refreshing state"
  },
  "path": "io.deephaven.engine.v2.TableMapImpl",
  "typeName": "class"

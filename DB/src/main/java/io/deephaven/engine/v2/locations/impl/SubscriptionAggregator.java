@@ -123,8 +123,8 @@ public abstract class SubscriptionAggregator<LISTENER_TYPE extends BasicTableDat
      * Listeners should guard against duplicate notifications, especially if the implementation delivers synchronous
      * notifications.
      * <p>
-     * The implementation should call activationSuccessful() when done activating and delivering initial run
-     * results, unless activationFailed() was called instead.
+     * The implementation should call activationSuccessful() when done activating and delivering initial run results,
+     * unless activationFailed() was called instead.
      * <p>
      * Must be called under the subscription lock.
      */

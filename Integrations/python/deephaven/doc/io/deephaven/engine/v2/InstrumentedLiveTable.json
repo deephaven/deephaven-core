@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.engine.v2.InstrumentedLiveTable",
- "methods": {
-  "refresh": "Refresh this LiveTable."
- },
- "path": "io.deephaven.engine.v2.InstrumentedLiveTable",
- "typeName": "class"
-}

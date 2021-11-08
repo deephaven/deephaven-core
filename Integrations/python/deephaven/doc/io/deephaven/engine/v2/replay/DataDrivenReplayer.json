@@ -2,8 +2,8 @@
  "className": "io.deephaven.engine.v2.replay.DataDrivenReplayer",
  "methods": {
   "currentTime": "Simulated time.\n\n:return: (io.deephaven.engine.tables.utils.DBDateTime) simulated time.",
-  "refresh": "Refresh the simulated live tables.",
   "registerTimeSource": "Register the time column and rowSet from a new table to replay. Most users will use replay,\n replayGrouped, or replayGroupedLastBy instead of this function.\n\n:param rowSet: (io.deephaven.engine.v2.utils.RowSet) - table rowSet\n:param timestampSource: (io.deephaven.engine.v2.sources.ColumnSource<io.deephaven.engine.tables.utils.DBDateTime>) - column source containing time information.",
+  "run": "Refresh the simulated live tables.",
   "setTime": "Sets the current replay time.\n\n:param updatedTime: (long) - new replay time.",
   "start": "Starts replaying data."
  },

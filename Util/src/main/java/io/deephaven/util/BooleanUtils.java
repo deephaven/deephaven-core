@@ -48,6 +48,7 @@ public class BooleanUtils {
      * @return booleanValue represented as a byte
      */
     public static byte booleanAsByte(final Boolean booleanValue) {
-        return booleanValue == null ? NULL_BOOLEAN_AS_BYTE : booleanValue ? TRUE_BOOLEAN_AS_BYTE : FALSE_BOOLEAN_AS_BYTE;
+        return booleanValue == null ? NULL_BOOLEAN_AS_BYTE
+                : booleanValue ? TRUE_BOOLEAN_AS_BYTE : FALSE_BOOLEAN_AS_BYTE;
     }
 }

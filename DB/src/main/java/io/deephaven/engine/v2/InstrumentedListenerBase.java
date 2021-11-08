@@ -102,7 +102,8 @@ public abstract class InstrumentedListenerBase extends LivenessArtifact
             return true;
         }
 
-        UpdateGraphProcessor.DEFAULT.logDependencies().append("Dependencies not yet satisfied for ").append(this).endl();
+        UpdateGraphProcessor.DEFAULT.logDependencies().append("Dependencies not yet satisfied for ").append(this)
+                .endl();
         return false;
     }
 

@@ -10,6 +10,6 @@
   "unlock": "Release a previously acquired read lock."
  },
  "path": "io.deephaven.engine.util.scripts.ConsoleScriptPathLoader",
- "text": "This loader loads *only* using GroovyDeephavenSession.findScript(String). Consistency locking and refresh\n methods are no-ops.",
+ "text": "This loader loads *only* using GroovyDeephavenSession.findScript(String). Consistency locking and run methods\n are no-ops.",
  "typeName": "class"
 }

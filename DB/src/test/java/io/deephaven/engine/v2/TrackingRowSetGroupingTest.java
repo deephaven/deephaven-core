@@ -138,7 +138,8 @@ public class TrackingRowSetGroupingTest extends RefreshingTableTestCase {
         addGroupingValidator(by, "by");
         Table avgBy = UpdateGraphProcessor.DEFAULT.exclusiveLock().computeLocked(() -> queryTable.avgBy("Sym"));
         addGroupingValidator(avgBy, "avgBy");
-        Table avgBy1 = UpdateGraphProcessor.DEFAULT.exclusiveLock().computeLocked(() -> queryTable.avgBy("Sym", "intCol"));
+        Table avgBy1 =
+                UpdateGraphProcessor.DEFAULT.exclusiveLock().computeLocked(() -> queryTable.avgBy("Sym", "intCol"));
         addGroupingValidator(avgBy1, "avgBy1");
 
         Table merged = Require.neqNull(

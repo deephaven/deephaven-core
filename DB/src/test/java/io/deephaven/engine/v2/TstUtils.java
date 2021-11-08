@@ -2207,7 +2207,7 @@ public class TstUtils {
      * @param runner A method whose first param is the random seed to use, and second parameter is the number of steps.
      */
     public static void findMinimalTestCase(final RefreshingTableTestCase test, final int initialSeed, final int maxSeed,
-                                           final int initialSteps, final BiConsumer<Integer, MutableInt> runner) {
+            final int initialSteps, final BiConsumer<Integer, MutableInt> runner) {
         final boolean origPrintTableUpdates = RefreshingTableTestCase.printTableUpdates;
         RefreshingTableTestCase.printTableUpdates = false;
 

@@ -35,14 +35,13 @@ public enum LogicalClock {
     public enum State {
 
         /**
-         * Clock state for logical timestamps when the associated
-         * {@link UpdateGraphProcessor} is propagating updates.
+         * Clock state for logical timestamps when the associated {@link UpdateGraphProcessor} is propagating updates.
          */
         Updating,
 
         /**
-         * Clock state for logical timestamps when the associated
-         * {@link UpdateGraphProcessor} is <em>not</em> propagating updates.
+         * Clock state for logical timestamps when the associated {@link UpdateGraphProcessor} is <em>not</em>
+         * propagating updates.
          */
         Idle
     }

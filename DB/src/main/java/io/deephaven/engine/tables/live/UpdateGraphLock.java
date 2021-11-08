@@ -145,10 +145,11 @@ class UpdateGraphLock {
         public final void lockInterruptibly() throws InterruptedException {
             final MutableBoolean lockSucceeded = new MutableBoolean(false);
             try {
-                QueryPerformanceRecorder.withNuggetThrowing("Acquire UpdateGraphProcessor readLock interruptibly", () -> {
-                    readLock.lockInterruptibly();
-                    lockSucceeded.setValue(true);
-                });
+                QueryPerformanceRecorder.withNuggetThrowing("Acquire UpdateGraphProcessor readLock interruptibly",
+                        () -> {
+                            readLock.lockInterruptibly();
+                            lockSucceeded.setValue(true);
+                        });
                 maybeLogStackTrace("locked (shared)");
             } catch (Throwable t) {
                 // If the recorder instrumentation causes us to throw an exception after the readLock was successfully
@@ -228,10 +229,11 @@ class UpdateGraphLock {
             checkForUpgradeAttempt();
             final MutableBoolean lockSucceeded = new MutableBoolean(false);
             try {
-                QueryPerformanceRecorder.withNuggetThrowing("Acquire UpdateGraphProcessor writeLock interruptibly", () -> {
-                    writeLock.lockInterruptibly();
-                    lockSucceeded.setValue(true);
-                });
+                QueryPerformanceRecorder.withNuggetThrowing("Acquire UpdateGraphProcessor writeLock interruptibly",
+                        () -> {
+                            writeLock.lockInterruptibly();
+                            lockSucceeded.setValue(true);
+                        });
                 Assert.eq(logicalClock.currentState(), "logicalClock.currentState()", LogicalClock.State.Idle);
                 maybeLogStackTrace("locked (exclusive)");
             } catch (Throwable t) {

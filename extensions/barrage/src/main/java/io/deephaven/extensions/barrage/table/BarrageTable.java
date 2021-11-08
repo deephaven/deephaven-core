@@ -232,7 +232,7 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
         final boolean mightBeInitialSnapshot = currentRowSet.isEmpty() && update.isSnapshot;
 
         try (final RowSet currRowsFromPrev = currentRowSet.copy();
-             final MutableRowSet populatedRows =
+                final MutableRowSet populatedRows =
                         (serverViewport != null ? currentRowSet.subSetForPositions(serverViewport) : null)) {
 
             // removes

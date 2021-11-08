@@ -56,7 +56,8 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
                 col("Sentinel", 1, 2, 3, 4, 5, 6, 7, 8, 9, 10),
                 col("Parent", NULL_INT, NULL_INT, 1, 1, 2, 3, 5, 5, 3, 2));
         final Table treed =
-                UpdateGraphProcessor.DEFAULT.exclusiveLock().computeLocked(() -> source.treeTable("Sentinel", "Parent"));
+                UpdateGraphProcessor.DEFAULT.exclusiveLock()
+                        .computeLocked(() -> source.treeTable("Sentinel", "Parent"));
 
         final Callable<Table> callable =
                 () -> TreeTableFilter.rawFilterTree(treed, "Sentinel in 4, 6, 9, 11, 12, 13, 14, 15");

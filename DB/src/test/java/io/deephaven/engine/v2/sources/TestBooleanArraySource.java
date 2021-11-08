@@ -3,13 +3,13 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.v2.sources;
 
-import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.v2.sources.chunk.ObjectChunk;
 
 import io.deephaven.engine.v2.sources.chunk.WritableObjectChunk;
 
 import io.deephaven.util.BooleanUtils;
 
+import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.v2.select.FormulaColumn;
 import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;

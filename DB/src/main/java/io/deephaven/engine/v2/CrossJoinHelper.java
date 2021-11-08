@@ -64,7 +64,7 @@ public class CrossJoinHelper {
                 new BucketingContext("join", leftTable, rightTable, columnsToMatch, columnsToAdd, control)) {
             // TODO: if we have a single column of unique values, and the range is small, we can use a simplified table
             // if (!rightTable.isRefreshing()
-            //     && control.useUniqueTable(uniqueValues, maximumUniqueValue, minumumUniqueValue)){ (etc)
+            // && control.useUniqueTable(uniqueValues, maximumUniqueValue, minumumUniqueValue)){ (etc)
             if (bucketingContext.keyColumnCount == 0) {
                 if (!leftTable.isRefreshing() && !rightTable.isRefreshing()) {
                     numRightBitsToReserve = 1; // tight computation of this is efficient and appropriate

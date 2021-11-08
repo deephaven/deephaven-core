@@ -31,8 +31,8 @@ import java.util.Map;
  * An abstract table that represents a hashset of smart keys. Since we are representing a set, there we are not defining
  * an order to our output. Whatever order the table happens to end up in, is fine.
  *
- * The table will run by regenerating the full hashset (using the setGenerator Function passed in); and then
- * comparing that to the existing hash set.
+ * The table will run by regenerating the full hashset (using the setGenerator Function passed in); and then comparing
+ * that to the existing hash set.
  */
 public class HashSetBackedTableFactory {
     private final Function.Nullary<HashSet<SmartKey>> setGenerator;

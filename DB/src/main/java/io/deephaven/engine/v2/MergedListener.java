@@ -189,12 +189,14 @@ public abstract class MergedListener extends LivenessArtifact implements Notific
             return true;
         }
         if (queuedNotificationClock == step) {
-            UpdateGraphProcessor.DEFAULT.logDependencies().append("MergedListener has queued notification ").append(this)
+            UpdateGraphProcessor.DEFAULT.logDependencies().append("MergedListener has queued notification ")
+                    .append(this)
                     .endl();
             return false;
         }
         if (canExecute(step)) {
-            UpdateGraphProcessor.DEFAULT.logDependencies().append("MergedListener has dependencies satisfied ").append(this)
+            UpdateGraphProcessor.DEFAULT.logDependencies().append("MergedListener has dependencies satisfied ")
+                    .append(this)
                     .endl();
             // mark this node as completed, because both our parents have been satisfied; but we are not enqueued; so we
             // can never actually execute
