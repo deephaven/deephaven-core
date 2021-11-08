@@ -43,127 +43,32 @@ except Exception as e:
     pass
 
 @_passThrough
-def table_to_numpy_bool(idx, cols):
+def table_to_numpy_2d(idx, cols, np_dtype = None):
     """
-    Convert table data to a NumPy array of the appropriate size (dtype = np.bool_)
+    Convert Deephaven table data to a 2d NumPy array of the appropriate size
 
     :param idx: An IndexSet describing the number of rows in the table
-    :param cols: ColumnSources describing which columns to copy to NumPy
-    :param dtype: The desired data type of the resultant NumPy array
+    :param cols: ColumnSources describing which columns to copy
+    :param dtype: The desired NumPy data type of the output NumPy array
     :return: A NumPy ndarray
     """
 
-    buffer = gatherer.booleanTensorBuffer2D(idx, cols)
-    
-    tensor = np.frombuffer(buffer, dtype = np.bool_)
-    tensor.shape = (idx.getSize(), len(cols))
+    if np_dtype == np.bool_:
+        buffer = gatherer.booleanTensorBuffer2D(idx, cols)
+    elif np_dtype == np.byte:
+        buffer = gatherer.byteTensorBuffer2D(idx, cols)
+    elif np_dtype == np.double:
+        buffer = gatherer.doubleTensorBuffer2D(idx, cols)
+    elif np_dtype == np.intc:
+        buffer = gatherer.intTensorBuffer2D(idx, cols)
+    elif np_dtype == np.int_:
+        buffer = gatherer.longTensorBuffer2D(idx, cols)
+    elif np_dtype == np.short:
+        buffer = gatherer.shortTensorBuffer2D(idx, cols)
+    elif np_dtype == np.single:
+        buffer = gatherer.floatTensorBuffer2D(idx, cols)
 
-    return np.squeeze(tensor)
-
-@_passThrough
-def table_to_numpy_byte(idx, cols):
-    """
-    Convert table data to a NumPy array of the appropriate size (dtype = np.byte)
-
-    :param idx: An IndexSet describing the number of rows in the table
-    :param cols: ColumnSources describing which columns to copy to NumPy
-    :param dtype: The desired data type of the resultant NumPy array
-    :return: A NumPy ndarray
-    """
-
-    buffer = gatherer.byteTensorBuffer2D(idx, cols)
-    
-    tensor = np.frombuffer(buffer, dtype = np.byte)
-    tensor.shape = (idx.getSize(), len(cols))
-
-    return np.squeeze(tensor)
-
-@_passThrough
-def table_to_numpy_short(idx, cols):
-    """
-    Convert table data to a NumPy array of the appropriate size (dtype = np.short)
-
-    :param idx: An IndexSet describing the number of rows in the table
-    :param cols: ColumnSources describing which columns to copy to NumPy
-    :param dtype: The desired data type of the resultant NumPy array
-    :return: A NumPy ndarray
-    """
-
-    buffer = gatherer.shortTensorBuffer2D(idx, cols)
-    
-    tensor = np.frombuffer(buffer, dtype = np.short)
-    tensor.shape = (idx.getSize(), len(cols))
-
-    return np.squeeze(tensor)
-
-@_passThrough
-def table_to_numpy_int(idx, cols):
-    """
-    Convert table data to a NumPy array of the appropriate size (dtype = np.intc)
-
-    :param idx: An IndexSet describing the number of rows in the table
-    :param cols: ColumnSources describing which columns to copy to NumPy
-    :param dtype: The desired data type of the resultant NumPy array
-    :return: A NumPy ndarray
-    """
-
-    buffer = gatherer.intTensorBuffer2D(idx, cols)
-    
-    tensor = np.frombuffer(buffer, dtype = np.intc)
-    tensor.shape = (idx.getSize(), len(cols))
-
-    return np.squeeze(tensor)
-
-@_passThrough
-def table_to_numpy_long(idx, cols):
-    """
-    Convert table data to a NumPy array of the appropriate size (dtype = np.int_)
-
-    :param idx: An IndexSet describing the number of rows in the table
-    :param cols: ColumnSources describing which columns to copy to NumPy
-    :param dtype: The desired data type of the resultant NumPy array
-    :return: A NumPy ndarray
-    """
-
-    buffer = gatherer.longTensorBuffer2D(idx, cols)
-    
-    tensor = np.frombuffer(buffer, dtype = np.int_)
-    tensor.shape = (idx.getSize(), len(cols))
-
-    return np.squeeze(tensor)
-
-@_passThrough
-def table_to_numpy_float(idx, cols):
-    """
-    Convert table data to a NumPy array of the appropriate size (dtype = np.single)
-
-    :param idx: An IndexSet describing the number of rows in the table
-    :param cols: ColumnSources describing which columns to copy to NumPy
-    :param dtype: The desired data type of the resultant NumPy array
-    :return: A NumPy ndarray
-    """
-
-    buffer = gatherer.floatTensorBuffer2D(idx, cols)
-    
-    tensor = np.frombuffer(buffer, dtype = np.single)
-    tensor.shape = (idx.getSize(), len(cols))
-
-    return np.squeeze(tensor)
-
-@_passThrough
-def table_to_numpy_double(idx, cols):
-    """
-    Convert table data to a NumPy array of the appropriate size (dtype = np.double)
-
-    :param idx: An IndexSet describing the number of rows in the table
-    :param cols: ColumnSources describing which columns to copy to NumPy
-    :param dtype: The desired data type of the resultant NumPy array
-    :return: A NumPy ndarray
-    """
-
-    buffer = gatherer.doubleTensorBuffer2D(idx, cols)
-    
-    tensor = np.frombuffer(buffer, dtype = np.double)
+    tensor = np.frombuffer(buffer, dtype = np_dtype)
     tensor.shape = (idx.getSize(), len(cols))
 
     return np.squeeze(tensor)
