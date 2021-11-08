@@ -49,7 +49,6 @@ public class Scatterer {
         for (int i = 0; i < outputs.length; i++) {
             // TODO: TICKET #1026: Replace typeString with the following once ticket #1009 is resolved:
             final String typeString = outputs[i].getType() == null ? "" : "(" + outputs[i].getType() + ")";
-            System.out.println("typeString = " + typeString);
 
             // final String typeString = "";
             queryStrings[i] = String.format("%s = %s (__scatterer.scatter(%d, %s))", outputs[i].getColName(),
