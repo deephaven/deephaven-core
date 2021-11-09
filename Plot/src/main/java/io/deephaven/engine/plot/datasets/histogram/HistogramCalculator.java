@@ -57,7 +57,7 @@ public class HistogramCalculator {
         }
 
         return data.join(range)
-                .updateView("RangeIndex = Range.rowSet(X)")
+                .updateView("RangeIndex = Range.index(X)")
                 .where("!isNull(RangeIndex)")
                 .by(AggCombo(AggCount("Count"), AggLast("Range")), groupByColumns)
                 .updateView("BinMin = Range.binMin(RangeIndex)", "BinMax = Range.binMax(RangeIndex)",
