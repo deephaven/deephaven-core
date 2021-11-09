@@ -228,7 +228,7 @@ def learn(table=None, model_func=None, inputs=[], outputs=[], batch_size = None)
         jpy.get_type("io.deephaven.db.tables.select.QueryScope").addParam("__scatterer", __scatterer)
 
         return table.update(f"{futureOffset} = __computer.compute(k)")\
-                .update(__scatterer.generateQueryStrings(f"{futureOffset}", True))\
+                .update(__scatterer.generateQueryStrings(f"{futureOffset}"))\
                 .update(f"{clean} = __computer.clear()")\
                 .dropColumns(f"{futureOffset}", f"{clean}")
 
