@@ -45,7 +45,7 @@ jobs:
         uses: burrunan/gradle-cache-action@v1
         with:
           job-id: check
-          arguments: --scan --continue --rerun-tasks check
+          arguments: --rerun-tasks check testOutOfBand testParallel testSerial
           gradle-version: wrapper
 
       - name: Upload Test Results
