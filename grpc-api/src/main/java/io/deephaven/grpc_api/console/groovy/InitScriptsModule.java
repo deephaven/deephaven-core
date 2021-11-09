@@ -1,7 +1,7 @@
 package io.deephaven.grpc_api.console.groovy;
 
 import io.deephaven.engine.util.GroovyDeephavenSession.CountMetrics;
-import io.deephaven.engine.util.GroovyDeephavenSession.Db;
+import io.deephaven.engine.util.GroovyDeephavenSession.Base;
 import io.deephaven.engine.util.GroovyDeephavenSession.InitScript;
 import io.deephaven.engine.util.GroovyDeephavenSession.PerformanceQueries;
 import io.deephaven.engine.util.GroovyDeephavenSession.RunScripts;
@@ -17,7 +17,7 @@ public class InitScriptsModule {
     public interface Explicit {
         @Binds
         @IntoSet
-        InitScript bindsDbScripts(Db impl);
+        InitScript bindsDbScripts(Base impl);
 
         @Binds
         @IntoSet

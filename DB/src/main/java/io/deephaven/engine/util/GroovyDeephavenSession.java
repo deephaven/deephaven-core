@@ -770,10 +770,10 @@ public class GroovyDeephavenSession extends AbstractScriptSession implements Scr
         int priority();
     }
 
-    public static class Db implements InitScript {
+    public static class Base implements InitScript {
         @Override
         public String getScriptPath() {
-            return "groovy/0-db.groovy";
+            return "groovy/0-base.groovy";
         }
 
         @Override
