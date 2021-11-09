@@ -47,10 +47,8 @@ public class Scatterer {
         String[] queryStrings = new String[outputs.length];
 
         for (int i = 0; i < outputs.length; i++) {
-            // TODO: TICKET #1026: Replace typeString with the following once ticket #1009 is resolved:
-            // final String typeString = outputs[i].getType() == null ? "" : "(" + outputs[i].getType() + ")";
+            final String typeString = outputs[i].getType() == null ? "" : "(" + outputs[i].getType() + ")(PyObject)";
 
-            final String typeString = "";
             queryStrings[i] = String.format("%s = %s (__scatterer.scatter(%d, %s))", outputs[i].getColName(),
                     typeString, i, futureOffsetColName);
         }
