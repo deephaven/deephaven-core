@@ -52,22 +52,19 @@ jobs:
         uses: actions/upload-artifact@v2
         if: always()
         with:
-          name: nightly-check-ci-results
-          path: '**/build/test-results/*/TEST-*.xml'
-
-      - name: Upload Test Reports
-        uses: actions/upload-artifact@v2
-        if: always()
-        with:
-          name: nightly-check-ci-reports
-          path: '**/build/reports/tests/**'
+          name: nightly-check-ci-test-results
+          path: |
+            **/build/test-results/*/TEST-*.xml
+            **/build/reports/tests/**
 
       - name: Upload JVM Error Logs
         uses: actions/upload-artifact@v2
         if: failure()
         with:
           name: nightly-check-ci-jvm-err
-          path: '**/*_pid*.log'
+          path: |
+            **/*_pid*.log
+            **/core.*
           if-no-files-found: ignore
 
       - name: Publish Test Results
