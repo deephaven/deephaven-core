@@ -40,17 +40,17 @@ public class Scatterer {
      * Generates query strings to create a new column for each Output.
      *
      * @param futureOffsetColName name of the FutureOffset column to get results from
+     * @param isPython true if the method is used with Python scatter functions; false otherwise.
      *
      * @return list of query strings to be used in .update() call.
      */
-    public String[] generateQueryStrings(String futureOffsetColName) {
-        String[] queryStrings = new String[outputs.length];
+    public String[] generateQueryStrings(String futureOffsetColName, boolean isPython) {
+        final String pyCast = isPython ? " (PyObject) " : "";
+        final String[] queryStrings = new String[outputs.length];
 
         for (int i = 0; i < outputs.length; i++) {
-            // TODO: TICKET #1026: Replace typeString with the following once ticket #1009 is resolved:
-            // final String typeString = outputs[i].getType() == null ? "" : "(" + outputs[i].getType() + ")";
+            final String typeString = outputs[i].getType() == null ? pyCast : "(" + outputs[i].getType() + ")" + pyCast;
 
-            final String typeString = "";
             queryStrings[i] = String.format("%s = %s (__scatterer.scatter(%d, %s))", outputs[i].getColName(),
                     typeString, i, futureOffsetColName);
         }

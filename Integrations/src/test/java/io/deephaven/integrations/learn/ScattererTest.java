@@ -112,8 +112,13 @@ public class ScattererTest {
         Scatterer scatterer = new Scatterer(outputs);
 
         Assert.assertArrayEquals(
-                new String[] {"OutCol1 =  (__scatterer.scatter(0, __FutureOffset))",
+                new String[] {"OutCol1 = (int) (__scatterer.scatter(0, __FutureOffset))",
                         "OutCol2 =  (__scatterer.scatter(1, __FutureOffset))"},
-                scatterer.generateQueryStrings("__FutureOffset"));
+                scatterer.generateQueryStrings("__FutureOffset", false));
+
+        Assert.assertArrayEquals(
+                new String[] {"OutCol1 = (int) (PyObject)  (__scatterer.scatter(0, __FutureOffset))",
+                        "OutCol2 =  (PyObject)  (__scatterer.scatter(1, __FutureOffset))"},
+                scatterer.generateQueryStrings("__FutureOffset", true));
     }
 }
