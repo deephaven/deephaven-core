@@ -28,7 +28,7 @@ public interface TableLocationState {
      *           {@link RegionedColumnSource#ELEMENT_INDEX_TO_SUB_REGION_ELEMENT_INDEX_MASK the region mask}.
      * @apiNote The returned rowSet will be a "copy", meaning the caller must {@link RowSet#close()} it when finished.
      */
-    RowSet getIndex();
+    RowSet getRowSet();
 
     /**
      * @return The size of a table location: <br>
@@ -54,7 +54,7 @@ public interface TableLocationState {
     @FinalDefault
     default boolean copyStateValuesTo(@NotNull TableLocationStateHolder destinationHolder) {
         synchronized (getStateLock()) {
-            return destinationHolder.setValues(getIndex(), getLastModifiedTimeMillis());
+            return destinationHolder.setValues(getRowSet(), getLastModifiedTimeMillis());
         }
     }
 }

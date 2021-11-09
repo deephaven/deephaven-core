@@ -364,7 +364,7 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
     }
 
     @VisibleForTesting
-    public RowSet getIndex() {
+    public RowSet getRowSet() {
         return parent.getRowSet();
     }
 

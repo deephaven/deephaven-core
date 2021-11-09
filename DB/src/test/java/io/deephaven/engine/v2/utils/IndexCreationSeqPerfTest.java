@@ -1,7 +1,7 @@
 package io.deephaven.engine.v2.utils;
 
 public class IndexCreationSeqPerfTest {
-    private final IndexLike il;
+    private final RowSetLike il;
     private final int sz;
     private final long seqMask;
     private final long singleMask;
@@ -20,7 +20,7 @@ public class IndexCreationSeqPerfTest {
         public final String name;
     }
 
-    public IndexCreationSeqPerfTest(final IndexLike.Factory f, final Config c, final int sz) {
+    public IndexCreationSeqPerfTest(final RowSetLike.Factory f, final Config c, final int sz) {
         il = f.make();
         this.sz = sz;
         if (c.seqOneIn2Pow < 0)
@@ -59,7 +59,7 @@ public class IndexCreationSeqPerfTest {
     }
 
     static long runAndGetSamples(
-            final IndexLike.Factory f, final Config c, final int sz, final int runs, final PerfStats stats,
+            final RowSetLike.Factory f, final Config c, final int sz, final int runs, final PerfStats stats,
             final String pfx, final boolean print) {
         final Runtime rt = Runtime.getRuntime();
         long lasts = 0; // to prevent the optimizer from eliminating unused steps.
@@ -98,7 +98,7 @@ public class IndexCreationSeqPerfTest {
         final Config c = new Config("codeWarmup", 1, 1);
         long lasts = 0;
         double sum = 0;
-        for (IndexLike.Factory f : ilfs)
+        for (RowSetLike.Factory f : ilfs)
             for (int i = 0; i < steps; ++i) {
                 final PerfStats s = new PerfStats(2);
                 lasts += runAndGetSamples(f, c, 8 * 32, 1, s, "", false);
@@ -108,7 +108,7 @@ public class IndexCreationSeqPerfTest {
     }
 
     static void runStep(final Config c, final String stepName, final int sz, final int runs, final boolean print) {
-        for (IndexLike.Factory f : ilfs) {
+        for (RowSetLike.Factory f : ilfs) {
             System.out.println(me + ": Running " + f.name() + " " + c.name + " " + stepName + " sz=" + sz);
             final PerfStats sStats = new PerfStats(runs);
             final String pfx = me + "    ";
@@ -135,7 +135,7 @@ public class IndexCreationSeqPerfTest {
 
     private static final Config[] configs = {c01, /* c10, c11 */ };
 
-    private static final IndexLike.Factory ilfs[] = {IndexLike.mixedf, IndexLike.pqf, IndexLike.rspf};
+    private static final RowSetLike.Factory ilfs[] = {RowSetLike.mixedf, RowSetLike.pqf, RowSetLike.rspf};
 
     public static void main(String[] args) {
         System.out.println(me + ": Running code warmup...");

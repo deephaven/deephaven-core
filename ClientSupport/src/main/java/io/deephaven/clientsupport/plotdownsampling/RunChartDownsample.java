@@ -671,7 +671,7 @@ public class RunChartDownsample implements Function.Unary<Table, Table> {
             // check each group to see if any needs a rescan
             for (final Iterator<BucketState> iterator = states.values().iterator(); iterator.hasNext();) {
                 final BucketState bucket = iterator.next();
-                if (bucket.getIndex().isEmpty()) {
+                if (bucket.getRowSet().isEmpty()) {
                     // if it has no keys at all, remove it so we quit checking it
                     iterator.remove();
                     releasePosition(bucket.getOffset());
@@ -717,7 +717,7 @@ public class RunChartDownsample implements Function.Unary<Table, Table> {
             // TODO this couldnt be uglier if i tried
             if (rangeMode == RangeMode.ZOOM) {
                 return Stream.concat(
-                        Stream.of(head, tail).filter(s -> !s.getIndex().isEmpty()), // note: we only filter these two,
+                        Stream.of(head, tail).filter(s -> !s.getRowSet().isEmpty()), // note: we only filter these two,
                                                                                     // since states shouldn't contain
                                                                                     // empty indexes anyway
                         states.values().stream())

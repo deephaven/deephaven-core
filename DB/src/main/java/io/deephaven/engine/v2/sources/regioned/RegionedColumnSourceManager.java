@@ -133,7 +133,7 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
         for (final Iterator<EmptyTableLocationEntry> iterator = emptyTableLocations.iterator(); iterator.hasNext();) {
             final EmptyTableLocationEntry nonexistentEntry = iterator.next();
             nonexistentEntry.refresh();
-            final RowSet locationIndex = nonexistentEntry.location.getIndex();
+            final RowSet locationIndex = nonexistentEntry.location.getRowSet();
             if (locationIndex != null) {
                 if (locationIndex.isEmpty()) {
                     locationIndex.close();
@@ -311,7 +311,7 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
             if (!subscriptionBuffer.processPending()) {
                 return;
             }
-            final RowSet updateIndex = location.getIndex();
+            final RowSet updateIndex = location.getRowSet();
             try {
                 if (updateIndex == null) {
                     // This should be impossible - the subscription buffer transforms a transition to null into a

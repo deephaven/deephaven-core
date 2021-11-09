@@ -172,7 +172,7 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
                         return lastSizes[li];
                     }
                 });
-                allowing(tl).getIndex();
+                allowing(tl).getRowSet();
                 will(new CustomAction("Return last size") {
                     @Override
                     public Object invoke(Invocation invocation) {

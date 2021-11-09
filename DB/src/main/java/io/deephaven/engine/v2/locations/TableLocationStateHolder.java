@@ -10,11 +10,11 @@ import org.jetbrains.annotations.Nullable;
  */
 public class TableLocationStateHolder implements TableLocationState {
 
-    private RowSet index;
+    private RowSet rowSet;
     private volatile long lastModifiedTimeMillis;
 
-    private TableLocationStateHolder(@Nullable final RowSet index, final long lastModifiedTimeMillis) {
-        this.index = index;
+    private TableLocationStateHolder(@Nullable final RowSet rowSet, final long lastModifiedTimeMillis) {
+        this.rowSet = rowSet;
         this.lastModifiedTimeMillis = lastModifiedTimeMillis;
     }
 
@@ -33,13 +33,13 @@ public class TableLocationStateHolder implements TableLocationState {
     }
 
     @Override
-    public final synchronized RowSet getIndex() {
-        return index.copy();
+    public final synchronized RowSet getRowSet() {
+        return rowSet.copy();
     }
 
     @Override
     public final synchronized long getSize() {
-        return index == null ? NULL_SIZE : index.size();
+        return rowSet == null ? NULL_SIZE : rowSet.size();
     }
 
     @Override
@@ -61,22 +61,22 @@ public class TableLocationStateHolder implements TableLocationState {
     /**
      * Set all state values.
      *
-     * @param index The new rowSet. Ownership passes to this holder; callers should {@link RowSet#copy() copy} it if
+     * @param rowSet The new rowSet. Ownership passes to this holder; callers should {@link RowSet#copy() copy} it if
      *        necessary.
      * @param lastModifiedTimeMillis The new modification time
      * @return Whether any of the values changed
      */
-    public final synchronized boolean setValues(@Nullable final RowSet index,
+    public final synchronized boolean setValues(@Nullable final RowSet rowSet,
             final long lastModifiedTimeMillis) {
         boolean changed = false;
 
-        if (index != this.index) {
+        if (rowSet != this.rowSet) {
             // Currently, locations *must* be add-only. Consequently, we assume that a size check is sufficient.
-            changed = (index == null || this.index == null || index.size() != this.index.size());
-            if (this.index != null) {
-                this.index.close();
+            changed = (rowSet == null || this.rowSet == null || rowSet.size() != this.rowSet.size());
+            if (this.rowSet != null) {
+                this.rowSet.close();
             }
-            this.index = index;
+            this.rowSet = rowSet;
         }
         if (lastModifiedTimeMillis != this.lastModifiedTimeMillis) {
             changed = true;

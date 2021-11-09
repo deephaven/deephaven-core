@@ -6,13 +6,13 @@ import java.util.Map;
 import java.util.TreeMap;
 
 public class IndexCreationRandomPerfTest {
-    private final IndexLike il;
+    private final RowSetLike il;
     private final QuickDirtyRandom r;
     private final int sz;
 
     private static final int seed = 1;
 
-    public IndexCreationRandomPerfTest(final IndexLike.Factory ilf, final int sz) {
+    public IndexCreationRandomPerfTest(final RowSetLike.Factory ilf, final int sz) {
         this.il = ilf.make();
         r = new QuickDirtyRandom(seed);
         this.sz = sz;
@@ -26,9 +26,9 @@ public class IndexCreationRandomPerfTest {
         il.doneAdding();
     }
 
-    public RowSet getIndex() {
-        if (il instanceof IndexLike.ActualIndex) {
-            return ((IndexLike.ActualIndex) il).getIndex();
+    public RowSet getRowSet() {
+        if (il instanceof RowSetLike.ActualRowSet) {
+            return ((RowSetLike.ActualRowSet) il).getRowSet();
         }
         return null;
     }
@@ -40,7 +40,7 @@ public class IndexCreationRandomPerfTest {
     private static final boolean doLeavesTypeStats = true;
 
     static long runAndGetSamples(
-            final IndexLike.Factory ilf,
+            final RowSetLike.Factory ilf,
             final int sz, final int runs, final PerfStats stats,
             final String pfx, final boolean print) {
         final Runtime rt = Runtime.getRuntime();
@@ -75,13 +75,13 @@ public class IndexCreationRandomPerfTest {
 
     static final String me = IndexCreationRandomPerfTest.class.getSimpleName();
 
-    private static final IndexLike.Factory ilfs[] = {IndexLike.mixedf, IndexLike.pqf, IndexLike.rspf};
+    private static final RowSetLike.Factory ilfs[] = {RowSetLike.mixedf, RowSetLike.pqf, RowSetLike.rspf};
 
     static double codeWarmup() {
         final int steps = 500;
         long lasts = 0;
         double sum = 0;
-        for (IndexLike.Factory ilf : ilfs) {
+        for (RowSetLike.Factory ilf : ilfs) {
             for (int i = 0; i < steps; ++i) {
                 final PerfStats s = new PerfStats(2);
                 lasts += runAndGetSamples(ilf, 8 * 64, 1, s, "", false);
@@ -95,12 +95,12 @@ public class IndexCreationRandomPerfTest {
         final Map<String, PerfStats> ss = new TreeMap<>();
         final String pfx = me + "    ";
         int maxNameLen = 0;
-        for (IndexLike.Factory ilf : ilfs) {
+        for (RowSetLike.Factory ilf : ilfs) {
             if (ilf.name().length() > maxNameLen) {
                 maxNameLen = ilf.name().length();
             }
         }
-        for (IndexLike.Factory ilf : ilfs) {
+        for (RowSetLike.Factory ilf : ilfs) {
             final String header = String.format("%-" + maxNameLen + "s %s",
                     ilf.name(), stepName + " sz=" + sz + " runs=" + runs);
             System.out.println(me + ": Running " + " " + header);

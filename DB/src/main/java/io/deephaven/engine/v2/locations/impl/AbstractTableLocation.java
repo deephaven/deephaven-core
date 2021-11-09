@@ -55,8 +55,8 @@ public abstract class AbstractTableLocation
     }
 
     @Override
-    public final RowSet getIndex() {
-        return state.getIndex();
+    public final RowSet getRowSet() {
+        return state.getRowSet();
     }
 
     @Override

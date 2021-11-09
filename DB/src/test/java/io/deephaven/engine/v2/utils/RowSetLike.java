@@ -2,14 +2,14 @@ package io.deephaven.engine.v2.utils;
 
 import io.deephaven.engine.v2.utils.rsp.RspBitmap;
 
-public interface IndexLike {
+public interface RowSetLike {
     interface Factory {
         String name();
 
-        IndexLike make();
+        RowSetLike make();
     }
-    interface ActualIndex extends IndexLike {
-        RowSet getIndex();
+    interface ActualRowSet extends RowSetLike {
+        RowSet getRowSet();
     }
 
     String name();
@@ -24,10 +24,10 @@ public interface IndexLike {
 
     int initialCapacity = 16;
 
-    IndexLike.Factory pqf = new IndexLike.Factory() {
+    RowSetLike.Factory pqf = new RowSetLike.Factory() {
         @Override
-        public IndexLike make() {
-            return new IndexLike.ActualIndex() {
+        public RowSetLike make() {
+            return new ActualRowSet() {
                 RangePriorityQueueBuilder b = new RangePriorityQueueBuilder(initialCapacity);
                 RowSet idx;
 
@@ -58,7 +58,7 @@ public interface IndexLike {
                 }
 
                 @Override
-                public RowSet getIndex() {
+                public RowSet getRowSet() {
                     return idx;
                 }
             };
@@ -70,10 +70,10 @@ public interface IndexLike {
         }
     };
 
-    IndexLike.Factory mixedf = new IndexLike.Factory() {
+    RowSetLike.Factory mixedf = new RowSetLike.Factory() {
         @Override
-        public IndexLike make() {
-            return new ActualIndex() {
+        public RowSetLike make() {
+            return new ActualRowSet() {
                 RowSetBuilderRandom b = new AdaptiveRowSetBuilderRandom();
                 RowSet idx;
 
@@ -104,7 +104,7 @@ public interface IndexLike {
                 }
 
                 @Override
-                public RowSet getIndex() {
+                public RowSet getRowSet() {
                     return idx;
                 }
             };
@@ -116,10 +116,10 @@ public interface IndexLike {
         }
     };
 
-    IndexLike.Factory rspf = new IndexLike.Factory() {
+    RowSetLike.Factory rspf = new RowSetLike.Factory() {
         @Override
-        public IndexLike make() {
-            return new IndexLike() {
+        public RowSetLike make() {
+            return new RowSetLike() {
                 final RspBitmap rb = new RspBitmap();
 
                 @Override

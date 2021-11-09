@@ -50,7 +50,7 @@ public class BucketState {
         }
     }
 
-    public RowSet getIndex() {
+    public RowSet getRowSet() {
         return rowSet;
     }
 
