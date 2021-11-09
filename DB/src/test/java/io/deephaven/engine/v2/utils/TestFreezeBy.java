@@ -4,8 +4,8 @@ import io.deephaven.api.Selectable;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.tables.select.QueryScope;
-import io.deephaven.engine.tables.utils.DBDateTime;
-import io.deephaven.engine.tables.utils.DBTimeUtils;
+import io.deephaven.engine.tables.utils.DateTime;
+import io.deephaven.engine.tables.utils.DateTimeUtils;
 import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.v2.*;
 import junit.framework.TestCase;
@@ -19,7 +19,7 @@ import static io.deephaven.engine.v2.TstUtils.*;
 
 public class TestFreezeBy extends RefreshingTableTestCase {
     public void testSimpleTypes() {
-        final DBDateTime timeBase = DBTimeUtils.convertDateTime("2020-09-10T09:00:00 NY");
+        final DateTime timeBase = DateTimeUtils.convertDateTime("2020-09-10T09:00:00 NY");
         QueryScope.addParam("freezeByTimeBase", timeBase);
         final QueryTable input =
                 TstUtils.testRefreshingTable(stringCol("Key", "A", "B", "C"), intCol("Sentinel", 1, 2, 3));
@@ -45,7 +45,7 @@ public class TestFreezeBy extends RefreshingTableTestCase {
         assertEquals(long.class, frozen.getColumn("SLong").getType());
         assertEquals(float.class, frozen.getColumn("SFloat").getType());
         assertEquals(double.class, frozen.getColumn("SDouble").getType());
-        assertEquals(DBDateTime.class, frozen.getColumn("SDateTime").getType());
+        assertEquals(DateTime.class, frozen.getColumn("SDateTime").getType());
         assertEquals(Boolean.class, frozen.getColumn("SBoolean").getType());
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {

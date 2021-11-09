@@ -3,7 +3,7 @@ package io.deephaven.engine.v2.select;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.tables.ColumnDefinition;
 import io.deephaven.engine.tables.TableDefinition;
-import io.deephaven.engine.tables.utils.DBDateTime;
+import io.deephaven.engine.tables.utils.DateTime;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.ReinterpretUtilities;
 import io.deephaven.engine.v2.sources.chunk.*;
@@ -13,12 +13,12 @@ import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.util.QueryConstants;
 
 public class DateTimeRangeFilter extends LongRangeFilter {
-    public DateTimeRangeFilter(String columnName, DBDateTime val1, DBDateTime val2) {
+    public DateTimeRangeFilter(String columnName, DateTime val1, DateTime val2) {
         super(columnName, val1.getNanos(), val2.getNanos(), true, true);
     }
 
-    public DateTimeRangeFilter(String columnName, DBDateTime val1, DBDateTime val2, boolean lowerInclusive,
-            boolean upperInclusive) {
+    public DateTimeRangeFilter(String columnName, DateTime val1, DateTime val2, boolean lowerInclusive,
+                               boolean upperInclusive) {
         super(columnName, val1.getNanos(), val2.getNanos(), lowerInclusive, upperInclusive);
     }
 
@@ -40,7 +40,7 @@ public class DateTimeRangeFilter extends LongRangeFilter {
         }
 
         final Class colClass = def.getDataType();
-        Assert.eq(colClass, "colClass", DBDateTime.class);
+        Assert.eq(colClass, "colClass", DateTime.class);
 
         longFilter = super.initChunkFilter();
         chunkFilter = new DateTimeLongChunkFilterAdapter();
@@ -54,7 +54,7 @@ public class DateTimeRangeFilter extends LongRangeFilter {
     @Override
     public String toString() {
         return "DateTimeRangeFilter(" + columnName + " in " +
-                (lowerInclusive ? "[" : "(") + new DBDateTime(lower) + "," + new DBDateTime(upper) +
+                (lowerInclusive ? "[" : "(") + new DateTime(lower) + "," + new DateTime(upper) +
                 (upperInclusive ? "]" : ")") + ")";
     }
 
@@ -66,7 +66,7 @@ public class DateTimeRangeFilter extends LongRangeFilter {
 
         // noinspection unchecked
         final ColumnSource<Long> dateTimeColumnSource =
-                ReinterpretUtilities.dateTimeToLongSource((ColumnSource<DBDateTime>) columnSource);
+                ReinterpretUtilities.dateTimeToLongSource((ColumnSource<DateTime>) columnSource);
         return super.binarySearch(selection, dateTimeColumnSource, usePrev, reverse);
     }
 
@@ -77,10 +77,10 @@ public class DateTimeRangeFilter extends LongRangeFilter {
             try (final WritableLongChunk<Values> writableLongChunk =
                     WritableLongChunk.makeWritableChunk(values.size())) {
 
-                final ObjectChunk<DBDateTime, ? extends Values> objectValues = values.asObjectChunk();
+                final ObjectChunk<DateTime, ? extends Values> objectValues = values.asObjectChunk();
                 for (int ii = 0; ii < values.size(); ++ii) {
-                    final DBDateTime dbDateTime = objectValues.get(ii);
-                    writableLongChunk.set(ii, dbDateTime == null ? QueryConstants.NULL_LONG : dbDateTime.getNanos());
+                    final DateTime dateTime = objectValues.get(ii);
+                    writableLongChunk.set(ii, dateTime == null ? QueryConstants.NULL_LONG : dateTime.getNanos());
                 }
                 writableLongChunk.setSize(values.size());
                 longFilter.filter(writableLongChunk, keys, results);

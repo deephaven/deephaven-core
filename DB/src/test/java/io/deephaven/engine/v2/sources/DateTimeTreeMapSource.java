@@ -1,7 +1,7 @@
 package io.deephaven.engine.v2.sources;
 
 import io.deephaven.engine.tables.utils.ArrayUtils;
-import io.deephaven.engine.tables.utils.DBDateTime;
+import io.deephaven.engine.tables.utils.DateTime;
 import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.util.QueryConstants;
 import org.jetbrains.annotations.NotNull;
@@ -12,8 +12,8 @@ import java.util.Arrays;
  * DateTime column source that wraps and delegates the storage to an {@code TreeMapSource<Long>}. This also provides an
  * interface so this column can be interpreted as a long column (through UnboxedDateTimeTreeMapSource).
  */
-public class DateTimeTreeMapSource extends AbstractColumnSource<DBDateTime>
-        implements MutableColumnSourceGetDefaults.ForObject<DBDateTime> {
+public class DateTimeTreeMapSource extends AbstractColumnSource<DateTime>
+        implements MutableColumnSourceGetDefaults.ForObject<DateTime> {
 
     private final TreeMapSource<Long> treeMapSource;
     private final UnboxedDateTimeTreeMapSource alternateColumnSource;
@@ -22,7 +22,7 @@ public class DateTimeTreeMapSource extends AbstractColumnSource<DBDateTime>
      * Create a new DateTimeTreeMapSource with no initial data.
      */
     public DateTimeTreeMapSource() {
-        super(DBDateTime.class);
+        super(DateTime.class);
         this.treeMapSource = new TreeMapSource<>(Long.class);
         this.alternateColumnSource = new UnboxedDateTimeTreeMapSource(this, treeMapSource);
     }
@@ -33,8 +33,8 @@ public class DateTimeTreeMapSource extends AbstractColumnSource<DBDateTime>
      * @param rowSet The row indexes for the initial data
      * @param data The initial data
      */
-    public DateTimeTreeMapSource(RowSet rowSet, DBDateTime[] data) {
-        super(DBDateTime.class);
+    public DateTimeTreeMapSource(RowSet rowSet, DateTime[] data) {
+        super(DateTime.class);
         this.treeMapSource = new TreeMapSource<>(Long.class, rowSet, mapData(data));
         this.alternateColumnSource = new UnboxedDateTimeTreeMapSource(this, treeMapSource);
     }
@@ -46,13 +46,13 @@ public class DateTimeTreeMapSource extends AbstractColumnSource<DBDateTime>
      * @param data The initial data
      */
     public DateTimeTreeMapSource(RowSet rowSet, long[] data) {
-        super(DBDateTime.class);
+        super(DateTime.class);
         final Long[] boxedData = ArrayUtils.getBoxedArray(data);
         this.treeMapSource = new TreeMapSource<>(Long.class, rowSet, boxedData);
         this.alternateColumnSource = new UnboxedDateTimeTreeMapSource(this, treeMapSource);
     }
 
-    private Long[] mapData(DBDateTime[] data) {
+    private Long[] mapData(DateTime[] data) {
         return Arrays.stream(data).map(dt -> {
             if (dt == null) {
                 return QueryConstants.NULL_LONG;
@@ -61,7 +61,7 @@ public class DateTimeTreeMapSource extends AbstractColumnSource<DBDateTime>
         }).toArray(Long[]::new);
     }
 
-    public void add(RowSet rowSet, DBDateTime[] data) {
+    public void add(RowSet rowSet, DateTime[] data) {
         treeMapSource.add(rowSet, mapData(data));
     }
 
@@ -78,9 +78,9 @@ public class DateTimeTreeMapSource extends AbstractColumnSource<DBDateTime>
     }
 
     @Override
-    public DBDateTime get(long index) {
+    public DateTime get(long index) {
         final Long v = treeMapSource.get(index);
-        return v == null ? null : new DBDateTime(v);
+        return v == null ? null : new DateTime(v);
     }
 
     @Override
@@ -94,9 +94,9 @@ public class DateTimeTreeMapSource extends AbstractColumnSource<DBDateTime>
     }
 
     @Override
-    public DBDateTime getPrev(long index) {
+    public DateTime getPrev(long index) {
         final Long v = treeMapSource.getPrev(index);
-        return v == null ? null : new DBDateTime(v);
+        return v == null ? null : new DateTime(v);
     }
 
     @Override

@@ -4,20 +4,20 @@
 
 package io.deephaven.engine.v2.sources;
 
-import io.deephaven.engine.tables.utils.DBDateTime;
+import io.deephaven.engine.tables.utils.DateTime;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Reinterpret result for many {@link ColumnSource} implementations that internally represent {@link DBDateTime} values
+ * Reinterpret result for many {@link ColumnSource} implementations that internally represent {@link DateTime} values
  * as {@code long} values.
  */
 @AbstractColumnSource.IsSerializable(value = true)
 public class UnboxedDateTimeColumnSource extends AbstractColumnSource<Long>
         implements MutableColumnSourceGetDefaults.ForLong {
 
-    private final ColumnSource<DBDateTime> alternateColumnSource;
+    private final ColumnSource<DateTime> alternateColumnSource;
 
-    UnboxedDateTimeColumnSource(ColumnSource<DBDateTime> alternateColumnSource) {
+    UnboxedDateTimeColumnSource(ColumnSource<DateTime> alternateColumnSource) {
         super(long.class);
         this.alternateColumnSource = alternateColumnSource;
     }
@@ -40,7 +40,7 @@ public class UnboxedDateTimeColumnSource extends AbstractColumnSource<Long>
     @Override
     public <ALTERNATE_DATA_TYPE> boolean allowsReinterpret(
             @NotNull final Class<ALTERNATE_DATA_TYPE> alternateDataType) {
-        return alternateDataType == DBDateTime.class;
+        return alternateDataType == DateTime.class;
     }
 
     @Override

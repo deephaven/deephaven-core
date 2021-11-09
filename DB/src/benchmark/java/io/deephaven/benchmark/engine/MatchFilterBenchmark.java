@@ -2,8 +2,8 @@ package io.deephaven.benchmark.engine;
 
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.live.UpdateGraphProcessor;
-import io.deephaven.engine.tables.utils.DBDateTime;
-import io.deephaven.engine.tables.utils.DBTimeUtils;
+import io.deephaven.engine.tables.utils.DateTime;
+import io.deephaven.engine.tables.utils.DateTimeUtils;
 import io.deephaven.engine.v2.select.*;
 import io.deephaven.benchmarking.*;
 import io.deephaven.benchmarking.runner.TableBenchmarkState;
@@ -73,8 +73,8 @@ public class MatchFilterBenchmark {
         builder.setSeed(0xDEADBEEF)
                 .addColumn(BenchmarkTools.stringCol("PartCol", 4, 5, 7, 0xFEEDBEEF));
 
-        final DBDateTime startTime = DBTimeUtils.convertDateTime("2019-01-01T12:00:00 NY");
-        final DBDateTime endTime = DBTimeUtils.convertDateTime("2019-01-01T12:00:00.000001 NY");
+        final DateTime startTime = DateTimeUtils.convertDateTime("2019-01-01T12:00:00 NY");
+        final DateTime endTime = DateTimeUtils.convertDateTime("2019-01-01T12:00:00.000001 NY");
 
         switch (filterCol) {
             case "L1":
@@ -99,7 +99,7 @@ public class MatchFilterBenchmark {
         final List<Object> values = new ArrayList<>();
         if (filterCol.equals("Timestamp")) {
             for (int ii = 0; ii < matchValues; ++ii) {
-                values.add(DBTimeUtils.plus(startTime, ii));
+                values.add(DateTimeUtils.plus(startTime, ii));
             }
         } else if (filterCol.equals("Symbol")) {
             inputTable.selectDistinct("Symbol").head(matchValues).columnIterator("Symbol")

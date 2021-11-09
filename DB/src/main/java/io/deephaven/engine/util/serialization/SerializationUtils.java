@@ -1,6 +1,6 @@
 package io.deephaven.engine.util.serialization;
 
-import io.deephaven.engine.tables.utils.DBDateTime;
+import io.deephaven.engine.tables.utils.DateTime;
 import io.deephaven.util.FunctionalInterfaces;
 import gnu.trove.map.TIntObjectMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
@@ -57,8 +57,8 @@ public class SerializationUtils {
         if (itemClass == String.class) {
             return k -> out.writeUTF((String) k);
         }
-        if (itemClass == DBDateTime.class) {
-            return k -> out.writeLong(((DBDateTime) k).getNanos());
+        if (itemClass == DateTime.class) {
+            return k -> out.writeLong(((DateTime) k).getNanos());
         }
         if (itemClass == Date.class) {
             return k -> out.writeLong(((Date) k).getTime());
@@ -113,8 +113,8 @@ public class SerializationUtils {
         if (itemClass == String.class) {
             return () -> (ITEM_TYPE) in.readUTF();
         }
-        if (itemClass == DBDateTime.class) {
-            return () -> (ITEM_TYPE) new DBDateTime(in.readLong());
+        if (itemClass == DateTime.class) {
+            return () -> (ITEM_TYPE) new DateTime(in.readLong());
         }
         if (itemClass == Date.class) {
             return () -> (ITEM_TYPE) new Date(in.readLong());

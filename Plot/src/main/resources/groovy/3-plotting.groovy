@@ -22,6 +22,6 @@ colorTable = {
             .ungroup()
     //todo simplify the following with the improved color branch
             .updateView("Paint = io.deephaven.gui.color.Color.color(Colors).javaColor()")
-            .formatColumns("Colors = io.deephaven.engine.util.DBColorUtil.bgfga(Paint.getRed(), Paint.getGreen(), Paint.getBlue())")
+            .formatColumns("Colors = io.deephaven.engine.util.ColorUtil.bgfga(Paint.getRed(), Paint.getGreen(), Paint.getBlue())")
             .dropColumns("Paint")
 }

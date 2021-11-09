@@ -204,8 +204,8 @@ public class WindowCheck {
 
                 // figure out for all the modified indices if the timestamp or rowSet changed
                 upstream.forAllModified((oldIndex, newIndex) -> {
-                    final DBDateTime currentTimestamp = inWindowColumnSource.timeStampSource.get(newIndex);
-                    final DBDateTime prevTimestamp = inWindowColumnSource.timeStampSource.getPrev(oldIndex);
+                    final DateTime currentTimestamp = inWindowColumnSource.timeStampSource.get(newIndex);
+                    final DateTime prevTimestamp = inWindowColumnSource.timeStampSource.getPrev(oldIndex);
                     if (!Objects.equals(currentTimestamp, prevTimestamp)) {
                         updateIndex(newIndex, currentTimestamp);
                     }
@@ -252,7 +252,7 @@ public class WindowCheck {
          * Handles modified indices. If they are outside of the window, they need to be removed from the queue. If they
          * are inside the window, they need to be (re)inserted into the queue.
          */
-        private void updateIndex(final long index, DBDateTime currentTimestamp) {
+        private void updateIndex(final long index, DateTime currentTimestamp) {
             Entry entry = indexToEntry.remove(index);
             if (currentTimestamp == null) {
                 if (entry != null) {
@@ -278,7 +278,7 @@ public class WindowCheck {
          * @param index the rowSet inserted into the table
          */
         private void addIndex(long index) {
-            final DBDateTime currentTimestamp = inWindowColumnSource.timeStampSource.get(index);
+            final DateTime currentTimestamp = inWindowColumnSource.timeStampSource.get(index);
             if (currentTimestamp == null) {
                 return;
             }
@@ -380,7 +380,7 @@ public class WindowCheck {
     private static class InWindowColumnSource extends AbstractColumnSource<Boolean>
             implements MutableColumnSourceGetDefaults.ForBoolean {
         private final long windowNanos;
-        private final ColumnSource<DBDateTime> timeStampSource;
+        private final ColumnSource<DateTime> timeStampSource;
 
         private long prevTime = 0;
         private long currentTime = 0;
@@ -391,9 +391,9 @@ public class WindowCheck {
             super(Boolean.class);
             this.windowNanos = windowNanos;
 
-            this.timeStampSource = table.getColumnSource(timestampColumn, DBDateTime.class);
-            if (!DBDateTime.class.isAssignableFrom(timeStampSource.getType())) {
-                throw new IllegalArgumentException(timestampColumn + " is not of type DBDateTime!");
+            this.timeStampSource = table.getColumnSource(timestampColumn, DateTime.class);
+            if (!DateTime.class.isAssignableFrom(timeStampSource.getType())) {
+                throw new IllegalArgumentException(timestampColumn + " is not of type DateTime!");
             }
         }
 
@@ -406,12 +406,12 @@ public class WindowCheck {
         }
 
         long getTimeNanos() {
-            return DBTimeUtils.currentTime().getNanos();
+            return DateTimeUtils.currentTime().getNanos();
         }
 
         @Override
         public Boolean get(long index) {
-            final DBDateTime tableTimeStamp = timeStampSource.get(index);
+            final DateTime tableTimeStamp = timeStampSource.get(index);
             return computeInWindow(tableTimeStamp, currentTime);
         }
 
@@ -422,11 +422,11 @@ public class WindowCheck {
             final long time = (clockStep < currentStep || clockStep == initialStep) ? currentTime : prevTime;
 
             // get the previous value from the underlying column source
-            final DBDateTime tableTimeStamp = timeStampSource.getPrev(index);
+            final DateTime tableTimeStamp = timeStampSource.getPrev(index);
             return computeInWindow(tableTimeStamp, time);
         }
 
-        private Boolean computeInWindow(DBDateTime tableTimeStamp, long time) {
+        private Boolean computeInWindow(DateTime tableTimeStamp, long time) {
             if (tableTimeStamp == null) {
                 return null;
             }

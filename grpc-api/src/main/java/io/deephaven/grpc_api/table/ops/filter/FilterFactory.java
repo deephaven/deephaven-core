@@ -2,8 +2,8 @@ package io.deephaven.grpc_api.table.ops.filter;
 
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.select.SelectFilterFactory;
-import io.deephaven.engine.tables.utils.DBDateTime;
-import io.deephaven.engine.tables.utils.DBTimeZone;
+import io.deephaven.engine.tables.utils.DateTime;
+import io.deephaven.engine.tables.utils.TimeZone;
 import io.deephaven.engine.v2.select.*;
 import io.deephaven.proto.backplane.grpc.CaseSensitivity;
 import io.deephaven.proto.backplane.grpc.CompareCondition;
@@ -73,7 +73,7 @@ public class FilterFactory implements FilterVisitor<SelectFilter> {
             case NOT_EQUALS:
                 // At this point, we shouldn't be able to be optimized to a match filter, so we'll tostring and build a
                 // condition
-                // and let the DBLangParser turn the "==" into the appropriate java call
+                // and let the LangParser turn the "==" into the appropriate java call
                 // Note that case insensitive checks aren't supported on this path
                 if (caseSensitivity != CaseSensitivity.MATCH_CASE) {
                     throw new IllegalStateException("Should have been compiled out in a previous pass");
@@ -169,7 +169,7 @@ public class FilterFactory implements FilterVisitor<SelectFilter> {
             Literal literal = d.getLiteral();
             // all other literals get created from a toString except DateTime
             if (literal.getValueCase() == Literal.ValueCase.NANO_TIME_VALUE) {
-                values[i] = "'" + new DBDateTime(literal.getNanoTimeValue()).toString(DBTimeZone.TZ_DEFAULT) + "'";
+                values[i] = "'" + new DateTime(literal.getNanoTimeValue()).toString(TimeZone.TZ_DEFAULT) + "'";
             } else {
                 values[i] = FilterPrinter.printNoEscape(literal);
             }

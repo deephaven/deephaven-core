@@ -2,7 +2,7 @@ package io.deephaven.engine.v2.utils;
 
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.tablelogger.ProcessMemoryLogLogger;
-import io.deephaven.engine.tables.utils.DBTimeUtils;
+import io.deephaven.engine.tables.utils.DateTimeUtils;
 import io.deephaven.engine.v2.QueryTable;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
@@ -85,11 +85,11 @@ public class ProcessMemoryTracker {
         try {
             processMemLogger.getTableLogger().log(
                     startMillis,
-                    DBTimeUtils.millisToNanos(endMillis - startMillis),
+                    DateTimeUtils.millisToNanos(endMillis - startMillis),
                     sample.totalMemory,
                     sample.freeMemory,
                     sample.totalCollections - prevTotalCollections,
-                    DBTimeUtils.millisToNanos(sample.totalCollectionTimeMs - prevTotalCollectionTimeMs));
+                    DateTimeUtils.millisToNanos(sample.totalCollectionTimeMs - prevTotalCollectionTimeMs));
         } catch (IOException e) {
             // Don't want to log this more than once in a report
             logger.error().append("Error sending ProcessMemoryLog data to memory").append(e).endl();

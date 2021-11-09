@@ -8,9 +8,9 @@ import io.deephaven.base.clock.Clock;
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.TableDefinition;
-import io.deephaven.engine.tables.lang.DBLanguageFunctionUtil;
+import io.deephaven.engine.tables.lang.LanguageFunctionUtil;
 import io.deephaven.engine.tables.live.UpdateGraphProcessor;
-import io.deephaven.engine.tables.utils.DBDateTime;
+import io.deephaven.engine.tables.utils.DateTime;
 import io.deephaven.engine.v2.DynamicNode;
 import io.deephaven.engine.v2.QueryTable;
 import io.deephaven.engine.v2.sources.ColumnSource;
@@ -64,10 +64,10 @@ public abstract class ClockFilter extends SelectFilterLivenessArtifactImpl imple
         Require.requirement(DynamicNode.notDynamicOrNotRefreshing(table),
                 "DynamicNode.notDynamicOrNotRefreshing(table)");
 
-        final ColumnSource<DBDateTime> dateTimeColumnSource = table.getColumnSource(columnName);
+        final ColumnSource<DateTime> dateTimeColumnSource = table.getColumnSource(columnName);
         // Obviously, column needs to be of date-time values.
-        Require.requirement(DBDateTime.class.isAssignableFrom(dateTimeColumnSource.getType()),
-                "DBDateTime.class.isAssignableFrom(dateTimeColumnSource.getType())");
+        Require.requirement(DateTime.class.isAssignableFrom(dateTimeColumnSource.getType()),
+                "DateTime.class.isAssignableFrom(dateTimeColumnSource.getType())");
 
         nanosColumnSource = dateTimeColumnSource.allowsReinterpret(long.class)
                 ? table.dateTimeColumnAsNanos(columnName).getColumnSource(columnName)
@@ -146,7 +146,7 @@ public abstract class ClockFilter extends SelectFilterLivenessArtifactImpl imple
             final long firstKeyAdded = nextKey;
             long lastKeyAdded = -1L;
             while (nextKey <= lastKey
-                    && DBLanguageFunctionUtil.lessEquals(nanosColumnSource.getLong(nextKey), nowNanos)) {
+                    && LanguageFunctionUtil.lessEquals(nanosColumnSource.getLong(nextKey), nowNanos)) {
                 lastKeyAdded = nextKey++;
             }
             if (lastKeyAdded == -1L) {

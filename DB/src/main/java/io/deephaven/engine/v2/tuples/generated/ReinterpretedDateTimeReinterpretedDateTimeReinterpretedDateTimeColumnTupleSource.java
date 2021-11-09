@@ -1,15 +1,14 @@
 package io.deephaven.engine.v2.tuples.generated;
 
 import io.deephaven.datastructures.util.SmartKey;
-import io.deephaven.engine.tables.utils.DBDateTime;
-import io.deephaven.engine.tables.utils.DBTimeUtils;
+import io.deephaven.engine.tables.utils.DateTime;
+import io.deephaven.engine.tables.utils.DateTimeUtils;
 import io.deephaven.engine.util.tuples.generated.LongLongLongTuple;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.WritableSource;
 import io.deephaven.engine.v2.sources.chunk.Attributes;
 import io.deephaven.engine.v2.sources.chunk.Chunk;
 import io.deephaven.engine.v2.sources.chunk.LongChunk;
-import io.deephaven.engine.v2.sources.chunk.ObjectChunk;
 import io.deephaven.engine.v2.sources.chunk.WritableChunk;
 import io.deephaven.engine.v2.sources.chunk.WritableObjectChunk;
 import io.deephaven.engine.v2.tuples.AbstractTupleSource;
@@ -65,9 +64,9 @@ public class ReinterpretedDateTimeReinterpretedDateTimeReinterpretedDateTimeColu
     @Override
     public final LongLongLongTuple createTupleFromValues(@NotNull final Object... values) {
         return new LongLongLongTuple(
-                DBTimeUtils.nanos((DBDateTime)values[0]),
-                DBTimeUtils.nanos((DBDateTime)values[1]),
-                DBTimeUtils.nanos((DBDateTime)values[2])
+                DateTimeUtils.nanos((DateTime)values[0]),
+                DateTimeUtils.nanos((DateTime)values[1]),
+                DateTimeUtils.nanos((DateTime)values[2])
         );
     }
 
@@ -84,15 +83,15 @@ public class ReinterpretedDateTimeReinterpretedDateTimeReinterpretedDateTimeColu
     @Override
     public final <ELEMENT_TYPE> void exportElement(@NotNull final LongLongLongTuple tuple, final int elementIndex, @NotNull final WritableSource<ELEMENT_TYPE> writableSource, final long destinationIndexKey) {
         if (elementIndex == 0) {
-            writableSource.set(destinationIndexKey, (ELEMENT_TYPE) DBTimeUtils.nanosToTime(tuple.getFirstElement()));
+            writableSource.set(destinationIndexKey, (ELEMENT_TYPE) DateTimeUtils.nanosToTime(tuple.getFirstElement()));
             return;
         }
         if (elementIndex == 1) {
-            writableSource.set(destinationIndexKey, (ELEMENT_TYPE) DBTimeUtils.nanosToTime(tuple.getSecondElement()));
+            writableSource.set(destinationIndexKey, (ELEMENT_TYPE) DateTimeUtils.nanosToTime(tuple.getSecondElement()));
             return;
         }
         if (elementIndex == 2) {
-            writableSource.set(destinationIndexKey, (ELEMENT_TYPE) DBTimeUtils.nanosToTime(tuple.getThirdElement()));
+            writableSource.set(destinationIndexKey, (ELEMENT_TYPE) DateTimeUtils.nanosToTime(tuple.getThirdElement()));
             return;
         }
         throw new IndexOutOfBoundsException("Invalid element rowSet " + elementIndex + " for export");
@@ -101,22 +100,22 @@ public class ReinterpretedDateTimeReinterpretedDateTimeReinterpretedDateTimeColu
     @Override
     public final Object exportToExternalKey(@NotNull final LongLongLongTuple tuple) {
         return new SmartKey(
-                DBTimeUtils.nanosToTime(tuple.getFirstElement()),
-                DBTimeUtils.nanosToTime(tuple.getSecondElement()),
-                DBTimeUtils.nanosToTime(tuple.getThirdElement())
+                DateTimeUtils.nanosToTime(tuple.getFirstElement()),
+                DateTimeUtils.nanosToTime(tuple.getSecondElement()),
+                DateTimeUtils.nanosToTime(tuple.getThirdElement())
         );
     }
 
     @Override
     public final Object exportElement(@NotNull final LongLongLongTuple tuple, int elementIndex) {
         if (elementIndex == 0) {
-            return DBTimeUtils.nanosToTime(tuple.getFirstElement());
+            return DateTimeUtils.nanosToTime(tuple.getFirstElement());
         }
         if (elementIndex == 1) {
-            return DBTimeUtils.nanosToTime(tuple.getSecondElement());
+            return DateTimeUtils.nanosToTime(tuple.getSecondElement());
         }
         if (elementIndex == 2) {
-            return DBTimeUtils.nanosToTime(tuple.getThirdElement());
+            return DateTimeUtils.nanosToTime(tuple.getThirdElement());
         }
         throw new IllegalArgumentException("Bad elementIndex for 3 element tuple: " + elementIndex);
     }

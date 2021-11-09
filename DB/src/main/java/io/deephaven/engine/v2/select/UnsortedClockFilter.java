@@ -7,7 +7,7 @@ package io.deephaven.engine.v2.select;
 import io.deephaven.base.clock.Clock;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.lang.DBLanguageFunctionUtil;
+import io.deephaven.engine.tables.lang.LanguageFunctionUtil;
 import io.deephaven.engine.v2.utils.*;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -17,7 +17,7 @@ import java.util.PriorityQueue;
 import java.util.Queue;
 
 /**
- * This will filter a table on a DBDateTime column for all rows greater than "now" according to a supplied clock. It
+ * This will filter a table on a DateTime column for all rows greater than "now" according to a supplied clock. It
  * does not require any pre-sorting of the input table, instead preserving relative order in the initial output and each
  * subsequent run. Relative to SortedClockFilter, this implementation may require less overall storage and do less
  * overall work for tables with relatively few monotonically nondecreasing ranges (that is, m (number of ranges)
@@ -59,7 +59,7 @@ public class UnsortedClockFilter extends ClockFilter {
         public int compare(final Range r1, final Range r2) {
             Assert.assertion(!r1.isEmpty(), "!r1.isEmpty()");
             Assert.assertion(!r2.isEmpty(), "!r2.isEmpty()");
-            return DBLanguageFunctionUtil.compareTo(nanosColumnSource.getLong(r1.nextKey),
+            return LanguageFunctionUtil.compareTo(nanosColumnSource.getLong(r1.nextKey),
                     nanosColumnSource.getLong(r2.nextKey));
         }
     }
@@ -84,17 +84,17 @@ public class UnsortedClockFilter extends ClockFilter {
         long activeRangeFirstKey = selectionIterator.nextLong();
         long activeRangeLastKey = activeRangeFirstKey;
         long previousValue = nanosColumnSource.getLong(activeRangeFirstKey);
-        boolean activeRangeIsDeferred = DBLanguageFunctionUtil.greater(previousValue, nowNanos);
+        boolean activeRangeIsDeferred = LanguageFunctionUtil.greater(previousValue, nowNanos);
 
         while (selectionIterator.hasNext()) {
             final long currentKey = selectionIterator.nextLong();
             final long currentValue = nanosColumnSource.getLong(currentKey);
-            final boolean currentIsDeferred = DBLanguageFunctionUtil.greater(currentValue, nowNanos);
+            final boolean currentIsDeferred = LanguageFunctionUtil.greater(currentValue, nowNanos);
 
             // If we observe a change in deferral status, a discontinuity in the keys, or a decrease in the values, we
             // have entered a new range
             if (currentIsDeferred != activeRangeIsDeferred || currentKey != activeRangeLastKey + 1
-                    || DBLanguageFunctionUtil.less(currentValue, previousValue)) {
+                    || LanguageFunctionUtil.less(currentValue, previousValue)) {
                 // Add the current range, as appropriate
                 if (activeRangeIsDeferred) {
                     rangesByNextTime.add(new Range(activeRangeFirstKey, activeRangeLastKey));

@@ -22,8 +22,8 @@ import java.util.Set;
  */
 class TableShowTools {
 
-    static void showInternal(Table source, long firstRow, long lastRowExclusive, DBTimeZone timeZone, String delimiter,
-            PrintStream out, boolean showIndex, String[] columns) {
+    static void showInternal(Table source, long firstRow, long lastRowExclusive, TimeZone timeZone, String delimiter,
+                             PrintStream out, boolean showIndex, String[] columns) {
         final QueryPerformanceNugget nugget = QueryPerformanceRecorder.getInstance().getNugget("TableTools.show()");
         try {
             if (columns.length == 0) {
@@ -116,7 +116,7 @@ class TableShowTools {
             len = Math.max(len, 20);
         } else if (columnSource.getType() == double.class || columnSource.getType() == Double.class) {
             len = Math.max(len, 20);
-        } else if (columnSource.getType() == DBDateTime.class) {
+        } else if (columnSource.getType() == DateTime.class) {
             len = Math.max(len, 33);
         } else if (columnSource.getType() == java.util.Date.class) {
             len = Math.max(len, 33);
@@ -142,8 +142,8 @@ class TableShowTools {
         return len;
     }
 
-    private static ColumnPrinter getColumnPrinter(ColumnSource column, int len, DBTimeZone timeZone) {
-        if (column.getType() == DBDateTime.class) {
+    private static ColumnPrinter getColumnPrinter(ColumnSource column, int len, TimeZone timeZone) {
+        if (column.getType() == DateTime.class) {
             return new DateTimePrinter(len, timeZone);
         } else if (!column.getType().isArray()) {
             return new DefaultPrinter(len);
@@ -242,16 +242,16 @@ class TableShowTools {
 
     private static class DateTimePrinter extends DefaultPrinter {
 
-        private final DBTimeZone timeZone;
+        private final TimeZone timeZone;
 
-        private DateTimePrinter(int len, DBTimeZone timeZone) {
+        private DateTimePrinter(int len, TimeZone timeZone) {
             super(len);
             this.timeZone = timeZone;
         }
 
         @Override
         public void print(PrintStream out, Object value) {
-            super.print(out, value == null ? null : ((DBDateTime) value).toString(timeZone));
+            super.print(out, value == null ? null : ((DateTime) value).toString(timeZone));
         }
     }
 

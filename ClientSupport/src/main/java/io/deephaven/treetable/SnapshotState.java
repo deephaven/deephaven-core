@@ -10,7 +10,7 @@ import io.deephaven.engine.exceptions.UncheckedTableException;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.TableDefinition;
 import io.deephaven.engine.tables.select.MatchPair;
-import io.deephaven.engine.tables.utils.DBDateTime;
+import io.deephaven.engine.tables.utils.DateTime;
 import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.BooleanUtils;
@@ -298,7 +298,7 @@ class SnapshotState {
     private Pair<String, Object> makeData(ColumnDefinition col, int requestedViewportSize) {
         final Class type = col.getDataType();
         final String name = col.getName();
-        if (type == DBDateTime.class) {
+        if (type == DateTime.class) {
             return new Pair<>(name, new long[requestedViewportSize]);
         } else if (type == boolean.class || type == Boolean.class) {
             return new Pair<>(name, new byte[requestedViewportSize]);
@@ -354,13 +354,13 @@ class SnapshotState {
      * @return A Copier for the child key column
      */
     private Copier makeChildCopier(Class type) {
-        if (type == DBDateTime.class) {
+        if (type == DateTime.class) {
             return (usePrev, columnSource, it, target, offset, table, tableMap, childPresenceColumn) -> {
                 Assert.neqNull(tableMap, "Child table map");
                 while (it.hasNext()) {
                     final long next = it.nextLong();
-                    final DBDateTime keyVal =
-                            (DBDateTime) (usePrev ? columnSource.getPrev(next) : columnSource.get(next));
+                    final DateTime keyVal =
+                            (DateTime) (usePrev ? columnSource.getPrev(next) : columnSource.get(next));
                     final Table child = tableMap.get(keyVal);
                     ((long[]) target)[offset] = keyVal.getNanos();
                     childPresenceColumn.set(offset++, child != null && child.size() > 0);
@@ -463,13 +463,13 @@ class SnapshotState {
      * Create a {@link Copier} that will copy data from columns into the local snapshot.
      */
     private Copier makeCopier(Class type) {
-        if (type == DBDateTime.class) {
+        if (type == DateTime.class) {
             return (usePrev, columnSource, it, target, offset, table, tableMap, childPresenceColumn) -> {
                 while (it.hasNext()) {
                     final long next = it.nextLong();
-                    final DBDateTime dbDateTime =
-                            (DBDateTime) (usePrev ? columnSource.getPrev(next) : columnSource.get(next));
-                    ((long[]) target)[offset++] = dbDateTime == null ? QueryConstants.NULL_LONG : dbDateTime.getNanos();
+                    final DateTime dateTime =
+                            (DateTime) (usePrev ? columnSource.getPrev(next) : columnSource.get(next));
+                    ((long[]) target)[offset++] = dateTime == null ? QueryConstants.NULL_LONG : dateTime.getNanos();
                 }
             };
         } else if (type == boolean.class || type == Boolean.class) {

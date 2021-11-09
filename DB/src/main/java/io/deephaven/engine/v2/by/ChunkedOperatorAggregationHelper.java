@@ -8,8 +8,8 @@ import io.deephaven.datastructures.util.SmartKey;
 import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.structures.rowsequence.RowSequenceUtil;
 import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.utils.DBDateTime;
-import io.deephaven.engine.tables.utils.DBTimeUtils;
+import io.deephaven.engine.tables.utils.DateTime;
+import io.deephaven.engine.tables.utils.DateTimeUtils;
 import io.deephaven.util.BooleanUtils;
 import io.deephaven.engine.v2.*;
 import io.deephaven.engine.v2.Listener.Update;
@@ -254,9 +254,9 @@ public class ChunkedOperatorAggregationHelper {
     private static void setReverseLookupFunction(ColumnSource<?>[] keySources, AggregationContext ac,
             ChunkedOperatorAggregationStateManager stateManager) {
         if (keySources.length == 1) {
-            if (keySources[0].getType() == DBDateTime.class) {
+            if (keySources[0].getType() == DateTime.class) {
                 ac.setReverseLookupFunction(key -> stateManager
-                        .findPositionForKey(key == null ? null : DBTimeUtils.nanos((DBDateTime) key)));
+                        .findPositionForKey(key == null ? null : DateTimeUtils.nanos((DateTime) key)));
             } else if (keySources[0].getType() == Boolean.class) {
                 ac.setReverseLookupFunction(
                         key -> stateManager.findPositionForKey(BooleanUtils.booleanAsByte((Boolean) key)));
@@ -266,10 +266,10 @@ public class ChunkedOperatorAggregationHelper {
         } else {
             final List<Consumer<Object[]>> transformers = new ArrayList<>();
             for (int ii = 0; ii < keySources.length; ++ii) {
-                if (keySources[ii].getType() == DBDateTime.class) {
+                if (keySources[ii].getType() == DateTime.class) {
                     final int fii = ii;
                     transformers.add(reinterpreted -> reinterpreted[fii] =
-                            reinterpreted[fii] == null ? null : DBTimeUtils.nanos((DBDateTime) reinterpreted[fii]));
+                            reinterpreted[fii] == null ? null : DateTimeUtils.nanos((DateTime) reinterpreted[fii]));
                 } else if (keySources[ii].getType() == Boolean.class) {
                     final int fii = ii;
                     transformers.add(reinterpreted -> reinterpreted[fii] =

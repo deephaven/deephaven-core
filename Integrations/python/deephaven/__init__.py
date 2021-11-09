@@ -11,7 +11,7 @@ For convenient usage in the python console, the main sub-packages of deephaven h
 
 * ComboAggregateFactory imported as caf
 
-* DBTimeUtils imported as dbtu
+* DateTimeUtils imported as dtu
 
 * MovingAverages imported as mavg
 
@@ -58,7 +58,7 @@ __all__ = [
     'ColumnRenderersBuilder', 'DistinctFormatter', 'DownsampledWhereFilter', 'DynamicTableWriter', 
     'LayoutHintBuilder', 'Replayer', 'SmartKey', 'SortPair', 'TotalsTableBuilder', 'WindowCheck',  # from TableManipulation
 
-    "cals", "caf", "dbtu", "figw", "mavg", "plt", "pt", "ttools", "tloggers"  # subpackages with abbreviated names
+    "cals", "caf", "dtu", "figw", "mavg", "plt", "pt", "ttools", "tloggers"  # subpackages with abbreviated names
 ]
 
 
@@ -80,7 +80,7 @@ from .conversion_utils import convertToJavaArray, convertToJavaList, convertToJa
 
 from . import Calendars as cals, \
     ComboAggregateFactory as caf, \
-    DBTimeUtils as dbtu, \
+    DateTimeUtils as dtu, \
     MovingAverages as mavg, \
     ConsumeKafka as ck, \
     ProduceKafka as pk, \
@@ -103,7 +103,7 @@ def initialize():
     # ensure that all the symbols are called and reimport the broken symbols
     cals._defineSymbols()
     caf._defineSymbols()
-    dbtu._defineSymbols()
+    dtu._defineSymbols()
     dh._defineSymbols()
     ck._defineSymbols()
     pk._defineSymbols()

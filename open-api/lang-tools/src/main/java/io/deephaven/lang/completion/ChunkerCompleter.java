@@ -4,7 +4,7 @@ import io.deephaven.engine.tables.ColumnDefinition;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.TableDefinition;
 import io.deephaven.engine.tables.select.QueryScope.MissingVariableException;
-import io.deephaven.engine.tables.utils.DBDateTime;
+import io.deephaven.engine.tables.utils.DateTime;
 import io.deephaven.engine.util.VariableProvider;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.lang.api.HasScope;
@@ -1382,7 +1382,7 @@ public class ChunkerCompleter implements CompletionHandler {
             case "Date":
                 return String.class;
             case "Timestamp":
-                return DBDateTime.class;
+                return DateTime.class;
         }
 
         // failure; allow anything...

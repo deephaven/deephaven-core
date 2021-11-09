@@ -9,10 +9,10 @@ import io.deephaven.compilertools.CompilerTools;
 import io.deephaven.engine.tables.ColumnDefinition;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.TableDefinition;
-import io.deephaven.engine.tables.lang.DBLanguageParser;
+import io.deephaven.engine.tables.lang.LanguageParser;
 import io.deephaven.engine.tables.libs.QueryLibrary;
 import io.deephaven.engine.tables.select.Param;
-import io.deephaven.engine.tables.utils.DBTimeUtils;
+import io.deephaven.engine.tables.utils.DateTimeUtils;
 import io.deephaven.engine.tables.utils.QueryPerformanceNugget;
 import io.deephaven.engine.tables.utils.QueryPerformanceRecorder;
 import io.deephaven.engine.v2.sources.ColumnSource;
@@ -359,8 +359,8 @@ public class ConditionFilter extends AbstractConditionFilter {
     }
 
     @Override
-    protected void generateFilterCode(TableDefinition tableDefinition, DBTimeUtils.Result timeConversionResult,
-            DBLanguageParser.Result result) throws MalformedURLException, ClassNotFoundException {
+    protected void generateFilterCode(TableDefinition tableDefinition, DateTimeUtils.Result timeConversionResult,
+            LanguageParser.Result result) throws MalformedURLException, ClassNotFoundException {
         final StringBuilder classBody = getClassBody(tableDefinition, timeConversionResult, result);
         if (classBody == null)
             return;
@@ -394,8 +394,8 @@ public class ConditionFilter extends AbstractConditionFilter {
     }
 
     @Nullable
-    private StringBuilder getClassBody(TableDefinition tableDefinition, DBTimeUtils.Result timeConversionResult,
-            DBLanguageParser.Result result) {
+    private StringBuilder getClassBody(TableDefinition tableDefinition, DateTimeUtils.Result timeConversionResult,
+            LanguageParser.Result result) {
         if (filterKernelClass != null) {
             return null;
         }
@@ -506,7 +506,7 @@ public class ConditionFilter extends AbstractConditionFilter {
             if (columnType.isPrimitive() && columnType != boolean.class) {
                 chunkType = toTitleCase(columnType.getSimpleName()) + "Chunk";
             } else {
-                // TODO: Reinterpret Boolean and DBDateTime to byte and long
+                // TODO: Reinterpret Boolean and DateTime to byte and long
                 chunkType = "ObjectChunk";
             }
             classBody.append(indenter).append("final ").append(chunkType).append(" __columnChunk").append(i)

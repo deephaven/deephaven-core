@@ -88,7 +88,7 @@ public class TableTools {
      * @param columns varargs of column names to display
      */
     public static void show(Table source, String... columns) {
-        show(source, 10, DBTimeZone.TZ_DEFAULT, System.out, columns);
+        show(source, 10, TimeZone.TZ_DEFAULT, System.out, columns);
     }
 
     /**
@@ -99,7 +99,7 @@ public class TableTools {
      * @param columns varargs of column names to display
      */
     public static void showWithIndex(Table source, String... columns) {
-        showWithIndex(source, 10, DBTimeZone.TZ_DEFAULT, System.out, columns);
+        showWithIndex(source, 10, TimeZone.TZ_DEFAULT, System.out, columns);
     }
 
     /**
@@ -109,17 +109,17 @@ public class TableTools {
      * @param columns varargs of column names to display
      */
     public static void showCommaDelimited(Table source, String... columns) {
-        show(source, 10, DBTimeZone.TZ_DEFAULT, ",", System.out, false, columns);
+        show(source, 10, TimeZone.TZ_DEFAULT, ",", System.out, false, columns);
     }
 
     /**
      * Prints the first few rows of a table to standard output.
      *
      * @param source a Deephaven table object
-     * @param timeZone a DBTimeZone constant relative to which DBDateTime data should be adjusted
+     * @param timeZone a TimeZone constant relative to which DateTime data should be adjusted
      * @param columns varargs of column names to display
      */
-    public static void show(Table source, DBTimeZone timeZone, String... columns) {
+    public static void show(Table source, TimeZone timeZone, String... columns) {
         show(source, 10, timeZone, System.out, columns);
     }
 
@@ -131,7 +131,7 @@ public class TableTools {
      * @param columns varargs of column names to display
      */
     public static void show(Table source, long maxRowCount, String... columns) {
-        show(source, maxRowCount, DBTimeZone.TZ_DEFAULT, System.out, columns);
+        show(source, maxRowCount, TimeZone.TZ_DEFAULT, System.out, columns);
     }
 
     /**
@@ -143,7 +143,7 @@ public class TableTools {
      * @param columns varargs of column names to display
      */
     public static void showWithIndex(Table source, long maxRowCount, String... columns) {
-        showWithIndex(source, maxRowCount, DBTimeZone.TZ_DEFAULT, System.out, columns);
+        showWithIndex(source, maxRowCount, TimeZone.TZ_DEFAULT, System.out, columns);
     }
 
     /**
@@ -154,7 +154,7 @@ public class TableTools {
      * @param columns varargs of column names to display
      */
     public static void showCommaDelimited(Table source, long maxRowCount, String... columns) {
-        show(source, maxRowCount, DBTimeZone.TZ_DEFAULT, ",", System.out, false, columns);
+        show(source, maxRowCount, TimeZone.TZ_DEFAULT, ",", System.out, false, columns);
     }
 
     /**
@@ -162,10 +162,10 @@ public class TableTools {
      *
      * @param source a Deephaven table object
      * @param maxRowCount the number of rows to return
-     * @param timeZone a DBTimeZone constant relative to which DBDateTime data should be adjusted
+     * @param timeZone a TimeZone constant relative to which DateTime data should be adjusted
      * @param columns varargs of column names to display
      */
-    public static void show(Table source, long maxRowCount, DBTimeZone timeZone, String... columns) {
+    public static void show(Table source, long maxRowCount, TimeZone timeZone, String... columns) {
         show(source, maxRowCount, timeZone, System.out, columns);
     }
 
@@ -174,11 +174,11 @@ public class TableTools {
      *
      * @param source a Deephaven table object
      * @param maxRowCount the number of rows to return
-     * @param timeZone a DBTimeZone constant relative to which DBDateTime data should be adjusted
+     * @param timeZone a TimeZone constant relative to which DateTime data should be adjusted
      * @param out a PrintStream destination to which to print the data
      * @param columns varargs of column names to display
      */
-    public static void show(Table source, long maxRowCount, DBTimeZone timeZone, PrintStream out, String... columns) {
+    public static void show(Table source, long maxRowCount, TimeZone timeZone, PrintStream out, String... columns) {
         show(source, maxRowCount, timeZone, "|", out, false, columns);
     }
 
@@ -188,12 +188,12 @@ public class TableTools {
      *
      * @param source a Deephaven table object
      * @param maxRowCount the number of rows to return
-     * @param timeZone a DBTimeZone constant relative to which DBDateTime data should be adjusted
+     * @param timeZone a TimeZone constant relative to which DateTime data should be adjusted
      * @param out a PrintStream destination to which to print the data
      * @param columns varargs of column names to display
      */
-    public static void showWithIndex(Table source, long maxRowCount, DBTimeZone timeZone, PrintStream out,
-            String... columns) {
+    public static void showWithIndex(Table source, long maxRowCount, TimeZone timeZone, PrintStream out,
+                                     String... columns) {
         show(source, maxRowCount, timeZone, "|", out, true, columns);
     }
 
@@ -208,7 +208,7 @@ public class TableTools {
      * @param columns varargs of column names to display
      */
     public static void showWithIndex(Table source, long firstRow, long lastRow, PrintStream out, String... columns) {
-        TableShowTools.showInternal(source, firstRow, lastRow, DBTimeZone.TZ_DEFAULT, "|", out, true, columns);
+        TableShowTools.showInternal(source, firstRow, lastRow, TimeZone.TZ_DEFAULT, "|", out, true, columns);
     }
 
     /**
@@ -216,13 +216,13 @@ public class TableTools {
      *
      * @param source a Deephaven table object
      * @param maxRowCount the number of rows to return
-     * @param timeZone a DBTimeZone constant relative to which DBDateTime data should be adjusted
+     * @param timeZone a TimeZone constant relative to which DateTime data should be adjusted
      * @param delimiter a String value to use between printed values
      * @param out a PrintStream destination to which to print the data
      * @param showIndex a boolean indicating whether to also print rowSet details
      * @param columns varargs of column names to display
      */
-    public static void show(final Table source, final long maxRowCount, final DBTimeZone timeZone,
+    public static void show(final Table source, final long maxRowCount, final TimeZone timeZone,
             final String delimiter, final PrintStream out, final boolean showIndex, String... columns) {
         TableShowTools.showInternal(source, 0, maxRowCount, timeZone, delimiter, out, showIndex, columns);
     }
@@ -237,7 +237,7 @@ public class TableTools {
      * @param columns varargs of column names to display
      */
     public static void showWithIndex(final Table source, final long firstRow, final long lastRow, String... columns) {
-        TableShowTools.showInternal(source, firstRow, lastRow, DBTimeZone.TZ_DEFAULT, "|", System.out, true, columns);
+        TableShowTools.showInternal(source, firstRow, lastRow, TimeZone.TZ_DEFAULT, "|", System.out, true, columns);
     }
 
     /**
@@ -248,7 +248,7 @@ public class TableTools {
      * @return a String
      */
     public static String string(Table t, String... columns) {
-        return string(t, 10, DBTimeZone.TZ_DEFAULT, columns);
+        return string(t, 10, TimeZone.TZ_DEFAULT, columns);
     }
 
     /**
@@ -260,18 +260,18 @@ public class TableTools {
      * @return a String
      */
     public static String string(Table t, int size, String... columns) {
-        return string(t, size, DBTimeZone.TZ_DEFAULT, columns);
+        return string(t, size, TimeZone.TZ_DEFAULT, columns);
     }
 
     /**
      * Returns the first few rows of a table as a pipe-delimited string.
      *
      * @param t a Deephaven table object
-     * @param timeZone a DBTimeZone constant relative to which DBDateTime data should be adjusted
+     * @param timeZone a TimeZone constant relative to which DateTime data should be adjusted
      * @param columns varargs of columns to include in the result
      * @return a String
      */
-    public static String string(Table t, DBTimeZone timeZone, String... columns) {
+    public static String string(Table t, TimeZone timeZone, String... columns) {
         return string(t, 10, timeZone, columns);
     }
 
@@ -280,11 +280,11 @@ public class TableTools {
      *
      * @param t a Deephaven table object
      * @param size the number of rows to return
-     * @param timeZone a DBTimeZone constant relative to which DBDateTime data should be adjusted
+     * @param timeZone a TimeZone constant relative to which DateTime data should be adjusted
      * @param columns varargs of columns to include in the result
      * @return a String
      */
-    public static String string(Table t, int size, DBTimeZone timeZone, String... columns) {
+    public static String string(Table t, int size, TimeZone timeZone, String... columns) {
         ByteArrayOutputStream os = new ByteArrayOutputStream();
         TableTools.show(t, size, timeZone, new PrintStream(os), columns);
         return os.toString();
@@ -515,7 +515,7 @@ public class TableTools {
     @ScriptApi
     public static void writeCsv(Table source, boolean compressed, String destPath, boolean nullsAsEmpty,
             String... columns) throws IOException {
-        writeCsv(source, destPath, compressed, DBTimeZone.TZ_DEFAULT, nullsAsEmpty, columns);
+        writeCsv(source, destPath, compressed, TimeZone.TZ_DEFAULT, nullsAsEmpty, columns);
     }
 
     /**
@@ -543,7 +543,7 @@ public class TableTools {
     @ScriptApi
     public static void writeCsv(Table source, String destPath, boolean nullsAsEmpty, String... columns)
             throws IOException {
-        writeCsv(source, destPath, false, DBTimeZone.TZ_DEFAULT, nullsAsEmpty, columns);
+        writeCsv(source, destPath, false, TimeZone.TZ_DEFAULT, nullsAsEmpty, columns);
     }
 
     /**
@@ -573,7 +573,7 @@ public class TableTools {
             throws IOException {
         final PrintWriter printWriter = new PrintWriter(out);
         final BufferedWriter bufferedWriter = new BufferedWriter(printWriter);
-        CsvHelpers.writeCsv(source, bufferedWriter, DBTimeZone.TZ_DEFAULT, null, nullsAsEmpty, ',', columns);
+        CsvHelpers.writeCsv(source, bufferedWriter, TimeZone.TZ_DEFAULT, null, nullsAsEmpty, ',', columns);
     }
 
     /**
@@ -582,12 +582,12 @@ public class TableTools {
      * @param source a Deephaven table object to be exported
      * @param destPath path to the CSV file to be written
      * @param compressed whether to zip the file being written
-     * @param timeZone a DBTimeZone constant relative to which DBDateTime data should be adjusted
+     * @param timeZone a TimeZone constant relative to which DateTime data should be adjusted
      * @param columns a list of columns to include in the export
      * @throws IOException if the target file cannot be written
      */
     @ScriptApi
-    public static void writeCsv(Table source, String destPath, boolean compressed, DBTimeZone timeZone,
+    public static void writeCsv(Table source, String destPath, boolean compressed, TimeZone timeZone,
             String... columns) throws IOException {
         CsvHelpers.writeCsv(source, destPath, compressed, timeZone, null, NULLS_AS_EMPTY_DEFAULT, ',', columns);
     }
@@ -598,13 +598,13 @@ public class TableTools {
      * @param source a Deephaven table object to be exported
      * @param destPath path to the CSV file to be written
      * @param compressed whether to zip the file being written
-     * @param timeZone a DBTimeZone constant relative to which DBDateTime data should be adjusted
+     * @param timeZone a TimeZone constant relative to which DateTime data should be adjusted
      * @param nullsAsEmpty if nulls should be written as blank instead of '(null)'
      * @param columns a list of columns to include in the export
      * @throws IOException if the target file cannot be written
      */
     @ScriptApi
-    public static void writeCsv(Table source, String destPath, boolean compressed, DBTimeZone timeZone,
+    public static void writeCsv(Table source, String destPath, boolean compressed, TimeZone timeZone,
             boolean nullsAsEmpty, String... columns) throws IOException {
         CsvHelpers.writeCsv(source, destPath, compressed, timeZone, null, nullsAsEmpty, ',', columns);
     }
@@ -615,14 +615,14 @@ public class TableTools {
      * @param source a Deephaven table object to be exported
      * @param destPath path to the CSV file to be written
      * @param compressed whether to zip the file being written
-     * @param timeZone a DBTimeZone constant relative to which DBDateTime data should be adjusted
+     * @param timeZone a TimeZone constant relative to which DateTime data should be adjusted
      * @param nullsAsEmpty if nulls should be written as blank instead of '(null)'
      * @param separator the delimiter for the CSV
      * @param columns a list of columns to include in the export
      * @throws IOException if the target file cannot be written
      */
     @ScriptApi
-    public static void writeCsv(Table source, String destPath, boolean compressed, DBTimeZone timeZone,
+    public static void writeCsv(Table source, String destPath, boolean compressed, TimeZone timeZone,
             boolean nullsAsEmpty, char separator, String... columns) throws IOException {
         CsvHelpers.writeCsv(source, destPath, compressed, timeZone, null, nullsAsEmpty, separator, columns);
     }
@@ -633,13 +633,13 @@ public class TableTools {
      * @param sources an array of Deephaven table objects to be exported
      * @param destPath path to the CSV file to be written
      * @param compressed whether to compress (bz2) the file being written
-     * @param timeZone a DBTimeZone constant relative to which DBDateTime data should be adjusted
+     * @param timeZone a TimeZone constant relative to which DateTime data should be adjusted
      * @param tableSeparator a String (normally a single character) to be used as the table delimiter
      * @param columns a list of columns to include in the export
      * @throws IOException if the target file cannot be written
      */
     @ScriptApi
-    public static void writeCsv(Table[] sources, String destPath, boolean compressed, DBTimeZone timeZone,
+    public static void writeCsv(Table[] sources, String destPath, boolean compressed, TimeZone timeZone,
             String tableSeparator, String... columns) throws IOException {
         writeCsv(sources, destPath, compressed, timeZone, tableSeparator, NULLS_AS_EMPTY_DEFAULT, columns);
     }
@@ -650,13 +650,13 @@ public class TableTools {
      * @param sources an array of Deephaven table objects to be exported
      * @param destPath path to the CSV file to be written
      * @param compressed whether to compress (bz2) the file being written
-     * @param timeZone a DBTimeZone constant relative to which DBDateTime data should be adjusted
+     * @param timeZone a TimeZone constant relative to which DateTime data should be adjusted
      * @param tableSeparator a String (normally a single character) to be used as the table delimiter
      * @param columns a list of columns to include in the export
      * @throws IOException if the target file cannot be written
      */
     @ScriptApi
-    public static void writeCsv(Table[] sources, String destPath, boolean compressed, DBTimeZone timeZone,
+    public static void writeCsv(Table[] sources, String destPath, boolean compressed, TimeZone timeZone,
             String tableSeparator, boolean nullsAsEmpty, String... columns) throws IOException {
         writeCsv(sources, destPath, compressed, timeZone, tableSeparator, ',', nullsAsEmpty, columns);
     }
@@ -667,7 +667,7 @@ public class TableTools {
      * @param sources an array of Deephaven table objects to be exported
      * @param destPath path to the CSV file to be written
      * @param compressed whether to compress (bz2) the file being written
-     * @param timeZone a DBTimeZone constant relative to which DBDateTime data should be adjusted
+     * @param timeZone a TimeZone constant relative to which DateTime data should be adjusted
      * @param tableSeparator a String (normally a single character) to be used as the table delimiter
      * @param fieldSeparator the delimiter for the CSV files
      * @param nullsAsEmpty if nulls should be written as blank instead of '(null)'
@@ -675,7 +675,7 @@ public class TableTools {
      * @throws IOException if the target file cannot be written
      */
     @ScriptApi
-    public static void writeCsv(Table[] sources, String destPath, boolean compressed, DBTimeZone timeZone,
+    public static void writeCsv(Table[] sources, String destPath, boolean compressed, TimeZone timeZone,
             String tableSeparator, char fieldSeparator, boolean nullsAsEmpty, String... columns) throws IOException {
         BufferedWriter out =
                 (compressed ? new BufferedWriter(new OutputStreamWriter(new BzipFileOutputStream(destPath + ".bz2")))
@@ -927,16 +927,16 @@ public class TableTools {
     }
 
     /**
-     * Returns a ColumnHolder of type DBDateTime that can be used when creating in-memory tables.
+     * Returns a ColumnHolder of type DateTime that can be used when creating in-memory tables.
      *
      * @param name name of the column
      * @param data a list of values for the column
      * @return a Deephaven ColumnHolder object
      */
-    public static ColumnHolder dateTimeCol(String name, DBDateTime... data) {
+    public static ColumnHolder dateTimeCol(String name, DateTime... data) {
         // NB: IntelliJ says that we do not need to cast data, but javac warns about this statement otherwise
         // noinspection RedundantCast
-        return new ColumnHolder(name, DBDateTime.class, null, false, (Object[]) data);
+        return new ColumnHolder(name, DateTime.class, null, false, (Object[]) data);
     }
 
     /**
@@ -1140,7 +1140,7 @@ public class TableTools {
      * @return time table
      */
     public static Table timeTable(String period, ReplayerInterface replayer) {
-        final long periodValue = DBTimeUtils.expressionToNanos(period);
+        final long periodValue = DateTimeUtils.expressionToNanos(period);
         return timeTable(periodValue, replayer);
     }
 
@@ -1151,8 +1151,8 @@ public class TableTools {
      * @param period time interval between new row additions
      * @return time table
      */
-    public static Table timeTable(DBDateTime startTime, String period) {
-        final long periodValue = DBTimeUtils.expressionToNanos(period);
+    public static Table timeTable(DateTime startTime, String period) {
+        final long periodValue = DateTimeUtils.expressionToNanos(period);
         return timeTable(startTime, periodValue);
     }
 
@@ -1164,8 +1164,8 @@ public class TableTools {
      * @param replayer data replayer
      * @return time table
      */
-    public static Table timeTable(DBDateTime startTime, String period, ReplayerInterface replayer) {
-        final long periodValue = DBTimeUtils.expressionToNanos(period);
+    public static Table timeTable(DateTime startTime, String period, ReplayerInterface replayer) {
+        final long periodValue = DateTimeUtils.expressionToNanos(period);
         return timeTable(startTime, periodValue, replayer);
     }
 
@@ -1177,7 +1177,7 @@ public class TableTools {
      * @return time table
      */
     public static Table timeTable(String startTime, String period) {
-        return timeTable(DBTimeUtils.convertDateTime(startTime), period);
+        return timeTable(DateTimeUtils.convertDateTime(startTime), period);
     }
 
     /**
@@ -1189,7 +1189,7 @@ public class TableTools {
      * @return time table
      */
     public static Table timeTable(String startTime, String period, ReplayerInterface replayer) {
-        return timeTable(DBTimeUtils.convertDateTime(startTime), period, replayer);
+        return timeTable(DateTimeUtils.convertDateTime(startTime), period, replayer);
     }
 
     /**
@@ -1222,7 +1222,7 @@ public class TableTools {
      * @param periodNanos time interval between new row additions in nanoseconds.
      * @return time table
      */
-    public static Table timeTable(DBDateTime startTime, long periodNanos) {
+    public static Table timeTable(DateTime startTime, long periodNanos) {
         final TimeTable timeTable = new TimeTable(Replayer.getTimeProvider(null), startTime, periodNanos);
         UpdateGraphProcessor.DEFAULT.addSource(timeTable);
         return timeTable;
@@ -1236,7 +1236,7 @@ public class TableTools {
      * @param replayer data replayer
      * @return time table
      */
-    public static Table timeTable(DBDateTime startTime, long periodNanos, ReplayerInterface replayer) {
+    public static Table timeTable(DateTime startTime, long periodNanos, ReplayerInterface replayer) {
         final TimeTable timeTable = new TimeTable(Replayer.getTimeProvider(replayer), startTime, periodNanos);
         UpdateGraphProcessor.DEFAULT.addSource(timeTable);
         return timeTable;
@@ -1250,7 +1250,7 @@ public class TableTools {
      * @return time table
      */
     public static Table timeTable(String startTime, long periodNanos) {
-        return timeTable(DBTimeUtils.convertDateTime(startTime), periodNanos);
+        return timeTable(DateTimeUtils.convertDateTime(startTime), periodNanos);
     }
 
     /**
@@ -1262,7 +1262,7 @@ public class TableTools {
      * @return time table
      */
     public static Table timeTable(String startTime, long periodNanos, ReplayerInterface replayer) {
-        return timeTable(DBTimeUtils.convertDateTime(startTime), periodNanos, replayer);
+        return timeTable(DateTimeUtils.convertDateTime(startTime), periodNanos, replayer);
     }
 
     /**
@@ -1273,7 +1273,7 @@ public class TableTools {
      * @param periodNanos time interval between new row additions in nanoseconds.
      * @return time table
      */
-    public static Table timeTable(TimeProvider timeProvider, DBDateTime startTime, long periodNanos) {
+    public static Table timeTable(TimeProvider timeProvider, DateTime startTime, long periodNanos) {
         final TimeTable timeTable = new TimeTable(timeProvider, startTime, periodNanos);
         UpdateGraphProcessor.DEFAULT.addSource(timeTable);
         return timeTable;
@@ -1512,7 +1512,7 @@ public class TableTools {
 
     private static void processColumnForFingerprint(RowSequence ok, ColumnSource<?> col, DataOutputStream outputStream)
             throws IOException {
-        if (col.getType() == DBDateTime.class) {
+        if (col.getType() == DateTime.class) {
             col = ReinterpretUtilities.dateTimeToLongSource(col);
         }
 

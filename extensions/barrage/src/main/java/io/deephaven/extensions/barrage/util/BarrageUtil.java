@@ -14,7 +14,7 @@ import io.deephaven.engine.tables.ColumnDefinition;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.TableDefinition;
 import io.deephaven.engine.tables.select.MatchPair;
-import io.deephaven.engine.tables.utils.DBDateTime;
+import io.deephaven.engine.tables.utils.DateTime;
 import io.deephaven.engine.tables.utils.NameValidator;
 import io.deephaven.engine.util.ColumnFormattingValues;
 import io.deephaven.engine.util.config.MutableInputTable;
@@ -80,7 +80,7 @@ public class BarrageUtil {
             BigDecimal.class,
             BigInteger.class,
             String.class,
-            DBDateTime.class,
+            DateTime.class,
             Boolean.class));
 
     public static ByteString schemaBytesFromTable(final Table table) {
@@ -254,7 +254,7 @@ public class BarrageUtil {
                 final TimeUnit timestampUnit = timestampType.getUnit();
                 if (tz == null || "UTC".equals(tz)) {
                     if (maybeConvertForTimeUnit(timestampUnit, result, i)) {
-                        return DBDateTime.class;
+                        return DateTime.class;
                     }
                 }
                 throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, exMsg +
@@ -284,7 +284,7 @@ public class BarrageUtil {
         public final int nCols;
         public TableDefinition tableDef;
         // a multiplicative factor to apply when reading; useful for eg converting arrow timestamp time units
-        // to the expected nanos value for DBDateTime.
+        // to the expected nanos value for DateTime.
         public int[] conversionFactors;
 
         public ConvertedArrowSchema(final int nCols) {
@@ -469,7 +469,7 @@ public class BarrageUtil {
                         || type == BigInteger.class) {
                     return Types.MinorType.VARBINARY.getType();
                 }
-                if (type == DBDateTime.class) {
+                if (type == DateTime.class) {
                     return NANO_SINCE_EPOCH_TYPE;
                 }
 

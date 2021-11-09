@@ -212,9 +212,9 @@ tasks.register("generatePyDocAssert") {
 
 def pythonStaticMethodsArgs = ['io.deephaven.util.calendar.Calendars',
                                     '/Integrations/python/deephaven/Calendars/__init__.py',
-                               'io.deephaven.engine.tables.utils.DBTimeUtils',
-                                    '/Generators/src/main/java/io/deephaven/pythonPreambles/DBTimeUtilsPreamble.txt',
-                                    '/Integrations/python/deephaven/DBTimeUtils/__init__.py',
+                               'io.deephaven.engine.tables.utils.DateTimeUtils',
+                                    '/Generators/src/main/java/io/deephaven/pythonPreambles/DateTimeUtilsPreamble.txt',
+                                    '/Integrations/python/deephaven/DateTimeUtils/__init__.py',
                                'io.deephaven.engine.tables.utils.ParquetTools',
                                     '/Generators/src/main/java/io/deephaven/pythonPreambles/ParquetToolsPreamble.txt',
                                     '/Integrations/python/deephaven/ParquetTools/__init__.py',

@@ -1,8 +1,8 @@
 package io.deephaven.engine.v2.tuples.generated;
 
 import io.deephaven.datastructures.util.SmartKey;
-import io.deephaven.engine.tables.utils.DBDateTime;
-import io.deephaven.engine.tables.utils.DBTimeUtils;
+import io.deephaven.engine.tables.utils.DateTime;
+import io.deephaven.engine.tables.utils.DateTimeUtils;
 import io.deephaven.engine.util.tuples.generated.ByteLongLongTuple;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.WritableSource;
@@ -10,7 +10,6 @@ import io.deephaven.engine.v2.sources.chunk.Attributes;
 import io.deephaven.engine.v2.sources.chunk.ByteChunk;
 import io.deephaven.engine.v2.sources.chunk.Chunk;
 import io.deephaven.engine.v2.sources.chunk.LongChunk;
-import io.deephaven.engine.v2.sources.chunk.ObjectChunk;
 import io.deephaven.engine.v2.sources.chunk.WritableChunk;
 import io.deephaven.engine.v2.sources.chunk.WritableObjectChunk;
 import io.deephaven.engine.v2.tuples.AbstractTupleSource;
@@ -67,7 +66,7 @@ public class ByteReinterpretedDateTimeLongColumnTupleSource extends AbstractTupl
     public final ByteLongLongTuple createTupleFromValues(@NotNull final Object... values) {
         return new ByteLongLongTuple(
                 TypeUtils.unbox((Byte)values[0]),
-                DBTimeUtils.nanos((DBDateTime)values[1]),
+                DateTimeUtils.nanos((DateTime)values[1]),
                 TypeUtils.unbox((Long)values[2])
         );
     }
@@ -89,7 +88,7 @@ public class ByteReinterpretedDateTimeLongColumnTupleSource extends AbstractTupl
             return;
         }
         if (elementIndex == 1) {
-            writableSource.set(destinationIndexKey, (ELEMENT_TYPE) DBTimeUtils.nanosToTime(tuple.getSecondElement()));
+            writableSource.set(destinationIndexKey, (ELEMENT_TYPE) DateTimeUtils.nanosToTime(tuple.getSecondElement()));
             return;
         }
         if (elementIndex == 2) {
@@ -103,7 +102,7 @@ public class ByteReinterpretedDateTimeLongColumnTupleSource extends AbstractTupl
     public final Object exportToExternalKey(@NotNull final ByteLongLongTuple tuple) {
         return new SmartKey(
                 TypeUtils.box(tuple.getFirstElement()),
-                DBTimeUtils.nanosToTime(tuple.getSecondElement()),
+                DateTimeUtils.nanosToTime(tuple.getSecondElement()),
                 TypeUtils.box(tuple.getThirdElement())
         );
     }
@@ -114,7 +113,7 @@ public class ByteReinterpretedDateTimeLongColumnTupleSource extends AbstractTupl
             return TypeUtils.box(tuple.getFirstElement());
         }
         if (elementIndex == 1) {
-            return DBTimeUtils.nanosToTime(tuple.getSecondElement());
+            return DateTimeUtils.nanosToTime(tuple.getSecondElement());
         }
         if (elementIndex == 2) {
             return TypeUtils.box(tuple.getThirdElement());

@@ -5,7 +5,7 @@
 package io.deephaven.engine.v2.utils;
 
 import io.deephaven.engine.tables.dbarrays.ObjectVector;
-import io.deephaven.engine.tables.utils.DBDateTime;
+import io.deephaven.engine.tables.utils.DateTime;
 import io.deephaven.engine.tables.utils.NameValidator;
 import io.deephaven.engine.v2.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.v2.sources.ColumnSource;
@@ -127,7 +127,7 @@ public class ColumnHolder<T> {
             throw new IllegalArgumentException("Data must be provided as an array");
         }
         if (!data.getClass().getComponentType().isAssignableFrom(dataType)
-                && !(dataType == DBDateTime.class && data.getClass().getComponentType() == long.class)
+                && !(dataType == DateTime.class && data.getClass().getComponentType() == long.class)
                 && !(dataType == Boolean.class && data.getClass().getComponentType() == byte.class)) {
             throw new IllegalArgumentException(
                     "Incompatible data type: " + dataType + " can not be stored in array of type " + data.getClass());
@@ -148,10 +148,10 @@ public class ColumnHolder<T> {
      * @param name column name
      * @param grouped true if the column is grouped; false otherwise
      * @param data column data (long integers representing nanos since the epoch)
-     * @return a DBDateTime column holder implemented with longs for storage
+     * @return a DateTime column holder implemented with longs for storage
      */
-    public static ColumnHolder<DBDateTime> getDateTimeColumnHolder(String name, boolean grouped, long... data) {
-        return new ColumnHolder<>(name, grouped, DBDateTime.class, null, data);
+    public static ColumnHolder<DateTime> getDateTimeColumnHolder(String name, boolean grouped, long... data) {
+        return new ColumnHolder<>(name, grouped, DateTime.class, null, data);
     }
 
     /**
@@ -195,7 +195,7 @@ public class ColumnHolder<T> {
     }
 
     /**
-     * Gets a column source for the data. Other than the special case of DBDateTime columns, this requires that the type
+     * Gets a column source for the data. Other than the special case of DateTime columns, this requires that the type
      * specified match the component type of the actual data.
      *
      * @return column source constructed with data from this column holder
@@ -203,7 +203,7 @@ public class ColumnHolder<T> {
     public ColumnSource<?> getColumnSource() {
         if (data.getClass().getComponentType().equals(dataType)) {
             return ArrayBackedColumnSource.getMemoryColumnSourceUntyped(data, dataType, componentType);
-        } else if (dataType.equals(DBDateTime.class) && data.getClass().getComponentType().equals(long.class)) {
+        } else if (dataType.equals(DateTime.class) && data.getClass().getComponentType().equals(long.class)) {
             return ArrayBackedColumnSource.getDateTimeMemoryColumnSource((long[]) data);
         } else {
             throw new IllegalStateException("Unsupported column holder data & type: " + dataType.getName() + ", "

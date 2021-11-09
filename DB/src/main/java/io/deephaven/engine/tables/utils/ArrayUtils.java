@@ -37,7 +37,7 @@ public class ArrayUtils {
     public static final boolean[] EMPTY_BOOLEAN_ARRAY = new boolean[0];
 
     public static final Object[] EMPTY_OBJECT_ARRAY = new Object[0];
-    public static final DBDateTime[] EMPTY_DATETIME_ARRAY = new DBDateTime[0];
+    public static final DateTime[] EMPTY_DATETIME_ARRAY = new DateTime[0];
 
     public static ArrayAccessor getArrayAccessor(Object array) {
         final Class<?> c = array.getClass();

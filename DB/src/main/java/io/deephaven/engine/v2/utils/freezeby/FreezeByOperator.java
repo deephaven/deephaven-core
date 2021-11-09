@@ -4,7 +4,7 @@
 
 package io.deephaven.engine.v2.utils.freezeby;
 
-import io.deephaven.engine.tables.utils.DBDateTime;
+import io.deephaven.engine.tables.utils.DateTime;
 import io.deephaven.engine.v2.Listener;
 import io.deephaven.engine.v2.by.IterativeChunkedAggregationOperator;
 import io.deephaven.engine.v2.sources.*;
@@ -111,7 +111,7 @@ public class FreezeByOperator implements IterativeChunkedAggregationOperator {
             case Double:
                 return new DoubleFreezeByHelper(source, rowCount);
             case Object:
-                if (source.getType() == DBDateTime.class) {
+                if (source.getType() == DateTime.class) {
                     return new LongFreezeByHelper(source, rowCount);
                 } else if (source.getType() == Boolean.class) {
                     return new BooleanFreezeByHelper(source, rowCount);

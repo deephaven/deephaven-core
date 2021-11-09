@@ -4,7 +4,7 @@
 
 //auto imported
 
-import io.deephaven.engine.tables.utils.DBDateTime
+import io.deephaven.engine.tables.utils.DateTime
 import io.deephaven.engine.tables.utils.TableTools
 
 import static io.deephaven.engine.plot.colors.ColorMaps.heatMap
@@ -18,10 +18,10 @@ import static io.deephaven.engine.plot.colors.ColorMaps.rangeMap
 time = 1491946585000000000L
 
 //Sample plot OHLCChart
-date = [new DBDateTime(time + DAY * 1),
-           new DBDateTime(time + DAY * 2),
-           new DBDateTime(time + DAY * 3),
-           new DBDateTime(time + DAY * 4)] as DBDateTime[]
+date = [new DateTime(time + DAY * 1),
+        new DateTime(time + DAY * 2),
+        new DateTime(time + DAY * 3),
+        new DateTime(time + DAY * 4)] as DateTime[]
 open = [3, 4, 3, 5]as Number[]
 high = [5, 6, 5, 7]as Number[]
 low = [2, 3, 1, 4]as Number[]
@@ -43,64 +43,64 @@ darkBlue = java.awt.Color.decode("#1f77b4")
 lighterRed = colorRGB(red.getRed(), red.getGreen(), red.getBlue(), 50)
 lighterDarkBlue = colorRGB(darkBlue.getRed(), darkBlue.getGreen(), darkBlue.getBlue(), 100)
 date1 = [
-            new DBDateTime(time + DAY * 2),
-            new DBDateTime(time + DAY * 4),
-            new DBDateTime(time + DAY * 5),
-            new DBDateTime(time + DAY * 8),
-            new DBDateTime(time + DAY * 9),
-            new DBDateTime(time + DAY * 11),
-            new DBDateTime(time + DAY * 12),
-            new DBDateTime(time + DAY * 13),
-            new DBDateTime(time + DAY * 14),
-            new DBDateTime(time + DAY * 15),
-            new DBDateTime(time + DAY * 18),
-            new DBDateTime(time + DAY * 19),
-            new DBDateTime(time + DAY * 21),
-            new DBDateTime(time + DAY * 22),
-            new DBDateTime(time + DAY * 23),
-            new DBDateTime(time + DAY * 24),
-            new DBDateTime(time + DAY * 25),
-            new DBDateTime(time + DAY * 28),
-            new DBDateTime(time + DAY * 30),
-            new DBDateTime(time + DAY * 31),
-            new DBDateTime(time + DAY * 32),
-            new DBDateTime(time + DAY * 33),
-            new DBDateTime(time + DAY * 36),
-            new DBDateTime(time + DAY * 38),
-            new DBDateTime(time + DAY * 40),
-            new DBDateTime(time + DAY * 43),
-            new DBDateTime(time + DAY * 44),
-            new DBDateTime(time + DAY * 46)] as DBDateTime[]
-date3 = [new DBDateTime(time + DAY),
-            new DBDateTime(time + DAY * 3),
-            new DBDateTime(time + DAY * 4),
-            new DBDateTime(time + DAY * 6),
-            new DBDateTime(time + DAY * 8),
-            new DBDateTime(time + DAY * 10),
-            new DBDateTime(time + DAY * 11),
-            new DBDateTime(time + DAY * 13),
-            new DBDateTime(time + DAY * 15),
-            new DBDateTime(time + DAY * 17),
-            new DBDateTime(time + DAY * 18),
-            new DBDateTime(time + DAY * 19),
-            new DBDateTime(time + DAY * 20),
-            new DBDateTime(time + DAY * 21),
-            new DBDateTime(time + DAY * 23),
-            new DBDateTime(time + DAY * 24),
-            new DBDateTime(time + DAY * 26),
-            new DBDateTime(time + DAY * 27),
-            new DBDateTime(time + DAY * 28),
-            new DBDateTime(time + DAY * 30),
-            new DBDateTime(time + DAY * 32),
-            new DBDateTime(time + DAY * 33),
-            new DBDateTime(time + DAY * 34),
-            new DBDateTime(time + DAY * 36),
-            new DBDateTime(time + DAY * 38),
-            new DBDateTime(time + DAY * 40),
-            new DBDateTime(time + DAY * 42),
-            new DBDateTime(time + DAY * 43),
-            new DBDateTime(time + DAY * 44),
-            new DBDateTime(time + DAY * 46)] as DBDateTime[]
+        new DateTime(time + DAY * 2),
+        new DateTime(time + DAY * 4),
+        new DateTime(time + DAY * 5),
+        new DateTime(time + DAY * 8),
+        new DateTime(time + DAY * 9),
+        new DateTime(time + DAY * 11),
+        new DateTime(time + DAY * 12),
+        new DateTime(time + DAY * 13),
+        new DateTime(time + DAY * 14),
+        new DateTime(time + DAY * 15),
+        new DateTime(time + DAY * 18),
+        new DateTime(time + DAY * 19),
+        new DateTime(time + DAY * 21),
+        new DateTime(time + DAY * 22),
+        new DateTime(time + DAY * 23),
+        new DateTime(time + DAY * 24),
+        new DateTime(time + DAY * 25),
+        new DateTime(time + DAY * 28),
+        new DateTime(time + DAY * 30),
+        new DateTime(time + DAY * 31),
+        new DateTime(time + DAY * 32),
+        new DateTime(time + DAY * 33),
+        new DateTime(time + DAY * 36),
+        new DateTime(time + DAY * 38),
+        new DateTime(time + DAY * 40),
+        new DateTime(time + DAY * 43),
+        new DateTime(time + DAY * 44),
+        new DateTime(time + DAY * 46)] as DateTime[]
+date3 = [new DateTime(time + DAY),
+         new DateTime(time + DAY * 3),
+         new DateTime(time + DAY * 4),
+         new DateTime(time + DAY * 6),
+         new DateTime(time + DAY * 8),
+         new DateTime(time + DAY * 10),
+         new DateTime(time + DAY * 11),
+         new DateTime(time + DAY * 13),
+         new DateTime(time + DAY * 15),
+         new DateTime(time + DAY * 17),
+         new DateTime(time + DAY * 18),
+         new DateTime(time + DAY * 19),
+         new DateTime(time + DAY * 20),
+         new DateTime(time + DAY * 21),
+         new DateTime(time + DAY * 23),
+         new DateTime(time + DAY * 24),
+         new DateTime(time + DAY * 26),
+         new DateTime(time + DAY * 27),
+         new DateTime(time + DAY * 28),
+         new DateTime(time + DAY * 30),
+         new DateTime(time + DAY * 32),
+         new DateTime(time + DAY * 33),
+         new DateTime(time + DAY * 34),
+         new DateTime(time + DAY * 36),
+         new DateTime(time + DAY * 38),
+         new DateTime(time + DAY * 40),
+         new DateTime(time + DAY * 42),
+         new DateTime(time + DAY * 43),
+         new DateTime(time + DAY * 44),
+         new DateTime(time + DAY * 46)] as DateTime[]
 y1 = [100,
          102,
          98,
@@ -236,14 +236,14 @@ SimpleHistoTableChart = figure().figureTitle("Histogram").histPlot("Histogram", 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 //Sample Time Series Plot
-x1 = [new DBDateTime(time),
-         new DBDateTime(time + MINUTE),
-         new DBDateTime(time + 2 * MINUTE),
-         new DBDateTime(time + 3 * MINUTE)] as DBDateTime[]
+x1 = [new DateTime(time),
+      new DateTime(time + MINUTE),
+      new DateTime(time + 2 * MINUTE),
+      new DateTime(time + 3 * MINUTE)] as DateTime[]
 y1 = [2, 3, 1, 9] as Number[]
-x2 = [new DBDateTime(time + MINUTE),
-         new DBDateTime(time + (3 * MINUTE)),
-         new DBDateTime(time + (4 * MINUTE))] as DBDateTime[]
+x2 = [new DateTime(time + MINUTE),
+      new DateTime(time + (3 * MINUTE)),
+      new DateTime(time + (4 * MINUTE))] as DateTime[]
 y2 = [1.3, 3.2, 3.4] as Number[]
 SimpleTsDBDatePlotChart = figure().figureTitle("Time Series")
         .plot("S1", x1,y1)
@@ -513,19 +513,19 @@ LivePlot2 = figure().updateInterval(500)
 
 
 //business transform
-x = new DBDateTime[500]
+x = new DateTime[500]
 y = new double[500]
 now = 1493305755000000000L
 for(ii = 0; ii < 250; ii++) {
     now = now + MINUTE
-    x[ii] = new DBDateTime(now)
+    x[ii] = new DateTime(now)
     y[ii] = Math.sin(ii);
 }
 
 now = 1493305755000000000L + DAY
 for(ii = 250; ii < x.length; ii++) {
     now = now + MINUTE
-    x[ii] = new DBDateTime(now)
+    x[ii] = new DateTime(now)
     y[ii] = Math.sin(ii)
 }
 

@@ -11,7 +11,7 @@ import io.deephaven.engine.NotSortableException;
 import io.deephaven.engine.tables.DataColumn;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.live.UpdateGraphProcessor;
-import io.deephaven.engine.tables.utils.DBDateTime;
+import io.deephaven.engine.tables.utils.DateTime;
 import io.deephaven.engine.v2.utils.RowSetFactory;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.QueryConstants;
@@ -478,10 +478,10 @@ public class TestSort extends BaseArrayTestCase {
 
     private class DateTimeGenerator extends DataGenerator {
         public Class getType() {
-            return DBDateTime.class;
+            return DateTime.class;
         }
 
-        public DBDateTime makeEntry() {
+        public DateTime makeEntry() {
             if (Math.random() < nullFraction) {
                 return null;
             }
@@ -490,7 +490,7 @@ public class TestSort extends BaseArrayTestCase {
             long offset = (int) Math.rint(Math.random() * 3600);
             offset *= 1000000000;
 
-            DBDateTime dateTime = new DBDateTime((startTime * 1000000000) - offset);
+            DateTime dateTime = new DateTime((startTime * 1000000000) - offset);
             return dateTime;
         }
 

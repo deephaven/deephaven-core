@@ -6,10 +6,10 @@ package io.deephaven.engine.plot.util.tables;
 
 import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.engine.plot.errors.PlotIllegalArgumentException;
+import io.deephaven.engine.tables.utils.DateTime;
 import io.deephaven.gui.color.Color;
 import io.deephaven.gui.color.Paint;
 import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.utils.DBDateTime;
 import io.deephaven.engine.tables.utils.TableTools;
 import junit.framework.TestCase;
 
@@ -31,7 +31,7 @@ public class TestColumnHandlerFactory extends BaseArrayTestCase {
     private final Double[] Doubles = {null, 2d, 3d};
     private final Number[] Numbers = {null, 2, 3};
     private final Date[] Dates = {null, new Date(1), new Date(2)};
-    private final DBDateTime[] DBDateTimes = {null, new DBDateTime(1), new DBDateTime(2)};
+    private final DateTime[] DateTimes = {null, new DateTime(1), new DateTime(2)};
     private final Paint[] paints = {null, new Color(100, 0, 0), new Color(0, 100, 0)};
     private final String[] strings = {"A", "B", "C"};
     private final Table table = TableTools.newTable(
@@ -47,13 +47,13 @@ public class TestColumnHandlerFactory extends BaseArrayTestCase {
             TableTools.col("Doubles", Doubles),
             TableTools.col("Numbers", Numbers),
             TableTools.col("Dates", Dates),
-            TableTools.col("DBDateTimes", DBDateTimes),
+            TableTools.col("DateTimes", DateTimes),
             TableTools.col("Paints", paints),
             TableTools.col("Strings", strings)).ungroup();
 
     private final TableHandle tableHandle = new TableHandle(table,
             "ints", "floats", "longs", "doubles", "shorts", "Shorts", "Integers", "Longs", "Floats", "Doubles",
-            "Numbers", "Dates", "DBDateTimes", "Paints", "Strings");
+            "Numbers", "Dates", "DateTimes", "Paints", "Strings");
 
 
     public void testTypeClassification() {
@@ -114,8 +114,8 @@ public class TestColumnHandlerFactory extends BaseArrayTestCase {
         handler = ColumnHandlerFactory.newNumericHandler(tableHandle, "Dates", null);
         columnHandlerTest(ColumnHandlerFactory.TypeClassification.TIME, "Dates", Date.class, handler);
 
-        handler = ColumnHandlerFactory.newNumericHandler(tableHandle, "DBDateTimes", null);
-        columnHandlerTest(ColumnHandlerFactory.TypeClassification.TIME, "DBDateTimes", DBDateTime.class, handler);
+        handler = ColumnHandlerFactory.newNumericHandler(tableHandle, "DateTimes", null);
+        columnHandlerTest(ColumnHandlerFactory.TypeClassification.TIME, "DateTimes", DateTime.class, handler);
 
         handler.getTableHandle();
         handler = ColumnHandlerFactory.newNumericHandler(tableHandle, "Paints", null);
@@ -194,8 +194,8 @@ public class TestColumnHandlerFactory extends BaseArrayTestCase {
         handler = ColumnHandlerFactory.newNumericHandler(table, "Dates", null);
         columnHandlerTest(ColumnHandlerFactory.TypeClassification.TIME, "Dates", Date.class, handler);
 
-        handler = ColumnHandlerFactory.newNumericHandler(table, "DBDateTimes", null);
-        columnHandlerTest(ColumnHandlerFactory.TypeClassification.TIME, "DBDateTimes", DBDateTime.class, handler);
+        handler = ColumnHandlerFactory.newNumericHandler(table, "DateTimes", null);
+        columnHandlerTest(ColumnHandlerFactory.TypeClassification.TIME, "DateTimes", DateTime.class, handler);
 
         try {
             handler.getTableHandle();
@@ -393,9 +393,9 @@ public class TestColumnHandlerFactory extends BaseArrayTestCase {
             if (clazz.equals(Date.class)) {
                 assertEquals(Dates[i].getTime(), ((Date) handler.get(i)).getTime());
                 assertEquals((double) Dates[i].getTime() * 1000000, handler.getDouble(i));
-            } else if (clazz.equals(DBDateTime.class)) {
-                assertEquals(DBDateTimes[i], handler.get(i));
-                assertEquals((double) DBDateTimes[i].getNanos(), handler.getDouble(i));
+            } else if (clazz.equals(DateTime.class)) {
+                assertEquals(DateTimes[i], handler.get(i));
+                assertEquals((double) DateTimes[i].getNanos(), handler.getDouble(i));
             } else {
                 assertEquals(doubles[i], handler.getDouble(i));
                 if (Number.class.isAssignableFrom(handler.get(i).getClass())) {

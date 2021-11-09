@@ -4,7 +4,7 @@
 
 package io.deephaven.integrations.common;
 
-import io.deephaven.engine.tables.utils.DBDateTime;
+import io.deephaven.engine.tables.utils.DateTime;
 import io.deephaven.util.QueryConstants;
 
 /**
@@ -46,30 +46,30 @@ public class PrimitiveArrayConversionUtility {
     }
 
     /**
-     * Translates a DBDateTime array to a long array. This is the (psuedo)inverse of `translateArrayLongToDBDateTime`.
+     * Translates a DateTime array to a long array. This is the (psuedo)inverse of `translateArrayLongToDateTime`.
      *
-     * @param array - the DBDateTime array
+     * @param array - the DateTime array
      * @return the corresponding long array
      */
-    public static long[] translateArrayDBDateTimeToLong(final DBDateTime[] array) {
+    public static long[] translateArrayDateTimeToLong(final DateTime[] array) {
         long[] out = new long[array.length];
         for (int i = 0; i < array.length; i++) {
-            DBDateTime element = array[i];
+            DateTime element = array[i];
             out[i] = (element == null ? QueryConstants.NULL_LONG : element.getNanos());
         }
         return out;
     }
 
     /**
-     * Translates a long array to a DBDateTime array. This is the (psuedo)inverse of `translateArrayLongToDBDateTime`.
+     * Translates a long array to a DateTime array. This is the (psuedo)inverse of `translateArrayLongToDateTime`.
      *
      * @param array - the long array
-     * @return the corresponding DBDateTime array
+     * @return the corresponding DateTime array
      */
-    public static DBDateTime[] translateArrayLongToDBDateTime(final long[] array) {
-        DBDateTime[] out = new DBDateTime[array.length];
+    public static DateTime[] translateArrayLongToDateTime(final long[] array) {
+        DateTime[] out = new DateTime[array.length];
         for (int i = 0; i < array.length; i++) {
-            out[i] = new DBDateTime(array[i]);
+            out[i] = new DateTime(array[i]);
         }
         return out;
     }

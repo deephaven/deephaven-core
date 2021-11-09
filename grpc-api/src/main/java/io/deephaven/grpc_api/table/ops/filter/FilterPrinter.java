@@ -272,7 +272,7 @@ public class FilterPrinter implements FilterVisitor<Void> {
                 sb.append(literal.getLongValue());
                 break;
             case NANO_TIME_VALUE:
-                sb.append("new DBDateTime(").append(literal.getNanoTimeValue()).append(")");
+                sb.append("new DateTime(").append(literal.getNanoTimeValue()).append(")");
                 break;
             case VALUE_NOT_SET:
             default:

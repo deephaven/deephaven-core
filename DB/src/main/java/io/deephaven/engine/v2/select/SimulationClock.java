@@ -4,8 +4,8 @@ import io.deephaven.base.clock.Clock;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.tables.live.UpdateGraphProcessor;
-import io.deephaven.engine.tables.utils.DBDateTime;
-import io.deephaven.engine.tables.utils.DBTimeUtils;
+import io.deephaven.engine.tables.utils.DateTime;
+import io.deephaven.engine.tables.utils.DateTimeUtils;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.concurrent.atomic.AtomicReference;
@@ -17,7 +17,7 @@ import java.util.concurrent.locks.Condition;
 @SuppressWarnings({"WeakerAccess", "unused"})
 public class SimulationClock implements Clock {
 
-    private final DBDateTime endTime;
+    private final DateTime endTime;
     private final long stepNanos;
 
     private final Runnable refreshTask = this::advance; // Save this in a reference so we can deregister it.
@@ -29,7 +29,7 @@ public class SimulationClock implements Clock {
     private final AtomicReference<State> state = new AtomicReference<>(State.NOT_STARTED);
     private final Condition ltmCondition = UpdateGraphProcessor.DEFAULT.exclusiveLock().newCondition();
 
-    private DBDateTime now;
+    private DateTime now;
 
     /**
      * Create a simulation clock for the specified time range and step.
@@ -41,8 +41,8 @@ public class SimulationClock implements Clock {
     public SimulationClock(@NotNull final String startTime,
             @NotNull final String endTime,
             @NotNull final String stepSize) {
-        this(DBTimeUtils.convertDateTime(startTime), DBTimeUtils.convertDateTime(endTime),
-                DBTimeUtils.convertTime(stepSize));
+        this(DateTimeUtils.convertDateTime(startTime), DateTimeUtils.convertDateTime(endTime),
+                DateTimeUtils.convertTime(stepSize));
     }
 
     /**
@@ -52,12 +52,12 @@ public class SimulationClock implements Clock {
      * @param endTime The final time that will be returned by this clock, when the simulation has completed
      * @param stepNanos The number of nanoseconds to "elapse" in each run loop
      */
-    public SimulationClock(@NotNull final DBDateTime startTime,
-            @NotNull final DBDateTime endTime,
+    public SimulationClock(@NotNull final DateTime startTime,
+            @NotNull final DateTime endTime,
             final long stepNanos) {
         Require.neqNull(startTime, "startTime");
         this.endTime = Require.neqNull(endTime, "endTime");
-        Require.requirement(DBTimeUtils.isBefore(startTime, endTime), "DBTimeUtils.isBefore(startTime, endTime)");
+        Require.requirement(DateTimeUtils.isBefore(startTime, endTime), "DateTimeUtils.isBefore(startTime, endTime)");
         this.stepNanos = Require.gtZero(stepNanos, "stepNanos");
         now = startTime;
     }
@@ -106,8 +106,8 @@ public class SimulationClock implements Clock {
             UpdateGraphProcessor.DEFAULT.requestSignal(ltmCondition);
             return; // This return is not strictly necessary, but it seems clearer this way.
         }
-        final DBDateTime incremented = DBTimeUtils.plus(now, stepNanos);
-        now = DBTimeUtils.isAfter(incremented, endTime) ? endTime : incremented;
+        final DateTime incremented = DateTimeUtils.plus(now, stepNanos);
+        now = DateTimeUtils.isAfter(incremented, endTime) ? endTime : incremented;
     }
 
     /**

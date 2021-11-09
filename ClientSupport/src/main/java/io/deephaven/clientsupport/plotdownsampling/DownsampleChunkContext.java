@@ -28,7 +28,7 @@ public class DownsampleChunkContext implements AutoCloseable {
     /**
      * Creates an object to track the contexts to be used to read data from an upstream table for a given operation
      * 
-     * @param xColumnSource the X column source, always a long column source, currently reinterpreted from DBDateTime
+     * @param xColumnSource the X column source, always a long column source, currently reinterpreted from DateTime
      * @param yColumnSources any Y value column source which may be used. Indexes into this list are used when
      *        specifying columns which are used later
      * @param chunkSize the size of chunks to specify when actually creating any GetContext

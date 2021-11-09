@@ -10,7 +10,7 @@ import io.deephaven.util.profiling.ThreadProfiler;
 
 import java.io.Serializable;
 
-import static io.deephaven.engine.tables.lang.DBLanguageFunctionUtil.minus;
+import static io.deephaven.engine.tables.lang.LanguageFunctionUtil.minus;
 import static io.deephaven.util.QueryConstants.*;
 
 /**
@@ -312,7 +312,7 @@ public class QueryPerformanceNugget implements Serializable, AutoCloseable {
      * @return Time spent in garbage collection, in milliseconds, between time of completion and creation
      */
     public long getDiffCollectionTimeNanos() {
-        return DBTimeUtils
+        return DateTimeUtils
                 .millisToNanos(endMemorySample.totalCollectionTimeMs - startMemorySample.totalCollectionTimeMs);
     }
 

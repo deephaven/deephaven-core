@@ -4,11 +4,11 @@
 
 package io.deephaven.engine.v2.utils;
 
-import io.deephaven.engine.tables.utils.DBDateTime;
+import io.deephaven.engine.tables.utils.DateTime;
 
 /**
  * Interface for providing the current time.
  */
 public interface TimeProvider {
-    DBDateTime currentTime();
+    DateTime currentTime();
 }

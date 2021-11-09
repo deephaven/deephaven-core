@@ -1296,7 +1296,7 @@ This enum describes the name of each supported operation/aggregation type when c
 Provides the details for a figure.
 
 The Deephaven JS API supports automatic lossless downsampling of time-series data, when that data is plotted in one or
-more line series. Using a scatter plot or a X-axis of some type other than DBDateTime will prevent this feature
+more line series. Using a scatter plot or a X-axis of some type other than DateTime will prevent this feature
 from being applied to a series. To enable this feature, invoke `Axis.range(...)` to specify the length in pixels of the
 axis on the screen, and the range of values that are visible, and the server will use that width (and range, if any) to
 reduce the number of points sent to the client.

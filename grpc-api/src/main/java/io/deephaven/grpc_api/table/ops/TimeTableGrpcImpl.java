@@ -4,7 +4,7 @@ import io.deephaven.base.verify.Assert;
 import com.google.rpc.Code;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.live.UpdateGraphProcessor;
-import io.deephaven.engine.tables.utils.DBTimeUtils;
+import io.deephaven.engine.tables.utils.DateTimeUtils;
 import io.deephaven.engine.v2.TimeTable;
 import io.deephaven.grpc_api.session.SessionState;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
@@ -45,7 +45,7 @@ public class TimeTableGrpcImpl extends GrpcTableOperation<TimeTableRequest> {
         final long startTime = request.getStartTimeNanos();
         final long periodValue = request.getPeriodNanos();
         final TimeTable timeTable =
-                new TimeTable(scheduler, startTime <= 0 ? null : DBTimeUtils.nanosToTime(startTime), periodValue);
+                new TimeTable(scheduler, startTime <= 0 ? null : DateTimeUtils.nanosToTime(startTime), periodValue);
         updateGraphProcessor.addSource(timeTable);
         return timeTable;
     }

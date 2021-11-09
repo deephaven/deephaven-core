@@ -6,8 +6,8 @@ package io.deephaven.engine.tablelogger;
 
 import io.deephaven.engine.tables.TableDefinition;
 import io.deephaven.engine.tables.utils.ColumnsSpecHelper;
-import io.deephaven.engine.tables.utils.DBDateTime;
-import io.deephaven.engine.tables.utils.DBTimeUtils;
+import io.deephaven.engine.tables.utils.DateTime;
+import io.deephaven.engine.tables.utils.DateTimeUtils;
 import io.deephaven.tablelogger.Row;
 import io.deephaven.tablelogger.RowSetter;
 import io.deephaven.tablelogger.TableLoggerImpl2;
@@ -35,7 +35,7 @@ public class ProcessMemoryLogLogger extends TableLoggerImpl2<ProcessMemoryLogLog
     }
 
     class DirectSetter extends TableLoggerImpl2.BaseSetter implements ISetter {
-        RowSetter<DBDateTime> IntervalStartTime;
+        RowSetter<DateTime> IntervalStartTime;
         RowSetter<Long> IntervalDurationNanos;
         RowSetter<Long> TotalMemory;
         RowSetter<Long> FreeMemory;
@@ -44,7 +44,7 @@ public class ProcessMemoryLogLogger extends TableLoggerImpl2<ProcessMemoryLogLog
         RowSetter<Float> IntervalCollectionTimePercent;
 
         DirectSetter() {
-            IntervalStartTime = row.getSetter("IntervalStartTime", DBDateTime.class);
+            IntervalStartTime = row.getSetter("IntervalStartTime", DateTime.class);
             IntervalDurationNanos = row.getSetter("IntervalDurationNanos", long.class);
             TotalMemory = row.getSetter("TotalMemory", long.class);
             FreeMemory = row.getSetter("FreeMemory", long.class);
@@ -59,7 +59,7 @@ public class ProcessMemoryLogLogger extends TableLoggerImpl2<ProcessMemoryLogLog
                 final long totalMemory, final long freeMemory,
                 final long intervalCollections, final long intervalCollectionTimeNanos) throws IOException {
             setRowFlags(flags);
-            this.IntervalStartTime.set(DBTimeUtils.millisToTime(intervalStartTime));
+            this.IntervalStartTime.set(DateTimeUtils.millisToTime(intervalStartTime));
             this.IntervalDurationNanos.set(intervalDurationNanos);
             this.TotalMemory.set(totalMemory);
             this.FreeMemory.set(freeMemory);
@@ -78,7 +78,7 @@ public class ProcessMemoryLogLogger extends TableLoggerImpl2<ProcessMemoryLogLog
 
     static {
         final ColumnsSpecHelper cols = new ColumnsSpecHelper()
-                .add("IntervalStartTime", DBDateTime.class)
+                .add("IntervalStartTime", DateTime.class)
                 .add("IntervalDurationNanos", long.class)
                 .add("TotalMemory", long.class)
                 .add("FreeMemory", long.class)

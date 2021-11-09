@@ -65,7 +65,7 @@ public abstract class AbstractFormulaColumn implements FormulaColumn {
      * The internal formula object is generated on-demand by calling out to the Java compiler.
      *
      * @param columnName the result column name
-     * @param formulaString the formula string to be parsed by the DBLanguageParser
+     * @param formulaString the formula string to be parsed by the LanguageParser
      * @param useKernelFormulas
      */
     protected AbstractFormulaColumn(String columnName, String formulaString, boolean useKernelFormulas) {

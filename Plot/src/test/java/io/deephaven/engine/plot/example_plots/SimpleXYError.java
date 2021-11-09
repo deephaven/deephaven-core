@@ -6,8 +6,8 @@ package io.deephaven.engine.plot.example_plots;
 
 import io.deephaven.engine.plot.Figure;
 import io.deephaven.engine.plot.FigureFactory;
-import io.deephaven.engine.tables.utils.DBDateTime;
-import io.deephaven.engine.tables.utils.DBTimeUtils;
+import io.deephaven.engine.tables.utils.DateTime;
+import io.deephaven.engine.tables.utils.DateTimeUtils;
 
 
 /**
@@ -26,11 +26,11 @@ public class SimpleXYError {
         final double[] yHigh = {5.9, 2.8, 5.9, 4.9};
 
         final long time = 1491946585000000000L;
-        DBDateTime[] date = {
-                new DBDateTime(time + DBTimeUtils.DAY * 1),
-                new DBDateTime(time + DBTimeUtils.DAY * 2),
-                new DBDateTime(time + DBTimeUtils.DAY * 3),
-                new DBDateTime(time + DBTimeUtils.DAY * 4)};
+        DateTime[] date = {
+                new DateTime(time + DateTimeUtils.DAY * 1),
+                new DateTime(time + DateTimeUtils.DAY * 2),
+                new DateTime(time + DateTimeUtils.DAY * 3),
+                new DateTime(time + DateTimeUtils.DAY * 4)};
 
         final Number[] open = {3, 4, 3, 5};
         final Number[] high = {5, 6, 5, 7};

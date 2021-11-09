@@ -5,7 +5,7 @@
 package io.deephaven.engine.v2.replay;
 
 import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.utils.DBDateTime;
+import io.deephaven.engine.tables.utils.DateTime;
 
 import java.io.IOException;
 import java.util.TimerTask;
@@ -64,7 +64,7 @@ public interface ReplayerInterface {
      *
      * @return simulated time.
      */
-    DBDateTime currentTime() throws IOException;
+    DateTime currentTime() throws IOException;
 
     /**
      * Prepares a historical table for replaying.

@@ -11,8 +11,8 @@ import io.deephaven.engine.tables.TableDefinition;
 import io.deephaven.engine.tables.remote.preview.DisplayWrapper;
 import io.deephaven.engine.tables.select.QueryScope;
 import io.deephaven.engine.tables.utils.ArrayUtils;
-import io.deephaven.engine.tables.utils.DBDateTime;
-import io.deephaven.engine.tables.utils.DBTimeUtils;
+import io.deephaven.engine.tables.utils.DateTime;
+import io.deephaven.engine.tables.utils.DateTimeUtils;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.utils.MutableRowSet;
 import io.deephaven.engine.v2.utils.RowSet;
@@ -314,15 +314,15 @@ public class MatchFilter extends SelectFilterImpl {
                         return paramValue;
                     }
                 };
-            } else if (cls == DBDateTime.class) {
+            } else if (cls == DateTime.class) {
                 return new ColumnTypeConvertor() {
                     @Override
                     Object convertStringLiteral(String str) {
                         if (str.charAt(0) != '\'' || str.charAt(str.length() - 1) != '\'') {
                             throw new IllegalArgumentException(
-                                    "DBDateTime literal not enclosed in single-quotes (\"" + str + "\")");
+                                    "DateTime literal not enclosed in single-quotes (\"" + str + "\")");
                         }
-                        return DBTimeUtils.convertDateTime(str.substring(1, str.length() - 1));
+                        return DateTimeUtils.convertDateTime(str.substring(1, str.length() - 1));
                     }
                 };
             } else if (cls == Object.class) {

@@ -5,8 +5,8 @@
 package io.deephaven.engine.plot.axistransformations;
 
 import io.deephaven.base.verify.Require;
-import io.deephaven.engine.tables.utils.DBDateTime;
-import io.deephaven.engine.tables.utils.DBTimeUtils;
+import io.deephaven.engine.tables.utils.DateTime;
+import io.deephaven.engine.tables.utils.DateTimeUtils;
 import io.deephaven.util.calendar.BusinessCalendar;
 import io.deephaven.util.calendar.BusinessSchedule;
 import io.deephaven.util.calendar.BusinessPeriod;
@@ -65,7 +65,7 @@ public class AxisTransformBusinessCalendar implements AxisTransform, Serializabl
         Nugget nMax = nuggets.size() == 0 ? null : nuggets.get(nuggets.size() - 1);
 
         if (nMin == null) {
-            final DBDateTime t = new DBDateTime((long) timeNanos);
+            final DateTime t = new DateTime((long) timeNanos);
             nMin = new Nugget(busCal.getBusinessSchedule(busCal.previousBusinessDay(t)), 0);
             nMax = nMin;
             nuggets.add(nMin);
@@ -156,7 +156,7 @@ public class AxisTransformBusinessCalendar implements AxisTransform, Serializabl
     @Override
     public boolean isVisible(final double timeNanos) {
         return !(Double.isInfinite(timeNanos) || Double.isNaN(timeNanos))
-                && busCal.isBusinessTime(DBTimeUtils.nanosToTime((long) timeNanos));
+                && busCal.isBusinessTime(DateTimeUtils.nanosToTime((long) timeNanos));
 
     }
 

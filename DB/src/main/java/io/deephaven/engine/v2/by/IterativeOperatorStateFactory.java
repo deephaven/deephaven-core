@@ -4,7 +4,7 @@
 
 package io.deephaven.engine.v2.by;
 
-import io.deephaven.engine.tables.utils.DBDateTime;
+import io.deephaven.engine.tables.utils.DateTime;
 import io.deephaven.engine.v2.by.ssmcountdistinct.DistinctOperatorFactory;
 import io.deephaven.engine.v2.by.ssmminmax.SsmChunkedMinMaxOperator;
 import io.deephaven.engine.v2.by.ssmpercentile.SsmChunkedPercentileOperator;
@@ -64,7 +64,7 @@ public abstract class IterativeOperatorStateFactory extends ReaggregatableStatef
                 return new FloatChunkedAddOnlyMinMaxOperator(minimum, name);
             } else if (type == Integer.class || type == int.class) {
                 return new IntChunkedAddOnlyMinMaxOperator(minimum, name);
-            } else if (type == Long.class || type == long.class || type == DBDateTime.class) {
+            } else if (type == Long.class || type == long.class || type == DateTime.class) {
                 return new LongChunkedAddOnlyMinMaxOperator(type, minimum, name);
             } else if (type == Short.class || type == short.class) {
                 return new ShortChunkedAddOnlyMinMaxOperator(minimum, name);

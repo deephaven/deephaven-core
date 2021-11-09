@@ -1,8 +1,8 @@
 package io.deephaven.engine.v2.tuples.generated;
 
 import io.deephaven.datastructures.util.SmartKey;
-import io.deephaven.engine.tables.utils.DBDateTime;
-import io.deephaven.engine.tables.utils.DBTimeUtils;
+import io.deephaven.engine.tables.utils.DateTime;
+import io.deephaven.engine.tables.utils.DateTimeUtils;
 import io.deephaven.engine.util.tuples.generated.DoubleLongTuple;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.WritableSource;
@@ -10,7 +10,6 @@ import io.deephaven.engine.v2.sources.chunk.Attributes;
 import io.deephaven.engine.v2.sources.chunk.Chunk;
 import io.deephaven.engine.v2.sources.chunk.DoubleChunk;
 import io.deephaven.engine.v2.sources.chunk.LongChunk;
-import io.deephaven.engine.v2.sources.chunk.ObjectChunk;
 import io.deephaven.engine.v2.sources.chunk.WritableChunk;
 import io.deephaven.engine.v2.sources.chunk.WritableObjectChunk;
 import io.deephaven.engine.v2.tuples.AbstractTupleSource;
@@ -62,7 +61,7 @@ public class DoubleReinterpretedDateTimeColumnTupleSource extends AbstractTupleS
     public final DoubleLongTuple createTupleFromValues(@NotNull final Object... values) {
         return new DoubleLongTuple(
                 TypeUtils.unbox((Double)values[0]),
-                DBTimeUtils.nanos((DBDateTime)values[1])
+                DateTimeUtils.nanos((DateTime)values[1])
         );
     }
 
@@ -82,7 +81,7 @@ public class DoubleReinterpretedDateTimeColumnTupleSource extends AbstractTupleS
             return;
         }
         if (elementIndex == 1) {
-            writableSource.set(destinationIndexKey, (ELEMENT_TYPE) DBTimeUtils.nanosToTime(tuple.getSecondElement()));
+            writableSource.set(destinationIndexKey, (ELEMENT_TYPE) DateTimeUtils.nanosToTime(tuple.getSecondElement()));
             return;
         }
         throw new IndexOutOfBoundsException("Invalid element rowSet " + elementIndex + " for export");
@@ -92,7 +91,7 @@ public class DoubleReinterpretedDateTimeColumnTupleSource extends AbstractTupleS
     public final Object exportToExternalKey(@NotNull final DoubleLongTuple tuple) {
         return new SmartKey(
                 TypeUtils.box(tuple.getFirstElement()),
-                DBTimeUtils.nanosToTime(tuple.getSecondElement())
+                DateTimeUtils.nanosToTime(tuple.getSecondElement())
         );
     }
 
@@ -102,7 +101,7 @@ public class DoubleReinterpretedDateTimeColumnTupleSource extends AbstractTupleS
             return TypeUtils.box(tuple.getFirstElement());
         }
         if (elementIndex == 1) {
-            return DBTimeUtils.nanosToTime(tuple.getSecondElement());
+            return DateTimeUtils.nanosToTime(tuple.getSecondElement());
         }
         throw new IllegalArgumentException("Bad elementIndex for 2 element tuple: " + elementIndex);
     }

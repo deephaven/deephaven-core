@@ -44,7 +44,7 @@ class TestTableDataframeConversion(unittest.TestCase):
                                                   "longCol=(long)0",
                                                   "floatCol=(float)0",
                                                   "doubleCol=(double)0",
-                                                  "datetimeCol=new DBDateTime(0)",
+                                                  "datetimeCol=new DateTime(0)",
                                                   "stringCol=`test`")
         # there are no nulls here, so all three conversion options should work, and result in identical dataframes
         with self.subTest(msg="convert null when no null values"):
@@ -101,7 +101,7 @@ class TestTableDataframeConversion(unittest.TestCase):
                                                     "longCol=(long)((i==0) ? 0 : NULL_LONG)",
                                                     "floatCol=(float)((i==0) ? 2 : NULL_FLOAT)",
                                                     "doubleCol=(double)((i==0) ? 2 : NULL_DOUBLE)",
-                                                    "datetimeCol=((i==0) ? new DBDateTime(0) : null)")
+                                                    "datetimeCol=((i==0) ? new DateTime(0) : null)")
         with self.subTest(msg="Does not convert if convertNulls=ERROR and nulls present"):
             self.assertRaises(ValueError, tableToDataFrame,
                               tab_nulls, convertNulls='ERROR', categoricals=None)
@@ -202,7 +202,7 @@ class TestTableDataframeConversion(unittest.TestCase):
                          ('longCol', 'long'),
                          ('floatCol', 'float'),
                          ('doubleCol', 'double'),
-                         ('datetimeCol', 'class io.deephaven.engine.tables.utils.DBDateTime'),
+                         ('datetimeCol', 'class io.deephaven.engine.tables.utils.DateTime'),
                          ('stringCol', 'class java.lang.String')
                          ]:
             with self.subTest(msg="data type for column {}".format(col)):
@@ -224,7 +224,7 @@ class TestTableDataframeConversion(unittest.TestCase):
         with self.subTest(msg="entry for column doubleCol"):
             self.assertEqual(getElement(tab, 'doubleCol'), 0)  # I'm guessing that Double() -> 0
         with self.subTest(msg="entry for column datetimeCol"):
-            cls = jpy.get_type('io.deephaven.engine.tables.utils.DBDateTime')
+            cls = jpy.get_type('io.deephaven.engine.tables.utils.DateTime')
             self.assertEqual(getElement(tab, 'datetimeCol'), cls(0))
         with self.subTest(msg="entry for column stringCol"):
             self.assertEqual(getElement(tab, 'stringCol'), u'test')
@@ -357,7 +357,7 @@ class TestTableDataframeConversion(unittest.TestCase):
         for dtypename, array_type in [('int8', '[[B'), ('int16', '[[S'), ('int32', '[[I'), ('int64', '[[J'),
                                       ('float32', '[[F'), ('float64', '[[D'), ('U1', '[[C'),
                                       ('U3', '[[Ljava.lang.String;'),
-                                      ('datetime64[ns]', '[[Lio.deephaven.engine.tables.utils.DBDateTime;')]:
+                                      ('datetime64[ns]', '[[Lio.deephaven.engine.tables.utils.DateTime;')]:
             with self.subTest(msg="dtype={}".format(dtypename)):
                 nparray = numpy.empty((2, ), dtype=numpy.object)
                 nparray[:] = [numpy.zeros((3, 4), dtype=dtypename) for i in range(2)]

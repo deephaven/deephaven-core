@@ -7,14 +7,14 @@ import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.tables.ColumnDefinition;
 import io.deephaven.engine.tables.SelectValidationResult;
 import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.lang.DBLanguageFunctionUtil;
-import io.deephaven.engine.tables.lang.DBLanguageParser;
-import io.deephaven.engine.tables.lang.DBLanguageParser.Result;
+import io.deephaven.engine.tables.lang.LanguageFunctionUtil;
+import io.deephaven.engine.tables.lang.LanguageParser;
+import io.deephaven.engine.tables.lang.LanguageParser.Result;
 import io.deephaven.engine.tables.select.SelectColumnFactory;
 import io.deephaven.engine.tables.select.SelectFilterFactory;
-import io.deephaven.engine.tables.utils.DBDateTime;
-import io.deephaven.engine.tables.utils.DBTimeUtils;
-import io.deephaven.engine.util.DBColorUtilImpl;
+import io.deephaven.engine.tables.utils.DateTime;
+import io.deephaven.engine.tables.utils.DateTimeUtils;
+import io.deephaven.engine.util.ColorUtilImpl;
 import io.deephaven.engine.v2.BaseTable;
 import io.deephaven.engine.v2.select.*;
 import io.deephaven.engine.v2.select.analyzers.SelectAndViewAnalyzer;
@@ -46,10 +46,10 @@ public class ColumnExpressionValidator extends GenericVisitorAdapter<Void, Void>
         // list all static methods in supported util classes:
         whitelistedStaticMethods = Stream
                 .of(
-                        DBLanguageFunctionUtil.class,
+                        LanguageFunctionUtil.class,
                         GroovyStaticImports.class,
-                        DBTimeUtils.class,
-                        DBColorUtilImpl.class)
+                        DateTimeUtils.class,
+                        ColorUtilImpl.class)
                 .map(Class::getDeclaredMethods)
                 .flatMap(Arrays::stream)
                 .filter(m -> Modifier.isStatic(m.getModifiers()) && Modifier.isPublic(m.getModifiers()))
@@ -57,11 +57,11 @@ public class ColumnExpressionValidator extends GenericVisitorAdapter<Void, Void>
                 .collect(Collectors.collectingAndThen(Collectors.toSet(), Collections::unmodifiableSet));
 
         // list all non-inherited instance methods in supported data classes:
-        // DBDateTime
+        // DateTime
         // String
         whitelistedInstanceMethods = Stream
                 .of(
-                        DBDateTime.class,
+                        DateTime.class,
                         String.class)
                 .map(Class::getDeclaredMethods)
                 .flatMap(Arrays::stream)
@@ -132,9 +132,9 @@ public class ColumnExpressionValidator extends GenericVisitorAdapter<Void, Void>
         final String formulaString = originalExpression.substring(indexOfEquals + 1);
 
         final Result compiledFormula;
-        final DBTimeUtils.Result timeConversionResult;
+        final DateTimeUtils.Result timeConversionResult;
         try {
-            timeConversionResult = DBTimeUtils.convertExpression(formulaString);
+            timeConversionResult = DateTimeUtils.convertExpression(formulaString);
             compiledFormula = FormulaAnalyzer.getCompiledFormula(availableColumns, timeConversionResult, null);
         } catch (final Exception e) {
             // in theory not possible, since we already parsed it once
@@ -159,10 +159,10 @@ public class ColumnExpressionValidator extends GenericVisitorAdapter<Void, Void>
     private static final JavaParser staticJavaParser = new JavaParser();
 
     private static void validateInvocations(String expression) {
-        // copied, modified from DBLanguageParser.java
+        // copied, modified from LanguageParser.java
         // before parsing, finish Deephaven-specific language features:
-        expression = DBLanguageParser.convertBackticks(expression);
-        expression = DBLanguageParser.convertSingleEquals(expression);
+        expression = LanguageParser.convertBackticks(expression);
+        expression = LanguageParser.convertSingleEquals(expression);
 
         // then, parse into an AST
         final ParseResult<Expression> result;

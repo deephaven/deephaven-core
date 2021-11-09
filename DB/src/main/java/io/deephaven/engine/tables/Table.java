@@ -12,7 +12,7 @@ import io.deephaven.api.filter.Filter;
 import io.deephaven.base.Function;
 import io.deephaven.base.Pair;
 import io.deephaven.datastructures.util.CollectionUtil;
-import io.deephaven.engine.tables.lang.DBLanguageParser;
+import io.deephaven.engine.tables.lang.LanguageParser;
 import io.deephaven.engine.tables.live.NotificationQueue;
 import io.deephaven.engine.tables.remote.*;
 import io.deephaven.engine.tables.select.*;
@@ -764,8 +764,8 @@ public interface Table extends
     @AsyncMethod
     default Table formatColumnWhere(String columnName, String condition, String formula) {
         return formatColumns(
-                columnName + " = (" + condition + ") ? io.deephaven.engine.util.DBColorUtil.toLong(" + formula
-                        + ") : io.deephaven.engine.util.DBColorUtil.toLong(NO_FORMATTING)");
+                columnName + " = (" + condition + ") ? io.deephaven.engine.util.ColorUtil.toLong(" + formula
+                        + ") : io.deephaven.engine.util.ColorUtil.toLong(NO_FORMATTING)");
     }
 
     /**
@@ -854,7 +854,7 @@ public interface Table extends
 
     /**
      * Produce a new table with the same columns as this table, but with a new column presenting the specified
-     * DBDateTime column as a Long column (with each DBDateTime represented instead as the corresponding number of nanos
+     * DateTime column as a Long column (with each DateTime represented instead as the corresponding number of nanos
      * since the epoch).
      * <p>
      * NOTE: This is a really just an updateView(), and behaves accordingly for column ordering and (re)placement. This
@@ -866,11 +866,11 @@ public interface Table extends
      */
     @AsyncMethod
     default Table dateTimeColumnAsNanos(String dateTimeColumnName, String nanosColumnName) {
-        return updateView(new ReinterpretedColumn<>(dateTimeColumnName, DBDateTime.class, nanosColumnName, long.class));
+        return updateView(new ReinterpretedColumn<>(dateTimeColumnName, DateTime.class, nanosColumnName, long.class));
     }
 
     /**
-     * @param columnName name of column to convert from DBDateTime to nanos
+     * @param columnName name of column to convert from DateTime to nanos
      * @return The result of dateTimeColumnAsNanos(columnName, columnName).
      */
     @AsyncMethod
@@ -2168,20 +2168,20 @@ public interface Table extends
         final Set<String> columnsNotToUnwrapSet = Arrays.stream(columnsNotToUngroup).collect(Collectors.toSet());
         return ungroup(getDefinition().getColumnStream()
                 .filter(c -> !columnsNotToUnwrapSet.contains(c.getName())
-                        && (c.getDataType().isArray() || DBLanguageParser.isDbArray(c.getDataType())))
+                        && (c.getDataType().isArray() || LanguageParser.isDbArray(c.getDataType())))
                 .map(ColumnDefinition::getName).toArray(String[]::new));
     }
 
     default Table ungroup() {
         return ungroup(getDefinition().getColumnStream()
-                .filter(c -> c.getDataType().isArray() || DBLanguageParser.isDbArray(c.getDataType()))
+                .filter(c -> c.getDataType().isArray() || LanguageParser.isDbArray(c.getDataType()))
                 .map(ColumnDefinition::getName).toArray(String[]::new));
     }
 
     default Table ungroup(boolean nullFill) {
         return ungroup(nullFill,
                 getDefinition().getColumnStream()
-                        .filter(c -> c.getDataType().isArray() || DBLanguageParser.isDbArray(c.getDataType()))
+                        .filter(c -> c.getDataType().isArray() || LanguageParser.isDbArray(c.getDataType()))
                         .map(ColumnDefinition::getName).toArray(String[]::new));
     }
 
@@ -2202,9 +2202,9 @@ public interface Table extends
      * </p>
      *
      * <p>
-     * For example if you have a Table keyed by a String column named USym, and a DBDateTime column named Expiry; a
+     * For example if you have a Table keyed by a String column named USym, and a DateTime column named Expiry; a
      * value could be retrieved from the TableMap with
-     * {@code tableMap.get(new SmartKey("SPY";, DBTimeUtils.convertDateTime("2020-06-19T16:15:00 NY")))}. For a table
+     * {@code tableMap.get(new SmartKey("SPY";, DateTimeUtils.convertDateTime("2020-06-19T16:15:00 NY")))}. For a table
      * with an Integer column named Bucket, you simply use the desired value as in {@code tableMap.get(1)}.
      * </p>
      *
@@ -2228,9 +2228,9 @@ public interface Table extends
      * </p>
      *
      * <p>
-     * For example if you have a Table keyed by a String column named USym, and a DBDateTime column named Expiry; a
+     * For example if you have a Table keyed by a String column named USym, and a DateTime column named Expiry; a
      * value could be retrieved from the TableMap with
-     * {@code tableMap.get(new SmartKey("SPY";, DBTimeUtils.convertDateTime("2020-06-19T16:15:00 NY")))}. For a table
+     * {@code tableMap.get(new SmartKey("SPY";, DateTimeUtils.convertDateTime("2020-06-19T16:15:00 NY")))}. For a table
      * with an Integer column named Bucket, you simply use the desired value as in {@code tableMap.get(1)}.
      * </p>
      *

@@ -7,13 +7,13 @@ package io.deephaven.engine.v2.sources;
 import io.deephaven.base.Pair;
 import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.tables.dbarrays.Vector;
+import io.deephaven.engine.tables.utils.DateTime;
 import io.deephaven.engine.v2.utils.*;
 import io.deephaven.hash.KeyedObjectHashSet;
 import io.deephaven.hash.KeyedObjectKey;
 import io.deephaven.base.string.cache.CharSequenceUtils;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.tables.dbarrays.*;
-import io.deephaven.engine.tables.utils.DBDateTime;
 import io.deephaven.engine.v2.select.ChunkFilter;
 import io.deephaven.engine.v2.select.chunkfilters.ChunkMatchFilterFactory;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
@@ -432,10 +432,10 @@ public abstract class AbstractColumnSource<T> implements ColumnSource<T>, Serial
      */
     protected <ALTERNATE_DATA_TYPE> ColumnSource<ALTERNATE_DATA_TYPE> doReinterpret(
             @NotNull final Class<ALTERNATE_DATA_TYPE> alternateDataType) {
-        Assert.eq(getType(), "getType()", DBDateTime.class);
+        Assert.eq(getType(), "getType()", DateTime.class);
         Assert.eq(alternateDataType, "alternateDataType", long.class);
         // noinspection unchecked
-        return (ColumnSource<ALTERNATE_DATA_TYPE>) new UnboxedDateTimeWritableSource((WritableSource<DBDateTime>) this);
+        return (ColumnSource<ALTERNATE_DATA_TYPE>) new UnboxedDateTimeWritableSource((WritableSource<DateTime>) this);
     }
 
     public static abstract class DefaultedMutable<DATA_TYPE> extends AbstractColumnSource<DATA_TYPE>

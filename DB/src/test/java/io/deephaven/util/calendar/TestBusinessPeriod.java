@@ -1,15 +1,15 @@
 package io.deephaven.util.calendar;
 
 import io.deephaven.base.testing.BaseArrayTestCase;
-import io.deephaven.engine.tables.utils.DBDateTime;
-import io.deephaven.engine.tables.utils.DBTimeUtils;
+import io.deephaven.engine.tables.utils.DateTime;
+import io.deephaven.engine.tables.utils.DateTimeUtils;
 import junit.framework.TestCase;
 
 public class TestBusinessPeriod extends BaseArrayTestCase {
 
     public void testBusinessPeriod() {
-        final DBDateTime open1 = DBTimeUtils.convertDateTime("2017-03-11T10:00:00.000000000 NY");
-        final DBDateTime close1 = DBTimeUtils.convertDateTime("2017-03-11T11:00:00.000000000 NY");
+        final DateTime open1 = DateTimeUtils.convertDateTime("2017-03-11T10:00:00.000000000 NY");
+        final DateTime close1 = DateTimeUtils.convertDateTime("2017-03-11T11:00:00.000000000 NY");
 
         try {
             new BusinessPeriod(null, close1);
@@ -35,13 +35,13 @@ public class TestBusinessPeriod extends BaseArrayTestCase {
         BusinessPeriod period = new BusinessPeriod(open1, close1);
         assertEquals(open1, period.getStartTime());
         assertEquals(close1, period.getEndTime());
-        assertEquals(DBTimeUtils.HOUR, period.getLength());
+        assertEquals(DateTimeUtils.HOUR, period.getLength());
 
         assertTrue(period.contains(open1));
-        assertTrue(period.contains(new DBDateTime(open1.getNanos() + DBTimeUtils.MINUTE)));
-        assertFalse(period.contains(new DBDateTime(open1.getNanos() - DBTimeUtils.MINUTE)));
+        assertTrue(period.contains(new DateTime(open1.getNanos() + DateTimeUtils.MINUTE)));
+        assertFalse(period.contains(new DateTime(open1.getNanos() - DateTimeUtils.MINUTE)));
         assertTrue(period.contains(close1));
-        assertTrue(period.contains(new DBDateTime(close1.getNanos() - DBTimeUtils.MINUTE)));
-        assertFalse(period.contains(new DBDateTime(close1.getNanos() + DBTimeUtils.MINUTE)));
+        assertTrue(period.contains(new DateTime(close1.getNanos() - DateTimeUtils.MINUTE)));
+        assertFalse(period.contains(new DateTime(close1.getNanos() + DateTimeUtils.MINUTE)));
     }
 }

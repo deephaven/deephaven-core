@@ -2,8 +2,8 @@ package io.deephaven.benchmark.engine;
 
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.live.UpdateGraphProcessor;
-import io.deephaven.engine.tables.utils.DBDateTime;
-import io.deephaven.engine.tables.utils.DBTimeUtils;
+import io.deephaven.engine.tables.utils.DateTime;
+import io.deephaven.engine.tables.utils.DateTimeUtils;
 import io.deephaven.engine.v2.select.*;
 import io.deephaven.benchmarking.*;
 import io.deephaven.benchmarking.runner.TableBenchmarkState;
@@ -68,8 +68,8 @@ public class RangeFilterBenchmark {
         builder.setSeed(0xDEADBEEF)
                 .addColumn(BenchmarkTools.stringCol("PartCol", 4, 5, 7, 0xFEEDBEEF));
 
-        final DBDateTime startTime = DBTimeUtils.convertDateTime("2019-01-01T12:00:00 NY");
-        final DBDateTime endTime = DBTimeUtils.convertDateTime("2019-12-31T12:00:00 NY");
+        final DateTime startTime = DateTimeUtils.convertDateTime("2019-01-01T12:00:00 NY");
+        final DateTime endTime = DateTimeUtils.convertDateTime("2019-12-31T12:00:00 NY");
 
         switch (filterCol) {
             case "D1":
@@ -90,18 +90,18 @@ public class RangeFilterBenchmark {
         }
 
         if (filterCol.equals("Timestamp")) {
-            final DBDateTime lowerBound, upperBound;
+            final DateTime lowerBound, upperBound;
             if (selectivity == 100) {
                 upperBound = endTime;
                 lowerBound = startTime;
             } else if (selectivity == 0) {
-                lowerBound = DBTimeUtils.plus(endTime, 1000_000_000L);
-                upperBound = DBTimeUtils.plus(lowerBound, 1000_000_00L);
+                lowerBound = DateTimeUtils.plus(endTime, 1000_000_000L);
+                upperBound = DateTimeUtils.plus(lowerBound, 1000_000_00L);
             } else {
                 final long midpoint = (startTime.getNanos() + endTime.getNanos()) / 2;
                 final long range = (endTime.getNanos() - startTime.getNanos());
-                lowerBound = DBTimeUtils.nanosToTime(midpoint - (long) (range * (selectivity / 100.0)));
-                upperBound = DBTimeUtils.nanosToTime(midpoint + (long) (range * (selectivity / 100.0)));
+                lowerBound = DateTimeUtils.nanosToTime(midpoint - (long) (range * (selectivity / 100.0)));
+                upperBound = DateTimeUtils.nanosToTime(midpoint + (long) (range * (selectivity / 100.0)));
             }
 
             assert lowerBound != null;

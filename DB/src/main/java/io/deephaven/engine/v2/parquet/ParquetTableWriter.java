@@ -5,7 +5,7 @@ import io.deephaven.engine.tables.dbarrays.Vector;
 import io.deephaven.engine.tables.libs.QueryLibrary;
 import io.deephaven.engine.tables.libs.StringSet;
 import io.deephaven.engine.tables.select.QueryScope;
-import io.deephaven.engine.tables.utils.DBDateTime;
+import io.deephaven.engine.tables.utils.DateTime;
 import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.v2.InMemoryTable;
 import io.deephaven.engine.v2.QueryTable;
@@ -424,7 +424,7 @@ public class ParquetTableWriter {
             stepsCount = (int) (rowSet.size() / finalTargetSize + ((rowSet.size() % finalTargetSize) == 0 ? 0 : 1));
         }
         Class<DATA_TYPE> columnType = columnSource.getType();
-        if (columnType == DBDateTime.class) {
+        if (columnType == DateTime.class) {
             // noinspection unchecked
             columnSource = (ColumnSource<DATA_TYPE>) ReinterpretUtilities.dateTimeToLongSource(columnSource);
             columnType = columnSource.getType();
@@ -1033,7 +1033,7 @@ public class ParquetTableWriter {
                 "someShortColumn = (short)i",
                 "someByteColumn = (byte)i",
                 "someCharColumn = (char)i",
-                "someTime = DBDateTime.now() + i",
+                "someTime = DateTime.now() + i",
                 "someKey = `` + (int)(i /100)",
                 "nullKey = i < -1?`123`:null",
                 "someSerializable = new SomeSillyTest(i)");

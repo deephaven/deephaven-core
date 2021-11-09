@@ -6,8 +6,8 @@ import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.libs.QueryLibrary;
 import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.tables.select.QueryScope;
-import io.deephaven.engine.tables.utils.DBDateTime;
-import io.deephaven.engine.tables.utils.DBTimeUtils;
+import io.deephaven.engine.tables.utils.DateTime;
+import io.deephaven.engine.tables.utils.DateTimeUtils;
 import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.util.liveness.LivenessScope;
 import io.deephaven.engine.util.liveness.LivenessScopeStack;
@@ -605,10 +605,10 @@ public class QueryTableSelectUpdateTest {
                 EvalNugget.from(() -> queryTable.update("newCol = intCol > 50")),
                 // Let's create a datetime and use it as an override
                 partialEvalNuggetFrom(queryTable, false,
-                        () -> queryTable.update("Time = new DBDateTime(0) + intCol * MINUTE")
+                        () -> queryTable.update("Time = new DateTime(0) + intCol * MINUTE")
                                 .update("Diff = Time_[i]")),
                 partialEvalNuggetFrom(queryTable, true,
-                        () -> queryTable.select("Time = new DBDateTime(0) + intCol * MINUTE").select("Time",
+                        () -> queryTable.select("Time = new DateTime(0) + intCol * MINUTE").select("Time",
                                 "Diff = Time_[i]")),
         };
 
@@ -852,14 +852,14 @@ public class QueryTableSelectUpdateTest {
     public void testSparseSelect() {
         int size = 1000;
         for (int seed = 0; seed < 10; ++seed) {
-            System.out.println(DBDateTime.now() + ": Size = " + size + ", seed=" + seed);
+            System.out.println(DateTime.now() + ": Size = " + size + ", seed=" + seed);
             try (final SafeCloseable ignored = LivenessScopeStack.open(new LivenessScope(true), true)) {
                 testSparseSelect(size, seed);
             }
         }
         size = 10000;
         for (int seed = 0; seed < 1; ++seed) {
-            System.out.println(DBDateTime.now() + ": Size = " + size + ", seed=" + seed);
+            System.out.println(DateTime.now() + ": Size = " + size + ", seed=" + seed);
             try (final SafeCloseable ignored = LivenessScopeStack.open(new LivenessScope(true), true)) {
                 testSparseSelect(size, seed);
             }
@@ -873,7 +873,7 @@ public class QueryTableSelectUpdateTest {
         final QueryTable queryTable = getTable(size, random,
                 columnInfo = initColumnInfos(
                         new String[] {"Sym", "intCol", "doubleCol", "boolCol", "floatCol", "longCol", "charCol",
-                                "byteCol", "shortCol", "dbDateTime"},
+                                "byteCol", "shortCol", "dateTime"},
                         new SetGenerator<>("a", "b", "c", "d", "e"),
                         new IntGenerator(10, 100),
                         new SetGenerator<>(10.1, 20.1, 30.1),
@@ -883,8 +883,8 @@ public class QueryTableSelectUpdateTest {
                         new CharGenerator('a', 'z'),
                         new ByteGenerator(),
                         new ShortGenerator(),
-                        new UnsortedDateTimeGenerator(DBTimeUtils.convertDateTime("2019-01-10T00:00:00 NY"),
-                                DBTimeUtils.convertDateTime("2019-01-20T00:00:00 NY"))));
+                        new UnsortedDateTimeGenerator(DateTimeUtils.convertDateTime("2019-01-10T00:00:00 NY"),
+                                DateTimeUtils.convertDateTime("2019-01-20T00:00:00 NY"))));
 
         final Table sortedTable = queryTable.sort("intCol");
 
@@ -906,7 +906,7 @@ public class QueryTableSelectUpdateTest {
                 },
                 new EvalNugget() {
                     public Table e() {
-                        return SparseSelect.sparseSelect(queryTable, "dbDateTime");
+                        return SparseSelect.sparseSelect(queryTable, "dateTime");
                     }
                 },
                 new EvalNugget() {
@@ -945,7 +945,7 @@ public class QueryTableSelectUpdateTest {
                                 .by("Sym").sort("Sym").ungroup())),
                 new TableComparator(queryTable, SparseSelect.sparseSelect(queryTable)),
                 new TableComparator(queryTable,
-                        SparseSelect.partialSparseSelect(queryTable, Arrays.asList("shortCol", "dbDateTime"))),
+                        SparseSelect.partialSparseSelect(queryTable, Arrays.asList("shortCol", "dateTime"))),
                 new TableComparator(sortedTable, SparseSelect.sparseSelect(sortedTable))
         };
 

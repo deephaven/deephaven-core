@@ -6,29 +6,29 @@ package io.deephaven.engine.plot.datasets.ohlc;
 
 import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.engine.plot.BaseFigureImpl;
+import io.deephaven.engine.plot.datasets.data.IndexableNumericDataArrayDateTime;
 import io.deephaven.engine.plot.util.tables.TableBackedTableMapHandle;
+import io.deephaven.engine.tables.utils.DateTime;
+import io.deephaven.engine.tables.utils.DateTimeUtils;
 import io.deephaven.gui.color.Color;
 import io.deephaven.engine.plot.datasets.data.IndexableNumericData;
-import io.deephaven.engine.plot.datasets.data.IndexableNumericDataArrayDBDateTime;
 import io.deephaven.engine.plot.datasets.data.IndexableNumericDataArrayDouble;
 import io.deephaven.engine.plot.datasets.xy.TestAbstractXYDataSeries;
 import io.deephaven.engine.plot.util.tables.SwappableTable;
 import io.deephaven.engine.plot.util.tables.TableHandle;
 import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.utils.DBDateTime;
-import io.deephaven.engine.tables.utils.DBTimeUtils;
 import io.deephaven.engine.tables.utils.TableTools;
 
 import java.util.ArrayList;
 
 public class TestOHLCDataSeries extends BaseArrayTestCase {
-    private final DBDateTime[] datesA = {new DBDateTime(DBTimeUtils.DAY), new DBDateTime(2 * DBTimeUtils.DAY),
-            new DBDateTime(3 * DBTimeUtils.DAY), new DBDateTime(4 * DBTimeUtils.DAY)};
+    private final DateTime[] datesA = {new DateTime(DateTimeUtils.DAY), new DateTime(2 * DateTimeUtils.DAY),
+            new DateTime(3 * DateTimeUtils.DAY), new DateTime(4 * DateTimeUtils.DAY)};
     private final double[] openA = {1.0, 2.0, 1.5, 2.0};
     private final double[] closeA = {1.8, 1.8, 1.7, 2.2};
     private final double[] highA = {2.0, 2.0, 1.8, 2.5};
     private final double[] lowA = {0.9, 1.5, 1.5, 1.8};
-    private final IndexableNumericData dates = new IndexableNumericDataArrayDBDateTime(datesA, null);
+    private final IndexableNumericData dates = new IndexableNumericDataArrayDateTime(datesA, null);
     private final IndexableNumericData open = new IndexableNumericDataArrayDouble(openA, null);
     private final IndexableNumericData close = new IndexableNumericDataArrayDouble(closeA, null);
     private final IndexableNumericData high = new IndexableNumericDataArrayDouble(highA, null);
@@ -48,8 +48,8 @@ public class TestOHLCDataSeries extends BaseArrayTestCase {
         checkOHLCDataSeriesArray(dataSeries2, datesA, closeA, highA, lowA, openA);
     }
 
-    private void checkOHLCDataSeriesArray(OHLCDataSeriesInternal dataSeries, DBDateTime[] time, double[] open,
-            double[] high, double[] low, double[] close) {
+    private void checkOHLCDataSeriesArray(OHLCDataSeriesInternal dataSeries, DateTime[] time, double[] open,
+                                          double[] high, double[] low, double[] close) {
         assertEquals(dataSeries.size(), time.length);
 
         for (int i = 0; i < dataSeries.size(); i++) {

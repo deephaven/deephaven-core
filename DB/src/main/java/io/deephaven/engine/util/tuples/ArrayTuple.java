@@ -1,7 +1,7 @@
 package io.deephaven.engine.util.tuples;
 
 import io.deephaven.datastructures.util.CollectionUtil;
-import io.deephaven.engine.tables.lang.DBLanguageFunctionUtil;
+import io.deephaven.engine.tables.lang.LanguageFunctionUtil;
 import io.deephaven.engine.util.serialization.SerializationUtils;
 import io.deephaven.engine.util.serialization.StreamingExternalizable;
 import gnu.trove.map.TIntObjectMap;
@@ -91,7 +91,7 @@ public class ArrayTuple
         }
         for (int ei = 0; ei < thisLength; ++ei) {
             final int comparison =
-                    DBLanguageFunctionUtil.compareTo((Comparable) elements[ei], (Comparable) other.elements[ei]);
+                    LanguageFunctionUtil.compareTo((Comparable) elements[ei], (Comparable) other.elements[ei]);
             if (comparison != 0) {
                 return comparison;
             }

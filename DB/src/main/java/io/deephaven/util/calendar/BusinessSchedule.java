@@ -4,8 +4,8 @@
 
 package io.deephaven.util.calendar;
 
-import io.deephaven.engine.tables.utils.DBDateTime;
-import io.deephaven.engine.tables.utils.DBTimeUtils;
+import io.deephaven.engine.tables.utils.DateTime;
+import io.deephaven.engine.tables.utils.DateTimeUtils;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.Serializable;
@@ -18,8 +18,8 @@ public class BusinessSchedule implements Serializable {
 
     private static final long serialVersionUID = 1118129010491637735L;
     private final BusinessPeriod[] openPeriods;
-    private final DBDateTime startOfDay;
-    private final DBDateTime endOfDay;
+    private final DateTime startOfDay;
+    private final DateTime endOfDay;
     private final long lengthOfDay;
 
     /**
@@ -58,7 +58,7 @@ public class BusinessSchedule implements Serializable {
                 throw new IllegalArgumentException("Null period.");
             }
 
-            lod += DBTimeUtils.minus(businessPeriod.getEndTime(), businessPeriod.getStartTime());
+            lod += DateTimeUtils.minus(businessPeriod.getEndTime(), businessPeriod.getStartTime());
         }
 
 
@@ -89,7 +89,7 @@ public class BusinessSchedule implements Serializable {
      *
      * @return start of the business day
      */
-    public DBDateTime getSOBD() {
+    public DateTime getSOBD() {
         return startOfDay;
     }
 
@@ -98,7 +98,7 @@ public class BusinessSchedule implements Serializable {
      *
      * @return start of the business day
      */
-    public DBDateTime getStartOfBusinessDay() {
+    public DateTime getStartOfBusinessDay() {
         return getSOBD();
     }
 
@@ -107,7 +107,7 @@ public class BusinessSchedule implements Serializable {
      *
      * @return end of the business day
      */
-    public DBDateTime getEOBD() {
+    public DateTime getEOBD() {
         return endOfDay;
     }
 
@@ -116,7 +116,7 @@ public class BusinessSchedule implements Serializable {
      *
      * @return end of the business day
      */
-    public DBDateTime getEndOfBusinessDay() {
+    public DateTime getEndOfBusinessDay() {
         return getEOBD();
     }
 
@@ -155,7 +155,7 @@ public class BusinessSchedule implements Serializable {
      * @param time time.
      * @return true if the time is a business time for the day; otherwise, false.
      */
-    public boolean isBusinessTime(final DBDateTime time) {
+    public boolean isBusinessTime(final DateTime time) {
         for (BusinessPeriod p : openPeriods) {
             if (p.contains(time)) {
                 return true;
@@ -171,16 +171,16 @@ public class BusinessSchedule implements Serializable {
      * @param time time
      * @return business time in nanoseconds that has elapsed on the given day by the specified time
      */
-    public long businessTimeElapsed(final DBDateTime time) {
+    public long businessTimeElapsed(final DateTime time) {
         long elapsed = 0;
 
         for (BusinessPeriod businessPeriod : openPeriods) {
-            if (DBTimeUtils.isBefore(time, businessPeriod.getStartTime())) {
+            if (DateTimeUtils.isBefore(time, businessPeriod.getStartTime())) {
                 return elapsed;
-            } else if (DBTimeUtils.isAfter(time, businessPeriod.getEndTime())) {
+            } else if (DateTimeUtils.isAfter(time, businessPeriod.getEndTime())) {
                 elapsed += businessPeriod.getLength();
             } else {
-                elapsed += DBTimeUtils.minus(time, businessPeriod.getStartTime());
+                elapsed += DateTimeUtils.minus(time, businessPeriod.getStartTime());
                 return elapsed;
             }
         }

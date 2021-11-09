@@ -1,7 +1,7 @@
 package io.deephaven.util.calendar;
 
-import io.deephaven.engine.tables.utils.DBDateTime;
-import io.deephaven.engine.tables.utils.DBTimeZone;
+import io.deephaven.engine.tables.utils.DateTime;
+import io.deephaven.engine.tables.utils.TimeZone;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
@@ -13,10 +13,10 @@ import java.time.LocalDate;
 public class StaticCalendarMethods {
 
 
-    // These methods are imported from DBTimeUtils, so are not included here
-    // public static long diffNanos(final DBDateTime start, final DBDateTime end) {
-    // public static long diffDay(final DBDateTime start, final DBDateTime end) {
-    // public static long diffYear(final DBDateTime start, final DBDateTime end) {
+    // These methods are imported from DateTimeUtils, so are not included here
+    // public static long diffNanos(final DateTime start, final DateTime end) {
+    // public static long diffDay(final DateTime start, final DateTime end) {
+    // public static long diffYear(final DateTime start, final DateTime end) {
 
     private StaticCalendarMethods() {
 
@@ -38,11 +38,11 @@ public class StaticCalendarMethods {
         return Calendars.calendar().previousDay(days);
     }
 
-    public static String previousDay(final DBDateTime time) {
+    public static String previousDay(final DateTime time) {
         return Calendars.calendar().previousDay(time);
     }
 
-    public static String previousDay(final DBDateTime time, final int days) {
+    public static String previousDay(final DateTime time, final int days) {
         return Calendars.calendar().previousDay(time, days);
     }
 
@@ -62,11 +62,11 @@ public class StaticCalendarMethods {
         return Calendars.calendar().nextDay(days);
     }
 
-    public static String nextDay(final DBDateTime time) {
+    public static String nextDay(final DateTime time) {
         return Calendars.calendar().nextDay(time);
     }
 
-    public static String nextDay(final DBDateTime time, final int days) {
+    public static String nextDay(final DateTime time, final int days) {
         return Calendars.calendar().nextDay(time, days);
     }
 
@@ -78,7 +78,7 @@ public class StaticCalendarMethods {
         return Calendars.calendar().nextDay(date, days);
     }
 
-    public static String[] daysInRange(DBDateTime start, DBDateTime end) {
+    public static String[] daysInRange(DateTime start, DateTime end) {
         return Calendars.calendar().daysInRange(start, end);
     }
 
@@ -86,11 +86,11 @@ public class StaticCalendarMethods {
         return Calendars.calendar().daysInRange(start, end);
     }
 
-    public static int numberOfDays(final DBDateTime start, final DBDateTime end) {
+    public static int numberOfDays(final DateTime start, final DateTime end) {
         return Calendars.calendar().numberOfDays(start, end);
     }
 
-    public static int numberOfDays(final DBDateTime start, final DBDateTime end, final boolean endInclusive) {
+    public static int numberOfDays(final DateTime start, final DateTime end, final boolean endInclusive) {
         return Calendars.calendar().numberOfDays(start, end, endInclusive);
     }
 
@@ -106,7 +106,7 @@ public class StaticCalendarMethods {
         return Calendars.calendar().dayOfWeek();
     }
 
-    public static DayOfWeek dayOfWeek(final DBDateTime time) {
+    public static DayOfWeek dayOfWeek(final DateTime time) {
         return Calendars.calendar().dayOfWeek(time);
     }
 
@@ -114,7 +114,7 @@ public class StaticCalendarMethods {
         return Calendars.calendar().dayOfWeek(date);
     }
 
-    public static DBTimeZone timeZone() {
+    public static TimeZone timeZone() {
         return Calendars.calendar().timeZone();
     }
 
@@ -122,7 +122,7 @@ public class StaticCalendarMethods {
         return Calendars.calendar().isBusinessDay();
     }
 
-    public static boolean isBusinessDay(DBDateTime time) {
+    public static boolean isBusinessDay(DateTime time) {
         return Calendars.calendar().isBusinessDay(time);
     }
 
@@ -134,7 +134,7 @@ public class StaticCalendarMethods {
         return Calendars.calendar().isBusinessDay(date);
     }
 
-    public static boolean isBusinessTime(DBDateTime time) {
+    public static boolean isBusinessTime(DateTime time) {
         return Calendars.calendar().isBusinessTime(time);
     }
 
@@ -146,11 +146,11 @@ public class StaticCalendarMethods {
         return Calendars.calendar().previousBusinessDay(days);
     }
 
-    public static String previousBusinessDay(DBDateTime time) {
+    public static String previousBusinessDay(DateTime time) {
         return Calendars.calendar().previousBusinessDay(time);
     }
 
-    public static String previousBusinessDay(DBDateTime time, int days) {
+    public static String previousBusinessDay(DateTime time, int days) {
         return Calendars.calendar().previousBusinessDay(time, days);
     }
 
@@ -170,11 +170,11 @@ public class StaticCalendarMethods {
         return Calendars.calendar().previousBusinessSchedule(days);
     }
 
-    public static BusinessSchedule previousBusinessSchedule(DBDateTime time) {
+    public static BusinessSchedule previousBusinessSchedule(DateTime time) {
         return Calendars.calendar().previousBusinessSchedule(time);
     }
 
-    public static BusinessSchedule previousBusinessSchedule(DBDateTime time, int days) {
+    public static BusinessSchedule previousBusinessSchedule(DateTime time, int days) {
         return Calendars.calendar().previousBusinessSchedule(time, days);
     }
 
@@ -194,11 +194,11 @@ public class StaticCalendarMethods {
         return Calendars.calendar().previousNonBusinessDay(days);
     }
 
-    public static String previousNonBusinessDay(DBDateTime time) {
+    public static String previousNonBusinessDay(DateTime time) {
         return Calendars.calendar().previousNonBusinessDay(time);
     }
 
-    public static String previousNonBusinessDay(DBDateTime time, int days) {
+    public static String previousNonBusinessDay(DateTime time, int days) {
         return Calendars.calendar().previousNonBusinessDay(time, days);
     }
 
@@ -218,11 +218,11 @@ public class StaticCalendarMethods {
         return Calendars.calendar().nextBusinessDay(days);
     }
 
-    public static String nextBusinessDay(DBDateTime time) {
+    public static String nextBusinessDay(DateTime time) {
         return Calendars.calendar().nextBusinessDay(time);
     }
 
-    public static String nextBusinessDay(DBDateTime time, int days) {
+    public static String nextBusinessDay(DateTime time, int days) {
         return Calendars.calendar().nextBusinessDay(time, days);
     }
 
@@ -242,11 +242,11 @@ public class StaticCalendarMethods {
         return Calendars.calendar().nextBusinessSchedule(days);
     }
 
-    public static BusinessSchedule nextBusinessSchedule(DBDateTime time) {
+    public static BusinessSchedule nextBusinessSchedule(DateTime time) {
         return Calendars.calendar().nextBusinessSchedule(time);
     }
 
-    public static BusinessSchedule nextBusinessSchedule(DBDateTime time, int days) {
+    public static BusinessSchedule nextBusinessSchedule(DateTime time, int days) {
         return Calendars.calendar().nextBusinessSchedule(time, days);
     }
 
@@ -266,11 +266,11 @@ public class StaticCalendarMethods {
         return Calendars.calendar().nextNonBusinessDay(days);
     }
 
-    public static String nextNonBusinessDay(DBDateTime time) {
+    public static String nextNonBusinessDay(DateTime time) {
         return Calendars.calendar().nextNonBusinessDay(time);
     }
 
-    public static String nextNonBusinessDay(DBDateTime time, int days) {
+    public static String nextNonBusinessDay(DateTime time, int days) {
         return Calendars.calendar().nextNonBusinessDay(time, days);
     }
 
@@ -282,7 +282,7 @@ public class StaticCalendarMethods {
         return Calendars.calendar().nextNonBusinessDay(date, days);
     }
 
-    public static String[] businessDaysInRange(DBDateTime start, DBDateTime end) {
+    public static String[] businessDaysInRange(DateTime start, DateTime end) {
         return Calendars.calendar().businessDaysInRange(start, end);
     }
 
@@ -290,7 +290,7 @@ public class StaticCalendarMethods {
         return Calendars.calendar().businessDaysInRange(start, end);
     }
 
-    public static String[] nonBusinessDaysInRange(DBDateTime start, DBDateTime end) {
+    public static String[] nonBusinessDaysInRange(DateTime start, DateTime end) {
         return Calendars.calendar().nonBusinessDaysInRange(start, end);
     }
 
@@ -302,31 +302,31 @@ public class StaticCalendarMethods {
         return Calendars.calendar().standardBusinessDayLengthNanos();
     }
 
-    public static long diffBusinessNanos(DBDateTime start, DBDateTime end) {
+    public static long diffBusinessNanos(DateTime start, DateTime end) {
         return Calendars.calendar().diffBusinessNanos(start, end);
     }
 
-    public static long diffNonBusinessNanos(DBDateTime start, DBDateTime end) {
+    public static long diffNonBusinessNanos(DateTime start, DateTime end) {
         return Calendars.calendar().diffNonBusinessNanos(start, end);
     }
 
-    public static double diffBusinessDay(DBDateTime start, DBDateTime end) {
+    public static double diffBusinessDay(DateTime start, DateTime end) {
         return Calendars.calendar().diffBusinessDay(start, end);
     }
 
-    public static double diffNonBusinessDay(DBDateTime start, DBDateTime end) {
+    public static double diffNonBusinessDay(DateTime start, DateTime end) {
         return Calendars.calendar().diffNonBusinessDay(start, end);
     }
 
-    public static double diffBusinessYear(DBDateTime start, DBDateTime end) {
+    public static double diffBusinessYear(DateTime start, DateTime end) {
         return Calendars.calendar().diffBusinessYear(start, end);
     }
 
-    public static int numberOfBusinessDays(DBDateTime start, DBDateTime end) {
+    public static int numberOfBusinessDays(DateTime start, DateTime end) {
         return Calendars.calendar().numberOfBusinessDays(start, end);
     }
 
-    public static int numberOfBusinessDays(DBDateTime start, DBDateTime end, boolean endInclusive) {
+    public static int numberOfBusinessDays(DateTime start, DateTime end, boolean endInclusive) {
         return Calendars.calendar().numberOfBusinessDays(start, end, endInclusive);
     }
 
@@ -338,11 +338,11 @@ public class StaticCalendarMethods {
         return Calendars.calendar().numberOfBusinessDays(start, end, endInclusive);
     }
 
-    public static int numberOfNonBusinessDays(DBDateTime start, DBDateTime end) {
+    public static int numberOfNonBusinessDays(DateTime start, DateTime end) {
         return Calendars.calendar().numberOfNonBusinessDays(start, end);
     }
 
-    public static int numberOfNonBusinessDays(DBDateTime start, DBDateTime end, boolean endInclusive) {
+    public static int numberOfNonBusinessDays(DateTime start, DateTime end, boolean endInclusive) {
         return Calendars.calendar().numberOfNonBusinessDays(start, end, endInclusive);
     }
 
@@ -358,7 +358,7 @@ public class StaticCalendarMethods {
         return Calendars.calendar().fractionOfStandardBusinessDay();
     }
 
-    public static double fractionOfStandardBusinessDay(DBDateTime time) {
+    public static double fractionOfStandardBusinessDay(DateTime time) {
         return Calendars.calendar().fractionOfStandardBusinessDay(time);
     }
 
@@ -366,11 +366,11 @@ public class StaticCalendarMethods {
         return Calendars.calendar().fractionOfStandardBusinessDay(date);
     }
 
-    public static double fractionOfBusinessDayRemaining(DBDateTime time) {
+    public static double fractionOfBusinessDayRemaining(DateTime time) {
         return Calendars.calendar().fractionOfBusinessDayRemaining(time);
     }
 
-    public static double fractionOfBusinessDayComplete(DBDateTime time) {
+    public static double fractionOfBusinessDayComplete(DateTime time) {
         return Calendars.calendar().fractionOfBusinessDayComplete(time);
     }
 
@@ -378,7 +378,7 @@ public class StaticCalendarMethods {
         return Calendars.calendar().isLastBusinessDayOfMonth();
     }
 
-    public static boolean isLastBusinessDayOfMonth(DBDateTime time) {
+    public static boolean isLastBusinessDayOfMonth(DateTime time) {
         return Calendars.calendar().isLastBusinessDayOfMonth(time);
     }
 
@@ -390,7 +390,7 @@ public class StaticCalendarMethods {
         return Calendars.calendar().isLastBusinessDayOfWeek();
     }
 
-    public static boolean isLastBusinessDayOfWeek(DBDateTime time) {
+    public static boolean isLastBusinessDayOfWeek(DateTime time) {
         return Calendars.calendar().isLastBusinessDayOfWeek(time);
     }
 
@@ -398,7 +398,7 @@ public class StaticCalendarMethods {
         return Calendars.calendar().isLastBusinessDayOfWeek(date);
     }
 
-    public static BusinessSchedule getBusinessSchedule(DBDateTime time) {
+    public static BusinessSchedule getBusinessSchedule(DateTime time) {
         return Calendars.calendar().getBusinessSchedule(time);
     }
 

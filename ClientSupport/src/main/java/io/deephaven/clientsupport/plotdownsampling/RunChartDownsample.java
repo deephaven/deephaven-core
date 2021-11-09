@@ -2,6 +2,7 @@ package io.deephaven.clientsupport.plotdownsampling;
 
 import io.deephaven.base.Function;
 import io.deephaven.engine.structures.RowSequence;
+import io.deephaven.engine.tables.utils.DateTime;
 import io.deephaven.engine.v2.utils.*;
 import io.deephaven.hash.KeyedLongObjectHash;
 import io.deephaven.hash.KeyedLongObjectHashMap;
@@ -11,7 +12,6 @@ import io.deephaven.configuration.Configuration;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.process.ProcessEnvironment;
 import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.utils.DBDateTime;
 import io.deephaven.engine.tables.utils.QueryPerformanceRecorder;
 import io.deephaven.engine.v2.*;
 import io.deephaven.engine.v2.sources.ColumnSource;
@@ -278,14 +278,14 @@ public class RunChartDownsample implements Function.Unary<Table, Table> {
             this.key = key;
 
             final ColumnSource xSource = sourceTable.getColumnSource(key.xColumnName);
-            if (xSource.getType() == DBDateTime.class) {
+            if (xSource.getType() == DateTime.class) {
                 this.xColumnSource = ReinterpretUtilities.dateTimeToLongSource(xSource);
             } else if (xSource.allowsReinterpret(long.class)) {
                 // noinspection unchecked
                 this.xColumnSource = xSource.reinterpret(long.class);
             } else {
                 throw new IllegalArgumentException(
-                        "Cannot use non-DBDateTime, non-long x column " + key.xColumnName + " in downsample");
+                        "Cannot use non-DateTime, non-long x column " + key.xColumnName + " in downsample");
             }
 
             this.valueColumnSources = Arrays.stream(this.key.yColumnNames)

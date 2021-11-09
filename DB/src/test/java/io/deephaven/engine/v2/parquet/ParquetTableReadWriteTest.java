@@ -62,7 +62,7 @@ public class ParquetTableReadWriteTest {
                         "someShortColumn = (short)i",
                         "someByteColumn = (byte)i",
                         "someCharColumn = (char)i",
-                        "someTime = DBDateTime.now() + i",
+                        "someTime = DateTime.now() + i",
                         "someKey = `` + (int)(i /100)",
                         "nullKey = i < -1?`123`:null"));
         if (includeSerializable) {
@@ -120,7 +120,7 @@ public class ParquetTableReadWriteTest {
                 "nonNullString = (String[])(((Object)nonNullString) == null?null:nonNullString.toArray())",
                 "nonNullPolyString = (String[])(((Object)nonNullPolyString) == null?null:nonNullPolyString.toArray())",
                 "someBoolColumn = (Boolean[])(((Object)someBoolColumn) == null?null:someBoolColumn.toArray())",
-                "someTime = (DBDateTime[])(((Object)someTime) == null?null:someTime.toArray())");
+                "someTime = (DateTime[])(((Object)someTime) == null?null:someTime.toArray())");
         return result;
     }
 

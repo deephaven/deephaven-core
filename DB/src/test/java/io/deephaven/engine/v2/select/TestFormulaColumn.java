@@ -9,8 +9,8 @@ import io.deephaven.base.verify.AssertionFailure;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.tables.ColumnDefinition;
 import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.lang.DBLanguageFunctionUtil;
-import io.deephaven.engine.tables.lang.DBLanguageParser.QueryLanguageParseException;
+import io.deephaven.engine.tables.lang.LanguageFunctionUtil;
+import io.deephaven.engine.tables.lang.LanguageParser.QueryLanguageParseException;
 import io.deephaven.engine.tables.libs.QueryLibrary;
 import io.deephaven.engine.tables.select.QueryScope;
 import io.deephaven.engine.tables.utils.*;
@@ -100,7 +100,7 @@ public class TestFormulaColumn {
 
     @Test
     public void testTimestamp() {
-        check("'2019-04-11T09:30 NY'", new DBDateTime(1554989400000000000L));
+        check("'2019-04-11T09:30 NY'", new DateTime(1554989400000000000L));
     }
 
     @Test
@@ -143,13 +143,13 @@ public class TestFormulaColumn {
     @Test
     public void testReturnUnboxedType() {
         for (int row = 0; row < testDataTable.size(); row++) {
-            checkPrimitive(row, "new Byte(ByteCol)", DBLanguageFunctionUtil.byteCast(BASE_VALUES[row]));
-            checkPrimitive(row, "new Short(ShortCol)", DBLanguageFunctionUtil.shortCast(BASE_VALUES[row]));
-            checkPrimitive(row, "new Character(CharCol)", DBLanguageFunctionUtil.charCast(BASE_VALUES[row]));
-            checkPrimitive(row, "new Integer(IntCol)", DBLanguageFunctionUtil.intCast(BASE_VALUES[row]));
-            checkPrimitive(row, "new Long(LongCol)", DBLanguageFunctionUtil.longCast(BASE_VALUES[row]));
-            checkPrimitive(row, "new Float(FloatCol)", DBLanguageFunctionUtil.floatCast(BASE_VALUES[row]));
-            checkPrimitive(row, "new Double(DoubleCol)", DBLanguageFunctionUtil.doubleCast(BASE_VALUES[row]));
+            checkPrimitive(row, "new Byte(ByteCol)", LanguageFunctionUtil.byteCast(BASE_VALUES[row]));
+            checkPrimitive(row, "new Short(ShortCol)", LanguageFunctionUtil.shortCast(BASE_VALUES[row]));
+            checkPrimitive(row, "new Character(CharCol)", LanguageFunctionUtil.charCast(BASE_VALUES[row]));
+            checkPrimitive(row, "new Integer(IntCol)", LanguageFunctionUtil.intCast(BASE_VALUES[row]));
+            checkPrimitive(row, "new Long(LongCol)", LanguageFunctionUtil.longCast(BASE_VALUES[row]));
+            checkPrimitive(row, "new Float(FloatCol)", LanguageFunctionUtil.floatCast(BASE_VALUES[row]));
+            checkPrimitive(row, "new Double(DoubleCol)", LanguageFunctionUtil.doubleCast(BASE_VALUES[row]));
         }
     }
 
@@ -216,7 +216,7 @@ public class TestFormulaColumn {
     }
 
     /**
-     * More or less copied from TestDBLanguageParser
+     * More or less copied from TestLanguageParser
      */
     @Test
     public void testResolution() {
@@ -261,11 +261,11 @@ public class TestFormulaColumn {
             checkPrimitive(row, expression, result);
 
             expression = "Math.sqrt(DoubleCol)";
-            result = Math.sqrt(DBLanguageFunctionUtil.doubleCast(BASE_VALUES[row]));
+            result = Math.sqrt(LanguageFunctionUtil.doubleCast(BASE_VALUES[row]));
             checkPrimitive(row, expression, result);
 
             expression = "Math.sqrt(IntCol)";
-            result = Math.sqrt(DBLanguageFunctionUtil.doubleCast(BASE_VALUES[row]));
+            result = Math.sqrt(LanguageFunctionUtil.doubleCast(BASE_VALUES[row]));
             checkPrimitive(row, expression, result);
         }
     }
@@ -323,8 +323,8 @@ public class TestFormulaColumn {
             result = new HashSet<String>();
             check(row, expression, result);
 
-            expression = "new io.deephaven.engine.tables.utils.DBDateTime(123L)";
-            result = new io.deephaven.engine.tables.utils.DBDateTime(123L);
+            expression = "new io.deephaven.engine.tables.utils.DateTime(123L)";
+            result = new DateTime(123L);
             check(row, expression, result);
         }
     }
@@ -555,7 +555,7 @@ public class TestFormulaColumn {
     private void testWrapWithCastHelper(final Class<?> type, final String cast) {
         final String theFormula = "theFormula";
         final String expected = cast == null ? theFormula
-                : DBLanguageFunctionUtil.class.getCanonicalName() + '.' + cast + '(' + theFormula + ')';
+                : LanguageFunctionUtil.class.getCanonicalName() + '.' + cast + '(' + theFormula + ')';
         final TypeAnalyzer ta = TypeAnalyzer.create(type);
         final String possiblyWrappedExpression = ta.wrapWithCastIfNecessary(theFormula);
         Assert.equals(possiblyWrappedExpression, "possiblyWrappedExpression", expected);

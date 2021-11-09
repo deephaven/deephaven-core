@@ -1,6 +1,6 @@
 package io.deephaven.engine.v2.utils.codegen;
 
-import io.deephaven.engine.tables.lang.DBLanguageFunctionUtil;
+import io.deephaven.engine.tables.lang.LanguageFunctionUtil;
 import io.deephaven.util.type.TypeUtils;
 
 /**
@@ -89,7 +89,7 @@ public class TypeAnalyzer {
         }
 
         // Otherwise, perform perform a null-safe unboxing cast
-        return DBLanguageFunctionUtil.class.getCanonicalName() + '.' + dbPrimitiveType.getName() + "Cast("
+        return LanguageFunctionUtil.class.getCanonicalName() + '.' + dbPrimitiveType.getName() + "Cast("
                 + formulaString + ')';
     }
 }

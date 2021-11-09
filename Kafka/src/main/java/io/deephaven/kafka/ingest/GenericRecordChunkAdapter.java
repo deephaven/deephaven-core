@@ -5,7 +5,7 @@
 package io.deephaven.kafka.ingest;
 
 import io.deephaven.engine.tables.TableDefinition;
-import io.deephaven.engine.tables.utils.DBDateTime;
+import io.deephaven.engine.tables.utils.DateTime;
 import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.kafka.Utils;
 import org.apache.avro.LogicalType;
@@ -68,14 +68,14 @@ public class GenericRecordChunkAdapter extends MultiFieldChunkAdapter {
             case Int:
                 return new GenericRecordIntFieldCopier(fieldName);
             case Long:
-                if (dataType == DBDateTime.class) {
+                if (dataType == DateTime.class) {
                     final Schema.Field field = schema.getField(fieldName);
                     if (field != null) {
                         Schema fieldSchema = Utils.getEffectiveSchema(fieldName, field.schema());
                         final LogicalType logicalType = fieldSchema.getLogicalType();
                         if (logicalType == null) {
                             throw new IllegalArgumentException(
-                                    "Can not map field without a logical type to DBDateTime: field=" + fieldName);
+                                    "Can not map field without a logical type to DateTime: field=" + fieldName);
                         }
                         if (LogicalTypes.timestampMicros().equals(logicalType)) {
                             // micros to nanos
@@ -85,12 +85,12 @@ public class GenericRecordChunkAdapter extends MultiFieldChunkAdapter {
                             return new GenericRecordLongFieldCopierWithMultiplier(fieldName, 1000000L);
                         }
                         throw new IllegalArgumentException(
-                                "Can not map field with unknown logical type to DBDateTime: field=" + fieldName
+                                "Can not map field with unknown logical type to DateTime: field=" + fieldName
                                         + ", type=" + logicalType);
 
                     } else {
                         throw new IllegalArgumentException(
-                                "Can not map field not in schema to DBDateTime: field=" + fieldName);
+                                "Can not map field not in schema to DateTime: field=" + fieldName);
                     }
                 }
                 return new GenericRecordLongFieldCopier(fieldName);

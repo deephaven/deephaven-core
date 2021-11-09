@@ -4,8 +4,8 @@
 
 package io.deephaven.util.calendar;
 
-import io.deephaven.engine.tables.utils.DBDateTime;
-import io.deephaven.engine.tables.utils.DBTimeUtils;
+import io.deephaven.engine.tables.utils.DateTime;
+import io.deephaven.engine.tables.utils.DateTimeUtils;
 import io.deephaven.util.QueryConstants;
 
 import java.time.DayOfWeek;
@@ -16,16 +16,16 @@ import java.util.List;
 
 public abstract class AbstractCalendar implements Calendar {
 
-    public String previousDay(final DBDateTime time) {
+    public String previousDay(final DateTime time) {
         return previousDay(time, 1);
     }
 
-    public String previousDay(final DBDateTime time, final int days) {
+    public String previousDay(final DateTime time, final int days) {
         if (time == null) {
             return null;
         }
 
-        final LocalDate t = DBTimeUtils.getZonedDateTime(time, timeZone()).toLocalDate().minusDays(days);
+        final LocalDate t = DateTimeUtils.getZonedDateTime(time, timeZone()).toLocalDate().minusDays(days);
 
         return DateStringUtils.format(t);
     }
@@ -43,16 +43,16 @@ public abstract class AbstractCalendar implements Calendar {
         return DateStringUtils.format(t);
     }
 
-    public String nextDay(final DBDateTime time) {
+    public String nextDay(final DateTime time) {
         return nextDay(time, 1);
     }
 
-    public String nextDay(final DBDateTime time, final int days) {
+    public String nextDay(final DateTime time, final int days) {
         if (time == null) {
             return null;
         }
 
-        final LocalDate t = DBTimeUtils.getZonedDateTime(time, timeZone()).toLocalDate().plusDays(days);
+        final LocalDate t = DateTimeUtils.getZonedDateTime(time, timeZone()).toLocalDate().plusDays(days);
 
         return DateStringUtils.format(t);
     }
@@ -70,12 +70,12 @@ public abstract class AbstractCalendar implements Calendar {
         return DateStringUtils.format(t);
     }
 
-    public String[] daysInRange(DBDateTime start, DBDateTime end) {
+    public String[] daysInRange(DateTime start, DateTime end) {
         if (start == null || end == null) {
             return new String[0];
         }
-        LocalDate day = DBTimeUtils.getZonedDateTime(start, timeZone()).toLocalDate();
-        final LocalDate day2 = DBTimeUtils.getZonedDateTime(end, timeZone()).toLocalDate();
+        LocalDate day = DateTimeUtils.getZonedDateTime(start, timeZone()).toLocalDate();
+        final LocalDate day2 = DateTimeUtils.getZonedDateTime(end, timeZone()).toLocalDate();
 
         List<String> dateList = new ArrayList<>();
         while (!day.isAfter(day2)) {
@@ -104,11 +104,11 @@ public abstract class AbstractCalendar implements Calendar {
         return dateList.toArray(new String[dateList.size()]);
     }
 
-    public int numberOfDays(final DBDateTime start, final DBDateTime end) {
+    public int numberOfDays(final DateTime start, final DateTime end) {
         return numberOfDays(start, end, false);
     }
 
-    public int numberOfDays(final DBDateTime start, final DBDateTime end, final boolean endInclusive) {
+    public int numberOfDays(final DateTime start, final DateTime end, final boolean endInclusive) {
         return numberOfDays(start == null ? null : start.toDateString(timeZone()),
                 end == null ? null : end.toDateString(timeZone()), endInclusive);
     }
@@ -134,31 +134,31 @@ public abstract class AbstractCalendar implements Calendar {
         return days;
     }
 
-    public long diffNanos(final DBDateTime start, final DBDateTime end) {
-        return DBTimeUtils.minus(end, start);
+    public long diffNanos(final DateTime start, final DateTime end) {
+        return DateTimeUtils.minus(end, start);
     }
 
-    public double diffDay(final DBDateTime start, final DBDateTime end) {
+    public double diffDay(final DateTime start, final DateTime end) {
         if (start == null || end == null) {
             return QueryConstants.NULL_DOUBLE;
         }
 
-        return (double) diffNanos(start, end) / (double) DBTimeUtils.DAY;
+        return (double) diffNanos(start, end) / (double) DateTimeUtils.DAY;
     }
 
-    public double diffYear(DBDateTime start, DBDateTime end) {
+    public double diffYear(DateTime start, DateTime end) {
         if (start == null || end == null) {
             return QueryConstants.NULL_DOUBLE;
         }
 
-        return (double) diffNanos(start, end) / (double) DBTimeUtils.YEAR;
+        return (double) diffNanos(start, end) / (double) DateTimeUtils.YEAR;
     }
 
-    public DayOfWeek dayOfWeek(final DBDateTime time) {
+    public DayOfWeek dayOfWeek(final DateTime time) {
         if (time == null) {
             return null;
         }
-        return DayOfWeek.of(DBTimeUtils.dayOfWeek(time, timeZone()));
+        return DayOfWeek.of(DateTimeUtils.dayOfWeek(time, timeZone()));
     }
 
     public DayOfWeek dayOfWeek(final String date) {

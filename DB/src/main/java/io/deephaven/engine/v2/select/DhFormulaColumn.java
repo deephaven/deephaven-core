@@ -8,11 +8,11 @@ import io.deephaven.configuration.Configuration;
 import io.deephaven.compilertools.CompilerTools;
 import io.deephaven.engine.tables.ColumnDefinition;
 import io.deephaven.engine.tables.dbarrays.ObjectVector;
-import io.deephaven.engine.tables.lang.DBLanguageParser;
+import io.deephaven.engine.tables.lang.LanguageParser;
 import io.deephaven.engine.tables.libs.QueryLibrary;
 import io.deephaven.engine.tables.select.Param;
 import io.deephaven.engine.tables.select.QueryScope;
-import io.deephaven.engine.tables.utils.DBTimeUtils;
+import io.deephaven.engine.tables.utils.DateTimeUtils;
 import io.deephaven.engine.tables.utils.QueryPerformanceNugget;
 import io.deephaven.engine.tables.utils.QueryPerformanceRecorder;
 import io.deephaven.engine.util.PythonScopeJpyImpl.NumbaCallableWrapper;
@@ -71,7 +71,7 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
      * The internal formula object is generated on-demand by calling out to the Java compiler.
      *
      * @param columnName the result column name
-     * @param formulaString the formula string to be parsed by the DBLanguageParser
+     * @param formulaString the formula string to be parsed by the LanguageParser
      */
     DhFormulaColumn(String columnName, String formulaString) {
         super(columnName, formulaString, useKernelFormulasProperty);
@@ -176,8 +176,8 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
     public List<String> initDef(Map<String, ColumnDefinition<?>> columnDefinitionMap) {
         try {
             analyzedFormula = FormulaAnalyzer.analyze(formulaString, columnDefinitionMap, timeNewVariables);
-            final DBTimeUtils.Result timeConversionResult = DBTimeUtils.convertExpression(formulaString);
-            final DBLanguageParser.Result result = FormulaAnalyzer.getCompiledFormula(columnDefinitionMap,
+            final DateTimeUtils.Result timeConversionResult = DateTimeUtils.convertExpression(formulaString);
+            final LanguageParser.Result result = FormulaAnalyzer.getCompiledFormula(columnDefinitionMap,
                     timeConversionResult, timeNewVariables);
 
             log.debug().append("Expression (after language conversion) : ").append(result.getConvertedExpression())
@@ -188,7 +188,7 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
             if (returnedType == boolean.class) {
                 returnedType = Boolean.class;
             }
-            // The first time we do an initDef, we allow the formulaString to be transformed by DBTimeUtils,
+            // The first time we do an initDef, we allow the formulaString to be transformed by DateTimeUtils,
             // possibly with the side effect of creating 'timeInstanceVariables' and 'timeNewVariables'.
             // However, we should not do this on subsequent calls because the answer is not expected to
             // change further, and we don't want to overwrite our 'timeInstanceVariables'.

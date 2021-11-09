@@ -20,8 +20,8 @@ import io.deephaven.engine.tables.select.MatchPairFactory;
 import io.deephaven.engine.tables.select.QueryScope;
 import io.deephaven.engine.tables.select.SelectColumnFactory;
 import io.deephaven.engine.tables.select.SelectFilterFactory;
-import io.deephaven.engine.tables.utils.DBDateTime;
-import io.deephaven.engine.tables.utils.DBTimeUtils;
+import io.deephaven.engine.tables.utils.DateTime;
+import io.deephaven.engine.tables.utils.DateTimeUtils;
 import io.deephaven.engine.tables.utils.ParquetTools;
 import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.util.liveness.LivenessScopeStack;
@@ -108,7 +108,7 @@ public class QueryTableTest extends QueryTableTestBase {
     }
 
     /**
-     * Test that the formula can see the internal variable that DBTimeUtils introduces here. (Prior to IDS-6532 this
+     * Test that the formula can see the internal variable that DateTimeUtils introduces here. (Prior to IDS-6532 this
      * threw an exception).
      */
     public void testIds6532() {
@@ -527,7 +527,7 @@ public class QueryTableTest extends QueryTableTestBase {
         final Table source = emptyTable(5).select("dt = nanosToTime(ii)", "n = ii");
         final Table result = source.dateTimeColumnAsNanos("dt");
         assertEquals((long[]) result.getColumn(0).getDirect(), LongStream.range(0, 5).toArray());
-        final Table reflexive = result.view(new ReinterpretedColumn<>("dt", long.class, "dt", DBDateTime.class));
+        final Table reflexive = result.view(new ReinterpretedColumn<>("dt", long.class, "dt", DateTime.class));
         assertEquals("", TableTools.diff(reflexive, source.dropColumns("n"), source.size()));
         final Table sortedSource = source.sortDescending("dt").dropColumns("dt");
         final Table sortedResult = result.sortDescending("dt").dropColumns("dt");
@@ -876,8 +876,8 @@ public class QueryTableTest extends QueryTableTestBase {
 
         final int size = 500;
 
-        final DBDateTime startTime = DBTimeUtils.convertDateTime("2019-04-30T16:00:00 NY");
-        final DBDateTime endTime = DBTimeUtils.convertDateTime("2019-04-30T16:01:00 NY");
+        final DateTime startTime = DateTimeUtils.convertDateTime("2019-04-30T16:00:00 NY");
+        final DateTime endTime = DateTimeUtils.convertDateTime("2019-04-30T16:01:00 NY");
 
         final ColumnInfo[] columnInfo;
         final QueryTable table = getTable(size, random,
@@ -886,8 +886,8 @@ public class QueryTableTest extends QueryTableTestBase {
                         new UnsortedDateTimeLongGenerator(startTime, endTime),
                         new IntGenerator(0, 1000)));
 
-        final DBDateTime lower = DBTimeUtils.plus(startTime, DBTimeUtils.SECOND);
-        final DBDateTime upper = DBTimeUtils.plus(startTime, DBTimeUtils.SECOND * 2);
+        final DateTime lower = DateTimeUtils.plus(startTime, DateTimeUtils.SECOND);
+        final DateTime upper = DateTimeUtils.plus(startTime, DateTimeUtils.SECOND * 2);
 
         final EvalNuggetInterface en[] = new EvalNuggetInterface[] {
                 new TableComparator(
@@ -937,8 +937,8 @@ public class QueryTableTest extends QueryTableTestBase {
 
         final int size = 500;
 
-        final DBDateTime startTime = DBTimeUtils.convertDateTime("2019-04-30T16:00:00 NY");
-        final DBDateTime endTime = DBTimeUtils.convertDateTime("2019-04-30T16:01:00 NY");
+        final DateTime startTime = DateTimeUtils.convertDateTime("2019-04-30T16:00:00 NY");
+        final DateTime endTime = DateTimeUtils.convertDateTime("2019-04-30T16:01:00 NY");
 
         final ColumnInfo[] columnInfo;
         final QueryTable table = getTable(size, random,
@@ -946,8 +946,8 @@ public class QueryTableTest extends QueryTableTestBase {
                         new UnsortedDateTimeGenerator(startTime, endTime, 0.1),
                         new IntGenerator(0, 1000)));
 
-        final DBDateTime lower = DBTimeUtils.plus(startTime, DBTimeUtils.SECOND);
-        final DBDateTime upper = DBTimeUtils.plus(startTime, DBTimeUtils.SECOND * 2);
+        final DateTime lower = DateTimeUtils.plus(startTime, DateTimeUtils.SECOND);
+        final DateTime upper = DateTimeUtils.plus(startTime, DateTimeUtils.SECOND * 2);
 
         final EvalNuggetInterface en[] = new EvalNuggetInterface[] {
                 new TableComparator(
@@ -2231,12 +2231,12 @@ public class QueryTableTest extends QueryTableTestBase {
         simpleListener.close();
     }
 
-    public void testDbDateTimeColumns() {
+    public void testDateTimeColumns() {
         final QueryTable queryTable = TstUtils.testRefreshingTable(
                 c("Sym", "aa", "bc", "aa", "aa"),
-                c("Timestamp", DBTimeUtils.currentTime(), DBTimeUtils.currentTime(), DBTimeUtils.currentTime(),
-                        DBTimeUtils.currentTime()));
-        assertEquals(queryTable.by("Sym").getDefinition().getColumn("Timestamp").getComponentType(), DBDateTime.class);
+                c("Timestamp", DateTimeUtils.currentTime(), DateTimeUtils.currentTime(), DateTimeUtils.currentTime(),
+                        DateTimeUtils.currentTime()));
+        assertEquals(queryTable.by("Sym").getDefinition().getColumn("Timestamp").getComponentType(), DateTime.class);
         show(queryTable.update("x = Timestamp_[0]"));
         show(queryTable.update("TimeinSeconds=round((max(Timestamp_)-min(Timestamp_))/1000000000)"));
         show(queryTable.by("Sym").view("Sym", "x = Timestamp[0]"));
@@ -2915,7 +2915,7 @@ public class QueryTableTest extends QueryTableTestBase {
                 ColumnDefinition.ofBoolean("Truthiness"));
 
         final String[] syms = new String[] {"Apple", "Banana", "Cantaloupe"};
-        final DBDateTime baseTime = DBTimeUtils.convertDateTime("2019-04-11T09:30 NY");
+        final DateTime baseTime = DateTimeUtils.convertDateTime("2019-04-11T09:30 NY");
         final long[] dateOffset = new long[] {0, 5, 10, 15, 1, 6, 11, 16, 2, 7};
         final Boolean[] booleans = new Boolean[] {true, false, null, true, false, null, true, false, null, true, false};
         QueryScope.addParam("syms", syms);

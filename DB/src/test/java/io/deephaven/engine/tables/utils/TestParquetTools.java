@@ -223,7 +223,7 @@ public class TestParquetTools {
                 "D    = NULL_DOUBLE",
                 "Bl   = (Boolean) null",
                 "Str  = (String) null",
-                "DT   = (DBDateTime) null");
+                "DT   = (DateTime) null");
         final File dest = new File(testRoot + File.separator + "Null.parquet");
         ParquetTools.writeTables(new Table[] {TableTools.emptyTable(10_000L)}, nullTable.getDefinition(),
                 new File[] {dest});

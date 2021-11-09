@@ -6,7 +6,7 @@ import io.deephaven.proto.backplane.script.grpc.CompletionItem
 import io.deephaven.util.process.ProcessEnvironment
 import io.deephaven.engine.tables.Table
 import io.deephaven.engine.tables.TableDefinition
-import io.deephaven.engine.tables.utils.DBDateTime
+import io.deephaven.engine.tables.utils.DateTime
 import io.deephaven.lang.parse.CompletionParser
 import spock.lang.Specification
 import spock.lang.Unroll
@@ -31,7 +31,7 @@ class ColumnExpressionCompletionHandlerTest extends Specification implements Chu
                 (0..1) * getVariableNames() >> ['t']
                 (0..1) * getVariableType('t') >> Table
                 (0..1) * getTableDefinition('t') >> new TableDefinition(
-                        [String, DBDateTime], ['Date', 'DateTime']
+                        [String, DateTime], ['Date', 'DateTime']
                 )
             }
 

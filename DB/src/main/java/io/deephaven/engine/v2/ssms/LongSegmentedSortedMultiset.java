@@ -3,9 +3,9 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.v2.ssms;
 
-import io.deephaven.engine.tables.utils.DBDateTime;
+import io.deephaven.engine.tables.utils.DateTime;
 import io.deephaven.engine.tables.dbarrays.ObjectVectorDirect;
-import io.deephaven.engine.tables.utils.DBTimeUtils;
+import io.deephaven.engine.tables.utils.DateTimeUtils;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.tables.dbarrays.LongVector;
@@ -2507,16 +2507,16 @@ public final class LongSegmentedSortedMultiset implements SegmentedSortedMultiSe
     }
 
     // region Extensions
-    public DBDateTime getAsDate(long i) {
-        return DBTimeUtils.nanosToTime(get(i));
+    public DateTime getAsDate(long i) {
+        return DateTimeUtils.nanosToTime(get(i));
     }
 
-    public ObjectVector<DBDateTime> subArrayAsDate(long fromIndexInclusive, long toIndexExclusive) {
+    public ObjectVector<DateTime> subArrayAsDate(long fromIndexInclusive, long toIndexExclusive) {
         return new ObjectVectorDirect<>(keyArrayAsDate(fromIndexInclusive, toIndexExclusive));
     }
 
-    public ObjectVector<DBDateTime> subArrayByPositionsAsDates(long[] positions) {
-        final DBDateTime[] keyArray = new DBDateTime[positions.length];
+    public ObjectVector<DateTime> subArrayByPositionsAsDates(long[] positions) {
+        final DateTime[] keyArray = new DateTime[positions.length];
         int writePos = 0;
         for (long position : positions) {
             keyArray[writePos++] = getAsDate(position);
@@ -2525,7 +2525,7 @@ public final class LongSegmentedSortedMultiset implements SegmentedSortedMultiSe
         return new ObjectVectorDirect<>(keyArray);
     }
 
-    public DBDateTime[] toDateArray() {
+    public DateTime[] toDateArray() {
         return keyArrayAsDate();
     }
 
@@ -2539,16 +2539,16 @@ public final class LongSegmentedSortedMultiset implements SegmentedSortedMultiSe
         }
 
         //noinspection unchecked
-        WritableObjectChunk<DBDateTime, Attributes.Values> writable = destChunk.asWritableObjectChunk();
+        WritableObjectChunk<DateTime, Attributes.Values> writable = destChunk.asWritableObjectChunk();
         if (leafCount == 1) {
             for(int ii = 0; ii < size(); ii++) {
-                writable.set(ii, DBTimeUtils.nanosToTime(directoryValues[ii]));
+                writable.set(ii, DateTimeUtils.nanosToTime(directoryValues[ii]));
             }
         } else if (leafCount > 0) {
             int offset = 0;
             for (int li = 0; li < leafCount; ++li) {
                 for(int jj = 0; jj < leafSizes[li]; jj++) {
-                    writable.set(jj + offset, DBTimeUtils.nanosToTime(leafValues[li][jj]));
+                    writable.set(jj + offset, DateTimeUtils.nanosToTime(leafValues[li][jj]));
                 }
                 offset += leafSizes[li];
             }
@@ -2556,11 +2556,11 @@ public final class LongSegmentedSortedMultiset implements SegmentedSortedMultiSe
     }
 
 
-    public ObjectVector<DBDateTime> getDirectAsDate() {
+    public ObjectVector<DateTime> getDirectAsDate() {
         return new ObjectVectorDirect<>(keyArrayAsDate());
     }
 
-    private DBDateTime[] keyArrayAsDate() {
+    private DateTime[] keyArrayAsDate() {
         return keyArrayAsDate(0, size()-1);
     }
 
@@ -2570,16 +2570,16 @@ public final class LongSegmentedSortedMultiset implements SegmentedSortedMultiSe
      * @param last
      * @return
      */
-    private DBDateTime[] keyArrayAsDate(long first, long last) {
+    private DateTime[] keyArrayAsDate(long first, long last) {
         if(isEmpty()) {
             return ArrayUtils.EMPTY_DATETIME_ARRAY;
         }
 
         final int totalSize = (int)(last - first + 1);
-        final DBDateTime[] keyArray = new DBDateTime[intSize()];
+        final DateTime[] keyArray = new DateTime[intSize()];
         if (leafCount == 1) {
             for(int ii = 0; ii < totalSize; ii++) {
-                keyArray[ii] = DBTimeUtils.nanosToTime(directoryValues[ii + (int)first]);
+                keyArray[ii] = DateTimeUtils.nanosToTime(directoryValues[ii + (int)first]);
             }
         } else if (leafCount > 0) {
             int offset = 0;
@@ -2591,7 +2591,7 @@ public final class LongSegmentedSortedMultiset implements SegmentedSortedMultiSe
                     if(toSkip < leafSizes[li]) {
                         final int nToCopy = Math.min(leafSizes[li] - toSkip, totalSize);
                         for(int jj = 0; jj < nToCopy; jj++) {
-                            keyArray[jj] = DBTimeUtils.nanosToTime(leafValues[li][jj + toSkip]);
+                            keyArray[jj] = DateTimeUtils.nanosToTime(leafValues[li][jj + toSkip]);
                         }
                         copied = nToCopy;
                         offset = copied;
@@ -2602,7 +2602,7 @@ public final class LongSegmentedSortedMultiset implements SegmentedSortedMultiSe
                 } else {
                     int nToCopy = Math.min(leafSizes[li], totalSize - copied);
                     for(int jj = 0; jj < nToCopy; jj++) {
-                        keyArray[jj + offset] = DBTimeUtils.nanosToTime(leafValues[li][jj]);
+                        keyArray[jj + offset] = DateTimeUtils.nanosToTime(leafValues[li][jj]);
                     }
                     offset += leafSizes[li];
                     copied += nToCopy;
@@ -2616,7 +2616,7 @@ public final class LongSegmentedSortedMultiset implements SegmentedSortedMultiSe
         final StringBuilder arrAsString = new StringBuilder("[");
         if (leafCount == 1) {
             for(int ii = 0; ii < intSize(); ii++) {
-                arrAsString.append(DBTimeUtils.nanosToTime(directoryValues[ii])).append(", ");
+                arrAsString.append(DateTimeUtils.nanosToTime(directoryValues[ii])).append(", ");
             }
             
             arrAsString.replace(arrAsString.length() - 2, arrAsString.length(), "]");
@@ -2624,7 +2624,7 @@ public final class LongSegmentedSortedMultiset implements SegmentedSortedMultiSe
         } else if (leafCount > 0) {
             for (int li = 0; li < leafCount; ++li) {
                 for(int ai = 0; ai < leafSizes[li]; ai++) {
-                    arrAsString.append(DBTimeUtils.nanosToTime(leafValues[li][ai])).append(", ");
+                    arrAsString.append(DateTimeUtils.nanosToTime(leafValues[li][ai])).append(", ");
                 }
             }
 

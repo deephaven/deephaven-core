@@ -6,12 +6,12 @@ package io.deephaven.engine.plot.util;
 
 
 import io.deephaven.base.testing.BaseArrayTestCase;
+import io.deephaven.engine.tables.utils.DateTime;
 import io.deephaven.gui.color.Color;
 import io.deephaven.engine.plot.datasets.data.IndexableNumericData;
 import io.deephaven.engine.plot.datasets.data.IndexableNumericDataArrayInt;
 import io.deephaven.engine.plot.util.tables.TableHandle;
 import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.utils.DBDateTime;
 import io.deephaven.engine.tables.utils.TableTools;
 import junit.framework.TestCase;
 
@@ -30,7 +30,7 @@ public class TestArgumentValidations extends BaseArrayTestCase {
         final int[] ints = {1};
         final IndexableNumericData intData = new IndexableNumericDataArrayInt(ints, null);
         final IndexableNumericData intData2 = new IndexableNumericDataArrayInt(new int[] {2, 3}, null);
-        final DBDateTime[] dates = {new DBDateTime(1)};
+        final DateTime[] dates = {new DateTime(1)};
         final Color[] colors = {new Color(1)};
         final Table table = TableTools.newTable(
                 TableTools.col(stringColumn, NON_NULL),
@@ -99,12 +99,12 @@ public class TestArgumentValidations extends BaseArrayTestCase {
             assertTrue(e.getMessage().contains(INVALID));
         }
 
-        assertTrue(ArgumentValidations.isTime(DBDateTime.class, null));
+        assertTrue(ArgumentValidations.isTime(DateTime.class, null));
         assertTrue(ArgumentValidations.isTime(Date.class, null));
         assertFalse(ArgumentValidations.isTime(int.class, null));
         assertFalse(ArgumentValidations.isTime(Double.class, null));
 
-        assertTrue(ArgumentValidations.isNumericOrTime(DBDateTime.class, null));
+        assertTrue(ArgumentValidations.isNumericOrTime(DateTime.class, null));
         assertTrue(ArgumentValidations.isNumericOrTime(Date.class, null));
         assertTrue(ArgumentValidations.isNumericOrTime(int.class, null));
         assertTrue(ArgumentValidations.isNumericOrTime(Double.class, null));

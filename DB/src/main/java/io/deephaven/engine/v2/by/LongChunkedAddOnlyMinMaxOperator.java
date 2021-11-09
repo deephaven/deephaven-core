@@ -7,7 +7,7 @@
 
 package io.deephaven.engine.v2.by;
 
-import io.deephaven.engine.tables.utils.DBDateTime;
+import io.deephaven.engine.tables.utils.DateTime;
 import io.deephaven.engine.v2.sources.DateTimeArraySource;
 import io.deephaven.engine.v2.sources.LongArraySource;
 
@@ -38,7 +38,7 @@ class LongChunkedAddOnlyMinMaxOperator implements IterativeChunkedAggregationOpe
         this.minimum = minimum;
         this.name = name;
         // region resultColumn initialization
-        resultColumn = type == DBDateTime.class ? new DateTimeArraySource() : new LongArraySource();
+        resultColumn = type == DateTime.class ? new DateTimeArraySource() : new LongArraySource();
         // endregion resultColumn initialization
     }
 

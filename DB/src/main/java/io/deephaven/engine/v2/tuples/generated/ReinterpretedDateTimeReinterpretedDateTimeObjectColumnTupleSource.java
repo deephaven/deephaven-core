@@ -1,8 +1,8 @@
 package io.deephaven.engine.v2.tuples.generated;
 
 import io.deephaven.datastructures.util.SmartKey;
-import io.deephaven.engine.tables.utils.DBDateTime;
-import io.deephaven.engine.tables.utils.DBTimeUtils;
+import io.deephaven.engine.tables.utils.DateTime;
+import io.deephaven.engine.tables.utils.DateTimeUtils;
 import io.deephaven.engine.util.tuples.generated.LongLongObjectTuple;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.WritableSource;
@@ -65,8 +65,8 @@ public class ReinterpretedDateTimeReinterpretedDateTimeObjectColumnTupleSource e
     @Override
     public final LongLongObjectTuple createTupleFromValues(@NotNull final Object... values) {
         return new LongLongObjectTuple(
-                DBTimeUtils.nanos((DBDateTime)values[0]),
-                DBTimeUtils.nanos((DBDateTime)values[1]),
+                DateTimeUtils.nanos((DateTime)values[0]),
+                DateTimeUtils.nanos((DateTime)values[1]),
                 values[2]
         );
     }
@@ -84,11 +84,11 @@ public class ReinterpretedDateTimeReinterpretedDateTimeObjectColumnTupleSource e
     @Override
     public final <ELEMENT_TYPE> void exportElement(@NotNull final LongLongObjectTuple tuple, final int elementIndex, @NotNull final WritableSource<ELEMENT_TYPE> writableSource, final long destinationIndexKey) {
         if (elementIndex == 0) {
-            writableSource.set(destinationIndexKey, (ELEMENT_TYPE) DBTimeUtils.nanosToTime(tuple.getFirstElement()));
+            writableSource.set(destinationIndexKey, (ELEMENT_TYPE) DateTimeUtils.nanosToTime(tuple.getFirstElement()));
             return;
         }
         if (elementIndex == 1) {
-            writableSource.set(destinationIndexKey, (ELEMENT_TYPE) DBTimeUtils.nanosToTime(tuple.getSecondElement()));
+            writableSource.set(destinationIndexKey, (ELEMENT_TYPE) DateTimeUtils.nanosToTime(tuple.getSecondElement()));
             return;
         }
         if (elementIndex == 2) {
@@ -101,8 +101,8 @@ public class ReinterpretedDateTimeReinterpretedDateTimeObjectColumnTupleSource e
     @Override
     public final Object exportToExternalKey(@NotNull final LongLongObjectTuple tuple) {
         return new SmartKey(
-                DBTimeUtils.nanosToTime(tuple.getFirstElement()),
-                DBTimeUtils.nanosToTime(tuple.getSecondElement()),
+                DateTimeUtils.nanosToTime(tuple.getFirstElement()),
+                DateTimeUtils.nanosToTime(tuple.getSecondElement()),
                 tuple.getThirdElement()
         );
     }
@@ -110,10 +110,10 @@ public class ReinterpretedDateTimeReinterpretedDateTimeObjectColumnTupleSource e
     @Override
     public final Object exportElement(@NotNull final LongLongObjectTuple tuple, int elementIndex) {
         if (elementIndex == 0) {
-            return DBTimeUtils.nanosToTime(tuple.getFirstElement());
+            return DateTimeUtils.nanosToTime(tuple.getFirstElement());
         }
         if (elementIndex == 1) {
-            return DBTimeUtils.nanosToTime(tuple.getSecondElement());
+            return DateTimeUtils.nanosToTime(tuple.getSecondElement());
         }
         if (elementIndex == 2) {
             return tuple.getThirdElement();

@@ -1,7 +1,7 @@
 package io.deephaven.grpc_api.util;
 
-import io.deephaven.engine.tables.utils.DBDateTime;
-import io.deephaven.engine.tables.utils.DBTimeUtils;
+import io.deephaven.engine.tables.utils.DateTime;
+import io.deephaven.engine.tables.utils.DateTimeUtils;
 import io.deephaven.engine.v2.utils.TimeProvider;
 import org.jetbrains.annotations.NotNull;
 
@@ -20,7 +20,7 @@ public interface Scheduler extends TimeProvider {
      * @param absoluteTime when to run this task
      * @param command the task to run
      */
-    void runAtTime(@NotNull DBDateTime absoluteTime, @NotNull Runnable command);
+    void runAtTime(@NotNull DateTime absoluteTime, @NotNull Runnable command);
 
     /**
      * Schedule this task to run at the specified time.
@@ -55,12 +55,12 @@ public interface Scheduler extends TimeProvider {
         }
 
         @Override
-        public DBDateTime currentTime() {
-            return DBTimeUtils.currentTime();
+        public DateTime currentTime() {
+            return DateTimeUtils.currentTime();
         }
 
         @Override
-        public void runAtTime(@NotNull final DBDateTime absoluteTime, final @NotNull Runnable command) {
+        public void runAtTime(@NotNull final DateTime absoluteTime, final @NotNull Runnable command) {
             runAfterDelay(absoluteTime.getMillis() - currentTime().getMillis(), command);
         }
 

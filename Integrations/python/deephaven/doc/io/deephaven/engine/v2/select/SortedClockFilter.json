@@ -7,6 +7,6 @@
   "sortingDone": "Advise this filter that sorting has been performed. requiresSorting must return false hereafter."
  },
  "path": "io.deephaven.engine.v2.select.SortedClockFilter",
- "text": "This will filter a table on a DBDateTime column for all rows greater than \"now\" according to a supplied clock. It\n requires sorting of the input table according to the specified timestamp column, leveraging this for a very efficient\n implementation (albeit one that requires sorting first) and an output sequence that is monotonically nondecreasing in\n the specified column.",
+ "text": "This will filter a table on a DateTime column for all rows greater than \"now\" according to a supplied clock. It\n requires sorting of the input table according to the specified timestamp column, leveraging this for a very efficient\n implementation (albeit one that requires sorting first) and an output sequence that is monotonically nondecreasing in\n the specified column.",
  "typeName": "class"
 }

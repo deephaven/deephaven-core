@@ -1,7 +1,7 @@
 package io.deephaven.util.calendar;
 
-import io.deephaven.engine.tables.utils.DBDateTime;
-import io.deephaven.engine.tables.utils.DBTimeZone;
+import io.deephaven.engine.tables.utils.DateTime;
+import io.deephaven.engine.tables.utils.TimeZone;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
@@ -46,7 +46,7 @@ public class DefaultNoHolidayBusinessCalendar extends AbstractBusinessCalendar {
     }
 
     @Override
-    public DBTimeZone timeZone() {
+    public TimeZone timeZone() {
         return calendar.timeZone();
     }
 
@@ -57,7 +57,7 @@ public class DefaultNoHolidayBusinessCalendar extends AbstractBusinessCalendar {
 
     @Override
     @Deprecated
-    public BusinessSchedule getBusinessDay(final DBDateTime time) {
+    public BusinessSchedule getBusinessDay(final DateTime time) {
         return calendar.getBusinessDay(time);
     }
 
@@ -74,7 +74,7 @@ public class DefaultNoHolidayBusinessCalendar extends AbstractBusinessCalendar {
     }
 
     @Override
-    public BusinessSchedule getBusinessSchedule(final DBDateTime time) {
+    public BusinessSchedule getBusinessSchedule(final DateTime time) {
         return calendar.getBusinessSchedule(time);
     }
 
@@ -89,12 +89,12 @@ public class DefaultNoHolidayBusinessCalendar extends AbstractBusinessCalendar {
     }
 
     @Override
-    public long diffBusinessNanos(final DBDateTime start, final DBDateTime end) {
+    public long diffBusinessNanos(final DateTime start, final DateTime end) {
         return calendar.diffBusinessNanos(start, end);
     }
 
     @Override
-    public double diffBusinessYear(final DBDateTime startTime, final DBDateTime endTime) {
+    public double diffBusinessYear(final DateTime startTime, final DateTime endTime) {
         return calendar.diffBusinessYear(startTime, endTime);
     }
 
@@ -125,12 +125,12 @@ public class DefaultNoHolidayBusinessCalendar extends AbstractBusinessCalendar {
     }
 
     @Override
-    public String previousNonBusinessDay(DBDateTime time) {
+    public String previousNonBusinessDay(DateTime time) {
         throw new UnsupportedOperationException("Calendar has no non-business days.");
     }
 
     @Override
-    public String previousNonBusinessDay(DBDateTime time, int days) {
+    public String previousNonBusinessDay(DateTime time, int days) {
         throw new UnsupportedOperationException("Calendar has no non-business days.");
     }
 
@@ -155,12 +155,12 @@ public class DefaultNoHolidayBusinessCalendar extends AbstractBusinessCalendar {
     }
 
     @Override
-    public String nextNonBusinessDay(DBDateTime time) {
+    public String nextNonBusinessDay(DateTime time) {
         throw new UnsupportedOperationException("Calendar has no non-business days.");
     }
 
     @Override
-    public String nextNonBusinessDay(DBDateTime time, int days) {
+    public String nextNonBusinessDay(DateTime time, int days) {
         throw new UnsupportedOperationException("Calendar has no non-business days.");
     }
 
@@ -175,7 +175,7 @@ public class DefaultNoHolidayBusinessCalendar extends AbstractBusinessCalendar {
     }
 
     @Override
-    public String[] nonBusinessDaysInRange(DBDateTime start, DBDateTime end) {
+    public String[] nonBusinessDaysInRange(DateTime start, DateTime end) {
         return new String[0];
     }
 
@@ -185,22 +185,22 @@ public class DefaultNoHolidayBusinessCalendar extends AbstractBusinessCalendar {
     }
 
     @Override
-    public long diffNonBusinessNanos(DBDateTime start, DBDateTime end) {
+    public long diffNonBusinessNanos(DateTime start, DateTime end) {
         return 0;
     }
 
     @Override
-    public double diffNonBusinessDay(DBDateTime start, DBDateTime end) {
+    public double diffNonBusinessDay(DateTime start, DateTime end) {
         return 0;
     }
 
     @Override
-    public int numberOfNonBusinessDays(DBDateTime start, DBDateTime end) {
+    public int numberOfNonBusinessDays(DateTime start, DateTime end) {
         return 0;
     }
 
     @Override
-    public int numberOfNonBusinessDays(DBDateTime start, DBDateTime end, boolean endInclusive) {
+    public int numberOfNonBusinessDays(DateTime start, DateTime end, boolean endInclusive) {
         return 0;
     }
 

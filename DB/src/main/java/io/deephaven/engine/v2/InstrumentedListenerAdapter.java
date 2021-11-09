@@ -7,7 +7,7 @@ package io.deephaven.engine.v2;
 import io.deephaven.base.cache.RetentionCache;
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.utils.DBTimeUtils;
+import io.deephaven.engine.tables.utils.DateTimeUtils;
 import io.deephaven.engine.util.liveness.Liveness;
 import io.deephaven.engine.v2.utils.AsyncErrorLogger;
 import io.deephaven.engine.v2.utils.AsyncClientErrorNotifier;
@@ -79,7 +79,7 @@ public abstract class InstrumentedListenerAdapter extends InstrumentedListener {
     @Override
     public void onFailureInternal(Throwable originalException, UpdatePerformanceTracker.Entry sourceEntry) {
         try {
-            AsyncErrorLogger.log(DBTimeUtils.currentTime(), sourceEntry, sourceEntry, originalException);
+            AsyncErrorLogger.log(DateTimeUtils.currentTime(), sourceEntry, sourceEntry, originalException);
             AsyncClientErrorNotifier.reportError(originalException);
         } catch (IOException e) {
             throw new RuntimeException("Exception in " + sourceEntry.toString(), originalException);

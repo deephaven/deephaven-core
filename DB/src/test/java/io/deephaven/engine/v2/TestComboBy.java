@@ -12,7 +12,7 @@ import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.dbarrays.CharVector;
 import io.deephaven.engine.tables.libs.QueryLibrary;
 import io.deephaven.engine.tables.live.UpdateGraphProcessor;
-import io.deephaven.engine.tables.utils.DBDateTime;
+import io.deephaven.engine.tables.utils.DateTime;
 import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.QueryConstants;
@@ -32,7 +32,7 @@ import java.util.Arrays;
 import java.util.Random;
 import org.junit.experimental.categories.Category;
 
-import static io.deephaven.engine.tables.utils.DBTimeUtils.convertDateTime;
+import static io.deephaven.engine.tables.utils.DateTimeUtils.convertDateTime;
 import static io.deephaven.engine.tables.utils.TableTools.*;
 import static io.deephaven.engine.v2.TstUtils.*;
 import static io.deephaven.engine.v2.by.ComboAggregateFactory.*;
@@ -554,10 +554,10 @@ public class TestComboBy extends RefreshingTableTestCase {
     }
 
     public void testComboByAggUnique() {
-        final DBDateTime dtdefault = convertDateTime("1987-10-20T07:45:00.000 NY");
-        final DBDateTime dt1 = convertDateTime("2021-01-01T00:00:01.000 NY");
-        final DBDateTime dt2 = convertDateTime("2021-01-01T00:00:02.000 NY");
-        final DBDateTime dt3 = convertDateTime("2021-01-01T00:00:03.000 NY");
+        final DateTime dtdefault = convertDateTime("1987-10-20T07:45:00.000 NY");
+        final DateTime dt1 = convertDateTime("2021-01-01T00:00:01.000 NY");
+        final DateTime dt2 = convertDateTime("2021-01-01T00:00:02.000 NY");
+        final DateTime dt3 = convertDateTime("2021-01-01T00:00:03.000 NY");
 
         QueryTable dataTable = TstUtils.testRefreshingTable(
                 c("USym", "AAPL", "AAPL", "AAPL", /**/ "GOOG", "GOOG", /**/ "SPY", "SPY", "SPY", "SPY", /**/ "VXX"),
@@ -583,7 +583,7 @@ public class TestComboBy extends RefreshingTableTestCase {
                     c("USym", "AAPL", "VXX"),
                     longCol("Account", 1, 5),
                     intCol("Qty", 100, QueryConstants.NULL_INT),
-                    c("Whee", (DBDateTime) null, (DBDateTime) null));
+                    c("Whee", (DateTime) null, (DateTime) null));
             dataTable.notifyListeners(i(10), i(), i(2));
         });
 
@@ -629,7 +629,7 @@ public class TestComboBy extends RefreshingTableTestCase {
                     c("USym", "GOOG", "GOOG", "VXX", "VXX"),
                     longCol("Account", 2L, 2L, QueryConstants.NULL_LONG, 99),
                     intCol("Qty", 350, 350, 50, 50),
-                    c("Whee", dt2, dt2, (DBDateTime) null, dt1));
+                    c("Whee", dt2, dt2, (DateTime) null, dt1));
             dataTable.notifyListeners(i(9, 10), i(), i(3, 4));
         });
 
@@ -639,8 +639,8 @@ public class TestComboBy extends RefreshingTableTestCase {
     }
 
     public void testAggUniqueDefaultValues() {
-        final DBDateTime dt1 = convertDateTime("2021-01-01T00:01:02.000 NY");
-        final DBDateTime dt2 = convertDateTime("2021-02-02T00:02:03.000 NY");
+        final DateTime dt1 = convertDateTime("2021-01-01T00:01:02.000 NY");
+        final DateTime dt2 = convertDateTime("2021-02-02T00:02:03.000 NY");
 
         QueryTable dataTable = TstUtils.testRefreshingTable(
                 c("USym", "NoKey", "SingleVal", "NonUnique", "NonUnique"),

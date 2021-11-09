@@ -11,7 +11,7 @@ import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.datastructures.util.HashCodeUtil;
 import io.deephaven.engine.tables.dbarrays.*;
 import io.deephaven.engine.tables.dbarrays.Vector;
-import io.deephaven.engine.tables.utils.DBDateTime;
+import io.deephaven.engine.tables.utils.DateTime;
 import io.deephaven.qst.column.header.ColumnHeader;
 import io.deephaven.qst.type.ArrayType;
 import io.deephaven.qst.type.BooleanType;
@@ -93,8 +93,8 @@ public class ColumnDefinition<TYPE> implements Externalizable, LogOutputAppendab
         return new ColumnDefinition<>(name, String.class);
     }
 
-    public static ColumnDefinition<DBDateTime> ofTime(@NotNull final String name) {
-        return new ColumnDefinition<>(name, DBDateTime.class);
+    public static ColumnDefinition<DateTime> ofTime(@NotNull final String name) {
+        return new ColumnDefinition<>(name, DateTime.class);
     }
 
     public static ColumnDefinition<?> of(String name, Type<?> type) {

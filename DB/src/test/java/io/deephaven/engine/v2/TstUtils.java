@@ -13,7 +13,7 @@ import io.deephaven.engine.tables.StringSetWrapper;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.libs.StringSet;
 import io.deephaven.engine.tables.utils.ArrayUtils;
-import io.deephaven.engine.tables.utils.DBDateTime;
+import io.deephaven.engine.tables.utils.DateTime;
 import io.deephaven.engine.tables.utils.TableDiff;
 import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.util.liveness.LivenessScopeStack;
@@ -331,9 +331,9 @@ public class TstUtils {
     }
 
     public static ColumnHolder getRandomDateTimeCol(String colName, int size, Random random) {
-        final DBDateTime[] data = new DBDateTime[size];
+        final DateTime[] data = new DateTime[size];
         for (int i = 0; i < data.length; i++) {
-            data[i] = new DBDateTime(random.nextLong());
+            data[i] = new DateTime(random.nextLong());
         }
         return ColumnHolder.createColumnHolder(colName, false, data);
     }
@@ -536,7 +536,7 @@ public class TstUtils {
         if (columnHolder instanceof ImmutableColumnHolder) {
             // noinspection unchecked,rawtypes
             result = new ImmutableTreeMapSource<>(columnHolder.dataType, rowSet, boxedData);
-        } else if (columnHolder.dataType.equals(DBDateTime.class) && columnHolder.data instanceof long[]) {
+        } else if (columnHolder.dataType.equals(DateTime.class) && columnHolder.data instanceof long[]) {
             result = new DateTimeTreeMapSource(rowSet, (long[]) columnHolder.data);
         } else {
             // noinspection unchecked,rawtypes
@@ -1362,61 +1362,61 @@ public class TstUtils {
         return bits >= 64 ? value : ((1L << bits) - 1L) & value;
     }
 
-    public static class SortedDateTimeGenerator extends AbstractSortedGenerator<DBDateTime> {
-        private final DBDateTime minTime;
-        private final DBDateTime maxTime;
+    public static class SortedDateTimeGenerator extends AbstractSortedGenerator<DateTime> {
+        private final DateTime minTime;
+        private final DateTime maxTime;
 
-        public SortedDateTimeGenerator(DBDateTime minTime, DBDateTime maxTime) {
+        public SortedDateTimeGenerator(DateTime minTime, DateTime maxTime) {
             this.minTime = minTime;
             this.maxTime = maxTime;
         }
 
-        DBDateTime maxValue() {
+        DateTime maxValue() {
             return maxTime;
         }
 
-        DBDateTime minValue() {
+        DateTime minValue() {
             return minTime;
         }
 
-        DBDateTime makeValue(DBDateTime floor, DBDateTime ceiling, Random random) {
+        DateTime makeValue(DateTime floor, DateTime ceiling, Random random) {
             final long longFloor = floor.getNanos();
             final long longCeiling = ceiling.getNanos();
 
             final long range = longCeiling - longFloor + 1L;
             final long nextLong = Math.abs(random.nextLong()) % range;
 
-            return new DBDateTime(longFloor + (nextLong % range));
+            return new DateTime(longFloor + (nextLong % range));
         }
 
         @Override
-        public Class<DBDateTime> getType() {
-            return DBDateTime.class;
+        public Class<DateTime> getType() {
+            return DateTime.class;
         }
     }
 
-    public static class UnsortedDateTimeGenerator extends AbstractGenerator<DBDateTime> {
-        private final DBDateTime minTime;
-        private final DBDateTime maxTime;
+    public static class UnsortedDateTimeGenerator extends AbstractGenerator<DateTime> {
+        private final DateTime minTime;
+        private final DateTime maxTime;
         private final double nullFrac;
 
-        public UnsortedDateTimeGenerator(DBDateTime minTime, DBDateTime maxTime) {
+        public UnsortedDateTimeGenerator(DateTime minTime, DateTime maxTime) {
             this(minTime, maxTime, 0);
         }
 
-        public UnsortedDateTimeGenerator(DBDateTime minTime, DBDateTime maxTime, double nullFrac) {
+        public UnsortedDateTimeGenerator(DateTime minTime, DateTime maxTime, double nullFrac) {
             this.minTime = minTime;
             this.maxTime = maxTime;
             this.nullFrac = nullFrac;
         }
 
         @Override
-        public Class<DBDateTime> getType() {
-            return DBDateTime.class;
+        public Class<DateTime> getType() {
+            return DateTime.class;
         }
 
         @Override
-        DBDateTime nextValue(TreeMap<Long, DBDateTime> values, long key, Random random) {
+        DateTime nextValue(TreeMap<Long, DateTime> values, long key, Random random) {
             if (nullFrac > 0 && random.nextDouble() < nullFrac) {
                 return null;
             }
@@ -1426,20 +1426,20 @@ public class TstUtils {
             final long range = longCeiling - longFloor + 1L;
             final long nextLong = Math.abs(random.nextLong()) % range;
 
-            return new DBDateTime(longFloor + (nextLong % range));
+            return new DateTime(longFloor + (nextLong % range));
         }
     }
 
-    public static class UnsortedDateTimeLongGenerator extends AbstractReinterpretedGenerator<DBDateTime, Long> {
-        private final DBDateTime minTime;
-        private final DBDateTime maxTime;
+    public static class UnsortedDateTimeLongGenerator extends AbstractReinterpretedGenerator<DateTime, Long> {
+        private final DateTime minTime;
+        private final DateTime maxTime;
         private final double nullFrac;
 
-        public UnsortedDateTimeLongGenerator(DBDateTime minTime, DBDateTime maxTime) {
+        public UnsortedDateTimeLongGenerator(DateTime minTime, DateTime maxTime) {
             this(minTime, maxTime, 0);
         }
 
-        public UnsortedDateTimeLongGenerator(DBDateTime minTime, DBDateTime maxTime, double nullFrac) {
+        public UnsortedDateTimeLongGenerator(DateTime minTime, DateTime maxTime, double nullFrac) {
             this.minTime = minTime;
             this.maxTime = maxTime;
             this.nullFrac = nullFrac;
@@ -1451,8 +1451,8 @@ public class TstUtils {
         }
 
         @Override
-        public Class<DBDateTime> getColumnType() {
-            return DBDateTime.class;
+        public Class<DateTime> getColumnType() {
+            return DateTime.class;
         }
 
         @Override
@@ -1466,7 +1466,7 @@ public class TstUtils {
             final long range = longCeiling - longFloor + 1L;
             final long nextLong = Math.abs(random.nextLong()) % range;
 
-            return new DBDateTime(longFloor + (nextLong % range)).getNanos();
+            return new DateTime(longFloor + (nextLong % range)).getNanos();
         }
     }
 
@@ -2035,7 +2035,7 @@ public class TstUtils {
 
         @SuppressWarnings("unchecked")
         public ColumnHolder c() {
-            if (dataType == Long.class && type == DBDateTime.class) {
+            if (dataType == Long.class && type == DateTime.class) {
                 Require.eqFalse(immutable, "immutable");
                 Require.eqFalse(grouped, "grouped");
                 final long[] dataArray = data.values().stream().map(x -> (Long) x).mapToLong(x -> x).toArray();

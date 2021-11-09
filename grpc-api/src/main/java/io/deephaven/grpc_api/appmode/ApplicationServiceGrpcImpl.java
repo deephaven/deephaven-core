@@ -6,7 +6,7 @@ import io.deephaven.appmode.CustomField;
 import io.deephaven.appmode.Field;
 import io.deephaven.engine.plot.FigureWidget;
 import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.utils.DBTimeUtils;
+import io.deephaven.engine.tables.utils.DateTimeUtils;
 import io.deephaven.engine.util.ScriptSession;
 import io.deephaven.engine.util.liveness.LivenessArtifact;
 import io.deephaven.engine.util.liveness.LivenessReferent;
@@ -369,7 +369,7 @@ public class ApplicationServiceGrpcImpl extends ApplicationServiceGrpc.Applicati
                 scheduler.runImmediately(this);
             } else {
                 lastScheduledMillis = nextMin;
-                scheduler.runAtTime(DBTimeUtils.millisToTime(nextMin), this);
+                scheduler.runAtTime(DateTimeUtils.millisToTime(nextMin), this);
             }
             return true;
         }

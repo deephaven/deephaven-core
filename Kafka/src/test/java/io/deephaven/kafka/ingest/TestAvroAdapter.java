@@ -2,8 +2,8 @@ package io.deephaven.kafka.ingest;
 
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.tables.TableDefinition;
-import io.deephaven.engine.tables.utils.DBDateTime;
-import io.deephaven.engine.tables.utils.DBTimeUtils;
+import io.deephaven.engine.tables.utils.DateTime;
+import io.deephaven.engine.tables.utils.DateTimeUtils;
 import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.util.BooleanUtils;
 import io.deephaven.util.QueryConstants;
@@ -83,13 +83,13 @@ public class TestAvroAdapter {
 
         final String[] names = new String[] {"last_name", "number", "truthiness", "timestamp", "timestampMicros",
                 "timeMillis", "timeMicros"};
-        final Class[] types = new Class[] {String.class, int.class, boolean.class, DBDateTime.class, DBDateTime.class,
+        final Class[] types = new Class[] {String.class, int.class, boolean.class, DateTime.class, DateTime.class,
                 int.class, long.class};
 
         final TableDefinition definition = new TableDefinition(Arrays.asList(types), Arrays.asList(names));
 
-        final DBDateTime dt1 = DBTimeUtils.convertDateTime("2021-08-23T12:00:00.123456789 NY");
-        final DBDateTime dt2 = DBTimeUtils.convertDateTime("2021-08-23T13:00:00.500600700 NY");
+        final DateTime dt1 = DateTimeUtils.convertDateTime("2021-08-23T12:00:00.123456789 NY");
+        final DateTime dt2 = DateTimeUtils.convertDateTime("2021-08-23T13:00:00.500600700 NY");
 
         final GenericData.Record genericRecord1 = new GenericData.Record(avroSchema);
         genericRecord1.put("last_name", "LN1");
@@ -156,16 +156,16 @@ public class TestAvroAdapter {
                 TestCase.assertEquals("LN1", output[0].asObjectChunk().get(0));
                 TestCase.assertEquals(32, output[1].asIntChunk().get(0));
                 TestCase.assertEquals(BooleanUtils.FALSE_BOOLEAN_AS_BYTE, output[2].asByteChunk().get(0));
-                TestCase.assertEquals(DBTimeUtils.millisToNanos(dt1.getMillis()), output[3].asLongChunk().get(0));
-                TestCase.assertEquals(DBTimeUtils.microsToNanos(dt1.getMicros()), output[4].asLongChunk().get(0));
+                TestCase.assertEquals(DateTimeUtils.millisToNanos(dt1.getMillis()), output[3].asLongChunk().get(0));
+                TestCase.assertEquals(DateTimeUtils.microsToNanos(dt1.getMicros()), output[4].asLongChunk().get(0));
                 TestCase.assertEquals(10000, output[5].asIntChunk().get(0));
                 TestCase.assertEquals(100000, output[6].asLongChunk().get(0));
 
                 TestCase.assertNull(output[0].asObjectChunk().get(1));
                 TestCase.assertEquals(64, output[1].asIntChunk().get(1));
                 TestCase.assertEquals(BooleanUtils.TRUE_BOOLEAN_AS_BYTE, output[2].asByteChunk().get(1));
-                TestCase.assertEquals(DBTimeUtils.millisToNanos(dt2.getMillis()), output[3].asLongChunk().get(1));
-                TestCase.assertEquals(DBTimeUtils.microsToNanos(dt2.getMicros()), output[4].asLongChunk().get(1));
+                TestCase.assertEquals(DateTimeUtils.millisToNanos(dt2.getMillis()), output[3].asLongChunk().get(1));
+                TestCase.assertEquals(DateTimeUtils.microsToNanos(dt2.getMicros()), output[4].asLongChunk().get(1));
                 TestCase.assertEquals(20000, output[5].asIntChunk().get(1));
                 TestCase.assertEquals(200000, output[6].asLongChunk().get(1));
 

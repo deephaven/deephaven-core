@@ -17,7 +17,7 @@ import io.deephaven.engine.tables.TableDefinition;
 import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.tables.live.UpdateSourceCombiner;
 import io.deephaven.engine.tables.live.UpdateSourceRegistrar;
-import io.deephaven.engine.tables.utils.DBDateTime;
+import io.deephaven.engine.tables.utils.DateTime;
 import io.deephaven.engine.util.liveness.LivenessScope;
 import io.deephaven.engine.util.liveness.LivenessScopeStack;
 import io.deephaven.engine.v2.LocalTableMap;
@@ -1457,7 +1457,7 @@ public class KafkaTools {
                 consumerProperties,
                 TIMESTAMP_COLUMN_NAME_PROPERTY,
                 TIMESTAMP_COLUMN_NAME_DEFAULT,
-                (final String colName) -> ColumnDefinition.fromGenericType(colName, DBDateTime.class));
+                (final String colName) -> ColumnDefinition.fromGenericType(colName, DateTime.class));
         return c;
     }
 

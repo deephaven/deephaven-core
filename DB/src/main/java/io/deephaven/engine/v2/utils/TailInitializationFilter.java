@@ -2,8 +2,8 @@ package io.deephaven.engine.v2.utils;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.utils.DBDateTime;
-import io.deephaven.engine.tables.utils.DBTimeUtils;
+import io.deephaven.engine.tables.utils.DateTime;
+import io.deephaven.engine.tables.utils.DateTimeUtils;
 import io.deephaven.engine.tables.utils.QueryPerformanceRecorder;
 import io.deephaven.engine.v2.BaseTable;
 import io.deephaven.engine.v2.ShiftObliviousInstrumentedListener;
@@ -35,11 +35,11 @@ public class TailInitializationFilter {
      *
      * @param table the source table to filter
      * @param timestampName the name of the timestamp column
-     * @param period interval between the last row in a partition (as converted by DBTimeUtils.expressionToNanos)
+     * @param period interval between the last row in a partition (as converted by DateTimeUtils.expressionToNanos)
      * @return a table with only the most recent values in each partition
      */
     public static Table mostRecent(final Table table, final String timestampName, final String period) {
-        return mostRecent(table, timestampName, DBTimeUtils.expressionToNanos(period));
+        return mostRecent(table, timestampName, DateTimeUtils.expressionToNanos(period));
     }
 
     /**
@@ -52,7 +52,7 @@ public class TailInitializationFilter {
      */
     public static Table mostRecent(final Table table, final String timestampName, final long nanos) {
         return QueryPerformanceRecorder.withNugget("TailInitializationFilter(" + nanos + ")", () -> {
-            final ColumnSource timestampSource = table.getColumnSource(timestampName, DBDateTime.class);
+            final ColumnSource timestampSource = table.getColumnSource(timestampName, DateTime.class);
             if (timestampSource.allowsReinterpret(long.class)) {
                 // noinspection unchecked
                 return mostRecentLong(table, timestampSource.reinterpret(long.class), nanos);
@@ -67,7 +67,7 @@ public class TailInitializationFilter {
         return mostRecentLong(table, reinterpret::getLong, nanos);
     }
 
-    private static Table mostRecentDateTime(final Table table, final ColumnSource<DBDateTime> cs, final long nanos) {
+    private static Table mostRecentDateTime(final Table table, final ColumnSource<DateTime> cs, final long nanos) {
         return mostRecentLong(table, (idx) -> cs.get(idx).getNanos(), nanos);
     }
 

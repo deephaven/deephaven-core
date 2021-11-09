@@ -4,8 +4,8 @@ import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.TableDefinition;
 import io.deephaven.engine.tables.live.UpdateGraphProcessor;
-import io.deephaven.engine.tables.utils.DBDateTime;
-import io.deephaven.engine.tables.utils.DBTimeUtils;
+import io.deephaven.engine.tables.utils.DateTime;
+import io.deephaven.engine.tables.utils.DateTimeUtils;
 import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.v2.ModifiedColumnSet;
 import io.deephaven.engine.v2.SimpleListener;
@@ -215,7 +215,7 @@ public class TestStreamToTableAdapter {
     @Test
     public void testWrappedTypes() {
         final TableDefinition tableDefinition = new TableDefinition(
-                Arrays.asList(String.class, Boolean.class, DBDateTime.class), Arrays.asList("S", "B", "D"));
+                Arrays.asList(String.class, Boolean.class, DateTime.class), Arrays.asList("S", "B", "D"));
         final Table empty = TableTools.newTable(tableDefinition);
 
         final StreamPublisher streamPublisher = new DummyStreamPublisher();
@@ -245,11 +245,11 @@ public class TestStreamToTableAdapter {
         wic.set(2, BooleanUtils.booleanAsByte(null));
         final WritableLongChunk<Attributes.Values> wlc = WritableLongChunk.makeWritableChunk(3);
         chunks[2] = wlc;
-        final DBDateTime dt1 = DBTimeUtils.convertDateTime("2021-04-28T12:00:00 NY");
+        final DateTime dt1 = DateTimeUtils.convertDateTime("2021-04-28T12:00:00 NY");
         wlc.set(0, dt1.getNanos());
-        final DBDateTime dt2 = DBTimeUtils.convertDateTime("2012-08-25T12:00:00 NY");
+        final DateTime dt2 = DateTimeUtils.convertDateTime("2012-08-25T12:00:00 NY");
         wlc.set(1, dt2.getNanos());
-        final DBDateTime dt3 = DBTimeUtils.convertDateTime("2030-01-20T12:00:00 NY");
+        final DateTime dt3 = DateTimeUtils.convertDateTime("2030-01-20T12:00:00 NY");
         wlc.set(2, dt3.getNanos());
 
         adapter.accept(chunks);

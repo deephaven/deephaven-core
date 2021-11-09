@@ -2,8 +2,8 @@ package io.deephaven.engine.v2.sources.chunkcolumnsource;
 
 import gnu.trove.list.array.TLongArrayList;
 import io.deephaven.engine.tables.live.UpdateGraphProcessor;
-import io.deephaven.engine.tables.utils.DBDateTime;
-import io.deephaven.engine.tables.utils.DBTimeUtils;
+import io.deephaven.engine.tables.utils.DateTime;
+import io.deephaven.engine.tables.utils.DateTimeUtils;
 import io.deephaven.engine.v2.hashing.IntChunkEquals;
 import io.deephaven.engine.v2.sources.ByteAsBooleanColumnSource;
 import io.deephaven.engine.v2.sources.LongAsDateTimeColumnSource;
@@ -472,8 +472,8 @@ public class TestChunkColumnSource {
         }
     }
 
-    private static DBDateTime makeExpectDateTime(int idx) {
-        return DBTimeUtils.plus(DBTimeUtils.convertDateTime("2021-07-27T09:00 NY"), idx * 3600_000_000_000L);
+    private static DateTime makeExpectDateTime(int idx) {
+        return DateTimeUtils.plus(DateTimeUtils.convertDateTime("2021-07-27T09:00 NY"), idx * 3600_000_000_000L);
     }
 
     @Test

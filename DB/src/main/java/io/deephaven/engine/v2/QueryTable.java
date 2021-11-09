@@ -17,7 +17,7 @@ import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.tables.live.NotificationQueue;
 import io.deephaven.engine.tables.select.MatchPair;
 import io.deephaven.engine.tables.select.WouldMatchPair;
-import io.deephaven.engine.tables.utils.DBDateTime;
+import io.deephaven.engine.tables.utils.DateTime;
 import io.deephaven.engine.tables.utils.QueryPerformanceRecorder;
 import io.deephaven.engine.tables.utils.SystemicObjectTracker;
 import io.deephaven.engine.util.IterableUtils;
@@ -2196,12 +2196,12 @@ public class QueryTable extends BaseTable {
      * @return the transformed column source, or the original column source if there is not a relevant transformation
      */
     static ColumnSource<?> maybeTransformToPrimitive(final ColumnSource<?> columnSource) {
-        if (DBDateTime.class.isAssignableFrom(columnSource.getType())) {
+        if (DateTime.class.isAssignableFrom(columnSource.getType())) {
             if (columnSource.allowsReinterpret(long.class)) {
                 return columnSource.reinterpret(long.class);
             } else {
                 // noinspection unchecked
-                final ColumnSource<DBDateTime> columnSourceAsDateTime = (ColumnSource<DBDateTime>) columnSource;
+                final ColumnSource<DateTime> columnSourceAsDateTime = (ColumnSource<DateTime>) columnSource;
                 return new DatetimeAsLongColumnSource(columnSourceAsDateTime);
             }
         }

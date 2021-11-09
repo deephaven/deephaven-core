@@ -36,8 +36,8 @@ public class C14nUtil {
             String.class,
             CompressedString.class,
 
-            // DBDateTimes used in aggregations are most likely expirations.
-            // DBDateTime.class,
+            // DateTimes used in aggregations are most likely expirations.
+            // DateTime.class,
 
             // If we're going to bother canonicalizing key members, we might as well do the keys themselves.
             // CanonicalizedSmartKey.class

@@ -4,8 +4,8 @@
 
 package io.deephaven.engine.plot.axisformatters;
 
-import io.deephaven.engine.tables.utils.DBDateTime;
-import io.deephaven.engine.tables.utils.DBTimeZone;
+import io.deephaven.engine.tables.utils.DateTime;
+import io.deephaven.engine.tables.utils.TimeZone;
 
 import java.io.Serializable;
 import java.text.FieldPosition;
@@ -22,7 +22,7 @@ import java.time.format.DateTimeFormatter;
 public class NanosAxisFormat implements AxisFormat, Serializable {
 
     private static final long serialVersionUID = -2096650974534906333L;
-    private DBTimeZone tz;
+    private TimeZone tz;
     private String pattern;
     private NanosFormat instance = null;
 
@@ -31,7 +31,7 @@ public class NanosAxisFormat implements AxisFormat, Serializable {
      *
      * @param tz timezone
      */
-    public NanosAxisFormat(DBTimeZone tz) {
+    public NanosAxisFormat(TimeZone tz) {
         this.tz = tz;
     }
 
@@ -39,7 +39,7 @@ public class NanosAxisFormat implements AxisFormat, Serializable {
      * Creates a new NanosAxisFormat with the default timezone.
      */
     public NanosAxisFormat() {
-        this(DBTimeZone.TZ_DEFAULT);
+        this(TimeZone.TZ_DEFAULT);
     }
 
     @Override
@@ -64,7 +64,7 @@ public class NanosAxisFormat implements AxisFormat, Serializable {
     }
 
     /**
-     * Formatter for DBDateTime values.
+     * Formatter for DateTime values.
      */
     public class NanosFormat extends NumberFormat {
         private static final long serialVersionUID = 6037426284760469353L;
@@ -74,7 +74,7 @@ public class NanosAxisFormat implements AxisFormat, Serializable {
             updateFormatter(pattern);
         }
 
-        public void updateTimeZone(final DBTimeZone tz) {
+        public void updateTimeZone(final TimeZone tz) {
             NanosAxisFormat.this.tz = tz;
 
             if (formatter != null) {
@@ -94,7 +94,7 @@ public class NanosAxisFormat implements AxisFormat, Serializable {
 
         @Override
         public StringBuffer format(final long number, final StringBuffer toAppendTo, final FieldPosition pos) {
-            return toAppendTo.append(formatter.format(new DBDateTime(number).getInstant()));
+            return toAppendTo.append(formatter.format(new DateTime(number).getInstant()));
         }
 
         @Override

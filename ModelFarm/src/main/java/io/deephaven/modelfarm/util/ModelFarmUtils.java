@@ -7,7 +7,7 @@ package io.deephaven.modelfarm.util;
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.dbarrays.*;
-import io.deephaven.engine.tables.utils.DBDateTime;
+import io.deephaven.engine.tables.utils.DateTime;
 
 /**
  * Utilities for building model farms.
@@ -54,9 +54,9 @@ public class ModelFarmUtils {
      * @param o table cell value.
      * @return date time array.
      */
-    public static DBDateTime[] arrayDBDateTime(final Object o) {
+    public static DateTime[] arrayDateTime(final Object o) {
         // noinspection unchecked
-        return o == null ? null : ((ObjectVector<DBDateTime>) o).toArray();
+        return o == null ? null : ((ObjectVector<DateTime>) o).toArray();
     }
 
     /**

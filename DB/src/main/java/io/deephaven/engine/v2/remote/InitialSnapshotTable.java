@@ -8,7 +8,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.tables.ColumnDefinition;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.TableDefinition;
-import io.deephaven.engine.tables.utils.DBDateTime;
+import io.deephaven.engine.tables.utils.DateTime;
 import io.deephaven.engine.v2.QueryTable;
 import io.deephaven.engine.v2.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.v2.sources.ColumnSource;
@@ -66,7 +66,7 @@ public class InitialSnapshotTable extends QueryTable {
             return (Setter<float[]>) (array, arrayIndex, destIndex) -> source.set(destIndex, array[arrayIndex]);
         } else if (source.getType() == int.class) {
             return (Setter<int[]>) (array, arrayIndex, destIndex) -> source.set(destIndex, array[arrayIndex]);
-        } else if (source.getType() == long.class || source.getType() == DBDateTime.class) {
+        } else if (source.getType() == long.class || source.getType() == DateTime.class) {
             return (Setter<long[]>) (array, arrayIndex, destIndex) -> source.set(destIndex, array[arrayIndex]);
         } else if (source.getType() == short.class) {
             return (Setter<short[]>) (array, arrayIndex, destIndex) -> source.set(destIndex, array[arrayIndex]);

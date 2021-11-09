@@ -8,7 +8,7 @@
 #include "deephaven/client/highlevel/impl/escape_utils.h"
 #include "deephaven/client/utility/utility.h"
 
-using deephaven::client::highlevel::DBDateTime;
+using deephaven::client::highlevel::DateTime;
 
 namespace deephaven {
 namespace client {
@@ -26,15 +26,15 @@ private:
   std::string value_;
 };
 
-class DateTimeDBDateTimeImpl final : public DateTimeExpressionImpl {
+class DateTimeDateTimeImpl final : public DateTimeExpressionImpl {
 public:
-  explicit DateTimeDBDateTimeImpl(const DBDateTime &value) : value_(value) {}
-  ~DateTimeDBDateTimeImpl() final = default;
+  explicit DateTimeDateTimeImpl(const DateTime &value) : value_(value) {}
+  ~DateTimeDateTimeImpl() final = default;
 
   void streamIrisRepresentation(std::ostream &s) const final;
 
 private:
-  DBDateTime value_;
+  DateTime value_;
 };
 
 class DateTimeComparisonImpl final : public BooleanExpressionImpl {
@@ -57,8 +57,8 @@ std::shared_ptr<DateTimeExpressionImpl> DateTimeExpressionImpl::createFromLitera
   return std::make_shared<DateTimeLiteralImpl>(std::move(value));
 }
 
-std::shared_ptr<DateTimeExpressionImpl> DateTimeExpressionImpl::createFromDBDateTime(const DBDateTime &value) {
-  return std::make_shared<DateTimeDBDateTimeImpl>(value);
+std::shared_ptr<DateTimeExpressionImpl> DateTimeExpressionImpl::createFromDateTime(const DateTime &value) {
+  return std::make_shared<DateTimeDateTimeImpl>(value);
 }
 
 std::shared_ptr<BooleanExpressionImpl> DateTimeExpressionImpl::createComparison(
@@ -76,7 +76,7 @@ void DateTimeLiteralImpl::streamIrisRepresentation(std::ostream &s) const {
   s << '`';
 }
 
-void DateTimeDBDateTimeImpl::streamIrisRepresentation(std::ostream &s) const {
+void DateTimeDateTimeImpl::streamIrisRepresentation(std::ostream &s) const {
   s << '`';
   value_.streamIrisRepresentation(s);
   s << '`';

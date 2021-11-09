@@ -1,8 +1,8 @@
 package io.deephaven.engine.v2.select;
 
 import io.deephaven.engine.tables.live.UpdateGraphProcessor;
-import io.deephaven.engine.tables.utils.DBDateTime;
-import io.deephaven.engine.tables.utils.DBTimeUtils;
+import io.deephaven.engine.tables.utils.DateTime;
+import io.deephaven.engine.tables.utils.DateTimeUtils;
 import io.deephaven.engine.v2.RefreshingTableTestCase;
 
 /**
@@ -11,8 +11,8 @@ import io.deephaven.engine.v2.RefreshingTableTestCase;
 public class TestSimulationClock extends RefreshingTableTestCase {
 
     public void testSignal() {
-        final DBDateTime start = DBDateTime.now();
-        final SimulationClock clock = new SimulationClock(start, DBTimeUtils.plus(start, 1), 1);
+        final DateTime start = DateTime.now();
+        final SimulationClock clock = new SimulationClock(start, DateTimeUtils.plus(start, 1), 1);
         clock.start();
         for (int ci = 0; ci < 2; ++ci) {
             UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(clock::advance);

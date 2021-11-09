@@ -4,12 +4,12 @@
 
 package io.deephaven.engine.tablelogger;
 
-import io.deephaven.engine.tables.utils.DBDateTime;
+import io.deephaven.engine.tables.utils.DateTime;
+import io.deephaven.engine.tables.utils.DateTimeUtils;
 import io.deephaven.tablelogger.*;
 import io.deephaven.engine.tables.TableDefinition;
 import io.deephaven.engine.tables.remotequery.QueryProcessingResults;
 import io.deephaven.engine.tables.utils.ColumnsSpecHelper;
-import io.deephaven.engine.tables.utils.DBTimeUtils;
 import io.deephaven.engine.tables.utils.QueryPerformanceNugget;
 import io.deephaven.util.QueryConstants;
 import java.io.IOException;
@@ -38,8 +38,8 @@ public class QueryPerformanceLogLogger
     class DirectSetter extends BaseSetter implements ISetter {
         RowSetter<String> ProcessUniqueId;
         RowSetter<Long> EvaluationNumber;
-        RowSetter<DBDateTime> StartTime;
-        RowSetter<DBDateTime> EndTime;
+        RowSetter<DateTime> StartTime;
+        RowSetter<DateTime> EndTime;
         RowSetter<Long> DurationNanos;
         RowSetter<Long> CpuNanos;
         RowSetter<Long> UserCpuNanos;
@@ -58,8 +58,8 @@ public class QueryPerformanceLogLogger
         DirectSetter() {
             ProcessUniqueId = row.getSetter("ProcessUniqueId", String.class);
             EvaluationNumber = row.getSetter("EvaluationNumber", long.class);
-            StartTime = row.getSetter("StartTime", DBDateTime.class);
-            EndTime = row.getSetter("EndTime", DBDateTime.class);
+            StartTime = row.getSetter("StartTime", DateTime.class);
+            EndTime = row.getSetter("EndTime", DateTime.class);
             DurationNanos = row.getSetter("DurationNanos", long.class);
             CpuNanos = row.getSetter("CpuNanos", long.class);
             UserCpuNanos = row.getSetter("UserCpuNanos", long.class);
@@ -84,11 +84,11 @@ public class QueryPerformanceLogLogger
             setRowFlags(flags);
             this.ProcessUniqueId.set(processUniqueId);
             this.EvaluationNumber.setLong(evaluationNumber);
-            this.StartTime.set(DBTimeUtils.millisToTime(nugget.getStartClockTime()));
+            this.StartTime.set(DateTimeUtils.millisToTime(nugget.getStartClockTime()));
             this.EndTime.set(nugget.getTotalTimeNanos() == null
                     ? null
-                    : DBTimeUtils.millisToTime(
-                            nugget.getStartClockTime() + DBTimeUtils.nanosToMillis(nugget.getTotalTimeNanos())));
+                    : DateTimeUtils.millisToTime(
+                            nugget.getStartClockTime() + DateTimeUtils.nanosToMillis(nugget.getTotalTimeNanos())));
             this.DurationNanos.setLong(
                     nugget.getTotalTimeNanos() == null ? QueryConstants.NULL_LONG : nugget.getTotalTimeNanos());
             this.CpuNanos.setLong(nugget.getCpuNanos());
@@ -119,8 +119,8 @@ public class QueryPerformanceLogLogger
         final ColumnsSpecHelper cols = new ColumnsSpecHelper()
                 .add("ProcessUniqueId", String.class)
                 .add("EvaluationNumber", long.class)
-                .add("StartTime", DBDateTime.class)
-                .add("EndTime", DBDateTime.class)
+                .add("StartTime", DateTime.class)
+                .add("EndTime", DateTime.class)
                 .add("DurationNanos", long.class)
                 .add("CpuNanos", long.class)
                 .add("UserCpuNanos", long.class)

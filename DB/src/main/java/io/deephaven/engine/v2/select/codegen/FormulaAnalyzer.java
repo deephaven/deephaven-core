@@ -3,11 +3,11 @@ package io.deephaven.engine.v2.select.codegen;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.tables.ColumnDefinition;
 import io.deephaven.engine.tables.dbarrays.ObjectVector;
-import io.deephaven.engine.tables.lang.DBLanguageParser;
+import io.deephaven.engine.tables.lang.LanguageParser;
 import io.deephaven.engine.tables.libs.QueryLibrary;
 import io.deephaven.engine.tables.select.Param;
 import io.deephaven.engine.tables.select.QueryScope;
-import io.deephaven.engine.tables.utils.DBTimeUtils;
+import io.deephaven.engine.tables.utils.DateTimeUtils;
 import io.deephaven.engine.v2.select.DhFormulaColumn;
 import io.deephaven.engine.v2.select.FormulaCompilationException;
 import io.deephaven.engine.v2.select.formula.FormulaSourceDescriptor;
@@ -42,8 +42,8 @@ public class FormulaAnalyzer {
             possibleParams.put(param.getName(), param);
         }
 
-        final DBTimeUtils.Result timeConversionResult = DBTimeUtils.convertExpression(rawFormulaString);
-        final DBLanguageParser.Result result = getCompiledFormula(columnDefinitionMap, timeConversionResult,
+        final DateTimeUtils.Result timeConversionResult = DateTimeUtils.convertExpression(rawFormulaString);
+        final LanguageParser.Result result = getCompiledFormula(columnDefinitionMap, timeConversionResult,
                 otherVariables);
 
         log.debug().append("Expression (after language conversion) : ").append(result.getConvertedExpression()).endl();
@@ -79,9 +79,9 @@ public class FormulaAnalyzer {
                 rawFormulaString, cookedFormulaString, timeInstanceVariables);
     }
 
-    public static DBLanguageParser.Result getCompiledFormula(Map<String, ColumnDefinition<?>> availableColumns,
-            DBTimeUtils.Result timeConversionResult,
-            Map<String, Class<?>> otherVariables) throws Exception {
+    public static LanguageParser.Result getCompiledFormula(Map<String, ColumnDefinition<?>> availableColumns,
+                                                           DateTimeUtils.Result timeConversionResult,
+                                                           Map<String, Class<?>> otherVariables) throws Exception {
         final Map<String, Class<?>> possibleVariables = new HashMap<>();
         possibleVariables.put("i", int.class);
         possibleVariables.put("ii", long.class);
@@ -136,7 +136,7 @@ public class FormulaAnalyzer {
         final Set<Class<?>> classImports = new HashSet<>(QueryLibrary.getClassImports());
         classImports.add(TrackingMutableRowSet.class);
         classImports.add(WritableSource.class);
-        return new DBLanguageParser(timeConversionResult.getConvertedFormula(), QueryLibrary.getPackageImports(),
+        return new LanguageParser(timeConversionResult.getConvertedFormula(), QueryLibrary.getPackageImports(),
                 classImports, QueryLibrary.getStaticImports(), possibleVariables, possibleVariableParameterizedTypes)
                         .getResult();
     }

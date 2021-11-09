@@ -10,8 +10,8 @@ import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.select.AjMatchPairFactory;
 import io.deephaven.engine.tables.select.MatchPairFactory;
 import io.deephaven.engine.tables.select.QueryScope;
-import io.deephaven.engine.tables.utils.DBDateTime;
-import io.deephaven.engine.tables.utils.DBTimeUtils;
+import io.deephaven.engine.tables.utils.DateTime;
+import io.deephaven.engine.tables.utils.DateTimeUtils;
 import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.util.liveness.LivenessScopeStack;
 import io.deephaven.engine.v2.QueryTableTestBase.JoinIncrement;
@@ -212,8 +212,8 @@ public class QueryTableAjTest {
 
     @Test
     public void testAjDateTime() {
-        final DBDateTime first = DBTimeUtils.convertDateTime("2019-06-14T08:30:00 NY");
-        final DBDateTime second = DBTimeUtils.convertDateTime("2019-06-14T19:30:00 NY");
+        final DateTime first = DateTimeUtils.convertDateTime("2019-06-14T08:30:00 NY");
+        final DateTime second = DateTimeUtils.convertDateTime("2019-06-14T19:30:00 NY");
 
         final Table left = TableTools.newTable(
                 c("Bucket", "A", "A", "B", "A", "B", "C", "C", "A"),
@@ -1271,7 +1271,7 @@ public class QueryTableAjTest {
         final Random random = new Random(0);
         final int size = 100;
         final int scale = 1000;
-        final long timeOffset = DBDateTime.now().getNanos();
+        final long timeOffset = DateTime.now().getNanos();
         final String[] columnNames = {"MyBoolean", "MyChar"};
 
         QueryScope.addParam("random", random);
@@ -1281,8 +1281,8 @@ public class QueryTableAjTest {
         try {
 
             final Table staticOne = emptyTable(size)
-                    .update("Timestamp= i%23 == 0 ? null : new DBDateTime(timeOffset + (long)(scale*(Math.random()*2-0.1))*100_000_000L)",
-                            "OtherTimestamp= i%24 == 0 ? null : new DBDateTime(timeOffset + (long)(scale*(Math.random()*2-0.05))*100_000_000L)",
+                    .update("Timestamp= i%23 == 0 ? null : new DateTime(timeOffset + (long)(scale*(Math.random()*2-0.1))*100_000_000L)",
+                            "OtherTimestamp= i%24 == 0 ? null : new DateTime(timeOffset + (long)(scale*(Math.random()*2-0.05))*100_000_000L)",
                             "MyString=(i%11==0? null : `a`+(int)(scale*(Math.random()*2-1)))",
                             "MyInt=(i%12==0 ? null : (int)(scale*(Math.random()*2-1)))",
                             "MyLong=(i%13==0 ? null : (long)(scale*(Math.random()*2-1)))",
@@ -1296,8 +1296,8 @@ public class QueryTableAjTest {
                             "MyBigInteger=(i%22==0 ? null : new java.math.BigInteger(Integer.toString((int)(scale*(Math.random()*2-1)))))");
 
             final Table staticTwo = emptyTable(size)
-                    .update("Timestamp= i%23 == 0 ? null : new DBDateTime(timeOffset + (long)(scale*(Math.random()*2-0.1))*100_000_000L)",
-                            "OtherTimestamp= i%24 == 0 ? null : new DBDateTime(timeOffset + (long)(scale*(Math.random()*2-0.05))*100_000_000L)",
+                    .update("Timestamp= i%23 == 0 ? null : new DateTime(timeOffset + (long)(scale*(Math.random()*2-0.1))*100_000_000L)",
+                            "OtherTimestamp= i%24 == 0 ? null : new DateTime(timeOffset + (long)(scale*(Math.random()*2-0.05))*100_000_000L)",
                             "MyString=(i%11==0? null : `a`+(int)(scale*(Math.random()*2-1)))",
                             "MyInt=(i%12==0 ? null : (int)(scale*(Math.random()*2-1)))",
                             "MyLong=(i%13==0 ? null : (long)(scale*(Math.random()*2-1)))",

@@ -4,36 +4,36 @@
 
 package io.deephaven.engine.v2.sources;
 
-import io.deephaven.engine.tables.utils.DBDateTime;
-import io.deephaven.engine.tables.utils.DBTimeUtils;
+import io.deephaven.engine.tables.utils.DateTime;
+import io.deephaven.engine.tables.utils.DateTimeUtils;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.structures.RowSequence;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Reinterpret result {@link ColumnSource} implementations that translates {@link long} to {@code DBDateTime} values.
+ * Reinterpret result {@link ColumnSource} implementations that translates {@link long} to {@code DateTime} values.
  */
 @AbstractColumnSource.IsSerializable(value = true)
-public class LongAsDateTimeColumnSource extends AbstractColumnSource<DBDateTime> implements MutableColumnSourceGetDefaults.ForObject<DBDateTime> {
+public class LongAsDateTimeColumnSource extends AbstractColumnSource<DateTime> implements MutableColumnSourceGetDefaults.ForObject<DateTime> {
 
     private final ColumnSource<Long> alternateColumnSource;
 
     public LongAsDateTimeColumnSource(ColumnSource<Long> alternateColumnSource) {
-        super(DBDateTime.class);
+        super(DateTime.class);
         this.alternateColumnSource = alternateColumnSource;
     }
 
     @Override
-    public DBDateTime get(final long index) {
+    public DateTime get(final long index) {
         final long longValue = alternateColumnSource.getLong(index);
-        return DBTimeUtils.nanosToTime(longValue);
+        return DateTimeUtils.nanosToTime(longValue);
     }
 
     @Override
-    public DBDateTime getPrev(final long index) {
+    public DateTime getPrev(final long index) {
         final long longValue = alternateColumnSource.getPrevLong(index);
-        return DBTimeUtils.nanosToTime(longValue);
+        return DateTimeUtils.nanosToTime(longValue);
     }
 
     @Override
@@ -74,22 +74,22 @@ public class LongAsDateTimeColumnSource extends AbstractColumnSource<DBDateTime>
     public void fillChunk(@NotNull final FillContext context, @NotNull final WritableChunk<? super Values> destination, @NotNull final RowSequence rowSequence) {
         final ToDateTimeFillContext toDateTimeFillContext = (ToDateTimeFillContext) context;
         final LongChunk<? extends Values> longChunk = alternateColumnSource.getChunk(toDateTimeFillContext.alternateGetContext, rowSequence).asLongChunk();
-        convertToDBDateTime(destination, longChunk);
+        convertToDateTime(destination, longChunk);
     }
 
     @Override
     public void fillPrevChunk(@NotNull final FillContext context, @NotNull final WritableChunk<? super Values> destination, @NotNull final RowSequence rowSequence) {
         final ToDateTimeFillContext toDateTimeFillContext = (ToDateTimeFillContext) context;
         final LongChunk<? extends Values> longChunk = alternateColumnSource.getPrevChunk(toDateTimeFillContext.alternateGetContext, rowSequence).asLongChunk();
-        convertToDBDateTime(destination, longChunk);
+        convertToDateTime(destination, longChunk);
     }
 
-    private static void convertToDBDateTime(@NotNull final WritableChunk<? super Values> destination, @NotNull final LongChunk<? extends Values> longChunk) {
-        final WritableObjectChunk<DBDateTime, ? super Values> dBDateTimeObjectDestination = destination.asWritableObjectChunk();
+    private static void convertToDateTime(@NotNull final WritableChunk<? super Values> destination, @NotNull final LongChunk<? extends Values> longChunk) {
+        final WritableObjectChunk<DateTime, ? super Values> dateTimeObjectDestination = destination.asWritableObjectChunk();
         for (int ii = 0; ii < longChunk.size(); ++ii) {
             final long longValue = longChunk.get(ii);
-            dBDateTimeObjectDestination.set(ii, DBTimeUtils.nanosToTime(longValue));
+            dateTimeObjectDestination.set(ii, DateTimeUtils.nanosToTime(longValue));
         }
-        dBDateTimeObjectDestination.setSize(longChunk.size());
+        dateTimeObjectDestination.setSize(longChunk.size());
     }
 }

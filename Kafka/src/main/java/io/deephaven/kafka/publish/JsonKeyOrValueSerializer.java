@@ -4,7 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.utils.DBDateTime;
+import io.deephaven.engine.tables.utils.DateTime;
 import io.deephaven.engine.util.string.StringUtils;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.chunk.*;
@@ -341,7 +341,7 @@ public class JsonKeyOrValueSerializer implements KeyOrValueSerializer<String> {
                 final WritableObjectChunk<ObjectNode, Attributes.Values> jsonChunk,
                 final RowSequence keys,
                 final boolean isRemoval) {
-            final String nanosString = String.valueOf(DBDateTime.now().getNanos());
+            final String nanosString = String.valueOf(DateTime.now().getNanos());
             for (int ii = 0; ii < jsonChunk.size(); ++ii) {
                 getChildNode(jsonChunk.get(ii)).put(childNodeFieldName, nanosString);
             }

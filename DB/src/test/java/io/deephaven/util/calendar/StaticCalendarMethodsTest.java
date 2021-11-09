@@ -4,8 +4,8 @@ import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.libs.QueryLibrary;
 import io.deephaven.engine.tables.select.QueryScope;
-import io.deephaven.engine.tables.utils.DBDateTime;
-import io.deephaven.engine.tables.utils.DBTimeUtils;
+import io.deephaven.engine.tables.utils.DateTime;
+import io.deephaven.engine.tables.utils.DateTimeUtils;
 
 import io.deephaven.test.junit4.EngineCleanup;
 import io.deephaven.test.types.OutOfBandTest;
@@ -21,8 +21,8 @@ import static io.deephaven.engine.tables.utils.TableTools.emptyTable;
 @Category(OutOfBandTest.class)
 public class StaticCalendarMethodsTest extends BaseArrayTestCase {
     private final BusinessCalendar calendar = Calendars.calendar();
-    private final DBDateTime time1 = DBTimeUtils.convertDateTime("2002-01-01T01:00:00.000000000 NY");
-    private final DBDateTime time2 = DBTimeUtils.convertDateTime("2002-01-21T01:00:00.000000000 NY");
+    private final DateTime time1 = DateTimeUtils.convertDateTime("2002-01-01T01:00:00.000000000 NY");
+    private final DateTime time2 = DateTimeUtils.convertDateTime("2002-01-21T01:00:00.000000000 NY");
     private final String date1 = "2017-08-01";
     private final String date2 = "2017-08-05";
 
@@ -76,7 +76,7 @@ public class StaticCalendarMethodsTest extends BaseArrayTestCase {
     }
 
     // test to make sure these methods work inside the query strings
-    // previous clash with DBTimeUtils
+    // previous clash with DateTimeUtils
     public void testCalendarMethodsTable() {
         if (!QueryLibrary.getStaticImports().contains(StaticCalendarMethods.class)) {
             QueryLibrary.importStatic(StaticCalendarMethods.class);

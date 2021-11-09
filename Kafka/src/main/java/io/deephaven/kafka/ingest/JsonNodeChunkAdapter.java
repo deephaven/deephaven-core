@@ -6,7 +6,7 @@ package io.deephaven.kafka.ingest;
 
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.engine.tables.TableDefinition;
-import io.deephaven.engine.tables.utils.DBDateTime;
+import io.deephaven.engine.tables.utils.DateTime;
 import io.deephaven.engine.v2.sources.chunk.ChunkType;
 
 import java.util.Map;
@@ -55,8 +55,8 @@ public class JsonNodeChunkAdapter extends MultiFieldChunkAdapter {
             case Int:
                 return new JsonNodeIntFieldCopier(fieldName);
             case Long:
-                if (dataType == DBDateTime.class) {
-                    return new JsonNodeDBDateTimeFieldCopier(fieldName);
+                if (dataType == DateTime.class) {
+                    return new JsonNodeDateTimeFieldCopier(fieldName);
                 }
                 return new JsonNodeLongFieldCopier(fieldName);
             case Float:

@@ -515,21 +515,21 @@ public class GroovyDeephavenSession extends AbstractScriptSession implements Scr
                 "import java.lang.reflect.Array;\n" +
                 "import io.deephaven.util.type.TypeUtils;\n" +
                 "import io.deephaven.engine.tables.utils.ArrayUtils;\n" +
-                "import io.deephaven.engine.tables.utils.DBDateTime;\n" +
-                "import io.deephaven.engine.tables.utils.DBTimeUtils;\n" +
+                "import io.deephaven.engine.tables.utils.DateTime;\n" +
+                "import io.deephaven.engine.tables.utils.DateTimeUtils;\n" +
                 "import io.deephaven.base.string.cache.CompressedString;\n" +
                 "import static io.deephaven.base.string.cache.CompressedString.compress;\n" +
                 "import org.joda.time.LocalTime;\n" +
-                "import io.deephaven.engine.tables.utils.DBPeriod;\n" +
+                "import io.deephaven.engine.tables.utils.Period;\n" +
                 "import io.deephaven.engine.tables.select.Param;\n" +
                 "import io.deephaven.engine.tables.select.QueryScope;\n" +
                 "import java.util.*;\n" +
                 "import java.lang.*;\n" +
                 "import static io.deephaven.util.QueryConstants.*;\n" +
                 "import static io.deephaven.libs.GroovyStaticImports.*;\n" +
-                "import static io.deephaven.engine.tables.utils.DBTimeUtils.*;\n" +
-                "import static io.deephaven.engine.tables.utils.DBTimeZone.*;\n" +
-                "import static io.deephaven.engine.tables.lang.DBLanguageFunctionUtil.*;\n" +
+                "import static io.deephaven.engine.tables.utils.DateTimeUtils.*;\n" +
+                "import static io.deephaven.engine.tables.utils.TimeZone.*;\n" +
+                "import static io.deephaven.engine.tables.lang.LanguageFunctionUtil.*;\n" +
                 "import static io.deephaven.engine.v2.by.ComboAggregateFactory.*;\n" +
                 StringUtils.joinStrings(scriptImports, "\n") + "\n";
         return new Pair<>(commandPrefix, commandPrefix + command

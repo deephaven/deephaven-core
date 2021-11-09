@@ -6,8 +6,8 @@ package io.deephaven.engine.v2.select;
 
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.TableDefinition;
-import io.deephaven.engine.tables.utils.DBDateTime;
-import io.deephaven.engine.tables.utils.DBTimeUtils;
+import io.deephaven.engine.tables.utils.DateTime;
+import io.deephaven.engine.tables.utils.DateTimeUtils;
 import io.deephaven.engine.v2.DynamicNode;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.utils.*;
@@ -17,12 +17,12 @@ import java.util.List;
 
 /**
  * Utilities for downsampling non-ticking time series data within a query. The input table must be sorted by the
- * {@link DBDateTime} column to be used for binning rows.
+ * {@link DateTime} column to be used for binning rows.
  * <p>
  * </p>
  * <p>
  * Usage is of the form:
- * {@code downsampledX = x.where(new DownsampledWhereFilter("Timestamp", 5 * DBTimeUtils.MINUTE));}
+ * {@code downsampledX = x.where(new DownsampledWhereFilter("Timestamp", 5 * DateTimeUtils.MINUTE));}
  * </p>
  */
 
@@ -47,8 +47,8 @@ public class DownsampledWhereFilter extends SelectFilterImpl {
     /**
      * Creates a {@link DownsampledWhereFilter} which can be used in a .where clause to downsample time series rows.
      * 
-     * @param column {@link DBDateTime} column to use for filtering.
-     * @param binSize Size in nanoseconds for the time bins. Constants like {@link DBTimeUtils#MINUTE} are typically
+     * @param column {@link DateTime} column to use for filtering.
+     * @param binSize Size in nanoseconds for the time bins. Constants like {@link DateTimeUtils#MINUTE} are typically
      *        used.
      * @param order {@link SampleOrder} to set desired behavior.
      */
@@ -61,8 +61,8 @@ public class DownsampledWhereFilter extends SelectFilterImpl {
     /**
      * Creates a {@link DownsampledWhereFilter} which can be used in a .where clause to downsample time series rows.
      * 
-     * @param column {@link DBDateTime} column to use for filtering.
-     * @param binSize Size in nanoseconds for the time bins. Constants like {@link DBTimeUtils#MINUTE} are typically
+     * @param column {@link DateTime} column to use for filtering.
+     * @param binSize Size in nanoseconds for the time bins. Constants like {@link DateTimeUtils#MINUTE} are typically
      *        used.
      */
     public DownsampledWhereFilter(String column, long binSize) {
@@ -92,7 +92,7 @@ public class DownsampledWhereFilter extends SelectFilterImpl {
 
         // NB: because our source is not refreshing, we don't care about the previous values
 
-        ColumnSource<DBDateTime> timestampColumn = table.getColumnSource(column);
+        ColumnSource<DateTime> timestampColumn = table.getColumnSource(column);
 
         RowSetBuilderSequential builder = RowSetFactory.builderSequential();
 
@@ -101,15 +101,15 @@ public class DownsampledWhereFilter extends SelectFilterImpl {
         boolean hasNext = it.hasNext();
 
         long lastKey = -1;
-        DBDateTime lastBin = null;
+        DateTime lastBin = null;
 
         while (hasNext) {
             long next = it.nextLong();
             hasNext = it.hasNext();
 
-            DBDateTime timestamp = timestampColumn.get(next);
-            DBDateTime bin = (order == SampleOrder.UPPERLAST) ? DBTimeUtils.upperBin(timestamp, binSize)
-                    : DBTimeUtils.lowerBin(timestamp, binSize);
+            DateTime timestamp = timestampColumn.get(next);
+            DateTime bin = (order == SampleOrder.UPPERLAST) ? DateTimeUtils.upperBin(timestamp, binSize)
+                    : DateTimeUtils.lowerBin(timestamp, binSize);
             if (!hasNext) {
                 if (order == SampleOrder.UPPERLAST) {
                     if (lastKey != -1 && (lastBin != null && !lastBin.equals(bin))) {

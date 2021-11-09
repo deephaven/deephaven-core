@@ -9,6 +9,8 @@
 package io.deephaven.engine.plot;
 
 
+import io.deephaven.engine.tables.utils.DateTime;
+
 /** An interface for constructing plots.  A Figure is immutable, and all function calls return a new immutable Figure instance.*/
 @SuppressWarnings({"unused", "RedundantCast", "SameParameterValue"})
 public interface Figure extends java.io.Serializable, io.deephaven.engine.plot.BaseFigure, io.deephaven.engine.plot.Chart, io.deephaven.engine.plot.Axes, io.deephaven.engine.plot.Axis, io.deephaven.engine.plot.datasets.DataSeries, io.deephaven.engine.plot.datasets.category.CategoryDataSeries, io.deephaven.engine.plot.datasets.interval.IntervalXYDataSeries, io.deephaven.engine.plot.datasets.ohlc.OHLCDataSeries, io.deephaven.engine.plot.datasets.xy.XYDataSeries, io.deephaven.engine.plot.datasets.multiseries.MultiSeries, io.deephaven.engine.plot.datasets.xy.XYDataSeriesFunction, io.deephaven.engine.plot.datasets.xyerrorbar.XYErrorBarDataSeries, io.deephaven.engine.plot.datasets.categoryerrorbar.CategoryErrorBarDataSeries {
@@ -68,7 +70,7 @@ public interface Figure extends java.io.Serializable, io.deephaven.engine.plot.B
 
     @Override <T0 extends java.lang.Comparable> Figure catErrorBar( java.lang.Comparable seriesName, T0[] categories, long[] values, long[] yLow, long[] yHigh );
 
-    @Override <T0 extends java.lang.Comparable> Figure catErrorBar( java.lang.Comparable seriesName, T0[] categories, io.deephaven.engine.tables.utils.DBDateTime[] values, io.deephaven.engine.tables.utils.DBDateTime[] yLow, io.deephaven.engine.tables.utils.DBDateTime[] yHigh );
+    @Override <T0 extends java.lang.Comparable> Figure catErrorBar(java.lang.Comparable seriesName, T0[] categories, DateTime[] values, DateTime[] yLow, DateTime[] yHigh );
 
     @Override <T0 extends java.lang.Comparable> Figure catErrorBar( java.lang.Comparable seriesName, T0[] categories, java.util.Date[] values, java.util.Date[] yLow, java.util.Date[] yHigh );
 
@@ -124,7 +126,7 @@ public interface Figure extends java.io.Serializable, io.deephaven.engine.plot.B
 
     @Override <T0 extends java.lang.Comparable> Figure catPlot( java.lang.Comparable seriesName, T0[] categories, long[] values );
 
-    @Override <T0 extends java.lang.Comparable> Figure catPlot( java.lang.Comparable seriesName, T0[] categories, io.deephaven.engine.tables.utils.DBDateTime[] values );
+    @Override <T0 extends java.lang.Comparable> Figure catPlot( java.lang.Comparable seriesName, T0[] categories, DateTime[] values );
 
     @Override <T0 extends java.lang.Comparable> Figure catPlot( java.lang.Comparable seriesName, T0[] categories, java.util.Date[] values );
 
@@ -144,7 +146,7 @@ public interface Figure extends java.io.Serializable, io.deephaven.engine.plot.B
 
     @Override <T0 extends java.lang.Comparable> Figure catPlot( java.lang.Comparable seriesName, java.util.List<T0> categories, long[] values );
 
-    @Override <T0 extends java.lang.Comparable> Figure catPlot( java.lang.Comparable seriesName, java.util.List<T0> categories, io.deephaven.engine.tables.utils.DBDateTime[] values );
+    @Override <T0 extends java.lang.Comparable> Figure catPlot( java.lang.Comparable seriesName, java.util.List<T0> categories, DateTime[] values );
 
     @Override <T0 extends java.lang.Comparable> Figure catPlot( java.lang.Comparable seriesName, java.util.List<T0> categories, java.util.Date[] values );
 
@@ -192,49 +194,49 @@ public interface Figure extends java.io.Serializable, io.deephaven.engine.plot.B
 
     @Override <T0 extends java.lang.Number,T1 extends java.lang.Number,T2 extends java.lang.Number,T3 extends java.lang.Number> Figure errorBarX( java.lang.Comparable seriesName, T0[] x, T1[] xLow, T2[] xHigh, T3[] y );
 
-    @Override <T0 extends java.lang.Number,T1 extends java.lang.Number,T2 extends java.lang.Number> Figure errorBarX( java.lang.Comparable seriesName, T0[] x, T1[] xLow, T2[] xHigh, io.deephaven.engine.tables.utils.DBDateTime[] y );
+    @Override <T0 extends java.lang.Number,T1 extends java.lang.Number,T2 extends java.lang.Number> Figure errorBarX( java.lang.Comparable seriesName, T0[] x, T1[] xLow, T2[] xHigh, DateTime[] y );
 
     @Override <T0 extends java.lang.Number,T1 extends java.lang.Number,T2 extends java.lang.Number> Figure errorBarX( java.lang.Comparable seriesName, T0[] x, T1[] xLow, T2[] xHigh, java.util.Date[] y );
 
     @Override  Figure errorBarX( java.lang.Comparable seriesName, double[] x, double[] xLow, double[] xHigh, double[] y );
 
-    @Override  Figure errorBarX( java.lang.Comparable seriesName, double[] x, double[] xLow, double[] xHigh, io.deephaven.engine.tables.utils.DBDateTime[] y );
+    @Override  Figure errorBarX( java.lang.Comparable seriesName, double[] x, double[] xLow, double[] xHigh, DateTime[] y );
 
     @Override  Figure errorBarX( java.lang.Comparable seriesName, double[] x, double[] xLow, double[] xHigh, java.util.Date[] y );
 
     @Override  Figure errorBarX( java.lang.Comparable seriesName, float[] x, float[] xLow, float[] xHigh, float[] y );
 
-    @Override  Figure errorBarX( java.lang.Comparable seriesName, float[] x, float[] xLow, float[] xHigh, io.deephaven.engine.tables.utils.DBDateTime[] y );
+    @Override  Figure errorBarX( java.lang.Comparable seriesName, float[] x, float[] xLow, float[] xHigh, DateTime[] y );
 
     @Override  Figure errorBarX( java.lang.Comparable seriesName, float[] x, float[] xLow, float[] xHigh, java.util.Date[] y );
 
     @Override  Figure errorBarX( java.lang.Comparable seriesName, int[] x, int[] xLow, int[] xHigh, int[] y );
 
-    @Override  Figure errorBarX( java.lang.Comparable seriesName, int[] x, int[] xLow, int[] xHigh, io.deephaven.engine.tables.utils.DBDateTime[] y );
+    @Override  Figure errorBarX( java.lang.Comparable seriesName, int[] x, int[] xLow, int[] xHigh, DateTime[] y );
 
     @Override  Figure errorBarX( java.lang.Comparable seriesName, int[] x, int[] xLow, int[] xHigh, java.util.Date[] y );
 
     @Override  Figure errorBarX( java.lang.Comparable seriesName, long[] x, long[] xLow, long[] xHigh, long[] y );
 
-    @Override  Figure errorBarX( java.lang.Comparable seriesName, long[] x, long[] xLow, long[] xHigh, io.deephaven.engine.tables.utils.DBDateTime[] y );
+    @Override  Figure errorBarX( java.lang.Comparable seriesName, long[] x, long[] xLow, long[] xHigh, DateTime[] y );
 
     @Override  Figure errorBarX( java.lang.Comparable seriesName, long[] x, long[] xLow, long[] xHigh, java.util.Date[] y );
 
-    @Override <T3 extends java.lang.Number> Figure errorBarX( java.lang.Comparable seriesName, io.deephaven.engine.tables.utils.DBDateTime[] x, io.deephaven.engine.tables.utils.DBDateTime[] xLow, io.deephaven.engine.tables.utils.DBDateTime[] xHigh, T3[] y );
+    @Override <T3 extends java.lang.Number> Figure errorBarX(java.lang.Comparable seriesName, DateTime[] x, DateTime[] xLow, DateTime[] xHigh, T3[] y );
 
-    @Override  Figure errorBarX( java.lang.Comparable seriesName, io.deephaven.engine.tables.utils.DBDateTime[] x, io.deephaven.engine.tables.utils.DBDateTime[] xLow, io.deephaven.engine.tables.utils.DBDateTime[] xHigh, double[] y );
+    @Override  Figure errorBarX(java.lang.Comparable seriesName, DateTime[] x, DateTime[] xLow, DateTime[] xHigh, double[] y );
 
-    @Override  Figure errorBarX( java.lang.Comparable seriesName, io.deephaven.engine.tables.utils.DBDateTime[] x, io.deephaven.engine.tables.utils.DBDateTime[] xLow, io.deephaven.engine.tables.utils.DBDateTime[] xHigh, float[] y );
+    @Override  Figure errorBarX(java.lang.Comparable seriesName, DateTime[] x, DateTime[] xLow, DateTime[] xHigh, float[] y );
 
-    @Override  Figure errorBarX( java.lang.Comparable seriesName, io.deephaven.engine.tables.utils.DBDateTime[] x, io.deephaven.engine.tables.utils.DBDateTime[] xLow, io.deephaven.engine.tables.utils.DBDateTime[] xHigh, int[] y );
+    @Override  Figure errorBarX(java.lang.Comparable seriesName, DateTime[] x, DateTime[] xLow, DateTime[] xHigh, int[] y );
 
-    @Override  Figure errorBarX( java.lang.Comparable seriesName, io.deephaven.engine.tables.utils.DBDateTime[] x, io.deephaven.engine.tables.utils.DBDateTime[] xLow, io.deephaven.engine.tables.utils.DBDateTime[] xHigh, long[] y );
+    @Override  Figure errorBarX(java.lang.Comparable seriesName, DateTime[] x, DateTime[] xLow, DateTime[] xHigh, long[] y );
 
-    @Override  Figure errorBarX( java.lang.Comparable seriesName, io.deephaven.engine.tables.utils.DBDateTime[] x, io.deephaven.engine.tables.utils.DBDateTime[] xLow, io.deephaven.engine.tables.utils.DBDateTime[] xHigh, io.deephaven.engine.tables.utils.DBDateTime[] y );
+    @Override  Figure errorBarX(java.lang.Comparable seriesName, DateTime[] x, DateTime[] xLow, DateTime[] xHigh, DateTime[] y );
 
-    @Override  Figure errorBarX( java.lang.Comparable seriesName, io.deephaven.engine.tables.utils.DBDateTime[] x, io.deephaven.engine.tables.utils.DBDateTime[] xLow, io.deephaven.engine.tables.utils.DBDateTime[] xHigh, short[] y );
+    @Override  Figure errorBarX(java.lang.Comparable seriesName, DateTime[] x, DateTime[] xLow, DateTime[] xHigh, short[] y );
 
-    @Override <T3 extends java.lang.Number> Figure errorBarX( java.lang.Comparable seriesName, io.deephaven.engine.tables.utils.DBDateTime[] x, io.deephaven.engine.tables.utils.DBDateTime[] xLow, io.deephaven.engine.tables.utils.DBDateTime[] xHigh, java.util.List<T3> y );
+    @Override <T3 extends java.lang.Number> Figure errorBarX(java.lang.Comparable seriesName, DateTime[] x, DateTime[] xLow, DateTime[] xHigh, java.util.List<T3> y );
 
     @Override <T3 extends java.lang.Number> Figure errorBarX( java.lang.Comparable seriesName, java.util.Date[] x, java.util.Date[] xLow, java.util.Date[] xHigh, T3[] y );
 
@@ -252,13 +254,13 @@ public interface Figure extends java.io.Serializable, io.deephaven.engine.plot.B
 
     @Override <T3 extends java.lang.Number> Figure errorBarX( java.lang.Comparable seriesName, java.util.Date[] x, java.util.Date[] xLow, java.util.Date[] xHigh, java.util.List<T3> y );
 
-    @Override  Figure errorBarX( java.lang.Comparable seriesName, short[] x, short[] xLow, short[] xHigh, io.deephaven.engine.tables.utils.DBDateTime[] y );
+    @Override  Figure errorBarX( java.lang.Comparable seriesName, short[] x, short[] xLow, short[] xHigh, DateTime[] y );
 
     @Override  Figure errorBarX( java.lang.Comparable seriesName, short[] x, short[] xLow, short[] xHigh, java.util.Date[] y );
 
     @Override  Figure errorBarX( java.lang.Comparable seriesName, short[] x, short[] xLow, short[] xHigh, short[] y );
 
-    @Override <T0 extends java.lang.Number,T1 extends java.lang.Number,T2 extends java.lang.Number> Figure errorBarX( java.lang.Comparable seriesName, java.util.List<T0> x, java.util.List<T1> xLow, java.util.List<T2> xHigh, io.deephaven.engine.tables.utils.DBDateTime[] y );
+    @Override <T0 extends java.lang.Number,T1 extends java.lang.Number,T2 extends java.lang.Number> Figure errorBarX( java.lang.Comparable seriesName, java.util.List<T0> x, java.util.List<T1> xLow, java.util.List<T2> xHigh, DateTime[] y );
 
     @Override <T0 extends java.lang.Number,T1 extends java.lang.Number,T2 extends java.lang.Number> Figure errorBarX( java.lang.Comparable seriesName, java.util.List<T0> x, java.util.List<T1> xLow, java.util.List<T2> xHigh, java.util.Date[] y );
 
@@ -274,49 +276,49 @@ public interface Figure extends java.io.Serializable, io.deephaven.engine.plot.B
 
     @Override <T0 extends java.lang.Number,T1 extends java.lang.Number,T2 extends java.lang.Number,T3 extends java.lang.Number,T4 extends java.lang.Number,T5 extends java.lang.Number> Figure errorBarXY( java.lang.Comparable seriesName, T0[] x, T1[] xLow, T2[] xHigh, T3[] y, T4[] yLow, T5[] yHigh );
 
-    @Override <T0 extends java.lang.Number,T1 extends java.lang.Number,T2 extends java.lang.Number> Figure errorBarXY( java.lang.Comparable seriesName, T0[] x, T1[] xLow, T2[] xHigh, io.deephaven.engine.tables.utils.DBDateTime[] y, io.deephaven.engine.tables.utils.DBDateTime[] yLow, io.deephaven.engine.tables.utils.DBDateTime[] yHigh );
+    @Override <T0 extends java.lang.Number,T1 extends java.lang.Number,T2 extends java.lang.Number> Figure errorBarXY(java.lang.Comparable seriesName, T0[] x, T1[] xLow, T2[] xHigh, DateTime[] y, DateTime[] yLow, DateTime[] yHigh );
 
     @Override <T0 extends java.lang.Number,T1 extends java.lang.Number,T2 extends java.lang.Number> Figure errorBarXY( java.lang.Comparable seriesName, T0[] x, T1[] xLow, T2[] xHigh, java.util.Date[] y, java.util.Date[] yLow, java.util.Date[] yHigh );
 
     @Override  Figure errorBarXY( java.lang.Comparable seriesName, double[] x, double[] xLow, double[] xHigh, double[] y, double[] yLow, double[] yHigh );
 
-    @Override  Figure errorBarXY( java.lang.Comparable seriesName, double[] x, double[] xLow, double[] xHigh, io.deephaven.engine.tables.utils.DBDateTime[] y, io.deephaven.engine.tables.utils.DBDateTime[] yLow, io.deephaven.engine.tables.utils.DBDateTime[] yHigh );
+    @Override  Figure errorBarXY(java.lang.Comparable seriesName, double[] x, double[] xLow, double[] xHigh, DateTime[] y, DateTime[] yLow, DateTime[] yHigh );
 
     @Override  Figure errorBarXY( java.lang.Comparable seriesName, double[] x, double[] xLow, double[] xHigh, java.util.Date[] y, java.util.Date[] yLow, java.util.Date[] yHigh );
 
     @Override  Figure errorBarXY( java.lang.Comparable seriesName, float[] x, float[] xLow, float[] xHigh, float[] y, float[] yLow, float[] yHigh );
 
-    @Override  Figure errorBarXY( java.lang.Comparable seriesName, float[] x, float[] xLow, float[] xHigh, io.deephaven.engine.tables.utils.DBDateTime[] y, io.deephaven.engine.tables.utils.DBDateTime[] yLow, io.deephaven.engine.tables.utils.DBDateTime[] yHigh );
+    @Override  Figure errorBarXY(java.lang.Comparable seriesName, float[] x, float[] xLow, float[] xHigh, DateTime[] y, DateTime[] yLow, DateTime[] yHigh );
 
     @Override  Figure errorBarXY( java.lang.Comparable seriesName, float[] x, float[] xLow, float[] xHigh, java.util.Date[] y, java.util.Date[] yLow, java.util.Date[] yHigh );
 
     @Override  Figure errorBarXY( java.lang.Comparable seriesName, int[] x, int[] xLow, int[] xHigh, int[] y, int[] yLow, int[] yHigh );
 
-    @Override  Figure errorBarXY( java.lang.Comparable seriesName, int[] x, int[] xLow, int[] xHigh, io.deephaven.engine.tables.utils.DBDateTime[] y, io.deephaven.engine.tables.utils.DBDateTime[] yLow, io.deephaven.engine.tables.utils.DBDateTime[] yHigh );
+    @Override  Figure errorBarXY(java.lang.Comparable seriesName, int[] x, int[] xLow, int[] xHigh, DateTime[] y, DateTime[] yLow, DateTime[] yHigh );
 
     @Override  Figure errorBarXY( java.lang.Comparable seriesName, int[] x, int[] xLow, int[] xHigh, java.util.Date[] y, java.util.Date[] yLow, java.util.Date[] yHigh );
 
     @Override  Figure errorBarXY( java.lang.Comparable seriesName, long[] x, long[] xLow, long[] xHigh, long[] y, long[] yLow, long[] yHigh );
 
-    @Override  Figure errorBarXY( java.lang.Comparable seriesName, long[] x, long[] xLow, long[] xHigh, io.deephaven.engine.tables.utils.DBDateTime[] y, io.deephaven.engine.tables.utils.DBDateTime[] yLow, io.deephaven.engine.tables.utils.DBDateTime[] yHigh );
+    @Override  Figure errorBarXY(java.lang.Comparable seriesName, long[] x, long[] xLow, long[] xHigh, DateTime[] y, DateTime[] yLow, DateTime[] yHigh );
 
     @Override  Figure errorBarXY( java.lang.Comparable seriesName, long[] x, long[] xLow, long[] xHigh, java.util.Date[] y, java.util.Date[] yLow, java.util.Date[] yHigh );
 
-    @Override <T3 extends java.lang.Number,T4 extends java.lang.Number,T5 extends java.lang.Number> Figure errorBarXY( java.lang.Comparable seriesName, io.deephaven.engine.tables.utils.DBDateTime[] x, io.deephaven.engine.tables.utils.DBDateTime[] xLow, io.deephaven.engine.tables.utils.DBDateTime[] xHigh, T3[] y, T4[] yLow, T5[] yHigh );
+    @Override <T3 extends java.lang.Number,T4 extends java.lang.Number,T5 extends java.lang.Number> Figure errorBarXY(java.lang.Comparable seriesName, DateTime[] x, DateTime[] xLow, DateTime[] xHigh, T3[] y, T4[] yLow, T5[] yHigh );
 
-    @Override  Figure errorBarXY( java.lang.Comparable seriesName, io.deephaven.engine.tables.utils.DBDateTime[] x, io.deephaven.engine.tables.utils.DBDateTime[] xLow, io.deephaven.engine.tables.utils.DBDateTime[] xHigh, double[] y, double[] yLow, double[] yHigh );
+    @Override  Figure errorBarXY(java.lang.Comparable seriesName, DateTime[] x, DateTime[] xLow, DateTime[] xHigh, double[] y, double[] yLow, double[] yHigh );
 
-    @Override  Figure errorBarXY( java.lang.Comparable seriesName, io.deephaven.engine.tables.utils.DBDateTime[] x, io.deephaven.engine.tables.utils.DBDateTime[] xLow, io.deephaven.engine.tables.utils.DBDateTime[] xHigh, float[] y, float[] yLow, float[] yHigh );
+    @Override  Figure errorBarXY(java.lang.Comparable seriesName, DateTime[] x, DateTime[] xLow, DateTime[] xHigh, float[] y, float[] yLow, float[] yHigh );
 
-    @Override  Figure errorBarXY( java.lang.Comparable seriesName, io.deephaven.engine.tables.utils.DBDateTime[] x, io.deephaven.engine.tables.utils.DBDateTime[] xLow, io.deephaven.engine.tables.utils.DBDateTime[] xHigh, int[] y, int[] yLow, int[] yHigh );
+    @Override  Figure errorBarXY(java.lang.Comparable seriesName, DateTime[] x, DateTime[] xLow, DateTime[] xHigh, int[] y, int[] yLow, int[] yHigh );
 
-    @Override  Figure errorBarXY( java.lang.Comparable seriesName, io.deephaven.engine.tables.utils.DBDateTime[] x, io.deephaven.engine.tables.utils.DBDateTime[] xLow, io.deephaven.engine.tables.utils.DBDateTime[] xHigh, long[] y, long[] yLow, long[] yHigh );
+    @Override  Figure errorBarXY(java.lang.Comparable seriesName, DateTime[] x, DateTime[] xLow, DateTime[] xHigh, long[] y, long[] yLow, long[] yHigh );
 
-    @Override  Figure errorBarXY( java.lang.Comparable seriesName, io.deephaven.engine.tables.utils.DBDateTime[] x, io.deephaven.engine.tables.utils.DBDateTime[] xLow, io.deephaven.engine.tables.utils.DBDateTime[] xHigh, io.deephaven.engine.tables.utils.DBDateTime[] y, io.deephaven.engine.tables.utils.DBDateTime[] yLow, io.deephaven.engine.tables.utils.DBDateTime[] yHigh );
+    @Override  Figure errorBarXY(java.lang.Comparable seriesName, DateTime[] x, DateTime[] xLow, DateTime[] xHigh, DateTime[] y, DateTime[] yLow, DateTime[] yHigh );
 
-    @Override  Figure errorBarXY( java.lang.Comparable seriesName, io.deephaven.engine.tables.utils.DBDateTime[] x, io.deephaven.engine.tables.utils.DBDateTime[] xLow, io.deephaven.engine.tables.utils.DBDateTime[] xHigh, short[] y, short[] yLow, short[] yHigh );
+    @Override  Figure errorBarXY(java.lang.Comparable seriesName, DateTime[] x, DateTime[] xLow, DateTime[] xHigh, short[] y, short[] yLow, short[] yHigh );
 
-    @Override <T3 extends java.lang.Number,T4 extends java.lang.Number,T5 extends java.lang.Number> Figure errorBarXY( java.lang.Comparable seriesName, io.deephaven.engine.tables.utils.DBDateTime[] x, io.deephaven.engine.tables.utils.DBDateTime[] xLow, io.deephaven.engine.tables.utils.DBDateTime[] xHigh, java.util.List<T3> y, java.util.List<T4> yLow, java.util.List<T5> yHigh );
+    @Override <T3 extends java.lang.Number,T4 extends java.lang.Number,T5 extends java.lang.Number> Figure errorBarXY(java.lang.Comparable seriesName, DateTime[] x, DateTime[] xLow, DateTime[] xHigh, java.util.List<T3> y, java.util.List<T4> yLow, java.util.List<T5> yHigh );
 
     @Override <T3 extends java.lang.Number,T4 extends java.lang.Number,T5 extends java.lang.Number> Figure errorBarXY( java.lang.Comparable seriesName, java.util.Date[] x, java.util.Date[] xLow, java.util.Date[] xHigh, T3[] y, T4[] yLow, T5[] yHigh );
 
@@ -334,13 +336,13 @@ public interface Figure extends java.io.Serializable, io.deephaven.engine.plot.B
 
     @Override <T3 extends java.lang.Number,T4 extends java.lang.Number,T5 extends java.lang.Number> Figure errorBarXY( java.lang.Comparable seriesName, java.util.Date[] x, java.util.Date[] xLow, java.util.Date[] xHigh, java.util.List<T3> y, java.util.List<T4> yLow, java.util.List<T5> yHigh );
 
-    @Override  Figure errorBarXY( java.lang.Comparable seriesName, short[] x, short[] xLow, short[] xHigh, io.deephaven.engine.tables.utils.DBDateTime[] y, io.deephaven.engine.tables.utils.DBDateTime[] yLow, io.deephaven.engine.tables.utils.DBDateTime[] yHigh );
+    @Override  Figure errorBarXY(java.lang.Comparable seriesName, short[] x, short[] xLow, short[] xHigh, DateTime[] y, DateTime[] yLow, DateTime[] yHigh );
 
     @Override  Figure errorBarXY( java.lang.Comparable seriesName, short[] x, short[] xLow, short[] xHigh, java.util.Date[] y, java.util.Date[] yLow, java.util.Date[] yHigh );
 
     @Override  Figure errorBarXY( java.lang.Comparable seriesName, short[] x, short[] xLow, short[] xHigh, short[] y, short[] yLow, short[] yHigh );
 
-    @Override <T0 extends java.lang.Number,T1 extends java.lang.Number,T2 extends java.lang.Number> Figure errorBarXY( java.lang.Comparable seriesName, java.util.List<T0> x, java.util.List<T1> xLow, java.util.List<T2> xHigh, io.deephaven.engine.tables.utils.DBDateTime[] y, io.deephaven.engine.tables.utils.DBDateTime[] yLow, io.deephaven.engine.tables.utils.DBDateTime[] yHigh );
+    @Override <T0 extends java.lang.Number,T1 extends java.lang.Number,T2 extends java.lang.Number> Figure errorBarXY(java.lang.Comparable seriesName, java.util.List<T0> x, java.util.List<T1> xLow, java.util.List<T2> xHigh, DateTime[] y, DateTime[] yLow, DateTime[] yHigh );
 
     @Override <T0 extends java.lang.Number,T1 extends java.lang.Number,T2 extends java.lang.Number> Figure errorBarXY( java.lang.Comparable seriesName, java.util.List<T0> x, java.util.List<T1> xLow, java.util.List<T2> xHigh, java.util.Date[] y, java.util.Date[] yLow, java.util.Date[] yHigh );
 
@@ -356,49 +358,49 @@ public interface Figure extends java.io.Serializable, io.deephaven.engine.plot.B
 
     @Override <T0 extends java.lang.Number,T1 extends java.lang.Number,T2 extends java.lang.Number,T3 extends java.lang.Number> Figure errorBarY( java.lang.Comparable seriesName, T0[] x, T1[] y, T2[] yLow, T3[] yHigh );
 
-    @Override <T0 extends java.lang.Number> Figure errorBarY( java.lang.Comparable seriesName, T0[] x, io.deephaven.engine.tables.utils.DBDateTime[] y, io.deephaven.engine.tables.utils.DBDateTime[] yLow, io.deephaven.engine.tables.utils.DBDateTime[] yHigh );
+    @Override <T0 extends java.lang.Number> Figure errorBarY(java.lang.Comparable seriesName, T0[] x, DateTime[] y, DateTime[] yLow, DateTime[] yHigh );
 
     @Override <T0 extends java.lang.Number> Figure errorBarY( java.lang.Comparable seriesName, T0[] x, java.util.Date[] y, java.util.Date[] yLow, java.util.Date[] yHigh );
 
     @Override  Figure errorBarY( java.lang.Comparable seriesName, double[] x, double[] y, double[] yLow, double[] yHigh );
 
-    @Override  Figure errorBarY( java.lang.Comparable seriesName, double[] x, io.deephaven.engine.tables.utils.DBDateTime[] y, io.deephaven.engine.tables.utils.DBDateTime[] yLow, io.deephaven.engine.tables.utils.DBDateTime[] yHigh );
+    @Override  Figure errorBarY(java.lang.Comparable seriesName, double[] x, DateTime[] y, DateTime[] yLow, DateTime[] yHigh );
 
     @Override  Figure errorBarY( java.lang.Comparable seriesName, double[] x, java.util.Date[] y, java.util.Date[] yLow, java.util.Date[] yHigh );
 
     @Override  Figure errorBarY( java.lang.Comparable seriesName, float[] x, float[] y, float[] yLow, float[] yHigh );
 
-    @Override  Figure errorBarY( java.lang.Comparable seriesName, float[] x, io.deephaven.engine.tables.utils.DBDateTime[] y, io.deephaven.engine.tables.utils.DBDateTime[] yLow, io.deephaven.engine.tables.utils.DBDateTime[] yHigh );
+    @Override  Figure errorBarY(java.lang.Comparable seriesName, float[] x, DateTime[] y, DateTime[] yLow, DateTime[] yHigh );
 
     @Override  Figure errorBarY( java.lang.Comparable seriesName, float[] x, java.util.Date[] y, java.util.Date[] yLow, java.util.Date[] yHigh );
 
     @Override  Figure errorBarY( java.lang.Comparable seriesName, int[] x, int[] y, int[] yLow, int[] yHigh );
 
-    @Override  Figure errorBarY( java.lang.Comparable seriesName, int[] x, io.deephaven.engine.tables.utils.DBDateTime[] y, io.deephaven.engine.tables.utils.DBDateTime[] yLow, io.deephaven.engine.tables.utils.DBDateTime[] yHigh );
+    @Override  Figure errorBarY(java.lang.Comparable seriesName, int[] x, DateTime[] y, DateTime[] yLow, DateTime[] yHigh );
 
     @Override  Figure errorBarY( java.lang.Comparable seriesName, int[] x, java.util.Date[] y, java.util.Date[] yLow, java.util.Date[] yHigh );
 
     @Override  Figure errorBarY( java.lang.Comparable seriesName, long[] x, long[] y, long[] yLow, long[] yHigh );
 
-    @Override  Figure errorBarY( java.lang.Comparable seriesName, long[] x, io.deephaven.engine.tables.utils.DBDateTime[] y, io.deephaven.engine.tables.utils.DBDateTime[] yLow, io.deephaven.engine.tables.utils.DBDateTime[] yHigh );
+    @Override  Figure errorBarY(java.lang.Comparable seriesName, long[] x, DateTime[] y, DateTime[] yLow, DateTime[] yHigh );
 
     @Override  Figure errorBarY( java.lang.Comparable seriesName, long[] x, java.util.Date[] y, java.util.Date[] yLow, java.util.Date[] yHigh );
 
-    @Override <T1 extends java.lang.Number,T2 extends java.lang.Number,T3 extends java.lang.Number> Figure errorBarY( java.lang.Comparable seriesName, io.deephaven.engine.tables.utils.DBDateTime[] x, T1[] y, T2[] yLow, T3[] yHigh );
+    @Override <T1 extends java.lang.Number,T2 extends java.lang.Number,T3 extends java.lang.Number> Figure errorBarY(java.lang.Comparable seriesName, DateTime[] x, T1[] y, T2[] yLow, T3[] yHigh );
 
-    @Override  Figure errorBarY( java.lang.Comparable seriesName, io.deephaven.engine.tables.utils.DBDateTime[] x, double[] y, double[] yLow, double[] yHigh );
+    @Override  Figure errorBarY(java.lang.Comparable seriesName, DateTime[] x, double[] y, double[] yLow, double[] yHigh );
 
-    @Override  Figure errorBarY( java.lang.Comparable seriesName, io.deephaven.engine.tables.utils.DBDateTime[] x, float[] y, float[] yLow, float[] yHigh );
+    @Override  Figure errorBarY(java.lang.Comparable seriesName, DateTime[] x, float[] y, float[] yLow, float[] yHigh );
 
-    @Override  Figure errorBarY( java.lang.Comparable seriesName, io.deephaven.engine.tables.utils.DBDateTime[] x, int[] y, int[] yLow, int[] yHigh );
+    @Override  Figure errorBarY(java.lang.Comparable seriesName, DateTime[] x, int[] y, int[] yLow, int[] yHigh );
 
-    @Override  Figure errorBarY( java.lang.Comparable seriesName, io.deephaven.engine.tables.utils.DBDateTime[] x, long[] y, long[] yLow, long[] yHigh );
+    @Override  Figure errorBarY(java.lang.Comparable seriesName, DateTime[] x, long[] y, long[] yLow, long[] yHigh );
 
-    @Override  Figure errorBarY( java.lang.Comparable seriesName, io.deephaven.engine.tables.utils.DBDateTime[] x, io.deephaven.engine.tables.utils.DBDateTime[] y, io.deephaven.engine.tables.utils.DBDateTime[] yLow, io.deephaven.engine.tables.utils.DBDateTime[] yHigh );
+    @Override  Figure errorBarY(java.lang.Comparable seriesName, DateTime[] x, DateTime[] y, DateTime[] yLow, DateTime[] yHigh );
 
-    @Override  Figure errorBarY( java.lang.Comparable seriesName, io.deephaven.engine.tables.utils.DBDateTime[] x, short[] y, short[] yLow, short[] yHigh );
+    @Override  Figure errorBarY(java.lang.Comparable seriesName, DateTime[] x, short[] y, short[] yLow, short[] yHigh );
 
-    @Override <T1 extends java.lang.Number,T2 extends java.lang.Number,T3 extends java.lang.Number> Figure errorBarY( java.lang.Comparable seriesName, io.deephaven.engine.tables.utils.DBDateTime[] x, java.util.List<T1> y, java.util.List<T2> yLow, java.util.List<T3> yHigh );
+    @Override <T1 extends java.lang.Number,T2 extends java.lang.Number,T3 extends java.lang.Number> Figure errorBarY(java.lang.Comparable seriesName, DateTime[] x, java.util.List<T1> y, java.util.List<T2> yLow, java.util.List<T3> yHigh );
 
     @Override <T1 extends java.lang.Number,T2 extends java.lang.Number,T3 extends java.lang.Number> Figure errorBarY( java.lang.Comparable seriesName, java.util.Date[] x, T1[] y, T2[] yLow, T3[] yHigh );
 
@@ -416,13 +418,13 @@ public interface Figure extends java.io.Serializable, io.deephaven.engine.plot.B
 
     @Override <T1 extends java.lang.Number,T2 extends java.lang.Number,T3 extends java.lang.Number> Figure errorBarY( java.lang.Comparable seriesName, java.util.Date[] x, java.util.List<T1> y, java.util.List<T2> yLow, java.util.List<T3> yHigh );
 
-    @Override  Figure errorBarY( java.lang.Comparable seriesName, short[] x, io.deephaven.engine.tables.utils.DBDateTime[] y, io.deephaven.engine.tables.utils.DBDateTime[] yLow, io.deephaven.engine.tables.utils.DBDateTime[] yHigh );
+    @Override  Figure errorBarY(java.lang.Comparable seriesName, short[] x, DateTime[] y, DateTime[] yLow, DateTime[] yHigh );
 
     @Override  Figure errorBarY( java.lang.Comparable seriesName, short[] x, java.util.Date[] y, java.util.Date[] yLow, java.util.Date[] yHigh );
 
     @Override  Figure errorBarY( java.lang.Comparable seriesName, short[] x, short[] y, short[] yLow, short[] yHigh );
 
-    @Override <T0 extends java.lang.Number> Figure errorBarY( java.lang.Comparable seriesName, java.util.List<T0> x, io.deephaven.engine.tables.utils.DBDateTime[] y, io.deephaven.engine.tables.utils.DBDateTime[] yLow, io.deephaven.engine.tables.utils.DBDateTime[] yHigh );
+    @Override <T0 extends java.lang.Number> Figure errorBarY(java.lang.Comparable seriesName, java.util.List<T0> x, DateTime[] y, DateTime[] yLow, DateTime[] yHigh );
 
     @Override <T0 extends java.lang.Number> Figure errorBarY( java.lang.Comparable seriesName, java.util.List<T0> x, java.util.Date[] y, java.util.Date[] yLow, java.util.Date[] yHigh );
 
@@ -532,19 +534,19 @@ public interface Figure extends java.io.Serializable, io.deephaven.engine.plot.B
 
     @Override  Figure newChart( int rowNum, int colNum );
 
-    @Override <T1 extends java.lang.Number,T2 extends java.lang.Number,T3 extends java.lang.Number,T4 extends java.lang.Number> Figure ohlcPlot( java.lang.Comparable seriesName, io.deephaven.engine.tables.utils.DBDateTime[] time, T1[] open, T2[] high, T3[] low, T4[] close );
+    @Override <T1 extends java.lang.Number,T2 extends java.lang.Number,T3 extends java.lang.Number,T4 extends java.lang.Number> Figure ohlcPlot(java.lang.Comparable seriesName, DateTime[] time, T1[] open, T2[] high, T3[] low, T4[] close );
 
-    @Override  Figure ohlcPlot( java.lang.Comparable seriesName, io.deephaven.engine.tables.utils.DBDateTime[] time, double[] open, double[] high, double[] low, double[] close );
+    @Override  Figure ohlcPlot(java.lang.Comparable seriesName, DateTime[] time, double[] open, double[] high, double[] low, double[] close );
 
-    @Override  Figure ohlcPlot( java.lang.Comparable seriesName, io.deephaven.engine.tables.utils.DBDateTime[] time, float[] open, float[] high, float[] low, float[] close );
+    @Override  Figure ohlcPlot(java.lang.Comparable seriesName, DateTime[] time, float[] open, float[] high, float[] low, float[] close );
 
-    @Override  Figure ohlcPlot( java.lang.Comparable seriesName, io.deephaven.engine.tables.utils.DBDateTime[] time, int[] open, int[] high, int[] low, int[] close );
+    @Override  Figure ohlcPlot(java.lang.Comparable seriesName, DateTime[] time, int[] open, int[] high, int[] low, int[] close );
 
-    @Override  Figure ohlcPlot( java.lang.Comparable seriesName, io.deephaven.engine.tables.utils.DBDateTime[] time, long[] open, long[] high, long[] low, long[] close );
+    @Override  Figure ohlcPlot(java.lang.Comparable seriesName, DateTime[] time, long[] open, long[] high, long[] low, long[] close );
 
-    @Override  Figure ohlcPlot( java.lang.Comparable seriesName, io.deephaven.engine.tables.utils.DBDateTime[] time, short[] open, short[] high, short[] low, short[] close );
+    @Override  Figure ohlcPlot(java.lang.Comparable seriesName, DateTime[] time, short[] open, short[] high, short[] low, short[] close );
 
-    @Override <T1 extends java.lang.Number,T2 extends java.lang.Number,T3 extends java.lang.Number,T4 extends java.lang.Number> Figure ohlcPlot( java.lang.Comparable seriesName, io.deephaven.engine.tables.utils.DBDateTime[] time, java.util.List<T1> open, java.util.List<T2> high, java.util.List<T3> low, java.util.List<T4> close );
+    @Override <T1 extends java.lang.Number,T2 extends java.lang.Number,T3 extends java.lang.Number,T4 extends java.lang.Number> Figure ohlcPlot(java.lang.Comparable seriesName, DateTime[] time, java.util.List<T1> open, java.util.List<T2> high, java.util.List<T3> low, java.util.List<T4> close );
 
     @Override <T1 extends java.lang.Number,T2 extends java.lang.Number,T3 extends java.lang.Number,T4 extends java.lang.Number> Figure ohlcPlot( java.lang.Comparable seriesName, java.util.Date[] time, T1[] open, T2[] high, T3[] low, T4[] close );
 
@@ -618,7 +620,7 @@ public interface Figure extends java.io.Serializable, io.deephaven.engine.plot.B
 
     @Override <T0 extends java.lang.Number> Figure plot( java.lang.Comparable seriesName, T0[] x, long[] y );
 
-    @Override <T0 extends java.lang.Number> Figure plot( java.lang.Comparable seriesName, T0[] x, io.deephaven.engine.tables.utils.DBDateTime[] y );
+    @Override <T0 extends java.lang.Number> Figure plot( java.lang.Comparable seriesName, T0[] x, DateTime[] y );
 
     @Override <T0 extends java.lang.Number> Figure plot( java.lang.Comparable seriesName, T0[] x, java.util.Date[] y );
 
@@ -636,7 +638,7 @@ public interface Figure extends java.io.Serializable, io.deephaven.engine.plot.B
 
     @Override  Figure plot( java.lang.Comparable seriesName, double[] x, long[] y );
 
-    @Override  Figure plot( java.lang.Comparable seriesName, double[] x, io.deephaven.engine.tables.utils.DBDateTime[] y );
+    @Override  Figure plot( java.lang.Comparable seriesName, double[] x, DateTime[] y );
 
     @Override  Figure plot( java.lang.Comparable seriesName, double[] x, java.util.Date[] y );
 
@@ -654,7 +656,7 @@ public interface Figure extends java.io.Serializable, io.deephaven.engine.plot.B
 
     @Override  Figure plot( java.lang.Comparable seriesName, float[] x, long[] y );
 
-    @Override  Figure plot( java.lang.Comparable seriesName, float[] x, io.deephaven.engine.tables.utils.DBDateTime[] y );
+    @Override  Figure plot( java.lang.Comparable seriesName, float[] x, DateTime[] y );
 
     @Override  Figure plot( java.lang.Comparable seriesName, float[] x, java.util.Date[] y );
 
@@ -672,7 +674,7 @@ public interface Figure extends java.io.Serializable, io.deephaven.engine.plot.B
 
     @Override  Figure plot( java.lang.Comparable seriesName, int[] x, long[] y );
 
-    @Override  Figure plot( java.lang.Comparable seriesName, int[] x, io.deephaven.engine.tables.utils.DBDateTime[] y );
+    @Override  Figure plot( java.lang.Comparable seriesName, int[] x, DateTime[] y );
 
     @Override  Figure plot( java.lang.Comparable seriesName, int[] x, java.util.Date[] y );
 
@@ -690,7 +692,7 @@ public interface Figure extends java.io.Serializable, io.deephaven.engine.plot.B
 
     @Override  Figure plot( java.lang.Comparable seriesName, long[] x, long[] y );
 
-    @Override  Figure plot( java.lang.Comparable seriesName, long[] x, io.deephaven.engine.tables.utils.DBDateTime[] y );
+    @Override  Figure plot( java.lang.Comparable seriesName, long[] x, DateTime[] y );
 
     @Override  Figure plot( java.lang.Comparable seriesName, long[] x, java.util.Date[] y );
 
@@ -698,23 +700,23 @@ public interface Figure extends java.io.Serializable, io.deephaven.engine.plot.B
 
     @Override <T1 extends java.lang.Number> Figure plot( java.lang.Comparable seriesName, long[] x, java.util.List<T1> y );
 
-    @Override <T1 extends java.lang.Number> Figure plot( java.lang.Comparable seriesName, io.deephaven.engine.tables.utils.DBDateTime[] x, T1[] y );
+    @Override <T1 extends java.lang.Number> Figure plot(java.lang.Comparable seriesName, DateTime[] x, T1[] y );
 
-    @Override  Figure plot( java.lang.Comparable seriesName, io.deephaven.engine.tables.utils.DBDateTime[] x, double[] y );
+    @Override  Figure plot(java.lang.Comparable seriesName, DateTime[] x, double[] y );
 
-    @Override  Figure plot( java.lang.Comparable seriesName, io.deephaven.engine.tables.utils.DBDateTime[] x, float[] y );
+    @Override  Figure plot(java.lang.Comparable seriesName, DateTime[] x, float[] y );
 
-    @Override  Figure plot( java.lang.Comparable seriesName, io.deephaven.engine.tables.utils.DBDateTime[] x, int[] y );
+    @Override  Figure plot(java.lang.Comparable seriesName, DateTime[] x, int[] y );
 
-    @Override  Figure plot( java.lang.Comparable seriesName, io.deephaven.engine.tables.utils.DBDateTime[] x, long[] y );
+    @Override  Figure plot(java.lang.Comparable seriesName, DateTime[] x, long[] y );
 
-    @Override  Figure plot( java.lang.Comparable seriesName, io.deephaven.engine.tables.utils.DBDateTime[] x, io.deephaven.engine.tables.utils.DBDateTime[] y );
+    @Override  Figure plot(java.lang.Comparable seriesName, DateTime[] x, DateTime[] y );
 
-    @Override  Figure plot( java.lang.Comparable seriesName, io.deephaven.engine.tables.utils.DBDateTime[] x, java.util.Date[] y );
+    @Override  Figure plot(java.lang.Comparable seriesName, DateTime[] x, java.util.Date[] y );
 
-    @Override  Figure plot( java.lang.Comparable seriesName, io.deephaven.engine.tables.utils.DBDateTime[] x, short[] y );
+    @Override  Figure plot(java.lang.Comparable seriesName, DateTime[] x, short[] y );
 
-    @Override <T1 extends java.lang.Number> Figure plot( java.lang.Comparable seriesName, io.deephaven.engine.tables.utils.DBDateTime[] x, java.util.List<T1> y );
+    @Override <T1 extends java.lang.Number> Figure plot(java.lang.Comparable seriesName, DateTime[] x, java.util.List<T1> y );
 
     @Override <T1 extends java.lang.Number> Figure plot( java.lang.Comparable seriesName, java.util.Date[] x, T1[] y );
 
@@ -726,7 +728,7 @@ public interface Figure extends java.io.Serializable, io.deephaven.engine.plot.B
 
     @Override  Figure plot( java.lang.Comparable seriesName, java.util.Date[] x, long[] y );
 
-    @Override  Figure plot( java.lang.Comparable seriesName, java.util.Date[] x, io.deephaven.engine.tables.utils.DBDateTime[] y );
+    @Override  Figure plot( java.lang.Comparable seriesName, java.util.Date[] x, DateTime[] y );
 
     @Override  Figure plot( java.lang.Comparable seriesName, java.util.Date[] x, java.util.Date[] y );
 
@@ -744,7 +746,7 @@ public interface Figure extends java.io.Serializable, io.deephaven.engine.plot.B
 
     @Override  Figure plot( java.lang.Comparable seriesName, short[] x, long[] y );
 
-    @Override  Figure plot( java.lang.Comparable seriesName, short[] x, io.deephaven.engine.tables.utils.DBDateTime[] y );
+    @Override  Figure plot( java.lang.Comparable seriesName, short[] x, DateTime[] y );
 
     @Override  Figure plot( java.lang.Comparable seriesName, short[] x, java.util.Date[] y );
 
@@ -762,7 +764,7 @@ public interface Figure extends java.io.Serializable, io.deephaven.engine.plot.B
 
     @Override <T0 extends java.lang.Number> Figure plot( java.lang.Comparable seriesName, java.util.List<T0> x, long[] y );
 
-    @Override <T0 extends java.lang.Number> Figure plot( java.lang.Comparable seriesName, java.util.List<T0> x, io.deephaven.engine.tables.utils.DBDateTime[] y );
+    @Override <T0 extends java.lang.Number> Figure plot( java.lang.Comparable seriesName, java.util.List<T0> x, DateTime[] y );
 
     @Override <T0 extends java.lang.Number> Figure plot( java.lang.Comparable seriesName, java.util.List<T0> x, java.util.Date[] y );
 

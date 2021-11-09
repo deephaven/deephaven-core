@@ -6,7 +6,7 @@ package io.deephaven.engine.v2.utils;
 
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.live.UpdateGraphProcessor;
-import io.deephaven.engine.tables.utils.DBDateTime;
+import io.deephaven.engine.tables.utils.DateTime;
 import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.v2.EvalNugget;
 import io.deephaven.engine.v2.RefreshingTableTestCase;
@@ -26,11 +26,11 @@ import static io.deephaven.engine.v2.TstUtils.initColumnInfos;
 
 public class TestTimeSeriesFilter extends RefreshingTableTestCase {
     public void testSimple() {
-        DBDateTime[] times = new DBDateTime[10];
+        DateTime[] times = new DateTime[10];
 
         final long startTime = System.currentTimeMillis() - (10 * times.length);
         for (int ii = 0; ii < times.length; ++ii) {
-            times[ii] = new DBDateTime((startTime + (ii * 1000)) * 1000000L);
+            times[ii] = new DateTime((startTime + (ii * 1000)) * 1000000L);
         }
 
         Table source = TableTools.newTable(TableTools.col("Timestamp", times));
@@ -91,7 +91,7 @@ public class TestTimeSeriesFilter extends RefreshingTableTestCase {
                                 new UnitTestTimeSeriesFilter(unitTestTimeSeriesFilter);
                         filtersToRefresh.add(new WeakReference<>(unitTestTimeSeriesFilter1));
                         return UpdateGraphProcessor.DEFAULT.exclusiveLock()
-                                .computeLocked(() -> table.update("Date=new DBDateTime(Date.getTime() * 1000000L)")
+                                .computeLocked(() -> table.update("Date=new DateTime(Date.getTime() * 1000000L)")
                                         .where(unitTestTimeSeriesFilter1));
                     }
                 },
@@ -141,8 +141,8 @@ public class TestTimeSeriesFilter extends RefreshingTableTestCase {
         }
 
         @Override
-        protected DBDateTime getNow() {
-            return new DBDateTime(now * 1000000L);
+        protected DateTime getNow() {
+            return new DateTime(now * 1000000L);
         }
 
         long getNowLong() {

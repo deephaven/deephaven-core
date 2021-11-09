@@ -57,9 +57,9 @@ def _fillRectangular(javaArray, shape, basicType, convertNulls):
                 # convert each leaf
                 for i, leafElement in enumerate(arrElement):
                     ndElement[i] = convertJavaArray(leafElement.toArray(), convertNulls=convertNulls)
-            elif basicType == 'io.deephaven.engine.tables.utils.DBDateTime':
+            elif basicType == 'io.deephaven.engine.tables.utils.DateTime':
                 # get long array
-                longs = jpy.get_type(__arrayConversionUtility__).translateArrayDBDateTimeToLong(arrElement)
+                longs = jpy.get_type(__arrayConversionUtility__).translateArrayDateTimeToLong(arrElement)
                 ndElement[:] = longs
             elif basicType == 'java.lang.Boolean':
                 # create byte array
@@ -94,7 +94,7 @@ def _fillRectangular(javaArray, shape, basicType, convertNulls):
         out = numpy.empty(shape, dtype=numpy.object)
         fillValuesIn(0, out, javaArray)  # recursively fill
         return out
-    elif basicType == 'io.deephaven.engine.tables.utils.DBDateTime':
+    elif basicType == 'io.deephaven.engine.tables.utils.DateTime':
         out = numpy.empty(shape, dtype='datetime64[ns]')
         fillValuesIn(0, out, javaArray)  # recursively fill
         return out
@@ -231,7 +231,7 @@ def convertJavaArray(javaArray, convertNulls='ERROR', forPandas=False):
     * ``Boolean -> numpy.bool``, or ``numpy.object`` if necessary for null conversion
     * ``float -> numpy.float32`` and ``NULL_FLOAT -> numpy.nan``
     * ``double -> numpy.float64`` and ``NULL_DOUBLE -> numpy.nan``
-    * ``DBDateTime -> numpy.dtype(datetime64[ns])`` and ``null -> numpy.nat``
+    * ``DateTime -> numpy.dtype(datetime64[ns])`` and ``null -> numpy.nat``
     * ``String -> numpy.unicode_`` (of appropriate length) and ``null -> ''``
     * ``char -> numpy.dtype('U1')`` (one character string) and ``NULL_CHAR -> ''``
     * ``array/Vector``
@@ -396,7 +396,7 @@ def columnToNumpyArray(table, columnName, convertNulls=NULL_CONVERSION.ERROR, fo
     * ``Boolean -> numpy.bool``, or ``numpy.object`` if necessary for null conversion
     * ``float -> numpy.float32`` and ``NULL_FLOAT -> numpy.nan``
     * ``double -> numpy.float64`` and ``NULL_DOUBLE -> numpy.nan``
-    * ``DBDateTime -> numpy.dtype(datetime64[ns])`` and ``null -> numpy.nat``
+    * ``DateTime -> numpy.dtype(datetime64[ns])`` and ``null -> numpy.nat``
     * ``String -> numpy.unicode_`` (of appropriate length) and ``null -> ''``
     * ``char -> numpy.dtype('U1')`` (one character string) and ``NULL_CHAR -> ''``
     * ``array/Vector``
@@ -463,7 +463,7 @@ def columnToSeries(table, columnName, convertNulls=NULL_CONVERSION.ERROR):
     if nparray is None:
         return None
 
-    if columnType == 'io.deephaven.engine.tables.utils.DBDateTime':
+    if columnType == 'io.deephaven.engine.tables.utils.DateTime':
         # NOTE: I think that we should localize to UTC, and then let the user convert that if they want to...
         #       Note that localizing does not actually effect the underlying numpy array,
         #       but only a pandas construct on top
@@ -515,7 +515,7 @@ def tableToDataFrame(table, convertNulls=NULL_CONVERSION.ERROR, categoricals=Non
     * ``Boolean -> numpy.bool``, or ``numpy.object`` if necessary for null conversion
     * ``float -> numpy.float32`` and ``NULL_FLOAT -> numpy.nan``
     * ``double -> numpy.float64`` and ``NULL_DOUBLE -> numpy.nan``
-    * ``DBDateTime -> numpy.dtype(datetime64[ns])`` and ``null -> numpy.nat``
+    * ``DateTime -> numpy.dtype(datetime64[ns])`` and ``null -> numpy.nat``
     * ``String -> numpy.unicode_`` (of appropriate length) and ``null -> ''``
     * ``char -> numpy.dtype('U1')`` (one character string) and ``NULL_CHAR -> ''``
     * ``array/Vector``

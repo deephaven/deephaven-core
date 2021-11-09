@@ -1,6 +1,6 @@
 package io.deephaven.engine.util.tuples.generated;
 
-import io.deephaven.engine.tables.lang.DBLanguageFunctionUtil;
+import io.deephaven.engine.tables.lang.LanguageFunctionUtil;
 import io.deephaven.engine.util.serialization.SerializationUtils;
 import io.deephaven.engine.util.serialization.StreamingExternalizable;
 import io.deephaven.engine.util.tuples.CanonicalizableTuple;
@@ -86,8 +86,8 @@ public class LongDoubleTuple implements Comparable<LongDoubleTuple>, Externaliza
         }
         int comparison;
         // @formatter:off
-        return 0 != (comparison = DBLanguageFunctionUtil.compareTo(element1, other.element1)) ? comparison :
-               DBLanguageFunctionUtil.compareTo(element2, other.element2);
+        return 0 != (comparison = LanguageFunctionUtil.compareTo(element1, other.element1)) ? comparison :
+               LanguageFunctionUtil.compareTo(element2, other.element2);
         // @formatter:on
     }
 

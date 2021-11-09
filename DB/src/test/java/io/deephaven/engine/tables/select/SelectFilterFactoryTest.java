@@ -6,8 +6,8 @@ package io.deephaven.engine.tables.select;
 
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.TableDefinition;
-import io.deephaven.engine.tables.utils.DBDateTime;
-import io.deephaven.engine.tables.utils.DBTimeUtils;
+import io.deephaven.engine.tables.utils.DateTime;
+import io.deephaven.engine.tables.utils.DateTimeUtils;
 import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.v2.LiveTableTestCase;
 import io.deephaven.engine.v2.TstUtils;
@@ -153,13 +153,13 @@ public class SelectFilterFactoryTest extends LiveTableTestCase {
 
 
     public void testInDateTimes() {
-        DBDateTime wed = DBTimeUtils.convertDateTime("2018-05-02T10:00:00 NY");// not in the table
+        DateTime wed = DateTimeUtils.convertDateTime("2018-05-02T10:00:00 NY");// not in the table
 
-        DBDateTime mon = DBTimeUtils.convertDateTime("2018-04-30T10:00:00 NY");
-        DBDateTime tues = DBTimeUtils.convertDateTime("2018-05-01T10:00:00 NY");
-        DBDateTime thurs = DBTimeUtils.convertDateTime("2018-05-03T10:00:00 NY");
-        Table t = TableTools.newTable(TableTools.col("Timestamp", new DBDateTime(mon.getNanos()),
-                new DBDateTime(tues.getNanos()), new DBDateTime(thurs.getNanos())));
+        DateTime mon = DateTimeUtils.convertDateTime("2018-04-30T10:00:00 NY");
+        DateTime tues = DateTimeUtils.convertDateTime("2018-05-01T10:00:00 NY");
+        DateTime thurs = DateTimeUtils.convertDateTime("2018-05-03T10:00:00 NY");
+        Table t = TableTools.newTable(TableTools.col("Timestamp", new DateTime(mon.getNanos()),
+                new DateTime(tues.getNanos()), new DateTime(thurs.getNanos())));
         // match one item
         SelectFilter f = SelectFilterFactory.getExpression("Timestamp in '" + mon + "'");
         f.init(t.getDefinition());
@@ -243,21 +243,21 @@ public class SelectFilterFactoryTest extends LiveTableTestCase {
         checkDateRange("18:43", makeDateTime("18:43"), makeDateTime("18:44"));
         checkDateRange("18:43:40", makeDateTime("18:43:40"), makeDateTime("18:43:41"));
         checkDateRange("18:43:40.100", makeDateTime("18:43:40.100"), makeDateTime("18:43:40.101"));
-        checkDateRange("2018-03-25 NY", DBTimeUtils.convertDateTime("2018-03-25 NY"),
-                DBTimeUtils.convertDateTime("2018-03-26 NY"));
-        checkDateRange("2018-03-25T18:00 NY", DBTimeUtils.convertDateTime("2018-03-25T18:00 NY"),
-                DBTimeUtils.convertDateTime("2018-03-25T18:01 NY"));
-        checkDateRange("2018-03-25T18:00:00 NY", DBTimeUtils.convertDateTime("2018-03-25T18:00:00 NY"),
-                DBTimeUtils.convertDateTime("2018-03-25T18:00:01 NY"));
+        checkDateRange("2018-03-25 NY", DateTimeUtils.convertDateTime("2018-03-25 NY"),
+                DateTimeUtils.convertDateTime("2018-03-26 NY"));
+        checkDateRange("2018-03-25T18:00 NY", DateTimeUtils.convertDateTime("2018-03-25T18:00 NY"),
+                DateTimeUtils.convertDateTime("2018-03-25T18:01 NY"));
+        checkDateRange("2018-03-25T18:00:00 NY", DateTimeUtils.convertDateTime("2018-03-25T18:00:00 NY"),
+                DateTimeUtils.convertDateTime("2018-03-25T18:00:01 NY"));
     }
 
-    private DBDateTime makeDateTime(String timeStr) {
+    private DateTime makeDateTime(String timeStr) {
         ZonedDateTime zdt = ZonedDateTime.now(ZoneId.of("America/New_York")).truncatedTo(ChronoUnit.DAYS)
-                .plus(DBTimeUtils.convertTime(timeStr), ChronoUnit.NANOS);
-        return DBTimeUtils.millisToTime(zdt.toInstant().toEpochMilli());
+                .plus(DateTimeUtils.convertTime(timeStr), ChronoUnit.NANOS);
+        return DateTimeUtils.millisToTime(zdt.toInstant().toEpochMilli());
     }
 
-    private void checkDateRange(String input, DBDateTime lowerDate, DBDateTime upperDate) {
+    private void checkDateRange(String input, DateTime lowerDate, DateTime upperDate) {
         SelectFilterFactory.InferenceResult inf = new SelectFilterFactory.InferenceResult(input);
         assertEquals(false, inf.isByte);
         assertEquals(false, inf.isShort);

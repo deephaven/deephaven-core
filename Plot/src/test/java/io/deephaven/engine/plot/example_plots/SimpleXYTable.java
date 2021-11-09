@@ -16,9 +16,9 @@ public class SimpleXYTable {
 
     public static void main(String[] args) {
 
-        Table t = TableTools.emptyTable(10).updateView("Timestamp = new DBDateTime(i * HOUR)", "Open = i",
+        Table t = TableTools.emptyTable(10).updateView("Timestamp = new DateTime(i * HOUR)", "Open = i",
                 "High = i + 2", "Low = i - 2", "Close = i + 1", "By = i % 5");
-        Table t2 = TableTools.emptyTable(5000).updateView("Timestamp = new DBDateTime(0) + (i * HOUR)",
+        Table t2 = TableTools.emptyTable(5000).updateView("Timestamp = new DateTime(0) + (i * HOUR)",
                 "Open = i + 100", "High = i + 2 + 100", "Low = i - 2 + 100", "Close = i + 1 + 100", "By = i % 5");
 
         final Figure f =

@@ -192,14 +192,14 @@ public class CsvHelpers {
      * @param source a Deephaven table object to be exported
      * @param destPath path to the CSV file to be written
      * @param compressed whether to zip the file being written
-     * @param timeZone a DBTimeZone constant relative to which DBDateTime data should be adjusted
+     * @param timeZone a TimeZone constant relative to which DateTime data should be adjusted
      * @param progress a procedure that implements Procedure.Binary, and takes a progress Integer and a total size
      *        Integer to update progress
      * @param columns a list of columns to include in the export
      * @throws IOException if the target file cannot be written
      */
     @ScriptApi
-    public static void writeCsv(Table source, String destPath, boolean compressed, DBTimeZone timeZone,
+    public static void writeCsv(Table source, String destPath, boolean compressed, TimeZone timeZone,
             @Nullable Procedure.Binary<Long, Long> progress, String... columns) throws IOException {
         writeCsv(source, destPath, compressed, timeZone, progress, NULLS_AS_EMPTY_DEFAULT, columns);
     }
@@ -210,7 +210,7 @@ public class CsvHelpers {
      * @param source a Deephaven table object to be exported
      * @param destPath path to the CSV file to be written
      * @param compressed whether to zip the file being written
-     * @param timeZone a DBTimeZone constant relative to which DBDateTime data should be adjusted
+     * @param timeZone a TimeZone constant relative to which DateTime data should be adjusted
      * @param progress a procedure that implements Procedure.Binary, and takes a progress Integer and a total size
      *        Integer to update progress
      * @param nullsAsEmpty if nulls should be written as blank instead of '(null)'
@@ -218,7 +218,7 @@ public class CsvHelpers {
      * @throws IOException if the target file cannot be written
      */
     @ScriptApi
-    public static void writeCsv(Table source, String destPath, boolean compressed, DBTimeZone timeZone,
+    public static void writeCsv(Table source, String destPath, boolean compressed, TimeZone timeZone,
             @Nullable Procedure.Binary<Long, Long> progress, boolean nullsAsEmpty, String... columns)
             throws IOException {
         writeCsv(source, destPath, compressed, timeZone, progress, nullsAsEmpty, ',', columns);
@@ -230,7 +230,7 @@ public class CsvHelpers {
      * @param source a Deephaven table object to be exported
      * @param destPath path to the CSV file to be written
      * @param compressed whether to zip the file being written
-     * @param timeZone a DBTimeZone constant relative to which DBDateTime data should be adjusted
+     * @param timeZone a TimeZone constant relative to which DateTime data should be adjusted
      * @param progress a procedure that implements Procedure.Binary, and takes a progress Integer and a total size
      *        Integer to update progress
      * @param nullsAsEmpty if nulls should be written as blank instead of '(null)'
@@ -239,7 +239,7 @@ public class CsvHelpers {
      * @throws IOException if the target file cannot be written
      */
     @ScriptApi
-    public static void writeCsv(Table source, String destPath, boolean compressed, DBTimeZone timeZone,
+    public static void writeCsv(Table source, String destPath, boolean compressed, TimeZone timeZone,
             @Nullable Procedure.Binary<Long, Long> progress, boolean nullsAsEmpty, char separator, String... columns)
             throws IOException {
         final BufferedWriter out =
@@ -253,7 +253,7 @@ public class CsvHelpers {
      *
      * @param source a Deephaven table object to be exported
      * @param out BufferedWriter used to write the CSV
-     * @param timeZone a DBTimeZone constant relative to which DBDateTime data should be adjusted
+     * @param timeZone a TimeZone constant relative to which DateTime data should be adjusted
      * @param progress a procedure that implements Procedure.Binary, and takes a progress Integer and a total size
      *        Integer to update progress
      * @param nullsAsEmpty if nulls should be written as blank instead of '(null)'
@@ -261,7 +261,7 @@ public class CsvHelpers {
      * @throws IOException if the target file cannot be written
      */
     @ScriptApi
-    public static void writeCsv(Table source, BufferedWriter out, DBTimeZone timeZone,
+    public static void writeCsv(Table source, BufferedWriter out, TimeZone timeZone,
             @Nullable Procedure.Binary<Long, Long> progress, boolean nullsAsEmpty, String... columns)
             throws IOException {
         writeCsv(source, out, timeZone, progress, nullsAsEmpty, ',', columns);
@@ -272,7 +272,7 @@ public class CsvHelpers {
      *
      * @param source a Deephaven table object to be exported
      * @param out BufferedWriter used to write the CSV
-     * @param timeZone a DBTimeZone constant relative to which DBDateTime data should be adjusted
+     * @param timeZone a TimeZone constant relative to which DateTime data should be adjusted
      * @param progress a procedure that implements Procedure.Binary, and takes a progress Integer and a total size
      *        Integer to update progress
      * @param nullsAsEmpty if nulls should be written as blank instead of '(null)'
@@ -281,7 +281,7 @@ public class CsvHelpers {
      * @throws IOException if the target file cannot be written
      */
     @ScriptApi
-    public static void writeCsv(Table source, BufferedWriter out, DBTimeZone timeZone,
+    public static void writeCsv(Table source, BufferedWriter out, TimeZone timeZone,
             @Nullable Procedure.Binary<Long, Long> progress, boolean nullsAsEmpty, char separator, String... columns)
             throws IOException {
 
@@ -405,12 +405,12 @@ public class CsvHelpers {
      *
      * @param source a Deephaven table object to be exported
      * @param out a BufferedWriter to which the header should be written
-     * @param timeZone a DBTimeZone constant relative to which DBDateTime data should be adjusted
+     * @param timeZone a TimeZone constant relative to which DateTime data should be adjusted
      * @param colNames a list of columns to include in the export
      * @throws IOException if the target file cannot be written
      */
     @ScriptApi
-    public static void writeCsvContents(Table source, BufferedWriter out, DBTimeZone timeZone, String... colNames)
+    public static void writeCsvContents(Table source, BufferedWriter out, TimeZone timeZone, String... colNames)
             throws IOException {
         writeCsvContents(source, out, timeZone, null, colNames);
     }
@@ -420,14 +420,14 @@ public class CsvHelpers {
      *
      * @param source a Deephaven table object to be exported
      * @param out a BufferedWriter to which the header should be written
-     * @param timeZone a DBTimeZone constant relative to which DBDateTime data should be adjusted
+     * @param timeZone a TimeZone constant relative to which DateTime data should be adjusted
      * @param nullsAsEmpty if nulls should be written as blank instead of '(null)'
      * @param colNames a list of columns to include in the export
      * @throws IOException if the target file cannot be written
      */
     @ScriptApi
-    public static void writeCsvContents(Table source, BufferedWriter out, DBTimeZone timeZone, boolean nullsAsEmpty,
-            String... colNames) throws IOException {
+    public static void writeCsvContents(Table source, BufferedWriter out, TimeZone timeZone, boolean nullsAsEmpty,
+                                        String... colNames) throws IOException {
         writeCsvContents(source, out, timeZone, null, nullsAsEmpty, colNames);
     }
 
@@ -436,14 +436,14 @@ public class CsvHelpers {
      *
      * @param source a Deephaven table object to be exported
      * @param out a BufferedWriter to which the header should be written
-     * @param timeZone a DBTimeZone constant relative to which DBDateTime data should be adjusted
+     * @param timeZone a TimeZone constant relative to which DateTime data should be adjusted
      * @param progress a procedure that implements Procedure.Binary, and takes a progress Integer and a total size
      *        Integer to update progress
      * @param colNames a list of columns to include in the export
      * @throws IOException if the target file cannot be written
      */
     @ScriptApi
-    public static void writeCsvContents(Table source, BufferedWriter out, DBTimeZone timeZone,
+    public static void writeCsvContents(Table source, BufferedWriter out, TimeZone timeZone,
             @Nullable Procedure.Binary<Long, Long> progress, String... colNames) throws IOException {
         writeCsvContents(source, out, timeZone, progress, NULLS_AS_EMPTY_DEFAULT, colNames);
     }
@@ -453,7 +453,7 @@ public class CsvHelpers {
      *
      * @param source a Deephaven table object to be exported
      * @param out a BufferedWriter to which the header should be written
-     * @param timeZone a DBTimeZone constant relative to which DBDateTime data should be adjusted
+     * @param timeZone a TimeZone constant relative to which DateTime data should be adjusted
      * @param progress a procedure that implements Procedure.Binary, and takes a progress Integer and a total size
      *        Integer to update progress
      * @param nullsAsEmpty if nulls should be written as blank instead of '(null)'
@@ -461,7 +461,7 @@ public class CsvHelpers {
      * @throws IOException if the target file cannot be written
      */
     @ScriptApi
-    public static void writeCsvContents(Table source, BufferedWriter out, DBTimeZone timeZone,
+    public static void writeCsvContents(Table source, BufferedWriter out, TimeZone timeZone,
             @Nullable Procedure.Binary<Long, Long> progress, boolean nullsAsEmpty, String... colNames)
             throws IOException {
         writeCsvContents(source, out, timeZone, progress, nullsAsEmpty, ',', colNames);
@@ -472,7 +472,7 @@ public class CsvHelpers {
      *
      * @param source a Deephaven table object to be exported
      * @param out a BufferedWriter to which the header should be written
-     * @param timeZone a DBTimeZone constant relative to which DBDateTime data should be adjusted
+     * @param timeZone a TimeZone constant relative to which DateTime data should be adjusted
      * @param progress a procedure that implements Procedure.Binary, and takes a progress Integer and a total size
      *        Integer to update progress
      * @param nullsAsEmpty if nulls should be written as blank instead of '(null)'
@@ -481,7 +481,7 @@ public class CsvHelpers {
      * @throws IOException if the target file cannot be written
      */
     @ScriptApi
-    public static void writeCsvContents(Table source, BufferedWriter out, DBTimeZone timeZone,
+    public static void writeCsvContents(Table source, BufferedWriter out, TimeZone timeZone,
             @Nullable Procedure.Binary<Long, Long> progress, boolean nullsAsEmpty, char separator, String... colNames)
             throws IOException {
         if (colNames.length == 0) {
@@ -515,7 +515,7 @@ public class CsvHelpers {
      * Writes an array of Deephaven DataColumns out as a CSV file.
      *
      * @param out a BufferedWriter to which the header should be written
-     * @param timeZone a DBTimeZone constant relative to which DBDateTime data should be adjusted
+     * @param timeZone a TimeZone constant relative to which DateTime data should be adjusted
      * @param cols an array of Deephaven DataColumns to be written
      * @param size the size of the DataColumns
      * @param nullsAsEmpty if nulls should be written as blank instead of '(null)'
@@ -526,7 +526,7 @@ public class CsvHelpers {
      */
     private static void writeCsvContentsSeq(
             final BufferedWriter out,
-            final DBTimeZone timeZone,
+            final TimeZone timeZone,
             final DataColumn[] cols,
             final long size,
             final boolean nullsAsEmpty,
@@ -546,8 +546,8 @@ public class CsvHelpers {
                     final Object o = cols[j].get(i);
                     if (o instanceof String) {
                         out.write("" + separatorCsvEscape((String) o, separatorStr));
-                    } else if (o instanceof DBDateTime) {
-                        out.write(separatorCsvEscape(((DBDateTime) o).toString(timeZone), separatorStr));
+                    } else if (o instanceof DateTime) {
+                        out.write(separatorCsvEscape(((DateTime) o).toString(timeZone), separatorStr));
                     } else {
                         out.write(nullsAsEmpty ? separatorCsvEscape(TableTools.nullToEmptyString(o), separatorStr)
                                 : separatorCsvEscape(TableTools.nullToNullString(o), separatorStr));

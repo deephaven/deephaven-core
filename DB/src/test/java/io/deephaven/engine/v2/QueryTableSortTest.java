@@ -6,8 +6,8 @@ import io.deephaven.engine.tables.ColumnDefinition;
 import io.deephaven.engine.tables.*;
 import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.tables.select.QueryScope;
-import io.deephaven.engine.tables.utils.DBDateTime;
-import io.deephaven.engine.tables.utils.DBTimeUtils;
+import io.deephaven.engine.tables.utils.DateTime;
+import io.deephaven.engine.tables.utils.DateTimeUtils;
 import io.deephaven.engine.tables.utils.ParquetTools;
 import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.v2.select.IncrementalReleaseFilter;
@@ -734,7 +734,7 @@ public class QueryTableSortTest extends QueryTableTestBase {
                 ColumnDefinition.ofBoolean("Truthiness"));
 
         final String[] syms = new String[] {"Apple", "Banana", "Cantaloupe"};
-        final DBDateTime baseTime = DBTimeUtils.convertDateTime("2019-04-11T09:30 NY");
+        final DateTime baseTime = DateTimeUtils.convertDateTime("2019-04-11T09:30 NY");
         final long dateOffset[] = new long[] {0, 5, 10, 15, 1, 6, 11, 16, 2, 7};
         final Boolean booleans[] = new Boolean[] {true, false, null, true, false, null, true, false, null, true, false};
         QueryScope.addParam("syms", syms);

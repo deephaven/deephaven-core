@@ -173,7 +173,7 @@ public class GenerateAxesPlotMethods {
             }
         });
 
-        types.put("DBDateTime", new Type() {
+        types.put("DateTime", new Type() {
             @Override
             public String getGenericSignature(int index) {
                 return null;
@@ -181,12 +181,12 @@ public class GenerateAxesPlotMethods {
 
             @Override
             public String getVariableType(int index) {
-                return "DBDateTime[]";
+                return "DateTime[]";
             }
 
             @Override
             public String getIndexableDataCode(String variableName) {
-                return "new IndexableNumericDataArrayDBDateTime(" + variableName + ", " + PLOT_INFO_ID + ")";
+                return "new IndexableNumericDataArrayDateTime(" + variableName + ", " + PLOT_INFO_ID + ")";
             }
 
             @Override
@@ -570,7 +570,7 @@ public class GenerateAxesPlotMethods {
 
     private static final String[] timeTypes = {
             "Date",
-            "DBDateTime"
+            "DateTime"
     };
 
     private static final String[] numberTypes = {

@@ -102,7 +102,7 @@ public class SelectColumnFactory {
                     dateMatcher.group(1), FormulaParserConfiguration.Deephaven);
         } else {
             return FormulaColumn.createFormulaColumn(columnName + ColumnFormattingValues.TABLE_FORMAT_NAME,
-                    "io.deephaven.engine.util.DBColorUtil.toLong("
+                    "io.deephaven.engine.util.ColorUtil.toLong("
                             + (colorMatcher.matches() ? colorMatcher.group(1) : topMatcher.group(2)) + ")",
                     FormulaParserConfiguration.Deephaven);
         }

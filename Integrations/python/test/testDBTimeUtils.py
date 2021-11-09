@@ -11,7 +11,7 @@ import sys
 import jpy
 import time
 
-from deephaven import DBTimeUtils
+from deephaven import DateTimeUtils
 
 if sys.version_info[0] < 3:
     int = long  # cheap python2/3 compliance - probably only required on a 32 bit system
@@ -22,279 +22,279 @@ else:
     import unittest
 
 
-class TestDBTimeUtils(unittest.TestCase):
+class TestDateTimeUtils(unittest.TestCase):
     """
-    Test cases for the deephaven.DBTimeUtils module (performed locally) -
+    Test cases for the deephaven.DateTimeUtils module (performed locally) -
     """
 
     def testCurrent(self):
         """
-        Test suite for getting DBDateTime object representing the current time
+        Test suite for getting DateTime object representing the current time
         """
 
-        tz = jpy.get_type('io.deephaven.engine.tables.utils.DBTimeZone').TZ_NY
+        tz = jpy.get_type('io.deephaven.engine.tables.utils.TimeZone').TZ_NY
         with self.subTest(msg="currentTime"):
-            junk = DBTimeUtils.currentTime()
+            junk = DateTimeUtils.currentTime()
         with self.subTest(msg="currentDate"):
-            junk = DBTimeUtils.currentDate(tz)
+            junk = DateTimeUtils.currentDate(tz)
         with self.subTest(msg="currentTimeNy"):
-            junk = DBTimeUtils.currentDateNy()
+            junk = DateTimeUtils.currentDateNy()
 
     def testDatetimeFromTimestamp(self):
         """
-        Test suite for converting timestamp to DBDateTime
+        Test suite for converting timestamp to DateTime
         """
 
         sampleTimestamp = time.time()  # seconds of type double
         with self.subTest(msg="autoEpochToTime"):
-            autoDate = DBTimeUtils.autoEpochToTime(int(sampleTimestamp))
+            autoDate = DateTimeUtils.autoEpochToTime(int(sampleTimestamp))
         with self.subTest(msg="secondsToTime"):
-            secondDate = DBTimeUtils.secondsToTime(int(sampleTimestamp))
+            secondDate = DateTimeUtils.secondsToTime(int(sampleTimestamp))
             self.assertTrue(autoDate.equals(secondDate))
         with self.subTest(msg="millisToTime"):
-            millisDate = DBTimeUtils.millisToTime(1000*int(sampleTimestamp))
+            millisDate = DateTimeUtils.millisToTime(1000*int(sampleTimestamp))
             self.assertTrue(autoDate.equals(millisDate))
         with self.subTest(msg="nanosToTime"):
-            microsDate = DBTimeUtils.microsToTime(1000000*int(sampleTimestamp))
+            microsDate = DateTimeUtils.microsToTime(1000000*int(sampleTimestamp))
             self.assertTrue(autoDate.equals(microsDate))
         with self.subTest(msg="nanosToTime"):
-            nanosDate = DBTimeUtils.nanosToTime(1000000000*int(sampleTimestamp))
+            nanosDate = DateTimeUtils.nanosToTime(1000000000*int(sampleTimestamp))
             # NB: underscore literals work in Python 3.5 and after
             self.assertTrue(autoDate.equals(nanosDate))
 
     def testConversionFromString(self):
         """
-        Coverage tests for converting strings of various forms to DbDateTime, DbPeriod, or nanosecond time (period)
+        Coverage tests for converting strings of various forms to DateTime, Period, or nanosecond time (period)
         """
 
         # TODO: Methods which almost certainly have no business being wrapped...
         #   convertExpression(string), expressionToNanos(string), getFinestDefinedUnit(string)
 
         with self.subTest(msg="convertDateTime"):
-            junk = DBTimeUtils.convertDateTime("2018-11-13T15:00:00.000000 NY")
+            junk = DateTimeUtils.convertDateTime("2018-11-13T15:00:00.000000 NY")
         with self.subTest(msg="convertDateTimeQuiet"):
-            junk = DBTimeUtils.convertDateTimeQuiet("2018-11-13T15:00:00.000000 NY")
+            junk = DateTimeUtils.convertDateTimeQuiet("2018-11-13T15:00:00.000000 NY")
 
         # appear to operate on string formatted as <days>T<hh>:<mm>:<ss>.<fractional seconds up to nanos>
         # NB: the documentation sucks, and I'm just guessing
         with self.subTest(msg="convertTime"):
-            junk = DBTimeUtils.convertTime("1T02:04:16.3264128")
+            junk = DateTimeUtils.convertTime("1T02:04:16.3264128")
         with self.subTest(msg="convertTimeQuiet"):
-            junk = DBTimeUtils.convertTimeQuiet("1T02:04:16.3264128")
+            junk = DateTimeUtils.convertTimeQuiet("1T02:04:16.3264128")
 
         # appear to operate on string formatted as <years>Y<months>M<weeks>W<days>D<hours>H<minutes>M<seconds>S
         #   all literals could be upper or lower case
         # NB: the documentation sucks, and I'm mostly guessing
         with self.subTest(msg="convertPeriod"):
-            junk = DBTimeUtils.convertPeriod("1Y1M1W1DT1H1M1S")
+            junk = DateTimeUtils.convertPeriod("1Y1M1W1DT1H1M1S")
         with self.subTest(msg="convertPeriodQuiet"):
-            junk = DBTimeUtils.convertPeriodQuiet("1Y1M1W1DT1H1M1S")
+            junk = DateTimeUtils.convertPeriodQuiet("1Y1M1W1DT1H1M1S")
 
     def testTimestampFromDatetime(self):
         """
-        Coverage tests for converting DbDateTime object to timestamp
+        Coverage tests for converting DateTime object to timestamp
         """
 
         # get current time
-        now = DBTimeUtils.currentTime()  # unit tested above...
+        now = DateTimeUtils.currentTime()  # unit tested above...
 
         with self.subTest(msg="millis"):
-            junk = DBTimeUtils.millis(now)
+            junk = DateTimeUtils.millis(now)
         with self.subTest(msg="nanos"):
-            junk = DBTimeUtils.nanos(now)
-        with self.subTest(msg="getExcelDateTime(DbDateTime)"):
-            junk = DBTimeUtils.getExcelDateTime(now)
+            junk = DateTimeUtils.nanos(now)
+        with self.subTest(msg="getExcelDateTime(DateTime)"):
+            junk = DateTimeUtils.getExcelDateTime(now)
 
-        tz = jpy.get_type('io.deephaven.engine.tables.utils.DBTimeZone').TZ_NY
-        with self.subTest(msg="getExcelDateTime(DbDateTime, DbTimeZone)"):
-            junk = DBTimeUtils.getExcelDateTime(now, tz)
-        with self.subTest(msg="getExcelDateTime(DbDateTime, TimeZone)"):
+        tz = jpy.get_type('io.deephaven.engine.tables.utils.TimeZone').TZ_NY
+        with self.subTest(msg="getExcelDateTime(DateTime, DbTimeZone)"):
+            junk = DateTimeUtils.getExcelDateTime(now, tz)
+        with self.subTest(msg="getExcelDateTime(DateTime, TimeZone)"):
             # NB: converting from DbTimeZone to TimeZone - should work...
             # should we even test this?
-            junk = DBTimeUtils.getExcelDateTime(now, tz.getTimeZone().toTimeZone())
+            junk = DateTimeUtils.getExcelDateTime(now, tz.getTimeZone().toTimeZone())
 
     def testZonedMethods(self):
         """
-        Test suite for DbDateTime <-> ZonedDateTime - not clear this is ever to be used
+        Test suite for DateTime <-> ZonedDateTime - not clear this is ever to be used
         """
 
         # get current time
-        now = DBTimeUtils.currentTime()  # unit tested above...
-        with self.subTest(msg="getZonedDateTime(DbDateTime)"):
-            junk = DBTimeUtils.getZonedDateTime(now)  # will have TZ_DEFAULT applied
+        now = DateTimeUtils.currentTime()  # unit tested above...
+        with self.subTest(msg="getZonedDateTime(DateTime)"):
+            junk = DateTimeUtils.getZonedDateTime(now)  # will have TZ_DEFAULT applied
 
-        tz = jpy.get_type('io.deephaven.engine.tables.utils.DBTimeZone').TZ_NY
-        with self.subTest(msg="getZonedDateTime(DbDateTime, DbTimeZone)"):
-            zoned = DBTimeUtils.getZonedDateTime(now, tz)
+        tz = jpy.get_type('io.deephaven.engine.tables.utils.TimeZone').TZ_NY
+        with self.subTest(msg="getZonedDateTime(DateTime, DbTimeZone)"):
+            zoned = DateTimeUtils.getZonedDateTime(now, tz)
         with self.subTest(msg="toDateTime(ZonedDateTime)"):
-            junk = DBTimeUtils.toDateTime(zoned)
+            junk = DateTimeUtils.toDateTime(zoned)
 
     def testDateParts(self):
         """
         Coverage test suite for various date part extractions
         """
 
-        tz = jpy.get_type('io.deephaven.engine.tables.utils.DBTimeZone').TZ_NY
+        tz = jpy.get_type('io.deephaven.engine.tables.utils.TimeZone').TZ_NY
         # get current time
-        now = DBTimeUtils.currentTime()
+        now = DateTimeUtils.currentTime()
 
         # year parts
         with self.subTest(msg="year"):
-            junk = DBTimeUtils.year(now, tz)
+            junk = DateTimeUtils.year(now, tz)
         with self.subTest(msg="yearOfCentury"):
-            junk = DBTimeUtils.yearOfCentury(now, tz)
+            junk = DateTimeUtils.yearOfCentury(now, tz)
         with self.subTest(msg="yearNy"):
-            junk = DBTimeUtils.yearNy(now)
+            junk = DateTimeUtils.yearNy(now)
         with self.subTest(msg="yearOfCenturyNy"):
-            junk = DBTimeUtils.yearOfCenturyNy(now)
+            junk = DateTimeUtils.yearOfCenturyNy(now)
 
         # month parts
         with self.subTest(msg="monthOfYear"):
-            junk = DBTimeUtils.monthOfYear(now, tz)
+            junk = DateTimeUtils.monthOfYear(now, tz)
         with self.subTest(msg="monthOfYearNy"):
-            junk = DBTimeUtils.monthOfYearNy(now)
+            junk = DateTimeUtils.monthOfYearNy(now)
 
         # day parts
         with self.subTest(msg="dayOfYear"):
-            junk = DBTimeUtils.dayOfYear(now, tz)
+            junk = DateTimeUtils.dayOfYear(now, tz)
         with self.subTest(msg="dayOfMonth"):
-            junk = DBTimeUtils.dayOfMonth(now, tz)
+            junk = DateTimeUtils.dayOfMonth(now, tz)
         with self.subTest(msg="dayOfWeek"):
-            junk = DBTimeUtils.dayOfWeek(now, tz)
+            junk = DateTimeUtils.dayOfWeek(now, tz)
         with self.subTest(msg="dayOfYearNy"):
-            junk = DBTimeUtils.dayOfYearNy(now)
+            junk = DateTimeUtils.dayOfYearNy(now)
         with self.subTest(msg="dayOfMonthNy"):
-            junk = DBTimeUtils.dayOfMonthNy(now)
+            junk = DateTimeUtils.dayOfMonthNy(now)
         with self.subTest(msg="dayOfWeekNy"):
-            junk = DBTimeUtils.dayOfWeekNy(now)
+            junk = DateTimeUtils.dayOfWeekNy(now)
 
         # hour parts
         with self.subTest(msg="hourOfDay"):
-            junk = DBTimeUtils.hourOfDay(now, tz)
+            junk = DateTimeUtils.hourOfDay(now, tz)
         with self.subTest(msg="hourOfDayNy"):
-            junk = DBTimeUtils.hourOfDayNy(now)
+            junk = DateTimeUtils.hourOfDayNy(now)
 
         # minute parts
         with self.subTest(msg="minuteOfDay"):
-            junk = DBTimeUtils.minuteOfDay(now, tz)
+            junk = DateTimeUtils.minuteOfDay(now, tz)
         with self.subTest(msg="minuteOfHour"):
-            junk = DBTimeUtils.minuteOfHour(now, tz)
+            junk = DateTimeUtils.minuteOfHour(now, tz)
         with self.subTest(msg="minuteOfDayNy"):
-            junk = DBTimeUtils.minuteOfDayNy(now)
+            junk = DateTimeUtils.minuteOfDayNy(now)
         with self.subTest(msg="minuteOfHourNy"):
-            junk = DBTimeUtils.minuteOfHourNy(now)
+            junk = DateTimeUtils.minuteOfHourNy(now)
 
         # second parts
         with self.subTest(msg="secondOfDay"):
-            junk = DBTimeUtils.secondOfDay(now, tz)
+            junk = DateTimeUtils.secondOfDay(now, tz)
         with self.subTest(msg="secondOfMinute"):
-            junk = DBTimeUtils.secondOfMinute(now, tz)
+            junk = DateTimeUtils.secondOfMinute(now, tz)
         with self.subTest(msg="secondOfDayNy"):
-            junk = DBTimeUtils.secondOfDayNy(now)
+            junk = DateTimeUtils.secondOfDayNy(now)
         with self.subTest(msg="secondOfMinuteNy"):
-            junk = DBTimeUtils.secondOfMinuteNy(now)
+            junk = DateTimeUtils.secondOfMinuteNy(now)
 
         # millisecond parts
         with self.subTest(msg="millisOfDay"):
-            junk = DBTimeUtils.millisOfDay(now, tz)
+            junk = DateTimeUtils.millisOfDay(now, tz)
         with self.subTest(msg="millisOfSecond"):
-            junk = DBTimeUtils.millisOfSecond(now, tz)
+            junk = DateTimeUtils.millisOfSecond(now, tz)
         with self.subTest(msg="millisOfDayNy"):
-            junk = DBTimeUtils.millisOfDayNy(now)
+            junk = DateTimeUtils.millisOfDayNy(now)
         with self.subTest(msg="millisOfSecondNy"):
-            junk = DBTimeUtils.millisOfSecondNy(now)
+            junk = DateTimeUtils.millisOfSecondNy(now)
 
         # microsecond parts
         with self.subTest(msg="microsOfMilli"):
-            junk = DBTimeUtils.microsOfMilli(now, tz)
+            junk = DateTimeUtils.microsOfMilli(now, tz)
         with self.subTest(msg="microsOfMilliNy"):
-            junk = DBTimeUtils.microsOfMilliNy(now)
+            junk = DateTimeUtils.microsOfMilliNy(now)
 
         # nanosecond parts
         with self.subTest(msg="nanosOfDay"):
-            junk = DBTimeUtils.nanosOfDay(now, tz)
+            junk = DateTimeUtils.nanosOfDay(now, tz)
         with self.subTest(msg="nanosOfSecond"):
-            junk = DBTimeUtils.nanosOfSecond(now, tz)
+            junk = DateTimeUtils.nanosOfSecond(now, tz)
         with self.subTest(msg="nanosOfDayNy"):
-            junk = DBTimeUtils.nanosOfDayNy(now)
+            junk = DateTimeUtils.nanosOfDayNy(now)
         with self.subTest(msg="nanosOfSecondNy"):
-            junk = DBTimeUtils.nanosOfSecondNy(now)
+            junk = DateTimeUtils.nanosOfSecondNy(now)
 
     def testArithmetic(self):
         """
-        Coverage test of DbDateTime arithmetic helper methods
+        Coverage test of DateTime arithmetic helper methods
         """
 
         with self.subTest(msg="secondsToNanos"):
-            junk = DBTimeUtils.secondsToNanos(1)
+            junk = DateTimeUtils.secondsToNanos(1)
         with self.subTest(msg="millisToNanos"):
-            junk = DBTimeUtils.millisToNanos(1)
+            junk = DateTimeUtils.millisToNanos(1)
         with self.subTest(msg="microsToNanos"):
-            junk = DBTimeUtils.microsToNanos(1)
+            junk = DateTimeUtils.microsToNanos(1)
         with self.subTest(msg="nanosToMicros"):
-            junk = DBTimeUtils.nanosToMicros(1000)
+            junk = DateTimeUtils.nanosToMicros(1000)
         with self.subTest(msg="nanosToMillis"):
-            junk = DBTimeUtils.nanosToMillis(1000000)
+            junk = DateTimeUtils.nanosToMillis(1000000)
 
         # get current time
-        now = DBTimeUtils.currentTime()
-        period = DBTimeUtils.convertPeriod("1D")  # returns a DbPeriod object
+        now = DateTimeUtils.currentTime()
+        period = DateTimeUtils.convertPeriod("1D")  # returns a Period object
         # various plus/minus signatures
-        with self.subTest(msg="plus(DbDateTime, long"):
-            now2 = DBTimeUtils.plus(now, 6000000000)  # shift forward by an hour
-        with self.subTest(msg="plus(DbDateTime, DbPeriod"):
-            junk = DBTimeUtils.plus(now, period)  # shift forward by a day
-        with self.subTest(msg="minus(DbDateTime, long"):
-            junk = DBTimeUtils.minus(now, 6000000000)  # shift back by an hour
-        with self.subTest(msg="minus(DbDateTime, DbDateTime"):
-            junk = DBTimeUtils.minus(now2, now)
-        with self.subTest(msg="minus(DbDateTime, DbPeriod)"):
-            junk = DBTimeUtils.minus(now2, period)
+        with self.subTest(msg="plus(DateTime, long"):
+            now2 = DateTimeUtils.plus(now, 6000000000)  # shift forward by an hour
+        with self.subTest(msg="plus(DateTime, Period"):
+            junk = DateTimeUtils.plus(now, period)  # shift forward by a day
+        with self.subTest(msg="minus(DateTime, long"):
+            junk = DateTimeUtils.minus(now, 6000000000)  # shift back by an hour
+        with self.subTest(msg="minus(DateTime, DateTime"):
+            junk = DateTimeUtils.minus(now2, now)
+        with self.subTest(msg="minus(DateTime, Period)"):
+            junk = DateTimeUtils.minus(now2, period)
 
         # other style date subtractions
         with self.subTest(msg="diffYear"):
-            junk = DBTimeUtils.diffYear(now2, now)
+            junk = DateTimeUtils.diffYear(now2, now)
         with self.subTest(msg="diffDay"):
-            junk = DBTimeUtils.diffDay(now2, now)
+            junk = DateTimeUtils.diffDay(now2, now)
         with self.subTest(msg="diffNanos"):
-            junk = DBTimeUtils.diffNanos(now2, now)
+            junk = DateTimeUtils.diffNanos(now2, now)
 
         with self.subTest(msg="isAfter"):
-            junk = DBTimeUtils.isAfter(now2, now)
+            junk = DateTimeUtils.isAfter(now2, now)
         with self.subTest(msg="isBefore"):
-            junk = DBTimeUtils.isBefore(now2, now)
+            junk = DateTimeUtils.isBefore(now2, now)
 
         with self.subTest(msg="lowerBin"):
-            junk = DBTimeUtils.lowerBin(now, 1000000000)
+            junk = DateTimeUtils.lowerBin(now, 1000000000)
         with self.subTest(msg="upperBin"):
-            junk = DBTimeUtils.upperBin(now, 1000000000)
+            junk = DateTimeUtils.upperBin(now, 1000000000)
 
     def testFormatting(self):
         """
         Test suite for date formatting
         """
 
-        tz = jpy.get_type('io.deephaven.engine.tables.utils.DBTimeZone').TZ_NY
+        tz = jpy.get_type('io.deephaven.engine.tables.utils.TimeZone').TZ_NY
         # get current time
-        now = DBTimeUtils.currentTime()
+        now = DateTimeUtils.currentTime()
 
-        with self.subTest(msg="formatNy(DbDateTime)"):
-            junk = DBTimeUtils.formatNy(now)  # Eastern timezone format
-        with self.subTest(msg="format(DbDateTime, DbTimeZone)"):
-            junk = DBTimeUtils.format(now, tz)
+        with self.subTest(msg="formatNy(DateTime)"):
+            junk = DateTimeUtils.formatNy(now)  # Eastern timezone format
+        with self.subTest(msg="format(DateTime, DbTimeZone)"):
+            junk = DateTimeUtils.format(now, tz)
         # Unrelated method - formats long as period <days>T<hours>:....
         with self.subTest(msg="format(long)"):
-            junk = DBTimeUtils.format(86400000000000 + 2*3600000000000 + 4*60000000000 + 8*1000000000 + 16)
+            junk = DateTimeUtils.format(86400000000000 + 2*3600000000000 + 4*60000000000 + 8*1000000000 + 16)
 
         # Basically aliases of the above - why both?
-        with self.subTest(msg="formatDate(DbDateTime, DbTimeZone)"):
-            junk = DBTimeUtils.formatDate(now, tz)
-        with self.subTest(msg="formatDateNy(DbDateTime)"):
-            junk = DBTimeUtils.formatDateNy(now)
+        with self.subTest(msg="formatDate(DateTime, DbTimeZone)"):
+            junk = DateTimeUtils.formatDate(now, tz)
+        with self.subTest(msg="formatDateNy(DateTime)"):
+            junk = DateTimeUtils.formatDateNy(now)
 
         formatter = None
         with self.subTest(msg="createFormatter"):
-            formatter = DBTimeUtils.createFormatter("America/Denver")
+            formatter = DateTimeUtils.createFormatter("America/Denver")
         if formatter is not None:
             # get timestamp
             tsNow = time.time()
@@ -303,13 +303,13 @@ class TestDBTimeUtils(unittest.TestCase):
             tsMicros = 1000*tsMillis
             tsNanos = 1000*tsMicros
             with self.subTest(msg="getPartitionFromTimestampNanos"):
-                junk = DBTimeUtils.getPartitionFromTimestampNanos(formatter, tsNanos)
+                junk = DateTimeUtils.getPartitionFromTimestampNanos(formatter, tsNanos)
             with self.subTest(msg="getPartitionFromTimestampMicros"):
-                junk = DBTimeUtils.getPartitionFromTimestampMicros(formatter, tsMicros)
+                junk = DateTimeUtils.getPartitionFromTimestampMicros(formatter, tsMicros)
             with self.subTest(msg="getPartitionFromTimestampMillis"):
-                junk = DBTimeUtils.getPartitionFromTimestampMillis(formatter, tsMillis)
+                junk = DateTimeUtils.getPartitionFromTimestampMillis(formatter, tsMillis)
             with self.subTest(msg="getPartitionFromTimestampSeconds"):
-                junk = DBTimeUtils.getPartitionFromTimestampSeconds(formatter, tsSeconds)
+                junk = DateTimeUtils.getPartitionFromTimestampSeconds(formatter, tsSeconds)
 
     def testBusinessDay(self):
         """
@@ -317,14 +317,14 @@ class TestDBTimeUtils(unittest.TestCase):
         """
 
         with self.subTest(msg="lastBusinessDateNy()"):
-            junk = DBTimeUtils.lastBusinessDateNy()
+            junk = DateTimeUtils.lastBusinessDateNy()
 
         tsMillis = 1000*int(time.time())
         with self.subTest(msg="lastBusinessDateNy(millis)"):
-            junk = DBTimeUtils.lastBusinessDateNy(tsMillis)
+            junk = DateTimeUtils.lastBusinessDateNy(tsMillis)
 
         with self.subTest(msg="overrideLastBusinessDateNyFromCurrentDateNy"):
-            DBTimeUtils.overrideLastBusinessDateNyFromCurrentDateNy()
+            DateTimeUtils.overrideLastBusinessDateNyFromCurrentDateNy()
 
     @unittest.skip("what to do?")
     def testDeprecated(self):

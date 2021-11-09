@@ -2,8 +2,8 @@ package io.deephaven.engine.v2.utils;
 
 import io.deephaven.base.clock.Clock;
 import io.deephaven.base.verify.Require;
-import io.deephaven.engine.tables.utils.DBDateTime;
-import io.deephaven.engine.tables.utils.DBTimeUtils;
+import io.deephaven.engine.tables.utils.DateTime;
+import io.deephaven.engine.tables.utils.DateTimeUtils;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -18,8 +18,8 @@ public class ClockTimeProvider implements TimeProvider {
     }
 
     @Override
-    public DBDateTime currentTime() {
+    public DateTime currentTime() {
         // TODO: Consider adding last-value caching.
-        return DBTimeUtils.microsToTime(clock.currentTimeMicros());
+        return DateTimeUtils.microsToTime(clock.currentTimeMicros());
     }
 }

@@ -18,7 +18,7 @@ import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.TableDefinition;
 import io.deephaven.engine.tables.select.MatchPair;
 import io.deephaven.engine.tables.select.QueryScope;
-import io.deephaven.engine.tables.utils.DBDateTime;
+import io.deephaven.engine.tables.utils.DateTime;
 import io.deephaven.gui.color.ColorPaletteArray;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.tables.utils.TableTools;
@@ -64,7 +64,7 @@ public class PlotUtils {
     private static final byte[] EMPTY_BYTE_ARRAY = new byte[0];
     private static final Number[] EMPTY_NUMBER_ARRAY = new Number[0];
     private static final Date[] EMPTY_DATE_ARRAY = new Date[0];
-    private static final DBDateTime[] EMPTY_DBDATETIME_ARRAY = new DBDateTime[0];
+    private static final DateTime[] EMPTY_DATETIME_ARRAY = new DateTime[0];
 
     private static int randVar() {
         return abs(rng.nextInt());
@@ -753,9 +753,9 @@ public class PlotUtils {
 
         final ColumnSource columnSource = t.getColumnSource(numericCol);
 
-        if (columnSource.getType() == DBDateTime.class) {
+        if (columnSource.getType() == DateTime.class) {
             return key -> {
-                final DBDateTime dateTime = (DBDateTime) columnSource.get(key);
+                final DateTime dateTime = (DateTime) columnSource.get(key);
                 return dateTime == null ? NULL_LONG : dateTime.getNanos();
             };
         } else if (columnSource.getType() == Date.class) {
@@ -881,9 +881,9 @@ public class PlotUtils {
             return new IndexableDataCharacter((char[]) data, plotInfo);
         } else if (c.equals(byte.class)) {
             return new IndexableDataByte((byte[]) data, plotInfo);
-        } else if (c.equals(DBDateTime.class)) {
+        } else if (c.equals(DateTime.class)) {
             if (data instanceof long[]) {
-                return new IndexableDataDBDateTime((long[]) data, plotInfo);
+                return new IndexableDataDateTime((long[]) data, plotInfo);
             }
         }
 
@@ -930,8 +930,8 @@ public class PlotUtils {
             return new IndexableNumericDataArrayLong(EMPTY_LONG_ARRAY, plotInfo);
         } else if (dataType == short.class) {
             return new IndexableNumericDataArrayShort(EMPTY_SHORT_ARRAY, plotInfo);
-        } else if (dataType == DBDateTime.class) {
-            return new IndexableNumericDataArrayDBDateTime(EMPTY_DBDATETIME_ARRAY, plotInfo);
+        } else if (dataType == DateTime.class) {
+            return new IndexableNumericDataArrayDateTime(EMPTY_DATETIME_ARRAY, plotInfo);
         } else if (dataType == Date.class) {
             return new IndexableNumericDataArrayDate(EMPTY_DATE_ARRAY, plotInfo);
         } else if (Number.class.isAssignableFrom(dataType)) {
@@ -953,11 +953,11 @@ public class PlotUtils {
             return new IndexableNumericDataArrayLong((long[]) data, plotInfo);
         } else if (dataType == short.class) {
             return new IndexableNumericDataArrayShort((short[]) data, plotInfo);
-        } else if (dataType == DBDateTime.class) {
+        } else if (dataType == DateTime.class) {
             if (data instanceof long[]) {
                 return new IndexableNumericDataArrayLong((long[]) data, plotInfo);
             } else {
-                return new IndexableNumericDataArrayDBDateTime((DBDateTime[]) data, plotInfo);
+                return new IndexableNumericDataArrayDateTime((DateTime[]) data, plotInfo);
             }
         } else if (dataType == Date.class) {
             return new IndexableNumericDataArrayDate((Date[]) data, plotInfo);

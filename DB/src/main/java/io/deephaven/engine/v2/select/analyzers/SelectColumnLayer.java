@@ -1,10 +1,10 @@
 package io.deephaven.engine.v2.select.analyzers;
 
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.tables.utils.DBDateTime;
+import io.deephaven.engine.tables.utils.DateTime;
 import io.deephaven.engine.v2.ModifiedColumnSet;
 import io.deephaven.engine.v2.Listener;
-import io.deephaven.engine.v2.select.DbArrayChunkAdapter;
+import io.deephaven.engine.v2.select.VectorChunkAdapter;
 import io.deephaven.engine.v2.select.SelectColumn;
 import io.deephaven.engine.v2.sources.WritableChunkSink;
 import io.deephaven.engine.v2.sources.WritableSource;
@@ -42,7 +42,7 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
             // noinspection unchecked
             chunkSource = selectColumn.getDataView();
             if (selectColumnHoldsDbArray) {
-                chunkSource = new DbArrayChunkAdapter<>(chunkSource);
+                chunkSource = new VectorChunkAdapter<>(chunkSource);
             }
         }
         return chunkSource;
@@ -142,7 +142,7 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
 
     private void clearObjectsAtThisLevel(RowSet keys) {
         // Only bother doing this if we're holding on to references.
-        if (!writableSource.getType().isPrimitive() && (writableSource.getType() != DBDateTime.class)) {
+        if (!writableSource.getType().isPrimitive() && (writableSource.getType() != DateTime.class)) {
             ChunkUtils.fillWithNullValue(writableSource, keys);
         }
     }

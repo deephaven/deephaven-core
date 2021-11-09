@@ -2,7 +2,7 @@
  "className": "io.deephaven.engine.v2.select.codegen.FormulaAnalyzer",
  "methods": {
   "analyze": ":param rawFormulaString: java.lang.String\n:param columnDefinitionMap: java.util.Map<java.lang.String,io.deephaven.engine.tables.ColumnDefinition<?>>\n:param otherVariables: java.util.Map<java.lang.String,java.lang.Class<?>>\n:return: io.deephaven.engine.v2.select.codegen.FormulaAnalyzer.Result",
-  "getCompiledFormula": ":param availableColumns: java.util.Map<java.lang.String,io.deephaven.engine.tables.ColumnDefinition<?>>\n:param timeConversionResult: io.deephaven.engine.tables.utils.DBTimeUtils.Result\n:param otherVariables: java.util.Map<java.lang.String,java.lang.Class<?>>\n:return: io.deephaven.engine.tables.lang.DBLanguageParser.Result"
+  "getCompiledFormula": ":param availableColumns: java.util.Map<java.lang.String,io.deephaven.engine.tables.ColumnDefinition<?>>\n:param timeConversionResult: io.deephaven.engine.tables.utils.DateTimeUtils.Result\n:param otherVariables: java.util.Map<java.lang.String,java.lang.Class<?>>\n:return: io.deephaven.engine.tables.lang.LanguageParser.Result"
  },
  "path": "io.deephaven.engine.v2.select.codegen.FormulaAnalyzer",
  "typeName": "class"

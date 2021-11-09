@@ -5,7 +5,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.utils.unboxer.ChunkUnboxer;
 import io.deephaven.kafka.StreamPublisherImpl;
-import io.deephaven.engine.tables.utils.DBTimeUtils;
+import io.deephaven.engine.tables.utils.DateTimeUtils;
 import io.deephaven.util.QueryConstants;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.record.TimestampType;
@@ -253,7 +253,7 @@ public class KafkaStreamPublisher implements ConsumerRecordToStreamPublisherAdap
                     if (record.timestampType() == TimestampType.NO_TIMESTAMP_TYPE) {
                         timestampChunk.add(QueryConstants.NULL_LONG);
                     } else {
-                        timestampChunk.add(DBTimeUtils.millisToNanos(timestamp));
+                        timestampChunk.add(DateTimeUtils.millisToNanos(timestamp));
                     }
                 }
 

@@ -2,6 +2,7 @@ package io.deephaven.engine.v2.select;
 
 import io.deephaven.base.verify.Require;
 import io.deephaven.configuration.Configuration;
+import io.deephaven.engine.tables.lang.LanguageFunctionUtil;
 import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.engine.v2.utils.RowSetBuilderSequential;
 import io.deephaven.engine.v2.utils.RowSetFactory;
@@ -10,7 +11,6 @@ import io.deephaven.io.logger.StreamLoggerImpl;
 import io.deephaven.util.process.ProcessEnvironment;
 import io.deephaven.compilertools.CompilerTools;
 import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.lang.DBLanguageFunctionUtil;
 import io.deephaven.engine.tables.select.Param;
 import io.deephaven.engine.tables.select.PythonMatchFilterTest;
 import io.deephaven.engine.tables.select.QueryScope;
@@ -138,129 +138,129 @@ public class TestConditionFilter extends PythonTest {
 
         { // LESS THAN
             expression = "myShortObj < ShortCol";
-            test = (colValues) -> DBLanguageFunctionUtil.less(
-                    DBLanguageFunctionUtil.shortCast(QUERYSCOPE_OBJ_BASE_VALUE),
-                    DBLanguageFunctionUtil.shortCast(colValues.get("ShortCol")));
+            test = (colValues) -> LanguageFunctionUtil.less(
+                    LanguageFunctionUtil.shortCast(QUERYSCOPE_OBJ_BASE_VALUE),
+                    LanguageFunctionUtil.shortCast(colValues.get("ShortCol")));
             check(expression, test, true, false);
 
             expression = "myIntObj < IntCol";
-            test = (colValues) -> DBLanguageFunctionUtil.less(
+            test = (colValues) -> LanguageFunctionUtil.less(
                     QUERYSCOPE_OBJ_BASE_VALUE,
-                    DBLanguageFunctionUtil.intCast(colValues.get("IntCol")));
+                    LanguageFunctionUtil.intCast(colValues.get("IntCol")));
             check(expression, test, true);
 
             expression = "myLongObj < LongCol";
-            test = (colValues) -> DBLanguageFunctionUtil.less(
-                    DBLanguageFunctionUtil.longCast(QUERYSCOPE_OBJ_BASE_VALUE),
-                    DBLanguageFunctionUtil.longCast(colValues.get("LongCol")));
+            test = (colValues) -> LanguageFunctionUtil.less(
+                    LanguageFunctionUtil.longCast(QUERYSCOPE_OBJ_BASE_VALUE),
+                    LanguageFunctionUtil.longCast(colValues.get("LongCol")));
             check(expression, test, true);
 
             expression = "myFloatObj < FloatCol";
-            test = (colValues) -> DBLanguageFunctionUtil.less(
-                    DBLanguageFunctionUtil.floatCast(QUERYSCOPE_OBJ_BASE_VALUE),
-                    DBLanguageFunctionUtil.floatCast(colValues.get("FloatCol")));
+            test = (colValues) -> LanguageFunctionUtil.less(
+                    LanguageFunctionUtil.floatCast(QUERYSCOPE_OBJ_BASE_VALUE),
+                    LanguageFunctionUtil.floatCast(colValues.get("FloatCol")));
             check(expression, test, true);
 
             expression = "myDoubleObj < DoubleCol";
-            test = (colValues) -> DBLanguageFunctionUtil.less(
-                    DBLanguageFunctionUtil.doubleCast(QUERYSCOPE_OBJ_BASE_VALUE),
-                    DBLanguageFunctionUtil.doubleCast(colValues.get("DoubleCol")));
+            test = (colValues) -> LanguageFunctionUtil.less(
+                    LanguageFunctionUtil.doubleCast(QUERYSCOPE_OBJ_BASE_VALUE),
+                    LanguageFunctionUtil.doubleCast(colValues.get("DoubleCol")));
             check(expression, test, true);
         }
 
         { // GREATER THAN
             expression = "myShortObj > ShortCol";
-            test = (colValues) -> DBLanguageFunctionUtil.greater(
-                    DBLanguageFunctionUtil.shortCast(QUERYSCOPE_OBJ_BASE_VALUE),
-                    DBLanguageFunctionUtil.shortCast(colValues.get("ShortCol")));
+            test = (colValues) -> LanguageFunctionUtil.greater(
+                    LanguageFunctionUtil.shortCast(QUERYSCOPE_OBJ_BASE_VALUE),
+                    LanguageFunctionUtil.shortCast(colValues.get("ShortCol")));
             check(expression, test, true);
 
             expression = "myIntObj > IntCol";
-            test = (colValues) -> DBLanguageFunctionUtil.greater(
+            test = (colValues) -> LanguageFunctionUtil.greater(
                     QUERYSCOPE_OBJ_BASE_VALUE,
-                    DBLanguageFunctionUtil.intCast(colValues.get("IntCol")));
+                    LanguageFunctionUtil.intCast(colValues.get("IntCol")));
             check(expression, test, true);
 
             expression = "myLongObj > LongCol";
-            test = (colValues) -> DBLanguageFunctionUtil.greater(
-                    DBLanguageFunctionUtil.longCast(QUERYSCOPE_OBJ_BASE_VALUE),
-                    DBLanguageFunctionUtil.longCast(colValues.get("LongCol")));
+            test = (colValues) -> LanguageFunctionUtil.greater(
+                    LanguageFunctionUtil.longCast(QUERYSCOPE_OBJ_BASE_VALUE),
+                    LanguageFunctionUtil.longCast(colValues.get("LongCol")));
             check(expression, test, true);
 
             expression = "myFloatObj > FloatCol";
-            test = (colValues) -> DBLanguageFunctionUtil.greater(
-                    DBLanguageFunctionUtil.floatCast(QUERYSCOPE_OBJ_BASE_VALUE),
-                    DBLanguageFunctionUtil.floatCast(colValues.get("FloatCol")));
+            test = (colValues) -> LanguageFunctionUtil.greater(
+                    LanguageFunctionUtil.floatCast(QUERYSCOPE_OBJ_BASE_VALUE),
+                    LanguageFunctionUtil.floatCast(colValues.get("FloatCol")));
             check(expression, test, true);
 
             expression = "myDoubleObj > DoubleCol";
-            test = (colValues) -> DBLanguageFunctionUtil.greater(
-                    DBLanguageFunctionUtil.doubleCast(QUERYSCOPE_OBJ_BASE_VALUE),
-                    DBLanguageFunctionUtil.doubleCast(colValues.get("DoubleCol")));
+            test = (colValues) -> LanguageFunctionUtil.greater(
+                    LanguageFunctionUtil.doubleCast(QUERYSCOPE_OBJ_BASE_VALUE),
+                    LanguageFunctionUtil.doubleCast(colValues.get("DoubleCol")));
             check(expression, test, true);
         }
 
         { // EQUAL
             expression = "myShortObj == ShortCol";
-            test = (colValues) -> DBLanguageFunctionUtil.eq(
-                    DBLanguageFunctionUtil.shortCast(QUERYSCOPE_OBJ_BASE_VALUE),
-                    DBLanguageFunctionUtil.shortCast(colValues.get("ShortCol")));
+            test = (colValues) -> LanguageFunctionUtil.eq(
+                    LanguageFunctionUtil.shortCast(QUERYSCOPE_OBJ_BASE_VALUE),
+                    LanguageFunctionUtil.shortCast(colValues.get("ShortCol")));
             check(expression, test, true);
 
             expression = "myIntObj == IntCol";
-            test = (colValues) -> DBLanguageFunctionUtil.eq(
+            test = (colValues) -> LanguageFunctionUtil.eq(
                     QUERYSCOPE_OBJ_BASE_VALUE,
-                    DBLanguageFunctionUtil.intCast(colValues.get("IntCol")));
+                    LanguageFunctionUtil.intCast(colValues.get("IntCol")));
             check(expression, test, true);
 
             expression = "myLongObj == LongCol";
-            test = (colValues) -> DBLanguageFunctionUtil.eq(
-                    DBLanguageFunctionUtil.longCast(QUERYSCOPE_OBJ_BASE_VALUE),
-                    DBLanguageFunctionUtil.longCast(colValues.get("LongCol")));
+            test = (colValues) -> LanguageFunctionUtil.eq(
+                    LanguageFunctionUtil.longCast(QUERYSCOPE_OBJ_BASE_VALUE),
+                    LanguageFunctionUtil.longCast(colValues.get("LongCol")));
             check(expression, test, true);
 
             expression = "myFloatObj == FloatCol";
-            test = (colValues) -> DBLanguageFunctionUtil.eq(
-                    DBLanguageFunctionUtil.floatCast(QUERYSCOPE_OBJ_BASE_VALUE),
-                    DBLanguageFunctionUtil.floatCast(colValues.get("FloatCol")));
+            test = (colValues) -> LanguageFunctionUtil.eq(
+                    LanguageFunctionUtil.floatCast(QUERYSCOPE_OBJ_BASE_VALUE),
+                    LanguageFunctionUtil.floatCast(colValues.get("FloatCol")));
             check(expression, test, true);
 
             expression = "myDoubleObj == DoubleCol";
-            test = (colValues) -> DBLanguageFunctionUtil.eq(
-                    DBLanguageFunctionUtil.doubleCast(QUERYSCOPE_OBJ_BASE_VALUE),
-                    DBLanguageFunctionUtil.doubleCast(colValues.get("DoubleCol")));
+            test = (colValues) -> LanguageFunctionUtil.eq(
+                    LanguageFunctionUtil.doubleCast(QUERYSCOPE_OBJ_BASE_VALUE),
+                    LanguageFunctionUtil.doubleCast(colValues.get("DoubleCol")));
             check(expression, test, true);
         }
 
         { // NOT EQUAL
             expression = "myShortObj != ShortCol";
-            test = (colValues) -> !DBLanguageFunctionUtil.eq(
-                    DBLanguageFunctionUtil.shortCast(QUERYSCOPE_OBJ_BASE_VALUE),
-                    DBLanguageFunctionUtil.shortCast(colValues.get("ShortCol")));
+            test = (colValues) -> !LanguageFunctionUtil.eq(
+                    LanguageFunctionUtil.shortCast(QUERYSCOPE_OBJ_BASE_VALUE),
+                    LanguageFunctionUtil.shortCast(colValues.get("ShortCol")));
             check(expression, test, true);
 
             expression = "myIntObj != IntCol";
-            test = (colValues) -> !DBLanguageFunctionUtil.eq(
+            test = (colValues) -> !LanguageFunctionUtil.eq(
                     QUERYSCOPE_OBJ_BASE_VALUE,
-                    DBLanguageFunctionUtil.intCast(colValues.get("IntCol")));
+                    LanguageFunctionUtil.intCast(colValues.get("IntCol")));
             check(expression, test, true);
 
             expression = "myLongObj != LongCol";
-            test = (colValues) -> !DBLanguageFunctionUtil.eq(
-                    DBLanguageFunctionUtil.longCast(QUERYSCOPE_OBJ_BASE_VALUE),
-                    DBLanguageFunctionUtil.longCast(colValues.get("LongCol")));
+            test = (colValues) -> !LanguageFunctionUtil.eq(
+                    LanguageFunctionUtil.longCast(QUERYSCOPE_OBJ_BASE_VALUE),
+                    LanguageFunctionUtil.longCast(colValues.get("LongCol")));
             check(expression, test, true);
 
             expression = "myFloatObj != FloatCol";
-            test = (colValues) -> !DBLanguageFunctionUtil.eq(
-                    DBLanguageFunctionUtil.floatCast(QUERYSCOPE_OBJ_BASE_VALUE),
-                    DBLanguageFunctionUtil.floatCast(colValues.get("FloatCol")));
+            test = (colValues) -> !LanguageFunctionUtil.eq(
+                    LanguageFunctionUtil.floatCast(QUERYSCOPE_OBJ_BASE_VALUE),
+                    LanguageFunctionUtil.floatCast(colValues.get("FloatCol")));
             check(expression, test, true);
 
             expression = "myDoubleObj != DoubleCol";
-            test = (colValues) -> !DBLanguageFunctionUtil.eq(
-                    DBLanguageFunctionUtil.doubleCast(QUERYSCOPE_OBJ_BASE_VALUE),
-                    DBLanguageFunctionUtil.doubleCast(colValues.get("DoubleCol")));
+            test = (colValues) -> !LanguageFunctionUtil.eq(
+                    LanguageFunctionUtil.doubleCast(QUERYSCOPE_OBJ_BASE_VALUE),
+                    LanguageFunctionUtil.doubleCast(colValues.get("DoubleCol")));
             check(expression, test, true);
         }
     }

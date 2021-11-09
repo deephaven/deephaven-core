@@ -4,7 +4,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.tables.ColumnDefinition;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.TableDefinition;
-import io.deephaven.engine.tables.utils.DBTimeUtils;
+import io.deephaven.engine.tables.utils.DateTimeUtils;
 import io.deephaven.engine.v2.utils.MutableRowSet;
 import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.gui.table.filters.Condition;
@@ -16,7 +16,7 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * A filter for comparable types (including DBDateTime) for {@link Condition} values: <br>
+ * A filter for comparable types (including DateTime) for {@link Condition} values: <br>
  * <ul>
  * <li>LESS_THAN</li>
  * <li>LESS_THAN_OR_EQUAL</li>
@@ -209,7 +209,7 @@ public class RangeConditionFilter extends SelectFilterImpl {
 
     private static long parseDateTimeNanos(String value) {
         if (value.startsWith("'") && value.endsWith("'")) {
-            return DBTimeUtils.convertDateTime(value.substring(1, value.length() - 1)).getNanos();
+            return DateTimeUtils.convertDateTime(value.substring(1, value.length() - 1)).getNanos();
         }
         return Long.parseLong(value);
     }

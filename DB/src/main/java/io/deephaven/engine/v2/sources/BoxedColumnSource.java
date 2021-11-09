@@ -1,8 +1,8 @@
 package io.deephaven.engine.v2.sources;
 
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.tables.utils.DBDateTime;
-import io.deephaven.engine.tables.utils.DBTimeUtils;
+import io.deephaven.engine.tables.utils.DateTime;
+import io.deephaven.engine.tables.utils.DateTimeUtils;
 import io.deephaven.util.BooleanUtils;
 import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
@@ -11,7 +11,7 @@ import org.jetbrains.annotations.NotNull;
 
 /**
  * {@link ColumnSource} implementation for explicitly boxing a primitive into a more complex type, e.g. {@code byte} as
- * {@link Boolean} or {@code long} as {@link DBDateTime}.
+ * {@link Boolean} or {@code long} as {@link DateTime}.
  */
 public abstract class BoxedColumnSource<DATA_TYPE> extends AbstractColumnSource<DATA_TYPE>
         implements MutableColumnSourceGetDefaults.ForObject<DATA_TYPE> {
@@ -116,33 +116,33 @@ public abstract class BoxedColumnSource<DATA_TYPE> extends AbstractColumnSource<
         }
     }
 
-    public static final class OfDateTime extends BoxedColumnSource<DBDateTime> {
+    public static final class OfDateTime extends BoxedColumnSource<DateTime> {
 
         public OfDateTime(@NotNull final ColumnSource<Long> originalSource) {
-            super(DBDateTime.class, originalSource);
+            super(DateTime.class, originalSource);
             Assert.eq(originalSource.getType(), "originalSource.getType()", long.class);
         }
 
         @Override
-        public final DBDateTime get(final long index) {
-            return DBTimeUtils.nanosToTime(originalSource.getLong(index));
+        public final DateTime get(final long index) {
+            return DateTimeUtils.nanosToTime(originalSource.getLong(index));
         }
 
         @Override
-        public final DBDateTime getPrev(final long index) {
-            return DBTimeUtils.nanosToTime(originalSource.getPrevLong(index));
+        public final DateTime getPrev(final long index) {
+            return DateTimeUtils.nanosToTime(originalSource.getPrevLong(index));
         }
 
         @Override
         final void transformChunk(@NotNull final Chunk<? extends Values> source,
                 @NotNull final WritableChunk<? super Values> destination) {
             final LongChunk<? extends Values> typedSource = source.asLongChunk();
-            final WritableObjectChunk<DBDateTime, ? super Values> typedDestination =
+            final WritableObjectChunk<DateTime, ? super Values> typedDestination =
                     destination.asWritableObjectChunk();
 
             final int sourceSize = typedSource.size();
             for (int pi = 0; pi < sourceSize; ++pi) {
-                typedDestination.set(pi, DBTimeUtils.nanosToTime(typedSource.get(pi)));
+                typedDestination.set(pi, DateTimeUtils.nanosToTime(typedSource.get(pi)));
             }
             typedDestination.setSize(sourceSize);
         }

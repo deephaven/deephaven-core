@@ -7,26 +7,26 @@ package io.deephaven.engine.plot.example_plots;
 import io.deephaven.engine.plot.Figure;
 import io.deephaven.engine.plot.FigureFactory;
 import io.deephaven.engine.plot.axistransformations.AxisTransformBusinessCalendar;
-import io.deephaven.engine.tables.utils.DBDateTime;
-import io.deephaven.engine.tables.utils.DBTimeUtils;
+import io.deephaven.engine.tables.utils.DateTime;
+import io.deephaven.engine.tables.utils.DateTimeUtils;
 import io.deephaven.util.calendar.Calendars;
 
 
 public class BusinessTime {
     public static void main(String[] args) {
-        DBDateTime[] x = new DBDateTime[500];
+        DateTime[] x = new DateTime[500];
         double[] y = new double[500];
         long time = 1493305755000000000L;
         for (int i = 0; i < 250; i++) {
-            time = time + DBTimeUtils.MINUTE;
-            x[i] = new DBDateTime(time);
+            time = time + DateTimeUtils.MINUTE;
+            x[i] = new DateTime(time);
             y[i] = Math.sin(i);
         }
 
-        time = 1493305755000000000L + DBTimeUtils.DAY;
+        time = 1493305755000000000L + DateTimeUtils.DAY;
         for (int i = 250; i < x.length; i++) {
-            time = time + DBTimeUtils.MINUTE;
-            x[i] = new DBDateTime(time);
+            time = time + DateTimeUtils.MINUTE;
+            x[i] = new DateTime(time);
             y[i] = Math.sin(i);
         }
 

@@ -4,8 +4,8 @@
 
 package io.deephaven.engine.v2.sources;
 
-import io.deephaven.engine.tables.utils.DBDateTime;
-import io.deephaven.engine.tables.utils.DBTimeUtils;
+import io.deephaven.engine.tables.utils.DateTime;
+import io.deephaven.engine.tables.utils.DateTimeUtils;
 import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 import io.deephaven.engine.v2.sources.chunk.util.chunkfillers.ChunkFiller;
@@ -15,34 +15,34 @@ import org.jetbrains.annotations.NotNull;
 import static io.deephaven.util.QueryConstants.NULL_LONG;
 
 /**
- * Array-backed ColumnSource for DBDateTimes. Allows reinterpret as long.
+ * Array-backed ColumnSource for DateTimes. Allows reinterpret as long.
  */
-public class DateTimeArraySource extends AbstractLongArraySource<DBDateTime> {
+public class DateTimeArraySource extends AbstractLongArraySource<DateTime> {
 
     public DateTimeArraySource() {
-        super(DBDateTime.class);
+        super(DateTime.class);
     }
 
     @Override
-    public void set(long key, DBDateTime value) {
+    public void set(long key, DateTime value) {
         set(key, value == null ? NULL_LONG : value.getNanos());
     }
 
     @Override
-    public DBDateTime get(long index) {
+    public DateTime get(long index) {
         final long nanos = getLong(index);
-        return DBTimeUtils.nanosToTime(nanos);
+        return DateTimeUtils.nanosToTime(nanos);
     }
 
     @Override
-    public DBDateTime getPrev(long index) {
+    public DateTime getPrev(long index) {
         final long nanos = getPrevLong(index);
-        return DBTimeUtils.nanosToTime(nanos);
+        return DateTimeUtils.nanosToTime(nanos);
     }
 
 
     @Override
-    public void copy(ColumnSource<? extends DBDateTime> sourceColumn, long sourceKey, long destKey) {
+    public void copy(ColumnSource<? extends DateTime> sourceColumn, long sourceKey, long destKey) {
         set(destKey, sourceColumn.get(sourceKey));
     }
 
@@ -88,41 +88,41 @@ public class DateTimeArraySource extends AbstractLongArraySource<DBDateTime> {
     @Override
     protected void fillSparseChunk(@NotNull final WritableChunk<? super Values> destGeneric,
             @NotNull final RowSequence indices) {
-        super.fillSparseChunk(destGeneric, indices, DBTimeUtils::nanosToTime);
+        super.fillSparseChunk(destGeneric, indices, DateTimeUtils::nanosToTime);
     }
 
     @Override
     protected void fillSparsePrevChunk(@NotNull final WritableChunk<? super Values> destGeneric,
             @NotNull final RowSequence indices) {
-        super.fillSparsePrevChunk(destGeneric, indices, DBTimeUtils::nanosToTime);
+        super.fillSparsePrevChunk(destGeneric, indices, DateTimeUtils::nanosToTime);
     }
 
     @Override
     protected void fillSparseChunkUnordered(@NotNull final WritableChunk<? super Values> destGeneric,
             @NotNull final LongChunk<? extends Attributes.RowKeys> indices) {
-        super.fillSparseChunkUnordered(destGeneric, indices, DBTimeUtils::nanosToTime);
+        super.fillSparseChunkUnordered(destGeneric, indices, DateTimeUtils::nanosToTime);
     }
 
     @Override
     protected void fillSparsePrevChunkUnordered(@NotNull final WritableChunk<? super Values> destGeneric,
             @NotNull final LongChunk<? extends Attributes.RowKeys> indices) {
-        super.fillSparsePrevChunkUnordered(destGeneric, indices, DBTimeUtils::nanosToTime);
+        super.fillSparsePrevChunkUnordered(destGeneric, indices, DateTimeUtils::nanosToTime);
     }
 
     @Override
     public void fillFromChunkByRanges(@NotNull RowSequence rowSequence, Chunk<? extends Values> src) {
-        super.<DBDateTime>fillFromChunkByRanges(rowSequence, src, DBTimeUtils::nanos);
+        super.<DateTime>fillFromChunkByRanges(rowSequence, src, DateTimeUtils::nanos);
     }
 
     @Override
     void fillFromChunkByKeys(@NotNull RowSequence rowSequence, Chunk<? extends Values> src) {
-        super.<DBDateTime>fillFromChunkByKeys(rowSequence, src, DBTimeUtils::nanos);
+        super.<DateTime>fillFromChunkByKeys(rowSequence, src, DateTimeUtils::nanos);
     }
 
     @Override
     public void fillFromChunkUnordered(@NotNull FillFromContext context, @NotNull Chunk<? extends Values> src,
             @NotNull LongChunk<Attributes.RowKeys> keys) {
-        super.<DBDateTime>fillFromChunkUnordered(src, keys, DBTimeUtils::nanos);
+        super.<DateTime>fillFromChunkUnordered(src, keys, DateTimeUtils::nanos);
     }
 
     @Override
@@ -155,7 +155,7 @@ public class DateTimeArraySource extends AbstractLongArraySource<DBDateTime> {
 
         @Override
         public <ALTERNATE_DATA_TYPE> boolean allowsReinterpret(@NotNull Class<ALTERNATE_DATA_TYPE> alternateDataType) {
-            return alternateDataType == DBDateTime.class;
+            return alternateDataType == DateTime.class;
         }
 
         @Override

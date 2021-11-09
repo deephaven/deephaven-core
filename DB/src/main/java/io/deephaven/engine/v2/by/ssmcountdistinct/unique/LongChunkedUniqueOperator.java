@@ -7,9 +7,8 @@
 
 package io.deephaven.engine.v2.by.ssmcountdistinct.unique;
 
+import io.deephaven.engine.tables.utils.DateTime;
 import io.deephaven.engine.v2.sources.BoxedColumnSource;
-import io.deephaven.engine.tables.utils.DBDateTime;
-import io.deephaven.engine.v2.by.ssmcountdistinct.DbDateTimeSsmSourceWrapper;
 
 import io.deephaven.engine.v2.Listener;
 import io.deephaven.engine.v2.by.ComboAggregateFactory;
@@ -73,7 +72,7 @@ public class LongChunkedUniqueOperator implements IterativeChunkedAggregationOpe
         this.internalResult = new LongArraySource();
         // endregion ResultCreation
         // region ResultAssignment
-        if(type == DBDateTime.class) {
+        if(type == DateTime.class) {
             externalResult = new BoxedColumnSource.OfDateTime(internalResult);
         } else {
             externalResult = internalResult;

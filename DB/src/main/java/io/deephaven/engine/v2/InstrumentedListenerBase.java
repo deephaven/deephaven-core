@@ -10,11 +10,11 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.live.UpdateGraphProcessor;
+import io.deephaven.engine.tables.utils.DateTimeUtils;
 import io.deephaven.io.log.LogEntry;
 import io.deephaven.io.log.impl.LogOutputStringImpl;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.engine.tables.live.NotificationQueue;
-import io.deephaven.engine.tables.utils.DBTimeUtils;
 import io.deephaven.engine.tables.utils.SystemicObjectTracker;
 import io.deephaven.engine.util.liveness.LivenessArtifact;
 import io.deephaven.engine.v2.sources.LogicalClock;
@@ -149,7 +149,7 @@ public abstract class InstrumentedListenerBase extends LivenessArtifact
             }
             failed = true;
             try {
-                AsyncErrorLogger.log(DBTimeUtils.currentTime(), entry, sourceEntry, originalException);
+                AsyncErrorLogger.log(DateTimeUtils.currentTime(), entry, sourceEntry, originalException);
             } catch (IOException e) {
                 log.error().append("Error logging failure from ").append(entry).append(": ").append(e).endl();
             }

@@ -1,7 +1,7 @@
 {
  "className": "io.deephaven.engine.v2.utils.TimeProvider",
  "methods": {
-  "currentTime": ":return: io.deephaven.engine.tables.utils.DBDateTime"
+  "currentTime": ":return: io.deephaven.engine.tables.utils.DateTime"
  },
  "path": "io.deephaven.engine.v2.utils.TimeProvider",
  "text": "Interface for providing the current time.",

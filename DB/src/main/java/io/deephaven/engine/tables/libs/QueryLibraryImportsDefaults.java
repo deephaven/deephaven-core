@@ -1,6 +1,12 @@
 package io.deephaven.engine.tables.libs;
 
 import io.deephaven.engine.structures.RowSequence;
+import io.deephaven.engine.tables.lang.LanguageFunctionUtil;
+import io.deephaven.engine.tables.utils.DateTime;
+import io.deephaven.engine.tables.utils.DateTimeUtils;
+import io.deephaven.engine.tables.utils.Period;
+import io.deephaven.engine.tables.utils.TimeZone;
+import io.deephaven.engine.util.ColorUtilImpl;
 import io.deephaven.engine.v2.utils.*;
 
 import java.util.Arrays;
@@ -25,12 +31,12 @@ public class QueryLibraryImportsDefaults implements QueryLibraryImports {
                 io.deephaven.engine.tables.Table.class,
                 io.deephaven.engine.tables.DataColumn.class,
                 io.deephaven.engine.tables.utils.ArrayUtils.class,
-                io.deephaven.engine.tables.utils.DBDateTime.class,
-                io.deephaven.engine.tables.utils.DBTimeUtils.class,
+                DateTime.class,
+                DateTimeUtils.class,
                 io.deephaven.base.string.cache.CompressedString.class,
                 java.util.Arrays.class,
                 org.joda.time.LocalTime.class,
-                io.deephaven.engine.tables.utils.DBPeriod.class,
+                Period.class,
                 io.deephaven.engine.tables.select.Param.class,
                 io.deephaven.engine.v2.sources.ColumnSource.class,
                 RowSet.class,
@@ -91,13 +97,13 @@ public class QueryLibraryImportsDefaults implements QueryLibraryImports {
                 io.deephaven.libs.primitives.BinSearch.class,
                 io.deephaven.libs.primitives.Casting.class,
                 io.deephaven.libs.primitives.PrimitiveParseUtil.class,
-                io.deephaven.engine.tables.lang.DBLanguageFunctionUtil.class,
-                io.deephaven.engine.tables.utils.DBTimeUtils.class,
-                io.deephaven.engine.tables.utils.DBTimeZone.class,
+                LanguageFunctionUtil.class,
+                DateTimeUtils.class,
+                TimeZone.class,
                 io.deephaven.base.string.cache.CompressedString.class,
                 io.deephaven.engine.tables.utils.WhereClause.class,
                 io.deephaven.gui.color.Color.class,
-                io.deephaven.engine.util.DBColorUtilImpl.class,
+                ColorUtilImpl.class,
                 io.deephaven.engine.tables.verify.TableAssertions.class,
                 io.deephaven.util.calendar.StaticCalendarMethods.class,
                 io.deephaven.engine.v2.sources.chunk.Attributes.class));

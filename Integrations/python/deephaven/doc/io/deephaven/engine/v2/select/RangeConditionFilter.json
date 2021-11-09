@@ -16,6 +16,6 @@
   "toString": ":return: java.lang.String"
  },
  "path": "io.deephaven.engine.v2.select.RangeConditionFilter",
- "text": "A filter for comparable types (including DBDateTime) for Condition values: \n\n* LESS_THAN\n* LESS_THAN_OR_EQUAL\n* GREATER_THAN\n* GREATER_THAN_OR_EQUAL",
+ "text": "A filter for comparable types (including DateTime) for Condition values: \n\n* LESS_THAN\n* LESS_THAN_OR_EQUAL\n* GREATER_THAN\n* GREATER_THAN_OR_EQUAL",
  "typeName": "class"
 }

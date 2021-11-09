@@ -1,6 +1,6 @@
 package io.deephaven.engine.v2.sources;
 
-import io.deephaven.engine.tables.utils.DBDateTime;
+import io.deephaven.engine.tables.utils.DateTime;
 
 /**
  * Defaulted interfaces for various immutable {@link ColumnSource} types, in order to avoid having defaults at higher
@@ -65,10 +65,10 @@ public final class ImmutableColumnSourceGetDefaults {
     }
 
     /**
-     * Default interface for immutable {@link DBDateTime} {@link ColumnSource} implementations.
+     * Default interface for immutable {@link DateTime} {@link ColumnSource} implementations.
      */
     public interface ForLongAsDateTime
-            extends ColumnSourceGetDefaults.ForLongAsDateTime, ImmutableColumnSource<DBDateTime> {
+            extends ColumnSourceGetDefaults.ForLongAsDateTime, ImmutableColumnSource<DateTime> {
     }
 
     /**

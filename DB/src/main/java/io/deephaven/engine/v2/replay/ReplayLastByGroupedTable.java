@@ -4,7 +4,7 @@
 
 package io.deephaven.engine.v2.replay;
 
-import io.deephaven.engine.tables.utils.DBDateTime;
+import io.deephaven.engine.tables.utils.DateTime;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.utils.*;
 
@@ -18,7 +18,7 @@ public class ReplayLastByGroupedTable extends QueryReplayGroupedTable {
         super(rowSet, input, timeColumn, replayer, RedirectionIndex.FACTORY.createRedirectionIndex(100),
                 groupingColumns);
         // noinspection unchecked
-        replayer.registerTimeSource(rowSet, (ColumnSource<DBDateTime>) input.get(timeColumn));
+        replayer.registerTimeSource(rowSet, (ColumnSource<DateTime>) input.get(timeColumn));
     }
 
     @Override

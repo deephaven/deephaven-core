@@ -7,7 +7,7 @@ import io.deephaven.engine.tables.ColumnDefinition;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.TableDefinition;
 import io.deephaven.engine.tables.live.UpdateSourceRegistrar;
-import io.deephaven.engine.tables.utils.DBDateTime;
+import io.deephaven.engine.tables.utils.DateTime;
 import io.deephaven.engine.v2.Listener;
 import io.deephaven.engine.v2.ModifiedColumnSet;
 import io.deephaven.engine.v2.QueryTable;
@@ -196,7 +196,7 @@ public class StreamToTableAdapter implements SafeCloseable, StreamConsumer, Runn
                     new SwitchColumnSource<>(wrapped[ii], StreamToTableAdapter::maybeClearChunkColumnSource);
 
             final ColumnSource<?> visibleSource;
-            if (columns[ii].getDataType() == DBDateTime.class) {
+            if (columns[ii].getDataType() == DateTime.class) {
                 // noinspection unchecked
                 visibleSource = new LongAsDateTimeColumnSource((ColumnSource<Long>) switchSource);
             } else if (columns[ii].getDataType() == Boolean.class) {
@@ -218,7 +218,7 @@ public class StreamToTableAdapter implements SafeCloseable, StreamConsumer, Runn
     }
 
     /**
-     * We change the inner columns to long and byte for DBDateTime and Boolean, respectively. We expect our ingesters to
+     * We change the inner columns to long and byte for DateTime and Boolean, respectively. We expect our ingesters to
      * pass us these primitive chunks for those types.
      *
      * @param columnType the type of the outer column
@@ -226,7 +226,7 @@ public class StreamToTableAdapter implements SafeCloseable, StreamConsumer, Runn
      * @return the type of the inner column
      */
     private static Class<?> replacementType(Class<?> columnType) {
-        if (columnType == DBDateTime.class) {
+        if (columnType == DateTime.class) {
             return long.class;
         } else if (columnType == Boolean.class) {
             return byte.class;

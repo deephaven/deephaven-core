@@ -1,8 +1,8 @@
 package io.deephaven.engine.v2.tuples.generated;
 
 import io.deephaven.datastructures.util.SmartKey;
-import io.deephaven.engine.tables.utils.DBDateTime;
-import io.deephaven.engine.tables.utils.DBTimeUtils;
+import io.deephaven.engine.tables.utils.DateTime;
+import io.deephaven.engine.tables.utils.DateTimeUtils;
 import io.deephaven.engine.util.tuples.generated.ByteByteLongTuple;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.WritableSource;
@@ -68,7 +68,7 @@ public class BooleanBooleanReinterpretedDateTimeColumnTupleSource extends Abstra
         return new ByteByteLongTuple(
                 BooleanUtils.booleanAsByte((Boolean)values[0]),
                 BooleanUtils.booleanAsByte((Boolean)values[1]),
-                DBTimeUtils.nanos((DBDateTime)values[2])
+                DateTimeUtils.nanos((DateTime)values[2])
         );
     }
 
@@ -93,7 +93,7 @@ public class BooleanBooleanReinterpretedDateTimeColumnTupleSource extends Abstra
             return;
         }
         if (elementIndex == 2) {
-            writableSource.set(destinationIndexKey, (ELEMENT_TYPE) DBTimeUtils.nanosToTime(tuple.getThirdElement()));
+            writableSource.set(destinationIndexKey, (ELEMENT_TYPE) DateTimeUtils.nanosToTime(tuple.getThirdElement()));
             return;
         }
         throw new IndexOutOfBoundsException("Invalid element rowSet " + elementIndex + " for export");
@@ -104,7 +104,7 @@ public class BooleanBooleanReinterpretedDateTimeColumnTupleSource extends Abstra
         return new SmartKey(
                 BooleanUtils.byteAsBoolean(tuple.getFirstElement()),
                 BooleanUtils.byteAsBoolean(tuple.getSecondElement()),
-                DBTimeUtils.nanosToTime(tuple.getThirdElement())
+                DateTimeUtils.nanosToTime(tuple.getThirdElement())
         );
     }
 
@@ -117,7 +117,7 @@ public class BooleanBooleanReinterpretedDateTimeColumnTupleSource extends Abstra
             return BooleanUtils.byteAsBoolean(tuple.getSecondElement());
         }
         if (elementIndex == 2) {
-            return DBTimeUtils.nanosToTime(tuple.getThirdElement());
+            return DateTimeUtils.nanosToTime(tuple.getThirdElement());
         }
         throw new IllegalArgumentException("Bad elementIndex for 3 element tuple: " + elementIndex);
     }

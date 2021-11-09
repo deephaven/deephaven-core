@@ -5,10 +5,10 @@
 package io.deephaven.engine.v2.select;
 
 import io.deephaven.engine.tables.live.UpdateGraphProcessor;
+import io.deephaven.engine.tables.utils.DateTime;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.clock.RealTimeClock;
 import io.deephaven.util.process.ProcessEnvironment;
-import io.deephaven.engine.tables.utils.DBDateTime;
 import io.deephaven.engine.v2.utils.ClockTimeProvider;
 import io.deephaven.engine.v2.utils.TerminalNotification;
 import io.deephaven.engine.v2.utils.TimeProvider;
@@ -103,11 +103,11 @@ public class AutoTuningIncrementalReleaseFilter extends BaseIncrementalReleaseFi
     private final Logger logger;
     private final double targetFactor;
 
-    private DBDateTime firstCycle;
+    private DateTime firstCycle;
 
     private long nextSize = 0;
-    private DBDateTime lastRefresh;
-    private DBDateTime cycleEnd;
+    private DateTime lastRefresh;
+    private DateTime cycleEnd;
     private boolean releasedAll = false;
 
     /**
@@ -227,7 +227,7 @@ public class AutoTuningIncrementalReleaseFilter extends BaseIncrementalReleaseFi
         if (releasedAll) {
             return;
         }
-        final DBDateTime now = timeProvider.currentTime();
+        final DateTime now = timeProvider.currentTime();
         if (nextSize == 0) {
             firstCycle = now;
             nextSize = initialRelease;

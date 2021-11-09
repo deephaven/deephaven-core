@@ -3,7 +3,7 @@ package io.deephaven.engine.tables;
 import io.deephaven.engine.tables.dbarrays.ObjectVector;
 import io.deephaven.engine.tables.dbarrays.Vector;
 import io.deephaven.engine.tables.libs.StringSet;
-import io.deephaven.engine.tables.utils.DBDateTime;
+import io.deephaven.engine.tables.utils.DateTime;
 import io.deephaven.engine.v2.ColumnToCodecMappings;
 import io.deephaven.util.codec.CodecCache;
 import io.deephaven.util.codec.ExternalizableCodec;
@@ -37,7 +37,7 @@ public class CodecLookup {
      * @return Whether a codec is required
      */
     public static boolean codecRequired(@NotNull final Class<?> dataType, @Nullable final Class<?> componentType) {
-        if (dataType.isPrimitive() || dataType == Boolean.class || dataType == DBDateTime.class
+        if (dataType.isPrimitive() || dataType == Boolean.class || dataType == DateTime.class
                 || dataType == String.class || StringSet.class.isAssignableFrom(dataType)) {
             // Primitive, basic, and special types do not require codecs
             return false;
@@ -48,7 +48,7 @@ public class CodecLookup {
                         "Array type " + dataType + " does not match component type " + componentType);
             }
             // Arrays of primitives or basic types do not require codecs
-            return !(componentType.isPrimitive() || componentType == Boolean.class || componentType == DBDateTime.class
+            return !(componentType.isPrimitive() || componentType == Boolean.class || componentType == DateTime.class
                     || componentType == String.class);
         }
         if (Vector.class.isAssignableFrom(dataType)) {
@@ -57,7 +57,7 @@ public class CodecLookup {
             }
             if (ObjectVector.class.isAssignableFrom(dataType)) {
                 // DbArrays of basic types do not require codecs
-                return !(componentType == Boolean.class || componentType == DBDateTime.class
+                return !(componentType == Boolean.class || componentType == DateTime.class
                         || componentType == String.class);
             }
             // DbArrayBases of primitive types do not require codecs

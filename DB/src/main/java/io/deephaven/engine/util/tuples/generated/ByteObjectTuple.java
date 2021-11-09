@@ -1,6 +1,6 @@
 package io.deephaven.engine.util.tuples.generated;
 
-import io.deephaven.engine.tables.lang.DBLanguageFunctionUtil;
+import io.deephaven.engine.tables.lang.LanguageFunctionUtil;
 import io.deephaven.engine.util.serialization.SerializationUtils;
 import io.deephaven.engine.util.serialization.StreamingExternalizable;
 import io.deephaven.engine.util.tuples.CanonicalizableTuple;
@@ -87,8 +87,8 @@ public class ByteObjectTuple implements Comparable<ByteObjectTuple>, Externaliza
         }
         int comparison;
         // @formatter:off
-        return 0 != (comparison = DBLanguageFunctionUtil.compareTo(element1, other.element1)) ? comparison :
-               DBLanguageFunctionUtil.compareTo((Comparable)element2, (Comparable)other.element2);
+        return 0 != (comparison = LanguageFunctionUtil.compareTo(element1, other.element1)) ? comparison :
+               LanguageFunctionUtil.compareTo((Comparable)element2, (Comparable)other.element2);
         // @formatter:on
     }
 

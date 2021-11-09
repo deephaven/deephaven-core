@@ -32,7 +32,7 @@ class TestFigureWrapper(unittest.TestCase):
         """
         Inherited method allowing initialization of test environment
         """
-        self.table = TableTools.emptyTable(200).update("timestamp=new DBDateTime((long)(i/2)*1000000000)",
+        self.table = TableTools.emptyTable(200).update("timestamp=new DateTime((long)(i/2)*1000000000)",
                                                        "Sym=((i%2 == 0) ? `MSFT` : `AAPL`)",
                                                        "price=(double)((i%2 == 0) ? 100.0 + (i/2) + 5*Math.random() : 250.0 + (i/2) + 10*Math.random())")
         # TODO: maybe we should test the direct data plotting functionality? vs table reference?

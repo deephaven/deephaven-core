@@ -1,7 +1,7 @@
 package io.deephaven.engine.v2.by.ssmcountdistinct;
 
 import io.deephaven.configuration.Configuration;
-import io.deephaven.engine.tables.utils.DBDateTime;
+import io.deephaven.engine.tables.utils.DateTime;
 import io.deephaven.engine.v2.by.IterativeChunkedAggregationOperator;
 import io.deephaven.engine.v2.by.ssmcountdistinct.count.*;
 import io.deephaven.engine.v2.by.ssmcountdistinct.distinct.*;
@@ -51,7 +51,7 @@ public interface DistinctOperatorFactory {
         } else if (type == Integer.class || type == int.class) {
             return isRollup ? new IntRollupCountDistinctOperator(resultName, countNulls)
                     : new IntChunkedCountDistinctOperator(resultName, countNulls, exposeInternal);
-        } else if (type == Long.class || type == long.class || type == DBDateTime.class) {
+        } else if (type == Long.class || type == long.class || type == DateTime.class) {
             return isRollup ? new LongRollupCountDistinctOperator(resultName, countNulls)
                     : new LongChunkedCountDistinctOperator(resultName, countNulls, exposeInternal);
         } else if (type == Short.class || type == short.class) {
@@ -93,7 +93,7 @@ public interface DistinctOperatorFactory {
         } else if (type == Integer.class || type == int.class) {
             return isRollup ? new IntRollupDistinctOperator(resultName, countNulls)
                     : new IntChunkedDistinctOperator(resultName, countNulls, exposeInternal);
-        } else if (type == Long.class || type == long.class || type == DBDateTime.class) {
+        } else if (type == Long.class || type == long.class || type == DateTime.class) {
             return isRollup ? new LongRollupDistinctOperator(type, resultName, countNulls)
                     : new LongChunkedDistinctOperator(type, resultName, countNulls, exposeInternal);
         } else if (type == Short.class || type == short.class) {
@@ -151,12 +151,12 @@ public interface DistinctOperatorFactory {
             final int nuvAsType = (nonUniqueValue == null) ? NULL_INT : ((Number) nonUniqueValue).intValue();
             return isRollup ? new IntRollupUniqueOperator(resultName, countNulls, nkvAsType, nuvAsType)
                     : new IntChunkedUniqueOperator(resultName, countNulls, exposeInternal, nkvAsType, nuvAsType);
-        } else if (type == Long.class || type == long.class || type == DBDateTime.class) {
+        } else if (type == Long.class || type == long.class || type == DateTime.class) {
             final long nkvAsType;
             final long nuvAsType;
-            if (type == DBDateTime.class) {
-                nkvAsType = (noKeyValue == null) ? NULL_LONG : ((DBDateTime) noKeyValue).getNanos();
-                nuvAsType = (nonUniqueValue == null) ? NULL_LONG : ((DBDateTime) nonUniqueValue).getNanos();
+            if (type == DateTime.class) {
+                nkvAsType = (noKeyValue == null) ? NULL_LONG : ((DateTime) noKeyValue).getNanos();
+                nuvAsType = (nonUniqueValue == null) ? NULL_LONG : ((DateTime) nonUniqueValue).getNanos();
             } else {
                 nkvAsType = (noKeyValue == null) ? NULL_LONG : ((Number) noKeyValue).longValue();
                 nuvAsType = (nonUniqueValue == null) ? NULL_LONG : ((Number) nonUniqueValue).longValue();

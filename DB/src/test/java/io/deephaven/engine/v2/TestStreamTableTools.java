@@ -2,8 +2,8 @@ package io.deephaven.engine.v2;
 
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.live.UpdateGraphProcessor;
-import io.deephaven.engine.tables.utils.DBDateTime;
-import io.deephaven.engine.tables.utils.DBTimeUtils;
+import io.deephaven.engine.tables.utils.DateTime;
+import io.deephaven.engine.tables.utils.DateTimeUtils;
 import io.deephaven.engine.tables.utils.TableTools;
 import junit.framework.TestCase;
 import org.junit.After;
@@ -28,9 +28,9 @@ public class TestStreamTableTools {
 
     @Test
     public void testStreamToAppendOnlyTable() {
-        final DBDateTime dt1 = DBTimeUtils.convertDateTime("2021-08-11T8:20:00 NY");
-        final DBDateTime dt2 = DBTimeUtils.convertDateTime("2021-08-11T8:21:00 NY");
-        final DBDateTime dt3 = DBTimeUtils.convertDateTime("2021-08-11T11:22:00 NY");
+        final DateTime dt1 = DateTimeUtils.convertDateTime("2021-08-11T8:20:00 NY");
+        final DateTime dt2 = DateTimeUtils.convertDateTime("2021-08-11T8:21:00 NY");
+        final DateTime dt3 = DateTimeUtils.convertDateTime("2021-08-11T11:22:00 NY");
 
         final QueryTable streamTable = TstUtils.testRefreshingTable(i(1).toTracking(), intCol("I", 7),
                 doubleCol("D", Double.NEGATIVE_INFINITY), dateTimeCol("DT", dt1), col("B", Boolean.TRUE));

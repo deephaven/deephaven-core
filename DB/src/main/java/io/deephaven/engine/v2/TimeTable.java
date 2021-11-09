@@ -5,12 +5,12 @@
 package io.deephaven.engine.v2;
 
 import io.deephaven.engine.tables.live.UpdateGraphProcessor;
+import io.deephaven.engine.tables.utils.DateTime;
+import io.deephaven.engine.tables.utils.DateTimeUtils;
 import io.deephaven.engine.v2.utils.*;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.libs.primitives.LongNumericPrimitives;
-import io.deephaven.engine.tables.utils.DBDateTime;
-import io.deephaven.engine.tables.utils.DBTimeUtils;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.DateTimeArraySource;
 
@@ -31,26 +31,26 @@ public class TimeTable extends QueryTable implements Runnable {
     private long lastIndex = -1;
     private final DateTimeArraySource dateTimeArraySource;
     private final TimeProvider timeProvider;
-    private DBDateTime lastTime;
-    private final long dbPeriod;
+    private DateTime lastTime;
+    private final long period;
     private final long binOffset;
     private final UpdatePerformanceTracker.Entry entry;
 
-    public TimeTable(TimeProvider timeProvider, long dbPeriod) {
-        this(timeProvider, null, dbPeriod);
+    public TimeTable(TimeProvider timeProvider, long period) {
+        this(timeProvider, null, period);
     }
 
-    public TimeTable(TimeProvider timeProvider, DBDateTime firstTime, long dbPeriod) {
+    public TimeTable(TimeProvider timeProvider, DateTime firstTime, long period) {
         super(RowSetFactory.fromKeys().toTracking(), initColumn());
-        if (dbPeriod <= 0) {
-            throw new IllegalArgumentException("Invalid time period: " + dbPeriod + " nanoseconds");
+        if (period <= 0) {
+            throw new IllegalArgumentException("Invalid time period: " + period + " nanoseconds");
         }
-        this.entry = UpdatePerformanceTracker.getInstance().getEntry("TimeTable(" + firstTime + "," + dbPeriod + ")");
-        this.lastTime = firstTime == null ? null : new DBDateTime(firstTime.getNanos() - dbPeriod);
-        binOffset = firstTime == null ? 0 : lastTime.getNanos() % dbPeriod;
+        this.entry = UpdatePerformanceTracker.getInstance().getEntry("TimeTable(" + firstTime + "," + period + ")");
+        this.lastTime = firstTime == null ? null : new DateTime(firstTime.getNanos() - period);
+        binOffset = firstTime == null ? 0 : lastTime.getNanos() % period;
         dateTimeArraySource = (DateTimeArraySource) getColumnSourceMap().get(TIMESTAMP);
         this.timeProvider = timeProvider;
-        this.dbPeriod = dbPeriod;
+        this.period = period;
         setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, Boolean.TRUE);
         setFlat();
         if (firstTime != null) {
@@ -70,9 +70,9 @@ public class TimeTable extends QueryTable implements Runnable {
     private void refresh(final boolean notifyListeners) {
         entry.onUpdateStart();
         try {
-            final DBDateTime dateTime = timeProvider.currentTime();
-            DBDateTime currentBinnedTime = new DBDateTime(
-                    LongNumericPrimitives.lowerBin(dateTime.getNanos() - binOffset, dbPeriod) + binOffset);
+            final DateTime dateTime = timeProvider.currentTime();
+            DateTime currentBinnedTime = new DateTime(
+                    LongNumericPrimitives.lowerBin(dateTime.getNanos() - binOffset, period) + binOffset);
             long rangeStart = lastIndex + 1;
             if (lastTime == null) {
                 lastIndex = 0;
@@ -81,7 +81,7 @@ public class TimeTable extends QueryTable implements Runnable {
                 getRowSet().mutableCast().insert(lastIndex);
             } else
                 while (currentBinnedTime.compareTo(lastTime) > 0) {
-                    lastTime = DBTimeUtils.plus(lastTime, dbPeriod);
+                    lastTime = DateTimeUtils.plus(lastTime, period);
                     lastIndex++;
                     dateTimeArraySource.ensureCapacity(lastIndex + 1);
                     dateTimeArraySource.set(lastIndex, lastTime);
@@ -91,7 +91,7 @@ public class TimeTable extends QueryTable implements Runnable {
                 // useful when analyzing what's gone wrong in the logs. It is capped at periods of 5s, so we don't
                 // end up with too much log spam for short interval time tables. 5s is not so coincidentally the period
                 // of the Jvm Heap: messages.
-                if (dbPeriod >= 5_000_000_000L) {
+                if (period >= 5_000_000_000L) {
                     log.info().append("TimeTable updated to ").append(lastTime.toString()).endl();
                 }
                 final RowSet range = RowSetFactory.fromRange(rangeStart, lastIndex);

@@ -28,13 +28,13 @@ public abstract class AbstractRangeFilter extends SelectFilterImpl {
     /**
      * The chunkFilter can be applied to the columns native type.
      *
-     * In practice, this is for non-reinterpretable DBDateTimes.
+     * In practice, this is for non-reinterpretable DateTimes.
      */
     ChunkFilter chunkFilter;
     /**
      * If the column can be be reinterpreted to a long, then we should prefer to use the longFilter instead.
      *
-     * In practice, this is used for reinterpretable DBDateTimes.
+     * In practice, this is used for reinterpretable DateTimes.
      */
     ChunkFilter longFilter;
 

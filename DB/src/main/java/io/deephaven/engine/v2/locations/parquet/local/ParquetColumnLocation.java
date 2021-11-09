@@ -593,7 +593,7 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
                         toPage = ToLongPage.create(pageType);
                         break;
                     case INT96:
-                        toPage = ToDBDateTimePageFromInt96.create(pageType);
+                        toPage = ToDateTimePageFromInt96.create(pageType);
                         break;
                     case DOUBLE:
                         toPage = ToDoublePage.create(pageType);
@@ -679,7 +679,7 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
                 LogicalTypeAnnotation.TimestampLogicalTypeAnnotation timestampLogicalType) {
             if (timestampLogicalType.isAdjustedToUTC()) {
                 return Optional
-                        .of(ToDBDateTimePage.create(componentType, timestampLogicalType.getUnit()));
+                        .of(ToDateTimePage.create(componentType, timestampLogicalType.getUnit()));
             }
 
             throw new TableDataException(

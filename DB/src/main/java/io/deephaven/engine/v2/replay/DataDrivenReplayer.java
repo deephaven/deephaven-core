@@ -4,31 +4,31 @@
 
 package io.deephaven.engine.v2.replay;
 
-import io.deephaven.engine.tables.utils.DBDateTime;
-import io.deephaven.engine.tables.utils.DBTimeUtils;
+import io.deephaven.engine.tables.utils.DateTime;
+import io.deephaven.engine.tables.utils.DateTimeUtils;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import gnu.trove.list.array.TLongArrayList;
 import io.deephaven.engine.v2.utils.RowSet;
 
 public class DataDrivenReplayer extends Replayer {
-    private DBDateTime currentTime;
+    private DateTime currentTime;
     private int pos;
     private long lastTime = -1;
 
-    public DataDrivenReplayer(DBDateTime startTime, DBDateTime endTime) {
+    public DataDrivenReplayer(DateTime startTime, DateTime endTime) {
         super(startTime, endTime);
         currentTime = startTime;
     }
 
     @Override
-    public DBDateTime currentTime() {
+    public DateTime currentTime() {
         return currentTime;
     }
 
     TLongArrayList allTimestamp = new TLongArrayList();
 
     @Override
-    public void registerTimeSource(RowSet rowSet, ColumnSource<DBDateTime> timestampSource) {
+    public void registerTimeSource(RowSet rowSet, ColumnSource<DateTime> timestampSource) {
         long prevValue = -1;
         if (timestampSource.allowsReinterpret(long.class)) {
             ColumnSource<Long> longColumn = timestampSource.reinterpret(long.class);
@@ -71,7 +71,7 @@ public class DataDrivenReplayer extends Replayer {
         if (currentTime.getNanos() > endTime.getNanos() || pos >= allTimestamp.size()) {
             currentTime = endTime;
         } else {
-            currentTime = new DBDateTime(currentTimeNanos);
+            currentTime = new DateTime(currentTimeNanos);
         }
         lastTime = currentTimeNanos;
         super.run();
@@ -79,6 +79,6 @@ public class DataDrivenReplayer extends Replayer {
 
     @Override
     public void setTime(long updatedTime) {
-        currentTime = DBTimeUtils.millisToTime(Math.max(updatedTime, currentTime.getMillis()));
+        currentTime = DateTimeUtils.millisToTime(Math.max(updatedTime, currentTime.getMillis()));
     }
 }

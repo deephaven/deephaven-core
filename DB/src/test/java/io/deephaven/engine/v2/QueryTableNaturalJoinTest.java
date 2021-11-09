@@ -581,8 +581,8 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         TableTools.showWithIndex(cj);
         assertEquals(new int[] {10, 11, 12, 10}, intColumn(cj, "RightSentinel"));
 
-        final DBDateTime time1 = DBTimeUtils.convertDateTime("2019-05-10T09:45:00 NY");
-        final DBDateTime time2 = DBTimeUtils.convertDateTime("2019-05-10T21:45:00 NY");
+        final DateTime time1 = DateTimeUtils.convertDateTime("2019-05-10T09:45:00 NY");
+        final DateTime time2 = DateTimeUtils.convertDateTime("2019-05-10T21:45:00 NY");
 
         final Table left2 = testTable(c("JDate", time1, time2, null, time2), c("LeftSentinel", 1, 2, 3, 4));
         final Table right2 = newTable(c("JDate", time2, time1, null), c("RightSentinel", 10, 11, 12));

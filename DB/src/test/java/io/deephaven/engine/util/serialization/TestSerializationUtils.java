@@ -1,6 +1,6 @@
 package io.deephaven.engine.util.serialization;
 
-import io.deephaven.engine.tables.utils.DBDateTime;
+import io.deephaven.engine.tables.utils.DateTime;
 import io.deephaven.engine.util.tuples.ArrayTuple;
 import io.deephaven.engine.util.tuples.generated.ObjectObjectObjectTuple;
 import io.deephaven.engine.util.tuples.generated.ObjectObjectTuple;
@@ -94,7 +94,7 @@ public class TestSerializationUtils {
     public void testAllTypes() throws Exception {
         // noinspection AutoBoxing
         final ArrayTuple fullInput = new ArrayTuple((byte) 1, (short) 2, 3, 4L, 5.0F, 6.0D, true, '7', "08",
-                new DBDateTime(9), new Date(10),
+                new DateTime(9), new Date(10),
                 new ObjectObjectTuple("11-A", "11-B"),
                 new ObjectObjectObjectTuple("12-X", "12-Y", "12-Z"),
                 new EE(13), new SE(14));

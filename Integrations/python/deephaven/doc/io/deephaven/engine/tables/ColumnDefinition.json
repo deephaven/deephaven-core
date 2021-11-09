@@ -29,7 +29,7 @@
   "ofLong": ":param name: java.lang.String\n:return: io.deephaven.engine.tables.ColumnDefinition<java.lang.Long>",
   "ofShort": ":param name: java.lang.String\n:return: io.deephaven.engine.tables.ColumnDefinition<java.lang.Short>",
   "ofString": ":param name: java.lang.String\n:return: io.deephaven.engine.tables.ColumnDefinition<java.lang.String>",
-  "ofTime": ":param name: java.lang.String\n:return: io.deephaven.engine.tables.ColumnDefinition<io.deephaven.engine.tables.utils.DBDateTime>",
+  "ofTime": ":param name: java.lang.String\n:return: io.deephaven.engine.tables.ColumnDefinition<io.deephaven.engine.tables.utils.DateTime>",
   "readExternal": ":param in: java.io.ObjectInput",
   "rename": ":param newName: java.lang.String\n:return: io.deephaven.engine.tables.ColumnDefinition<?>",
   "safeClone": ":return: io.deephaven.engine.tables.ColumnDefinition<ColumnDefinition.TYPE>",

@@ -35,89 +35,12 @@ removeVariable = {name ->
 }
 
 ///////////////////// Performance /////////////////////
-performanceInfo = {
-    if (db != null) {
-        publishVariable("workerName", db.getWorkerName())
-        queryPerformanceLog = db.i2("DbInternal", "QueryPerformanceLog").where("Date=currentDateNy()", "WorkerName=workerName");
-        updatePerformanceLog = db.i2("DbInternal", "UpdatePerformanceLog").where("Date=currentDateNy()", "WorkerName=workerName").update("Ratio=EntryIntervalUsage*100/IntervalDuration");
-        topOffenders=updatePerformanceLog.where("Ratio > 1.00").sortDescending("Ratio").update("EntryDescription=(!isNull(EntryDescription) && EntryDescription.length() > 100) ? EntryDescription.substring(0, 100) : EntryDescription");
-        performanceAggregate = updatePerformanceLog.view("IntervalEndTime", "EntryIntervalUsage", "IntervalDuration").by("IntervalEndTime").view("IntervalEndTime", "IntervalDuration=first(IntervalDuration)", "Ratio=100*sum(EntryIntervalUsage)/IntervalDuration")
-    } else {
-        publishVariable("workerName", context.getWorkerName())
-        queryPerformanceLog = context.i("DbInternal", "QueryPerformanceLog").where("Date=currentDateNy()", "WorkerName=workerName");
-        updatePerformanceLog = context.i("DbInternal", "UpdatePerformanceLog").where("Date=currentDateNy()", "WorkerName=workerName").update("Ratio=EntryIntervalUsage*100/IntervalDuration");
-        topOffenders=updatePerformanceLog.where("Ratio > 1.00").sortDescending("Ratio").update("EntryDescription=(!isNull(EntryDescription) && EntryDescription.length() > 100) ? EntryDescription.substring(0, 100) : EntryDescription");
-        performanceAggregate = updatePerformanceLog.view("IntervalEndTime", "EntryIntervalUsage", "IntervalDuration").by("IntervalEndTime").view("IntervalEndTime", "IntervalDuration=first(IntervalDuration)", "Ratio=100*sum(EntryIntervalUsage)/IntervalDuration")
-    }
-}
 
 
-import io.deephaven.engine.tables.utils.DBDateTime
-import io.deephaven.engine.tables.utils.DBTimeUtils
+import io.deephaven.engine.tables.utils.DateTime
+import io.deephaven.engine.tables.utils.DateTimeUtils
 import io.deephaven.engine.util.PerformanceQueries
 
-performanceOverview = { workerName = null,  String date = DBTimeUtils.currentDateNy(), Boolean useIntraday = true,
-                        String serverHost = null, String workerHostName = null ->
-    Map<String,Object> tables;
-
-    PerformanceQueries.PerformanceOverview.QueryBuilder queryBuilder = new PerformanceQueries.PerformanceOverview.QueryBuilder()
-            .workerName(workerName)
-            .date(date)
-            .useIntraday(useIntraday)
-            .workerHostName(workerHostName);
-
-    if(!useIntraday && PerformanceQueries.PERF_QUERY_BY_INTERNAL_PARTITION) {
-        if(db.getServerHost().equals(serverHost)) {
-            serverHost = db.getServerHost().replaceAll("\\.", "_")
-        }
-        queryBuilder = querybuilder.internalPartition(serverHost)
-    } else {
-        queryBuilder = queryBuilder.hostname(serverHost)
-    }
-
-    tables = db.executeQuery(queryBuilder.build())
-
-    // binding.getVariables().addAll(tables)
-    tables.each{ k, v -> binding.setVariable(k,v)}
-}
-
-performanceOverviewByName = {String queryName , String queryOwner, String date = DBTimeUtils.currentDateNy(),
-                             boolean useIntraday=true, String workerHostName = null, DBDateTime asOfTime =  null ->
-
-    Map<String,Object> tables;
-
-    tables = db.executeQuery(
-            new PerformanceQueries.PerformanceOverview.QueryBuilder()
-                    .date(date)
-                    .queryOwner(queryOwner)
-                    .queryName(queryName)
-                    .asOfTime(asOfTime)
-                    .useIntraday(useIntraday)
-                    .workerHostName(workerHostName)
-                    .build())
-
-    tables.each{ k, v -> binding.setVariable(k,v)}
-}
-
-
-persistentQueryStatusMonitor = {String startDate = null, String endDate = null ->
-
-    Map<String,Object> tables;
-
-    if (startDate == null && endDate == null){
-        tables = db.executeQuery(new PerformanceQueries.PersistentQueryStatusMonitor())
-    }
-    else if (endDate == null ){
-        tables = db.executeQuery(new PerformanceQueries.PersistentQueryStatusMonitor(startDate))
-    }
-    else{
-        tables = db.executeQuery(new PerformanceQueries.PersistentQueryStatusMonitor(startDate,endDate))
-    }
-
-    //binding.getVariables().addAll(tables)
-
-    tables.each{ k, v -> binding.setVariable(k,v) }
-}
 
 ///////////////////// Calendars /////////////////////
 import static io.deephaven.util.calendar.Calendars.calendar
@@ -140,12 +63,6 @@ for( String n : calendarNames() ) {
 // import static io.deephaven.engine.plot.Font.FontStyle
 //////////////////// Colors ////////////////////////
 
-import io.deephaven.engine.plot.PlotStyle
-import io.deephaven.engine.plot.axistransformations.AxisTransforms
-import io.deephaven.engine.plot.colors.ColorMaps
-
-import static io.deephaven.engine.plot.PlottingConvenience.*
-
 for( String c : io.deephaven.gui.color.Color.colorNames() ) {
     publishVariable( "COLOR_" + c, io.deephaven.gui.color.Color.valueOf(c) )
 }
@@ -156,7 +73,7 @@ colorTable = {
             .ungroup()
     //todo simplify the following with the improved color branch
             .updateView("Paint = io.deephaven.gui.color.Color.color(Colors).javaColor()")
-            .formatColumns("Colors = io.deephaven.engine.util.DBColorUtil.bgfga(Paint.getRed(), Paint.getGreen(), Paint.getBlue())")
+            .formatColumns("Colors = io.deephaven.engine.util.ColorUtil.bgfga(Paint.getRed(), Paint.getGreen(), Paint.getBlue())")
             .dropColumns("Paint")
 }
 

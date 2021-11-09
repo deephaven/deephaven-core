@@ -9,7 +9,7 @@ import io.deephaven.engine.plot.errors.PlotUnsupportedOperationException;
 import io.deephaven.engine.plot.util.ArgumentValidations;
 import io.deephaven.engine.tables.DataColumn;
 import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.utils.DBDateTime;
+import io.deephaven.engine.tables.utils.DateTime;
 import io.deephaven.gui.color.Paint;
 
 import java.io.Serializable;
@@ -385,7 +385,7 @@ public class ColumnHandlerFactory implements Serializable {
                 }
 
             };
-        } else if (type.equals(DBDateTime.class)) {
+        } else if (type.equals(DateTime.class)) {
             return new ColumnHandlerHandle(tableHandle, columnName, type, plotInfo) {
                 @Override
                 public TypeClassification typeClassification() {
@@ -394,7 +394,7 @@ public class ColumnHandlerFactory implements Serializable {
 
                 @Override
                 public double getDouble(int i) {
-                    final DBDateTime value = (DBDateTime) getDataColumn().get(i);
+                    final DateTime value = (DateTime) getDataColumn().get(i);
                     return value == null ? Double.NaN : value.getNanos();
                 }
 
@@ -602,7 +602,7 @@ public class ColumnHandlerFactory implements Serializable {
                 }
 
             };
-        } else if (type.equals(DBDateTime.class)) {
+        } else if (type.equals(DateTime.class)) {
             return new ColumnHandlerTable(table, columnName, type, plotInfo) {
                 @Override
                 public TypeClassification typeClassification() {
@@ -611,7 +611,7 @@ public class ColumnHandlerFactory implements Serializable {
 
                 @Override
                 public double getDouble(int i) {
-                    final DBDateTime value = (DBDateTime) getDataColumn().get(i);
+                    final DateTime value = (DateTime) getDataColumn().get(i);
                     return value == null ? Double.NaN : value.getNanos();
                 }
 

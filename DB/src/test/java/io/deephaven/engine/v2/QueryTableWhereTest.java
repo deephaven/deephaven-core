@@ -10,8 +10,8 @@ import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.tables.select.MatchPairFactory;
 import io.deephaven.engine.tables.select.QueryScope;
-import io.deephaven.engine.tables.utils.DBDateTime;
-import io.deephaven.engine.tables.utils.DBTimeUtils;
+import io.deephaven.engine.tables.utils.DateTime;
+import io.deephaven.engine.tables.utils.DateTimeUtils;
 import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.tables.verify.TableAssertions;
 import io.deephaven.engine.v2.QueryTableTestBase.TableComparator;
@@ -915,8 +915,8 @@ public class QueryTableWhereTest {
                         new DoubleGenerator(0.0, 100.0, 0, 0, 0, 0),
                         new LongGenerator(-100, 100, 0.01),
                         new CharGenerator('A', 'Z', 0.1),
-                        new UnsortedDateTimeGenerator(DBTimeUtils.convertDateTime("2020-01-01T00:00:00 NY"),
-                                DBTimeUtils.convertDateTime("2020-01-01T01:00:00 NY"))));
+                        new UnsortedDateTimeGenerator(DateTimeUtils.convertDateTime("2020-01-01T00:00:00 NY"),
+                                DateTimeUtils.convertDateTime("2020-01-01T01:00:00 NY"))));
         final String bigIntConversion = "BI4=" + getClass().getCanonicalName() + ".convertToBigInteger(L3)";
         final Table augmentedInts =
                 table.update(bigIntConversion, "D5=(double)L3", "I6=(int)L3", "S7=(short)L3", "B8=(byte)L3");
@@ -937,7 +937,7 @@ public class QueryTableWhereTest {
         final BigDecimal two = BigDecimal.valueOf(2);
         final BigDecimal nine = BigDecimal.valueOf(9);
         final String filterTimeString = "2020-01-01T00:30:00 NY";
-        final DBDateTime filterTime = DBTimeUtils.convertDateTime(filterTimeString);
+        final DateTime filterTime = DateTimeUtils.convertDateTime(filterTimeString);
 
         QueryScope.addParam("two", two);
         QueryScope.addParam("nine", nine);
@@ -1017,13 +1017,12 @@ public class QueryTableWhereTest {
         QueryScope.addParam("nine", null);
     }
 
-
     @Test
-    public void testDbDateTimeRangeFilter() {
-        final DBDateTime startTime = DBTimeUtils.convertDateTime("2021-04-23T09:30 NY");
-        final DBDateTime[] array = new DBDateTime[10];
+    public void testDateTimeRangeFilter() {
+        final DateTime startTime = DateTimeUtils.convertDateTime("2021-04-23T09:30 NY");
+        final DateTime[] array = new DateTime[10];
         for (int ii = 0; ii < array.length; ++ii) {
-            array[ii] = DBTimeUtils.plus(startTime, 60_000_000_000L * ii);
+            array[ii] = DateTimeUtils.plus(startTime, 60_000_000_000L * ii);
         }
         final Table table = TableTools.newTable(col("DT", array));
         TableTools.showWithIndex(table);

@@ -8,8 +8,8 @@ import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.base.verify.RequirementFailure;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.dbarrays.*;
-import io.deephaven.engine.tables.utils.DBDateTime;
-import io.deephaven.engine.tables.utils.DBTimeUtils;
+import io.deephaven.engine.tables.utils.DateTime;
+import io.deephaven.engine.tables.utils.DateTimeUtils;
 import io.deephaven.engine.tables.utils.TableTools;
 
 public class TestModelFarmUtils extends BaseArrayTestCase {
@@ -44,13 +44,13 @@ public class TestModelFarmUtils extends BaseArrayTestCase {
         assertNull(ModelFarmUtils.arrayString(null));
     }
 
-    public void testArrayDBDateTime() {
-        final DBDateTime[] target = {DBTimeUtils.convertDateTime("2018-01-11T01:01:01 NY"),
-                DBTimeUtils.convertDateTime("2018-02-11T01:01:01 NY"),
-                DBTimeUtils.convertDateTime("2018-03-11T01:01:01 NY")};
-        final DBDateTime[] result = ModelFarmUtils.arrayDBDateTime(new ObjectVectorDirect<>(target));
+    public void testArrayDateTime() {
+        final DateTime[] target = {DateTimeUtils.convertDateTime("2018-01-11T01:01:01 NY"),
+                DateTimeUtils.convertDateTime("2018-02-11T01:01:01 NY"),
+                DateTimeUtils.convertDateTime("2018-03-11T01:01:01 NY")};
+        final DateTime[] result = ModelFarmUtils.arrayDateTime(new ObjectVectorDirect<>(target));
         assertEquals(target, result);
-        assertNull(ModelFarmUtils.arrayDBDateTime(null));
+        assertNull(ModelFarmUtils.arrayDateTime(null));
     }
 
     public void testArrayFloat() {

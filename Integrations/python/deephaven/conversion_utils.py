@@ -190,7 +190,7 @@ def convertToJavaArray(input, boxed=False):
 
     * basic numpy primitive dtype are converted to their java analog, ``NaN`` values in floating point columns are
       converted to their respective Deephaven NULL constant values.
-    * dtype ``datatime64[*]`` are converted to ``DBDateTime``
+    * dtype ``datatime64[*]`` are converted to ``DateTime``
     * dtype of one of the basic string type *(unicode\*, str\*, bytes\*):
         - if all elements are one character long: converted to ``char`` array
         - otherwise, ``String`` array
@@ -203,7 +203,7 @@ def convertToJavaArray(input, boxed=False):
 
         - ``bool`` - converted to ``Boolean`` array with null values preserved
         - ``str`` - converted to ``String`` array with null values as empty string
-        - ``datetime.date`` or ``datetime.datetime`` - the array is converted to ``DBDateTime``
+        - ``datetime.date`` or ``datetime.datetime`` - the array is converted to ``DateTime``
         - ``numpy.ndarray`` - converted to java array. All elements are assumed null, or ndarray of the same type and
           compatible shape, or an exception will be raised.
         - ``dict`` - **unsupported**
@@ -504,7 +504,7 @@ def _getJavaTypeFromArray(ndarray):
         else:
             return 'java.lang.String'
     elif dtype.startswith('datetime64'):
-        return 'io.deephaven.engine.tables.utils.DBDateTime'
+        return 'io.deephaven.engine.tables.utils.DateTime'
     elif dtype == 'object':
         # infer type from the first non-stupid element
         goodElement = None
@@ -609,7 +609,7 @@ def _makeJavaArray(ndarray, javaType, containsArrays=False, depth=None):
         if javaType == 'long':
             return longs
         else:
-            return jpy.get_type(__ArrayConversionUtility__).translateArrayLongToDBDateTime(longs)
+            return jpy.get_type(__ArrayConversionUtility__).translateArrayLongToDateTime(longs)
     elif javaType == 'java.lang.Boolean':
         # make corresponding byte version: None -> -1, False -> 0, True -> 1
         byts = numpy.full(ndarray.shape, -1, dtype=numpy.int8)
@@ -637,7 +637,7 @@ def makeJavaArray(data, name, convertUnknownToString=False):
 
     * basic numpy primitive dtype are converted to their java analog, ``NaN`` values in floating point columns are
       converted to their respective Deephaven NULL constant values.
-    * dtype ``datatime64[*]`` are converted to ``DBDateTime``
+    * dtype ``datatime64[*]`` are converted to ``DateTime``
     * dtype of one of the basic string type *(unicode\*, str\*, bytes\*):
         - if all elements are one character long: converted to ``char`` array
         - otherwise, ``String`` array
@@ -650,7 +650,7 @@ def makeJavaArray(data, name, convertUnknownToString=False):
 
         - ``bool`` - converted to ``Boolean`` array with null values preserved
         - ``str`` - converted to ``String`` array with null values as empty string
-        - ``datetime.date`` or ``datetime.datetime`` - the array is converted to ``DBDateTime``
+        - ``datetime.date`` or ``datetime.datetime`` - the array is converted to ``DateTime``
         - ``numpy.ndarray`` - converted to java array. All elements are assumed null, or ndarray of the same type and
           compatible shape, or an exception will be raised.
         - ``dict`` - **unsupported**
@@ -676,7 +676,7 @@ def makeJavaArray(data, name, convertUnknownToString=False):
         raise ValueError("Conversion failed")
     elif len(junk) in [2, 3]:
         if junk[0] == 'io.deephaven.engine.v2.sources.immutable.ImmutableDateTimeArraySource':
-            return jpy.get_type(__ArrayConversionUtility__).translateArrayLongToDBDateTime(junk[1])
+            return jpy.get_type(__ArrayConversionUtility__).translateArrayLongToDateTime(junk[1])
         else:
             return junk[1]
 
@@ -791,7 +791,7 @@ def _convertNdarrayToImmutableSource(data, name, convertUnknownToString=False):
         return _stringColumnSource(data, name, type(data[0]))
     elif javaType == 'java.lang.Boolean':
         return _booleanColumnSource(data, name, type(data[0]))
-    elif javaType == 'io.deephaven.engine.tables.utils.DBDateTime':
+    elif javaType == 'io.deephaven.engine.tables.utils.DateTime':
         return __DatetimeColumnSource__, _makeJavaArray(data, 'long')
     elif javaType == 'datetime':
         return __DatetimeColumnSource__, jpy.array('long', [_datetimeToLong(el) for el in data])

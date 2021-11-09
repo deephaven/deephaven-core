@@ -5,7 +5,7 @@
 package io.deephaven.engine.v2.by.ssmminmax;
 
 import io.deephaven.configuration.Configuration;
-import io.deephaven.engine.tables.utils.DBDateTime;
+import io.deephaven.engine.tables.utils.DateTime;
 import io.deephaven.engine.v2.by.IterativeChunkedAggregationOperator;
 import io.deephaven.engine.v2.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.v2.sources.ColumnSource;
@@ -44,7 +44,7 @@ public class SsmChunkedMinMaxOperator implements IterativeChunkedAggregationOper
         // region resultColumn initialization
         this.resultColumn = ArrayBackedColumnSource.getMemoryColumnSource(0, type);
         // endregion resultColumn initialization
-        if (type == DBDateTime.class) {
+        if (type == DateTime.class) {
             chunkType = ChunkType.Long;
         } else {
             chunkType = ChunkType.fromElementType(type);
@@ -57,7 +57,7 @@ public class SsmChunkedMinMaxOperator implements IterativeChunkedAggregationOper
 
     private static SetResult makeSetResult(ChunkType chunkType, Class<?> type, boolean minimum,
             ArrayBackedColumnSource resultColumn) {
-        if (type == DBDateTime.class) {
+        if (type == DateTime.class) {
             return new DateTimeSetResult(minimum, resultColumn);
         } else if (type == Boolean.class) {
             return new BooleanSetResult(minimum, resultColumn);

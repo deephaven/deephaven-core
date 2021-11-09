@@ -2,9 +2,9 @@ package io.deephaven.engine.v2.ssms;
 
 import gnu.trove.set.hash.THashSet;
 import io.deephaven.engine.tables.dbarrays.ObjectVectorDirect;
-import io.deephaven.engine.tables.utils.DBDateTime;
-import io.deephaven.engine.tables.utils.DBTimeUtils;
-import io.deephaven.engine.v2.by.ssmcountdistinct.DbDateTimeSsmSourceWrapper;
+import io.deephaven.engine.tables.utils.DateTime;
+import io.deephaven.engine.tables.utils.DateTimeUtils;
+import io.deephaven.engine.v2.by.ssmcountdistinct.DateTimeSsmSourceWrapper;
 import io.deephaven.engine.v2.sort.ReplicateSortKernel;
 import io.deephaven.engine.v2.sources.BoxedColumnSource;
 import org.apache.commons.io.FileUtils;
@@ -24,7 +24,7 @@ import static io.deephaven.compilertools.ReplicateUtilities.*;
 public class ReplicateSegmentedSortedMultiset {
     public static void main(String[] args) throws IOException {
         charToAllButBooleanAndLong("DB/src/main/java/io/deephaven/engine/v2/ssms/CharSegmentedSortedMultiset.java");
-        insertDbDateTimeExtensions(charToLong(
+        insertDateTimeExtensions(charToLong(
                 "DB/src/main/java/io/deephaven/engine/v2/ssms/CharSegmentedSortedMultiset.java"));
 
         String objectSsm = charToObject(
@@ -67,7 +67,7 @@ public class ReplicateSegmentedSortedMultiset {
         fixupLongKernelOperator(
                 charToLong(
                         "DB/src/main/java/io/deephaven/engine/v2/by/ssmcountdistinct/distinct/CharChunkedDistinctOperator.java"),
-                "    externalResult = new DbDateTimeSsmSourceWrapper(internalResult);");
+                "    externalResult = new DateTimeSsmSourceWrapper(internalResult);");
         fixupObjectKernelOperator(
                 charToObject(
                         "DB/src/main/java/io/deephaven/engine/v2/by/ssmcountdistinct/distinct/CharChunkedDistinctOperator.java"),
@@ -95,7 +95,7 @@ public class ReplicateSegmentedSortedMultiset {
         fixupLongKernelOperator(
                 charToLong(
                         "DB/src/main/java/io/deephaven/engine/v2/by/ssmcountdistinct/distinct/CharRollupDistinctOperator.java"),
-                "    externalResult = new DbDateTimeSsmSourceWrapper(internalResult);");
+                "    externalResult = new DateTimeSsmSourceWrapper(internalResult);");
         fixupObjectKernelOperator(
                 charToObject(
                         "DB/src/main/java/io/deephaven/engine/v2/by/ssmcountdistinct/distinct/CharRollupDistinctOperator.java"),
@@ -116,12 +116,12 @@ public class ReplicateSegmentedSortedMultiset {
     private static void fixupLongKernelOperator(String longPath, String externalResultSetter) throws IOException {
         final File longFile = new File(longPath);
         List<String> lines = FileUtils.readLines(longFile, Charset.defaultCharset());
-        lines = addImport(lines, BoxedColumnSource.class, DBDateTime.class, DbDateTimeSsmSourceWrapper.class);
+        lines = addImport(lines, BoxedColumnSource.class, DateTime.class, DateTimeSsmSourceWrapper.class);
         lines = replaceRegion(lines, "Constructor",
                 indent(Collections.singletonList("Class<?> type,"), 12));
         lines = replaceRegion(lines, "ResultAssignment",
                 indent(Arrays.asList(
-                        "if(type == DBDateTime.class) {",
+                        "if(type == DateTime.class) {",
                         externalResultSetter,
                         "} else {",
                         "    externalResult = internalResult;",
@@ -224,23 +224,23 @@ public class ReplicateSegmentedSortedMultiset {
                                 "                }"));
     }
 
-    private static void insertDbDateTimeExtensions(String longPath) throws IOException {
+    private static void insertDateTimeExtensions(String longPath) throws IOException {
         final File longFile = new File(longPath);
         List<String> lines = FileUtils.readLines(longFile, Charset.defaultCharset());
 
-        lines = addImport(lines, DBDateTime.class, ObjectVectorDirect.class, DBTimeUtils.class);
+        lines = addImport(lines, DateTime.class, ObjectVectorDirect.class, DateTimeUtils.class);
         lines = insertRegion(lines, "Extensions",
                 Arrays.asList(
-                        "    public DBDateTime getAsDate(long i) {",
-                        "        return DBTimeUtils.nanosToTime(get(i));",
+                        "    public DateTime getAsDate(long i) {",
+                        "        return DateTimeUtils.nanosToTime(get(i));",
                         "    }",
                         "",
-                        "    public ObjectVector<DBDateTime> subArrayAsDate(long fromIndexInclusive, long toIndexExclusive) {",
+                        "    public ObjectVector<DateTime> subArrayAsDate(long fromIndexInclusive, long toIndexExclusive) {",
                         "        return new ObjectVectorDirect<>(keyArrayAsDate(fromIndexInclusive, toIndexExclusive));",
                         "    }",
                         "",
-                        "    public ObjectVector<DBDateTime> subArrayByPositionsAsDates(long[] positions) {",
-                        "        final DBDateTime[] keyArray = new DBDateTime[positions.length];",
+                        "    public ObjectVector<DateTime> subArrayByPositionsAsDates(long[] positions) {",
+                        "        final DateTime[] keyArray = new DateTime[positions.length];",
                         "        int writePos = 0;",
                         "        for (long position : positions) {",
                         "            keyArray[writePos++] = getAsDate(position);",
@@ -249,7 +249,7 @@ public class ReplicateSegmentedSortedMultiset {
                         "        return new ObjectVectorDirect<>(keyArray);",
                         "    }",
                         "",
-                        "    public DBDateTime[] toDateArray() {",
+                        "    public DateTime[] toDateArray() {",
                         "        return keyArrayAsDate();",
                         "    }",
                         "",
@@ -263,16 +263,16 @@ public class ReplicateSegmentedSortedMultiset {
                         "        }",
                         "",
                         "        //noinspection unchecked",
-                        "        WritableObjectChunk<DBDateTime, Attributes.Values> writable = destChunk.asWritableObjectChunk();",
+                        "        WritableObjectChunk<DateTime, Attributes.Values> writable = destChunk.asWritableObjectChunk();",
                         "        if (leafCount == 1) {",
                         "            for(int ii = 0; ii < size(); ii++) {",
-                        "                writable.set(ii, DBTimeUtils.nanosToTime(directoryValues[ii]));",
+                        "                writable.set(ii, DateTimeUtils.nanosToTime(directoryValues[ii]));",
                         "            }",
                         "        } else if (leafCount > 0) {",
                         "            int offset = 0;",
                         "            for (int li = 0; li < leafCount; ++li) {",
                         "                for(int jj = 0; jj < leafSizes[li]; jj++) {",
-                        "                    writable.set(jj + offset, DBTimeUtils.nanosToTime(leafValues[li][jj]));",
+                        "                    writable.set(jj + offset, DateTimeUtils.nanosToTime(leafValues[li][jj]));",
                         "                }",
                         "                offset += leafSizes[li];",
                         "            }",
@@ -280,11 +280,11 @@ public class ReplicateSegmentedSortedMultiset {
                         "    }",
                         "",
                         "",
-                        "    public ObjectVector<DBDateTime> getDirectAsDate() {",
+                        "    public ObjectVector<DateTime> getDirectAsDate() {",
                         "        return new ObjectVectorDirect<>(keyArrayAsDate());",
                         "    }",
                         "",
-                        "    private DBDateTime[] keyArrayAsDate() {",
+                        "    private DateTime[] keyArrayAsDate() {",
                         "        return keyArrayAsDate(0, size()-1);",
                         "    }",
                         "",
@@ -294,16 +294,16 @@ public class ReplicateSegmentedSortedMultiset {
                         "     * @param last",
                         "     * @return",
                         "     */",
-                        "    private DBDateTime[] keyArrayAsDate(long first, long last) {",
+                        "    private DateTime[] keyArrayAsDate(long first, long last) {",
                         "        if(isEmpty()) {",
                         "            return ArrayUtils.EMPTY_DATETIME_ARRAY;",
                         "        }",
                         "",
                         "        final int totalSize = (int)(last - first + 1);",
-                        "        final DBDateTime[] keyArray = new DBDateTime[intSize()];",
+                        "        final DateTime[] keyArray = new DateTime[intSize()];",
                         "        if (leafCount == 1) {",
                         "            for(int ii = 0; ii < totalSize; ii++) {",
-                        "                keyArray[ii] = DBTimeUtils.nanosToTime(directoryValues[ii + (int)first]);",
+                        "                keyArray[ii] = DateTimeUtils.nanosToTime(directoryValues[ii + (int)first]);",
                         "            }",
                         "        } else if (leafCount > 0) {",
                         "            int offset = 0;",
@@ -315,7 +315,7 @@ public class ReplicateSegmentedSortedMultiset {
                         "                    if(toSkip < leafSizes[li]) {",
                         "                        final int nToCopy = Math.min(leafSizes[li] - toSkip, totalSize);",
                         "                        for(int jj = 0; jj < nToCopy; jj++) {",
-                        "                            keyArray[jj] = DBTimeUtils.nanosToTime(leafValues[li][jj + toSkip]);",
+                        "                            keyArray[jj] = DateTimeUtils.nanosToTime(leafValues[li][jj + toSkip]);",
                         "                        }",
                         "                        copied = nToCopy;",
                         "                        offset = copied;",
@@ -326,7 +326,7 @@ public class ReplicateSegmentedSortedMultiset {
                         "                } else {",
                         "                    int nToCopy = Math.min(leafSizes[li], totalSize - copied);",
                         "                    for(int jj = 0; jj < nToCopy; jj++) {",
-                        "                        keyArray[jj + offset] = DBTimeUtils.nanosToTime(leafValues[li][jj]);",
+                        "                        keyArray[jj + offset] = DateTimeUtils.nanosToTime(leafValues[li][jj]);",
                         "                    }",
                         "                    offset += leafSizes[li];",
                         "                    copied += nToCopy;",
@@ -340,7 +340,7 @@ public class ReplicateSegmentedSortedMultiset {
                         "        final StringBuilder arrAsString = new StringBuilder(\"[\");",
                         "        if (leafCount == 1) {",
                         "            for(int ii = 0; ii < intSize(); ii++) {",
-                        "                arrAsString.append(DBTimeUtils.nanosToTime(directoryValues[ii])).append(\", \");",
+                        "                arrAsString.append(DateTimeUtils.nanosToTime(directoryValues[ii])).append(\", \");",
                         "            }",
                         "            ",
                         "            arrAsString.replace(arrAsString.length() - 2, arrAsString.length(), \"]\");",
@@ -348,7 +348,7 @@ public class ReplicateSegmentedSortedMultiset {
                         "        } else if (leafCount > 0) {",
                         "            for (int li = 0; li < leafCount; ++li) {",
                         "                for(int ai = 0; ai < leafSizes[li]; ai++) {",
-                        "                    arrAsString.append(DBTimeUtils.nanosToTime(leafValues[li][ai])).append(\", \");",
+                        "                    arrAsString.append(DateTimeUtils.nanosToTime(leafValues[li][ai])).append(\", \");",
                         "                }",
                         "            }",
                         "",

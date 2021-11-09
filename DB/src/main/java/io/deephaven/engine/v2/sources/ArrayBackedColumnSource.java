@@ -5,7 +5,7 @@
 package io.deephaven.engine.v2.sources;
 
 import io.deephaven.engine.tables.utils.ArrayUtils;
-import io.deephaven.engine.tables.utils.DBDateTime;
+import io.deephaven.engine.tables.utils.DateTime;
 import io.deephaven.engine.util.LongSizedDataStructure;
 import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedRowKeyRanges;
@@ -341,8 +341,8 @@ public abstract class ArrayBackedColumnSource<T>
      *        the epoch
      * @return an in-memory column source with the requested data
      */
-    public static ArrayBackedColumnSource<DBDateTime> getDateTimeMemoryColumnSource(@NotNull final long[] data) {
-        final ArrayBackedColumnSource<DBDateTime> result = new DateTimeArraySource();
+    public static ArrayBackedColumnSource<DateTime> getDateTimeMemoryColumnSource(@NotNull final long[] data) {
+        final ArrayBackedColumnSource<DateTime> result = new DateTimeArraySource();
         result.ensureCapacity(data.length);
         final WritableSource<Long> asLong = (WritableSource<Long>) result.reinterpret(long.class);
         try (final FillFromContext context = asLong.makeFillFromContext(data.length);
@@ -414,7 +414,7 @@ public abstract class ArrayBackedColumnSource<T>
             result = new ShortArraySource();
         } else if (dataType == boolean.class || dataType == Boolean.class) {
             result = new BooleanArraySource();
-        } else if (dataType == DBDateTime.class) {
+        } else if (dataType == DateTime.class) {
             result = new DateTimeArraySource();
         } else {
             if (componentType != null) {
@@ -532,7 +532,7 @@ public abstract class ArrayBackedColumnSource<T>
      * Wrap the input array in an immutable {@link ColumnSource}. This method will unbox any boxed values, and directly
      * use the result array. This version allows the user to specify the column data type. It will automatically map
      * column type Boolean/boolean with input array types byte[] to {@link ImmutableBooleanArraySource} and columnType
-     * DBDateTime / array type long[] to {@link ImmutableDateTimeArraySource}
+     * DateTime / array type long[] to {@link ImmutableDateTimeArraySource}
      *
      * @param dataArray The array to turn into a ColumnSource
      * @param dataType the data type of the resultant column source
@@ -579,7 +579,7 @@ public abstract class ArrayBackedColumnSource<T>
             result = new ImmutableLongArraySource(ArrayUtils.getUnboxedArray((Long[]) dataArray));
         } else if (dataType == Short.class) {
             result = new ImmutableShortArraySource(ArrayUtils.getUnboxedArray((Short[]) dataArray));
-        } else if (dataType == DBDateTime.class && dataArray instanceof long[]) {
+        } else if (dataType == DateTime.class && dataArray instanceof long[]) {
             result = new ImmutableDateTimeArraySource((long[]) dataArray);
         } else {
             // noinspection unchecked

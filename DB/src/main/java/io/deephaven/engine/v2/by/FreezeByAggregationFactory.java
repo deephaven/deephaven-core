@@ -6,7 +6,7 @@ package io.deephaven.engine.v2.by;
 
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.utils.DBDateTime;
+import io.deephaven.engine.tables.utils.DateTime;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.ReinterpretUtilities;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
@@ -48,10 +48,10 @@ public class FreezeByAggregationFactory implements AggregationContextFactory {
 
             final Class<?> type = columnSource.getType();
 
-            // For DBDateTime columns, the in-memory source uses longs internally, and all supported aggregations (i.e.
+            // For DateTime columns, the in-memory source uses longs internally, and all supported aggregations (i.e.
             // min and max) work correctly against longs.
             final ColumnSource inputSource =
-                    columnSource.getType() == DBDateTime.class ? ReinterpretUtilities.dateTimeToLongSource(columnSource)
+                    columnSource.getType() == DateTime.class ? ReinterpretUtilities.dateTimeToLongSource(columnSource)
                             : columnSource;
 
             // noinspection unchecked

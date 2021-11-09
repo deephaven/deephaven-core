@@ -11,7 +11,7 @@ import static io.deephaven.util.QueryConstants.NULL_LONG;
  *
  * The colors are the named colors commonly supported by HTML browsers.
  *
- * Methods and colors moved from DBColorUtil to here. They are left in DBColorUtil for backward compatibility. TODO
+ * Methods and colors moved from ColorUtil to here. They are left in ColorUtil for backward compatibility. TODO
  * (deephaven/deephaven-core/issues/175): Move this to a new module and package
  */
 public enum Colors {

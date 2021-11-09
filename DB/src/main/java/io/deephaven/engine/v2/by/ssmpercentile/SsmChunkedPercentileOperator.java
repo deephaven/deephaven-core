@@ -6,7 +6,7 @@ package io.deephaven.engine.v2.by.ssmpercentile;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
-import io.deephaven.engine.tables.utils.DBDateTime;
+import io.deephaven.engine.tables.utils.DateTime;
 import io.deephaven.engine.v2.by.IterativeChunkedAggregationOperator;
 import io.deephaven.engine.v2.sources.*;
 import io.deephaven.engine.v2.sources.chunk.*;
@@ -42,7 +42,7 @@ public class SsmChunkedPercentileOperator implements IterativeChunkedAggregation
     public SsmChunkedPercentileOperator(Class<?> type, double percentile, boolean averageMedian, String name) {
         this.name = name;
         this.ssms = new ObjectArraySource<>(SegmentedSortedMultiSet.class);
-        final boolean isDateTime = type == DBDateTime.class;
+        final boolean isDateTime = type == DateTime.class;
         if (isDateTime) {
             chunkType = ChunkType.Long;
         } else {
@@ -138,7 +138,7 @@ public class SsmChunkedPercentileOperator implements IterativeChunkedAggregation
             ArrayBackedColumnSource resultColumn) {
         if (type == Boolean.class) {
             return new BooleanPercentileTypeHelper(percentile, resultColumn);
-        } else if (type == DBDateTime.class) {
+        } else if (type == DateTime.class) {
             return new DateTimePercentileTypeHelper(percentile, resultColumn);
         } else {
             return new ObjectPercentileTypeHelper(percentile, resultColumn);

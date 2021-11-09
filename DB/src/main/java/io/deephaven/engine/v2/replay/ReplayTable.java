@@ -5,7 +5,7 @@
 package io.deephaven.engine.v2.replay;
 
 import io.deephaven.base.verify.Require;
-import io.deephaven.engine.tables.utils.DBDateTime;
+import io.deephaven.engine.tables.utils.DateTime;
 import io.deephaven.engine.v2.QueryTable;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.utils.RowSet;
@@ -19,7 +19,7 @@ public class ReplayTable extends QueryTable implements Runnable {
 
     private final RowSet.Iterator indexIterator;
     private long curr;
-    private final ColumnSource<DBDateTime> timeSource;
+    private final ColumnSource<DateTime> timeSource;
     private boolean done;
     private final Replayer replayer;
 
@@ -28,7 +28,7 @@ public class ReplayTable extends QueryTable implements Runnable {
         super(RowSetFactory.empty().toTracking(), result);
         Require.requirement(replayer != null, "replayer != null");
         // noinspection unchecked
-        replayer.registerTimeSource(rowSet, (ColumnSource<DBDateTime>) result.get(timeColumn));
+        replayer.registerTimeSource(rowSet, (ColumnSource<DateTime>) result.get(timeColumn));
         setRefreshing(true);
         indexIterator = rowSet.iterator();
         if (indexIterator.hasNext()) {

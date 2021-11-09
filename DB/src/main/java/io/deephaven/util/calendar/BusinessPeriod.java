@@ -4,8 +4,8 @@
 
 package io.deephaven.util.calendar;
 
-import io.deephaven.engine.tables.utils.DBDateTime;
-import io.deephaven.engine.tables.utils.DBTimeUtils;
+import io.deephaven.engine.tables.utils.DateTime;
+import io.deephaven.engine.tables.utils.DateTimeUtils;
 
 import java.io.Serializable;
 
@@ -14,11 +14,11 @@ import java.io.Serializable;
  */
 public class BusinessPeriod implements Serializable {
     private static final long serialVersionUID = 8196837269495115196L;
-    private final DBDateTime startTime;
-    private final DBDateTime endTime;
+    private final DateTime startTime;
+    private final DateTime endTime;
 
     @SuppressWarnings("ConstantConditions")
-    BusinessPeriod(final DBDateTime startTime, final DBDateTime endTime) {
+    BusinessPeriod(final DateTime startTime, final DateTime endTime) {
         this.startTime = startTime;
         this.endTime = endTime;
 
@@ -36,7 +36,7 @@ public class BusinessPeriod implements Serializable {
      *
      * @return the start of the period
      */
-    public DBDateTime getStartTime() {
+    public DateTime getStartTime() {
         return startTime;
     }
 
@@ -45,7 +45,7 @@ public class BusinessPeriod implements Serializable {
      *
      * @return the end of the period
      */
-    public DBDateTime getEndTime() {
+    public DateTime getEndTime() {
         return endTime;
     }
 
@@ -55,7 +55,7 @@ public class BusinessPeriod implements Serializable {
      * @return length of the period in nanoseconds
      */
     public long getLength() {
-        return DBTimeUtils.minus(endTime, startTime);
+        return DateTimeUtils.minus(endTime, startTime);
     }
 
     /**
@@ -64,7 +64,7 @@ public class BusinessPeriod implements Serializable {
      * @param time time.
      * @return true if the time is in this period; otherwise, false.
      */
-    public boolean contains(final DBDateTime time) {
+    public boolean contains(final DateTime time) {
         return time != null && (startTime.getNanos() <= time.getNanos() && time.getNanos() <= endTime.getNanos());
     }
 }

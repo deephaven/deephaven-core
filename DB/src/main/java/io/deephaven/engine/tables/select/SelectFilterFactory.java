@@ -5,12 +5,12 @@
 package io.deephaven.engine.tables.select;
 
 import io.deephaven.base.Pair;
+import io.deephaven.engine.tables.utils.DateTime;
+import io.deephaven.engine.tables.utils.DateTimeUtils;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.process.ProcessEnvironment;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.utils.AbstractExpressionFactory;
-import io.deephaven.engine.tables.utils.DBDateTime;
-import io.deephaven.engine.tables.utils.DBTimeUtils;
 import io.deephaven.engine.tables.utils.ExpressionParser;
 import io.deephaven.engine.util.ColumnFormattingValues;
 import io.deephaven.engine.util.string.StringUtils;
@@ -297,7 +297,7 @@ public class SelectFilterFactory {
                         colName, quickFilter);
             } else if ((colClass == boolean.class || colClass == Boolean.class) && typeData.isBool) {
                 return new MatchFilter(colName, Boolean.parseBoolean(quickFilter));
-            } else if (colClass == DBDateTime.class && typeData.dateLower != null && typeData.dateUpper != null) {
+            } else if (colClass == DateTime.class && typeData.dateLower != null && typeData.dateUpper != null) {
                 return new DateTimeRangeFilter(colName, typeData.dateLower, typeData.dateUpper, true, false);
             } else if ((colClass == char.class || colClass == Character.class) && typeData.isChar) {
                 return new MatchFilter(colName, typeData.charVal);
@@ -349,8 +349,8 @@ public class SelectFilterFactory {
         boolean isBigDecimal;
         BigDecimal bigDecVal;
 
-        DBDateTime dateUpper;
-        DBDateTime dateLower;
+        DateTime dateUpper;
+        DateTime dateLower;
 
         InferenceResult(String valString) {
             isBool = (valString.equalsIgnoreCase("false") || valString.equalsIgnoreCase("true"));
@@ -412,12 +412,12 @@ public class SelectFilterFactory {
             ZonedDateTime dateUpper = null;
             try {
                 // Was it a full date?
-                dateLower = DBTimeUtils.getZonedDateTime(DBTimeUtils.convertDateTime(valString));
+                dateLower = DateTimeUtils.getZonedDateTime(DateTimeUtils.convertDateTime(valString));
             } catch (RuntimeException ignored) {
                 try {
                     // Maybe it was just a TOD?
-                    long time = DBTimeUtils.convertTime(valString);
-                    dateLower = DBTimeUtils.getZonedDateTime(DBDateTime.now()).truncatedTo(ChronoUnit.DAYS).plus(time,
+                    long time = DateTimeUtils.convertTime(valString);
+                    dateLower = DateTimeUtils.getZonedDateTime(DateTime.now()).truncatedTo(ChronoUnit.DAYS).plus(time,
                             ChronoUnit.NANOS);
                 } catch (RuntimeException stillIgnored) {
 
@@ -425,12 +425,12 @@ public class SelectFilterFactory {
             }
 
             if (dateLower != null) {
-                final ChronoField finestUnit = DBTimeUtils.getFinestDefinedUnit(valString);
+                final ChronoField finestUnit = DateTimeUtils.getFinestDefinedUnit(valString);
                 dateUpper = finestUnit == null ? dateLower : dateLower.plus(1, finestUnit.getBaseUnit());
             }
 
-            this.dateUpper = dateUpper == null ? null : DBTimeUtils.millisToTime(dateUpper.toInstant().toEpochMilli());
-            this.dateLower = dateLower == null ? null : DBTimeUtils.millisToTime(dateLower.toInstant().toEpochMilli());
+            this.dateUpper = dateUpper == null ? null : DateTimeUtils.millisToTime(dateUpper.toInstant().toEpochMilli());
+            this.dateLower = dateLower == null ? null : DateTimeUtils.millisToTime(dateLower.toInstant().toEpochMilli());
         }
     }
 }

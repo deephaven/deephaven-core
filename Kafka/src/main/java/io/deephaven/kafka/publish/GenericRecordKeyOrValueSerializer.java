@@ -1,7 +1,7 @@
 package io.deephaven.kafka.publish;
 
 import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.utils.DBDateTime;
+import io.deephaven.engine.tables.utils.DateTime;
 import io.deephaven.engine.util.string.StringUtils;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.chunk.*;
@@ -305,7 +305,7 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
                 final WritableObjectChunk<GenericRecord, Attributes.Values> avroChunk,
                 final RowSequence keys,
                 final boolean isRemoval) {
-            final long nanos = DBDateTime.now().getNanos();
+            final long nanos = DateTime.now().getNanos();
             for (int ii = 0; ii < avroChunk.size(); ++ii) {
                 avroChunk.get(ii).put(fieldName, nanos / fromNanosToUnitDenominator);
             }
@@ -318,7 +318,7 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
             final Class<?> columnType,
             final ColumnSource<?> src) {
         final Schema fieldSchema = field.schema();
-        if (columnType == DBDateTime.class && fieldSchema.getType() == Schema.Type.LONG) {
+        if (columnType == DateTime.class && fieldSchema.getType() == Schema.Type.LONG) {
             final LogicalType logicalType = fieldSchema.getLogicalType();
             if (LogicalTypes.timestampMicros().equals(logicalType)) {
                 return makeLongFieldProcessorWithInverseFactor(fieldName, src, 1000);

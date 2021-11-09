@@ -6,7 +6,7 @@ import io.deephaven.engine.tables.ColumnDefinition;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.TableDefinition;
 import io.deephaven.engine.tables.select.QueryScope;
-import io.deephaven.engine.tables.utils.DBDateTime;
+import io.deephaven.engine.tables.utils.DateTime;
 import io.deephaven.util.annotations.ScriptApi;
 import io.deephaven.benchmarking.generator.*;
 import io.deephaven.benchmarking.impl.PersistentBenchmarkTableBuilder;
@@ -142,11 +142,11 @@ public class BenchmarkTools {
 
     /**
      * @param name The name of the column
-     * @return a {@link ColumnGenerator<DBDateTime>} for use with
+     * @return a {@link ColumnGenerator< DateTime >} for use with
      *         {@link BenchmarkTableBuilder#addColumn(ColumnGenerator)}
      */
     @ScriptApi
-    public static ColumnGenerator<DBDateTime> dateCol(String name) {
+    public static ColumnGenerator<DateTime> dateCol(String name) {
         return new DateColumnGenerator(name);
     }
 
@@ -154,11 +154,11 @@ public class BenchmarkTools {
      * @param name The name of the column
      * @param min the minimum value
      * @param max the maximum value
-     * @return a {@link ColumnGenerator<DBDateTime>} for use with
+     * @return a {@link ColumnGenerator< DateTime >} for use with
      *         {@link BenchmarkTableBuilder#addColumn(ColumnGenerator)}
      */
     @ScriptApi
-    public static ColumnGenerator<DBDateTime> dateCol(String name, DBDateTime min, DBDateTime max) {
+    public static ColumnGenerator<DateTime> dateCol(String name, DateTime min, DateTime max) {
         return new DateColumnGenerator(name, min, max);
     }
 

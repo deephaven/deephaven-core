@@ -8,7 +8,7 @@ import static io.deephaven.engine.tables.utils.TableTools.col;
 import static io.deephaven.engine.tables.utils.TableTools.intCol;
 import static io.deephaven.engine.tables.utils.TableTools.merge;
 import static io.deephaven.engine.tables.utils.TableTools.newTable;
-import static io.deephaven.engine.tables.utils.DBTimeUtils.nanosToTime;
+import static io.deephaven.engine.tables.utils.DateTimeUtils.nanosToTime;
 import static io.deephaven.engine.v2.TstUtils.StepClock;
 
 /**

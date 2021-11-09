@@ -6,8 +6,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import io.deephaven.UncheckedDeephavenException;
-import io.deephaven.engine.tables.utils.DBDateTime;
-import io.deephaven.engine.tables.utils.DBTimeUtils;
+import io.deephaven.engine.tables.utils.DateTime;
+import io.deephaven.engine.tables.utils.DateTimeUtils;
 import io.deephaven.util.QueryConstants;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -527,31 +527,31 @@ public class JsonNodeUtil {
     }
 
     /**
-     * Returns a {@link DBDateTime} from a {@link JsonNode}. Will try to infer precision of a long value to be parsed
-     * using {@link DBTimeUtils} autoEpochToTime. If the value in the JSON record is not numeric, this method will
-     * attempt to parse it as a Deephaven DBDateTime string (yyyy-MM-ddThh:mm:ss[.nnnnnnnnn] TZ).
+     * Returns a {@link DateTime} from a {@link JsonNode}. Will try to infer precision of a long value to be parsed
+     * using {@link DateTimeUtils} autoEpochToTime. If the value in the JSON record is not numeric, this method will
+     * attempt to parse it as a Deephaven DateTime string (yyyy-MM-ddThh:mm:ss[.nnnnnnnnn] TZ).
      * 
      * @param node The {@link JsonNode} from which to retrieve the value.
      * @param key The String key of the value to retrieve.
-     * @return A {@link DBDateTime}
+     * @return A {@link DateTime}
      */
     @Nullable
-    public static DBDateTime getDBDateTime(@NotNull final JsonNode node, @NotNull final String key,
-            final boolean allowMissingKeys, final boolean allowNullValues) {
+    public static DateTime getDateTime(@NotNull final JsonNode node, @NotNull final String key,
+                                         final boolean allowMissingKeys, final boolean allowNullValues) {
         final JsonNode tmpNode = checkAllowMissingOrNull(node, key, allowMissingKeys, allowNullValues);
-        return getDBDateTime(tmpNode);
+        return getDateTime(tmpNode);
     }
 
     /**
-     * Returns a {@link DBDateTime} from a {@link JsonNode}. Will try to infer precision of a long value to be parsed
-     * using {@link DBTimeUtils} autoEpochToTime. If the value in the JSON record is not numeric, this method will
-     * attempt to parse it as a Deephaven DBDateTime string (yyyy-MM-ddThh:mm:ss[.nnnnnnnnn] TZ).
+     * Returns a {@link DateTime} from a {@link JsonNode}. Will try to infer precision of a long value to be parsed
+     * using {@link DateTimeUtils} autoEpochToTime. If the value in the JSON record is not numeric, this method will
+     * attempt to parse it as a Deephaven DateTime string (yyyy-MM-ddThh:mm:ss[.nnnnnnnnn] TZ).
      * 
      * @param node The {@link JsonNode} from which to retrieve the value.
-     * @return A {@link DBDateTime}
+     * @return A {@link DateTime}
      */
     @Nullable
-    public static DBDateTime getDBDateTime(final JsonNode node) {
+    public static DateTime getDateTime(final JsonNode node) {
         if (isNullField(node)) {
             return null;
         }
@@ -559,9 +559,9 @@ public class JsonNodeUtil {
         // ISO Zoned String, millis (small number), or nanos (large number)
         if (node.isLong() || node.isInt()) {
             final long value = node.asLong();
-            return DBTimeUtils.autoEpochToTime(value);
+            return DateTimeUtils.autoEpochToTime(value);
         } else {
-            return DBTimeUtils.convertDateTime(node.asText());
+            return DateTimeUtils.convertDateTime(node.asText());
         }
     }
 }

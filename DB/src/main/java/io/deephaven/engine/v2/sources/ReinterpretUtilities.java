@@ -1,6 +1,6 @@
 package io.deephaven.engine.v2.sources;
 
-import io.deephaven.engine.tables.utils.DBDateTime;
+import io.deephaven.engine.tables.utils.DateTime;
 import org.jetbrains.annotations.NotNull;
 
 public class ReinterpretUtilities {
@@ -17,7 +17,7 @@ public class ReinterpretUtilities {
             return source.reinterpret(long.class);
         } else {
             // noinspection unchecked
-            return new DatetimeAsLongColumnSource((ColumnSource<DBDateTime>) source);
+            return new DatetimeAsLongColumnSource((ColumnSource<DateTime>) source);
         }
     }
 
@@ -47,7 +47,7 @@ public class ReinterpretUtilities {
         if (source.getType() == Boolean.class || source.getType() == boolean.class) {
             return booleanToByteSource(source);
         }
-        if (source.getType() == DBDateTime.class) {
+        if (source.getType() == DateTime.class) {
             return dateTimeToLongSource(source);
         }
         return source;
@@ -71,13 +71,13 @@ public class ReinterpretUtilities {
             return source.allowsReinterpret(Boolean.class) ? source.reinterpret(Boolean.class)
                     : new BoxedColumnSource.OfBoolean((ColumnSource<Byte>) source);
         }
-        if (originalType == DBDateTime.class) {
+        if (originalType == DateTime.class) {
             if (source.getType() != long.class) {
                 throw new UnsupportedOperationException(
-                        "Cannot convert column of type " + source.getType() + " to DBDateTime");
+                        "Cannot convert column of type " + source.getType() + " to DateTime");
             }
             // noinspection unchecked
-            return source.allowsReinterpret(DBDateTime.class) ? source.reinterpret(DBDateTime.class)
+            return source.allowsReinterpret(DateTime.class) ? source.reinterpret(DateTime.class)
                     : new BoxedColumnSource.OfDateTime((ColumnSource<Long>) source);
         }
         throw new UnsupportedOperationException("Unsupported original type " + originalType);

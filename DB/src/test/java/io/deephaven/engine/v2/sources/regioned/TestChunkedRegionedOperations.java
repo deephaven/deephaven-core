@@ -127,7 +127,7 @@ public class TestChunkedRegionedOperations {
         final QueryScope queryScope = new QueryScope.StandaloneImpl();
         Arrays.stream(originalScope.getParams(originalScope.getParamNames()))
                 .forEach(p -> queryScope.putParam(p.getName(), p.getValue()));
-        queryScope.putParam("nowNanos", DBTimeUtils.currentTime().getNanos());
+        queryScope.putParam("nowNanos", DateTimeUtils.currentTime().getNanos());
         queryScope.putParam("letters",
                 IntStream.range('A', 'A' + 64).mapToObj(c -> new String(new char[] {(char) c})).toArray(String[]::new));
         queryScope.putParam("emptySymbolSet", new StringSetArrayWrapper());
@@ -183,7 +183,7 @@ public class TestChunkedRegionedOperations {
                         "Bl   = II % 8192  == 0  ? null        :         II % 2 == 0",
                         "Sym  = II % 64    == 0  ? null        :         Long.toString(II % 1000)",
                         "Str  = II % 128   == 0  ? null        :         Long.toString(II)",
-                        "DT   = II % 256   == 0  ? null        :         new DBDateTime(nowNanos + II)",
+                        "DT   = II % 256   == 0  ? null        :         new DateTime(nowNanos + II)",
                         "SymS = (StringSet) new StringSetArrayWrapper(letters[((int) II) % 64], letters[(((int) II) + 7) % 64])",
                         "Ser  = II % 1024  == 0  ? null        : new SimpleSerializable(II)",
                         "Ext  = II % 1024  == 0  ? null        : new SimpleExternalizable(II)",
@@ -207,7 +207,7 @@ public class TestChunkedRegionedOperations {
                         "Bl   = (Boolean) null",
                         "Sym  = (String) null",
                         "Str  = (String) null",
-                        "DT   = (DBDateTime) null",
+                        "DT   = (DateTime) null",
                         "SymS = (StringSet) null",
                         "Ser  = (SimpleSerializable) null",
                         "Ext  = (SimpleExternalizable) null",
@@ -261,7 +261,7 @@ public class TestChunkedRegionedOperations {
                 ParquetInstructions.EMPTY,
                 partitionedDataDefinition).updateView(
                         new ReinterpretedColumn<>("Bl", Boolean.class, "Bl_R", byte.class),
-                        new ReinterpretedColumn<>("DT", DBDateTime.class, "DT_R", long.class))
+                        new ReinterpretedColumn<>("DT", DateTime.class, "DT_R", long.class))
                 .coalesce();
     }
 

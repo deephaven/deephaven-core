@@ -12,7 +12,7 @@ import io.deephaven.engine.tablelogger.UpdatePerformanceLogLogger;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.TableDefinition;
 import io.deephaven.engine.tables.live.UpdateGraphProcessor;
-import io.deephaven.engine.tables.utils.DBTimeUtils;
+import io.deephaven.engine.tables.utils.DateTimeUtils;
 import io.deephaven.engine.tables.utils.QueryPerformanceLogThreshold;
 import io.deephaven.engine.tables.utils.QueryPerformanceRecorder;
 import io.deephaven.engine.v2.QueryTable;
@@ -33,8 +33,8 @@ import java.util.Queue;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static io.deephaven.engine.tables.lang.DBLanguageFunctionUtil.minus;
-import static io.deephaven.engine.tables.lang.DBLanguageFunctionUtil.plus;
+import static io.deephaven.engine.tables.lang.LanguageFunctionUtil.minus;
+import static io.deephaven.engine.tables.lang.LanguageFunctionUtil.plus;
 
 /**
  * <p>
@@ -445,7 +445,7 @@ public class UpdatePerformanceTracker {
                     .append(", maxTotalMemory=").append(maxTotalMemory)
                     .append(", minFreeMemory=").append(minFreeMemory)
                     .append(", collections=").append(collections)
-                    .append(", collectionTimeNanos=").append(DBTimeUtils.millisToNanos(collectionTimeMs))
+                    .append(", collectionTimeNanos=").append(DateTimeUtils.millisToNanos(collectionTimeMs))
                     .append('}');
         }
 
@@ -510,7 +510,7 @@ public class UpdatePerformanceTracker {
         }
 
         public long getCollectionTimeNanos() {
-            return DBTimeUtils.millisToNanos(collectionTimeMs);
+            return DateTimeUtils.millisToNanos(collectionTimeMs);
         }
 
         public long getIntervalAllocatedBytes() {

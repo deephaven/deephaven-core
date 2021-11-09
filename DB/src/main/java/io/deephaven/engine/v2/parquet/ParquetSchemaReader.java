@@ -3,7 +3,7 @@ package io.deephaven.engine.v2.parquet;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.engine.tables.libs.StringSet;
-import io.deephaven.engine.tables.utils.DBDateTime;
+import io.deephaven.engine.tables.utils.DateTime;
 import io.deephaven.engine.tables.utils.ParquetTools;
 import io.deephaven.engine.v2.locations.TableDataException;
 import io.deephaven.engine.v2.parquet.metadata.CodecInfo;
@@ -221,7 +221,7 @@ public class ParquetSchemaReader {
                         colDef.baseType = long.class;
                         break;
                     case INT96:
-                        colDef.baseType = DBDateTime.class;
+                        colDef.baseType = DateTime.class;
                         break;
                     case DOUBLE:
                         colDef.baseType = double.class;
@@ -350,7 +350,7 @@ public class ParquetSchemaReader {
                         case MILLIS:
                         case MICROS:
                         case NANOS:
-                            return Optional.of(io.deephaven.engine.tables.utils.DBDateTime.class);
+                            return Optional.of(DateTime.class);
                     }
                 }
                 errorString.setValue("TimestampLogicalType, isAdjustedToUTC=" + timestampLogicalType.isAdjustedToUTC()

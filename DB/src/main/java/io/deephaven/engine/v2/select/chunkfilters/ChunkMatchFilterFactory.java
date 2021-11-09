@@ -48,7 +48,7 @@ public class ChunkMatchFilterFactory {
         }
         // TODO: we should do something nicer with booleans
         // TODO: we need to consider symbol tables
-        // TODO: we need to consider reinterpretation of DBDateTimes
+        // TODO: we need to consider reinterpretation of DateTimes
         return ObjectChunkMatchFilterFactory.makeFilter(invertMatch, keys);
     }
 }

@@ -37,7 +37,7 @@ import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.dbarrays.Vector;
 import io.deephaven.engine.tables.select.MatchPair;
 import io.deephaven.engine.tables.select.MatchPairFactory;
-import io.deephaven.engine.tables.utils.DBDateTime;
+import io.deephaven.engine.tables.utils.DateTime;
 import io.deephaven.engine.util.tuples.generated.ByteDoubleTuple;
 import io.deephaven.engine.v2.BaseTable;
 import io.deephaven.engine.v2.QueryTable;
@@ -1291,7 +1291,7 @@ public class ComboAggregateFactory implements AggregationStateFactory {
 
                                 final ColumnSource<?> columnSource = table.getColumnSource(mp.right());
                                 final Class<?> type = columnSource.getType();
-                                final ColumnSource<?> inputSource = columnSource.getType() == DBDateTime.class
+                                final ColumnSource<?> inputSource = columnSource.getType() == DateTime.class
                                         ? ReinterpretUtilities.dateTimeToLongSource(columnSource)
                                         : columnSource;
 

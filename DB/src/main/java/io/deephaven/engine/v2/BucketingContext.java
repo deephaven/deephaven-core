@@ -2,7 +2,7 @@ package io.deephaven.engine.v2;
 
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.select.MatchPair;
-import io.deephaven.engine.tables.utils.DBDateTime;
+import io.deephaven.engine.tables.utils.DateTime;
 import io.deephaven.util.BooleanUtils;
 import io.deephaven.engine.util.LongSizedDataStructure;
 import io.deephaven.engine.v2.hashing.ToIntFunctor;
@@ -69,7 +69,7 @@ class BucketingContext implements SafeCloseable {
                         "Mismatched join types, " + columnsToMatch[ii] + ": " + leftType + " != " + rightType);
             }
 
-            if (leftType == DBDateTime.class) {
+            if (leftType == DateTime.class) {
                 leftSources[ii] = ReinterpretUtilities.dateTimeToLongSource(leftSources[ii]);
                 rightSources[ii] = ReinterpretUtilities.dateTimeToLongSource(rightSources[ii]);
             } else if (leftType == boolean.class || leftType == Boolean.class) {

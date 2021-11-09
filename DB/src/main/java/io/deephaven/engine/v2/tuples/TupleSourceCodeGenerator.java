@@ -2,8 +2,8 @@ package io.deephaven.engine.v2.tuples;
 
 
 import io.deephaven.datastructures.util.SmartKey;
-import io.deephaven.engine.tables.utils.DBDateTime;
-import io.deephaven.engine.tables.utils.DBTimeUtils;
+import io.deephaven.engine.tables.utils.DateTime;
+import io.deephaven.engine.tables.utils.DateTimeUtils;
 import io.deephaven.util.BooleanUtils;
 import io.deephaven.engine.util.tuples.TupleCodeGenerator;
 import io.deephaven.engine.v2.sources.ColumnSource;
@@ -68,8 +68,8 @@ public class TupleSourceCodeGenerator {
             OBJECT(               "Object",     Object.class,        null,       null, false,                                 CS + ".get("        + IK + ")" ,                                 CS + ".getPrev("        + IK + ")" ,                                 VAL      ,                                    VAL      ,                  VAL                                                      ),
          R_BOOLEAN( "ReinterpretedBoolean",       byte.class,        null,       null,  true,                                 CS + ".getByte("    + IK + ")" ,                                 CS + ".getPrevByte("    + IK + ")" , "BooleanUtils.byteAsBoolean(" + VAL + ')', "BooleanUtils.booleanAsByte("    + VAL + ')', "(Boolean)"    + VAL, BooleanUtils.class, TypeUtils.class                 ),
            BOOLEAN(              "Boolean",    Boolean.class,  byte.class,  R_BOOLEAN, false, "BooleanUtils.booleanAsByte(" + CS + ".getBoolean(" + IK + "))", "BooleanUtils.booleanAsByte(" + CS + ".getPrevBoolean(" + IK + "))", "BooleanUtils.byteAsBoolean(" + VAL + ')', "BooleanUtils.booleanAsByte("    + VAL + ')', "(Boolean)"    + VAL, BooleanUtils.class                                  ),
-        R_DATETIME("ReinterpretedDateTime",       long.class,        null,       null,  true,                                 CS + ".getLong("    + IK + ")" ,                                 CS + ".getPrevLong("    + IK + ")" , "DBTimeUtils.nanosToTime("    + VAL + ')', "DBTimeUtils.nanos("             + VAL + ')', "(DBDateTime)" + VAL, DBDateTime.class, DBTimeUtils.class, TypeUtils.class),
-          DATETIME(             "DateTime", DBDateTime.class,  long.class, R_DATETIME, false,          "DBTimeUtils.nanos(" + CS + ".get("        + IK + "))",          "DBTimeUtils.nanos(" + CS + ".getPrev("        + IK + "))", "DBTimeUtils.nanosToTime("    + VAL + ')', "DBTimeUtils.nanos("             + VAL + ')', "(DBDateTime)" + VAL, DBDateTime.class, DBTimeUtils.class                 ),
+        R_DATETIME("ReinterpretedDateTime",       long.class,        null,       null,  true,                                 CS + ".getLong("    + IK + ")" ,                                 CS + ".getPrevLong("    + IK + ")" , "DateTimeUtils.nanosToTime("    + VAL + ')', "DateTimeUtils.nanos("             + VAL + ')', "(DateTime)" + VAL, DateTime.class, DateTimeUtils.class, TypeUtils.class),
+          DATETIME(             "DateTime", DateTime.class,  long.class, R_DATETIME, false,          "DateTimeUtils.nanos(" + CS + ".get("        + IK + "))",          "DateTimeUtils.nanos(" + CS + ".getPrev("        + IK + "))", "DateTimeUtils.nanosToTime("    + VAL + ')', "DateTimeUtils.nanos("             + VAL + ')', "(DateTime)" + VAL, DateTime.class, DateTimeUtils.class                 ),
         ;
         // @formatter:on
 

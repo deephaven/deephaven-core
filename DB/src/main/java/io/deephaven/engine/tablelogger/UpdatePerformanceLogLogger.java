@@ -7,8 +7,8 @@ package io.deephaven.engine.tablelogger;
 import java.io.IOException;
 import io.deephaven.engine.tables.TableDefinition;
 import io.deephaven.engine.tables.utils.ColumnsSpecHelper;
-import io.deephaven.engine.tables.utils.DBDateTime;
-import io.deephaven.engine.tables.utils.DBTimeUtils;
+import io.deephaven.engine.tables.utils.DateTime;
+import io.deephaven.engine.tables.utils.DateTimeUtils;
 import io.deephaven.tablelogger.*;
 
 import static io.deephaven.engine.v2.utils.UpdatePerformanceTracker.IntervalLevelDetails;
@@ -41,8 +41,8 @@ public class UpdatePerformanceLogLogger
         RowSetter<Integer> OperationNumber;
         RowSetter<String> EntryDescription;
         RowSetter<String> EntryCallerLine;
-        RowSetter<DBDateTime> IntervalStartTime;
-        RowSetter<DBDateTime> IntervalEndTime;
+        RowSetter<DateTime> IntervalStartTime;
+        RowSetter<DateTime> IntervalEndTime;
         RowSetter<Long> IntervalDurationNanos;
         RowSetter<Long> EntryIntervalUsage;
         RowSetter<Long> EntryIntervalCpuNanos;
@@ -66,8 +66,8 @@ public class UpdatePerformanceLogLogger
             OperationNumber = row.getSetter("OperationNumber", int.class);
             EntryDescription = row.getSetter("EntryDescription", String.class);
             EntryCallerLine = row.getSetter("EntryCallerLine", String.class);
-            IntervalStartTime = row.getSetter("IntervalStartTime", DBDateTime.class);
-            IntervalEndTime = row.getSetter("IntervalEndTime", DBDateTime.class);
+            IntervalStartTime = row.getSetter("IntervalStartTime", DateTime.class);
+            IntervalEndTime = row.getSetter("IntervalEndTime", DateTime.class);
             IntervalDurationNanos = row.getSetter("IntervalDurationNanos", long.class);
             EntryIntervalUsage = row.getSetter("EntryIntervalUsage", long.class);
             EntryIntervalCpuNanos = row.getSetter("EntryIntervalCpuNanos", long.class);
@@ -95,8 +95,8 @@ public class UpdatePerformanceLogLogger
             this.OperationNumber.setInt(performanceEntry.getOperationNumber());
             this.EntryDescription.set(performanceEntry.getDescription());
             this.EntryCallerLine.set(performanceEntry.getCallerLine());
-            this.IntervalStartTime.set(DBTimeUtils.millisToTime(intervalLevelDetails.getIntervalStartTimeMillis()));
-            this.IntervalEndTime.set(DBTimeUtils.millisToTime(intervalLevelDetails.getIntervalEndTimeMillis()));
+            this.IntervalStartTime.set(DateTimeUtils.millisToTime(intervalLevelDetails.getIntervalStartTimeMillis()));
+            this.IntervalEndTime.set(DateTimeUtils.millisToTime(intervalLevelDetails.getIntervalEndTimeMillis()));
             this.IntervalDurationNanos.setLong(intervalLevelDetails.getIntervalDurationNanos());
             this.EntryIntervalUsage.setLong(performanceEntry.getIntervalUsageNanos());
             this.EntryIntervalCpuNanos.setLong(performanceEntry.getIntervalCpuNanos());
@@ -132,8 +132,8 @@ public class UpdatePerformanceLogLogger
                 .add("EntryDescription", String.class)
                 .add("EntryCallerLine", String.class)
 
-                .add("IntervalStartTime", DBDateTime.class)
-                .add("IntervalEndTime", DBDateTime.class)
+                .add("IntervalStartTime", DateTime.class)
+                .add("IntervalEndTime", DateTime.class)
 
                 .add("IntervalDurationNanos", long.class)
                 .add("EntryIntervalUsage", long.class)

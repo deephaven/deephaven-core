@@ -93,13 +93,13 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
                 TstUtils.c("StringKeys1", "key1", "key1", "key1", "key1", "key2", "key2", "key2", "key2", "key2"),
                 TstUtils.c("GroupedInts1", 1, 1, 2, 2, 2, 3, 3, 3, 3));
         table3 = new InMemoryTable(
-                new String[] {"StringKeys", "GroupedInts", "Doubles", "DBDateTime"},
+                new String[] {"StringKeys", "GroupedInts", "Doubles", "DateTime"},
                 new Object[] {
                         new String[] {"key11", "key11", "key21", "key21", "key22"},
                         new int[] {1, 2, 2, NULL_INT, 3},
                         new double[] {2.342, 0.0932, Double.NaN, NULL_DOUBLE, 3},
-                        new DBDateTime[] {new DBDateTime(100), new DBDateTime(10000), null,
-                                new DBDateTime(100000), new DBDateTime(1000000)}
+                        new DateTime[] {new DateTime(100), new DateTime(10000), null,
+                                new DateTime(100000), new DateTime(1000000)}
                 });
         emptyTable = testRefreshingTable(TstUtils.c("StringKeys", (Object) CollectionUtil.ZERO_LENGTH_STRING_ARRAY),
                 TstUtils.c("GroupedInts", (Object) CollectionUtil.ZERO_LENGTH_BYTE_ARRAY));
@@ -403,7 +403,7 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
     public void testWriteCsv() throws Exception {
         String filePath = TEST_ROOT + File.separator + "tmp.csv";
         Table tableToTest = table3;
-        String[] colNames = {"StringKeys", "GroupedInts", "Doubles", "DBDateTime"};
+        String[] colNames = {"StringKeys", "GroupedInts", "Doubles", "DateTime"};
         long numCols = colNames.length;
         long numRows = tableToTest.size();
 
@@ -414,7 +414,7 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
             // Ignore separators in double quotes using this regex
             String splitterPattern = Pattern.quote(separatorStr) + "(?=([^\"]*\"[^\"]*\")*[^\"]*$)";
 
-            TableTools.writeCsv(tableToTest, filePath, false, DBTimeZone.TZ_DEFAULT, false, separator, colNames);
+            TableTools.writeCsv(tableToTest, filePath, false, TimeZone.TZ_DEFAULT, false, separator, colNames);
             File csvFile = new File(filePath);
             Scanner csvReader = new Scanner(csvFile);
 
@@ -571,7 +571,7 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
     public void testDateTimeColumnHolder() throws Exception {
 
         // create two columns with the same data
-        final DBDateTime[] data = new DBDateTime[] {new DBDateTime(100), new DBDateTime(100), null};
+        final DateTime[] data = new DateTime[] {new DateTime(100), new DateTime(100), null};
         final long[] longData =
                 new long[] {data[0] == null ? io.deephaven.util.QueryConstants.NULL_LONG : data[0].getNanos(),
                         data[1] == null ? io.deephaven.util.QueryConstants.NULL_LONG : data[1].getNanos(),
@@ -582,20 +582,20 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
 
         final Table table = TableTools.newTable(dateTimeCol, dateTimeCol2);
 
-        // make sure both columns are in fact DBDateTime columns
+        // make sure both columns are in fact DateTime columns
         final Table meta = table.getMeta();
-        Assert.assertEquals(DBDateTime.class.getCanonicalName(), meta.getColumn("DataType").get(0));
-        Assert.assertEquals(DBDateTime.class.getCanonicalName(), meta.getColumn("DataType").get(1));
+        Assert.assertEquals(DateTime.class.getCanonicalName(), meta.getColumn("DataType").get(0));
+        Assert.assertEquals(DateTime.class.getCanonicalName(), meta.getColumn("DataType").get(1));
 
         // make sure this doesn't crash
         TableTools.showWithIndex(table);
 
-        // validate column1 (backed with DBDateTime objects)
+        // validate column1 (backed with DateTime objects)
         Assert.assertEquals(data[0], table.getColumn(0).get(0));
         Assert.assertEquals(data[1], table.getColumn(0).get(1));
         Assert.assertEquals(data[2], table.getColumn(0).get(2));
 
-        // validate column2 (backed with longs, but should be get-able as DBDateTimes as well)
+        // validate column2 (backed with longs, but should be get-able as DateTimes as well)
         Assert.assertEquals(data[0], table.getColumn(1).get(0));
         Assert.assertEquals(data[1], table.getColumn(1).get(1));
         Assert.assertEquals(data[2], table.getColumn(1).get(2));

@@ -1,6 +1,6 @@
 package io.deephaven.engine.tables.utils.csv;
 
-import io.deephaven.engine.tables.utils.DBTimeUtils;
+import io.deephaven.engine.tables.utils.DateTimeUtils;
 import io.deephaven.qst.type.Type;
 
 import java.time.Duration;
@@ -94,7 +94,7 @@ public class Parser<T> {
     public static final Parser<Instant> INSTANT = new Parser<>(Type.instantType(), Instant::parse);
 
     /**
-     * A parser that delegates to {@link DBTimeUtils#convertDateTime(String)}.
+     * A parser that delegates to {@link DateTimeUtils#convertDateTime(String)}.
      */
     public static final Parser<Instant> INSTANT_LEGACY = new Parser<>(Type.instantType(), Parser::parseAsDateFormat);
 
@@ -319,7 +319,7 @@ public class Parser<T> {
     }
 
     private static Instant parseAsDateFormat(String value) {
-        return DBTimeUtils.convertDateTime(value).getInstant();
+        return DateTimeUtils.convertDateTime(value).getInstant();
     }
 
     private static Instant parseAsEpochSeconds(Parser<Long> longParser, Instant min, Instant max, String value) {

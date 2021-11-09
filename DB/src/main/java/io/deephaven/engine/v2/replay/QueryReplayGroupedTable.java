@@ -6,7 +6,7 @@ package io.deephaven.engine.v2.replay;
 
 
 import io.deephaven.base.verify.Require;
-import io.deephaven.engine.tables.utils.DBDateTime;
+import io.deephaven.engine.tables.utils.DateTime;
 import io.deephaven.engine.v2.QueryTable;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.ReadOnlyRedirectedColumnSource;
@@ -39,12 +39,12 @@ public abstract class QueryReplayGroupedTable extends QueryTable implements Runn
     static class IteratorsAndNextTime implements Comparable<IteratorsAndNextTime> {
 
         private final RowSet.Iterator iterator;
-        private final ColumnSource<DBDateTime> columnSource;
-        DBDateTime lastTime;
+        private final ColumnSource<DateTime> columnSource;
+        DateTime lastTime;
         long lastIndex;
         public final long pos;
 
-        private IteratorsAndNextTime(RowSet.Iterator iterator, ColumnSource<DBDateTime> columnSource, long pos) {
+        private IteratorsAndNextTime(RowSet.Iterator iterator, ColumnSource<DateTime> columnSource, long pos) {
             this.iterator = iterator;
             this.columnSource = columnSource;
             this.pos = pos;
@@ -84,7 +84,7 @@ public abstract class QueryReplayGroupedTable extends QueryTable implements Runn
         grouping = rowSet.getGrouping(tupleSource);
 
         // noinspection unchecked
-        ColumnSource<DBDateTime> timeSource = (ColumnSource<DBDateTime>) input.get(timeColumn);
+        ColumnSource<DateTime> timeSource = (ColumnSource<DateTime>) input.get(timeColumn);
         int pos = 0;
         for (RowSet groupRowSet : grouping.values()) {
             RowSet.Iterator iterator = groupRowSet.iterator();

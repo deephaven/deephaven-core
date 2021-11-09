@@ -5,8 +5,8 @@ import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.tables.select.QueryScope;
-import io.deephaven.engine.tables.utils.DBDateTime;
-import io.deephaven.engine.tables.utils.DBTimeUtils;
+import io.deephaven.engine.tables.utils.DateTime;
+import io.deephaven.engine.tables.utils.DateTimeUtils;
 import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.util.GroovyDeephavenSession;
 import io.deephaven.engine.util.GroovyDeephavenSession.RunScripts;
@@ -119,9 +119,9 @@ public class FuzzerTest {
         final Random timeRandom = new Random(timeSeed);
         final String groovyString = FileUtils.readTextFile(new File(Configuration.getInstance().getDevRootPath() + s));
 
-        final DBDateTime fakeStart = DBTimeUtils.convertDateTime("2020-03-17T13:53:25.123456 NY");
+        final DateTime fakeStart = DateTimeUtils.convertDateTime("2020-03-17T13:53:25.123456 NY");
         final MutableLong now = new MutableLong(fakeStart.getNanos());
-        final TimeProvider timeProvider = realtime ? null : () -> new DBDateTime(now.longValue());
+        final TimeProvider timeProvider = realtime ? null : () -> new DateTime(now.longValue());
 
         final GroovyDeephavenSession session = getGroovySession(timeProvider);
 
@@ -137,7 +137,7 @@ public class FuzzerTest {
 
         // so the first tick has a duration related to our initialization time
         if (!realtime) {
-            now.add(DBTimeUtils.SECOND / 10 * timeRandom.nextInt(20));
+            now.add(DateTimeUtils.SECOND / 10 * timeRandom.nextInt(20));
         }
 
         final TimeTable timeTable = (TimeTable) session.getVariable("tt");
@@ -151,7 +151,7 @@ public class FuzzerTest {
             if (realtime) {
                 Thread.sleep(1000);
             } else {
-                now.add(DBTimeUtils.SECOND / 10 * timeRandom.nextInt(20));
+                now.add(DateTimeUtils.SECOND / 10 * timeRandom.nextInt(20));
             }
         }
     }
@@ -204,12 +204,12 @@ public class FuzzerTest {
     @Test
     public void testLargeSetOfFuzzerQueriesRealtime() throws IOException, InterruptedException {
         Assume.assumeTrue("Realtime Fuzzer can have a positive feedback loop.", REALTIME_FUZZER_ENABLED);
-        runLargeFuzzerSetWithSeed(DBDateTime.now().getNanos(), 0, 99, true, 120, 1000);
+        runLargeFuzzerSetWithSeed(DateTime.now().getNanos(), 0, 99, true, 120, 1000);
     }
 
     @Test
     public void testLargeSetOfFuzzerQueriesSimTime() throws IOException, InterruptedException {
-        final long seed1 = DBDateTime.now().getNanos();
+        final long seed1 = DateTime.now().getNanos();
         for (long iteration = 0; iteration < 5; ++iteration) {
             for (int segment = 0; segment < 10; segment++) {
                 UpdateGraphProcessor.DEFAULT.resetForUnitTests(false);
@@ -234,9 +234,9 @@ public class FuzzerTest {
         final Random sourceRandom = new Random(mainTestSeed);
         final Random timeRandom = new Random(mainTestSeed + 1);
 
-        final DBDateTime fakeStart = DBTimeUtils.convertDateTime("2020-03-17T13:53:25.123456 NY");
+        final DateTime fakeStart = DateTimeUtils.convertDateTime("2020-03-17T13:53:25.123456 NY");
         final MutableLong now = new MutableLong(fakeStart.getNanos());
-        final TimeProvider timeProvider = () -> new DBDateTime(now.longValue());
+        final TimeProvider timeProvider = () -> new DateTime(now.longValue());
         final long start = System.currentTimeMillis();
 
         final GroovyDeephavenSession session = getGroovySession(realtime ? null : timeProvider);
@@ -262,7 +262,7 @@ public class FuzzerTest {
         annotateBinding(session);
 
         if (!realtime) {
-            now.add(DBTimeUtils.SECOND / 10 * timeRandom.nextInt(20));
+            now.add(DateTimeUtils.SECOND / 10 * timeRandom.nextInt(20));
         }
 
         final DecimalFormat commaFormat = new DecimalFormat();
@@ -292,7 +292,7 @@ public class FuzzerTest {
             if (realtime) {
                 Thread.sleep(sleepTime);
             } else {
-                now.add(DBTimeUtils.SECOND / 10 * timeRandom.nextInt(20));
+                now.add(DateTimeUtils.SECOND / 10 * timeRandom.nextInt(20));
             }
             if (maxTableSize > 500_000L) {
                 System.out.println("Tables have grown too large, quitting fuzzer run.");
@@ -302,7 +302,7 @@ public class FuzzerTest {
 
         final long loopEnd = System.currentTimeMillis();
         System.out.println("Elapsed time: " + (loopEnd - start) + "ms, loop: " + (loopEnd - loopStart) + "ms"
-                + (realtime ? "" : (", sim: " + (double) (now.longValue() - fakeStart.getNanos()) / DBTimeUtils.SECOND))
+                + (realtime ? "" : (", sim: " + (double) (now.longValue() - fakeStart.getNanos()) / DateTimeUtils.SECOND))
                 + ", ttSize: " + timeTable.size());
     }
 

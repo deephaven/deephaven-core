@@ -1,8 +1,8 @@
 package io.deephaven.engine.v2.tuples.generated;
 
 import io.deephaven.datastructures.util.SmartKey;
-import io.deephaven.engine.tables.utils.DBDateTime;
-import io.deephaven.engine.tables.utils.DBTimeUtils;
+import io.deephaven.engine.tables.utils.DateTime;
+import io.deephaven.engine.tables.utils.DateTimeUtils;
 import io.deephaven.engine.util.tuples.generated.LongShortByteTuple;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.WritableSource;
@@ -10,7 +10,6 @@ import io.deephaven.engine.v2.sources.chunk.Attributes;
 import io.deephaven.engine.v2.sources.chunk.ByteChunk;
 import io.deephaven.engine.v2.sources.chunk.Chunk;
 import io.deephaven.engine.v2.sources.chunk.LongChunk;
-import io.deephaven.engine.v2.sources.chunk.ObjectChunk;
 import io.deephaven.engine.v2.sources.chunk.ShortChunk;
 import io.deephaven.engine.v2.sources.chunk.WritableChunk;
 import io.deephaven.engine.v2.sources.chunk.WritableObjectChunk;
@@ -67,7 +66,7 @@ public class ReinterpretedDateTimeShortByteColumnTupleSource extends AbstractTup
     @Override
     public final LongShortByteTuple createTupleFromValues(@NotNull final Object... values) {
         return new LongShortByteTuple(
-                DBTimeUtils.nanos((DBDateTime)values[0]),
+                DateTimeUtils.nanos((DateTime)values[0]),
                 TypeUtils.unbox((Short)values[1]),
                 TypeUtils.unbox((Byte)values[2])
         );
@@ -86,7 +85,7 @@ public class ReinterpretedDateTimeShortByteColumnTupleSource extends AbstractTup
     @Override
     public final <ELEMENT_TYPE> void exportElement(@NotNull final LongShortByteTuple tuple, final int elementIndex, @NotNull final WritableSource<ELEMENT_TYPE> writableSource, final long destinationIndexKey) {
         if (elementIndex == 0) {
-            writableSource.set(destinationIndexKey, (ELEMENT_TYPE) DBTimeUtils.nanosToTime(tuple.getFirstElement()));
+            writableSource.set(destinationIndexKey, (ELEMENT_TYPE) DateTimeUtils.nanosToTime(tuple.getFirstElement()));
             return;
         }
         if (elementIndex == 1) {
@@ -103,7 +102,7 @@ public class ReinterpretedDateTimeShortByteColumnTupleSource extends AbstractTup
     @Override
     public final Object exportToExternalKey(@NotNull final LongShortByteTuple tuple) {
         return new SmartKey(
-                DBTimeUtils.nanosToTime(tuple.getFirstElement()),
+                DateTimeUtils.nanosToTime(tuple.getFirstElement()),
                 TypeUtils.box(tuple.getSecondElement()),
                 TypeUtils.box(tuple.getThirdElement())
         );
@@ -112,7 +111,7 @@ public class ReinterpretedDateTimeShortByteColumnTupleSource extends AbstractTup
     @Override
     public final Object exportElement(@NotNull final LongShortByteTuple tuple, int elementIndex) {
         if (elementIndex == 0) {
-            return DBTimeUtils.nanosToTime(tuple.getFirstElement());
+            return DateTimeUtils.nanosToTime(tuple.getFirstElement());
         }
         if (elementIndex == 1) {
             return TypeUtils.box(tuple.getSecondElement());

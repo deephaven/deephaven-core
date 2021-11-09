@@ -40,8 +40,8 @@ public class QueryOperationPerformanceLogLogger
         RowSetter<String> CallerLine;
         RowSetter<Boolean> IsTopLevel;
         RowSetter<Boolean> IsCompilation;
-        RowSetter<DBDateTime> StartTime;
-        RowSetter<DBDateTime> EndTime;
+        RowSetter<DateTime> StartTime;
+        RowSetter<DateTime> EndTime;
         RowSetter<Long> DurationNanos;
         RowSetter<Long> CpuNanos;
         RowSetter<Long> UserCpuNanos;
@@ -63,8 +63,8 @@ public class QueryOperationPerformanceLogLogger
             CallerLine = row.getSetter("CallerLine", String.class);
             IsTopLevel = row.getSetter("IsTopLevel", Boolean.class);
             IsCompilation = row.getSetter("IsCompilation", Boolean.class);
-            StartTime = row.getSetter("StartTime", DBDateTime.class);
-            EndTime = row.getSetter("EndTime", DBDateTime.class);
+            StartTime = row.getSetter("StartTime", DateTime.class);
+            EndTime = row.getSetter("EndTime", DateTime.class);
             DurationNanos = row.getSetter("DurationNanos", long.class);
             CpuNanos = row.getSetter("CpuNanos", long.class);
             UserCpuNanos = row.getSetter("UserCpuNanos", long.class);
@@ -90,11 +90,11 @@ public class QueryOperationPerformanceLogLogger
             this.CallerLine.set(nugget.getCallerLine());
             this.IsTopLevel.setBoolean(nugget.isTopLevel());
             this.IsCompilation.setBoolean(nugget.getName().startsWith("Compile:"));
-            this.StartTime.set(DBTimeUtils.millisToTime(nugget.getStartClockTime()));
+            this.StartTime.set(DateTimeUtils.millisToTime(nugget.getStartClockTime()));
             this.EndTime.set(nugget.getTotalTimeNanos() == null
                     ? null
-                    : DBTimeUtils.millisToTime(
-                            nugget.getStartClockTime() + DBTimeUtils.nanosToMillis(nugget.getTotalTimeNanos())));
+                    : DateTimeUtils.millisToTime(
+                            nugget.getStartClockTime() + DateTimeUtils.nanosToMillis(nugget.getTotalTimeNanos())));
             this.DurationNanos.setLong(
                     nugget.getTotalTimeNanos() == null ? QueryConstants.NULL_LONG : nugget.getTotalTimeNanos());
             this.CpuNanos.setLong(nugget.getCpuNanos());
@@ -128,8 +128,8 @@ public class QueryOperationPerformanceLogLogger
                 .add("CallerLine", String.class)
                 .add("IsTopLevel", Boolean.class)
                 .add("IsCompilation", Boolean.class)
-                .add("StartTime", DBDateTime.class)
-                .add("EndTime", DBDateTime.class)
+                .add("StartTime", DateTime.class)
+                .add("EndTime", DateTime.class)
                 .add("DurationNanos", long.class)
                 .add("CpuNanos", long.class)
                 .add("UserCpuNanos", long.class)

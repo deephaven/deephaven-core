@@ -1,8 +1,8 @@
 package io.deephaven.engine.v2.sources;
 
-import io.deephaven.engine.tables.utils.DBDateTime;
+import io.deephaven.engine.tables.utils.DateTime;
 
-import static io.deephaven.engine.tables.utils.DBTimeUtils.nanosToTime;
+import static io.deephaven.engine.tables.utils.DateTimeUtils.nanosToTime;
 import static io.deephaven.util.type.TypeUtils.box;
 
 /**
@@ -385,12 +385,12 @@ public final class ColumnSourceGetDefaults {
     }
 
     /**
-     * Default interface for {@link DBDateTime} {@link ColumnSource} implementations.
+     * Default interface for {@link DateTime} {@link ColumnSource} implementations.
      */
-    public interface ForLongAsDateTime extends LongBacked<DBDateTime> {
+    public interface ForLongAsDateTime extends LongBacked<DateTime> {
 
         @Override
-        default DBDateTime get(final long index) {
+        default DateTime get(final long index) {
             return nanosToTime(getLong(index));
         }
     }

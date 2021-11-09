@@ -6,7 +6,7 @@ package io.deephaven.engine.v2.sources;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.tables.utils.ArrayUtils;
-import io.deephaven.engine.tables.utils.DBDateTime;
+import io.deephaven.engine.tables.utils.DateTime;
 import io.deephaven.engine.v2.sources.chunk.Attributes;
 import io.deephaven.engine.v2.sources.chunk.Attributes.RowKeys;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
@@ -282,8 +282,8 @@ public abstract class SparseArrayColumnSource<T>
         return result;
     }
 
-    public static SparseArrayColumnSource<DBDateTime> getDateTimeMemoryColumnSource(long[] data) {
-        final SparseArrayColumnSource<DBDateTime> result = new DateTimeSparseArraySource();
+    public static SparseArrayColumnSource<DateTime> getDateTimeMemoryColumnSource(long[] data) {
+        final SparseArrayColumnSource<DateTime> result = new DateTimeSparseArraySource();
         result.ensureCapacity(data.length);
         long i = 0;
         for (long o : data) {
@@ -333,7 +333,7 @@ public abstract class SparseArrayColumnSource<T>
             result = new ShortSparseArraySource();
         } else if (type == boolean.class || type == Boolean.class) {
             result = new BooleanSparseArraySource();
-        } else if (type == DBDateTime.class) {
+        } else if (type == DateTime.class) {
             result = new DateTimeSparseArraySource();
         } else {
             if (componentType != null) {

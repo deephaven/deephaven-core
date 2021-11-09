@@ -1,6 +1,6 @@
 package io.deephaven.engine.v2.locations.impl;
 
-import io.deephaven.engine.tables.utils.DBTimeUtils;
+import io.deephaven.engine.tables.utils.DateTimeUtils;
 
 import java.util.function.Supplier;
 
@@ -20,10 +20,10 @@ public class CompositeTableDataServiceConsistencyMonitor {
     }
 
     private final static ConsistentSupplier<String> defaultCurrentDateNySupplier =
-            new ConsistentSupplier<>(DBTimeUtils::currentDateNy);
+            new ConsistentSupplier<>(DateTimeUtils::currentDateNy);
 
     /**
-     * Get the consistent value of currentDateNy() as defined by {@link DBTimeUtils#currentDateNy()}.
+     * Get the consistent value of currentDateNy() as defined by {@link DateTimeUtils#currentDateNy()}.
      *
      * @return the current date in the New York time zone.
      */

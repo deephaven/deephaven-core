@@ -4,8 +4,8 @@
 
 package io.deephaven.engine.v2.sources;
 
-import io.deephaven.engine.tables.utils.DBDateTime;
-import io.deephaven.engine.tables.utils.DBTimeUtils;
+import io.deephaven.engine.tables.utils.DateTime;
+import io.deephaven.engine.tables.utils.DateTimeUtils;
 import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 import io.deephaven.engine.structures.RowSequence;
@@ -17,21 +17,21 @@ import org.jetbrains.annotations.NotNull;
 @AbstractColumnSource.IsSerializable(value = true)
 public class DatetimeAsLongColumnSource extends AbstractColumnSource<Long> implements MutableColumnSourceGetDefaults.ForLong {
 
-    private final ColumnSource<DBDateTime> alternateColumnSource;
+    private final ColumnSource<DateTime> alternateColumnSource;
 
-    public DatetimeAsLongColumnSource(@NotNull final ColumnSource<DBDateTime> alternateColumnSource) {
+    public DatetimeAsLongColumnSource(@NotNull final ColumnSource<DateTime> alternateColumnSource) {
         super(long.class);
         this.alternateColumnSource = alternateColumnSource;
     }
 
     @Override
     public long getLong(final long index) {
-        return DBTimeUtils.nanos(alternateColumnSource.get(index));
+        return DateTimeUtils.nanos(alternateColumnSource.get(index));
     }
 
     @Override
     public long getPrevLong(final long index) {
-        return DBTimeUtils.nanos(alternateColumnSource.getPrev(index));
+        return DateTimeUtils.nanos(alternateColumnSource.getPrev(index));
     }
 
     @Override
@@ -41,7 +41,7 @@ public class DatetimeAsLongColumnSource extends AbstractColumnSource<Long> imple
 
     @Override
     public <ALTERNATE_DATA_TYPE> boolean allowsReinterpret(@NotNull final Class<ALTERNATE_DATA_TYPE> alternateDataType) {
-        return alternateDataType == DBDateTime.class;
+        return alternateDataType == DateTime.class;
     }
 
     @Override
@@ -71,23 +71,23 @@ public class DatetimeAsLongColumnSource extends AbstractColumnSource<Long> imple
     @Override
     public void fillChunk(@NotNull final FillContext context, @NotNull final WritableChunk<? super Values> destination, @NotNull final RowSequence rowSequence) {
         final UnboxingFillContext unboxingFillContext = (UnboxingFillContext) context;
-        final ObjectChunk<DBDateTime, ? extends Values> dbdatetimeChunk = alternateColumnSource.getChunk(unboxingFillContext.alternateGetContext, rowSequence).asObjectChunk();
-        convertToLong(destination, dbdatetimeChunk);
+        final ObjectChunk<DateTime, ? extends Values> dateTimeChunk = alternateColumnSource.getChunk(unboxingFillContext.alternateGetContext, rowSequence).asObjectChunk();
+        convertToLong(destination, dateTimeChunk);
     }
 
     @Override
     public void fillPrevChunk(@NotNull final FillContext context, @NotNull final WritableChunk<? super Values> destination, @NotNull final RowSequence rowSequence) {
         final UnboxingFillContext unboxingFillContext = (UnboxingFillContext) context;
-        final ObjectChunk<DBDateTime, ? extends Values> dbdatetimeChunk = alternateColumnSource.getPrevChunk(unboxingFillContext.alternateGetContext, rowSequence).asObjectChunk();
-        convertToLong(destination, dbdatetimeChunk);
+        final ObjectChunk<DateTime, ? extends Values> dateTimeChunk = alternateColumnSource.getPrevChunk(unboxingFillContext.alternateGetContext, rowSequence).asObjectChunk();
+        convertToLong(destination, dateTimeChunk);
     }
 
-    private static void convertToLong(@NotNull final WritableChunk<? super Values> destination, @NotNull final ObjectChunk<DBDateTime, ? extends Values> dbdatetimeChunk) {
+    private static void convertToLong(@NotNull final WritableChunk<? super Values> destination, @NotNull final ObjectChunk<DateTime, ? extends Values> dateTimeChunk) {
         final WritableLongChunk<? super Values> longDestination = destination.asWritableLongChunk();
-        for (int ii = 0; ii < dbdatetimeChunk.size(); ++ii) {
-            final DBDateTime dbDateTime = dbdatetimeChunk.get(ii);
-            longDestination.set(ii, DBTimeUtils.nanos(dbDateTime));
+        for (int ii = 0; ii < dateTimeChunk.size(); ++ii) {
+            final DateTime dateTime = dateTimeChunk.get(ii);
+            longDestination.set(ii, DateTimeUtils.nanos(dateTime));
         }
-        longDestination.setSize(dbdatetimeChunk.size());
+        longDestination.setSize(dateTimeChunk.size());
     }
 }

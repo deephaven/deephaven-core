@@ -21,7 +21,7 @@ import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.TableDefinition;
 import io.deephaven.engine.tables.live.NotificationQueue;
 import io.deephaven.engine.tables.live.WaitNotification;
-import io.deephaven.engine.tables.utils.DBDateTime;
+import io.deephaven.engine.tables.utils.DateTime;
 import io.deephaven.engine.util.LongSizedDataStructure;
 import io.deephaven.engine.util.liveness.LivenessManager;
 import io.deephaven.engine.util.liveness.LivenessScope;
@@ -1447,7 +1447,7 @@ public class ConstructSnapshot {
             } else if (definition.getDataType() == int.class || definition.getDataType() == float.class) {
                 sizePerRow += 4;
             } else if (definition.getDataType() == long.class || definition.getDataType() == double.class
-                    || definition.getDataType() == DBDateTime.class) {
+                    || definition.getDataType() == DateTime.class) {
                 sizePerRow += 8;
             } else {
                 switch (definition.getName()) {

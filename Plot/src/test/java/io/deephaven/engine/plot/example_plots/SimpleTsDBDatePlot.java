@@ -6,25 +6,25 @@ package io.deephaven.engine.plot.example_plots;
 
 import io.deephaven.engine.plot.Figure;
 import io.deephaven.engine.plot.FigureFactory;
-import io.deephaven.engine.tables.utils.DBDateTime;
-import io.deephaven.engine.tables.utils.DBTimeUtils;
+import io.deephaven.engine.tables.utils.DateTime;
+import io.deephaven.engine.tables.utils.DateTimeUtils;
 
 
 public class SimpleTsDBDatePlot {
 
     public static void main(String[] args) {
         final long time = 1491946585000000000L;
-        final DBDateTime[] x1 = {
-                new DBDateTime(time),
-                new DBDateTime(time + DBTimeUtils.MINUTE),
-                new DBDateTime(time + 2 * DBTimeUtils.MINUTE),
-                new DBDateTime(time + 3 * DBTimeUtils.MINUTE)
+        final DateTime[] x1 = {
+                new DateTime(time),
+                new DateTime(time + DateTimeUtils.MINUTE),
+                new DateTime(time + 2 * DateTimeUtils.MINUTE),
+                new DateTime(time + 3 * DateTimeUtils.MINUTE)
         };
         final Number[] y1 = {2, 3, 1, 9};
-        final DBDateTime[] x2 = {
-                new DBDateTime(time + DBTimeUtils.MINUTE),
-                new DBDateTime(time + 3 * DBTimeUtils.MINUTE),
-                new DBDateTime(time + 4 * DBTimeUtils.MINUTE)
+        final DateTime[] x2 = {
+                new DateTime(time + DateTimeUtils.MINUTE),
+                new DateTime(time + 3 * DateTimeUtils.MINUTE),
+                new DateTime(time + 4 * DateTimeUtils.MINUTE)
         };
         final Number[] y2 = {1.3, 3.2, 3.4};
 

@@ -266,7 +266,7 @@ public class FlightMessageRoundTripTest {
 
     @Test
     public void testTimestampColumn() throws InterruptedException, ExecutionException {
-        assertRoundTripDataEqual(TableTools.emptyTable(10).update("tm = DBDateTime.now()"));
+        assertRoundTripDataEqual(TableTools.emptyTable(10).update("tm = DateTime.now()"));
     }
 
     @Test

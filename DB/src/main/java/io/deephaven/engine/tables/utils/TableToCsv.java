@@ -19,6 +19,6 @@ public class TableToCsv {
         }
 
         Table source = ParquetTools.readTable(args[0]);
-        TableTools.writeCsv(source, args[1], false, DBTimeZone.TZ_DEFAULT, false, columns);
+        TableTools.writeCsv(source, args[1], false, TimeZone.TZ_DEFAULT, false, columns);
     }
 }

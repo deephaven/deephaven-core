@@ -36,8 +36,8 @@ public class HtmlTable {
                 final Object value = columnSource.get(key);
                 if (value instanceof String) {
                     out.append(StringEscapeUtils.escapeCsv((String) value));
-                } else if (value instanceof DBDateTime) {
-                    out.append(((DBDateTime) value).toString(DBTimeZone.TZ_NY));
+                } else if (value instanceof DateTime) {
+                    out.append(((DateTime) value).toString(TimeZone.TZ_NY));
                 } else {
                     out.append(TableTools.nullToNullString(value));
                 }

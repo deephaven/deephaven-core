@@ -5,11 +5,11 @@ import io.deephaven.engine.tables.ColumnDefinition;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.TableDefinition;
 import io.deephaven.engine.tables.dbarrays.ObjectVector;
-import io.deephaven.engine.tables.lang.DBLanguageParser;
+import io.deephaven.engine.tables.lang.LanguageParser;
 import io.deephaven.engine.tables.libs.QueryLibrary;
 import io.deephaven.engine.tables.select.Param;
 import io.deephaven.engine.tables.select.QueryScope;
-import io.deephaven.engine.tables.utils.DBTimeUtils;
+import io.deephaven.engine.tables.utils.DateTimeUtils;
 import io.deephaven.engine.v2.select.python.DeephavenCompatibleFunction;
 import io.deephaven.engine.v2.utils.MutableRowSet;
 import io.deephaven.engine.v2.utils.RowSet;
@@ -118,13 +118,13 @@ public abstract class AbstractConditionFilter extends SelectFilterImpl {
 
             log.debug("Expression (before) : " + formula);
 
-            final DBTimeUtils.Result timeConversionResult = DBTimeUtils.convertExpression(formula);
+            final DateTimeUtils.Result timeConversionResult = DateTimeUtils.convertExpression(formula);
 
             log.debug("Expression (after time conversion) : " + timeConversionResult.getConvertedFormula());
 
             possibleVariables.putAll(timeConversionResult.getNewVariables());
 
-            final DBLanguageParser.Result result = new DBLanguageParser(timeConversionResult.getConvertedFormula(),
+            final LanguageParser.Result result = new LanguageParser(timeConversionResult.getConvertedFormula(),
                     QueryLibrary.getPackageImports(), QueryLibrary.getClassImports(), QueryLibrary.getStaticImports(),
                     possibleVariables, possibleVariableParameterizedTypes, unboxArguments).getResult();
 
@@ -166,7 +166,7 @@ public abstract class AbstractConditionFilter extends SelectFilterImpl {
             if (paramOptional.isPresent()) {
                 /*
                  * numba vectorized function must be used alone as an entire expression, and that should have been
-                 * checked in the DBLanguageParser already, this is a sanity check
+                 * checked in the LanguageParser already, this is a sanity check
                  */
                 if (params.length != 1) {
                     throw new UncheckedDeephavenException(
@@ -196,7 +196,7 @@ public abstract class AbstractConditionFilter extends SelectFilterImpl {
         }
     }
 
-    private void checkReturnType(DBLanguageParser.Result result, Class<?> resultType) {
+    private void checkReturnType(LanguageParser.Result result, Class<?> resultType) {
         if (!Boolean.class.equals(resultType) && !boolean.class.equals(resultType)) {
             throw new RuntimeException("Invalid condition filter expression type: boolean required.\n" +
                     "Formula              : " + truncateLongFormula(formula) + '\n' +
@@ -205,8 +205,8 @@ public abstract class AbstractConditionFilter extends SelectFilterImpl {
         }
     }
 
-    protected abstract void generateFilterCode(TableDefinition tableDefinition, DBTimeUtils.Result timeConversionResult,
-            DBLanguageParser.Result result) throws MalformedURLException, ClassNotFoundException;
+    protected abstract void generateFilterCode(TableDefinition tableDefinition, DateTimeUtils.Result timeConversionResult,
+            LanguageParser.Result result) throws MalformedURLException, ClassNotFoundException;
 
     @Override
     public MutableRowSet filter(RowSet selection, RowSet fullSet, Table table, boolean usePrev) {

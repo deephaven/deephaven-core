@@ -1,6 +1,6 @@
 package io.deephaven.engine.v2.sources;
 
-import io.deephaven.engine.tables.utils.DBDateTime;
+import io.deephaven.engine.tables.utils.DateTime;
 import io.deephaven.qst.array.Array;
 import io.deephaven.qst.array.GenericArray;
 import io.deephaven.qst.array.PrimitiveArray;
@@ -114,7 +114,7 @@ public class ArrayBackedColumnSourceTest {
 
     private static boolean checkInstant(Instant instant, Object o) {
         return (instant == null && o == null) ||
-                (instant != null && (o instanceof DBDateTime)
-                        && instant.toEpochMilli() == ((DBDateTime) o).getMillis());
+                (instant != null && (o instanceof DateTime)
+                        && instant.toEpochMilli() == ((DateTime) o).getMillis());
     }
 }

@@ -4,7 +4,7 @@
 
 package io.deephaven.engine.v2.by;
 
-import io.deephaven.engine.tables.utils.DBDateTime;
+import io.deephaven.engine.tables.utils.DateTime;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.v2.QueryTable;
 import io.deephaven.engine.v2.Listener;
@@ -50,7 +50,7 @@ public class TDigestPercentileOperator implements IterativeChunkedAggregationOpe
         this.digestColumnName = digestColumnName;
         this.resultNames = resultNames;
         this.digests = new ObjectArraySource<>(TDigest.class);
-        final boolean isDateTime = type == DBDateTime.class;
+        final boolean isDateTime = type == DateTime.class;
         if (isDateTime) {
             throw new UnsupportedOperationException("DateTime is not supported for approximate percentiles.");
         }

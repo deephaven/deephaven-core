@@ -68,7 +68,7 @@ public class SingleTableKeyedDateTimeOperations {
         convertToDateTime = new String[columnCount + 1];
         for (int i = 0; i < keyColumns.length; i++) {
             keyColumns[i] = "InputColumn" + i;
-            convertToDateTime[i] = keyColumns[i] + " = new DBDateTime(" + keyColumns[i] + ")";
+            convertToDateTime[i] = keyColumns[i] + " = new DateTime(" + keyColumns[i] + ")";
         }
         convertToDateTime[columnCount] = "Mock";
     }

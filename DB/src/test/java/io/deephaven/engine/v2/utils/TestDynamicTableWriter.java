@@ -2,8 +2,8 @@ package io.deephaven.engine.v2.utils;
 
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.live.UpdateGraphProcessor;
-import io.deephaven.engine.tables.utils.DBDateTime;
-import io.deephaven.engine.tables.utils.DBTimeUtils;
+import io.deephaven.engine.tables.utils.DateTime;
+import io.deephaven.engine.tables.utils.DateTimeUtils;
 import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.v2.UpdateSourceQueryTable;
 import io.deephaven.engine.v2.TstUtils;
@@ -26,7 +26,7 @@ public class TestDynamicTableWriter {
     public void testTypes() throws IOException {
         final String[] names = new String[] {"BC", "CC", "SC", "IC", "LC", "FC", "DC", "StrC", "BLC", "DTC", "BIC"};
         final Class[] types = new Class[] {byte.class, char.class, short.class, int.class, long.class, float.class,
-                double.class, String.class, Boolean.class, DBDateTime.class, BigInteger.class};
+                double.class, String.class, Boolean.class, DateTime.class, BigInteger.class};
         final DynamicTableWriter writer = new DynamicTableWriter(names, types);
         final UpdateSourceQueryTable result = writer.getTable();
 
@@ -39,7 +39,7 @@ public class TestDynamicTableWriter {
         writer.getSetter("DC").setDouble(6.6);
         writer.getSetter("StrC", String.class).set("Seven");
         writer.getSetter("BLC", Boolean.class).setBoolean(true);
-        writer.getSetter("DTC", DBDateTime.class).set(DBTimeUtils.convertDateTime("2020-09-16T07:55:00 NY"));
+        writer.getSetter("DTC", DateTime.class).set(DateTimeUtils.convertDateTime("2020-09-16T07:55:00 NY"));
         writer.getSetter("BIC", BigInteger.class).set(BigInteger.valueOf(8));
         writer.writeRow();
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(result::run);
@@ -53,7 +53,7 @@ public class TestDynamicTableWriter {
                 doubleCol("DC", 6.6),
                 stringCol("StrC", "Seven"),
                 col("BLC", true),
-                col("DTC", DBTimeUtils.convertDateTime("2020-09-16T07:55:00 NY")),
+                col("DTC", DateTimeUtils.convertDateTime("2020-09-16T07:55:00 NY")),
                 col("BIC", BigInteger.valueOf(8)));
         TstUtils.assertTableEquals(expected1, result);
 
@@ -68,7 +68,7 @@ public class TestDynamicTableWriter {
         row.getSetter("DC").setDouble(14.14);
         row.getSetter("StrC", String.class).set("Fifteen");
         row.getSetter("BLC", Boolean.class).setBoolean(true);
-        row.getSetter("DTC", DBDateTime.class).set(DBTimeUtils.convertDateTime("2020-09-16T08:55:00 NY"));
+        row.getSetter("DTC", DateTime.class).set(DateTimeUtils.convertDateTime("2020-09-16T08:55:00 NY"));
         row.getSetter("BIC", BigInteger.class).set(BigInteger.valueOf(16));
         row.setFlags(Row.Flags.StartTransaction);
         row.writeRow();
@@ -83,7 +83,7 @@ public class TestDynamicTableWriter {
         row2.getSetter("DC").setDouble(22.22);
         row2.getSetter("StrC", String.class).set("Twenty Three");
         row2.getSetter("BLC", Boolean.class).setBoolean(false);
-        row2.getSetter("DTC", DBDateTime.class).set(DBTimeUtils.convertDateTime("2020-09-16T09:55:00 NY"));
+        row2.getSetter("DTC", DateTime.class).set(DateTimeUtils.convertDateTime("2020-09-16T09:55:00 NY"));
         row2.getSetter("BIC", BigInteger.class).set(BigInteger.valueOf(24));
         row2.setFlags(Row.Flags.StartTransaction);
         row2.writeRow();
@@ -101,7 +101,7 @@ public class TestDynamicTableWriter {
         row3.getSetter("DC", double.class).set(30.30);
         row3.getSetter("StrC", String.class).set("Thirty One");
         row3.getSetter("BLC", Boolean.class).set(null);
-        row3.getSetter("DTC", DBDateTime.class).set(DBTimeUtils.convertDateTime("2020-09-16T10:55:00 NY"));
+        row3.getSetter("DTC", DateTime.class).set(DateTimeUtils.convertDateTime("2020-09-16T10:55:00 NY"));
         row3.getSetter("BIC", BigInteger.class).set(BigInteger.valueOf(32));
         row3.setFlags(Row.Flags.EndTransaction);
         row3.writeRow();
@@ -117,9 +117,9 @@ public class TestDynamicTableWriter {
                 doubleCol("DC", 6.6, 22.22, 30.30),
                 stringCol("StrC", "Seven", "Twenty Three", "Thirty One"),
                 col("BLC", true, false, null),
-                col("DTC", DBTimeUtils.convertDateTime("2020-09-16T07:55:00 NY"),
-                        DBTimeUtils.convertDateTime("2020-09-16T09:55:00 NY"),
-                        DBTimeUtils.convertDateTime("2020-09-16T10:55:00 NY")),
+                col("DTC", DateTimeUtils.convertDateTime("2020-09-16T07:55:00 NY"),
+                        DateTimeUtils.convertDateTime("2020-09-16T09:55:00 NY"),
+                        DateTimeUtils.convertDateTime("2020-09-16T10:55:00 NY")),
                 col("BIC", BigInteger.valueOf(8), BigInteger.valueOf(24), BigInteger.valueOf(32)));
         TstUtils.assertTableEquals(expected2, result);
 
@@ -129,7 +129,7 @@ public class TestDynamicTableWriter {
     public void testNulls() throws IOException {
         final String[] names = new String[] {"BC", "CC", "SC", "IC", "LC", "FC", "DC", "StrC", "BLC", "DTC", "BIC"};
         final Class[] types = new Class[] {byte.class, char.class, short.class, int.class, long.class, float.class,
-                double.class, String.class, Boolean.class, DBDateTime.class, BigInteger.class};
+                double.class, String.class, Boolean.class, DateTime.class, BigInteger.class};
         final DynamicTableWriter writer = new DynamicTableWriter(names, types);
         final UpdateSourceQueryTable result = writer.getTable();
 
@@ -149,7 +149,7 @@ public class TestDynamicTableWriter {
                 longCol("LC", 4),
                 floatCol("FC", 5.5f),
                 doubleCol("DC", QueryConstants.NULL_DOUBLE))
-                        .updateView("StrC=(String)null", "BLC=(Boolean)null", "DTC=(DBDateTime)null",
+                        .updateView("StrC=(String)null", "BLC=(Boolean)null", "DTC=(DateTime)null",
                                 "BIC=(java.math.BigInteger)null");
         TstUtils.assertTableEquals(expected1, result);
 
@@ -158,7 +158,7 @@ public class TestDynamicTableWriter {
         row.getSetter("DC").setDouble(14.14);
         row.getSetter("StrC", String.class).set("Fifteen");
         row.getSetter("BLC", Boolean.class).setBoolean(true);
-        row.getSetter("DTC", DBDateTime.class).set(DBTimeUtils.convertDateTime("2020-09-16T08:55:00 NY"));
+        row.getSetter("DTC", DateTime.class).set(DateTimeUtils.convertDateTime("2020-09-16T08:55:00 NY"));
         row.getSetter("BIC", BigInteger.class).set(BigInteger.valueOf(16));
         row.setFlags(Row.Flags.SingleRow);
         row.writeRow();
@@ -174,7 +174,7 @@ public class TestDynamicTableWriter {
                 doubleCol("DC", 14.14),
                 stringCol("StrC", "Fifteen"),
                 col("BLC", true),
-                col("DTC", DBTimeUtils.convertDateTime("2020-09-16T08:55:00 NY")),
+                col("DTC", DateTimeUtils.convertDateTime("2020-09-16T08:55:00 NY")),
                 col("BIC", BigInteger.valueOf(16)));
         TstUtils.assertTableEquals(merge(expected1, expected2), result);
 

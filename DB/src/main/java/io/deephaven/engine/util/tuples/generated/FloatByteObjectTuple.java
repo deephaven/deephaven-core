@@ -1,6 +1,6 @@
 package io.deephaven.engine.util.tuples.generated;
 
-import io.deephaven.engine.tables.lang.DBLanguageFunctionUtil;
+import io.deephaven.engine.tables.lang.LanguageFunctionUtil;
 import io.deephaven.engine.util.serialization.SerializationUtils;
 import io.deephaven.engine.util.serialization.StreamingExternalizable;
 import io.deephaven.engine.util.tuples.CanonicalizableTuple;
@@ -98,9 +98,9 @@ public class FloatByteObjectTuple implements Comparable<FloatByteObjectTuple>, E
         }
         int comparison;
         // @formatter:off
-        return 0 != (comparison = DBLanguageFunctionUtil.compareTo(element1, other.element1)) ? comparison :
-               0 != (comparison = DBLanguageFunctionUtil.compareTo(element2, other.element2)) ? comparison :
-               DBLanguageFunctionUtil.compareTo((Comparable)element3, (Comparable)other.element3);
+        return 0 != (comparison = LanguageFunctionUtil.compareTo(element1, other.element1)) ? comparison :
+               0 != (comparison = LanguageFunctionUtil.compareTo(element2, other.element2)) ? comparison :
+               LanguageFunctionUtil.compareTo((Comparable)element3, (Comparable)other.element3);
         // @formatter:on
     }
 

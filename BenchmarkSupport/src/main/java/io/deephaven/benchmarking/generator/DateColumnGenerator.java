@@ -1,13 +1,13 @@
 package io.deephaven.benchmarking.generator;
 
 import io.deephaven.engine.tables.ColumnDefinition;
-import io.deephaven.engine.tables.utils.DBDateTime;
-import io.deephaven.engine.tables.utils.DBTimeUtils;
+import io.deephaven.engine.tables.utils.DateTime;
+import io.deephaven.engine.tables.utils.DateTimeUtils;
 import io.deephaven.benchmarking.generator.random.ExtendedRandom;
 
-public class DateColumnGenerator implements ColumnGenerator<DBDateTime> {
+public class DateColumnGenerator implements ColumnGenerator<DateTime> {
     private NumGenerator gen;
-    private final ColumnDefinition<DBDateTime> def;
+    private final ColumnDefinition<DateTime> def;
     private final long min;
     private final long max;
 
@@ -15,7 +15,7 @@ public class DateColumnGenerator implements ColumnGenerator<DBDateTime> {
         this(name, 0, Long.MAX_VALUE);
     }
 
-    public DateColumnGenerator(String name, DBDateTime min, DBDateTime max) {
+    public DateColumnGenerator(String name, DateTime min, DateTime max) {
         this(name, min.getNanos(), max.getNanos());
     }
 
@@ -26,13 +26,13 @@ public class DateColumnGenerator implements ColumnGenerator<DBDateTime> {
     }
 
     @Override
-    public ColumnDefinition<DBDateTime> getDefinition() {
+    public ColumnDefinition<DateTime> getDefinition() {
         return def;
     }
 
     @Override
     public String getUpdateString(String varName) {
-        return def.getName() + "=(DBDateTime)" + varName + ".get()";
+        return def.getName() + "=(DateTime)" + varName + ".get()";
     }
 
     @Override
@@ -45,7 +45,7 @@ public class DateColumnGenerator implements ColumnGenerator<DBDateTime> {
         gen = new NumGenerator(min, max, random);
     }
 
-    public DBDateTime get() {
-        return DBTimeUtils.nanosToTime(gen.getLong());
+    public DateTime get() {
+        return DateTimeUtils.nanosToTime(gen.getLong());
     }
 }

@@ -3,8 +3,8 @@ package io.deephaven.engine.v2;
 import io.deephaven.engine.tables.ColumnDefinition;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.TableDefinition;
-import io.deephaven.engine.tables.utils.DBDateTime;
-import io.deephaven.engine.tables.utils.DBTimeUtils;
+import io.deephaven.engine.tables.utils.DateTime;
+import io.deephaven.engine.tables.utils.DateTimeUtils;
 import io.deephaven.engine.v2.locations.ColumnLocation;
 import io.deephaven.engine.v2.locations.TableKey;
 import io.deephaven.engine.v2.locations.TableLocation;
@@ -41,8 +41,8 @@ public class TestPartitioningColumns {
                 longCol("Lo", 1L << 36, 2L << 36, 3L << 36),
                 floatCol("Fl", 0.1f, 0.2f, 0.3f),
                 doubleCol("Do", 0.1, 0.2, 0.3),
-                dateTimeCol("DT", DBDateTime.now(), DBTimeUtils.plus(DBDateTime.now(), 1),
-                        DBTimeUtils.plus(DBDateTime.now(), 2)),
+                dateTimeCol("DT", DateTime.now(), DateTimeUtils.plus(DateTime.now(), 1),
+                        DateTimeUtils.plus(DateTime.now(), 2)),
                 stringCol("St", "ABC", "DEF", "GHI"),
                 col("Bo", Boolean.TRUE, Boolean.FALSE, Boolean.TRUE));
 

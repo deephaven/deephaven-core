@@ -4,7 +4,7 @@
 
 package io.deephaven.util.calendar;
 
-import io.deephaven.engine.tables.utils.DBDateTime;
+import io.deephaven.engine.tables.utils.DateTime;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
@@ -66,7 +66,7 @@ public interface BusinessCalendar extends Calendar {
      * @param time time
      * @return true if the date is a business day; false otherwise.
      */
-    boolean isBusinessDay(final DBDateTime time);
+    boolean isBusinessDay(final DateTime time);
 
     /**
      * Is the date a business day?
@@ -91,7 +91,7 @@ public interface BusinessCalendar extends Calendar {
      * @param time time
      * @return true if the specified time is a business time; otherwise, false.
      */
-    boolean isBusinessTime(final DBDateTime time);
+    boolean isBusinessTime(final DateTime time);
 
     /**
      * Gets the previous business day.
@@ -119,7 +119,7 @@ public interface BusinessCalendar extends Calendar {
      * @param time time; if null, return null
      * @return the most recent business day before {@code time}
      */
-    String previousBusinessDay(final DBDateTime time);
+    String previousBusinessDay(final DateTime time);
 
     /**
      * Gets the business date {@code days} business days before input {@code time}. If {@code days} is zero and the day
@@ -129,7 +129,7 @@ public interface BusinessCalendar extends Calendar {
      * @param days number of days
      * @return the business date {@code days} business days before input {@code time}
      */
-    String previousBusinessDay(final DBDateTime time, int days);
+    String previousBusinessDay(final DateTime time, int days);
 
     /**
      * Gets the previous business day.
@@ -179,7 +179,7 @@ public interface BusinessCalendar extends Calendar {
      * @param time time; if null, return null
      * @return the most recent business schedule before {@code time}
      */
-    BusinessSchedule previousBusinessSchedule(final DBDateTime time);
+    BusinessSchedule previousBusinessSchedule(final DateTime time);
 
     /**
      * Gets the business schedule {@code days} days before input {@code time}.
@@ -189,7 +189,7 @@ public interface BusinessCalendar extends Calendar {
      * @param time time; if null, return null
      * @param days number of days
      */
-    BusinessSchedule previousBusinessSchedule(final DBDateTime time, int days);
+    BusinessSchedule previousBusinessSchedule(final DateTime time, int days);
 
     /**
      * Gets the business schedule before input {@code date}.
@@ -238,7 +238,7 @@ public interface BusinessCalendar extends Calendar {
      * @param time time; if null, return null
      * @return the most recent non-business day before {@code time}
      */
-    String previousNonBusinessDay(final DBDateTime time);
+    String previousNonBusinessDay(final DateTime time);
 
     /**
      * Gets the non-business date {@code days} non-business days before input {@code time}. If {@code days} is zero and
@@ -248,7 +248,7 @@ public interface BusinessCalendar extends Calendar {
      * @param days number of days
      * @return the non-business date {@code days} non-business days before input {@code time}
      */
-    String previousNonBusinessDay(final DBDateTime time, int days);
+    String previousNonBusinessDay(final DateTime time, int days);
 
     /**
      * Gets the previous non-business day.
@@ -294,7 +294,7 @@ public interface BusinessCalendar extends Calendar {
      * @param time time; if null, return null
      * @return the next business day after {@code time}
      */
-    String nextBusinessDay(final DBDateTime time);
+    String nextBusinessDay(final DateTime time);
 
     /**
      * Gets the business date {@code days} business days after input {@code time}. If {@code days} is zero and the day
@@ -304,7 +304,7 @@ public interface BusinessCalendar extends Calendar {
      * @param days number of days
      * @return the next business day after {@code time}
      */
-    String nextBusinessDay(final DBDateTime time, int days);
+    String nextBusinessDay(final DateTime time, int days);
 
     /**
      * Gets the next business day.
@@ -351,7 +351,7 @@ public interface BusinessCalendar extends Calendar {
      * @param time time; if null, return null
      * @return the next closest business schedule after {@code time}
      */
-    BusinessSchedule nextBusinessSchedule(final DBDateTime time);
+    BusinessSchedule nextBusinessSchedule(final DateTime time);
 
     /**
      * Gets the business schedule {@code days} days after input {@code time}.
@@ -362,7 +362,7 @@ public interface BusinessCalendar extends Calendar {
      * @param days number of days
      * @return the business schedule {@code days} after {@code time}
      */
-    BusinessSchedule nextBusinessSchedule(final DBDateTime time, int days);
+    BusinessSchedule nextBusinessSchedule(final DateTime time, int days);
 
     /**
      * Gets the next business schedule after input {@code date}.
@@ -411,7 +411,7 @@ public interface BusinessCalendar extends Calendar {
      * @param time time; if null, return null
      * @return the next non-business day after {@code time}
      */
-    String nextNonBusinessDay(final DBDateTime time);
+    String nextNonBusinessDay(final DateTime time);
 
     /**
      * Gets the non-business date {@code days} non-business days after input {@code time}. If {@code days} is zero and
@@ -421,7 +421,7 @@ public interface BusinessCalendar extends Calendar {
      * @param days number of days
      * @return the non-business date {@code days} non-business days after input {@code time}
      */
-    String nextNonBusinessDay(final DBDateTime time, int days);
+    String nextNonBusinessDay(final DateTime time, int days);
 
     /**
      * Gets the next non-business day.
@@ -451,7 +451,7 @@ public interface BusinessCalendar extends Calendar {
      * @param end end time; if null, return empty array
      * @return inclusive business days between {@code start} and {@code end}
      */
-    String[] businessDaysInRange(final DBDateTime start, final DBDateTime end);
+    String[] businessDaysInRange(final DateTime start, final DateTime end);
 
     /**
      * Returns the business days between {@code start} and {@code end}, inclusive.
@@ -475,7 +475,7 @@ public interface BusinessCalendar extends Calendar {
      * @param end end time; if null, return empty array
      * @return inclusive non-business days between {@code start} and {@code end}
      */
-    String[] nonBusinessDaysInRange(final DBDateTime start, final DBDateTime end);
+    String[] nonBusinessDaysInRange(final DateTime start, final DateTime end);
 
     /**
      * Returns the non-business days between {@code start} and {@code end}, inclusive.
@@ -503,7 +503,7 @@ public interface BusinessCalendar extends Calendar {
      * @param end end time; if null, return NULL_LONG
      * @return the amount of business time in nanoseconds between the {@code start} and {@code end}
      */
-    long diffBusinessNanos(DBDateTime start, DBDateTime end);
+    long diffBusinessNanos(DateTime start, DateTime end);
 
     /**
      * Returns the amount of non-business time in nanoseconds between {@code start} and {@code end}.
@@ -512,7 +512,7 @@ public interface BusinessCalendar extends Calendar {
      * @param end end time; if null, return NULL_LONG
      * @return the amount of non-business time in nanoseconds between the {@code start} and {@code end}
      */
-    long diffNonBusinessNanos(final DBDateTime start, final DBDateTime end);
+    long diffNonBusinessNanos(final DateTime start, final DateTime end);
 
     /**
      * Returns the amount of business time in standard business days between {@code start} and {@code end}.
@@ -521,7 +521,7 @@ public interface BusinessCalendar extends Calendar {
      * @param end end time; if null, return NULL_LONG
      * @return the amount of business time in standard business days between the {@code start} and {@code end}
      */
-    double diffBusinessDay(final DBDateTime start, final DBDateTime end);
+    double diffBusinessDay(final DateTime start, final DateTime end);
 
     /**
      * Returns the amount of non-business time in standard business days between {@code start} and {@code end}.
@@ -530,7 +530,7 @@ public interface BusinessCalendar extends Calendar {
      * @param end end time; if null, return NULL_LONG
      * @return the amount of non-business time in standard business days between the {@code start} and {@code end}
      */
-    double diffNonBusinessDay(final DBDateTime start, final DBDateTime end);
+    double diffNonBusinessDay(final DateTime start, final DateTime end);
 
     /**
      * Returns the number of business years between {@code start} and {@code end}.
@@ -539,7 +539,7 @@ public interface BusinessCalendar extends Calendar {
      * @param end end; if null, return null
      * @return the amount of business time in business years between the {@code start} and {@code end}
      */
-    double diffBusinessYear(DBDateTime start, DBDateTime end);
+    double diffBusinessYear(DateTime start, DateTime end);
 
     /**
      * Returns the number of business days between {@code start} and {@code end}.
@@ -548,7 +548,7 @@ public interface BusinessCalendar extends Calendar {
      * @param end end time; if null, return NULL_INT
      * @return number of business days between the {@code start} and {@code end}, inclusive and exclusive respectively.
      */
-    int numberOfBusinessDays(DBDateTime start, DBDateTime end);
+    int numberOfBusinessDays(DateTime start, DateTime end);
 
     /**
      * Returns the number of business days between {@code start} and {@code end}.
@@ -559,7 +559,7 @@ public interface BusinessCalendar extends Calendar {
      * @return number of business days between the {@code start} and {@code end}, inclusive and {@code endInclusive}
      *         respectively.
      */
-    int numberOfBusinessDays(DBDateTime start, DBDateTime end, final boolean endInclusive);
+    int numberOfBusinessDays(DateTime start, DateTime end, final boolean endInclusive);
 
     /**
      * Returns the number of business days between {@code start} and {@code end}.
@@ -588,7 +588,7 @@ public interface BusinessCalendar extends Calendar {
      * @param end end time; if null, return NULL_INT
      * @return number of business days between the {@code start} and {@code end}, inclusive and exclusive respectively.
      */
-    int numberOfNonBusinessDays(DBDateTime start, DBDateTime end);
+    int numberOfNonBusinessDays(DateTime start, DateTime end);
 
     /**
      * Returns the number of non-business days between {@code start} and {@code end}.
@@ -599,7 +599,7 @@ public interface BusinessCalendar extends Calendar {
      * @return number of business days between the {@code start} and {@code end}, inclusive and {@code endInclusive}
      *         respectively.
      */
-    int numberOfNonBusinessDays(DBDateTime start, DBDateTime end, final boolean endInclusive);
+    int numberOfNonBusinessDays(DateTime start, DateTime end, final boolean endInclusive);
 
     /**
      * Returns the number of non-business days between {@code start} and {@code end}.
@@ -626,7 +626,7 @@ public interface BusinessCalendar extends Calendar {
      * holiday has zero business time and will therefore return 0.0. A normal business day will be of the standard
      * length and will therefore return 1.0. A half day holiday will return 0.5.
      *
-     * @see BusinessCalendar#fractionOfBusinessDayRemaining(DBDateTime)
+     * @see BusinessCalendar#fractionOfBusinessDayRemaining(DateTime)
      * @return ratio of the business day length and the standard business day length for the current day
      */
     default double fractionOfStandardBusinessDay() {
@@ -638,18 +638,18 @@ public interface BusinessCalendar extends Calendar {
      * example, a holiday has zero business time and will therefore return 0.0. A normal business day will be of the
      * standard length and will therefore return 1.0. A half day holiday will return 0.5.
      *
-     * @see BusinessCalendar#fractionOfBusinessDayRemaining(DBDateTime)
+     * @see BusinessCalendar#fractionOfBusinessDayRemaining(DateTime)
      * @param time time; if null, return 0
      * @return ratio of the business day length and the standard business day length for the date
      */
-    double fractionOfStandardBusinessDay(final DBDateTime time);
+    double fractionOfStandardBusinessDay(final DateTime time);
 
     /**
      * For the given date, returns the ratio of the business day length and the standard business day length. For
      * example, a holiday has zero business time and will therefore return 0.0. A normal business day will be of the
      * standard length and will therefore return 1.0. A half day holiday will return 0.5.
      *
-     * @see BusinessCalendar#fractionOfBusinessDayRemaining(DBDateTime)
+     * @see BusinessCalendar#fractionOfBusinessDayRemaining(DateTime)
      * @param date date; if null, return 0
      * @return ratio of the business day length and the standard business day length for the date
      */
@@ -661,7 +661,7 @@ public interface BusinessCalendar extends Calendar {
      * @param time time
      * @return the fraction of the day left after {@code time}; NULL_DOUBLE if time is null
      */
-    double fractionOfBusinessDayRemaining(final DBDateTime time);
+    double fractionOfBusinessDayRemaining(final DateTime time);
 
     /**
      * Returns the fraction of the business day complete by the given time.
@@ -669,7 +669,7 @@ public interface BusinessCalendar extends Calendar {
      * @param time time
      * @return the fraction of the day complete by {@code time}; NULL_DOUBLE if time is null
      */
-    double fractionOfBusinessDayComplete(final DBDateTime time);
+    double fractionOfBusinessDayComplete(final DateTime time);
 
     /**
      * Is the time on the last business day of the month with business time remaining?
@@ -678,7 +678,7 @@ public interface BusinessCalendar extends Calendar {
      * @return true if {@code time} is on the last business day of the month with business time remaining; false
      *         otherwise.
      */
-    boolean isLastBusinessDayOfMonth(final DBDateTime time);
+    boolean isLastBusinessDayOfMonth(final DateTime time);
 
     /**
      * Is the current day the last business day of the month?
@@ -713,7 +713,7 @@ public interface BusinessCalendar extends Calendar {
      * @return true if {@code time} is on the last business day of the week with business time remaining; false
      *         otherwise.
      */
-    boolean isLastBusinessDayOfWeek(final DBDateTime time);
+    boolean isLastBusinessDayOfWeek(final DateTime time);
 
     /**
      * Is the date the last business day of the week?
@@ -730,7 +730,7 @@ public interface BusinessCalendar extends Calendar {
      * @return the corresponding BusinessSchedule of {@code time}; null if time is null
      */
     @Deprecated
-    BusinessSchedule getBusinessDay(final DBDateTime time);
+    BusinessSchedule getBusinessDay(final DateTime time);
 
     /**
      * Gets the indicated business day.
@@ -756,7 +756,7 @@ public interface BusinessCalendar extends Calendar {
      * @param time time
      * @return the corresponding BusinessSchedule of {@code time}; null if time is null
      */
-    BusinessSchedule getBusinessSchedule(final DBDateTime time);
+    BusinessSchedule getBusinessSchedule(final DateTime time);
 
     /**
      * Gets the indicated business day's schedule. {@code getBusinessSchedule(null)} returns {@code null}.

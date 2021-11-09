@@ -5,10 +5,10 @@
 package io.deephaven.engine.v2.utils;
 
 import io.deephaven.engine.tables.Table;
+import io.deephaven.engine.tables.utils.DateTime;
 import io.deephaven.qst.column.header.ColumnHeader;
 import io.deephaven.qst.table.TableHeader;
 import io.deephaven.tablelogger.RowSetter;
-import io.deephaven.engine.tables.utils.DBDateTime;
 
 import java.io.IOException;
 
@@ -17,7 +17,7 @@ public class AsyncErrorLogger {
 
     private static final DynamicTableWriter tableWriter = new DynamicTableWriter(
             TableHeader.of(
-                    ColumnHeader.of("Time", DBDateTime.class),
+                    ColumnHeader.of("Time", DateTime.class),
                     ColumnHeader.ofInt("EvaluationNumber"),
                     ColumnHeader.ofInt("OperationNumber"),
                     ColumnHeader.ofString("Description"),
@@ -27,7 +27,7 @@ public class AsyncErrorLogger {
                     ColumnHeader.of("Cause", Exception.class),
                     ColumnHeader.ofString("WorkerName"),
                     ColumnHeader.ofString("HostName")));
-    private static final RowSetter<DBDateTime> timeSetter = tableWriter.getSetter("Time");
+    private static final RowSetter<DateTime> timeSetter = tableWriter.getSetter("Time");
     private static final RowSetter<Integer> evaluationNumberSetter = tableWriter.getSetter("EvaluationNumber");
     private static final RowSetter<Integer> operationNumberSetter = tableWriter.getSetter("OperationNumber");
     private static final RowSetter<String> descriptionSetter = tableWriter.getSetter("Description");
@@ -44,8 +44,8 @@ public class AsyncErrorLogger {
         return tableWriter.getTable();
     }
 
-    public static void log(DBDateTime time, UpdatePerformanceTracker.Entry entry,
-            UpdatePerformanceTracker.Entry sourceEntry, Throwable originalException) throws IOException {
+    public static void log(DateTime time, UpdatePerformanceTracker.Entry entry,
+                           UpdatePerformanceTracker.Entry sourceEntry, Throwable originalException) throws IOException {
         timeSetter.set(time);
         if (entry != null) {
             evaluationNumberSetter.set(entry.getEvaluationNumber());

@@ -1,6 +1,6 @@
 package io.deephaven.engine.v2;
 
-import io.deephaven.engine.tables.utils.DBDateTime;
+import io.deephaven.engine.tables.utils.DateTime;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -54,7 +54,7 @@ public class QueryFactory {
     private static final String[] DEFAULT_COLUMN_NAMES = {"Timestamp", "MyString", "MyInt", "MyLong", "MyFloat",
             "MyDouble", "MyBoolean", "MyChar", "MyShort", "MyByte", "MyBigDecimal", "MyBigInteger"};
     private static final Class[] DEFAULT_COLUMN_TYPES =
-            {DBDateTime.class, String.class, Integer.class, Long.class, Float.class, Double.class, Boolean.class,
+            {DateTime.class, String.class, Integer.class, Long.class, Float.class, Double.class, Boolean.class,
                     Character.class, short.class, byte.class, java.math.BigDecimal.class, java.math.BigInteger.class};
     // Copy and modify this block of code if you want to disable an operation.
     private static final String[] IMPLEMENTED_OPS = {"where", "merge", "flatten", "slice", "head", "tail", "headPct",
@@ -676,7 +676,7 @@ public class QueryFactory {
         StringBuilder filter = new StringBuilder();
         switch (columnTypes[colNum].getSimpleName()) {
 
-            case "DBDateTime":
+            case "DateTime":
                 filter.append(colName).append(" > ").append(random.nextInt(1000) * 1_000_000_000L);
                 break;
 
@@ -875,7 +875,7 @@ public class QueryFactory {
                 "}\n" +
                 "\n" +
                 "randomValues = emptyTable(size)\n" +
-                ".update(\"Timestamp= i%nullPoints[0] == 0 ? null : new DBDateTime(i*1_000_000_000L)\")\n" +
+                ".update(\"Timestamp= i%nullPoints[0] == 0 ? null : new DateTime(i*1_000_000_000L)\")\n" +
                 ".update(\"MyString=(i%nullPoints[1] == 0 ? null : `a`+ (columnRandoms[0].nextInt(scale*2) - scale) )\",\n"
                 +
                 "\"MyInt=(i%nullPoints[2] == 0 ? null : columnRandoms[1].nextInt(scale*2) - scale )\",\n" +

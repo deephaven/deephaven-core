@@ -3,7 +3,7 @@ package io.deephaven.engine.v2.parquet;
 import io.deephaven.engine.tables.CodecLookup;
 import io.deephaven.engine.tables.ColumnDefinition;
 import io.deephaven.engine.tables.libs.StringSet;
-import io.deephaven.engine.tables.utils.DBDateTime;
+import io.deephaven.engine.tables.utils.DateTime;
 import io.deephaven.util.codec.ExternalizableCodec;
 import io.deephaven.util.codec.SerializableCodec;
 import org.apache.commons.lang3.tuple.ImmutablePair;
@@ -35,7 +35,7 @@ class TypeInfos {
             CharType.INSTANCE,
             ByteType.INSTANCE,
             StringType.INSTANCE,
-            DBDateTimeType.INSTANCE
+            DateTimeType.INSTANCE
     };
 
     private static final Map<Class<?>, TypeInfo> BY_CLASS;
@@ -290,10 +290,10 @@ class TypeInfos {
     /**
      * TODO: newer versions of parquet seem to support NANOS, but this version seems to only support MICROS
      */
-    private enum DBDateTimeType implements TypeInfo {
+    private enum DateTimeType implements TypeInfo {
         INSTANCE;
 
-        private static final Set<Class<?>> clazzes = Collections.singleton(DBDateTime.class);
+        private static final Set<Class<?>> clazzes = Collections.singleton(DateTime.class);
 
         @Override
         public Set<Class<?>> getTypes() {

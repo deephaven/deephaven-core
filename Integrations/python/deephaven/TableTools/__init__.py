@@ -467,10 +467,10 @@ def computeFingerprint(source):
 @_passThrough
 def dateTimeCol(name, *data):
     """
-    Returns a ColumnHolder of type DBDateTime that can be used when creating in-memory tables.
+    Returns a ColumnHolder of type DateTime that can be used when creating in-memory tables.
     
     :param name: (java.lang.String) - name of the column
-    :param data: (io.deephaven.engine.tables.utils.DBDateTime...) - a list of values for the column
+    :param data: (io.deephaven.engine.tables.utils.DateTime...) - a list of values for the column
     :return: (io.deephaven.engine.v2.utils.ColumnHolder) a Deephaven ColumnHolder object
     """
     
@@ -875,7 +875,7 @@ def show(*args):
       
     *Overload 2*  
       :param source: (io.deephaven.engine.tables.Table) - a Deephaven table object
-      :param timeZone: (io.deephaven.engine.tables.utils.DBTimeZone) - a DBTimeZone constant relative to which DBDateTime data should be adjusted
+      :param timeZone: (io.deephaven.engine.tables.utils.TimeZone) - a TimeZone constant relative to which DateTime data should be adjusted
       :param columns: (java.lang.String...) - varargs of column names to display
       
     *Overload 3*  
@@ -886,20 +886,20 @@ def show(*args):
     *Overload 4*  
       :param source: (io.deephaven.engine.tables.Table) - a Deephaven table object
       :param maxRowCount: (long) - the number of rows to return
-      :param timeZone: (io.deephaven.engine.tables.utils.DBTimeZone) - a DBTimeZone constant relative to which DBDateTime data should be adjusted
+      :param timeZone: (io.deephaven.engine.tables.utils.TimeZone) - a TimeZone constant relative to which DateTime data should be adjusted
       :param columns: (java.lang.String...) - varargs of column names to display
       
     *Overload 5*  
       :param source: (io.deephaven.engine.tables.Table) - a Deephaven table object
       :param maxRowCount: (long) - the number of rows to return
-      :param timeZone: (io.deephaven.engine.tables.utils.DBTimeZone) - a DBTimeZone constant relative to which DBDateTime data should be adjusted
+      :param timeZone: (io.deephaven.engine.tables.utils.TimeZone) - a TimeZone constant relative to which DateTime data should be adjusted
       :param out: (java.io.PrintStream) - a PrintStream destination to which to print the data
       :param columns: (java.lang.String...) - varargs of column names to display
       
     *Overload 6*  
       :param source: (io.deephaven.engine.tables.Table) - a Deephaven table object
       :param maxRowCount: (long) - the number of rows to return
-      :param timeZone: (io.deephaven.engine.tables.utils.DBTimeZone) - a DBTimeZone constant relative to which DBDateTime data should be adjusted
+      :param timeZone: (io.deephaven.engine.tables.utils.TimeZone) - a TimeZone constant relative to which DateTime data should be adjusted
       :param delimiter: (java.lang.String) - a String value to use between printed values
       :param out: (java.io.PrintStream) - a PrintStream destination to which to print the data
       :param showIndex: (boolean) - a boolean indicating whether to also print rowSet details
@@ -945,7 +945,7 @@ def showWithIndex(*args):
     *Overload 3*  
       :param source: (io.deephaven.engine.tables.Table) - a Deephaven table object
       :param maxRowCount: (long) - the number of rows to return
-      :param timeZone: (io.deephaven.engine.tables.utils.DBTimeZone) - a DBTimeZone constant relative to which DBDateTime data should be adjusted
+      :param timeZone: (io.deephaven.engine.tables.utils.TimeZone) - a TimeZone constant relative to which DateTime data should be adjusted
       :param out: (java.io.PrintStream) - a PrintStream destination to which to print the data
       :param columns: (java.lang.String...) - varargs of column names to display
       
@@ -984,14 +984,14 @@ def string(*args):
       
     *Overload 3*  
       :param t: (io.deephaven.engine.tables.Table) - a Deephaven table object
-      :param timeZone: (io.deephaven.engine.tables.utils.DBTimeZone) - a DBTimeZone constant relative to which DBDateTime data should be adjusted
+      :param timeZone: (io.deephaven.engine.tables.utils.TimeZone) - a TimeZone constant relative to which DateTime data should be adjusted
       :param columns: (java.lang.String...) - varargs of columns to include in the result
       :return: (java.lang.String) a String
       
     *Overload 4*  
       :param t: (io.deephaven.engine.tables.Table) - a Deephaven table object
       :param size: (int) - the number of rows to return
-      :param timeZone: (io.deephaven.engine.tables.utils.DBTimeZone) - a DBTimeZone constant relative to which DBDateTime data should be adjusted
+      :param timeZone: (io.deephaven.engine.tables.utils.TimeZone) - a TimeZone constant relative to which DateTime data should be adjusted
       :param columns: (java.lang.String...) - varargs of columns to include in the result
       :return: (java.lang.String) a String
     """
@@ -1027,12 +1027,12 @@ def timeTable(*args):
       :return: (io.deephaven.engine.tables.Table) time table
       
     *Overload 3*  
-      :param startTime: (io.deephaven.engine.tables.utils.DBDateTime) - start time for adding new rows
+      :param startTime: (io.deephaven.engine.tables.utils.DateTime) - start time for adding new rows
       :param period: (java.lang.String) - time interval between new row additions
       :return: (io.deephaven.engine.tables.Table) time table
       
     *Overload 4*  
-      :param startTime: (io.deephaven.engine.tables.utils.DBDateTime) - start time for adding new rows
+      :param startTime: (io.deephaven.engine.tables.utils.DateTime) - start time for adding new rows
       :param period: (java.lang.String) - time interval between new row additions
       :param replayer: (io.deephaven.engine.v2.replay.ReplayerInterface) - data replayer
       :return: (io.deephaven.engine.tables.Table) time table
@@ -1058,12 +1058,12 @@ def timeTable(*args):
       :return: (io.deephaven.engine.tables.Table) time table
       
     *Overload 9*  
-      :param startTime: (io.deephaven.engine.tables.utils.DBDateTime) - start time for adding new rows
+      :param startTime: (io.deephaven.engine.tables.utils.DateTime) - start time for adding new rows
       :param periodNanos: (long) - time interval between new row additions in nanoseconds.
       :return: (io.deephaven.engine.tables.Table) time table
       
     *Overload 10*  
-      :param startTime: (io.deephaven.engine.tables.utils.DBDateTime) - start time for adding new rows
+      :param startTime: (io.deephaven.engine.tables.utils.DateTime) - start time for adding new rows
       :param periodNanos: (long) - time interval between new row additions in nanoseconds.
       :param replayer: (io.deephaven.engine.v2.replay.ReplayerInterface) - data replayer
       :return: (io.deephaven.engine.tables.Table) time table
@@ -1081,7 +1081,7 @@ def timeTable(*args):
       
     *Overload 13*  
       :param timeProvider: (io.deephaven.engine.v2.utils.TimeProvider) - the time provider
-      :param startTime: (io.deephaven.engine.tables.utils.DBDateTime) - start time for adding new rows
+      :param startTime: (io.deephaven.engine.tables.utils.DateTime) - start time for adding new rows
       :param periodNanos: (long) - time interval between new row additions in nanoseconds.
       :return: (io.deephaven.engine.tables.Table) time table
     """
@@ -1143,14 +1143,14 @@ def writeCsv(*args):
       :param source: (io.deephaven.engine.tables.Table) - a Deephaven table object to be exported
       :param destPath: (java.lang.String) - path to the CSV file to be written
       :param compressed: (boolean) - whether to zip the file being written
-      :param timeZone: (io.deephaven.engine.tables.utils.DBTimeZone) - a DBTimeZone constant relative to which DBDateTime data should be adjusted
+      :param timeZone: (io.deephaven.engine.tables.utils.TimeZone) - a TimeZone constant relative to which DateTime data should be adjusted
       :param columns: (java.lang.String...) - a list of columns to include in the export
       
     *Overload 8*  
       :param source: (io.deephaven.engine.tables.Table) - a Deephaven table object to be exported
       :param destPath: (java.lang.String) - path to the CSV file to be written
       :param compressed: (boolean) - whether to zip the file being written
-      :param timeZone: (io.deephaven.engine.tables.utils.DBTimeZone) - a DBTimeZone constant relative to which DBDateTime data should be adjusted
+      :param timeZone: (io.deephaven.engine.tables.utils.TimeZone) - a TimeZone constant relative to which DateTime data should be adjusted
       :param nullsAsEmpty: (boolean) - if nulls should be written as blank instead of '(null)'
       :param columns: (java.lang.String...) - a list of columns to include in the export
       
@@ -1158,7 +1158,7 @@ def writeCsv(*args):
       :param source: (io.deephaven.engine.tables.Table) - a Deephaven table object to be exported
       :param destPath: (java.lang.String) - path to the CSV file to be written
       :param compressed: (boolean) - whether to zip the file being written
-      :param timeZone: (io.deephaven.engine.tables.utils.DBTimeZone) - a DBTimeZone constant relative to which DBDateTime data should be adjusted
+      :param timeZone: (io.deephaven.engine.tables.utils.TimeZone) - a TimeZone constant relative to which DateTime data should be adjusted
       :param nullsAsEmpty: (boolean) - if nulls should be written as blank instead of '(null)'
       :param separator: (char) - the delimiter for the CSV
       :param columns: (java.lang.String...) - a list of columns to include in the export
@@ -1167,7 +1167,7 @@ def writeCsv(*args):
       :param sources: (io.deephaven.engine.tables.Table[]) - an array of Deephaven table objects to be exported
       :param destPath: (java.lang.String) - path to the CSV file to be written
       :param compressed: (boolean) - whether to compress (bz2) the file being written
-      :param timeZone: (io.deephaven.engine.tables.utils.DBTimeZone) - a DBTimeZone constant relative to which DBDateTime data should be adjusted
+      :param timeZone: (io.deephaven.engine.tables.utils.TimeZone) - a TimeZone constant relative to which DateTime data should be adjusted
       :param tableSeparator: (java.lang.String) - a String (normally a single character) to be used as the table delimiter
       :param columns: (java.lang.String...) - a list of columns to include in the export
       
@@ -1175,7 +1175,7 @@ def writeCsv(*args):
       :param sources: (io.deephaven.engine.tables.Table[]) - an array of Deephaven table objects to be exported
       :param destPath: (java.lang.String) - path to the CSV file to be written
       :param compressed: (boolean) - whether to compress (bz2) the file being written
-      :param timeZone: (io.deephaven.engine.tables.utils.DBTimeZone) - a DBTimeZone constant relative to which DBDateTime data should be adjusted
+      :param timeZone: (io.deephaven.engine.tables.utils.TimeZone) - a TimeZone constant relative to which DateTime data should be adjusted
       :param tableSeparator: (java.lang.String) - a String (normally a single character) to be used as the table delimiter
       :param nullsAsEmpty: boolean
       :param columns: (java.lang.String...) - a list of columns to include in the export
@@ -1184,7 +1184,7 @@ def writeCsv(*args):
       :param sources: (io.deephaven.engine.tables.Table[]) - an array of Deephaven table objects to be exported
       :param destPath: (java.lang.String) - path to the CSV file to be written
       :param compressed: (boolean) - whether to compress (bz2) the file being written
-      :param timeZone: (io.deephaven.engine.tables.utils.DBTimeZone) - a DBTimeZone constant relative to which DBDateTime data should be adjusted
+      :param timeZone: (io.deephaven.engine.tables.utils.TimeZone) - a TimeZone constant relative to which DateTime data should be adjusted
       :param tableSeparator: (java.lang.String) - a String (normally a single character) to be used as the table delimiter
       :param fieldSeparator: (char) - the delimiter for the CSV files
       :param nullsAsEmpty: (boolean) - if nulls should be written as blank instead of '(null)'

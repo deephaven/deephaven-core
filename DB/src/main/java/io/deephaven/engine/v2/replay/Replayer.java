@@ -8,8 +8,8 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.exceptions.QueryCancellationException;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.live.UpdateGraphProcessor;
-import io.deephaven.engine.tables.utils.DBDateTime;
-import io.deephaven.engine.tables.utils.DBTimeUtils;
+import io.deephaven.engine.tables.utils.DateTime;
+import io.deephaven.engine.tables.utils.DateTimeUtils;
 import io.deephaven.engine.v2.ShiftObliviousInstrumentedListener;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.utils.RowSet;
@@ -24,8 +24,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 
-import static io.deephaven.engine.tables.utils.DBTimeUtils.millisToNanos;
-import static io.deephaven.engine.tables.utils.DBTimeUtils.nanosToTime;
+import static io.deephaven.engine.tables.utils.DateTimeUtils.millisToNanos;
+import static io.deephaven.engine.tables.utils.DateTimeUtils.nanosToTime;
 
 /**
  * Replay historical data as simulated real-time data.
@@ -33,8 +33,8 @@ import static io.deephaven.engine.tables.utils.DBTimeUtils.nanosToTime;
 public class Replayer implements ReplayerInterface, Runnable {
     private static final Logger log = LoggerFactory.getLogger(ShiftObliviousInstrumentedListener.class);
 
-    protected DBDateTime startTime;
-    protected DBDateTime endTime;
+    protected DateTime startTime;
+    protected DateTime endTime;
     private long delta = Long.MAX_VALUE;
     private CopyOnWriteArrayList<Runnable> currentTables = new CopyOnWriteArrayList<>();
     private volatile boolean done;
@@ -55,7 +55,7 @@ public class Replayer implements ReplayerInterface, Runnable {
      * @param startTime start time
      * @param endTime end time
      */
-    public Replayer(DBDateTime startTime, DBDateTime endTime) {
+    public Replayer(DateTime startTime, DateTime endTime) {
         this.endTime = endTime;
         this.startTime = startTime;
         currentTables.add(this);
@@ -166,12 +166,12 @@ public class Replayer implements ReplayerInterface, Runnable {
     public static TimeProvider getTimeProvider(final ReplayerInterface replayer) {
         return replayer == null ? new TimeProvider() {
             @Override
-            public DBDateTime currentTime() {
-                return DBTimeUtils.currentTime();
+            public DateTime currentTime() {
+                return DateTimeUtils.currentTime();
             }
         } : new TimeProvider() {
             @Override
-            public DBDateTime currentTime() {
+            public DateTime currentTime() {
                 try {
                     return replayer.currentTime();
                 } catch (IOException e) {
@@ -196,10 +196,10 @@ public class Replayer implements ReplayerInterface, Runnable {
      * @return simulated time.
      */
     @Override
-    public DBDateTime currentTime() {
+    public DateTime currentTime() {
         if (delta == Long.MAX_VALUE)
             return startTime;
-        final DBDateTime result = DBTimeUtils.minus(nanosToTime(millisToNanos(System.currentTimeMillis())), delta);
+        final DateTime result = DateTimeUtils.minus(nanosToTime(millisToNanos(System.currentTimeMillis())), delta);
         if (result.getNanos() > endTime.getNanos()) {
             return endTime;
         }
@@ -214,7 +214,7 @@ public class Replayer implements ReplayerInterface, Runnable {
     @Override
     public void setTime(long updatedTime) {
         if (delta == Long.MAX_VALUE) {
-            startTime = DBTimeUtils.millisToTime(updatedTime);
+            startTime = DateTimeUtils.millisToTime(updatedTime);
         } else {
             long adjustment = updatedTime - currentTime().getMillis();
             if (adjustment > 0) {
@@ -287,7 +287,7 @@ public class Replayer implements ReplayerInterface, Runnable {
      * @param rowSet table rowSet
      * @param timestampSource column source containing time information.
      */
-    public void registerTimeSource(RowSet rowSet, ColumnSource<DBDateTime> timestampSource) {
+    public void registerTimeSource(RowSet rowSet, ColumnSource<DateTime> timestampSource) {
         // Does nothing
     }
 
@@ -317,7 +317,7 @@ public class Replayer implements ReplayerInterface, Runnable {
         private final TimerTask task;
         private final long delay;
         private final long period;
-        DBDateTime nextTime = null;
+        DateTime nextTime = null;
 
         public PeriodicTask(TimerTask task, long delay, long period) {
             this.task = task;
@@ -325,14 +325,14 @@ public class Replayer implements ReplayerInterface, Runnable {
             this.period = period;
         }
 
-        public void next(DBDateTime currentTime) {
+        public void next(DateTime currentTime) {
             if (nextTime == null) {
-                nextTime = DBTimeUtils.plus(currentTime, delay * 1000000);
+                nextTime = DateTimeUtils.plus(currentTime, delay * 1000000);
             } else {
                 if (nextTime.getNanos() < currentTime.getNanos()) {
                     try {
                         task.run();
-                        nextTime = DBTimeUtils.plus(currentTime, period * 1000000);
+                        nextTime = DateTimeUtils.plus(currentTime, period * 1000000);
                     } catch (Error e) {
                         log.error(e).append("Error").endl();
                     }

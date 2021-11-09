@@ -6,6 +6,6 @@
   "updateTimeZone": ":param tz: io.deephaven.engine.tables.utils.DBTimeZone"
  },
  "path": "io.deephaven.engine.plot.axisformatters.NanosAxisFormat.NanosFormat",
- "text": "Formatter for DBDateTime values.",
+ "text": "Formatter for DateTime values.",
  "typeName": "class"
 }

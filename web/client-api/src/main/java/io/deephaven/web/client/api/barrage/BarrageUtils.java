@@ -304,7 +304,7 @@ public class BarrageUtils {
                 return new CharArrayColumnData(Js.uncheckedCast(charArray));
             // longs are a special case despite being java primitives
             case "long":
-            case "io.deephaven.engine.tables.utils.DBDateTime":
+            case "io.deephaven.engine.tables.utils.DateTime":
                 assert positions.length().toFloat64() >= size * 8;
                 long[] longArray = new long[size];
 

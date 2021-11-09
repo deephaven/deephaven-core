@@ -5,7 +5,7 @@
 package io.deephaven.engine.v2.by;
 
 import io.deephaven.compilertools.ReplicateUtilities;
-import io.deephaven.engine.tables.utils.DBDateTime;
+import io.deephaven.engine.tables.utils.DateTime;
 import io.deephaven.engine.v2.sources.DateTimeArraySource;
 import io.deephaven.engine.v2.sources.LongArraySource;
 import io.deephaven.util.QueryConstants;
@@ -65,8 +65,8 @@ public class ReplicateOperators {
         lines = ReplicateUtilities.replaceRegion(lines, "extra constructor params",
                 Collections.singletonList("            Class<?> type,"));
         lines = ReplicateUtilities.replaceRegion(lines, "resultColumn initialization", Collections.singletonList(
-                "        resultColumn = type == DBDateTime.class ? new DateTimeArraySource() : new LongArraySource();"));
-        lines = ReplicateUtilities.addImport(lines, DBDateTime.class, DateTimeArraySource.class, LongArraySource.class);
+                "        resultColumn = type == DateTime.class ? new DateTimeArraySource() : new LongArraySource();"));
+        lines = ReplicateUtilities.addImport(lines, DateTime.class, DateTimeArraySource.class, LongArraySource.class);
         FileUtils.writeLines(longAddOnlyMinMaxFile, lines);
     }
 
