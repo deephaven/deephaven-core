@@ -75,8 +75,8 @@ public class IntChunkFactory implements ChunkFactory {
     @NotNull
     @Override
     public IntVectorSlice vectorWrap(Object array, int offset, int capacity) {
-        IntVectorDirect dbIntArrayDirect = vectorWrap(array);
-        return new IntVectorSlice(dbIntArrayDirect, offset, capacity);
+        IntVectorDirect vectorDirect = vectorWrap(array);
+        return new IntVectorSlice(vectorDirect, offset, capacity);
     }
     // endregion vectorWrap
 

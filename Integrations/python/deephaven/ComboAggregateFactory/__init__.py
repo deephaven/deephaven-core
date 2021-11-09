@@ -211,8 +211,7 @@ def AggDistinct(*args):
     """
     Create a distinct aggregation.
     
-     The output column contains a Vector with the distinct values for
-     the input column within the group.
+     The output column contains a Vector with the distinct values for the input column within the group.
     
     *Overload 1*  
       :param matchPairs: (java.lang.String...) - the columns to apply the aggregation to in the form Output=Input, if the Output and Input have

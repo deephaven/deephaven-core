@@ -75,8 +75,8 @@ public class DoubleChunkFactory implements ChunkFactory {
     @NotNull
     @Override
     public DoubleVectorSlice vectorWrap(Object array, int offset, int capacity) {
-        DoubleVectorDirect dbDoubleArrayDirect = vectorWrap(array);
-        return new DoubleVectorSlice(dbDoubleArrayDirect, offset, capacity);
+        DoubleVectorDirect vectorDirect = vectorWrap(array);
+        return new DoubleVectorSlice(vectorDirect, offset, capacity);
     }
     // endregion vectorWrap
 

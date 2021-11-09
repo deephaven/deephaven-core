@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.engine.v2.dbarrays.ReplicateDbArrayColumnWrappers",
- "methods": {
-  "main": ":param args: java.lang.String[]"
- },
- "path": "io.deephaven.engine.v2.dbarrays.ReplicateDbArrayColumnWrappers",
- "typeName": "class"
-}

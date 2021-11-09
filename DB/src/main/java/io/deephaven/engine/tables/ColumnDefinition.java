@@ -114,7 +114,7 @@ public class ColumnDefinition<TYPE> implements Externalizable, LogOutputAppendab
     }
 
     public static <T extends Vector<?>> ColumnDefinition<T> ofDbArray(@NotNull final String name,
-                                                                      @NotNull final Class<T> dbArrayType) {
+            @NotNull final Class<T> dbArrayType) {
         ColumnDefinition<T> columnDefinition = new ColumnDefinition<>(name, dbArrayType);
         columnDefinition.setComponentType(baseComponentTypeForVector(dbArrayType));
         return columnDefinition;
@@ -135,8 +135,8 @@ public class ColumnDefinition<TYPE> implements Externalizable, LogOutputAppendab
     }
 
     /**
-     * Base component type class for each {@link Vector} type. Note that {@link BooleanVector} is deprecated,
-     * superseded by {@link ObjectVector}.
+     * Base component type class for each {@link Vector} type. Note that {@link BooleanVector} is deprecated, superseded
+     * by {@link ObjectVector}.
      */
     private static Class<?> baseComponentTypeForVector(@NotNull final Class<? extends Vector<?>> vectorType) {
         if (BooleanVector.class.isAssignableFrom(vectorType)) {
@@ -212,8 +212,8 @@ public class ColumnDefinition<TYPE> implements Externalizable, LogOutputAppendab
                     baseComponentTypeForVector((Class<? extends Vector<?>>) dataType);
             if (inputComponentType == null) {
                 /*
-                 * TODO (https://github.com/deephaven/deephaven-core/issues/817): Allow formula results returning
-                 * Vector to know component type if (Vector.class.isAssignableFrom(dataType)) { throw new
+                 * TODO (https://github.com/deephaven/deephaven-core/issues/817): Allow formula results returning Vector
+                 * to know component type if (Vector.class.isAssignableFrom(dataType)) { throw new
                  * IllegalArgumentException("Missing required component type for Vector data type " + dataType); }
                  */
                 return dbArrayComponentType;

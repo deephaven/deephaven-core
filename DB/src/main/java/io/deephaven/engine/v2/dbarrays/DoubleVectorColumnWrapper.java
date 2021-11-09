@@ -33,7 +33,7 @@ public class DoubleVectorColumnWrapper extends DoubleVector.Indirect {
     }
 
     public DoubleVectorColumnWrapper(@NotNull final ColumnSource<Double> columnSource, @NotNull final RowSet rowSet,
-                                     final long startPadding, final long endPadding) {
+                                   final long startPadding, final long endPadding) {
         Assert.neqNull(rowSet, "rowSet");
         this.columnSource = columnSource;
         this.rowSet = rowSet;

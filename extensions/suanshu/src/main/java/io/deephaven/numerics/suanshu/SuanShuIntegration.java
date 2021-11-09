@@ -532,7 +532,8 @@ public class SuanShuIntegration {
      * @throws io.deephaven.base.verify.RequirementFailure if <code>vector</code> contains elements other than
      *         {@link Number} or any of its implementations.
      */
-    public static <T extends Number> com.numericalmethod.suanshu.vector.doubles.Vector ssVec(final ObjectVector<T> vector) {
+    public static <T extends Number> com.numericalmethod.suanshu.vector.doubles.Vector ssVec(
+            final ObjectVector<T> vector) {
         Require.neqNull(vector, "vector");
         Require.requirement(Number.class.isAssignableFrom(vector.getComponentType()),
                 "vector of type " + Number.class + ", instead found " + vector.getComponentType());
@@ -610,10 +611,11 @@ public class SuanShuIntegration {
             }
 
             @Override
-            public com.numericalmethod.suanshu.vector.doubles.Vector getColumn(int column) throws MatrixAccessException {
+            public com.numericalmethod.suanshu.vector.doubles.Vector getColumn(int column)
+                    throws MatrixAccessException {
                 return new AbstractDbArrayBaseVector(byteVectors[column - 1]) {// Because 1-based row and column
-                                                                                // indices in
-                                                                                // com.numericalmethod.suanshu.matrix.doubles.Matrix
+                                                                               // indices in
+                                                                               // com.numericalmethod.suanshu.matrix.doubles.Matrix
                     private static final long serialVersionUID = 6151466803319078752L;
 
                     @Override
@@ -681,7 +683,8 @@ public class SuanShuIntegration {
             }
 
             @Override
-            public com.numericalmethod.suanshu.vector.doubles.Vector getColumn(int column) throws MatrixAccessException {
+            public com.numericalmethod.suanshu.vector.doubles.Vector getColumn(int column)
+                    throws MatrixAccessException {
                 return new AbstractVector() {
                     private static final long serialVersionUID = 8776652413193025287L;
 
@@ -754,10 +757,11 @@ public class SuanShuIntegration {
             }
 
             @Override
-            public com.numericalmethod.suanshu.vector.doubles.Vector getColumn(int column) throws MatrixAccessException {
+            public com.numericalmethod.suanshu.vector.doubles.Vector getColumn(int column)
+                    throws MatrixAccessException {
                 return new AbstractDbArrayBaseVector(shortVectors[column - 1]) {// Because 1-based row and column
-                                                                                 // indices in
-                                                                                 // com.numericalmethod.suanshu.matrix.doubles.Matrix
+                                                                                // indices in
+                                                                                // com.numericalmethod.suanshu.matrix.doubles.Matrix
                     private static final long serialVersionUID = 6991137420725851810L;
 
                     @Override
@@ -825,7 +829,8 @@ public class SuanShuIntegration {
             }
 
             @Override
-            public com.numericalmethod.suanshu.vector.doubles.Vector getColumn(int column) throws MatrixAccessException {
+            public com.numericalmethod.suanshu.vector.doubles.Vector getColumn(int column)
+                    throws MatrixAccessException {
                 return new AbstractVector() {
                     private static final long serialVersionUID = -4358292042125326869L;
 
@@ -898,10 +903,11 @@ public class SuanShuIntegration {
             }
 
             @Override
-            public com.numericalmethod.suanshu.vector.doubles.Vector getColumn(int column) throws MatrixAccessException {
+            public com.numericalmethod.suanshu.vector.doubles.Vector getColumn(int column)
+                    throws MatrixAccessException {
                 return new AbstractDbArrayBaseVector(intVectors[column - 1]) {// Because 1-based row and column indices
-                                                                               // in
-                                                                               // com.numericalmethod.suanshu.matrix.doubles.Matrix
+                                                                              // in
+                                                                              // com.numericalmethod.suanshu.matrix.doubles.Matrix
                     private static final long serialVersionUID = 821557745996553552L;
 
                     @Override
@@ -968,7 +974,8 @@ public class SuanShuIntegration {
             }
 
             @Override
-            public com.numericalmethod.suanshu.vector.doubles.Vector getColumn(int column) throws MatrixAccessException {
+            public com.numericalmethod.suanshu.vector.doubles.Vector getColumn(int column)
+                    throws MatrixAccessException {
                 return new AbstractVector() {
                     private static final long serialVersionUID = -8323652796518072916L;
 
@@ -1041,10 +1048,11 @@ public class SuanShuIntegration {
             }
 
             @Override
-            public com.numericalmethod.suanshu.vector.doubles.Vector getColumn(int column) throws MatrixAccessException {
+            public com.numericalmethod.suanshu.vector.doubles.Vector getColumn(int column)
+                    throws MatrixAccessException {
                 return new AbstractDbArrayBaseVector(floatVectors[column - 1]) {// Because 1-based row and column
-                                                                                 // indices in
-                                                                                 // com.numericalmethod.suanshu.matrix.doubles.Matrix
+                                                                                // indices in
+                                                                                // com.numericalmethod.suanshu.matrix.doubles.Matrix
                     private static final long serialVersionUID = -8535605234772136511L;
 
                     @Override
@@ -1112,7 +1120,8 @@ public class SuanShuIntegration {
             }
 
             @Override
-            public com.numericalmethod.suanshu.vector.doubles.Vector getColumn(int column) throws MatrixAccessException {
+            public com.numericalmethod.suanshu.vector.doubles.Vector getColumn(int column)
+                    throws MatrixAccessException {
                 return new AbstractVector() {
                     private static final long serialVersionUID = 6874105163141506182L;
 
@@ -1185,10 +1194,11 @@ public class SuanShuIntegration {
             }
 
             @Override
-            public com.numericalmethod.suanshu.vector.doubles.Vector getColumn(int column) throws MatrixAccessException {
+            public com.numericalmethod.suanshu.vector.doubles.Vector getColumn(int column)
+                    throws MatrixAccessException {
                 return new AbstractDbArrayBaseVector(longVectors[column - 1]) {// Because 1-based row and column
-                                                                                // indices in
-                                                                                // com.numericalmethod.suanshu.matrix.doubles.Matrix
+                                                                               // indices in
+                                                                               // com.numericalmethod.suanshu.matrix.doubles.Matrix
                     private static final long serialVersionUID = 4391740406197864817L;
 
                     @Override
@@ -1256,7 +1266,8 @@ public class SuanShuIntegration {
             }
 
             @Override
-            public com.numericalmethod.suanshu.vector.doubles.Vector getColumn(int column) throws MatrixAccessException {
+            public com.numericalmethod.suanshu.vector.doubles.Vector getColumn(int column)
+                    throws MatrixAccessException {
                 return new AbstractVector() {
                     private static final long serialVersionUID = -3740303268339723983L;
 
@@ -1292,9 +1303,8 @@ public class SuanShuIntegration {
     }
 
     /**
-     * Wraps {@link DoubleVector}... as {@link Matrix} This method assumes {@code doubleVectors} to be in
-     * unconventional [columns][rows] structure, where first dimension denotes columns and second dimension denotes
-     * rows.
+     * Wraps {@link DoubleVector}... as {@link Matrix} This method assumes {@code doubleVectors} to be in unconventional
+     * [columns][rows] structure, where first dimension denotes columns and second dimension denotes rows.
      *
      * @param doubleVectors array to wrap
      * @return Immutable {@link Matrix} backed by {@link DoubleVector}...
@@ -1330,10 +1340,11 @@ public class SuanShuIntegration {
             }
 
             @Override
-            public com.numericalmethod.suanshu.vector.doubles.Vector getColumn(int column) throws MatrixAccessException {
+            public com.numericalmethod.suanshu.vector.doubles.Vector getColumn(int column)
+                    throws MatrixAccessException {
                 return new AbstractDbArrayBaseVector(doubleVectors[column - 1]) {// Because 1-based row and column
-                                                                                  // indices in
-                                                                                  // com.numericalmethod.suanshu.matrix.doubles.Matrix
+                                                                                 // indices in
+                                                                                 // com.numericalmethod.suanshu.matrix.doubles.Matrix
                     private static final long serialVersionUID = 172294086541855763L;
 
                     @Override
@@ -1406,7 +1417,8 @@ public class SuanShuIntegration {
             }
 
             @Override
-            public com.numericalmethod.suanshu.vector.doubles.Vector getColumn(int column) throws MatrixAccessException {
+            public com.numericalmethod.suanshu.vector.doubles.Vector getColumn(int column)
+                    throws MatrixAccessException {
                 return new AbstractVector() {
                     private static final long serialVersionUID = 2519265445719875525L;
 
@@ -1484,7 +1496,8 @@ public class SuanShuIntegration {
             }
 
             @Override
-            public com.numericalmethod.suanshu.vector.doubles.Vector getColumn(int column) throws MatrixAccessException {
+            public com.numericalmethod.suanshu.vector.doubles.Vector getColumn(int column)
+                    throws MatrixAccessException {
                 return new WrapperArrayBaseVector(numberColumnsData[column - 1]);
             }
 
@@ -1536,8 +1549,8 @@ public class SuanShuIntegration {
      * @param vectors array to wrap
      * @return Immutable {@link Matrix} backed by {@link Vector}...
      * @throws UnsupportedOperationException if any of the arrays in {@code vectors} does not belong to
-     *         {{@link ByteVector}, {@link ShortVector}, {@link IntVector}, {@link FloatVector},
-     *         {@link LongVector}, {@link DoubleVector}, {@link ObjectVector}<code>&lt;? extends {@link Number}&gt;</code>}
+     *         {{@link ByteVector}, {@link ShortVector}, {@link IntVector}, {@link FloatVector}, {@link LongVector},
+     *         {@link DoubleVector}, {@link ObjectVector}<code>&lt;? extends {@link Number}&gt;</code>}
      */
     public static Matrix ssMat(final Vector... vectors) {
         return ssMat(new ObjectVectorDirect<>(vectors));
@@ -1551,8 +1564,8 @@ public class SuanShuIntegration {
      * @param <T> - type of elements in <code>dhVector</code>
      * @return Immutable {@link Matrix} backed by {@link ObjectVector}...
      * @throws UnsupportedOperationException if any of the vectors in {@code objectVector} does not belong to
-     *         {{@link ByteVector}, {@link ShortVector}, {@link IntVector}, {@link FloatVector},
-     *         {@link LongVector}, {@link DoubleVector}, {@link ObjectVector}<code>&lt;? extends {@link Number}&gt;</code>}
+     *         {{@link ByteVector}, {@link ShortVector}, {@link IntVector}, {@link FloatVector}, {@link LongVector},
+     *         {@link DoubleVector}, {@link ObjectVector}<code>&lt;? extends {@link Number}&gt;</code>}
      */
     public static <T extends Vector> Matrix ssMat(final ObjectVector<T> objectVector) {
         Require.neqNull(objectVector, "objectVector");
@@ -1597,7 +1610,8 @@ public class SuanShuIntegration {
             }
 
             @Override
-            public com.numericalmethod.suanshu.vector.doubles.Vector getColumn(final int column) throws MatrixAccessException {
+            public com.numericalmethod.suanshu.vector.doubles.Vector getColumn(final int column)
+                    throws MatrixAccessException {
                 return new AbstractDbArrayBaseVector(objectVector.get(column - 1)) {
                     private static final long serialVersionUID = 8517809020282279391L;
 
@@ -1670,7 +1684,8 @@ public class SuanShuIntegration {
     /**
      * The abstract implementation of {@link com.numericalmethod.suanshu.vector.doubles.Vector}.
      */
-    public abstract static class AbstractVector implements com.numericalmethod.suanshu.vector.doubles.Vector, Serializable {
+    public abstract static class AbstractVector
+            implements com.numericalmethod.suanshu.vector.doubles.Vector, Serializable {
 
         private static final long serialVersionUID = -7713580887929399868L;
 
@@ -1689,22 +1704,26 @@ public class SuanShuIntegration {
         }
 
         @Override
-        public com.numericalmethod.suanshu.vector.doubles.Vector add(final com.numericalmethod.suanshu.vector.doubles.Vector vector) {
+        public com.numericalmethod.suanshu.vector.doubles.Vector add(
+                final com.numericalmethod.suanshu.vector.doubles.Vector vector) {
             return new ImmutableVector(new VectorMathOperation().add(this, vector));
         }
 
         @Override
-        public com.numericalmethod.suanshu.vector.doubles.Vector minus(final com.numericalmethod.suanshu.vector.doubles.Vector vector) {
+        public com.numericalmethod.suanshu.vector.doubles.Vector minus(
+                final com.numericalmethod.suanshu.vector.doubles.Vector vector) {
             return new ImmutableVector(new VectorMathOperation().minus(this, vector));
         }
 
         @Override
-        public com.numericalmethod.suanshu.vector.doubles.Vector multiply(final com.numericalmethod.suanshu.vector.doubles.Vector vector) {
+        public com.numericalmethod.suanshu.vector.doubles.Vector multiply(
+                final com.numericalmethod.suanshu.vector.doubles.Vector vector) {
             return new ImmutableVector(new VectorMathOperation().multiply(this, vector));
         }
 
         @Override
-        public com.numericalmethod.suanshu.vector.doubles.Vector divide(final com.numericalmethod.suanshu.vector.doubles.Vector vector) {
+        public com.numericalmethod.suanshu.vector.doubles.Vector divide(
+                final com.numericalmethod.suanshu.vector.doubles.Vector vector) {
             return new ImmutableVector(new VectorMathOperation().divide(this, vector));
         }
 
@@ -1774,8 +1793,9 @@ public class SuanShuIntegration {
         }
 
         /**
-         * Returns the compact {@link String} representation of {@link com.numericalmethod.suanshu.vector.doubles.Vector}. If you want to have String
-         * representation of the whole {@link com.numericalmethod.suanshu.vector.doubles.Vector}, please use {@code show()} method.
+         * Returns the compact {@link String} representation of
+         * {@link com.numericalmethod.suanshu.vector.doubles.Vector}. If you want to have String representation of the
+         * whole {@link com.numericalmethod.suanshu.vector.doubles.Vector}, please use {@code show()} method.
          *
          * @return Compact string representation of {@link com.numericalmethod.suanshu.vector.doubles.Vector}
          */
@@ -1904,7 +1924,8 @@ public class SuanShuIntegration {
         private static final long serialVersionUID = 1940714674230668397L;
 
         @Override
-        public com.numericalmethod.suanshu.vector.doubles.Vector multiply(final com.numericalmethod.suanshu.vector.doubles.Vector vector) {
+        public com.numericalmethod.suanshu.vector.doubles.Vector multiply(
+                final com.numericalmethod.suanshu.vector.doubles.Vector vector) {
             return new ImmutableVector(new ParallelMatrixMathOperation().multiply(this, vector));
         }
 
@@ -1924,7 +1945,8 @@ public class SuanShuIntegration {
          * @return vector at column<sup>th</sup> indexed (1-based)
          */
         @Override
-        public abstract com.numericalmethod.suanshu.vector.doubles.Vector getColumn(int column) throws MatrixAccessException;
+        public abstract com.numericalmethod.suanshu.vector.doubles.Vector getColumn(int column)
+                throws MatrixAccessException;
 
         /**
          * Gets the value at row<sup>th</sup> indexed row (1-based) and column<sup>th</sup> indexed (1-based) column

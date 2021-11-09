@@ -2,11 +2,11 @@
  "className": "io.deephaven.engine.tables.remote.preview.ArrayPreview",
  "methods": {
   "fromArray": ":param array: java.lang.Object\n:return: io.deephaven.engine.tables.remote.preview.ArrayPreview",
-  "fromDbArray": ":param dbArray: io.deephaven.engine.tables.dbarrays.DbArrayBase<?>\n:return: io.deephaven.engine.tables.remote.preview.ArrayPreview",
+  "fromDbArray": ":param vector: io.deephaven.engine.tables.dbarrays.Vector<?>\n:return: io.deephaven.engine.tables.remote.preview.ArrayPreview",
   "fromPyListWrapper": ":param list: org.jpy.PyListWrapper\n:return: io.deephaven.engine.tables.remote.preview.ArrayPreview",
   "toString": ":return: java.lang.String"
  },
  "path": "io.deephaven.engine.tables.remote.preview.ArrayPreview",
- "text": "A Preview Type for Arrays and DbArray. Converts long arrays to a String \"[1, 2, 3, 4, 5...]\"",
+ "text": "A Preview Type for Arrays and Vector. Converts long arrays to a String \"[1, 2, 3, 4, 5...]\"",
  "typeName": "class"
 }

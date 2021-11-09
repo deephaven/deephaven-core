@@ -22,7 +22,7 @@ import java.util.Arrays;
 
 public interface DoubleVector extends Vector<DoubleVector> {
 
-    long serialVersionUID = 7218901311693729986L;
+    long serialVersionUID = -1373264425081841175L;
 
     static PrimitiveVectorType<DoubleVector, Double> type() {
         return PrimitiveVectorType.of(DoubleVector.class, DoubleType.instance());
@@ -151,7 +151,7 @@ public interface DoubleVector extends Vector<DoubleVector> {
      */
     abstract class Indirect implements DoubleVector {
 
-        private static final long serialVersionUID = 7218901311693729986L;
+        private static final long serialVersionUID = 1L;
 
         @Override
         public DoubleVector getDirect() {

@@ -75,8 +75,8 @@ public class LongChunkFactory implements ChunkFactory {
     @NotNull
     @Override
     public LongVectorSlice vectorWrap(Object array, int offset, int capacity) {
-        LongVectorDirect dbLongArrayDirect = vectorWrap(array);
-        return new LongVectorSlice(dbLongArrayDirect, offset, capacity);
+        LongVectorDirect vectorDirect = vectorWrap(array);
+        return new LongVectorSlice(vectorDirect, offset, capacity);
     }
     // endregion vectorWrap
 

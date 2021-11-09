@@ -29,12 +29,12 @@ public class PrevDoubleVectorColumnWrapper extends DoubleVector.Indirect {
     private final long endPadding;
 
     public PrevDoubleVectorColumnWrapper(@NotNull final ColumnSource<Double> columnSource,
-                                         @NotNull final RowSet rowSet) {
+                                       @NotNull final RowSet rowSet) {
         this(columnSource, rowSet, 0, 0);
     }
 
     private PrevDoubleVectorColumnWrapper(@NotNull final ColumnSource<Double> columnSource,
-                                          @NotNull final RowSet rowSet, final long startPadding, final long endPadding) {
+                                        @NotNull final RowSet rowSet, final long startPadding, final long endPadding) {
         Assert.neqNull(rowSet, "rowSet");
         this.columnSource = columnSource;
         this.rowSet = rowSet;

@@ -718,8 +718,8 @@ public class RunChartDownsample implements Function.Unary<Table, Table> {
             if (rangeMode == RangeMode.ZOOM) {
                 return Stream.concat(
                         Stream.of(head, tail).filter(s -> !s.getRowSet().isEmpty()), // note: we only filter these two,
-                                                                                    // since states shouldn't contain
-                                                                                    // empty indexes anyway
+                                                                                     // since states shouldn't contain
+                                                                                     // empty indexes anyway
                         states.values().stream())
                         .reduce(RowSetFactory.builderRandom(), (builder, state) -> {
                             builder.addRowSet(state.makeIndex());

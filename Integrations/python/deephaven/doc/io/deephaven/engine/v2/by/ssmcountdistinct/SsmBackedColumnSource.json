@@ -10,6 +10,6 @@
   "getUnderlyingSource": ":return: io.deephaven.engine.v2.sources.ObjectArraySource<SsmBackedColumnSource.K>"
  },
  "path": "io.deephaven.engine.v2.by.ssmcountdistinct.SsmBackedColumnSource",
- "text": "A ColumnSource that provides DBArrays of type T, backed by a same typed\n SegmentedSortedMultiSet.",
+ "text": "A ColumnSource that provides vectors of type T, backed by a same typed\n SegmentedSortedMultiSet.",
  "typeName": "interface"
 }

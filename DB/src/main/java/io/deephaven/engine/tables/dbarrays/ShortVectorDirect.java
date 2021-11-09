@@ -18,7 +18,7 @@ import static io.deephaven.util.QueryConstants.NULL_SHORT;
 @ArrayType(type = short[].class)
 public class ShortVectorDirect implements ShortVector {
 
-    private final static long serialVersionUID = -4415134364550246624L;
+    private final static long serialVersionUID = 3636374971797603565L;
 
     private final short[] data;
 
@@ -31,7 +31,7 @@ public class ShortVectorDirect implements ShortVector {
         if (i < 0 || i > data.length - 1) {
             return NULL_SHORT;
         }
-        return data[LongSizedDataStructure.intSize("ObjectVectorDirect get",  i)];
+        return data[LongSizedDataStructure.intSize("ShortVectorDirect get",  i)];
     }
 
     @Override

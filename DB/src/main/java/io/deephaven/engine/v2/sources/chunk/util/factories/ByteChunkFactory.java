@@ -75,8 +75,8 @@ public class ByteChunkFactory implements ChunkFactory {
     @NotNull
     @Override
     public ByteVectorSlice vectorWrap(Object array, int offset, int capacity) {
-        ByteVectorDirect dbByteArrayDirect = vectorWrap(array);
-        return new ByteVectorSlice(dbByteArrayDirect, offset, capacity);
+        ByteVectorDirect vectorDirect = vectorWrap(array);
+        return new ByteVectorSlice(vectorDirect, offset, capacity);
     }
     // endregion vectorWrap
 

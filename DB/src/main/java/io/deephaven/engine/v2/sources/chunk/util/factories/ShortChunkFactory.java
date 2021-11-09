@@ -75,8 +75,8 @@ public class ShortChunkFactory implements ChunkFactory {
     @NotNull
     @Override
     public ShortVectorSlice vectorWrap(Object array, int offset, int capacity) {
-        ShortVectorDirect dbShortArrayDirect = vectorWrap(array);
-        return new ShortVectorSlice(dbShortArrayDirect, offset, capacity);
+        ShortVectorDirect vectorDirect = vectorWrap(array);
+        return new ShortVectorSlice(vectorDirect, offset, capacity);
     }
     // endregion vectorWrap
 

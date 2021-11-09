@@ -5,12 +5,12 @@ package io.deephaven.engine.v2.ssms;
 
 import gnu.trove.set.hash.THashSet;
 
-import io.deephaven.engine.tables.dbarrays.ObjectVector;
-import io.deephaven.engine.tables.dbarrays.ObjectVectorDirect;
-
 import java.util.Objects;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.tables.dbarrays.ObjectVector;
+import io.deephaven.engine.tables.dbarrays.ObjectVectorDirect;
+import io.deephaven.engine.tables.dbarrays.ObjectVector;
 import io.deephaven.engine.tables.utils.ArrayUtils;
 import io.deephaven.engine.util.DhObjectComparisons;
 import io.deephaven.engine.v2.by.SumIntChunk;
@@ -22,6 +22,7 @@ import io.deephaven.util.annotations.VisibleForTesting;
 import org.apache.commons.lang3.mutable.MutableInt;
 
 import java.util.Arrays;
+import java.util.Objects;
 
 
 public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMultiSet<Object>, ObjectVector {
@@ -2204,7 +2205,7 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
         }
 
         if(prevValues == null) {
-            prevValues = new ObjectVectorDirect<>(keyArray());
+            prevValues = new ObjectVectorDirect(keyArray());
         }
 
         if (added == null) {
@@ -2233,7 +2234,7 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
         }
 
         if(prevValues == null) {
-            prevValues = new ObjectVectorDirect<>(keyArray());
+            prevValues = new ObjectVectorDirect(keyArray());
         }
 
         if(removed == null) {
@@ -2302,7 +2303,7 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
 
     @Override
     public ObjectVector subVector(long fromIndex, long toIndex) {
-        return new ObjectVectorDirect<>(keyArray(fromIndex, toIndex));
+        return new ObjectVectorDirect(keyArray(fromIndex, toIndex));
     }
 
     @Override
@@ -2313,7 +2314,7 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
             keyArray[writePos++] = get(position);
         }
 
-        return new ObjectVectorDirect<>(keyArray);
+        return new ObjectVectorDirect(keyArray);
     }
 
     @Override
@@ -2328,7 +2329,7 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
 
     @Override
     public ObjectVector getDirect() {
-        return new ObjectVectorDirect<>(keyArray());
+        return new ObjectVectorDirect(keyArray());
     }
     //endregion
 

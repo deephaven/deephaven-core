@@ -27,8 +27,7 @@ public class ColumnHolder<T> {
      * 
      * @param name column name
      * @param dataType column data type
-     * @param componentType column component type (for array or {@link ObjectVector >}
-     *        data types)
+     * @param componentType column component type (for array or {@link ObjectVector >} data types)
      * @param data column data
      */
     @SuppressWarnings("unchecked")
@@ -120,8 +119,7 @@ public class ColumnHolder<T> {
      * @param name column name
      * @param grouped true if the column is grouped; false otherwise
      * @param dataType column data type
-     * @param componentType column component type (for array or {@link ObjectVector >}
-     *        data types)
+     * @param componentType column component type (for array or {@link ObjectVector >} data types)
      * @param data column data
      */
     private ColumnHolder(String name, boolean grouped, Class<?> dataType, Class<?> componentType, Object data) {

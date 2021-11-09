@@ -29,12 +29,12 @@ public class PrevIntVectorColumnWrapper extends IntVector.Indirect {
     private final long endPadding;
 
     public PrevIntVectorColumnWrapper(@NotNull final ColumnSource<Integer> columnSource,
-                                      @NotNull final RowSet rowSet) {
+                                       @NotNull final RowSet rowSet) {
         this(columnSource, rowSet, 0, 0);
     }
 
     private PrevIntVectorColumnWrapper(@NotNull final ColumnSource<Integer> columnSource,
-                                       @NotNull final RowSet rowSet, final long startPadding, final long endPadding) {
+                                        @NotNull final RowSet rowSet, final long startPadding, final long endPadding) {
         Assert.neqNull(rowSet, "rowSet");
         this.columnSource = columnSource;
         this.rowSet = rowSet;

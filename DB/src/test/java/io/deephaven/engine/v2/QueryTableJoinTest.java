@@ -1008,7 +1008,8 @@ public class QueryTableJoinTest {
         assertEquals(IntVector.class, noPairMatch.getColumns()[2].getType());
         assertEquals(asList("c", "e", "g"), asList((Object[]) noPairMatch.getColumns()[0].getDirect()));
         // noinspection unchecked
-        final ObjectVector<String>[] aggregateString = (ObjectVector<String>[]) noPairMatch.getColumn("String2").getDirect();
+        final ObjectVector<String>[] aggregateString =
+                (ObjectVector<String>[]) noPairMatch.getColumn("String2").getDirect();
         assertEquals(asList("c", "e"), asList(aggregateString[0].toArray()));
         assertEquals(asList("c", "e"), asList(aggregateString[1].toArray()));
         assertEquals(asList("c", "e"), asList(aggregateString[2].toArray()));

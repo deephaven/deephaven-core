@@ -2619,7 +2619,8 @@ public class QueryTableTest extends QueryTableTestBase {
                 c("DValue", null, (DoubleVector) new DoubleVectorDirect(1.1d), null, null),
                 c("CCol", null, (CharVector) new CharVectorDirect('b'), null, null),
                 c("BoCol", null, (ObjectVector<Boolean>) new ObjectVectorDirect<>(false), null, null),
-                c("OCol", null, (ObjectVector<Pair<Integer, Integer>>) new ObjectVectorDirect<>(new Pair<>(2, 3)), null, null));
+                c("OCol", null, (ObjectVector<Pair<Integer, Integer>>) new ObjectVectorDirect<>(new Pair<>(2, 3)), null,
+                        null));
 
         assertTableEquals(expected, joined);
 

@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.engine.tables.dbarrays.ReplicateDbArrays",
- "methods": {
-  "main": ":param args: java.lang.String[]"
- },
- "path": "io.deephaven.engine.tables.dbarrays.ReplicateDbArrays",
- "typeName": "class"
-}

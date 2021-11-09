@@ -37,7 +37,7 @@ public abstract class PrimitiveVectorType<T, ComponentType>
                     LONG_VECTOR, FLOAT_VECTOR, DOUBLE_VECTOR).collect(Collectors.toSet());
 
     public static <T, ComponentType> PrimitiveVectorType<T, ComponentType> of(Class<T> clazz,
-                                                                              PrimitiveType<ComponentType> primitiveType) {
+            PrimitiveType<ComponentType> primitiveType) {
         return ImmutablePrimitiveVectorType.of(clazz, primitiveType);
     }
 

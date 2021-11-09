@@ -75,8 +75,8 @@ public class FloatChunkFactory implements ChunkFactory {
     @NotNull
     @Override
     public FloatVectorSlice vectorWrap(Object array, int offset, int capacity) {
-        FloatVectorDirect dbFloatArrayDirect = vectorWrap(array);
-        return new FloatVectorSlice(dbFloatArrayDirect, offset, capacity);
+        FloatVectorDirect vectorDirect = vectorWrap(array);
+        return new FloatVectorSlice(vectorDirect, offset, capacity);
     }
     // endregion vectorWrap
 

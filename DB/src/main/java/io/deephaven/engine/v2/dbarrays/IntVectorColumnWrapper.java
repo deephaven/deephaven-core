@@ -33,7 +33,7 @@ public class IntVectorColumnWrapper extends IntVector.Indirect {
     }
 
     public IntVectorColumnWrapper(@NotNull final ColumnSource<Integer> columnSource, @NotNull final RowSet rowSet,
-                                  final long startPadding, final long endPadding) {
+                                   final long startPadding, final long endPadding) {
         Assert.neqNull(rowSet, "rowSet");
         this.columnSource = columnSource;
         this.rowSet = rowSet;

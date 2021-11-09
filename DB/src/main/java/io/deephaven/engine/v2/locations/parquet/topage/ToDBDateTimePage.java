@@ -43,7 +43,7 @@ public abstract class ToDBDateTimePage<ATTR extends Attributes.Any> extends ToLo
     protected ToDBDateTimePage() {}
 
     protected static ObjectVector<DBDateTime> makeDbArrayHelper(final long[] result,
-                                                                final LongFunction<DBDateTime> unitToTime) {
+            final LongFunction<DBDateTime> unitToTime) {
         DBDateTime[] to = new DBDateTime[result.length];
 
         for (int i = 0; i < result.length; ++i) {

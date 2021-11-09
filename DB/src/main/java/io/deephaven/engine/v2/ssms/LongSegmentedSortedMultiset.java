@@ -3,12 +3,13 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.v2.ssms;
 
-import io.deephaven.engine.tables.dbarrays.*;
 import io.deephaven.engine.tables.utils.DBDateTime;
 import io.deephaven.engine.tables.dbarrays.ObjectVectorDirect;
 import io.deephaven.engine.tables.utils.DBTimeUtils;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.tables.dbarrays.LongVector;
+import io.deephaven.engine.tables.dbarrays.LongVectorDirect;
 import io.deephaven.engine.tables.dbarrays.ObjectVector;
 import io.deephaven.engine.tables.utils.ArrayUtils;
 import io.deephaven.engine.util.DhLongComparisons;

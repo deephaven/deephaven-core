@@ -22,7 +22,7 @@ import java.util.Arrays;
 
 public interface FloatVector extends Vector<FloatVector> {
 
-    long serialVersionUID = -1889118072737983807L;
+    long serialVersionUID = -1373264425081841175L;
 
     static PrimitiveVectorType<FloatVector, Float> type() {
         return PrimitiveVectorType.of(FloatVector.class, FloatType.instance());
@@ -151,7 +151,7 @@ public interface FloatVector extends Vector<FloatVector> {
      */
     abstract class Indirect implements FloatVector {
 
-        private static final long serialVersionUID = -1889118072737983807L;
+        private static final long serialVersionUID = 1L;
 
         @Override
         public FloatVector getDirect() {

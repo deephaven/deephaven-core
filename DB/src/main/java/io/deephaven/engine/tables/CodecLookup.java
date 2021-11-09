@@ -33,8 +33,7 @@ public class CodecLookup {
      * Test whether a codec is required to write or read the supplied types.
      *
      * @param dataType The data type to check
-     * @param componentType The component type to check, for array and
-     *        {@link Vector} types
+     * @param componentType The component type to check, for array and {@link Vector} types
      * @return Whether a codec is required
      */
     public static boolean codecRequired(@NotNull final Class<?> dataType, @Nullable final Class<?> componentType) {

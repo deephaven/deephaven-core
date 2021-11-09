@@ -1,7 +1,7 @@
 {
  "className": "io.deephaven.engine.v2.sources.UngroupableColumnSource",
  "methods": {
-  "getUngrouped": "Reach into a grouped column source and pull one element out of the array.\n\n:param columnIndex: (long) - the rowSet within the column of the cell to get\n:param arrayIndex: (int) - the rowSet within the array at the specified cell\n:return: (java.lang.Object) Equivalent to ((DbArray)columnSource.get(columnIndex)).get(arrayIndex)",
+  "getUngrouped": "Reach into a grouped column source and pull one element out of the array.\n\n:param columnIndex: (long) - the rowSet within the column of the cell to get\n:param arrayIndex: (int) - the rowSet within the array at the specified cell\n:return: (java.lang.Object) Equivalent to ((Vector)columnSource.get(columnIndex)).get(arrayIndex)",
   "getUngroupedBoolean": ":param columnIndex: long\n:param arrayIndex: int\n:return: java.lang.Boolean",
   "getUngroupedByte": ":param columnIndex: long\n:param arrayIndex: int\n:return: byte",
   "getUngroupedChar": ":param columnIndex: long\n:param arrayIndex: int\n:return: char",
@@ -20,7 +20,7 @@
   "getUngroupedPrevShort": ":param columnIndex: long\n:param arrayIndex: int\n:return: short",
   "getUngroupedPrevSize": ":param columnIndex: long\n:return: long",
   "getUngroupedShort": ":param columnIndex: long\n:param arrayIndex: int\n:return: short",
-  "getUngroupedSize": ":param columnIndex: (long) - the rowSet within this column to interrogate\n:return: (long) the size of the DbArray at columnIndex.",
+  "getUngroupedSize": ":param columnIndex: (long) - the rowSet within this column to interrogate\n:return: (long) the size of the Vector at columnIndex.",
   "isUngroupable": "Does this particular instance of the column source support ungrouping?\n\n:return: (boolean) true if you can call the getUngrouped family of methods and get a valid answer."
  },
  "path": "io.deephaven.engine.v2.sources.UngroupableColumnSource",

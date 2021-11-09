@@ -22,7 +22,7 @@ import java.util.Arrays;
 
 public interface IntVector extends Vector<IntVector> {
 
-    long serialVersionUID = -4282375411744560278L;
+    long serialVersionUID = -1373264425081841175L;
 
     static PrimitiveVectorType<IntVector, Integer> type() {
         return PrimitiveVectorType.of(IntVector.class, IntType.instance());
@@ -151,7 +151,7 @@ public interface IntVector extends Vector<IntVector> {
      */
     abstract class Indirect implements IntVector {
 
-        private static final long serialVersionUID = -4282375411744560278L;
+        private static final long serialVersionUID = 1L;
 
         @Override
         public IntVector getDirect() {

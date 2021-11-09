@@ -146,8 +146,9 @@ public class TestSuanShuIntegration extends BaseArrayTestCase {
     }
 
     public void testConvertDhNumberVectorToVector() throws Exception {
-        ObjectVector vector = new ObjectVectorDirect<>(BigDecimal.ZERO, BigDecimal.ONE, BigDecimal.ZERO, BigDecimal.ONE, null,
-                BigDecimal.ONE);
+        ObjectVector vector =
+                new ObjectVectorDirect<>(BigDecimal.ZERO, BigDecimal.ONE, BigDecimal.ZERO, BigDecimal.ONE, null,
+                        BigDecimal.ONE);
         double[] doubles = new double[] {0, 1, 0, 1, Double.NaN, 1};
         com.numericalmethod.suanshu.vector.doubles.Vector actual = ssVec(vector);
         testAbstractVector(actual);
@@ -478,7 +479,8 @@ public class TestSuanShuIntegration extends BaseArrayTestCase {
         }
     }
 
-    private void testVecEquals(final com.numericalmethod.suanshu.vector.doubles.Vector expected, final com.numericalmethod.suanshu.vector.doubles.Vector actual) {
+    private void testVecEquals(final com.numericalmethod.suanshu.vector.doubles.Vector expected,
+            final com.numericalmethod.suanshu.vector.doubles.Vector actual) {
         assertEquals(expected.size(), actual.size());
         for (int i = 1; i <= expected.size(); i++) {
             assertEquals(expected.get(i), actual.get(i), 0);
