@@ -44,6 +44,7 @@ public class Output {
      * Creates a new Output.
      *
      * @param colName name of new column to store results.
+     * @param isPythonScatterFunc true if the scatter function is a Python function; false otherwise.
      * @param scatterFunc function to scatter the results of a Python object into the table column.
      * @param type desired datatype of the new column.
      */
