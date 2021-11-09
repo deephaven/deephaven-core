@@ -889,10 +889,13 @@ class NULL_CONVERSION(object):
             return cls._stringToValue.get(tval, cls.ERROR)
         return cls.ERROR
 
+def _isVectorType(type_name): \
+        return type_name.startswith('io.deephaven.engine.tables.dbarrays.') or \
+               type_name.startswith('io.deephaven.engine.v2.dbarrays.')
 
 def _isVector(obj):
     try:
-        return jpy.get_type('io.deephaven.engine.tables.dbarrays.Vector').isAssignaleFrom(obj.getClass())
+        return _isVectorType(obj.getClass().getName())
     except Exception as e:
         return False
 

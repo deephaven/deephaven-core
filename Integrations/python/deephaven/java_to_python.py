@@ -13,7 +13,7 @@ import numpy
 import pandas
 
 from .conversion_utils import _nullValues, NULL_CHAR, NULL_CONVERSION, _arrayTypes, \
-    _isStr, _isVector, _isJavaArray, _getJavaArrayDetails
+    _isStr, _isVectorType, _isVector, _isJavaArray, _getJavaArrayDetails
 from .TableTools import emptyTable
 
 
@@ -53,7 +53,7 @@ def _fillRectangular(javaArray, shape, basicType, convertNulls):
                 fillValuesIn(dimension+1, ndSub, arrSub)
         else:
             # at the final dimension, and arrElement is a one dimensional array
-            if jpy.get_type('io.deephaven.engine.tables.dbarrays.Vector').isAssignaleFrom(basicType):
+            if _isVectorType(basicType):
                 # convert each leaf
                 for i, leafElement in enumerate(arrElement):
                     ndElement[i] = convertJavaArray(leafElement.toArray(), convertNulls=convertNulls)
@@ -90,7 +90,7 @@ def _fillRectangular(javaArray, shape, basicType, convertNulls):
             except Exception as e:
                 return 0
 
-    if basicType.startswith('io.deephaven.engine.tables.dbarrays.Db'):
+    if _isVectorType(basicType):
         out = numpy.empty(shape, dtype=numpy.object)
         fillValuesIn(0, out, javaArray)  # recursively fill
         return out
@@ -197,7 +197,7 @@ def convertJavaArray(javaArray, convertNulls='ERROR', forPandas=False):
     """
     Converts a java array to it's closest :class:`numpy.ndarray` alternative.
 
-    :param javaArray: input java array or dbarray object
+    :param javaArray: input java array or vector object
     :param convertNulls: member of :class:`NULL_CONVERSION` enum, specifying how to treat null values. Can be
       specified by string value (i.e. ``'ERROR'``), enum member (i.e. ``NULL_CONVERSION.PASS``), or integer value
       (i.e. ``2``)
