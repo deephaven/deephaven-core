@@ -259,6 +259,21 @@ public class ParentsVisitor implements Visitor {
         out = none();
     }
 
+    @Override
+    public void visit(InputTable inputTable) {
+        inputTable.schema().walk(new TableSchema.Visitor() {
+            @Override
+            public void visit(TableSpec spec) {
+                out = Stream.of(spec);
+            }
+
+            @Override
+            public void visit(TableHeader header) {
+                out = none();
+            }
+        });
+    }
+
     private static class Search {
 
         private final Predicate<TableSpec> excludePaths;

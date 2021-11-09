@@ -117,4 +117,24 @@ public interface Session extends AutoCloseable, TableHandleManager {
      * @return the future
      */
     CompletableFuture<Void> release(Ticket ticket);
+
+    // ----------------------------------------------------------
+
+    /**
+     * Add {@code source} to the input table {@code destination}.
+     *
+     * @param destination the input table
+     * @param source the source to add
+     * @return the future
+     */
+    CompletableFuture<Void> addToInputTable(HasTicket destination, HasTicket source);
+
+    /**
+     * Delete {@code source} from the input table {@code destination}.
+     *
+     * @param destination the input table
+     * @param source the source to delete
+     * @return the future
+     */
+    CompletableFuture<Void> deleteFromInputTable(HasTicket destination, HasTicket source);
 }

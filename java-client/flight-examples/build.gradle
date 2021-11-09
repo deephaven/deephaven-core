@@ -130,6 +130,30 @@ task createDoPutTableScript(type: CreateStartScripts) {
             '-XX:+UseStringDeduplication' ]
 }
 
+task createAddToInputTableScript(type: CreateStartScripts) {
+    mainClassName = 'io.deephaven.client.examples.AddToInputTable'
+    applicationName = 'add-to-input-table'
+    outputDir = new File(project.buildDir, name)
+    classpath = startScripts.classpath
+    defaultJvmOpts = [
+            '-server',
+            '-XX:+UseG1GC',
+            '-XX:MaxGCPauseMillis=100',
+            '-XX:+UseStringDeduplication' ]
+}
+
+task createKeyValueInputTableScript(type: CreateStartScripts) {
+    mainClassName = 'io.deephaven.client.examples.KeyValueInputTable'
+    applicationName = 'kv-input-table'
+    outputDir = new File(project.buildDir, name)
+    classpath = startScripts.classpath
+    defaultJvmOpts = [
+            '-server',
+            '-XX:+UseG1GC',
+            '-XX:MaxGCPauseMillis=100',
+            '-XX:+UseStringDeduplication' ]
+}
+
 applicationDistribution.into('bin') {
     from(createGetSchemaScripts)
     from(createGetTsvScripts)
@@ -140,6 +164,8 @@ applicationDistribution.into('bin') {
     from(createDoPutNewScript)
     from(createDoPutSprayScript)
     from(createDoPutTableScript)
+    from(createAddToInputTableScript)
+    from(createKeyValueInputTableScript)
     fileMode = 0755
 }
 

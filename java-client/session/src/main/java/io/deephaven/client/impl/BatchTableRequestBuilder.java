@@ -54,6 +54,10 @@ import io.deephaven.proto.backplane.grpc.ComboAggregateRequest.Aggregate;
 import io.deephaven.proto.backplane.grpc.CompareCondition;
 import io.deephaven.proto.backplane.grpc.CompareCondition.CompareOperation;
 import io.deephaven.proto.backplane.grpc.Condition;
+import io.deephaven.proto.backplane.grpc.CreateInputTableRequest;
+import io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind;
+import io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.InMemoryAppendOnly;
+import io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.InMemoryKeyBacked;
 import io.deephaven.proto.backplane.grpc.CrossJoinTablesRequest;
 import io.deephaven.proto.backplane.grpc.EmptyTableRequest;
 import io.deephaven.proto.backplane.grpc.ExactJoinTablesRequest;
@@ -78,23 +82,27 @@ import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.proto.backplane.grpc.TimeTableRequest;
 import io.deephaven.proto.backplane.grpc.UnstructuredFilterTableRequest;
 import io.deephaven.qst.table.AggregationTable;
+import io.deephaven.qst.table.InMemoryAppendOnlyInputTable;
 import io.deephaven.qst.table.AsOfJoinTable;
 import io.deephaven.qst.table.ByTable;
 import io.deephaven.qst.table.EmptyTable;
 import io.deephaven.qst.table.ExactJoinTable;
 import io.deephaven.qst.table.HeadTable;
+import io.deephaven.qst.table.InMemoryKeyBackedInputTable;
+import io.deephaven.qst.table.InputTable;
 import io.deephaven.qst.table.JoinTable;
 import io.deephaven.qst.table.LeftJoinTable;
 import io.deephaven.qst.table.MergeTable;
 import io.deephaven.qst.table.NaturalJoinTable;
 import io.deephaven.qst.table.NewTable;
-import io.deephaven.qst.table.ParentsVisitor;
 import io.deephaven.qst.table.ReverseAsOfJoinTable;
 import io.deephaven.qst.table.ReverseTable;
 import io.deephaven.qst.table.SelectTable;
 import io.deephaven.qst.table.SingleParentTable;
 import io.deephaven.qst.table.SnapshotTable;
 import io.deephaven.qst.table.SortTable;
+import io.deephaven.qst.table.TableHeader;
+import io.deephaven.qst.table.TableSchema;
 import io.deephaven.qst.table.TableSpec;
 import io.deephaven.qst.table.TailTable;
 import io.deephaven.qst.table.TicketTable;
@@ -433,6 +441,36 @@ class BatchTableRequestBuilder {
             FetchTableRequest.Builder builder =
                     FetchTableRequest.newBuilder().setResultId(ticket).setSourceId(sourceReference);
             out = op(Builder::setFetchTable, builder);
+        }
+
+        @Override
+        public void visit(InputTable inputTable) {
+            CreateInputTableRequest.Builder builder = CreateInputTableRequest.newBuilder()
+                    .setResultId(ticket);
+            inputTable.schema().walk(new TableSchema.Visitor() {
+                @Override
+                public void visit(TableSpec spec) {
+                    builder.setSourceTableId(ref(spec));
+                }
+
+                @Override
+                public void visit(TableHeader header) {
+                    builder.setSchema(ByteStringAccess.wrap(SchemaBytes.of(header)));
+                }
+            });
+            inputTable.walk(new InputTable.Visitor() {
+                @Override
+                public void visit(InMemoryAppendOnlyInputTable inMemoryAppendOnly) {
+                    builder.setKind(InputTableKind.newBuilder().setInMemoryAppendOnly(InMemoryAppendOnly.newBuilder()));
+                }
+
+                @Override
+                public void visit(InMemoryKeyBackedInputTable inMemoryKeyBacked) {
+                    builder.setKind(InputTableKind.newBuilder().setInMemoryKeyBacked(
+                            InMemoryKeyBacked.newBuilder().addAllKeyColumns(inMemoryKeyBacked.keys())));
+                }
+            });
+            out = op(Builder::setCreateInputTable, builder);
         }
 
         private SelectOrUpdateRequest selectOrUpdate(SingleParentTable x,

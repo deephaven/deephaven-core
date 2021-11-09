@@ -35,6 +35,11 @@ public enum TableCreatorImpl implements TableCreator<TableSpec> {
     }
 
     @Override
+    public final TableSpec of(InputTable inputTable) {
+        return inputTable;
+    }
+
+    @Override
     public final MergeTable merge(Iterable<TableSpec> tables) {
         return ImmutableMergeTable.builder().addAllTables(tables).build();
     }

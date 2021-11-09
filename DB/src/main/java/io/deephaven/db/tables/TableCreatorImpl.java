@@ -4,18 +4,24 @@ import io.deephaven.db.tables.utils.DBDateTime;
 import io.deephaven.db.tables.utils.DBTimeUtils;
 import io.deephaven.db.tables.utils.TableTools;
 import io.deephaven.db.v2.InMemoryTable;
+import io.deephaven.db.v2.UpdatableTable;
+import io.deephaven.db.v2.utils.AppendOnlyArrayBackedMutableTable;
+import io.deephaven.db.v2.utils.KeyedArrayBackedMutableTable;
 import io.deephaven.qst.TableCreator;
 import io.deephaven.qst.table.EmptyTable;
+import io.deephaven.qst.table.InMemoryAppendOnlyInputTable;
+import io.deephaven.qst.table.InMemoryKeyBackedInputTable;
+import io.deephaven.qst.table.InputTable;
 import io.deephaven.qst.table.NewTable;
+import io.deephaven.qst.table.TableHeader;
+import io.deephaven.qst.table.TableSchema;
 import io.deephaven.qst.table.TableSpec;
 import io.deephaven.qst.table.TicketTable;
 import io.deephaven.qst.table.TimeProvider;
 import io.deephaven.qst.table.TimeProviderSystem;
 import io.deephaven.qst.table.TimeTable;
 
-import java.util.Collection;
 import java.util.Objects;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -45,10 +51,16 @@ enum TableCreatorImpl implements TableCreator<Table> {
     }
 
     @Override
-    public Table of(TicketTable ticketTable) {
+    public final Table of(TicketTable ticketTable) {
         throw new UnsupportedOperationException("Ticket tables can't be referenced in a static context;" +
                 "no access to TicketRouter nor SessionState - see deephaven-core#1172 for more details");
     }
+
+    @Override
+    public final UpdatableTable of(InputTable inputTable) {
+        return UpdatableTableAdapter.of(inputTable);
+    }
+
 
     @Override
     public final Table merge(Iterable<Table> tables) {
@@ -124,6 +136,55 @@ enum TableCreatorImpl implements TableCreator<Table> {
         @Override
         public void visit(TimeProviderSystem system) {
             out = SYSTEM_PROVIDER;
+        }
+    }
+
+    static class UpdatableTableAdapter implements InputTable.Visitor {
+
+        public static UpdatableTable of(InputTable inputTable) {
+            return inputTable.walk(new UpdatableTableAdapter()).out();
+        }
+
+        private UpdatableTable out;
+
+        public UpdatableTable out() {
+            return Objects.requireNonNull(out);
+        }
+
+        @Override
+        public void visit(InMemoryAppendOnlyInputTable inMemoryAppendOnly) {
+            final TableDefinition definition = DefinitionAdapter.of(inMemoryAppendOnly.schema());
+            out = AppendOnlyArrayBackedMutableTable.make(definition);
+        }
+
+        @Override
+        public void visit(InMemoryKeyBackedInputTable inMemoryKeyBacked) {
+            final TableDefinition definition = DefinitionAdapter.of(inMemoryKeyBacked.schema());
+            final String[] keyColumnNames = inMemoryKeyBacked.keys().toArray(String[]::new);
+            out = KeyedArrayBackedMutableTable.make(definition, keyColumnNames);
+        }
+    }
+
+    static class DefinitionAdapter implements TableSchema.Visitor {
+
+        public static TableDefinition of(TableSchema schema) {
+            return schema.walk(new DefinitionAdapter()).out();
+        }
+
+        private TableDefinition out;
+
+        public TableDefinition out() {
+            return Objects.requireNonNull(out);
+        }
+
+        @Override
+        public void visit(TableSpec spec) {
+            out = create(spec).getDefinition();
+        }
+
+        @Override
+        public void visit(TableHeader header) {
+            out = TableDefinition.from(header);
         }
     }
 }

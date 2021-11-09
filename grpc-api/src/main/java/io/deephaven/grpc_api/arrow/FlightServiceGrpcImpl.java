@@ -18,6 +18,7 @@ import io.deephaven.grpc_api.session.TicketRouter;
 import io.deephaven.grpc_api.session.SessionService;
 import io.deephaven.grpc_api.session.SessionState;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
+import io.deephaven.grpc_api.util.MessageHelper;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.proto.backplane.grpc.ExportNotification;
@@ -156,7 +157,7 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
                         final FlatBufferBuilder builder = new FlatBufferBuilder();
                         final int schemaOffset = BarrageUtil.makeSchemaPayload(builder, table.getDefinition(),
                                 table.getAttributes());
-                        builder.finish(BarrageUtil.wrapInMessage(builder, schemaOffset,
+                        builder.finish(MessageHelper.wrapInMessage(builder, schemaOffset,
                                 org.apache.arrow.flatbuf.MessageHeader.Schema));
                         final ByteBuffer serializedMessage = builder.dataBuffer();
 

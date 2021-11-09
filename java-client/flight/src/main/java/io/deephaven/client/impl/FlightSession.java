@@ -197,6 +197,79 @@ public class FlightSession implements AutoCloseable {
     }
 
     /**
+     * Add {@code source} to the input table {@code destination}.
+     *
+     * @param destination the destination input table
+     * @param source the source
+     * @return the future
+     * @see #putTicket(FlightStream)
+     * @see Session#addToInputTable(HasTicket, HasTicket)
+     */
+    public CompletableFuture<Void> addToInputTable(HasTicket destination, FlightStream source) {
+        // TODO: would be nice to implicitly addToInputTable for appropriate doPuts - one call instead of two
+        // https://github.com/deephaven/deephaven-core/discussions/1578
+        final io.deephaven.proto.backplane.grpc.Ticket ticket = putTicket(source);
+        final CompletableFuture<Void> future = session.addToInputTable(destination, () -> ticket);
+        future.whenComplete((result, error) -> release(ticket));
+        return future;
+    }
+
+    /**
+     * Add {@code source} to the input table {@code destination}.
+     *
+     * @param destination the destination input table
+     * @param source the source
+     * @return the future
+     * @see #putTicket(NewTable, BufferAllocator)
+     * @see Session#addToInputTable(HasTicket, HasTicket)
+     */
+    public CompletableFuture<Void> addToInputTable(HasTicket destination, NewTable source, BufferAllocator allocator) {
+        // TODO: would be nice to implicitly addToInputTable for appropriate doPuts - one call instead of two
+        // https://github.com/deephaven/deephaven-core/discussions/1578
+        final io.deephaven.proto.backplane.grpc.Ticket ticket = putTicket(source, allocator);
+        final CompletableFuture<Void> future = session.addToInputTable(destination, () -> ticket);
+        future.whenComplete((result, error) -> release(ticket));
+        return future;
+    }
+
+    /**
+     * Delete {@code source} from the input table {@code destination}.
+     *
+     * @param destination the destination input table
+     * @param source the source
+     * @return the future
+     * @see #putTicket(FlightStream)
+     * @see Session#deleteFromInputTable(HasTicket, HasTicket)
+     */
+    public CompletableFuture<Void> deleteFromInputTable(HasTicket destination, FlightStream source) {
+        // TODO: would be nice to implicitly addToInputTable for appropriate doPuts - one call instead of two
+        // https://github.com/deephaven/deephaven-core/discussions/1578
+        final io.deephaven.proto.backplane.grpc.Ticket ticket = putTicket(source);
+        final CompletableFuture<Void> future = session.deleteFromInputTable(destination, () -> ticket);
+        future.whenComplete((result, error) -> release(ticket));
+        return future;
+    }
+
+    /**
+     * Delete {@code source} from the input table {@code destination}.
+     *
+     * @param destination the destination input table
+     * @param source the source
+     * @return the future
+     * @see #putTicket(NewTable, BufferAllocator)
+     * @see Session#deleteFromInputTable(HasTicket, HasTicket)
+     */
+    public CompletableFuture<Void> deleteFromInputTable(HasTicket destination, NewTable source,
+            BufferAllocator allocator) {
+        // TODO: would be nice to implicitly addToInputTable for appropriate doPuts - one call instead of two
+        // https://github.com/deephaven/deephaven-core/discussions/1578
+        final io.deephaven.proto.backplane.grpc.Ticket ticket = putTicket(source, allocator);
+        final CompletableFuture<Void> future = session.deleteFromInputTable(destination, () -> ticket);
+        future.whenComplete((result, error) -> release(ticket));
+        return future;
+    }
+
+    /**
      * Releases the low-level {@code ticket}.
      *
      * <p>
