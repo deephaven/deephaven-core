@@ -1,5 +1,8 @@
 plugins {
+    id 'base'
     id 'com.bmuschko.docker-remote-api'
 }
 
-Docker.buildPyWheel(project, 'buildWheel', 'deephaven/deephaven-wheel', "${project(':Integrations').projectDir}/python")
+def buildWheel = Docker.buildPyWheel(project, 'buildWheel', 'deephaven/deephaven-wheel', "${project(':Integrations').projectDir}/python")
+
+assemble.dependsOn buildWheel
