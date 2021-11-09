@@ -85,6 +85,7 @@ def extraJvmArgs = { runtimeJavaVersion ->
             '-XX:CompileCommand=exclude,io.deephaven.db.v2.RightIncrementalChunkedCrossJoinStateManager::addToIndex',
             '-XX:CompileCommand=exclude,io.deephaven.db.v2.IncrementalChunkedNaturalJoinStateManager::buildTable',
             '-XX:CompileCommand=exclude,io.deephaven.db.v2.IncrementalChunkedOperatorAggregationStateManager::buildTable',
+            '-XX:CompileCommand=exclude,io.deephaven.db.v2.by.IncrementalChunkedOperatorAggregationStateManager::buildTable',
     ]
   }
   return []
