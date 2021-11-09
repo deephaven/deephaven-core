@@ -573,7 +573,7 @@ public class ParquetTableWriter {
 
     private static Object getNullValue(Class<?> columnType) {
         if (columnType == Boolean.class) {
-            return (byte) -1;
+            return QueryConstants.NULL_BYTE;
         } else if (columnType == char.class) {
             return (int) QueryConstants.NULL_CHAR;
         } else if (columnType == byte.class) {

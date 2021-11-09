@@ -26,21 +26,12 @@ public class ByteAsBooleanColumnSource extends AbstractColumnSource<Boolean> imp
 
     @Override
     public Boolean get(final long index) {
-        final byte byteValue = alternateColumnSource.getByte(index);
-        // the underlying column source may store null values (which we define differently than null boolean), which we should convert to null values
-        if (byteValue == QueryConstants.NULL_BYTE) {
-            return null;
-        }
-        return BooleanUtils.byteAsBoolean(byteValue);
+        return BooleanUtils.byteAsBoolean(alternateColumnSource.getByte(index));
     }
 
     @Override
     public Boolean getPrev(final long index) {
-        final byte byteValue = alternateColumnSource.getPrevByte(index);
-        if (byteValue == QueryConstants.NULL_BYTE) {
-            return null;
-        }
-        return BooleanUtils.byteAsBoolean(byteValue);
+        return BooleanUtils.byteAsBoolean(alternateColumnSource.getPrevByte(index));
     }
 
     @Override
@@ -94,12 +85,7 @@ public class ByteAsBooleanColumnSource extends AbstractColumnSource<Boolean> imp
     private static void convertToBoolean(@NotNull final WritableChunk<? super Values> destination, @NotNull final ByteChunk<? extends Values> byteChunk) {
         final WritableObjectChunk<Boolean, ? super Values> booleanObjectDestination = destination.asWritableObjectChunk();
         for (int ii = 0; ii < byteChunk.size(); ++ii) {
-            final byte byteValue = byteChunk.get(ii);
-            if (byteValue == QueryConstants.NULL_BYTE) {
-                booleanObjectDestination.set(ii, null);
-            } else {
-                booleanObjectDestination.set(ii, BooleanUtils.byteAsBoolean(byteValue));
-            }
+            booleanObjectDestination.set(ii, BooleanUtils.byteAsBoolean(byteChunk.get(ii)));
         }
         booleanObjectDestination.setSize(byteChunk.size());
     }

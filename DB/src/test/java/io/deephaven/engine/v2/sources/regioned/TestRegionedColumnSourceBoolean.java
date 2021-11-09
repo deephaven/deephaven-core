@@ -7,6 +7,7 @@ package io.deephaven.engine.v2.sources.regioned;
 import io.deephaven.util.BooleanUtils;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.chunk.Attributes;
+import io.deephaven.util.type.TypeUtils;
 import org.junit.Test;
 
 /**
@@ -43,7 +44,7 @@ public class TestRegionedColumnSourceBoolean extends TstRegionedColumnSourceRefe
         }});
         if (reinterpreted) {
             if (boxed) {
-                assertEquals(Byte.valueOf(BooleanUtils.booleanAsByte(output)), prev ? SUT_AS_BYTE.getPrev(elementIndex) : SUT_AS_BYTE.get(elementIndex));
+                assertEquals(TypeUtils.box(BooleanUtils.booleanAsByte(output)), prev ? SUT_AS_BYTE.getPrev(elementIndex) : SUT_AS_BYTE.get(elementIndex));
             } else {
                 assertEquals(BooleanUtils.booleanAsByte(output), prev ? SUT_AS_BYTE.getPrevByte(elementIndex) : SUT_AS_BYTE.getByte(elementIndex));
             }
