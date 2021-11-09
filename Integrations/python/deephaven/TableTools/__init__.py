@@ -212,17 +212,17 @@ def _custom_col(name, *data):
 def _custom_charCol(name, *data):
     def makeElementChar(el):
         if el is None:
-            return NULL_CHAR
+            return ord(NULL_CHAR)
         if isinstance(el, int):
             return el
         if _isStr(el):
             if len(el) < 1:
-                return NULL_CHAR
+                return ord(NULL_CHAR)
             return ord(el[0])
         try:
             return int(el)
         except ValueError:
-            return NULL_CHAR
+            return ord(NULL_CHAR)
 
     # should only be called from charCol() below
     if len(data) < 1:
