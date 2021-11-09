@@ -73,7 +73,7 @@ __ObjectColumnSource__ = 'io.deephaven.db.v2.sources.immutable.ImmutableObjectAr
 __DatetimeColumnSource__ = 'io.deephaven.db.v2.sources.immutable.ImmutableDateTimeArraySource'
 __ArrayConversionUtility__ = 'io.deephaven.integrations.common.PrimitiveArrayConversionUtility'
 
-NULL_CHAR = chr(65535)                                    #: Null value for char.
+NULL_CHAR = 65534                                         #: Null value for char.
 NULL_FLOAT = float.fromhex('-0x1.fffffep127')             #: Null value for float.
 NULL_DOUBLE = float.fromhex('-0x1.fffffffffffffP+1023')   #: Null value for double.
 NULL_SHORT = -32768                                       #: Null value for short.
@@ -590,8 +590,7 @@ def _makeJavaArray(ndarray, javaType, containsArrays=False, depth=None):
         if junk is None:
             raise ValueError("Cannot convert ndarray of dtype {} and dtype.name {} "
                              "to type `char`".format(ndarray.dtype, ndarray.dtype.name))
-
-        junk[junk == 0] = ord(NULL_CHAR)
+        junk[junk == 0] = NULL_CHAR
         return jpy.array('char', junk)
     elif javaType == 'float':
         newarray = numpy.copy(ndarray)

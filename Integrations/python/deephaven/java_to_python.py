@@ -154,8 +154,8 @@ def _handleNulls(nparray, javaArrayType, convertNulls):
     elif javaArrayType in ['C', 'char']:
         if convertNulls == NULL_CONVERSION.PASS:
             nparray.dtype = numpy.dtype('U1')
-        elif ord(NULL_CHAR) in nparray:
-            mask = (nparray == ord(NULL_CHAR))
+        elif NULL_CHAR in nparray:
+            mask = (nparray == NULL_CHAR)
             nparray.dtype = numpy.dtype('U1')
             nparray[mask] = ''
         else:
