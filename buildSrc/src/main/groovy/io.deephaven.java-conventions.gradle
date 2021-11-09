@@ -74,12 +74,31 @@ tasks.withType(JavaCompile).configureEach {
   }
 }
 
+def extraJvmArgs = { runtimeJavaVersion ->
+  if (runtimeJavaVersion > 8) {
+    // Allow reflection, disable broken jit
+    return [
+            '--add-opens', 'java.base/java.lang=ALL-UNNAMED',
+            '-XX:CompileCommand=exclude,io.deephaven.db.v2.by.ssmpercentile.DoublePercentileTypeMedianHelper::setResult',
+            '-XX:CompileCommand=exclude,io.deephaven.db.v2.by.IncrementalChunkedByAggregationStateManager::buildTable',
+            '-XX:CompileCommand=exclude,io.deephaven.db.v2.by.ssmpercentile.SsmChunkedPercentileOperator::addChunk',
+            '-XX:CompileCommand=exclude,io.deephaven.db.v2.RightIncrementalChunkedCrossJoinStateManager::addToIndex',
+            '-XX:CompileCommand=exclude,io.deephaven.db.v2.IncrementalChunkedNaturalJoinStateManager::buildTable',
+            '-XX:CompileCommand=exclude,io.deephaven.db.v2.IncrementalChunkedOperatorAggregationStateManager::buildTable',
+    ]
+  }
+  return []
+}
+
 tasks.withType(JavaExec).configureEach {
   javaLauncher.set runtimeLauncher
+  jvmArgs += extraJvmArgs(runtimeVersion)
+  // todo: configure create start scripts
 }
 
 tasks.withType(Test).configureEach {
   javaLauncher.set testRuntimeLauncher
+  jvmArgs += extraJvmArgs(testRuntimeVersion)
 }
 
 tasks.withType(GroovyCompile).configureEach {
