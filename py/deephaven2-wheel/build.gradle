@@ -1,0 +1,5 @@
+plugins {
+    id 'com.bmuschko.docker-remote-api'
+}
+
+Docker.buildPyWheel(project, 'buildWheel', 'deephaven/deephaven2-wheel', "${rootDir}/pyintegration")
