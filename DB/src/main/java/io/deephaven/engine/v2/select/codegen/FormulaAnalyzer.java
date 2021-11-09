@@ -91,7 +91,7 @@ public class FormulaAnalyzer {
 
         for (ColumnDefinition<?> columnDefinition : availableColumns.values()) {
             final String columnSuffix = DhFormulaColumn.COLUMN_SUFFIX;
-            final Class<?> dbArrayType = DhFormulaColumn.getDbArrayType(columnDefinition.getDataType());
+            final Class<?> dbArrayType = DhFormulaColumn.getVectorType(columnDefinition.getDataType());
 
             possibleVariables.put(columnDefinition.getName() + columnSuffix, dbArrayType);
 

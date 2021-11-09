@@ -330,17 +330,17 @@ public abstract class AbstractFormulaColumn implements FormulaColumn {
         final String name;
         final String bareName;
         final Class<?> dataType;
-        final Class<?> dbArrayType;
-        final String dbArrayTypeString;
+        final Class<?> vectorType;
+        final String vectorTypeString;
         final ColumnSource<?> columnSource;
 
-        public ColumnArrayParameter(String name, String bareName, Class<?> dataType, Class<?> dbArrayType,
-                String dbArrayTypeString, ColumnSource<?> columnSource) {
+        public ColumnArrayParameter(String name, String bareName, Class<?> dataType, Class<?> vectorType,
+                                    String vectorTypeString, ColumnSource<?> columnSource) {
             this.name = name;
             this.bareName = bareName;
             this.dataType = dataType;
-            this.dbArrayType = dbArrayType;
-            this.dbArrayTypeString = dbArrayTypeString;
+            this.vectorType = vectorType;
+            this.vectorTypeString = vectorTypeString;
             this.columnSource = columnSource;
         }
     }

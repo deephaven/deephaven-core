@@ -438,7 +438,7 @@ public class ConditionFilter extends AbstractConditionFilter {
                     throw new RuntimeException("Column \"" + columnName + "\" doesn't exist in this table");
                 }
                 final Class dataType = column.getDataType();
-                final Class columnType = DhFormulaColumn.getDbArrayType(dataType);
+                final Class columnType = DhFormulaColumn.getVectorType(dataType);
 
                 /*
                  * Adding array column fields.
@@ -474,7 +474,7 @@ public class ConditionFilter extends AbstractConditionFilter {
                     throw new RuntimeException("Column \"" + columnName + "\" doesn't exist in this table");
                 }
                 final Class dataType = column.getDataType();
-                final Class columnType = DhFormulaColumn.getDbArrayType(dataType);
+                final Class columnType = DhFormulaColumn.getVectorType(dataType);
 
                 final String arrayType = columnType.getCanonicalName().replace(
                         "io.deephaven.engine.tables.dbarrays",

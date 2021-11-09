@@ -238,7 +238,7 @@ public class JavaKernelBuilder {
             for (Map.Entry<String, Class<?>> entry : arrays.entrySet()) {
                 final String name = entry.getKey() + DhFormulaColumn.COLUMN_SUFFIX;
                 final Class<?> dataType = entry.getValue();
-                final Class<?> dbArrayType = DhFormulaColumn.getDbArrayType(dataType);
+                final Class<?> dbArrayType = DhFormulaColumn.getVectorType(dataType);
                 final String dbArrayTypeAsString = dbArrayType.getCanonicalName() +
                         (TypeUtils.isConvertibleToPrimitive(dataType) ? "" : "<" + dataType.getCanonicalName() + ">");
                 final ColumnArrayParameter cap = new ColumnArrayParameter(name, dbArrayType, dbArrayTypeAsString);

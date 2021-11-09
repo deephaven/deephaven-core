@@ -154,18 +154,18 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
         return result;
     }
 
-    public static Class<?> getDbArrayType(Class<?> declaredType) {
+    public static Class<?> getVectorType(Class<?> declaredType) {
         if (!io.deephaven.util.type.TypeUtils.isConvertibleToPrimitive(declaredType) || declaredType == boolean.class
                 || declaredType == Boolean.class) {
             return ObjectVector.class;
         } else {
+            final String declaredTypeSimpleName =
+                    io.deephaven.util.type.TypeUtils.getUnboxedType(declaredType).getSimpleName();
             try {
-                return Class.forName(ObjectVector.class.getPackage().getName() + ".Db"
-                        + Character.toUpperCase(
-                                io.deephaven.util.type.TypeUtils.getUnboxedType(declaredType).getSimpleName().charAt(0))
-                        +
-                        io.deephaven.util.type.TypeUtils.getUnboxedType(declaredType).getSimpleName().substring(1)
-                        + "Array");
+                return Class.forName(ObjectVector.class.getPackage().getName() + '.'
+                        + Character.toUpperCase(declaredTypeSimpleName.charAt(0))
+                        + declaredTypeSimpleName.substring(1)
+                        + "Vector");
             } catch (ClassNotFoundException e) {
                 throw new RuntimeException("Unexpected exception for type " + declaredType, e);
             }
@@ -258,7 +258,7 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
                 },
                 ca -> {
                     final CodeGenerator fc = g.instantiateNewRepeated("instanceVar");
-                    fc.replace("TYPE", ca.dbArrayTypeString);
+                    fc.replace("TYPE", ca.vectorTypeString);
                     fc.replace("NAME", ca.name);
                     return null;
                 },
@@ -290,7 +290,7 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
                         CodeGenerator.repeated("initColumn",
                                 "[[COLUMN_NAME]] = __columnsToData.get(\"[[COLUMN_NAME]]\");"),
                         CodeGenerator.repeated("initNormalColumnArray",
-                                "[[COLUMN_ARRAY_NAME]] = new [[DB_ARRAY_TYPE_PREFIX]]ColumnWrapper(__columnsToData.get(\"[[COLUMN_NAME]]\"), __rowSet);"),
+                                "[[COLUMN_ARRAY_NAME]] = new [[VECTOR_TYPE_PREFIX]]ColumnWrapper(__columnsToData.get(\"[[COLUMN_NAME]]\"), __rowSet);"),
                         CodeGenerator.repeated("initParam",
                                 "[[PARAM_NAME]] = ([[PARAM_TYPE]]) __params[[[PARAM_INDEX]]].getValue();"),
                         "[[LAZY_RESULT_CACHE_NAME]] = __lazy ? new ConcurrentHashMap<>() : null;"));
@@ -309,10 +309,10 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
                     fc.replace("COLUMN_ARRAY_NAME", ac.name);
                     fc.replace("COLUMN_NAME", ac.bareName);
 
-                    final String datp = getDbArrayType(ac.columnSource.getType()).getCanonicalName().replace(
+                    final String vtp = getVectorType(ac.columnSource.getType()).getCanonicalName().replace(
                             "io.deephaven.engine.tables.dbarrays",
                             "io.deephaven.engine.v2.dbarrays");
-                    fc.replace("DB_ARRAY_TYPE_PREFIX", datp);
+                    fc.replace("VECTOR_TYPE_PREFIX", vtp);
                     return null;
                 },
                 p -> {
@@ -657,11 +657,11 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
             for (String uca : usedColumnArrays) {
                 final ColumnSource<?> cs = columnSources.get(uca);
                 final Class<?> dataType = cs.getType();
-                final Class<?> dbArrayType = getDbArrayType(dataType);
-                final String dbArrayTypeAsString = dbArrayType.getCanonicalName() +
+                final Class<?> vectorType = getVectorType(dataType);
+                final String vectorTypeAsString = vectorType.getCanonicalName() +
                         (TypeUtils.isConvertibleToPrimitive(dataType) ? "" : "<" + dataType.getCanonicalName() + ">");
                 final ColumnArrayParameter cap = new ColumnArrayParameter(uca + COLUMN_SUFFIX, uca,
-                        dataType, dbArrayType, dbArrayTypeAsString, cs);
+                        dataType, vectorType, vectorTypeAsString, cs);
                 addIfNotNull(results, columnArrayLambda.apply(cap));
             }
         }
