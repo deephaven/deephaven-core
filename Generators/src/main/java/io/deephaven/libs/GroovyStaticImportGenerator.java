@@ -1,6 +1,7 @@
 package io.deephaven.libs;
 
 import io.deephaven.configuration.Configuration;
+import io.deephaven.util.type.TypeUtils;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
@@ -13,8 +14,6 @@ import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
-
-import io.deephaven.util.type.TypeUtils;
 
 
 /**
@@ -411,12 +410,10 @@ public class GroovyStaticImportGenerator {
 
         @SuppressWarnings("unchecked")
         GroovyStaticImportGenerator gen = new GroovyStaticImportGenerator(imports,
+                // skipping common erasure "sum"
                 Collections.singletonList((f) -> f.methodName.equals("sum") && f.parameterTypes.length == 1
-                        && f.parameterTypes[0].getTypeName().contains("io.deephaven.engine.tables.dbarrays.Vector<")) // skipping
-        // common
-        // erasure
-        // "sum"
-        );
+                        && f.parameterTypes[0].getTypeName()
+                                .contains("io.deephaven.engine.tables.dbarrays.ObjectVector<")));
 
         final String code = gen.generateCode();
         log.info("\n\n**************************************\n\n");

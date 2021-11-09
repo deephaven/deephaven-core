@@ -1874,18 +1874,6 @@ public class GroovyStaticImports {
     public static  long sum( io.deephaven.engine.tables.dbarrays.LongVector values ) {return LongNumericPrimitives.sum( values );}
     /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#sum(io.deephaven.engine.tables.dbarrays.ShortVector) */
     public static  short sum( io.deephaven.engine.tables.dbarrays.ShortVector values ) {return ShortNumericPrimitives.sum( values );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#sum(io.deephaven.engine.tables.dbarrays.ObjectVector<byte[]>) */
-    public static  byte[] sum( io.deephaven.engine.tables.dbarrays.ObjectVector<byte[]> values ) {return ByteNumericPrimitives.sum( values );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#sum(io.deephaven.engine.tables.dbarrays.ObjectVector<double[]>) */
-    public static  double[] sum( io.deephaven.engine.tables.dbarrays.ObjectVector<double[]> values ) {return DoubleNumericPrimitives.sum( values );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#sum(io.deephaven.engine.tables.dbarrays.ObjectVector<float[]>) */
-    public static  float[] sum( io.deephaven.engine.tables.dbarrays.ObjectVector<float[]> values ) {return FloatNumericPrimitives.sum( values );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#sum(io.deephaven.engine.tables.dbarrays.ObjectVector<int[]>) */
-    public static  int[] sum( io.deephaven.engine.tables.dbarrays.ObjectVector<int[]> values ) {return IntegerNumericPrimitives.sum( values );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#sum(io.deephaven.engine.tables.dbarrays.ObjectVector<long[]>) */
-    public static  long[] sum( io.deephaven.engine.tables.dbarrays.ObjectVector<long[]> values ) {return LongNumericPrimitives.sum( values );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#sum(io.deephaven.engine.tables.dbarrays.ObjectVector<short[]>) */
-    public static  short[] sum( io.deephaven.engine.tables.dbarrays.ObjectVector<short[]> values ) {return ShortNumericPrimitives.sum( values );}
     /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#tan(byte) */
     public static  double tan( byte value ) {return ByteNumericPrimitives.tan( value );}
     /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#tan(double) */
