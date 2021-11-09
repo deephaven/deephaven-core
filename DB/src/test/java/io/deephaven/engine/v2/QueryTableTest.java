@@ -2353,7 +2353,7 @@ public class QueryTableTest extends QueryTableTestBase {
         final String diff4 = diff(t8, t7, 10);
         Assert.assertEquals("UngroupableColumnSources do not match!", "", diff4);
 
-        final Table t9 = t1.update("Array=new io.deephaven.engine.tables.dbarrays.DbIntArrayDirect(19, 40)");
+        final Table t9 = t1.update("Array=new io.deephaven.engine.tables.dbarrays.IntVectorDirect(19, 40)");
         final Table t10 = t9.ungroup();
         final String diff5 = diff(t10, t6, 10);
         Assert.assertEquals("UngroupableColumnSources do not match!", "", diff5);
@@ -2609,17 +2609,17 @@ public class QueryTableTest extends QueryTableTestBase {
                 .updateView("BValue = ((i%2) == 0) ? null : BValue");
 
         QueryTable expected = TstUtils.testRefreshingTable(c("Letter", 'a', 'b', 'c', 'd'),
-                c("Value", (DbIntArray) new DbIntArrayDirect(0), (DbIntArray) new DbIntArrayDirect(1),
-                        (DbIntArray) new DbIntArrayDirect(2), (DbIntArray) new DbIntArrayDirect(3)),
-                c("BValue", null, (DbByteArray) new DbByteArrayDirect((byte) 1), null, null),
-                c("SValue", null, (DbShortArray) new DbShortArrayDirect((short) 1), null, null),
-                c("EulavI", null, (DbIntArray) new DbIntArrayDirect(1), null, null),
-                c("LValue", null, (DbLongArray) new DbLongArrayDirect(1), null, null),
-                c("FValue", null, (DbFloatArray) new DbFloatArrayDirect(1.1f), null, null),
-                c("DValue", null, (DbDoubleArray) new DbDoubleArrayDirect(1.1d), null, null),
-                c("CCol", null, (DbCharArray) new DbCharArrayDirect('b'), null, null),
-                c("BoCol", null, (DbArray<Boolean>) new DbArrayDirect<>(false), null, null),
-                c("OCol", null, (DbArray<Pair<Integer, Integer>>) new DbArrayDirect<>(new Pair<>(2, 3)), null, null));
+                c("Value", (IntVector) new IntVectorDirect(0), (IntVector) new IntVectorDirect(1),
+                        (IntVector) new IntVectorDirect(2), (IntVector) new IntVectorDirect(3)),
+                c("BValue", null, (ByteVector) new ByteVectorDirect((byte) 1), null, null),
+                c("SValue", null, (ShortVector) new ShortVectorDirect((short) 1), null, null),
+                c("EulavI", null, (IntVector) new IntVectorDirect(1), null, null),
+                c("LValue", null, (LongVector) new LongVectorDirect(1), null, null),
+                c("FValue", null, (FloatVector) new FloatVectorDirect(1.1f), null, null),
+                c("DValue", null, (DoubleVector) new DoubleVectorDirect(1.1d), null, null),
+                c("CCol", null, (CharVector) new CharVectorDirect('b'), null, null),
+                c("BoCol", null, (ObjectVector<Boolean>) new ObjectVectorDirect<>(false), null, null),
+                c("OCol", null, (ObjectVector<Pair<Integer, Integer>>) new ObjectVectorDirect<>(new Pair<>(2, 3)), null, null));
 
         assertTableEquals(expected, joined);
 

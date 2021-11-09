@@ -133,17 +133,17 @@ _boxedArrayTypes = {
 }
 
 
-_javaTypeToDbarrayType = {
-    'java.lang.String': 'io.deephaven.engine.tables.dbarrays.DbArrayDirect',
-    'char': 'io.deephaven.engine.tables.dbarrays.DbCharArrayDirect',
-    'java.lang.Boolean': 'io.deephaven.engine.tables.dbarrays.DbArrayDirect',
-    'boolean': 'io.deephaven.engine.tables.dbarrays.DbArrayDirect',  # it really should be boxed...
-    'byte': 'io.deephaven.engine.tables.dbarrays.DbByteArrayDirect',
-    'short': 'io.deephaven.engine.tables.dbarrays.DbShortArrayDirect',
-    'int': 'io.deephaven.engine.tables.dbarrays.DbIntArrayDirect',
-    'long': 'io.deephaven.engine.tables.dbarrays.DbLongArrayDirect',
-    'float': 'io.deephaven.engine.tables.dbarrays.DbFloatArrayDirect',
-    'double': 'io.deephaven.engine.tables.dbarrays.DbDoubleArrayDirect',
+_javaTypeToVectorType = {
+    'java.lang.String': 'io.deephaven.engine.tables.dbarrays.ObjectVectorDirect',
+    'char': 'io.deephaven.engine.tables.dbarrays.CharVectorDirect',
+    'java.lang.Boolean': 'io.deephaven.engine.tables.dbarrays.ObjectVectorDirect',
+    'boolean': 'io.deephaven.engine.tables.dbarrays.ObjectVectorDirect',  # it really should be boxed...
+    'byte': 'io.deephaven.engine.tables.dbarrays.ByteVectorDirect',
+    'short': 'io.deephaven.engine.tables.dbarrays.ShortVectorDirect',
+    'int': 'io.deephaven.engine.tables.dbarrays.IntVectorDirect',
+    'long': 'io.deephaven.engine.tables.dbarrays.LongVectorDirect',
+    'float': 'io.deephaven.engine.tables.dbarrays.FloatVectorDirect',
+    'double': 'io.deephaven.engine.tables.dbarrays.DoubleVectorDirect',
 }
 
 _javaTypeToImmutableColumnSource = {
@@ -426,10 +426,10 @@ def _arrayColumnSource(array, javaTypeString):
 
     arrayType = None
 
-    if javaTypeString in _javaTypeToDbarrayType:
-        arrayType = _javaTypeToDbarrayType[javaTypeString]
+    if javaTypeString in _javaTypeToVectorType:
+        arrayType = _javaTypeToVectorType[javaTypeString]
     elif javaTypeString in jpy.dtypes:
-        arrayType = 'io.deephaven.engine.tables.dbarrays.DbArrayDirect'
+        arrayType = 'io.deephaven.engine.tables.dbarrays.ObjectVectorDirect'
 
     arrayCls = jpy.get_type(arrayType)
     if javaTypeString == 'java.lang.Boolean':
@@ -890,20 +890,16 @@ class NULL_CONVERSION(object):
         return cls.ERROR
 
 
-def _isDbArray(obj):
+def _isVector(obj):
     try:
-        classString = obj.getClass().getName()
-        cond = classString.startswith('io.deephaven.engine.tables.dbarrays.Db') or \
-               classString.startswith('io.deephaven.engine.v2.dbarrays.Db')
-        return cond
+        return jpy.get_type('io.deephaven.engine.tables.dbarrays.Vector').isAssignaleFrom(obj.getClass())
     except Exception as e:
         return False
 
 
 def _isJavaArray(obj):
     try:
-        classString = obj.getClass().getName()
-        return classString.startswith('[')
+        return obj.getClass().isArray()
     except Exception as e:
         return False
 

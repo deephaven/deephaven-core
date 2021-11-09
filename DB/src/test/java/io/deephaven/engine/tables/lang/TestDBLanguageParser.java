@@ -10,6 +10,7 @@ import io.deephaven.base.verify.Require;
 import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.dbarrays.*;
+import io.deephaven.engine.tables.dbarrays.Vector;
 import io.deephaven.engine.tables.lang.DBLanguageParser.QueryLanguageParseException;
 import io.deephaven.engine.tables.utils.*;
 import io.deephaven.utils.test.PropertySaver;
@@ -52,7 +53,7 @@ public class TestDBLanguageParser extends BaseArrayTestCase {
         classImports.add(Color.class);
         classImports.add(ArrayUtils.class);
         classImports.add(HashSet.class);
-        classImports.add(DbArrayBase.class);
+        classImports.add(Vector.class);
         classImports.add(DBLanguageParserDummyClass.class);
         classImports.add(DBLanguageParserDummyClass.SubclassOfDBLanguageParserDummyClass.class);
         classImports.add(DBLanguageParserDummyEnum.class);
@@ -96,14 +97,14 @@ public class TestDBLanguageParser extends BaseArrayTestCase {
         variables.put("myBooleanObj", Boolean.class);
         variables.put("myArrayList", ArrayList.class);
         variables.put("myHashMap", HashMap.class);
-        variables.put("myDBArray", DbArray.class);
+        variables.put("myDBArray", ObjectVector.class);
         variables.put("myEnumValue", DBLanguageParserDummyEnum.class);
-        variables.put("myObjectDBArray", DbArray.class);
-        variables.put("myIntDBArray", DbIntArray.class);
-        variables.put("myByteDBArray", DbByteArray.class);
-        variables.put("myDoubleDBArray", DbDoubleArray.class);
+        variables.put("myObjectDBArray", ObjectVector.class);
+        variables.put("myIntDBArray", IntVector.class);
+        variables.put("myByteDBArray", ByteVector.class);
+        variables.put("myDoubleDBArray", DoubleVector.class);
         // noinspection deprecation
-        variables.put("myBooleanDBArray", DbBooleanArray.class);
+        variables.put("myBooleanDBArray", BooleanVector.class);
         variables.put("myDummyClass", DBLanguageParserDummyClass.class);
         variables.put("myDummyInnerClass", DBLanguageParserDummyClass.InnerClass.class);
         variables.put("myClosure", Closure.class);
@@ -1156,7 +1157,7 @@ public class TestDBLanguageParser extends BaseArrayTestCase {
         check(expression, resultExpression, new double[0].getClass(), new String[] {"myDoubleArray", "myInt"});
 
         expression = "testImplicitConversion1(myDoubleDBArray)";
-        resultExpression = "testImplicitConversion1(ArrayUtils.nullSafeDbArrayToArray(myDoubleDBArray))";
+        resultExpression = "testImplicitConversion1(ArrayUtils.nullSafeVectorToArray(myDoubleDBArray))";
         check(expression, resultExpression, new double[0].getClass(), new String[] {"myDoubleDBArray"});
 
         expression = "testImplicitConversion2(myInt, myInt)";
@@ -1168,7 +1169,7 @@ public class TestDBLanguageParser extends BaseArrayTestCase {
         check(expression, resultExpression, new Object[0].getClass(), new String[] {"myLongArray"});
 
         expression = "testImplicitConversion3(myDBArray)";
-        resultExpression = "testImplicitConversion3(ArrayUtils.nullSafeDbArrayToArray(myDBArray))";
+        resultExpression = "testImplicitConversion3(ArrayUtils.nullSafeVectorToArray(myDBArray))";
         check(expression, resultExpression, new Object[0].getClass(), new String[] {"myDBArray"});
 
         expression = "testImplicitConversion3(myDoubleArray)";
@@ -1184,7 +1185,7 @@ public class TestDBLanguageParser extends BaseArrayTestCase {
         check(expression, resultExpression, new Object[0].getClass(), new String[] {"myDoubleArray", "myInt"});
 
         expression = "testImplicitConversion4(myInt, myDBArray)";
-        resultExpression = "testImplicitConversion4(doubleCast(myInt), ArrayUtils.nullSafeDbArrayToArray(myDBArray))";
+        resultExpression = "testImplicitConversion4(doubleCast(myInt), ArrayUtils.nullSafeVectorToArray(myDBArray))";
         check(expression, resultExpression, new Object[0].getClass(), new String[] {"myDBArray", "myInt"});
 
         expression = "testImplicitConversion4(myInt, myDBArray, myDouble)";
@@ -1196,16 +1197,16 @@ public class TestDBLanguageParser extends BaseArrayTestCase {
         check(expression, resultExpression, new Object[0].getClass(), new String[] {"myDBArray", "myDouble", "myInt"});
 
         // expression="testImplicitConversion5(myDBArray)"; // TODO: This test fails (declared arg type is
-        // "DbArrayBase...")
-        // resultExpression="testImplicitConversion5(myDBArray)"; // vararg of DbArrayBase -- don't convert!
+        // "Vector...")
+        // resultExpression="testImplicitConversion5(myDBArray)"; // vararg of Vector -- don't convert!
         // check(expression, resultExpression, new Object[0].getClass(), new String[]{"myDBArray"});
 
-        expression = "testImplicitConversion5((DbArrayBase) myDBArray)"; // Workaround for the above.
-        resultExpression = "testImplicitConversion5((DbArrayBase)myDBArray)"; // vararg of DbArrayBase -- don't convert!
+        expression = "testImplicitConversion5((Vector) myDBArray)"; // Workaround for the above.
+        resultExpression = "testImplicitConversion5((Vector)myDBArray)"; // vararg of Vector -- don't convert!
         check(expression, resultExpression, new Object[0].getClass(), new String[] {"myDBArray"});
 
         expression = "testImplicitConversion5(myDBArray, myDBArray)";
-        resultExpression = "testImplicitConversion5(myDBArray, myDBArray)"; // vararg of DbArrayBase -- don't convert!
+        resultExpression = "testImplicitConversion5(myDBArray, myDBArray)"; // vararg of Vector -- don't convert!
         check(expression, resultExpression, new Object[0].getClass(), new String[] {"myDBArray"});
     }
 
@@ -1701,7 +1702,7 @@ public class TestDBLanguageParser extends BaseArrayTestCase {
 
         expression = "DBLanguageParserDummyClass.arrayOnlyFunction(myIntDBArray)";
         resultExpression =
-                "DBLanguageParserDummyClass.arrayOnlyFunction(ArrayUtils.nullSafeDbArrayToArray(myIntDBArray))";
+                "DBLanguageParserDummyClass.arrayOnlyFunction(ArrayUtils.nullSafeVectorToArray(myIntDBArray))";
         check(expression, resultExpression, long.class, new String[] {"myIntDBArray"});
 
         expression = "DBLanguageParserDummyClass.dbArrayOnlyFunction(myIntArray)";
@@ -1803,15 +1804,15 @@ public class TestDBLanguageParser extends BaseArrayTestCase {
 
     public void testDBArrayUnboxing() throws Exception {
         String expression = "genericArrayToSingle(myDBArray)";
-        String resultExpression = "genericArrayToSingle(ArrayUtils.nullSafeDbArrayToArray(myDBArray))";
+        String resultExpression = "genericArrayToSingle(ArrayUtils.nullSafeVectorToArray(myDBArray))";
         check(expression, resultExpression, Double.class, new String[] {"myDBArray"});
 
         expression = "genericArraysToSingle(myDBArray, myIntegerObjArray)";
-        resultExpression = "genericArraysToSingle(ArrayUtils.nullSafeDbArrayToArray(myDBArray), myIntegerObjArray)";
+        resultExpression = "genericArraysToSingle(ArrayUtils.nullSafeVectorToArray(myDBArray), myIntegerObjArray)";
         check(expression, resultExpression, Integer.class, new String[] {"myDBArray", "myIntegerObjArray"});
 
         expression = "genericArraysToSingle(myIntegerObjArray, myDBArray)";
-        resultExpression = "genericArraysToSingle(myIntegerObjArray, ArrayUtils.nullSafeDbArrayToArray(myDBArray))";
+        resultExpression = "genericArraysToSingle(myIntegerObjArray, ArrayUtils.nullSafeVectorToArray(myDBArray))";
         check(expression, resultExpression, Double.class, new String[] {"myDBArray", "myIntegerObjArray"});
 
         expression = "genericDBArray(myDBArray)";
@@ -1819,20 +1820,20 @@ public class TestDBLanguageParser extends BaseArrayTestCase {
         check(expression, resultExpression, Double.class, new String[] {"myDBArray"});
 
         expression = "genericArrayToSingle(myObjectDBArray)";
-        resultExpression = "genericArrayToSingle(ArrayUtils.nullSafeDbArrayToArray(myObjectDBArray))";
+        resultExpression = "genericArrayToSingle(ArrayUtils.nullSafeVectorToArray(myObjectDBArray))";
         check(expression, resultExpression, Object.class, new String[] {"myObjectDBArray"});
 
         expression = "intArrayToInt(myIntDBArray)";
-        resultExpression = "intArrayToInt(ArrayUtils.nullSafeDbArrayToArray(myIntDBArray))";
+        resultExpression = "intArrayToInt(ArrayUtils.nullSafeVectorToArray(myIntDBArray))";
         check(expression, resultExpression, int.class, new String[] {"myIntDBArray"});
 
         expression = "myIntDBArray==myIntDBArray";
         resultExpression =
-                "eqArray(ArrayUtils.nullSafeDbArrayToArray(myIntDBArray), ArrayUtils.nullSafeDbArrayToArray(myIntDBArray))";
+                "eqArray(ArrayUtils.nullSafeVectorToArray(myIntDBArray), ArrayUtils.nullSafeVectorToArray(myIntDBArray))";
         check(expression, resultExpression, boolean[].class, new String[] {"myIntDBArray"});
 
         expression = "booleanArrayToBoolean(myBooleanDBArray)";
-        resultExpression = "booleanArrayToBoolean(ArrayUtils.nullSafeDbArrayToArray(myBooleanDBArray))";
+        resultExpression = "booleanArrayToBoolean(ArrayUtils.nullSafeVectorToArray(myBooleanDBArray))";
         check(expression, resultExpression, Boolean.class, new String[] {"myBooleanDBArray"});
 
         expression = "new String(myByteArray)";
@@ -1840,7 +1841,7 @@ public class TestDBLanguageParser extends BaseArrayTestCase {
         check(expression, resultExpression, String.class, new String[] {"myByteArray"});
 
         expression = "new String(myByteDBArray)";
-        resultExpression = "new String(ArrayUtils.nullSafeDbArrayToArray(myByteDBArray))";
+        resultExpression = "new String(ArrayUtils.nullSafeVectorToArray(myByteDBArray))";
         check(expression, resultExpression, String.class, new String[] {"myByteDBArray"});
     }
 
@@ -1888,7 +1889,7 @@ public class TestDBLanguageParser extends BaseArrayTestCase {
         expression =
                 "DBLanguageParserDummyClass.interpolate(myDoubleDBArray,myDoubleDBArray,new double[]{myDouble},DBLanguageParserDummyClass.NestedEnum.ONE,false)[0]";
         resultExpression =
-                "DBLanguageParserDummyClass.interpolate(ArrayUtils.nullSafeDbArrayToArray(myDoubleDBArray), ArrayUtils.nullSafeDbArrayToArray(myDoubleDBArray), new double[]{ myDouble }, DBLanguageParserDummyClass.NestedEnum.ONE, false)[0]";
+                "DBLanguageParserDummyClass.interpolate(ArrayUtils.nullSafeVectorToArray(myDoubleDBArray), ArrayUtils.nullSafeVectorToArray(myDoubleDBArray), new double[]{ myDouble }, DBLanguageParserDummyClass.NestedEnum.ONE, false)[0]";
         check(expression, resultExpression, double.class, new String[] {"myDouble", "myDoubleDBArray"});
     }
 
@@ -2256,7 +2257,7 @@ public class TestDBLanguageParser extends BaseArrayTestCase {
         return o;
     }
 
-    public static Object[] testImplicitConversion5(DbArrayBase... o) {
+    public static Object[] testImplicitConversion5(Vector... o) {
         return o;
     }
 
@@ -2320,7 +2321,7 @@ public class TestDBLanguageParser extends BaseArrayTestCase {
         return null;
     }
 
-    public static <T> T genericDBArray(DbArray<T> dbArray) {
+    public static <T> T genericDBArray(ObjectVector<T> vector) {
         return null;
     }
 

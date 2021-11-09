@@ -1,7 +1,7 @@
 package io.deephaven.engine.tables;
 
-import io.deephaven.engine.tables.dbarrays.DbArray;
-import io.deephaven.engine.tables.dbarrays.DbArrayBase;
+import io.deephaven.engine.tables.dbarrays.ObjectVector;
+import io.deephaven.engine.tables.dbarrays.Vector;
 import io.deephaven.engine.tables.libs.StringSet;
 import io.deephaven.engine.tables.utils.DBDateTime;
 import io.deephaven.engine.v2.ColumnToCodecMappings;
@@ -34,7 +34,7 @@ public class CodecLookup {
      *
      * @param dataType The data type to check
      * @param componentType The component type to check, for array and
-     *        {@link io.deephaven.engine.tables.dbarrays.DbArrayBase} types
+     *        {@link Vector} types
      * @return Whether a codec is required
      */
     public static boolean codecRequired(@NotNull final Class<?> dataType, @Nullable final Class<?> componentType) {
@@ -52,11 +52,11 @@ public class CodecLookup {
             return !(componentType.isPrimitive() || componentType == Boolean.class || componentType == DBDateTime.class
                     || componentType == String.class);
         }
-        if (DbArrayBase.class.isAssignableFrom(dataType)) {
+        if (Vector.class.isAssignableFrom(dataType)) {
             if (componentType == null) {
                 throw new IllegalArgumentException("Vector type " + dataType + " requires a component type");
             }
-            if (DbArray.class.isAssignableFrom(dataType)) {
+            if (ObjectVector.class.isAssignableFrom(dataType)) {
                 // DbArrays of basic types do not require codecs
                 return !(componentType == Boolean.class || componentType == DBDateTime.class
                         || componentType == String.class);

@@ -11,6 +11,6 @@ import java.io.IOException;
 public class ReplicateTst {
     public static void main(String[] args) throws IOException {
         ReplicatePrimitiveCode
-                .charToAllButBoolean("DB/src/test/java/io/deephaven/engine/tables/dbarrays/DbCharArrayTest.java");
+                .charToAllButBoolean("DB/src/test/java/io/deephaven/engine/tables/dbarrays/CharVectorTest.java");
     }
 }

@@ -92,7 +92,7 @@ public class Casting {
      * @param values values
      * @return cast array.
      */
-    public static long[] castLong(DbByteArray values) {
+    public static long[] castLong(ByteVector values) {
         return values == null ? null : castLong(values.toArray());
     }
 
@@ -102,7 +102,7 @@ public class Casting {
      * @param values values
      * @return cast array.
      */
-    public static long[] castLong(DbShortArray values) {
+    public static long[] castLong(ShortVector values) {
         return values == null ? null : castLong(values.toArray());
     }
 
@@ -112,7 +112,7 @@ public class Casting {
      * @param values values
      * @return cast array.
      */
-    public static long[] castLong(DbIntArray values) {
+    public static long[] castLong(IntVector values) {
         return values == null ? null : castLong(values.toArray());
     }
 
@@ -122,7 +122,7 @@ public class Casting {
      * @param values values
      * @return cast array.
      */
-    public static long[] castLong(DbLongArray values) {
+    public static long[] castLong(LongVector values) {
         return values == null ? null : castLong(values.toArray());
     }
 
@@ -248,7 +248,7 @@ public class Casting {
      * @param values values
      * @return cast array.
      */
-    public static double[] castDouble(DbByteArray values) {
+    public static double[] castDouble(ByteVector values) {
         return values == null ? null : castDouble(values.toArray());
     }
 
@@ -258,7 +258,7 @@ public class Casting {
      * @param values values
      * @return cast array.
      */
-    public static double[] castDouble(DbShortArray values) {
+    public static double[] castDouble(ShortVector values) {
         return values == null ? null : castDouble(values.toArray());
     }
 
@@ -268,7 +268,7 @@ public class Casting {
      * @param values values
      * @return cast array.
      */
-    public static double[] castDouble(DbIntArray values) {
+    public static double[] castDouble(IntVector values) {
         return values == null ? null : castDouble(values.toArray());
     }
 
@@ -278,7 +278,7 @@ public class Casting {
      * @param values values
      * @return cast array.
      */
-    public static double[] castDouble(DbLongArray values) {
+    public static double[] castDouble(LongVector values) {
         return values == null ? null : castDouble(values.toArray());
     }
 
@@ -288,7 +288,7 @@ public class Casting {
      * @param values values
      * @return cast array.
      */
-    public static double[] castDouble(DbFloatArray values) {
+    public static double[] castDouble(FloatVector values) {
         return values == null ? null : castDouble(values.toArray());
     }
 
@@ -298,7 +298,7 @@ public class Casting {
      * @param values values
      * @return cast array.
      */
-    public static double[] castDouble(DbDoubleArray values) {
+    public static double[] castDouble(DoubleVector values) {
         return values == null ? null : castDouble(values.toArray());
     }
 
@@ -331,8 +331,8 @@ public class Casting {
      * @return cast array.
      */
     @Deprecated
-    public static DbDoubleArray intToDouble(final DbIntArray values) {
-        return values == null ? null : new DbDoubleArrayDirect(castDouble(values));
+    public static DoubleVector intToDouble(final IntVector values) {
+        return values == null ? null : new DoubleVectorDirect(castDouble(values));
     }
 
     /**
@@ -342,8 +342,8 @@ public class Casting {
      * @return cast array.
      */
     @Deprecated
-    public static DbDoubleArray longToDouble(final DbLongArray values) {
-        return values == null ? null : new DbDoubleArrayDirect(castDouble(values));
+    public static DoubleVector longToDouble(final LongVector values) {
+        return values == null ? null : new DoubleVectorDirect(castDouble(values));
     }
 
     static class LosingPrecisionWhileCastingException extends UnsupportedOperationException {

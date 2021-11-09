@@ -456,40 +456,40 @@ public class ArrayUtils {
         }
     }
 
-    public static <T> T[] nullSafeDbArrayToArray(final DbArray<T> dbArray) {
-        return dbArray == null ? null : dbArray.toArray();
+    public static <T> T[] nullSafeVectorToArray(final ObjectVector<T> vector) {
+        return vector == null ? null : vector.toArray();
     }
 
-    public static Boolean[] nullSafeDbArrayToArray(final DbBooleanArray dbArray) {
-        return dbArray == null ? null : dbArray.toArray();
+    public static Boolean[] nullSafeVectorToArray(final BooleanVector vector) {
+        return vector == null ? null : vector.toArray();
     }
 
-    public static byte[] nullSafeDbArrayToArray(final DbByteArray dbArray) {
-        return dbArray == null ? null : dbArray.toArray();
+    public static byte[] nullSafeVectorToArray(final ByteVector vector) {
+        return vector == null ? null : vector.toArray();
     }
 
-    public static char[] nullSafeDbArrayToArray(final DbCharArray dbArray) {
-        return dbArray == null ? null : dbArray.toArray();
+    public static char[] nullSafeVectorToArray(final CharVector vector) {
+        return vector == null ? null : vector.toArray();
     }
 
-    public static double[] nullSafeDbArrayToArray(final DbDoubleArray dbArray) {
-        return dbArray == null ? null : dbArray.toArray();
+    public static double[] nullSafeVectorToArray(final DoubleVector vector) {
+        return vector == null ? null : vector.toArray();
     }
 
-    public static float[] nullSafeDbArrayToArray(final DbFloatArray dbArray) {
-        return dbArray == null ? null : dbArray.toArray();
+    public static float[] nullSafeVectorToArray(final FloatVector vector) {
+        return vector == null ? null : vector.toArray();
     }
 
-    public static int[] nullSafeDbArrayToArray(final DbIntArray dbArray) {
-        return dbArray == null ? null : dbArray.toArray();
+    public static int[] nullSafeVectorToArray(final IntVector vector) {
+        return vector == null ? null : vector.toArray();
     }
 
-    public static long[] nullSafeDbArrayToArray(final DbLongArray dbArray) {
-        return dbArray == null ? null : dbArray.toArray();
+    public static long[] nullSafeVectorToArray(final LongVector vector) {
+        return vector == null ? null : vector.toArray();
     }
 
-    public static short[] nullSafeDbArrayToArray(final DbShortArray dbArray) {
-        return dbArray == null ? null : dbArray.toArray();
+    public static short[] nullSafeVectorToArray(final ShortVector vector) {
+        return vector == null ? null : vector.toArray();
     }
 
     public static boolean equals(Object actualValue, Object expectedValue) {

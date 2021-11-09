@@ -61,21 +61,21 @@ public class CharChunkFactory implements ChunkFactory {
         return CharChunkChunk.chunkWrap(typedArray, offset, capacity);
     }
 
-    // region dbArrayWrap
+    // region vectorWrap
     @NotNull
     @Override
-    public final DbCharArrayDirect dbArrayWrap(Object array) {
+    public final CharVectorDirect vectorWrap(Object array) {
         final char[] typedArray = (char[])array;
-        return new DbCharArrayDirect(typedArray);
+        return new CharVectorDirect(typedArray);
     }
 
     @NotNull
     @Override
-    public DbCharArraySlice dbArrayWrap(Object array, int offset, int capacity) {
-        DbCharArrayDirect dbCharArrayDirect = dbArrayWrap(array);
-        return new DbCharArraySlice(dbCharArrayDirect, offset, capacity);
+    public CharVectorSlice vectorWrap(Object array, int offset, int capacity) {
+        CharVectorDirect vectorDirect = vectorWrap(array);
+        return new CharVectorSlice(vectorDirect, offset, capacity);
     }
-    // endregion dbArrayWrap
+    // endregion vectorWrap
 
     @NotNull
     @Override

@@ -1,6 +1,6 @@
 package io.deephaven.engine.v2.by.ssmcountdistinct;
 
-import io.deephaven.engine.tables.dbarrays.DbArrayBase;
+import io.deephaven.engine.tables.dbarrays.Vector;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.ObjectArraySource;
 import io.deephaven.engine.v2.ssms.SegmentedSortedMultiSet;
@@ -8,13 +8,13 @@ import io.deephaven.engine.v2.utils.RowSet;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * A {@link ColumnSource} that provides {@link DbArrayBase DBArrays} of type T, backed by a same typed
+ * A {@link ColumnSource} that provides {@link Vector vectors} of type T, backed by a same typed
  * {@link SegmentedSortedMultiSet}.
  *
  * @param <K> The SSM Type
  * @param <T> The provided Array type
  */
-public interface SsmBackedColumnSource<K extends SegmentedSortedMultiSet, T extends DbArrayBase>
+public interface SsmBackedColumnSource<K extends SegmentedSortedMultiSet, T extends Vector>
         extends ColumnSource<T> {
 
     /**

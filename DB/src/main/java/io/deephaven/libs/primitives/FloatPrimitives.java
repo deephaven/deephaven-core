@@ -7,8 +7,8 @@
 
 package io.deephaven.libs.primitives;
 
-import io.deephaven.engine.tables.dbarrays.DbFloatArray;
-import io.deephaven.engine.tables.dbarrays.DbFloatArrayDirect;
+import io.deephaven.engine.tables.dbarrays.FloatVector;
+import io.deephaven.engine.tables.dbarrays.FloatVectorDirect;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.util.LongSizedDataStructure;
 import gnu.trove.list.array.TFloatArrayList;
@@ -82,7 +82,7 @@ public class FloatPrimitives {
      * @return values with nulls replaced by defaultValue.
      */
     static public float[] nullToValue(float[] values, float defaultValue) {
-        return nullToValue(new DbFloatArrayDirect(values), defaultValue);
+        return nullToValue(new FloatVectorDirect(values), defaultValue);
     }
 
     /**
@@ -92,7 +92,7 @@ public class FloatPrimitives {
      * @param defaultValue default value to return for null values.
      * @return values with nulls replaced by defaultValue.
      */
-    static public float[] nullToValue(DbFloatArray values, float defaultValue) {
+    static public float[] nullToValue(FloatVector values, float defaultValue) {
         float[] result = new float[LongSizedDataStructure.intSize("nullToValue", values.size())];
 
         for (int i = 0; i < values.size(); i++) {
@@ -132,7 +132,7 @@ public class FloatPrimitives {
             return 0;
         }
 
-        return count(new DbFloatArrayDirect(values));
+        return count(new FloatVectorDirect(values));
     }
 
     /**
@@ -141,7 +141,7 @@ public class FloatPrimitives {
      * @param values values.
      * @return number of non-null values.
      */
-    static public int count(DbFloatArray values){
+    static public int count(FloatVector values){
         if (values == null){
             return 0;
         }
@@ -160,7 +160,7 @@ public class FloatPrimitives {
      * @param values values.
      * @return last value from the array.
      */
-    static public float last(DbFloatArray values){
+    static public float last(FloatVector values){
         if(values == null || values.size() < 1){
             return NULL_FLOAT;
         }
@@ -188,7 +188,7 @@ public class FloatPrimitives {
      * @param values values.
      * @return first value from the array.
      */
-    static public float first(DbFloatArray values){
+    static public float first(FloatVector values){
         if(values == null || values.size() < 1){
             return NULL_FLOAT;
         }
@@ -217,7 +217,7 @@ public class FloatPrimitives {
      * @param values values.
      * @return nth value from the array or null, if the rowSet is outside of the array's rowSet range.
      */
-    static public float nth(int index, DbFloatArray values){
+    static public float nth(int index, FloatVector values){
         if(index < 0 || index >= values.size()){
             return NULL_FLOAT;
         }
@@ -242,7 +242,7 @@ public class FloatPrimitives {
      * @param values DB array
      * @return primitive array.
      */
-    public static float[] vec(DbFloatArray values) {
+    public static float[] vec(FloatVector values) {
         if(values == null){
             return null;
         }
@@ -256,12 +256,12 @@ public class FloatPrimitives {
      * @param values primitive array
      * @return DB array.
      */
-    public static DbFloatArray array(float[] values) {
+    public static FloatVector array(float[] values) {
         if(values == null){
             return null;
         }
 
-        return new DbFloatArrayDirect(values);
+        return new FloatVectorDirect(values);
     }
 
     /**
@@ -310,7 +310,7 @@ public class FloatPrimitives {
             return QueryConstants.NULL_LONG;
         }
 
-        return countDistinct(new DbFloatArrayDirect(values));
+        return countDistinct(new FloatVectorDirect(values));
     }
 
     /**
@@ -319,7 +319,7 @@ public class FloatPrimitives {
      * @param values values.
      * @return number of distinct non-null values.
      */
-    public static long countDistinct(final DbFloatArray values) {
+    public static long countDistinct(final FloatVector values) {
         return countDistinct(values, false);
     }
 
@@ -335,7 +335,7 @@ public class FloatPrimitives {
             return QueryConstants.NULL_LONG;
         }
 
-        return countDistinct(new DbFloatArrayDirect(values), countNull);
+        return countDistinct(new FloatVectorDirect(values), countNull);
     }
 
     /**
@@ -345,7 +345,7 @@ public class FloatPrimitives {
      * @param countNull true to count null values, and false to exclude null values.
      * @return number of distinct values.
      */
-    public static long countDistinct(final DbFloatArray values, boolean countNull) {
+    public static long countDistinct(final FloatVector values, boolean countNull) {
         if(values == null) {
             return QueryConstants.NULL_LONG;
         }
@@ -377,7 +377,7 @@ public class FloatPrimitives {
      * @param countNull if nulls should count as values
      * @return the single unique value in the array, or null.
      */
-    public static float uniqueValue(final DbFloatArray arr, boolean countNull) {
+    public static float uniqueValue(final FloatVector arr, boolean countNull) {
         if(arr == null || arr.isEmpty()) {
             return NULL_FLOAT;
         }
@@ -409,7 +409,7 @@ public class FloatPrimitives {
             return null;
         }
 
-        return distinct(new DbFloatArrayDirect(values)).toArray();
+        return distinct(new FloatVectorDirect(values)).toArray();
     }
 
     /**
@@ -418,7 +418,7 @@ public class FloatPrimitives {
      * @param values values.
      * @return unsorted array containing only distinct non-null items from arr.
      */
-    public static DbFloatArray distinct(final DbFloatArray values) {
+    public static FloatVector distinct(final FloatVector values) {
         if(values == null) {
             return null;
         }
@@ -481,17 +481,17 @@ public class FloatPrimitives {
      * @param sort true to sort the resultant array
      * @return array containing only distinct items from arr.
      */
-    public static DbFloatArray distinct(final DbFloatArray values, boolean includeNull, boolean sort) {
+    public static FloatVector distinct(final FloatVector values, boolean includeNull, boolean sort) {
         if(values == null) {
             return null;
         }
 
         if(values.size() == 0) {
-            return new DbFloatArrayDirect();
+            return new FloatVectorDirect();
         }
 
         if(values.size() == 1) {
-            return !includeNull && values.get(0) == QueryConstants.NULL_FLOAT ? new DbFloatArrayDirect() : values;
+            return !includeNull && values.get(0) == QueryConstants.NULL_FLOAT ? new FloatVectorDirect() : values;
         }
 
         final TFloatArrayList orderedList = new TFloatArrayList();
@@ -513,7 +513,7 @@ public class FloatPrimitives {
             data = orderedList.toArray();
         }
 
-        return new DbFloatArrayDirect(data);
+        return new FloatVectorDirect(data);
     }
 
     /**
@@ -562,7 +562,7 @@ public class FloatPrimitives {
             return new float[0];
         }
 
-        return concat(Arrays.stream(values).map(e->e==null?null:new DbFloatArrayDirect(e)).toArray(DbFloatArray[]::new));
+        return concat(Arrays.stream(values).map(e->e==null?null:new FloatVectorDirect(e)).toArray(FloatVector[]::new));
     }
 
     /**
@@ -571,14 +571,14 @@ public class FloatPrimitives {
      * @param values values.
      * @return concatenation of multiple arrays into a single array.
      */
-    public static float[] concat(DbFloatArray... values){
+    public static float[] concat(FloatVector... values){
         if(values == null){
             return new float[0];
         }
 
         int n = 0;
 
-        for (DbFloatArray v : values) {
+        for (FloatVector v : values) {
             if (v != null) {
                 n += v.size();
             }
@@ -587,7 +587,7 @@ public class FloatPrimitives {
         final float[] result = new float[n];
         int idx = 0;
 
-        for (DbFloatArray v : values) {
+        for (FloatVector v : values) {
             if (v != null) {
                 for (int i = 0; i < v.size(); i++) {
                     result[idx] = v.get(i);
@@ -610,7 +610,7 @@ public class FloatPrimitives {
             return null;
         }
 
-        return reverse(new DbFloatArrayDirect(values));
+        return reverse(new FloatVectorDirect(values));
     }
 
     /**
@@ -619,7 +619,7 @@ public class FloatPrimitives {
      * @param values values.
      * @return array with the values reversed.
      */
-    public static float[] reverse(DbFloatArray values){
+    public static float[] reverse(FloatVector values){
         if(values == null){
             return null;
         }

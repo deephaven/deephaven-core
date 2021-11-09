@@ -4,9 +4,9 @@
 package io.deephaven.engine.v2.sources.aggregate;
 
 import io.deephaven.engine.structures.RowSequence;
-import io.deephaven.engine.tables.dbarrays.DbIntArray;
-import io.deephaven.engine.v2.dbarrays.DbIntArrayColumnWrapper;
-import io.deephaven.engine.v2.dbarrays.DbPrevIntArrayColumnWrapper;
+import io.deephaven.engine.tables.dbarrays.IntVector;
+import io.deephaven.engine.v2.dbarrays.IntVectorColumnWrapper;
+import io.deephaven.engine.v2.dbarrays.PrevIntVectorColumnWrapper;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 import io.deephaven.engine.v2.sources.chunk.ObjectChunk;
@@ -18,27 +18,27 @@ import org.jetbrains.annotations.NotNull;
 /**
  * {@link ColumnSource} implementation for aggregation result int columns.
  */
-public final class IntAggregateColumnSource extends BaseAggregateColumnSource<DbIntArray, Integer> {
+public final class IntAggregateColumnSource extends BaseAggregateColumnSource<IntVector, Integer> {
 
     IntAggregateColumnSource(@NotNull final ColumnSource<Integer> aggregatedSource,
             @NotNull final ColumnSource<? extends RowSet> groupRowSetSource) {
-        super(DbIntArray.class, aggregatedSource, groupRowSetSource);
+        super(IntVector.class, aggregatedSource, groupRowSetSource);
     }
 
     @Override
-    public DbIntArray get(final long rowKey) {
+    public IntVector get(final long rowKey) {
         if (rowKey == RowSet.NULL_ROW_KEY) {
             return null;
         }
-        return new DbIntArrayColumnWrapper(aggregatedSource, groupRowSetSource.get(rowKey));
+        return new IntVectorColumnWrapper(aggregatedSource, groupRowSetSource.get(rowKey));
     }
 
     @Override
-    public DbIntArray getPrev(final long rowKey) {
+    public IntVector getPrev(final long rowKey) {
         if (rowKey == RowSet.NULL_ROW_KEY) {
             return null;
         }
-        return new DbPrevIntArrayColumnWrapper(aggregatedSource, getPrevGroupRowSet(rowKey));
+        return new PrevIntVectorColumnWrapper(aggregatedSource, getPrevGroupRowSet(rowKey));
     }
 
     @Override
@@ -46,10 +46,10 @@ public final class IntAggregateColumnSource extends BaseAggregateColumnSource<Db
             @NotNull final RowSequence rowSequence) {
         final ObjectChunk<RowSet, ? extends Values> groupRowSetChunk = groupRowSetSource
                 .getChunk(((AggregateFillContext) context).groupRowSetGetContext, rowSequence).asObjectChunk();
-        final WritableObjectChunk<DbIntArray, ? super Values> typedDestination = destination.asWritableObjectChunk();
+        final WritableObjectChunk<IntVector, ? super Values> typedDestination = destination.asWritableObjectChunk();
         final int size = rowSequence.intSize();
         for (int di = 0; di < size; ++di) {
-            typedDestination.set(di, new DbIntArrayColumnWrapper(aggregatedSource, groupRowSetChunk.get(di)));
+            typedDestination.set(di, new IntVectorColumnWrapper(aggregatedSource, groupRowSetChunk.get(di)));
         }
         typedDestination.setSize(size);
     }
@@ -59,14 +59,14 @@ public final class IntAggregateColumnSource extends BaseAggregateColumnSource<Db
             @NotNull final WritableChunk<? super Values> destination, @NotNull final RowSequence rowSequence) {
         final ObjectChunk<RowSet, ? extends Values> groupRowSetPrevChunk = groupRowSetSource
                 .getPrevChunk(((AggregateFillContext) context).groupRowSetGetContext, rowSequence).asObjectChunk();
-        final WritableObjectChunk<DbIntArray, ? super Values> typedDestination = destination.asWritableObjectChunk();
+        final WritableObjectChunk<IntVector, ? super Values> typedDestination = destination.asWritableObjectChunk();
         final int size = rowSequence.intSize();
         for (int di = 0; di < size; ++di) {
             final RowSet groupRowSetPrev = groupRowSetPrevChunk.get(di);
             final RowSet groupRowSetToUse = groupRowSetPrev.isTracking()
                     ? groupRowSetPrev.trackingCast().getPrevRowSet()
                     : groupRowSetPrev;
-            typedDestination.set(di, new DbPrevIntArrayColumnWrapper(aggregatedSource, groupRowSetToUse));
+            typedDestination.set(di, new PrevIntVectorColumnWrapper(aggregatedSource, groupRowSetToUse));
         }
         typedDestination.setSize(size);
     }

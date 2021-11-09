@@ -1,6 +1,6 @@
 package io.deephaven.engine.v2.sources.chunk;
 
-import io.deephaven.engine.tables.dbarrays.DbArrayBase;
+import io.deephaven.engine.tables.dbarrays.Vector;
 import io.deephaven.engine.v2.sources.chunk.page.ChunkPage;
 import io.deephaven.engine.v2.sources.chunk.util.*;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Any;
@@ -92,14 +92,14 @@ public enum ChunkType implements ChunkFactory {
 
     @NotNull
     @Override
-    public DbArrayBase dbArrayWrap(Object array) {
-        return factory.dbArrayWrap(array);
+    public Vector vectorWrap(Object array) {
+        return factory.vectorWrap(array);
     }
 
     @NotNull
     @Override
-    public DbArrayBase dbArrayWrap(Object array, int offset, int capacity) {
-        return factory.dbArrayWrap(array, offset, capacity);
+    public Vector vectorWrap(Object array, int offset, int capacity) {
+        return factory.vectorWrap(array, offset, capacity);
     }
 
     @NotNull

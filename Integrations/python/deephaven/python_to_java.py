@@ -85,7 +85,7 @@ def dataFrameToTable(dataframe, convertUnknownToString=False):
         - ``numpy.ndarray`` - all elements are assumed null, or ndarray of the same type and compatible shape, or an
           exception will be raised.
 
-            + if one-dimensional, then column of appropriate ``DbArray`` type
+            + if one-dimensional, then column of appropriate ``Vector`` type
             + otherwise, column of java array type
         - ``dict`` - **unsupported**
         - ``other iterable type`` - naive conversion to :class:`numpy.ndarray` is attempted, then as above.
@@ -162,7 +162,7 @@ def createTableFromData(data, columns=None, convertUnknownToString=False):
         - ``numpy.ndarray`` - all elements are assumed null, or ndarray of the same type and compatible shape, or an
           exception will be raised.
 
-            + if one-dimensional, then column of appropriate ``DbArray`` type
+            + if one-dimensional, then column of appropriate ``Vector`` type
             + otherwise, column of java array type
         - ``dict`` - **unsupported**
         - ``other iterable type`` - naive conversion to :class:`numpy.ndarray` is attempted, then as above.

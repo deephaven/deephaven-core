@@ -64,21 +64,21 @@ public class ByteChunkFactory implements ChunkFactory {
         return ByteChunkChunk.chunkWrap(typedArray, offset, capacity);
     }
 
-    // region dbArrayWrap
+    // region vectorWrap
     @NotNull
     @Override
-    public final DbByteArrayDirect dbArrayWrap(Object array) {
+    public final ByteVectorDirect vectorWrap(Object array) {
         final byte[] typedArray = (byte[])array;
-        return new DbByteArrayDirect(typedArray);
+        return new ByteVectorDirect(typedArray);
     }
 
     @NotNull
     @Override
-    public DbByteArraySlice dbArrayWrap(Object array, int offset, int capacity) {
-        DbByteArrayDirect dbByteArrayDirect = dbArrayWrap(array);
-        return new DbByteArraySlice(dbByteArrayDirect, offset, capacity);
+    public ByteVectorSlice vectorWrap(Object array, int offset, int capacity) {
+        ByteVectorDirect dbByteArrayDirect = vectorWrap(array);
+        return new ByteVectorSlice(dbByteArrayDirect, offset, capacity);
     }
-    // endregion dbArrayWrap
+    // endregion vectorWrap
 
     @NotNull
     @Override

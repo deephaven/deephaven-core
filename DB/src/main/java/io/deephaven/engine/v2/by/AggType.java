@@ -25,7 +25,7 @@ public enum AggType {
     First,
     /** Return the last value of each group. */
     Last,
-    /** Return the values of each group as a DbArray. */
+    /** Return the values of each group as a Vector. */
     Array,
     /** Return the number of unique values in each group */
     CountDistinct,

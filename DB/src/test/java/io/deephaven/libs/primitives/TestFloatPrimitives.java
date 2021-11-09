@@ -8,8 +8,8 @@
 package io.deephaven.libs.primitives;
 
 import io.deephaven.base.testing.BaseArrayTestCase;
-import io.deephaven.engine.tables.dbarrays.DbFloatArray;
-import io.deephaven.engine.tables.dbarrays.DbFloatArrayDirect;
+import io.deephaven.engine.tables.dbarrays.FloatVector;
+import io.deephaven.engine.tables.dbarrays.FloatVectorDirect;
 
 import static io.deephaven.libs.primitives.FloatPrimitives.*;
 import static io.deephaven.util.QueryConstants.NULL_FLOAT;
@@ -33,25 +33,25 @@ public class TestFloatPrimitives extends BaseArrayTestCase {
     }
 
     public void testNullToValueArray() {
-        assertEquals(new float[]{(float) 3, (float) 7, (float) 11}, nullToValue(new DbFloatArrayDirect(new float[]{(float) 3, NULL_FLOAT, (float) 11}), (float) 7));
+        assertEquals(new float[]{(float) 3, (float) 7, (float) 11}, nullToValue(new FloatVectorDirect(new float[]{(float) 3, NULL_FLOAT, (float) 11}), (float) 7));
 
         assertEquals(new float[]{(float) 3, (float) 7, (float) 11}, nullToValue(new float[]{(float) 3, NULL_FLOAT, (float) 11}, (float) 7));
     }
 
     public void testCount(){
-        assertEquals(0, count((DbFloatArray)null));
-        assertEquals(3,count(new DbFloatArrayDirect(new float[]{40,50,60})));
-        assertEquals(0,count(new DbFloatArrayDirect()));
-        assertEquals(0,count(new DbFloatArrayDirect(NULL_FLOAT)));
-        assertEquals(2,count(new DbFloatArrayDirect(new float[]{5,NULL_FLOAT,15})));
+        assertEquals(0, count((FloatVector)null));
+        assertEquals(3,count(new FloatVectorDirect(new float[]{40,50,60})));
+        assertEquals(0,count(new FloatVectorDirect()));
+        assertEquals(0,count(new FloatVectorDirect(NULL_FLOAT)));
+        assertEquals(2,count(new FloatVectorDirect(new float[]{5,NULL_FLOAT,15})));
     }
 
     public void testLast(){
-        assertTrue(Math.abs(60-last(new DbFloatArrayDirect(new float[]{40,50,60})))==0.0);
-        assertEquals(NULL_FLOAT,last(new DbFloatArrayDirect()));
-        assertEquals(NULL_FLOAT,last(new DbFloatArrayDirect(NULL_FLOAT)));
-        assertTrue(Math.abs(15-last(new DbFloatArrayDirect(new float[]{5,NULL_FLOAT,15})))==0.0);
-        assertTrue(Math.abs(40-last(new DbFloatArrayDirect((float)40)))==0.0);
+        assertTrue(Math.abs(60-last(new FloatVectorDirect(new float[]{40,50,60})))==0.0);
+        assertEquals(NULL_FLOAT,last(new FloatVectorDirect()));
+        assertEquals(NULL_FLOAT,last(new FloatVectorDirect(NULL_FLOAT)));
+        assertTrue(Math.abs(15-last(new FloatVectorDirect(new float[]{5,NULL_FLOAT,15})))==0.0);
+        assertTrue(Math.abs(40-last(new FloatVectorDirect((float)40)))==0.0);
 
         assertTrue(Math.abs(60-last(new float[]{40,50,60}))==0.0);
         assertEquals(NULL_FLOAT,last(new float[]{}));
@@ -61,11 +61,11 @@ public class TestFloatPrimitives extends BaseArrayTestCase {
     }
 
     public void testFirst(){
-        assertTrue(Math.abs(40-first(new DbFloatArrayDirect(new float[]{40,50,60})))==0.0);
-        assertEquals(NULL_FLOAT,first(new DbFloatArrayDirect()));
-        assertEquals(NULL_FLOAT,first(new DbFloatArrayDirect(NULL_FLOAT)));
-        assertTrue(Math.abs(5-first(new DbFloatArrayDirect(new float[]{5,NULL_FLOAT,15})))==0.0);
-        assertTrue(Math.abs(40-first(new DbFloatArrayDirect((float)40)))==0.0);
+        assertTrue(Math.abs(40-first(new FloatVectorDirect(new float[]{40,50,60})))==0.0);
+        assertEquals(NULL_FLOAT,first(new FloatVectorDirect()));
+        assertEquals(NULL_FLOAT,first(new FloatVectorDirect(NULL_FLOAT)));
+        assertTrue(Math.abs(5-first(new FloatVectorDirect(new float[]{5,NULL_FLOAT,15})))==0.0);
+        assertTrue(Math.abs(40-first(new FloatVectorDirect((float)40)))==0.0);
 
         assertTrue(Math.abs(40-first(new float[]{40,50,60}))==0.0);
         assertEquals(NULL_FLOAT,first(new float[]{}));
@@ -75,11 +75,11 @@ public class TestFloatPrimitives extends BaseArrayTestCase {
     }
 
     public void testNth(){
-        assertEquals(NULL_FLOAT, nth(-1,new DbFloatArrayDirect(new float[]{40,50,60})));
-        assertEquals((float)40, nth(0,new DbFloatArrayDirect(new float[]{40,50,60})));
-        assertEquals((float)50, nth(1,new DbFloatArrayDirect(new float[]{40,50,60})));
-        assertEquals((float)60, nth(2,new DbFloatArrayDirect(new float[]{40,50,60})));
-        assertEquals(NULL_FLOAT, nth(10,new DbFloatArrayDirect(new float[]{40,50,60})));
+        assertEquals(NULL_FLOAT, nth(-1,new FloatVectorDirect(new float[]{40,50,60})));
+        assertEquals((float)40, nth(0,new FloatVectorDirect(new float[]{40,50,60})));
+        assertEquals((float)50, nth(1,new FloatVectorDirect(new float[]{40,50,60})));
+        assertEquals((float)60, nth(2,new FloatVectorDirect(new float[]{40,50,60})));
+        assertEquals(NULL_FLOAT, nth(10,new FloatVectorDirect(new float[]{40,50,60})));
 
         assertEquals(NULL_FLOAT, nth(-1,new float[]{40,50,60}));
         assertEquals((float)40, nth(0,new float[]{40,50,60}));
@@ -89,14 +89,14 @@ public class TestFloatPrimitives extends BaseArrayTestCase {
     }
 
     public void testCountDistinct() {
-        assertEquals(NULL_LONG, countDistinct((DbFloatArrayDirect)null));
-        assertEquals(NULL_LONG, countDistinct((DbFloatArrayDirect)null,true));
-        assertEquals(0, countDistinct(new DbFloatArrayDirect(new float[]{})));
-        assertEquals(0, countDistinct(new DbFloatArrayDirect(new float[]{NULL_FLOAT})));
-        assertEquals(1, countDistinct(new DbFloatArrayDirect(new float[]{1})));
-        assertEquals(2, countDistinct(new DbFloatArrayDirect(new float[]{1,2,1,NULL_FLOAT,NULL_FLOAT})));
-        assertEquals(2, countDistinct(new DbFloatArrayDirect(new float[]{1,2,1,NULL_FLOAT,NULL_FLOAT}), false));
-        assertEquals(3, countDistinct(new DbFloatArrayDirect(new float[]{1,2,1,NULL_FLOAT,NULL_FLOAT}), true));
+        assertEquals(NULL_LONG, countDistinct((FloatVectorDirect)null));
+        assertEquals(NULL_LONG, countDistinct((FloatVectorDirect)null,true));
+        assertEquals(0, countDistinct(new FloatVectorDirect(new float[]{})));
+        assertEquals(0, countDistinct(new FloatVectorDirect(new float[]{NULL_FLOAT})));
+        assertEquals(1, countDistinct(new FloatVectorDirect(new float[]{1})));
+        assertEquals(2, countDistinct(new FloatVectorDirect(new float[]{1,2,1,NULL_FLOAT,NULL_FLOAT})));
+        assertEquals(2, countDistinct(new FloatVectorDirect(new float[]{1,2,1,NULL_FLOAT,NULL_FLOAT}), false));
+        assertEquals(3, countDistinct(new FloatVectorDirect(new float[]{1,2,1,NULL_FLOAT,NULL_FLOAT}), true));
 
         assertEquals(NULL_LONG, countDistinct((float[])null));
         assertEquals(NULL_LONG, countDistinct((float[])null,true));
@@ -109,17 +109,17 @@ public class TestFloatPrimitives extends BaseArrayTestCase {
     }
 
     public void testDistinct() {
-        assertEquals(null, distinct((DbFloatArrayDirect)null));
-        assertEquals(null, distinct((DbFloatArrayDirect)null, true, true));
-        assertEquals(new DbFloatArrayDirect(), distinct(new DbFloatArrayDirect(new float[]{})));
-        assertEquals(new DbFloatArrayDirect(), distinct(new DbFloatArrayDirect(new float[]{NULL_FLOAT})));
-        assertEquals(new DbFloatArrayDirect(new float[]{1}), distinct(new DbFloatArrayDirect(new float[]{1})));
-        assertEquals(new DbFloatArrayDirect(new float[]{1,2}), distinct(new DbFloatArrayDirect(new float[]{1,2,1,NULL_FLOAT,NULL_FLOAT})));
-        assertEquals(new DbFloatArrayDirect(new float[]{1,2}), distinct(new DbFloatArrayDirect(new float[]{1,2,1,NULL_FLOAT,NULL_FLOAT}), false, false));
-        assertEquals(new DbFloatArrayDirect(new float[]{1,2,NULL_FLOAT}), distinct(new DbFloatArrayDirect(new float[]{1,2,1,NULL_FLOAT,NULL_FLOAT}), true, false));
-        assertEquals(new DbFloatArrayDirect(new float[]{1,2,3}), distinct(new DbFloatArrayDirect(new float[]{3,1,2,1,NULL_FLOAT,NULL_FLOAT}), false, true));
-        assertEquals(new DbFloatArrayDirect(new float[]{1,2,3,4}), distinct(new DbFloatArrayDirect(new float[]{3,1,2,4,1,NULL_FLOAT,NULL_FLOAT}), false, true));
-        assertEquals(new DbFloatArrayDirect(new float[]{NULL_FLOAT,1,2,3,4}), distinct(new DbFloatArrayDirect(new float[]{3,1,2,4,1,NULL_FLOAT,NULL_FLOAT}), true, true));
+        assertEquals(null, distinct((FloatVectorDirect)null));
+        assertEquals(null, distinct((FloatVectorDirect)null, true, true));
+        assertEquals(new FloatVectorDirect(), distinct(new FloatVectorDirect(new float[]{})));
+        assertEquals(new FloatVectorDirect(), distinct(new FloatVectorDirect(new float[]{NULL_FLOAT})));
+        assertEquals(new FloatVectorDirect(new float[]{1}), distinct(new FloatVectorDirect(new float[]{1})));
+        assertEquals(new FloatVectorDirect(new float[]{1,2}), distinct(new FloatVectorDirect(new float[]{1,2,1,NULL_FLOAT,NULL_FLOAT})));
+        assertEquals(new FloatVectorDirect(new float[]{1,2}), distinct(new FloatVectorDirect(new float[]{1,2,1,NULL_FLOAT,NULL_FLOAT}), false, false));
+        assertEquals(new FloatVectorDirect(new float[]{1,2,NULL_FLOAT}), distinct(new FloatVectorDirect(new float[]{1,2,1,NULL_FLOAT,NULL_FLOAT}), true, false));
+        assertEquals(new FloatVectorDirect(new float[]{1,2,3}), distinct(new FloatVectorDirect(new float[]{3,1,2,1,NULL_FLOAT,NULL_FLOAT}), false, true));
+        assertEquals(new FloatVectorDirect(new float[]{1,2,3,4}), distinct(new FloatVectorDirect(new float[]{3,1,2,4,1,NULL_FLOAT,NULL_FLOAT}), false, true));
+        assertEquals(new FloatVectorDirect(new float[]{NULL_FLOAT,1,2,3,4}), distinct(new FloatVectorDirect(new float[]{3,1,2,4,1,NULL_FLOAT,NULL_FLOAT}), true, true));
 
         assertEquals(null, distinct((float[])null));
         assertEquals(null, distinct((float[])null, true, true));
@@ -135,11 +135,11 @@ public class TestFloatPrimitives extends BaseArrayTestCase {
     }
 
     public void testVec(){
-        assertEquals(new float[]{(float)1,(float)3,(float)5}, vec(new DbFloatArrayDirect((float)1,(float)3,(float)5)));
+        assertEquals(new float[]{(float)1,(float)3,(float)5}, vec(new FloatVectorDirect((float)1,(float)3,(float)5)));
     }
 
     public void testArray(){
-        assertEquals(new DbFloatArrayDirect((float)1,(float)3,(float)5), array(new float[]{(float)1,(float)3,(float)5}));
+        assertEquals(new FloatVectorDirect((float)1,(float)3,(float)5), array(new float[]{(float)1,(float)3,(float)5}));
     }
 
     public void testIn(){
@@ -172,17 +172,17 @@ public class TestFloatPrimitives extends BaseArrayTestCase {
         assertEquals(new float[]{1,2,3,4,5,6}, concat(new float[]{1,2}, new float[]{3}, new float[]{4,5,6}));
         assertEquals(new float[]{}, concat((float[])(null)));
 
-        assertEquals(new float[]{}, concat((DbFloatArray[])null));
-        assertEquals(new float[]{1,2,3,4,5,6}, concat(new DbFloatArrayDirect(new float[]{1,2}), new DbFloatArrayDirect(new float[]{3}), new DbFloatArrayDirect(new float[]{4,5,6})));
-        assertEquals(new float[]{}, concat((DbFloatArray) (null)));
+        assertEquals(new float[]{}, concat((FloatVector[])null));
+        assertEquals(new float[]{1,2,3,4,5,6}, concat(new FloatVectorDirect(new float[]{1,2}), new FloatVectorDirect(new float[]{3}), new FloatVectorDirect(new float[]{4,5,6})));
+        assertEquals(new float[]{}, concat((FloatVector) (null)));
     }
 
     public void testReverse() {
         assertEquals(new float[]{3,2,1}, reverse((float)1,(float)2,(float)3));
         assertEquals(null, reverse((float[])(null)));
 
-        assertEquals(new float[]{3,2,1}, reverse(new DbFloatArrayDirect(new float[]{1,2,3})));
-        assertEquals(null, reverse((DbFloatArray) (null)));
+        assertEquals(new float[]{3,2,1}, reverse(new FloatVectorDirect(new float[]{1,2,3})));
+        assertEquals(null, reverse((FloatVector) (null)));
     }
 }
 

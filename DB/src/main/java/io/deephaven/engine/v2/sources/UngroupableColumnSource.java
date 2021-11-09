@@ -17,7 +17,7 @@ public interface UngroupableColumnSource {
 
     /**
      * @param columnIndex the rowSet within this column to interrogate
-     * @return the size of the DbArray at columnIndex.
+     * @return the size of the Vector at columnIndex.
      */
     long getUngroupedSize(long columnIndex);
 
@@ -28,7 +28,7 @@ public interface UngroupableColumnSource {
      * 
      * @param columnIndex the rowSet within the column of the cell to get
      * @param arrayIndex the rowSet within the array at the specified cell
-     * @return Equivalent to ((DbArray)columnSource.get(columnIndex)).get(arrayIndex)
+     * @return Equivalent to ((Vector)columnSource.get(columnIndex)).get(arrayIndex)
      */
     Object getUngrouped(long columnIndex, int arrayIndex);
 

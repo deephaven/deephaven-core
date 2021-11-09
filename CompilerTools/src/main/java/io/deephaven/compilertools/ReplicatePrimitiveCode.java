@@ -240,7 +240,7 @@ public class ReplicatePrimitiveCode {
     private static void shortToInteger(String sourceClassJavaPath, Map<String, Long> serialVersionUIDs,
             String... exemptions) throws IOException {
         replicateCodeBasedOnShort(sourceClassJavaPath, serialVersionUIDs, exemptions, "Integer", "int", "INT",
-                new String[][] {{"DbShortArray", "DbIntArray"}});
+                new String[][] {{"ShortVector", "IntVector"}});
     }
 
     private static void shortToLong(String sourceClassJavaPath, Map<String, Long> serialVersionUIDs,

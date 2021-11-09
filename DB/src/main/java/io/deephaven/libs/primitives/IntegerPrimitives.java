@@ -7,8 +7,8 @@
 
 package io.deephaven.libs.primitives;
 
-import io.deephaven.engine.tables.dbarrays.DbIntArray;
-import io.deephaven.engine.tables.dbarrays.DbIntArrayDirect;
+import io.deephaven.engine.tables.dbarrays.IntVector;
+import io.deephaven.engine.tables.dbarrays.IntVectorDirect;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.util.LongSizedDataStructure;
 import gnu.trove.list.array.TIntArrayList;
@@ -82,7 +82,7 @@ public class IntegerPrimitives {
      * @return values with nulls replaced by defaultValue.
      */
     static public int[] nullToValue(int[] values, int defaultValue) {
-        return nullToValue(new DbIntArrayDirect(values), defaultValue);
+        return nullToValue(new IntVectorDirect(values), defaultValue);
     }
 
     /**
@@ -92,7 +92,7 @@ public class IntegerPrimitives {
      * @param defaultValue default value to return for null values.
      * @return values with nulls replaced by defaultValue.
      */
-    static public int[] nullToValue(DbIntArray values, int defaultValue) {
+    static public int[] nullToValue(IntVector values, int defaultValue) {
         int[] result = new int[LongSizedDataStructure.intSize("nullToValue", values.size())];
 
         for (int i = 0; i < values.size(); i++) {
@@ -132,7 +132,7 @@ public class IntegerPrimitives {
             return 0;
         }
 
-        return count(new DbIntArrayDirect(values));
+        return count(new IntVectorDirect(values));
     }
 
     /**
@@ -141,7 +141,7 @@ public class IntegerPrimitives {
      * @param values values.
      * @return number of non-null values.
      */
-    static public int count(DbIntArray values){
+    static public int count(IntVector values){
         if (values == null){
             return 0;
         }
@@ -160,7 +160,7 @@ public class IntegerPrimitives {
      * @param values values.
      * @return last value from the array.
      */
-    static public int last(DbIntArray values){
+    static public int last(IntVector values){
         if(values == null || values.size() < 1){
             return NULL_INT;
         }
@@ -188,7 +188,7 @@ public class IntegerPrimitives {
      * @param values values.
      * @return first value from the array.
      */
-    static public int first(DbIntArray values){
+    static public int first(IntVector values){
         if(values == null || values.size() < 1){
             return NULL_INT;
         }
@@ -217,7 +217,7 @@ public class IntegerPrimitives {
      * @param values values.
      * @return nth value from the array or null, if the rowSet is outside of the array's rowSet range.
      */
-    static public int nth(int index, DbIntArray values){
+    static public int nth(int index, IntVector values){
         if(index < 0 || index >= values.size()){
             return NULL_INT;
         }
@@ -242,7 +242,7 @@ public class IntegerPrimitives {
      * @param values DB array
      * @return primitive array.
      */
-    public static int[] vec(DbIntArray values) {
+    public static int[] vec(IntVector values) {
         if(values == null){
             return null;
         }
@@ -256,12 +256,12 @@ public class IntegerPrimitives {
      * @param values primitive array
      * @return DB array.
      */
-    public static DbIntArray array(int[] values) {
+    public static IntVector array(int[] values) {
         if(values == null){
             return null;
         }
 
-        return new DbIntArrayDirect(values);
+        return new IntVectorDirect(values);
     }
 
     /**
@@ -310,7 +310,7 @@ public class IntegerPrimitives {
             return QueryConstants.NULL_LONG;
         }
 
-        return countDistinct(new DbIntArrayDirect(values));
+        return countDistinct(new IntVectorDirect(values));
     }
 
     /**
@@ -319,7 +319,7 @@ public class IntegerPrimitives {
      * @param values values.
      * @return number of distinct non-null values.
      */
-    public static long countDistinct(final DbIntArray values) {
+    public static long countDistinct(final IntVector values) {
         return countDistinct(values, false);
     }
 
@@ -335,7 +335,7 @@ public class IntegerPrimitives {
             return QueryConstants.NULL_LONG;
         }
 
-        return countDistinct(new DbIntArrayDirect(values), countNull);
+        return countDistinct(new IntVectorDirect(values), countNull);
     }
 
     /**
@@ -345,7 +345,7 @@ public class IntegerPrimitives {
      * @param countNull true to count null values, and false to exclude null values.
      * @return number of distinct values.
      */
-    public static long countDistinct(final DbIntArray values, boolean countNull) {
+    public static long countDistinct(final IntVector values, boolean countNull) {
         if(values == null) {
             return QueryConstants.NULL_LONG;
         }
@@ -377,7 +377,7 @@ public class IntegerPrimitives {
      * @param countNull if nulls should count as values
      * @return the single unique value in the array, or null.
      */
-    public static int uniqueValue(final DbIntArray arr, boolean countNull) {
+    public static int uniqueValue(final IntVector arr, boolean countNull) {
         if(arr == null || arr.isEmpty()) {
             return NULL_INT;
         }
@@ -409,7 +409,7 @@ public class IntegerPrimitives {
             return null;
         }
 
-        return distinct(new DbIntArrayDirect(values)).toArray();
+        return distinct(new IntVectorDirect(values)).toArray();
     }
 
     /**
@@ -418,7 +418,7 @@ public class IntegerPrimitives {
      * @param values values.
      * @return unsorted array containing only distinct non-null items from arr.
      */
-    public static DbIntArray distinct(final DbIntArray values) {
+    public static IntVector distinct(final IntVector values) {
         if(values == null) {
             return null;
         }
@@ -481,17 +481,17 @@ public class IntegerPrimitives {
      * @param sort true to sort the resultant array
      * @return array containing only distinct items from arr.
      */
-    public static DbIntArray distinct(final DbIntArray values, boolean includeNull, boolean sort) {
+    public static IntVector distinct(final IntVector values, boolean includeNull, boolean sort) {
         if(values == null) {
             return null;
         }
 
         if(values.size() == 0) {
-            return new DbIntArrayDirect();
+            return new IntVectorDirect();
         }
 
         if(values.size() == 1) {
-            return !includeNull && values.get(0) == QueryConstants.NULL_INT ? new DbIntArrayDirect() : values;
+            return !includeNull && values.get(0) == QueryConstants.NULL_INT ? new IntVectorDirect() : values;
         }
 
         final TIntArrayList orderedList = new TIntArrayList();
@@ -513,7 +513,7 @@ public class IntegerPrimitives {
             data = orderedList.toArray();
         }
 
-        return new DbIntArrayDirect(data);
+        return new IntVectorDirect(data);
     }
 
     /**
@@ -562,7 +562,7 @@ public class IntegerPrimitives {
             return new int[0];
         }
 
-        return concat(Arrays.stream(values).map(e->e==null?null:new DbIntArrayDirect(e)).toArray(DbIntArray[]::new));
+        return concat(Arrays.stream(values).map(e->e==null?null:new IntVectorDirect(e)).toArray(IntVector[]::new));
     }
 
     /**
@@ -571,14 +571,14 @@ public class IntegerPrimitives {
      * @param values values.
      * @return concatenation of multiple arrays into a single array.
      */
-    public static int[] concat(DbIntArray... values){
+    public static int[] concat(IntVector... values){
         if(values == null){
             return new int[0];
         }
 
         int n = 0;
 
-        for (DbIntArray v : values) {
+        for (IntVector v : values) {
             if (v != null) {
                 n += v.size();
             }
@@ -587,7 +587,7 @@ public class IntegerPrimitives {
         final int[] result = new int[n];
         int idx = 0;
 
-        for (DbIntArray v : values) {
+        for (IntVector v : values) {
             if (v != null) {
                 for (int i = 0; i < v.size(); i++) {
                     result[idx] = v.get(i);
@@ -610,7 +610,7 @@ public class IntegerPrimitives {
             return null;
         }
 
-        return reverse(new DbIntArrayDirect(values));
+        return reverse(new IntVectorDirect(values));
     }
 
     /**
@@ -619,7 +619,7 @@ public class IntegerPrimitives {
      * @param values values.
      * @return array with the values reversed.
      */
-    public static int[] reverse(DbIntArray values){
+    public static int[] reverse(IntVector values){
         if(values == null){
             return null;
         }

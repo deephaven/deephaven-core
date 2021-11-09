@@ -2,7 +2,7 @@ package io.deephaven.engine.tables.remote.preview;
 
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.dbarrays.DbArrayBase;
+import io.deephaven.engine.tables.dbarrays.Vector;
 import io.deephaven.engine.v2.BaseTable;
 import io.deephaven.engine.v2.HierarchicalTable;
 import io.deephaven.engine.v2.select.FunctionalColumn;
@@ -26,8 +26,8 @@ public class ColumnPreviewManager {
     // Factories for arrays and DbArrays
     private static final PreviewColumnFactory<Object, ArrayPreview> arrayPreviewFactory =
             new PreviewColumnFactory<>(Object.class, ArrayPreview.class, ArrayPreview::fromArray);
-    private static final PreviewColumnFactory<DbArrayBase, ArrayPreview> dbArrayPreviewFactory =
-            new PreviewColumnFactory<>(DbArrayBase.class, ArrayPreview.class, ArrayPreview::fromDbArray);
+    private static final PreviewColumnFactory<Vector, ArrayPreview> dbArrayPreviewFactory =
+            new PreviewColumnFactory<>(Vector.class, ArrayPreview.class, ArrayPreview::fromDbArray);
     private static final PreviewColumnFactory<PyListWrapper, ArrayPreview> pyListWrapperPreviewFactory =
             new PreviewColumnFactory<>(PyListWrapper.class, ArrayPreview.class, ArrayPreview::fromPyListWrapper);
 
@@ -86,7 +86,7 @@ public class ColumnPreviewManager {
                 final PreviewColumnFactory factory = previewMap.get(type);
                 selectColumns.add(factory.makeColumn(name));
                 originalTypes.put(name, type.getName());
-            } else if (DbArrayBase.class.isAssignableFrom(type)) {
+            } else if (Vector.class.isAssignableFrom(type)) {
                 // Always wrap DbArrays
                 selectColumns.add(dbArrayPreviewFactory.makeColumn(name));
                 originalTypes.put(name, type.getName());
@@ -143,7 +143,7 @@ public class ColumnPreviewManager {
      */
     public static boolean isColumnTypeDisplayable(Class<?> type) {
         // Generally arrays and DbArrays will be wrapped in an ArrayPreview class. This check is here for correctness.
-        if (type.isArray() || DbArrayBase.class.isAssignableFrom(type)) {
+        if (type.isArray() || Vector.class.isAssignableFrom(type)) {
             // For arrays, we need to check that the component type is displayable
             return isColumnTypeDisplayable(type.getComponentType());
         }

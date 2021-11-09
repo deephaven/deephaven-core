@@ -13,7 +13,7 @@ import numpy
 import pandas
 
 from .conversion_utils import _nullValues, NULL_CHAR, NULL_CONVERSION, _arrayTypes, \
-    _isStr, _isDbArray, _isJavaArray, _getJavaArrayDetails
+    _isStr, _isVector, _isJavaArray, _getJavaArrayDetails
 from .TableTools import emptyTable
 
 
@@ -53,7 +53,7 @@ def _fillRectangular(javaArray, shape, basicType, convertNulls):
                 fillValuesIn(dimension+1, ndSub, arrSub)
         else:
             # at the final dimension, and arrElement is a one dimensional array
-            if basicType.startswith('io.deephaven.engine.tables.dbarrays.Db'):
+            if jpy.get_type('io.deephaven.engine.tables.dbarrays.Vector').isAssignaleFrom(basicType):
                 # convert each leaf
                 for i, leafElement in enumerate(arrElement):
                     ndElement[i] = convertJavaArray(leafElement.toArray(), convertNulls=convertNulls)
@@ -234,7 +234,7 @@ def convertJavaArray(javaArray, convertNulls='ERROR', forPandas=False):
     * ``DBDateTime -> numpy.dtype(datetime64[ns])`` and ``null -> numpy.nat``
     * ``String -> numpy.unicode_`` (of appropriate length) and ``null -> ''``
     * ``char -> numpy.dtype('U1')`` (one character string) and ``NULL_CHAR -> ''``
-    * ``array/DbArray``
+    * ``array/Vector``
        - if ``forPandas=False`` and all entries are of compatible shape, then will return a rectangular
          :class:`numpy.ndarray` of dtype in keeping with the above
        - if ``forPandas=False`` or all entries are not of compatible shape, then returns one-diemnsional
@@ -259,7 +259,7 @@ def convertJavaArray(javaArray, convertNulls='ERROR', forPandas=False):
     if javaArray is None:
         return None
 
-    if _isDbArray(javaArray):
+    if _isVector(javaArray):
         # convert a engine array to a java array, if necessary
         return convertJavaArray(javaArray.toArray(), convertNulls=convertNulls)
 
@@ -399,7 +399,7 @@ def columnToNumpyArray(table, columnName, convertNulls=NULL_CONVERSION.ERROR, fo
     * ``DBDateTime -> numpy.dtype(datetime64[ns])`` and ``null -> numpy.nat``
     * ``String -> numpy.unicode_`` (of appropriate length) and ``null -> ''``
     * ``char -> numpy.dtype('U1')`` (one character string) and ``NULL_CHAR -> ''``
-    * ``array/DbArray``
+    * ``array/Vector``
        - if ``forPandas=False`` and all entries are of compatible shape, then will return a rectangular
          :class:`numpy.ndarray` of dtype in keeping with the above
        - if ``forPandas=False`` or all entries are not of compatible shape, then returns one-diemnsional
@@ -518,7 +518,7 @@ def tableToDataFrame(table, convertNulls=NULL_CONVERSION.ERROR, categoricals=Non
     * ``DBDateTime -> numpy.dtype(datetime64[ns])`` and ``null -> numpy.nat``
     * ``String -> numpy.unicode_`` (of appropriate length) and ``null -> ''``
     * ``char -> numpy.dtype('U1')`` (one character string) and ``NULL_CHAR -> ''``
-    * ``array/DbArray``
+    * ``array/Vector``
        - if ``forPandas=False`` and all entries are of compatible shape, then will return a rectangular
          :class:`numpy.ndarray` of dtype in keeping with the above
        - if ``forPandas=False`` or all entries are not of compatible shape, then returns one-diemnsional

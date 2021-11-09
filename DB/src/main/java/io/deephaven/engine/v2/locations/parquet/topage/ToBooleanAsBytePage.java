@@ -1,7 +1,7 @@
 package io.deephaven.engine.v2.locations.parquet.topage;
 
-import io.deephaven.engine.tables.dbarrays.DbArray;
-import io.deephaven.engine.tables.dbarrays.DbArrayDirect;
+import io.deephaven.engine.tables.dbarrays.ObjectVector;
+import io.deephaven.engine.tables.dbarrays.ObjectVectorDirect;
 import io.deephaven.util.BooleanUtils;
 import io.deephaven.engine.v2.sources.chunk.Attributes;
 import io.deephaven.engine.v2.sources.chunk.ChunkType;
@@ -50,13 +50,13 @@ public class ToBooleanAsBytePage<ATTR extends Attributes.Any> implements ToPage<
 
     @Override
     @NotNull
-    public DbArray<Boolean> makeDbArray(byte[] result) {
+    public ObjectVector<Boolean> makeDbArray(byte[] result) {
         Boolean[] to = new Boolean[result.length];
 
         for (int i = 0; i < result.length; ++i) {
             to[i] = BooleanUtils.byteAsBoolean(result[i]);
         }
 
-        return new DbArrayDirect<>(to);
+        return new ObjectVectorDirect<>(to);
     }
 }

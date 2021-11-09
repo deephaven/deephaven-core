@@ -64,21 +64,21 @@ public class ShortChunkFactory implements ChunkFactory {
         return ShortChunkChunk.chunkWrap(typedArray, offset, capacity);
     }
 
-    // region dbArrayWrap
+    // region vectorWrap
     @NotNull
     @Override
-    public final DbShortArrayDirect dbArrayWrap(Object array) {
+    public final ShortVectorDirect vectorWrap(Object array) {
         final short[] typedArray = (short[])array;
-        return new DbShortArrayDirect(typedArray);
+        return new ShortVectorDirect(typedArray);
     }
 
     @NotNull
     @Override
-    public DbShortArraySlice dbArrayWrap(Object array, int offset, int capacity) {
-        DbShortArrayDirect dbShortArrayDirect = dbArrayWrap(array);
-        return new DbShortArraySlice(dbShortArrayDirect, offset, capacity);
+    public ShortVectorSlice vectorWrap(Object array, int offset, int capacity) {
+        ShortVectorDirect dbShortArrayDirect = vectorWrap(array);
+        return new ShortVectorSlice(dbShortArrayDirect, offset, capacity);
     }
-    // endregion dbArrayWrap
+    // endregion vectorWrap
 
     @NotNull
     @Override

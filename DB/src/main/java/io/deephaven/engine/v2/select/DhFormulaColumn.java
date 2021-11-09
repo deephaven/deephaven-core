@@ -7,7 +7,7 @@ package io.deephaven.engine.v2.select;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.compilertools.CompilerTools;
 import io.deephaven.engine.tables.ColumnDefinition;
-import io.deephaven.engine.tables.dbarrays.DbArray;
+import io.deephaven.engine.tables.dbarrays.ObjectVector;
 import io.deephaven.engine.tables.lang.DBLanguageParser;
 import io.deephaven.engine.tables.libs.QueryLibrary;
 import io.deephaven.engine.tables.select.Param;
@@ -157,10 +157,10 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
     public static Class<?> getDbArrayType(Class<?> declaredType) {
         if (!io.deephaven.util.type.TypeUtils.isConvertibleToPrimitive(declaredType) || declaredType == boolean.class
                 || declaredType == Boolean.class) {
-            return DbArray.class;
+            return ObjectVector.class;
         } else {
             try {
-                return Class.forName(DbArray.class.getPackage().getName() + ".Db"
+                return Class.forName(ObjectVector.class.getPackage().getName() + ".Db"
                         + Character.toUpperCase(
                                 io.deephaven.util.type.TypeUtils.getUnboxedType(declaredType).getSimpleName().charAt(0))
                         +

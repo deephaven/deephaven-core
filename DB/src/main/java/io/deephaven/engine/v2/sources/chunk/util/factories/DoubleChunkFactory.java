@@ -64,21 +64,21 @@ public class DoubleChunkFactory implements ChunkFactory {
         return DoubleChunkChunk.chunkWrap(typedArray, offset, capacity);
     }
 
-    // region dbArrayWrap
+    // region vectorWrap
     @NotNull
     @Override
-    public final DbDoubleArrayDirect dbArrayWrap(Object array) {
+    public final DoubleVectorDirect vectorWrap(Object array) {
         final double[] typedArray = (double[])array;
-        return new DbDoubleArrayDirect(typedArray);
+        return new DoubleVectorDirect(typedArray);
     }
 
     @NotNull
     @Override
-    public DbDoubleArraySlice dbArrayWrap(Object array, int offset, int capacity) {
-        DbDoubleArrayDirect dbDoubleArrayDirect = dbArrayWrap(array);
-        return new DbDoubleArraySlice(dbDoubleArrayDirect, offset, capacity);
+    public DoubleVectorSlice vectorWrap(Object array, int offset, int capacity) {
+        DoubleVectorDirect dbDoubleArrayDirect = vectorWrap(array);
+        return new DoubleVectorSlice(dbDoubleArrayDirect, offset, capacity);
     }
-    // endregion dbArrayWrap
+    // endregion vectorWrap
 
     @NotNull
     @Override

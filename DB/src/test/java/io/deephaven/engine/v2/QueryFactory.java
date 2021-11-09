@@ -381,7 +381,7 @@ public class QueryFactory {
     private void addApplyToAllByOperation(int opNum, StringBuilder opChain, Random random, String nameSeed) {
         addNormalTableSegment(opChain, nameSeed, opNum);
         // getDirect() is required for previous value to work. see IDS-6257
-        opChain.append(".applyToAllBy(\"each.getDirect().subArray(0L,1L)\",");
+        opChain.append(".applyToAllBy(\"each.getDirect().subVector(0L,1L)\",");
         final int numOfColumns = random.nextInt(3) + 1;
 
         final ArrayList<String> colSet = new ArrayList<>(Arrays.asList(columnNames));

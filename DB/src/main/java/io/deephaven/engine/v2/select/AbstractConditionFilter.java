@@ -4,7 +4,7 @@ import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.engine.tables.ColumnDefinition;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.TableDefinition;
-import io.deephaven.engine.tables.dbarrays.DbArray;
+import io.deephaven.engine.tables.dbarrays.ObjectVector;
 import io.deephaven.engine.tables.lang.DBLanguageParser;
 import io.deephaven.engine.tables.libs.QueryLibrary;
 import io.deephaven.engine.tables.select.Param;
@@ -110,7 +110,7 @@ public abstract class AbstractConditionFilter extends SelectFilterImpl {
                 if (compType != null && !compType.isPrimitive()) {
                     possibleVariableParameterizedTypes.put(columnName, new Class[] {compType});
                 }
-                if (dbArrayType == DbArray.class) {
+                if (dbArrayType == ObjectVector.class) {
                     possibleVariableParameterizedTypes.put(columnName + COLUMN_SUFFIX,
                             new Class[] {column.getDataType()});
                 }

@@ -23,16 +23,16 @@ public class TestCasting extends BaseArrayTestCase {
         assertEquals(new long[] {1, 2, 3, NULL_LONG}, castLong(new int[] {1, 2, 3, NULL_INT}));
         assertEquals(new long[] {1, 2, 3, NULL_LONG}, castLong(new long[] {1, 2, 3, NULL_LONG}));
 
-        assertNull(castLong((DbByteArray) null));
-        assertNull(castLong((DbShortArray) null));
-        assertNull(castLong((DbIntArray) null));
-        assertNull(castLong((DbLongArray) null));
+        assertNull(castLong((ByteVector) null));
+        assertNull(castLong((ShortVector) null));
+        assertNull(castLong((IntVector) null));
+        assertNull(castLong((LongVector) null));
 
-        assertEquals(new long[] {1, 2, 3, NULL_LONG}, castLong(new DbByteArrayDirect(new byte[] {1, 2, 3, NULL_BYTE})));
+        assertEquals(new long[] {1, 2, 3, NULL_LONG}, castLong(new ByteVectorDirect(new byte[] {1, 2, 3, NULL_BYTE})));
         assertEquals(new long[] {1, 2, 3, NULL_LONG},
-                castLong(new DbShortArrayDirect(new short[] {1, 2, 3, NULL_SHORT})));
-        assertEquals(new long[] {1, 2, 3, NULL_LONG}, castLong(new DbIntArrayDirect(new int[] {1, 2, 3, NULL_INT})));
-        assertEquals(new long[] {1, 2, 3, NULL_LONG}, castLong(new DbLongArrayDirect(new long[] {1, 2, 3, NULL_LONG})));
+                castLong(new ShortVectorDirect(new short[] {1, 2, 3, NULL_SHORT})));
+        assertEquals(new long[] {1, 2, 3, NULL_LONG}, castLong(new IntVectorDirect(new int[] {1, 2, 3, NULL_INT})));
+        assertEquals(new long[] {1, 2, 3, NULL_LONG}, castLong(new LongVectorDirect(new long[] {1, 2, 3, NULL_LONG})));
     }
 
     public void testCastDouble() {
@@ -50,42 +50,42 @@ public class TestCasting extends BaseArrayTestCase {
         assertEquals(new double[] {1, 2, 3, NULL_DOUBLE}, castDouble(new float[] {1, 2, 3, NULL_FLOAT}));
         assertEquals(new double[] {1, 2, 3, NULL_DOUBLE}, castDouble(new double[] {1, 2, 3, NULL_DOUBLE}));
 
-        assertNull(castDouble((DbByteArray) null));
-        assertNull(castDouble((DbShortArray) null));
-        assertNull(castDouble((DbIntArray) null));
-        assertNull(castDouble((DbLongArray) null));
-        assertNull(castDouble((DbFloatArray) null));
-        assertNull(castDouble((DbDoubleArray) null));
+        assertNull(castDouble((ByteVector) null));
+        assertNull(castDouble((ShortVector) null));
+        assertNull(castDouble((IntVector) null));
+        assertNull(castDouble((LongVector) null));
+        assertNull(castDouble((FloatVector) null));
+        assertNull(castDouble((DoubleVector) null));
 
         assertEquals(new double[] {1, 2, 3, NULL_DOUBLE},
-                castDouble(new DbByteArrayDirect(new byte[] {1, 2, 3, NULL_BYTE})));
+                castDouble(new ByteVectorDirect(new byte[] {1, 2, 3, NULL_BYTE})));
         assertEquals(new double[] {1, 2, 3, NULL_DOUBLE},
-                castDouble(new DbShortArrayDirect(new short[] {1, 2, 3, NULL_SHORT})));
+                castDouble(new ShortVectorDirect(new short[] {1, 2, 3, NULL_SHORT})));
         assertEquals(new double[] {1, 2, 3, NULL_DOUBLE},
-                castDouble(new DbIntArrayDirect(new int[] {1, 2, 3, NULL_INT})));
+                castDouble(new IntVectorDirect(new int[] {1, 2, 3, NULL_INT})));
         assertEquals(new double[] {1, 2, 3, NULL_DOUBLE},
-                castDouble(new DbLongArrayDirect(new long[] {1, 2, 3, NULL_LONG})));
+                castDouble(new LongVectorDirect(new long[] {1, 2, 3, NULL_LONG})));
         assertEquals(new double[] {1, 2, 3, NULL_DOUBLE},
-                castDouble(new DbFloatArrayDirect(new float[] {1, 2, 3, NULL_FLOAT})));
+                castDouble(new FloatVectorDirect(new float[] {1, 2, 3, NULL_FLOAT})));
         assertEquals(new double[] {1, 2, 3, NULL_DOUBLE},
-                castDouble(new DbDoubleArrayDirect(new double[] {1, 2, 3, NULL_DOUBLE})));
+                castDouble(new DoubleVectorDirect(new double[] {1, 2, 3, NULL_DOUBLE})));
     }
 
     public void testIntToDouble() {
         assertNull(intToDouble((int[]) null));
         assertEquals(new double[] {1, 2, 3, NULL_DOUBLE}, intToDouble(new int[] {1, 2, 3, NULL_INT}));
 
-        assertNull(intToDouble((DbIntArray) null));
+        assertNull(intToDouble((IntVector) null));
         assertEquals(new double[] {1, 2, 3, NULL_DOUBLE},
-                intToDouble(new DbIntArrayDirect(new int[] {1, 2, 3, NULL_INT})).toArray());
+                intToDouble(new IntVectorDirect(new int[] {1, 2, 3, NULL_INT})).toArray());
     }
 
     public void testLongToDouble() {
         assertNull(longToDouble((long[]) null));
         assertEquals(new double[] {1, 2, 3, NULL_DOUBLE}, longToDouble(new long[] {1, 2, 3, NULL_LONG}));
 
-        assertNull(longToDouble((DbLongArray) null));
+        assertNull(longToDouble((LongVector) null));
         assertEquals(new double[] {1, 2, 3, NULL_DOUBLE},
-                longToDouble(new DbLongArrayDirect(new long[] {1, 2, 3, NULL_LONG})).toArray());
+                longToDouble(new LongVectorDirect(new long[] {1, 2, 3, NULL_LONG})).toArray());
     }
 }

@@ -5,13 +5,12 @@ package io.deephaven.engine.v2.ssms;
 
 import gnu.trove.set.hash.THashSet;
 
-import io.deephaven.engine.tables.dbarrays.DbArray;
-import io.deephaven.engine.tables.dbarrays.DbArrayDirect;
+import io.deephaven.engine.tables.dbarrays.ObjectVector;
+import io.deephaven.engine.tables.dbarrays.ObjectVectorDirect;
 
 import java.util.Objects;
 
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.tables.dbarrays.DbArray;
 import io.deephaven.engine.tables.utils.ArrayUtils;
 import io.deephaven.engine.util.DhObjectComparisons;
 import io.deephaven.engine.v2.by.SumIntChunk;
@@ -23,10 +22,9 @@ import io.deephaven.util.annotations.VisibleForTesting;
 import org.apache.commons.lang3.mutable.MutableInt;
 
 import java.util.Arrays;
-import java.util.Objects;
 
 
-public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMultiSet<Object>, DbArray {
+public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMultiSet<Object>, ObjectVector {
     private final int leafSize;
     private int leafCount;
     private int size;
@@ -50,7 +48,7 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
     private transient boolean accumulateDeltas = false;
     private transient THashSet added;
     private transient THashSet removed;
-    private transient DbArray prevValues;
+    private transient ObjectVector prevValues;
     // endregion Deltas
 
 
@@ -2206,7 +2204,7 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
         }
 
         if(prevValues == null) {
-            prevValues = new DbArrayDirect<>(keyArray());
+            prevValues = new ObjectVectorDirect<>(keyArray());
         }
 
         if (added == null) {
@@ -2235,7 +2233,7 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
         }
 
         if(prevValues == null) {
-            prevValues = new DbArrayDirect<>(keyArray());
+            prevValues = new ObjectVectorDirect<>(keyArray());
         }
 
         if(removed == null) {
@@ -2276,12 +2274,12 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
         chunk.copyFromTypedArray(added.toArray(), 0, position, added.size());
     }
 
-    public DbArray getPrevValues() {
+    public ObjectVector getPrevValues() {
         return prevValues == null ? this : prevValues;
     }
     // endregion
 
-    // region DBObjectArray
+    // region ObjectVector
     @Override
     public Object get(long i) {
         if(i < 0 || i > size()) {
@@ -2303,19 +2301,19 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
     }
 
     @Override
-    public DbArray subArray(long fromIndex, long toIndex) {
-        return new DbArrayDirect<>(keyArray(fromIndex, toIndex));
+    public ObjectVector subVector(long fromIndex, long toIndex) {
+        return new ObjectVectorDirect<>(keyArray(fromIndex, toIndex));
     }
 
     @Override
-    public DbArray subArrayByPositions(long[] positions) {
+    public ObjectVector subVectorByPositions(long[] positions) {
         final Object[] keyArray = new Object[positions.length];
         int writePos = 0;
         for (long position : positions) {
             keyArray[writePos++] = get(position);
         }
 
-        return new DbArrayDirect<>(keyArray);
+        return new ObjectVectorDirect<>(keyArray);
     }
 
     @Override
@@ -2329,15 +2327,15 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
     }
 
     @Override
-    public DbArray getDirect() {
-        return new DbArrayDirect<>(keyArray());
+    public ObjectVector getDirect() {
+        return new ObjectVectorDirect<>(keyArray());
     }
     //endregion
 
-    //region DbArrayEquals
-    //endregion DbArrayEquals
+    //region VectorEquals
+    //endregion VectorEquals
 
-    private boolean equalsArray(DbArray<?> o) {
+    private boolean equalsArray(ObjectVector<?> o) {
         //region EqualsArrayTypeCheck
         if(o.getComponentType() != o.getComponentType()) {
             return false;
@@ -2351,8 +2349,8 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
         if(leafCount == 1) {
             for(int ii = 0; ii < size; ii++) {
                 final Object val = (Object)o.get(ii);
-                //region DbArrayEquals
-                //endregion DbArrayEquals
+                //region VectorEquals
+                //endregion VectorEquals
 
                 if(!Objects.equals(directoryValues[ii], val)) {
                     return false;
@@ -2366,8 +2364,8 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
         for (int li = 0; li < leafCount; ++li) {
             for(int ai = 0; ai < leafSizes[li]; ai++) {
                 final Object val = (Object)o.get(nCompared++);
-                //region DbArrayEquals
-                //endregion DbArrayEquals
+                //region VectorEquals
+                //endregion VectorEquals
 
                 if(!Objects.equals(leafValues[li][ai],  val)) {
                     return false;
@@ -2382,11 +2380,11 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
     public boolean equals(Object o) {
         if (this == o) return true;
         if (!(o instanceof ObjectSegmentedSortedMultiset)) {
-            //region DbArrayEquals
-            //endregion DbArrayEquals
+            //region VectorEquals
+            //endregion VectorEquals
 
-            if(o instanceof DbArray) {
-                return equalsArray((DbArray)o);
+            if(o instanceof ObjectVector) {
+                return equalsArray((ObjectVector)o);
             }
             return false;
         }

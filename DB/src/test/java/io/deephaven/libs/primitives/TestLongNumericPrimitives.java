@@ -42,12 +42,12 @@ public class TestLongNumericPrimitives extends BaseArrayTestCase {
         assertEquals(10.0, avg(new Long[]{(long)5, NULL_LONG, (long)15}));
         assertEquals(QueryConstants.NULL_DOUBLE, avg((Long[])null));
 
-        assertEquals(50.0, avg(new DbLongArrayDirect(new long[]{40, 50, 60})));
-        assertEquals(45.5, avg(new DbLongArrayDirect(new long[]{40, 51})));
-        assertTrue(Double.isNaN(avg(new DbLongArrayDirect())));
-        assertTrue(Double.isNaN(avg(new DbLongArrayDirect(NULL_LONG))));
-        assertEquals(10.0, avg(new DbLongArrayDirect(new long[]{5, NULL_LONG, 15})));
-        assertEquals(QueryConstants.NULL_DOUBLE, avg((DbLongArrayDirect)null));
+        assertEquals(50.0, avg(new LongVectorDirect(new long[]{40, 50, 60})));
+        assertEquals(45.5, avg(new LongVectorDirect(new long[]{40, 51})));
+        assertTrue(Double.isNaN(avg(new LongVectorDirect())));
+        assertTrue(Double.isNaN(avg(new LongVectorDirect(NULL_LONG))));
+        assertEquals(10.0, avg(new LongVectorDirect(new long[]{5, NULL_LONG, 15})));
+        assertEquals(QueryConstants.NULL_DOUBLE, avg((LongVectorDirect)null));
     }
 
     public void testAbsAvg() {
@@ -65,12 +65,12 @@ public class TestLongNumericPrimitives extends BaseArrayTestCase {
         assertEquals(10.0, absAvg(new Long[]{(long) 5, NULL_LONG, (long) 15}));
         assertEquals(QueryConstants.NULL_DOUBLE, absAvg((Long[])null));
 
-        assertEquals(50.0, absAvg(new DbLongArrayDirect(new long[]{40, (long) 50, 60})));
-        assertEquals(45.5, absAvg(new DbLongArrayDirect(new long[]{(long) 40, 51})));
-        assertTrue(Double.isNaN(absAvg(new DbLongArrayDirect())));
-        assertTrue(Double.isNaN(absAvg(new DbLongArrayDirect(NULL_LONG))));
-        assertEquals(10.0, absAvg(new DbLongArrayDirect((long) 5, NULL_LONG, (long) 15)));
-        assertEquals(QueryConstants.NULL_DOUBLE, absAvg((DbLongArrayDirect)null));
+        assertEquals(50.0, absAvg(new LongVectorDirect(new long[]{40, (long) 50, 60})));
+        assertEquals(45.5, absAvg(new LongVectorDirect(new long[]{(long) 40, 51})));
+        assertTrue(Double.isNaN(absAvg(new LongVectorDirect())));
+        assertTrue(Double.isNaN(absAvg(new LongVectorDirect(NULL_LONG))));
+        assertEquals(10.0, absAvg(new LongVectorDirect((long) 5, NULL_LONG, (long) 15)));
+        assertEquals(QueryConstants.NULL_DOUBLE, absAvg((LongVectorDirect)null));
     }
 
     public void testCountPos() {
@@ -86,11 +86,11 @@ public class TestLongNumericPrimitives extends BaseArrayTestCase {
         assertEquals(3, countPos(new Long[]{(long)5, NULL_LONG, (long)15, (long) 1, (long)0}));
         assertEquals(QueryConstants.NULL_INT, countPos((long[])null));
 
-        assertEquals(4, countPos(new DbLongArrayDirect(new long[]{40, 50, 60, (long) 1, 0})));
-        assertEquals(0, countPos(new DbLongArrayDirect()));
-        assertEquals(0, countPos(new DbLongArrayDirect(NULL_LONG)));
-        assertEquals(3, countPos(new DbLongArrayDirect(new long[]{5, NULL_LONG, 15, (long) 1, 0})));
-        assertEquals(QueryConstants.NULL_INT, countPos((DbLongArrayDirect)null));
+        assertEquals(4, countPos(new LongVectorDirect(new long[]{40, 50, 60, (long) 1, 0})));
+        assertEquals(0, countPos(new LongVectorDirect()));
+        assertEquals(0, countPos(new LongVectorDirect(NULL_LONG)));
+        assertEquals(3, countPos(new LongVectorDirect(new long[]{5, NULL_LONG, 15, (long) 1, 0})));
+        assertEquals(QueryConstants.NULL_INT, countPos((LongVectorDirect)null));
     }
 
     public void testCountNeg() {
@@ -106,11 +106,11 @@ public class TestLongNumericPrimitives extends BaseArrayTestCase {
         assertEquals(1, countNeg(new Long[]{(long)5, NULL_LONG, (long)15, (long) -1, (long)0}));
         assertEquals(QueryConstants.NULL_INT, countNeg((Long[])null));
 
-        assertEquals(2, countNeg(new DbLongArrayDirect(new long[]{40, (long) -50, 60, (long) -1, 0})));
-        assertEquals(0, countNeg(new DbLongArrayDirect()));
-        assertEquals(0, countNeg(new DbLongArrayDirect(NULL_LONG)));
-        assertEquals(1, countNeg(new DbLongArrayDirect(new long[]{5, NULL_LONG, 15, (long) -1, 0})));
-        assertEquals(QueryConstants.NULL_INT, countNeg((DbLongArrayDirect)null));
+        assertEquals(2, countNeg(new LongVectorDirect(new long[]{40, (long) -50, 60, (long) -1, 0})));
+        assertEquals(0, countNeg(new LongVectorDirect()));
+        assertEquals(0, countNeg(new LongVectorDirect(NULL_LONG)));
+        assertEquals(1, countNeg(new LongVectorDirect(new long[]{5, NULL_LONG, 15, (long) -1, 0})));
+        assertEquals(QueryConstants.NULL_INT, countNeg((LongVectorDirect)null));
     }
 
     public void testCountZero() {
@@ -126,19 +126,19 @@ public class TestLongNumericPrimitives extends BaseArrayTestCase {
         assertEquals(2, countZero(new Long[]{(long)0, (long)5, NULL_LONG, (long)0, (long) -15}));
         assertEquals(QueryConstants.NULL_INT, countZero((Long[])null));
 
-        assertEquals(2, countZero(new DbLongArrayDirect(new long[]{0, 40, 50, 60, (long) -1, 0})));
-        assertEquals(0, countZero(new DbLongArrayDirect()));
-        assertEquals(0, countZero(new DbLongArrayDirect(NULL_LONG)));
-        assertEquals(2, countZero(new DbLongArrayDirect(new long[]{0, 5, NULL_LONG, 0, (long) -15})));
-        assertEquals(QueryConstants.NULL_INT, countZero((DbLongArrayDirect)null));
+        assertEquals(2, countZero(new LongVectorDirect(new long[]{0, 40, 50, 60, (long) -1, 0})));
+        assertEquals(0, countZero(new LongVectorDirect()));
+        assertEquals(0, countZero(new LongVectorDirect(NULL_LONG)));
+        assertEquals(2, countZero(new LongVectorDirect(new long[]{0, 5, NULL_LONG, 0, (long) -15})));
+        assertEquals(QueryConstants.NULL_INT, countZero((LongVectorDirect)null));
     }
 
     public void testMax() {
-        assertEquals((long) 60, max(new DbLongArrayDirect(new long[]{0, 40, NULL_LONG, 50, 60, (long) 1, 0})));
-        assertEquals((long) 60, max(new DbLongArrayDirect((long) 40, NULL_LONG, (long) 50, (long) 60, (long) 1)));
-        assertEquals(NULL_LONG, max(new DbLongArrayDirect()));
-        assertEquals(NULL_LONG, max(new DbLongArrayDirect(NULL_LONG)));
-        assertEquals(NULL_LONG, max((DbLongArray) null));
+        assertEquals((long) 60, max(new LongVectorDirect(new long[]{0, 40, NULL_LONG, 50, 60, (long) 1, 0})));
+        assertEquals((long) 60, max(new LongVectorDirect((long) 40, NULL_LONG, (long) 50, (long) 60, (long) 1)));
+        assertEquals(NULL_LONG, max(new LongVectorDirect()));
+        assertEquals(NULL_LONG, max(new LongVectorDirect(NULL_LONG)));
+        assertEquals(NULL_LONG, max((LongVector) null));
 
         assertEquals((long) 60, max((long) 0, (long) 40, NULL_LONG, (long) 50, (long) 60, (long) 1, (long) 0));
         assertEquals((long) 60, max((long) 40, NULL_LONG, (long) 50, (long) 60, (long) -1));
@@ -149,11 +149,11 @@ public class TestLongNumericPrimitives extends BaseArrayTestCase {
     }
 
     public void testMin() {
-        assertEquals((long) 0, min(new DbLongArrayDirect(new long[]{0, 40, NULL_LONG, 50, 60, (long) 1, 0})));
-        assertEquals((long) -1, min(new DbLongArrayDirect((long) 40, NULL_LONG, (long) 50, (long) 60, (long) -1)));
-        assertEquals(NULL_LONG, min(new DbLongArrayDirect()));
-        assertEquals(NULL_LONG, min(new DbLongArrayDirect(NULL_LONG)));
-        assertEquals(NULL_LONG, min((DbLongArray) null));
+        assertEquals((long) 0, min(new LongVectorDirect(new long[]{0, 40, NULL_LONG, 50, 60, (long) 1, 0})));
+        assertEquals((long) -1, min(new LongVectorDirect((long) 40, NULL_LONG, (long) 50, (long) 60, (long) -1)));
+        assertEquals(NULL_LONG, min(new LongVectorDirect()));
+        assertEquals(NULL_LONG, min(new LongVectorDirect(NULL_LONG)));
+        assertEquals(NULL_LONG, min((LongVector) null));
 
         assertEquals((long) 0, min((long) 0, (long) 40, NULL_LONG, (long) 50, (long) 60, (long) 1, (long) 0));
         assertEquals((long) -1, min((long) 40, NULL_LONG, (long) 50, (long) 60, (long) -1));
@@ -169,10 +169,10 @@ public class TestLongNumericPrimitives extends BaseArrayTestCase {
         assertEquals(NULL_INT, firstIndexOf(new long[]{0, 40, NULL_LONG, 40, 60, 40, 0}, (long)1));
         assertEquals(QueryConstants.NULL_INT, firstIndexOf((long[])null, (long)40));
 
-        assertEquals(1, firstIndexOf(new DbLongArrayDirect(new long[]{0, 40, NULL_LONG, 40, 60, 40, 0}), (long)40));
-        assertEquals(4, firstIndexOf(new DbLongArrayDirect(new long[]{0, 40, NULL_LONG, 40, 60, 40, 0}), (long)60));
-        assertEquals(NULL_INT, firstIndexOf(new DbLongArrayDirect(new long[]{0, 40, NULL_LONG, 40, 60, 40, 0}), (long)1));
-        assertEquals(QueryConstants.NULL_INT, firstIndexOf((DbLongArray) null, (long)40));
+        assertEquals(1, firstIndexOf(new LongVectorDirect(new long[]{0, 40, NULL_LONG, 40, 60, 40, 0}), (long)40));
+        assertEquals(4, firstIndexOf(new LongVectorDirect(new long[]{0, 40, NULL_LONG, 40, 60, 40, 0}), (long)60));
+        assertEquals(NULL_INT, firstIndexOf(new LongVectorDirect(new long[]{0, 40, NULL_LONG, 40, 60, 40, 0}), (long)1));
+        assertEquals(QueryConstants.NULL_INT, firstIndexOf((LongVector) null, (long)40));
     }
 
     public void testIndexOfMax() {
@@ -188,11 +188,11 @@ public class TestLongNumericPrimitives extends BaseArrayTestCase {
         assertEquals(-1, indexOfMax(new Long[]{NULL_LONG}));
         assertEquals(QueryConstants.NULL_INT, indexOfMax((Long[])null));
 
-        assertEquals(4, indexOfMax(new DbLongArrayDirect(new long[]{0, 40, NULL_LONG, 50, 60, (long) 1, 0})));
-        assertEquals(3, indexOfMax(new DbLongArrayDirect((long) 40, NULL_LONG, (long) 50, (long) 60, (long) 1)));
-        assertEquals(-1, indexOfMax(new DbLongArrayDirect()));
-        assertEquals(-1, indexOfMax(new DbLongArrayDirect(NULL_LONG)));
-        assertEquals(QueryConstants.NULL_INT, indexOfMax((DbLongArrayDirect)null));
+        assertEquals(4, indexOfMax(new LongVectorDirect(new long[]{0, 40, NULL_LONG, 50, 60, (long) 1, 0})));
+        assertEquals(3, indexOfMax(new LongVectorDirect((long) 40, NULL_LONG, (long) 50, (long) 60, (long) 1)));
+        assertEquals(-1, indexOfMax(new LongVectorDirect()));
+        assertEquals(-1, indexOfMax(new LongVectorDirect(NULL_LONG)));
+        assertEquals(QueryConstants.NULL_INT, indexOfMax((LongVectorDirect)null));
     }
 
     public void testIndexOfMin() {
@@ -208,11 +208,11 @@ public class TestLongNumericPrimitives extends BaseArrayTestCase {
         assertEquals(-1, indexOfMin(new Long[]{NULL_LONG}));
         assertEquals(QueryConstants.NULL_INT, indexOfMin((Long[])null));
 
-        assertEquals(1, indexOfMin(new DbLongArrayDirect(new long[]{40, 0, NULL_LONG, 50, 60, (long) 1, 0})));
-        assertEquals(4, indexOfMin(new DbLongArrayDirect((long) 40, NULL_LONG, (long) 50, (long) 60, (long) -1)));
-        assertEquals(-1, indexOfMin(new DbLongArrayDirect()));
-        assertEquals(-1, indexOfMin(new DbLongArrayDirect(NULL_LONG)));
-        assertEquals(QueryConstants.NULL_INT, indexOfMin((DbLongArrayDirect)null));
+        assertEquals(1, indexOfMin(new LongVectorDirect(new long[]{40, 0, NULL_LONG, 50, 60, (long) 1, 0})));
+        assertEquals(4, indexOfMin(new LongVectorDirect((long) 40, NULL_LONG, (long) 50, (long) 60, (long) -1)));
+        assertEquals(-1, indexOfMin(new LongVectorDirect()));
+        assertEquals(-1, indexOfMin(new LongVectorDirect(NULL_LONG)));
+        assertEquals(QueryConstants.NULL_INT, indexOfMin((LongVectorDirect)null));
     }
 
 
@@ -230,50 +230,50 @@ public class TestLongNumericPrimitives extends BaseArrayTestCase {
         assertEquals(var, var(V));
         assertEquals(QueryConstants.NULL_DOUBLE, var((Long[])null));
 
-        assertEquals(var, var(new DbLongArrayDirect(v)));
-        assertEquals(QueryConstants.NULL_DOUBLE, var((DbLongArrayDirect)null));
+        assertEquals(var, var(new LongVectorDirect(v)));
+        assertEquals(QueryConstants.NULL_DOUBLE, var((LongVectorDirect)null));
     }
 
     public void testStd() {
         long[] v = {0, 40, NULL_LONG, 50, 60, (long) -1, 0};
         Long[] V = {(long)0, (long)40, NULL_LONG, (long)50, (long)60, (long) -1, (long)0};
 
-        assertEquals(Math.sqrt(var(new DbLongArrayDirect(v))), std(v));
+        assertEquals(Math.sqrt(var(new LongVectorDirect(v))), std(v));
         assertEquals(QueryConstants.NULL_DOUBLE, std((long[])null));
 
-        assertEquals(Math.sqrt(var(new DbLongArrayDirect(v))), std(V));
+        assertEquals(Math.sqrt(var(new LongVectorDirect(v))), std(V));
         assertEquals(QueryConstants.NULL_DOUBLE, std((Long[])null));
 
-        assertEquals(Math.sqrt(var(new DbLongArrayDirect(v))), std(new DbLongArrayDirect(v)));
-        assertEquals(QueryConstants.NULL_DOUBLE, std((DbLongArrayDirect)null));
+        assertEquals(Math.sqrt(var(new LongVectorDirect(v))), std(new LongVectorDirect(v)));
+        assertEquals(QueryConstants.NULL_DOUBLE, std((LongVectorDirect)null));
     }
 
     public void testSte() {
         long[] v = {0, 40, NULL_LONG, 50, 60, (long) -1, 0};
         Long[] V = {(long)0, (long)40, NULL_LONG, (long)50, (long)60, (long) -1, (long)0};
 
-        assertEquals(std(new DbLongArrayDirect(v)) / Math.sqrt(count(new DbLongArrayDirect(v))), ste(v));
+        assertEquals(std(new LongVectorDirect(v)) / Math.sqrt(count(new LongVectorDirect(v))), ste(v));
         assertEquals(QueryConstants.NULL_DOUBLE, ste((long[])null));
 
-        assertEquals(std(new DbLongArrayDirect(v)) / Math.sqrt(count(new DbLongArrayDirect(v))), ste(V));
+        assertEquals(std(new LongVectorDirect(v)) / Math.sqrt(count(new LongVectorDirect(v))), ste(V));
         assertEquals(QueryConstants.NULL_DOUBLE, ste((Long[])null));
 
-        assertEquals(std(new DbLongArrayDirect(v)) / Math.sqrt(count(new DbLongArrayDirect(v))), ste(new DbLongArrayDirect(v)));
-        assertEquals(QueryConstants.NULL_DOUBLE, ste((DbLongArrayDirect)null));
+        assertEquals(std(new LongVectorDirect(v)) / Math.sqrt(count(new LongVectorDirect(v))), ste(new LongVectorDirect(v)));
+        assertEquals(QueryConstants.NULL_DOUBLE, ste((LongVectorDirect)null));
     }
 
     public void testTstat() {
         long[] v = {0, 40, NULL_LONG, 50, 60, (long) -1, 0};
         Long[] V = {(long)0, (long)40, NULL_LONG, (long)50, (long)60, (long) -1, (long)0};
 
-        assertEquals(avg(new DbLongArrayDirect(v)) / ste(new DbLongArrayDirect(v)), tstat(v));
+        assertEquals(avg(new LongVectorDirect(v)) / ste(new LongVectorDirect(v)), tstat(v));
         assertEquals(QueryConstants.NULL_DOUBLE, tstat((long[])null));
 
-        assertEquals(avg(new DbLongArrayDirect(v)) / ste(new DbLongArrayDirect(v)), tstat(V));
+        assertEquals(avg(new LongVectorDirect(v)) / ste(new LongVectorDirect(v)), tstat(V));
         assertEquals(QueryConstants.NULL_DOUBLE, tstat((Long[])null));
 
-        assertEquals(avg(new DbLongArrayDirect(v)) / ste(new DbLongArrayDirect(v)), tstat(new DbLongArrayDirect(v)));
-        assertEquals(QueryConstants.NULL_DOUBLE, tstat((DbLongArrayDirect)null));
+        assertEquals(avg(new LongVectorDirect(v)) / ste(new LongVectorDirect(v)), tstat(new LongVectorDirect(v)));
+        assertEquals(QueryConstants.NULL_DOUBLE, tstat((LongVectorDirect)null));
     }
 
     public void testCov() {
@@ -290,20 +290,20 @@ public class TestLongNumericPrimitives extends BaseArrayTestCase {
         assertEquals(QueryConstants.NULL_DOUBLE, cov((long[])null, b));
         assertEquals(QueryConstants.NULL_DOUBLE, cov((long[])null, (long[]) null));
 
-        assertEquals(cov, cov(a, new DbLongArrayDirect(b)));
-        assertEquals(QueryConstants.NULL_DOUBLE, cov(a, (DbLongArrayDirect)null));
-        assertEquals(QueryConstants.NULL_DOUBLE, cov((long[])null, new DbLongArrayDirect(b)));
-        assertEquals(QueryConstants.NULL_DOUBLE, cov((long[])null, (DbLongArrayDirect)null));
+        assertEquals(cov, cov(a, new LongVectorDirect(b)));
+        assertEquals(QueryConstants.NULL_DOUBLE, cov(a, (LongVectorDirect)null));
+        assertEquals(QueryConstants.NULL_DOUBLE, cov((long[])null, new LongVectorDirect(b)));
+        assertEquals(QueryConstants.NULL_DOUBLE, cov((long[])null, (LongVectorDirect)null));
 
-        assertEquals(cov, cov(new DbLongArrayDirect(a), b));
-        assertEquals(QueryConstants.NULL_DOUBLE, cov(new DbLongArrayDirect(a), (long[])null));
-        assertEquals(QueryConstants.NULL_DOUBLE, cov((DbLongArrayDirect)null, b));
-        assertEquals(QueryConstants.NULL_DOUBLE, cov((DbLongArrayDirect)null, (long[])null));
+        assertEquals(cov, cov(new LongVectorDirect(a), b));
+        assertEquals(QueryConstants.NULL_DOUBLE, cov(new LongVectorDirect(a), (long[])null));
+        assertEquals(QueryConstants.NULL_DOUBLE, cov((LongVectorDirect)null, b));
+        assertEquals(QueryConstants.NULL_DOUBLE, cov((LongVectorDirect)null, (long[])null));
 
-        assertEquals(cov, cov(new DbLongArrayDirect(a), new DbLongArrayDirect(b)));
-        assertEquals(QueryConstants.NULL_DOUBLE, cov(new DbLongArrayDirect(a), (DbLongArrayDirect)null));
-        assertEquals(QueryConstants.NULL_DOUBLE, cov((DbLongArrayDirect)null, new DbLongArrayDirect(b)));
-        assertEquals(QueryConstants.NULL_DOUBLE, cov((DbLongArrayDirect)null, (DbLongArrayDirect)null));
+        assertEquals(cov, cov(new LongVectorDirect(a), new LongVectorDirect(b)));
+        assertEquals(QueryConstants.NULL_DOUBLE, cov(new LongVectorDirect(a), (LongVectorDirect)null));
+        assertEquals(QueryConstants.NULL_DOUBLE, cov((LongVectorDirect)null, new LongVectorDirect(b)));
+        assertEquals(QueryConstants.NULL_DOUBLE, cov((LongVectorDirect)null, (LongVectorDirect)null));
     }
 
     public void testCor() {
@@ -325,28 +325,28 @@ public class TestLongNumericPrimitives extends BaseArrayTestCase {
         assertEquals(QueryConstants.NULL_DOUBLE, cor((long[])null, b));
         assertEquals(QueryConstants.NULL_DOUBLE, cor((long[])null, (long[])null));
 
-        assertEquals(cor, cor(a, new DbLongArrayDirect(b)));
-        assertEquals(QueryConstants.NULL_DOUBLE, cor(a, (DbLongArrayDirect)null));
-        assertEquals(QueryConstants.NULL_DOUBLE, cor((long[])null, new DbLongArrayDirect(b)));
-        assertEquals(QueryConstants.NULL_DOUBLE, cor((long[])null, (DbLongArrayDirect)null));
+        assertEquals(cor, cor(a, new LongVectorDirect(b)));
+        assertEquals(QueryConstants.NULL_DOUBLE, cor(a, (LongVectorDirect)null));
+        assertEquals(QueryConstants.NULL_DOUBLE, cor((long[])null, new LongVectorDirect(b)));
+        assertEquals(QueryConstants.NULL_DOUBLE, cor((long[])null, (LongVectorDirect)null));
 
-        assertEquals(cor, cor(new DbLongArrayDirect(a), b));
-        assertEquals(QueryConstants.NULL_DOUBLE, cor(new DbLongArrayDirect(a), (long[])null));
-        assertEquals(QueryConstants.NULL_DOUBLE, cor((DbLongArrayDirect)null, b));
-        assertEquals(QueryConstants.NULL_DOUBLE, cor((DbLongArrayDirect)null, (long[])null));
+        assertEquals(cor, cor(new LongVectorDirect(a), b));
+        assertEquals(QueryConstants.NULL_DOUBLE, cor(new LongVectorDirect(a), (long[])null));
+        assertEquals(QueryConstants.NULL_DOUBLE, cor((LongVectorDirect)null, b));
+        assertEquals(QueryConstants.NULL_DOUBLE, cor((LongVectorDirect)null, (long[])null));
 
-        assertEquals(cor, cor(new DbLongArrayDirect(a), new DbLongArrayDirect(b)));
-        assertEquals(QueryConstants.NULL_DOUBLE, cor(new DbLongArrayDirect(a), (DbLongArrayDirect)null));
-        assertEquals(QueryConstants.NULL_DOUBLE, cor((DbLongArrayDirect)null, new DbLongArrayDirect(b)));
-        assertEquals(QueryConstants.NULL_DOUBLE, cor((DbLongArrayDirect)null, (DbLongArrayDirect)null));
+        assertEquals(cor, cor(new LongVectorDirect(a), new LongVectorDirect(b)));
+        assertEquals(QueryConstants.NULL_DOUBLE, cor(new LongVectorDirect(a), (LongVectorDirect)null));
+        assertEquals(QueryConstants.NULL_DOUBLE, cor((LongVectorDirect)null, new LongVectorDirect(b)));
+        assertEquals(QueryConstants.NULL_DOUBLE, cor((LongVectorDirect)null, (LongVectorDirect)null));
     }
 
     public void testSum1() {
-        assertTrue(Math.abs(15 - sum(new DbLongArrayDirect(new long[]{4, 5, 6}))) == 0.0);
-        assertTrue(Math.abs(0 - sum(new DbLongArrayDirect())) == 0.0);
-        assertTrue(Math.abs(0 - sum(new DbLongArrayDirect(NULL_LONG))) == 0.0);
-        assertTrue(Math.abs(20 - sum(new DbLongArrayDirect(new long[]{5, NULL_LONG, 15}))) == 0.0);
-        assertEquals(NULL_LONG, sum((DbLongArray) null));
+        assertTrue(Math.abs(15 - sum(new LongVectorDirect(new long[]{4, 5, 6}))) == 0.0);
+        assertTrue(Math.abs(0 - sum(new LongVectorDirect())) == 0.0);
+        assertTrue(Math.abs(0 - sum(new LongVectorDirect(NULL_LONG))) == 0.0);
+        assertTrue(Math.abs(20 - sum(new LongVectorDirect(new long[]{5, NULL_LONG, 15}))) == 0.0);
+        assertEquals(NULL_LONG, sum((LongVector) null));
     }
 
     public void testSum2() {
@@ -358,12 +358,12 @@ public class TestLongNumericPrimitives extends BaseArrayTestCase {
     }
 
     public void testSumDbArray() {
-        assertEquals(new long[]{4, 15}, sum(new DbArrayDirect<>(new long[][]{{5, 4}, {-3, 5}, {2, 6}})));
-        assertEquals(new long[]{4, NULL_LONG}, sum(new DbArrayDirect<>(new long[][]{{5, NULL_LONG}, {-3, 5}, {2, 6}})));
-        assertEquals(null, sum((DbArray<long[]>) null));
+        assertEquals(new long[]{4, 15}, sum(new ObjectVectorDirect<>(new long[][]{{5, 4}, {-3, 5}, {2, 6}})));
+        assertEquals(new long[]{4, NULL_LONG}, sum(new ObjectVectorDirect<>(new long[][]{{5, NULL_LONG}, {-3, 5}, {2, 6}})));
+        assertEquals(null, sum((ObjectVector<long[]>) null));
 
         try {
-            sum(new DbArrayDirect<>(new long[][]{{5}, {-3, 5}, {2, 6}}));
+            sum(new ObjectVectorDirect<>(new long[][]{{5}, {-3, 5}, {2, 6}}));
             fail("Should have failed on different length arrays");
         } catch (RequirementFailure e) {
             //pass
@@ -390,20 +390,20 @@ public class TestLongNumericPrimitives extends BaseArrayTestCase {
         assertTrue(Math.abs(75 - product(new long[]{5, NULL_LONG, 15})) == 0.0);
         assertEquals(NULL_LONG, product((long[]) null));
 
-        assertTrue(Math.abs(120 - product(new DbLongArrayDirect(new long[]{4, 5, 6}))) == 0.0);
-        assertEquals(NULL_LONG, product(new DbLongArrayDirect()));
-        assertEquals(NULL_LONG, product(new DbLongArrayDirect(NULL_LONG)));
-        assertTrue(Math.abs(75 - product(new DbLongArrayDirect(new long[]{5, NULL_LONG, 15}))) == 0.0);
-        assertEquals(NULL_LONG, product((DbLongArray) null));
+        assertTrue(Math.abs(120 - product(new LongVectorDirect(new long[]{4, 5, 6}))) == 0.0);
+        assertEquals(NULL_LONG, product(new LongVectorDirect()));
+        assertEquals(NULL_LONG, product(new LongVectorDirect(NULL_LONG)));
+        assertTrue(Math.abs(75 - product(new LongVectorDirect(new long[]{5, NULL_LONG, 15}))) == 0.0);
+        assertEquals(NULL_LONG, product((LongVector) null));
     }
 
 //    public void testProdDbArray() {
-//        assertEquals(new long[]{-30, 120}, product(new DbArrayDirect<>(new long[][]{{5, 4}, {-3, 5}, {2, 6}})));
-//        assertEquals(new long[]{-30, NULL_LONG}, product(new DbArrayDirect<>(new long[][]{{5, NULL_LONG}, {-3, 5}, {2, 6}})));
-//        assertEquals(null, product((DbArray<long[]>) null));
+//        assertEquals(new long[]{-30, 120}, product(new ObjectVectorDirect<>(new long[][]{{5, 4}, {-3, 5}, {2, 6}})));
+//        assertEquals(new long[]{-30, NULL_LONG}, product(new ObjectVectorDirect<>(new long[][]{{5, NULL_LONG}, {-3, 5}, {2, 6}})));
+//        assertEquals(null, product((Vector<long[]>) null));
 //
 //        try {
-//            product(new DbArrayDirect<>(new long[][]{{5}, {-3, 5}, {2, 6}}));
+//            product(new ObjectVectorDirect<>(new long[][]{{5}, {-3, 5}, {2, 6}}));
 //            fail("Should have failed on different length arrays");
 //        } catch (RequirementFailure e) {
 //            //pass
@@ -430,11 +430,11 @@ public class TestLongNumericPrimitives extends BaseArrayTestCase {
         assertEquals(new long[0], cumsum());
         assertEquals(null, cumsum((long[]) null));
 
-        assertEquals(new long[]{1, 3, 6, 10, 15}, cumsum(new DbLongArrayDirect(new long[]{1, 2, 3, 4, 5})));
-        assertEquals(new long[]{1, 3, 6, 6, 11}, cumsum(new DbLongArrayDirect(new long[]{1, 2, 3, NULL_LONG, 5})));
-        assertEquals(new long[]{NULL_LONG, 2, 5, 9, 14}, cumsum(new DbLongArrayDirect(new long[]{NULL_LONG, 2, 3, 4, 5})));
-        assertEquals(new long[0], cumsum(new DbLongArrayDirect()));
-        assertEquals(null, cumsum((DbLongArray) null));
+        assertEquals(new long[]{1, 3, 6, 10, 15}, cumsum(new LongVectorDirect(new long[]{1, 2, 3, 4, 5})));
+        assertEquals(new long[]{1, 3, 6, 6, 11}, cumsum(new LongVectorDirect(new long[]{1, 2, 3, NULL_LONG, 5})));
+        assertEquals(new long[]{NULL_LONG, 2, 5, 9, 14}, cumsum(new LongVectorDirect(new long[]{NULL_LONG, 2, 3, 4, 5})));
+        assertEquals(new long[0], cumsum(new LongVectorDirect()));
+        assertEquals(null, cumsum((LongVector) null));
     }
 
     public void testCumProdArray() {
@@ -444,11 +444,11 @@ public class TestLongNumericPrimitives extends BaseArrayTestCase {
         assertEquals(new long[0], cumprod());
         assertEquals(null, cumprod((long[]) null));
 
-        assertEquals(new long[]{1, 2, 6, 24, 120}, cumprod(new DbLongArrayDirect(new long[]{1, 2, 3, 4, 5})));
-        assertEquals(new long[]{1, 2, 6, 6, 30}, cumprod(new DbLongArrayDirect(new long[]{1, 2, 3, NULL_LONG, 5})));
-        assertEquals(new long[]{NULL_LONG, 2, 6, 24, 120}, cumprod(new DbLongArrayDirect(new long[]{NULL_LONG, 2, 3, 4, 5})));
-        assertEquals(new long[0], cumprod(new DbLongArrayDirect()));
-        assertEquals(null, cumprod((DbLongArray) null));
+        assertEquals(new long[]{1, 2, 6, 24, 120}, cumprod(new LongVectorDirect(new long[]{1, 2, 3, 4, 5})));
+        assertEquals(new long[]{1, 2, 6, 6, 30}, cumprod(new LongVectorDirect(new long[]{1, 2, 3, NULL_LONG, 5})));
+        assertEquals(new long[]{NULL_LONG, 2, 6, 24, 120}, cumprod(new LongVectorDirect(new long[]{NULL_LONG, 2, 3, 4, 5})));
+        assertEquals(new long[0], cumprod(new LongVectorDirect()));
+        assertEquals(null, cumprod((LongVector) null));
     }
 
     public void testAbs() {
@@ -609,83 +609,83 @@ public class TestLongNumericPrimitives extends BaseArrayTestCase {
         assertEquals(2, binSearchIndex(new long[]{1,3,4}, (long)4, BinSearch.BS_ANY));
         assertEquals(2, binSearchIndex(new long[]{1,3,4}, (long)5, BinSearch.BS_ANY));
 
-        assertEquals(NULL_INT, binSearchIndex((DbLongArray) null, (long) 0, BinSearch.BS_ANY));
-        assertEquals(-1, binSearchIndex(new DbLongArrayDirect(new long[]{1,3,4}), (long)0, BinSearch.BS_ANY));
-        assertEquals(0, binSearchIndex(new DbLongArrayDirect(new long[]{1,3,4}), (long)1, BinSearch.BS_ANY));
-        assertEquals(0, binSearchIndex(new DbLongArrayDirect(new long[]{1,3,4}), (long)2, BinSearch.BS_ANY));
-        assertEquals(1, binSearchIndex(new DbLongArrayDirect(new long[]{1,3,4}), (long)3, BinSearch.BS_ANY));
-        assertEquals(2, binSearchIndex(new DbLongArrayDirect(new long[]{1,3,4}), (long)4, BinSearch.BS_ANY));
-        assertEquals(2, binSearchIndex(new DbLongArrayDirect(new long[]{1,3,4}), (long)5, BinSearch.BS_ANY));
+        assertEquals(NULL_INT, binSearchIndex((LongVector) null, (long) 0, BinSearch.BS_ANY));
+        assertEquals(-1, binSearchIndex(new LongVectorDirect(new long[]{1,3,4}), (long)0, BinSearch.BS_ANY));
+        assertEquals(0, binSearchIndex(new LongVectorDirect(new long[]{1,3,4}), (long)1, BinSearch.BS_ANY));
+        assertEquals(0, binSearchIndex(new LongVectorDirect(new long[]{1,3,4}), (long)2, BinSearch.BS_ANY));
+        assertEquals(1, binSearchIndex(new LongVectorDirect(new long[]{1,3,4}), (long)3, BinSearch.BS_ANY));
+        assertEquals(2, binSearchIndex(new LongVectorDirect(new long[]{1,3,4}), (long)4, BinSearch.BS_ANY));
+        assertEquals(2, binSearchIndex(new LongVectorDirect(new long[]{1,3,4}), (long)5, BinSearch.BS_ANY));
     }
 
     public void testRawBinSearchIndex() {
-        assertEquals(NULL_INT, rawBinSearchIndex((DbLongArray)null, (long) 0, BinSearch.BS_ANY));
-        assertEquals(NULL_INT, rawBinSearchIndex((DbLongArray)null, (long) 0, BinSearch.BS_HIGHEST));
-        assertEquals(NULL_INT, rawBinSearchIndex((DbLongArray)null, (long) 0, BinSearch.BS_LOWEST));
+        assertEquals(NULL_INT, rawBinSearchIndex((LongVector)null, (long) 0, BinSearch.BS_ANY));
+        assertEquals(NULL_INT, rawBinSearchIndex((LongVector)null, (long) 0, BinSearch.BS_HIGHEST));
+        assertEquals(NULL_INT, rawBinSearchIndex((LongVector)null, (long) 0, BinSearch.BS_LOWEST));
 
         long[] empty = {};
-        assertEquals(-1, rawBinSearchIndex(new DbLongArrayDirect(empty), (long) 0, BinSearch.BS_ANY));
-        assertEquals(-1, rawBinSearchIndex(new DbLongArrayDirect(empty), (long) 0, BinSearch.BS_HIGHEST));
-        assertEquals(-1, rawBinSearchIndex(new DbLongArrayDirect(empty), (long) 0, BinSearch.BS_LOWEST));
+        assertEquals(-1, rawBinSearchIndex(new LongVectorDirect(empty), (long) 0, BinSearch.BS_ANY));
+        assertEquals(-1, rawBinSearchIndex(new LongVectorDirect(empty), (long) 0, BinSearch.BS_HIGHEST));
+        assertEquals(-1, rawBinSearchIndex(new LongVectorDirect(empty), (long) 0, BinSearch.BS_LOWEST));
 
         long[] one = {11};
-        assertEquals(-1, rawBinSearchIndex(new DbLongArrayDirect(one), (long) 0, BinSearch.BS_ANY));
-        assertEquals(-1, rawBinSearchIndex(new DbLongArrayDirect(one), (long) 0, BinSearch.BS_HIGHEST));
-        assertEquals(-1, rawBinSearchIndex(new DbLongArrayDirect(one), (long) 0, BinSearch.BS_LOWEST));
+        assertEquals(-1, rawBinSearchIndex(new LongVectorDirect(one), (long) 0, BinSearch.BS_ANY));
+        assertEquals(-1, rawBinSearchIndex(new LongVectorDirect(one), (long) 0, BinSearch.BS_HIGHEST));
+        assertEquals(-1, rawBinSearchIndex(new LongVectorDirect(one), (long) 0, BinSearch.BS_LOWEST));
 
-        assertEquals(-2, rawBinSearchIndex(new DbLongArrayDirect(one), (long) 12, BinSearch.BS_ANY));
-        assertEquals(-2, rawBinSearchIndex(new DbLongArrayDirect(one), (long) 12, BinSearch.BS_HIGHEST));
-        assertEquals(-2, rawBinSearchIndex(new DbLongArrayDirect(one), (long) 12, BinSearch.BS_LOWEST));
+        assertEquals(-2, rawBinSearchIndex(new LongVectorDirect(one), (long) 12, BinSearch.BS_ANY));
+        assertEquals(-2, rawBinSearchIndex(new LongVectorDirect(one), (long) 12, BinSearch.BS_HIGHEST));
+        assertEquals(-2, rawBinSearchIndex(new LongVectorDirect(one), (long) 12, BinSearch.BS_LOWEST));
 
-        assertEquals(0, rawBinSearchIndex(new DbLongArrayDirect(one), (long) 11, BinSearch.BS_ANY));
-        assertEquals(0, rawBinSearchIndex(new DbLongArrayDirect(one), (long) 11, BinSearch.BS_HIGHEST));
-        assertEquals(0, rawBinSearchIndex(new DbLongArrayDirect(one), (long) 11, BinSearch.BS_LOWEST));
+        assertEquals(0, rawBinSearchIndex(new LongVectorDirect(one), (long) 11, BinSearch.BS_ANY));
+        assertEquals(0, rawBinSearchIndex(new LongVectorDirect(one), (long) 11, BinSearch.BS_HIGHEST));
+        assertEquals(0, rawBinSearchIndex(new LongVectorDirect(one), (long) 11, BinSearch.BS_LOWEST));
 
 
         long[] v = {1, 2, 2, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5, 5, 10, 10, 10, 10, 10, 11, 11, 11, 11, 11, 15, 20, 20, 25, 25};
 
-        rawBinSearchIndex((DbLongArray)null, (long) 0, null);
+        rawBinSearchIndex((LongVector)null, (long) 0, null);
 
-        assertEquals(-1, rawBinSearchIndex(new DbLongArrayDirect(v), (long) 0, BinSearch.BS_ANY));
-        assertEquals(-1, rawBinSearchIndex(new DbLongArrayDirect(v), (long) 0, BinSearch.BS_HIGHEST));
-        assertEquals(-1, rawBinSearchIndex(new DbLongArrayDirect(v), (long) 0, BinSearch.BS_LOWEST));
+        assertEquals(-1, rawBinSearchIndex(new LongVectorDirect(v), (long) 0, BinSearch.BS_ANY));
+        assertEquals(-1, rawBinSearchIndex(new LongVectorDirect(v), (long) 0, BinSearch.BS_HIGHEST));
+        assertEquals(-1, rawBinSearchIndex(new LongVectorDirect(v), (long) 0, BinSearch.BS_LOWEST));
 
-        assertEquals(-v.length - 1, rawBinSearchIndex(new DbLongArrayDirect(v), (long) 26, BinSearch.BS_ANY));
-        assertEquals(-v.length - 1, rawBinSearchIndex(new DbLongArrayDirect(v), (long) 26, BinSearch.BS_HIGHEST));
-        assertEquals(-v.length - 1, rawBinSearchIndex(new DbLongArrayDirect(v), (long) 26, BinSearch.BS_LOWEST));
+        assertEquals(-v.length - 1, rawBinSearchIndex(new LongVectorDirect(v), (long) 26, BinSearch.BS_ANY));
+        assertEquals(-v.length - 1, rawBinSearchIndex(new LongVectorDirect(v), (long) 26, BinSearch.BS_HIGHEST));
+        assertEquals(-v.length - 1, rawBinSearchIndex(new LongVectorDirect(v), (long) 26, BinSearch.BS_LOWEST));
 
-        assertEquals(0, rawBinSearchIndex(new DbLongArrayDirect(v), (long) 1, BinSearch.BS_ANY));
-        assertEquals(0, rawBinSearchIndex(new DbLongArrayDirect(v), (long) 1, BinSearch.BS_HIGHEST));
-        assertEquals(0, rawBinSearchIndex(new DbLongArrayDirect(v), (long) 1, BinSearch.BS_LOWEST));
+        assertEquals(0, rawBinSearchIndex(new LongVectorDirect(v), (long) 1, BinSearch.BS_ANY));
+        assertEquals(0, rawBinSearchIndex(new LongVectorDirect(v), (long) 1, BinSearch.BS_HIGHEST));
+        assertEquals(0, rawBinSearchIndex(new LongVectorDirect(v), (long) 1, BinSearch.BS_LOWEST));
 
-        assertEquals(2, rawBinSearchIndex(new DbLongArrayDirect(v), (long) 2, BinSearch.BS_HIGHEST));
-        assertEquals(1, rawBinSearchIndex(new DbLongArrayDirect(v), (long) 2, BinSearch.BS_LOWEST));
+        assertEquals(2, rawBinSearchIndex(new LongVectorDirect(v), (long) 2, BinSearch.BS_HIGHEST));
+        assertEquals(1, rawBinSearchIndex(new LongVectorDirect(v), (long) 2, BinSearch.BS_LOWEST));
 
-        assertEquals(5, rawBinSearchIndex(new DbLongArrayDirect(v), (long) 3, BinSearch.BS_HIGHEST));
-        assertEquals(3, rawBinSearchIndex(new DbLongArrayDirect(v), (long) 3, BinSearch.BS_LOWEST));
+        assertEquals(5, rawBinSearchIndex(new LongVectorDirect(v), (long) 3, BinSearch.BS_HIGHEST));
+        assertEquals(3, rawBinSearchIndex(new LongVectorDirect(v), (long) 3, BinSearch.BS_LOWEST));
 
-        assertEquals(9, rawBinSearchIndex(new DbLongArrayDirect(v), (long) 4, BinSearch.BS_HIGHEST));
-        assertEquals(6, rawBinSearchIndex(new DbLongArrayDirect(v), (long) 4, BinSearch.BS_LOWEST));
+        assertEquals(9, rawBinSearchIndex(new LongVectorDirect(v), (long) 4, BinSearch.BS_HIGHEST));
+        assertEquals(6, rawBinSearchIndex(new LongVectorDirect(v), (long) 4, BinSearch.BS_LOWEST));
 
-        assertEquals(14, rawBinSearchIndex(new DbLongArrayDirect(v), (long) 5, BinSearch.BS_HIGHEST));
-        assertEquals(10, rawBinSearchIndex(new DbLongArrayDirect(v), (long) 5, BinSearch.BS_LOWEST));
+        assertEquals(14, rawBinSearchIndex(new LongVectorDirect(v), (long) 5, BinSearch.BS_HIGHEST));
+        assertEquals(10, rawBinSearchIndex(new LongVectorDirect(v), (long) 5, BinSearch.BS_LOWEST));
 
-        assertEquals(-16, rawBinSearchIndex(new DbLongArrayDirect(v), (long) 7, BinSearch.BS_ANY));
-        assertEquals(-16, rawBinSearchIndex(new DbLongArrayDirect(v), (long) 7, BinSearch.BS_HIGHEST));
-        assertEquals(-16, rawBinSearchIndex(new DbLongArrayDirect(v), (long) 7, BinSearch.BS_LOWEST));
+        assertEquals(-16, rawBinSearchIndex(new LongVectorDirect(v), (long) 7, BinSearch.BS_ANY));
+        assertEquals(-16, rawBinSearchIndex(new LongVectorDirect(v), (long) 7, BinSearch.BS_HIGHEST));
+        assertEquals(-16, rawBinSearchIndex(new LongVectorDirect(v), (long) 7, BinSearch.BS_LOWEST));
 
-        assertEquals(19, rawBinSearchIndex(new DbLongArrayDirect(v), (long) 10, BinSearch.BS_HIGHEST));
-        assertEquals(15, rawBinSearchIndex(new DbLongArrayDirect(v), (long) 10, BinSearch.BS_LOWEST));
+        assertEquals(19, rawBinSearchIndex(new LongVectorDirect(v), (long) 10, BinSearch.BS_HIGHEST));
+        assertEquals(15, rawBinSearchIndex(new LongVectorDirect(v), (long) 10, BinSearch.BS_LOWEST));
 
-        assertEquals(24, rawBinSearchIndex(new DbLongArrayDirect(v), (long) 11, BinSearch.BS_HIGHEST));
-        assertEquals(20, rawBinSearchIndex(new DbLongArrayDirect(v), (long) 11, BinSearch.BS_LOWEST));
+        assertEquals(24, rawBinSearchIndex(new LongVectorDirect(v), (long) 11, BinSearch.BS_HIGHEST));
+        assertEquals(20, rawBinSearchIndex(new LongVectorDirect(v), (long) 11, BinSearch.BS_LOWEST));
 
-        assertEquals(25, rawBinSearchIndex(new DbLongArrayDirect(v), (long) 15, BinSearch.BS_ANY));
-        assertEquals(25, rawBinSearchIndex(new DbLongArrayDirect(v), (long) 15, BinSearch.BS_HIGHEST));
-        assertEquals(25, rawBinSearchIndex(new DbLongArrayDirect(v), (long) 15, BinSearch.BS_LOWEST));
+        assertEquals(25, rawBinSearchIndex(new LongVectorDirect(v), (long) 15, BinSearch.BS_ANY));
+        assertEquals(25, rawBinSearchIndex(new LongVectorDirect(v), (long) 15, BinSearch.BS_HIGHEST));
+        assertEquals(25, rawBinSearchIndex(new LongVectorDirect(v), (long) 15, BinSearch.BS_LOWEST));
 
-        assertEquals(29, rawBinSearchIndex(new DbLongArrayDirect(v), (long) 25, BinSearch.BS_HIGHEST));
-        assertEquals(28, rawBinSearchIndex(new DbLongArrayDirect(v), (long) 25, BinSearch.BS_LOWEST));
+        assertEquals(29, rawBinSearchIndex(new LongVectorDirect(v), (long) 25, BinSearch.BS_HIGHEST));
+        assertEquals(28, rawBinSearchIndex(new LongVectorDirect(v), (long) 25, BinSearch.BS_LOWEST));
 
         /////
 
@@ -756,41 +756,41 @@ public class TestLongNumericPrimitives extends BaseArrayTestCase {
 
     public void testSort() {
         final long[] longs = new long[]{1, -5, -2, -2, 96, 0, 12, NULL_LONG, NULL_LONG};
-        final DbLongArray sort = sort(new DbLongArrayDirect(longs));
-        final DbLongArray expected = new DbLongArrayDirect(new long[]{NULL_LONG, NULL_LONG, -5, -2, -2, 0, 1, 12, 96});
+        final LongVector sort = sort(new LongVectorDirect(longs));
+        final LongVector expected = new LongVectorDirect(new long[]{NULL_LONG, NULL_LONG, -5, -2, -2, 0, 1, 12, 96});
         assertEquals(expected, sort);
 
         long[] sortedArray = sort(longs);
         assertEquals(new long[]{NULL_LONG, NULL_LONG, -5, -2, -2, 0, 1, 12, 96}, sortedArray);
 
-        assertNull(sort((DbLongArray)null));
+        assertNull(sort((LongVector)null));
         assertNull(sort((long[])null));
         assertNull(sort((Long[])null));
-        assertEquals(new DbLongArrayDirect(), sort(new DbLongArrayDirect()));
+        assertEquals(new LongVectorDirect(), sort(new LongVectorDirect()));
         assertEquals(new long[]{}, sort(new long[]{}));
         assertEquals(new long[]{}, sort(new Long[]{}));
     }
 
     public void testSortDescending() {
         final long[] longs = new long[]{1, -5, -2, -2, 96, 0, 12, NULL_LONG, NULL_LONG};
-        final DbLongArray sort = sortDescending(new DbLongArrayDirect(longs));
-        final DbLongArray expected = new DbLongArrayDirect(new long[]{96, 12, 1, 0, -2, -2, -5, NULL_LONG, NULL_LONG});
+        final LongVector sort = sortDescending(new LongVectorDirect(longs));
+        final LongVector expected = new LongVectorDirect(new long[]{96, 12, 1, 0, -2, -2, -5, NULL_LONG, NULL_LONG});
         assertEquals(expected, sort);
 
         long[] sortedArray = sortDescending(longs);
         assertEquals(new long[]{96, 12, 1, 0, -2, -2, -5, NULL_LONG, NULL_LONG}, sortedArray);
 
-        assertNull(sortDescending((DbLongArray)null));
+        assertNull(sortDescending((LongVector)null));
         assertNull(sortDescending((long[])null));
         assertNull(sortDescending((Long[])null));
-        assertEquals(new DbLongArrayDirect(), sortDescending(new DbLongArrayDirect()));
+        assertEquals(new LongVectorDirect(), sortDescending(new LongVectorDirect()));
         assertEquals(new long[]{}, sortDescending(new long[]{}));
         assertEquals(new long[]{}, sortDescending(new Long[]{}));
     }
 
     public void testSortsExceptions() {
-        DbLongArray dbLongArray = null;
-        DbLongArray sort = sort(dbLongArray);
+        LongVector longVector = null;
+        LongVector sort = sort(longVector);
         assertNull(sort);
 
         long[] longs = null;
@@ -798,16 +798,16 @@ public class TestLongNumericPrimitives extends BaseArrayTestCase {
         assertNull(sortArray);
 
         longs = new long[]{};
-        sort = sort(new DbLongArrayDirect(longs));
-        assertEquals(new DbLongArrayDirect(), sort);
+        sort = sort(new LongVectorDirect(longs));
+        assertEquals(new LongVectorDirect(), sort);
 
         sortArray = sort(longs);
         assertTrue(ArrayUtils.isEmpty(sortArray));
     }
 
     public void testSortDescendingExceptions() {
-        DbLongArray dbLongArray = null;
-        DbLongArray sort = sortDescending(dbLongArray);
+        LongVector longVector = null;
+        LongVector sort = sortDescending(longVector);
         assertNull(sort);
 
         long[] longs = null;
@@ -815,8 +815,8 @@ public class TestLongNumericPrimitives extends BaseArrayTestCase {
         assertNull(sortArray);
 
         longs = new long[]{};
-        sort = sortDescending(new DbLongArrayDirect(longs));
-        assertEquals(new DbLongArrayDirect(), sort);
+        sort = sortDescending(new LongVectorDirect(longs));
+        assertEquals(new LongVectorDirect(), sort);
 
         sortArray = sortDescending(longs);
         assertTrue(ArrayUtils.isEmpty(sortArray));
@@ -845,9 +845,9 @@ public class TestLongNumericPrimitives extends BaseArrayTestCase {
         assertEquals(3.5, median(new Long[]{(long)5,(long)4,(long)2,(long)3}));
         assertEquals(NULL_DOUBLE, median((Long[])null));
 
-        assertEquals(3.0, median(new DbLongArrayDirect(new long[]{4,2,3})));
-        assertEquals(3.5, median(new DbLongArrayDirect(new long[]{5,4,2,3})));
-        assertEquals(NULL_DOUBLE, median((DbLongArray) null));
+        assertEquals(3.0, median(new LongVectorDirect(new long[]{4,2,3})));
+        assertEquals(3.5, median(new LongVectorDirect(new long[]{5,4,2,3})));
+        assertEquals(NULL_DOUBLE, median((LongVector) null));
     }
 
     public void testPercentile() {
@@ -855,9 +855,9 @@ public class TestLongNumericPrimitives extends BaseArrayTestCase {
         assertEquals(3.0, percentile(0.50, new long[]{4,2,3}));
         assertEquals(NULL_DOUBLE, percentile(0.25, (long[])null));
 
-        assertEquals(2.0, percentile(0.00, new DbLongArrayDirect(new long[]{4,2,3})));
-        assertEquals(3.0, percentile(0.50, new DbLongArrayDirect(new long[]{4,2,3})));
-        assertEquals(NULL_DOUBLE, percentile(0.25, (DbLongArray) null));
+        assertEquals(2.0, percentile(0.00, new LongVectorDirect(new long[]{4,2,3})));
+        assertEquals(3.0, percentile(0.50, new LongVectorDirect(new long[]{4,2,3})));
+        assertEquals(NULL_DOUBLE, percentile(0.25, (LongVector) null));
     }
 
     public void testWsum() {
@@ -883,69 +883,69 @@ public class TestLongNumericPrimitives extends BaseArrayTestCase {
 
         /////
 
-        assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, wsum(new DbLongArrayDirect(new long[]{1,2,3,NULL_LONG,5}), new long[]{4,5,6,7,NULL_LONG}));
-        assertEquals(NULL_DOUBLE, wsum((DbLongArray) null, new long[]{4,5,6}));
-        assertEquals(NULL_DOUBLE, wsum(new DbLongArrayDirect(new long[]{1,2,3}), (long[])null));
+        assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, wsum(new LongVectorDirect(new long[]{1,2,3,NULL_LONG,5}), new long[]{4,5,6,7,NULL_LONG}));
+        assertEquals(NULL_DOUBLE, wsum((LongVector) null, new long[]{4,5,6}));
+        assertEquals(NULL_DOUBLE, wsum(new LongVectorDirect(new long[]{1,2,3}), (long[])null));
 
-        assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, wsum(new DbLongArrayDirect(new long[]{1,2,3,NULL_LONG,5}), new int[]{4,5,6,7,NULL_INT}));
-        assertEquals(NULL_DOUBLE, wsum((DbLongArray)null, new int[]{4,5,6}));
-        assertEquals(NULL_DOUBLE, wsum(new DbLongArrayDirect(new long[]{1,2,3}), (int[])null));
+        assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, wsum(new LongVectorDirect(new long[]{1,2,3,NULL_LONG,5}), new int[]{4,5,6,7,NULL_INT}));
+        assertEquals(NULL_DOUBLE, wsum((LongVector)null, new int[]{4,5,6}));
+        assertEquals(NULL_DOUBLE, wsum(new LongVectorDirect(new long[]{1,2,3}), (int[])null));
 
-        assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, wsum(new DbLongArrayDirect(new long[]{1,2,3,NULL_LONG,5}), new long[]{4,5,6,7,NULL_LONG}));
-        assertEquals(NULL_DOUBLE, wsum((DbLongArray)null, new long[]{4,5,6}));
-        assertEquals(NULL_DOUBLE, wsum(new DbLongArrayDirect(new long[]{1,2,3}), (long[])null));
+        assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, wsum(new LongVectorDirect(new long[]{1,2,3,NULL_LONG,5}), new long[]{4,5,6,7,NULL_LONG}));
+        assertEquals(NULL_DOUBLE, wsum((LongVector)null, new long[]{4,5,6}));
+        assertEquals(NULL_DOUBLE, wsum(new LongVectorDirect(new long[]{1,2,3}), (long[])null));
 
-        assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, wsum(new DbLongArrayDirect(new long[]{1,2,3,NULL_LONG,5}), new double[]{4,5,6,7,NULL_DOUBLE}));
-        assertEquals(NULL_DOUBLE, wsum((DbLongArray)null, new double[]{4,5,6}));
-        assertEquals(NULL_DOUBLE, wsum(new DbLongArrayDirect(new long[]{1,2,3}), (double[])null));
+        assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, wsum(new LongVectorDirect(new long[]{1,2,3,NULL_LONG,5}), new double[]{4,5,6,7,NULL_DOUBLE}));
+        assertEquals(NULL_DOUBLE, wsum((LongVector)null, new double[]{4,5,6}));
+        assertEquals(NULL_DOUBLE, wsum(new LongVectorDirect(new long[]{1,2,3}), (double[])null));
 
-        assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, wsum(new DbLongArrayDirect(new long[]{1,2,3,NULL_LONG,5}), new float[]{4,5,6,7,NULL_FLOAT}));
-        assertEquals(NULL_DOUBLE, wsum((DbLongArray)null, new float[]{4,5,6}));
-        assertEquals(NULL_DOUBLE, wsum(new DbLongArrayDirect(new long[]{1,2,3}), (float[])null));
-
-        /////
-
-        assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, wsum(new long[]{1,2,3,NULL_LONG,5}, new DbLongArrayDirect(new long[]{4,5,6,7,NULL_LONG})));
-        assertEquals(NULL_DOUBLE, wsum((long[])null, new DbLongArrayDirect(new long[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, wsum(new long[]{1,2,3}, (DbLongArray) null));
-
-        assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, wsum(new long[]{1,2,3,NULL_LONG,5}, new DbIntArrayDirect(new int[]{4,5,6,7,NULL_INT})));
-        assertEquals(NULL_DOUBLE, wsum((long[])null, new DbIntArrayDirect(new int[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, wsum(new long[]{1,2,3}, (DbIntArray) null));
-
-        assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, wsum(new long[]{1,2,3,NULL_LONG,5}, new DbLongArrayDirect(new long[]{4,5,6,7,NULL_LONG})));
-        assertEquals(NULL_DOUBLE, wsum((long[])null, new DbLongArrayDirect(new long[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, wsum(new long[]{1,2,3}, (DbLongArray) null));
-
-        assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, wsum(new long[]{1,2,3,NULL_LONG,5}, new DbDoubleArrayDirect(new double[]{4,5,6,7,NULL_DOUBLE})));
-        assertEquals(NULL_DOUBLE, wsum((long[])null, new DbDoubleArrayDirect(new double[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, wsum(new long[]{1,2,3}, (DbDoubleArray)null));
-
-        assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, wsum(new long[]{1,2,3,NULL_LONG,5}, new DbFloatArrayDirect(new float[]{4,5,6,7,NULL_FLOAT})));
-        assertEquals(NULL_DOUBLE, wsum((long[])null, new DbFloatArrayDirect(new float[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, wsum(new long[]{1,2,3}, (DbFloatArray)null));
+        assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, wsum(new LongVectorDirect(new long[]{1,2,3,NULL_LONG,5}), new float[]{4,5,6,7,NULL_FLOAT}));
+        assertEquals(NULL_DOUBLE, wsum((LongVector)null, new float[]{4,5,6}));
+        assertEquals(NULL_DOUBLE, wsum(new LongVectorDirect(new long[]{1,2,3}), (float[])null));
 
         /////
 
-        assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, wsum(new DbLongArrayDirect(new long[]{1,2,3,NULL_LONG,5}), new DbLongArrayDirect(new long[]{4,5,6,7,NULL_LONG})));
-        assertEquals(NULL_DOUBLE, wsum((DbLongArray) null, new DbLongArrayDirect(new long[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, wsum(new DbLongArrayDirect(new long[]{1,2,3}), (DbLongArray) null));
+        assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, wsum(new long[]{1,2,3,NULL_LONG,5}, new LongVectorDirect(new long[]{4,5,6,7,NULL_LONG})));
+        assertEquals(NULL_DOUBLE, wsum((long[])null, new LongVectorDirect(new long[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, wsum(new long[]{1,2,3}, (LongVector) null));
 
-        assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, wsum(new DbLongArrayDirect(new long[]{1,2,3,NULL_LONG,5}), new DbIntArrayDirect(new int[]{4,5,6,7,NULL_INT})));
-        assertEquals(NULL_DOUBLE, wsum((DbLongArray) null, new DbIntArrayDirect(new int[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, wsum(new DbLongArrayDirect(new long[]{1,2,3}), (DbIntArray) null));
+        assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, wsum(new long[]{1,2,3,NULL_LONG,5}, new IntVectorDirect(new int[]{4,5,6,7,NULL_INT})));
+        assertEquals(NULL_DOUBLE, wsum((long[])null, new IntVectorDirect(new int[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, wsum(new long[]{1,2,3}, (IntVector) null));
 
-        assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, wsum(new DbLongArrayDirect(new long[]{1,2,3,NULL_LONG,5}), new DbLongArrayDirect(new long[]{4,5,6,7,NULL_LONG})));
-        assertEquals(NULL_DOUBLE, wsum((DbLongArray) null, new DbLongArrayDirect(new long[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, wsum(new DbLongArrayDirect(new long[]{1,2,3}), (DbLongArray) null));
+        assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, wsum(new long[]{1,2,3,NULL_LONG,5}, new LongVectorDirect(new long[]{4,5,6,7,NULL_LONG})));
+        assertEquals(NULL_DOUBLE, wsum((long[])null, new LongVectorDirect(new long[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, wsum(new long[]{1,2,3}, (LongVector) null));
 
-        assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, wsum(new DbLongArrayDirect(new long[]{1,2,3,NULL_LONG,5}), new DbDoubleArrayDirect(new double[]{4,5,6,7,NULL_DOUBLE})));
-        assertEquals(NULL_DOUBLE, wsum((DbLongArray) null, new DbDoubleArrayDirect(new double[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, wsum(new DbLongArrayDirect(new long[]{1,2,3}), (DbDoubleArray)null));
+        assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, wsum(new long[]{1,2,3,NULL_LONG,5}, new DoubleVectorDirect(new double[]{4,5,6,7,NULL_DOUBLE})));
+        assertEquals(NULL_DOUBLE, wsum((long[])null, new DoubleVectorDirect(new double[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, wsum(new long[]{1,2,3}, (DoubleVector)null));
 
-        assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, wsum(new DbLongArrayDirect(new long[]{1,2,3,NULL_LONG,5}), new DbFloatArrayDirect(new float[]{4,5,6,7,NULL_FLOAT})));
-        assertEquals(NULL_DOUBLE, wsum((DbLongArray) null, new DbFloatArrayDirect(new float[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, wsum(new DbLongArrayDirect(new long[]{1,2,3}), (DbFloatArray)null));
+        assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, wsum(new long[]{1,2,3,NULL_LONG,5}, new FloatVectorDirect(new float[]{4,5,6,7,NULL_FLOAT})));
+        assertEquals(NULL_DOUBLE, wsum((long[])null, new FloatVectorDirect(new float[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, wsum(new long[]{1,2,3}, (FloatVector)null));
+
+        /////
+
+        assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, wsum(new LongVectorDirect(new long[]{1,2,3,NULL_LONG,5}), new LongVectorDirect(new long[]{4,5,6,7,NULL_LONG})));
+        assertEquals(NULL_DOUBLE, wsum((LongVector) null, new LongVectorDirect(new long[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, wsum(new LongVectorDirect(new long[]{1,2,3}), (LongVector) null));
+
+        assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, wsum(new LongVectorDirect(new long[]{1,2,3,NULL_LONG,5}), new IntVectorDirect(new int[]{4,5,6,7,NULL_INT})));
+        assertEquals(NULL_DOUBLE, wsum((LongVector) null, new IntVectorDirect(new int[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, wsum(new LongVectorDirect(new long[]{1,2,3}), (IntVector) null));
+
+        assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, wsum(new LongVectorDirect(new long[]{1,2,3,NULL_LONG,5}), new LongVectorDirect(new long[]{4,5,6,7,NULL_LONG})));
+        assertEquals(NULL_DOUBLE, wsum((LongVector) null, new LongVectorDirect(new long[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, wsum(new LongVectorDirect(new long[]{1,2,3}), (LongVector) null));
+
+        assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, wsum(new LongVectorDirect(new long[]{1,2,3,NULL_LONG,5}), new DoubleVectorDirect(new double[]{4,5,6,7,NULL_DOUBLE})));
+        assertEquals(NULL_DOUBLE, wsum((LongVector) null, new DoubleVectorDirect(new double[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, wsum(new LongVectorDirect(new long[]{1,2,3}), (DoubleVector)null));
+
+        assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, wsum(new LongVectorDirect(new long[]{1,2,3,NULL_LONG,5}), new FloatVectorDirect(new float[]{4,5,6,7,NULL_FLOAT})));
+        assertEquals(NULL_DOUBLE, wsum((LongVector) null, new FloatVectorDirect(new float[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, wsum(new LongVectorDirect(new long[]{1,2,3}), (FloatVector)null));
     }
 
     public void testWeightedSum() {
@@ -971,69 +971,69 @@ public class TestLongNumericPrimitives extends BaseArrayTestCase {
 
         /////
 
-        assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, weightedSum(new DbLongArrayDirect(new long[]{1,2,3,NULL_LONG,5}), new long[]{4,5,6,7,NULL_LONG}));
-        assertEquals(NULL_DOUBLE, weightedSum((DbLongArray) null, new long[]{4,5,6}));
-        assertEquals(NULL_DOUBLE, weightedSum(new DbLongArrayDirect(new long[]{1,2,3}), (long[])null));
+        assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, weightedSum(new LongVectorDirect(new long[]{1,2,3,NULL_LONG,5}), new long[]{4,5,6,7,NULL_LONG}));
+        assertEquals(NULL_DOUBLE, weightedSum((LongVector) null, new long[]{4,5,6}));
+        assertEquals(NULL_DOUBLE, weightedSum(new LongVectorDirect(new long[]{1,2,3}), (long[])null));
 
-        assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, weightedSum(new DbLongArrayDirect(new long[]{1,2,3,NULL_LONG,5}), new int[]{4,5,6,7,NULL_INT}));
-        assertEquals(NULL_DOUBLE, weightedSum((DbLongArray)null, new int[]{4,5,6}));
-        assertEquals(NULL_DOUBLE, weightedSum(new DbLongArrayDirect(new long[]{1,2,3}), (int[])null));
+        assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, weightedSum(new LongVectorDirect(new long[]{1,2,3,NULL_LONG,5}), new int[]{4,5,6,7,NULL_INT}));
+        assertEquals(NULL_DOUBLE, weightedSum((LongVector)null, new int[]{4,5,6}));
+        assertEquals(NULL_DOUBLE, weightedSum(new LongVectorDirect(new long[]{1,2,3}), (int[])null));
 
-        assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, weightedSum(new DbLongArrayDirect(new long[]{1,2,3,NULL_LONG,5}), new long[]{4,5,6,7,NULL_LONG}));
-        assertEquals(NULL_DOUBLE, weightedSum((DbLongArray)null, new long[]{4,5,6}));
-        assertEquals(NULL_DOUBLE, weightedSum(new DbLongArrayDirect(new long[]{1,2,3}), (long[])null));
+        assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, weightedSum(new LongVectorDirect(new long[]{1,2,3,NULL_LONG,5}), new long[]{4,5,6,7,NULL_LONG}));
+        assertEquals(NULL_DOUBLE, weightedSum((LongVector)null, new long[]{4,5,6}));
+        assertEquals(NULL_DOUBLE, weightedSum(new LongVectorDirect(new long[]{1,2,3}), (long[])null));
 
-        assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, weightedSum(new DbLongArrayDirect(new long[]{1,2,3,NULL_LONG,5}), new double[]{4,5,6,7,NULL_DOUBLE}));
-        assertEquals(NULL_DOUBLE, weightedSum((DbLongArray)null, new double[]{4,5,6}));
-        assertEquals(NULL_DOUBLE, weightedSum(new DbLongArrayDirect(new long[]{1,2,3}), (double[])null));
+        assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, weightedSum(new LongVectorDirect(new long[]{1,2,3,NULL_LONG,5}), new double[]{4,5,6,7,NULL_DOUBLE}));
+        assertEquals(NULL_DOUBLE, weightedSum((LongVector)null, new double[]{4,5,6}));
+        assertEquals(NULL_DOUBLE, weightedSum(new LongVectorDirect(new long[]{1,2,3}), (double[])null));
 
-        assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, weightedSum(new DbLongArrayDirect(new long[]{1,2,3,NULL_LONG,5}), new float[]{4,5,6,7,NULL_FLOAT}));
-        assertEquals(NULL_DOUBLE, weightedSum((DbLongArray)null, new float[]{4,5,6}));
-        assertEquals(NULL_DOUBLE, weightedSum(new DbLongArrayDirect(new long[]{1,2,3}), (float[])null));
-
-        /////
-
-        assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, weightedSum(new long[]{1,2,3,NULL_LONG,5}, new DbLongArrayDirect(new long[]{4,5,6,7,NULL_LONG})));
-        assertEquals(NULL_DOUBLE, weightedSum((long[])null, new DbLongArrayDirect(new long[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, weightedSum(new long[]{1,2,3}, (DbLongArray) null));
-
-        assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, weightedSum(new long[]{1,2,3,NULL_LONG,5}, new DbIntArrayDirect(new int[]{4,5,6,7,NULL_INT})));
-        assertEquals(NULL_DOUBLE, weightedSum((long[])null, new DbIntArrayDirect(new int[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, weightedSum(new long[]{1,2,3}, (DbIntArray) null));
-
-        assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, weightedSum(new long[]{1,2,3,NULL_LONG,5}, new DbLongArrayDirect(new long[]{4,5,6,7,NULL_LONG})));
-        assertEquals(NULL_DOUBLE, weightedSum((long[])null, new DbLongArrayDirect(new long[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, weightedSum(new long[]{1,2,3}, (DbLongArray) null));
-
-        assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, weightedSum(new long[]{1,2,3,NULL_LONG,5}, new DbDoubleArrayDirect(new double[]{4,5,6,7,NULL_DOUBLE})));
-        assertEquals(NULL_DOUBLE, weightedSum((long[])null, new DbDoubleArrayDirect(new double[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, weightedSum(new long[]{1,2,3}, (DbDoubleArray)null));
-
-        assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, weightedSum(new long[]{1,2,3,NULL_LONG,5}, new DbFloatArrayDirect(new float[]{4,5,6,7,NULL_FLOAT})));
-        assertEquals(NULL_DOUBLE, weightedSum((long[])null, new DbFloatArrayDirect(new float[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, weightedSum(new long[]{1,2,3}, (DbFloatArray)null));
+        assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, weightedSum(new LongVectorDirect(new long[]{1,2,3,NULL_LONG,5}), new float[]{4,5,6,7,NULL_FLOAT}));
+        assertEquals(NULL_DOUBLE, weightedSum((LongVector)null, new float[]{4,5,6}));
+        assertEquals(NULL_DOUBLE, weightedSum(new LongVectorDirect(new long[]{1,2,3}), (float[])null));
 
         /////
 
-        assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, weightedSum(new DbLongArrayDirect(new long[]{1,2,3,NULL_LONG,5}), new DbLongArrayDirect(new long[]{4,5,6,7,NULL_LONG})));
-        assertEquals(NULL_DOUBLE, weightedSum((DbLongArray) null, new DbLongArrayDirect(new long[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, weightedSum(new DbLongArrayDirect(new long[]{1,2,3}), (DbLongArray) null));
+        assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, weightedSum(new long[]{1,2,3,NULL_LONG,5}, new LongVectorDirect(new long[]{4,5,6,7,NULL_LONG})));
+        assertEquals(NULL_DOUBLE, weightedSum((long[])null, new LongVectorDirect(new long[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, weightedSum(new long[]{1,2,3}, (LongVector) null));
 
-        assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, weightedSum(new DbLongArrayDirect(new long[]{1,2,3,NULL_LONG,5}), new DbIntArrayDirect(new int[]{4,5,6,7,NULL_INT})));
-        assertEquals(NULL_DOUBLE, weightedSum((DbLongArray) null, new DbIntArrayDirect(new int[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, weightedSum(new DbLongArrayDirect(new long[]{1,2,3}), (DbIntArray) null));
+        assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, weightedSum(new long[]{1,2,3,NULL_LONG,5}, new IntVectorDirect(new int[]{4,5,6,7,NULL_INT})));
+        assertEquals(NULL_DOUBLE, weightedSum((long[])null, new IntVectorDirect(new int[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, weightedSum(new long[]{1,2,3}, (IntVector) null));
 
-        assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, weightedSum(new DbLongArrayDirect(new long[]{1,2,3,NULL_LONG,5}), new DbLongArrayDirect(new long[]{4,5,6,7,NULL_LONG})));
-        assertEquals(NULL_DOUBLE, weightedSum((DbLongArray) null, new DbLongArrayDirect(new long[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, weightedSum(new DbLongArrayDirect(new long[]{1,2,3}), (DbLongArray) null));
+        assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, weightedSum(new long[]{1,2,3,NULL_LONG,5}, new LongVectorDirect(new long[]{4,5,6,7,NULL_LONG})));
+        assertEquals(NULL_DOUBLE, weightedSum((long[])null, new LongVectorDirect(new long[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, weightedSum(new long[]{1,2,3}, (LongVector) null));
 
-        assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, weightedSum(new DbLongArrayDirect(new long[]{1,2,3,NULL_LONG,5}), new DbDoubleArrayDirect(new double[]{4,5,6,7,NULL_DOUBLE})));
-        assertEquals(NULL_DOUBLE, weightedSum((DbLongArray) null, new DbDoubleArrayDirect(new double[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, weightedSum(new DbLongArrayDirect(new long[]{1,2,3}), (DbDoubleArray)null));
+        assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, weightedSum(new long[]{1,2,3,NULL_LONG,5}, new DoubleVectorDirect(new double[]{4,5,6,7,NULL_DOUBLE})));
+        assertEquals(NULL_DOUBLE, weightedSum((long[])null, new DoubleVectorDirect(new double[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, weightedSum(new long[]{1,2,3}, (DoubleVector)null));
 
-        assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, weightedSum(new DbLongArrayDirect(new long[]{1,2,3,NULL_LONG,5}), new DbFloatArrayDirect(new float[]{4,5,6,7,NULL_FLOAT})));
-        assertEquals(NULL_DOUBLE, weightedSum((DbLongArray) null, new DbFloatArrayDirect(new float[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, weightedSum(new DbLongArrayDirect(new long[]{1,2,3}), (DbFloatArray)null));
+        assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, weightedSum(new long[]{1,2,3,NULL_LONG,5}, new FloatVectorDirect(new float[]{4,5,6,7,NULL_FLOAT})));
+        assertEquals(NULL_DOUBLE, weightedSum((long[])null, new FloatVectorDirect(new float[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, weightedSum(new long[]{1,2,3}, (FloatVector)null));
+
+        /////
+
+        assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, weightedSum(new LongVectorDirect(new long[]{1,2,3,NULL_LONG,5}), new LongVectorDirect(new long[]{4,5,6,7,NULL_LONG})));
+        assertEquals(NULL_DOUBLE, weightedSum((LongVector) null, new LongVectorDirect(new long[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, weightedSum(new LongVectorDirect(new long[]{1,2,3}), (LongVector) null));
+
+        assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, weightedSum(new LongVectorDirect(new long[]{1,2,3,NULL_LONG,5}), new IntVectorDirect(new int[]{4,5,6,7,NULL_INT})));
+        assertEquals(NULL_DOUBLE, weightedSum((LongVector) null, new IntVectorDirect(new int[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, weightedSum(new LongVectorDirect(new long[]{1,2,3}), (IntVector) null));
+
+        assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, weightedSum(new LongVectorDirect(new long[]{1,2,3,NULL_LONG,5}), new LongVectorDirect(new long[]{4,5,6,7,NULL_LONG})));
+        assertEquals(NULL_DOUBLE, weightedSum((LongVector) null, new LongVectorDirect(new long[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, weightedSum(new LongVectorDirect(new long[]{1,2,3}), (LongVector) null));
+
+        assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, weightedSum(new LongVectorDirect(new long[]{1,2,3,NULL_LONG,5}), new DoubleVectorDirect(new double[]{4,5,6,7,NULL_DOUBLE})));
+        assertEquals(NULL_DOUBLE, weightedSum((LongVector) null, new DoubleVectorDirect(new double[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, weightedSum(new LongVectorDirect(new long[]{1,2,3}), (DoubleVector)null));
+
+        assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, weightedSum(new LongVectorDirect(new long[]{1,2,3,NULL_LONG,5}), new FloatVectorDirect(new float[]{4,5,6,7,NULL_FLOAT})));
+        assertEquals(NULL_DOUBLE, weightedSum((LongVector) null, new FloatVectorDirect(new float[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, weightedSum(new LongVectorDirect(new long[]{1,2,3}), (FloatVector)null));
     }
 
     public void testWAvg() {
@@ -1059,69 +1059,69 @@ public class TestLongNumericPrimitives extends BaseArrayTestCase {
 
         /////
 
-        assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), wavg(new DbLongArrayDirect(new long[]{1,2,3,NULL_LONG,5}), new long[]{4,5,6,7,NULL_LONG}));
-        assertEquals(NULL_DOUBLE, wavg((DbLongArray) null, new long[]{4,5,6}));
-        assertEquals(NULL_DOUBLE, wavg(new DbLongArrayDirect(new long[]{1,2,3}), (long[])null));
+        assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), wavg(new LongVectorDirect(new long[]{1,2,3,NULL_LONG,5}), new long[]{4,5,6,7,NULL_LONG}));
+        assertEquals(NULL_DOUBLE, wavg((LongVector) null, new long[]{4,5,6}));
+        assertEquals(NULL_DOUBLE, wavg(new LongVectorDirect(new long[]{1,2,3}), (long[])null));
 
-        assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), wavg(new DbLongArrayDirect(new long[]{1,2,3,NULL_LONG,5}), new int[]{4,5,6,7,NULL_INT}));
-        assertEquals(NULL_DOUBLE, wavg((DbLongArray)null, new int[]{4,5,6}));
-        assertEquals(NULL_DOUBLE, wavg(new DbLongArrayDirect(new long[]{1,2,3}), (int[])null));
+        assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), wavg(new LongVectorDirect(new long[]{1,2,3,NULL_LONG,5}), new int[]{4,5,6,7,NULL_INT}));
+        assertEquals(NULL_DOUBLE, wavg((LongVector)null, new int[]{4,5,6}));
+        assertEquals(NULL_DOUBLE, wavg(new LongVectorDirect(new long[]{1,2,3}), (int[])null));
 
-        assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), wavg(new DbLongArrayDirect(new long[]{1,2,3,NULL_LONG,5}), new long[]{4,5,6,7,NULL_LONG}));
-        assertEquals(NULL_DOUBLE, wavg((DbLongArray)null, new long[]{4,5,6}));
-        assertEquals(NULL_DOUBLE, wavg(new DbLongArrayDirect(new long[]{1,2,3}), (long[])null));
+        assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), wavg(new LongVectorDirect(new long[]{1,2,3,NULL_LONG,5}), new long[]{4,5,6,7,NULL_LONG}));
+        assertEquals(NULL_DOUBLE, wavg((LongVector)null, new long[]{4,5,6}));
+        assertEquals(NULL_DOUBLE, wavg(new LongVectorDirect(new long[]{1,2,3}), (long[])null));
 
-        assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), wavg(new DbLongArrayDirect(new long[]{1,2,3,NULL_LONG,5}), new double[]{4,5,6,7,NULL_DOUBLE}));
-        assertEquals(NULL_DOUBLE, wavg((DbLongArray)null, new double[]{4,5,6}));
-        assertEquals(NULL_DOUBLE, wavg(new DbLongArrayDirect(new long[]{1,2,3}), (double[])null));
+        assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), wavg(new LongVectorDirect(new long[]{1,2,3,NULL_LONG,5}), new double[]{4,5,6,7,NULL_DOUBLE}));
+        assertEquals(NULL_DOUBLE, wavg((LongVector)null, new double[]{4,5,6}));
+        assertEquals(NULL_DOUBLE, wavg(new LongVectorDirect(new long[]{1,2,3}), (double[])null));
 
-        assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), wavg(new DbLongArrayDirect(new long[]{1,2,3,NULL_LONG,5}), new float[]{4,5,6,7,NULL_FLOAT}));
-        assertEquals(NULL_DOUBLE, wavg((DbLongArray)null, new float[]{4,5,6}));
-        assertEquals(NULL_DOUBLE, wavg(new DbLongArrayDirect(new long[]{1,2,3}), (float[])null));
-
-        /////
-
-        assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), wavg(new long[]{1,2,3,NULL_LONG,5}, new DbLongArrayDirect(new long[]{4,5,6,7,NULL_LONG})));
-        assertEquals(NULL_DOUBLE, wavg((long[])null, new DbLongArrayDirect(new long[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, wavg(new long[]{1,2,3}, (DbLongArray) null));
-
-        assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), wavg(new long[]{1,2,3,NULL_LONG,5}, new DbIntArrayDirect(new int[]{4,5,6,7,NULL_INT})));
-        assertEquals(NULL_DOUBLE, wavg((long[])null, new DbIntArrayDirect(new int[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, wavg(new long[]{1,2,3}, (DbIntArray) null));
-
-        assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), wavg(new long[]{1,2,3,NULL_LONG,5}, new DbLongArrayDirect(new long[]{4,5,6,7,NULL_LONG})));
-        assertEquals(NULL_DOUBLE, wavg((long[])null, new DbLongArrayDirect(new long[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, wavg(new long[]{1,2,3}, (DbLongArray) null));
-
-        assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), wavg(new long[]{1,2,3,NULL_LONG,5}, new DbDoubleArrayDirect(new double[]{4,5,6,7,NULL_DOUBLE})));
-        assertEquals(NULL_DOUBLE, wavg((long[])null, new DbDoubleArrayDirect(new double[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, wavg(new long[]{1,2,3}, (DbDoubleArray)null));
-
-        assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), wavg(new long[]{1,2,3,NULL_LONG,5}, new DbFloatArrayDirect(new float[]{4,5,6,7,NULL_FLOAT})));
-        assertEquals(NULL_DOUBLE, wavg((long[])null, new DbFloatArrayDirect(new float[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, wavg(new long[]{1,2,3}, (DbFloatArray)null));
+        assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), wavg(new LongVectorDirect(new long[]{1,2,3,NULL_LONG,5}), new float[]{4,5,6,7,NULL_FLOAT}));
+        assertEquals(NULL_DOUBLE, wavg((LongVector)null, new float[]{4,5,6}));
+        assertEquals(NULL_DOUBLE, wavg(new LongVectorDirect(new long[]{1,2,3}), (float[])null));
 
         /////
 
-        assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), wavg(new DbLongArrayDirect(new long[]{1,2,3,NULL_LONG,5}), new DbLongArrayDirect(new long[]{4,5,6,7,NULL_LONG})));
-        assertEquals(NULL_DOUBLE, wavg((DbLongArray) null, new DbLongArrayDirect(new long[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, wavg(new DbLongArrayDirect(new long[]{1,2,3}), (DbLongArray) null));
+        assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), wavg(new long[]{1,2,3,NULL_LONG,5}, new LongVectorDirect(new long[]{4,5,6,7,NULL_LONG})));
+        assertEquals(NULL_DOUBLE, wavg((long[])null, new LongVectorDirect(new long[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, wavg(new long[]{1,2,3}, (LongVector) null));
 
-        assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), wavg(new DbLongArrayDirect(new long[]{1,2,3,NULL_LONG,5}), new DbIntArrayDirect(new int[]{4,5,6,7,NULL_INT})));
-        assertEquals(NULL_DOUBLE, wavg((DbLongArray) null, new DbIntArrayDirect(new int[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, wavg(new DbLongArrayDirect(new long[]{1,2,3}), (DbIntArray) null));
+        assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), wavg(new long[]{1,2,3,NULL_LONG,5}, new IntVectorDirect(new int[]{4,5,6,7,NULL_INT})));
+        assertEquals(NULL_DOUBLE, wavg((long[])null, new IntVectorDirect(new int[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, wavg(new long[]{1,2,3}, (IntVector) null));
 
-        assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), wavg(new DbLongArrayDirect(new long[]{1,2,3,NULL_LONG,5}), new DbLongArrayDirect(new long[]{4,5,6,7,NULL_LONG})));
-        assertEquals(NULL_DOUBLE, wavg((DbLongArray) null, new DbLongArrayDirect(new long[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, wavg(new DbLongArrayDirect(new long[]{1,2,3}), (DbLongArray) null));
+        assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), wavg(new long[]{1,2,3,NULL_LONG,5}, new LongVectorDirect(new long[]{4,5,6,7,NULL_LONG})));
+        assertEquals(NULL_DOUBLE, wavg((long[])null, new LongVectorDirect(new long[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, wavg(new long[]{1,2,3}, (LongVector) null));
 
-        assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), wavg(new DbLongArrayDirect(new long[]{1,2,3,NULL_LONG,5}), new DbDoubleArrayDirect(new double[]{4,5,6,7,NULL_DOUBLE})));
-        assertEquals(NULL_DOUBLE, wavg((DbLongArray) null, new DbDoubleArrayDirect(new double[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, wavg(new DbLongArrayDirect(new long[]{1,2,3}), (DbDoubleArray)null));
+        assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), wavg(new long[]{1,2,3,NULL_LONG,5}, new DoubleVectorDirect(new double[]{4,5,6,7,NULL_DOUBLE})));
+        assertEquals(NULL_DOUBLE, wavg((long[])null, new DoubleVectorDirect(new double[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, wavg(new long[]{1,2,3}, (DoubleVector)null));
 
-        assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), wavg(new DbLongArrayDirect(new long[]{1,2,3,NULL_LONG,5}), new DbFloatArrayDirect(new float[]{4,5,6,7,NULL_FLOAT})));
-        assertEquals(NULL_DOUBLE, wavg((DbLongArray) null, new DbFloatArrayDirect(new float[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, wavg(new DbLongArrayDirect(new long[]{1,2,3}), (DbFloatArray)null));
+        assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), wavg(new long[]{1,2,3,NULL_LONG,5}, new FloatVectorDirect(new float[]{4,5,6,7,NULL_FLOAT})));
+        assertEquals(NULL_DOUBLE, wavg((long[])null, new FloatVectorDirect(new float[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, wavg(new long[]{1,2,3}, (FloatVector)null));
+
+        /////
+
+        assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), wavg(new LongVectorDirect(new long[]{1,2,3,NULL_LONG,5}), new LongVectorDirect(new long[]{4,5,6,7,NULL_LONG})));
+        assertEquals(NULL_DOUBLE, wavg((LongVector) null, new LongVectorDirect(new long[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, wavg(new LongVectorDirect(new long[]{1,2,3}), (LongVector) null));
+
+        assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), wavg(new LongVectorDirect(new long[]{1,2,3,NULL_LONG,5}), new IntVectorDirect(new int[]{4,5,6,7,NULL_INT})));
+        assertEquals(NULL_DOUBLE, wavg((LongVector) null, new IntVectorDirect(new int[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, wavg(new LongVectorDirect(new long[]{1,2,3}), (IntVector) null));
+
+        assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), wavg(new LongVectorDirect(new long[]{1,2,3,NULL_LONG,5}), new LongVectorDirect(new long[]{4,5,6,7,NULL_LONG})));
+        assertEquals(NULL_DOUBLE, wavg((LongVector) null, new LongVectorDirect(new long[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, wavg(new LongVectorDirect(new long[]{1,2,3}), (LongVector) null));
+
+        assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), wavg(new LongVectorDirect(new long[]{1,2,3,NULL_LONG,5}), new DoubleVectorDirect(new double[]{4,5,6,7,NULL_DOUBLE})));
+        assertEquals(NULL_DOUBLE, wavg((LongVector) null, new DoubleVectorDirect(new double[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, wavg(new LongVectorDirect(new long[]{1,2,3}), (DoubleVector)null));
+
+        assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), wavg(new LongVectorDirect(new long[]{1,2,3,NULL_LONG,5}), new FloatVectorDirect(new float[]{4,5,6,7,NULL_FLOAT})));
+        assertEquals(NULL_DOUBLE, wavg((LongVector) null, new FloatVectorDirect(new float[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, wavg(new LongVectorDirect(new long[]{1,2,3}), (FloatVector)null));
     }
 
     public void testWeightedAvg() {
@@ -1147,69 +1147,69 @@ public class TestLongNumericPrimitives extends BaseArrayTestCase {
 
         /////
 
-        assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), weightedAvg(new DbLongArrayDirect(new long[]{1,2,3,NULL_LONG,5}), new long[]{4,5,6,7,NULL_LONG}));
-        assertEquals(NULL_DOUBLE, weightedAvg((DbLongArray) null, new long[]{4,5,6}));
-        assertEquals(NULL_DOUBLE, weightedAvg(new DbLongArrayDirect(new long[]{1,2,3}), (long[])null));
+        assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), weightedAvg(new LongVectorDirect(new long[]{1,2,3,NULL_LONG,5}), new long[]{4,5,6,7,NULL_LONG}));
+        assertEquals(NULL_DOUBLE, weightedAvg((LongVector) null, new long[]{4,5,6}));
+        assertEquals(NULL_DOUBLE, weightedAvg(new LongVectorDirect(new long[]{1,2,3}), (long[])null));
 
-        assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), weightedAvg(new DbLongArrayDirect(new long[]{1,2,3,NULL_LONG,5}), new int[]{4,5,6,7,NULL_INT}));
-        assertEquals(NULL_DOUBLE, weightedAvg((DbLongArray)null, new int[]{4,5,6}));
-        assertEquals(NULL_DOUBLE, weightedAvg(new DbLongArrayDirect(new long[]{1,2,3}), (int[])null));
+        assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), weightedAvg(new LongVectorDirect(new long[]{1,2,3,NULL_LONG,5}), new int[]{4,5,6,7,NULL_INT}));
+        assertEquals(NULL_DOUBLE, weightedAvg((LongVector)null, new int[]{4,5,6}));
+        assertEquals(NULL_DOUBLE, weightedAvg(new LongVectorDirect(new long[]{1,2,3}), (int[])null));
 
-        assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), weightedAvg(new DbLongArrayDirect(new long[]{1,2,3,NULL_LONG,5}), new long[]{4,5,6,7,NULL_LONG}));
-        assertEquals(NULL_DOUBLE, weightedAvg((DbLongArray)null, new long[]{4,5,6}));
-        assertEquals(NULL_DOUBLE, weightedAvg(new DbLongArrayDirect(new long[]{1,2,3}), (long[])null));
+        assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), weightedAvg(new LongVectorDirect(new long[]{1,2,3,NULL_LONG,5}), new long[]{4,5,6,7,NULL_LONG}));
+        assertEquals(NULL_DOUBLE, weightedAvg((LongVector)null, new long[]{4,5,6}));
+        assertEquals(NULL_DOUBLE, weightedAvg(new LongVectorDirect(new long[]{1,2,3}), (long[])null));
 
-        assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), weightedAvg(new DbLongArrayDirect(new long[]{1,2,3,NULL_LONG,5}), new double[]{4,5,6,7,NULL_DOUBLE}));
-        assertEquals(NULL_DOUBLE, weightedAvg((DbLongArray)null, new double[]{4,5,6}));
-        assertEquals(NULL_DOUBLE, weightedAvg(new DbLongArrayDirect(new long[]{1,2,3}), (double[])null));
+        assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), weightedAvg(new LongVectorDirect(new long[]{1,2,3,NULL_LONG,5}), new double[]{4,5,6,7,NULL_DOUBLE}));
+        assertEquals(NULL_DOUBLE, weightedAvg((LongVector)null, new double[]{4,5,6}));
+        assertEquals(NULL_DOUBLE, weightedAvg(new LongVectorDirect(new long[]{1,2,3}), (double[])null));
 
-        assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), weightedAvg(new DbLongArrayDirect(new long[]{1,2,3,NULL_LONG,5}), new float[]{4,5,6,7,NULL_FLOAT}));
-        assertEquals(NULL_DOUBLE, weightedAvg((DbLongArray)null, new float[]{4,5,6}));
-        assertEquals(NULL_DOUBLE, weightedAvg(new DbLongArrayDirect(new long[]{1,2,3}), (float[])null));
-
-        /////
-
-        assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), weightedAvg(new long[]{1,2,3,NULL_LONG,5}, new DbLongArrayDirect(new long[]{4,5,6,7,NULL_LONG})));
-        assertEquals(NULL_DOUBLE, weightedAvg((long[])null, new DbLongArrayDirect(new long[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, weightedAvg(new long[]{1,2,3}, (DbLongArray) null));
-
-        assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), weightedAvg(new long[]{1,2,3,NULL_LONG,5}, new DbIntArrayDirect(new int[]{4,5,6,7,NULL_INT})));
-        assertEquals(NULL_DOUBLE, weightedAvg((long[])null, new DbIntArrayDirect(new int[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, weightedAvg(new long[]{1,2,3}, (DbIntArray) null));
-
-        assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), weightedAvg(new long[]{1,2,3,NULL_LONG,5}, new DbLongArrayDirect(new long[]{4,5,6,7,NULL_LONG})));
-        assertEquals(NULL_DOUBLE, weightedAvg((long[])null, new DbLongArrayDirect(new long[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, weightedAvg(new long[]{1,2,3}, (DbLongArray) null));
-
-        assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), weightedAvg(new long[]{1,2,3,NULL_LONG,5}, new DbDoubleArrayDirect(new double[]{4,5,6,7,NULL_DOUBLE})));
-        assertEquals(NULL_DOUBLE, weightedAvg((long[])null, new DbDoubleArrayDirect(new double[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, weightedAvg(new long[]{1,2,3}, (DbDoubleArray)null));
-
-        assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), weightedAvg(new long[]{1,2,3,NULL_LONG,5}, new DbFloatArrayDirect(new float[]{4,5,6,7,NULL_FLOAT})));
-        assertEquals(NULL_DOUBLE, weightedAvg((long[])null, new DbFloatArrayDirect(new float[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, weightedAvg(new long[]{1,2,3}, (DbFloatArray)null));
+        assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), weightedAvg(new LongVectorDirect(new long[]{1,2,3,NULL_LONG,5}), new float[]{4,5,6,7,NULL_FLOAT}));
+        assertEquals(NULL_DOUBLE, weightedAvg((LongVector)null, new float[]{4,5,6}));
+        assertEquals(NULL_DOUBLE, weightedAvg(new LongVectorDirect(new long[]{1,2,3}), (float[])null));
 
         /////
 
-        assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), weightedAvg(new DbLongArrayDirect(new long[]{1,2,3,NULL_LONG,5}), new DbLongArrayDirect(new long[]{4,5,6,7,NULL_LONG})));
-        assertEquals(NULL_DOUBLE, weightedAvg((DbLongArray) null, new DbLongArrayDirect(new long[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, weightedAvg(new DbLongArrayDirect(new long[]{1,2,3}), (DbLongArray) null));
+        assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), weightedAvg(new long[]{1,2,3,NULL_LONG,5}, new LongVectorDirect(new long[]{4,5,6,7,NULL_LONG})));
+        assertEquals(NULL_DOUBLE, weightedAvg((long[])null, new LongVectorDirect(new long[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, weightedAvg(new long[]{1,2,3}, (LongVector) null));
 
-        assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), weightedAvg(new DbLongArrayDirect(new long[]{1,2,3,NULL_LONG,5}), new DbIntArrayDirect(new int[]{4,5,6,7,NULL_INT})));
-        assertEquals(NULL_DOUBLE, weightedAvg((DbLongArray) null, new DbIntArrayDirect(new int[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, weightedAvg(new DbLongArrayDirect(new long[]{1,2,3}), (DbIntArray) null));
+        assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), weightedAvg(new long[]{1,2,3,NULL_LONG,5}, new IntVectorDirect(new int[]{4,5,6,7,NULL_INT})));
+        assertEquals(NULL_DOUBLE, weightedAvg((long[])null, new IntVectorDirect(new int[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, weightedAvg(new long[]{1,2,3}, (IntVector) null));
 
-        assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), weightedAvg(new DbLongArrayDirect(new long[]{1,2,3,NULL_LONG,5}), new DbLongArrayDirect(new long[]{4,5,6,7,NULL_LONG})));
-        assertEquals(NULL_DOUBLE, weightedAvg((DbLongArray) null, new DbLongArrayDirect(new long[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, weightedAvg(new DbLongArrayDirect(new long[]{1,2,3}), (DbLongArray) null));
+        assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), weightedAvg(new long[]{1,2,3,NULL_LONG,5}, new LongVectorDirect(new long[]{4,5,6,7,NULL_LONG})));
+        assertEquals(NULL_DOUBLE, weightedAvg((long[])null, new LongVectorDirect(new long[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, weightedAvg(new long[]{1,2,3}, (LongVector) null));
 
-        assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), weightedAvg(new DbLongArrayDirect(new long[]{1,2,3,NULL_LONG,5}), new DbDoubleArrayDirect(new double[]{4,5,6,7,NULL_DOUBLE})));
-        assertEquals(NULL_DOUBLE, weightedAvg((DbLongArray) null, new DbDoubleArrayDirect(new double[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, weightedAvg(new DbLongArrayDirect(new long[]{1,2,3}), (DbDoubleArray)null));
+        assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), weightedAvg(new long[]{1,2,3,NULL_LONG,5}, new DoubleVectorDirect(new double[]{4,5,6,7,NULL_DOUBLE})));
+        assertEquals(NULL_DOUBLE, weightedAvg((long[])null, new DoubleVectorDirect(new double[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, weightedAvg(new long[]{1,2,3}, (DoubleVector)null));
 
-        assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), weightedAvg(new DbLongArrayDirect(new long[]{1,2,3,NULL_LONG,5}), new DbFloatArrayDirect(new float[]{4,5,6,7,NULL_FLOAT})));
-        assertEquals(NULL_DOUBLE, weightedAvg((DbLongArray) null, new DbFloatArrayDirect(new float[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, weightedAvg(new DbLongArrayDirect(new long[]{1,2,3}), (DbFloatArray)null));
+        assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), weightedAvg(new long[]{1,2,3,NULL_LONG,5}, new FloatVectorDirect(new float[]{4,5,6,7,NULL_FLOAT})));
+        assertEquals(NULL_DOUBLE, weightedAvg((long[])null, new FloatVectorDirect(new float[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, weightedAvg(new long[]{1,2,3}, (FloatVector)null));
+
+        /////
+
+        assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), weightedAvg(new LongVectorDirect(new long[]{1,2,3,NULL_LONG,5}), new LongVectorDirect(new long[]{4,5,6,7,NULL_LONG})));
+        assertEquals(NULL_DOUBLE, weightedAvg((LongVector) null, new LongVectorDirect(new long[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, weightedAvg(new LongVectorDirect(new long[]{1,2,3}), (LongVector) null));
+
+        assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), weightedAvg(new LongVectorDirect(new long[]{1,2,3,NULL_LONG,5}), new IntVectorDirect(new int[]{4,5,6,7,NULL_INT})));
+        assertEquals(NULL_DOUBLE, weightedAvg((LongVector) null, new IntVectorDirect(new int[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, weightedAvg(new LongVectorDirect(new long[]{1,2,3}), (IntVector) null));
+
+        assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), weightedAvg(new LongVectorDirect(new long[]{1,2,3,NULL_LONG,5}), new LongVectorDirect(new long[]{4,5,6,7,NULL_LONG})));
+        assertEquals(NULL_DOUBLE, weightedAvg((LongVector) null, new LongVectorDirect(new long[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, weightedAvg(new LongVectorDirect(new long[]{1,2,3}), (LongVector) null));
+
+        assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), weightedAvg(new LongVectorDirect(new long[]{1,2,3,NULL_LONG,5}), new DoubleVectorDirect(new double[]{4,5,6,7,NULL_DOUBLE})));
+        assertEquals(NULL_DOUBLE, weightedAvg((LongVector) null, new DoubleVectorDirect(new double[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, weightedAvg(new LongVectorDirect(new long[]{1,2,3}), (DoubleVector)null));
+
+        assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), weightedAvg(new LongVectorDirect(new long[]{1,2,3,NULL_LONG,5}), new FloatVectorDirect(new float[]{4,5,6,7,NULL_FLOAT})));
+        assertEquals(NULL_DOUBLE, weightedAvg((LongVector) null, new FloatVectorDirect(new float[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, weightedAvg(new LongVectorDirect(new long[]{1,2,3}), (FloatVector)null));
     }
 
     public void testWvar() {
@@ -1240,69 +1240,69 @@ public class TestLongNumericPrimitives extends BaseArrayTestCase {
 
         /////
 
-        assertEquals(target, wvar(new DbLongArrayDirect(new long[]{1,2,3,NULL_LONG,5}), new long[]{4,5,6,7,NULL_LONG}));
-        assertEquals(NULL_DOUBLE, wvar((DbLongArray) null, new long[]{4,5,6}));
-        assertEquals(NULL_DOUBLE, wvar(new DbLongArrayDirect(new long[]{1,2,3}), (long[])null));
+        assertEquals(target, wvar(new LongVectorDirect(new long[]{1,2,3,NULL_LONG,5}), new long[]{4,5,6,7,NULL_LONG}));
+        assertEquals(NULL_DOUBLE, wvar((LongVector) null, new long[]{4,5,6}));
+        assertEquals(NULL_DOUBLE, wvar(new LongVectorDirect(new long[]{1,2,3}), (long[])null));
 
-        assertEquals(target, wvar(new DbLongArrayDirect(new long[]{1,2,3,NULL_LONG,5}), new int[]{4,5,6,7,NULL_INT}));
-        assertEquals(NULL_DOUBLE, wvar((DbLongArray)null, new int[]{4,5,6}));
-        assertEquals(NULL_DOUBLE, wvar(new DbLongArrayDirect(new long[]{1,2,3}), (int[])null));
+        assertEquals(target, wvar(new LongVectorDirect(new long[]{1,2,3,NULL_LONG,5}), new int[]{4,5,6,7,NULL_INT}));
+        assertEquals(NULL_DOUBLE, wvar((LongVector)null, new int[]{4,5,6}));
+        assertEquals(NULL_DOUBLE, wvar(new LongVectorDirect(new long[]{1,2,3}), (int[])null));
 
-        assertEquals(target, wvar(new DbLongArrayDirect(new long[]{1,2,3,NULL_LONG,5}), new long[]{4,5,6,7,NULL_LONG}));
-        assertEquals(NULL_DOUBLE, wvar((DbLongArray)null, new long[]{4,5,6}));
-        assertEquals(NULL_DOUBLE, wvar(new DbLongArrayDirect(new long[]{1,2,3}), (long[])null));
+        assertEquals(target, wvar(new LongVectorDirect(new long[]{1,2,3,NULL_LONG,5}), new long[]{4,5,6,7,NULL_LONG}));
+        assertEquals(NULL_DOUBLE, wvar((LongVector)null, new long[]{4,5,6}));
+        assertEquals(NULL_DOUBLE, wvar(new LongVectorDirect(new long[]{1,2,3}), (long[])null));
 
-        assertEquals(target, wvar(new DbLongArrayDirect(new long[]{1,2,3,NULL_LONG,5}), new double[]{4,5,6,7,NULL_DOUBLE}));
-        assertEquals(NULL_DOUBLE, wvar((DbLongArray)null, new double[]{4,5,6}));
-        assertEquals(NULL_DOUBLE, wvar(new DbLongArrayDirect(new long[]{1,2,3}), (double[])null));
+        assertEquals(target, wvar(new LongVectorDirect(new long[]{1,2,3,NULL_LONG,5}), new double[]{4,5,6,7,NULL_DOUBLE}));
+        assertEquals(NULL_DOUBLE, wvar((LongVector)null, new double[]{4,5,6}));
+        assertEquals(NULL_DOUBLE, wvar(new LongVectorDirect(new long[]{1,2,3}), (double[])null));
 
-        assertEquals(target, wvar(new DbLongArrayDirect(new long[]{1,2,3,NULL_LONG,5}), new float[]{4,5,6,7,NULL_FLOAT}));
-        assertEquals(NULL_DOUBLE, wvar((DbLongArray)null, new float[]{4,5,6}));
-        assertEquals(NULL_DOUBLE, wvar(new DbLongArrayDirect(new long[]{1,2,3}), (float[])null));
-
-        /////
-
-        assertEquals(target, wvar(new long[]{1,2,3,NULL_LONG,5}, new DbLongArrayDirect(new long[]{4,5,6,7,NULL_LONG})));
-        assertEquals(NULL_DOUBLE, wvar((long[])null, new DbLongArrayDirect(new long[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, wvar(new long[]{1,2,3}, (DbLongArray) null));
-
-        assertEquals(target, wvar(new long[]{1,2,3,NULL_LONG,5}, new DbIntArrayDirect(new int[]{4,5,6,7,NULL_INT})));
-        assertEquals(NULL_DOUBLE, wvar((long[])null, new DbIntArrayDirect(new int[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, wvar(new long[]{1,2,3}, (DbIntArray) null));
-
-        assertEquals(target, wvar(new long[]{1,2,3,NULL_LONG,5}, new DbLongArrayDirect(new long[]{4,5,6,7,NULL_LONG})));
-        assertEquals(NULL_DOUBLE, wvar((long[])null, new DbLongArrayDirect(new long[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, wvar(new long[]{1,2,3}, (DbLongArray) null));
-
-        assertEquals(target, wvar(new long[]{1,2,3,NULL_LONG,5}, new DbDoubleArrayDirect(new double[]{4,5,6,7,NULL_DOUBLE})));
-        assertEquals(NULL_DOUBLE, wvar((long[])null, new DbDoubleArrayDirect(new double[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, wvar(new long[]{1,2,3}, (DbDoubleArray)null));
-
-        assertEquals(target, wvar(new long[]{1,2,3,NULL_LONG,5}, new DbFloatArrayDirect(new float[]{4,5,6,7,NULL_FLOAT})));
-        assertEquals(NULL_DOUBLE, wvar((long[])null, new DbFloatArrayDirect(new float[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, wvar(new long[]{1,2,3}, (DbFloatArray)null));
+        assertEquals(target, wvar(new LongVectorDirect(new long[]{1,2,3,NULL_LONG,5}), new float[]{4,5,6,7,NULL_FLOAT}));
+        assertEquals(NULL_DOUBLE, wvar((LongVector)null, new float[]{4,5,6}));
+        assertEquals(NULL_DOUBLE, wvar(new LongVectorDirect(new long[]{1,2,3}), (float[])null));
 
         /////
 
-        assertEquals(target, wvar(new DbLongArrayDirect(new long[]{1,2,3,NULL_LONG,5}), new DbLongArrayDirect(new long[]{4,5,6,7,NULL_LONG})));
-        assertEquals(NULL_DOUBLE, wvar((DbLongArray) null, new DbLongArrayDirect(new long[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, wvar(new DbLongArrayDirect(new long[]{1,2,3}), (DbLongArray) null));
+        assertEquals(target, wvar(new long[]{1,2,3,NULL_LONG,5}, new LongVectorDirect(new long[]{4,5,6,7,NULL_LONG})));
+        assertEquals(NULL_DOUBLE, wvar((long[])null, new LongVectorDirect(new long[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, wvar(new long[]{1,2,3}, (LongVector) null));
 
-        assertEquals(target, wvar(new DbLongArrayDirect(new long[]{1,2,3,NULL_LONG,5}), new DbIntArrayDirect(new int[]{4,5,6,7,NULL_INT})));
-        assertEquals(NULL_DOUBLE, wvar((DbLongArray) null, new DbIntArrayDirect(new int[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, wvar(new DbLongArrayDirect(new long[]{1,2,3}), (DbIntArray) null));
+        assertEquals(target, wvar(new long[]{1,2,3,NULL_LONG,5}, new IntVectorDirect(new int[]{4,5,6,7,NULL_INT})));
+        assertEquals(NULL_DOUBLE, wvar((long[])null, new IntVectorDirect(new int[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, wvar(new long[]{1,2,3}, (IntVector) null));
 
-        assertEquals(target, wvar(new DbLongArrayDirect(new long[]{1,2,3,NULL_LONG,5}), new DbLongArrayDirect(new long[]{4,5,6,7,NULL_LONG})));
-        assertEquals(NULL_DOUBLE, wvar((DbLongArray) null, new DbLongArrayDirect(new long[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, wvar(new DbLongArrayDirect(new long[]{1,2,3}), (DbLongArray) null));
+        assertEquals(target, wvar(new long[]{1,2,3,NULL_LONG,5}, new LongVectorDirect(new long[]{4,5,6,7,NULL_LONG})));
+        assertEquals(NULL_DOUBLE, wvar((long[])null, new LongVectorDirect(new long[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, wvar(new long[]{1,2,3}, (LongVector) null));
 
-        assertEquals(target, wvar(new DbLongArrayDirect(new long[]{1,2,3,NULL_LONG,5}), new DbDoubleArrayDirect(new double[]{4,5,6,7,NULL_DOUBLE})));
-        assertEquals(NULL_DOUBLE, wvar((DbLongArray) null, new DbDoubleArrayDirect(new double[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, wvar(new DbLongArrayDirect(new long[]{1,2,3}), (DbDoubleArray)null));
+        assertEquals(target, wvar(new long[]{1,2,3,NULL_LONG,5}, new DoubleVectorDirect(new double[]{4,5,6,7,NULL_DOUBLE})));
+        assertEquals(NULL_DOUBLE, wvar((long[])null, new DoubleVectorDirect(new double[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, wvar(new long[]{1,2,3}, (DoubleVector)null));
 
-        assertEquals(target, wvar(new DbLongArrayDirect(new long[]{1,2,3,NULL_LONG,5}), new DbFloatArrayDirect(new float[]{4,5,6,7,NULL_FLOAT})));
-        assertEquals(NULL_DOUBLE, wvar((DbLongArray) null, new DbFloatArrayDirect(new float[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, wvar(new DbLongArrayDirect(new long[]{1,2,3}), (DbFloatArray)null));
+        assertEquals(target, wvar(new long[]{1,2,3,NULL_LONG,5}, new FloatVectorDirect(new float[]{4,5,6,7,NULL_FLOAT})));
+        assertEquals(NULL_DOUBLE, wvar((long[])null, new FloatVectorDirect(new float[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, wvar(new long[]{1,2,3}, (FloatVector)null));
+
+        /////
+
+        assertEquals(target, wvar(new LongVectorDirect(new long[]{1,2,3,NULL_LONG,5}), new LongVectorDirect(new long[]{4,5,6,7,NULL_LONG})));
+        assertEquals(NULL_DOUBLE, wvar((LongVector) null, new LongVectorDirect(new long[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, wvar(new LongVectorDirect(new long[]{1,2,3}), (LongVector) null));
+
+        assertEquals(target, wvar(new LongVectorDirect(new long[]{1,2,3,NULL_LONG,5}), new IntVectorDirect(new int[]{4,5,6,7,NULL_INT})));
+        assertEquals(NULL_DOUBLE, wvar((LongVector) null, new IntVectorDirect(new int[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, wvar(new LongVectorDirect(new long[]{1,2,3}), (IntVector) null));
+
+        assertEquals(target, wvar(new LongVectorDirect(new long[]{1,2,3,NULL_LONG,5}), new LongVectorDirect(new long[]{4,5,6,7,NULL_LONG})));
+        assertEquals(NULL_DOUBLE, wvar((LongVector) null, new LongVectorDirect(new long[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, wvar(new LongVectorDirect(new long[]{1,2,3}), (LongVector) null));
+
+        assertEquals(target, wvar(new LongVectorDirect(new long[]{1,2,3,NULL_LONG,5}), new DoubleVectorDirect(new double[]{4,5,6,7,NULL_DOUBLE})));
+        assertEquals(NULL_DOUBLE, wvar((LongVector) null, new DoubleVectorDirect(new double[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, wvar(new LongVectorDirect(new long[]{1,2,3}), (DoubleVector)null));
+
+        assertEquals(target, wvar(new LongVectorDirect(new long[]{1,2,3,NULL_LONG,5}), new FloatVectorDirect(new float[]{4,5,6,7,NULL_FLOAT})));
+        assertEquals(NULL_DOUBLE, wvar((LongVector) null, new FloatVectorDirect(new float[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, wvar(new LongVectorDirect(new long[]{1,2,3}), (FloatVector)null));
     }
 
     public void testWstd() {
@@ -1333,69 +1333,69 @@ public class TestLongNumericPrimitives extends BaseArrayTestCase {
 
         /////
 
-        assertEquals(target, wstd(new DbLongArrayDirect(new long[]{1,2,3,NULL_LONG,5}), new long[]{4,5,6,7,NULL_LONG}));
-        assertEquals(NULL_DOUBLE, wstd((DbLongArray) null, new long[]{4,5,6}));
-        assertEquals(NULL_DOUBLE, wstd(new DbLongArrayDirect(new long[]{1,2,3}), (long[])null));
+        assertEquals(target, wstd(new LongVectorDirect(new long[]{1,2,3,NULL_LONG,5}), new long[]{4,5,6,7,NULL_LONG}));
+        assertEquals(NULL_DOUBLE, wstd((LongVector) null, new long[]{4,5,6}));
+        assertEquals(NULL_DOUBLE, wstd(new LongVectorDirect(new long[]{1,2,3}), (long[])null));
 
-        assertEquals(target, wstd(new DbLongArrayDirect(new long[]{1,2,3,NULL_LONG,5}), new int[]{4,5,6,7,NULL_INT}));
-        assertEquals(NULL_DOUBLE, wstd((DbLongArray)null, new int[]{4,5,6}));
-        assertEquals(NULL_DOUBLE, wstd(new DbLongArrayDirect(new long[]{1,2,3}), (int[])null));
+        assertEquals(target, wstd(new LongVectorDirect(new long[]{1,2,3,NULL_LONG,5}), new int[]{4,5,6,7,NULL_INT}));
+        assertEquals(NULL_DOUBLE, wstd((LongVector)null, new int[]{4,5,6}));
+        assertEquals(NULL_DOUBLE, wstd(new LongVectorDirect(new long[]{1,2,3}), (int[])null));
 
-        assertEquals(target, wstd(new DbLongArrayDirect(new long[]{1,2,3,NULL_LONG,5}), new long[]{4,5,6,7,NULL_LONG}));
-        assertEquals(NULL_DOUBLE, wstd((DbLongArray)null, new long[]{4,5,6}));
-        assertEquals(NULL_DOUBLE, wstd(new DbLongArrayDirect(new long[]{1,2,3}), (long[])null));
+        assertEquals(target, wstd(new LongVectorDirect(new long[]{1,2,3,NULL_LONG,5}), new long[]{4,5,6,7,NULL_LONG}));
+        assertEquals(NULL_DOUBLE, wstd((LongVector)null, new long[]{4,5,6}));
+        assertEquals(NULL_DOUBLE, wstd(new LongVectorDirect(new long[]{1,2,3}), (long[])null));
 
-        assertEquals(target, wstd(new DbLongArrayDirect(new long[]{1,2,3,NULL_LONG,5}), new double[]{4,5,6,7,NULL_DOUBLE}));
-        assertEquals(NULL_DOUBLE, wstd((DbLongArray)null, new double[]{4,5,6}));
-        assertEquals(NULL_DOUBLE, wstd(new DbLongArrayDirect(new long[]{1,2,3}), (double[])null));
+        assertEquals(target, wstd(new LongVectorDirect(new long[]{1,2,3,NULL_LONG,5}), new double[]{4,5,6,7,NULL_DOUBLE}));
+        assertEquals(NULL_DOUBLE, wstd((LongVector)null, new double[]{4,5,6}));
+        assertEquals(NULL_DOUBLE, wstd(new LongVectorDirect(new long[]{1,2,3}), (double[])null));
 
-        assertEquals(target, wstd(new DbLongArrayDirect(new long[]{1,2,3,NULL_LONG,5}), new float[]{4,5,6,7,NULL_FLOAT}));
-        assertEquals(NULL_DOUBLE, wstd((DbLongArray)null, new float[]{4,5,6}));
-        assertEquals(NULL_DOUBLE, wstd(new DbLongArrayDirect(new long[]{1,2,3}), (float[])null));
-
-        /////
-
-        assertEquals(target, wstd(new long[]{1,2,3,NULL_LONG,5}, new DbLongArrayDirect(new long[]{4,5,6,7,NULL_LONG})));
-        assertEquals(NULL_DOUBLE, wstd((long[])null, new DbLongArrayDirect(new long[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, wstd(new long[]{1,2,3}, (DbLongArray) null));
-
-        assertEquals(target, wstd(new long[]{1,2,3,NULL_LONG,5}, new DbIntArrayDirect(new int[]{4,5,6,7,NULL_INT})));
-        assertEquals(NULL_DOUBLE, wstd((long[])null, new DbIntArrayDirect(new int[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, wstd(new long[]{1,2,3}, (DbIntArray) null));
-
-        assertEquals(target, wstd(new long[]{1,2,3,NULL_LONG,5}, new DbLongArrayDirect(new long[]{4,5,6,7,NULL_LONG})));
-        assertEquals(NULL_DOUBLE, wstd((long[])null, new DbLongArrayDirect(new long[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, wstd(new long[]{1,2,3}, (DbLongArray) null));
-
-        assertEquals(target, wstd(new long[]{1,2,3,NULL_LONG,5}, new DbDoubleArrayDirect(new double[]{4,5,6,7,NULL_DOUBLE})));
-        assertEquals(NULL_DOUBLE, wstd((long[])null, new DbDoubleArrayDirect(new double[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, wstd(new long[]{1,2,3}, (DbDoubleArray)null));
-
-        assertEquals(target, wstd(new long[]{1,2,3,NULL_LONG,5}, new DbFloatArrayDirect(new float[]{4,5,6,7,NULL_FLOAT})));
-        assertEquals(NULL_DOUBLE, wstd((long[])null, new DbFloatArrayDirect(new float[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, wstd(new long[]{1,2,3}, (DbFloatArray)null));
+        assertEquals(target, wstd(new LongVectorDirect(new long[]{1,2,3,NULL_LONG,5}), new float[]{4,5,6,7,NULL_FLOAT}));
+        assertEquals(NULL_DOUBLE, wstd((LongVector)null, new float[]{4,5,6}));
+        assertEquals(NULL_DOUBLE, wstd(new LongVectorDirect(new long[]{1,2,3}), (float[])null));
 
         /////
 
-        assertEquals(target, wstd(new DbLongArrayDirect(new long[]{1,2,3,NULL_LONG,5}), new DbLongArrayDirect(new long[]{4,5,6,7,NULL_LONG})));
-        assertEquals(NULL_DOUBLE, wstd((DbLongArray) null, new DbLongArrayDirect(new long[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, wstd(new DbLongArrayDirect(new long[]{1,2,3}), (DbLongArray) null));
+        assertEquals(target, wstd(new long[]{1,2,3,NULL_LONG,5}, new LongVectorDirect(new long[]{4,5,6,7,NULL_LONG})));
+        assertEquals(NULL_DOUBLE, wstd((long[])null, new LongVectorDirect(new long[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, wstd(new long[]{1,2,3}, (LongVector) null));
 
-        assertEquals(target, wstd(new DbLongArrayDirect(new long[]{1,2,3,NULL_LONG,5}), new DbIntArrayDirect(new int[]{4,5,6,7,NULL_INT})));
-        assertEquals(NULL_DOUBLE, wstd((DbLongArray) null, new DbIntArrayDirect(new int[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, wstd(new DbLongArrayDirect(new long[]{1,2,3}), (DbIntArray) null));
+        assertEquals(target, wstd(new long[]{1,2,3,NULL_LONG,5}, new IntVectorDirect(new int[]{4,5,6,7,NULL_INT})));
+        assertEquals(NULL_DOUBLE, wstd((long[])null, new IntVectorDirect(new int[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, wstd(new long[]{1,2,3}, (IntVector) null));
 
-        assertEquals(target, wstd(new DbLongArrayDirect(new long[]{1,2,3,NULL_LONG,5}), new DbLongArrayDirect(new long[]{4,5,6,7,NULL_LONG})));
-        assertEquals(NULL_DOUBLE, wstd((DbLongArray) null, new DbLongArrayDirect(new long[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, wstd(new DbLongArrayDirect(new long[]{1,2,3}), (DbLongArray) null));
+        assertEquals(target, wstd(new long[]{1,2,3,NULL_LONG,5}, new LongVectorDirect(new long[]{4,5,6,7,NULL_LONG})));
+        assertEquals(NULL_DOUBLE, wstd((long[])null, new LongVectorDirect(new long[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, wstd(new long[]{1,2,3}, (LongVector) null));
 
-        assertEquals(target, wstd(new DbLongArrayDirect(new long[]{1,2,3,NULL_LONG,5}), new DbDoubleArrayDirect(new double[]{4,5,6,7,NULL_DOUBLE})));
-        assertEquals(NULL_DOUBLE, wstd((DbLongArray) null, new DbDoubleArrayDirect(new double[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, wstd(new DbLongArrayDirect(new long[]{1,2,3}), (DbDoubleArray)null));
+        assertEquals(target, wstd(new long[]{1,2,3,NULL_LONG,5}, new DoubleVectorDirect(new double[]{4,5,6,7,NULL_DOUBLE})));
+        assertEquals(NULL_DOUBLE, wstd((long[])null, new DoubleVectorDirect(new double[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, wstd(new long[]{1,2,3}, (DoubleVector)null));
 
-        assertEquals(target, wstd(new DbLongArrayDirect(new long[]{1,2,3,NULL_LONG,5}), new DbFloatArrayDirect(new float[]{4,5,6,7,NULL_FLOAT})));
-        assertEquals(NULL_DOUBLE, wstd((DbLongArray) null, new DbFloatArrayDirect(new float[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, wstd(new DbLongArrayDirect(new long[]{1,2,3}), (DbFloatArray)null));
+        assertEquals(target, wstd(new long[]{1,2,3,NULL_LONG,5}, new FloatVectorDirect(new float[]{4,5,6,7,NULL_FLOAT})));
+        assertEquals(NULL_DOUBLE, wstd((long[])null, new FloatVectorDirect(new float[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, wstd(new long[]{1,2,3}, (FloatVector)null));
+
+        /////
+
+        assertEquals(target, wstd(new LongVectorDirect(new long[]{1,2,3,NULL_LONG,5}), new LongVectorDirect(new long[]{4,5,6,7,NULL_LONG})));
+        assertEquals(NULL_DOUBLE, wstd((LongVector) null, new LongVectorDirect(new long[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, wstd(new LongVectorDirect(new long[]{1,2,3}), (LongVector) null));
+
+        assertEquals(target, wstd(new LongVectorDirect(new long[]{1,2,3,NULL_LONG,5}), new IntVectorDirect(new int[]{4,5,6,7,NULL_INT})));
+        assertEquals(NULL_DOUBLE, wstd((LongVector) null, new IntVectorDirect(new int[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, wstd(new LongVectorDirect(new long[]{1,2,3}), (IntVector) null));
+
+        assertEquals(target, wstd(new LongVectorDirect(new long[]{1,2,3,NULL_LONG,5}), new LongVectorDirect(new long[]{4,5,6,7,NULL_LONG})));
+        assertEquals(NULL_DOUBLE, wstd((LongVector) null, new LongVectorDirect(new long[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, wstd(new LongVectorDirect(new long[]{1,2,3}), (LongVector) null));
+
+        assertEquals(target, wstd(new LongVectorDirect(new long[]{1,2,3,NULL_LONG,5}), new DoubleVectorDirect(new double[]{4,5,6,7,NULL_DOUBLE})));
+        assertEquals(NULL_DOUBLE, wstd((LongVector) null, new DoubleVectorDirect(new double[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, wstd(new LongVectorDirect(new long[]{1,2,3}), (DoubleVector)null));
+
+        assertEquals(target, wstd(new LongVectorDirect(new long[]{1,2,3,NULL_LONG,5}), new FloatVectorDirect(new float[]{4,5,6,7,NULL_FLOAT})));
+        assertEquals(NULL_DOUBLE, wstd((LongVector) null, new FloatVectorDirect(new float[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, wstd(new LongVectorDirect(new long[]{1,2,3}), (FloatVector)null));
     }
 
     public void testWste() {
@@ -1429,69 +1429,69 @@ public class TestLongNumericPrimitives extends BaseArrayTestCase {
 
         /////
 
-        assertEquals(target, wste(new DbLongArrayDirect(new long[]{1,2,3,NULL_LONG,5}), new long[]{4,5,6,7,NULL_LONG}));
-        assertEquals(NULL_DOUBLE, wste((DbLongArray) null, new long[]{4,5,6}));
-        assertEquals(NULL_DOUBLE, wste(new DbLongArrayDirect(new long[]{1,2,3}), (long[])null));
+        assertEquals(target, wste(new LongVectorDirect(new long[]{1,2,3,NULL_LONG,5}), new long[]{4,5,6,7,NULL_LONG}));
+        assertEquals(NULL_DOUBLE, wste((LongVector) null, new long[]{4,5,6}));
+        assertEquals(NULL_DOUBLE, wste(new LongVectorDirect(new long[]{1,2,3}), (long[])null));
 
-        assertEquals(target, wste(new DbLongArrayDirect(new long[]{1,2,3,NULL_LONG,5}), new int[]{4,5,6,7,NULL_INT}));
-        assertEquals(NULL_DOUBLE, wste((DbLongArray)null, new int[]{4,5,6}));
-        assertEquals(NULL_DOUBLE, wste(new DbLongArrayDirect(new long[]{1,2,3}), (int[])null));
+        assertEquals(target, wste(new LongVectorDirect(new long[]{1,2,3,NULL_LONG,5}), new int[]{4,5,6,7,NULL_INT}));
+        assertEquals(NULL_DOUBLE, wste((LongVector)null, new int[]{4,5,6}));
+        assertEquals(NULL_DOUBLE, wste(new LongVectorDirect(new long[]{1,2,3}), (int[])null));
 
-        assertEquals(target, wste(new DbLongArrayDirect(new long[]{1,2,3,NULL_LONG,5}), new long[]{4,5,6,7,NULL_LONG}));
-        assertEquals(NULL_DOUBLE, wste((DbLongArray)null, new long[]{4,5,6}));
-        assertEquals(NULL_DOUBLE, wste(new DbLongArrayDirect(new long[]{1,2,3}), (long[])null));
+        assertEquals(target, wste(new LongVectorDirect(new long[]{1,2,3,NULL_LONG,5}), new long[]{4,5,6,7,NULL_LONG}));
+        assertEquals(NULL_DOUBLE, wste((LongVector)null, new long[]{4,5,6}));
+        assertEquals(NULL_DOUBLE, wste(new LongVectorDirect(new long[]{1,2,3}), (long[])null));
 
-        assertEquals(target, wste(new DbLongArrayDirect(new long[]{1,2,3,NULL_LONG,5}), new double[]{4,5,6,7,NULL_DOUBLE}));
-        assertEquals(NULL_DOUBLE, wste((DbLongArray)null, new double[]{4,5,6}));
-        assertEquals(NULL_DOUBLE, wste(new DbLongArrayDirect(new long[]{1,2,3}), (double[])null));
+        assertEquals(target, wste(new LongVectorDirect(new long[]{1,2,3,NULL_LONG,5}), new double[]{4,5,6,7,NULL_DOUBLE}));
+        assertEquals(NULL_DOUBLE, wste((LongVector)null, new double[]{4,5,6}));
+        assertEquals(NULL_DOUBLE, wste(new LongVectorDirect(new long[]{1,2,3}), (double[])null));
 
-        assertEquals(target, wste(new DbLongArrayDirect(new long[]{1,2,3,NULL_LONG,5}), new float[]{4,5,6,7,NULL_FLOAT}));
-        assertEquals(NULL_DOUBLE, wste((DbLongArray)null, new float[]{4,5,6}));
-        assertEquals(NULL_DOUBLE, wste(new DbLongArrayDirect(new long[]{1,2,3}), (float[])null));
-
-        /////
-
-        assertEquals(target, wste(new long[]{1,2,3,NULL_LONG,5}, new DbLongArrayDirect(new long[]{4,5,6,7,NULL_LONG})));
-        assertEquals(NULL_DOUBLE, wste((long[])null, new DbLongArrayDirect(new long[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, wste(new long[]{1,2,3}, (DbLongArray) null));
-
-        assertEquals(target, wste(new long[]{1,2,3,NULL_LONG,5}, new DbIntArrayDirect(new int[]{4,5,6,7,NULL_INT})));
-        assertEquals(NULL_DOUBLE, wste((long[])null, new DbIntArrayDirect(new int[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, wste(new long[]{1,2,3}, (DbIntArray) null));
-
-        assertEquals(target, wste(new long[]{1,2,3,NULL_LONG,5}, new DbLongArrayDirect(new long[]{4,5,6,7,NULL_LONG})));
-        assertEquals(NULL_DOUBLE, wste((long[])null, new DbLongArrayDirect(new long[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, wste(new long[]{1,2,3}, (DbLongArray) null));
-
-        assertEquals(target, wste(new long[]{1,2,3,NULL_LONG,5}, new DbDoubleArrayDirect(new double[]{4,5,6,7,NULL_DOUBLE})));
-        assertEquals(NULL_DOUBLE, wste((long[])null, new DbDoubleArrayDirect(new double[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, wste(new long[]{1,2,3}, (DbDoubleArray)null));
-
-        assertEquals(target, wste(new long[]{1,2,3,NULL_LONG,5}, new DbFloatArrayDirect(new float[]{4,5,6,7,NULL_FLOAT})));
-        assertEquals(NULL_DOUBLE, wste((long[])null, new DbFloatArrayDirect(new float[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, wste(new long[]{1,2,3}, (DbFloatArray)null));
+        assertEquals(target, wste(new LongVectorDirect(new long[]{1,2,3,NULL_LONG,5}), new float[]{4,5,6,7,NULL_FLOAT}));
+        assertEquals(NULL_DOUBLE, wste((LongVector)null, new float[]{4,5,6}));
+        assertEquals(NULL_DOUBLE, wste(new LongVectorDirect(new long[]{1,2,3}), (float[])null));
 
         /////
 
-        assertEquals(target, wste(new DbLongArrayDirect(new long[]{1,2,3,NULL_LONG,5}), new DbLongArrayDirect(new long[]{4,5,6,7,NULL_LONG})));
-        assertEquals(NULL_DOUBLE, wste((DbLongArray) null, new DbLongArrayDirect(new long[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, wste(new DbLongArrayDirect(new long[]{1,2,3}), (DbLongArray) null));
+        assertEquals(target, wste(new long[]{1,2,3,NULL_LONG,5}, new LongVectorDirect(new long[]{4,5,6,7,NULL_LONG})));
+        assertEquals(NULL_DOUBLE, wste((long[])null, new LongVectorDirect(new long[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, wste(new long[]{1,2,3}, (LongVector) null));
 
-        assertEquals(target, wste(new DbLongArrayDirect(new long[]{1,2,3,NULL_LONG,5}), new DbIntArrayDirect(new int[]{4,5,6,7,NULL_INT})));
-        assertEquals(NULL_DOUBLE, wste((DbLongArray) null, new DbIntArrayDirect(new int[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, wste(new DbLongArrayDirect(new long[]{1,2,3}), (DbIntArray) null));
+        assertEquals(target, wste(new long[]{1,2,3,NULL_LONG,5}, new IntVectorDirect(new int[]{4,5,6,7,NULL_INT})));
+        assertEquals(NULL_DOUBLE, wste((long[])null, new IntVectorDirect(new int[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, wste(new long[]{1,2,3}, (IntVector) null));
 
-        assertEquals(target, wste(new DbLongArrayDirect(new long[]{1,2,3,NULL_LONG,5}), new DbLongArrayDirect(new long[]{4,5,6,7,NULL_LONG})));
-        assertEquals(NULL_DOUBLE, wste((DbLongArray) null, new DbLongArrayDirect(new long[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, wste(new DbLongArrayDirect(new long[]{1,2,3}), (DbLongArray) null));
+        assertEquals(target, wste(new long[]{1,2,3,NULL_LONG,5}, new LongVectorDirect(new long[]{4,5,6,7,NULL_LONG})));
+        assertEquals(NULL_DOUBLE, wste((long[])null, new LongVectorDirect(new long[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, wste(new long[]{1,2,3}, (LongVector) null));
 
-        assertEquals(target, wste(new DbLongArrayDirect(new long[]{1,2,3,NULL_LONG,5}), new DbDoubleArrayDirect(new double[]{4,5,6,7,NULL_DOUBLE})));
-        assertEquals(NULL_DOUBLE, wste((DbLongArray) null, new DbDoubleArrayDirect(new double[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, wste(new DbLongArrayDirect(new long[]{1,2,3}), (DbDoubleArray)null));
+        assertEquals(target, wste(new long[]{1,2,3,NULL_LONG,5}, new DoubleVectorDirect(new double[]{4,5,6,7,NULL_DOUBLE})));
+        assertEquals(NULL_DOUBLE, wste((long[])null, new DoubleVectorDirect(new double[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, wste(new long[]{1,2,3}, (DoubleVector)null));
 
-        assertEquals(target, wste(new DbLongArrayDirect(new long[]{1,2,3,NULL_LONG,5}), new DbFloatArrayDirect(new float[]{4,5,6,7,NULL_FLOAT})));
-        assertEquals(NULL_DOUBLE, wste((DbLongArray) null, new DbFloatArrayDirect(new float[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, wste(new DbLongArrayDirect(new long[]{1,2,3}), (DbFloatArray)null));
+        assertEquals(target, wste(new long[]{1,2,3,NULL_LONG,5}, new FloatVectorDirect(new float[]{4,5,6,7,NULL_FLOAT})));
+        assertEquals(NULL_DOUBLE, wste((long[])null, new FloatVectorDirect(new float[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, wste(new long[]{1,2,3}, (FloatVector)null));
+
+        /////
+
+        assertEquals(target, wste(new LongVectorDirect(new long[]{1,2,3,NULL_LONG,5}), new LongVectorDirect(new long[]{4,5,6,7,NULL_LONG})));
+        assertEquals(NULL_DOUBLE, wste((LongVector) null, new LongVectorDirect(new long[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, wste(new LongVectorDirect(new long[]{1,2,3}), (LongVector) null));
+
+        assertEquals(target, wste(new LongVectorDirect(new long[]{1,2,3,NULL_LONG,5}), new IntVectorDirect(new int[]{4,5,6,7,NULL_INT})));
+        assertEquals(NULL_DOUBLE, wste((LongVector) null, new IntVectorDirect(new int[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, wste(new LongVectorDirect(new long[]{1,2,3}), (IntVector) null));
+
+        assertEquals(target, wste(new LongVectorDirect(new long[]{1,2,3,NULL_LONG,5}), new LongVectorDirect(new long[]{4,5,6,7,NULL_LONG})));
+        assertEquals(NULL_DOUBLE, wste((LongVector) null, new LongVectorDirect(new long[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, wste(new LongVectorDirect(new long[]{1,2,3}), (LongVector) null));
+
+        assertEquals(target, wste(new LongVectorDirect(new long[]{1,2,3,NULL_LONG,5}), new DoubleVectorDirect(new double[]{4,5,6,7,NULL_DOUBLE})));
+        assertEquals(NULL_DOUBLE, wste((LongVector) null, new DoubleVectorDirect(new double[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, wste(new LongVectorDirect(new long[]{1,2,3}), (DoubleVector)null));
+
+        assertEquals(target, wste(new LongVectorDirect(new long[]{1,2,3,NULL_LONG,5}), new FloatVectorDirect(new float[]{4,5,6,7,NULL_FLOAT})));
+        assertEquals(NULL_DOUBLE, wste((LongVector) null, new FloatVectorDirect(new float[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, wste(new LongVectorDirect(new long[]{1,2,3}), (FloatVector)null));
     }
 
     public void testWtstat() {
@@ -1519,68 +1519,68 @@ public class TestLongNumericPrimitives extends BaseArrayTestCase {
 
         /////
 
-        assertEquals(target, wtstat(new DbLongArrayDirect(new long[]{1,2,3,NULL_LONG,5}), new long[]{4,5,6,7,NULL_LONG}));
-        assertEquals(NULL_DOUBLE, wtstat((DbLongArray) null, new long[]{4,5,6}));
-        assertEquals(NULL_DOUBLE, wtstat(new DbLongArrayDirect(new long[]{1,2,3}), (long[])null));
+        assertEquals(target, wtstat(new LongVectorDirect(new long[]{1,2,3,NULL_LONG,5}), new long[]{4,5,6,7,NULL_LONG}));
+        assertEquals(NULL_DOUBLE, wtstat((LongVector) null, new long[]{4,5,6}));
+        assertEquals(NULL_DOUBLE, wtstat(new LongVectorDirect(new long[]{1,2,3}), (long[])null));
 
-        assertEquals(target, wtstat(new DbLongArrayDirect(new long[]{1,2,3,NULL_LONG,5}), new int[]{4,5,6,7,NULL_INT}));
-        assertEquals(NULL_DOUBLE, wtstat((DbLongArray)null, new int[]{4,5,6}));
-        assertEquals(NULL_DOUBLE, wtstat(new DbLongArrayDirect(new long[]{1,2,3}), (int[])null));
+        assertEquals(target, wtstat(new LongVectorDirect(new long[]{1,2,3,NULL_LONG,5}), new int[]{4,5,6,7,NULL_INT}));
+        assertEquals(NULL_DOUBLE, wtstat((LongVector)null, new int[]{4,5,6}));
+        assertEquals(NULL_DOUBLE, wtstat(new LongVectorDirect(new long[]{1,2,3}), (int[])null));
 
-        assertEquals(target, wtstat(new DbLongArrayDirect(new long[]{1,2,3,NULL_LONG,5}), new long[]{4,5,6,7,NULL_LONG}));
-        assertEquals(NULL_DOUBLE, wtstat((DbLongArray)null, new long[]{4,5,6}));
-        assertEquals(NULL_DOUBLE, wtstat(new DbLongArrayDirect(new long[]{1,2,3}), (long[])null));
+        assertEquals(target, wtstat(new LongVectorDirect(new long[]{1,2,3,NULL_LONG,5}), new long[]{4,5,6,7,NULL_LONG}));
+        assertEquals(NULL_DOUBLE, wtstat((LongVector)null, new long[]{4,5,6}));
+        assertEquals(NULL_DOUBLE, wtstat(new LongVectorDirect(new long[]{1,2,3}), (long[])null));
 
-        assertEquals(target, wtstat(new DbLongArrayDirect(new long[]{1,2,3,NULL_LONG,5}), new double[]{4,5,6,7,NULL_DOUBLE}));
-        assertEquals(NULL_DOUBLE, wtstat((DbLongArray)null, new double[]{4,5,6}));
-        assertEquals(NULL_DOUBLE, wtstat(new DbLongArrayDirect(new long[]{1,2,3}), (double[])null));
+        assertEquals(target, wtstat(new LongVectorDirect(new long[]{1,2,3,NULL_LONG,5}), new double[]{4,5,6,7,NULL_DOUBLE}));
+        assertEquals(NULL_DOUBLE, wtstat((LongVector)null, new double[]{4,5,6}));
+        assertEquals(NULL_DOUBLE, wtstat(new LongVectorDirect(new long[]{1,2,3}), (double[])null));
 
-        assertEquals(target, wtstat(new DbLongArrayDirect(new long[]{1,2,3,NULL_LONG,5}), new float[]{4,5,6,7,NULL_FLOAT}));
-        assertEquals(NULL_DOUBLE, wtstat((DbLongArray)null, new float[]{4,5,6}));
-        assertEquals(NULL_DOUBLE, wtstat(new DbLongArrayDirect(new long[]{1,2,3}), (float[])null));
-
-        /////
-
-        assertEquals(target, wtstat(new long[]{1,2,3,NULL_LONG,5}, new DbLongArrayDirect(new long[]{4,5,6,7,NULL_LONG})));
-        assertEquals(NULL_DOUBLE, wtstat((long[])null, new DbLongArrayDirect(new long[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, wtstat(new long[]{1,2,3}, (DbLongArray) null));
-
-        assertEquals(target, wtstat(new long[]{1,2,3,NULL_LONG,5}, new DbIntArrayDirect(new int[]{4,5,6,7,NULL_INT})));
-        assertEquals(NULL_DOUBLE, wtstat((long[])null, new DbIntArrayDirect(new int[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, wtstat(new long[]{1,2,3}, (DbIntArray) null));
-
-        assertEquals(target, wtstat(new long[]{1,2,3,NULL_LONG,5}, new DbLongArrayDirect(new long[]{4,5,6,7,NULL_LONG})));
-        assertEquals(NULL_DOUBLE, wtstat((long[])null, new DbLongArrayDirect(new long[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, wtstat(new long[]{1,2,3}, (DbLongArray) null));
-
-        assertEquals(target, wtstat(new long[]{1,2,3,NULL_LONG,5}, new DbDoubleArrayDirect(new double[]{4,5,6,7,NULL_DOUBLE})));
-        assertEquals(NULL_DOUBLE, wtstat((long[])null, new DbDoubleArrayDirect(new double[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, wtstat(new long[]{1,2,3}, (DbDoubleArray)null));
-
-        assertEquals(target, wtstat(new long[]{1,2,3,NULL_LONG,5}, new DbFloatArrayDirect(new float[]{4,5,6,7,NULL_FLOAT})));
-        assertEquals(NULL_DOUBLE, wtstat((long[])null, new DbFloatArrayDirect(new float[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, wtstat(new long[]{1,2,3}, (DbFloatArray)null));
+        assertEquals(target, wtstat(new LongVectorDirect(new long[]{1,2,3,NULL_LONG,5}), new float[]{4,5,6,7,NULL_FLOAT}));
+        assertEquals(NULL_DOUBLE, wtstat((LongVector)null, new float[]{4,5,6}));
+        assertEquals(NULL_DOUBLE, wtstat(new LongVectorDirect(new long[]{1,2,3}), (float[])null));
 
         /////
 
-        assertEquals(target, wtstat(new DbLongArrayDirect(new long[]{1,2,3,NULL_LONG,5}), new DbLongArrayDirect(new long[]{4,5,6,7,NULL_LONG})));
-        assertEquals(NULL_DOUBLE, wtstat((DbLongArray) null, new DbLongArrayDirect(new long[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, wtstat(new DbLongArrayDirect(new long[]{1,2,3}), (DbLongArray) null));
+        assertEquals(target, wtstat(new long[]{1,2,3,NULL_LONG,5}, new LongVectorDirect(new long[]{4,5,6,7,NULL_LONG})));
+        assertEquals(NULL_DOUBLE, wtstat((long[])null, new LongVectorDirect(new long[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, wtstat(new long[]{1,2,3}, (LongVector) null));
 
-        assertEquals(target, wtstat(new DbLongArrayDirect(new long[]{1,2,3,NULL_LONG,5}), new DbIntArrayDirect(new int[]{4,5,6,7,NULL_INT})));
-        assertEquals(NULL_DOUBLE, wtstat((DbLongArray) null, new DbIntArrayDirect(new int[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, wtstat(new DbLongArrayDirect(new long[]{1,2,3}), (DbIntArray) null));
+        assertEquals(target, wtstat(new long[]{1,2,3,NULL_LONG,5}, new IntVectorDirect(new int[]{4,5,6,7,NULL_INT})));
+        assertEquals(NULL_DOUBLE, wtstat((long[])null, new IntVectorDirect(new int[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, wtstat(new long[]{1,2,3}, (IntVector) null));
 
-        assertEquals(target, wtstat(new DbLongArrayDirect(new long[]{1,2,3,NULL_LONG,5}), new DbLongArrayDirect(new long[]{4,5,6,7,NULL_LONG})));
-        assertEquals(NULL_DOUBLE, wtstat((DbLongArray) null, new DbLongArrayDirect(new long[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, wtstat(new DbLongArrayDirect(new long[]{1,2,3}), (DbLongArray) null));
+        assertEquals(target, wtstat(new long[]{1,2,3,NULL_LONG,5}, new LongVectorDirect(new long[]{4,5,6,7,NULL_LONG})));
+        assertEquals(NULL_DOUBLE, wtstat((long[])null, new LongVectorDirect(new long[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, wtstat(new long[]{1,2,3}, (LongVector) null));
 
-        assertEquals(target, wtstat(new DbLongArrayDirect(new long[]{1,2,3,NULL_LONG,5}), new DbDoubleArrayDirect(new double[]{4,5,6,7,NULL_DOUBLE})));
-        assertEquals(NULL_DOUBLE, wtstat((DbLongArray) null, new DbDoubleArrayDirect(new double[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, wtstat(new DbLongArrayDirect(new long[]{1,2,3}), (DbDoubleArray)null));
+        assertEquals(target, wtstat(new long[]{1,2,3,NULL_LONG,5}, new DoubleVectorDirect(new double[]{4,5,6,7,NULL_DOUBLE})));
+        assertEquals(NULL_DOUBLE, wtstat((long[])null, new DoubleVectorDirect(new double[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, wtstat(new long[]{1,2,3}, (DoubleVector)null));
 
-        assertEquals(target, wtstat(new DbLongArrayDirect(new long[]{1,2,3,NULL_LONG,5}), new DbFloatArrayDirect(new float[]{4,5,6,7,NULL_FLOAT})));
-        assertEquals(NULL_DOUBLE, wtstat((DbLongArray) null, new DbFloatArrayDirect(new float[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, wtstat(new DbLongArrayDirect(new long[]{1,2,3}), (DbFloatArray)null));
+        assertEquals(target, wtstat(new long[]{1,2,3,NULL_LONG,5}, new FloatVectorDirect(new float[]{4,5,6,7,NULL_FLOAT})));
+        assertEquals(NULL_DOUBLE, wtstat((long[])null, new FloatVectorDirect(new float[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, wtstat(new long[]{1,2,3}, (FloatVector)null));
+
+        /////
+
+        assertEquals(target, wtstat(new LongVectorDirect(new long[]{1,2,3,NULL_LONG,5}), new LongVectorDirect(new long[]{4,5,6,7,NULL_LONG})));
+        assertEquals(NULL_DOUBLE, wtstat((LongVector) null, new LongVectorDirect(new long[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, wtstat(new LongVectorDirect(new long[]{1,2,3}), (LongVector) null));
+
+        assertEquals(target, wtstat(new LongVectorDirect(new long[]{1,2,3,NULL_LONG,5}), new IntVectorDirect(new int[]{4,5,6,7,NULL_INT})));
+        assertEquals(NULL_DOUBLE, wtstat((LongVector) null, new IntVectorDirect(new int[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, wtstat(new LongVectorDirect(new long[]{1,2,3}), (IntVector) null));
+
+        assertEquals(target, wtstat(new LongVectorDirect(new long[]{1,2,3,NULL_LONG,5}), new LongVectorDirect(new long[]{4,5,6,7,NULL_LONG})));
+        assertEquals(NULL_DOUBLE, wtstat((LongVector) null, new LongVectorDirect(new long[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, wtstat(new LongVectorDirect(new long[]{1,2,3}), (LongVector) null));
+
+        assertEquals(target, wtstat(new LongVectorDirect(new long[]{1,2,3,NULL_LONG,5}), new DoubleVectorDirect(new double[]{4,5,6,7,NULL_DOUBLE})));
+        assertEquals(NULL_DOUBLE, wtstat((LongVector) null, new DoubleVectorDirect(new double[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, wtstat(new LongVectorDirect(new long[]{1,2,3}), (DoubleVector)null));
+
+        assertEquals(target, wtstat(new LongVectorDirect(new long[]{1,2,3,NULL_LONG,5}), new FloatVectorDirect(new float[]{4,5,6,7,NULL_FLOAT})));
+        assertEquals(NULL_DOUBLE, wtstat((LongVector) null, new FloatVectorDirect(new float[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, wtstat(new LongVectorDirect(new long[]{1,2,3}), (FloatVector)null));
     }
 }

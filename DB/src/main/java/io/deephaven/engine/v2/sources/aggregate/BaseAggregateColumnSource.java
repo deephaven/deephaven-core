@@ -4,7 +4,7 @@
 
 package io.deephaven.engine.v2.sources.aggregate;
 
-import io.deephaven.engine.tables.dbarrays.DbArrayBase;
+import io.deephaven.engine.tables.dbarrays.Vector;
 import io.deephaven.engine.v2.sources.AbstractColumnSource;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.UngroupedColumnSource;
@@ -17,7 +17,7 @@ import static io.deephaven.util.QueryConstants.*;
 /**
  * Base {@link ColumnSource} implementation for aggregation result columns.
  */
-abstract class BaseAggregateColumnSource<DB_ARRAY_TYPE extends DbArrayBase, COMPONENT_TYPE>
+abstract class BaseAggregateColumnSource<DB_ARRAY_TYPE extends Vector, COMPONENT_TYPE>
         extends AbstractColumnSource<DB_ARRAY_TYPE> implements AggregateColumnSource<DB_ARRAY_TYPE, COMPONENT_TYPE> {
 
     final ColumnSource<COMPONENT_TYPE> aggregatedSource;

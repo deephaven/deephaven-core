@@ -3,7 +3,7 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.v2.by.ssmcountdistinct;
 
-import io.deephaven.engine.tables.dbarrays.DbIntArray;
+import io.deephaven.engine.tables.dbarrays.IntVector;
 import io.deephaven.engine.v2.sources.AbstractColumnSource;
 import io.deephaven.engine.v2.sources.ColumnSourceGetDefaults;
 import io.deephaven.engine.v2.sources.MutableColumnSourceGetDefaults;
@@ -14,16 +14,16 @@ import io.deephaven.engine.v2.utils.RowSet;
 /**
  * A {@link SsmBackedColumnSource} for Integers.
  */
-public class IntSsmBackedSource extends AbstractColumnSource<DbIntArray>
-                                 implements ColumnSourceGetDefaults.ForObject<DbIntArray>,
-                                            MutableColumnSourceGetDefaults.ForObject<DbIntArray>,
-                                            SsmBackedColumnSource<IntSegmentedSortedMultiset, DbIntArray> {
+public class IntSsmBackedSource extends AbstractColumnSource<IntVector>
+                                 implements ColumnSourceGetDefaults.ForObject<IntVector>,
+                                            MutableColumnSourceGetDefaults.ForObject<IntVector>,
+                                            SsmBackedColumnSource<IntSegmentedSortedMultiset, IntVector> {
     private final ObjectArraySource<IntSegmentedSortedMultiset> underlying;
     private boolean trackingPrevious = false;
 
     //region Constructor
     public IntSsmBackedSource() {
-        super(DbIntArray.class, int.class);
+        super(IntVector.class, int.class);
         underlying = new ObjectArraySource<>(IntSegmentedSortedMultiset.class, int.class);
     }
     //endregion Constructor
@@ -68,12 +68,12 @@ public class IntSsmBackedSource extends AbstractColumnSource<DbIntArray>
     }
 
     @Override
-    public DbIntArray get(long index) {
+    public IntVector get(long index) {
         return underlying.get(index);
     }
 
     @Override
-    public DbIntArray getPrev(long index) {
+    public IntVector getPrev(long index) {
         final IntSegmentedSortedMultiset maybePrev = underlying.getPrev(index);
         return maybePrev == null ? null : maybePrev.getPrevValues();
     }

@@ -4,9 +4,9 @@
 package io.deephaven.engine.v2.ssms;
 
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.tables.dbarrays.DbArray;
-import io.deephaven.engine.tables.dbarrays.DbByteArray;
-import io.deephaven.engine.tables.dbarrays.DbByteArrayDirect;
+import io.deephaven.engine.tables.dbarrays.ByteVector;
+import io.deephaven.engine.tables.dbarrays.ByteVectorDirect;
+import io.deephaven.engine.tables.dbarrays.ObjectVector;
 import io.deephaven.engine.tables.utils.ArrayUtils;
 import io.deephaven.engine.util.DhByteComparisons;
 import io.deephaven.engine.v2.by.SumIntChunk;
@@ -23,7 +23,7 @@ import java.util.Objects;
 
 import static io.deephaven.util.QueryConstants.NULL_BYTE;
 
-public final class ByteSegmentedSortedMultiset implements SegmentedSortedMultiSet<Byte>, DbByteArray {
+public final class ByteSegmentedSortedMultiset implements SegmentedSortedMultiSet<Byte>, ByteVector {
     private final int leafSize;
     private int leafCount;
     private int size;
@@ -47,7 +47,7 @@ public final class ByteSegmentedSortedMultiset implements SegmentedSortedMultiSe
     private transient boolean accumulateDeltas = false;
     private transient TByteHashSet added;
     private transient TByteHashSet removed;
-    private transient DbByteArray prevValues;
+    private transient ByteVector prevValues;
     // endregion Deltas
 
 
@@ -2194,7 +2194,7 @@ public final class ByteSegmentedSortedMultiset implements SegmentedSortedMultiSe
         }
 
         if(prevValues == null) {
-            prevValues = new DbByteArrayDirect(keyArray());
+            prevValues = new ByteVectorDirect(keyArray());
         }
 
         if (added == null) {
@@ -2223,7 +2223,7 @@ public final class ByteSegmentedSortedMultiset implements SegmentedSortedMultiSe
         }
 
         if(prevValues == null) {
-            prevValues = new DbByteArrayDirect(keyArray());
+            prevValues = new ByteVectorDirect(keyArray());
         }
 
         if(removed == null) {
@@ -2264,12 +2264,12 @@ public final class ByteSegmentedSortedMultiset implements SegmentedSortedMultiSe
         chunk.copyFromTypedArray(added.toArray(), 0, position, added.size());
     }
 
-    public DbByteArray getPrevValues() {
+    public ByteVector getPrevValues() {
         return prevValues == null ? this : prevValues;
     }
     // endregion
 
-    // region DBByteArray
+    // region ByteVector
     @Override
     public byte get(long i) {
         if(i < 0 || i > size()) {
@@ -2291,19 +2291,19 @@ public final class ByteSegmentedSortedMultiset implements SegmentedSortedMultiSe
     }
 
     @Override
-    public DbByteArray subArray(long fromIndex, long toIndex) {
-        return new DbByteArrayDirect(keyArray(fromIndex, toIndex));
+    public ByteVector subVector(long fromIndex, long toIndex) {
+        return new ByteVectorDirect(keyArray(fromIndex, toIndex));
     }
 
     @Override
-    public DbByteArray subArrayByPositions(long[] positions) {
+    public ByteVector subVectorByPositions(long[] positions) {
         final byte[] keyArray = new byte[positions.length];
         int writePos = 0;
         for (long position : positions) {
             keyArray[writePos++] = get(position);
         }
 
-        return new DbByteArrayDirect(keyArray);
+        return new ByteVectorDirect(keyArray);
     }
 
     @Override
@@ -2317,13 +2317,13 @@ public final class ByteSegmentedSortedMultiset implements SegmentedSortedMultiSe
     }
 
     @Override
-    public DbByteArray getDirect() {
-        return new DbByteArrayDirect(keyArray());
+    public ByteVector getDirect() {
+        return new ByteVectorDirect(keyArray());
     }
     //endregion
 
-    //region DbArrayEquals
-    private boolean equalsArray(DbByteArray o) {
+    //region VectorEquals
+    private boolean equalsArray(ByteVector o) {
         if(size() != o.size()) {
             return false;
         }
@@ -2351,9 +2351,9 @@ public final class ByteSegmentedSortedMultiset implements SegmentedSortedMultiSe
 
         return true;
     }
-    //endregion DbArrayEquals
+    //endregion VectorEquals
 
-    private boolean equalsArray(DbArray<?> o) {
+    private boolean equalsArray(ObjectVector<?> o) {
         //region EqualsArrayTypeCheck
         if(o.getComponentType() != byte.class && o.getComponentType() != Byte.class) {
             return false;
@@ -2367,11 +2367,11 @@ public final class ByteSegmentedSortedMultiset implements SegmentedSortedMultiSe
         if(leafCount == 1) {
             for(int ii = 0; ii < size; ii++) {
                 final Byte val = (Byte)o.get(ii);
-                //region DbArrayEquals
+                //region VectorEquals
                 if(directoryValues[ii] == NULL_BYTE && val != null && val != NULL_BYTE) {
                     return false;
                 }
-                //endregion DbArrayEquals
+                //endregion VectorEquals
 
                 if(!Objects.equals(directoryValues[ii], val)) {
                     return false;
@@ -2385,11 +2385,11 @@ public final class ByteSegmentedSortedMultiset implements SegmentedSortedMultiSe
         for (int li = 0; li < leafCount; ++li) {
             for(int ai = 0; ai < leafSizes[li]; ai++) {
                 final Byte val = (Byte)o.get(nCompared++);
-                //region DbArrayEquals
+                //region VectorEquals
                 if(leafValues[li][ai] == NULL_BYTE && val != null && val != NULL_BYTE) {
                     return false;
                 }
-                //endregion DbArrayEquals
+                //endregion VectorEquals
 
                 if(!Objects.equals(leafValues[li][ai],  val)) {
                     return false;
@@ -2404,14 +2404,14 @@ public final class ByteSegmentedSortedMultiset implements SegmentedSortedMultiSe
     public boolean equals(Object o) {
         if (this == o) return true;
         if (!(o instanceof ByteSegmentedSortedMultiset)) {
-            //region DbArrayEquals
-            if(o instanceof DbByteArray) {
-                return equalsArray((DbByteArray)o);
+            //region VectorEquals
+            if(o instanceof ByteVector) {
+                return equalsArray((ByteVector)o);
             }
-            //endregion DbArrayEquals
+            //endregion VectorEquals
 
-            if(o instanceof DbArray) {
-                return equalsArray((DbArray)o);
+            if(o instanceof ObjectVector) {
+                return equalsArray((ObjectVector)o);
             }
             return false;
         }

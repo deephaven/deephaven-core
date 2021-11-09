@@ -7,7 +7,7 @@ package io.deephaven.engine.v2.select;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.tables.ColumnDefinition;
 import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.dbarrays.DbArrayBase;
+import io.deephaven.engine.tables.dbarrays.Vector;
 import io.deephaven.engine.tables.select.MatchPair;
 import io.deephaven.engine.tables.utils.NameValidator;
 import io.deephaven.engine.v2.NoSuchColumnException;
@@ -118,7 +118,7 @@ public class SourceColumn implements SelectColumn {
     @Override
     public WritableSource<?> newDestInstance(long size) {
         Class<?> type = sourceColumn.getType();
-        if (DbArrayBase.class.isAssignableFrom(type)) {
+        if (Vector.class.isAssignableFrom(type)) {
             return SparseArrayColumnSource.getSparseMemoryColumnSource(size, type, sourceColumn.getComponentType());
         } else {
             return SparseArrayColumnSource.getSparseMemoryColumnSource(size, type);

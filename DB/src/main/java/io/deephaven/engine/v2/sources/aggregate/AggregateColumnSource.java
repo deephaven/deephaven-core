@@ -1,6 +1,6 @@
 package io.deephaven.engine.v2.sources.aggregate;
 
-import io.deephaven.engine.tables.dbarrays.DbArrayBase;
+import io.deephaven.engine.tables.dbarrays.Vector;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.MutableColumnSourceGetDefaults;
 import io.deephaven.engine.v2.sources.UngroupableColumnSource;
@@ -14,12 +14,12 @@ import java.util.function.BiFunction;
 /**
  * {@link ColumnSource} and {@link UngroupableColumnSource} interface for aggregation result columns.
  */
-public interface AggregateColumnSource<DB_ARRAY_TYPE extends DbArrayBase, COMPONENT_TYPE>
+public interface AggregateColumnSource<DB_ARRAY_TYPE extends Vector, COMPONENT_TYPE>
         extends UngroupableColumnSource, MutableColumnSourceGetDefaults.ForObject<DB_ARRAY_TYPE> {
 
     UngroupedColumnSource<COMPONENT_TYPE> ungrouped();
 
-    static <DB_ARRAY_TYPE extends DbArrayBase, DATA_TYPE> AggregateColumnSource<DB_ARRAY_TYPE, DATA_TYPE> make(
+    static <DB_ARRAY_TYPE extends Vector, DATA_TYPE> AggregateColumnSource<DB_ARRAY_TYPE, DATA_TYPE> make(
             @NotNull final ColumnSource<DATA_TYPE> aggregatedSource,
             @NotNull final ColumnSource<? extends RowSet> groupRowSetSource) {
         // noinspection unchecked

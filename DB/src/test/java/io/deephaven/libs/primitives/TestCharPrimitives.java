@@ -5,8 +5,8 @@
 package io.deephaven.libs.primitives;
 
 import io.deephaven.base.testing.BaseArrayTestCase;
-import io.deephaven.engine.tables.dbarrays.DbCharArray;
-import io.deephaven.engine.tables.dbarrays.DbCharArrayDirect;
+import io.deephaven.engine.tables.dbarrays.CharVector;
+import io.deephaven.engine.tables.dbarrays.CharVectorDirect;
 
 import static io.deephaven.libs.primitives.CharacterPrimitives.*;
 import static io.deephaven.util.QueryConstants.NULL_CHAR;
@@ -30,25 +30,25 @@ public class TestCharPrimitives extends BaseArrayTestCase {
     }
 
     public void testNullToValueArray() {
-        assertEquals(new char[]{(char) 3, (char) 7, (char) 11}, nullToValue(new DbCharArrayDirect(new char[]{(char) 3, NULL_CHAR, (char) 11}), (char) 7));
+        assertEquals(new char[]{(char) 3, (char) 7, (char) 11}, nullToValue(new CharVectorDirect(new char[]{(char) 3, NULL_CHAR, (char) 11}), (char) 7));
 
         assertEquals(new char[]{(char) 3, (char) 7, (char) 11}, nullToValue(new char[]{(char) 3, NULL_CHAR, (char) 11}, (char) 7));
     }
 
     public void testCount(){
-        assertEquals(0, count((DbCharArray)null));
-        assertEquals(3,count(new DbCharArrayDirect(new char[]{40,50,60})));
-        assertEquals(0,count(new DbCharArrayDirect()));
-        assertEquals(0,count(new DbCharArrayDirect(NULL_CHAR)));
-        assertEquals(2,count(new DbCharArrayDirect(new char[]{5,NULL_CHAR,15})));
+        assertEquals(0, count((CharVector)null));
+        assertEquals(3,count(new CharVectorDirect(new char[]{40,50,60})));
+        assertEquals(0,count(new CharVectorDirect()));
+        assertEquals(0,count(new CharVectorDirect(NULL_CHAR)));
+        assertEquals(2,count(new CharVectorDirect(new char[]{5,NULL_CHAR,15})));
     }
 
     public void testLast(){
-        assertTrue(Math.abs(60-last(new DbCharArrayDirect(new char[]{40,50,60})))==0.0);
-        assertEquals(NULL_CHAR,last(new DbCharArrayDirect()));
-        assertEquals(NULL_CHAR,last(new DbCharArrayDirect(NULL_CHAR)));
-        assertTrue(Math.abs(15-last(new DbCharArrayDirect(new char[]{5,NULL_CHAR,15})))==0.0);
-        assertTrue(Math.abs(40-last(new DbCharArrayDirect((char)40)))==0.0);
+        assertTrue(Math.abs(60-last(new CharVectorDirect(new char[]{40,50,60})))==0.0);
+        assertEquals(NULL_CHAR,last(new CharVectorDirect()));
+        assertEquals(NULL_CHAR,last(new CharVectorDirect(NULL_CHAR)));
+        assertTrue(Math.abs(15-last(new CharVectorDirect(new char[]{5,NULL_CHAR,15})))==0.0);
+        assertTrue(Math.abs(40-last(new CharVectorDirect((char)40)))==0.0);
 
         assertTrue(Math.abs(60-last(new char[]{40,50,60}))==0.0);
         assertEquals(NULL_CHAR,last(new char[]{}));
@@ -58,11 +58,11 @@ public class TestCharPrimitives extends BaseArrayTestCase {
     }
 
     public void testFirst(){
-        assertTrue(Math.abs(40-first(new DbCharArrayDirect(new char[]{40,50,60})))==0.0);
-        assertEquals(NULL_CHAR,first(new DbCharArrayDirect()));
-        assertEquals(NULL_CHAR,first(new DbCharArrayDirect(NULL_CHAR)));
-        assertTrue(Math.abs(5-first(new DbCharArrayDirect(new char[]{5,NULL_CHAR,15})))==0.0);
-        assertTrue(Math.abs(40-first(new DbCharArrayDirect((char)40)))==0.0);
+        assertTrue(Math.abs(40-first(new CharVectorDirect(new char[]{40,50,60})))==0.0);
+        assertEquals(NULL_CHAR,first(new CharVectorDirect()));
+        assertEquals(NULL_CHAR,first(new CharVectorDirect(NULL_CHAR)));
+        assertTrue(Math.abs(5-first(new CharVectorDirect(new char[]{5,NULL_CHAR,15})))==0.0);
+        assertTrue(Math.abs(40-first(new CharVectorDirect((char)40)))==0.0);
 
         assertTrue(Math.abs(40-first(new char[]{40,50,60}))==0.0);
         assertEquals(NULL_CHAR,first(new char[]{}));
@@ -72,11 +72,11 @@ public class TestCharPrimitives extends BaseArrayTestCase {
     }
 
     public void testNth(){
-        assertEquals(NULL_CHAR, nth(-1,new DbCharArrayDirect(new char[]{40,50,60})));
-        assertEquals((char)40, nth(0,new DbCharArrayDirect(new char[]{40,50,60})));
-        assertEquals((char)50, nth(1,new DbCharArrayDirect(new char[]{40,50,60})));
-        assertEquals((char)60, nth(2,new DbCharArrayDirect(new char[]{40,50,60})));
-        assertEquals(NULL_CHAR, nth(10,new DbCharArrayDirect(new char[]{40,50,60})));
+        assertEquals(NULL_CHAR, nth(-1,new CharVectorDirect(new char[]{40,50,60})));
+        assertEquals((char)40, nth(0,new CharVectorDirect(new char[]{40,50,60})));
+        assertEquals((char)50, nth(1,new CharVectorDirect(new char[]{40,50,60})));
+        assertEquals((char)60, nth(2,new CharVectorDirect(new char[]{40,50,60})));
+        assertEquals(NULL_CHAR, nth(10,new CharVectorDirect(new char[]{40,50,60})));
 
         assertEquals(NULL_CHAR, nth(-1,new char[]{40,50,60}));
         assertEquals((char)40, nth(0,new char[]{40,50,60}));
@@ -86,14 +86,14 @@ public class TestCharPrimitives extends BaseArrayTestCase {
     }
 
     public void testCountDistinct() {
-        assertEquals(NULL_LONG, countDistinct((DbCharArrayDirect)null));
-        assertEquals(NULL_LONG, countDistinct((DbCharArrayDirect)null,true));
-        assertEquals(0, countDistinct(new DbCharArrayDirect(new char[]{})));
-        assertEquals(0, countDistinct(new DbCharArrayDirect(new char[]{NULL_CHAR})));
-        assertEquals(1, countDistinct(new DbCharArrayDirect(new char[]{1})));
-        assertEquals(2, countDistinct(new DbCharArrayDirect(new char[]{1,2,1,NULL_CHAR,NULL_CHAR})));
-        assertEquals(2, countDistinct(new DbCharArrayDirect(new char[]{1,2,1,NULL_CHAR,NULL_CHAR}), false));
-        assertEquals(3, countDistinct(new DbCharArrayDirect(new char[]{1,2,1,NULL_CHAR,NULL_CHAR}), true));
+        assertEquals(NULL_LONG, countDistinct((CharVectorDirect)null));
+        assertEquals(NULL_LONG, countDistinct((CharVectorDirect)null,true));
+        assertEquals(0, countDistinct(new CharVectorDirect(new char[]{})));
+        assertEquals(0, countDistinct(new CharVectorDirect(new char[]{NULL_CHAR})));
+        assertEquals(1, countDistinct(new CharVectorDirect(new char[]{1})));
+        assertEquals(2, countDistinct(new CharVectorDirect(new char[]{1,2,1,NULL_CHAR,NULL_CHAR})));
+        assertEquals(2, countDistinct(new CharVectorDirect(new char[]{1,2,1,NULL_CHAR,NULL_CHAR}), false));
+        assertEquals(3, countDistinct(new CharVectorDirect(new char[]{1,2,1,NULL_CHAR,NULL_CHAR}), true));
 
         assertEquals(NULL_LONG, countDistinct((char[])null));
         assertEquals(NULL_LONG, countDistinct((char[])null,true));
@@ -106,17 +106,17 @@ public class TestCharPrimitives extends BaseArrayTestCase {
     }
 
     public void testDistinct() {
-        assertEquals(null, distinct((DbCharArrayDirect)null));
-        assertEquals(null, distinct((DbCharArrayDirect)null, true, true));
-        assertEquals(new DbCharArrayDirect(), distinct(new DbCharArrayDirect(new char[]{})));
-        assertEquals(new DbCharArrayDirect(), distinct(new DbCharArrayDirect(new char[]{NULL_CHAR})));
-        assertEquals(new DbCharArrayDirect(new char[]{1}), distinct(new DbCharArrayDirect(new char[]{1})));
-        assertEquals(new DbCharArrayDirect(new char[]{1,2}), distinct(new DbCharArrayDirect(new char[]{1,2,1,NULL_CHAR,NULL_CHAR})));
-        assertEquals(new DbCharArrayDirect(new char[]{1,2}), distinct(new DbCharArrayDirect(new char[]{1,2,1,NULL_CHAR,NULL_CHAR}), false, false));
-        assertEquals(new DbCharArrayDirect(new char[]{1,2,NULL_CHAR}), distinct(new DbCharArrayDirect(new char[]{1,2,1,NULL_CHAR,NULL_CHAR}), true, false));
-        assertEquals(new DbCharArrayDirect(new char[]{1,2,3}), distinct(new DbCharArrayDirect(new char[]{3,1,2,1,NULL_CHAR,NULL_CHAR}), false, true));
-        assertEquals(new DbCharArrayDirect(new char[]{1,2,3,4}), distinct(new DbCharArrayDirect(new char[]{3,1,2,4,1,NULL_CHAR,NULL_CHAR}), false, true));
-        assertEquals(new DbCharArrayDirect(new char[]{NULL_CHAR,1,2,3,4}), distinct(new DbCharArrayDirect(new char[]{3,1,2,4,1,NULL_CHAR,NULL_CHAR}), true, true));
+        assertEquals(null, distinct((CharVectorDirect)null));
+        assertEquals(null, distinct((CharVectorDirect)null, true, true));
+        assertEquals(new CharVectorDirect(), distinct(new CharVectorDirect(new char[]{})));
+        assertEquals(new CharVectorDirect(), distinct(new CharVectorDirect(new char[]{NULL_CHAR})));
+        assertEquals(new CharVectorDirect(new char[]{1}), distinct(new CharVectorDirect(new char[]{1})));
+        assertEquals(new CharVectorDirect(new char[]{1,2}), distinct(new CharVectorDirect(new char[]{1,2,1,NULL_CHAR,NULL_CHAR})));
+        assertEquals(new CharVectorDirect(new char[]{1,2}), distinct(new CharVectorDirect(new char[]{1,2,1,NULL_CHAR,NULL_CHAR}), false, false));
+        assertEquals(new CharVectorDirect(new char[]{1,2,NULL_CHAR}), distinct(new CharVectorDirect(new char[]{1,2,1,NULL_CHAR,NULL_CHAR}), true, false));
+        assertEquals(new CharVectorDirect(new char[]{1,2,3}), distinct(new CharVectorDirect(new char[]{3,1,2,1,NULL_CHAR,NULL_CHAR}), false, true));
+        assertEquals(new CharVectorDirect(new char[]{1,2,3,4}), distinct(new CharVectorDirect(new char[]{3,1,2,4,1,NULL_CHAR,NULL_CHAR}), false, true));
+        assertEquals(new CharVectorDirect(new char[]{NULL_CHAR,1,2,3,4}), distinct(new CharVectorDirect(new char[]{3,1,2,4,1,NULL_CHAR,NULL_CHAR}), true, true));
 
         assertEquals(null, distinct((char[])null));
         assertEquals(null, distinct((char[])null, true, true));
@@ -132,11 +132,11 @@ public class TestCharPrimitives extends BaseArrayTestCase {
     }
 
     public void testVec(){
-        assertEquals(new char[]{(char)1,(char)3,(char)5}, vec(new DbCharArrayDirect((char)1,(char)3,(char)5)));
+        assertEquals(new char[]{(char)1,(char)3,(char)5}, vec(new CharVectorDirect((char)1,(char)3,(char)5)));
     }
 
     public void testArray(){
-        assertEquals(new DbCharArrayDirect((char)1,(char)3,(char)5), array(new char[]{(char)1,(char)3,(char)5}));
+        assertEquals(new CharVectorDirect((char)1,(char)3,(char)5), array(new char[]{(char)1,(char)3,(char)5}));
     }
 
     public void testIn(){
@@ -169,17 +169,17 @@ public class TestCharPrimitives extends BaseArrayTestCase {
         assertEquals(new char[]{1,2,3,4,5,6}, concat(new char[]{1,2}, new char[]{3}, new char[]{4,5,6}));
         assertEquals(new char[]{}, concat((char[])(null)));
 
-        assertEquals(new char[]{}, concat((DbCharArray[])null));
-        assertEquals(new char[]{1,2,3,4,5,6}, concat(new DbCharArrayDirect(new char[]{1,2}), new DbCharArrayDirect(new char[]{3}), new DbCharArrayDirect(new char[]{4,5,6})));
-        assertEquals(new char[]{}, concat((DbCharArray) (null)));
+        assertEquals(new char[]{}, concat((CharVector[])null));
+        assertEquals(new char[]{1,2,3,4,5,6}, concat(new CharVectorDirect(new char[]{1,2}), new CharVectorDirect(new char[]{3}), new CharVectorDirect(new char[]{4,5,6})));
+        assertEquals(new char[]{}, concat((CharVector) (null)));
     }
 
     public void testReverse() {
         assertEquals(new char[]{3,2,1}, reverse((char)1,(char)2,(char)3));
         assertEquals(null, reverse((char[])(null)));
 
-        assertEquals(new char[]{3,2,1}, reverse(new DbCharArrayDirect(new char[]{1,2,3})));
-        assertEquals(null, reverse((DbCharArray) (null)));
+        assertEquals(new char[]{3,2,1}, reverse(new CharVectorDirect(new char[]{1,2,3})));
+        assertEquals(null, reverse((CharVector) (null)));
     }
 }
 

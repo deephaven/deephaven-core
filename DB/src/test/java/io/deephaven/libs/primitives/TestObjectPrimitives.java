@@ -5,8 +5,8 @@
 package io.deephaven.libs.primitives;
 
 import io.deephaven.base.testing.BaseArrayTestCase;
-import io.deephaven.engine.tables.dbarrays.DbArray;
-import io.deephaven.engine.tables.dbarrays.DbArrayDirect;
+import io.deephaven.engine.tables.dbarrays.ObjectVector;
+import io.deephaven.engine.tables.dbarrays.ObjectVectorDirect;
 import io.deephaven.util.QueryConstants;
 import org.apache.commons.lang3.ArrayUtils;
 import org.jetbrains.annotations.NotNull;
@@ -67,63 +67,63 @@ public class TestObjectPrimitives extends BaseArrayTestCase {
 
     public void testNullToValueArray() {
         assertEquals(new Integer[]{new Integer(7), new Integer(3), new Integer(-5)},
-                nullToValue(new DbArrayDirect<>(new Integer[]{new Integer(7), null, new Integer(-5)}), new Integer(3)));
+                nullToValue(new ObjectVectorDirect<>(new Integer[]{new Integer(7), null, new Integer(-5)}), new Integer(3)));
     }
 
     public void testCount() {
-        assertEquals(3, count(new DbArrayDirect<Integer>(40, 50, 60)));
-        assertEquals(0, count(new DbArrayDirect<Integer>()));
-        assertEquals(0, count(new DbArrayDirect<Integer>(new Integer[]{null})));
-        assertEquals(2, count(new DbArrayDirect<Integer>(5, null, 15)));
+        assertEquals(3, count(new ObjectVectorDirect<Integer>(40, 50, 60)));
+        assertEquals(0, count(new ObjectVectorDirect<Integer>()));
+        assertEquals(0, count(new ObjectVectorDirect<Integer>(new Integer[]{null})));
+        assertEquals(2, count(new ObjectVectorDirect<Integer>(5, null, 15)));
     }
 
     public void testCountDistinct() {
-        assertEquals(NULL_LONG, countDistinct((DbArray<Short>)null));
-        assertEquals(NULL_LONG, countDistinct((DbArray<Short>)null,true));
-        assertEquals(0, countDistinct(new DbArrayDirect<Short>(new Short[]{})));
-        assertEquals(0, countDistinct(new DbArrayDirect<Short>(new Short[]{NULL_SHORT})));
-        assertEquals(1, countDistinct(new DbArrayDirect<Short>(new Short[]{1})));
-        assertEquals(2, countDistinct(new DbArrayDirect<Short>(new Short[]{1,2,1,NULL_SHORT,NULL_SHORT})));
-        assertEquals(2, countDistinct(new DbArrayDirect<Short>(new Short[]{1,2,1,NULL_SHORT,NULL_SHORT}), false));
-        assertEquals(3, countDistinct(new DbArrayDirect<Short>(new Short[]{1,2,1,NULL_SHORT,NULL_SHORT}), true));
+        assertEquals(NULL_LONG, countDistinct((ObjectVector<Short>)null));
+        assertEquals(NULL_LONG, countDistinct((ObjectVector<Short>)null,true));
+        assertEquals(0, countDistinct(new ObjectVectorDirect<Short>(new Short[]{})));
+        assertEquals(0, countDistinct(new ObjectVectorDirect<Short>(new Short[]{NULL_SHORT})));
+        assertEquals(1, countDistinct(new ObjectVectorDirect<Short>(new Short[]{1})));
+        assertEquals(2, countDistinct(new ObjectVectorDirect<Short>(new Short[]{1,2,1,NULL_SHORT,NULL_SHORT})));
+        assertEquals(2, countDistinct(new ObjectVectorDirect<Short>(new Short[]{1,2,1,NULL_SHORT,NULL_SHORT}), false));
+        assertEquals(3, countDistinct(new ObjectVectorDirect<Short>(new Short[]{1,2,1,NULL_SHORT,NULL_SHORT}), true));
     }
 
     public void testDistinct() {
-        assertEquals(null, distinct((DbArrayDirect<Short>)null));
-        assertEquals(null, distinct((DbArrayDirect<Short>)null, true, true));
-        assertEquals(new DbArrayDirect(), distinct(new DbArrayDirect<Short>(new Short[]{})));
-        assertEquals(new DbArrayDirect<Short>(new Short[]{}), distinct(new DbArrayDirect<Short>(new Short[]{NULL_SHORT})));
-        assertEquals(new DbArrayDirect<Short>(new Short[]{1}), distinct(new DbArrayDirect<Short>(new Short[]{1})));
-        assertEquals(new DbArrayDirect<Short>(new Short[]{1,2}), distinct(new DbArrayDirect<Short>(new Short[]{1,2,1,NULL_SHORT,NULL_SHORT})));
-        assertEquals(new DbArrayDirect<Short>(new Short[]{1,2}), distinct(new DbArrayDirect<Short>(new Short[]{1,2,1,NULL_SHORT,NULL_SHORT}), false, false));
-        assertEquals(new DbArrayDirect<Short>(new Short[]{1,2,NULL_SHORT}), distinct(new DbArrayDirect<Short>(new Short[]{1,2,1,NULL_SHORT,NULL_SHORT}), true, false));
-        assertEquals(new DbArrayDirect<Short>(new Short[]{1,2,3}), distinct(new DbArrayDirect<Short>(new Short[]{3,1,2,1,NULL_SHORT,NULL_SHORT}), false, true));
-        assertEquals(new DbArrayDirect<Short>(new Short[]{1,2,3,4}), distinct(new DbArrayDirect<Short>(new Short[]{3,1,2,4,1,NULL_SHORT,NULL_SHORT}), false, true));
-        assertEquals(new DbArrayDirect<Short>(new Short[]{NULL_SHORT,1,2,3,4}), distinct(new DbArrayDirect<Short>(new Short[]{3,1,2,4,1,NULL_SHORT,NULL_SHORT}), true, true));
+        assertEquals(null, distinct((ObjectVectorDirect<Short>)null));
+        assertEquals(null, distinct((ObjectVectorDirect<Short>)null, true, true));
+        assertEquals(new ObjectVectorDirect(), distinct(new ObjectVectorDirect<Short>(new Short[]{})));
+        assertEquals(new ObjectVectorDirect<Short>(new Short[]{}), distinct(new ObjectVectorDirect<Short>(new Short[]{NULL_SHORT})));
+        assertEquals(new ObjectVectorDirect<Short>(new Short[]{1}), distinct(new ObjectVectorDirect<Short>(new Short[]{1})));
+        assertEquals(new ObjectVectorDirect<Short>(new Short[]{1,2}), distinct(new ObjectVectorDirect<Short>(new Short[]{1,2,1,NULL_SHORT,NULL_SHORT})));
+        assertEquals(new ObjectVectorDirect<Short>(new Short[]{1,2}), distinct(new ObjectVectorDirect<Short>(new Short[]{1,2,1,NULL_SHORT,NULL_SHORT}), false, false));
+        assertEquals(new ObjectVectorDirect<Short>(new Short[]{1,2,NULL_SHORT}), distinct(new ObjectVectorDirect<Short>(new Short[]{1,2,1,NULL_SHORT,NULL_SHORT}), true, false));
+        assertEquals(new ObjectVectorDirect<Short>(new Short[]{1,2,3}), distinct(new ObjectVectorDirect<Short>(new Short[]{3,1,2,1,NULL_SHORT,NULL_SHORT}), false, true));
+        assertEquals(new ObjectVectorDirect<Short>(new Short[]{1,2,3,4}), distinct(new ObjectVectorDirect<Short>(new Short[]{3,1,2,4,1,NULL_SHORT,NULL_SHORT}), false, true));
+        assertEquals(new ObjectVectorDirect<Short>(new Short[]{NULL_SHORT,1,2,3,4}), distinct(new ObjectVectorDirect<Short>(new Short[]{3,1,2,4,1,NULL_SHORT,NULL_SHORT}), true, true));
     }
 
     public void testLast() {
-        assertEquals(10, last(new DbArrayDirect<Object>(10)));
-        assertEquals(3, last(new DbArrayDirect<Object>(1, 2, 3)));
-        assertEquals(null, last(new DbArrayDirect<Object>(1, 2, null)));
+        assertEquals(10, last(new ObjectVectorDirect<Object>(10)));
+        assertEquals(3, last(new ObjectVectorDirect<Object>(1, 2, 3)));
+        assertEquals(null, last(new ObjectVectorDirect<Object>(1, 2, null)));
     }
 
     public void testFirst() {
-        assertEquals(10, first(new DbArrayDirect<Object>(10)));
-        assertEquals(3, first(new DbArrayDirect<Object>(3, 2, 1)));
-        assertEquals(null, first(new DbArrayDirect<Object>(null, 1, 2)));
+        assertEquals(10, first(new ObjectVectorDirect<Object>(10)));
+        assertEquals(3, first(new ObjectVectorDirect<Object>(3, 2, 1)));
+        assertEquals(null, first(new ObjectVectorDirect<Object>(null, 1, 2)));
     }
 
     public void testNth() {
-        assertEquals(null, nth(-1, new DbArrayDirect<Integer>(40, 50, 60)));
-        assertEquals(new Integer(40), nth(0, new DbArrayDirect<Integer>(40, 50, 60)));
-        assertEquals(new Integer(50), nth(1, new DbArrayDirect<Integer>(40, 50, 60)));
-        assertEquals(new Integer(60), nth(2, new DbArrayDirect<Integer>(40, 50, 60)));
-        assertEquals(null, nth(10, new DbArrayDirect<Integer>(40, 50, 60)));
+        assertEquals(null, nth(-1, new ObjectVectorDirect<Integer>(40, 50, 60)));
+        assertEquals(new Integer(40), nth(0, new ObjectVectorDirect<Integer>(40, 50, 60)));
+        assertEquals(new Integer(50), nth(1, new ObjectVectorDirect<Integer>(40, 50, 60)));
+        assertEquals(new Integer(60), nth(2, new ObjectVectorDirect<Integer>(40, 50, 60)));
+        assertEquals(null, nth(10, new ObjectVectorDirect<Integer>(40, 50, 60)));
     }
 
     public void testVec() {
-        assertEquals(new Character[]{new Character('1'), new Character('3'), new Character('5')}, vec(new DbArrayDirect<Character>(new Character('1'), new Character('3'), new Character('5'))));
+        assertEquals(new Character[]{new Character('1'), new Character('3'), new Character('5')}, vec(new ObjectVectorDirect<Character>(new Character('1'), new Character('3'), new Character('5'))));
     }
 
     public void testIn() {
@@ -142,26 +142,26 @@ public class TestObjectPrimitives extends BaseArrayTestCase {
     }
 
     public void testMin() {
-        assertEquals(new Integer(1), min(new DbArrayDirect<Integer>(new Integer(3), new Integer(1), new Integer(2))));
-        assertEquals(new Integer(-2), min(new DbArrayDirect<Integer>(new Integer(3), new Integer(10), new Integer(-2), new Integer(1))));
-        assertEquals(null, min(new DbArrayDirect<Integer>()));
+        assertEquals(new Integer(1), min(new ObjectVectorDirect<Integer>(new Integer(3), new Integer(1), new Integer(2))));
+        assertEquals(new Integer(-2), min(new ObjectVectorDirect<Integer>(new Integer(3), new Integer(10), new Integer(-2), new Integer(1))));
+        assertEquals(null, min(new ObjectVectorDirect<Integer>()));
     }
 
     public void testMax() {
-        assertEquals(new Integer(3), max(new DbArrayDirect<Integer>(new Integer(3), new Integer(1), new Integer(2))));
-        assertEquals(new Integer(10), max(new DbArrayDirect<Integer>(new Integer(3), new Integer(10), new Integer(-2), new Integer(1))));
-        assertEquals(null, max(new DbArrayDirect<Integer>()));
+        assertEquals(new Integer(3), max(new ObjectVectorDirect<Integer>(new Integer(3), new Integer(1), new Integer(2))));
+        assertEquals(new Integer(10), max(new ObjectVectorDirect<Integer>(new Integer(3), new Integer(10), new Integer(-2), new Integer(1))));
+        assertEquals(null, max(new ObjectVectorDirect<Integer>()));
     }
 
     public void testBinSearchIndex() {
         Short[] data = {1,3,4};
         assertEquals(NULL_INT, binSearchIndex(null, (short) 0, BinSearch.BS_ANY));
-        assertEquals(-1, binSearchIndex(new DbArrayDirect<Short>(data), (short)0, BinSearch.BS_ANY));
-        assertEquals(0, binSearchIndex(new DbArrayDirect<Short>(data), (short)1, BinSearch.BS_ANY));
-        assertEquals(0, binSearchIndex(new DbArrayDirect<Short>(data), (short)2, BinSearch.BS_ANY));
-        assertEquals(1, binSearchIndex(new DbArrayDirect<Short>(data), (short)3, BinSearch.BS_ANY));
-        assertEquals(2, binSearchIndex(new DbArrayDirect<Short>(data), (short)4, BinSearch.BS_ANY));
-        assertEquals(2, binSearchIndex(new DbArrayDirect<Short>(data), (short)5, BinSearch.BS_ANY));
+        assertEquals(-1, binSearchIndex(new ObjectVectorDirect<Short>(data), (short)0, BinSearch.BS_ANY));
+        assertEquals(0, binSearchIndex(new ObjectVectorDirect<Short>(data), (short)1, BinSearch.BS_ANY));
+        assertEquals(0, binSearchIndex(new ObjectVectorDirect<Short>(data), (short)2, BinSearch.BS_ANY));
+        assertEquals(1, binSearchIndex(new ObjectVectorDirect<Short>(data), (short)3, BinSearch.BS_ANY));
+        assertEquals(2, binSearchIndex(new ObjectVectorDirect<Short>(data), (short)4, BinSearch.BS_ANY));
+        assertEquals(2, binSearchIndex(new ObjectVectorDirect<Short>(data), (short)5, BinSearch.BS_ANY));
     }
 
     public void testRawBinSearchIndex() {
@@ -170,68 +170,68 @@ public class TestObjectPrimitives extends BaseArrayTestCase {
         assertEquals(QueryConstants.NULL_INT, rawBinSearchIndex(null, (short) 0, BinSearch.BS_LOWEST));
 
         Short[] empty = {};
-        assertEquals(-1, rawBinSearchIndex(new DbArrayDirect<Short>(empty), (short) 0, BinSearch.BS_ANY));
-        assertEquals(-1, rawBinSearchIndex(new DbArrayDirect<Short>(empty), (short) 0, BinSearch.BS_HIGHEST));
-        assertEquals(-1, rawBinSearchIndex(new DbArrayDirect<Short>(empty), (short) 0, BinSearch.BS_LOWEST));
+        assertEquals(-1, rawBinSearchIndex(new ObjectVectorDirect<Short>(empty), (short) 0, BinSearch.BS_ANY));
+        assertEquals(-1, rawBinSearchIndex(new ObjectVectorDirect<Short>(empty), (short) 0, BinSearch.BS_HIGHEST));
+        assertEquals(-1, rawBinSearchIndex(new ObjectVectorDirect<Short>(empty), (short) 0, BinSearch.BS_LOWEST));
 
         Short[] one = {11};
-        assertEquals(-1, rawBinSearchIndex(new DbArrayDirect<Short>(one), (short) 0, BinSearch.BS_ANY));
-        assertEquals(-1, rawBinSearchIndex(new DbArrayDirect<Short>(one), (short) 0, BinSearch.BS_HIGHEST));
-        assertEquals(-1, rawBinSearchIndex(new DbArrayDirect<Short>(one), (short) 0, BinSearch.BS_LOWEST));
+        assertEquals(-1, rawBinSearchIndex(new ObjectVectorDirect<Short>(one), (short) 0, BinSearch.BS_ANY));
+        assertEquals(-1, rawBinSearchIndex(new ObjectVectorDirect<Short>(one), (short) 0, BinSearch.BS_HIGHEST));
+        assertEquals(-1, rawBinSearchIndex(new ObjectVectorDirect<Short>(one), (short) 0, BinSearch.BS_LOWEST));
 
-        assertEquals(-2, rawBinSearchIndex(new DbArrayDirect<Short>(one), (short) 12, BinSearch.BS_ANY));
-        assertEquals(-2, rawBinSearchIndex(new DbArrayDirect<Short>(one), (short) 12, BinSearch.BS_HIGHEST));
-        assertEquals(-2, rawBinSearchIndex(new DbArrayDirect<Short>(one), (short) 12, BinSearch.BS_LOWEST));
+        assertEquals(-2, rawBinSearchIndex(new ObjectVectorDirect<Short>(one), (short) 12, BinSearch.BS_ANY));
+        assertEquals(-2, rawBinSearchIndex(new ObjectVectorDirect<Short>(one), (short) 12, BinSearch.BS_HIGHEST));
+        assertEquals(-2, rawBinSearchIndex(new ObjectVectorDirect<Short>(one), (short) 12, BinSearch.BS_LOWEST));
 
-        assertEquals(0, rawBinSearchIndex(new DbArrayDirect<Short>(one), (short) 11, BinSearch.BS_ANY));
-        assertEquals(0, rawBinSearchIndex(new DbArrayDirect<Short>(one), (short) 11, BinSearch.BS_HIGHEST));
-        assertEquals(0, rawBinSearchIndex(new DbArrayDirect<Short>(one), (short) 11, BinSearch.BS_LOWEST));
+        assertEquals(0, rawBinSearchIndex(new ObjectVectorDirect<Short>(one), (short) 11, BinSearch.BS_ANY));
+        assertEquals(0, rawBinSearchIndex(new ObjectVectorDirect<Short>(one), (short) 11, BinSearch.BS_HIGHEST));
+        assertEquals(0, rawBinSearchIndex(new ObjectVectorDirect<Short>(one), (short) 11, BinSearch.BS_LOWEST));
 
 
         Short[] v = {1, 2, 2, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5, 5, 10, 10, 10, 10, 10, 11, 11, 11, 11, 11, 15, 20, 20, 25, 25};
 
         rawBinSearchIndex(null, (short) 0, null);
 
-        assertEquals(-1, rawBinSearchIndex(new DbArrayDirect<Short>(v), (short) 0, BinSearch.BS_ANY));
-        assertEquals(-1, rawBinSearchIndex(new DbArrayDirect<Short>(v), (short) 0, BinSearch.BS_HIGHEST));
-        assertEquals(-1, rawBinSearchIndex(new DbArrayDirect<Short>(v), (short) 0, BinSearch.BS_LOWEST));
+        assertEquals(-1, rawBinSearchIndex(new ObjectVectorDirect<Short>(v), (short) 0, BinSearch.BS_ANY));
+        assertEquals(-1, rawBinSearchIndex(new ObjectVectorDirect<Short>(v), (short) 0, BinSearch.BS_HIGHEST));
+        assertEquals(-1, rawBinSearchIndex(new ObjectVectorDirect<Short>(v), (short) 0, BinSearch.BS_LOWEST));
 
-        assertEquals(-v.length - 1, rawBinSearchIndex(new DbArrayDirect<Short>(v), (short) 26, BinSearch.BS_ANY));
-        assertEquals(-v.length - 1, rawBinSearchIndex(new DbArrayDirect<Short>(v), (short) 26, BinSearch.BS_HIGHEST));
-        assertEquals(-v.length - 1, rawBinSearchIndex(new DbArrayDirect<Short>(v), (short) 26, BinSearch.BS_LOWEST));
+        assertEquals(-v.length - 1, rawBinSearchIndex(new ObjectVectorDirect<Short>(v), (short) 26, BinSearch.BS_ANY));
+        assertEquals(-v.length - 1, rawBinSearchIndex(new ObjectVectorDirect<Short>(v), (short) 26, BinSearch.BS_HIGHEST));
+        assertEquals(-v.length - 1, rawBinSearchIndex(new ObjectVectorDirect<Short>(v), (short) 26, BinSearch.BS_LOWEST));
 
-        assertEquals(0, rawBinSearchIndex(new DbArrayDirect<Short>(v), (short) 1, BinSearch.BS_ANY));
-        assertEquals(0, rawBinSearchIndex(new DbArrayDirect<Short>(v), (short) 1, BinSearch.BS_HIGHEST));
-        assertEquals(0, rawBinSearchIndex(new DbArrayDirect<Short>(v), (short) 1, BinSearch.BS_LOWEST));
+        assertEquals(0, rawBinSearchIndex(new ObjectVectorDirect<Short>(v), (short) 1, BinSearch.BS_ANY));
+        assertEquals(0, rawBinSearchIndex(new ObjectVectorDirect<Short>(v), (short) 1, BinSearch.BS_HIGHEST));
+        assertEquals(0, rawBinSearchIndex(new ObjectVectorDirect<Short>(v), (short) 1, BinSearch.BS_LOWEST));
 
-        assertEquals(2, rawBinSearchIndex(new DbArrayDirect<Short>(v), (short) 2, BinSearch.BS_HIGHEST));
-        assertEquals(1, rawBinSearchIndex(new DbArrayDirect<Short>(v), (short) 2, BinSearch.BS_LOWEST));
+        assertEquals(2, rawBinSearchIndex(new ObjectVectorDirect<Short>(v), (short) 2, BinSearch.BS_HIGHEST));
+        assertEquals(1, rawBinSearchIndex(new ObjectVectorDirect<Short>(v), (short) 2, BinSearch.BS_LOWEST));
 
-        assertEquals(5, rawBinSearchIndex(new DbArrayDirect<Short>(v), (short) 3, BinSearch.BS_HIGHEST));
-        assertEquals(3, rawBinSearchIndex(new DbArrayDirect<Short>(v), (short) 3, BinSearch.BS_LOWEST));
+        assertEquals(5, rawBinSearchIndex(new ObjectVectorDirect<Short>(v), (short) 3, BinSearch.BS_HIGHEST));
+        assertEquals(3, rawBinSearchIndex(new ObjectVectorDirect<Short>(v), (short) 3, BinSearch.BS_LOWEST));
 
-        assertEquals(9, rawBinSearchIndex(new DbArrayDirect<Short>(v), (short) 4, BinSearch.BS_HIGHEST));
-        assertEquals(6, rawBinSearchIndex(new DbArrayDirect<Short>(v), (short) 4, BinSearch.BS_LOWEST));
+        assertEquals(9, rawBinSearchIndex(new ObjectVectorDirect<Short>(v), (short) 4, BinSearch.BS_HIGHEST));
+        assertEquals(6, rawBinSearchIndex(new ObjectVectorDirect<Short>(v), (short) 4, BinSearch.BS_LOWEST));
 
-        assertEquals(14, rawBinSearchIndex(new DbArrayDirect<Short>(v), (short) 5, BinSearch.BS_HIGHEST));
-        assertEquals(10, rawBinSearchIndex(new DbArrayDirect<Short>(v), (short) 5, BinSearch.BS_LOWEST));
+        assertEquals(14, rawBinSearchIndex(new ObjectVectorDirect<Short>(v), (short) 5, BinSearch.BS_HIGHEST));
+        assertEquals(10, rawBinSearchIndex(new ObjectVectorDirect<Short>(v), (short) 5, BinSearch.BS_LOWEST));
 
-        assertEquals(-16, rawBinSearchIndex(new DbArrayDirect<Short>(v), (short) 7, BinSearch.BS_ANY));
-        assertEquals(-16, rawBinSearchIndex(new DbArrayDirect<Short>(v), (short) 7, BinSearch.BS_HIGHEST));
-        assertEquals(-16, rawBinSearchIndex(new DbArrayDirect<Short>(v), (short) 7, BinSearch.BS_LOWEST));
+        assertEquals(-16, rawBinSearchIndex(new ObjectVectorDirect<Short>(v), (short) 7, BinSearch.BS_ANY));
+        assertEquals(-16, rawBinSearchIndex(new ObjectVectorDirect<Short>(v), (short) 7, BinSearch.BS_HIGHEST));
+        assertEquals(-16, rawBinSearchIndex(new ObjectVectorDirect<Short>(v), (short) 7, BinSearch.BS_LOWEST));
 
-        assertEquals(19, rawBinSearchIndex(new DbArrayDirect<Short>(v), (short) 10, BinSearch.BS_HIGHEST));
-        assertEquals(15, rawBinSearchIndex(new DbArrayDirect<Short>(v), (short) 10, BinSearch.BS_LOWEST));
+        assertEquals(19, rawBinSearchIndex(new ObjectVectorDirect<Short>(v), (short) 10, BinSearch.BS_HIGHEST));
+        assertEquals(15, rawBinSearchIndex(new ObjectVectorDirect<Short>(v), (short) 10, BinSearch.BS_LOWEST));
 
-        assertEquals(24, rawBinSearchIndex(new DbArrayDirect<Short>(v), (short) 11, BinSearch.BS_HIGHEST));
-        assertEquals(20, rawBinSearchIndex(new DbArrayDirect<Short>(v), (short) 11, BinSearch.BS_LOWEST));
+        assertEquals(24, rawBinSearchIndex(new ObjectVectorDirect<Short>(v), (short) 11, BinSearch.BS_HIGHEST));
+        assertEquals(20, rawBinSearchIndex(new ObjectVectorDirect<Short>(v), (short) 11, BinSearch.BS_LOWEST));
 
-        assertEquals(25, rawBinSearchIndex(new DbArrayDirect<Short>(v), (short) 15, BinSearch.BS_ANY));
-        assertEquals(25, rawBinSearchIndex(new DbArrayDirect<Short>(v), (short) 15, BinSearch.BS_HIGHEST));
-        assertEquals(25, rawBinSearchIndex(new DbArrayDirect<Short>(v), (short) 15, BinSearch.BS_LOWEST));
+        assertEquals(25, rawBinSearchIndex(new ObjectVectorDirect<Short>(v), (short) 15, BinSearch.BS_ANY));
+        assertEquals(25, rawBinSearchIndex(new ObjectVectorDirect<Short>(v), (short) 15, BinSearch.BS_HIGHEST));
+        assertEquals(25, rawBinSearchIndex(new ObjectVectorDirect<Short>(v), (short) 15, BinSearch.BS_LOWEST));
 
-        assertEquals(29, rawBinSearchIndex(new DbArrayDirect<Short>(v), (short) 25, BinSearch.BS_HIGHEST));
-        assertEquals(28, rawBinSearchIndex(new DbArrayDirect<Short>(v), (short) 25, BinSearch.BS_LOWEST));
+        assertEquals(29, rawBinSearchIndex(new ObjectVectorDirect<Short>(v), (short) 25, BinSearch.BS_HIGHEST));
+        assertEquals(28, rawBinSearchIndex(new ObjectVectorDirect<Short>(v), (short) 25, BinSearch.BS_LOWEST));
     }
 
     private class ComparableExtended implements Comparable<ComparableExtended> {
@@ -382,10 +382,10 @@ public class TestObjectPrimitives extends BaseArrayTestCase {
     }
 
     public void testSort() {
-        final DbArray<ComparableExtended> comparableExtendedDbArray = new DbArrayDirect<>(null, new ComparableExtended(1d), new ComparableExtended(12d), new ComparableExtended(0d)
+        final ObjectVector<ComparableExtended> comparableExtendedDbArray = new ObjectVectorDirect<>(null, new ComparableExtended(1d), new ComparableExtended(12d), new ComparableExtended(0d)
                 , new ComparableExtended(9.4d), null, new ComparableExtended(-5.6d), new ComparableExtended(-2.3d), new ComparableExtended(-2.3d));
-        DbArray<ComparableExtended> sort = sort(comparableExtendedDbArray);
-        DbArray<ComparableExtended> expected = new DbArrayDirect<>(null, null, new ComparableExtended(-5.6d), new ComparableExtended(-2.3d), new ComparableExtended(-2.3d),
+        ObjectVector<ComparableExtended> sort = sort(comparableExtendedDbArray);
+        ObjectVector<ComparableExtended> expected = new ObjectVectorDirect<>(null, null, new ComparableExtended(-5.6d), new ComparableExtended(-2.3d), new ComparableExtended(-2.3d),
                 new ComparableExtended(0d), new ComparableExtended(1d), new ComparableExtended(9.4d), new ComparableExtended(12d));
         assertEquals(expected, sort);
 
@@ -402,10 +402,10 @@ public class TestObjectPrimitives extends BaseArrayTestCase {
         final Byte[] expectedSortedByteArray = new Byte[]{null, io.deephaven.util.QueryConstants.NULL_BYTE, null, io.deephaven.util.QueryConstants.NULL_BYTE, (byte) 1, (byte) 3, (byte) 9, (byte) 78};
         assertEquals(expectedSortedByteArray, sortBytesArray);
 
-        final DbArray<Byte> byteDbArray = new DbArrayDirect<>(null, (byte) 1, (byte) 9, (byte) 3, io.deephaven.util.QueryConstants.NULL_BYTE, null, (byte) 78, io.deephaven.util.QueryConstants
+        final ObjectVector<Byte> byteDbArray = new ObjectVectorDirect<>(null, (byte) 1, (byte) 9, (byte) 3, io.deephaven.util.QueryConstants.NULL_BYTE, null, (byte) 78, io.deephaven.util.QueryConstants
                 .NULL_BYTE);
-        final DbArray<Byte> sortedByteDbArray = sort(byteDbArray);
-        final DbArray<Byte> expectedSortedByteDbArray = new DbArrayDirect<>(null, io.deephaven.util.QueryConstants.NULL_BYTE, null, io.deephaven.util
+        final ObjectVector<Byte> sortedByteDbArray = sort(byteDbArray);
+        final ObjectVector<Byte> expectedSortedByteDbArray = new ObjectVectorDirect<>(null, io.deephaven.util.QueryConstants.NULL_BYTE, null, io.deephaven.util
                 .QueryConstants.NULL_BYTE, (byte) 1, (byte) 3, (byte) 9, (byte) 78);
         assertEquals(expectedSortedByteDbArray, sortedByteDbArray);
 
@@ -416,10 +416,10 @@ public class TestObjectPrimitives extends BaseArrayTestCase {
                 .NULL_SHORT, (short) 1, (short) 3, (short) 9, (short) 78,};
         assertEquals(expectedSortedShortArray, sortShortsArray);
 
-        final DbArray<Short> shortDbArray = new DbArrayDirect<>(null, (short) 1, (short) 9, (short) 3, io.deephaven.util.QueryConstants.NULL_SHORT, null, (short) 78, io.deephaven.util.QueryConstants
+        final ObjectVector<Short> shortDbArray = new ObjectVectorDirect<>(null, (short) 1, (short) 9, (short) 3, io.deephaven.util.QueryConstants.NULL_SHORT, null, (short) 78, io.deephaven.util.QueryConstants
                 .NULL_SHORT);
-        final DbArray<Short> sortedShortDbArray = sort(shortDbArray);
-        final DbArray<Short> expectedSortedShortDbArray = new DbArrayDirect<>(null, io.deephaven.util.QueryConstants.NULL_SHORT, null, io.deephaven.util
+        final ObjectVector<Short> sortedShortDbArray = sort(shortDbArray);
+        final ObjectVector<Short> expectedSortedShortDbArray = new ObjectVectorDirect<>(null, io.deephaven.util.QueryConstants.NULL_SHORT, null, io.deephaven.util
                 .QueryConstants.NULL_SHORT, (short) 1, (short) 3, (short) 9, (short) 78);
         assertEquals(expectedSortedShortDbArray, sortedShortDbArray);
 
@@ -429,10 +429,10 @@ public class TestObjectPrimitives extends BaseArrayTestCase {
                 78,};
         assertEquals(expectedSortedIntegerArray, sortIntegersArray);
 
-        final DbArray<Integer> intDbArray = new DbArrayDirect<>(null, (int) 1, (int) 9, (int) 3, io.deephaven.util.QueryConstants.NULL_INT, null, (int) 78, io.deephaven.util.QueryConstants
+        final ObjectVector<Integer> intDbArray = new ObjectVectorDirect<>(null, (int) 1, (int) 9, (int) 3, io.deephaven.util.QueryConstants.NULL_INT, null, (int) 78, io.deephaven.util.QueryConstants
                 .NULL_INT);
-        final DbArray<Integer> sortedIntegerDbArray = sort(intDbArray);
-        final DbArray<Integer> expectedSortedIntegerDbArray = new DbArrayDirect<>(null, io.deephaven.util.QueryConstants.NULL_INT, null, io.deephaven.util
+        final ObjectVector<Integer> sortedIntegerDbArray = sort(intDbArray);
+        final ObjectVector<Integer> expectedSortedIntegerDbArray = new ObjectVectorDirect<>(null, io.deephaven.util.QueryConstants.NULL_INT, null, io.deephaven.util
                 .QueryConstants.NULL_INT, (int) 1, (int) 3, (int) 9, (int) 78);
         assertEquals(expectedSortedIntegerDbArray, sortedIntegerDbArray);
 
@@ -443,10 +443,10 @@ public class TestObjectPrimitives extends BaseArrayTestCase {
                 .NULL_FLOAT, (float) 1, (float) 3, (float) 9, (float) 78};
         assertEquals(expectedSortedFloatArray, sortFloatsArray);
 
-        final DbArray<Float> floatDbArray = new DbArrayDirect<>(null, (float) 1, (float) 9, (float) 3, io.deephaven.util.QueryConstants.NULL_FLOAT, null, (float) 78, io.deephaven.util.QueryConstants
+        final ObjectVector<Float> floatDbArray = new ObjectVectorDirect<>(null, (float) 1, (float) 9, (float) 3, io.deephaven.util.QueryConstants.NULL_FLOAT, null, (float) 78, io.deephaven.util.QueryConstants
                 .NULL_FLOAT);
-        final DbArray<Float> sortedFloatDbArray = sort(floatDbArray);
-        final DbArray<Float> expectedSortedFloatDbArray = new DbArrayDirect<>(null, io.deephaven.util.QueryConstants.NULL_FLOAT, null, io.deephaven.util
+        final ObjectVector<Float> sortedFloatDbArray = sort(floatDbArray);
+        final ObjectVector<Float> expectedSortedFloatDbArray = new ObjectVectorDirect<>(null, io.deephaven.util.QueryConstants.NULL_FLOAT, null, io.deephaven.util
                 .QueryConstants.NULL_FLOAT, (float) 1, (float) 3, (float) 9, (float) 78);
         assertEquals(expectedSortedFloatDbArray, sortedFloatDbArray);
 
@@ -456,10 +456,10 @@ public class TestObjectPrimitives extends BaseArrayTestCase {
         final Long[] expectedSortedLongArray = new Long[]{null, io.deephaven.util.QueryConstants.NULL_LONG, null, io.deephaven.util.QueryConstants.NULL_LONG, (long) 1, (long) 3, (long) 9, (long) 78};
         assertEquals(expectedSortedLongArray, sortLongsArray);
 
-        final DbArray<Long> longDbArray = new DbArrayDirect<>(null, (long) 1, (long) 9, (long) 3, io.deephaven.util.QueryConstants.NULL_LONG, null, (long) 78, io.deephaven.util.QueryConstants
+        final ObjectVector<Long> longDbArray = new ObjectVectorDirect<>(null, (long) 1, (long) 9, (long) 3, io.deephaven.util.QueryConstants.NULL_LONG, null, (long) 78, io.deephaven.util.QueryConstants
                 .NULL_LONG);
-        final DbArray<Long> sortedLongDbArray = sort(longDbArray);
-        final DbArray<Long> expectedSortedLongDbArray = new DbArrayDirect<>(null, io.deephaven.util.QueryConstants.NULL_LONG, null, io.deephaven.util
+        final ObjectVector<Long> sortedLongDbArray = sort(longDbArray);
+        final ObjectVector<Long> expectedSortedLongDbArray = new ObjectVectorDirect<>(null, io.deephaven.util.QueryConstants.NULL_LONG, null, io.deephaven.util
                 .QueryConstants.NULL_LONG, (long) 1, (long) 3, (long) 9, (long) 78);
         assertEquals(expectedSortedLongDbArray, sortedLongDbArray);
 
@@ -470,10 +470,10 @@ public class TestObjectPrimitives extends BaseArrayTestCase {
                 .QueryConstants.NULL_DOUBLE, (double) 1, (double) 3, (double) 9, (double) 78};
         assertEquals(expectedSortedDoubleArray, sortDoublesArray);
 
-        final DbArray<Double> doubleDbArray = new DbArrayDirect<>(null, (double) 1, (double) 9, (double) 3, io.deephaven.util.QueryConstants.NULL_DOUBLE, null, (double) 78, io.deephaven.util.QueryConstants
+        final ObjectVector<Double> doubleDbArray = new ObjectVectorDirect<>(null, (double) 1, (double) 9, (double) 3, io.deephaven.util.QueryConstants.NULL_DOUBLE, null, (double) 78, io.deephaven.util.QueryConstants
                 .NULL_DOUBLE, Double.NaN);
-        final DbArray<Double> sortedDoubleDbArray = sort(doubleDbArray);
-        final DbArray<Double> expectedSortedDoubleDbArray = new DbArrayDirect<>(null, io.deephaven.util.QueryConstants.NULL_DOUBLE, null, io.deephaven
+        final ObjectVector<Double> sortedDoubleDbArray = sort(doubleDbArray);
+        final ObjectVector<Double> expectedSortedDoubleDbArray = new ObjectVectorDirect<>(null, io.deephaven.util.QueryConstants.NULL_DOUBLE, null, io.deephaven
                 .util.QueryConstants.NULL_DOUBLE, (double) 1, (double) 3, (double) 9, (double) 78, Double.NaN);
         assertEquals(expectedSortedDoubleDbArray, sortedDoubleDbArray);
 
@@ -497,11 +497,11 @@ public class TestObjectPrimitives extends BaseArrayTestCase {
     }
 
     public void testSortDescending() {
-        final DbArray<ComparableExtended> comparableExtendedDbArray = new DbArrayDirect<>(null, new ComparableExtended(1d), new ComparableExtended(12d), new ComparableExtended(0d)
+        final ObjectVector<ComparableExtended> comparableExtendedDbArray = new ObjectVectorDirect<>(null, new ComparableExtended(1d), new ComparableExtended(12d), new ComparableExtended(0d)
                 , new ComparableExtended(9.4d), null, new ComparableExtended(-5.6d), new ComparableExtended(-2.3d), new ComparableExtended(-2.3d));
 
-        DbArray<ComparableExtended> sort = sortDescending(comparableExtendedDbArray);
-        DbArray<ComparableExtended> expected = new DbArrayDirect<>(new ComparableExtended(12d), new ComparableExtended(9.4d), new ComparableExtended(1d),
+        ObjectVector<ComparableExtended> sort = sortDescending(comparableExtendedDbArray);
+        ObjectVector<ComparableExtended> expected = new ObjectVectorDirect<>(new ComparableExtended(12d), new ComparableExtended(9.4d), new ComparableExtended(1d),
                 new ComparableExtended(0d), new ComparableExtended(-2.3d), new ComparableExtended(-2.3d), new ComparableExtended(-5.6d), null, null);
         assertEquals(expected, sort);
 
@@ -518,10 +518,10 @@ public class TestObjectPrimitives extends BaseArrayTestCase {
                 .NULL_BYTE};
         assertEquals(expectedSortedByteArray, sortedBytesArray);
 
-        final DbArray<Byte> byteDbArray = new DbArrayDirect<>(null, (byte) 1, (byte) 9, (byte) 3, io.deephaven.util.QueryConstants.NULL_BYTE, null, (byte) 78, io.deephaven.util.QueryConstants
+        final ObjectVector<Byte> byteDbArray = new ObjectVectorDirect<>(null, (byte) 1, (byte) 9, (byte) 3, io.deephaven.util.QueryConstants.NULL_BYTE, null, (byte) 78, io.deephaven.util.QueryConstants
                 .NULL_BYTE);
-        DbArray<Byte> sortedBytesDbArray = sortDescending(byteDbArray);
-        DbArray<Byte> expectedSortedBytesDbArray = new DbArrayDirect<>((byte) 78, (byte) 9, (byte) 3, (byte) 1, null, io.deephaven.util.QueryConstants.NULL_BYTE, null, io.deephaven.util.QueryConstants
+        ObjectVector<Byte> sortedBytesDbArray = sortDescending(byteDbArray);
+        ObjectVector<Byte> expectedSortedBytesDbArray = new ObjectVectorDirect<>((byte) 78, (byte) 9, (byte) 3, (byte) 1, null, io.deephaven.util.QueryConstants.NULL_BYTE, null, io.deephaven.util.QueryConstants
                 .NULL_BYTE);
         assertEquals(expectedSortedBytesDbArray, sortedBytesDbArray);
 
@@ -532,10 +532,10 @@ public class TestObjectPrimitives extends BaseArrayTestCase {
                 .NULL_SHORT};
         assertEquals(expectedSortedShortArray, sortedShortsArray);
 
-        final DbArray<Short> shortDbArray = new DbArrayDirect<>(null, (short) 1, (short) 9, (short) 3, io.deephaven.util.QueryConstants.NULL_SHORT, null, (short) 78, io.deephaven.util.QueryConstants
+        final ObjectVector<Short> shortDbArray = new ObjectVectorDirect<>(null, (short) 1, (short) 9, (short) 3, io.deephaven.util.QueryConstants.NULL_SHORT, null, (short) 78, io.deephaven.util.QueryConstants
                 .NULL_SHORT);
-        DbArray<Short> sortedShortsDbArray = sortDescending(shortDbArray);
-        DbArray<Short> expectedSortedShortsDbArray = new DbArrayDirect<>((short) 78, (short) 9, (short) 3, (short) 1, null, io.deephaven.util.QueryConstants.NULL_SHORT, null, io.deephaven.util
+        ObjectVector<Short> sortedShortsDbArray = sortDescending(shortDbArray);
+        ObjectVector<Short> expectedSortedShortsDbArray = new ObjectVectorDirect<>((short) 78, (short) 9, (short) 3, (short) 1, null, io.deephaven.util.QueryConstants.NULL_SHORT, null, io.deephaven.util
                 .QueryConstants
                 .NULL_SHORT);
         assertEquals(expectedSortedShortsDbArray, sortedShortsDbArray);
@@ -547,10 +547,10 @@ public class TestObjectPrimitives extends BaseArrayTestCase {
                 .NULL_INT};
         assertEquals(expectedSortedIntegerArray, sortedIntegersArray);
 
-        final DbArray<Integer> intDbArray = new DbArrayDirect<>(null, (int) 1, (int) 9, (int) 3, io.deephaven.util.QueryConstants.NULL_INT, null, (int) 78, io.deephaven.util.QueryConstants
+        final ObjectVector<Integer> intDbArray = new ObjectVectorDirect<>(null, (int) 1, (int) 9, (int) 3, io.deephaven.util.QueryConstants.NULL_INT, null, (int) 78, io.deephaven.util.QueryConstants
                 .NULL_INT);
-        DbArray<Integer> sortedIntegersDbArray = sortDescending(intDbArray);
-        DbArray<Integer> expectedSortedIntegersDbArray = new DbArrayDirect<>((int) 78, (int) 9, (int) 3, (int) 1, null, io.deephaven.util.QueryConstants.NULL_INT, null, io.deephaven.util.QueryConstants
+        ObjectVector<Integer> sortedIntegersDbArray = sortDescending(intDbArray);
+        ObjectVector<Integer> expectedSortedIntegersDbArray = new ObjectVectorDirect<>((int) 78, (int) 9, (int) 3, (int) 1, null, io.deephaven.util.QueryConstants.NULL_INT, null, io.deephaven.util.QueryConstants
                 .NULL_INT);
         assertEquals(expectedSortedIntegersDbArray, sortedIntegersDbArray);
 
@@ -561,10 +561,10 @@ public class TestObjectPrimitives extends BaseArrayTestCase {
                 .NULL_FLOAT};
         assertEquals(expectedSortedFloatArray, sortedFloatsArray);
 
-        final DbArray<Float> floatDbArray = new DbArrayDirect<>(null, (float) 1, (float) 9, (float) 3, io.deephaven.util.QueryConstants.NULL_FLOAT, null, (float) 78, io.deephaven.util.QueryConstants
+        final ObjectVector<Float> floatDbArray = new ObjectVectorDirect<>(null, (float) 1, (float) 9, (float) 3, io.deephaven.util.QueryConstants.NULL_FLOAT, null, (float) 78, io.deephaven.util.QueryConstants
                 .NULL_FLOAT);
-        DbArray<Float> sortedFloatsDbArray = sortDescending(floatDbArray);
-        DbArray<Float> expectedSortedFloatsDbArray = new DbArrayDirect<>((float) 78, (float) 9, (float) 3, (float) 1, null, io.deephaven.util.QueryConstants.NULL_FLOAT, null, io.deephaven.util
+        ObjectVector<Float> sortedFloatsDbArray = sortDescending(floatDbArray);
+        ObjectVector<Float> expectedSortedFloatsDbArray = new ObjectVectorDirect<>((float) 78, (float) 9, (float) 3, (float) 1, null, io.deephaven.util.QueryConstants.NULL_FLOAT, null, io.deephaven.util
                 .QueryConstants
                 .NULL_FLOAT);
         assertEquals(expectedSortedFloatsDbArray, sortedFloatsDbArray);
@@ -576,10 +576,10 @@ public class TestObjectPrimitives extends BaseArrayTestCase {
                 .NULL_LONG};
         assertEquals(expectedSortedLongArray, sortedLongsArray);
 
-        final DbArray<Long> longDbArray = new DbArrayDirect<>(null, (long) 1, (long) 9, (long) 3, io.deephaven.util.QueryConstants.NULL_LONG, null, (long) 78, io.deephaven.util.QueryConstants
+        final ObjectVector<Long> longDbArray = new ObjectVectorDirect<>(null, (long) 1, (long) 9, (long) 3, io.deephaven.util.QueryConstants.NULL_LONG, null, (long) 78, io.deephaven.util.QueryConstants
                 .NULL_LONG);
-        DbArray<Long> sortedLongsDbArray = sortDescending(longDbArray);
-        DbArray<Long> expectedSortedLongsDbArray = new DbArrayDirect<>((long) 78, (long) 9, (long) 3, (long) 1, null, io.deephaven.util.QueryConstants.NULL_LONG, null, io.deephaven.util.QueryConstants
+        ObjectVector<Long> sortedLongsDbArray = sortDescending(longDbArray);
+        ObjectVector<Long> expectedSortedLongsDbArray = new ObjectVectorDirect<>((long) 78, (long) 9, (long) 3, (long) 1, null, io.deephaven.util.QueryConstants.NULL_LONG, null, io.deephaven.util.QueryConstants
                 .NULL_LONG);
         assertEquals(expectedSortedLongsDbArray, sortedLongsDbArray);
 
@@ -590,10 +590,10 @@ public class TestObjectPrimitives extends BaseArrayTestCase {
                 .QueryConstants.NULL_DOUBLE};
         assertEquals(expectedSortedDoubleArray, sortedDoublesArray);
 
-        final DbArray<Double> doubleDbArray = new DbArrayDirect<>(null, (double) 1, (double) 9, (double) 3, io.deephaven.util.QueryConstants.NULL_DOUBLE, null, (double) 78, io.deephaven
+        final ObjectVector<Double> doubleDbArray = new ObjectVectorDirect<>(null, (double) 1, (double) 9, (double) 3, io.deephaven.util.QueryConstants.NULL_DOUBLE, null, (double) 78, io.deephaven
                 .util.QueryConstants.NULL_DOUBLE, Double.NaN);
-        DbArray<Double> sortedDoublesDbArray = sortDescending(doubleDbArray);
-        DbArray<Double> expectedSortedDoublesDbArray = new DbArrayDirect<>(Double.NaN, (double) 78, (double) 9, (double) 3, (double) 1, null, io.deephaven.util.QueryConstants.NULL_DOUBLE, null, io.deephaven.util
+        ObjectVector<Double> sortedDoublesDbArray = sortDescending(doubleDbArray);
+        ObjectVector<Double> expectedSortedDoublesDbArray = new ObjectVectorDirect<>(Double.NaN, (double) 78, (double) 9, (double) 3, (double) 1, null, io.deephaven.util.QueryConstants.NULL_DOUBLE, null, io.deephaven.util
                 .QueryConstants.NULL_DOUBLE);
         assertEquals(expectedSortedDoublesDbArray, sortedDoublesDbArray);
 
@@ -621,17 +621,17 @@ public class TestObjectPrimitives extends BaseArrayTestCase {
 
     public void testSortExceptions() {
         //sort
-        DbArray dbArrayToSort = null;
+        ObjectVector dbArrayToSort = null;
 
-        DbArray sort = sort(dbArrayToSort);
+        ObjectVector sort = sort(dbArrayToSort);
         assertNull(sort);
 
         BigDecimal[] bd = null;
         BigDecimal[] sortedNumbers = sort(bd);
         assertNull(sortedNumbers);
 
-        sort = sort(new DbArrayDirect<ComparableExtended>());
-        assertEquals(new DbArrayDirect<ComparableExtended>(), sort);
+        sort = sort(new ObjectVectorDirect<ComparableExtended>());
+        assertEquals(new ObjectVectorDirect<ComparableExtended>(), sort);
 
         bd = new BigDecimal[]{};
         sortedNumbers = sort(bd);
@@ -653,8 +653,8 @@ public class TestObjectPrimitives extends BaseArrayTestCase {
         sortedNumbers = sortDescending(bd);
         assertNull(sortedNumbers);
 
-        sort = sortDescending(new DbArrayDirect<ComparableExtended>());
-        assertEquals(new DbArrayDirect<ComparableExtended>(), sort);
+        sort = sortDescending(new ObjectVectorDirect<ComparableExtended>());
+        assertEquals(new ObjectVectorDirect<ComparableExtended>(), sort);
 
         bd = new BigDecimal[]{};
         sortedNumbers = sortDescending(bd);

@@ -259,29 +259,29 @@ public class TableUpdateValidator implements QueryTable.Operation {
     }
 
     /**
-     * Some things won't last forever, like a DbArray that is really a column wrapper. We need to turn those into
+     * Some things won't last forever, like a Vector that is really a column wrapper. We need to turn those into
      * something that will persist properly until the next clock cycle.
      *
      * @param fromSource
      * @return a version of fromSource that does not reference ephemeral stuff.
      */
     private Object maybeWrap(Object fromSource) {
-        if (fromSource instanceof DbArray) {
-            return ((DbArray) fromSource).getDirect();
-        } else if (fromSource instanceof DbIntArray) {
-            return ((DbIntArray) fromSource).getDirect();
-        } else if (fromSource instanceof DbLongArray) {
-            return ((DbLongArray) fromSource).getDirect();
-        } else if (fromSource instanceof DbShortArray) {
-            return ((DbShortArray) fromSource).getDirect();
-        } else if (fromSource instanceof DbDoubleArray) {
-            return ((DbDoubleArray) fromSource).getDirect();
-        } else if (fromSource instanceof DbFloatArray) {
-            return ((DbFloatArray) fromSource).getDirect();
-        } else if (fromSource instanceof DbCharArray) {
-            return ((DbCharArray) fromSource).getDirect();
-        } else if (fromSource instanceof DbByteArray) {
-            return ((DbByteArray) fromSource).getDirect();
+        if (fromSource instanceof ObjectVector) {
+            return ((ObjectVector) fromSource).getDirect();
+        } else if (fromSource instanceof IntVector) {
+            return ((IntVector) fromSource).getDirect();
+        } else if (fromSource instanceof LongVector) {
+            return ((LongVector) fromSource).getDirect();
+        } else if (fromSource instanceof ShortVector) {
+            return ((ShortVector) fromSource).getDirect();
+        } else if (fromSource instanceof DoubleVector) {
+            return ((DoubleVector) fromSource).getDirect();
+        } else if (fromSource instanceof FloatVector) {
+            return ((FloatVector) fromSource).getDirect();
+        } else if (fromSource instanceof CharVector) {
+            return ((CharVector) fromSource).getDirect();
+        } else if (fromSource instanceof ByteVector) {
+            return ((ByteVector) fromSource).getDirect();
         }
         return fromSource;
     }

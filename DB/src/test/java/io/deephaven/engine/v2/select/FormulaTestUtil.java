@@ -2,10 +2,10 @@ package io.deephaven.engine.v2.select;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.dbarrays.DbArray;
-import io.deephaven.engine.tables.dbarrays.DbArrayDirect;
-import io.deephaven.engine.tables.dbarrays.DbByteArrayDirect;
-import io.deephaven.engine.tables.dbarrays.DbIntArrayDirect;
+import io.deephaven.engine.tables.dbarrays.ByteVectorDirect;
+import io.deephaven.engine.tables.dbarrays.ObjectVector;
+import io.deephaven.engine.tables.dbarrays.ObjectVectorDirect;
+import io.deephaven.engine.tables.dbarrays.IntVectorDirect;
 import io.deephaven.engine.tables.libs.QueryLibrary;
 import io.deephaven.engine.tables.select.QueryScope;
 import io.deephaven.engine.tables.utils.ArrayUtils;
@@ -133,13 +133,13 @@ public class FormulaTestUtil {
                 new ArrayList<>(IntStream.of(BASE_VALUES).boxed().collect(Collectors.toList())));
         QueryScope.addParam("myHashMap",
                 new HashMap<>(Collections.singletonMap(QUERYSCOPE_OBJ_BASE_VALUE, QUERYSCOPE_OBJ_BASE_VALUE)));
-        QueryScope.addParam("myDBArray", new DbArrayDirect<>(IntStream.of(BASE_VALUES).boxed().toArray()));
+        QueryScope.addParam("myDBArray", new ObjectVectorDirect<>(IntStream.of(BASE_VALUES).boxed().toArray()));
         QueryScope.addParam("myEnumValue", TestFormulaColumnEnum.ONE);
-        QueryScope.addParam("myObjectDBArray", DbArray.class);
-        QueryScope.addParam("myIntDBArray", new DbIntArrayDirect(BASE_VALUES));
-        QueryScope.addParam("myByteDBArray", new DbByteArrayDirect(ArrayUtils
+        QueryScope.addParam("myObjectDBArray", ObjectVector.class);
+        QueryScope.addParam("myIntDBArray", new IntVectorDirect(BASE_VALUES));
+        QueryScope.addParam("myByteDBArray", new ByteVectorDirect(ArrayUtils
                 .getUnboxedArray(IntStream.of(BASE_VALUES).boxed().map(Integer::byteValue).toArray(Byte[]::new))));
-        // QueryScope.addParam("myBooleanDBArray", DbBooleanArray.class);
+        // QueryScope.addParam("myBooleanDBArray", BooleanVector.class);
 
         QueryScope.addParam("ExampleQuantity", 1);
         QueryScope.addParam("ExampleQuantity2", 2d);

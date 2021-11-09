@@ -7,8 +7,8 @@
 
 package io.deephaven.libs.primitives;
 
-import io.deephaven.engine.tables.dbarrays.DbByteArray;
-import io.deephaven.engine.tables.dbarrays.DbByteArrayDirect;
+import io.deephaven.engine.tables.dbarrays.ByteVector;
+import io.deephaven.engine.tables.dbarrays.ByteVectorDirect;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.util.LongSizedDataStructure;
 import gnu.trove.list.array.TByteArrayList;
@@ -82,7 +82,7 @@ public class BytePrimitives {
      * @return values with nulls replaced by defaultValue.
      */
     static public byte[] nullToValue(byte[] values, byte defaultValue) {
-        return nullToValue(new DbByteArrayDirect(values), defaultValue);
+        return nullToValue(new ByteVectorDirect(values), defaultValue);
     }
 
     /**
@@ -92,7 +92,7 @@ public class BytePrimitives {
      * @param defaultValue default value to return for null values.
      * @return values with nulls replaced by defaultValue.
      */
-    static public byte[] nullToValue(DbByteArray values, byte defaultValue) {
+    static public byte[] nullToValue(ByteVector values, byte defaultValue) {
         byte[] result = new byte[LongSizedDataStructure.intSize("nullToValue", values.size())];
 
         for (int i = 0; i < values.size(); i++) {
@@ -132,7 +132,7 @@ public class BytePrimitives {
             return 0;
         }
 
-        return count(new DbByteArrayDirect(values));
+        return count(new ByteVectorDirect(values));
     }
 
     /**
@@ -141,7 +141,7 @@ public class BytePrimitives {
      * @param values values.
      * @return number of non-null values.
      */
-    static public int count(DbByteArray values){
+    static public int count(ByteVector values){
         if (values == null){
             return 0;
         }
@@ -160,7 +160,7 @@ public class BytePrimitives {
      * @param values values.
      * @return last value from the array.
      */
-    static public byte last(DbByteArray values){
+    static public byte last(ByteVector values){
         if(values == null || values.size() < 1){
             return NULL_BYTE;
         }
@@ -188,7 +188,7 @@ public class BytePrimitives {
      * @param values values.
      * @return first value from the array.
      */
-    static public byte first(DbByteArray values){
+    static public byte first(ByteVector values){
         if(values == null || values.size() < 1){
             return NULL_BYTE;
         }
@@ -217,7 +217,7 @@ public class BytePrimitives {
      * @param values values.
      * @return nth value from the array or null, if the rowSet is outside of the array's rowSet range.
      */
-    static public byte nth(int index, DbByteArray values){
+    static public byte nth(int index, ByteVector values){
         if(index < 0 || index >= values.size()){
             return NULL_BYTE;
         }
@@ -242,7 +242,7 @@ public class BytePrimitives {
      * @param values DB array
      * @return primitive array.
      */
-    public static byte[] vec(DbByteArray values) {
+    public static byte[] vec(ByteVector values) {
         if(values == null){
             return null;
         }
@@ -256,12 +256,12 @@ public class BytePrimitives {
      * @param values primitive array
      * @return DB array.
      */
-    public static DbByteArray array(byte[] values) {
+    public static ByteVector array(byte[] values) {
         if(values == null){
             return null;
         }
 
-        return new DbByteArrayDirect(values);
+        return new ByteVectorDirect(values);
     }
 
     /**
@@ -310,7 +310,7 @@ public class BytePrimitives {
             return QueryConstants.NULL_LONG;
         }
 
-        return countDistinct(new DbByteArrayDirect(values));
+        return countDistinct(new ByteVectorDirect(values));
     }
 
     /**
@@ -319,7 +319,7 @@ public class BytePrimitives {
      * @param values values.
      * @return number of distinct non-null values.
      */
-    public static long countDistinct(final DbByteArray values) {
+    public static long countDistinct(final ByteVector values) {
         return countDistinct(values, false);
     }
 
@@ -335,7 +335,7 @@ public class BytePrimitives {
             return QueryConstants.NULL_LONG;
         }
 
-        return countDistinct(new DbByteArrayDirect(values), countNull);
+        return countDistinct(new ByteVectorDirect(values), countNull);
     }
 
     /**
@@ -345,7 +345,7 @@ public class BytePrimitives {
      * @param countNull true to count null values, and false to exclude null values.
      * @return number of distinct values.
      */
-    public static long countDistinct(final DbByteArray values, boolean countNull) {
+    public static long countDistinct(final ByteVector values, boolean countNull) {
         if(values == null) {
             return QueryConstants.NULL_LONG;
         }
@@ -377,7 +377,7 @@ public class BytePrimitives {
      * @param countNull if nulls should count as values
      * @return the single unique value in the array, or null.
      */
-    public static byte uniqueValue(final DbByteArray arr, boolean countNull) {
+    public static byte uniqueValue(final ByteVector arr, boolean countNull) {
         if(arr == null || arr.isEmpty()) {
             return NULL_BYTE;
         }
@@ -409,7 +409,7 @@ public class BytePrimitives {
             return null;
         }
 
-        return distinct(new DbByteArrayDirect(values)).toArray();
+        return distinct(new ByteVectorDirect(values)).toArray();
     }
 
     /**
@@ -418,7 +418,7 @@ public class BytePrimitives {
      * @param values values.
      * @return unsorted array containing only distinct non-null items from arr.
      */
-    public static DbByteArray distinct(final DbByteArray values) {
+    public static ByteVector distinct(final ByteVector values) {
         if(values == null) {
             return null;
         }
@@ -481,17 +481,17 @@ public class BytePrimitives {
      * @param sort true to sort the resultant array
      * @return array containing only distinct items from arr.
      */
-    public static DbByteArray distinct(final DbByteArray values, boolean includeNull, boolean sort) {
+    public static ByteVector distinct(final ByteVector values, boolean includeNull, boolean sort) {
         if(values == null) {
             return null;
         }
 
         if(values.size() == 0) {
-            return new DbByteArrayDirect();
+            return new ByteVectorDirect();
         }
 
         if(values.size() == 1) {
-            return !includeNull && values.get(0) == QueryConstants.NULL_BYTE ? new DbByteArrayDirect() : values;
+            return !includeNull && values.get(0) == QueryConstants.NULL_BYTE ? new ByteVectorDirect() : values;
         }
 
         final TByteArrayList orderedList = new TByteArrayList();
@@ -513,7 +513,7 @@ public class BytePrimitives {
             data = orderedList.toArray();
         }
 
-        return new DbByteArrayDirect(data);
+        return new ByteVectorDirect(data);
     }
 
     /**
@@ -562,7 +562,7 @@ public class BytePrimitives {
             return new byte[0];
         }
 
-        return concat(Arrays.stream(values).map(e->e==null?null:new DbByteArrayDirect(e)).toArray(DbByteArray[]::new));
+        return concat(Arrays.stream(values).map(e->e==null?null:new ByteVectorDirect(e)).toArray(ByteVector[]::new));
     }
 
     /**
@@ -571,14 +571,14 @@ public class BytePrimitives {
      * @param values values.
      * @return concatenation of multiple arrays into a single array.
      */
-    public static byte[] concat(DbByteArray... values){
+    public static byte[] concat(ByteVector... values){
         if(values == null){
             return new byte[0];
         }
 
         int n = 0;
 
-        for (DbByteArray v : values) {
+        for (ByteVector v : values) {
             if (v != null) {
                 n += v.size();
             }
@@ -587,7 +587,7 @@ public class BytePrimitives {
         final byte[] result = new byte[n];
         int idx = 0;
 
-        for (DbByteArray v : values) {
+        for (ByteVector v : values) {
             if (v != null) {
                 for (int i = 0; i < v.size(); i++) {
                     result[idx] = v.get(i);
@@ -610,7 +610,7 @@ public class BytePrimitives {
             return null;
         }
 
-        return reverse(new DbByteArrayDirect(values));
+        return reverse(new ByteVectorDirect(values));
     }
 
     /**
@@ -619,7 +619,7 @@ public class BytePrimitives {
      * @param values values.
      * @return array with the values reversed.
      */
-    public static byte[] reverse(DbByteArray values){
+    public static byte[] reverse(ByteVector values){
         if(values == null){
             return null;
         }

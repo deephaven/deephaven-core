@@ -1,7 +1,7 @@
 package io.deephaven.engine.v2.select.codegen;
 
 import io.deephaven.compilertools.CompilerTools;
-import io.deephaven.engine.tables.dbarrays.DbArrayBase;
+import io.deephaven.engine.tables.dbarrays.Vector;
 import io.deephaven.engine.tables.libs.QueryLibrary;
 import io.deephaven.engine.tables.select.Param;
 import io.deephaven.engine.tables.utils.QueryPerformanceNugget;
@@ -121,7 +121,7 @@ public class JavaKernelBuilder {
                 CodeGenerator.block(
                         CodeGenerator.repeated("getDbArray", "[[NAME]] = ([[TYPE]])__dbArrays[[[INDEX]]];"),
                         CodeGenerator.repeated("getParam", "[[NAME]] = ([[TYPE]])__params[[[INDEX]]].getValue();")));
-        g.replace("DBARRAYBASE_CANONICAL", DbArrayBase.class.getCanonicalName());
+        g.replace("DBARRAYBASE_CANONICAL", Vector.class.getCanonicalName());
         g.replace("PARAM_CANONICAL", Param.class.getCanonicalName());
         final int[] nextArrayIndex = {0};
         final int[] nextParamIndex = {0};

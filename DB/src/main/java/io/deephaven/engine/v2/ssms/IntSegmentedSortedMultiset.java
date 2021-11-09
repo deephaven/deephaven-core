@@ -4,9 +4,9 @@
 package io.deephaven.engine.v2.ssms;
 
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.tables.dbarrays.DbArray;
-import io.deephaven.engine.tables.dbarrays.DbIntArray;
-import io.deephaven.engine.tables.dbarrays.DbIntArrayDirect;
+import io.deephaven.engine.tables.dbarrays.IntVector;
+import io.deephaven.engine.tables.dbarrays.IntVectorDirect;
+import io.deephaven.engine.tables.dbarrays.ObjectVector;
 import io.deephaven.engine.tables.utils.ArrayUtils;
 import io.deephaven.engine.util.DhIntComparisons;
 import io.deephaven.engine.v2.by.SumIntChunk;
@@ -23,7 +23,7 @@ import java.util.Objects;
 
 import static io.deephaven.util.QueryConstants.NULL_INT;
 
-public final class IntSegmentedSortedMultiset implements SegmentedSortedMultiSet<Integer>, DbIntArray {
+public final class IntSegmentedSortedMultiset implements SegmentedSortedMultiSet<Integer>, IntVector {
     private final int leafSize;
     private int leafCount;
     private int size;
@@ -47,7 +47,7 @@ public final class IntSegmentedSortedMultiset implements SegmentedSortedMultiSet
     private transient boolean accumulateDeltas = false;
     private transient TIntHashSet added;
     private transient TIntHashSet removed;
-    private transient DbIntArray prevValues;
+    private transient IntVector prevValues;
     // endregion Deltas
 
 
@@ -2194,7 +2194,7 @@ public final class IntSegmentedSortedMultiset implements SegmentedSortedMultiSet
         }
 
         if(prevValues == null) {
-            prevValues = new DbIntArrayDirect(keyArray());
+            prevValues = new IntVectorDirect(keyArray());
         }
 
         if (added == null) {
@@ -2223,7 +2223,7 @@ public final class IntSegmentedSortedMultiset implements SegmentedSortedMultiSet
         }
 
         if(prevValues == null) {
-            prevValues = new DbIntArrayDirect(keyArray());
+            prevValues = new IntVectorDirect(keyArray());
         }
 
         if(removed == null) {
@@ -2264,12 +2264,12 @@ public final class IntSegmentedSortedMultiset implements SegmentedSortedMultiSet
         chunk.copyFromTypedArray(added.toArray(), 0, position, added.size());
     }
 
-    public DbIntArray getPrevValues() {
+    public IntVector getPrevValues() {
         return prevValues == null ? this : prevValues;
     }
     // endregion
 
-    // region DBIntArray
+    // region IntVector
     @Override
     public int get(long i) {
         if(i < 0 || i > size()) {
@@ -2291,19 +2291,19 @@ public final class IntSegmentedSortedMultiset implements SegmentedSortedMultiSet
     }
 
     @Override
-    public DbIntArray subArray(long fromIndex, long toIndex) {
-        return new DbIntArrayDirect(keyArray(fromIndex, toIndex));
+    public IntVector subVector(long fromIndex, long toIndex) {
+        return new IntVectorDirect(keyArray(fromIndex, toIndex));
     }
 
     @Override
-    public DbIntArray subArrayByPositions(long[] positions) {
+    public IntVector subVectorByPositions(long[] positions) {
         final int[] keyArray = new int[positions.length];
         int writePos = 0;
         for (long position : positions) {
             keyArray[writePos++] = get(position);
         }
 
-        return new DbIntArrayDirect(keyArray);
+        return new IntVectorDirect(keyArray);
     }
 
     @Override
@@ -2317,13 +2317,13 @@ public final class IntSegmentedSortedMultiset implements SegmentedSortedMultiSet
     }
 
     @Override
-    public DbIntArray getDirect() {
-        return new DbIntArrayDirect(keyArray());
+    public IntVector getDirect() {
+        return new IntVectorDirect(keyArray());
     }
     //endregion
 
-    //region DbArrayEquals
-    private boolean equalsArray(DbIntArray o) {
+    //region VectorEquals
+    private boolean equalsArray(IntVector o) {
         if(size() != o.size()) {
             return false;
         }
@@ -2351,9 +2351,9 @@ public final class IntSegmentedSortedMultiset implements SegmentedSortedMultiSet
 
         return true;
     }
-    //endregion DbArrayEquals
+    //endregion VectorEquals
 
-    private boolean equalsArray(DbArray<?> o) {
+    private boolean equalsArray(ObjectVector<?> o) {
         //region EqualsArrayTypeCheck
         if(o.getComponentType() != int.class && o.getComponentType() != Integer.class) {
             return false;
@@ -2367,11 +2367,11 @@ public final class IntSegmentedSortedMultiset implements SegmentedSortedMultiSet
         if(leafCount == 1) {
             for(int ii = 0; ii < size; ii++) {
                 final Integer val = (Integer)o.get(ii);
-                //region DbArrayEquals
+                //region VectorEquals
                 if(directoryValues[ii] == NULL_INT && val != null && val != NULL_INT) {
                     return false;
                 }
-                //endregion DbArrayEquals
+                //endregion VectorEquals
 
                 if(!Objects.equals(directoryValues[ii], val)) {
                     return false;
@@ -2385,11 +2385,11 @@ public final class IntSegmentedSortedMultiset implements SegmentedSortedMultiSet
         for (int li = 0; li < leafCount; ++li) {
             for(int ai = 0; ai < leafSizes[li]; ai++) {
                 final Integer val = (Integer)o.get(nCompared++);
-                //region DbArrayEquals
+                //region VectorEquals
                 if(leafValues[li][ai] == NULL_INT && val != null && val != NULL_INT) {
                     return false;
                 }
-                //endregion DbArrayEquals
+                //endregion VectorEquals
 
                 if(!Objects.equals(leafValues[li][ai],  val)) {
                     return false;
@@ -2404,14 +2404,14 @@ public final class IntSegmentedSortedMultiset implements SegmentedSortedMultiSet
     public boolean equals(Object o) {
         if (this == o) return true;
         if (!(o instanceof IntSegmentedSortedMultiset)) {
-            //region DbArrayEquals
-            if(o instanceof DbIntArray) {
-                return equalsArray((DbIntArray)o);
+            //region VectorEquals
+            if(o instanceof IntVector) {
+                return equalsArray((IntVector)o);
             }
-            //endregion DbArrayEquals
+            //endregion VectorEquals
 
-            if(o instanceof DbArray) {
-                return equalsArray((DbArray)o);
+            if(o instanceof ObjectVector) {
+                return equalsArray((ObjectVector)o);
             }
             return false;
         }

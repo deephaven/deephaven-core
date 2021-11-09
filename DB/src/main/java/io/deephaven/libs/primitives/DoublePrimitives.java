@@ -7,8 +7,8 @@
 
 package io.deephaven.libs.primitives;
 
-import io.deephaven.engine.tables.dbarrays.DbDoubleArray;
-import io.deephaven.engine.tables.dbarrays.DbDoubleArrayDirect;
+import io.deephaven.engine.tables.dbarrays.DoubleVector;
+import io.deephaven.engine.tables.dbarrays.DoubleVectorDirect;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.util.LongSizedDataStructure;
 import gnu.trove.list.array.TDoubleArrayList;
@@ -82,7 +82,7 @@ public class DoublePrimitives {
      * @return values with nulls replaced by defaultValue.
      */
     static public double[] nullToValue(double[] values, double defaultValue) {
-        return nullToValue(new DbDoubleArrayDirect(values), defaultValue);
+        return nullToValue(new DoubleVectorDirect(values), defaultValue);
     }
 
     /**
@@ -92,7 +92,7 @@ public class DoublePrimitives {
      * @param defaultValue default value to return for null values.
      * @return values with nulls replaced by defaultValue.
      */
-    static public double[] nullToValue(DbDoubleArray values, double defaultValue) {
+    static public double[] nullToValue(DoubleVector values, double defaultValue) {
         double[] result = new double[LongSizedDataStructure.intSize("nullToValue", values.size())];
 
         for (int i = 0; i < values.size(); i++) {
@@ -132,7 +132,7 @@ public class DoublePrimitives {
             return 0;
         }
 
-        return count(new DbDoubleArrayDirect(values));
+        return count(new DoubleVectorDirect(values));
     }
 
     /**
@@ -141,7 +141,7 @@ public class DoublePrimitives {
      * @param values values.
      * @return number of non-null values.
      */
-    static public int count(DbDoubleArray values){
+    static public int count(DoubleVector values){
         if (values == null){
             return 0;
         }
@@ -160,7 +160,7 @@ public class DoublePrimitives {
      * @param values values.
      * @return last value from the array.
      */
-    static public double last(DbDoubleArray values){
+    static public double last(DoubleVector values){
         if(values == null || values.size() < 1){
             return NULL_DOUBLE;
         }
@@ -188,7 +188,7 @@ public class DoublePrimitives {
      * @param values values.
      * @return first value from the array.
      */
-    static public double first(DbDoubleArray values){
+    static public double first(DoubleVector values){
         if(values == null || values.size() < 1){
             return NULL_DOUBLE;
         }
@@ -217,7 +217,7 @@ public class DoublePrimitives {
      * @param values values.
      * @return nth value from the array or null, if the rowSet is outside of the array's rowSet range.
      */
-    static public double nth(int index, DbDoubleArray values){
+    static public double nth(int index, DoubleVector values){
         if(index < 0 || index >= values.size()){
             return NULL_DOUBLE;
         }
@@ -242,7 +242,7 @@ public class DoublePrimitives {
      * @param values DB array
      * @return primitive array.
      */
-    public static double[] vec(DbDoubleArray values) {
+    public static double[] vec(DoubleVector values) {
         if(values == null){
             return null;
         }
@@ -256,12 +256,12 @@ public class DoublePrimitives {
      * @param values primitive array
      * @return DB array.
      */
-    public static DbDoubleArray array(double[] values) {
+    public static DoubleVector array(double[] values) {
         if(values == null){
             return null;
         }
 
-        return new DbDoubleArrayDirect(values);
+        return new DoubleVectorDirect(values);
     }
 
     /**
@@ -310,7 +310,7 @@ public class DoublePrimitives {
             return QueryConstants.NULL_LONG;
         }
 
-        return countDistinct(new DbDoubleArrayDirect(values));
+        return countDistinct(new DoubleVectorDirect(values));
     }
 
     /**
@@ -319,7 +319,7 @@ public class DoublePrimitives {
      * @param values values.
      * @return number of distinct non-null values.
      */
-    public static long countDistinct(final DbDoubleArray values) {
+    public static long countDistinct(final DoubleVector values) {
         return countDistinct(values, false);
     }
 
@@ -335,7 +335,7 @@ public class DoublePrimitives {
             return QueryConstants.NULL_LONG;
         }
 
-        return countDistinct(new DbDoubleArrayDirect(values), countNull);
+        return countDistinct(new DoubleVectorDirect(values), countNull);
     }
 
     /**
@@ -345,7 +345,7 @@ public class DoublePrimitives {
      * @param countNull true to count null values, and false to exclude null values.
      * @return number of distinct values.
      */
-    public static long countDistinct(final DbDoubleArray values, boolean countNull) {
+    public static long countDistinct(final DoubleVector values, boolean countNull) {
         if(values == null) {
             return QueryConstants.NULL_LONG;
         }
@@ -377,7 +377,7 @@ public class DoublePrimitives {
      * @param countNull if nulls should count as values
      * @return the single unique value in the array, or null.
      */
-    public static double uniqueValue(final DbDoubleArray arr, boolean countNull) {
+    public static double uniqueValue(final DoubleVector arr, boolean countNull) {
         if(arr == null || arr.isEmpty()) {
             return NULL_DOUBLE;
         }
@@ -409,7 +409,7 @@ public class DoublePrimitives {
             return null;
         }
 
-        return distinct(new DbDoubleArrayDirect(values)).toArray();
+        return distinct(new DoubleVectorDirect(values)).toArray();
     }
 
     /**
@@ -418,7 +418,7 @@ public class DoublePrimitives {
      * @param values values.
      * @return unsorted array containing only distinct non-null items from arr.
      */
-    public static DbDoubleArray distinct(final DbDoubleArray values) {
+    public static DoubleVector distinct(final DoubleVector values) {
         if(values == null) {
             return null;
         }
@@ -481,17 +481,17 @@ public class DoublePrimitives {
      * @param sort true to sort the resultant array
      * @return array containing only distinct items from arr.
      */
-    public static DbDoubleArray distinct(final DbDoubleArray values, boolean includeNull, boolean sort) {
+    public static DoubleVector distinct(final DoubleVector values, boolean includeNull, boolean sort) {
         if(values == null) {
             return null;
         }
 
         if(values.size() == 0) {
-            return new DbDoubleArrayDirect();
+            return new DoubleVectorDirect();
         }
 
         if(values.size() == 1) {
-            return !includeNull && values.get(0) == QueryConstants.NULL_DOUBLE ? new DbDoubleArrayDirect() : values;
+            return !includeNull && values.get(0) == QueryConstants.NULL_DOUBLE ? new DoubleVectorDirect() : values;
         }
 
         final TDoubleArrayList orderedList = new TDoubleArrayList();
@@ -513,7 +513,7 @@ public class DoublePrimitives {
             data = orderedList.toArray();
         }
 
-        return new DbDoubleArrayDirect(data);
+        return new DoubleVectorDirect(data);
     }
 
     /**
@@ -562,7 +562,7 @@ public class DoublePrimitives {
             return new double[0];
         }
 
-        return concat(Arrays.stream(values).map(e->e==null?null:new DbDoubleArrayDirect(e)).toArray(DbDoubleArray[]::new));
+        return concat(Arrays.stream(values).map(e->e==null?null:new DoubleVectorDirect(e)).toArray(DoubleVector[]::new));
     }
 
     /**
@@ -571,14 +571,14 @@ public class DoublePrimitives {
      * @param values values.
      * @return concatenation of multiple arrays into a single array.
      */
-    public static double[] concat(DbDoubleArray... values){
+    public static double[] concat(DoubleVector... values){
         if(values == null){
             return new double[0];
         }
 
         int n = 0;
 
-        for (DbDoubleArray v : values) {
+        for (DoubleVector v : values) {
             if (v != null) {
                 n += v.size();
             }
@@ -587,7 +587,7 @@ public class DoublePrimitives {
         final double[] result = new double[n];
         int idx = 0;
 
-        for (DbDoubleArray v : values) {
+        for (DoubleVector v : values) {
             if (v != null) {
                 for (int i = 0; i < v.size(); i++) {
                     result[idx] = v.get(i);
@@ -610,7 +610,7 @@ public class DoublePrimitives {
             return null;
         }
 
-        return reverse(new DbDoubleArrayDirect(values));
+        return reverse(new DoubleVectorDirect(values));
     }
 
     /**
@@ -619,7 +619,7 @@ public class DoublePrimitives {
      * @param values values.
      * @return array with the values reversed.
      */
-    public static double[] reverse(DbDoubleArray values){
+    public static double[] reverse(DoubleVector values){
         if(values == null){
             return null;
         }

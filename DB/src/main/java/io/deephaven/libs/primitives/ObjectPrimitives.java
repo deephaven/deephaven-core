@@ -4,8 +4,8 @@
 
 package io.deephaven.libs.primitives;
 
-import io.deephaven.engine.tables.dbarrays.DbArray;
-import io.deephaven.engine.tables.dbarrays.DbArrayDirect;
+import io.deephaven.engine.tables.dbarrays.ObjectVector;
+import io.deephaven.engine.tables.dbarrays.ObjectVectorDirect;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.util.LongSizedDataStructure;
 import gnu.trove.set.hash.THashSet;
@@ -90,7 +90,7 @@ public class ObjectPrimitives {
      * @param defaultValue default value to return for null values.
      * @return value, if value is not null, and defaultValue if value is null.
      */
-    static public <T> T[] nullToValue(DbArray<T> values, T defaultValue) {
+    static public <T> T[] nullToValue(ObjectVector<T> values, T defaultValue) {
         T[] result = (T[]) Array.newInstance(values.getComponentType(), LongSizedDataStructure.intSize("nullToValue", values.size()));
 
         for (int i = 0; i < values.size(); i++) {
@@ -106,7 +106,7 @@ public class ObjectPrimitives {
      * @param values values.
      * @return number of non-null values.
      */
-    static public <T> int count(DbArray<T> values) {
+    static public <T> int count(ObjectVector<T> values) {
         if(values == null){
             return 0;
         }
@@ -129,7 +129,7 @@ public class ObjectPrimitives {
      * @param values values.
      * @return last value from the array.
      */
-    static public <T> T last(DbArray<T> values) {
+    static public <T> T last(ObjectVector<T> values) {
         return values.get(values.size() - 1);
     }
 
@@ -139,7 +139,7 @@ public class ObjectPrimitives {
      * @param values values.
      * @return first value from the array.
      */
-    static public <T> T first(DbArray<T> values) {
+    static public <T> T first(ObjectVector<T> values) {
         return values.get(0);
     }
 
@@ -150,7 +150,7 @@ public class ObjectPrimitives {
      * @param values values.
      * @return nth value from the array or null, if the rowSet is outside of the array's rowSet range.
      */
-    static public <T> T nth(int index, DbArray<T> values) {
+    static public <T> T nth(int index, ObjectVector<T> values) {
         if (index < 0 || index >= values.size()) {
             return null;
         }
@@ -168,7 +168,7 @@ public class ObjectPrimitives {
      * @param values DB array
      * @return primitive array.
      */
-    public static <T> T[] vec(DbArray<T> values) {
+    public static <T> T[] vec(ObjectVector<T> values) {
         return values.toArray();
     }
 
@@ -209,7 +209,7 @@ public class ObjectPrimitives {
      * @param values values.
      * @return minimum of non-null values.
      */
-    static public <T extends Comparable> T min(DbArray<T> values) {
+    static public <T extends Comparable> T min(ObjectVector<T> values) {
         T min = null;
 
         for (int i = 0; i < values.size(); i++) {
@@ -232,7 +232,7 @@ public class ObjectPrimitives {
      * @param values values.
      * @return maximum of non-null values.
      */
-    static public <T extends Comparable> T max(DbArray<T> values) {
+    static public <T extends Comparable> T max(ObjectVector<T> values) {
         T max = null;
 
         for (int i = 0; i < values.size(); i++) {
@@ -257,7 +257,7 @@ public class ObjectPrimitives {
      * @param choiceWhenEquals algorithm used to resolve ties when performing a binary search.
      * @return rowSet of the search key, if it is contained in the array; otherwise, the rowSet of where the key would be inserted.
      */
-    static public <T extends Comparable<? super T>> int binSearchIndex(DbArray<T> values, T key, BinSearch choiceWhenEquals) {
+    static public <T extends Comparable<? super T>> int binSearchIndex(ObjectVector<T> values, T key, BinSearch choiceWhenEquals) {
         int index = rawBinSearchIndex(values, key, choiceWhenEquals);
         if (index == NULL_INT) {
             return index;
@@ -278,7 +278,7 @@ public class ObjectPrimitives {
      * @param choiceWhenEquals algorithm used to resolve ties when performing a binary search.
      * @return rowSet of the search key, if it is contained in the array; otherwise, {@code (-(insertion point) - 1)}.
      */
-    static public <T extends Comparable<? super T>> int rawBinSearchIndex(DbArray<T> values, T key, BinSearch choiceWhenEquals) {
+    static public <T extends Comparable<? super T>> int rawBinSearchIndex(ObjectVector<T> values, T key, BinSearch choiceWhenEquals) {
         if (values == null || key == null) {
             return NULL_INT;
         }
@@ -290,7 +290,7 @@ public class ObjectPrimitives {
         }
     }
 
-    static private <T extends Comparable<? super T>> int binarySearch0(DbArray<T> array, int fromIndex, int toIndex, T key) {
+    static private <T extends Comparable<? super T>> int binarySearch0(ObjectVector<T> array, int fromIndex, int toIndex, T key) {
         int low = fromIndex;
         int high = toIndex - 1;
 
@@ -313,7 +313,7 @@ public class ObjectPrimitives {
         return -(low + 1);  // key not found.
     }
 
-    static private <T extends Comparable<? super T>> int binarySearch0Modified(DbArray<T> array, int fromIndex, int toIndex, T key, boolean highestOrLowest) {
+    static private <T extends Comparable<? super T>> int binarySearch0Modified(ObjectVector<T> array, int fromIndex, int toIndex, T key, boolean highestOrLowest) {
         int low = fromIndex;
         int high = toIndex - 1;
 
@@ -505,12 +505,12 @@ public class ObjectPrimitives {
      * @param values values.
      * @return sorted values.
      */
-    static public <T extends Comparable<? super T>> DbArray<T> sort(final DbArray<T> values) {
+    static public <T extends Comparable<? super T>> ObjectVector<T> sort(final ObjectVector<T> values) {
         if (values == null) {
             return null;
         }
         if (values.size() == 0) {
-            return new DbArrayDirect<>();
+            return new ObjectVectorDirect<>();
         }
 
         T[] vs = (T[]) Array.newInstance(values.getComponentType(), LongSizedDataStructure.intSize("nullToValue", values.size()));
@@ -520,7 +520,7 @@ public class ObjectPrimitives {
         }
 
         Arrays.sort(vs, Comparators.AscendingOrderComparator.getInstance());
-        return new DbArrayDirect<>(vs);
+        return new ObjectVectorDirect<>(vs);
     }
 
     /**
@@ -569,12 +569,12 @@ public class ObjectPrimitives {
      * @param values values.
      * @return sorted values.
      */
-    static public <T extends Comparable<? super T>> DbArray<T> sortDescending(final DbArray<T> values) {
+    static public <T extends Comparable<? super T>> ObjectVector<T> sortDescending(final ObjectVector<T> values) {
         if (values == null) {
             return null;
         }
         if (values.size() == 0) {
-            return new DbArrayDirect<>();
+            return new ObjectVectorDirect<>();
         }
 
         T[] vs = (T[]) Array.newInstance(values.getComponentType(), LongSizedDataStructure.intSize("nullToValue", values.size()));
@@ -584,7 +584,7 @@ public class ObjectPrimitives {
         }
 
         Arrays.sort(vs, Comparators.AscendingOrderComparator.getReversedInstance());
-        return new DbArrayDirect<>(vs);
+        return new ObjectVectorDirect<>(vs);
     }
 
     /**
@@ -633,7 +633,7 @@ public class ObjectPrimitives {
      * @param values values.
      * @return number of distinct non-null values.
      */
-    public static <T extends Comparable<? super T>> long countDistinct(final DbArray<T> values) {
+    public static <T extends Comparable<? super T>> long countDistinct(final ObjectVector<T> values) {
         return countDistinct(values, false);
     }
 
@@ -644,7 +644,7 @@ public class ObjectPrimitives {
      * @param countNull true to count null values, and false to exclude null values.
      * @return number of distinct values.
      */
-    public static <T extends Comparable<? super T>> long countDistinct(final DbArray<T> values, boolean countNull) {
+    public static <T extends Comparable<? super T>> long countDistinct(final ObjectVector<T> values, boolean countNull) {
         if(values == null) {
             return QueryConstants.NULL_LONG;
         }
@@ -683,7 +683,7 @@ public class ObjectPrimitives {
      * @param values values.
      * @return unsorted array containing only distinct non-null items from arr.
      */
-    public static <T extends Comparable<? super T>> DbArray<T> distinct(final DbArray<T> values) {
+    public static <T extends Comparable<? super T>> ObjectVector<T> distinct(final ObjectVector<T> values) {
         return distinct(values, false, false);
     }
 
@@ -695,17 +695,17 @@ public class ObjectPrimitives {
      * @param sort true to sort the resultant array
      * @return array containing only distinct items from arr.
      */
-    public static <T extends Comparable<? super T>> DbArray<T> distinct(final DbArray<T> values, boolean includeNull, boolean sort) {
+    public static <T extends Comparable<? super T>> ObjectVector<T> distinct(final ObjectVector<T> values, boolean includeNull, boolean sort) {
         if(values == null) {
             return null;
         }
 
         if(values.size() == 0) {
-            return new DbArrayDirect<>();
+            return new ObjectVectorDirect<>();
         }
 
         if(values.size() == 1) {
-            return !includeNull && isDBNull(values.get(0)) ? new DbArrayDirect<>() : values;
+            return !includeNull && isDBNull(values.get(0)) ? new ObjectVectorDirect<>() : values;
         }
 
         final List<T> orderedList = new ArrayList<>();
@@ -721,6 +721,6 @@ public class ObjectPrimitives {
             orderedList.sort(Comparable::compareTo);
         }
 
-        return new DbArrayDirect(orderedList.toArray());
+        return new ObjectVectorDirect(orderedList.toArray());
     }
 }

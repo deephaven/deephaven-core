@@ -4,9 +4,9 @@
 package io.deephaven.engine.v2.ssms;
 
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.tables.dbarrays.DbArray;
-import io.deephaven.engine.tables.dbarrays.DbShortArray;
-import io.deephaven.engine.tables.dbarrays.DbShortArrayDirect;
+import io.deephaven.engine.tables.dbarrays.ObjectVector;
+import io.deephaven.engine.tables.dbarrays.ShortVector;
+import io.deephaven.engine.tables.dbarrays.ShortVectorDirect;
 import io.deephaven.engine.tables.utils.ArrayUtils;
 import io.deephaven.engine.util.DhShortComparisons;
 import io.deephaven.engine.v2.by.SumIntChunk;
@@ -23,7 +23,7 @@ import java.util.Objects;
 
 import static io.deephaven.util.QueryConstants.NULL_SHORT;
 
-public final class ShortSegmentedSortedMultiset implements SegmentedSortedMultiSet<Short>, DbShortArray {
+public final class ShortSegmentedSortedMultiset implements SegmentedSortedMultiSet<Short>, ShortVector {
     private final int leafSize;
     private int leafCount;
     private int size;
@@ -47,7 +47,7 @@ public final class ShortSegmentedSortedMultiset implements SegmentedSortedMultiS
     private transient boolean accumulateDeltas = false;
     private transient TShortHashSet added;
     private transient TShortHashSet removed;
-    private transient DbShortArray prevValues;
+    private transient ShortVector prevValues;
     // endregion Deltas
 
 
@@ -2194,7 +2194,7 @@ public final class ShortSegmentedSortedMultiset implements SegmentedSortedMultiS
         }
 
         if(prevValues == null) {
-            prevValues = new DbShortArrayDirect(keyArray());
+            prevValues = new ShortVectorDirect(keyArray());
         }
 
         if (added == null) {
@@ -2223,7 +2223,7 @@ public final class ShortSegmentedSortedMultiset implements SegmentedSortedMultiS
         }
 
         if(prevValues == null) {
-            prevValues = new DbShortArrayDirect(keyArray());
+            prevValues = new ShortVectorDirect(keyArray());
         }
 
         if(removed == null) {
@@ -2264,12 +2264,12 @@ public final class ShortSegmentedSortedMultiset implements SegmentedSortedMultiS
         chunk.copyFromTypedArray(added.toArray(), 0, position, added.size());
     }
 
-    public DbShortArray getPrevValues() {
+    public ShortVector getPrevValues() {
         return prevValues == null ? this : prevValues;
     }
     // endregion
 
-    // region DBShortArray
+    // region ShortVector
     @Override
     public short get(long i) {
         if(i < 0 || i > size()) {
@@ -2291,19 +2291,19 @@ public final class ShortSegmentedSortedMultiset implements SegmentedSortedMultiS
     }
 
     @Override
-    public DbShortArray subArray(long fromIndex, long toIndex) {
-        return new DbShortArrayDirect(keyArray(fromIndex, toIndex));
+    public ShortVector subVector(long fromIndex, long toIndex) {
+        return new ShortVectorDirect(keyArray(fromIndex, toIndex));
     }
 
     @Override
-    public DbShortArray subArrayByPositions(long[] positions) {
+    public ShortVector subVectorByPositions(long[] positions) {
         final short[] keyArray = new short[positions.length];
         int writePos = 0;
         for (long position : positions) {
             keyArray[writePos++] = get(position);
         }
 
-        return new DbShortArrayDirect(keyArray);
+        return new ShortVectorDirect(keyArray);
     }
 
     @Override
@@ -2317,13 +2317,13 @@ public final class ShortSegmentedSortedMultiset implements SegmentedSortedMultiS
     }
 
     @Override
-    public DbShortArray getDirect() {
-        return new DbShortArrayDirect(keyArray());
+    public ShortVector getDirect() {
+        return new ShortVectorDirect(keyArray());
     }
     //endregion
 
-    //region DbArrayEquals
-    private boolean equalsArray(DbShortArray o) {
+    //region VectorEquals
+    private boolean equalsArray(ShortVector o) {
         if(size() != o.size()) {
             return false;
         }
@@ -2351,9 +2351,9 @@ public final class ShortSegmentedSortedMultiset implements SegmentedSortedMultiS
 
         return true;
     }
-    //endregion DbArrayEquals
+    //endregion VectorEquals
 
-    private boolean equalsArray(DbArray<?> o) {
+    private boolean equalsArray(ObjectVector<?> o) {
         //region EqualsArrayTypeCheck
         if(o.getComponentType() != short.class && o.getComponentType() != Short.class) {
             return false;
@@ -2367,11 +2367,11 @@ public final class ShortSegmentedSortedMultiset implements SegmentedSortedMultiS
         if(leafCount == 1) {
             for(int ii = 0; ii < size; ii++) {
                 final Short val = (Short)o.get(ii);
-                //region DbArrayEquals
+                //region VectorEquals
                 if(directoryValues[ii] == NULL_SHORT && val != null && val != NULL_SHORT) {
                     return false;
                 }
-                //endregion DbArrayEquals
+                //endregion VectorEquals
 
                 if(!Objects.equals(directoryValues[ii], val)) {
                     return false;
@@ -2385,11 +2385,11 @@ public final class ShortSegmentedSortedMultiset implements SegmentedSortedMultiS
         for (int li = 0; li < leafCount; ++li) {
             for(int ai = 0; ai < leafSizes[li]; ai++) {
                 final Short val = (Short)o.get(nCompared++);
-                //region DbArrayEquals
+                //region VectorEquals
                 if(leafValues[li][ai] == NULL_SHORT && val != null && val != NULL_SHORT) {
                     return false;
                 }
-                //endregion DbArrayEquals
+                //endregion VectorEquals
 
                 if(!Objects.equals(leafValues[li][ai],  val)) {
                     return false;
@@ -2404,14 +2404,14 @@ public final class ShortSegmentedSortedMultiset implements SegmentedSortedMultiS
     public boolean equals(Object o) {
         if (this == o) return true;
         if (!(o instanceof ShortSegmentedSortedMultiset)) {
-            //region DbArrayEquals
-            if(o instanceof DbShortArray) {
-                return equalsArray((DbShortArray)o);
+            //region VectorEquals
+            if(o instanceof ShortVector) {
+                return equalsArray((ShortVector)o);
             }
-            //endregion DbArrayEquals
+            //endregion VectorEquals
 
-            if(o instanceof DbArray) {
-                return equalsArray((DbArray)o);
+            if(o instanceof ObjectVector) {
+                return equalsArray((ObjectVector)o);
             }
             return false;
         }

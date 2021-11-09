@@ -3,7 +3,7 @@ package io.deephaven.engine.v2;
 import io.deephaven.compilertools.CompilerTools;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.dbarrays.DbDoubleArrayDirect;
+import io.deephaven.engine.tables.dbarrays.DoubleVectorDirect;
 import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.utils.UpdatePerformanceTracker;
@@ -105,16 +105,16 @@ public class TestTotalsTable extends RefreshingTableTestCase {
                     totals3.getColumn("byteCol").get(0));
             assertEquals(
                     DoubleNumericPrimitives
-                            .var(new DbDoubleArrayDirect((double[]) queryTable.getColumn("doubleCol").getDirect())),
+                            .var(new DoubleVectorDirect((double[]) queryTable.getColumn("doubleCol").getDirect())),
                     totals3.getColumn("doubleCol").get(0));
             assertEquals(
                     DoubleNumericPrimitives
-                            .std(new DbDoubleArrayDirect((double[]) queryTable.getColumn("doubleNullCol").getDirect())),
+                            .std(new DoubleVectorDirect((double[]) queryTable.getColumn("doubleNullCol").getDirect())),
                     totals3.getColumn("doubleNullCol__Std").get(0));
             assertEquals(queryTable.size(), totals3.getColumn("doubleNullCol__Count").get(0));
             assertEquals(
                     DoubleNumericPrimitives
-                            .avg(new DbDoubleArrayDirect((double[]) queryTable.getColumn("doubleCol2").getDirect())),
+                            .avg(new DoubleVectorDirect((double[]) queryTable.getColumn("doubleCol2").getDirect())),
                     totals3.getColumn("doubleCol2").get(0));
             assertEquals(queryTable.size(), (long) totals3.getColumn("shortCol").get(0));
 

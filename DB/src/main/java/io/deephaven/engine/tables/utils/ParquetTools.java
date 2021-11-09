@@ -534,8 +534,8 @@ public class ParquetTools {
     }
 
     private static final SimpleTypeMap<Class<?>> DB_ARRAY_TYPE_MAP = SimpleTypeMap.create(
-            null, DbCharArray.class, DbByteArray.class, DbShortArray.class, DbIntArray.class, DbLongArray.class,
-            DbFloatArray.class, DbDoubleArray.class, DbArray.class);
+            null, CharVector.class, ByteVector.class, ShortVector.class, IntVector.class, LongVector.class,
+            FloatVector.class, DoubleVector.class, ObjectVector.class);
 
     private static Class<?> loadClass(final String colName, final String desc, final String className) {
         try {
@@ -571,7 +571,7 @@ public class ParquetTools {
                     if (dbArrayType != null) {
                         colDef = ColumnDefinition.fromGenericType(parquetColDef.name, dbArrayType, baseType);
                     } else {
-                        colDef = ColumnDefinition.fromGenericType(parquetColDef.name, DbArray.class, baseType);
+                        colDef = ColumnDefinition.fromGenericType(parquetColDef.name, ObjectVector.class, baseType);
                     }
                 } else {
                     throw new UncheckedDeephavenException("Unhandled dbSpecialType=" + parquetColDef.dhSpecialType);

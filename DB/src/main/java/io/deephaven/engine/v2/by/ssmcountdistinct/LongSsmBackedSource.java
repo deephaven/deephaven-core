@@ -3,7 +3,7 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.v2.by.ssmcountdistinct;
 
-import io.deephaven.engine.tables.dbarrays.DbLongArray;
+import io.deephaven.engine.tables.dbarrays.LongVector;
 import io.deephaven.engine.v2.sources.AbstractColumnSource;
 import io.deephaven.engine.v2.sources.ColumnSourceGetDefaults;
 import io.deephaven.engine.v2.sources.MutableColumnSourceGetDefaults;
@@ -14,16 +14,16 @@ import io.deephaven.engine.v2.utils.RowSet;
 /**
  * A {@link SsmBackedColumnSource} for Longs.
  */
-public class LongSsmBackedSource extends AbstractColumnSource<DbLongArray>
-                                 implements ColumnSourceGetDefaults.ForObject<DbLongArray>,
-                                            MutableColumnSourceGetDefaults.ForObject<DbLongArray>,
-                                            SsmBackedColumnSource<LongSegmentedSortedMultiset, DbLongArray> {
+public class LongSsmBackedSource extends AbstractColumnSource<LongVector>
+                                 implements ColumnSourceGetDefaults.ForObject<LongVector>,
+                                            MutableColumnSourceGetDefaults.ForObject<LongVector>,
+                                            SsmBackedColumnSource<LongSegmentedSortedMultiset, LongVector> {
     private final ObjectArraySource<LongSegmentedSortedMultiset> underlying;
     private boolean trackingPrevious = false;
 
     //region Constructor
     public LongSsmBackedSource() {
-        super(DbLongArray.class, long.class);
+        super(LongVector.class, long.class);
         underlying = new ObjectArraySource<>(LongSegmentedSortedMultiset.class, long.class);
     }
     //endregion Constructor
@@ -68,12 +68,12 @@ public class LongSsmBackedSource extends AbstractColumnSource<DbLongArray>
     }
 
     @Override
-    public DbLongArray get(long index) {
+    public LongVector get(long index) {
         return underlying.get(index);
     }
 
     @Override
-    public DbLongArray getPrev(long index) {
+    public LongVector getPrev(long index) {
         final LongSegmentedSortedMultiset maybePrev = underlying.getPrev(index);
         return maybePrev == null ? null : maybePrev.getPrevValues();
     }

@@ -2,7 +2,7 @@ package io.deephaven.engine.v2.select.analyzers;
 
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.tables.ColumnDefinition;
-import io.deephaven.engine.tables.dbarrays.DbArrayBase;
+import io.deephaven.engine.tables.dbarrays.Vector;
 import io.deephaven.engine.v2.ModifiedColumnSet;
 import io.deephaven.engine.v2.Listener;
 import io.deephaven.engine.v2.select.SelectColumn;
@@ -50,7 +50,7 @@ public abstract class SelectAndViewAnalyzer {
                     || (sc instanceof SwitchColumn && ((SwitchColumn) sc).getRealColumn() instanceof SourceColumn)) {
                 final ColumnSource<?> sccs = sc.getDataView();
                 if ((sccs instanceof SparseArrayColumnSource || sccs instanceof ArrayBackedColumnSource)
-                        && !DbArrayBase.class.isAssignableFrom(sc.getReturnedType())) {
+                        && !Vector.class.isAssignableFrom(sc.getReturnedType())) {
                     analyzer = analyzer.createLayerForPreserve(sc.getName(), sc, sc.getDataView(), distinctDeps,
                             mcsBuilder);
                     continue;

@@ -3,10 +3,7 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.v2.by.ssmcountdistinct;
 
-import io.deephaven.engine.tables.dbarrays.DbArray;
-import io.deephaven.engine.tables.dbarrays.DbArrayDirect;
-
-import java.util.Objects;
+import io.deephaven.engine.tables.dbarrays.ObjectVector;
 
 import io.deephaven.engine.v2.sources.AbstractColumnSource;
 import io.deephaven.engine.v2.sources.ColumnSourceGetDefaults;
@@ -18,16 +15,16 @@ import io.deephaven.engine.v2.utils.RowSet;
 /**
  * A {@link SsmBackedColumnSource} for Objects.
  */
-public class ObjectSsmBackedSource extends AbstractColumnSource<DbArray>
-                                 implements ColumnSourceGetDefaults.ForObject<DbArray>,
-                                            MutableColumnSourceGetDefaults.ForObject<DbArray>,
-                                            SsmBackedColumnSource<ObjectSegmentedSortedMultiset, DbArray> {
+public class ObjectSsmBackedSource extends AbstractColumnSource<ObjectVector>
+                                 implements ColumnSourceGetDefaults.ForObject<ObjectVector>,
+                                            MutableColumnSourceGetDefaults.ForObject<ObjectVector>,
+                                            SsmBackedColumnSource<ObjectSegmentedSortedMultiset, ObjectVector> {
     private final ObjectArraySource<ObjectSegmentedSortedMultiset> underlying;
     private boolean trackingPrevious = false;
 
     //region Constructor
     public ObjectSsmBackedSource(Class type) {
-        super(DbArray.class, type);
+        super(ObjectVector.class, type);
         underlying = new ObjectArraySource<>(ObjectSegmentedSortedMultiset.class, type);
     }
     //endregion Constructor
@@ -72,12 +69,12 @@ public class ObjectSsmBackedSource extends AbstractColumnSource<DbArray>
     }
 
     @Override
-    public DbArray get(long index) {
+    public ObjectVector get(long index) {
         return underlying.get(index);
     }
 
     @Override
-    public DbArray getPrev(long index) {
+    public ObjectVector getPrev(long index) {
         final ObjectSegmentedSortedMultiset maybePrev = underlying.getPrev(index);
         return maybePrev == null ? null : maybePrev.getPrevValues();
     }

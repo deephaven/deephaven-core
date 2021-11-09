@@ -1,7 +1,7 @@
 package io.deephaven.engine.v2.locations.parquet.topage;
 
-import io.deephaven.engine.tables.dbarrays.DbArray;
-import io.deephaven.engine.tables.dbarrays.DbArrayDirect;
+import io.deephaven.engine.tables.dbarrays.ObjectVector;
+import io.deephaven.engine.tables.dbarrays.ObjectVectorDirect;
 import io.deephaven.engine.tables.utils.DBDateTime;
 import io.deephaven.engine.tables.utils.DBTimeUtils;
 import io.deephaven.engine.v2.sources.chunk.Attributes;
@@ -42,14 +42,14 @@ public abstract class ToDBDateTimePage<ATTR extends Attributes.Any> extends ToLo
 
     protected ToDBDateTimePage() {}
 
-    protected static DbArray<DBDateTime> makeDbArrayHelper(final long[] result,
-            final LongFunction<DBDateTime> unitToTime) {
+    protected static ObjectVector<DBDateTime> makeDbArrayHelper(final long[] result,
+                                                                final LongFunction<DBDateTime> unitToTime) {
         DBDateTime[] to = new DBDateTime[result.length];
 
         for (int i = 0; i < result.length; ++i) {
             to[i] = unitToTime.apply(result[i]);
         }
-        return new DbArrayDirect<>(to);
+        return new ObjectVectorDirect<>(to);
     }
 
     protected static long[] convertResultHelper(@NotNull final Object result, final LongUnaryOperator unitToNanos) {
@@ -70,7 +70,7 @@ public abstract class ToDBDateTimePage<ATTR extends Attributes.Any> extends ToLo
     private static final class ToDBDateTimePageFromNanos<ATTR extends Attributes.Any> extends ToDBDateTimePage<ATTR> {
         @Override
         @NotNull
-        public DbArray<DBDateTime> makeDbArray(long[] result) {
+        public ObjectVector<DBDateTime> makeDbArray(long[] result) {
             return makeDbArrayHelper(result, DBTimeUtils::nanosToTime);
         }
     }
@@ -78,7 +78,7 @@ public abstract class ToDBDateTimePage<ATTR extends Attributes.Any> extends ToLo
     private static final class ToDBDateTimePageFromMicros<ATTR extends Attributes.Any> extends ToDBDateTimePage<ATTR> {
         @Override
         @NotNull
-        public DbArray<DBDateTime> makeDbArray(long[] result) {
+        public ObjectVector<DBDateTime> makeDbArray(long[] result) {
             return makeDbArrayHelper(result, DBTimeUtils::microsToTime);
         }
 
@@ -91,7 +91,7 @@ public abstract class ToDBDateTimePage<ATTR extends Attributes.Any> extends ToLo
     private static final class ToDBDateTimePageFromMillis<ATTR extends Attributes.Any> extends ToDBDateTimePage<ATTR> {
         @Override
         @NotNull
-        public DbArray<DBDateTime> makeDbArray(long[] result) {
+        public ObjectVector<DBDateTime> makeDbArray(long[] result) {
             return makeDbArrayHelper(result, DBTimeUtils::millisToTime);
         }
 

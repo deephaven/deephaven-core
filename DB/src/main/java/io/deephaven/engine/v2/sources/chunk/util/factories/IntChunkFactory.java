@@ -64,21 +64,21 @@ public class IntChunkFactory implements ChunkFactory {
         return IntChunkChunk.chunkWrap(typedArray, offset, capacity);
     }
 
-    // region dbArrayWrap
+    // region vectorWrap
     @NotNull
     @Override
-    public final DbIntArrayDirect dbArrayWrap(Object array) {
+    public final IntVectorDirect vectorWrap(Object array) {
         final int[] typedArray = (int[])array;
-        return new DbIntArrayDirect(typedArray);
+        return new IntVectorDirect(typedArray);
     }
 
     @NotNull
     @Override
-    public DbIntArraySlice dbArrayWrap(Object array, int offset, int capacity) {
-        DbIntArrayDirect dbIntArrayDirect = dbArrayWrap(array);
-        return new DbIntArraySlice(dbIntArrayDirect, offset, capacity);
+    public IntVectorSlice vectorWrap(Object array, int offset, int capacity) {
+        IntVectorDirect dbIntArrayDirect = vectorWrap(array);
+        return new IntVectorSlice(dbIntArrayDirect, offset, capacity);
     }
-    // endregion dbArrayWrap
+    // endregion vectorWrap
 
     @NotNull
     @Override

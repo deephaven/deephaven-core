@@ -4,9 +4,9 @@
 
 package io.deephaven.libs.primitives;
 
-import io.deephaven.engine.tables.dbarrays.DbArray;
-import io.deephaven.engine.tables.dbarrays.DbBooleanArray;
-import io.deephaven.engine.tables.dbarrays.DbBooleanArrayDirect;
+import io.deephaven.engine.tables.dbarrays.BooleanVector;
+import io.deephaven.engine.tables.dbarrays.ObjectVector;
+import io.deephaven.engine.tables.dbarrays.BooleanVectorDirect;
 
 import static io.deephaven.util.QueryConstants.NULL_BOOLEAN;
 
@@ -46,7 +46,7 @@ public class BooleanPrimitives {
      * @param defaultValue default value to return for null values.
      * @return value, if value is not null, and defaultValue if value is null.
      */
-    static public Boolean[] nullToValue(DbBooleanArray values, boolean defaultValue) {
+    static public Boolean[] nullToValue(BooleanVector values, boolean defaultValue) {
         Boolean[] result = new Boolean[values.intSize("nullToValue")];
 
         for (int i = 0; i < values.size(); i++) {
@@ -62,7 +62,7 @@ public class BooleanPrimitives {
      * @param values values.
      * @return number of non-null values.
      */
-    static public int count(DbBooleanArray values){
+    static public int count(BooleanVector values){
         if (values == null){
             return 0;
         }
@@ -138,7 +138,7 @@ public class BooleanPrimitives {
      * @param values values.
      * @return nth value from the array or null, if the rowSet is outside of the array's rowSet range.
      */
-    static public Boolean nth(int index, DbBooleanArray values){
+    static public Boolean nth(int index, BooleanVector values){
         if(index < 0 || index >= values.size()){
             return NULL_BOOLEAN;
         }
@@ -163,7 +163,7 @@ public class BooleanPrimitives {
      * @param values DB array
      * @return primitive array.
      */
-    public static Boolean[] vec(DbBooleanArray values) {
+    public static Boolean[] vec(BooleanVector values) {
         return values.toArray();
     }
 
@@ -173,8 +173,8 @@ public class BooleanPrimitives {
      * @param values primitive array
      * @return DB array.
      */
-    public static DbBooleanArray array(Boolean[] values) {
-        return new DbBooleanArrayDirect(values);
+    public static BooleanVector array(Boolean[] values) {
+        return new BooleanVectorDirect(values);
     }
 
     /**
@@ -215,7 +215,7 @@ public class BooleanPrimitives {
      * @param values values.
      * @return logical and of all the values in the array.
      */
-    static public Boolean and(DbArray<Boolean> values) {
+    static public Boolean and(ObjectVector<Boolean> values) {
         for (int ii = 0; ii < values.size(); ++ii) {
             Boolean b = values.get(ii);
             if (!isNull(b) && !b) {
@@ -252,7 +252,7 @@ public class BooleanPrimitives {
      * @param nullValue value to use in place of null values.
      * @return logical and of all the values in the array.
      */
-    static public Boolean and(DbArray<Boolean> values, Boolean nullValue) {
+    static public Boolean and(ObjectVector<Boolean> values, Boolean nullValue) {
         for (int ii = 0; ii < values.size(); ++ii) {
             Boolean b = values.get(ii);
             b = b==null ? nullValue : b;

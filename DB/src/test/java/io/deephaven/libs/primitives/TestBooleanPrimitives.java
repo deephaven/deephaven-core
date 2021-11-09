@@ -5,8 +5,8 @@
 package io.deephaven.libs.primitives;
 
 import io.deephaven.base.testing.BaseArrayTestCase;
-import io.deephaven.engine.tables.dbarrays.DbArrayDirect;
-import io.deephaven.engine.tables.dbarrays.DbBooleanArrayDirect;
+import io.deephaven.engine.tables.dbarrays.BooleanVectorDirect;
+import io.deephaven.engine.tables.dbarrays.ObjectVectorDirect;
 
 import static io.deephaven.libs.primitives.BooleanPrimitives.*;
 import static io.deephaven.util.QueryConstants.NULL_BOOLEAN;
@@ -25,15 +25,15 @@ public class TestBooleanPrimitives extends BaseArrayTestCase {
     }
 
     public void testNullToValueArray() {
-        assertEquals(new Boolean[]{true, false, false}, nullToValue(new DbBooleanArrayDirect(Boolean.TRUE, null, Boolean.FALSE), false));
+        assertEquals(new Boolean[]{true, false, false}, nullToValue(new BooleanVectorDirect(Boolean.TRUE, null, Boolean.FALSE), false));
     }
 
     public void testCount(){
-        assertEquals(3,count(new DbBooleanArrayDirect(new Boolean[]{true, false, true})));
-        assertEquals(0,count(new DbBooleanArrayDirect()));
-        assertEquals(0,count(new DbBooleanArrayDirect(NULL_BOOLEAN)));
-        assertEquals(2,count(new DbBooleanArrayDirect(new Boolean[]{true,NULL_BOOLEAN,true})));
-        assertEquals(0, count((DbBooleanArrayDirect)null));
+        assertEquals(3,count(new BooleanVectorDirect(new Boolean[]{true, false, true})));
+        assertEquals(0,count(new BooleanVectorDirect()));
+        assertEquals(0,count(new BooleanVectorDirect(NULL_BOOLEAN)));
+        assertEquals(2,count(new BooleanVectorDirect(new Boolean[]{true,NULL_BOOLEAN,true})));
+        assertEquals(0, count((BooleanVectorDirect)null));
     }
 
     public void testLast(){
@@ -61,11 +61,11 @@ public class TestBooleanPrimitives extends BaseArrayTestCase {
     }
 
     public void testNth(){
-        assertEquals(NULL_BOOLEAN, nth(-1,new DbBooleanArrayDirect(new Boolean[]{true, false, true})));
-        assertEquals((Boolean)true, nth(0,new DbBooleanArrayDirect(new Boolean[]{true,false,true})));
-        assertEquals((Boolean)false, nth(1,new DbBooleanArrayDirect(new Boolean[]{true,false,true})));
-        assertEquals((Boolean)true, nth(2,new DbBooleanArrayDirect(new Boolean[]{true,false,true})));
-        assertEquals(NULL_BOOLEAN, nth(10,new DbBooleanArrayDirect(new Boolean[]{true,false,true})));
+        assertEquals(NULL_BOOLEAN, nth(-1,new BooleanVectorDirect(new Boolean[]{true, false, true})));
+        assertEquals((Boolean)true, nth(0,new BooleanVectorDirect(new Boolean[]{true,false,true})));
+        assertEquals((Boolean)false, nth(1,new BooleanVectorDirect(new Boolean[]{true,false,true})));
+        assertEquals((Boolean)true, nth(2,new BooleanVectorDirect(new Boolean[]{true,false,true})));
+        assertEquals(NULL_BOOLEAN, nth(10,new BooleanVectorDirect(new Boolean[]{true,false,true})));
 
         assertEquals(NULL_BOOLEAN, nth(-1,new Boolean[]{true, false, true}));
         assertEquals((Boolean)true, nth(0,new Boolean[]{true,false,true}));
@@ -75,11 +75,11 @@ public class TestBooleanPrimitives extends BaseArrayTestCase {
     }
 
     public void testVec(){
-        assertEquals(new Boolean[]{true,false,true}, vec(new DbBooleanArrayDirect(true,false,true)));
+        assertEquals(new Boolean[]{true,false,true}, vec(new BooleanVectorDirect(true,false,true)));
     }
 
     public void testArray(){
-        assertEquals(new DbBooleanArrayDirect(true,false,true), array(new Boolean[]{true,false,true}));
+        assertEquals(new BooleanVectorDirect(true,false,true), array(new Boolean[]{true,false,true}));
     }
 
     public void testAnd() {
@@ -104,19 +104,19 @@ public class TestBooleanPrimitives extends BaseArrayTestCase {
         assertFalse(and(new boolean[]{false, false, true}));
         assertFalse(and(new boolean[]{false, false, false}));
 
-        assertTrue(and(new DbArrayDirect<>(true, true, true)));
-        assertFalse(and(new DbArrayDirect<>(false, true, true)));
-        assertFalse(and(new DbArrayDirect<>(false, false, true)));
-        assertFalse(and(new DbArrayDirect<>(true, false, false)));
-        assertFalse(and(new DbArrayDirect<>(false, false, true)));
-        assertFalse(and(new DbArrayDirect<>(false, false, false)));
+        assertTrue(and(new ObjectVectorDirect<>(true, true, true)));
+        assertFalse(and(new ObjectVectorDirect<>(false, true, true)));
+        assertFalse(and(new ObjectVectorDirect<>(false, false, true)));
+        assertFalse(and(new ObjectVectorDirect<>(true, false, false)));
+        assertFalse(and(new ObjectVectorDirect<>(false, false, true)));
+        assertFalse(and(new ObjectVectorDirect<>(false, false, false)));
 
-        assertTrue(and(new DbArrayDirect<>(true, true, null), true));
-        assertFalse(and(new DbArrayDirect<>(false, true, null), true));
-        assertFalse(and(new DbArrayDirect<>(false, false, null), true));
-        assertFalse(and(new DbArrayDirect<>(true, false, null), false));
-        assertFalse(and(new DbArrayDirect<>(false, false, null), true));
-        assertFalse(and(new DbArrayDirect<>(false, false, null), false));
+        assertTrue(and(new ObjectVectorDirect<>(true, true, null), true));
+        assertFalse(and(new ObjectVectorDirect<>(false, true, null), true));
+        assertFalse(and(new ObjectVectorDirect<>(false, false, null), true));
+        assertFalse(and(new ObjectVectorDirect<>(true, false, null), false));
+        assertFalse(and(new ObjectVectorDirect<>(false, false, null), true));
+        assertFalse(and(new ObjectVectorDirect<>(false, false, null), false));
     }
 
     public void testSum() {

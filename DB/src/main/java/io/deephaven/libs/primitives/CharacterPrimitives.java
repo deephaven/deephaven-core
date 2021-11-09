@@ -4,8 +4,8 @@
 
 package io.deephaven.libs.primitives;
 
-import io.deephaven.engine.tables.dbarrays.DbCharArray;
-import io.deephaven.engine.tables.dbarrays.DbCharArrayDirect;
+import io.deephaven.engine.tables.dbarrays.CharVector;
+import io.deephaven.engine.tables.dbarrays.CharVectorDirect;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.util.LongSizedDataStructure;
 import gnu.trove.list.array.TCharArrayList;
@@ -79,7 +79,7 @@ public class CharacterPrimitives {
      * @return values with nulls replaced by defaultValue.
      */
     static public char[] nullToValue(char[] values, char defaultValue) {
-        return nullToValue(new DbCharArrayDirect(values), defaultValue);
+        return nullToValue(new CharVectorDirect(values), defaultValue);
     }
 
     /**
@@ -89,7 +89,7 @@ public class CharacterPrimitives {
      * @param defaultValue default value to return for null values.
      * @return values with nulls replaced by defaultValue.
      */
-    static public char[] nullToValue(DbCharArray values, char defaultValue) {
+    static public char[] nullToValue(CharVector values, char defaultValue) {
         char[] result = new char[LongSizedDataStructure.intSize("nullToValue", values.size())];
 
         for (int i = 0; i < values.size(); i++) {
@@ -129,7 +129,7 @@ public class CharacterPrimitives {
             return 0;
         }
 
-        return count(new DbCharArrayDirect(values));
+        return count(new CharVectorDirect(values));
     }
 
     /**
@@ -138,7 +138,7 @@ public class CharacterPrimitives {
      * @param values values.
      * @return number of non-null values.
      */
-    static public int count(DbCharArray values){
+    static public int count(CharVector values){
         if (values == null){
             return 0;
         }
@@ -157,7 +157,7 @@ public class CharacterPrimitives {
      * @param values values.
      * @return last value from the array.
      */
-    static public char last(DbCharArray values){
+    static public char last(CharVector values){
         if(values == null || values.size() < 1){
             return NULL_CHAR;
         }
@@ -185,7 +185,7 @@ public class CharacterPrimitives {
      * @param values values.
      * @return first value from the array.
      */
-    static public char first(DbCharArray values){
+    static public char first(CharVector values){
         if(values == null || values.size() < 1){
             return NULL_CHAR;
         }
@@ -214,7 +214,7 @@ public class CharacterPrimitives {
      * @param values values.
      * @return nth value from the array or null, if the rowSet is outside of the array's rowSet range.
      */
-    static public char nth(int index, DbCharArray values){
+    static public char nth(int index, CharVector values){
         if(index < 0 || index >= values.size()){
             return NULL_CHAR;
         }
@@ -239,7 +239,7 @@ public class CharacterPrimitives {
      * @param values DB array
      * @return primitive array.
      */
-    public static char[] vec(DbCharArray values) {
+    public static char[] vec(CharVector values) {
         if(values == null){
             return null;
         }
@@ -253,12 +253,12 @@ public class CharacterPrimitives {
      * @param values primitive array
      * @return DB array.
      */
-    public static DbCharArray array(char[] values) {
+    public static CharVector array(char[] values) {
         if(values == null){
             return null;
         }
 
-        return new DbCharArrayDirect(values);
+        return new CharVectorDirect(values);
     }
 
     /**
@@ -307,7 +307,7 @@ public class CharacterPrimitives {
             return QueryConstants.NULL_LONG;
         }
 
-        return countDistinct(new DbCharArrayDirect(values));
+        return countDistinct(new CharVectorDirect(values));
     }
 
     /**
@@ -316,7 +316,7 @@ public class CharacterPrimitives {
      * @param values values.
      * @return number of distinct non-null values.
      */
-    public static long countDistinct(final DbCharArray values) {
+    public static long countDistinct(final CharVector values) {
         return countDistinct(values, false);
     }
 
@@ -332,7 +332,7 @@ public class CharacterPrimitives {
             return QueryConstants.NULL_LONG;
         }
 
-        return countDistinct(new DbCharArrayDirect(values), countNull);
+        return countDistinct(new CharVectorDirect(values), countNull);
     }
 
     /**
@@ -342,7 +342,7 @@ public class CharacterPrimitives {
      * @param countNull true to count null values, and false to exclude null values.
      * @return number of distinct values.
      */
-    public static long countDistinct(final DbCharArray values, boolean countNull) {
+    public static long countDistinct(final CharVector values, boolean countNull) {
         if(values == null) {
             return QueryConstants.NULL_LONG;
         }
@@ -374,7 +374,7 @@ public class CharacterPrimitives {
      * @param countNull if nulls should count as values
      * @return the single unique value in the array, or null.
      */
-    public static char uniqueValue(final DbCharArray arr, boolean countNull) {
+    public static char uniqueValue(final CharVector arr, boolean countNull) {
         if(arr == null || arr.isEmpty()) {
             return NULL_CHAR;
         }
@@ -406,7 +406,7 @@ public class CharacterPrimitives {
             return null;
         }
 
-        return distinct(new DbCharArrayDirect(values)).toArray();
+        return distinct(new CharVectorDirect(values)).toArray();
     }
 
     /**
@@ -415,7 +415,7 @@ public class CharacterPrimitives {
      * @param values values.
      * @return unsorted array containing only distinct non-null items from arr.
      */
-    public static DbCharArray distinct(final DbCharArray values) {
+    public static CharVector distinct(final CharVector values) {
         if(values == null) {
             return null;
         }
@@ -492,17 +492,17 @@ public class CharacterPrimitives {
      * @param sort true to sort the resultant array
      * @return array containing only distinct items from arr.
      */
-    public static DbCharArray distinct(final DbCharArray values, boolean includeNull, boolean sort) {
+    public static CharVector distinct(final CharVector values, boolean includeNull, boolean sort) {
         if(values == null) {
             return null;
         }
 
         if(values.size() == 0) {
-            return new DbCharArrayDirect();
+            return new CharVectorDirect();
         }
 
         if(values.size() == 1) {
-            return !includeNull && values.get(0) == QueryConstants.NULL_CHAR ? new DbCharArrayDirect() : values;
+            return !includeNull && values.get(0) == QueryConstants.NULL_CHAR ? new CharVectorDirect() : values;
         }
 
         final TCharArrayList orderedList = new TCharArrayList();
@@ -538,7 +538,7 @@ public class CharacterPrimitives {
             data = orderedList.toArray();
         }
 
-        return new DbCharArrayDirect(data);
+        return new CharVectorDirect(data);
     }
 
     /**
@@ -587,7 +587,7 @@ public class CharacterPrimitives {
             return new char[0];
         }
 
-        return concat(Arrays.stream(values).map(e->e==null?null:new DbCharArrayDirect(e)).toArray(DbCharArray[]::new));
+        return concat(Arrays.stream(values).map(e->e==null?null:new CharVectorDirect(e)).toArray(CharVector[]::new));
     }
 
     /**
@@ -596,14 +596,14 @@ public class CharacterPrimitives {
      * @param values values.
      * @return concatenation of multiple arrays into a single array.
      */
-    public static char[] concat(DbCharArray... values){
+    public static char[] concat(CharVector... values){
         if(values == null){
             return new char[0];
         }
 
         int n = 0;
 
-        for (DbCharArray v : values) {
+        for (CharVector v : values) {
             if (v != null) {
                 n += v.size();
             }
@@ -612,7 +612,7 @@ public class CharacterPrimitives {
         final char[] result = new char[n];
         int idx = 0;
 
-        for (DbCharArray v : values) {
+        for (CharVector v : values) {
             if (v != null) {
                 for (int i = 0; i < v.size(); i++) {
                     result[idx] = v.get(i);
@@ -635,7 +635,7 @@ public class CharacterPrimitives {
             return null;
         }
 
-        return reverse(new DbCharArrayDirect(values));
+        return reverse(new CharVectorDirect(values));
     }
 
     /**
@@ -644,7 +644,7 @@ public class CharacterPrimitives {
      * @param values values.
      * @return array with the values reversed.
      */
-    public static char[] reverse(DbCharArray values){
+    public static char[] reverse(CharVector values){
         if(values == null){
             return null;
         }

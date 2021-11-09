@@ -4,9 +4,9 @@
 package io.deephaven.engine.v2.sources.aggregate;
 
 import io.deephaven.engine.structures.RowSequence;
-import io.deephaven.engine.tables.dbarrays.DbDoubleArray;
-import io.deephaven.engine.v2.dbarrays.DbDoubleArrayColumnWrapper;
-import io.deephaven.engine.v2.dbarrays.DbPrevDoubleArrayColumnWrapper;
+import io.deephaven.engine.tables.dbarrays.DoubleVector;
+import io.deephaven.engine.v2.dbarrays.DoubleVectorColumnWrapper;
+import io.deephaven.engine.v2.dbarrays.PrevDoubleVectorColumnWrapper;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 import io.deephaven.engine.v2.sources.chunk.ObjectChunk;
@@ -18,27 +18,27 @@ import org.jetbrains.annotations.NotNull;
 /**
  * {@link ColumnSource} implementation for aggregation result double columns.
  */
-public final class DoubleAggregateColumnSource extends BaseAggregateColumnSource<DbDoubleArray, Double> {
+public final class DoubleAggregateColumnSource extends BaseAggregateColumnSource<DoubleVector, Double> {
 
     DoubleAggregateColumnSource(@NotNull final ColumnSource<Double> aggregatedSource,
             @NotNull final ColumnSource<? extends RowSet> groupRowSetSource) {
-        super(DbDoubleArray.class, aggregatedSource, groupRowSetSource);
+        super(DoubleVector.class, aggregatedSource, groupRowSetSource);
     }
 
     @Override
-    public DbDoubleArray get(final long rowKey) {
+    public DoubleVector get(final long rowKey) {
         if (rowKey == RowSet.NULL_ROW_KEY) {
             return null;
         }
-        return new DbDoubleArrayColumnWrapper(aggregatedSource, groupRowSetSource.get(rowKey));
+        return new DoubleVectorColumnWrapper(aggregatedSource, groupRowSetSource.get(rowKey));
     }
 
     @Override
-    public DbDoubleArray getPrev(final long rowKey) {
+    public DoubleVector getPrev(final long rowKey) {
         if (rowKey == RowSet.NULL_ROW_KEY) {
             return null;
         }
-        return new DbPrevDoubleArrayColumnWrapper(aggregatedSource, getPrevGroupRowSet(rowKey));
+        return new PrevDoubleVectorColumnWrapper(aggregatedSource, getPrevGroupRowSet(rowKey));
     }
 
     @Override
@@ -46,10 +46,10 @@ public final class DoubleAggregateColumnSource extends BaseAggregateColumnSource
             @NotNull final RowSequence rowSequence) {
         final ObjectChunk<RowSet, ? extends Values> groupRowSetChunk = groupRowSetSource
                 .getChunk(((AggregateFillContext) context).groupRowSetGetContext, rowSequence).asObjectChunk();
-        final WritableObjectChunk<DbDoubleArray, ? super Values> typedDestination = destination.asWritableObjectChunk();
+        final WritableObjectChunk<DoubleVector, ? super Values> typedDestination = destination.asWritableObjectChunk();
         final int size = rowSequence.intSize();
         for (int di = 0; di < size; ++di) {
-            typedDestination.set(di, new DbDoubleArrayColumnWrapper(aggregatedSource, groupRowSetChunk.get(di)));
+            typedDestination.set(di, new DoubleVectorColumnWrapper(aggregatedSource, groupRowSetChunk.get(di)));
         }
         typedDestination.setSize(size);
     }
@@ -59,14 +59,14 @@ public final class DoubleAggregateColumnSource extends BaseAggregateColumnSource
             @NotNull final WritableChunk<? super Values> destination, @NotNull final RowSequence rowSequence) {
         final ObjectChunk<RowSet, ? extends Values> groupRowSetPrevChunk = groupRowSetSource
                 .getPrevChunk(((AggregateFillContext) context).groupRowSetGetContext, rowSequence).asObjectChunk();
-        final WritableObjectChunk<DbDoubleArray, ? super Values> typedDestination = destination.asWritableObjectChunk();
+        final WritableObjectChunk<DoubleVector, ? super Values> typedDestination = destination.asWritableObjectChunk();
         final int size = rowSequence.intSize();
         for (int di = 0; di < size; ++di) {
             final RowSet groupRowSetPrev = groupRowSetPrevChunk.get(di);
             final RowSet groupRowSetToUse = groupRowSetPrev.isTracking()
                     ? groupRowSetPrev.trackingCast().getPrevRowSet()
                     : groupRowSetPrev;
-            typedDestination.set(di, new DbPrevDoubleArrayColumnWrapper(aggregatedSource, groupRowSetToUse));
+            typedDestination.set(di, new PrevDoubleVectorColumnWrapper(aggregatedSource, groupRowSetToUse));
         }
         typedDestination.setSize(size);
     }

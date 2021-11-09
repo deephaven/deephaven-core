@@ -64,19 +64,19 @@ public class BooleanChunkFactory implements ChunkFactory {
         return BooleanChunkChunk.chunkWrap(typedArray, offset, capacity);
     }
 
-    // region dbArrayWrap
+    // region vectorWrap
     @NotNull
     @Override
-    public final DbBooleanArrayDirect dbArrayWrap(Object array) {
-        throw new UnsupportedOperationException("No boolean primitive DbArray.");
+    public final BooleanVectorDirect vectorWrap(Object array) {
+        throw new UnsupportedOperationException("No implementation for boolean primitive Vector exists");
     }
 
     @NotNull
     @Override
-    public DbBooleanArraySlice dbArrayWrap(Object array, int offset, int capacity) {
-        throw new UnsupportedOperationException("No boolean primitive DbArray.");
+    public BooleanVectorSlice vectorWrap(Object array, int offset, int capacity) {
+        throw new UnsupportedOperationException("No implementation for boolean primitive Vector exists");
     }
-    // endregion dbArrayWrap
+    // endregion vectorWrap
 
     @NotNull
     @Override

@@ -12,55 +12,55 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 
 public class QueryTableAggregationTestFormulaStaticMethods {
-    public static DbByteArray abs(DbByteArray values) {
+    public static ByteVector abs(ByteVector values) {
         final byte[] result = new byte[values.intSize()];
         for (int ii = 0; ii < values.size(); ++ii) {
             result[ii] = ByteNumericPrimitives.abs(values.get(ii));
         }
-        return new DbByteArrayDirect(result);
+        return new ByteVectorDirect(result);
     }
 
-    public static DbShortArray abs(DbShortArray values) {
+    public static ShortVector abs(ShortVector values) {
         final short[] result = new short[values.intSize()];
         for (int ii = 0; ii < values.size(); ++ii) {
             result[ii] = ShortNumericPrimitives.abs(values.get(ii));
         }
-        return new DbShortArrayDirect(result);
+        return new ShortVectorDirect(result);
     }
 
-    public static DbIntArray abs(DbIntArray values) {
+    public static IntVector abs(IntVector values) {
         final int[] result = new int[values.intSize()];
         for (int ii = 0; ii < values.size(); ++ii) {
             result[ii] = IntegerNumericPrimitives.abs(values.get(ii));
         }
-        return new DbIntArrayDirect(result);
+        return new IntVectorDirect(result);
     }
 
-    public static DbLongArray abs(DbLongArray values) {
+    public static LongVector abs(LongVector values) {
         final long[] result = new long[values.intSize()];
         for (int ii = 0; ii < values.size(); ++ii) {
             result[ii] = LongNumericPrimitives.abs(values.get(ii));
         }
-        return new DbLongArrayDirect(result);
+        return new LongVectorDirect(result);
     }
 
-    public static DbFloatArray abs(DbFloatArray values) {
+    public static FloatVector abs(FloatVector values) {
         final float[] result = new float[values.intSize()];
         for (int ii = 0; ii < values.size(); ++ii) {
             result[ii] = FloatNumericPrimitives.abs(values.get(ii));
         }
-        return new DbFloatArrayDirect(result);
+        return new FloatVectorDirect(result);
     }
 
-    public static DbDoubleArray abs(DbDoubleArray values) {
+    public static DoubleVector abs(DoubleVector values) {
         final double[] result = new double[values.intSize()];
         for (int ii = 0; ii < values.size(); ++ii) {
             result[ii] = DoubleNumericPrimitives.abs(values.get(ii));
         }
-        return new DbDoubleArrayDirect(result);
+        return new DoubleVectorDirect(result);
     }
 
-    public static long countChar(DbCharArray values) {
+    public static long countChar(CharVector values) {
         if (values.size() == 0) {
             return 0;
         }
@@ -74,7 +74,7 @@ public class QueryTableAggregationTestFormulaStaticMethods {
         return count;
     }
 
-    public static long countByte(DbByteArray values) {
+    public static long countByte(ByteVector values) {
         if (values.size() == 0) {
             return 0;
         }
@@ -88,7 +88,7 @@ public class QueryTableAggregationTestFormulaStaticMethods {
         return count;
     }
 
-    public static long countShort(DbShortArray values) {
+    public static long countShort(ShortVector values) {
         if (values.size() == 0) {
             return 0;
         }
@@ -102,7 +102,7 @@ public class QueryTableAggregationTestFormulaStaticMethods {
         return count;
     }
 
-    public static long countInt(DbIntArray values) {
+    public static long countInt(IntVector values) {
         if (values.size() == 0) {
             return 0;
         }
@@ -116,7 +116,7 @@ public class QueryTableAggregationTestFormulaStaticMethods {
         return count;
     }
 
-    public static long countLong(DbLongArray values) {
+    public static long countLong(LongVector values) {
         if (values.size() == 0) {
             return 0;
         }
@@ -130,7 +130,7 @@ public class QueryTableAggregationTestFormulaStaticMethods {
         return count;
     }
 
-    public static long countFloat(DbFloatArray values) {
+    public static long countFloat(FloatVector values) {
         if (values.size() == 0) {
             return 0;
         }
@@ -144,7 +144,7 @@ public class QueryTableAggregationTestFormulaStaticMethods {
         return count;
     }
 
-    public static long countDouble(DbDoubleArray values) {
+    public static long countDouble(DoubleVector values) {
         if (values.size() == 0) {
             return 0;
         }
@@ -158,7 +158,7 @@ public class QueryTableAggregationTestFormulaStaticMethods {
         return count;
     }
 
-    public static long countObject(DbArray values) {
+    public static long countObject(ObjectVector values) {
         if (values.size() == 0) {
             return 0;
         }
@@ -172,7 +172,7 @@ public class QueryTableAggregationTestFormulaStaticMethods {
         return count;
     }
 
-    public static long sumChar(DbCharArray values) {
+    public static long sumChar(CharVector values) {
         if (values.size() == 0) {
             return QueryConstants.NULL_LONG;
         }
@@ -188,7 +188,7 @@ public class QueryTableAggregationTestFormulaStaticMethods {
         return count == 0 ? QueryConstants.NULL_LONG : sum;
     }
 
-    public static long sumByte(DbByteArray values) {
+    public static long sumByte(ByteVector values) {
         if (values.size() == 0) {
             return QueryConstants.NULL_LONG;
         }
@@ -204,7 +204,7 @@ public class QueryTableAggregationTestFormulaStaticMethods {
         return count == 0 ? QueryConstants.NULL_LONG : sum;
     }
 
-    public static long sumShort(DbShortArray values) {
+    public static long sumShort(ShortVector values) {
         if (values.size() == 0) {
             return QueryConstants.NULL_LONG;
         }
@@ -220,7 +220,7 @@ public class QueryTableAggregationTestFormulaStaticMethods {
         return count == 0 ? QueryConstants.NULL_LONG : sum;
     }
 
-    public static long sumInt(DbIntArray values) {
+    public static long sumInt(IntVector values) {
         if (values.size() == 0) {
             return QueryConstants.NULL_LONG;
         }
@@ -236,7 +236,7 @@ public class QueryTableAggregationTestFormulaStaticMethods {
         return count == 0 ? QueryConstants.NULL_LONG : sum;
     }
 
-    public static double sumDouble(DbDoubleArray values) {
+    public static double sumDouble(DoubleVector values) {
         if (values.size() == 0) {
             return QueryConstants.NULL_DOUBLE;
         }
@@ -252,7 +252,7 @@ public class QueryTableAggregationTestFormulaStaticMethods {
         return count == 0 ? QueryConstants.NULL_DOUBLE : sum;
     }
 
-    public static float sumFloat(DbFloatArray values) {
+    public static float sumFloat(FloatVector values) {
         if (values.size() == 0) {
             return QueryConstants.NULL_FLOAT;
         }
@@ -268,7 +268,7 @@ public class QueryTableAggregationTestFormulaStaticMethods {
         return count == 0 ? QueryConstants.NULL_FLOAT : sum;
     }
 
-    public static long sumBool(DbArray<Boolean> values) {
+    public static long sumBool(ObjectVector<Boolean> values) {
         if (values.size() == 0) {
             return QueryConstants.NULL_LONG;
         }
@@ -286,7 +286,7 @@ public class QueryTableAggregationTestFormulaStaticMethods {
         return count == 0 ? QueryConstants.NULL_LONG : sum;
     }
 
-    public static BigInteger sumBigInt(DbArray<BigInteger> values) {
+    public static BigInteger sumBigInt(ObjectVector<BigInteger> values) {
         if (values.size() == 0) {
             return null;
         }
@@ -302,7 +302,7 @@ public class QueryTableAggregationTestFormulaStaticMethods {
         return count == 0 ? null : sum;
     }
 
-    public static BigInteger absSumBigInt(DbArray<BigInteger> values) {
+    public static BigInteger absSumBigInt(ObjectVector<BigInteger> values) {
         if (values.size() == 0) {
             return null;
         }
@@ -318,7 +318,7 @@ public class QueryTableAggregationTestFormulaStaticMethods {
         return count == 0 ? null : sum;
     }
 
-    public static BigDecimal sumBigDec(DbArray<BigDecimal> values) {
+    public static BigDecimal sumBigDec(ObjectVector<BigDecimal> values) {
         if (values.size() == 0) {
             return null;
         }
@@ -334,7 +334,7 @@ public class QueryTableAggregationTestFormulaStaticMethods {
         return count == 0 ? null : sum;
     }
 
-    public static BigDecimal absSumBigDec(DbArray<BigDecimal> values) {
+    public static BigDecimal absSumBigDec(ObjectVector<BigDecimal> values) {
         if (values.size() == 0) {
             return null;
         }
@@ -350,7 +350,7 @@ public class QueryTableAggregationTestFormulaStaticMethods {
         return count == 0 ? null : sum;
     }
 
-    public static double varChar(DbCharArray values) {
+    public static double varChar(CharVector values) {
         double sum = 0;
         double sum2 = 0;
         int count = 0;
@@ -367,7 +367,7 @@ public class QueryTableAggregationTestFormulaStaticMethods {
         return (sum2 - sum * sum / count) / (count - 1);
     }
 
-    public static BigDecimal varBigInt(DbArray<BigInteger> values) {
+    public static BigDecimal varBigInt(ObjectVector<BigInteger> values) {
         BigInteger sum = BigInteger.ZERO;
         BigInteger sum2 = BigInteger.ZERO;
         int count = 0;
@@ -390,7 +390,7 @@ public class QueryTableAggregationTestFormulaStaticMethods {
                 .divide(countMinus1, BigDecimal.ROUND_HALF_UP);
     }
 
-    public static BigDecimal varBigDec(DbArray<BigDecimal> values) {
+    public static BigDecimal varBigDec(ObjectVector<BigDecimal> values) {
         BigDecimal sum = BigDecimal.ZERO;
         BigDecimal sum2 = BigDecimal.ZERO;
         int count = 0;
@@ -412,7 +412,7 @@ public class QueryTableAggregationTestFormulaStaticMethods {
                 BigDecimal.ROUND_HALF_UP);
     }
 
-    public static char minChar(DbCharArray values) {
+    public static char minChar(CharVector values) {
         if (values.size() == 0) {
             return QueryConstants.NULL_CHAR;
         }
@@ -431,7 +431,7 @@ public class QueryTableAggregationTestFormulaStaticMethods {
         return count == 0 ? QueryConstants.NULL_CHAR : min;
     }
 
-    public static char maxChar(DbCharArray values) {
+    public static char maxChar(CharVector values) {
         if (values.size() == 0) {
             return QueryConstants.NULL_CHAR;
         }
@@ -450,7 +450,7 @@ public class QueryTableAggregationTestFormulaStaticMethods {
         return count == 0 ? QueryConstants.NULL_CHAR : max;
     }
 
-    public static Object minObj(DbArray values) {
+    public static Object minObj(ObjectVector values) {
         if (values.size() == 0) {
             return null;
         }
@@ -469,7 +469,7 @@ public class QueryTableAggregationTestFormulaStaticMethods {
         return count == 0 ? null : min;
     }
 
-    public static Object maxObj(DbArray values) {
+    public static Object maxObj(ObjectVector values) {
         if (values.size() == 0) {
             return null;
         }
@@ -488,7 +488,7 @@ public class QueryTableAggregationTestFormulaStaticMethods {
         return count == 0 ? null : max;
     }
 
-    public static double minDouble(DbDoubleArray values) {
+    public static double minDouble(DoubleVector values) {
         if (values.size() == 0) {
             return QueryConstants.NULL_DOUBLE;
         }
@@ -508,7 +508,7 @@ public class QueryTableAggregationTestFormulaStaticMethods {
         return count == 0 ? QueryConstants.NULL_DOUBLE : min;
     }
 
-    public static double maxDouble(DbDoubleArray values) {
+    public static double maxDouble(DoubleVector values) {
         if (values.size() == 0) {
             return QueryConstants.NULL_DOUBLE;
         }

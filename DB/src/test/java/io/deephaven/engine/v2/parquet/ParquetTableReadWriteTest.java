@@ -86,7 +86,7 @@ public class ParquetTableReadWriteTest {
         Table result = t.by("groupKey = i % 100 + (int)(i/10)");
         result = result.select(result.getDefinition().getColumnNames().stream()
                 .map(name -> name.equals("groupKey") ? name
-                        : (name + " = i % 5 == 0 ? null:(i%3 == 0?" + name + ".subArray(0,0):" + name
+                        : (name + " = i % 5 == 0 ? null:(i%3 == 0?" + name + ".subVector(0,0):" + name
                                 + ")"))
                 .toArray(String[]::new));
         return result;
@@ -108,7 +108,7 @@ public class ParquetTableReadWriteTest {
         Table result = t.by("groupKey = i % 100 + (int)(i/10)");
         result = result.select(result.getDefinition().getColumnNames().stream()
                 .map(name -> name.equals("groupKey") ? name
-                        : (name + " = i % 5 == 0 ? null:(i%3 == 0?" + name + ".subArray(0,0):" + name
+                        : (name + " = i % 5 == 0 ? null:(i%3 == 0?" + name + ".subVector(0,0):" + name
                                 + ")"))
                 .toArray(String[]::new));
         result = result.update(

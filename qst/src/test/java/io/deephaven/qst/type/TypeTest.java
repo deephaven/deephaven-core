@@ -191,7 +191,7 @@ public class TypeTest {
         // Db primitive array types are not on the classpath as QST dependency, make sure
         // they are not found.
         try {
-            DbPrimitiveArrayType.types();
+            PrimitiveVectorType.types();
             failBecauseExceptionWasNotThrown(ClassNotFoundException.class);
         } catch (ClassNotFoundException e) {
             // expected

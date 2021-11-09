@@ -1,6 +1,6 @@
 package io.deephaven.engine.v2.by.ssmcountdistinct;
 
-import io.deephaven.engine.tables.dbarrays.DbCharArray;
+import io.deephaven.engine.tables.dbarrays.CharVector;
 import io.deephaven.engine.v2.sources.AbstractColumnSource;
 import io.deephaven.engine.v2.sources.ColumnSourceGetDefaults;
 import io.deephaven.engine.v2.sources.MutableColumnSourceGetDefaults;
@@ -11,16 +11,16 @@ import io.deephaven.engine.v2.utils.RowSet;
 /**
  * A {@link SsmBackedColumnSource} for Characters.
  */
-public class CharSsmBackedSource extends AbstractColumnSource<DbCharArray>
-                                 implements ColumnSourceGetDefaults.ForObject<DbCharArray>,
-                                            MutableColumnSourceGetDefaults.ForObject<DbCharArray>,
-                                            SsmBackedColumnSource<CharSegmentedSortedMultiset, DbCharArray> {
+public class CharSsmBackedSource extends AbstractColumnSource<CharVector>
+                                 implements ColumnSourceGetDefaults.ForObject<CharVector>,
+                                            MutableColumnSourceGetDefaults.ForObject<CharVector>,
+                                            SsmBackedColumnSource<CharSegmentedSortedMultiset, CharVector> {
     private final ObjectArraySource<CharSegmentedSortedMultiset> underlying;
     private boolean trackingPrevious = false;
 
     //region Constructor
     public CharSsmBackedSource() {
-        super(DbCharArray.class, char.class);
+        super(CharVector.class, char.class);
         underlying = new ObjectArraySource<>(CharSegmentedSortedMultiset.class, char.class);
     }
     //endregion Constructor
@@ -65,12 +65,12 @@ public class CharSsmBackedSource extends AbstractColumnSource<DbCharArray>
     }
 
     @Override
-    public DbCharArray get(long index) {
+    public CharVector get(long index) {
         return underlying.get(index);
     }
 
     @Override
-    public DbCharArray getPrev(long index) {
+    public CharVector getPrev(long index) {
         final CharSegmentedSortedMultiset maybePrev = underlying.getPrev(index);
         return maybePrev == null ? null : maybePrev.getPrevValues();
     }

@@ -1,6 +1,6 @@
 package io.deephaven.engine.v2.sources.chunk.util.factories;
 
-import io.deephaven.engine.tables.dbarrays.DbArrayBase;
+import io.deephaven.engine.tables.dbarrays.Vector;
 import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Any;
 import io.deephaven.engine.v2.sources.chunk.page.ChunkPage;
@@ -34,10 +34,10 @@ public interface ChunkFactory {
     <ATTR extends Any> ChunkChunk<ATTR> chunkChunkWrap(Chunk<ATTR>[] array, int offset, int capacity);
 
     @NotNull
-    DbArrayBase dbArrayWrap(Object array);
+    Vector vectorWrap(Object array);
 
     @NotNull
-    DbArrayBase dbArrayWrap(Object array, int offset, int capacity);
+    Vector vectorWrap(Object array, int offset, int capacity);
 
     @NotNull
     <ATTR extends Any> ChunkPage<ATTR> pageWrap(long beginRow, Object array, long mask);

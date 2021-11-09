@@ -12,7 +12,7 @@ import io.deephaven.configuration.Configuration;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.exceptions.QueryCancellationException;
 import io.deephaven.engine.tables.*;
-import io.deephaven.engine.tables.dbarrays.DbArrayBase;
+import io.deephaven.engine.tables.dbarrays.Vector;
 import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.tables.live.NotificationQueue;
 import io.deephaven.engine.tables.select.MatchPair;
@@ -718,20 +718,20 @@ public class QueryTable extends BaseTable {
                     updates[j++] =
                             // Get the first nRows rows:
                             // colName = isNull(colName) ? null
-                            // : colName.size() > nRows ? colName.subArray(0, nRows)
+                            // : colName.size() > nRows ? colName.subVector(0, nRows)
                             // : colName
                             colName + '=' + "isNull(" + colName + ") ? null" +
-                                    ':' + colName + ".size() > " + nRows + " ? " + colName + ".subArray(0, " + nRows
+                                    ':' + colName + ".size() > " + nRows + " ? " + colName + ".subVector(0, " + nRows
                                     + ')' +
                                     ':' + colName;
                 else
                     updates[j++] =
                             // Get the last nRows rows:
                             // colName = isNull(colName) ? null
-                            // : colName.size() > nRows ? colName.subArray(colName.size() - nRows, colName.size())
+                            // : colName.size() > nRows ? colName.subVector(colName.size() - nRows, colName.size())
                             // : colName
                             colName + '=' + "isNull(" + colName + ") ? null" +
-                                    ':' + colName + ".size() > " + nRows + " ? " + colName + ".subArray(" + colName
+                                    ':' + colName + ".size() > " + nRows + " ? " + colName + ".subVector(" + colName
                                     + ".size() - " + nRows + ", " + colName + ".size())" +
                                     ':' + colName;
             }
@@ -2100,7 +2100,7 @@ public class QueryTable extends BaseTable {
                         final String name = entry.getKey();
                         final ColumnSource<?> cs = entry.getValue();
                         final Class<?> type = cs.getType();
-                        final SparseArrayColumnSource<?> stampDest = DbArrayBase.class.isAssignableFrom(type)
+                        final SparseArrayColumnSource<?> stampDest = Vector.class.isAssignableFrom(type)
                                 ? SparseArrayColumnSource.getSparseMemoryColumnSource(type, cs.getComponentType())
                                 : SparseArrayColumnSource.getSparseMemoryColumnSource(type);
 
@@ -2289,7 +2289,7 @@ public class QueryTable extends BaseTable {
                         ColumnSource<?> column = getColumnSource(name);
                         if (column.getType().isArray()) {
                             arrayColumns.put(name, column);
-                        } else if (DbArrayBase.class.isAssignableFrom(column.getType())) {
+                        } else if (Vector.class.isAssignableFrom(column.getType())) {
                             dbArrayColumns.put(name, column);
                         } else {
                             throw new RuntimeException("Column " + name + " is not an array");
@@ -2381,9 +2381,9 @@ public class QueryTable extends BaseTable {
                                             for (int i = 0; i < rowSet.size(); i++) {
                                                 final long next = iterator.nextLong();
                                                 long size = (arrayColumn.get(next) == null ? 0
-                                                        : ((DbArrayBase<?>) arrayColumn.get(next)).size());
+                                                        : ((Vector<?>) arrayColumn.get(next)).size());
                                                 long prevSize = (arrayColumn.getPrev(next) == null ? 0
-                                                        : ((DbArrayBase<?>) arrayColumn.getPrev(next)).size());
+                                                        : ((Vector<?>) arrayColumn.getPrev(next)).size());
                                                 log.error().append(name).append("[").append(i).append("] ").append(size)
                                                         .append(" -> ").append(prevSize).endl();
                                             }
@@ -2500,10 +2500,10 @@ public class QueryTable extends BaseTable {
             }
             for (Map.Entry<String, ColumnSource<?>> es : dbArrayColumns.entrySet()) {
                 final ColumnSource<?> arrayColumn = es.getValue();
-                DbArrayBase<?> array = (DbArrayBase<?>) arrayColumn.get(next);
+                Vector<?> array = (Vector<?>) arrayColumn.get(next);
                 final long size = (array == null ? 0 : array.size());
                 maxCur = Math.max(maxCur, size);
-                DbArrayBase<?> prevArray = (DbArrayBase<?>) arrayColumn.getPrev(next);
+                Vector<?> prevArray = (Vector<?>) arrayColumn.getPrev(next);
                 final long prevSize = (prevArray == null ? 0 : prevArray.size());
                 maxPrev = Math.max(maxPrev, prevSize);
             }
@@ -2555,9 +2555,9 @@ public class QueryTable extends BaseTable {
                 RowSet.Iterator iterator = rowSet.iterator();
                 for (int i = 0; i < rowSet.size(); i++) {
                     final long next = iterator.nextLong();
-                    DbArrayBase<?> array = (DbArrayBase<?>) arrayColumn.get(next);
+                    Vector<?> array = (Vector<?>) arrayColumn.get(next);
                     sizes[i] = (array == null ? 0 : array.size());
-                    DbArrayBase<?> prevArray = (DbArrayBase<?>) arrayColumn.getPrev(next);
+                    Vector<?> prevArray = (Vector<?>) arrayColumn.getPrev(next);
                     long prevSize = (prevArray == null ? 0 : prevArray.size());
                     maxSize = maxAndIndexUpdateForRow(modifyBuilder, addedBuilded, removedBuilder, maxSize, sizes[i],
                             next, prevSize, base);
@@ -2567,8 +2567,8 @@ public class QueryTable extends BaseTable {
                 for (int i = 0; i < rowSet.size(); i++) {
                     final long next = iterator.nextLong();
                     Assert.assertion(sizes[i] == 0 && arrayColumn.get(next) == null ||
-                            sizes[i] == ((DbArrayBase<?>) arrayColumn.get(next)).size(),
-                            "sizes[i] == ((DbArrayBase)arrayColumn.get(i)).size()",
+                            sizes[i] == ((Vector<?>) arrayColumn.get(next)).size(),
+                            "sizes[i] == ((Vector)arrayColumn.get(i)).size()",
                             referenceColumn, "referenceColumn", name, "arrayColumn.getName()", i, "row");
                 }
             }
@@ -2633,8 +2633,8 @@ public class QueryTable extends BaseTable {
                 if (isUngroupable) {
                     size = ((UngroupableColumnSource) arrayColumn).getUngroupedSize(nextIndex);
                 } else {
-                    final DbArrayBase<?> dbArrayBase = (DbArrayBase<?>) arrayColumn.get(nextIndex);
-                    size = dbArrayBase != null ? dbArrayBase.size() : 0;
+                    final Vector<?> vector = (Vector<?>) arrayColumn.get(nextIndex);
+                    size = vector != null ? vector.size() : 0;
                 }
                 maxSize = Math.max(maxSize, size);
                 localMax = Math.max(localMax, size);
@@ -2685,8 +2685,8 @@ public class QueryTable extends BaseTable {
                     if (isUngroupable) {
                         sizes[ii] = ((UngroupableColumnSource) arrayColumn).getUngroupedSize(iterator.nextLong());
                     } else {
-                        final DbArrayBase<?> dbArrayBase = (DbArrayBase<?>) arrayColumn.get(iterator.nextLong());
-                        sizes[ii] = dbArrayBase != null ? dbArrayBase.size() : 0;
+                        final Vector<?> vector = (Vector<?>) arrayColumn.get(iterator.nextLong());
+                        sizes[ii] = vector != null ? vector.size() : 0;
                     }
                     maxSize = Math.max(maxSize, sizes[ii]);
                 }
@@ -2697,10 +2697,10 @@ public class QueryTable extends BaseTable {
                     if (isUngroupable) {
                         expectedSize = ((UngroupableColumnSource) arrayColumn).getUngroupedSize(iterator.nextLong());
                     } else {
-                        final DbArrayBase<?> dbArrayBase = (DbArrayBase<?>) arrayColumn.get(iterator.nextLong());
-                        expectedSize = dbArrayBase != null ? dbArrayBase.size() : 0;
+                        final Vector<?> vector = (Vector<?>) arrayColumn.get(iterator.nextLong());
+                        expectedSize = vector != null ? vector.size() : 0;
                     }
-                    Assert.assertion(sizes[i] == expectedSize, "sizes[i] == ((DbArrayBase)arrayColumn.get(i)).size()",
+                    Assert.assertion(sizes[i] == expectedSize, "sizes[i] == ((Vector)arrayColumn.get(i)).size()",
                             referenceColumn, "referenceColumn", name, "arrayColumn.getName()", i, "row");
                 }
             }
@@ -2738,8 +2738,8 @@ public class QueryTable extends BaseTable {
                 if (isUngroupable) {
                     size = ((UngroupableColumnSource) arrayColumn).getUngroupedPrevSize(nextIndex);
                 } else {
-                    final DbArrayBase<?> dbArrayBase = (DbArrayBase<?>) arrayColumn.getPrev(nextIndex);
-                    size = dbArrayBase != null ? dbArrayBase.size() : 0;
+                    final Vector<?> vector = (Vector<?>) arrayColumn.getPrev(nextIndex);
+                    size = vector != null ? vector.size() : 0;
                 }
                 localMax = Math.max(localMax, size);
             }
@@ -2766,7 +2766,7 @@ public class QueryTable extends BaseTable {
                 if (isUngroupable) {
                     sizes[i] = ((UngroupableColumnSource) arrayColumn).getUngroupedPrevSize(iterator.nextLong());
                 } else {
-                    DbArrayBase<?> array = (DbArrayBase<?>) arrayColumn.getPrev(iterator.nextLong());
+                    Vector<?> array = (Vector<?>) arrayColumn.getPrev(iterator.nextLong());
                     sizes[i] = array == null ? 0 : array.size();
                 }
             }
@@ -2805,8 +2805,8 @@ public class QueryTable extends BaseTable {
                 if (isUngroupable) {
                     size = ((UngroupableColumnSource) arrayColumn).getUngroupedSize(nextIndex);
                 } else {
-                    final DbArrayBase<?> dbArrayBase = (DbArrayBase<?>) arrayColumn.get(nextIndex);
-                    size = dbArrayBase != null ? dbArrayBase.size() : 0;
+                    final Vector<?> vector = (Vector<?>) arrayColumn.get(nextIndex);
+                    size = vector != null ? vector.size() : 0;
                 }
                 localMax = Math.max(localMax, size);
             }
@@ -2835,7 +2835,7 @@ public class QueryTable extends BaseTable {
                 if (isUngroupable) {
                     sizes[i] = ((UngroupableColumnSource) arrayColumn).getUngroupedSize(iterator.nextLong());
                 } else {
-                    DbArrayBase<?> array = (DbArrayBase<?>) arrayColumn.get(iterator.nextLong());
+                    Vector<?> array = (Vector<?>) arrayColumn.get(iterator.nextLong());
                     sizes[i] = array == null ? 0 : array.size();
                 }
             }

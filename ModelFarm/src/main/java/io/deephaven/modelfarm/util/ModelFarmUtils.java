@@ -45,7 +45,7 @@ public class ModelFarmUtils {
      */
     public static String[] arrayString(final Object o) {
         // noinspection unchecked
-        return o == null ? null : ((DbArray<String>) o).toArray();
+        return o == null ? null : ((ObjectVector<String>) o).toArray();
     }
 
     /**
@@ -56,7 +56,7 @@ public class ModelFarmUtils {
      */
     public static DBDateTime[] arrayDBDateTime(final Object o) {
         // noinspection unchecked
-        return o == null ? null : ((DbArray<DBDateTime>) o).toArray();
+        return o == null ? null : ((ObjectVector<DBDateTime>) o).toArray();
     }
 
     /**
@@ -66,7 +66,7 @@ public class ModelFarmUtils {
      * @return float array.
      */
     public static float[] arrayFloat(final Object o) {
-        return o == null ? null : ((DbFloatArray) o).toArray();
+        return o == null ? null : ((FloatVector) o).toArray();
     }
 
     /**
@@ -76,7 +76,7 @@ public class ModelFarmUtils {
      * @return double array.
      */
     public static double[] arrayDouble(final Object o) {
-        return o == null ? null : ((DbDoubleArray) o).toArray();
+        return o == null ? null : ((DoubleVector) o).toArray();
     }
 
     /**
@@ -86,7 +86,7 @@ public class ModelFarmUtils {
      * @return int array.
      */
     public static int[] arrayInt(final Object o) {
-        return o == null ? null : ((DbIntArray) o).toArray();
+        return o == null ? null : ((IntVector) o).toArray();
     }
 
     /**
@@ -96,7 +96,7 @@ public class ModelFarmUtils {
      * @return long array.
      */
     public static long[] arrayLong(final Object o) {
-        return o == null ? null : ((DbLongArray) o).toArray();
+        return o == null ? null : ((LongVector) o).toArray();
     }
 
     /**
@@ -110,7 +110,7 @@ public class ModelFarmUtils {
             return null;
         }
 
-        final DbArray<DbDoubleArray> a = (DbArray<DbDoubleArray>) o;
+        final ObjectVector<DoubleVector> a = (ObjectVector<DoubleVector>) o;
         final double[][] result = new double[a.intSize()][];
 
         for (int i = 0; i < a.intSize(); i++) {

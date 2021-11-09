@@ -3,7 +3,7 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.v2.by.ssmcountdistinct;
 
-import io.deephaven.engine.tables.dbarrays.DbShortArray;
+import io.deephaven.engine.tables.dbarrays.ShortVector;
 import io.deephaven.engine.v2.sources.AbstractColumnSource;
 import io.deephaven.engine.v2.sources.ColumnSourceGetDefaults;
 import io.deephaven.engine.v2.sources.MutableColumnSourceGetDefaults;
@@ -14,16 +14,16 @@ import io.deephaven.engine.v2.utils.RowSet;
 /**
  * A {@link SsmBackedColumnSource} for Shorts.
  */
-public class ShortSsmBackedSource extends AbstractColumnSource<DbShortArray>
-                                 implements ColumnSourceGetDefaults.ForObject<DbShortArray>,
-                                            MutableColumnSourceGetDefaults.ForObject<DbShortArray>,
-                                            SsmBackedColumnSource<ShortSegmentedSortedMultiset, DbShortArray> {
+public class ShortSsmBackedSource extends AbstractColumnSource<ShortVector>
+                                 implements ColumnSourceGetDefaults.ForObject<ShortVector>,
+                                            MutableColumnSourceGetDefaults.ForObject<ShortVector>,
+                                            SsmBackedColumnSource<ShortSegmentedSortedMultiset, ShortVector> {
     private final ObjectArraySource<ShortSegmentedSortedMultiset> underlying;
     private boolean trackingPrevious = false;
 
     //region Constructor
     public ShortSsmBackedSource() {
-        super(DbShortArray.class, short.class);
+        super(ShortVector.class, short.class);
         underlying = new ObjectArraySource<>(ShortSegmentedSortedMultiset.class, short.class);
     }
     //endregion Constructor
@@ -68,12 +68,12 @@ public class ShortSsmBackedSource extends AbstractColumnSource<DbShortArray>
     }
 
     @Override
-    public DbShortArray get(long index) {
+    public ShortVector get(long index) {
         return underlying.get(index);
     }
 
     @Override
-    public DbShortArray getPrev(long index) {
+    public ShortVector getPrev(long index) {
         final ShortSegmentedSortedMultiset maybePrev = underlying.getPrev(index);
         return maybePrev == null ? null : maybePrev.getPrevValues();
     }

@@ -5,7 +5,7 @@
 package io.deephaven.engine.v2.sources;
 
 import io.deephaven.compilertools.ReplicateUtilities;
-import io.deephaven.engine.tables.dbarrays.DbArrayBase;
+import io.deephaven.engine.tables.dbarrays.Vector;
 import io.deephaven.util.BooleanUtils;
 import io.deephaven.engine.util.DhObjectComparisons;
 import org.apache.commons.io.FileUtils;
@@ -30,9 +30,9 @@ public class ReplicateSourcesAndChunks {
         charToAllButBooleanAndLong("DB/src/main/java/io/deephaven/engine/v2/sources/CharacterArraySource.java");
         charToAllButBoolean("DB/src/main/java/io/deephaven/engine/v2/sources/aggregate/CharAggregateColumnSource.java");
         charToAllButBoolean("DB/src/main/java/io/deephaven/engine/v2/sources/UngroupedCharArrayColumnSource.java");
-        charToAllButBoolean("DB/src/main/java/io/deephaven/engine/v2/sources/UngroupedCharDbArrayColumnSource.java");
+        charToAllButBoolean("DB/src/main/java/io/deephaven/engine/v2/sources/UngroupedCharVectorColumnSource.java");
         charToAllButBoolean(
-                "DB/src/main/java/io/deephaven/engine/v2/sources/UngroupedBoxedCharDbArrayColumnSource.java");
+                "DB/src/main/java/io/deephaven/engine/v2/sources/UngroupedBoxedCharObjectVectorColumnSource.java");
         charToAllButBoolean("DB/src/main/java/io/deephaven/engine/v2/sources/UngroupedBoxedCharArrayColumnSource.java");
         charToAllButBoolean("DB/src/main/java/io/deephaven/engine/v2/sources/immutable/ImmutableCharArraySource.java");
         charToAll("DB/src/main/java/io/deephaven/engine/v2/sources/chunk/sized/SizedCharChunk.java");
@@ -434,17 +434,17 @@ public class ReplicateSourcesAndChunks {
                 "DB/src/main/java/io/deephaven/engine/v2/sources/chunk/util/factories/CharChunkFactory.java");
         final File classFile = new File(className);
         List<String> classLines = FileUtils.readLines(classFile, Charset.defaultCharset());
-        classLines = ReplicateUtilities.replaceRegion(classLines, "dbArrayWrap", Arrays.asList(
+        classLines = ReplicateUtilities.replaceRegion(classLines, "vectorWrap", Arrays.asList(
                 "    @NotNull",
                 "    @Override",
-                "    public final DbBooleanArrayDirect dbArrayWrap(Object array) {",
-                "        throw new UnsupportedOperationException(\"No boolean primitive DbArray.\");",
+                "    public final BooleanVectorDirect vectorWrap(Object array) {",
+                "        throw new UnsupportedOperationException(\"No implementation for boolean primitive Vector exists\");",
                 "    }",
                 "",
                 "    @NotNull",
                 "    @Override",
-                "    public DbBooleanArraySlice dbArrayWrap(Object array, int offset, int capacity) {",
-                "        throw new UnsupportedOperationException(\"No boolean primitive DbArray.\");",
+                "    public BooleanVectorSlice vectorWrap(Object array, int offset, int capacity) {",
+                "        throw new UnsupportedOperationException(\"No implementation for boolean primitive Vector exists\");",
                 "    }"));
         FileUtils.writeLines(classFile, classLines);
     }
@@ -883,13 +883,13 @@ public class ReplicateSourcesAndChunks {
                 "    ObjectSparseArraySource(Class<T> type) {",
                 "        super(type);",
                 "        blocks = new ObjectOneOrN.Block0<>();",
-                "        isArrayType = DbArrayBase.class.isAssignableFrom(type);",
+                "        isArrayType = Vector.class.isAssignableFrom(type);",
                 "    }",
                 "",
                 "    ObjectSparseArraySource(Class<T> type, Class componentType) {",
                 "        super(type, componentType);",
                 "        blocks = new ObjectOneOrN.Block0<>();",
-                "        isArrayType = DbArrayBase.class.isAssignableFrom(type);",
+                "        isArrayType = Vector.class.isAssignableFrom(type);",
                 "    }"));
 
         lines = replaceRegion(lines, "move method", Arrays.asList(
@@ -913,16 +913,16 @@ public class ReplicateSourcesAndChunks {
                 "    public void copy(ColumnSource<? extends T> sourceColumn, long sourceKey, long destKey) {",
                 "        final T value = sourceColumn.get(sourceKey);",
                 "",
-                "        if (isArrayType && value instanceof DbArrayBase) {",
-                "            final DbArrayBase<?> dbArray = (DbArrayBase<?>) value;",
+                "        if (isArrayType && value instanceof Vector) {",
+                "            final Vector<?> vector = (Vector<?>) value;",
                 "            // noinspection unchecked",
-                "            set(destKey, (T) dbArray.getDirect());",
+                "            set(destKey, (T) vector.getDirect());",
                 "        } else {",
                 "            set(destKey, value);",
                 "        }",
                 "    }"));
 
-        lines = addImport(lines, DbArrayBase.class);
+        lines = addImport(lines, Vector.class);
 
         FileUtils.writeLines(objectFile, lines);
     }

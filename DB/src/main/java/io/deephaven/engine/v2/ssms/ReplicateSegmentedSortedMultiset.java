@@ -1,8 +1,7 @@
 package io.deephaven.engine.v2.ssms;
 
 import gnu.trove.set.hash.THashSet;
-import io.deephaven.engine.tables.dbarrays.DbArray;
-import io.deephaven.engine.tables.dbarrays.DbArrayDirect;
+import io.deephaven.engine.tables.dbarrays.ObjectVectorDirect;
 import io.deephaven.engine.tables.utils.DBDateTime;
 import io.deephaven.engine.tables.utils.DBTimeUtils;
 import io.deephaven.engine.v2.by.ssmcountdistinct.DbDateTimeSsmSourceWrapper;
@@ -31,7 +30,7 @@ public class ReplicateSegmentedSortedMultiset {
         String objectSsm = charToObject(
                 "DB/src/main/java/io/deephaven/engine/v2/ssms/CharSegmentedSortedMultiset.java");
         fixupObjectSsm(objectSsm, ReplicateSegmentedSortedMultiset::fixupNulls,
-                ReplicateSegmentedSortedMultiset::fixupDbArrays, ReplicateSegmentedSortedMultiset::fixupTHashes,
+                ReplicateSegmentedSortedMultiset::fixupTHashes,
                 ReplicateSegmentedSortedMultiset::fixupSsmConstructor,
                 ReplicateSegmentedSortedMultiset::fixupObjectCompare);
 
@@ -51,7 +50,7 @@ public class ReplicateSegmentedSortedMultiset {
         charToAllButBoolean("DB/src/main/java/io/deephaven/engine/v2/by/ssmcountdistinct/CharSsmBackedSource.java");
         objectSsm = charToObject(
                 "DB/src/main/java/io/deephaven/engine/v2/by/ssmcountdistinct/CharSsmBackedSource.java");
-        fixupObjectSsm(objectSsm, ReplicateSegmentedSortedMultiset::fixupDbArrays,
+        fixupObjectSsm(objectSsm,
                 ReplicateSegmentedSortedMultiset::fixupSourceConstructor,
                 (l) -> replaceRegion(l, "CreateNew", Collections.singletonList(
                         "            underlying.set(key, ssm = new ObjectSegmentedSortedMultiset(DistinctOperatorFactory.NODE_SIZE, Object.class));")));
@@ -169,20 +168,6 @@ public class ReplicateSegmentedSortedMultiset {
         return removeImport(lines, "\\s*import static.*QueryConstants.*;");
     }
 
-    private static List<String> fixupDbArrays(List<String> lines) {
-        lines = removeAnyImports(lines, "\\s*import .*DbArray.+Wrapper;",
-                "\\s*import .*Db.+Array;",
-                "\\s*import .*Db.+Direct;");
-
-        lines = addImport(lines, DbArray.class, DbArrayDirect.class);
-
-        return globalReplacements(lines, "DbObjectArray>", "DbArray>",
-                "DbObjectArray\\s+", "DbArray ",
-                "DbObjectArray\\.", "DbArray.",
-                "DbObjectArrayDirect", "DbArrayDirect<>",
-                "new DbArrayObjectWrapper\\(this\\)", "this");
-    }
-
     private static List<String> fixupTHashes(List<String> lines) {
         lines = removeImport(lines, "\\s*import gnu.trove.*;");
         lines = addImport(lines, THashSet.class);
@@ -215,13 +200,13 @@ public class ReplicateSegmentedSortedMultiset {
     private static List<String> fixupSourceConstructor(List<String> lines) {
         return replaceRegion(lines, "Constructor",
                 Collections.singletonList("    public ObjectSsmBackedSource(Class type) {\n" +
-                        "        super(DbArray.class, type);\n" +
+                        "        super(ObjectVector.class, type);\n" +
                         "        underlying = new ObjectArraySource<>(ObjectSegmentedSortedMultiset.class, type);\n" +
                         "    }"));
     }
 
     private static List<String> fixupObjectCompare(List<String> lines) {
-        lines = removeRegion(lines, "DbArrayEquals");
+        lines = removeRegion(lines, "VectorEquals");
         lines = replaceRegion(lines, "EqualsArrayTypeCheck", Collections.singletonList(
                 "        if(o.getComponentType() != o.getComponentType()) {\n" +
                         "            return false;\n" +
@@ -243,25 +228,25 @@ public class ReplicateSegmentedSortedMultiset {
         final File longFile = new File(longPath);
         List<String> lines = FileUtils.readLines(longFile, Charset.defaultCharset());
 
-        lines = addImport(lines, DBDateTime.class, DbArrayDirect.class, DBTimeUtils.class);
+        lines = addImport(lines, DBDateTime.class, ObjectVectorDirect.class, DBTimeUtils.class);
         lines = insertRegion(lines, "Extensions",
                 Arrays.asList(
                         "    public DBDateTime getAsDate(long i) {",
                         "        return DBTimeUtils.nanosToTime(get(i));",
                         "    }",
                         "",
-                        "    public DbArray<DBDateTime> subArrayAsDate(long fromIndexInclusive, long toIndexExclusive) {",
-                        "        return new DbArrayDirect<>(keyArrayAsDate(fromIndexInclusive, toIndexExclusive));",
+                        "    public ObjectVector<DBDateTime> subArrayAsDate(long fromIndexInclusive, long toIndexExclusive) {",
+                        "        return new ObjectVectorDirect<>(keyArrayAsDate(fromIndexInclusive, toIndexExclusive));",
                         "    }",
                         "",
-                        "    public DbArray<DBDateTime> subArrayByPositionsAsDates(long[] positions) {",
+                        "    public ObjectVector<DBDateTime> subArrayByPositionsAsDates(long[] positions) {",
                         "        final DBDateTime[] keyArray = new DBDateTime[positions.length];",
                         "        int writePos = 0;",
                         "        for (long position : positions) {",
                         "            keyArray[writePos++] = getAsDate(position);",
                         "        }",
                         "",
-                        "        return new DbArrayDirect<>(keyArray);",
+                        "        return new ObjectVectorDirect<>(keyArray);",
                         "    }",
                         "",
                         "    public DBDateTime[] toDateArray() {",
@@ -295,8 +280,8 @@ public class ReplicateSegmentedSortedMultiset {
                         "    }",
                         "",
                         "",
-                        "    public DbArray<DBDateTime> getDirectAsDate() {",
-                        "        return new DbArrayDirect<>(keyArrayAsDate());",
+                        "    public ObjectVector<DBDateTime> getDirectAsDate() {",
+                        "        return new ObjectVectorDirect<>(keyArrayAsDate());",
                         "    }",
                         "",
                         "    private DBDateTime[] keyArrayAsDate() {",

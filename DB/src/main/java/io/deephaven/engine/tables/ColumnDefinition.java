@@ -9,16 +9,8 @@ import io.deephaven.base.formatters.EnumFormatter;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.datastructures.util.HashCodeUtil;
-import io.deephaven.engine.tables.dbarrays.DbArray;
-import io.deephaven.engine.tables.dbarrays.DbArrayBase;
-import io.deephaven.engine.tables.dbarrays.DbBooleanArray;
-import io.deephaven.engine.tables.dbarrays.DbByteArray;
-import io.deephaven.engine.tables.dbarrays.DbCharArray;
-import io.deephaven.engine.tables.dbarrays.DbDoubleArray;
-import io.deephaven.engine.tables.dbarrays.DbFloatArray;
-import io.deephaven.engine.tables.dbarrays.DbIntArray;
-import io.deephaven.engine.tables.dbarrays.DbLongArray;
-import io.deephaven.engine.tables.dbarrays.DbShortArray;
+import io.deephaven.engine.tables.dbarrays.*;
+import io.deephaven.engine.tables.dbarrays.Vector;
 import io.deephaven.engine.tables.utils.DBDateTime;
 import io.deephaven.qst.column.header.ColumnHeader;
 import io.deephaven.qst.type.ArrayType;
@@ -26,8 +18,8 @@ import io.deephaven.qst.type.BooleanType;
 import io.deephaven.qst.type.ByteType;
 import io.deephaven.qst.type.CharType;
 import io.deephaven.qst.type.CustomType;
-import io.deephaven.qst.type.DbGenericArrayType;
-import io.deephaven.qst.type.DbPrimitiveArrayType;
+import io.deephaven.qst.type.GenericVectorType;
+import io.deephaven.qst.type.PrimitiveVectorType;
 import io.deephaven.qst.type.DoubleType;
 import io.deephaven.qst.type.FloatType;
 import io.deephaven.qst.type.GenericType;
@@ -121,10 +113,10 @@ public class ColumnDefinition<TYPE> implements Externalizable, LogOutputAppendab
         return adapter.out();
     }
 
-    public static <T extends DbArrayBase<?>> ColumnDefinition<T> ofDbArray(@NotNull final String name,
-            @NotNull final Class<T> dbArrayType) {
+    public static <T extends Vector<?>> ColumnDefinition<T> ofDbArray(@NotNull final String name,
+                                                                      @NotNull final Class<T> dbArrayType) {
         ColumnDefinition<T> columnDefinition = new ColumnDefinition<>(name, dbArrayType);
-        columnDefinition.setComponentType(baseComponentTypeForDbArray(dbArrayType));
+        columnDefinition.setComponentType(baseComponentTypeForVector(dbArrayType));
         return columnDefinition;
     }
 
@@ -143,43 +135,43 @@ public class ColumnDefinition<TYPE> implements Externalizable, LogOutputAppendab
     }
 
     /**
-     * Base component type class for each {@link DbArrayBase} type. Note that {@link DbBooleanArray} is deprecated,
-     * superseded by {@link DbArray}.
+     * Base component type class for each {@link Vector} type. Note that {@link BooleanVector} is deprecated,
+     * superseded by {@link ObjectVector}.
      */
-    private static Class<?> baseComponentTypeForDbArray(@NotNull final Class<? extends DbArrayBase<?>> dbArrayType) {
-        if (DbBooleanArray.class.isAssignableFrom(dbArrayType)) {
+    private static Class<?> baseComponentTypeForVector(@NotNull final Class<? extends Vector<?>> vectorType) {
+        if (BooleanVector.class.isAssignableFrom(vectorType)) {
             return Boolean.class;
         }
-        if (DbCharArray.class.isAssignableFrom(dbArrayType)) {
+        if (CharVector.class.isAssignableFrom(vectorType)) {
             return char.class;
         }
-        if (DbByteArray.class.isAssignableFrom(dbArrayType)) {
+        if (ByteVector.class.isAssignableFrom(vectorType)) {
             return byte.class;
         }
-        if (DbShortArray.class.isAssignableFrom(dbArrayType)) {
+        if (ShortVector.class.isAssignableFrom(vectorType)) {
             return short.class;
         }
-        if (DbIntArray.class.isAssignableFrom(dbArrayType)) {
+        if (IntVector.class.isAssignableFrom(vectorType)) {
             return int.class;
         }
-        if (DbLongArray.class.isAssignableFrom(dbArrayType)) {
+        if (LongVector.class.isAssignableFrom(vectorType)) {
             return long.class;
         }
-        if (DbFloatArray.class.isAssignableFrom(dbArrayType)) {
+        if (FloatVector.class.isAssignableFrom(vectorType)) {
             return float.class;
         }
-        if (DbDoubleArray.class.isAssignableFrom(dbArrayType)) {
+        if (DoubleVector.class.isAssignableFrom(vectorType)) {
             return double.class;
         }
-        if (DbArray.class.isAssignableFrom(dbArrayType)) {
+        if (ObjectVector.class.isAssignableFrom(vectorType)) {
             return Object.class;
         }
-        throw new IllegalArgumentException("Unrecognized DbArray type " + dbArrayType);
+        throw new IllegalArgumentException("Unrecognized Vector type " + vectorType);
     }
 
     private static void assertComponentTypeValid(@NotNull final Class<?> dataType,
             @Nullable final Class<?> componentType) {
-        if (!DbArrayBase.class.isAssignableFrom(dataType) && !dataType.isArray()) {
+        if (!Vector.class.isAssignableFrom(dataType) && !dataType.isArray()) {
             return;
         }
         if (componentType == null) {
@@ -194,10 +186,10 @@ public class ColumnDefinition<TYPE> implements Externalizable, LogOutputAppendab
             return;
         }
         // noinspection unchecked
-        final Class<?> baseComponentType = baseComponentTypeForDbArray((Class<? extends DbArrayBase<?>>) dataType);
+        final Class<?> baseComponentType = baseComponentTypeForVector((Class<? extends Vector<?>>) dataType);
         if (!baseComponentType.isAssignableFrom(componentType)) {
             throw new IllegalArgumentException(
-                    "Invalid component type " + componentType + " for DbArray data type " + dataType);
+                    "Invalid component type " + componentType + " for Vector data type " + dataType);
         }
     }
 
@@ -214,21 +206,21 @@ public class ColumnDefinition<TYPE> implements Externalizable, LogOutputAppendab
             }
             return inputComponentType;
         }
-        if (DbArrayBase.class.isAssignableFrom(dataType)) {
+        if (Vector.class.isAssignableFrom(dataType)) {
             // noinspection unchecked
             final Class<?> dbArrayComponentType =
-                    baseComponentTypeForDbArray((Class<? extends DbArrayBase<?>>) dataType);
+                    baseComponentTypeForVector((Class<? extends Vector<?>>) dataType);
             if (inputComponentType == null) {
                 /*
                  * TODO (https://github.com/deephaven/deephaven-core/issues/817): Allow formula results returning
-                 * DbArray to know component type if (DbArray.class.isAssignableFrom(dataType)) { throw new
-                 * IllegalArgumentException("Missing required component type for DbArray data type " + dataType); }
+                 * Vector to know component type if (Vector.class.isAssignableFrom(dataType)) { throw new
+                 * IllegalArgumentException("Missing required component type for Vector data type " + dataType); }
                  */
                 return dbArrayComponentType;
             }
             if (!dbArrayComponentType.isAssignableFrom(inputComponentType)) {
                 throw new IllegalArgumentException(
-                        "Invalid component type " + inputComponentType + " for DbArray data type " + dataType);
+                        "Invalid component type " + inputComponentType + " for Vector data type " + dataType);
             }
             return inputComponentType;
         }
@@ -343,16 +335,16 @@ public class ColumnDefinition<TYPE> implements Externalizable, LogOutputAppendab
                 }
 
                 @Override
-                public void visit(DbPrimitiveArrayType<?, ?> dbArrayPrimitiveType) {
+                public void visit(PrimitiveVectorType<?, ?> dbArrayPrimitiveType) {
                     // noinspection unchecked,rawtypes
                     out = ofDbArray(name, (Class) dbArrayPrimitiveType.clazz());
                 }
 
                 @Override
-                public void visit(DbGenericArrayType<?, ?> dbGenericArrayType) {
+                public void visit(GenericVectorType<?, ?> genericVectorType) {
                     // noinspection unchecked,rawtypes
-                    ColumnDefinition<DbArray<?>> cd = new ColumnDefinition(name, DbArray.class);
-                    cd.setComponentType(dbGenericArrayType.componentType().clazz());
+                    ColumnDefinition<ObjectVector<?>> cd = new ColumnDefinition(name, ObjectVector.class);
+                    cd.setComponentType(genericVectorType.componentType().clazz());
                     out = cd;
                 }
             });

@@ -21,9 +21,9 @@ public interface DataColumn<TYPE> extends LongSizedDataStructure {
 
     /**
      * Get the array component type, or the type itself. For basic types, this is just the type. For example, if you
-     * have a column of java.lang.String, this also returns java.lang.String. For array types (java Arrays), or DbArray
+     * have a column of java.lang.String, this also returns java.lang.String. For array types (java Arrays), or Vector
      * (which would be returned by getType), you get the type that is contained within the array. For example, if a
-     * single row in this column contains a DbDoubleArray, getComponentType returns double.
+     * single row in this column contains a DoubleVector, getComponentType returns double.
      *
      * @return if type is an array, the type of object within the array. Otherwise type itself.
      */

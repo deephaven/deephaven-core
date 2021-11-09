@@ -4,9 +4,9 @@
 package io.deephaven.engine.v2.ssms;
 
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.tables.dbarrays.DbArray;
-import io.deephaven.engine.tables.dbarrays.DbFloatArray;
-import io.deephaven.engine.tables.dbarrays.DbFloatArrayDirect;
+import io.deephaven.engine.tables.dbarrays.FloatVector;
+import io.deephaven.engine.tables.dbarrays.FloatVectorDirect;
+import io.deephaven.engine.tables.dbarrays.ObjectVector;
 import io.deephaven.engine.tables.utils.ArrayUtils;
 import io.deephaven.engine.util.DhFloatComparisons;
 import io.deephaven.engine.v2.by.SumIntChunk;
@@ -23,7 +23,7 @@ import java.util.Objects;
 
 import static io.deephaven.util.QueryConstants.NULL_FLOAT;
 
-public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiSet<Float>, DbFloatArray {
+public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiSet<Float>, FloatVector {
     private final int leafSize;
     private int leafCount;
     private int size;
@@ -47,7 +47,7 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
     private transient boolean accumulateDeltas = false;
     private transient TFloatHashSet added;
     private transient TFloatHashSet removed;
-    private transient DbFloatArray prevValues;
+    private transient FloatVector prevValues;
     // endregion Deltas
 
 
@@ -2194,7 +2194,7 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
         }
 
         if(prevValues == null) {
-            prevValues = new DbFloatArrayDirect(keyArray());
+            prevValues = new FloatVectorDirect(keyArray());
         }
 
         if (added == null) {
@@ -2223,7 +2223,7 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
         }
 
         if(prevValues == null) {
-            prevValues = new DbFloatArrayDirect(keyArray());
+            prevValues = new FloatVectorDirect(keyArray());
         }
 
         if(removed == null) {
@@ -2264,12 +2264,12 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
         chunk.copyFromTypedArray(added.toArray(), 0, position, added.size());
     }
 
-    public DbFloatArray getPrevValues() {
+    public FloatVector getPrevValues() {
         return prevValues == null ? this : prevValues;
     }
     // endregion
 
-    // region DBFloatArray
+    // region FloatVector
     @Override
     public float get(long i) {
         if(i < 0 || i > size()) {
@@ -2291,19 +2291,19 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
     }
 
     @Override
-    public DbFloatArray subArray(long fromIndex, long toIndex) {
-        return new DbFloatArrayDirect(keyArray(fromIndex, toIndex));
+    public FloatVector subVector(long fromIndex, long toIndex) {
+        return new FloatVectorDirect(keyArray(fromIndex, toIndex));
     }
 
     @Override
-    public DbFloatArray subArrayByPositions(long[] positions) {
+    public FloatVector subVectorByPositions(long[] positions) {
         final float[] keyArray = new float[positions.length];
         int writePos = 0;
         for (long position : positions) {
             keyArray[writePos++] = get(position);
         }
 
-        return new DbFloatArrayDirect(keyArray);
+        return new FloatVectorDirect(keyArray);
     }
 
     @Override
@@ -2317,13 +2317,13 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
     }
 
     @Override
-    public DbFloatArray getDirect() {
-        return new DbFloatArrayDirect(keyArray());
+    public FloatVector getDirect() {
+        return new FloatVectorDirect(keyArray());
     }
     //endregion
 
-    //region DbArrayEquals
-    private boolean equalsArray(DbFloatArray o) {
+    //region VectorEquals
+    private boolean equalsArray(FloatVector o) {
         if(size() != o.size()) {
             return false;
         }
@@ -2351,9 +2351,9 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
 
         return true;
     }
-    //endregion DbArrayEquals
+    //endregion VectorEquals
 
-    private boolean equalsArray(DbArray<?> o) {
+    private boolean equalsArray(ObjectVector<?> o) {
         //region EqualsArrayTypeCheck
         if(o.getComponentType() != float.class && o.getComponentType() != Float.class) {
             return false;
@@ -2367,11 +2367,11 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
         if(leafCount == 1) {
             for(int ii = 0; ii < size; ii++) {
                 final Float val = (Float)o.get(ii);
-                //region DbArrayEquals
+                //region VectorEquals
                 if(directoryValues[ii] == NULL_FLOAT && val != null && val != NULL_FLOAT) {
                     return false;
                 }
-                //endregion DbArrayEquals
+                //endregion VectorEquals
 
                 if(!Objects.equals(directoryValues[ii], val)) {
                     return false;
@@ -2385,11 +2385,11 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
         for (int li = 0; li < leafCount; ++li) {
             for(int ai = 0; ai < leafSizes[li]; ai++) {
                 final Float val = (Float)o.get(nCompared++);
-                //region DbArrayEquals
+                //region VectorEquals
                 if(leafValues[li][ai] == NULL_FLOAT && val != null && val != NULL_FLOAT) {
                     return false;
                 }
-                //endregion DbArrayEquals
+                //endregion VectorEquals
 
                 if(!Objects.equals(leafValues[li][ai],  val)) {
                     return false;
@@ -2404,14 +2404,14 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
     public boolean equals(Object o) {
         if (this == o) return true;
         if (!(o instanceof FloatSegmentedSortedMultiset)) {
-            //region DbArrayEquals
-            if(o instanceof DbFloatArray) {
-                return equalsArray((DbFloatArray)o);
+            //region VectorEquals
+            if(o instanceof FloatVector) {
+                return equalsArray((FloatVector)o);
             }
-            //endregion DbArrayEquals
+            //endregion VectorEquals
 
-            if(o instanceof DbArray) {
-                return equalsArray((DbArray)o);
+            if(o instanceof ObjectVector) {
+                return equalsArray((ObjectVector)o);
             }
             return false;
         }

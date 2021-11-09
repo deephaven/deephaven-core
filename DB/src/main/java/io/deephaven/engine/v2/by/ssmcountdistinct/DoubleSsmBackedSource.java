@@ -3,7 +3,7 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.v2.by.ssmcountdistinct;
 
-import io.deephaven.engine.tables.dbarrays.DbDoubleArray;
+import io.deephaven.engine.tables.dbarrays.DoubleVector;
 import io.deephaven.engine.v2.sources.AbstractColumnSource;
 import io.deephaven.engine.v2.sources.ColumnSourceGetDefaults;
 import io.deephaven.engine.v2.sources.MutableColumnSourceGetDefaults;
@@ -14,16 +14,16 @@ import io.deephaven.engine.v2.utils.RowSet;
 /**
  * A {@link SsmBackedColumnSource} for Doubles.
  */
-public class DoubleSsmBackedSource extends AbstractColumnSource<DbDoubleArray>
-                                 implements ColumnSourceGetDefaults.ForObject<DbDoubleArray>,
-                                            MutableColumnSourceGetDefaults.ForObject<DbDoubleArray>,
-                                            SsmBackedColumnSource<DoubleSegmentedSortedMultiset, DbDoubleArray> {
+public class DoubleSsmBackedSource extends AbstractColumnSource<DoubleVector>
+                                 implements ColumnSourceGetDefaults.ForObject<DoubleVector>,
+                                            MutableColumnSourceGetDefaults.ForObject<DoubleVector>,
+                                            SsmBackedColumnSource<DoubleSegmentedSortedMultiset, DoubleVector> {
     private final ObjectArraySource<DoubleSegmentedSortedMultiset> underlying;
     private boolean trackingPrevious = false;
 
     //region Constructor
     public DoubleSsmBackedSource() {
-        super(DbDoubleArray.class, double.class);
+        super(DoubleVector.class, double.class);
         underlying = new ObjectArraySource<>(DoubleSegmentedSortedMultiset.class, double.class);
     }
     //endregion Constructor
@@ -68,12 +68,12 @@ public class DoubleSsmBackedSource extends AbstractColumnSource<DbDoubleArray>
     }
 
     @Override
-    public DbDoubleArray get(long index) {
+    public DoubleVector get(long index) {
         return underlying.get(index);
     }
 
     @Override
-    public DbDoubleArray getPrev(long index) {
+    public DoubleVector getPrev(long index) {
         final DoubleSegmentedSortedMultiset maybePrev = underlying.getPrev(index);
         return maybePrev == null ? null : maybePrev.getPrevValues();
     }

@@ -8,8 +8,8 @@
 package io.deephaven.libs.primitives;
 
 import io.deephaven.base.testing.BaseArrayTestCase;
-import io.deephaven.engine.tables.dbarrays.DbByteArray;
-import io.deephaven.engine.tables.dbarrays.DbByteArrayDirect;
+import io.deephaven.engine.tables.dbarrays.ByteVector;
+import io.deephaven.engine.tables.dbarrays.ByteVectorDirect;
 
 import static io.deephaven.libs.primitives.BytePrimitives.*;
 import static io.deephaven.util.QueryConstants.NULL_BYTE;
@@ -33,25 +33,25 @@ public class TestBytePrimitives extends BaseArrayTestCase {
     }
 
     public void testNullToValueArray() {
-        assertEquals(new byte[]{(byte) 3, (byte) 7, (byte) 11}, nullToValue(new DbByteArrayDirect(new byte[]{(byte) 3, NULL_BYTE, (byte) 11}), (byte) 7));
+        assertEquals(new byte[]{(byte) 3, (byte) 7, (byte) 11}, nullToValue(new ByteVectorDirect(new byte[]{(byte) 3, NULL_BYTE, (byte) 11}), (byte) 7));
 
         assertEquals(new byte[]{(byte) 3, (byte) 7, (byte) 11}, nullToValue(new byte[]{(byte) 3, NULL_BYTE, (byte) 11}, (byte) 7));
     }
 
     public void testCount(){
-        assertEquals(0, count((DbByteArray)null));
-        assertEquals(3,count(new DbByteArrayDirect(new byte[]{40,50,60})));
-        assertEquals(0,count(new DbByteArrayDirect()));
-        assertEquals(0,count(new DbByteArrayDirect(NULL_BYTE)));
-        assertEquals(2,count(new DbByteArrayDirect(new byte[]{5,NULL_BYTE,15})));
+        assertEquals(0, count((ByteVector)null));
+        assertEquals(3,count(new ByteVectorDirect(new byte[]{40,50,60})));
+        assertEquals(0,count(new ByteVectorDirect()));
+        assertEquals(0,count(new ByteVectorDirect(NULL_BYTE)));
+        assertEquals(2,count(new ByteVectorDirect(new byte[]{5,NULL_BYTE,15})));
     }
 
     public void testLast(){
-        assertTrue(Math.abs(60-last(new DbByteArrayDirect(new byte[]{40,50,60})))==0.0);
-        assertEquals(NULL_BYTE,last(new DbByteArrayDirect()));
-        assertEquals(NULL_BYTE,last(new DbByteArrayDirect(NULL_BYTE)));
-        assertTrue(Math.abs(15-last(new DbByteArrayDirect(new byte[]{5,NULL_BYTE,15})))==0.0);
-        assertTrue(Math.abs(40-last(new DbByteArrayDirect((byte)40)))==0.0);
+        assertTrue(Math.abs(60-last(new ByteVectorDirect(new byte[]{40,50,60})))==0.0);
+        assertEquals(NULL_BYTE,last(new ByteVectorDirect()));
+        assertEquals(NULL_BYTE,last(new ByteVectorDirect(NULL_BYTE)));
+        assertTrue(Math.abs(15-last(new ByteVectorDirect(new byte[]{5,NULL_BYTE,15})))==0.0);
+        assertTrue(Math.abs(40-last(new ByteVectorDirect((byte)40)))==0.0);
 
         assertTrue(Math.abs(60-last(new byte[]{40,50,60}))==0.0);
         assertEquals(NULL_BYTE,last(new byte[]{}));
@@ -61,11 +61,11 @@ public class TestBytePrimitives extends BaseArrayTestCase {
     }
 
     public void testFirst(){
-        assertTrue(Math.abs(40-first(new DbByteArrayDirect(new byte[]{40,50,60})))==0.0);
-        assertEquals(NULL_BYTE,first(new DbByteArrayDirect()));
-        assertEquals(NULL_BYTE,first(new DbByteArrayDirect(NULL_BYTE)));
-        assertTrue(Math.abs(5-first(new DbByteArrayDirect(new byte[]{5,NULL_BYTE,15})))==0.0);
-        assertTrue(Math.abs(40-first(new DbByteArrayDirect((byte)40)))==0.0);
+        assertTrue(Math.abs(40-first(new ByteVectorDirect(new byte[]{40,50,60})))==0.0);
+        assertEquals(NULL_BYTE,first(new ByteVectorDirect()));
+        assertEquals(NULL_BYTE,first(new ByteVectorDirect(NULL_BYTE)));
+        assertTrue(Math.abs(5-first(new ByteVectorDirect(new byte[]{5,NULL_BYTE,15})))==0.0);
+        assertTrue(Math.abs(40-first(new ByteVectorDirect((byte)40)))==0.0);
 
         assertTrue(Math.abs(40-first(new byte[]{40,50,60}))==0.0);
         assertEquals(NULL_BYTE,first(new byte[]{}));
@@ -75,11 +75,11 @@ public class TestBytePrimitives extends BaseArrayTestCase {
     }
 
     public void testNth(){
-        assertEquals(NULL_BYTE, nth(-1,new DbByteArrayDirect(new byte[]{40,50,60})));
-        assertEquals((byte)40, nth(0,new DbByteArrayDirect(new byte[]{40,50,60})));
-        assertEquals((byte)50, nth(1,new DbByteArrayDirect(new byte[]{40,50,60})));
-        assertEquals((byte)60, nth(2,new DbByteArrayDirect(new byte[]{40,50,60})));
-        assertEquals(NULL_BYTE, nth(10,new DbByteArrayDirect(new byte[]{40,50,60})));
+        assertEquals(NULL_BYTE, nth(-1,new ByteVectorDirect(new byte[]{40,50,60})));
+        assertEquals((byte)40, nth(0,new ByteVectorDirect(new byte[]{40,50,60})));
+        assertEquals((byte)50, nth(1,new ByteVectorDirect(new byte[]{40,50,60})));
+        assertEquals((byte)60, nth(2,new ByteVectorDirect(new byte[]{40,50,60})));
+        assertEquals(NULL_BYTE, nth(10,new ByteVectorDirect(new byte[]{40,50,60})));
 
         assertEquals(NULL_BYTE, nth(-1,new byte[]{40,50,60}));
         assertEquals((byte)40, nth(0,new byte[]{40,50,60}));
@@ -89,14 +89,14 @@ public class TestBytePrimitives extends BaseArrayTestCase {
     }
 
     public void testCountDistinct() {
-        assertEquals(NULL_LONG, countDistinct((DbByteArrayDirect)null));
-        assertEquals(NULL_LONG, countDistinct((DbByteArrayDirect)null,true));
-        assertEquals(0, countDistinct(new DbByteArrayDirect(new byte[]{})));
-        assertEquals(0, countDistinct(new DbByteArrayDirect(new byte[]{NULL_BYTE})));
-        assertEquals(1, countDistinct(new DbByteArrayDirect(new byte[]{1})));
-        assertEquals(2, countDistinct(new DbByteArrayDirect(new byte[]{1,2,1,NULL_BYTE,NULL_BYTE})));
-        assertEquals(2, countDistinct(new DbByteArrayDirect(new byte[]{1,2,1,NULL_BYTE,NULL_BYTE}), false));
-        assertEquals(3, countDistinct(new DbByteArrayDirect(new byte[]{1,2,1,NULL_BYTE,NULL_BYTE}), true));
+        assertEquals(NULL_LONG, countDistinct((ByteVectorDirect)null));
+        assertEquals(NULL_LONG, countDistinct((ByteVectorDirect)null,true));
+        assertEquals(0, countDistinct(new ByteVectorDirect(new byte[]{})));
+        assertEquals(0, countDistinct(new ByteVectorDirect(new byte[]{NULL_BYTE})));
+        assertEquals(1, countDistinct(new ByteVectorDirect(new byte[]{1})));
+        assertEquals(2, countDistinct(new ByteVectorDirect(new byte[]{1,2,1,NULL_BYTE,NULL_BYTE})));
+        assertEquals(2, countDistinct(new ByteVectorDirect(new byte[]{1,2,1,NULL_BYTE,NULL_BYTE}), false));
+        assertEquals(3, countDistinct(new ByteVectorDirect(new byte[]{1,2,1,NULL_BYTE,NULL_BYTE}), true));
 
         assertEquals(NULL_LONG, countDistinct((byte[])null));
         assertEquals(NULL_LONG, countDistinct((byte[])null,true));
@@ -109,17 +109,17 @@ public class TestBytePrimitives extends BaseArrayTestCase {
     }
 
     public void testDistinct() {
-        assertEquals(null, distinct((DbByteArrayDirect)null));
-        assertEquals(null, distinct((DbByteArrayDirect)null, true, true));
-        assertEquals(new DbByteArrayDirect(), distinct(new DbByteArrayDirect(new byte[]{})));
-        assertEquals(new DbByteArrayDirect(), distinct(new DbByteArrayDirect(new byte[]{NULL_BYTE})));
-        assertEquals(new DbByteArrayDirect(new byte[]{1}), distinct(new DbByteArrayDirect(new byte[]{1})));
-        assertEquals(new DbByteArrayDirect(new byte[]{1,2}), distinct(new DbByteArrayDirect(new byte[]{1,2,1,NULL_BYTE,NULL_BYTE})));
-        assertEquals(new DbByteArrayDirect(new byte[]{1,2}), distinct(new DbByteArrayDirect(new byte[]{1,2,1,NULL_BYTE,NULL_BYTE}), false, false));
-        assertEquals(new DbByteArrayDirect(new byte[]{1,2,NULL_BYTE}), distinct(new DbByteArrayDirect(new byte[]{1,2,1,NULL_BYTE,NULL_BYTE}), true, false));
-        assertEquals(new DbByteArrayDirect(new byte[]{1,2,3}), distinct(new DbByteArrayDirect(new byte[]{3,1,2,1,NULL_BYTE,NULL_BYTE}), false, true));
-        assertEquals(new DbByteArrayDirect(new byte[]{1,2,3,4}), distinct(new DbByteArrayDirect(new byte[]{3,1,2,4,1,NULL_BYTE,NULL_BYTE}), false, true));
-        assertEquals(new DbByteArrayDirect(new byte[]{NULL_BYTE,1,2,3,4}), distinct(new DbByteArrayDirect(new byte[]{3,1,2,4,1,NULL_BYTE,NULL_BYTE}), true, true));
+        assertEquals(null, distinct((ByteVectorDirect)null));
+        assertEquals(null, distinct((ByteVectorDirect)null, true, true));
+        assertEquals(new ByteVectorDirect(), distinct(new ByteVectorDirect(new byte[]{})));
+        assertEquals(new ByteVectorDirect(), distinct(new ByteVectorDirect(new byte[]{NULL_BYTE})));
+        assertEquals(new ByteVectorDirect(new byte[]{1}), distinct(new ByteVectorDirect(new byte[]{1})));
+        assertEquals(new ByteVectorDirect(new byte[]{1,2}), distinct(new ByteVectorDirect(new byte[]{1,2,1,NULL_BYTE,NULL_BYTE})));
+        assertEquals(new ByteVectorDirect(new byte[]{1,2}), distinct(new ByteVectorDirect(new byte[]{1,2,1,NULL_BYTE,NULL_BYTE}), false, false));
+        assertEquals(new ByteVectorDirect(new byte[]{1,2,NULL_BYTE}), distinct(new ByteVectorDirect(new byte[]{1,2,1,NULL_BYTE,NULL_BYTE}), true, false));
+        assertEquals(new ByteVectorDirect(new byte[]{1,2,3}), distinct(new ByteVectorDirect(new byte[]{3,1,2,1,NULL_BYTE,NULL_BYTE}), false, true));
+        assertEquals(new ByteVectorDirect(new byte[]{1,2,3,4}), distinct(new ByteVectorDirect(new byte[]{3,1,2,4,1,NULL_BYTE,NULL_BYTE}), false, true));
+        assertEquals(new ByteVectorDirect(new byte[]{NULL_BYTE,1,2,3,4}), distinct(new ByteVectorDirect(new byte[]{3,1,2,4,1,NULL_BYTE,NULL_BYTE}), true, true));
 
         assertEquals(null, distinct((byte[])null));
         assertEquals(null, distinct((byte[])null, true, true));
@@ -135,11 +135,11 @@ public class TestBytePrimitives extends BaseArrayTestCase {
     }
 
     public void testVec(){
-        assertEquals(new byte[]{(byte)1,(byte)3,(byte)5}, vec(new DbByteArrayDirect((byte)1,(byte)3,(byte)5)));
+        assertEquals(new byte[]{(byte)1,(byte)3,(byte)5}, vec(new ByteVectorDirect((byte)1,(byte)3,(byte)5)));
     }
 
     public void testArray(){
-        assertEquals(new DbByteArrayDirect((byte)1,(byte)3,(byte)5), array(new byte[]{(byte)1,(byte)3,(byte)5}));
+        assertEquals(new ByteVectorDirect((byte)1,(byte)3,(byte)5), array(new byte[]{(byte)1,(byte)3,(byte)5}));
     }
 
     public void testIn(){
@@ -172,17 +172,17 @@ public class TestBytePrimitives extends BaseArrayTestCase {
         assertEquals(new byte[]{1,2,3,4,5,6}, concat(new byte[]{1,2}, new byte[]{3}, new byte[]{4,5,6}));
         assertEquals(new byte[]{}, concat((byte[])(null)));
 
-        assertEquals(new byte[]{}, concat((DbByteArray[])null));
-        assertEquals(new byte[]{1,2,3,4,5,6}, concat(new DbByteArrayDirect(new byte[]{1,2}), new DbByteArrayDirect(new byte[]{3}), new DbByteArrayDirect(new byte[]{4,5,6})));
-        assertEquals(new byte[]{}, concat((DbByteArray) (null)));
+        assertEquals(new byte[]{}, concat((ByteVector[])null));
+        assertEquals(new byte[]{1,2,3,4,5,6}, concat(new ByteVectorDirect(new byte[]{1,2}), new ByteVectorDirect(new byte[]{3}), new ByteVectorDirect(new byte[]{4,5,6})));
+        assertEquals(new byte[]{}, concat((ByteVector) (null)));
     }
 
     public void testReverse() {
         assertEquals(new byte[]{3,2,1}, reverse((byte)1,(byte)2,(byte)3));
         assertEquals(null, reverse((byte[])(null)));
 
-        assertEquals(new byte[]{3,2,1}, reverse(new DbByteArrayDirect(new byte[]{1,2,3})));
-        assertEquals(null, reverse((DbByteArray) (null)));
+        assertEquals(new byte[]{3,2,1}, reverse(new ByteVectorDirect(new byte[]{1,2,3})));
+        assertEquals(null, reverse((ByteVector) (null)));
     }
 }
 

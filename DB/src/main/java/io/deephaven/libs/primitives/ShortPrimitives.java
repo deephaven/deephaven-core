@@ -7,8 +7,8 @@
 
 package io.deephaven.libs.primitives;
 
-import io.deephaven.engine.tables.dbarrays.DbShortArray;
-import io.deephaven.engine.tables.dbarrays.DbShortArrayDirect;
+import io.deephaven.engine.tables.dbarrays.ShortVector;
+import io.deephaven.engine.tables.dbarrays.ShortVectorDirect;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.util.LongSizedDataStructure;
 import gnu.trove.list.array.TShortArrayList;
@@ -82,7 +82,7 @@ public class ShortPrimitives {
      * @return values with nulls replaced by defaultValue.
      */
     static public short[] nullToValue(short[] values, short defaultValue) {
-        return nullToValue(new DbShortArrayDirect(values), defaultValue);
+        return nullToValue(new ShortVectorDirect(values), defaultValue);
     }
 
     /**
@@ -92,7 +92,7 @@ public class ShortPrimitives {
      * @param defaultValue default value to return for null values.
      * @return values with nulls replaced by defaultValue.
      */
-    static public short[] nullToValue(DbShortArray values, short defaultValue) {
+    static public short[] nullToValue(ShortVector values, short defaultValue) {
         short[] result = new short[LongSizedDataStructure.intSize("nullToValue", values.size())];
 
         for (int i = 0; i < values.size(); i++) {
@@ -132,7 +132,7 @@ public class ShortPrimitives {
             return 0;
         }
 
-        return count(new DbShortArrayDirect(values));
+        return count(new ShortVectorDirect(values));
     }
 
     /**
@@ -141,7 +141,7 @@ public class ShortPrimitives {
      * @param values values.
      * @return number of non-null values.
      */
-    static public int count(DbShortArray values){
+    static public int count(ShortVector values){
         if (values == null){
             return 0;
         }
@@ -160,7 +160,7 @@ public class ShortPrimitives {
      * @param values values.
      * @return last value from the array.
      */
-    static public short last(DbShortArray values){
+    static public short last(ShortVector values){
         if(values == null || values.size() < 1){
             return NULL_SHORT;
         }
@@ -188,7 +188,7 @@ public class ShortPrimitives {
      * @param values values.
      * @return first value from the array.
      */
-    static public short first(DbShortArray values){
+    static public short first(ShortVector values){
         if(values == null || values.size() < 1){
             return NULL_SHORT;
         }
@@ -217,7 +217,7 @@ public class ShortPrimitives {
      * @param values values.
      * @return nth value from the array or null, if the rowSet is outside of the array's rowSet range.
      */
-    static public short nth(int index, DbShortArray values){
+    static public short nth(int index, ShortVector values){
         if(index < 0 || index >= values.size()){
             return NULL_SHORT;
         }
@@ -242,7 +242,7 @@ public class ShortPrimitives {
      * @param values DB array
      * @return primitive array.
      */
-    public static short[] vec(DbShortArray values) {
+    public static short[] vec(ShortVector values) {
         if(values == null){
             return null;
         }
@@ -256,12 +256,12 @@ public class ShortPrimitives {
      * @param values primitive array
      * @return DB array.
      */
-    public static DbShortArray array(short[] values) {
+    public static ShortVector array(short[] values) {
         if(values == null){
             return null;
         }
 
-        return new DbShortArrayDirect(values);
+        return new ShortVectorDirect(values);
     }
 
     /**
@@ -310,7 +310,7 @@ public class ShortPrimitives {
             return QueryConstants.NULL_LONG;
         }
 
-        return countDistinct(new DbShortArrayDirect(values));
+        return countDistinct(new ShortVectorDirect(values));
     }
 
     /**
@@ -319,7 +319,7 @@ public class ShortPrimitives {
      * @param values values.
      * @return number of distinct non-null values.
      */
-    public static long countDistinct(final DbShortArray values) {
+    public static long countDistinct(final ShortVector values) {
         return countDistinct(values, false);
     }
 
@@ -335,7 +335,7 @@ public class ShortPrimitives {
             return QueryConstants.NULL_LONG;
         }
 
-        return countDistinct(new DbShortArrayDirect(values), countNull);
+        return countDistinct(new ShortVectorDirect(values), countNull);
     }
 
     /**
@@ -345,7 +345,7 @@ public class ShortPrimitives {
      * @param countNull true to count null values, and false to exclude null values.
      * @return number of distinct values.
      */
-    public static long countDistinct(final DbShortArray values, boolean countNull) {
+    public static long countDistinct(final ShortVector values, boolean countNull) {
         if(values == null) {
             return QueryConstants.NULL_LONG;
         }
@@ -377,7 +377,7 @@ public class ShortPrimitives {
      * @param countNull if nulls should count as values
      * @return the single unique value in the array, or null.
      */
-    public static short uniqueValue(final DbShortArray arr, boolean countNull) {
+    public static short uniqueValue(final ShortVector arr, boolean countNull) {
         if(arr == null || arr.isEmpty()) {
             return NULL_SHORT;
         }
@@ -409,7 +409,7 @@ public class ShortPrimitives {
             return null;
         }
 
-        return distinct(new DbShortArrayDirect(values)).toArray();
+        return distinct(new ShortVectorDirect(values)).toArray();
     }
 
     /**
@@ -418,7 +418,7 @@ public class ShortPrimitives {
      * @param values values.
      * @return unsorted array containing only distinct non-null items from arr.
      */
-    public static DbShortArray distinct(final DbShortArray values) {
+    public static ShortVector distinct(final ShortVector values) {
         if(values == null) {
             return null;
         }
@@ -481,17 +481,17 @@ public class ShortPrimitives {
      * @param sort true to sort the resultant array
      * @return array containing only distinct items from arr.
      */
-    public static DbShortArray distinct(final DbShortArray values, boolean includeNull, boolean sort) {
+    public static ShortVector distinct(final ShortVector values, boolean includeNull, boolean sort) {
         if(values == null) {
             return null;
         }
 
         if(values.size() == 0) {
-            return new DbShortArrayDirect();
+            return new ShortVectorDirect();
         }
 
         if(values.size() == 1) {
-            return !includeNull && values.get(0) == QueryConstants.NULL_SHORT ? new DbShortArrayDirect() : values;
+            return !includeNull && values.get(0) == QueryConstants.NULL_SHORT ? new ShortVectorDirect() : values;
         }
 
         final TShortArrayList orderedList = new TShortArrayList();
@@ -513,7 +513,7 @@ public class ShortPrimitives {
             data = orderedList.toArray();
         }
 
-        return new DbShortArrayDirect(data);
+        return new ShortVectorDirect(data);
     }
 
     /**
@@ -562,7 +562,7 @@ public class ShortPrimitives {
             return new short[0];
         }
 
-        return concat(Arrays.stream(values).map(e->e==null?null:new DbShortArrayDirect(e)).toArray(DbShortArray[]::new));
+        return concat(Arrays.stream(values).map(e->e==null?null:new ShortVectorDirect(e)).toArray(ShortVector[]::new));
     }
 
     /**
@@ -571,14 +571,14 @@ public class ShortPrimitives {
      * @param values values.
      * @return concatenation of multiple arrays into a single array.
      */
-    public static short[] concat(DbShortArray... values){
+    public static short[] concat(ShortVector... values){
         if(values == null){
             return new short[0];
         }
 
         int n = 0;
 
-        for (DbShortArray v : values) {
+        for (ShortVector v : values) {
             if (v != null) {
                 n += v.size();
             }
@@ -587,7 +587,7 @@ public class ShortPrimitives {
         final short[] result = new short[n];
         int idx = 0;
 
-        for (DbShortArray v : values) {
+        for (ShortVector v : values) {
             if (v != null) {
                 for (int i = 0; i < v.size(); i++) {
                     result[idx] = v.get(i);
@@ -610,7 +610,7 @@ public class ShortPrimitives {
             return null;
         }
 
-        return reverse(new DbShortArrayDirect(values));
+        return reverse(new ShortVectorDirect(values));
     }
 
     /**
@@ -619,7 +619,7 @@ public class ShortPrimitives {
      * @param values values.
      * @return array with the values reversed.
      */
-    public static short[] reverse(DbShortArray values){
+    public static short[] reverse(ShortVector values){
         if(values == null){
             return null;
         }

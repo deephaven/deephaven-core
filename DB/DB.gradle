@@ -214,8 +214,8 @@ createTestExecTask('replicateColumnSourceFillBenchmark', 'io.deephaven.engine.v2
 createMainExecTask('replicateSetInclusionKernel', 'io.deephaven.engine.v2.select.setinclusion.ReplicateSetInclusionKernel')
 createMainExecTask('replicateRegions', 'io.deephaven.engine.v2.sources.regioned.ReplicateRegionsAndRegionedSources')
 createMainExecTask('replicateToPage', 'io.deephaven.engine.v2.locations.parquet.topage.ReplicateToPage')
-createMainExecTask('replicateDbArrays', 'io.deephaven.engine.tables.dbarrays.ReplicateDbArrays')
-createMainExecTask('replicateDbArrayColumnWrappers', 'io.deephaven.engine.v2.dbarrays.ReplicateDbArrayColumnWrappers')
+createMainExecTask('replicateVectors', 'io.deephaven.engine.tables.dbarrays.ReplicateVectors')
+createMainExecTask('replicateVectorColumnWrappers', 'io.deephaven.engine.v2.dbarrays.ReplicateVectorColumnWrappers')
 createMainExecTask('replicateCopyKernel', 'io.deephaven.engine.v2.utils.copy.ReplicateCopyKernel')
 createMainExecTask('replicateUnboxerKernel', 'io.deephaven.engine.v2.utils.unboxer.ReplicateUnboxerKernel')
 createMainExecTask('replicateOperators', 'io.deephaven.engine.v2.by.ReplicateOperators')
@@ -241,8 +241,8 @@ task replicate {
     dependsOn 'replicateColumnSourceFillBenchmark'
     dependsOn 'replicateRegions'
     dependsOn 'replicateToPage'
-    dependsOn 'replicateDbArrays'
-    dependsOn 'replicateDbArrayColumnWrappers'
+    dependsOn 'replicateVectors'
+    dependsOn 'replicateVectorColumnWrappers'
     dependsOn 'replicateCopyKernel'
     dependsOn 'replicateUnboxerKernel'
     dependsOn 'replicateOperators'

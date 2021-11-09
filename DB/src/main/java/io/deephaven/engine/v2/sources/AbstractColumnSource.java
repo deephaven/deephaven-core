@@ -6,6 +6,7 @@ package io.deephaven.engine.v2.sources;
 
 import io.deephaven.base.Pair;
 import io.deephaven.engine.structures.RowSequence;
+import io.deephaven.engine.tables.dbarrays.Vector;
 import io.deephaven.engine.v2.utils.*;
 import io.deephaven.hash.KeyedObjectHashSet;
 import io.deephaven.hash.KeyedObjectKey;
@@ -63,23 +64,23 @@ public abstract class AbstractColumnSource<T> implements ColumnSource<T>, Serial
         }
         if (type.isArray()) {
             componentType = type.getComponentType();
-        } else if (DbArrayBase.class.isAssignableFrom(type)) {
+        } else if (Vector.class.isAssignableFrom(type)) {
             // noinspection deprecation
-            if (DbBooleanArray.class.isAssignableFrom(type)) {
+            if (BooleanVector.class.isAssignableFrom(type)) {
                 componentType = Boolean.class;
-            } else if (DbByteArray.class.isAssignableFrom(type)) {
+            } else if (ByteVector.class.isAssignableFrom(type)) {
                 componentType = byte.class;
-            } else if (DbCharArray.class.isAssignableFrom(type)) {
+            } else if (CharVector.class.isAssignableFrom(type)) {
                 componentType = char.class;
-            } else if (DbDoubleArray.class.isAssignableFrom(type)) {
+            } else if (DoubleVector.class.isAssignableFrom(type)) {
                 componentType = double.class;
-            } else if (DbFloatArray.class.isAssignableFrom(type)) {
+            } else if (FloatVector.class.isAssignableFrom(type)) {
                 componentType = float.class;
-            } else if (DbIntArray.class.isAssignableFrom(type)) {
+            } else if (IntVector.class.isAssignableFrom(type)) {
                 componentType = int.class;
-            } else if (DbLongArray.class.isAssignableFrom(type)) {
+            } else if (LongVector.class.isAssignableFrom(type)) {
                 componentType = long.class;
-            } else if (DbShortArray.class.isAssignableFrom(type)) {
+            } else if (ShortVector.class.isAssignableFrom(type)) {
                 componentType = short.class;
             } else {
                 componentType = elementType;

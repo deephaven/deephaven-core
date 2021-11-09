@@ -64,21 +64,21 @@ public class LongChunkFactory implements ChunkFactory {
         return LongChunkChunk.chunkWrap(typedArray, offset, capacity);
     }
 
-    // region dbArrayWrap
+    // region vectorWrap
     @NotNull
     @Override
-    public final DbLongArrayDirect dbArrayWrap(Object array) {
+    public final LongVectorDirect vectorWrap(Object array) {
         final long[] typedArray = (long[])array;
-        return new DbLongArrayDirect(typedArray);
+        return new LongVectorDirect(typedArray);
     }
 
     @NotNull
     @Override
-    public DbLongArraySlice dbArrayWrap(Object array, int offset, int capacity) {
-        DbLongArrayDirect dbLongArrayDirect = dbArrayWrap(array);
-        return new DbLongArraySlice(dbLongArrayDirect, offset, capacity);
+    public LongVectorSlice vectorWrap(Object array, int offset, int capacity) {
+        LongVectorDirect dbLongArrayDirect = vectorWrap(array);
+        return new LongVectorSlice(dbLongArrayDirect, offset, capacity);
     }
-    // endregion dbArrayWrap
+    // endregion vectorWrap
 
     @NotNull
     @Override

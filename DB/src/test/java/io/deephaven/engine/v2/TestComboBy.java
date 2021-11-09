@@ -9,7 +9,7 @@ import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.compilertools.CompilerTools;
 import io.deephaven.engine.tables.DataColumn;
 import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.dbarrays.DbCharArray;
+import io.deephaven.engine.tables.dbarrays.CharVector;
 import io.deephaven.engine.tables.libs.QueryLibrary;
 import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.tables.utils.DBDateTime;
@@ -414,7 +414,7 @@ public class TestComboBy extends RefreshingTableTestCase {
         final Table result = tail.by(AggCombo(AggDistinct("Let")), "Grp");
 
         // noinspection unchecked
-        final ColumnSource<DbCharArray> cs = result.getColumnSource("Let");
+        final ColumnSource<CharVector> cs = result.getColumnSource("Let");
         assertEquals(4, result.size());
         assertArrayEquals(new char[] {'a'}, cs.get(0).toArray());
         assertArrayEquals(new char[] {'b'}, cs.get(1).toArray());

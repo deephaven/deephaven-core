@@ -211,7 +211,7 @@ def AggDistinct(*args):
     """
     Create a distinct aggregation.
     
-     The output column contains a DbArrayBase with the distinct values for
+     The output column contains a Vector with the distinct values for
      the input column within the group.
     
     *Overload 1*  

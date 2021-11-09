@@ -7,6 +7,7 @@ package io.deephaven.engine.tables.lang;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.configuration.Configuration;
+import io.deephaven.engine.tables.dbarrays.Vector;
 import io.deephaven.engine.tables.select.Param;
 import io.deephaven.engine.tables.select.QueryScope;
 import io.deephaven.util.type.TypeUtils;
@@ -52,7 +53,7 @@ public final class DBLanguageParser extends GenericVisitorAdapter<Class<?>, DBLa
     private static final Class<?> NULL_CLASS = DBLanguageParser.class;
 
     private static final Set<String> simpleNameWhiteList = Collections.unmodifiableSet(
-            new HashSet<>(Arrays.asList("java.lang", DbArrayBase.class.getPackage().getName())));
+            new HashSet<>(Arrays.asList("java.lang", Vector.class.getPackage().getName())));
 
     /**
      * The result of the DBLanguageParser for the expression passed given to the constructor.
@@ -684,35 +685,35 @@ public final class DBLanguageParser extends GenericVisitorAdapter<Class<?>, DBLa
     }
 
     private static Class<?> convertDBArray(Class<?> type, Class<?> parameterizedType) {
-        if (DbArray.class.isAssignableFrom(type)) {
+        if (ObjectVector.class.isAssignableFrom(type)) {
             return Array.newInstance(parameterizedType == null ? Object.class : parameterizedType, 0).getClass();
         }
-        if (DbIntArray.class.isAssignableFrom(type)) {
+        if (IntVector.class.isAssignableFrom(type)) {
             return int[].class;
         }
         // noinspection deprecation
-        if (DbBooleanArray.class.isAssignableFrom(type)) {
+        if (BooleanVector.class.isAssignableFrom(type)) {
             return Boolean[].class;
         }
-        if (DbDoubleArray.class.isAssignableFrom(type)) {
+        if (DoubleVector.class.isAssignableFrom(type)) {
             return double[].class;
         }
-        if (DbCharArray.class.isAssignableFrom(type)) {
+        if (CharVector.class.isAssignableFrom(type)) {
             return char[].class;
         }
-        if (DbByteArray.class.isAssignableFrom(type)) {
+        if (ByteVector.class.isAssignableFrom(type)) {
             return byte[].class;
         }
-        if (DbShortArray.class.isAssignableFrom(type)) {
+        if (ShortVector.class.isAssignableFrom(type)) {
             return short[].class;
         }
-        if (DbLongArray.class.isAssignableFrom(type)) {
+        if (LongVector.class.isAssignableFrom(type)) {
             return long[].class;
         }
-        if (DbFloatArray.class.isAssignableFrom(type)) {
+        if (FloatVector.class.isAssignableFrom(type)) {
             return float[].class;
         }
-        throw new RuntimeException("Unknown DBArray type : " + type);
+        throw new RuntimeException("Unknown Vector type : " + type);
     }
 
     private Class<?> getTypeWithCaching(Node n) {
@@ -786,15 +787,15 @@ public final class DBLanguageParser extends GenericVisitorAdapter<Class<?>, DBLa
 
     public static boolean isDbArray(Class<?> type) {
         // noinspection deprecation
-        return DbArray.class.isAssignableFrom(type) ||
-                DbIntArray.class.isAssignableFrom(type) ||
-                DbBooleanArray.class.isAssignableFrom(type) ||
-                DbDoubleArray.class.isAssignableFrom(type) ||
-                DbCharArray.class.isAssignableFrom(type) ||
-                DbByteArray.class.isAssignableFrom(type) ||
-                DbShortArray.class.isAssignableFrom(type) ||
-                DbLongArray.class.isAssignableFrom(type) ||
-                DbFloatArray.class.isAssignableFrom(type);
+        return ObjectVector.class.isAssignableFrom(type) ||
+                IntVector.class.isAssignableFrom(type) ||
+                BooleanVector.class.isAssignableFrom(type) ||
+                DoubleVector.class.isAssignableFrom(type) ||
+                CharVector.class.isAssignableFrom(type) ||
+                ByteVector.class.isAssignableFrom(type) ||
+                ShortVector.class.isAssignableFrom(type) ||
+                LongVector.class.isAssignableFrom(type) ||
+                FloatVector.class.isAssignableFrom(type);
     }
 
     /**
@@ -827,7 +828,7 @@ public final class DBLanguageParser extends GenericVisitorAdapter<Class<?>, DBLa
                 expressions[ai] = new MethodCallExpr(expressions[ai],
                         argumentTypes[ai].getSimpleName() + "Value", new NodeList<>());
             } else if (argumentTypes[ai].isArray() && isDbArray(expressionTypes[ai])) {
-                expressions[ai] = new MethodCallExpr(new NameExpr("ArrayUtils"), "nullSafeDbArrayToArray",
+                expressions[ai] = new MethodCallExpr(new NameExpr("ArrayUtils"), "nullSafeVectorToArray",
                         new NodeList<>(expressions[ai]));
                 expressionTypes[ai] = convertDBArray(expressionTypes[ai],
                         parameterizedTypes[ai] == null ? null : parameterizedTypes[ai][0]);
@@ -841,12 +842,12 @@ public final class DBLanguageParser extends GenericVisitorAdapter<Class<?>, DBLa
 
             final int nArgExpressions = expressionTypes.length;
             final int lastArgIndex = expressions.length - 1;
-            // If there's only one arg expression provided, and it's a DbArray, and the varArgType
-            // *isn't* DbArray, then convert the DbArray to a Java array
+            // If there's only one arg expression provided, and it's a Vector, and the varArgType
+            // *isn't* Vector, then convert the Vector to a Java array
             if (nArgExpressions == nArgs
                     && varArgType != expressionTypes[lastArgIndex]
                     && isDbArray(expressionTypes[lastArgIndex])) {
-                expressions[lastArgIndex] = new MethodCallExpr(new NameExpr("ArrayUtils"), "nullSafeDbArrayToArray",
+                expressions[lastArgIndex] = new MethodCallExpr(new NameExpr("ArrayUtils"), "nullSafeVectorToArray",
                         new NodeList<>(expressions[lastArgIndex]));
                 expressionTypes[lastArgIndex] = convertDBArray(expressionTypes[lastArgIndex],
                         parameterizedTypes[lastArgIndex] == null ? null : parameterizedTypes[lastArgIndex][0]);

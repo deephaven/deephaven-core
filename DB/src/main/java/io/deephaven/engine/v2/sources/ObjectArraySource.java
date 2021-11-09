@@ -5,7 +5,7 @@
 package io.deephaven.engine.v2.sources;
 
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.tables.dbarrays.DbArrayBase;
+import io.deephaven.engine.tables.dbarrays.Vector;
 import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.sources.chunk.Attributes.RowKeys;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
@@ -26,13 +26,13 @@ public class ObjectArraySource<T> extends ArraySourceHelper<T, T[]> implements M
 
     public ObjectArraySource(Class<T> type) {
         super(type);
-        isArrayType = DbArrayBase.class.isAssignableFrom(type);
+        isArrayType = Vector.class.isAssignableFrom(type);
         init();
     }
 
     public ObjectArraySource(Class<T> type, Class<?> componentType) {
         super(type, componentType);
-        isArrayType = DbArrayBase.class.isAssignableFrom(type);
+        isArrayType = Vector.class.isAssignableFrom(type);
         init();
     }
 
@@ -98,10 +98,10 @@ public class ObjectArraySource<T> extends ArraySourceHelper<T, T[]> implements M
     public void copy(ColumnSource<? extends T> sourceColumn, long sourceKey, long destKey) {
         final T value = sourceColumn.get(sourceKey);
 
-        if (isArrayType && value instanceof DbArrayBase) {
-            final DbArrayBase<?> dbArray = (DbArrayBase<?>) value;
+        if (isArrayType && value instanceof Vector) {
+            final Vector<?> vector = (Vector<?>) value;
             //noinspection unchecked
-            set(destKey, (T) dbArray.getDirect());
+            set(destKey, (T) vector.getDirect());
         } else {
             set(destKey, value);
         }

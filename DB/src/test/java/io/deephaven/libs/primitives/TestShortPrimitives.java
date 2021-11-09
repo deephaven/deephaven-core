@@ -8,8 +8,8 @@
 package io.deephaven.libs.primitives;
 
 import io.deephaven.base.testing.BaseArrayTestCase;
-import io.deephaven.engine.tables.dbarrays.DbShortArray;
-import io.deephaven.engine.tables.dbarrays.DbShortArrayDirect;
+import io.deephaven.engine.tables.dbarrays.ShortVector;
+import io.deephaven.engine.tables.dbarrays.ShortVectorDirect;
 
 import static io.deephaven.libs.primitives.ShortPrimitives.*;
 import static io.deephaven.util.QueryConstants.NULL_SHORT;
@@ -33,25 +33,25 @@ public class TestShortPrimitives extends BaseArrayTestCase {
     }
 
     public void testNullToValueArray() {
-        assertEquals(new short[]{(short) 3, (short) 7, (short) 11}, nullToValue(new DbShortArrayDirect(new short[]{(short) 3, NULL_SHORT, (short) 11}), (short) 7));
+        assertEquals(new short[]{(short) 3, (short) 7, (short) 11}, nullToValue(new ShortVectorDirect(new short[]{(short) 3, NULL_SHORT, (short) 11}), (short) 7));
 
         assertEquals(new short[]{(short) 3, (short) 7, (short) 11}, nullToValue(new short[]{(short) 3, NULL_SHORT, (short) 11}, (short) 7));
     }
 
     public void testCount(){
-        assertEquals(0, count((DbShortArray)null));
-        assertEquals(3,count(new DbShortArrayDirect(new short[]{40,50,60})));
-        assertEquals(0,count(new DbShortArrayDirect()));
-        assertEquals(0,count(new DbShortArrayDirect(NULL_SHORT)));
-        assertEquals(2,count(new DbShortArrayDirect(new short[]{5,NULL_SHORT,15})));
+        assertEquals(0, count((ShortVector)null));
+        assertEquals(3,count(new ShortVectorDirect(new short[]{40,50,60})));
+        assertEquals(0,count(new ShortVectorDirect()));
+        assertEquals(0,count(new ShortVectorDirect(NULL_SHORT)));
+        assertEquals(2,count(new ShortVectorDirect(new short[]{5,NULL_SHORT,15})));
     }
 
     public void testLast(){
-        assertTrue(Math.abs(60-last(new DbShortArrayDirect(new short[]{40,50,60})))==0.0);
-        assertEquals(NULL_SHORT,last(new DbShortArrayDirect()));
-        assertEquals(NULL_SHORT,last(new DbShortArrayDirect(NULL_SHORT)));
-        assertTrue(Math.abs(15-last(new DbShortArrayDirect(new short[]{5,NULL_SHORT,15})))==0.0);
-        assertTrue(Math.abs(40-last(new DbShortArrayDirect((short)40)))==0.0);
+        assertTrue(Math.abs(60-last(new ShortVectorDirect(new short[]{40,50,60})))==0.0);
+        assertEquals(NULL_SHORT,last(new ShortVectorDirect()));
+        assertEquals(NULL_SHORT,last(new ShortVectorDirect(NULL_SHORT)));
+        assertTrue(Math.abs(15-last(new ShortVectorDirect(new short[]{5,NULL_SHORT,15})))==0.0);
+        assertTrue(Math.abs(40-last(new ShortVectorDirect((short)40)))==0.0);
 
         assertTrue(Math.abs(60-last(new short[]{40,50,60}))==0.0);
         assertEquals(NULL_SHORT,last(new short[]{}));
@@ -61,11 +61,11 @@ public class TestShortPrimitives extends BaseArrayTestCase {
     }
 
     public void testFirst(){
-        assertTrue(Math.abs(40-first(new DbShortArrayDirect(new short[]{40,50,60})))==0.0);
-        assertEquals(NULL_SHORT,first(new DbShortArrayDirect()));
-        assertEquals(NULL_SHORT,first(new DbShortArrayDirect(NULL_SHORT)));
-        assertTrue(Math.abs(5-first(new DbShortArrayDirect(new short[]{5,NULL_SHORT,15})))==0.0);
-        assertTrue(Math.abs(40-first(new DbShortArrayDirect((short)40)))==0.0);
+        assertTrue(Math.abs(40-first(new ShortVectorDirect(new short[]{40,50,60})))==0.0);
+        assertEquals(NULL_SHORT,first(new ShortVectorDirect()));
+        assertEquals(NULL_SHORT,first(new ShortVectorDirect(NULL_SHORT)));
+        assertTrue(Math.abs(5-first(new ShortVectorDirect(new short[]{5,NULL_SHORT,15})))==0.0);
+        assertTrue(Math.abs(40-first(new ShortVectorDirect((short)40)))==0.0);
 
         assertTrue(Math.abs(40-first(new short[]{40,50,60}))==0.0);
         assertEquals(NULL_SHORT,first(new short[]{}));
@@ -75,11 +75,11 @@ public class TestShortPrimitives extends BaseArrayTestCase {
     }
 
     public void testNth(){
-        assertEquals(NULL_SHORT, nth(-1,new DbShortArrayDirect(new short[]{40,50,60})));
-        assertEquals((short)40, nth(0,new DbShortArrayDirect(new short[]{40,50,60})));
-        assertEquals((short)50, nth(1,new DbShortArrayDirect(new short[]{40,50,60})));
-        assertEquals((short)60, nth(2,new DbShortArrayDirect(new short[]{40,50,60})));
-        assertEquals(NULL_SHORT, nth(10,new DbShortArrayDirect(new short[]{40,50,60})));
+        assertEquals(NULL_SHORT, nth(-1,new ShortVectorDirect(new short[]{40,50,60})));
+        assertEquals((short)40, nth(0,new ShortVectorDirect(new short[]{40,50,60})));
+        assertEquals((short)50, nth(1,new ShortVectorDirect(new short[]{40,50,60})));
+        assertEquals((short)60, nth(2,new ShortVectorDirect(new short[]{40,50,60})));
+        assertEquals(NULL_SHORT, nth(10,new ShortVectorDirect(new short[]{40,50,60})));
 
         assertEquals(NULL_SHORT, nth(-1,new short[]{40,50,60}));
         assertEquals((short)40, nth(0,new short[]{40,50,60}));
@@ -89,14 +89,14 @@ public class TestShortPrimitives extends BaseArrayTestCase {
     }
 
     public void testCountDistinct() {
-        assertEquals(NULL_LONG, countDistinct((DbShortArrayDirect)null));
-        assertEquals(NULL_LONG, countDistinct((DbShortArrayDirect)null,true));
-        assertEquals(0, countDistinct(new DbShortArrayDirect(new short[]{})));
-        assertEquals(0, countDistinct(new DbShortArrayDirect(new short[]{NULL_SHORT})));
-        assertEquals(1, countDistinct(new DbShortArrayDirect(new short[]{1})));
-        assertEquals(2, countDistinct(new DbShortArrayDirect(new short[]{1,2,1,NULL_SHORT,NULL_SHORT})));
-        assertEquals(2, countDistinct(new DbShortArrayDirect(new short[]{1,2,1,NULL_SHORT,NULL_SHORT}), false));
-        assertEquals(3, countDistinct(new DbShortArrayDirect(new short[]{1,2,1,NULL_SHORT,NULL_SHORT}), true));
+        assertEquals(NULL_LONG, countDistinct((ShortVectorDirect)null));
+        assertEquals(NULL_LONG, countDistinct((ShortVectorDirect)null,true));
+        assertEquals(0, countDistinct(new ShortVectorDirect(new short[]{})));
+        assertEquals(0, countDistinct(new ShortVectorDirect(new short[]{NULL_SHORT})));
+        assertEquals(1, countDistinct(new ShortVectorDirect(new short[]{1})));
+        assertEquals(2, countDistinct(new ShortVectorDirect(new short[]{1,2,1,NULL_SHORT,NULL_SHORT})));
+        assertEquals(2, countDistinct(new ShortVectorDirect(new short[]{1,2,1,NULL_SHORT,NULL_SHORT}), false));
+        assertEquals(3, countDistinct(new ShortVectorDirect(new short[]{1,2,1,NULL_SHORT,NULL_SHORT}), true));
 
         assertEquals(NULL_LONG, countDistinct((short[])null));
         assertEquals(NULL_LONG, countDistinct((short[])null,true));
@@ -109,17 +109,17 @@ public class TestShortPrimitives extends BaseArrayTestCase {
     }
 
     public void testDistinct() {
-        assertEquals(null, distinct((DbShortArrayDirect)null));
-        assertEquals(null, distinct((DbShortArrayDirect)null, true, true));
-        assertEquals(new DbShortArrayDirect(), distinct(new DbShortArrayDirect(new short[]{})));
-        assertEquals(new DbShortArrayDirect(), distinct(new DbShortArrayDirect(new short[]{NULL_SHORT})));
-        assertEquals(new DbShortArrayDirect(new short[]{1}), distinct(new DbShortArrayDirect(new short[]{1})));
-        assertEquals(new DbShortArrayDirect(new short[]{1,2}), distinct(new DbShortArrayDirect(new short[]{1,2,1,NULL_SHORT,NULL_SHORT})));
-        assertEquals(new DbShortArrayDirect(new short[]{1,2}), distinct(new DbShortArrayDirect(new short[]{1,2,1,NULL_SHORT,NULL_SHORT}), false, false));
-        assertEquals(new DbShortArrayDirect(new short[]{1,2,NULL_SHORT}), distinct(new DbShortArrayDirect(new short[]{1,2,1,NULL_SHORT,NULL_SHORT}), true, false));
-        assertEquals(new DbShortArrayDirect(new short[]{1,2,3}), distinct(new DbShortArrayDirect(new short[]{3,1,2,1,NULL_SHORT,NULL_SHORT}), false, true));
-        assertEquals(new DbShortArrayDirect(new short[]{1,2,3,4}), distinct(new DbShortArrayDirect(new short[]{3,1,2,4,1,NULL_SHORT,NULL_SHORT}), false, true));
-        assertEquals(new DbShortArrayDirect(new short[]{NULL_SHORT,1,2,3,4}), distinct(new DbShortArrayDirect(new short[]{3,1,2,4,1,NULL_SHORT,NULL_SHORT}), true, true));
+        assertEquals(null, distinct((ShortVectorDirect)null));
+        assertEquals(null, distinct((ShortVectorDirect)null, true, true));
+        assertEquals(new ShortVectorDirect(), distinct(new ShortVectorDirect(new short[]{})));
+        assertEquals(new ShortVectorDirect(), distinct(new ShortVectorDirect(new short[]{NULL_SHORT})));
+        assertEquals(new ShortVectorDirect(new short[]{1}), distinct(new ShortVectorDirect(new short[]{1})));
+        assertEquals(new ShortVectorDirect(new short[]{1,2}), distinct(new ShortVectorDirect(new short[]{1,2,1,NULL_SHORT,NULL_SHORT})));
+        assertEquals(new ShortVectorDirect(new short[]{1,2}), distinct(new ShortVectorDirect(new short[]{1,2,1,NULL_SHORT,NULL_SHORT}), false, false));
+        assertEquals(new ShortVectorDirect(new short[]{1,2,NULL_SHORT}), distinct(new ShortVectorDirect(new short[]{1,2,1,NULL_SHORT,NULL_SHORT}), true, false));
+        assertEquals(new ShortVectorDirect(new short[]{1,2,3}), distinct(new ShortVectorDirect(new short[]{3,1,2,1,NULL_SHORT,NULL_SHORT}), false, true));
+        assertEquals(new ShortVectorDirect(new short[]{1,2,3,4}), distinct(new ShortVectorDirect(new short[]{3,1,2,4,1,NULL_SHORT,NULL_SHORT}), false, true));
+        assertEquals(new ShortVectorDirect(new short[]{NULL_SHORT,1,2,3,4}), distinct(new ShortVectorDirect(new short[]{3,1,2,4,1,NULL_SHORT,NULL_SHORT}), true, true));
 
         assertEquals(null, distinct((short[])null));
         assertEquals(null, distinct((short[])null, true, true));
@@ -135,11 +135,11 @@ public class TestShortPrimitives extends BaseArrayTestCase {
     }
 
     public void testVec(){
-        assertEquals(new short[]{(short)1,(short)3,(short)5}, vec(new DbShortArrayDirect((short)1,(short)3,(short)5)));
+        assertEquals(new short[]{(short)1,(short)3,(short)5}, vec(new ShortVectorDirect((short)1,(short)3,(short)5)));
     }
 
     public void testArray(){
-        assertEquals(new DbShortArrayDirect((short)1,(short)3,(short)5), array(new short[]{(short)1,(short)3,(short)5}));
+        assertEquals(new ShortVectorDirect((short)1,(short)3,(short)5), array(new short[]{(short)1,(short)3,(short)5}));
     }
 
     public void testIn(){
@@ -172,17 +172,17 @@ public class TestShortPrimitives extends BaseArrayTestCase {
         assertEquals(new short[]{1,2,3,4,5,6}, concat(new short[]{1,2}, new short[]{3}, new short[]{4,5,6}));
         assertEquals(new short[]{}, concat((short[])(null)));
 
-        assertEquals(new short[]{}, concat((DbShortArray[])null));
-        assertEquals(new short[]{1,2,3,4,5,6}, concat(new DbShortArrayDirect(new short[]{1,2}), new DbShortArrayDirect(new short[]{3}), new DbShortArrayDirect(new short[]{4,5,6})));
-        assertEquals(new short[]{}, concat((DbShortArray) (null)));
+        assertEquals(new short[]{}, concat((ShortVector[])null));
+        assertEquals(new short[]{1,2,3,4,5,6}, concat(new ShortVectorDirect(new short[]{1,2}), new ShortVectorDirect(new short[]{3}), new ShortVectorDirect(new short[]{4,5,6})));
+        assertEquals(new short[]{}, concat((ShortVector) (null)));
     }
 
     public void testReverse() {
         assertEquals(new short[]{3,2,1}, reverse((short)1,(short)2,(short)3));
         assertEquals(null, reverse((short[])(null)));
 
-        assertEquals(new short[]{3,2,1}, reverse(new DbShortArrayDirect(new short[]{1,2,3})));
-        assertEquals(null, reverse((DbShortArray) (null)));
+        assertEquals(new short[]{3,2,1}, reverse(new ShortVectorDirect(new short[]{1,2,3})));
+        assertEquals(null, reverse((ShortVector) (null)));
     }
 }
 

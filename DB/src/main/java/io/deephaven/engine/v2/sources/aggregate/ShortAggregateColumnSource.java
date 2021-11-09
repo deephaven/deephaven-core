@@ -4,9 +4,9 @@
 package io.deephaven.engine.v2.sources.aggregate;
 
 import io.deephaven.engine.structures.RowSequence;
-import io.deephaven.engine.tables.dbarrays.DbShortArray;
-import io.deephaven.engine.v2.dbarrays.DbShortArrayColumnWrapper;
-import io.deephaven.engine.v2.dbarrays.DbPrevShortArrayColumnWrapper;
+import io.deephaven.engine.tables.dbarrays.ShortVector;
+import io.deephaven.engine.v2.dbarrays.ShortVectorColumnWrapper;
+import io.deephaven.engine.v2.dbarrays.PrevShortVectorColumnWrapper;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 import io.deephaven.engine.v2.sources.chunk.ObjectChunk;
@@ -18,27 +18,27 @@ import org.jetbrains.annotations.NotNull;
 /**
  * {@link ColumnSource} implementation for aggregation result short columns.
  */
-public final class ShortAggregateColumnSource extends BaseAggregateColumnSource<DbShortArray, Short> {
+public final class ShortAggregateColumnSource extends BaseAggregateColumnSource<ShortVector, Short> {
 
     ShortAggregateColumnSource(@NotNull final ColumnSource<Short> aggregatedSource,
             @NotNull final ColumnSource<? extends RowSet> groupRowSetSource) {
-        super(DbShortArray.class, aggregatedSource, groupRowSetSource);
+        super(ShortVector.class, aggregatedSource, groupRowSetSource);
     }
 
     @Override
-    public DbShortArray get(final long rowKey) {
+    public ShortVector get(final long rowKey) {
         if (rowKey == RowSet.NULL_ROW_KEY) {
             return null;
         }
-        return new DbShortArrayColumnWrapper(aggregatedSource, groupRowSetSource.get(rowKey));
+        return new ShortVectorColumnWrapper(aggregatedSource, groupRowSetSource.get(rowKey));
     }
 
     @Override
-    public DbShortArray getPrev(final long rowKey) {
+    public ShortVector getPrev(final long rowKey) {
         if (rowKey == RowSet.NULL_ROW_KEY) {
             return null;
         }
-        return new DbPrevShortArrayColumnWrapper(aggregatedSource, getPrevGroupRowSet(rowKey));
+        return new PrevShortVectorColumnWrapper(aggregatedSource, getPrevGroupRowSet(rowKey));
     }
 
     @Override
@@ -46,10 +46,10 @@ public final class ShortAggregateColumnSource extends BaseAggregateColumnSource<
             @NotNull final RowSequence rowSequence) {
         final ObjectChunk<RowSet, ? extends Values> groupRowSetChunk = groupRowSetSource
                 .getChunk(((AggregateFillContext) context).groupRowSetGetContext, rowSequence).asObjectChunk();
-        final WritableObjectChunk<DbShortArray, ? super Values> typedDestination = destination.asWritableObjectChunk();
+        final WritableObjectChunk<ShortVector, ? super Values> typedDestination = destination.asWritableObjectChunk();
         final int size = rowSequence.intSize();
         for (int di = 0; di < size; ++di) {
-            typedDestination.set(di, new DbShortArrayColumnWrapper(aggregatedSource, groupRowSetChunk.get(di)));
+            typedDestination.set(di, new ShortVectorColumnWrapper(aggregatedSource, groupRowSetChunk.get(di)));
         }
         typedDestination.setSize(size);
     }
@@ -59,14 +59,14 @@ public final class ShortAggregateColumnSource extends BaseAggregateColumnSource<
             @NotNull final WritableChunk<? super Values> destination, @NotNull final RowSequence rowSequence) {
         final ObjectChunk<RowSet, ? extends Values> groupRowSetPrevChunk = groupRowSetSource
                 .getPrevChunk(((AggregateFillContext) context).groupRowSetGetContext, rowSequence).asObjectChunk();
-        final WritableObjectChunk<DbShortArray, ? super Values> typedDestination = destination.asWritableObjectChunk();
+        final WritableObjectChunk<ShortVector, ? super Values> typedDestination = destination.asWritableObjectChunk();
         final int size = rowSequence.intSize();
         for (int di = 0; di < size; ++di) {
             final RowSet groupRowSetPrev = groupRowSetPrevChunk.get(di);
             final RowSet groupRowSetToUse = groupRowSetPrev.isTracking()
                     ? groupRowSetPrev.trackingCast().getPrevRowSet()
                     : groupRowSetPrev;
-            typedDestination.set(di, new DbPrevShortArrayColumnWrapper(aggregatedSource, groupRowSetToUse));
+            typedDestination.set(di, new PrevShortVectorColumnWrapper(aggregatedSource, groupRowSetToUse));
         }
         typedDestination.setSize(size);
     }

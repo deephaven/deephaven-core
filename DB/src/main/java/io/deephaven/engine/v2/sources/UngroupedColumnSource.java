@@ -4,8 +4,8 @@
 
 package io.deephaven.engine.v2.sources;
 
-import io.deephaven.engine.tables.dbarrays.DbArray;
-import io.deephaven.engine.tables.dbarrays.DbArrayBase;
+import io.deephaven.engine.tables.dbarrays.ObjectVector;
+import io.deephaven.engine.tables.dbarrays.Vector;
 import io.deephaven.engine.v2.sources.aggregate.AggregateColumnSource;
 
 @AbstractColumnSource.IsSerializable(value = true)
@@ -55,41 +55,41 @@ public abstract class UngroupedColumnSource<T> extends AbstractColumnSource<T> {
         if (column instanceof AggregateColumnSource) {
             return ((AggregateColumnSource) column).ungrouped();
         }
-        if (DbArray.class.isAssignableFrom(column.getType())) {
+        if (ObjectVector.class.isAssignableFrom(column.getType())) {
             if (column.getComponentType() == Byte.class || column.getComponentType() == byte.class) {
-                return new UngroupedBoxedByteDbArrayColumnSource(column);
+                return new UngroupedBoxedByteObjectVectorColumnSource(column);
             } else if (column.getComponentType() == Character.class || column.getComponentType() == char.class) {
-                return new UngroupedBoxedCharDbArrayColumnSource(column);
+                return new UngroupedBoxedCharObjectVectorColumnSource(column);
             } else if (column.getComponentType() == Double.class || column.getComponentType() == double.class) {
-                return new UngroupedBoxedDoubleDbArrayColumnSource(column);
+                return new UngroupedBoxedDoubleObjectVectorColumnSource(column);
             } else if (column.getComponentType() == Float.class || column.getComponentType() == float.class) {
-                return new UngroupedBoxedFloatDbArrayColumnSource(column);
+                return new UngroupedBoxedFloatObjectVectorColumnSource(column);
             } else if (column.getComponentType() == Integer.class || column.getComponentType() == int.class) {
-                return new UngroupedBoxedIntDbArrayColumnSource(column);
+                return new UngroupedBoxedIntObjectVectorColumnSource(column);
             } else if (column.getComponentType() == Long.class || column.getComponentType() == long.class) {
-                return new UngroupedBoxedLongDbArrayColumnSource(column);
+                return new UngroupedBoxedLongObjectVectorColumnSource(column);
             } else if (column.getComponentType() == Short.class || column.getComponentType() == short.class) {
-                return new UngroupedBoxedShortDbArrayColumnSource(column);
+                return new UngroupedBoxedShortObjectVectorColumnSource(column);
             } else {
-                return new UngroupedDbArrayColumnSource(column);
+                return new UngroupedObjectVectorColumnSource(column);
             }
-        } else if (DbArrayBase.class.isAssignableFrom(column.getType())) {
+        } else if (Vector.class.isAssignableFrom(column.getType())) {
             if (column.getComponentType() == Byte.class || column.getComponentType() == byte.class) {
-                return new UngroupedByteDbArrayColumnSource(column);
+                return new UngroupedByteVectorColumnSource(column);
             } else if (column.getComponentType() == Character.class || column.getComponentType() == char.class) {
-                return new UngroupedCharDbArrayColumnSource(column);
+                return new UngroupedCharVectorColumnSource(column);
             } else if (column.getComponentType() == Double.class || column.getComponentType() == double.class) {
-                return new UngroupedDoubleDbArrayColumnSource(column);
+                return new UngroupedDoubleVectorColumnSource(column);
             } else if (column.getComponentType() == Float.class || column.getComponentType() == float.class) {
-                return new UngroupedFloatDbArrayColumnSource(column);
+                return new UngroupedFloatVectorColumnSource(column);
             } else if (column.getComponentType() == Integer.class || column.getComponentType() == int.class) {
-                return new UngroupedIntDbArrayColumnSource(column);
+                return new UngroupedIntVectorColumnSource(column);
             } else if (column.getComponentType() == Long.class || column.getComponentType() == long.class) {
-                return new UngroupedLongDbArrayColumnSource(column);
+                return new UngroupedLongVectorColumnSource(column);
             } else if (column.getComponentType() == Short.class || column.getComponentType() == short.class) {
-                return new UngroupedShortDbArrayColumnSource(column);
+                return new UngroupedShortVectorColumnSource(column);
             } else {
-                return new UngroupedDbArrayColumnSource(column);
+                return new UngroupedObjectVectorColumnSource(column);
             }
         } else if (column.getType().isArray()) {
             if (column.getComponentType() == byte.class) {

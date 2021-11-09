@@ -9,23 +9,23 @@ import java.io.ObjectStreamClass;
 public class WriteSerializedDbArrays {
     public static void main(String[] args) throws ClassNotFoundException {
         for (String className : new String[] {
-                "io.deephaven.engine.tables.dbarrays.DbArrayBase",
-                "io.deephaven.engine.tables.dbarrays.DbArrayDirect",
-                "io.deephaven.engine.tables.dbarrays.DbBooleanArrayDirect",
-                "io.deephaven.engine.tables.dbarrays.DbCharArray",
-                "io.deephaven.engine.tables.dbarrays.DbLongArray",
-                "io.deephaven.engine.tables.dbarrays.DbIntArray",
-                "io.deephaven.engine.tables.dbarrays.DbShortArray",
-                "io.deephaven.engine.tables.dbarrays.DbByteArray",
-                "io.deephaven.engine.tables.dbarrays.DbDoubleArray",
-                "io.deephaven.engine.tables.dbarrays.DbFloatArray",
-                "io.deephaven.engine.tables.dbarrays.DbCharArrayDirect",
-                "io.deephaven.engine.tables.dbarrays.DbLongArrayDirect",
-                "io.deephaven.engine.tables.dbarrays.DbIntArrayDirect",
-                "io.deephaven.engine.tables.dbarrays.DbShortArrayDirect",
-                "io.deephaven.engine.tables.dbarrays.DbByteArrayDirect",
-                "io.deephaven.engine.tables.dbarrays.DbDoubleArrayDirect",
-                "io.deephaven.engine.tables.dbarrays.DbFloatArrayDirect"
+                "io.deephaven.engine.tables.dbarrays.Vector",
+                "io.deephaven.engine.tables.dbarrays.ObjectVectorDirect",
+                "io.deephaven.engine.tables.dbarrays.BooleanVectorDirect",
+                "io.deephaven.engine.tables.dbarrays.CharVector",
+                "io.deephaven.engine.tables.dbarrays.LongVector",
+                "io.deephaven.engine.tables.dbarrays.IntVector",
+                "io.deephaven.engine.tables.dbarrays.ShortVector",
+                "io.deephaven.engine.tables.dbarrays.ByteVector",
+                "io.deephaven.engine.tables.dbarrays.DoubleVector",
+                "io.deephaven.engine.tables.dbarrays.FloatVector",
+                "io.deephaven.engine.tables.dbarrays.CharVectorDirect",
+                "io.deephaven.engine.tables.dbarrays.LongVectorDirect",
+                "io.deephaven.engine.tables.dbarrays.IntVectorDirect",
+                "io.deephaven.engine.tables.dbarrays.ShortVectorDirect",
+                "io.deephaven.engine.tables.dbarrays.ByteVectorDirect",
+                "io.deephaven.engine.tables.dbarrays.DoubleVectorDirect",
+                "io.deephaven.engine.tables.dbarrays.FloatVectorDirect"
         }) {
             showSerialVersionUID(className);
         }

@@ -3,7 +3,7 @@ package io.deephaven.engine.v2.by;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.dbarrays.DbArray;
+import io.deephaven.engine.tables.dbarrays.ObjectVector;
 import io.deephaven.engine.tables.select.SelectColumnFactory;
 import io.deephaven.engine.tables.utils.NameValidator;
 import io.deephaven.engine.v2.QueryTable;
@@ -285,10 +285,10 @@ public class ApproximatePercentile {
     }
 
     /**
-     * Accumulate an DbArray of TDigests into a single new TDigest.
+     * Accumulate an Vector of TDigests into a single new TDigest.
      *
      * <p>
-     * Accumulate the digests within the DbArray into a single TDigest. The compression factor is one third of the
+     * Accumulate the digests within the Vector into a single TDigest. The compression factor is one third of the
      * compression factor of the first digest within the array. If the array has only a single element, then that
      * element is returned. If a null array is passed in, null is returned.
      * </p>
@@ -304,7 +304,7 @@ public class ApproximatePercentile {
      * @param array an array of TDigests
      * @return the accumulated TDigests
      */
-    public static TDigest accumulateDigests(DbArray<TDigest> array) {
+    public static TDigest accumulateDigests(ObjectVector<TDigest> array) {
         if (array == null) {
             return null;
         }

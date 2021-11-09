@@ -7,8 +7,8 @@
 
 package io.deephaven.libs.primitives;
 
-import io.deephaven.engine.tables.dbarrays.DbLongArray;
-import io.deephaven.engine.tables.dbarrays.DbLongArrayDirect;
+import io.deephaven.engine.tables.dbarrays.LongVector;
+import io.deephaven.engine.tables.dbarrays.LongVectorDirect;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.util.LongSizedDataStructure;
 import gnu.trove.list.array.TLongArrayList;
@@ -82,7 +82,7 @@ public class LongPrimitives {
      * @return values with nulls replaced by defaultValue.
      */
     static public long[] nullToValue(long[] values, long defaultValue) {
-        return nullToValue(new DbLongArrayDirect(values), defaultValue);
+        return nullToValue(new LongVectorDirect(values), defaultValue);
     }
 
     /**
@@ -92,7 +92,7 @@ public class LongPrimitives {
      * @param defaultValue default value to return for null values.
      * @return values with nulls replaced by defaultValue.
      */
-    static public long[] nullToValue(DbLongArray values, long defaultValue) {
+    static public long[] nullToValue(LongVector values, long defaultValue) {
         long[] result = new long[LongSizedDataStructure.intSize("nullToValue", values.size())];
 
         for (int i = 0; i < values.size(); i++) {
@@ -132,7 +132,7 @@ public class LongPrimitives {
             return 0;
         }
 
-        return count(new DbLongArrayDirect(values));
+        return count(new LongVectorDirect(values));
     }
 
     /**
@@ -141,7 +141,7 @@ public class LongPrimitives {
      * @param values values.
      * @return number of non-null values.
      */
-    static public int count(DbLongArray values){
+    static public int count(LongVector values){
         if (values == null){
             return 0;
         }
@@ -160,7 +160,7 @@ public class LongPrimitives {
      * @param values values.
      * @return last value from the array.
      */
-    static public long last(DbLongArray values){
+    static public long last(LongVector values){
         if(values == null || values.size() < 1){
             return NULL_LONG;
         }
@@ -188,7 +188,7 @@ public class LongPrimitives {
      * @param values values.
      * @return first value from the array.
      */
-    static public long first(DbLongArray values){
+    static public long first(LongVector values){
         if(values == null || values.size() < 1){
             return NULL_LONG;
         }
@@ -217,7 +217,7 @@ public class LongPrimitives {
      * @param values values.
      * @return nth value from the array or null, if the rowSet is outside of the array's rowSet range.
      */
-    static public long nth(int index, DbLongArray values){
+    static public long nth(int index, LongVector values){
         if(index < 0 || index >= values.size()){
             return NULL_LONG;
         }
@@ -242,7 +242,7 @@ public class LongPrimitives {
      * @param values DB array
      * @return primitive array.
      */
-    public static long[] vec(DbLongArray values) {
+    public static long[] vec(LongVector values) {
         if(values == null){
             return null;
         }
@@ -256,12 +256,12 @@ public class LongPrimitives {
      * @param values primitive array
      * @return DB array.
      */
-    public static DbLongArray array(long[] values) {
+    public static LongVector array(long[] values) {
         if(values == null){
             return null;
         }
 
-        return new DbLongArrayDirect(values);
+        return new LongVectorDirect(values);
     }
 
     /**
@@ -310,7 +310,7 @@ public class LongPrimitives {
             return QueryConstants.NULL_LONG;
         }
 
-        return countDistinct(new DbLongArrayDirect(values));
+        return countDistinct(new LongVectorDirect(values));
     }
 
     /**
@@ -319,7 +319,7 @@ public class LongPrimitives {
      * @param values values.
      * @return number of distinct non-null values.
      */
-    public static long countDistinct(final DbLongArray values) {
+    public static long countDistinct(final LongVector values) {
         return countDistinct(values, false);
     }
 
@@ -335,7 +335,7 @@ public class LongPrimitives {
             return QueryConstants.NULL_LONG;
         }
 
-        return countDistinct(new DbLongArrayDirect(values), countNull);
+        return countDistinct(new LongVectorDirect(values), countNull);
     }
 
     /**
@@ -345,7 +345,7 @@ public class LongPrimitives {
      * @param countNull true to count null values, and false to exclude null values.
      * @return number of distinct values.
      */
-    public static long countDistinct(final DbLongArray values, boolean countNull) {
+    public static long countDistinct(final LongVector values, boolean countNull) {
         if(values == null) {
             return QueryConstants.NULL_LONG;
         }
@@ -377,7 +377,7 @@ public class LongPrimitives {
      * @param countNull if nulls should count as values
      * @return the single unique value in the array, or null.
      */
-    public static long uniqueValue(final DbLongArray arr, boolean countNull) {
+    public static long uniqueValue(final LongVector arr, boolean countNull) {
         if(arr == null || arr.isEmpty()) {
             return NULL_LONG;
         }
@@ -409,7 +409,7 @@ public class LongPrimitives {
             return null;
         }
 
-        return distinct(new DbLongArrayDirect(values)).toArray();
+        return distinct(new LongVectorDirect(values)).toArray();
     }
 
     /**
@@ -418,7 +418,7 @@ public class LongPrimitives {
      * @param values values.
      * @return unsorted array containing only distinct non-null items from arr.
      */
-    public static DbLongArray distinct(final DbLongArray values) {
+    public static LongVector distinct(final LongVector values) {
         if(values == null) {
             return null;
         }
@@ -481,17 +481,17 @@ public class LongPrimitives {
      * @param sort true to sort the resultant array
      * @return array containing only distinct items from arr.
      */
-    public static DbLongArray distinct(final DbLongArray values, boolean includeNull, boolean sort) {
+    public static LongVector distinct(final LongVector values, boolean includeNull, boolean sort) {
         if(values == null) {
             return null;
         }
 
         if(values.size() == 0) {
-            return new DbLongArrayDirect();
+            return new LongVectorDirect();
         }
 
         if(values.size() == 1) {
-            return !includeNull && values.get(0) == QueryConstants.NULL_LONG ? new DbLongArrayDirect() : values;
+            return !includeNull && values.get(0) == QueryConstants.NULL_LONG ? new LongVectorDirect() : values;
         }
 
         final TLongArrayList orderedList = new TLongArrayList();
@@ -513,7 +513,7 @@ public class LongPrimitives {
             data = orderedList.toArray();
         }
 
-        return new DbLongArrayDirect(data);
+        return new LongVectorDirect(data);
     }
 
     /**
@@ -562,7 +562,7 @@ public class LongPrimitives {
             return new long[0];
         }
 
-        return concat(Arrays.stream(values).map(e->e==null?null:new DbLongArrayDirect(e)).toArray(DbLongArray[]::new));
+        return concat(Arrays.stream(values).map(e->e==null?null:new LongVectorDirect(e)).toArray(LongVector[]::new));
     }
 
     /**
@@ -571,14 +571,14 @@ public class LongPrimitives {
      * @param values values.
      * @return concatenation of multiple arrays into a single array.
      */
-    public static long[] concat(DbLongArray... values){
+    public static long[] concat(LongVector... values){
         if(values == null){
             return new long[0];
         }
 
         int n = 0;
 
-        for (DbLongArray v : values) {
+        for (LongVector v : values) {
             if (v != null) {
                 n += v.size();
             }
@@ -587,7 +587,7 @@ public class LongPrimitives {
         final long[] result = new long[n];
         int idx = 0;
 
-        for (DbLongArray v : values) {
+        for (LongVector v : values) {
             if (v != null) {
                 for (int i = 0; i < v.size(); i++) {
                     result[idx] = v.get(i);
@@ -610,7 +610,7 @@ public class LongPrimitives {
             return null;
         }
 
-        return reverse(new DbLongArrayDirect(values));
+        return reverse(new LongVectorDirect(values));
     }
 
     /**
@@ -619,7 +619,7 @@ public class LongPrimitives {
      * @param values values.
      * @return array with the values reversed.
      */
-    public static long[] reverse(DbLongArray values){
+    public static long[] reverse(LongVector values){
         if(values == null){
             return null;
         }

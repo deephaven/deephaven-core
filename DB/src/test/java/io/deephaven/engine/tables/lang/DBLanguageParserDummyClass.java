@@ -4,7 +4,7 @@
 
 package io.deephaven.engine.tables.lang;
 
-import io.deephaven.engine.tables.dbarrays.DbIntArray;
+import io.deephaven.engine.tables.dbarrays.IntVector;
 
 import java.io.Serializable;
 
@@ -24,11 +24,11 @@ public class DBLanguageParserDummyClass {
         return arr.length;
     }
 
-    public static long arrayAndDbArrayFunction(DbIntArray arr) {
+    public static long arrayAndDbArrayFunction(IntVector arr) {
         return arr.size();
     }
 
-    public static long dbArrayOnlyFunction(DbIntArray arr) {
+    public static long dbArrayOnlyFunction(IntVector arr) {
         return arrayAndDbArrayFunction(arr);
     }
 

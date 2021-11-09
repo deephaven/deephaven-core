@@ -1,8 +1,8 @@
 package io.deephaven.engine.v2.by.ssmcountdistinct;
 
-import io.deephaven.engine.tables.dbarrays.DbArray;
-import io.deephaven.engine.tables.dbarrays.DbArrayDirect;
-import io.deephaven.engine.tables.dbarrays.DbLongArray;
+import io.deephaven.engine.tables.dbarrays.LongVector;
+import io.deephaven.engine.tables.dbarrays.ObjectVector;
+import io.deephaven.engine.tables.dbarrays.ObjectVectorDirect;
 import io.deephaven.engine.tables.utils.DBDateTime;
 import io.deephaven.engine.v2.sources.AbstractColumnSource;
 import io.deephaven.engine.v2.sources.ColumnSourceGetDefaults;
@@ -21,13 +21,13 @@ import static io.deephaven.engine.tables.utils.DBTimeUtils.nanosToTime;
  * A {@link SsmBackedColumnSource} for Longs.
  */
 @SuppressWarnings("rawtypes")
-public class DbDateTimeSsmSourceWrapper extends AbstractColumnSource<DbArray>
-        implements ColumnSourceGetDefaults.ForObject<DbArray>,
-        MutableColumnSourceGetDefaults.ForObject<DbArray> {
+public class DbDateTimeSsmSourceWrapper extends AbstractColumnSource<ObjectVector>
+        implements ColumnSourceGetDefaults.ForObject<ObjectVector>,
+        MutableColumnSourceGetDefaults.ForObject<ObjectVector> {
     private final LongSsmBackedSource underlying;
 
     public DbDateTimeSsmSourceWrapper(@NotNull final LongSsmBackedSource underlying) {
-        super(DbArray.class, DBDateTime.class);
+        super(ObjectVector.class, DBDateTime.class);
         this.underlying = underlying;
     }
 
@@ -37,13 +37,13 @@ public class DbDateTimeSsmSourceWrapper extends AbstractColumnSource<DbArray>
     }
 
     @Override
-    public DbArray<DBDateTime> get(long index) {
+    public ObjectVector<DBDateTime> get(long index) {
         return new ValueWrapper(underlying.getCurrentSsm(index));
     }
 
     @Override
-    public DbArray<DBDateTime> getPrev(long index) {
-        final DbLongArray maybePrev = underlying.getPrev(index);
+    public ObjectVector<DBDateTime> getPrev(long index) {
+        final LongVector maybePrev = underlying.getPrev(index);
         if (maybePrev == null) {
             return null;
         }
@@ -60,7 +60,7 @@ public class DbDateTimeSsmSourceWrapper extends AbstractColumnSource<DbArray>
         underlying.startTrackingPrevValues();
     }
 
-    public static class ValueWrapper implements DbArray<DBDateTime> {
+    public static class ValueWrapper implements ObjectVector<DBDateTime> {
         final LongSegmentedSortedMultiset underlying;
 
         public ValueWrapper(LongSegmentedSortedMultiset underlying) {
@@ -73,12 +73,12 @@ public class DbDateTimeSsmSourceWrapper extends AbstractColumnSource<DbArray>
         }
 
         @Override
-        public DbArray<DBDateTime> subArray(long fromIndexInclusive, long toIndexExclusive) {
+        public ObjectVector<DBDateTime> subVector(long fromIndexInclusive, long toIndexExclusive) {
             return underlying.subArrayAsDate(fromIndexInclusive, toIndexExclusive);
         }
 
         @Override
-        public DbArray<DBDateTime> subArrayByPositions(long[] positions) {
+        public ObjectVector<DBDateTime> subVectorByPositions(long[] positions) {
             return underlying.subArrayByPositionsAsDates(positions);
         }
 
@@ -108,7 +108,7 @@ public class DbDateTimeSsmSourceWrapper extends AbstractColumnSource<DbArray>
         }
 
         @Override
-        public DbArray<DBDateTime> getDirect() {
+        public ObjectVector<DBDateTime> getDirect() {
             return underlying.getDirectAsDate();
         }
 
@@ -127,13 +127,13 @@ public class DbDateTimeSsmSourceWrapper extends AbstractColumnSource<DbArray>
             return underlying.intSize(operation);
         }
 
-        public static DbArray<DBDateTime> getPrevValues(DbLongArray previousLongs) {
+        public static ObjectVector<DBDateTime> getPrevValues(LongVector previousLongs) {
             final DBDateTime[] asDates = new DBDateTime[previousLongs.intSize()];
             for (int ii = 0; ii < asDates.length; ii++) {
                 asDates[ii] = nanosToTime(previousLongs.get(ii));
             }
 
-            return new DbArrayDirect<>(asDates);
+            return new ObjectVectorDirect<>(asDates);
         }
 
         @Override

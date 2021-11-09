@@ -1,7 +1,7 @@
 package io.deephaven.engine.v2.locations.parquet.topage;
 
-import io.deephaven.engine.tables.dbarrays.DbArray;
-import io.deephaven.engine.tables.dbarrays.DbArrayDirect;
+import io.deephaven.engine.tables.dbarrays.ObjectVector;
+import io.deephaven.engine.tables.dbarrays.ObjectVectorDirect;
 import io.deephaven.engine.tables.utils.DBDateTime;
 import io.deephaven.engine.tables.utils.DBTimeUtils;
 import io.deephaven.engine.tables.utils.DBTimeZone;
@@ -97,7 +97,7 @@ public class ToDBDateTimePageFromInt96<ATTR extends Attributes.Any> implements T
 
     @Override
     @NotNull
-    public final DbArray<DBDateTime> makeDbArray(@NotNull final long[] result) {
+    public final ObjectVector<DBDateTime> makeDbArray(@NotNull final long[] result) {
         final DBDateTime[] to = new DBDateTime[result.length];
 
         final int resultLength = result.length;
@@ -105,6 +105,6 @@ public class ToDBDateTimePageFromInt96<ATTR extends Attributes.Any> implements T
             to[ri] = DBTimeUtils.nanosToTime(result[ri]);
         }
 
-        return new DbArrayDirect<>(to);
+        return new ObjectVectorDirect<>(to);
     }
 }

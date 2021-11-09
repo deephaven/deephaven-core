@@ -44,7 +44,7 @@ abstract class RegionedColumnSourceArray<DATA_TYPE, ATTR extends Attributes.Valu
      * @param nullRegion A ColumnRegion to be used when the actual region doesn't exist, which returns the correct null
      *        values for that region.
      * @param type The type of the column.
-     * @param componentType The component type in case the main type is a DbArray
+     * @param componentType The component type in case the main type is a Vector
      * @param makeDeferred A function which creates the correct deferred region for this ColumnSource. If you don't want
      *        any deferred regions then use Supplier::get.
      */

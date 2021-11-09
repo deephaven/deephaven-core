@@ -1,7 +1,7 @@
 package io.deephaven.engine.v2.select.analyzers;
 
 import io.deephaven.engine.tables.ColumnDefinition;
-import io.deephaven.engine.tables.dbarrays.DbArrayBase;
+import io.deephaven.engine.tables.dbarrays.Vector;
 import io.deephaven.engine.v2.ModifiedColumnSet;
 import io.deephaven.engine.v2.select.SelectColumn;
 import io.deephaven.engine.v2.sources.ColumnSource;
@@ -27,7 +27,7 @@ public abstract class DependencyLayerBase extends SelectAndViewAnalyzer {
         this.inner = inner;
         this.name = name;
         this.selectColumn = selectColumn;
-        selectColumnHoldsDbArray = DbArrayBase.class.isAssignableFrom(selectColumn.getReturnedType());
+        selectColumnHoldsDbArray = Vector.class.isAssignableFrom(selectColumn.getReturnedType());
         this.columnSource = columnSource;
         this.dependencies = dependencies;
         final Set<String> remainingDepsToSatisfy = new HashSet<>(Arrays.asList(dependencies));

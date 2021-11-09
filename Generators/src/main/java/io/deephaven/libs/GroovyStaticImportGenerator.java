@@ -412,7 +412,7 @@ public class GroovyStaticImportGenerator {
         @SuppressWarnings("unchecked")
         GroovyStaticImportGenerator gen = new GroovyStaticImportGenerator(imports,
                 Collections.singletonList((f) -> f.methodName.equals("sum") && f.parameterTypes.length == 1
-                        && f.parameterTypes[0].getTypeName().contains("io.deephaven.engine.tables.dbarrays.DbArray<")) // skipping
+                        && f.parameterTypes[0].getTypeName().contains("io.deephaven.engine.tables.dbarrays.Vector<")) // skipping
         // common
         // erasure
         // "sum"

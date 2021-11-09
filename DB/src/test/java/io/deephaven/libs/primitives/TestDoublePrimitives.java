@@ -8,8 +8,8 @@
 package io.deephaven.libs.primitives;
 
 import io.deephaven.base.testing.BaseArrayTestCase;
-import io.deephaven.engine.tables.dbarrays.DbDoubleArray;
-import io.deephaven.engine.tables.dbarrays.DbDoubleArrayDirect;
+import io.deephaven.engine.tables.dbarrays.DoubleVector;
+import io.deephaven.engine.tables.dbarrays.DoubleVectorDirect;
 
 import static io.deephaven.libs.primitives.DoublePrimitives.*;
 import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
@@ -33,25 +33,25 @@ public class TestDoublePrimitives extends BaseArrayTestCase {
     }
 
     public void testNullToValueArray() {
-        assertEquals(new double[]{(double) 3, (double) 7, (double) 11}, nullToValue(new DbDoubleArrayDirect(new double[]{(double) 3, NULL_DOUBLE, (double) 11}), (double) 7));
+        assertEquals(new double[]{(double) 3, (double) 7, (double) 11}, nullToValue(new DoubleVectorDirect(new double[]{(double) 3, NULL_DOUBLE, (double) 11}), (double) 7));
 
         assertEquals(new double[]{(double) 3, (double) 7, (double) 11}, nullToValue(new double[]{(double) 3, NULL_DOUBLE, (double) 11}, (double) 7));
     }
 
     public void testCount(){
-        assertEquals(0, count((DbDoubleArray)null));
-        assertEquals(3,count(new DbDoubleArrayDirect(new double[]{40,50,60})));
-        assertEquals(0,count(new DbDoubleArrayDirect()));
-        assertEquals(0,count(new DbDoubleArrayDirect(NULL_DOUBLE)));
-        assertEquals(2,count(new DbDoubleArrayDirect(new double[]{5,NULL_DOUBLE,15})));
+        assertEquals(0, count((DoubleVector)null));
+        assertEquals(3,count(new DoubleVectorDirect(new double[]{40,50,60})));
+        assertEquals(0,count(new DoubleVectorDirect()));
+        assertEquals(0,count(new DoubleVectorDirect(NULL_DOUBLE)));
+        assertEquals(2,count(new DoubleVectorDirect(new double[]{5,NULL_DOUBLE,15})));
     }
 
     public void testLast(){
-        assertTrue(Math.abs(60-last(new DbDoubleArrayDirect(new double[]{40,50,60})))==0.0);
-        assertEquals(NULL_DOUBLE,last(new DbDoubleArrayDirect()));
-        assertEquals(NULL_DOUBLE,last(new DbDoubleArrayDirect(NULL_DOUBLE)));
-        assertTrue(Math.abs(15-last(new DbDoubleArrayDirect(new double[]{5,NULL_DOUBLE,15})))==0.0);
-        assertTrue(Math.abs(40-last(new DbDoubleArrayDirect((double)40)))==0.0);
+        assertTrue(Math.abs(60-last(new DoubleVectorDirect(new double[]{40,50,60})))==0.0);
+        assertEquals(NULL_DOUBLE,last(new DoubleVectorDirect()));
+        assertEquals(NULL_DOUBLE,last(new DoubleVectorDirect(NULL_DOUBLE)));
+        assertTrue(Math.abs(15-last(new DoubleVectorDirect(new double[]{5,NULL_DOUBLE,15})))==0.0);
+        assertTrue(Math.abs(40-last(new DoubleVectorDirect((double)40)))==0.0);
 
         assertTrue(Math.abs(60-last(new double[]{40,50,60}))==0.0);
         assertEquals(NULL_DOUBLE,last(new double[]{}));
@@ -61,11 +61,11 @@ public class TestDoublePrimitives extends BaseArrayTestCase {
     }
 
     public void testFirst(){
-        assertTrue(Math.abs(40-first(new DbDoubleArrayDirect(new double[]{40,50,60})))==0.0);
-        assertEquals(NULL_DOUBLE,first(new DbDoubleArrayDirect()));
-        assertEquals(NULL_DOUBLE,first(new DbDoubleArrayDirect(NULL_DOUBLE)));
-        assertTrue(Math.abs(5-first(new DbDoubleArrayDirect(new double[]{5,NULL_DOUBLE,15})))==0.0);
-        assertTrue(Math.abs(40-first(new DbDoubleArrayDirect((double)40)))==0.0);
+        assertTrue(Math.abs(40-first(new DoubleVectorDirect(new double[]{40,50,60})))==0.0);
+        assertEquals(NULL_DOUBLE,first(new DoubleVectorDirect()));
+        assertEquals(NULL_DOUBLE,first(new DoubleVectorDirect(NULL_DOUBLE)));
+        assertTrue(Math.abs(5-first(new DoubleVectorDirect(new double[]{5,NULL_DOUBLE,15})))==0.0);
+        assertTrue(Math.abs(40-first(new DoubleVectorDirect((double)40)))==0.0);
 
         assertTrue(Math.abs(40-first(new double[]{40,50,60}))==0.0);
         assertEquals(NULL_DOUBLE,first(new double[]{}));
@@ -75,11 +75,11 @@ public class TestDoublePrimitives extends BaseArrayTestCase {
     }
 
     public void testNth(){
-        assertEquals(NULL_DOUBLE, nth(-1,new DbDoubleArrayDirect(new double[]{40,50,60})));
-        assertEquals((double)40, nth(0,new DbDoubleArrayDirect(new double[]{40,50,60})));
-        assertEquals((double)50, nth(1,new DbDoubleArrayDirect(new double[]{40,50,60})));
-        assertEquals((double)60, nth(2,new DbDoubleArrayDirect(new double[]{40,50,60})));
-        assertEquals(NULL_DOUBLE, nth(10,new DbDoubleArrayDirect(new double[]{40,50,60})));
+        assertEquals(NULL_DOUBLE, nth(-1,new DoubleVectorDirect(new double[]{40,50,60})));
+        assertEquals((double)40, nth(0,new DoubleVectorDirect(new double[]{40,50,60})));
+        assertEquals((double)50, nth(1,new DoubleVectorDirect(new double[]{40,50,60})));
+        assertEquals((double)60, nth(2,new DoubleVectorDirect(new double[]{40,50,60})));
+        assertEquals(NULL_DOUBLE, nth(10,new DoubleVectorDirect(new double[]{40,50,60})));
 
         assertEquals(NULL_DOUBLE, nth(-1,new double[]{40,50,60}));
         assertEquals((double)40, nth(0,new double[]{40,50,60}));
@@ -89,14 +89,14 @@ public class TestDoublePrimitives extends BaseArrayTestCase {
     }
 
     public void testCountDistinct() {
-        assertEquals(NULL_LONG, countDistinct((DbDoubleArrayDirect)null));
-        assertEquals(NULL_LONG, countDistinct((DbDoubleArrayDirect)null,true));
-        assertEquals(0, countDistinct(new DbDoubleArrayDirect(new double[]{})));
-        assertEquals(0, countDistinct(new DbDoubleArrayDirect(new double[]{NULL_DOUBLE})));
-        assertEquals(1, countDistinct(new DbDoubleArrayDirect(new double[]{1})));
-        assertEquals(2, countDistinct(new DbDoubleArrayDirect(new double[]{1,2,1,NULL_DOUBLE,NULL_DOUBLE})));
-        assertEquals(2, countDistinct(new DbDoubleArrayDirect(new double[]{1,2,1,NULL_DOUBLE,NULL_DOUBLE}), false));
-        assertEquals(3, countDistinct(new DbDoubleArrayDirect(new double[]{1,2,1,NULL_DOUBLE,NULL_DOUBLE}), true));
+        assertEquals(NULL_LONG, countDistinct((DoubleVectorDirect)null));
+        assertEquals(NULL_LONG, countDistinct((DoubleVectorDirect)null,true));
+        assertEquals(0, countDistinct(new DoubleVectorDirect(new double[]{})));
+        assertEquals(0, countDistinct(new DoubleVectorDirect(new double[]{NULL_DOUBLE})));
+        assertEquals(1, countDistinct(new DoubleVectorDirect(new double[]{1})));
+        assertEquals(2, countDistinct(new DoubleVectorDirect(new double[]{1,2,1,NULL_DOUBLE,NULL_DOUBLE})));
+        assertEquals(2, countDistinct(new DoubleVectorDirect(new double[]{1,2,1,NULL_DOUBLE,NULL_DOUBLE}), false));
+        assertEquals(3, countDistinct(new DoubleVectorDirect(new double[]{1,2,1,NULL_DOUBLE,NULL_DOUBLE}), true));
 
         assertEquals(NULL_LONG, countDistinct((double[])null));
         assertEquals(NULL_LONG, countDistinct((double[])null,true));
@@ -109,17 +109,17 @@ public class TestDoublePrimitives extends BaseArrayTestCase {
     }
 
     public void testDistinct() {
-        assertEquals(null, distinct((DbDoubleArrayDirect)null));
-        assertEquals(null, distinct((DbDoubleArrayDirect)null, true, true));
-        assertEquals(new DbDoubleArrayDirect(), distinct(new DbDoubleArrayDirect(new double[]{})));
-        assertEquals(new DbDoubleArrayDirect(), distinct(new DbDoubleArrayDirect(new double[]{NULL_DOUBLE})));
-        assertEquals(new DbDoubleArrayDirect(new double[]{1}), distinct(new DbDoubleArrayDirect(new double[]{1})));
-        assertEquals(new DbDoubleArrayDirect(new double[]{1,2}), distinct(new DbDoubleArrayDirect(new double[]{1,2,1,NULL_DOUBLE,NULL_DOUBLE})));
-        assertEquals(new DbDoubleArrayDirect(new double[]{1,2}), distinct(new DbDoubleArrayDirect(new double[]{1,2,1,NULL_DOUBLE,NULL_DOUBLE}), false, false));
-        assertEquals(new DbDoubleArrayDirect(new double[]{1,2,NULL_DOUBLE}), distinct(new DbDoubleArrayDirect(new double[]{1,2,1,NULL_DOUBLE,NULL_DOUBLE}), true, false));
-        assertEquals(new DbDoubleArrayDirect(new double[]{1,2,3}), distinct(new DbDoubleArrayDirect(new double[]{3,1,2,1,NULL_DOUBLE,NULL_DOUBLE}), false, true));
-        assertEquals(new DbDoubleArrayDirect(new double[]{1,2,3,4}), distinct(new DbDoubleArrayDirect(new double[]{3,1,2,4,1,NULL_DOUBLE,NULL_DOUBLE}), false, true));
-        assertEquals(new DbDoubleArrayDirect(new double[]{NULL_DOUBLE,1,2,3,4}), distinct(new DbDoubleArrayDirect(new double[]{3,1,2,4,1,NULL_DOUBLE,NULL_DOUBLE}), true, true));
+        assertEquals(null, distinct((DoubleVectorDirect)null));
+        assertEquals(null, distinct((DoubleVectorDirect)null, true, true));
+        assertEquals(new DoubleVectorDirect(), distinct(new DoubleVectorDirect(new double[]{})));
+        assertEquals(new DoubleVectorDirect(), distinct(new DoubleVectorDirect(new double[]{NULL_DOUBLE})));
+        assertEquals(new DoubleVectorDirect(new double[]{1}), distinct(new DoubleVectorDirect(new double[]{1})));
+        assertEquals(new DoubleVectorDirect(new double[]{1,2}), distinct(new DoubleVectorDirect(new double[]{1,2,1,NULL_DOUBLE,NULL_DOUBLE})));
+        assertEquals(new DoubleVectorDirect(new double[]{1,2}), distinct(new DoubleVectorDirect(new double[]{1,2,1,NULL_DOUBLE,NULL_DOUBLE}), false, false));
+        assertEquals(new DoubleVectorDirect(new double[]{1,2,NULL_DOUBLE}), distinct(new DoubleVectorDirect(new double[]{1,2,1,NULL_DOUBLE,NULL_DOUBLE}), true, false));
+        assertEquals(new DoubleVectorDirect(new double[]{1,2,3}), distinct(new DoubleVectorDirect(new double[]{3,1,2,1,NULL_DOUBLE,NULL_DOUBLE}), false, true));
+        assertEquals(new DoubleVectorDirect(new double[]{1,2,3,4}), distinct(new DoubleVectorDirect(new double[]{3,1,2,4,1,NULL_DOUBLE,NULL_DOUBLE}), false, true));
+        assertEquals(new DoubleVectorDirect(new double[]{NULL_DOUBLE,1,2,3,4}), distinct(new DoubleVectorDirect(new double[]{3,1,2,4,1,NULL_DOUBLE,NULL_DOUBLE}), true, true));
 
         assertEquals(null, distinct((double[])null));
         assertEquals(null, distinct((double[])null, true, true));
@@ -135,11 +135,11 @@ public class TestDoublePrimitives extends BaseArrayTestCase {
     }
 
     public void testVec(){
-        assertEquals(new double[]{(double)1,(double)3,(double)5}, vec(new DbDoubleArrayDirect((double)1,(double)3,(double)5)));
+        assertEquals(new double[]{(double)1,(double)3,(double)5}, vec(new DoubleVectorDirect((double)1,(double)3,(double)5)));
     }
 
     public void testArray(){
-        assertEquals(new DbDoubleArrayDirect((double)1,(double)3,(double)5), array(new double[]{(double)1,(double)3,(double)5}));
+        assertEquals(new DoubleVectorDirect((double)1,(double)3,(double)5), array(new double[]{(double)1,(double)3,(double)5}));
     }
 
     public void testIn(){
@@ -172,17 +172,17 @@ public class TestDoublePrimitives extends BaseArrayTestCase {
         assertEquals(new double[]{1,2,3,4,5,6}, concat(new double[]{1,2}, new double[]{3}, new double[]{4,5,6}));
         assertEquals(new double[]{}, concat((double[])(null)));
 
-        assertEquals(new double[]{}, concat((DbDoubleArray[])null));
-        assertEquals(new double[]{1,2,3,4,5,6}, concat(new DbDoubleArrayDirect(new double[]{1,2}), new DbDoubleArrayDirect(new double[]{3}), new DbDoubleArrayDirect(new double[]{4,5,6})));
-        assertEquals(new double[]{}, concat((DbDoubleArray) (null)));
+        assertEquals(new double[]{}, concat((DoubleVector[])null));
+        assertEquals(new double[]{1,2,3,4,5,6}, concat(new DoubleVectorDirect(new double[]{1,2}), new DoubleVectorDirect(new double[]{3}), new DoubleVectorDirect(new double[]{4,5,6})));
+        assertEquals(new double[]{}, concat((DoubleVector) (null)));
     }
 
     public void testReverse() {
         assertEquals(new double[]{3,2,1}, reverse((double)1,(double)2,(double)3));
         assertEquals(null, reverse((double[])(null)));
 
-        assertEquals(new double[]{3,2,1}, reverse(new DbDoubleArrayDirect(new double[]{1,2,3})));
-        assertEquals(null, reverse((DbDoubleArray) (null)));
+        assertEquals(new double[]{3,2,1}, reverse(new DoubleVectorDirect(new double[]{1,2,3})));
+        assertEquals(null, reverse((DoubleVector) (null)));
     }
 }
 

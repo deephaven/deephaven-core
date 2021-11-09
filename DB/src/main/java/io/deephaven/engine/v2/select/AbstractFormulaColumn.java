@@ -9,7 +9,7 @@ import io.deephaven.base.verify.Require;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.tables.ColumnDefinition;
 import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.dbarrays.DbArrayBase;
+import io.deephaven.engine.tables.dbarrays.Vector;
 import io.deephaven.engine.tables.select.MatchPair;
 import io.deephaven.engine.tables.select.Param;
 import io.deephaven.engine.tables.select.QueryScope;
@@ -240,33 +240,33 @@ public abstract class AbstractFormulaColumn implements FormulaColumn {
     }
 
     @SuppressWarnings("unchecked")
-    private static DbArrayBase<?> makeAppropriateDbArrayWrapper(ColumnSource<?> cs, RowSet rowSet) {
+    private static Vector<?> makeAppropriateDbArrayWrapper(ColumnSource<?> cs, RowSet rowSet) {
         final Class<?> type = cs.getType();
         if (type == Boolean.class) {
-            return new DbArrayColumnWrapper<>((ColumnSource<Boolean>) cs, rowSet);
+            return new ObjectVectorColumnWrapper<>((ColumnSource<Boolean>) cs, rowSet);
         }
         if (type == byte.class) {
-            return new DbByteArrayColumnWrapper((ColumnSource<Byte>) cs, rowSet);
+            return new ByteVectorColumnWrapper((ColumnSource<Byte>) cs, rowSet);
         }
         if (type == char.class) {
-            return new DbCharArrayColumnWrapper((ColumnSource<Character>) cs, rowSet);
+            return new CharVectorColumnWrapper((ColumnSource<Character>) cs, rowSet);
         }
         if (type == double.class) {
-            return new DbDoubleArrayColumnWrapper((ColumnSource<Double>) cs, rowSet);
+            return new DoubleVectorColumnWrapper((ColumnSource<Double>) cs, rowSet);
         }
         if (type == float.class) {
-            return new DbFloatArrayColumnWrapper((ColumnSource<Float>) cs, rowSet);
+            return new FloatVectorColumnWrapper((ColumnSource<Float>) cs, rowSet);
         }
         if (type == int.class) {
-            return new DbIntArrayColumnWrapper((ColumnSource<Integer>) cs, rowSet);
+            return new IntVectorColumnWrapper((ColumnSource<Integer>) cs, rowSet);
         }
         if (type == long.class) {
-            return new DbLongArrayColumnWrapper((ColumnSource<Long>) cs, rowSet);
+            return new LongVectorColumnWrapper((ColumnSource<Long>) cs, rowSet);
         }
         if (type == short.class) {
-            return new DbShortArrayColumnWrapper((ColumnSource<Short>) cs, rowSet);
+            return new ShortVectorColumnWrapper((ColumnSource<Short>) cs, rowSet);
         }
-        return new DbArrayColumnWrapper<>((ColumnSource<Object>) cs, rowSet);
+        return new ObjectVectorColumnWrapper<>((ColumnSource<Object>) cs, rowSet);
     }
 
     private FormulaFactory createKernelFormulaFactory() {
@@ -282,7 +282,7 @@ public abstract class AbstractFormulaColumn implements FormulaColumn {
                 netColumnSources.put(columnName, columnSourceToUse);
             }
 
-            final DbArrayBase<?>[] dbArrays = new DbArrayBase[sd.arrays.length];
+            final Vector<?>[] dbArrays = new Vector[sd.arrays.length];
             for (int ii = 0; ii < sd.arrays.length; ++ii) {
                 final ColumnSource<?> cs = columnsToData.get(sd.arrays[ii]);
                 dbArrays[ii] = makeAppropriateDbArrayWrapper(cs, rowSet);

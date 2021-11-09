@@ -3,7 +3,7 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.v2.by.ssmcountdistinct;
 
-import io.deephaven.engine.tables.dbarrays.DbFloatArray;
+import io.deephaven.engine.tables.dbarrays.FloatVector;
 import io.deephaven.engine.v2.sources.AbstractColumnSource;
 import io.deephaven.engine.v2.sources.ColumnSourceGetDefaults;
 import io.deephaven.engine.v2.sources.MutableColumnSourceGetDefaults;
@@ -14,16 +14,16 @@ import io.deephaven.engine.v2.utils.RowSet;
 /**
  * A {@link SsmBackedColumnSource} for Floats.
  */
-public class FloatSsmBackedSource extends AbstractColumnSource<DbFloatArray>
-                                 implements ColumnSourceGetDefaults.ForObject<DbFloatArray>,
-                                            MutableColumnSourceGetDefaults.ForObject<DbFloatArray>,
-                                            SsmBackedColumnSource<FloatSegmentedSortedMultiset, DbFloatArray> {
+public class FloatSsmBackedSource extends AbstractColumnSource<FloatVector>
+                                 implements ColumnSourceGetDefaults.ForObject<FloatVector>,
+                                            MutableColumnSourceGetDefaults.ForObject<FloatVector>,
+                                            SsmBackedColumnSource<FloatSegmentedSortedMultiset, FloatVector> {
     private final ObjectArraySource<FloatSegmentedSortedMultiset> underlying;
     private boolean trackingPrevious = false;
 
     //region Constructor
     public FloatSsmBackedSource() {
-        super(DbFloatArray.class, float.class);
+        super(FloatVector.class, float.class);
         underlying = new ObjectArraySource<>(FloatSegmentedSortedMultiset.class, float.class);
     }
     //endregion Constructor
@@ -68,12 +68,12 @@ public class FloatSsmBackedSource extends AbstractColumnSource<DbFloatArray>
     }
 
     @Override
-    public DbFloatArray get(long index) {
+    public FloatVector get(long index) {
         return underlying.get(index);
     }
 
     @Override
-    public DbFloatArray getPrev(long index) {
+    public FloatVector getPrev(long index) {
         final FloatSegmentedSortedMultiset maybePrev = underlying.getPrev(index);
         return maybePrev == null ? null : maybePrev.getPrevValues();
     }

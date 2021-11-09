@@ -51,7 +51,7 @@ public class LongNumericPrimitives {
             return NULL_INT;
         }
 
-        return countPos(new DbLongArrayDirect(values));
+        return countPos(new LongVectorDirect(values));
     }
 
     /**
@@ -60,7 +60,7 @@ public class LongNumericPrimitives {
      * @param values values.
      * @return number of positive values.
      */
-    public static int countPos(DbLongArray values) {
+    public static int countPos(LongVector values) {
         if (values == null) {
             return NULL_INT;
         }
@@ -106,7 +106,7 @@ public class LongNumericPrimitives {
             return NULL_INT;
         }
 
-        return countNeg(new DbLongArrayDirect(values));
+        return countNeg(new LongVectorDirect(values));
     }
 
     /**
@@ -115,7 +115,7 @@ public class LongNumericPrimitives {
      * @param values values.
      * @return number of negative values.
      */
-    public static int countNeg(DbLongArray values) {
+    public static int countNeg(LongVector values) {
         if (values == null) {
             return NULL_INT;
         }
@@ -161,7 +161,7 @@ public class LongNumericPrimitives {
             return NULL_INT;
         }
 
-        return countZero(new DbLongArrayDirect(values));
+        return countZero(new LongVectorDirect(values));
     }
 
     /**
@@ -170,7 +170,7 @@ public class LongNumericPrimitives {
      * @param values values.
      * @return number of zero values.
      */
-    public static int countZero(DbLongArray values) {
+    public static int countZero(LongVector values) {
         if (values == null) {
             return NULL_INT;
         }
@@ -217,7 +217,7 @@ public class LongNumericPrimitives {
             return NULL_DOUBLE;
         }
 
-        return avg(new DbLongArrayDirect(values));
+        return avg(new LongVectorDirect(values));
     }
 
     /**
@@ -226,7 +226,7 @@ public class LongNumericPrimitives {
      * @param values values.
      * @return mean of non-null values.
      */
-    public static double avg(DbLongArray values) {
+    public static double avg(LongVector values) {
         if (values == null) {
             return NULL_DOUBLE;
         }
@@ -276,7 +276,7 @@ public class LongNumericPrimitives {
             return NULL_DOUBLE;
         }
 
-        return absAvg(new DbLongArrayDirect(values));
+        return absAvg(new LongVectorDirect(values));
     }
 
     /**
@@ -285,7 +285,7 @@ public class LongNumericPrimitives {
      * @param values values.
      * @return mean of the absolute value of non-null values.
      */
-    public static double absAvg(DbLongArray values) {
+    public static double absAvg(LongVector values) {
         if (values == null) {
             return NULL_DOUBLE;
         }
@@ -340,7 +340,7 @@ public class LongNumericPrimitives {
             return NULL_DOUBLE;
         }
 
-        return var(new DbLongArrayDirect(values));
+        return var(new LongVectorDirect(values));
     }
 
     /**
@@ -349,7 +349,7 @@ public class LongNumericPrimitives {
      * @param values values.
      * @return variance of non-null values.
      */
-    public static double var(DbLongArray values) {
+    public static double var(LongVector values) {
         if (values == null) {
             return NULL_DOUBLE;
         }
@@ -378,12 +378,12 @@ public class LongNumericPrimitives {
      * @param weights weights
      * @return weighted variance of non-null values.
      */
-    public static double wvar(long[] values, DbDoubleArray weights) {
+    public static double wvar(long[] values, DoubleVector weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
 
-        return wvar(new DbLongArrayDirect(values), weights);
+        return wvar(new LongVectorDirect(values), weights);
     }
 
     /**
@@ -393,12 +393,12 @@ public class LongNumericPrimitives {
      * @param weights weights
      * @return weighted variance of non-null values.
      */
-    public static double wvar(DbLongArray values, double[] weights) {
+    public static double wvar(LongVector values, double[] weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
 
-        return wvar(values, new DbDoubleArrayDirect(weights));
+        return wvar(values, new DoubleVectorDirect(weights));
     }
 
     /**
@@ -413,7 +413,7 @@ public class LongNumericPrimitives {
             return NULL_DOUBLE;
         }
 
-        return wvar(new DbLongArrayDirect(values), new DbDoubleArrayDirect(weights));
+        return wvar(new LongVectorDirect(values), new DoubleVectorDirect(weights));
     }
 
     /**
@@ -423,7 +423,7 @@ public class LongNumericPrimitives {
      * @param weights weights
      * @return weighted variance of non-null values.
      */
-    public static double wvar(DbLongArray values, DbDoubleArray weights) {
+    public static double wvar(LongVector values, DoubleVector weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
@@ -453,12 +453,12 @@ public class LongNumericPrimitives {
      * @param weights weights
      * @return weighted variance of non-null values.
      */
-    public static double wvar(long[] values, DbFloatArray weights) {
+    public static double wvar(long[] values, FloatVector weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
 
-        return wvar(new DbLongArrayDirect(values), weights);
+        return wvar(new LongVectorDirect(values), weights);
     }
 
     /**
@@ -468,12 +468,12 @@ public class LongNumericPrimitives {
      * @param weights weights
      * @return weighted variance of non-null values.
      */
-    public static double wvar(DbLongArray values, float[] weights) {
+    public static double wvar(LongVector values, float[] weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
 
-        return wvar(values, new DbFloatArrayDirect(weights));
+        return wvar(values, new FloatVectorDirect(weights));
     }
 
     /**
@@ -488,7 +488,7 @@ public class LongNumericPrimitives {
             return NULL_DOUBLE;
         }
 
-        return wvar(new DbLongArrayDirect(values), new DbFloatArrayDirect(weights));
+        return wvar(new LongVectorDirect(values), new FloatVectorDirect(weights));
     }
 
     /**
@@ -498,7 +498,7 @@ public class LongNumericPrimitives {
      * @param weights weights
      * @return weighted variance of non-null values.
      */
-    public static double wvar(DbLongArray values, DbFloatArray weights) {
+    public static double wvar(LongVector values, FloatVector weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
@@ -528,12 +528,12 @@ public class LongNumericPrimitives {
      * @param weights weights
      * @return weighted variance of non-null values.
      */
-    public static double wvar(long[] values, DbLongArray weights) {
+    public static double wvar(long[] values, LongVector weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
 
-        return wvar(new DbLongArrayDirect(values), weights);
+        return wvar(new LongVectorDirect(values), weights);
     }
 
     /**
@@ -543,12 +543,12 @@ public class LongNumericPrimitives {
      * @param weights weights
      * @return weighted variance of non-null values.
      */
-    public static double wvar(DbLongArray values, long[] weights) {
+    public static double wvar(LongVector values, long[] weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
 
-        return wvar(values, new DbLongArrayDirect(weights));
+        return wvar(values, new LongVectorDirect(weights));
     }
 
     /**
@@ -563,7 +563,7 @@ public class LongNumericPrimitives {
             return NULL_DOUBLE;
         }
 
-        return wvar(new DbLongArrayDirect(values), new DbLongArrayDirect(weights));
+        return wvar(new LongVectorDirect(values), new LongVectorDirect(weights));
     }
 
     /**
@@ -573,7 +573,7 @@ public class LongNumericPrimitives {
      * @param weights weights
      * @return weighted variance of non-null values.
      */
-    public static double wvar(DbLongArray values, DbLongArray weights) {
+    public static double wvar(LongVector values, LongVector weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
@@ -603,12 +603,12 @@ public class LongNumericPrimitives {
      * @param weights weights
      * @return weighted variance of non-null values.
      */
-    public static double wvar(long[] values, DbIntArray weights) {
+    public static double wvar(long[] values, IntVector weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
 
-        return wvar(new DbLongArrayDirect(values), weights);
+        return wvar(new LongVectorDirect(values), weights);
     }
 
     /**
@@ -618,12 +618,12 @@ public class LongNumericPrimitives {
      * @param weights weights
      * @return weighted variance of non-null values.
      */
-    public static double wvar(DbLongArray values, int[] weights) {
+    public static double wvar(LongVector values, int[] weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
 
-        return wvar(values, new DbIntArrayDirect(weights));
+        return wvar(values, new IntVectorDirect(weights));
     }
 
     /**
@@ -638,7 +638,7 @@ public class LongNumericPrimitives {
             return NULL_DOUBLE;
         }
 
-        return wvar(new DbLongArrayDirect(values), new DbIntArrayDirect(weights));
+        return wvar(new LongVectorDirect(values), new IntVectorDirect(weights));
     }
 
     /**
@@ -648,7 +648,7 @@ public class LongNumericPrimitives {
      * @param weights weights
      * @return weighted variance of non-null values.
      */
-    public static double wvar(DbLongArray values, DbIntArray weights) {
+    public static double wvar(LongVector values, IntVector weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
@@ -678,12 +678,12 @@ public class LongNumericPrimitives {
      * @param weights weights
      * @return weighted variance of non-null values.
      */
-    public static double wvar(long[] values, DbShortArray weights) {
+    public static double wvar(long[] values, ShortVector weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
 
-        return wvar(new DbLongArrayDirect(values), weights);
+        return wvar(new LongVectorDirect(values), weights);
     }
 
     /**
@@ -693,12 +693,12 @@ public class LongNumericPrimitives {
      * @param weights weights
      * @return weighted variance of non-null values.
      */
-    public static double wvar(DbLongArray values, short[] weights) {
+    public static double wvar(LongVector values, short[] weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
 
-        return wvar(values, new DbShortArrayDirect(weights));
+        return wvar(values, new ShortVectorDirect(weights));
     }
 
     /**
@@ -713,7 +713,7 @@ public class LongNumericPrimitives {
             return NULL_DOUBLE;
         }
 
-        return wvar(new DbLongArrayDirect(values), new DbShortArrayDirect(weights));
+        return wvar(new LongVectorDirect(values), new ShortVectorDirect(weights));
     }
 
     /**
@@ -723,7 +723,7 @@ public class LongNumericPrimitives {
      * @param weights weights
      * @return weighted variance of non-null values.
      */
-    public static double wvar(DbLongArray values, DbShortArray weights) {
+    public static double wvar(LongVector values, ShortVector weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
@@ -772,7 +772,7 @@ public class LongNumericPrimitives {
             return NULL_DOUBLE;
         }
 
-        return std(new DbLongArrayDirect(values));
+        return std(new LongVectorDirect(values));
     }
 
     /**
@@ -781,7 +781,7 @@ public class LongNumericPrimitives {
      * @param values values.
      * @return standard deviation of non-null values.
      */
-    public static double std(DbLongArray values) {
+    public static double std(LongVector values) {
         if (values == null) {
             return NULL_DOUBLE;
         }
@@ -797,12 +797,12 @@ public class LongNumericPrimitives {
      * @param weights weights
      * @return weighted standard deviation of non-null values.
      */
-    public static double wstd(long[] values, DbDoubleArray weights) {
+    public static double wstd(long[] values, DoubleVector weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
 
-        return wstd(new DbLongArrayDirect(values), weights);
+        return wstd(new LongVectorDirect(values), weights);
     }
 
     /**
@@ -812,12 +812,12 @@ public class LongNumericPrimitives {
      * @param weights weights
      * @return weighted standard deviation of non-null values.
      */
-    public static double wstd(DbLongArray values, double[] weights) {
+    public static double wstd(LongVector values, double[] weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
 
-        return wstd(values, new DbDoubleArrayDirect(weights));
+        return wstd(values, new DoubleVectorDirect(weights));
     }
 
     /**
@@ -832,7 +832,7 @@ public class LongNumericPrimitives {
             return NULL_DOUBLE;
         }
 
-        return wstd(new DbLongArrayDirect(values), new DbDoubleArrayDirect(weights));
+        return wstd(new LongVectorDirect(values), new DoubleVectorDirect(weights));
     }
 
     /**
@@ -842,7 +842,7 @@ public class LongNumericPrimitives {
      * @param weights weights
      * @return weighted standard deviation of non-null values.
      */
-    public static double wstd(DbLongArray values, DbDoubleArray weights) {
+    public static double wstd(LongVector values, DoubleVector weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
@@ -858,12 +858,12 @@ public class LongNumericPrimitives {
      * @param weights weights
      * @return weighted standard deviation of non-null values.
      */
-    public static double wstd(long[] values, DbFloatArray weights) {
+    public static double wstd(long[] values, FloatVector weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
 
-        return wstd(new DbLongArrayDirect(values), weights);
+        return wstd(new LongVectorDirect(values), weights);
     }
 
     /**
@@ -873,12 +873,12 @@ public class LongNumericPrimitives {
      * @param weights weights
      * @return weighted standard deviation of non-null values.
      */
-    public static double wstd(DbLongArray values, float[] weights) {
+    public static double wstd(LongVector values, float[] weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
 
-        return wstd(values, new DbFloatArrayDirect(weights));
+        return wstd(values, new FloatVectorDirect(weights));
     }
 
     /**
@@ -893,7 +893,7 @@ public class LongNumericPrimitives {
             return NULL_DOUBLE;
         }
 
-        return wstd(new DbLongArrayDirect(values), new DbFloatArrayDirect(weights));
+        return wstd(new LongVectorDirect(values), new FloatVectorDirect(weights));
     }
 
     /**
@@ -903,7 +903,7 @@ public class LongNumericPrimitives {
      * @param weights weights
      * @return weighted standard deviation of non-null values.
      */
-    public static double wstd(DbLongArray values, DbFloatArray weights) {
+    public static double wstd(LongVector values, FloatVector weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
@@ -919,12 +919,12 @@ public class LongNumericPrimitives {
      * @param weights weights
      * @return weighted standard deviation of non-null values.
      */
-    public static double wstd(long[] values, DbLongArray weights) {
+    public static double wstd(long[] values, LongVector weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
 
-        return wstd(new DbLongArrayDirect(values), weights);
+        return wstd(new LongVectorDirect(values), weights);
     }
 
     /**
@@ -934,12 +934,12 @@ public class LongNumericPrimitives {
      * @param weights weights
      * @return weighted standard deviation of non-null values.
      */
-    public static double wstd(DbLongArray values, long[] weights) {
+    public static double wstd(LongVector values, long[] weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
 
-        return wstd(values, new DbLongArrayDirect(weights));
+        return wstd(values, new LongVectorDirect(weights));
     }
 
     /**
@@ -954,7 +954,7 @@ public class LongNumericPrimitives {
             return NULL_DOUBLE;
         }
 
-        return wstd(new DbLongArrayDirect(values), new DbLongArrayDirect(weights));
+        return wstd(new LongVectorDirect(values), new LongVectorDirect(weights));
     }
 
     /**
@@ -964,7 +964,7 @@ public class LongNumericPrimitives {
      * @param weights weights
      * @return weighted standard deviation of non-null values.
      */
-    public static double wstd(DbLongArray values, DbLongArray weights) {
+    public static double wstd(LongVector values, LongVector weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
@@ -980,12 +980,12 @@ public class LongNumericPrimitives {
      * @param weights weights
      * @return weighted standard deviation of non-null values.
      */
-    public static double wstd(long[] values, DbIntArray weights) {
+    public static double wstd(long[] values, IntVector weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
 
-        return wstd(new DbLongArrayDirect(values), weights);
+        return wstd(new LongVectorDirect(values), weights);
     }
 
     /**
@@ -995,12 +995,12 @@ public class LongNumericPrimitives {
      * @param weights weights
      * @return weighted standard deviation of non-null values.
      */
-    public static double wstd(DbLongArray values, int[] weights) {
+    public static double wstd(LongVector values, int[] weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
 
-        return wstd(values, new DbIntArrayDirect(weights));
+        return wstd(values, new IntVectorDirect(weights));
     }
 
     /**
@@ -1015,7 +1015,7 @@ public class LongNumericPrimitives {
             return NULL_DOUBLE;
         }
 
-        return wstd(new DbLongArrayDirect(values), new DbIntArrayDirect(weights));
+        return wstd(new LongVectorDirect(values), new IntVectorDirect(weights));
     }
 
     /**
@@ -1025,7 +1025,7 @@ public class LongNumericPrimitives {
      * @param weights weights
      * @return weighted standard deviation of non-null values.
      */
-    public static double wstd(DbLongArray values, DbIntArray weights) {
+    public static double wstd(LongVector values, IntVector weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
@@ -1041,12 +1041,12 @@ public class LongNumericPrimitives {
      * @param weights weights
      * @return weighted standard deviation of non-null values.
      */
-    public static double wstd(long[] values, DbShortArray weights) {
+    public static double wstd(long[] values, ShortVector weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
 
-        return wstd(new DbLongArrayDirect(values), weights);
+        return wstd(new LongVectorDirect(values), weights);
     }
 
     /**
@@ -1056,12 +1056,12 @@ public class LongNumericPrimitives {
      * @param weights weights
      * @return weighted standard deviation of non-null values.
      */
-    public static double wstd(DbLongArray values, short[] weights) {
+    public static double wstd(LongVector values, short[] weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
 
-        return wstd(values, new DbShortArrayDirect(weights));
+        return wstd(values, new ShortVectorDirect(weights));
     }
 
     /**
@@ -1076,7 +1076,7 @@ public class LongNumericPrimitives {
             return NULL_DOUBLE;
         }
 
-        return wstd(new DbLongArrayDirect(values), new DbShortArrayDirect(weights));
+        return wstd(new LongVectorDirect(values), new ShortVectorDirect(weights));
     }
 
     /**
@@ -1086,7 +1086,7 @@ public class LongNumericPrimitives {
      * @param weights weights
      * @return weighted standard deviation of non-null values.
      */
-    public static double wstd(DbLongArray values, DbShortArray weights) {
+    public static double wstd(LongVector values, ShortVector weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
@@ -1122,7 +1122,7 @@ public class LongNumericPrimitives {
             return NULL_DOUBLE;
         }
 
-        return ste(new DbLongArrayDirect(values));
+        return ste(new LongVectorDirect(values));
     }
 
     /**
@@ -1131,7 +1131,7 @@ public class LongNumericPrimitives {
      * @param values values.
      * @return standard error of non-null values.
      */
-    public static double ste(DbLongArray values) {
+    public static double ste(LongVector values) {
         if (values == null) {
             return NULL_DOUBLE;
         }
@@ -1148,12 +1148,12 @@ public class LongNumericPrimitives {
      * @param weights weights
      * @return weighted standard error of non-null values.
      */
-    public static double wste(long[] values, DbDoubleArray weights) {
+    public static double wste(long[] values, DoubleVector weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
 
-        return wste(new DbLongArrayDirect(values), weights);
+        return wste(new LongVectorDirect(values), weights);
     }
 
     /**
@@ -1163,12 +1163,12 @@ public class LongNumericPrimitives {
      * @param weights weights
      * @return weighted standard error of non-null values.
      */
-    public static double wste(DbLongArray values, double[] weights) {
+    public static double wste(LongVector values, double[] weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
 
-        return wste(values, new DbDoubleArrayDirect(weights));
+        return wste(values, new DoubleVectorDirect(weights));
     }
 
     /**
@@ -1183,7 +1183,7 @@ public class LongNumericPrimitives {
             return NULL_DOUBLE;
         }
 
-        return wste(new DbLongArrayDirect(values), new DbDoubleArrayDirect(weights));
+        return wste(new LongVectorDirect(values), new DoubleVectorDirect(weights));
     }
 
     /**
@@ -1193,7 +1193,7 @@ public class LongNumericPrimitives {
      * @param weights weights
      * @return weighted standard error of non-null values.
      */
-    public static double wste(DbLongArray values, DbDoubleArray weights) {
+    public static double wste(LongVector values, DoubleVector weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
@@ -1227,12 +1227,12 @@ public class LongNumericPrimitives {
      * @param weights weights
      * @return weighted standard error of non-null values.
      */
-    public static double wste(long[] values, DbFloatArray weights) {
+    public static double wste(long[] values, FloatVector weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
 
-        return wste(new DbLongArrayDirect(values), weights);
+        return wste(new LongVectorDirect(values), weights);
     }
 
     /**
@@ -1242,12 +1242,12 @@ public class LongNumericPrimitives {
      * @param weights weights
      * @return weighted standard error of non-null values.
      */
-    public static double wste(DbLongArray values, float[] weights) {
+    public static double wste(LongVector values, float[] weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
 
-        return wste(values, new DbFloatArrayDirect(weights));
+        return wste(values, new FloatVectorDirect(weights));
     }
 
     /**
@@ -1262,7 +1262,7 @@ public class LongNumericPrimitives {
             return NULL_DOUBLE;
         }
 
-        return wste(new DbLongArrayDirect(values), new DbFloatArrayDirect(weights));
+        return wste(new LongVectorDirect(values), new FloatVectorDirect(weights));
     }
 
     /**
@@ -1272,7 +1272,7 @@ public class LongNumericPrimitives {
      * @param weights weights
      * @return weighted standard error of non-null values.
      */
-    public static double wste(DbLongArray values, DbFloatArray weights) {
+    public static double wste(LongVector values, FloatVector weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
@@ -1306,12 +1306,12 @@ public class LongNumericPrimitives {
      * @param weights weights
      * @return weighted standard error of non-null values.
      */
-    public static double wste(long[] values, DbLongArray weights) {
+    public static double wste(long[] values, LongVector weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
 
-        return wste(new DbLongArrayDirect(values), weights);
+        return wste(new LongVectorDirect(values), weights);
     }
 
     /**
@@ -1321,12 +1321,12 @@ public class LongNumericPrimitives {
      * @param weights weights
      * @return weighted standard error of non-null values.
      */
-    public static double wste(DbLongArray values, long[] weights) {
+    public static double wste(LongVector values, long[] weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
 
-        return wste(values, new DbLongArrayDirect(weights));
+        return wste(values, new LongVectorDirect(weights));
     }
 
     /**
@@ -1341,7 +1341,7 @@ public class LongNumericPrimitives {
             return NULL_DOUBLE;
         }
 
-        return wste(new DbLongArrayDirect(values), new DbLongArrayDirect(weights));
+        return wste(new LongVectorDirect(values), new LongVectorDirect(weights));
     }
 
     /**
@@ -1351,7 +1351,7 @@ public class LongNumericPrimitives {
      * @param weights weights
      * @return weighted standard error of non-null values.
      */
-    public static double wste(DbLongArray values, DbLongArray weights) {
+    public static double wste(LongVector values, LongVector weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
@@ -1385,12 +1385,12 @@ public class LongNumericPrimitives {
      * @param weights weights
      * @return weighted standard error of non-null values.
      */
-    public static double wste(long[] values, DbIntArray weights) {
+    public static double wste(long[] values, IntVector weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
 
-        return wste(new DbLongArrayDirect(values), weights);
+        return wste(new LongVectorDirect(values), weights);
     }
 
     /**
@@ -1400,12 +1400,12 @@ public class LongNumericPrimitives {
      * @param weights weights
      * @return weighted standard error of non-null values.
      */
-    public static double wste(DbLongArray values, int[] weights) {
+    public static double wste(LongVector values, int[] weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
 
-        return wste(values, new DbIntArrayDirect(weights));
+        return wste(values, new IntVectorDirect(weights));
     }
 
     /**
@@ -1420,7 +1420,7 @@ public class LongNumericPrimitives {
             return NULL_DOUBLE;
         }
 
-        return wste(new DbLongArrayDirect(values), new DbIntArrayDirect(weights));
+        return wste(new LongVectorDirect(values), new IntVectorDirect(weights));
     }
 
     /**
@@ -1430,7 +1430,7 @@ public class LongNumericPrimitives {
      * @param weights weights
      * @return weighted standard error of non-null values.
      */
-    public static double wste(DbLongArray values, DbIntArray weights) {
+    public static double wste(LongVector values, IntVector weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
@@ -1464,12 +1464,12 @@ public class LongNumericPrimitives {
      * @param weights weights
      * @return weighted standard error of non-null values.
      */
-    public static double wste(long[] values, DbShortArray weights) {
+    public static double wste(long[] values, ShortVector weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
 
-        return wste(new DbLongArrayDirect(values), weights);
+        return wste(new LongVectorDirect(values), weights);
     }
 
     /**
@@ -1479,12 +1479,12 @@ public class LongNumericPrimitives {
      * @param weights weights
      * @return weighted standard error of non-null values.
      */
-    public static double wste(DbLongArray values, short[] weights) {
+    public static double wste(LongVector values, short[] weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
 
-        return wste(values, new DbShortArrayDirect(weights));
+        return wste(values, new ShortVectorDirect(weights));
     }
 
     /**
@@ -1499,7 +1499,7 @@ public class LongNumericPrimitives {
             return NULL_DOUBLE;
         }
 
-        return wste(new DbLongArrayDirect(values), new DbShortArrayDirect(weights));
+        return wste(new LongVectorDirect(values), new ShortVectorDirect(weights));
     }
 
     /**
@@ -1509,7 +1509,7 @@ public class LongNumericPrimitives {
      * @param weights weights
      * @return weighted standard error of non-null values.
      */
-    public static double wste(DbLongArray values, DbShortArray weights) {
+    public static double wste(LongVector values, ShortVector weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
@@ -1563,7 +1563,7 @@ public class LongNumericPrimitives {
             return NULL_DOUBLE;
         }
 
-        return tstat(new DbLongArrayDirect(values));
+        return tstat(new LongVectorDirect(values));
     }
 
     /**
@@ -1572,7 +1572,7 @@ public class LongNumericPrimitives {
      * @param values values.
      * @return t-statistic of non-null values.
      */
-    public static double tstat(DbLongArray values) {
+    public static double tstat(LongVector values) {
         if (values == null) {
             return NULL_DOUBLE;
         }
@@ -1589,12 +1589,12 @@ public class LongNumericPrimitives {
      * @param weights weights
      * @return weighted t-statistic of non-null values.
      */
-    public static double wtstat(long[] values, DbDoubleArray weights) {
+    public static double wtstat(long[] values, DoubleVector weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
 
-        return wtstat(new DbLongArrayDirect(values), weights);
+        return wtstat(new LongVectorDirect(values), weights);
     }
 
     /**
@@ -1604,12 +1604,12 @@ public class LongNumericPrimitives {
      * @param weights weights
      * @return weighted t-statistic of non-null values.
      */
-    public static double wtstat(DbLongArray values, double[] weights) {
+    public static double wtstat(LongVector values, double[] weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
 
-        return wtstat(values, new DbDoubleArrayDirect(weights));
+        return wtstat(values, new DoubleVectorDirect(weights));
     }
 
     /**
@@ -1624,7 +1624,7 @@ public class LongNumericPrimitives {
             return NULL_DOUBLE;
         }
 
-        return wtstat(new DbLongArrayDirect(values), new DbDoubleArrayDirect(weights));
+        return wtstat(new LongVectorDirect(values), new DoubleVectorDirect(weights));
     }
 
     /**
@@ -1634,7 +1634,7 @@ public class LongNumericPrimitives {
      * @param weights weights
      * @return weighted t-statistic of non-null values.
      */
-    public static double wtstat(DbLongArray values, DbDoubleArray weights) {
+    public static double wtstat(LongVector values, DoubleVector weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
@@ -1651,12 +1651,12 @@ public class LongNumericPrimitives {
      * @param weights weights
      * @return weighted t-statistic of non-null values.
      */
-    public static double wtstat(long[] values, DbFloatArray weights) {
+    public static double wtstat(long[] values, FloatVector weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
 
-        return wtstat(new DbLongArrayDirect(values), weights);
+        return wtstat(new LongVectorDirect(values), weights);
     }
 
     /**
@@ -1666,12 +1666,12 @@ public class LongNumericPrimitives {
      * @param weights weights
      * @return weighted t-statistic of non-null values.
      */
-    public static double wtstat(DbLongArray values, float[] weights) {
+    public static double wtstat(LongVector values, float[] weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
 
-        return wtstat(values, new DbFloatArrayDirect(weights));
+        return wtstat(values, new FloatVectorDirect(weights));
     }
 
     /**
@@ -1686,7 +1686,7 @@ public class LongNumericPrimitives {
             return NULL_DOUBLE;
         }
 
-        return wtstat(new DbLongArrayDirect(values), new DbFloatArrayDirect(weights));
+        return wtstat(new LongVectorDirect(values), new FloatVectorDirect(weights));
     }
 
     /**
@@ -1696,7 +1696,7 @@ public class LongNumericPrimitives {
      * @param weights weights
      * @return weighted t-statistic of non-null values.
      */
-    public static double wtstat(DbLongArray values, DbFloatArray weights) {
+    public static double wtstat(LongVector values, FloatVector weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
@@ -1713,12 +1713,12 @@ public class LongNumericPrimitives {
      * @param weights weights
      * @return weighted t-statistic of non-null values.
      */
-    public static double wtstat(long[] values, DbLongArray weights) {
+    public static double wtstat(long[] values, LongVector weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
 
-        return wtstat(new DbLongArrayDirect(values), weights);
+        return wtstat(new LongVectorDirect(values), weights);
     }
 
     /**
@@ -1728,12 +1728,12 @@ public class LongNumericPrimitives {
      * @param weights weights
      * @return weighted t-statistic of non-null values.
      */
-    public static double wtstat(DbLongArray values, long[] weights) {
+    public static double wtstat(LongVector values, long[] weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
 
-        return wtstat(values, new DbLongArrayDirect(weights));
+        return wtstat(values, new LongVectorDirect(weights));
     }
 
     /**
@@ -1748,7 +1748,7 @@ public class LongNumericPrimitives {
             return NULL_DOUBLE;
         }
 
-        return wtstat(new DbLongArrayDirect(values), new DbLongArrayDirect(weights));
+        return wtstat(new LongVectorDirect(values), new LongVectorDirect(weights));
     }
 
     /**
@@ -1758,7 +1758,7 @@ public class LongNumericPrimitives {
      * @param weights weights
      * @return weighted t-statistic of non-null values.
      */
-    public static double wtstat(DbLongArray values, DbLongArray weights) {
+    public static double wtstat(LongVector values, LongVector weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
@@ -1775,12 +1775,12 @@ public class LongNumericPrimitives {
      * @param weights weights
      * @return weighted t-statistic of non-null values.
      */
-    public static double wtstat(long[] values, DbIntArray weights) {
+    public static double wtstat(long[] values, IntVector weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
 
-        return wtstat(new DbLongArrayDirect(values), weights);
+        return wtstat(new LongVectorDirect(values), weights);
     }
 
     /**
@@ -1790,12 +1790,12 @@ public class LongNumericPrimitives {
      * @param weights weights
      * @return weighted t-statistic of non-null values.
      */
-    public static double wtstat(DbLongArray values, int[] weights) {
+    public static double wtstat(LongVector values, int[] weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
 
-        return wtstat(values, new DbIntArrayDirect(weights));
+        return wtstat(values, new IntVectorDirect(weights));
     }
 
     /**
@@ -1810,7 +1810,7 @@ public class LongNumericPrimitives {
             return NULL_DOUBLE;
         }
 
-        return wtstat(new DbLongArrayDirect(values), new DbIntArrayDirect(weights));
+        return wtstat(new LongVectorDirect(values), new IntVectorDirect(weights));
     }
 
     /**
@@ -1820,7 +1820,7 @@ public class LongNumericPrimitives {
      * @param weights weights
      * @return weighted t-statistic of non-null values.
      */
-    public static double wtstat(DbLongArray values, DbIntArray weights) {
+    public static double wtstat(LongVector values, IntVector weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
@@ -1837,12 +1837,12 @@ public class LongNumericPrimitives {
      * @param weights weights
      * @return weighted t-statistic of non-null values.
      */
-    public static double wtstat(long[] values, DbShortArray weights) {
+    public static double wtstat(long[] values, ShortVector weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
 
-        return wtstat(new DbLongArrayDirect(values), weights);
+        return wtstat(new LongVectorDirect(values), weights);
     }
 
     /**
@@ -1852,12 +1852,12 @@ public class LongNumericPrimitives {
      * @param weights weights
      * @return weighted t-statistic of non-null values.
      */
-    public static double wtstat(DbLongArray values, short[] weights) {
+    public static double wtstat(LongVector values, short[] weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
 
-        return wtstat(values, new DbShortArrayDirect(weights));
+        return wtstat(values, new ShortVectorDirect(weights));
     }
 
     /**
@@ -1872,7 +1872,7 @@ public class LongNumericPrimitives {
             return NULL_DOUBLE;
         }
 
-        return wtstat(new DbLongArrayDirect(values), new DbShortArrayDirect(weights));
+        return wtstat(new LongVectorDirect(values), new ShortVectorDirect(weights));
     }
 
     /**
@@ -1882,7 +1882,7 @@ public class LongNumericPrimitives {
      * @param weights weights
      * @return weighted t-statistic of non-null values.
      */
-    public static double wtstat(DbLongArray values, DbShortArray weights) {
+    public static double wtstat(LongVector values, ShortVector weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
@@ -1898,7 +1898,7 @@ public class LongNumericPrimitives {
      * @param values values.
      * @return maximum of non-null values.
      */
-    public static long max(DbLongArray values) {
+    public static long max(LongVector values) {
         if (values == null) {
             return NULL_LONG;
         }
@@ -1968,7 +1968,7 @@ public class LongNumericPrimitives {
      * @param values values.
      * @return minimum of non-null values.
      */
-    public static long min(DbLongArray values) {
+    public static long min(LongVector values) {
         if (values == null) {
             return NULL_LONG;
         }
@@ -2070,7 +2070,7 @@ public class LongNumericPrimitives {
             return NULL_DOUBLE;
         }
 
-        return median(new DbLongArrayDirect(values));
+        return median(new LongVectorDirect(values));
     }
 
     /**
@@ -2079,7 +2079,7 @@ public class LongNumericPrimitives {
      * @param values values.
      * @return median.
      */
-    public static double median(DbLongArray values) {
+    public static double median(LongVector values) {
         if (values == null) {
             return NULL_DOUBLE;
         }
@@ -2112,7 +2112,7 @@ public class LongNumericPrimitives {
             return NULL_DOUBLE;
         }
 
-        return percentile(percentile, new DbLongArrayDirect(values));
+        return percentile(percentile, new LongVectorDirect(values));
     }
 
     /**
@@ -2122,7 +2122,7 @@ public class LongNumericPrimitives {
      * @param values values.
      * @return percentile.
      */
-    public static double percentile(double percentile, DbLongArray values) {
+    public static double percentile(double percentile, LongVector values) {
         if(values == null){
             return NULL_DOUBLE;
         }
@@ -2155,7 +2155,7 @@ public class LongNumericPrimitives {
             return NULL_INT;
         }
 
-        return firstIndexOf(new DbLongArrayDirect(values), val);
+        return firstIndexOf(new LongVectorDirect(values), val);
     }
 
     /**
@@ -2165,7 +2165,7 @@ public class LongNumericPrimitives {
      * @param val value to search for.
      * @return first rowSet containing the value or null, if the value is not present.
      */
-    public static int firstIndexOf(DbLongArray values, long val) {
+    public static int firstIndexOf(LongVector values, long val) {
         if (values == null) {
             return NULL_INT;
         }
@@ -2218,7 +2218,7 @@ public class LongNumericPrimitives {
             return NULL_INT;
         }
 
-        return indexOfMax(new DbLongArrayDirect(values));
+        return indexOfMax(new LongVectorDirect(values));
     }
 
     /**
@@ -2227,7 +2227,7 @@ public class LongNumericPrimitives {
      * @param values values.
      * @return rowSet of the maximum value.
      */
-    public static int indexOfMax(DbLongArray values) {
+    public static int indexOfMax(LongVector values) {
         if (values == null) {
             return NULL_INT;
         }
@@ -2284,7 +2284,7 @@ public class LongNumericPrimitives {
             return NULL_INT;
         }
 
-        return indexOfMin(new DbLongArrayDirect(values));
+        return indexOfMin(new LongVectorDirect(values));
     }
 
     /**
@@ -2293,7 +2293,7 @@ public class LongNumericPrimitives {
      * @param values values.
      * @return rowSet of the minimum value.
      */
-    public static int indexOfMin(DbLongArray values) {
+    public static int indexOfMin(LongVector values) {
         if (values == null) {
             return NULL_INT;
         }
@@ -2326,7 +2326,7 @@ public class LongNumericPrimitives {
             return NULL_INT;
         }
 
-        return binSearchIndex(new DbLongArrayDirect(values), key, choiceWhenEquals);
+        return binSearchIndex(new LongVectorDirect(values), key, choiceWhenEquals);
     }
 
     /**
@@ -2337,7 +2337,7 @@ public class LongNumericPrimitives {
      * @param choiceWhenEquals algorithm used to resolve ties when performing a binary search.
      * @return rowSet of the search key, if it is contained in the array; otherwise, the rowSet immediately before where the key would be inserted.
      */
-    public static int binSearchIndex(DbLongArray values, long key, BinSearch choiceWhenEquals) {
+    public static int binSearchIndex(LongVector values, long key, BinSearch choiceWhenEquals) {
         int index = rawBinSearchIndex(values, key, choiceWhenEquals);
         if (index == NULL_INT) {
             return index;
@@ -2363,7 +2363,7 @@ public class LongNumericPrimitives {
             return NULL_INT;
         }
 
-        return rawBinSearchIndex(new DbLongArrayDirect(values), key, choiceWhenEquals);
+        return rawBinSearchIndex(new LongVectorDirect(values), key, choiceWhenEquals);
     }
 
     /**
@@ -2374,7 +2374,7 @@ public class LongNumericPrimitives {
      * @param choiceWhenEquals algorithm used to resolve ties when performing a binary search.
      * @return rowSet of the search key, if it is contained in the array; otherwise, {@code (-(insertion point) - 1)}.
      */
-    public static int rawBinSearchIndex(DbLongArray values, long key, BinSearch choiceWhenEquals) {
+    public static int rawBinSearchIndex(LongVector values, long key, BinSearch choiceWhenEquals) {
         if (values == null || key == NULL_LONG) {
             return NULL_INT;
         }
@@ -2386,7 +2386,7 @@ public class LongNumericPrimitives {
         }
     }
 
-    static private int binarySearch0(DbLongArray array, int fromIndex, int toIndex, long key) {
+    static private int binarySearch0(LongVector array, int fromIndex, int toIndex, long key) {
         int low = fromIndex;
         int high = toIndex - 1;
 
@@ -2407,7 +2407,7 @@ public class LongNumericPrimitives {
         return -(low + 1);  // key not found.
     }
 
-    static private int binarySearch0Modified(DbLongArray array, int fromIndex, int toIndex, long key, boolean highestOrLowest) {
+    static private int binarySearch0Modified(LongVector array, int fromIndex, int toIndex, long key, boolean highestOrLowest) {
         int low = fromIndex;
         int high = toIndex - 1;
 
@@ -2466,12 +2466,12 @@ public class LongNumericPrimitives {
      * @param values1 2nd set of values.
      * @return covariance of non-null values.
      */
-    public static double cov(long[] values0, DbLongArray values1) {
+    public static double cov(long[] values0, LongVector values1) {
         if (values0 == null || values1 == null) {
             return NULL_DOUBLE;
         }
 
-        return cov(new DbLongArrayDirect(values0), values1);
+        return cov(new LongVectorDirect(values0), values1);
     }
 
     /**
@@ -2481,12 +2481,12 @@ public class LongNumericPrimitives {
      * @param values1 2nd set of values.
      * @return covariance of non-null values.
      */
-    public static double cov(DbLongArray values0, long[] values1) {
+    public static double cov(LongVector values0, long[] values1) {
         if (values0 == null || values1 == null) {
             return NULL_DOUBLE;
         }
 
-        return cov(values0, new DbLongArrayDirect(values1));
+        return cov(values0, new LongVectorDirect(values1));
     }
 
     /**
@@ -2501,7 +2501,7 @@ public class LongNumericPrimitives {
             return NULL_DOUBLE;
         }
 
-        return cov(new DbLongArrayDirect(values0), new DbLongArrayDirect(values1));
+        return cov(new LongVectorDirect(values0), new LongVectorDirect(values1));
     }
 
     /**
@@ -2511,7 +2511,7 @@ public class LongNumericPrimitives {
      * @param values1 2nd set of values.
      * @return covariance of non-null values.
      */
-    public static double cov(DbLongArray values0, DbLongArray values1) {
+    public static double cov(LongVector values0, LongVector values1) {
         if (values0 == null || values1 == null) {
             return NULL_DOUBLE;
         }
@@ -2544,12 +2544,12 @@ public class LongNumericPrimitives {
      * @param values1 2nd set of values.
      * @return correlation of non-null values.
      */
-    public static double cor(long[] values0, DbLongArray values1) {
+    public static double cor(long[] values0, LongVector values1) {
         if (values0 == null || values1 == null) {
             return NULL_DOUBLE;
         }
 
-        return cor(new DbLongArrayDirect(values0), values1);
+        return cor(new LongVectorDirect(values0), values1);
     }
 
     /**
@@ -2559,12 +2559,12 @@ public class LongNumericPrimitives {
      * @param values1 2nd set of values.
      * @return correlation of non-null values.
      */
-    public static double cor(DbLongArray values0, long[] values1) {
+    public static double cor(LongVector values0, long[] values1) {
         if (values0 == null || values1 == null) {
             return NULL_DOUBLE;
         }
 
-        return cor(values0, new DbLongArrayDirect(values1));
+        return cor(values0, new LongVectorDirect(values1));
     }
 
     /**
@@ -2579,7 +2579,7 @@ public class LongNumericPrimitives {
             return NULL_DOUBLE;
         }
 
-        return cor(new DbLongArrayDirect(values0), new DbLongArrayDirect(values1));
+        return cor(new LongVectorDirect(values0), new LongVectorDirect(values1));
     }
 
     /**
@@ -2589,7 +2589,7 @@ public class LongNumericPrimitives {
      * @param values1 2nd set of values.
      * @return correlation of non-null values.
      */
-    public static double cor(DbLongArray values0, DbLongArray values1) {
+    public static double cor(LongVector values0, LongVector values1) {
         if (values0 == null || values1 == null) {
             return NULL_DOUBLE;
         }
@@ -2629,7 +2629,7 @@ public class LongNumericPrimitives {
      * @param values values.
      * @return sum of non-null values.
      */
-    public static long sum(DbLongArray values) {
+    public static long sum(LongVector values) {
         if (values == null) {
             return NULL_LONG;
         }
@@ -2671,7 +2671,7 @@ public class LongNumericPrimitives {
      * @param values values.
      * @return array of sums of non-null values.
      */
-    public static long[] sum(DbArray<long[]> values) {
+    public static long[] sum(ObjectVector<long[]> values) {
         if (values == null || values.size() == 0) {
             return null;
         }
@@ -2728,7 +2728,7 @@ public class LongNumericPrimitives {
      * @param values values.
      * @return product of non-null values.
      */
-    public static long product(DbLongArray values) {
+    public static long product(LongVector values) {
         if (values == null) {
             return NULL_LONG;
         }
@@ -2784,7 +2784,7 @@ public class LongNumericPrimitives {
 //     * @param values values.
 //     * @return array of products of non-null values.
 //     */
-//    public static long[] product(DbArray<long[]> values) {
+//    public static long[] product(Vector<long[]> values) {
 //        if (values == null || values.size() == 0) {
 //            return null;
 //        }
@@ -2903,7 +2903,7 @@ public class LongNumericPrimitives {
      * @param values values.
      * @return cumulative sum of non-null values.
      */
-    public static long[] cumsum(DbLongArray values) {
+    public static long[] cumsum(LongVector values) {
         if (values == null) {
             return null;
         }
@@ -2996,7 +2996,7 @@ public class LongNumericPrimitives {
      * @param values values.
      * @return cumulative product of non-null values.
      */
-    public static long[] cumprod(DbLongArray values) {
+    public static long[] cumprod(LongVector values) {
         if (values == null) {
             return null;
         }
@@ -3347,12 +3347,12 @@ public class LongNumericPrimitives {
      * @param weights weights
      * @return weighted sum of non-null values.
      */
-    public static double wsum(long[] values, DbLongArray weights) {
+    public static double wsum(long[] values, LongVector weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
 
-        return wsum(new DbLongArrayDirect(values), weights);
+        return wsum(new LongVectorDirect(values), weights);
     }
 
     /**
@@ -3362,12 +3362,12 @@ public class LongNumericPrimitives {
      * @param weights weights
      * @return weighted sum of non-null values.
      */
-    public static double wsum(DbLongArray values, long[] weights) {
+    public static double wsum(LongVector values, long[] weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
 
-        return wsum(values, new DbLongArrayDirect(weights));
+        return wsum(values, new LongVectorDirect(weights));
     }
 
     /**
@@ -3382,7 +3382,7 @@ public class LongNumericPrimitives {
             return NULL_DOUBLE;
         }
 
-        return wsum(new DbLongArrayDirect(values), new DbLongArrayDirect(weights));
+        return wsum(new LongVectorDirect(values), new LongVectorDirect(weights));
     }
 
     /**
@@ -3392,7 +3392,7 @@ public class LongNumericPrimitives {
      * @param weights weights
      * @return weighted sum of non-null values.
      */
-    public static double wsum(DbLongArray values, DbLongArray weights) {
+    public static double wsum(LongVector values, LongVector weights) {
         return weightedSum(values, weights);
     }
 
@@ -3403,12 +3403,12 @@ public class LongNumericPrimitives {
      * @param weights weights
      * @return weighted sum of non-null values.
      */
-    public static double weightedSum(long[] values, DbLongArray weights) {
+    public static double weightedSum(long[] values, LongVector weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
 
-        return weightedSum(new DbLongArrayDirect(values), weights);
+        return weightedSum(new LongVectorDirect(values), weights);
     }
 
     /**
@@ -3418,12 +3418,12 @@ public class LongNumericPrimitives {
      * @param weights weights
      * @return weighted sum of non-null values.
      */
-    public static double weightedSum(DbLongArray values, long[] weights) {
+    public static double weightedSum(LongVector values, long[] weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
 
-        return weightedSum(values, new DbLongArrayDirect(weights));
+        return weightedSum(values, new LongVectorDirect(weights));
     }
 
     /**
@@ -3438,7 +3438,7 @@ public class LongNumericPrimitives {
             return NULL_DOUBLE;
         }
 
-        return weightedSum(new DbLongArrayDirect(values), new DbLongArrayDirect(weights));
+        return weightedSum(new LongVectorDirect(values), new LongVectorDirect(weights));
     }
 
     /**
@@ -3448,7 +3448,7 @@ public class LongNumericPrimitives {
      * @param weights weights
      * @return weighted sum of non-null values.
      */
-    public static double weightedSum(DbLongArray values, DbLongArray weights) {
+    public static double weightedSum(LongVector values, LongVector weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
@@ -3471,12 +3471,12 @@ public class LongNumericPrimitives {
      * @param weights weights
      * @return weighted sum of non-null values.
      */
-    public static double wsum(long[] values, DbShortArray weights) {
+    public static double wsum(long[] values, ShortVector weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
 
-        return wsum(new DbLongArrayDirect(values), weights);
+        return wsum(new LongVectorDirect(values), weights);
     }
 
     /**
@@ -3486,12 +3486,12 @@ public class LongNumericPrimitives {
      * @param weights weights
      * @return weighted sum of non-null values.
      */
-    public static double wsum(DbLongArray values, short[] weights) {
+    public static double wsum(LongVector values, short[] weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
 
-        return wsum(values, new DbShortArrayDirect(weights));
+        return wsum(values, new ShortVectorDirect(weights));
     }
 
     /**
@@ -3506,7 +3506,7 @@ public class LongNumericPrimitives {
             return NULL_DOUBLE;
         }
 
-        return wsum(new DbLongArrayDirect(values), new DbShortArrayDirect(weights));
+        return wsum(new LongVectorDirect(values), new ShortVectorDirect(weights));
     }
 
     /**
@@ -3516,7 +3516,7 @@ public class LongNumericPrimitives {
      * @param weights weights
      * @return weighted sum of non-null values.
      */
-    public static double wsum(DbLongArray values, DbShortArray weights) {
+    public static double wsum(LongVector values, ShortVector weights) {
         return weightedSum(values, weights);
     }
 
@@ -3527,12 +3527,12 @@ public class LongNumericPrimitives {
      * @param weights weights
      * @return weighted sum of non-null values.
      */
-    public static double weightedSum(long[] values, DbShortArray weights) {
+    public static double weightedSum(long[] values, ShortVector weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
 
-        return weightedSum(new DbLongArrayDirect(values), weights);
+        return weightedSum(new LongVectorDirect(values), weights);
     }
 
     /**
@@ -3542,12 +3542,12 @@ public class LongNumericPrimitives {
      * @param weights weights
      * @return weighted sum of non-null values.
      */
-    public static double weightedSum(DbLongArray values, short[] weights) {
+    public static double weightedSum(LongVector values, short[] weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
 
-        return weightedSum(values, new DbShortArrayDirect(weights));
+        return weightedSum(values, new ShortVectorDirect(weights));
     }
 
     /**
@@ -3562,7 +3562,7 @@ public class LongNumericPrimitives {
             return NULL_DOUBLE;
         }
 
-        return weightedSum(new DbLongArrayDirect(values), new DbShortArrayDirect(weights));
+        return weightedSum(new LongVectorDirect(values), new ShortVectorDirect(weights));
     }
 
     /**
@@ -3572,7 +3572,7 @@ public class LongNumericPrimitives {
      * @param weights weights
      * @return weighted sum of non-null values.
      */
-    public static double weightedSum(DbLongArray values, DbShortArray weights) {
+    public static double weightedSum(LongVector values, ShortVector weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
@@ -3600,7 +3600,7 @@ public class LongNumericPrimitives {
             return NULL_DOUBLE;
         }
 
-        return wsum(new DbLongArrayDirect(values), new DbDoubleArrayDirect(weights));
+        return wsum(new LongVectorDirect(values), new DoubleVectorDirect(weights));
     }
 
     /**
@@ -3610,12 +3610,12 @@ public class LongNumericPrimitives {
      * @param weights weights
      * @return weighted sum of non-null values.
      */
-    public static double wsum(DbLongArray values, double[] weights) {
+    public static double wsum(LongVector values, double[] weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
 
-        return wsum(values, new DbDoubleArrayDirect(weights));
+        return wsum(values, new DoubleVectorDirect(weights));
     }
 
     /**
@@ -3625,12 +3625,12 @@ public class LongNumericPrimitives {
      * @param weights weights
      * @return weighted sum of non-null values.
      */
-    public static double wsum(long[] values, DbDoubleArray weights) {
+    public static double wsum(long[] values, DoubleVector weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
 
-        return wsum(new DbLongArrayDirect(values), weights);
+        return wsum(new LongVectorDirect(values), weights);
     }
 
     /**
@@ -3640,7 +3640,7 @@ public class LongNumericPrimitives {
      * @param weights weights
      * @return weighted sum of non-null values.
      */
-    public static double wsum(DbLongArray values, DbDoubleArray weights) {
+    public static double wsum(LongVector values, DoubleVector weights) {
         return weightedSum(values, weights);
     }
 
@@ -3651,12 +3651,12 @@ public class LongNumericPrimitives {
      * @param weights weights
      * @return weighted sum of non-null values.
      */
-    public static double weightedSum(long[] values, DbDoubleArray weights) {
+    public static double weightedSum(long[] values, DoubleVector weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
 
-        return weightedSum(new DbLongArrayDirect(values), weights);
+        return weightedSum(new LongVectorDirect(values), weights);
     }
 
     /**
@@ -3666,12 +3666,12 @@ public class LongNumericPrimitives {
      * @param weights weights
      * @return weighted sum of non-null values.
      */
-    public static double weightedSum(DbLongArray values, double[] weights) {
+    public static double weightedSum(LongVector values, double[] weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
 
-        return weightedSum(values, new DbDoubleArrayDirect(weights));
+        return weightedSum(values, new DoubleVectorDirect(weights));
     }
 
     /**
@@ -3686,7 +3686,7 @@ public class LongNumericPrimitives {
             return NULL_DOUBLE;
         }
 
-        return weightedSum(new DbLongArrayDirect(values), new DbDoubleArrayDirect(weights));
+        return weightedSum(new LongVectorDirect(values), new DoubleVectorDirect(weights));
     }
 
     /**
@@ -3696,7 +3696,7 @@ public class LongNumericPrimitives {
      * @param weights weights
      * @return weighted sum of non-null values.
      */
-    public static double weightedSum(DbLongArray values, DbDoubleArray weights) {
+    public static double weightedSum(LongVector values, DoubleVector weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
@@ -3724,7 +3724,7 @@ public class LongNumericPrimitives {
             return NULL_DOUBLE;
         }
 
-        return wsum(new DbLongArrayDirect(values), new DbFloatArrayDirect(weights));
+        return wsum(new LongVectorDirect(values), new FloatVectorDirect(weights));
     }
 
     /**
@@ -3734,12 +3734,12 @@ public class LongNumericPrimitives {
      * @param weights weights
      * @return weighted sum of non-null values.
      */
-    public static double wsum(DbLongArray values, float[] weights) {
+    public static double wsum(LongVector values, float[] weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
 
-        return wsum(values, new DbFloatArrayDirect(weights));
+        return wsum(values, new FloatVectorDirect(weights));
     }
 
     /**
@@ -3749,12 +3749,12 @@ public class LongNumericPrimitives {
      * @param weights weights
      * @return weighted sum of non-null values.
      */
-    public static double wsum(long[] values, DbFloatArray weights) {
+    public static double wsum(long[] values, FloatVector weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
 
-        return wsum(new DbLongArrayDirect(values), weights);
+        return wsum(new LongVectorDirect(values), weights);
     }
 
     /**
@@ -3764,7 +3764,7 @@ public class LongNumericPrimitives {
      * @param weights weights
      * @return weighted sum of non-null values.
      */
-    public static double wsum(DbLongArray values, DbFloatArray weights) {
+    public static double wsum(LongVector values, FloatVector weights) {
         return weightedSum(values, weights);
     }
 
@@ -3775,12 +3775,12 @@ public class LongNumericPrimitives {
      * @param weights weights
      * @return weighted sum of non-null values.
      */
-    public static double weightedSum(long[] values, DbFloatArray weights) {
+    public static double weightedSum(long[] values, FloatVector weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
 
-        return weightedSum(new DbLongArrayDirect(values), weights);
+        return weightedSum(new LongVectorDirect(values), weights);
     }
 
     /**
@@ -3790,12 +3790,12 @@ public class LongNumericPrimitives {
      * @param weights weights
      * @return weighted sum of non-null values.
      */
-    public static double weightedSum(DbLongArray values, float[] weights) {
+    public static double weightedSum(LongVector values, float[] weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
 
-        return weightedSum(values, new DbFloatArrayDirect(weights));
+        return weightedSum(values, new FloatVectorDirect(weights));
     }
 
     /**
@@ -3810,7 +3810,7 @@ public class LongNumericPrimitives {
             return NULL_DOUBLE;
         }
 
-        return weightedSum(new DbLongArrayDirect(values), new DbFloatArrayDirect(weights));
+        return weightedSum(new LongVectorDirect(values), new FloatVectorDirect(weights));
     }
 
     /**
@@ -3820,7 +3820,7 @@ public class LongNumericPrimitives {
      * @param weights weights
      * @return weighted sum of non-null values.
      */
-    public static double weightedSum(DbLongArray values, DbFloatArray weights) {
+    public static double weightedSum(LongVector values, FloatVector weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
@@ -3843,12 +3843,12 @@ public class LongNumericPrimitives {
      * @param weights weights
      * @return weighted sum of non-null values.
      */
-    public static double wsum(long[] values, DbIntArray weights) {
+    public static double wsum(long[] values, IntVector weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
 
-        return wsum(new DbLongArrayDirect(values), weights);
+        return wsum(new LongVectorDirect(values), weights);
     }
 
     /**
@@ -3858,12 +3858,12 @@ public class LongNumericPrimitives {
      * @param weights weights
      * @return weighted sum of non-null values.
      */
-    public static double wsum(DbLongArray values, int[] weights) {
+    public static double wsum(LongVector values, int[] weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
 
-        return wsum(values, new DbIntArrayDirect(weights));
+        return wsum(values, new IntVectorDirect(weights));
     }
 
     /**
@@ -3878,7 +3878,7 @@ public class LongNumericPrimitives {
             return NULL_DOUBLE;
         }
 
-        return wsum(new DbLongArrayDirect(values), new DbIntArrayDirect(weights));
+        return wsum(new LongVectorDirect(values), new IntVectorDirect(weights));
     }
 
     /**
@@ -3888,7 +3888,7 @@ public class LongNumericPrimitives {
      * @param weights weights
      * @return weighted sum of non-null values.
      */
-    public static double wsum(DbLongArray values, DbIntArray weights) {
+    public static double wsum(LongVector values, IntVector weights) {
         return weightedSum(values, weights);
     }
 
@@ -3899,12 +3899,12 @@ public class LongNumericPrimitives {
      * @param weights weights
      * @return weighted sum of non-null values.
      */
-    public static double weightedSum(long[] values, DbIntArray weights) {
+    public static double weightedSum(long[] values, IntVector weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
 
-        return weightedSum(new DbLongArrayDirect(values), weights);
+        return weightedSum(new LongVectorDirect(values), weights);
     }
 
     /**
@@ -3914,12 +3914,12 @@ public class LongNumericPrimitives {
      * @param weights weights
      * @return weighted sum of non-null values.
      */
-    public static double weightedSum(DbLongArray values, int[] weights) {
+    public static double weightedSum(LongVector values, int[] weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
 
-        return weightedSum(values, new DbIntArrayDirect(weights));
+        return weightedSum(values, new IntVectorDirect(weights));
     }
 
     /**
@@ -3934,7 +3934,7 @@ public class LongNumericPrimitives {
             return NULL_DOUBLE;
         }
 
-        return weightedSum(new DbLongArrayDirect(values), new DbIntArrayDirect(weights));
+        return weightedSum(new LongVectorDirect(values), new IntVectorDirect(weights));
     }
 
     /**
@@ -3944,7 +3944,7 @@ public class LongNumericPrimitives {
      * @param weights weights
      * @return weighted sum of non-null values.
      */
-    public static double weightedSum(DbLongArray values, DbIntArray weights) {
+    public static double weightedSum(LongVector values, IntVector weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
@@ -3967,12 +3967,12 @@ public class LongNumericPrimitives {
      * @param weights weights
      * @return weighted average of non-null values.
      */
-    public static double wavg(long[] values, DbDoubleArray weights) {
+    public static double wavg(long[] values, DoubleVector weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
 
-        return wavg(new DbLongArrayDirect(values), weights);
+        return wavg(new LongVectorDirect(values), weights);
     }
 
     /**
@@ -3982,12 +3982,12 @@ public class LongNumericPrimitives {
      * @param weights weights
      * @return weighted average of non-null values.
      */
-    public static double wavg(DbLongArray values, double[] weights) {
+    public static double wavg(LongVector values, double[] weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
 
-        return wavg(values, new DbDoubleArrayDirect(weights));
+        return wavg(values, new DoubleVectorDirect(weights));
     }
 
     /**
@@ -4002,7 +4002,7 @@ public class LongNumericPrimitives {
             return NULL_DOUBLE;
         }
 
-        return wavg(new DbLongArrayDirect(values), new DbDoubleArrayDirect(weights));
+        return wavg(new LongVectorDirect(values), new DoubleVectorDirect(weights));
     }
 
     /**
@@ -4012,7 +4012,7 @@ public class LongNumericPrimitives {
      * @param weights weights
      * @return weighted average of non-null values.
      */
-    public static double wavg(DbLongArray values, DbDoubleArray weights) {
+    public static double wavg(LongVector values, DoubleVector weights) {
         return weightedAvg(values, weights);
     }
 
@@ -4023,12 +4023,12 @@ public class LongNumericPrimitives {
      * @param weights weights
      * @return weighted average of non-null values.
      */
-    public static double weightedAvg(long[] values, DbDoubleArray weights) {
+    public static double weightedAvg(long[] values, DoubleVector weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
 
-        return weightedAvg(new DbLongArrayDirect(values), weights);
+        return weightedAvg(new LongVectorDirect(values), weights);
     }
 
     /**
@@ -4038,12 +4038,12 @@ public class LongNumericPrimitives {
      * @param weights weights
      * @return weighted average of non-null values.
      */
-    public static double weightedAvg(DbLongArray values, double[] weights) {
+    public static double weightedAvg(LongVector values, double[] weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
 
-        return weightedAvg(values, new DbDoubleArrayDirect(weights));
+        return weightedAvg(values, new DoubleVectorDirect(weights));
     }
 
     /**
@@ -4058,7 +4058,7 @@ public class LongNumericPrimitives {
             return NULL_DOUBLE;
         }
 
-        return weightedAvg(new DbLongArrayDirect(values), new DbDoubleArrayDirect(weights));
+        return weightedAvg(new LongVectorDirect(values), new DoubleVectorDirect(weights));
     }
 
     /**
@@ -4068,7 +4068,7 @@ public class LongNumericPrimitives {
      * @param weights weights
      * @return weighted average of non-null values.
      */
-    public static double weightedAvg(DbLongArray values, DbDoubleArray weights) {
+    public static double weightedAvg(LongVector values, DoubleVector weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
@@ -4093,12 +4093,12 @@ public class LongNumericPrimitives {
      * @param weights weights
      * @return weighted average of non-null values.
      */
-    public static double wavg(long[] values, DbFloatArray weights) {
+    public static double wavg(long[] values, FloatVector weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
 
-        return wavg(new DbLongArrayDirect(values), weights);
+        return wavg(new LongVectorDirect(values), weights);
     }
 
     /**
@@ -4108,12 +4108,12 @@ public class LongNumericPrimitives {
      * @param weights weights
      * @return weighted average of non-null values.
      */
-    public static double wavg(DbLongArray values, float[] weights) {
+    public static double wavg(LongVector values, float[] weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
 
-        return wavg(values, new DbFloatArrayDirect(weights));
+        return wavg(values, new FloatVectorDirect(weights));
     }
 
     /**
@@ -4128,7 +4128,7 @@ public class LongNumericPrimitives {
             return NULL_DOUBLE;
         }
 
-        return wavg(new DbLongArrayDirect(values), new DbFloatArrayDirect(weights));
+        return wavg(new LongVectorDirect(values), new FloatVectorDirect(weights));
     }
 
     /**
@@ -4138,7 +4138,7 @@ public class LongNumericPrimitives {
      * @param weights weights
      * @return weighted average of non-null values.
      */
-    public static double wavg(DbLongArray values, DbFloatArray weights) {
+    public static double wavg(LongVector values, FloatVector weights) {
         return weightedAvg(values, weights);
     }
 
@@ -4149,12 +4149,12 @@ public class LongNumericPrimitives {
      * @param weights weights
      * @return weighted average of non-null values.
      */
-    public static double weightedAvg(long[] values, DbFloatArray weights) {
+    public static double weightedAvg(long[] values, FloatVector weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
 
-        return weightedAvg(new DbLongArrayDirect(values), weights);
+        return weightedAvg(new LongVectorDirect(values), weights);
     }
 
     /**
@@ -4164,12 +4164,12 @@ public class LongNumericPrimitives {
      * @param weights weights
      * @return weighted average of non-null values.
      */
-    public static double weightedAvg(DbLongArray values, float[] weights) {
+    public static double weightedAvg(LongVector values, float[] weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
 
-        return weightedAvg(values, new DbFloatArrayDirect(weights));
+        return weightedAvg(values, new FloatVectorDirect(weights));
     }
 
     /**
@@ -4184,7 +4184,7 @@ public class LongNumericPrimitives {
             return NULL_DOUBLE;
         }
 
-        return weightedAvg(new DbLongArrayDirect(values), new DbFloatArrayDirect(weights));
+        return weightedAvg(new LongVectorDirect(values), new FloatVectorDirect(weights));
     }
 
     /**
@@ -4194,7 +4194,7 @@ public class LongNumericPrimitives {
      * @param weights weights
      * @return weighted average of non-null values.
      */
-    public static double weightedAvg(DbLongArray values, DbFloatArray weights) {
+    public static double weightedAvg(LongVector values, FloatVector weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
@@ -4219,12 +4219,12 @@ public class LongNumericPrimitives {
      * @param weights weights
      * @return weighted average of non-null values.
      */
-    public static double wavg(long[] values, DbLongArray weights) {
+    public static double wavg(long[] values, LongVector weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
 
-        return wavg(new DbLongArrayDirect(values), weights);
+        return wavg(new LongVectorDirect(values), weights);
     }
 
     /**
@@ -4234,12 +4234,12 @@ public class LongNumericPrimitives {
      * @param weights weights
      * @return weighted average of non-null values.
      */
-    public static double wavg(DbLongArray values, long[] weights) {
+    public static double wavg(LongVector values, long[] weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
 
-        return wavg(values, new DbLongArrayDirect(weights));
+        return wavg(values, new LongVectorDirect(weights));
     }
 
     /**
@@ -4254,7 +4254,7 @@ public class LongNumericPrimitives {
             return NULL_DOUBLE;
         }
 
-        return wavg(new DbLongArrayDirect(values), new DbLongArrayDirect(weights));
+        return wavg(new LongVectorDirect(values), new LongVectorDirect(weights));
     }
 
     /**
@@ -4264,7 +4264,7 @@ public class LongNumericPrimitives {
      * @param weights weights
      * @return weighted average of non-null values.
      */
-    public static double wavg(DbLongArray values, DbLongArray weights) {
+    public static double wavg(LongVector values, LongVector weights) {
         return weightedAvg(values, weights);
     }
 
@@ -4275,12 +4275,12 @@ public class LongNumericPrimitives {
      * @param weights weights
      * @return weighted average of non-null values.
      */
-    public static double weightedAvg(long[] values, DbLongArray weights) {
+    public static double weightedAvg(long[] values, LongVector weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
 
-        return weightedAvg(new DbLongArrayDirect(values), weights);
+        return weightedAvg(new LongVectorDirect(values), weights);
     }
 
     /**
@@ -4290,12 +4290,12 @@ public class LongNumericPrimitives {
      * @param weights weights
      * @return weighted average of non-null values.
      */
-    public static double weightedAvg(DbLongArray values, long[] weights) {
+    public static double weightedAvg(LongVector values, long[] weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
 
-        return weightedAvg(values, new DbLongArrayDirect(weights));
+        return weightedAvg(values, new LongVectorDirect(weights));
     }
 
     /**
@@ -4310,7 +4310,7 @@ public class LongNumericPrimitives {
             return NULL_DOUBLE;
         }
 
-        return weightedAvg(new DbLongArrayDirect(values), new DbLongArrayDirect(weights));
+        return weightedAvg(new LongVectorDirect(values), new LongVectorDirect(weights));
     }
 
     /**
@@ -4320,7 +4320,7 @@ public class LongNumericPrimitives {
      * @param weights weights
      * @return weighted average of non-null values.
      */
-    public static double weightedAvg(DbLongArray values, DbLongArray weights) {
+    public static double weightedAvg(LongVector values, LongVector weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
@@ -4345,12 +4345,12 @@ public class LongNumericPrimitives {
      * @param weights weights
      * @return weighted average of non-null values.
      */
-    public static double wavg(long[] values, DbIntArray weights) {
+    public static double wavg(long[] values, IntVector weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
 
-        return wavg(new DbLongArrayDirect(values), weights);
+        return wavg(new LongVectorDirect(values), weights);
     }
 
     /**
@@ -4360,12 +4360,12 @@ public class LongNumericPrimitives {
      * @param weights weights
      * @return weighted average of non-null values.
      */
-    public static double wavg(DbLongArray values, int[] weights) {
+    public static double wavg(LongVector values, int[] weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
 
-        return wavg(values, new DbIntArrayDirect(weights));
+        return wavg(values, new IntVectorDirect(weights));
     }
 
     /**
@@ -4380,7 +4380,7 @@ public class LongNumericPrimitives {
             return NULL_DOUBLE;
         }
 
-        return wavg(new DbLongArrayDirect(values), new DbIntArrayDirect(weights));
+        return wavg(new LongVectorDirect(values), new IntVectorDirect(weights));
     }
 
     /**
@@ -4390,7 +4390,7 @@ public class LongNumericPrimitives {
      * @param weights weights
      * @return weighted average of non-null values.
      */
-    public static double wavg(DbLongArray values, DbIntArray weights) {
+    public static double wavg(LongVector values, IntVector weights) {
         return weightedAvg(values, weights);
     }
 
@@ -4401,12 +4401,12 @@ public class LongNumericPrimitives {
      * @param weights weights
      * @return weighted average of non-null values.
      */
-    public static double weightedAvg(long[] values, DbIntArray weights) {
+    public static double weightedAvg(long[] values, IntVector weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
 
-        return weightedAvg(new DbLongArrayDirect(values), weights);
+        return weightedAvg(new LongVectorDirect(values), weights);
     }
 
     /**
@@ -4416,12 +4416,12 @@ public class LongNumericPrimitives {
      * @param weights weights
      * @return weighted average of non-null values.
      */
-    public static double weightedAvg(DbLongArray values, int[] weights) {
+    public static double weightedAvg(LongVector values, int[] weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
 
-        return weightedAvg(values, new DbIntArrayDirect(weights));
+        return weightedAvg(values, new IntVectorDirect(weights));
     }
 
     /**
@@ -4436,7 +4436,7 @@ public class LongNumericPrimitives {
             return NULL_DOUBLE;
         }
 
-        return weightedAvg(new DbLongArrayDirect(values), new DbIntArrayDirect(weights));
+        return weightedAvg(new LongVectorDirect(values), new IntVectorDirect(weights));
     }
 
     /**
@@ -4446,7 +4446,7 @@ public class LongNumericPrimitives {
      * @param weights weights
      * @return weighted average of non-null values.
      */
-    public static double weightedAvg(DbLongArray values, DbIntArray weights) {
+    public static double weightedAvg(LongVector values, IntVector weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
@@ -4471,12 +4471,12 @@ public class LongNumericPrimitives {
      * @param weights weights
      * @return weighted average of non-null values.
      */
-    public static double wavg(long[] values, DbShortArray weights) {
+    public static double wavg(long[] values, ShortVector weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
 
-        return wavg(new DbLongArrayDirect(values), weights);
+        return wavg(new LongVectorDirect(values), weights);
     }
 
     /**
@@ -4486,12 +4486,12 @@ public class LongNumericPrimitives {
      * @param weights weights
      * @return weighted average of non-null values.
      */
-    public static double wavg(DbLongArray values, short[] weights) {
+    public static double wavg(LongVector values, short[] weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
 
-        return wavg(values, new DbShortArrayDirect(weights));
+        return wavg(values, new ShortVectorDirect(weights));
     }
 
     /**
@@ -4506,7 +4506,7 @@ public class LongNumericPrimitives {
             return NULL_DOUBLE;
         }
 
-        return wavg(new DbLongArrayDirect(values), new DbShortArrayDirect(weights));
+        return wavg(new LongVectorDirect(values), new ShortVectorDirect(weights));
     }
 
     /**
@@ -4516,7 +4516,7 @@ public class LongNumericPrimitives {
      * @param weights weights
      * @return weighted average of non-null values.
      */
-    public static double wavg(DbLongArray values, DbShortArray weights) {
+    public static double wavg(LongVector values, ShortVector weights) {
         return weightedAvg(values, weights);
     }
 
@@ -4527,12 +4527,12 @@ public class LongNumericPrimitives {
      * @param weights weights
      * @return weighted average of non-null values.
      */
-    public static double weightedAvg(long[] values, DbShortArray weights) {
+    public static double weightedAvg(long[] values, ShortVector weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
 
-        return weightedAvg(new DbLongArrayDirect(values), weights);
+        return weightedAvg(new LongVectorDirect(values), weights);
     }
 
     /**
@@ -4542,12 +4542,12 @@ public class LongNumericPrimitives {
      * @param weights weights
      * @return weighted average of non-null values.
      */
-    public static double weightedAvg(DbLongArray values, short[] weights) {
+    public static double weightedAvg(LongVector values, short[] weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
 
-        return weightedAvg(values, new DbShortArrayDirect(weights));
+        return weightedAvg(values, new ShortVectorDirect(weights));
     }
 
     /**
@@ -4562,7 +4562,7 @@ public class LongNumericPrimitives {
             return NULL_DOUBLE;
         }
 
-        return weightedAvg(new DbLongArrayDirect(values), new DbShortArrayDirect(weights));
+        return weightedAvg(new LongVectorDirect(values), new ShortVectorDirect(weights));
     }
 
     /**
@@ -4572,7 +4572,7 @@ public class LongNumericPrimitives {
      * @param weights weights
      * @return weighted average of non-null values.
      */
-    public static double weightedAvg(DbLongArray values, DbShortArray weights) {
+    public static double weightedAvg(LongVector values, ShortVector weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
@@ -4596,17 +4596,17 @@ public class LongNumericPrimitives {
      * @param values values.
      * @return sorted values.
      */
-    public static DbLongArray sort(final DbLongArray values) {
+    public static LongVector sort(final LongVector values) {
         if (values == null) {
             return null;
         }
         if (values.size() == 0) {
-            return new DbLongArrayDirect();
+            return new LongVectorDirect();
         }
 
         final long[] vs = Arrays.copyOf(values.toArray(), values.intSize());
         Arrays.sort(vs);
-        return new DbLongArrayDirect(vs);
+        return new LongVectorDirect(vs);
     }
 
     /**
@@ -4656,19 +4656,19 @@ public class LongNumericPrimitives {
      * @param values values.
      * @return sorted values.
      */
-    public static DbLongArray sortDescending(final DbLongArray values) {
+    public static LongVector sortDescending(final LongVector values) {
         if (values == null) {
             return null;
         }
         if (values.size() == 0) {
-            return new DbLongArrayDirect();
+            return new LongVectorDirect();
         }
 
         final long[] vs = Arrays.copyOf(values.toArray(), values.intSize());
         Arrays.sort(vs);
         ArrayUtils.reverse(vs);
 
-        return new DbLongArrayDirect(vs);
+        return new LongVectorDirect(vs);
     }
 
     /**

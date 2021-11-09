@@ -9,7 +9,7 @@ import io.deephaven.base.verify.Require;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.tables.CodecLookup;
 import io.deephaven.engine.tables.ColumnDefinition;
-import io.deephaven.engine.tables.dbarrays.DbArrayBase;
+import io.deephaven.engine.tables.dbarrays.Vector;
 import io.deephaven.engine.v2.locations.TableDataException;
 import io.deephaven.engine.v2.locations.impl.AbstractColumnLocation;
 import io.deephaven.engine.v2.locations.parquet.ColumnChunkPageStore;
@@ -637,8 +637,8 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
                 toPage = ToStringSetPage.create(dataType, toPage);
             } else if (isArray) {
                 Assert.assertion(!isCodec, "!isCodec");
-                if (DbArrayBase.class.isAssignableFrom(dataType)) {
-                    toPage = ToDbArrayPage.create(dataType, componentType, toPage);
+                if (Vector.class.isAssignableFrom(dataType)) {
+                    toPage = ToVectorPage.create(dataType, componentType, toPage);
                 } else if (dataType.isArray()) {
                     toPage = ToArrayPage.create(dataType, componentType, toPage);
                 }

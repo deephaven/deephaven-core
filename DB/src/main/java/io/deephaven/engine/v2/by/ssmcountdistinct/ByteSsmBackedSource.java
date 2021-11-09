@@ -3,7 +3,7 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.v2.by.ssmcountdistinct;
 
-import io.deephaven.engine.tables.dbarrays.DbByteArray;
+import io.deephaven.engine.tables.dbarrays.ByteVector;
 import io.deephaven.engine.v2.sources.AbstractColumnSource;
 import io.deephaven.engine.v2.sources.ColumnSourceGetDefaults;
 import io.deephaven.engine.v2.sources.MutableColumnSourceGetDefaults;
@@ -14,16 +14,16 @@ import io.deephaven.engine.v2.utils.RowSet;
 /**
  * A {@link SsmBackedColumnSource} for Bytes.
  */
-public class ByteSsmBackedSource extends AbstractColumnSource<DbByteArray>
-                                 implements ColumnSourceGetDefaults.ForObject<DbByteArray>,
-                                            MutableColumnSourceGetDefaults.ForObject<DbByteArray>,
-                                            SsmBackedColumnSource<ByteSegmentedSortedMultiset, DbByteArray> {
+public class ByteSsmBackedSource extends AbstractColumnSource<ByteVector>
+                                 implements ColumnSourceGetDefaults.ForObject<ByteVector>,
+                                            MutableColumnSourceGetDefaults.ForObject<ByteVector>,
+                                            SsmBackedColumnSource<ByteSegmentedSortedMultiset, ByteVector> {
     private final ObjectArraySource<ByteSegmentedSortedMultiset> underlying;
     private boolean trackingPrevious = false;
 
     //region Constructor
     public ByteSsmBackedSource() {
-        super(DbByteArray.class, byte.class);
+        super(ByteVector.class, byte.class);
         underlying = new ObjectArraySource<>(ByteSegmentedSortedMultiset.class, byte.class);
     }
     //endregion Constructor
@@ -68,12 +68,12 @@ public class ByteSsmBackedSource extends AbstractColumnSource<DbByteArray>
     }
 
     @Override
-    public DbByteArray get(long index) {
+    public ByteVector get(long index) {
         return underlying.get(index);
     }
 
     @Override
-    public DbByteArray getPrev(long index) {
+    public ByteVector getPrev(long index) {
         final ByteSegmentedSortedMultiset maybePrev = underlying.getPrev(index);
         return maybePrev == null ? null : maybePrev.getPrevValues();
     }

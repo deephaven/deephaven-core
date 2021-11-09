@@ -1,9 +1,9 @@
 package io.deephaven.engine.v2.ssms;
 
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.tables.dbarrays.DbArray;
-import io.deephaven.engine.tables.dbarrays.DbCharArray;
-import io.deephaven.engine.tables.dbarrays.DbCharArrayDirect;
+import io.deephaven.engine.tables.dbarrays.CharVector;
+import io.deephaven.engine.tables.dbarrays.CharVectorDirect;
+import io.deephaven.engine.tables.dbarrays.ObjectVector;
 import io.deephaven.engine.tables.utils.ArrayUtils;
 import io.deephaven.engine.util.DhCharComparisons;
 import io.deephaven.engine.v2.by.SumIntChunk;
@@ -20,7 +20,7 @@ import java.util.Objects;
 
 import static io.deephaven.util.QueryConstants.NULL_CHAR;
 
-public final class CharSegmentedSortedMultiset implements SegmentedSortedMultiSet<Character>, DbCharArray {
+public final class CharSegmentedSortedMultiset implements SegmentedSortedMultiSet<Character>, CharVector {
     private final int leafSize;
     private int leafCount;
     private int size;
@@ -44,7 +44,7 @@ public final class CharSegmentedSortedMultiset implements SegmentedSortedMultiSe
     private transient boolean accumulateDeltas = false;
     private transient TCharHashSet added;
     private transient TCharHashSet removed;
-    private transient DbCharArray prevValues;
+    private transient CharVector prevValues;
     // endregion Deltas
 
 
@@ -2191,7 +2191,7 @@ public final class CharSegmentedSortedMultiset implements SegmentedSortedMultiSe
         }
 
         if(prevValues == null) {
-            prevValues = new DbCharArrayDirect(keyArray());
+            prevValues = new CharVectorDirect(keyArray());
         }
 
         if (added == null) {
@@ -2220,7 +2220,7 @@ public final class CharSegmentedSortedMultiset implements SegmentedSortedMultiSe
         }
 
         if(prevValues == null) {
-            prevValues = new DbCharArrayDirect(keyArray());
+            prevValues = new CharVectorDirect(keyArray());
         }
 
         if(removed == null) {
@@ -2261,12 +2261,12 @@ public final class CharSegmentedSortedMultiset implements SegmentedSortedMultiSe
         chunk.copyFromTypedArray(added.toArray(), 0, position, added.size());
     }
 
-    public DbCharArray getPrevValues() {
+    public CharVector getPrevValues() {
         return prevValues == null ? this : prevValues;
     }
     // endregion
 
-    // region DBCharArray
+    // region CharVector
     @Override
     public char get(long i) {
         if(i < 0 || i > size()) {
@@ -2288,19 +2288,19 @@ public final class CharSegmentedSortedMultiset implements SegmentedSortedMultiSe
     }
 
     @Override
-    public DbCharArray subArray(long fromIndex, long toIndex) {
-        return new DbCharArrayDirect(keyArray(fromIndex, toIndex));
+    public CharVector subVector(long fromIndex, long toIndex) {
+        return new CharVectorDirect(keyArray(fromIndex, toIndex));
     }
 
     @Override
-    public DbCharArray subArrayByPositions(long[] positions) {
+    public CharVector subVectorByPositions(long[] positions) {
         final char[] keyArray = new char[positions.length];
         int writePos = 0;
         for (long position : positions) {
             keyArray[writePos++] = get(position);
         }
 
-        return new DbCharArrayDirect(keyArray);
+        return new CharVectorDirect(keyArray);
     }
 
     @Override
@@ -2314,13 +2314,13 @@ public final class CharSegmentedSortedMultiset implements SegmentedSortedMultiSe
     }
 
     @Override
-    public DbCharArray getDirect() {
-        return new DbCharArrayDirect(keyArray());
+    public CharVector getDirect() {
+        return new CharVectorDirect(keyArray());
     }
     //endregion
 
-    //region DbArrayEquals
-    private boolean equalsArray(DbCharArray o) {
+    //region VectorEquals
+    private boolean equalsArray(CharVector o) {
         if(size() != o.size()) {
             return false;
         }
@@ -2348,9 +2348,9 @@ public final class CharSegmentedSortedMultiset implements SegmentedSortedMultiSe
 
         return true;
     }
-    //endregion DbArrayEquals
+    //endregion VectorEquals
 
-    private boolean equalsArray(DbArray<?> o) {
+    private boolean equalsArray(ObjectVector<?> o) {
         //region EqualsArrayTypeCheck
         if(o.getComponentType() != char.class && o.getComponentType() != Character.class) {
             return false;
@@ -2364,11 +2364,11 @@ public final class CharSegmentedSortedMultiset implements SegmentedSortedMultiSe
         if(leafCount == 1) {
             for(int ii = 0; ii < size; ii++) {
                 final Character val = (Character)o.get(ii);
-                //region DbArrayEquals
+                //region VectorEquals
                 if(directoryValues[ii] == NULL_CHAR && val != null && val != NULL_CHAR) {
                     return false;
                 }
-                //endregion DbArrayEquals
+                //endregion VectorEquals
 
                 if(!Objects.equals(directoryValues[ii], val)) {
                     return false;
@@ -2382,11 +2382,11 @@ public final class CharSegmentedSortedMultiset implements SegmentedSortedMultiSe
         for (int li = 0; li < leafCount; ++li) {
             for(int ai = 0; ai < leafSizes[li]; ai++) {
                 final Character val = (Character)o.get(nCompared++);
-                //region DbArrayEquals
+                //region VectorEquals
                 if(leafValues[li][ai] == NULL_CHAR && val != null && val != NULL_CHAR) {
                     return false;
                 }
-                //endregion DbArrayEquals
+                //endregion VectorEquals
 
                 if(!Objects.equals(leafValues[li][ai],  val)) {
                     return false;
@@ -2401,14 +2401,14 @@ public final class CharSegmentedSortedMultiset implements SegmentedSortedMultiSe
     public boolean equals(Object o) {
         if (this == o) return true;
         if (!(o instanceof CharSegmentedSortedMultiset)) {
-            //region DbArrayEquals
-            if(o instanceof DbCharArray) {
-                return equalsArray((DbCharArray)o);
+            //region VectorEquals
+            if(o instanceof CharVector) {
+                return equalsArray((CharVector)o);
             }
-            //endregion DbArrayEquals
+            //endregion VectorEquals
 
-            if(o instanceof DbArray) {
-                return equalsArray((DbArray)o);
+            if(o instanceof ObjectVector) {
+                return equalsArray((ObjectVector)o);
             }
             return false;
         }

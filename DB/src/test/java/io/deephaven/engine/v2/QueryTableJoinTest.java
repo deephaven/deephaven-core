@@ -2,9 +2,9 @@ package io.deephaven.engine.v2;
 
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.dbarrays.DbArray;
-import io.deephaven.engine.tables.dbarrays.DbDoubleArray;
-import io.deephaven.engine.tables.dbarrays.DbIntArray;
+import io.deephaven.engine.tables.dbarrays.IntVector;
+import io.deephaven.engine.tables.dbarrays.ObjectVector;
+import io.deephaven.engine.tables.dbarrays.DoubleVector;
 import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.tables.select.QueryScope;
 import io.deephaven.engine.tables.utils.ArrayUtils;
@@ -896,16 +896,16 @@ public class QueryTableJoinTest {
         assertEquals("v", pairMatch.getColumns()[1].getName());
         assertEquals("u", pairMatch.getColumns()[2].getName());
         assertEquals(String.class, pairMatch.getColumns()[0].getType());
-        assertEquals(DbIntArray.class, pairMatch.getColumns()[1].getType());
-        assertEquals(DbDoubleArray.class, pairMatch.getColumns()[2].getType());
+        assertEquals(IntVector.class, pairMatch.getColumns()[1].getType());
+        assertEquals(DoubleVector.class, pairMatch.getColumns()[2].getType());
         assertEquals(asList("c", "e", "g"), asList((Object[]) pairMatch.getColumns()[0].getDirect()));
-        DbIntArray[] vValues = (DbIntArray[]) pairMatch.getColumn("v").getDirect();
+        IntVector[] vValues = (IntVector[]) pairMatch.getColumn("v").getDirect();
         assertEquals(1, vValues[0].get(0));
         assertEquals(2, vValues[1].get(0));
         assertEquals(1, vValues[0].size());
         assertEquals(1, vValues[1].size());
         assertNull(vValues[2]);
-        DbDoubleArray[] uValues = (DbDoubleArray[]) pairMatch.getColumn("u").getDirect();
+        DoubleVector[] uValues = (DoubleVector[]) pairMatch.getColumn("u").getDirect();
         assertEquals(3.0, uValues[0].get(0));
         assertEquals(4.0, uValues[1].get(0));
         assertEquals(1, uValues[0].size());
@@ -918,9 +918,9 @@ public class QueryTableJoinTest {
         assertEquals("String", pairMatch.getColumns()[0].getName());
         assertEquals("v", pairMatch.getColumns()[1].getName());
         assertEquals(String.class, pairMatch.getColumns()[0].getType());
-        assertEquals(DbIntArray.class, pairMatch.getColumns()[1].getType());
+        assertEquals(IntVector.class, pairMatch.getColumns()[1].getType());
         assertEquals(asList("c", "e", "g"), asList((Object[]) pairMatch.getColumns()[0].getDirect()));
-        vValues = (DbIntArray[]) pairMatch.getColumn("v").getDirect();
+        vValues = (IntVector[]) pairMatch.getColumn("v").getDirect();
         assertEquals(1, vValues[0].get(0));
         assertEquals(2, vValues[1].get(0));
         assertEquals(1, vValues[0].size());
@@ -934,16 +934,16 @@ public class QueryTableJoinTest {
         assertEquals("u", pairMatch.getColumns()[1].getName());
         assertEquals("v", pairMatch.getColumns()[2].getName());
         assertEquals(String.class, pairMatch.getColumns()[0].getType());
-        assertEquals(DbDoubleArray.class, pairMatch.getColumns()[1].getType());
-        assertEquals(DbIntArray.class, pairMatch.getColumns()[2].getType());
+        assertEquals(DoubleVector.class, pairMatch.getColumns()[1].getType());
+        assertEquals(IntVector.class, pairMatch.getColumns()[2].getType());
         assertEquals(asList("c", "e", "g"), asList((Object[]) pairMatch.getColumns()[0].getDirect()));
-        vValues = (DbIntArray[]) pairMatch.getColumn("v").getDirect();
+        vValues = (IntVector[]) pairMatch.getColumn("v").getDirect();
         assertEquals(1, vValues[0].get(0));
         assertEquals(2, vValues[1].get(0));
         assertEquals(1, vValues[0].size());
         assertEquals(1, vValues[1].size());
         assertNull(vValues[2]);
-        uValues = (DbDoubleArray[]) pairMatch.getColumn("u").getDirect();
+        uValues = (DoubleVector[]) pairMatch.getColumn("u").getDirect();
         assertEquals(3.0, uValues[0].get(0));
         assertEquals(4.0, uValues[1].get(0));
         assertEquals(1, uValues[0].size());
@@ -969,9 +969,9 @@ public class QueryTableJoinTest {
         assertEquals("String", pairMatch.getColumns()[0].getName());
         assertEquals("v", pairMatch.getColumns()[1].getName());
         assertEquals(String.class, pairMatch.getColumns()[0].getType());
-        assertEquals(DbIntArray.class, pairMatch.getColumns()[1].getType());
+        assertEquals(IntVector.class, pairMatch.getColumns()[1].getType());
         assertEquals(asList("c", "e", "g"), asList((Object[]) pairMatch.getColumns()[0].getDirect()));
-        vValues = (DbIntArray[]) pairMatch.getColumn("v").getDirect();
+        vValues = (IntVector[]) pairMatch.getColumn("v").getDirect();
         assertEquals(1, vValues[0].get(0));
         assertEquals(2, vValues[1].get(0));
         assertEquals(1, vValues[0].size());
@@ -1004,15 +1004,15 @@ public class QueryTableJoinTest {
         assertEquals("String2", noPairMatch.getColumns()[1].getName());
         assertEquals("v", noPairMatch.getColumns()[2].getName());
         assertEquals(String.class, noPairMatch.getColumns()[0].getType());
-        assertEquals(DbArray.class, noPairMatch.getColumns()[1].getType());
-        assertEquals(DbIntArray.class, noPairMatch.getColumns()[2].getType());
+        assertEquals(ObjectVector.class, noPairMatch.getColumns()[1].getType());
+        assertEquals(IntVector.class, noPairMatch.getColumns()[2].getType());
         assertEquals(asList("c", "e", "g"), asList((Object[]) noPairMatch.getColumns()[0].getDirect()));
         // noinspection unchecked
-        final DbArray<String>[] aggregateString = (DbArray<String>[]) noPairMatch.getColumn("String2").getDirect();
+        final ObjectVector<String>[] aggregateString = (ObjectVector<String>[]) noPairMatch.getColumn("String2").getDirect();
         assertEquals(asList("c", "e"), asList(aggregateString[0].toArray()));
         assertEquals(asList("c", "e"), asList(aggregateString[1].toArray()));
         assertEquals(asList("c", "e"), asList(aggregateString[2].toArray()));
-        vValues = (DbIntArray[]) noPairMatch.getColumn("v").getDirect();
+        vValues = (IntVector[]) noPairMatch.getColumn("v").getDirect();
         assertEquals(asList(1, 2), asList(ArrayUtils.getBoxedArray(vValues[0].toArray())));
         assertEquals(asList(1, 2), asList(ArrayUtils.getBoxedArray(vValues[1].toArray())));
         assertEquals(asList(1, 2), asList(ArrayUtils.getBoxedArray(vValues[2].toArray())));
@@ -1025,7 +1025,7 @@ public class QueryTableJoinTest {
         assertEquals("v", pairMatch.getColumns()[2].getName());
         assertEquals(String.class, pairMatch.getColumns()[0].getType());
         assertEquals(String.class, pairMatch.getColumns()[1].getType());
-        assertEquals(DbIntArray.class, pairMatch.getColumns()[2].getType());
+        assertEquals(IntVector.class, pairMatch.getColumns()[2].getType());
         assertEquals(asList("c", "e", "g"), asList((Object[]) pairMatch.getColumns()[0].getDirect()));
 
         final String[] stringColumn = (String[]) pairMatch.getColumn("String2").getDirect();
@@ -1033,7 +1033,7 @@ public class QueryTableJoinTest {
         assertEquals("e", stringColumn[1]);
         assertNull(stringColumn[2]);
 
-        vValues = (DbIntArray[]) pairMatch.getColumn("v").getDirect();
+        vValues = (IntVector[]) pairMatch.getColumn("v").getDirect();
         assertEquals(1, vValues[0].get(0));
         assertEquals(2, vValues[1].get(0));
         assertEquals(1, vValues[0].size());

@@ -3,14 +3,13 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.v2.ssms;
 
+import io.deephaven.engine.tables.dbarrays.*;
 import io.deephaven.engine.tables.utils.DBDateTime;
-import io.deephaven.engine.tables.dbarrays.DbArrayDirect;
+import io.deephaven.engine.tables.dbarrays.ObjectVectorDirect;
 import io.deephaven.engine.tables.utils.DBTimeUtils;
 
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.tables.dbarrays.DbArray;
-import io.deephaven.engine.tables.dbarrays.DbLongArray;
-import io.deephaven.engine.tables.dbarrays.DbLongArrayDirect;
+import io.deephaven.engine.tables.dbarrays.ObjectVector;
 import io.deephaven.engine.tables.utils.ArrayUtils;
 import io.deephaven.engine.util.DhLongComparisons;
 import io.deephaven.engine.v2.by.SumIntChunk;
@@ -27,7 +26,7 @@ import java.util.Objects;
 
 import static io.deephaven.util.QueryConstants.NULL_LONG;
 
-public final class LongSegmentedSortedMultiset implements SegmentedSortedMultiSet<Long>, DbLongArray {
+public final class LongSegmentedSortedMultiset implements SegmentedSortedMultiSet<Long>, LongVector {
     private final int leafSize;
     private int leafCount;
     private int size;
@@ -51,7 +50,7 @@ public final class LongSegmentedSortedMultiset implements SegmentedSortedMultiSe
     private transient boolean accumulateDeltas = false;
     private transient TLongHashSet added;
     private transient TLongHashSet removed;
-    private transient DbLongArray prevValues;
+    private transient LongVector prevValues;
     // endregion Deltas
 
 
@@ -2198,7 +2197,7 @@ public final class LongSegmentedSortedMultiset implements SegmentedSortedMultiSe
         }
 
         if(prevValues == null) {
-            prevValues = new DbLongArrayDirect(keyArray());
+            prevValues = new LongVectorDirect(keyArray());
         }
 
         if (added == null) {
@@ -2227,7 +2226,7 @@ public final class LongSegmentedSortedMultiset implements SegmentedSortedMultiSe
         }
 
         if(prevValues == null) {
-            prevValues = new DbLongArrayDirect(keyArray());
+            prevValues = new LongVectorDirect(keyArray());
         }
 
         if(removed == null) {
@@ -2268,12 +2267,12 @@ public final class LongSegmentedSortedMultiset implements SegmentedSortedMultiSe
         chunk.copyFromTypedArray(added.toArray(), 0, position, added.size());
     }
 
-    public DbLongArray getPrevValues() {
+    public LongVector getPrevValues() {
         return prevValues == null ? this : prevValues;
     }
     // endregion
 
-    // region DBLongArray
+    // region LongVector
     @Override
     public long get(long i) {
         if(i < 0 || i > size()) {
@@ -2295,19 +2294,19 @@ public final class LongSegmentedSortedMultiset implements SegmentedSortedMultiSe
     }
 
     @Override
-    public DbLongArray subArray(long fromIndex, long toIndex) {
-        return new DbLongArrayDirect(keyArray(fromIndex, toIndex));
+    public LongVector subVector(long fromIndex, long toIndex) {
+        return new LongVectorDirect(keyArray(fromIndex, toIndex));
     }
 
     @Override
-    public DbLongArray subArrayByPositions(long[] positions) {
+    public LongVector subVectorByPositions(long[] positions) {
         final long[] keyArray = new long[positions.length];
         int writePos = 0;
         for (long position : positions) {
             keyArray[writePos++] = get(position);
         }
 
-        return new DbLongArrayDirect(keyArray);
+        return new LongVectorDirect(keyArray);
     }
 
     @Override
@@ -2321,13 +2320,13 @@ public final class LongSegmentedSortedMultiset implements SegmentedSortedMultiSe
     }
 
     @Override
-    public DbLongArray getDirect() {
-        return new DbLongArrayDirect(keyArray());
+    public LongVector getDirect() {
+        return new LongVectorDirect(keyArray());
     }
     //endregion
 
-    //region DbArrayEquals
-    private boolean equalsArray(DbLongArray o) {
+    //region VectorEquals
+    private boolean equalsArray(LongVector o) {
         if(size() != o.size()) {
             return false;
         }
@@ -2355,9 +2354,9 @@ public final class LongSegmentedSortedMultiset implements SegmentedSortedMultiSe
 
         return true;
     }
-    //endregion DbArrayEquals
+    //endregion VectorEquals
 
-    private boolean equalsArray(DbArray<?> o) {
+    private boolean equalsArray(ObjectVector<?> o) {
         //region EqualsArrayTypeCheck
         if(o.getComponentType() != long.class && o.getComponentType() != Long.class) {
             return false;
@@ -2371,11 +2370,11 @@ public final class LongSegmentedSortedMultiset implements SegmentedSortedMultiSe
         if(leafCount == 1) {
             for(int ii = 0; ii < size; ii++) {
                 final Long val = (Long)o.get(ii);
-                //region DbArrayEquals
+                //region VectorEquals
                 if(directoryValues[ii] == NULL_LONG && val != null && val != NULL_LONG) {
                     return false;
                 }
-                //endregion DbArrayEquals
+                //endregion VectorEquals
 
                 if(!Objects.equals(directoryValues[ii], val)) {
                     return false;
@@ -2389,11 +2388,11 @@ public final class LongSegmentedSortedMultiset implements SegmentedSortedMultiSe
         for (int li = 0; li < leafCount; ++li) {
             for(int ai = 0; ai < leafSizes[li]; ai++) {
                 final Long val = (Long)o.get(nCompared++);
-                //region DbArrayEquals
+                //region VectorEquals
                 if(leafValues[li][ai] == NULL_LONG && val != null && val != NULL_LONG) {
                     return false;
                 }
-                //endregion DbArrayEquals
+                //endregion VectorEquals
 
                 if(!Objects.equals(leafValues[li][ai],  val)) {
                     return false;
@@ -2408,14 +2407,14 @@ public final class LongSegmentedSortedMultiset implements SegmentedSortedMultiSe
     public boolean equals(Object o) {
         if (this == o) return true;
         if (!(o instanceof LongSegmentedSortedMultiset)) {
-            //region DbArrayEquals
-            if(o instanceof DbLongArray) {
-                return equalsArray((DbLongArray)o);
+            //region VectorEquals
+            if(o instanceof LongVector) {
+                return equalsArray((LongVector)o);
             }
-            //endregion DbArrayEquals
+            //endregion VectorEquals
 
-            if(o instanceof DbArray) {
-                return equalsArray((DbArray)o);
+            if(o instanceof ObjectVector) {
+                return equalsArray((ObjectVector)o);
             }
             return false;
         }
@@ -2511,18 +2510,18 @@ public final class LongSegmentedSortedMultiset implements SegmentedSortedMultiSe
         return DBTimeUtils.nanosToTime(get(i));
     }
 
-    public DbArray<DBDateTime> subArrayAsDate(long fromIndexInclusive, long toIndexExclusive) {
-        return new DbArrayDirect<>(keyArrayAsDate(fromIndexInclusive, toIndexExclusive));
+    public ObjectVector<DBDateTime> subArrayAsDate(long fromIndexInclusive, long toIndexExclusive) {
+        return new ObjectVectorDirect<>(keyArrayAsDate(fromIndexInclusive, toIndexExclusive));
     }
 
-    public DbArray<DBDateTime> subArrayByPositionsAsDates(long[] positions) {
+    public ObjectVector<DBDateTime> subArrayByPositionsAsDates(long[] positions) {
         final DBDateTime[] keyArray = new DBDateTime[positions.length];
         int writePos = 0;
         for (long position : positions) {
             keyArray[writePos++] = getAsDate(position);
         }
 
-        return new DbArrayDirect<>(keyArray);
+        return new ObjectVectorDirect<>(keyArray);
     }
 
     public DBDateTime[] toDateArray() {
@@ -2556,8 +2555,8 @@ public final class LongSegmentedSortedMultiset implements SegmentedSortedMultiSe
     }
 
 
-    public DbArray<DBDateTime> getDirectAsDate() {
-        return new DbArrayDirect<>(keyArrayAsDate());
+    public ObjectVector<DBDateTime> getDirectAsDate() {
+        return new ObjectVectorDirect<>(keyArrayAsDate());
     }
 
     private DBDateTime[] keyArrayAsDate() {

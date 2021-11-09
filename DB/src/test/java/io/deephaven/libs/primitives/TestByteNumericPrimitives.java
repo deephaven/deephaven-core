@@ -42,12 +42,12 @@ public class TestByteNumericPrimitives extends BaseArrayTestCase {
         assertEquals(10.0, avg(new Byte[]{(byte)5, NULL_BYTE, (byte)15}));
         assertEquals(QueryConstants.NULL_DOUBLE, avg((Byte[])null));
 
-        assertEquals(50.0, avg(new DbByteArrayDirect(new byte[]{40, 50, 60})));
-        assertEquals(45.5, avg(new DbByteArrayDirect(new byte[]{40, 51})));
-        assertTrue(Double.isNaN(avg(new DbByteArrayDirect())));
-        assertTrue(Double.isNaN(avg(new DbByteArrayDirect(NULL_BYTE))));
-        assertEquals(10.0, avg(new DbByteArrayDirect(new byte[]{5, NULL_BYTE, 15})));
-        assertEquals(QueryConstants.NULL_DOUBLE, avg((DbByteArrayDirect)null));
+        assertEquals(50.0, avg(new ByteVectorDirect(new byte[]{40, 50, 60})));
+        assertEquals(45.5, avg(new ByteVectorDirect(new byte[]{40, 51})));
+        assertTrue(Double.isNaN(avg(new ByteVectorDirect())));
+        assertTrue(Double.isNaN(avg(new ByteVectorDirect(NULL_BYTE))));
+        assertEquals(10.0, avg(new ByteVectorDirect(new byte[]{5, NULL_BYTE, 15})));
+        assertEquals(QueryConstants.NULL_DOUBLE, avg((ByteVectorDirect)null));
     }
 
     public void testAbsAvg() {
@@ -65,12 +65,12 @@ public class TestByteNumericPrimitives extends BaseArrayTestCase {
         assertEquals(10.0, absAvg(new Byte[]{(byte) 5, NULL_BYTE, (byte) 15}));
         assertEquals(QueryConstants.NULL_DOUBLE, absAvg((Byte[])null));
 
-        assertEquals(50.0, absAvg(new DbByteArrayDirect(new byte[]{40, (byte) 50, 60})));
-        assertEquals(45.5, absAvg(new DbByteArrayDirect(new byte[]{(byte) 40, 51})));
-        assertTrue(Double.isNaN(absAvg(new DbByteArrayDirect())));
-        assertTrue(Double.isNaN(absAvg(new DbByteArrayDirect(NULL_BYTE))));
-        assertEquals(10.0, absAvg(new DbByteArrayDirect((byte) 5, NULL_BYTE, (byte) 15)));
-        assertEquals(QueryConstants.NULL_DOUBLE, absAvg((DbByteArrayDirect)null));
+        assertEquals(50.0, absAvg(new ByteVectorDirect(new byte[]{40, (byte) 50, 60})));
+        assertEquals(45.5, absAvg(new ByteVectorDirect(new byte[]{(byte) 40, 51})));
+        assertTrue(Double.isNaN(absAvg(new ByteVectorDirect())));
+        assertTrue(Double.isNaN(absAvg(new ByteVectorDirect(NULL_BYTE))));
+        assertEquals(10.0, absAvg(new ByteVectorDirect((byte) 5, NULL_BYTE, (byte) 15)));
+        assertEquals(QueryConstants.NULL_DOUBLE, absAvg((ByteVectorDirect)null));
     }
 
     public void testCountPos() {
@@ -86,11 +86,11 @@ public class TestByteNumericPrimitives extends BaseArrayTestCase {
         assertEquals(3, countPos(new Byte[]{(byte)5, NULL_BYTE, (byte)15, (byte) 1, (byte)0}));
         assertEquals(QueryConstants.NULL_INT, countPos((byte[])null));
 
-        assertEquals(4, countPos(new DbByteArrayDirect(new byte[]{40, 50, 60, (byte) 1, 0})));
-        assertEquals(0, countPos(new DbByteArrayDirect()));
-        assertEquals(0, countPos(new DbByteArrayDirect(NULL_BYTE)));
-        assertEquals(3, countPos(new DbByteArrayDirect(new byte[]{5, NULL_BYTE, 15, (byte) 1, 0})));
-        assertEquals(QueryConstants.NULL_INT, countPos((DbByteArrayDirect)null));
+        assertEquals(4, countPos(new ByteVectorDirect(new byte[]{40, 50, 60, (byte) 1, 0})));
+        assertEquals(0, countPos(new ByteVectorDirect()));
+        assertEquals(0, countPos(new ByteVectorDirect(NULL_BYTE)));
+        assertEquals(3, countPos(new ByteVectorDirect(new byte[]{5, NULL_BYTE, 15, (byte) 1, 0})));
+        assertEquals(QueryConstants.NULL_INT, countPos((ByteVectorDirect)null));
     }
 
     public void testCountNeg() {
@@ -106,11 +106,11 @@ public class TestByteNumericPrimitives extends BaseArrayTestCase {
         assertEquals(1, countNeg(new Byte[]{(byte)5, NULL_BYTE, (byte)15, (byte) -1, (byte)0}));
         assertEquals(QueryConstants.NULL_INT, countNeg((Byte[])null));
 
-        assertEquals(2, countNeg(new DbByteArrayDirect(new byte[]{40, (byte) -50, 60, (byte) -1, 0})));
-        assertEquals(0, countNeg(new DbByteArrayDirect()));
-        assertEquals(0, countNeg(new DbByteArrayDirect(NULL_BYTE)));
-        assertEquals(1, countNeg(new DbByteArrayDirect(new byte[]{5, NULL_BYTE, 15, (byte) -1, 0})));
-        assertEquals(QueryConstants.NULL_INT, countNeg((DbByteArrayDirect)null));
+        assertEquals(2, countNeg(new ByteVectorDirect(new byte[]{40, (byte) -50, 60, (byte) -1, 0})));
+        assertEquals(0, countNeg(new ByteVectorDirect()));
+        assertEquals(0, countNeg(new ByteVectorDirect(NULL_BYTE)));
+        assertEquals(1, countNeg(new ByteVectorDirect(new byte[]{5, NULL_BYTE, 15, (byte) -1, 0})));
+        assertEquals(QueryConstants.NULL_INT, countNeg((ByteVectorDirect)null));
     }
 
     public void testCountZero() {
@@ -126,19 +126,19 @@ public class TestByteNumericPrimitives extends BaseArrayTestCase {
         assertEquals(2, countZero(new Byte[]{(byte)0, (byte)5, NULL_BYTE, (byte)0, (byte) -15}));
         assertEquals(QueryConstants.NULL_INT, countZero((Byte[])null));
 
-        assertEquals(2, countZero(new DbByteArrayDirect(new byte[]{0, 40, 50, 60, (byte) -1, 0})));
-        assertEquals(0, countZero(new DbByteArrayDirect()));
-        assertEquals(0, countZero(new DbByteArrayDirect(NULL_BYTE)));
-        assertEquals(2, countZero(new DbByteArrayDirect(new byte[]{0, 5, NULL_BYTE, 0, (byte) -15})));
-        assertEquals(QueryConstants.NULL_INT, countZero((DbByteArrayDirect)null));
+        assertEquals(2, countZero(new ByteVectorDirect(new byte[]{0, 40, 50, 60, (byte) -1, 0})));
+        assertEquals(0, countZero(new ByteVectorDirect()));
+        assertEquals(0, countZero(new ByteVectorDirect(NULL_BYTE)));
+        assertEquals(2, countZero(new ByteVectorDirect(new byte[]{0, 5, NULL_BYTE, 0, (byte) -15})));
+        assertEquals(QueryConstants.NULL_INT, countZero((ByteVectorDirect)null));
     }
 
     public void testMax() {
-        assertEquals((byte) 60, max(new DbByteArrayDirect(new byte[]{0, 40, NULL_BYTE, 50, 60, (byte) 1, 0})));
-        assertEquals((byte) 60, max(new DbByteArrayDirect((byte) 40, NULL_BYTE, (byte) 50, (byte) 60, (byte) 1)));
-        assertEquals(NULL_BYTE, max(new DbByteArrayDirect()));
-        assertEquals(NULL_BYTE, max(new DbByteArrayDirect(NULL_BYTE)));
-        assertEquals(NULL_BYTE, max((DbByteArray) null));
+        assertEquals((byte) 60, max(new ByteVectorDirect(new byte[]{0, 40, NULL_BYTE, 50, 60, (byte) 1, 0})));
+        assertEquals((byte) 60, max(new ByteVectorDirect((byte) 40, NULL_BYTE, (byte) 50, (byte) 60, (byte) 1)));
+        assertEquals(NULL_BYTE, max(new ByteVectorDirect()));
+        assertEquals(NULL_BYTE, max(new ByteVectorDirect(NULL_BYTE)));
+        assertEquals(NULL_BYTE, max((ByteVector) null));
 
         assertEquals((byte) 60, max((byte) 0, (byte) 40, NULL_BYTE, (byte) 50, (byte) 60, (byte) 1, (byte) 0));
         assertEquals((byte) 60, max((byte) 40, NULL_BYTE, (byte) 50, (byte) 60, (byte) -1));
@@ -149,11 +149,11 @@ public class TestByteNumericPrimitives extends BaseArrayTestCase {
     }
 
     public void testMin() {
-        assertEquals((byte) 0, min(new DbByteArrayDirect(new byte[]{0, 40, NULL_BYTE, 50, 60, (byte) 1, 0})));
-        assertEquals((byte) -1, min(new DbByteArrayDirect((byte) 40, NULL_BYTE, (byte) 50, (byte) 60, (byte) -1)));
-        assertEquals(NULL_BYTE, min(new DbByteArrayDirect()));
-        assertEquals(NULL_BYTE, min(new DbByteArrayDirect(NULL_BYTE)));
-        assertEquals(NULL_BYTE, min((DbByteArray) null));
+        assertEquals((byte) 0, min(new ByteVectorDirect(new byte[]{0, 40, NULL_BYTE, 50, 60, (byte) 1, 0})));
+        assertEquals((byte) -1, min(new ByteVectorDirect((byte) 40, NULL_BYTE, (byte) 50, (byte) 60, (byte) -1)));
+        assertEquals(NULL_BYTE, min(new ByteVectorDirect()));
+        assertEquals(NULL_BYTE, min(new ByteVectorDirect(NULL_BYTE)));
+        assertEquals(NULL_BYTE, min((ByteVector) null));
 
         assertEquals((byte) 0, min((byte) 0, (byte) 40, NULL_BYTE, (byte) 50, (byte) 60, (byte) 1, (byte) 0));
         assertEquals((byte) -1, min((byte) 40, NULL_BYTE, (byte) 50, (byte) 60, (byte) -1));
@@ -169,10 +169,10 @@ public class TestByteNumericPrimitives extends BaseArrayTestCase {
         assertEquals(NULL_INT, firstIndexOf(new byte[]{0, 40, NULL_BYTE, 40, 60, 40, 0}, (byte)1));
         assertEquals(QueryConstants.NULL_INT, firstIndexOf((byte[])null, (byte)40));
 
-        assertEquals(1, firstIndexOf(new DbByteArrayDirect(new byte[]{0, 40, NULL_BYTE, 40, 60, 40, 0}), (byte)40));
-        assertEquals(4, firstIndexOf(new DbByteArrayDirect(new byte[]{0, 40, NULL_BYTE, 40, 60, 40, 0}), (byte)60));
-        assertEquals(NULL_INT, firstIndexOf(new DbByteArrayDirect(new byte[]{0, 40, NULL_BYTE, 40, 60, 40, 0}), (byte)1));
-        assertEquals(QueryConstants.NULL_INT, firstIndexOf((DbByteArray) null, (byte)40));
+        assertEquals(1, firstIndexOf(new ByteVectorDirect(new byte[]{0, 40, NULL_BYTE, 40, 60, 40, 0}), (byte)40));
+        assertEquals(4, firstIndexOf(new ByteVectorDirect(new byte[]{0, 40, NULL_BYTE, 40, 60, 40, 0}), (byte)60));
+        assertEquals(NULL_INT, firstIndexOf(new ByteVectorDirect(new byte[]{0, 40, NULL_BYTE, 40, 60, 40, 0}), (byte)1));
+        assertEquals(QueryConstants.NULL_INT, firstIndexOf((ByteVector) null, (byte)40));
     }
 
     public void testIndexOfMax() {
@@ -188,11 +188,11 @@ public class TestByteNumericPrimitives extends BaseArrayTestCase {
         assertEquals(-1, indexOfMax(new Byte[]{NULL_BYTE}));
         assertEquals(QueryConstants.NULL_INT, indexOfMax((Byte[])null));
 
-        assertEquals(4, indexOfMax(new DbByteArrayDirect(new byte[]{0, 40, NULL_BYTE, 50, 60, (byte) 1, 0})));
-        assertEquals(3, indexOfMax(new DbByteArrayDirect((byte) 40, NULL_BYTE, (byte) 50, (byte) 60, (byte) 1)));
-        assertEquals(-1, indexOfMax(new DbByteArrayDirect()));
-        assertEquals(-1, indexOfMax(new DbByteArrayDirect(NULL_BYTE)));
-        assertEquals(QueryConstants.NULL_INT, indexOfMax((DbByteArrayDirect)null));
+        assertEquals(4, indexOfMax(new ByteVectorDirect(new byte[]{0, 40, NULL_BYTE, 50, 60, (byte) 1, 0})));
+        assertEquals(3, indexOfMax(new ByteVectorDirect((byte) 40, NULL_BYTE, (byte) 50, (byte) 60, (byte) 1)));
+        assertEquals(-1, indexOfMax(new ByteVectorDirect()));
+        assertEquals(-1, indexOfMax(new ByteVectorDirect(NULL_BYTE)));
+        assertEquals(QueryConstants.NULL_INT, indexOfMax((ByteVectorDirect)null));
     }
 
     public void testIndexOfMin() {
@@ -208,11 +208,11 @@ public class TestByteNumericPrimitives extends BaseArrayTestCase {
         assertEquals(-1, indexOfMin(new Byte[]{NULL_BYTE}));
         assertEquals(QueryConstants.NULL_INT, indexOfMin((Byte[])null));
 
-        assertEquals(1, indexOfMin(new DbByteArrayDirect(new byte[]{40, 0, NULL_BYTE, 50, 60, (byte) 1, 0})));
-        assertEquals(4, indexOfMin(new DbByteArrayDirect((byte) 40, NULL_BYTE, (byte) 50, (byte) 60, (byte) -1)));
-        assertEquals(-1, indexOfMin(new DbByteArrayDirect()));
-        assertEquals(-1, indexOfMin(new DbByteArrayDirect(NULL_BYTE)));
-        assertEquals(QueryConstants.NULL_INT, indexOfMin((DbByteArrayDirect)null));
+        assertEquals(1, indexOfMin(new ByteVectorDirect(new byte[]{40, 0, NULL_BYTE, 50, 60, (byte) 1, 0})));
+        assertEquals(4, indexOfMin(new ByteVectorDirect((byte) 40, NULL_BYTE, (byte) 50, (byte) 60, (byte) -1)));
+        assertEquals(-1, indexOfMin(new ByteVectorDirect()));
+        assertEquals(-1, indexOfMin(new ByteVectorDirect(NULL_BYTE)));
+        assertEquals(QueryConstants.NULL_INT, indexOfMin((ByteVectorDirect)null));
     }
 
 
@@ -230,50 +230,50 @@ public class TestByteNumericPrimitives extends BaseArrayTestCase {
         assertEquals(var, var(V));
         assertEquals(QueryConstants.NULL_DOUBLE, var((Byte[])null));
 
-        assertEquals(var, var(new DbByteArrayDirect(v)));
-        assertEquals(QueryConstants.NULL_DOUBLE, var((DbByteArrayDirect)null));
+        assertEquals(var, var(new ByteVectorDirect(v)));
+        assertEquals(QueryConstants.NULL_DOUBLE, var((ByteVectorDirect)null));
     }
 
     public void testStd() {
         byte[] v = {0, 40, NULL_BYTE, 50, 60, (byte) -1, 0};
         Byte[] V = {(byte)0, (byte)40, NULL_BYTE, (byte)50, (byte)60, (byte) -1, (byte)0};
 
-        assertEquals(Math.sqrt(var(new DbByteArrayDirect(v))), std(v));
+        assertEquals(Math.sqrt(var(new ByteVectorDirect(v))), std(v));
         assertEquals(QueryConstants.NULL_DOUBLE, std((byte[])null));
 
-        assertEquals(Math.sqrt(var(new DbByteArrayDirect(v))), std(V));
+        assertEquals(Math.sqrt(var(new ByteVectorDirect(v))), std(V));
         assertEquals(QueryConstants.NULL_DOUBLE, std((Byte[])null));
 
-        assertEquals(Math.sqrt(var(new DbByteArrayDirect(v))), std(new DbByteArrayDirect(v)));
-        assertEquals(QueryConstants.NULL_DOUBLE, std((DbByteArrayDirect)null));
+        assertEquals(Math.sqrt(var(new ByteVectorDirect(v))), std(new ByteVectorDirect(v)));
+        assertEquals(QueryConstants.NULL_DOUBLE, std((ByteVectorDirect)null));
     }
 
     public void testSte() {
         byte[] v = {0, 40, NULL_BYTE, 50, 60, (byte) -1, 0};
         Byte[] V = {(byte)0, (byte)40, NULL_BYTE, (byte)50, (byte)60, (byte) -1, (byte)0};
 
-        assertEquals(std(new DbByteArrayDirect(v)) / Math.sqrt(count(new DbByteArrayDirect(v))), ste(v));
+        assertEquals(std(new ByteVectorDirect(v)) / Math.sqrt(count(new ByteVectorDirect(v))), ste(v));
         assertEquals(QueryConstants.NULL_DOUBLE, ste((byte[])null));
 
-        assertEquals(std(new DbByteArrayDirect(v)) / Math.sqrt(count(new DbByteArrayDirect(v))), ste(V));
+        assertEquals(std(new ByteVectorDirect(v)) / Math.sqrt(count(new ByteVectorDirect(v))), ste(V));
         assertEquals(QueryConstants.NULL_DOUBLE, ste((Byte[])null));
 
-        assertEquals(std(new DbByteArrayDirect(v)) / Math.sqrt(count(new DbByteArrayDirect(v))), ste(new DbByteArrayDirect(v)));
-        assertEquals(QueryConstants.NULL_DOUBLE, ste((DbByteArrayDirect)null));
+        assertEquals(std(new ByteVectorDirect(v)) / Math.sqrt(count(new ByteVectorDirect(v))), ste(new ByteVectorDirect(v)));
+        assertEquals(QueryConstants.NULL_DOUBLE, ste((ByteVectorDirect)null));
     }
 
     public void testTstat() {
         byte[] v = {0, 40, NULL_BYTE, 50, 60, (byte) -1, 0};
         Byte[] V = {(byte)0, (byte)40, NULL_BYTE, (byte)50, (byte)60, (byte) -1, (byte)0};
 
-        assertEquals(avg(new DbByteArrayDirect(v)) / ste(new DbByteArrayDirect(v)), tstat(v));
+        assertEquals(avg(new ByteVectorDirect(v)) / ste(new ByteVectorDirect(v)), tstat(v));
         assertEquals(QueryConstants.NULL_DOUBLE, tstat((byte[])null));
 
-        assertEquals(avg(new DbByteArrayDirect(v)) / ste(new DbByteArrayDirect(v)), tstat(V));
+        assertEquals(avg(new ByteVectorDirect(v)) / ste(new ByteVectorDirect(v)), tstat(V));
         assertEquals(QueryConstants.NULL_DOUBLE, tstat((Byte[])null));
 
-        assertEquals(avg(new DbByteArrayDirect(v)) / ste(new DbByteArrayDirect(v)), tstat(new DbByteArrayDirect(v)));
-        assertEquals(QueryConstants.NULL_DOUBLE, tstat((DbByteArrayDirect)null));
+        assertEquals(avg(new ByteVectorDirect(v)) / ste(new ByteVectorDirect(v)), tstat(new ByteVectorDirect(v)));
+        assertEquals(QueryConstants.NULL_DOUBLE, tstat((ByteVectorDirect)null));
     }
 
     public void testCov() {
@@ -290,20 +290,20 @@ public class TestByteNumericPrimitives extends BaseArrayTestCase {
         assertEquals(QueryConstants.NULL_DOUBLE, cov((byte[])null, b));
         assertEquals(QueryConstants.NULL_DOUBLE, cov((byte[])null, (byte[]) null));
 
-        assertEquals(cov, cov(a, new DbByteArrayDirect(b)));
-        assertEquals(QueryConstants.NULL_DOUBLE, cov(a, (DbByteArrayDirect)null));
-        assertEquals(QueryConstants.NULL_DOUBLE, cov((byte[])null, new DbByteArrayDirect(b)));
-        assertEquals(QueryConstants.NULL_DOUBLE, cov((byte[])null, (DbByteArrayDirect)null));
+        assertEquals(cov, cov(a, new ByteVectorDirect(b)));
+        assertEquals(QueryConstants.NULL_DOUBLE, cov(a, (ByteVectorDirect)null));
+        assertEquals(QueryConstants.NULL_DOUBLE, cov((byte[])null, new ByteVectorDirect(b)));
+        assertEquals(QueryConstants.NULL_DOUBLE, cov((byte[])null, (ByteVectorDirect)null));
 
-        assertEquals(cov, cov(new DbByteArrayDirect(a), b));
-        assertEquals(QueryConstants.NULL_DOUBLE, cov(new DbByteArrayDirect(a), (byte[])null));
-        assertEquals(QueryConstants.NULL_DOUBLE, cov((DbByteArrayDirect)null, b));
-        assertEquals(QueryConstants.NULL_DOUBLE, cov((DbByteArrayDirect)null, (byte[])null));
+        assertEquals(cov, cov(new ByteVectorDirect(a), b));
+        assertEquals(QueryConstants.NULL_DOUBLE, cov(new ByteVectorDirect(a), (byte[])null));
+        assertEquals(QueryConstants.NULL_DOUBLE, cov((ByteVectorDirect)null, b));
+        assertEquals(QueryConstants.NULL_DOUBLE, cov((ByteVectorDirect)null, (byte[])null));
 
-        assertEquals(cov, cov(new DbByteArrayDirect(a), new DbByteArrayDirect(b)));
-        assertEquals(QueryConstants.NULL_DOUBLE, cov(new DbByteArrayDirect(a), (DbByteArrayDirect)null));
-        assertEquals(QueryConstants.NULL_DOUBLE, cov((DbByteArrayDirect)null, new DbByteArrayDirect(b)));
-        assertEquals(QueryConstants.NULL_DOUBLE, cov((DbByteArrayDirect)null, (DbByteArrayDirect)null));
+        assertEquals(cov, cov(new ByteVectorDirect(a), new ByteVectorDirect(b)));
+        assertEquals(QueryConstants.NULL_DOUBLE, cov(new ByteVectorDirect(a), (ByteVectorDirect)null));
+        assertEquals(QueryConstants.NULL_DOUBLE, cov((ByteVectorDirect)null, new ByteVectorDirect(b)));
+        assertEquals(QueryConstants.NULL_DOUBLE, cov((ByteVectorDirect)null, (ByteVectorDirect)null));
     }
 
     public void testCor() {
@@ -325,28 +325,28 @@ public class TestByteNumericPrimitives extends BaseArrayTestCase {
         assertEquals(QueryConstants.NULL_DOUBLE, cor((byte[])null, b));
         assertEquals(QueryConstants.NULL_DOUBLE, cor((byte[])null, (byte[])null));
 
-        assertEquals(cor, cor(a, new DbByteArrayDirect(b)));
-        assertEquals(QueryConstants.NULL_DOUBLE, cor(a, (DbByteArrayDirect)null));
-        assertEquals(QueryConstants.NULL_DOUBLE, cor((byte[])null, new DbByteArrayDirect(b)));
-        assertEquals(QueryConstants.NULL_DOUBLE, cor((byte[])null, (DbByteArrayDirect)null));
+        assertEquals(cor, cor(a, new ByteVectorDirect(b)));
+        assertEquals(QueryConstants.NULL_DOUBLE, cor(a, (ByteVectorDirect)null));
+        assertEquals(QueryConstants.NULL_DOUBLE, cor((byte[])null, new ByteVectorDirect(b)));
+        assertEquals(QueryConstants.NULL_DOUBLE, cor((byte[])null, (ByteVectorDirect)null));
 
-        assertEquals(cor, cor(new DbByteArrayDirect(a), b));
-        assertEquals(QueryConstants.NULL_DOUBLE, cor(new DbByteArrayDirect(a), (byte[])null));
-        assertEquals(QueryConstants.NULL_DOUBLE, cor((DbByteArrayDirect)null, b));
-        assertEquals(QueryConstants.NULL_DOUBLE, cor((DbByteArrayDirect)null, (byte[])null));
+        assertEquals(cor, cor(new ByteVectorDirect(a), b));
+        assertEquals(QueryConstants.NULL_DOUBLE, cor(new ByteVectorDirect(a), (byte[])null));
+        assertEquals(QueryConstants.NULL_DOUBLE, cor((ByteVectorDirect)null, b));
+        assertEquals(QueryConstants.NULL_DOUBLE, cor((ByteVectorDirect)null, (byte[])null));
 
-        assertEquals(cor, cor(new DbByteArrayDirect(a), new DbByteArrayDirect(b)));
-        assertEquals(QueryConstants.NULL_DOUBLE, cor(new DbByteArrayDirect(a), (DbByteArrayDirect)null));
-        assertEquals(QueryConstants.NULL_DOUBLE, cor((DbByteArrayDirect)null, new DbByteArrayDirect(b)));
-        assertEquals(QueryConstants.NULL_DOUBLE, cor((DbByteArrayDirect)null, (DbByteArrayDirect)null));
+        assertEquals(cor, cor(new ByteVectorDirect(a), new ByteVectorDirect(b)));
+        assertEquals(QueryConstants.NULL_DOUBLE, cor(new ByteVectorDirect(a), (ByteVectorDirect)null));
+        assertEquals(QueryConstants.NULL_DOUBLE, cor((ByteVectorDirect)null, new ByteVectorDirect(b)));
+        assertEquals(QueryConstants.NULL_DOUBLE, cor((ByteVectorDirect)null, (ByteVectorDirect)null));
     }
 
     public void testSum1() {
-        assertTrue(Math.abs(15 - sum(new DbByteArrayDirect(new byte[]{4, 5, 6}))) == 0.0);
-        assertTrue(Math.abs(0 - sum(new DbByteArrayDirect())) == 0.0);
-        assertTrue(Math.abs(0 - sum(new DbByteArrayDirect(NULL_BYTE))) == 0.0);
-        assertTrue(Math.abs(20 - sum(new DbByteArrayDirect(new byte[]{5, NULL_BYTE, 15}))) == 0.0);
-        assertEquals(NULL_BYTE, sum((DbByteArray) null));
+        assertTrue(Math.abs(15 - sum(new ByteVectorDirect(new byte[]{4, 5, 6}))) == 0.0);
+        assertTrue(Math.abs(0 - sum(new ByteVectorDirect())) == 0.0);
+        assertTrue(Math.abs(0 - sum(new ByteVectorDirect(NULL_BYTE))) == 0.0);
+        assertTrue(Math.abs(20 - sum(new ByteVectorDirect(new byte[]{5, NULL_BYTE, 15}))) == 0.0);
+        assertEquals(NULL_BYTE, sum((ByteVector) null));
     }
 
     public void testSum2() {
@@ -358,12 +358,12 @@ public class TestByteNumericPrimitives extends BaseArrayTestCase {
     }
 
     public void testSumDbArray() {
-        assertEquals(new byte[]{4, 15}, sum(new DbArrayDirect<>(new byte[][]{{5, 4}, {-3, 5}, {2, 6}})));
-        assertEquals(new byte[]{4, NULL_BYTE}, sum(new DbArrayDirect<>(new byte[][]{{5, NULL_BYTE}, {-3, 5}, {2, 6}})));
-        assertEquals(null, sum((DbArray<byte[]>) null));
+        assertEquals(new byte[]{4, 15}, sum(new ObjectVectorDirect<>(new byte[][]{{5, 4}, {-3, 5}, {2, 6}})));
+        assertEquals(new byte[]{4, NULL_BYTE}, sum(new ObjectVectorDirect<>(new byte[][]{{5, NULL_BYTE}, {-3, 5}, {2, 6}})));
+        assertEquals(null, sum((ObjectVector<byte[]>) null));
 
         try {
-            sum(new DbArrayDirect<>(new byte[][]{{5}, {-3, 5}, {2, 6}}));
+            sum(new ObjectVectorDirect<>(new byte[][]{{5}, {-3, 5}, {2, 6}}));
             fail("Should have failed on different length arrays");
         } catch (RequirementFailure e) {
             //pass
@@ -390,20 +390,20 @@ public class TestByteNumericPrimitives extends BaseArrayTestCase {
         assertTrue(Math.abs(75 - product(new byte[]{5, NULL_BYTE, 15})) == 0.0);
         assertEquals(NULL_BYTE, product((byte[]) null));
 
-        assertTrue(Math.abs(120 - product(new DbByteArrayDirect(new byte[]{4, 5, 6}))) == 0.0);
-        assertEquals(NULL_BYTE, product(new DbByteArrayDirect()));
-        assertEquals(NULL_BYTE, product(new DbByteArrayDirect(NULL_BYTE)));
-        assertTrue(Math.abs(75 - product(new DbByteArrayDirect(new byte[]{5, NULL_BYTE, 15}))) == 0.0);
-        assertEquals(NULL_BYTE, product((DbByteArray) null));
+        assertTrue(Math.abs(120 - product(new ByteVectorDirect(new byte[]{4, 5, 6}))) == 0.0);
+        assertEquals(NULL_BYTE, product(new ByteVectorDirect()));
+        assertEquals(NULL_BYTE, product(new ByteVectorDirect(NULL_BYTE)));
+        assertTrue(Math.abs(75 - product(new ByteVectorDirect(new byte[]{5, NULL_BYTE, 15}))) == 0.0);
+        assertEquals(NULL_BYTE, product((ByteVector) null));
     }
 
 //    public void testProdDbArray() {
-//        assertEquals(new byte[]{-30, 120}, product(new DbArrayDirect<>(new byte[][]{{5, 4}, {-3, 5}, {2, 6}})));
-//        assertEquals(new byte[]{-30, NULL_BYTE}, product(new DbArrayDirect<>(new byte[][]{{5, NULL_BYTE}, {-3, 5}, {2, 6}})));
-//        assertEquals(null, product((DbArray<byte[]>) null));
+//        assertEquals(new byte[]{-30, 120}, product(new ObjectVectorDirect<>(new byte[][]{{5, 4}, {-3, 5}, {2, 6}})));
+//        assertEquals(new byte[]{-30, NULL_BYTE}, product(new ObjectVectorDirect<>(new byte[][]{{5, NULL_BYTE}, {-3, 5}, {2, 6}})));
+//        assertEquals(null, product((Vector<byte[]>) null));
 //
 //        try {
-//            product(new DbArrayDirect<>(new byte[][]{{5}, {-3, 5}, {2, 6}}));
+//            product(new ObjectVectorDirect<>(new byte[][]{{5}, {-3, 5}, {2, 6}}));
 //            fail("Should have failed on different length arrays");
 //        } catch (RequirementFailure e) {
 //            //pass
@@ -430,11 +430,11 @@ public class TestByteNumericPrimitives extends BaseArrayTestCase {
         assertEquals(new byte[0], cumsum());
         assertEquals(null, cumsum((byte[]) null));
 
-        assertEquals(new byte[]{1, 3, 6, 10, 15}, cumsum(new DbByteArrayDirect(new byte[]{1, 2, 3, 4, 5})));
-        assertEquals(new byte[]{1, 3, 6, 6, 11}, cumsum(new DbByteArrayDirect(new byte[]{1, 2, 3, NULL_BYTE, 5})));
-        assertEquals(new byte[]{NULL_BYTE, 2, 5, 9, 14}, cumsum(new DbByteArrayDirect(new byte[]{NULL_BYTE, 2, 3, 4, 5})));
-        assertEquals(new byte[0], cumsum(new DbByteArrayDirect()));
-        assertEquals(null, cumsum((DbByteArray) null));
+        assertEquals(new byte[]{1, 3, 6, 10, 15}, cumsum(new ByteVectorDirect(new byte[]{1, 2, 3, 4, 5})));
+        assertEquals(new byte[]{1, 3, 6, 6, 11}, cumsum(new ByteVectorDirect(new byte[]{1, 2, 3, NULL_BYTE, 5})));
+        assertEquals(new byte[]{NULL_BYTE, 2, 5, 9, 14}, cumsum(new ByteVectorDirect(new byte[]{NULL_BYTE, 2, 3, 4, 5})));
+        assertEquals(new byte[0], cumsum(new ByteVectorDirect()));
+        assertEquals(null, cumsum((ByteVector) null));
     }
 
     public void testCumProdArray() {
@@ -444,11 +444,11 @@ public class TestByteNumericPrimitives extends BaseArrayTestCase {
         assertEquals(new byte[0], cumprod());
         assertEquals(null, cumprod((byte[]) null));
 
-        assertEquals(new byte[]{1, 2, 6, 24, 120}, cumprod(new DbByteArrayDirect(new byte[]{1, 2, 3, 4, 5})));
-        assertEquals(new byte[]{1, 2, 6, 6, 30}, cumprod(new DbByteArrayDirect(new byte[]{1, 2, 3, NULL_BYTE, 5})));
-        assertEquals(new byte[]{NULL_BYTE, 2, 6, 24, 120}, cumprod(new DbByteArrayDirect(new byte[]{NULL_BYTE, 2, 3, 4, 5})));
-        assertEquals(new byte[0], cumprod(new DbByteArrayDirect()));
-        assertEquals(null, cumprod((DbByteArray) null));
+        assertEquals(new byte[]{1, 2, 6, 24, 120}, cumprod(new ByteVectorDirect(new byte[]{1, 2, 3, 4, 5})));
+        assertEquals(new byte[]{1, 2, 6, 6, 30}, cumprod(new ByteVectorDirect(new byte[]{1, 2, 3, NULL_BYTE, 5})));
+        assertEquals(new byte[]{NULL_BYTE, 2, 6, 24, 120}, cumprod(new ByteVectorDirect(new byte[]{NULL_BYTE, 2, 3, 4, 5})));
+        assertEquals(new byte[0], cumprod(new ByteVectorDirect()));
+        assertEquals(null, cumprod((ByteVector) null));
     }
 
     public void testAbs() {
@@ -609,83 +609,83 @@ public class TestByteNumericPrimitives extends BaseArrayTestCase {
         assertEquals(2, binSearchIndex(new byte[]{1,3,4}, (byte)4, BinSearch.BS_ANY));
         assertEquals(2, binSearchIndex(new byte[]{1,3,4}, (byte)5, BinSearch.BS_ANY));
 
-        assertEquals(NULL_INT, binSearchIndex((DbByteArray) null, (byte) 0, BinSearch.BS_ANY));
-        assertEquals(-1, binSearchIndex(new DbByteArrayDirect(new byte[]{1,3,4}), (byte)0, BinSearch.BS_ANY));
-        assertEquals(0, binSearchIndex(new DbByteArrayDirect(new byte[]{1,3,4}), (byte)1, BinSearch.BS_ANY));
-        assertEquals(0, binSearchIndex(new DbByteArrayDirect(new byte[]{1,3,4}), (byte)2, BinSearch.BS_ANY));
-        assertEquals(1, binSearchIndex(new DbByteArrayDirect(new byte[]{1,3,4}), (byte)3, BinSearch.BS_ANY));
-        assertEquals(2, binSearchIndex(new DbByteArrayDirect(new byte[]{1,3,4}), (byte)4, BinSearch.BS_ANY));
-        assertEquals(2, binSearchIndex(new DbByteArrayDirect(new byte[]{1,3,4}), (byte)5, BinSearch.BS_ANY));
+        assertEquals(NULL_INT, binSearchIndex((ByteVector) null, (byte) 0, BinSearch.BS_ANY));
+        assertEquals(-1, binSearchIndex(new ByteVectorDirect(new byte[]{1,3,4}), (byte)0, BinSearch.BS_ANY));
+        assertEquals(0, binSearchIndex(new ByteVectorDirect(new byte[]{1,3,4}), (byte)1, BinSearch.BS_ANY));
+        assertEquals(0, binSearchIndex(new ByteVectorDirect(new byte[]{1,3,4}), (byte)2, BinSearch.BS_ANY));
+        assertEquals(1, binSearchIndex(new ByteVectorDirect(new byte[]{1,3,4}), (byte)3, BinSearch.BS_ANY));
+        assertEquals(2, binSearchIndex(new ByteVectorDirect(new byte[]{1,3,4}), (byte)4, BinSearch.BS_ANY));
+        assertEquals(2, binSearchIndex(new ByteVectorDirect(new byte[]{1,3,4}), (byte)5, BinSearch.BS_ANY));
     }
 
     public void testRawBinSearchIndex() {
-        assertEquals(NULL_INT, rawBinSearchIndex((DbByteArray)null, (byte) 0, BinSearch.BS_ANY));
-        assertEquals(NULL_INT, rawBinSearchIndex((DbByteArray)null, (byte) 0, BinSearch.BS_HIGHEST));
-        assertEquals(NULL_INT, rawBinSearchIndex((DbByteArray)null, (byte) 0, BinSearch.BS_LOWEST));
+        assertEquals(NULL_INT, rawBinSearchIndex((ByteVector)null, (byte) 0, BinSearch.BS_ANY));
+        assertEquals(NULL_INT, rawBinSearchIndex((ByteVector)null, (byte) 0, BinSearch.BS_HIGHEST));
+        assertEquals(NULL_INT, rawBinSearchIndex((ByteVector)null, (byte) 0, BinSearch.BS_LOWEST));
 
         byte[] empty = {};
-        assertEquals(-1, rawBinSearchIndex(new DbByteArrayDirect(empty), (byte) 0, BinSearch.BS_ANY));
-        assertEquals(-1, rawBinSearchIndex(new DbByteArrayDirect(empty), (byte) 0, BinSearch.BS_HIGHEST));
-        assertEquals(-1, rawBinSearchIndex(new DbByteArrayDirect(empty), (byte) 0, BinSearch.BS_LOWEST));
+        assertEquals(-1, rawBinSearchIndex(new ByteVectorDirect(empty), (byte) 0, BinSearch.BS_ANY));
+        assertEquals(-1, rawBinSearchIndex(new ByteVectorDirect(empty), (byte) 0, BinSearch.BS_HIGHEST));
+        assertEquals(-1, rawBinSearchIndex(new ByteVectorDirect(empty), (byte) 0, BinSearch.BS_LOWEST));
 
         byte[] one = {11};
-        assertEquals(-1, rawBinSearchIndex(new DbByteArrayDirect(one), (byte) 0, BinSearch.BS_ANY));
-        assertEquals(-1, rawBinSearchIndex(new DbByteArrayDirect(one), (byte) 0, BinSearch.BS_HIGHEST));
-        assertEquals(-1, rawBinSearchIndex(new DbByteArrayDirect(one), (byte) 0, BinSearch.BS_LOWEST));
+        assertEquals(-1, rawBinSearchIndex(new ByteVectorDirect(one), (byte) 0, BinSearch.BS_ANY));
+        assertEquals(-1, rawBinSearchIndex(new ByteVectorDirect(one), (byte) 0, BinSearch.BS_HIGHEST));
+        assertEquals(-1, rawBinSearchIndex(new ByteVectorDirect(one), (byte) 0, BinSearch.BS_LOWEST));
 
-        assertEquals(-2, rawBinSearchIndex(new DbByteArrayDirect(one), (byte) 12, BinSearch.BS_ANY));
-        assertEquals(-2, rawBinSearchIndex(new DbByteArrayDirect(one), (byte) 12, BinSearch.BS_HIGHEST));
-        assertEquals(-2, rawBinSearchIndex(new DbByteArrayDirect(one), (byte) 12, BinSearch.BS_LOWEST));
+        assertEquals(-2, rawBinSearchIndex(new ByteVectorDirect(one), (byte) 12, BinSearch.BS_ANY));
+        assertEquals(-2, rawBinSearchIndex(new ByteVectorDirect(one), (byte) 12, BinSearch.BS_HIGHEST));
+        assertEquals(-2, rawBinSearchIndex(new ByteVectorDirect(one), (byte) 12, BinSearch.BS_LOWEST));
 
-        assertEquals(0, rawBinSearchIndex(new DbByteArrayDirect(one), (byte) 11, BinSearch.BS_ANY));
-        assertEquals(0, rawBinSearchIndex(new DbByteArrayDirect(one), (byte) 11, BinSearch.BS_HIGHEST));
-        assertEquals(0, rawBinSearchIndex(new DbByteArrayDirect(one), (byte) 11, BinSearch.BS_LOWEST));
+        assertEquals(0, rawBinSearchIndex(new ByteVectorDirect(one), (byte) 11, BinSearch.BS_ANY));
+        assertEquals(0, rawBinSearchIndex(new ByteVectorDirect(one), (byte) 11, BinSearch.BS_HIGHEST));
+        assertEquals(0, rawBinSearchIndex(new ByteVectorDirect(one), (byte) 11, BinSearch.BS_LOWEST));
 
 
         byte[] v = {1, 2, 2, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5, 5, 10, 10, 10, 10, 10, 11, 11, 11, 11, 11, 15, 20, 20, 25, 25};
 
-        rawBinSearchIndex((DbByteArray)null, (byte) 0, null);
+        rawBinSearchIndex((ByteVector)null, (byte) 0, null);
 
-        assertEquals(-1, rawBinSearchIndex(new DbByteArrayDirect(v), (byte) 0, BinSearch.BS_ANY));
-        assertEquals(-1, rawBinSearchIndex(new DbByteArrayDirect(v), (byte) 0, BinSearch.BS_HIGHEST));
-        assertEquals(-1, rawBinSearchIndex(new DbByteArrayDirect(v), (byte) 0, BinSearch.BS_LOWEST));
+        assertEquals(-1, rawBinSearchIndex(new ByteVectorDirect(v), (byte) 0, BinSearch.BS_ANY));
+        assertEquals(-1, rawBinSearchIndex(new ByteVectorDirect(v), (byte) 0, BinSearch.BS_HIGHEST));
+        assertEquals(-1, rawBinSearchIndex(new ByteVectorDirect(v), (byte) 0, BinSearch.BS_LOWEST));
 
-        assertEquals(-v.length - 1, rawBinSearchIndex(new DbByteArrayDirect(v), (byte) 26, BinSearch.BS_ANY));
-        assertEquals(-v.length - 1, rawBinSearchIndex(new DbByteArrayDirect(v), (byte) 26, BinSearch.BS_HIGHEST));
-        assertEquals(-v.length - 1, rawBinSearchIndex(new DbByteArrayDirect(v), (byte) 26, BinSearch.BS_LOWEST));
+        assertEquals(-v.length - 1, rawBinSearchIndex(new ByteVectorDirect(v), (byte) 26, BinSearch.BS_ANY));
+        assertEquals(-v.length - 1, rawBinSearchIndex(new ByteVectorDirect(v), (byte) 26, BinSearch.BS_HIGHEST));
+        assertEquals(-v.length - 1, rawBinSearchIndex(new ByteVectorDirect(v), (byte) 26, BinSearch.BS_LOWEST));
 
-        assertEquals(0, rawBinSearchIndex(new DbByteArrayDirect(v), (byte) 1, BinSearch.BS_ANY));
-        assertEquals(0, rawBinSearchIndex(new DbByteArrayDirect(v), (byte) 1, BinSearch.BS_HIGHEST));
-        assertEquals(0, rawBinSearchIndex(new DbByteArrayDirect(v), (byte) 1, BinSearch.BS_LOWEST));
+        assertEquals(0, rawBinSearchIndex(new ByteVectorDirect(v), (byte) 1, BinSearch.BS_ANY));
+        assertEquals(0, rawBinSearchIndex(new ByteVectorDirect(v), (byte) 1, BinSearch.BS_HIGHEST));
+        assertEquals(0, rawBinSearchIndex(new ByteVectorDirect(v), (byte) 1, BinSearch.BS_LOWEST));
 
-        assertEquals(2, rawBinSearchIndex(new DbByteArrayDirect(v), (byte) 2, BinSearch.BS_HIGHEST));
-        assertEquals(1, rawBinSearchIndex(new DbByteArrayDirect(v), (byte) 2, BinSearch.BS_LOWEST));
+        assertEquals(2, rawBinSearchIndex(new ByteVectorDirect(v), (byte) 2, BinSearch.BS_HIGHEST));
+        assertEquals(1, rawBinSearchIndex(new ByteVectorDirect(v), (byte) 2, BinSearch.BS_LOWEST));
 
-        assertEquals(5, rawBinSearchIndex(new DbByteArrayDirect(v), (byte) 3, BinSearch.BS_HIGHEST));
-        assertEquals(3, rawBinSearchIndex(new DbByteArrayDirect(v), (byte) 3, BinSearch.BS_LOWEST));
+        assertEquals(5, rawBinSearchIndex(new ByteVectorDirect(v), (byte) 3, BinSearch.BS_HIGHEST));
+        assertEquals(3, rawBinSearchIndex(new ByteVectorDirect(v), (byte) 3, BinSearch.BS_LOWEST));
 
-        assertEquals(9, rawBinSearchIndex(new DbByteArrayDirect(v), (byte) 4, BinSearch.BS_HIGHEST));
-        assertEquals(6, rawBinSearchIndex(new DbByteArrayDirect(v), (byte) 4, BinSearch.BS_LOWEST));
+        assertEquals(9, rawBinSearchIndex(new ByteVectorDirect(v), (byte) 4, BinSearch.BS_HIGHEST));
+        assertEquals(6, rawBinSearchIndex(new ByteVectorDirect(v), (byte) 4, BinSearch.BS_LOWEST));
 
-        assertEquals(14, rawBinSearchIndex(new DbByteArrayDirect(v), (byte) 5, BinSearch.BS_HIGHEST));
-        assertEquals(10, rawBinSearchIndex(new DbByteArrayDirect(v), (byte) 5, BinSearch.BS_LOWEST));
+        assertEquals(14, rawBinSearchIndex(new ByteVectorDirect(v), (byte) 5, BinSearch.BS_HIGHEST));
+        assertEquals(10, rawBinSearchIndex(new ByteVectorDirect(v), (byte) 5, BinSearch.BS_LOWEST));
 
-        assertEquals(-16, rawBinSearchIndex(new DbByteArrayDirect(v), (byte) 7, BinSearch.BS_ANY));
-        assertEquals(-16, rawBinSearchIndex(new DbByteArrayDirect(v), (byte) 7, BinSearch.BS_HIGHEST));
-        assertEquals(-16, rawBinSearchIndex(new DbByteArrayDirect(v), (byte) 7, BinSearch.BS_LOWEST));
+        assertEquals(-16, rawBinSearchIndex(new ByteVectorDirect(v), (byte) 7, BinSearch.BS_ANY));
+        assertEquals(-16, rawBinSearchIndex(new ByteVectorDirect(v), (byte) 7, BinSearch.BS_HIGHEST));
+        assertEquals(-16, rawBinSearchIndex(new ByteVectorDirect(v), (byte) 7, BinSearch.BS_LOWEST));
 
-        assertEquals(19, rawBinSearchIndex(new DbByteArrayDirect(v), (byte) 10, BinSearch.BS_HIGHEST));
-        assertEquals(15, rawBinSearchIndex(new DbByteArrayDirect(v), (byte) 10, BinSearch.BS_LOWEST));
+        assertEquals(19, rawBinSearchIndex(new ByteVectorDirect(v), (byte) 10, BinSearch.BS_HIGHEST));
+        assertEquals(15, rawBinSearchIndex(new ByteVectorDirect(v), (byte) 10, BinSearch.BS_LOWEST));
 
-        assertEquals(24, rawBinSearchIndex(new DbByteArrayDirect(v), (byte) 11, BinSearch.BS_HIGHEST));
-        assertEquals(20, rawBinSearchIndex(new DbByteArrayDirect(v), (byte) 11, BinSearch.BS_LOWEST));
+        assertEquals(24, rawBinSearchIndex(new ByteVectorDirect(v), (byte) 11, BinSearch.BS_HIGHEST));
+        assertEquals(20, rawBinSearchIndex(new ByteVectorDirect(v), (byte) 11, BinSearch.BS_LOWEST));
 
-        assertEquals(25, rawBinSearchIndex(new DbByteArrayDirect(v), (byte) 15, BinSearch.BS_ANY));
-        assertEquals(25, rawBinSearchIndex(new DbByteArrayDirect(v), (byte) 15, BinSearch.BS_HIGHEST));
-        assertEquals(25, rawBinSearchIndex(new DbByteArrayDirect(v), (byte) 15, BinSearch.BS_LOWEST));
+        assertEquals(25, rawBinSearchIndex(new ByteVectorDirect(v), (byte) 15, BinSearch.BS_ANY));
+        assertEquals(25, rawBinSearchIndex(new ByteVectorDirect(v), (byte) 15, BinSearch.BS_HIGHEST));
+        assertEquals(25, rawBinSearchIndex(new ByteVectorDirect(v), (byte) 15, BinSearch.BS_LOWEST));
 
-        assertEquals(29, rawBinSearchIndex(new DbByteArrayDirect(v), (byte) 25, BinSearch.BS_HIGHEST));
-        assertEquals(28, rawBinSearchIndex(new DbByteArrayDirect(v), (byte) 25, BinSearch.BS_LOWEST));
+        assertEquals(29, rawBinSearchIndex(new ByteVectorDirect(v), (byte) 25, BinSearch.BS_HIGHEST));
+        assertEquals(28, rawBinSearchIndex(new ByteVectorDirect(v), (byte) 25, BinSearch.BS_LOWEST));
 
         /////
 
@@ -756,41 +756,41 @@ public class TestByteNumericPrimitives extends BaseArrayTestCase {
 
     public void testSort() {
         final byte[] bytes = new byte[]{1, -5, -2, -2, 96, 0, 12, NULL_BYTE, NULL_BYTE};
-        final DbByteArray sort = sort(new DbByteArrayDirect(bytes));
-        final DbByteArray expected = new DbByteArrayDirect(new byte[]{NULL_BYTE, NULL_BYTE, -5, -2, -2, 0, 1, 12, 96});
+        final ByteVector sort = sort(new ByteVectorDirect(bytes));
+        final ByteVector expected = new ByteVectorDirect(new byte[]{NULL_BYTE, NULL_BYTE, -5, -2, -2, 0, 1, 12, 96});
         assertEquals(expected, sort);
 
         byte[] sortedArray = sort(bytes);
         assertEquals(new byte[]{NULL_BYTE, NULL_BYTE, -5, -2, -2, 0, 1, 12, 96}, sortedArray);
 
-        assertNull(sort((DbByteArray)null));
+        assertNull(sort((ByteVector)null));
         assertNull(sort((byte[])null));
         assertNull(sort((Byte[])null));
-        assertEquals(new DbByteArrayDirect(), sort(new DbByteArrayDirect()));
+        assertEquals(new ByteVectorDirect(), sort(new ByteVectorDirect()));
         assertEquals(new byte[]{}, sort(new byte[]{}));
         assertEquals(new byte[]{}, sort(new Byte[]{}));
     }
 
     public void testSortDescending() {
         final byte[] bytes = new byte[]{1, -5, -2, -2, 96, 0, 12, NULL_BYTE, NULL_BYTE};
-        final DbByteArray sort = sortDescending(new DbByteArrayDirect(bytes));
-        final DbByteArray expected = new DbByteArrayDirect(new byte[]{96, 12, 1, 0, -2, -2, -5, NULL_BYTE, NULL_BYTE});
+        final ByteVector sort = sortDescending(new ByteVectorDirect(bytes));
+        final ByteVector expected = new ByteVectorDirect(new byte[]{96, 12, 1, 0, -2, -2, -5, NULL_BYTE, NULL_BYTE});
         assertEquals(expected, sort);
 
         byte[] sortedArray = sortDescending(bytes);
         assertEquals(new byte[]{96, 12, 1, 0, -2, -2, -5, NULL_BYTE, NULL_BYTE}, sortedArray);
 
-        assertNull(sortDescending((DbByteArray)null));
+        assertNull(sortDescending((ByteVector)null));
         assertNull(sortDescending((byte[])null));
         assertNull(sortDescending((Byte[])null));
-        assertEquals(new DbByteArrayDirect(), sortDescending(new DbByteArrayDirect()));
+        assertEquals(new ByteVectorDirect(), sortDescending(new ByteVectorDirect()));
         assertEquals(new byte[]{}, sortDescending(new byte[]{}));
         assertEquals(new byte[]{}, sortDescending(new Byte[]{}));
     }
 
     public void testSortsExceptions() {
-        DbByteArray dbByteArray = null;
-        DbByteArray sort = sort(dbByteArray);
+        ByteVector byteVector = null;
+        ByteVector sort = sort(byteVector);
         assertNull(sort);
 
         byte[] bytes = null;
@@ -798,16 +798,16 @@ public class TestByteNumericPrimitives extends BaseArrayTestCase {
         assertNull(sortArray);
 
         bytes = new byte[]{};
-        sort = sort(new DbByteArrayDirect(bytes));
-        assertEquals(new DbByteArrayDirect(), sort);
+        sort = sort(new ByteVectorDirect(bytes));
+        assertEquals(new ByteVectorDirect(), sort);
 
         sortArray = sort(bytes);
         assertTrue(ArrayUtils.isEmpty(sortArray));
     }
 
     public void testSortDescendingExceptions() {
-        DbByteArray dbByteArray = null;
-        DbByteArray sort = sortDescending(dbByteArray);
+        ByteVector byteVector = null;
+        ByteVector sort = sortDescending(byteVector);
         assertNull(sort);
 
         byte[] bytes = null;
@@ -815,8 +815,8 @@ public class TestByteNumericPrimitives extends BaseArrayTestCase {
         assertNull(sortArray);
 
         bytes = new byte[]{};
-        sort = sortDescending(new DbByteArrayDirect(bytes));
-        assertEquals(new DbByteArrayDirect(), sort);
+        sort = sortDescending(new ByteVectorDirect(bytes));
+        assertEquals(new ByteVectorDirect(), sort);
 
         sortArray = sortDescending(bytes);
         assertTrue(ArrayUtils.isEmpty(sortArray));
@@ -845,9 +845,9 @@ public class TestByteNumericPrimitives extends BaseArrayTestCase {
         assertEquals(3.5, median(new Byte[]{(byte)5,(byte)4,(byte)2,(byte)3}));
         assertEquals(NULL_DOUBLE, median((Byte[])null));
 
-        assertEquals(3.0, median(new DbByteArrayDirect(new byte[]{4,2,3})));
-        assertEquals(3.5, median(new DbByteArrayDirect(new byte[]{5,4,2,3})));
-        assertEquals(NULL_DOUBLE, median((DbByteArray) null));
+        assertEquals(3.0, median(new ByteVectorDirect(new byte[]{4,2,3})));
+        assertEquals(3.5, median(new ByteVectorDirect(new byte[]{5,4,2,3})));
+        assertEquals(NULL_DOUBLE, median((ByteVector) null));
     }
 
     public void testPercentile() {
@@ -855,9 +855,9 @@ public class TestByteNumericPrimitives extends BaseArrayTestCase {
         assertEquals(3.0, percentile(0.50, new byte[]{4,2,3}));
         assertEquals(NULL_DOUBLE, percentile(0.25, (byte[])null));
 
-        assertEquals(2.0, percentile(0.00, new DbByteArrayDirect(new byte[]{4,2,3})));
-        assertEquals(3.0, percentile(0.50, new DbByteArrayDirect(new byte[]{4,2,3})));
-        assertEquals(NULL_DOUBLE, percentile(0.25, (DbByteArray) null));
+        assertEquals(2.0, percentile(0.00, new ByteVectorDirect(new byte[]{4,2,3})));
+        assertEquals(3.0, percentile(0.50, new ByteVectorDirect(new byte[]{4,2,3})));
+        assertEquals(NULL_DOUBLE, percentile(0.25, (ByteVector) null));
     }
 
     public void testWsum() {
@@ -883,69 +883,69 @@ public class TestByteNumericPrimitives extends BaseArrayTestCase {
 
         /////
 
-        assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, wsum(new DbByteArrayDirect(new byte[]{1,2,3,NULL_BYTE,5}), new byte[]{4,5,6,7,NULL_BYTE}));
-        assertEquals(NULL_DOUBLE, wsum((DbByteArray) null, new byte[]{4,5,6}));
-        assertEquals(NULL_DOUBLE, wsum(new DbByteArrayDirect(new byte[]{1,2,3}), (byte[])null));
+        assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, wsum(new ByteVectorDirect(new byte[]{1,2,3,NULL_BYTE,5}), new byte[]{4,5,6,7,NULL_BYTE}));
+        assertEquals(NULL_DOUBLE, wsum((ByteVector) null, new byte[]{4,5,6}));
+        assertEquals(NULL_DOUBLE, wsum(new ByteVectorDirect(new byte[]{1,2,3}), (byte[])null));
 
-        assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, wsum(new DbByteArrayDirect(new byte[]{1,2,3,NULL_BYTE,5}), new int[]{4,5,6,7,NULL_INT}));
-        assertEquals(NULL_DOUBLE, wsum((DbByteArray)null, new int[]{4,5,6}));
-        assertEquals(NULL_DOUBLE, wsum(new DbByteArrayDirect(new byte[]{1,2,3}), (int[])null));
+        assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, wsum(new ByteVectorDirect(new byte[]{1,2,3,NULL_BYTE,5}), new int[]{4,5,6,7,NULL_INT}));
+        assertEquals(NULL_DOUBLE, wsum((ByteVector)null, new int[]{4,5,6}));
+        assertEquals(NULL_DOUBLE, wsum(new ByteVectorDirect(new byte[]{1,2,3}), (int[])null));
 
-        assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, wsum(new DbByteArrayDirect(new byte[]{1,2,3,NULL_BYTE,5}), new long[]{4,5,6,7,NULL_LONG}));
-        assertEquals(NULL_DOUBLE, wsum((DbByteArray)null, new long[]{4,5,6}));
-        assertEquals(NULL_DOUBLE, wsum(new DbByteArrayDirect(new byte[]{1,2,3}), (long[])null));
+        assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, wsum(new ByteVectorDirect(new byte[]{1,2,3,NULL_BYTE,5}), new long[]{4,5,6,7,NULL_LONG}));
+        assertEquals(NULL_DOUBLE, wsum((ByteVector)null, new long[]{4,5,6}));
+        assertEquals(NULL_DOUBLE, wsum(new ByteVectorDirect(new byte[]{1,2,3}), (long[])null));
 
-        assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, wsum(new DbByteArrayDirect(new byte[]{1,2,3,NULL_BYTE,5}), new double[]{4,5,6,7,NULL_DOUBLE}));
-        assertEquals(NULL_DOUBLE, wsum((DbByteArray)null, new double[]{4,5,6}));
-        assertEquals(NULL_DOUBLE, wsum(new DbByteArrayDirect(new byte[]{1,2,3}), (double[])null));
+        assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, wsum(new ByteVectorDirect(new byte[]{1,2,3,NULL_BYTE,5}), new double[]{4,5,6,7,NULL_DOUBLE}));
+        assertEquals(NULL_DOUBLE, wsum((ByteVector)null, new double[]{4,5,6}));
+        assertEquals(NULL_DOUBLE, wsum(new ByteVectorDirect(new byte[]{1,2,3}), (double[])null));
 
-        assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, wsum(new DbByteArrayDirect(new byte[]{1,2,3,NULL_BYTE,5}), new float[]{4,5,6,7,NULL_FLOAT}));
-        assertEquals(NULL_DOUBLE, wsum((DbByteArray)null, new float[]{4,5,6}));
-        assertEquals(NULL_DOUBLE, wsum(new DbByteArrayDirect(new byte[]{1,2,3}), (float[])null));
-
-        /////
-
-        assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, wsum(new byte[]{1,2,3,NULL_BYTE,5}, new DbByteArrayDirect(new byte[]{4,5,6,7,NULL_BYTE})));
-        assertEquals(NULL_DOUBLE, wsum((byte[])null, new DbByteArrayDirect(new byte[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, wsum(new byte[]{1,2,3}, (DbByteArray) null));
-
-        assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, wsum(new byte[]{1,2,3,NULL_BYTE,5}, new DbIntArrayDirect(new int[]{4,5,6,7,NULL_INT})));
-        assertEquals(NULL_DOUBLE, wsum((byte[])null, new DbIntArrayDirect(new int[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, wsum(new byte[]{1,2,3}, (DbIntArray) null));
-
-        assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, wsum(new byte[]{1,2,3,NULL_BYTE,5}, new DbLongArrayDirect(new long[]{4,5,6,7,NULL_LONG})));
-        assertEquals(NULL_DOUBLE, wsum((byte[])null, new DbLongArrayDirect(new long[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, wsum(new byte[]{1,2,3}, (DbLongArray) null));
-
-        assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, wsum(new byte[]{1,2,3,NULL_BYTE,5}, new DbDoubleArrayDirect(new double[]{4,5,6,7,NULL_DOUBLE})));
-        assertEquals(NULL_DOUBLE, wsum((byte[])null, new DbDoubleArrayDirect(new double[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, wsum(new byte[]{1,2,3}, (DbDoubleArray)null));
-
-        assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, wsum(new byte[]{1,2,3,NULL_BYTE,5}, new DbFloatArrayDirect(new float[]{4,5,6,7,NULL_FLOAT})));
-        assertEquals(NULL_DOUBLE, wsum((byte[])null, new DbFloatArrayDirect(new float[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, wsum(new byte[]{1,2,3}, (DbFloatArray)null));
+        assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, wsum(new ByteVectorDirect(new byte[]{1,2,3,NULL_BYTE,5}), new float[]{4,5,6,7,NULL_FLOAT}));
+        assertEquals(NULL_DOUBLE, wsum((ByteVector)null, new float[]{4,5,6}));
+        assertEquals(NULL_DOUBLE, wsum(new ByteVectorDirect(new byte[]{1,2,3}), (float[])null));
 
         /////
 
-        assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, wsum(new DbByteArrayDirect(new byte[]{1,2,3,NULL_BYTE,5}), new DbByteArrayDirect(new byte[]{4,5,6,7,NULL_BYTE})));
-        assertEquals(NULL_DOUBLE, wsum((DbByteArray) null, new DbByteArrayDirect(new byte[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, wsum(new DbByteArrayDirect(new byte[]{1,2,3}), (DbByteArray) null));
+        assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, wsum(new byte[]{1,2,3,NULL_BYTE,5}, new ByteVectorDirect(new byte[]{4,5,6,7,NULL_BYTE})));
+        assertEquals(NULL_DOUBLE, wsum((byte[])null, new ByteVectorDirect(new byte[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, wsum(new byte[]{1,2,3}, (ByteVector) null));
 
-        assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, wsum(new DbByteArrayDirect(new byte[]{1,2,3,NULL_BYTE,5}), new DbIntArrayDirect(new int[]{4,5,6,7,NULL_INT})));
-        assertEquals(NULL_DOUBLE, wsum((DbByteArray) null, new DbIntArrayDirect(new int[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, wsum(new DbByteArrayDirect(new byte[]{1,2,3}), (DbIntArray) null));
+        assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, wsum(new byte[]{1,2,3,NULL_BYTE,5}, new IntVectorDirect(new int[]{4,5,6,7,NULL_INT})));
+        assertEquals(NULL_DOUBLE, wsum((byte[])null, new IntVectorDirect(new int[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, wsum(new byte[]{1,2,3}, (IntVector) null));
 
-        assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, wsum(new DbByteArrayDirect(new byte[]{1,2,3,NULL_BYTE,5}), new DbLongArrayDirect(new long[]{4,5,6,7,NULL_LONG})));
-        assertEquals(NULL_DOUBLE, wsum((DbByteArray) null, new DbLongArrayDirect(new long[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, wsum(new DbByteArrayDirect(new byte[]{1,2,3}), (DbLongArray) null));
+        assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, wsum(new byte[]{1,2,3,NULL_BYTE,5}, new LongVectorDirect(new long[]{4,5,6,7,NULL_LONG})));
+        assertEquals(NULL_DOUBLE, wsum((byte[])null, new LongVectorDirect(new long[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, wsum(new byte[]{1,2,3}, (LongVector) null));
 
-        assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, wsum(new DbByteArrayDirect(new byte[]{1,2,3,NULL_BYTE,5}), new DbDoubleArrayDirect(new double[]{4,5,6,7,NULL_DOUBLE})));
-        assertEquals(NULL_DOUBLE, wsum((DbByteArray) null, new DbDoubleArrayDirect(new double[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, wsum(new DbByteArrayDirect(new byte[]{1,2,3}), (DbDoubleArray)null));
+        assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, wsum(new byte[]{1,2,3,NULL_BYTE,5}, new DoubleVectorDirect(new double[]{4,5,6,7,NULL_DOUBLE})));
+        assertEquals(NULL_DOUBLE, wsum((byte[])null, new DoubleVectorDirect(new double[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, wsum(new byte[]{1,2,3}, (DoubleVector)null));
 
-        assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, wsum(new DbByteArrayDirect(new byte[]{1,2,3,NULL_BYTE,5}), new DbFloatArrayDirect(new float[]{4,5,6,7,NULL_FLOAT})));
-        assertEquals(NULL_DOUBLE, wsum((DbByteArray) null, new DbFloatArrayDirect(new float[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, wsum(new DbByteArrayDirect(new byte[]{1,2,3}), (DbFloatArray)null));
+        assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, wsum(new byte[]{1,2,3,NULL_BYTE,5}, new FloatVectorDirect(new float[]{4,5,6,7,NULL_FLOAT})));
+        assertEquals(NULL_DOUBLE, wsum((byte[])null, new FloatVectorDirect(new float[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, wsum(new byte[]{1,2,3}, (FloatVector)null));
+
+        /////
+
+        assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, wsum(new ByteVectorDirect(new byte[]{1,2,3,NULL_BYTE,5}), new ByteVectorDirect(new byte[]{4,5,6,7,NULL_BYTE})));
+        assertEquals(NULL_DOUBLE, wsum((ByteVector) null, new ByteVectorDirect(new byte[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, wsum(new ByteVectorDirect(new byte[]{1,2,3}), (ByteVector) null));
+
+        assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, wsum(new ByteVectorDirect(new byte[]{1,2,3,NULL_BYTE,5}), new IntVectorDirect(new int[]{4,5,6,7,NULL_INT})));
+        assertEquals(NULL_DOUBLE, wsum((ByteVector) null, new IntVectorDirect(new int[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, wsum(new ByteVectorDirect(new byte[]{1,2,3}), (IntVector) null));
+
+        assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, wsum(new ByteVectorDirect(new byte[]{1,2,3,NULL_BYTE,5}), new LongVectorDirect(new long[]{4,5,6,7,NULL_LONG})));
+        assertEquals(NULL_DOUBLE, wsum((ByteVector) null, new LongVectorDirect(new long[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, wsum(new ByteVectorDirect(new byte[]{1,2,3}), (LongVector) null));
+
+        assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, wsum(new ByteVectorDirect(new byte[]{1,2,3,NULL_BYTE,5}), new DoubleVectorDirect(new double[]{4,5,6,7,NULL_DOUBLE})));
+        assertEquals(NULL_DOUBLE, wsum((ByteVector) null, new DoubleVectorDirect(new double[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, wsum(new ByteVectorDirect(new byte[]{1,2,3}), (DoubleVector)null));
+
+        assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, wsum(new ByteVectorDirect(new byte[]{1,2,3,NULL_BYTE,5}), new FloatVectorDirect(new float[]{4,5,6,7,NULL_FLOAT})));
+        assertEquals(NULL_DOUBLE, wsum((ByteVector) null, new FloatVectorDirect(new float[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, wsum(new ByteVectorDirect(new byte[]{1,2,3}), (FloatVector)null));
     }
 
     public void testWeightedSum() {
@@ -971,69 +971,69 @@ public class TestByteNumericPrimitives extends BaseArrayTestCase {
 
         /////
 
-        assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, weightedSum(new DbByteArrayDirect(new byte[]{1,2,3,NULL_BYTE,5}), new byte[]{4,5,6,7,NULL_BYTE}));
-        assertEquals(NULL_DOUBLE, weightedSum((DbByteArray) null, new byte[]{4,5,6}));
-        assertEquals(NULL_DOUBLE, weightedSum(new DbByteArrayDirect(new byte[]{1,2,3}), (byte[])null));
+        assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, weightedSum(new ByteVectorDirect(new byte[]{1,2,3,NULL_BYTE,5}), new byte[]{4,5,6,7,NULL_BYTE}));
+        assertEquals(NULL_DOUBLE, weightedSum((ByteVector) null, new byte[]{4,5,6}));
+        assertEquals(NULL_DOUBLE, weightedSum(new ByteVectorDirect(new byte[]{1,2,3}), (byte[])null));
 
-        assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, weightedSum(new DbByteArrayDirect(new byte[]{1,2,3,NULL_BYTE,5}), new int[]{4,5,6,7,NULL_INT}));
-        assertEquals(NULL_DOUBLE, weightedSum((DbByteArray)null, new int[]{4,5,6}));
-        assertEquals(NULL_DOUBLE, weightedSum(new DbByteArrayDirect(new byte[]{1,2,3}), (int[])null));
+        assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, weightedSum(new ByteVectorDirect(new byte[]{1,2,3,NULL_BYTE,5}), new int[]{4,5,6,7,NULL_INT}));
+        assertEquals(NULL_DOUBLE, weightedSum((ByteVector)null, new int[]{4,5,6}));
+        assertEquals(NULL_DOUBLE, weightedSum(new ByteVectorDirect(new byte[]{1,2,3}), (int[])null));
 
-        assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, weightedSum(new DbByteArrayDirect(new byte[]{1,2,3,NULL_BYTE,5}), new long[]{4,5,6,7,NULL_LONG}));
-        assertEquals(NULL_DOUBLE, weightedSum((DbByteArray)null, new long[]{4,5,6}));
-        assertEquals(NULL_DOUBLE, weightedSum(new DbByteArrayDirect(new byte[]{1,2,3}), (long[])null));
+        assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, weightedSum(new ByteVectorDirect(new byte[]{1,2,3,NULL_BYTE,5}), new long[]{4,5,6,7,NULL_LONG}));
+        assertEquals(NULL_DOUBLE, weightedSum((ByteVector)null, new long[]{4,5,6}));
+        assertEquals(NULL_DOUBLE, weightedSum(new ByteVectorDirect(new byte[]{1,2,3}), (long[])null));
 
-        assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, weightedSum(new DbByteArrayDirect(new byte[]{1,2,3,NULL_BYTE,5}), new double[]{4,5,6,7,NULL_DOUBLE}));
-        assertEquals(NULL_DOUBLE, weightedSum((DbByteArray)null, new double[]{4,5,6}));
-        assertEquals(NULL_DOUBLE, weightedSum(new DbByteArrayDirect(new byte[]{1,2,3}), (double[])null));
+        assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, weightedSum(new ByteVectorDirect(new byte[]{1,2,3,NULL_BYTE,5}), new double[]{4,5,6,7,NULL_DOUBLE}));
+        assertEquals(NULL_DOUBLE, weightedSum((ByteVector)null, new double[]{4,5,6}));
+        assertEquals(NULL_DOUBLE, weightedSum(new ByteVectorDirect(new byte[]{1,2,3}), (double[])null));
 
-        assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, weightedSum(new DbByteArrayDirect(new byte[]{1,2,3,NULL_BYTE,5}), new float[]{4,5,6,7,NULL_FLOAT}));
-        assertEquals(NULL_DOUBLE, weightedSum((DbByteArray)null, new float[]{4,5,6}));
-        assertEquals(NULL_DOUBLE, weightedSum(new DbByteArrayDirect(new byte[]{1,2,3}), (float[])null));
-
-        /////
-
-        assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, weightedSum(new byte[]{1,2,3,NULL_BYTE,5}, new DbByteArrayDirect(new byte[]{4,5,6,7,NULL_BYTE})));
-        assertEquals(NULL_DOUBLE, weightedSum((byte[])null, new DbByteArrayDirect(new byte[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, weightedSum(new byte[]{1,2,3}, (DbByteArray) null));
-
-        assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, weightedSum(new byte[]{1,2,3,NULL_BYTE,5}, new DbIntArrayDirect(new int[]{4,5,6,7,NULL_INT})));
-        assertEquals(NULL_DOUBLE, weightedSum((byte[])null, new DbIntArrayDirect(new int[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, weightedSum(new byte[]{1,2,3}, (DbIntArray) null));
-
-        assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, weightedSum(new byte[]{1,2,3,NULL_BYTE,5}, new DbLongArrayDirect(new long[]{4,5,6,7,NULL_LONG})));
-        assertEquals(NULL_DOUBLE, weightedSum((byte[])null, new DbLongArrayDirect(new long[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, weightedSum(new byte[]{1,2,3}, (DbLongArray) null));
-
-        assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, weightedSum(new byte[]{1,2,3,NULL_BYTE,5}, new DbDoubleArrayDirect(new double[]{4,5,6,7,NULL_DOUBLE})));
-        assertEquals(NULL_DOUBLE, weightedSum((byte[])null, new DbDoubleArrayDirect(new double[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, weightedSum(new byte[]{1,2,3}, (DbDoubleArray)null));
-
-        assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, weightedSum(new byte[]{1,2,3,NULL_BYTE,5}, new DbFloatArrayDirect(new float[]{4,5,6,7,NULL_FLOAT})));
-        assertEquals(NULL_DOUBLE, weightedSum((byte[])null, new DbFloatArrayDirect(new float[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, weightedSum(new byte[]{1,2,3}, (DbFloatArray)null));
+        assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, weightedSum(new ByteVectorDirect(new byte[]{1,2,3,NULL_BYTE,5}), new float[]{4,5,6,7,NULL_FLOAT}));
+        assertEquals(NULL_DOUBLE, weightedSum((ByteVector)null, new float[]{4,5,6}));
+        assertEquals(NULL_DOUBLE, weightedSum(new ByteVectorDirect(new byte[]{1,2,3}), (float[])null));
 
         /////
 
-        assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, weightedSum(new DbByteArrayDirect(new byte[]{1,2,3,NULL_BYTE,5}), new DbByteArrayDirect(new byte[]{4,5,6,7,NULL_BYTE})));
-        assertEquals(NULL_DOUBLE, weightedSum((DbByteArray) null, new DbByteArrayDirect(new byte[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, weightedSum(new DbByteArrayDirect(new byte[]{1,2,3}), (DbByteArray) null));
+        assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, weightedSum(new byte[]{1,2,3,NULL_BYTE,5}, new ByteVectorDirect(new byte[]{4,5,6,7,NULL_BYTE})));
+        assertEquals(NULL_DOUBLE, weightedSum((byte[])null, new ByteVectorDirect(new byte[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, weightedSum(new byte[]{1,2,3}, (ByteVector) null));
 
-        assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, weightedSum(new DbByteArrayDirect(new byte[]{1,2,3,NULL_BYTE,5}), new DbIntArrayDirect(new int[]{4,5,6,7,NULL_INT})));
-        assertEquals(NULL_DOUBLE, weightedSum((DbByteArray) null, new DbIntArrayDirect(new int[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, weightedSum(new DbByteArrayDirect(new byte[]{1,2,3}), (DbIntArray) null));
+        assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, weightedSum(new byte[]{1,2,3,NULL_BYTE,5}, new IntVectorDirect(new int[]{4,5,6,7,NULL_INT})));
+        assertEquals(NULL_DOUBLE, weightedSum((byte[])null, new IntVectorDirect(new int[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, weightedSum(new byte[]{1,2,3}, (IntVector) null));
 
-        assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, weightedSum(new DbByteArrayDirect(new byte[]{1,2,3,NULL_BYTE,5}), new DbLongArrayDirect(new long[]{4,5,6,7,NULL_LONG})));
-        assertEquals(NULL_DOUBLE, weightedSum((DbByteArray) null, new DbLongArrayDirect(new long[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, weightedSum(new DbByteArrayDirect(new byte[]{1,2,3}), (DbLongArray) null));
+        assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, weightedSum(new byte[]{1,2,3,NULL_BYTE,5}, new LongVectorDirect(new long[]{4,5,6,7,NULL_LONG})));
+        assertEquals(NULL_DOUBLE, weightedSum((byte[])null, new LongVectorDirect(new long[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, weightedSum(new byte[]{1,2,3}, (LongVector) null));
 
-        assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, weightedSum(new DbByteArrayDirect(new byte[]{1,2,3,NULL_BYTE,5}), new DbDoubleArrayDirect(new double[]{4,5,6,7,NULL_DOUBLE})));
-        assertEquals(NULL_DOUBLE, weightedSum((DbByteArray) null, new DbDoubleArrayDirect(new double[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, weightedSum(new DbByteArrayDirect(new byte[]{1,2,3}), (DbDoubleArray)null));
+        assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, weightedSum(new byte[]{1,2,3,NULL_BYTE,5}, new DoubleVectorDirect(new double[]{4,5,6,7,NULL_DOUBLE})));
+        assertEquals(NULL_DOUBLE, weightedSum((byte[])null, new DoubleVectorDirect(new double[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, weightedSum(new byte[]{1,2,3}, (DoubleVector)null));
 
-        assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, weightedSum(new DbByteArrayDirect(new byte[]{1,2,3,NULL_BYTE,5}), new DbFloatArrayDirect(new float[]{4,5,6,7,NULL_FLOAT})));
-        assertEquals(NULL_DOUBLE, weightedSum((DbByteArray) null, new DbFloatArrayDirect(new float[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, weightedSum(new DbByteArrayDirect(new byte[]{1,2,3}), (DbFloatArray)null));
+        assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, weightedSum(new byte[]{1,2,3,NULL_BYTE,5}, new FloatVectorDirect(new float[]{4,5,6,7,NULL_FLOAT})));
+        assertEquals(NULL_DOUBLE, weightedSum((byte[])null, new FloatVectorDirect(new float[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, weightedSum(new byte[]{1,2,3}, (FloatVector)null));
+
+        /////
+
+        assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, weightedSum(new ByteVectorDirect(new byte[]{1,2,3,NULL_BYTE,5}), new ByteVectorDirect(new byte[]{4,5,6,7,NULL_BYTE})));
+        assertEquals(NULL_DOUBLE, weightedSum((ByteVector) null, new ByteVectorDirect(new byte[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, weightedSum(new ByteVectorDirect(new byte[]{1,2,3}), (ByteVector) null));
+
+        assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, weightedSum(new ByteVectorDirect(new byte[]{1,2,3,NULL_BYTE,5}), new IntVectorDirect(new int[]{4,5,6,7,NULL_INT})));
+        assertEquals(NULL_DOUBLE, weightedSum((ByteVector) null, new IntVectorDirect(new int[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, weightedSum(new ByteVectorDirect(new byte[]{1,2,3}), (IntVector) null));
+
+        assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, weightedSum(new ByteVectorDirect(new byte[]{1,2,3,NULL_BYTE,5}), new LongVectorDirect(new long[]{4,5,6,7,NULL_LONG})));
+        assertEquals(NULL_DOUBLE, weightedSum((ByteVector) null, new LongVectorDirect(new long[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, weightedSum(new ByteVectorDirect(new byte[]{1,2,3}), (LongVector) null));
+
+        assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, weightedSum(new ByteVectorDirect(new byte[]{1,2,3,NULL_BYTE,5}), new DoubleVectorDirect(new double[]{4,5,6,7,NULL_DOUBLE})));
+        assertEquals(NULL_DOUBLE, weightedSum((ByteVector) null, new DoubleVectorDirect(new double[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, weightedSum(new ByteVectorDirect(new byte[]{1,2,3}), (DoubleVector)null));
+
+        assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, weightedSum(new ByteVectorDirect(new byte[]{1,2,3,NULL_BYTE,5}), new FloatVectorDirect(new float[]{4,5,6,7,NULL_FLOAT})));
+        assertEquals(NULL_DOUBLE, weightedSum((ByteVector) null, new FloatVectorDirect(new float[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, weightedSum(new ByteVectorDirect(new byte[]{1,2,3}), (FloatVector)null));
     }
 
     public void testWAvg() {
@@ -1059,69 +1059,69 @@ public class TestByteNumericPrimitives extends BaseArrayTestCase {
 
         /////
 
-        assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), wavg(new DbByteArrayDirect(new byte[]{1,2,3,NULL_BYTE,5}), new byte[]{4,5,6,7,NULL_BYTE}));
-        assertEquals(NULL_DOUBLE, wavg((DbByteArray) null, new byte[]{4,5,6}));
-        assertEquals(NULL_DOUBLE, wavg(new DbByteArrayDirect(new byte[]{1,2,3}), (byte[])null));
+        assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), wavg(new ByteVectorDirect(new byte[]{1,2,3,NULL_BYTE,5}), new byte[]{4,5,6,7,NULL_BYTE}));
+        assertEquals(NULL_DOUBLE, wavg((ByteVector) null, new byte[]{4,5,6}));
+        assertEquals(NULL_DOUBLE, wavg(new ByteVectorDirect(new byte[]{1,2,3}), (byte[])null));
 
-        assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), wavg(new DbByteArrayDirect(new byte[]{1,2,3,NULL_BYTE,5}), new int[]{4,5,6,7,NULL_INT}));
-        assertEquals(NULL_DOUBLE, wavg((DbByteArray)null, new int[]{4,5,6}));
-        assertEquals(NULL_DOUBLE, wavg(new DbByteArrayDirect(new byte[]{1,2,3}), (int[])null));
+        assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), wavg(new ByteVectorDirect(new byte[]{1,2,3,NULL_BYTE,5}), new int[]{4,5,6,7,NULL_INT}));
+        assertEquals(NULL_DOUBLE, wavg((ByteVector)null, new int[]{4,5,6}));
+        assertEquals(NULL_DOUBLE, wavg(new ByteVectorDirect(new byte[]{1,2,3}), (int[])null));
 
-        assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), wavg(new DbByteArrayDirect(new byte[]{1,2,3,NULL_BYTE,5}), new long[]{4,5,6,7,NULL_LONG}));
-        assertEquals(NULL_DOUBLE, wavg((DbByteArray)null, new long[]{4,5,6}));
-        assertEquals(NULL_DOUBLE, wavg(new DbByteArrayDirect(new byte[]{1,2,3}), (long[])null));
+        assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), wavg(new ByteVectorDirect(new byte[]{1,2,3,NULL_BYTE,5}), new long[]{4,5,6,7,NULL_LONG}));
+        assertEquals(NULL_DOUBLE, wavg((ByteVector)null, new long[]{4,5,6}));
+        assertEquals(NULL_DOUBLE, wavg(new ByteVectorDirect(new byte[]{1,2,3}), (long[])null));
 
-        assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), wavg(new DbByteArrayDirect(new byte[]{1,2,3,NULL_BYTE,5}), new double[]{4,5,6,7,NULL_DOUBLE}));
-        assertEquals(NULL_DOUBLE, wavg((DbByteArray)null, new double[]{4,5,6}));
-        assertEquals(NULL_DOUBLE, wavg(new DbByteArrayDirect(new byte[]{1,2,3}), (double[])null));
+        assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), wavg(new ByteVectorDirect(new byte[]{1,2,3,NULL_BYTE,5}), new double[]{4,5,6,7,NULL_DOUBLE}));
+        assertEquals(NULL_DOUBLE, wavg((ByteVector)null, new double[]{4,5,6}));
+        assertEquals(NULL_DOUBLE, wavg(new ByteVectorDirect(new byte[]{1,2,3}), (double[])null));
 
-        assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), wavg(new DbByteArrayDirect(new byte[]{1,2,3,NULL_BYTE,5}), new float[]{4,5,6,7,NULL_FLOAT}));
-        assertEquals(NULL_DOUBLE, wavg((DbByteArray)null, new float[]{4,5,6}));
-        assertEquals(NULL_DOUBLE, wavg(new DbByteArrayDirect(new byte[]{1,2,3}), (float[])null));
-
-        /////
-
-        assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), wavg(new byte[]{1,2,3,NULL_BYTE,5}, new DbByteArrayDirect(new byte[]{4,5,6,7,NULL_BYTE})));
-        assertEquals(NULL_DOUBLE, wavg((byte[])null, new DbByteArrayDirect(new byte[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, wavg(new byte[]{1,2,3}, (DbByteArray) null));
-
-        assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), wavg(new byte[]{1,2,3,NULL_BYTE,5}, new DbIntArrayDirect(new int[]{4,5,6,7,NULL_INT})));
-        assertEquals(NULL_DOUBLE, wavg((byte[])null, new DbIntArrayDirect(new int[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, wavg(new byte[]{1,2,3}, (DbIntArray) null));
-
-        assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), wavg(new byte[]{1,2,3,NULL_BYTE,5}, new DbLongArrayDirect(new long[]{4,5,6,7,NULL_LONG})));
-        assertEquals(NULL_DOUBLE, wavg((byte[])null, new DbLongArrayDirect(new long[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, wavg(new byte[]{1,2,3}, (DbLongArray) null));
-
-        assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), wavg(new byte[]{1,2,3,NULL_BYTE,5}, new DbDoubleArrayDirect(new double[]{4,5,6,7,NULL_DOUBLE})));
-        assertEquals(NULL_DOUBLE, wavg((byte[])null, new DbDoubleArrayDirect(new double[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, wavg(new byte[]{1,2,3}, (DbDoubleArray)null));
-
-        assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), wavg(new byte[]{1,2,3,NULL_BYTE,5}, new DbFloatArrayDirect(new float[]{4,5,6,7,NULL_FLOAT})));
-        assertEquals(NULL_DOUBLE, wavg((byte[])null, new DbFloatArrayDirect(new float[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, wavg(new byte[]{1,2,3}, (DbFloatArray)null));
+        assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), wavg(new ByteVectorDirect(new byte[]{1,2,3,NULL_BYTE,5}), new float[]{4,5,6,7,NULL_FLOAT}));
+        assertEquals(NULL_DOUBLE, wavg((ByteVector)null, new float[]{4,5,6}));
+        assertEquals(NULL_DOUBLE, wavg(new ByteVectorDirect(new byte[]{1,2,3}), (float[])null));
 
         /////
 
-        assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), wavg(new DbByteArrayDirect(new byte[]{1,2,3,NULL_BYTE,5}), new DbByteArrayDirect(new byte[]{4,5,6,7,NULL_BYTE})));
-        assertEquals(NULL_DOUBLE, wavg((DbByteArray) null, new DbByteArrayDirect(new byte[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, wavg(new DbByteArrayDirect(new byte[]{1,2,3}), (DbByteArray) null));
+        assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), wavg(new byte[]{1,2,3,NULL_BYTE,5}, new ByteVectorDirect(new byte[]{4,5,6,7,NULL_BYTE})));
+        assertEquals(NULL_DOUBLE, wavg((byte[])null, new ByteVectorDirect(new byte[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, wavg(new byte[]{1,2,3}, (ByteVector) null));
 
-        assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), wavg(new DbByteArrayDirect(new byte[]{1,2,3,NULL_BYTE,5}), new DbIntArrayDirect(new int[]{4,5,6,7,NULL_INT})));
-        assertEquals(NULL_DOUBLE, wavg((DbByteArray) null, new DbIntArrayDirect(new int[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, wavg(new DbByteArrayDirect(new byte[]{1,2,3}), (DbIntArray) null));
+        assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), wavg(new byte[]{1,2,3,NULL_BYTE,5}, new IntVectorDirect(new int[]{4,5,6,7,NULL_INT})));
+        assertEquals(NULL_DOUBLE, wavg((byte[])null, new IntVectorDirect(new int[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, wavg(new byte[]{1,2,3}, (IntVector) null));
 
-        assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), wavg(new DbByteArrayDirect(new byte[]{1,2,3,NULL_BYTE,5}), new DbLongArrayDirect(new long[]{4,5,6,7,NULL_LONG})));
-        assertEquals(NULL_DOUBLE, wavg((DbByteArray) null, new DbLongArrayDirect(new long[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, wavg(new DbByteArrayDirect(new byte[]{1,2,3}), (DbLongArray) null));
+        assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), wavg(new byte[]{1,2,3,NULL_BYTE,5}, new LongVectorDirect(new long[]{4,5,6,7,NULL_LONG})));
+        assertEquals(NULL_DOUBLE, wavg((byte[])null, new LongVectorDirect(new long[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, wavg(new byte[]{1,2,3}, (LongVector) null));
 
-        assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), wavg(new DbByteArrayDirect(new byte[]{1,2,3,NULL_BYTE,5}), new DbDoubleArrayDirect(new double[]{4,5,6,7,NULL_DOUBLE})));
-        assertEquals(NULL_DOUBLE, wavg((DbByteArray) null, new DbDoubleArrayDirect(new double[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, wavg(new DbByteArrayDirect(new byte[]{1,2,3}), (DbDoubleArray)null));
+        assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), wavg(new byte[]{1,2,3,NULL_BYTE,5}, new DoubleVectorDirect(new double[]{4,5,6,7,NULL_DOUBLE})));
+        assertEquals(NULL_DOUBLE, wavg((byte[])null, new DoubleVectorDirect(new double[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, wavg(new byte[]{1,2,3}, (DoubleVector)null));
 
-        assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), wavg(new DbByteArrayDirect(new byte[]{1,2,3,NULL_BYTE,5}), new DbFloatArrayDirect(new float[]{4,5,6,7,NULL_FLOAT})));
-        assertEquals(NULL_DOUBLE, wavg((DbByteArray) null, new DbFloatArrayDirect(new float[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, wavg(new DbByteArrayDirect(new byte[]{1,2,3}), (DbFloatArray)null));
+        assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), wavg(new byte[]{1,2,3,NULL_BYTE,5}, new FloatVectorDirect(new float[]{4,5,6,7,NULL_FLOAT})));
+        assertEquals(NULL_DOUBLE, wavg((byte[])null, new FloatVectorDirect(new float[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, wavg(new byte[]{1,2,3}, (FloatVector)null));
+
+        /////
+
+        assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), wavg(new ByteVectorDirect(new byte[]{1,2,3,NULL_BYTE,5}), new ByteVectorDirect(new byte[]{4,5,6,7,NULL_BYTE})));
+        assertEquals(NULL_DOUBLE, wavg((ByteVector) null, new ByteVectorDirect(new byte[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, wavg(new ByteVectorDirect(new byte[]{1,2,3}), (ByteVector) null));
+
+        assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), wavg(new ByteVectorDirect(new byte[]{1,2,3,NULL_BYTE,5}), new IntVectorDirect(new int[]{4,5,6,7,NULL_INT})));
+        assertEquals(NULL_DOUBLE, wavg((ByteVector) null, new IntVectorDirect(new int[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, wavg(new ByteVectorDirect(new byte[]{1,2,3}), (IntVector) null));
+
+        assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), wavg(new ByteVectorDirect(new byte[]{1,2,3,NULL_BYTE,5}), new LongVectorDirect(new long[]{4,5,6,7,NULL_LONG})));
+        assertEquals(NULL_DOUBLE, wavg((ByteVector) null, new LongVectorDirect(new long[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, wavg(new ByteVectorDirect(new byte[]{1,2,3}), (LongVector) null));
+
+        assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), wavg(new ByteVectorDirect(new byte[]{1,2,3,NULL_BYTE,5}), new DoubleVectorDirect(new double[]{4,5,6,7,NULL_DOUBLE})));
+        assertEquals(NULL_DOUBLE, wavg((ByteVector) null, new DoubleVectorDirect(new double[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, wavg(new ByteVectorDirect(new byte[]{1,2,3}), (DoubleVector)null));
+
+        assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), wavg(new ByteVectorDirect(new byte[]{1,2,3,NULL_BYTE,5}), new FloatVectorDirect(new float[]{4,5,6,7,NULL_FLOAT})));
+        assertEquals(NULL_DOUBLE, wavg((ByteVector) null, new FloatVectorDirect(new float[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, wavg(new ByteVectorDirect(new byte[]{1,2,3}), (FloatVector)null));
     }
 
     public void testWeightedAvg() {
@@ -1147,69 +1147,69 @@ public class TestByteNumericPrimitives extends BaseArrayTestCase {
 
         /////
 
-        assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), weightedAvg(new DbByteArrayDirect(new byte[]{1,2,3,NULL_BYTE,5}), new byte[]{4,5,6,7,NULL_BYTE}));
-        assertEquals(NULL_DOUBLE, weightedAvg((DbByteArray) null, new byte[]{4,5,6}));
-        assertEquals(NULL_DOUBLE, weightedAvg(new DbByteArrayDirect(new byte[]{1,2,3}), (byte[])null));
+        assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), weightedAvg(new ByteVectorDirect(new byte[]{1,2,3,NULL_BYTE,5}), new byte[]{4,5,6,7,NULL_BYTE}));
+        assertEquals(NULL_DOUBLE, weightedAvg((ByteVector) null, new byte[]{4,5,6}));
+        assertEquals(NULL_DOUBLE, weightedAvg(new ByteVectorDirect(new byte[]{1,2,3}), (byte[])null));
 
-        assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), weightedAvg(new DbByteArrayDirect(new byte[]{1,2,3,NULL_BYTE,5}), new int[]{4,5,6,7,NULL_INT}));
-        assertEquals(NULL_DOUBLE, weightedAvg((DbByteArray)null, new int[]{4,5,6}));
-        assertEquals(NULL_DOUBLE, weightedAvg(new DbByteArrayDirect(new byte[]{1,2,3}), (int[])null));
+        assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), weightedAvg(new ByteVectorDirect(new byte[]{1,2,3,NULL_BYTE,5}), new int[]{4,5,6,7,NULL_INT}));
+        assertEquals(NULL_DOUBLE, weightedAvg((ByteVector)null, new int[]{4,5,6}));
+        assertEquals(NULL_DOUBLE, weightedAvg(new ByteVectorDirect(new byte[]{1,2,3}), (int[])null));
 
-        assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), weightedAvg(new DbByteArrayDirect(new byte[]{1,2,3,NULL_BYTE,5}), new long[]{4,5,6,7,NULL_LONG}));
-        assertEquals(NULL_DOUBLE, weightedAvg((DbByteArray)null, new long[]{4,5,6}));
-        assertEquals(NULL_DOUBLE, weightedAvg(new DbByteArrayDirect(new byte[]{1,2,3}), (long[])null));
+        assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), weightedAvg(new ByteVectorDirect(new byte[]{1,2,3,NULL_BYTE,5}), new long[]{4,5,6,7,NULL_LONG}));
+        assertEquals(NULL_DOUBLE, weightedAvg((ByteVector)null, new long[]{4,5,6}));
+        assertEquals(NULL_DOUBLE, weightedAvg(new ByteVectorDirect(new byte[]{1,2,3}), (long[])null));
 
-        assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), weightedAvg(new DbByteArrayDirect(new byte[]{1,2,3,NULL_BYTE,5}), new double[]{4,5,6,7,NULL_DOUBLE}));
-        assertEquals(NULL_DOUBLE, weightedAvg((DbByteArray)null, new double[]{4,5,6}));
-        assertEquals(NULL_DOUBLE, weightedAvg(new DbByteArrayDirect(new byte[]{1,2,3}), (double[])null));
+        assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), weightedAvg(new ByteVectorDirect(new byte[]{1,2,3,NULL_BYTE,5}), new double[]{4,5,6,7,NULL_DOUBLE}));
+        assertEquals(NULL_DOUBLE, weightedAvg((ByteVector)null, new double[]{4,5,6}));
+        assertEquals(NULL_DOUBLE, weightedAvg(new ByteVectorDirect(new byte[]{1,2,3}), (double[])null));
 
-        assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), weightedAvg(new DbByteArrayDirect(new byte[]{1,2,3,NULL_BYTE,5}), new float[]{4,5,6,7,NULL_FLOAT}));
-        assertEquals(NULL_DOUBLE, weightedAvg((DbByteArray)null, new float[]{4,5,6}));
-        assertEquals(NULL_DOUBLE, weightedAvg(new DbByteArrayDirect(new byte[]{1,2,3}), (float[])null));
-
-        /////
-
-        assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), weightedAvg(new byte[]{1,2,3,NULL_BYTE,5}, new DbByteArrayDirect(new byte[]{4,5,6,7,NULL_BYTE})));
-        assertEquals(NULL_DOUBLE, weightedAvg((byte[])null, new DbByteArrayDirect(new byte[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, weightedAvg(new byte[]{1,2,3}, (DbByteArray) null));
-
-        assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), weightedAvg(new byte[]{1,2,3,NULL_BYTE,5}, new DbIntArrayDirect(new int[]{4,5,6,7,NULL_INT})));
-        assertEquals(NULL_DOUBLE, weightedAvg((byte[])null, new DbIntArrayDirect(new int[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, weightedAvg(new byte[]{1,2,3}, (DbIntArray) null));
-
-        assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), weightedAvg(new byte[]{1,2,3,NULL_BYTE,5}, new DbLongArrayDirect(new long[]{4,5,6,7,NULL_LONG})));
-        assertEquals(NULL_DOUBLE, weightedAvg((byte[])null, new DbLongArrayDirect(new long[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, weightedAvg(new byte[]{1,2,3}, (DbLongArray) null));
-
-        assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), weightedAvg(new byte[]{1,2,3,NULL_BYTE,5}, new DbDoubleArrayDirect(new double[]{4,5,6,7,NULL_DOUBLE})));
-        assertEquals(NULL_DOUBLE, weightedAvg((byte[])null, new DbDoubleArrayDirect(new double[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, weightedAvg(new byte[]{1,2,3}, (DbDoubleArray)null));
-
-        assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), weightedAvg(new byte[]{1,2,3,NULL_BYTE,5}, new DbFloatArrayDirect(new float[]{4,5,6,7,NULL_FLOAT})));
-        assertEquals(NULL_DOUBLE, weightedAvg((byte[])null, new DbFloatArrayDirect(new float[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, weightedAvg(new byte[]{1,2,3}, (DbFloatArray)null));
+        assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), weightedAvg(new ByteVectorDirect(new byte[]{1,2,3,NULL_BYTE,5}), new float[]{4,5,6,7,NULL_FLOAT}));
+        assertEquals(NULL_DOUBLE, weightedAvg((ByteVector)null, new float[]{4,5,6}));
+        assertEquals(NULL_DOUBLE, weightedAvg(new ByteVectorDirect(new byte[]{1,2,3}), (float[])null));
 
         /////
 
-        assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), weightedAvg(new DbByteArrayDirect(new byte[]{1,2,3,NULL_BYTE,5}), new DbByteArrayDirect(new byte[]{4,5,6,7,NULL_BYTE})));
-        assertEquals(NULL_DOUBLE, weightedAvg((DbByteArray) null, new DbByteArrayDirect(new byte[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, weightedAvg(new DbByteArrayDirect(new byte[]{1,2,3}), (DbByteArray) null));
+        assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), weightedAvg(new byte[]{1,2,3,NULL_BYTE,5}, new ByteVectorDirect(new byte[]{4,5,6,7,NULL_BYTE})));
+        assertEquals(NULL_DOUBLE, weightedAvg((byte[])null, new ByteVectorDirect(new byte[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, weightedAvg(new byte[]{1,2,3}, (ByteVector) null));
 
-        assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), weightedAvg(new DbByteArrayDirect(new byte[]{1,2,3,NULL_BYTE,5}), new DbIntArrayDirect(new int[]{4,5,6,7,NULL_INT})));
-        assertEquals(NULL_DOUBLE, weightedAvg((DbByteArray) null, new DbIntArrayDirect(new int[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, weightedAvg(new DbByteArrayDirect(new byte[]{1,2,3}), (DbIntArray) null));
+        assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), weightedAvg(new byte[]{1,2,3,NULL_BYTE,5}, new IntVectorDirect(new int[]{4,5,6,7,NULL_INT})));
+        assertEquals(NULL_DOUBLE, weightedAvg((byte[])null, new IntVectorDirect(new int[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, weightedAvg(new byte[]{1,2,3}, (IntVector) null));
 
-        assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), weightedAvg(new DbByteArrayDirect(new byte[]{1,2,3,NULL_BYTE,5}), new DbLongArrayDirect(new long[]{4,5,6,7,NULL_LONG})));
-        assertEquals(NULL_DOUBLE, weightedAvg((DbByteArray) null, new DbLongArrayDirect(new long[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, weightedAvg(new DbByteArrayDirect(new byte[]{1,2,3}), (DbLongArray) null));
+        assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), weightedAvg(new byte[]{1,2,3,NULL_BYTE,5}, new LongVectorDirect(new long[]{4,5,6,7,NULL_LONG})));
+        assertEquals(NULL_DOUBLE, weightedAvg((byte[])null, new LongVectorDirect(new long[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, weightedAvg(new byte[]{1,2,3}, (LongVector) null));
 
-        assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), weightedAvg(new DbByteArrayDirect(new byte[]{1,2,3,NULL_BYTE,5}), new DbDoubleArrayDirect(new double[]{4,5,6,7,NULL_DOUBLE})));
-        assertEquals(NULL_DOUBLE, weightedAvg((DbByteArray) null, new DbDoubleArrayDirect(new double[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, weightedAvg(new DbByteArrayDirect(new byte[]{1,2,3}), (DbDoubleArray)null));
+        assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), weightedAvg(new byte[]{1,2,3,NULL_BYTE,5}, new DoubleVectorDirect(new double[]{4,5,6,7,NULL_DOUBLE})));
+        assertEquals(NULL_DOUBLE, weightedAvg((byte[])null, new DoubleVectorDirect(new double[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, weightedAvg(new byte[]{1,2,3}, (DoubleVector)null));
 
-        assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), weightedAvg(new DbByteArrayDirect(new byte[]{1,2,3,NULL_BYTE,5}), new DbFloatArrayDirect(new float[]{4,5,6,7,NULL_FLOAT})));
-        assertEquals(NULL_DOUBLE, weightedAvg((DbByteArray) null, new DbFloatArrayDirect(new float[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, weightedAvg(new DbByteArrayDirect(new byte[]{1,2,3}), (DbFloatArray)null));
+        assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), weightedAvg(new byte[]{1,2,3,NULL_BYTE,5}, new FloatVectorDirect(new float[]{4,5,6,7,NULL_FLOAT})));
+        assertEquals(NULL_DOUBLE, weightedAvg((byte[])null, new FloatVectorDirect(new float[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, weightedAvg(new byte[]{1,2,3}, (FloatVector)null));
+
+        /////
+
+        assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), weightedAvg(new ByteVectorDirect(new byte[]{1,2,3,NULL_BYTE,5}), new ByteVectorDirect(new byte[]{4,5,6,7,NULL_BYTE})));
+        assertEquals(NULL_DOUBLE, weightedAvg((ByteVector) null, new ByteVectorDirect(new byte[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, weightedAvg(new ByteVectorDirect(new byte[]{1,2,3}), (ByteVector) null));
+
+        assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), weightedAvg(new ByteVectorDirect(new byte[]{1,2,3,NULL_BYTE,5}), new IntVectorDirect(new int[]{4,5,6,7,NULL_INT})));
+        assertEquals(NULL_DOUBLE, weightedAvg((ByteVector) null, new IntVectorDirect(new int[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, weightedAvg(new ByteVectorDirect(new byte[]{1,2,3}), (IntVector) null));
+
+        assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), weightedAvg(new ByteVectorDirect(new byte[]{1,2,3,NULL_BYTE,5}), new LongVectorDirect(new long[]{4,5,6,7,NULL_LONG})));
+        assertEquals(NULL_DOUBLE, weightedAvg((ByteVector) null, new LongVectorDirect(new long[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, weightedAvg(new ByteVectorDirect(new byte[]{1,2,3}), (LongVector) null));
+
+        assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), weightedAvg(new ByteVectorDirect(new byte[]{1,2,3,NULL_BYTE,5}), new DoubleVectorDirect(new double[]{4,5,6,7,NULL_DOUBLE})));
+        assertEquals(NULL_DOUBLE, weightedAvg((ByteVector) null, new DoubleVectorDirect(new double[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, weightedAvg(new ByteVectorDirect(new byte[]{1,2,3}), (DoubleVector)null));
+
+        assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), weightedAvg(new ByteVectorDirect(new byte[]{1,2,3,NULL_BYTE,5}), new FloatVectorDirect(new float[]{4,5,6,7,NULL_FLOAT})));
+        assertEquals(NULL_DOUBLE, weightedAvg((ByteVector) null, new FloatVectorDirect(new float[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, weightedAvg(new ByteVectorDirect(new byte[]{1,2,3}), (FloatVector)null));
     }
 
     public void testWvar() {
@@ -1240,69 +1240,69 @@ public class TestByteNumericPrimitives extends BaseArrayTestCase {
 
         /////
 
-        assertEquals(target, wvar(new DbByteArrayDirect(new byte[]{1,2,3,NULL_BYTE,5}), new byte[]{4,5,6,7,NULL_BYTE}));
-        assertEquals(NULL_DOUBLE, wvar((DbByteArray) null, new byte[]{4,5,6}));
-        assertEquals(NULL_DOUBLE, wvar(new DbByteArrayDirect(new byte[]{1,2,3}), (byte[])null));
+        assertEquals(target, wvar(new ByteVectorDirect(new byte[]{1,2,3,NULL_BYTE,5}), new byte[]{4,5,6,7,NULL_BYTE}));
+        assertEquals(NULL_DOUBLE, wvar((ByteVector) null, new byte[]{4,5,6}));
+        assertEquals(NULL_DOUBLE, wvar(new ByteVectorDirect(new byte[]{1,2,3}), (byte[])null));
 
-        assertEquals(target, wvar(new DbByteArrayDirect(new byte[]{1,2,3,NULL_BYTE,5}), new int[]{4,5,6,7,NULL_INT}));
-        assertEquals(NULL_DOUBLE, wvar((DbByteArray)null, new int[]{4,5,6}));
-        assertEquals(NULL_DOUBLE, wvar(new DbByteArrayDirect(new byte[]{1,2,3}), (int[])null));
+        assertEquals(target, wvar(new ByteVectorDirect(new byte[]{1,2,3,NULL_BYTE,5}), new int[]{4,5,6,7,NULL_INT}));
+        assertEquals(NULL_DOUBLE, wvar((ByteVector)null, new int[]{4,5,6}));
+        assertEquals(NULL_DOUBLE, wvar(new ByteVectorDirect(new byte[]{1,2,3}), (int[])null));
 
-        assertEquals(target, wvar(new DbByteArrayDirect(new byte[]{1,2,3,NULL_BYTE,5}), new long[]{4,5,6,7,NULL_LONG}));
-        assertEquals(NULL_DOUBLE, wvar((DbByteArray)null, new long[]{4,5,6}));
-        assertEquals(NULL_DOUBLE, wvar(new DbByteArrayDirect(new byte[]{1,2,3}), (long[])null));
+        assertEquals(target, wvar(new ByteVectorDirect(new byte[]{1,2,3,NULL_BYTE,5}), new long[]{4,5,6,7,NULL_LONG}));
+        assertEquals(NULL_DOUBLE, wvar((ByteVector)null, new long[]{4,5,6}));
+        assertEquals(NULL_DOUBLE, wvar(new ByteVectorDirect(new byte[]{1,2,3}), (long[])null));
 
-        assertEquals(target, wvar(new DbByteArrayDirect(new byte[]{1,2,3,NULL_BYTE,5}), new double[]{4,5,6,7,NULL_DOUBLE}));
-        assertEquals(NULL_DOUBLE, wvar((DbByteArray)null, new double[]{4,5,6}));
-        assertEquals(NULL_DOUBLE, wvar(new DbByteArrayDirect(new byte[]{1,2,3}), (double[])null));
+        assertEquals(target, wvar(new ByteVectorDirect(new byte[]{1,2,3,NULL_BYTE,5}), new double[]{4,5,6,7,NULL_DOUBLE}));
+        assertEquals(NULL_DOUBLE, wvar((ByteVector)null, new double[]{4,5,6}));
+        assertEquals(NULL_DOUBLE, wvar(new ByteVectorDirect(new byte[]{1,2,3}), (double[])null));
 
-        assertEquals(target, wvar(new DbByteArrayDirect(new byte[]{1,2,3,NULL_BYTE,5}), new float[]{4,5,6,7,NULL_FLOAT}));
-        assertEquals(NULL_DOUBLE, wvar((DbByteArray)null, new float[]{4,5,6}));
-        assertEquals(NULL_DOUBLE, wvar(new DbByteArrayDirect(new byte[]{1,2,3}), (float[])null));
-
-        /////
-
-        assertEquals(target, wvar(new byte[]{1,2,3,NULL_BYTE,5}, new DbByteArrayDirect(new byte[]{4,5,6,7,NULL_BYTE})));
-        assertEquals(NULL_DOUBLE, wvar((byte[])null, new DbByteArrayDirect(new byte[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, wvar(new byte[]{1,2,3}, (DbByteArray) null));
-
-        assertEquals(target, wvar(new byte[]{1,2,3,NULL_BYTE,5}, new DbIntArrayDirect(new int[]{4,5,6,7,NULL_INT})));
-        assertEquals(NULL_DOUBLE, wvar((byte[])null, new DbIntArrayDirect(new int[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, wvar(new byte[]{1,2,3}, (DbIntArray) null));
-
-        assertEquals(target, wvar(new byte[]{1,2,3,NULL_BYTE,5}, new DbLongArrayDirect(new long[]{4,5,6,7,NULL_LONG})));
-        assertEquals(NULL_DOUBLE, wvar((byte[])null, new DbLongArrayDirect(new long[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, wvar(new byte[]{1,2,3}, (DbLongArray) null));
-
-        assertEquals(target, wvar(new byte[]{1,2,3,NULL_BYTE,5}, new DbDoubleArrayDirect(new double[]{4,5,6,7,NULL_DOUBLE})));
-        assertEquals(NULL_DOUBLE, wvar((byte[])null, new DbDoubleArrayDirect(new double[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, wvar(new byte[]{1,2,3}, (DbDoubleArray)null));
-
-        assertEquals(target, wvar(new byte[]{1,2,3,NULL_BYTE,5}, new DbFloatArrayDirect(new float[]{4,5,6,7,NULL_FLOAT})));
-        assertEquals(NULL_DOUBLE, wvar((byte[])null, new DbFloatArrayDirect(new float[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, wvar(new byte[]{1,2,3}, (DbFloatArray)null));
+        assertEquals(target, wvar(new ByteVectorDirect(new byte[]{1,2,3,NULL_BYTE,5}), new float[]{4,5,6,7,NULL_FLOAT}));
+        assertEquals(NULL_DOUBLE, wvar((ByteVector)null, new float[]{4,5,6}));
+        assertEquals(NULL_DOUBLE, wvar(new ByteVectorDirect(new byte[]{1,2,3}), (float[])null));
 
         /////
 
-        assertEquals(target, wvar(new DbByteArrayDirect(new byte[]{1,2,3,NULL_BYTE,5}), new DbByteArrayDirect(new byte[]{4,5,6,7,NULL_BYTE})));
-        assertEquals(NULL_DOUBLE, wvar((DbByteArray) null, new DbByteArrayDirect(new byte[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, wvar(new DbByteArrayDirect(new byte[]{1,2,3}), (DbByteArray) null));
+        assertEquals(target, wvar(new byte[]{1,2,3,NULL_BYTE,5}, new ByteVectorDirect(new byte[]{4,5,6,7,NULL_BYTE})));
+        assertEquals(NULL_DOUBLE, wvar((byte[])null, new ByteVectorDirect(new byte[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, wvar(new byte[]{1,2,3}, (ByteVector) null));
 
-        assertEquals(target, wvar(new DbByteArrayDirect(new byte[]{1,2,3,NULL_BYTE,5}), new DbIntArrayDirect(new int[]{4,5,6,7,NULL_INT})));
-        assertEquals(NULL_DOUBLE, wvar((DbByteArray) null, new DbIntArrayDirect(new int[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, wvar(new DbByteArrayDirect(new byte[]{1,2,3}), (DbIntArray) null));
+        assertEquals(target, wvar(new byte[]{1,2,3,NULL_BYTE,5}, new IntVectorDirect(new int[]{4,5,6,7,NULL_INT})));
+        assertEquals(NULL_DOUBLE, wvar((byte[])null, new IntVectorDirect(new int[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, wvar(new byte[]{1,2,3}, (IntVector) null));
 
-        assertEquals(target, wvar(new DbByteArrayDirect(new byte[]{1,2,3,NULL_BYTE,5}), new DbLongArrayDirect(new long[]{4,5,6,7,NULL_LONG})));
-        assertEquals(NULL_DOUBLE, wvar((DbByteArray) null, new DbLongArrayDirect(new long[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, wvar(new DbByteArrayDirect(new byte[]{1,2,3}), (DbLongArray) null));
+        assertEquals(target, wvar(new byte[]{1,2,3,NULL_BYTE,5}, new LongVectorDirect(new long[]{4,5,6,7,NULL_LONG})));
+        assertEquals(NULL_DOUBLE, wvar((byte[])null, new LongVectorDirect(new long[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, wvar(new byte[]{1,2,3}, (LongVector) null));
 
-        assertEquals(target, wvar(new DbByteArrayDirect(new byte[]{1,2,3,NULL_BYTE,5}), new DbDoubleArrayDirect(new double[]{4,5,6,7,NULL_DOUBLE})));
-        assertEquals(NULL_DOUBLE, wvar((DbByteArray) null, new DbDoubleArrayDirect(new double[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, wvar(new DbByteArrayDirect(new byte[]{1,2,3}), (DbDoubleArray)null));
+        assertEquals(target, wvar(new byte[]{1,2,3,NULL_BYTE,5}, new DoubleVectorDirect(new double[]{4,5,6,7,NULL_DOUBLE})));
+        assertEquals(NULL_DOUBLE, wvar((byte[])null, new DoubleVectorDirect(new double[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, wvar(new byte[]{1,2,3}, (DoubleVector)null));
 
-        assertEquals(target, wvar(new DbByteArrayDirect(new byte[]{1,2,3,NULL_BYTE,5}), new DbFloatArrayDirect(new float[]{4,5,6,7,NULL_FLOAT})));
-        assertEquals(NULL_DOUBLE, wvar((DbByteArray) null, new DbFloatArrayDirect(new float[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, wvar(new DbByteArrayDirect(new byte[]{1,2,3}), (DbFloatArray)null));
+        assertEquals(target, wvar(new byte[]{1,2,3,NULL_BYTE,5}, new FloatVectorDirect(new float[]{4,5,6,7,NULL_FLOAT})));
+        assertEquals(NULL_DOUBLE, wvar((byte[])null, new FloatVectorDirect(new float[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, wvar(new byte[]{1,2,3}, (FloatVector)null));
+
+        /////
+
+        assertEquals(target, wvar(new ByteVectorDirect(new byte[]{1,2,3,NULL_BYTE,5}), new ByteVectorDirect(new byte[]{4,5,6,7,NULL_BYTE})));
+        assertEquals(NULL_DOUBLE, wvar((ByteVector) null, new ByteVectorDirect(new byte[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, wvar(new ByteVectorDirect(new byte[]{1,2,3}), (ByteVector) null));
+
+        assertEquals(target, wvar(new ByteVectorDirect(new byte[]{1,2,3,NULL_BYTE,5}), new IntVectorDirect(new int[]{4,5,6,7,NULL_INT})));
+        assertEquals(NULL_DOUBLE, wvar((ByteVector) null, new IntVectorDirect(new int[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, wvar(new ByteVectorDirect(new byte[]{1,2,3}), (IntVector) null));
+
+        assertEquals(target, wvar(new ByteVectorDirect(new byte[]{1,2,3,NULL_BYTE,5}), new LongVectorDirect(new long[]{4,5,6,7,NULL_LONG})));
+        assertEquals(NULL_DOUBLE, wvar((ByteVector) null, new LongVectorDirect(new long[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, wvar(new ByteVectorDirect(new byte[]{1,2,3}), (LongVector) null));
+
+        assertEquals(target, wvar(new ByteVectorDirect(new byte[]{1,2,3,NULL_BYTE,5}), new DoubleVectorDirect(new double[]{4,5,6,7,NULL_DOUBLE})));
+        assertEquals(NULL_DOUBLE, wvar((ByteVector) null, new DoubleVectorDirect(new double[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, wvar(new ByteVectorDirect(new byte[]{1,2,3}), (DoubleVector)null));
+
+        assertEquals(target, wvar(new ByteVectorDirect(new byte[]{1,2,3,NULL_BYTE,5}), new FloatVectorDirect(new float[]{4,5,6,7,NULL_FLOAT})));
+        assertEquals(NULL_DOUBLE, wvar((ByteVector) null, new FloatVectorDirect(new float[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, wvar(new ByteVectorDirect(new byte[]{1,2,3}), (FloatVector)null));
     }
 
     public void testWstd() {
@@ -1333,69 +1333,69 @@ public class TestByteNumericPrimitives extends BaseArrayTestCase {
 
         /////
 
-        assertEquals(target, wstd(new DbByteArrayDirect(new byte[]{1,2,3,NULL_BYTE,5}), new byte[]{4,5,6,7,NULL_BYTE}));
-        assertEquals(NULL_DOUBLE, wstd((DbByteArray) null, new byte[]{4,5,6}));
-        assertEquals(NULL_DOUBLE, wstd(new DbByteArrayDirect(new byte[]{1,2,3}), (byte[])null));
+        assertEquals(target, wstd(new ByteVectorDirect(new byte[]{1,2,3,NULL_BYTE,5}), new byte[]{4,5,6,7,NULL_BYTE}));
+        assertEquals(NULL_DOUBLE, wstd((ByteVector) null, new byte[]{4,5,6}));
+        assertEquals(NULL_DOUBLE, wstd(new ByteVectorDirect(new byte[]{1,2,3}), (byte[])null));
 
-        assertEquals(target, wstd(new DbByteArrayDirect(new byte[]{1,2,3,NULL_BYTE,5}), new int[]{4,5,6,7,NULL_INT}));
-        assertEquals(NULL_DOUBLE, wstd((DbByteArray)null, new int[]{4,5,6}));
-        assertEquals(NULL_DOUBLE, wstd(new DbByteArrayDirect(new byte[]{1,2,3}), (int[])null));
+        assertEquals(target, wstd(new ByteVectorDirect(new byte[]{1,2,3,NULL_BYTE,5}), new int[]{4,5,6,7,NULL_INT}));
+        assertEquals(NULL_DOUBLE, wstd((ByteVector)null, new int[]{4,5,6}));
+        assertEquals(NULL_DOUBLE, wstd(new ByteVectorDirect(new byte[]{1,2,3}), (int[])null));
 
-        assertEquals(target, wstd(new DbByteArrayDirect(new byte[]{1,2,3,NULL_BYTE,5}), new long[]{4,5,6,7,NULL_LONG}));
-        assertEquals(NULL_DOUBLE, wstd((DbByteArray)null, new long[]{4,5,6}));
-        assertEquals(NULL_DOUBLE, wstd(new DbByteArrayDirect(new byte[]{1,2,3}), (long[])null));
+        assertEquals(target, wstd(new ByteVectorDirect(new byte[]{1,2,3,NULL_BYTE,5}), new long[]{4,5,6,7,NULL_LONG}));
+        assertEquals(NULL_DOUBLE, wstd((ByteVector)null, new long[]{4,5,6}));
+        assertEquals(NULL_DOUBLE, wstd(new ByteVectorDirect(new byte[]{1,2,3}), (long[])null));
 
-        assertEquals(target, wstd(new DbByteArrayDirect(new byte[]{1,2,3,NULL_BYTE,5}), new double[]{4,5,6,7,NULL_DOUBLE}));
-        assertEquals(NULL_DOUBLE, wstd((DbByteArray)null, new double[]{4,5,6}));
-        assertEquals(NULL_DOUBLE, wstd(new DbByteArrayDirect(new byte[]{1,2,3}), (double[])null));
+        assertEquals(target, wstd(new ByteVectorDirect(new byte[]{1,2,3,NULL_BYTE,5}), new double[]{4,5,6,7,NULL_DOUBLE}));
+        assertEquals(NULL_DOUBLE, wstd((ByteVector)null, new double[]{4,5,6}));
+        assertEquals(NULL_DOUBLE, wstd(new ByteVectorDirect(new byte[]{1,2,3}), (double[])null));
 
-        assertEquals(target, wstd(new DbByteArrayDirect(new byte[]{1,2,3,NULL_BYTE,5}), new float[]{4,5,6,7,NULL_FLOAT}));
-        assertEquals(NULL_DOUBLE, wstd((DbByteArray)null, new float[]{4,5,6}));
-        assertEquals(NULL_DOUBLE, wstd(new DbByteArrayDirect(new byte[]{1,2,3}), (float[])null));
-
-        /////
-
-        assertEquals(target, wstd(new byte[]{1,2,3,NULL_BYTE,5}, new DbByteArrayDirect(new byte[]{4,5,6,7,NULL_BYTE})));
-        assertEquals(NULL_DOUBLE, wstd((byte[])null, new DbByteArrayDirect(new byte[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, wstd(new byte[]{1,2,3}, (DbByteArray) null));
-
-        assertEquals(target, wstd(new byte[]{1,2,3,NULL_BYTE,5}, new DbIntArrayDirect(new int[]{4,5,6,7,NULL_INT})));
-        assertEquals(NULL_DOUBLE, wstd((byte[])null, new DbIntArrayDirect(new int[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, wstd(new byte[]{1,2,3}, (DbIntArray) null));
-
-        assertEquals(target, wstd(new byte[]{1,2,3,NULL_BYTE,5}, new DbLongArrayDirect(new long[]{4,5,6,7,NULL_LONG})));
-        assertEquals(NULL_DOUBLE, wstd((byte[])null, new DbLongArrayDirect(new long[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, wstd(new byte[]{1,2,3}, (DbLongArray) null));
-
-        assertEquals(target, wstd(new byte[]{1,2,3,NULL_BYTE,5}, new DbDoubleArrayDirect(new double[]{4,5,6,7,NULL_DOUBLE})));
-        assertEquals(NULL_DOUBLE, wstd((byte[])null, new DbDoubleArrayDirect(new double[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, wstd(new byte[]{1,2,3}, (DbDoubleArray)null));
-
-        assertEquals(target, wstd(new byte[]{1,2,3,NULL_BYTE,5}, new DbFloatArrayDirect(new float[]{4,5,6,7,NULL_FLOAT})));
-        assertEquals(NULL_DOUBLE, wstd((byte[])null, new DbFloatArrayDirect(new float[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, wstd(new byte[]{1,2,3}, (DbFloatArray)null));
+        assertEquals(target, wstd(new ByteVectorDirect(new byte[]{1,2,3,NULL_BYTE,5}), new float[]{4,5,6,7,NULL_FLOAT}));
+        assertEquals(NULL_DOUBLE, wstd((ByteVector)null, new float[]{4,5,6}));
+        assertEquals(NULL_DOUBLE, wstd(new ByteVectorDirect(new byte[]{1,2,3}), (float[])null));
 
         /////
 
-        assertEquals(target, wstd(new DbByteArrayDirect(new byte[]{1,2,3,NULL_BYTE,5}), new DbByteArrayDirect(new byte[]{4,5,6,7,NULL_BYTE})));
-        assertEquals(NULL_DOUBLE, wstd((DbByteArray) null, new DbByteArrayDirect(new byte[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, wstd(new DbByteArrayDirect(new byte[]{1,2,3}), (DbByteArray) null));
+        assertEquals(target, wstd(new byte[]{1,2,3,NULL_BYTE,5}, new ByteVectorDirect(new byte[]{4,5,6,7,NULL_BYTE})));
+        assertEquals(NULL_DOUBLE, wstd((byte[])null, new ByteVectorDirect(new byte[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, wstd(new byte[]{1,2,3}, (ByteVector) null));
 
-        assertEquals(target, wstd(new DbByteArrayDirect(new byte[]{1,2,3,NULL_BYTE,5}), new DbIntArrayDirect(new int[]{4,5,6,7,NULL_INT})));
-        assertEquals(NULL_DOUBLE, wstd((DbByteArray) null, new DbIntArrayDirect(new int[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, wstd(new DbByteArrayDirect(new byte[]{1,2,3}), (DbIntArray) null));
+        assertEquals(target, wstd(new byte[]{1,2,3,NULL_BYTE,5}, new IntVectorDirect(new int[]{4,5,6,7,NULL_INT})));
+        assertEquals(NULL_DOUBLE, wstd((byte[])null, new IntVectorDirect(new int[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, wstd(new byte[]{1,2,3}, (IntVector) null));
 
-        assertEquals(target, wstd(new DbByteArrayDirect(new byte[]{1,2,3,NULL_BYTE,5}), new DbLongArrayDirect(new long[]{4,5,6,7,NULL_LONG})));
-        assertEquals(NULL_DOUBLE, wstd((DbByteArray) null, new DbLongArrayDirect(new long[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, wstd(new DbByteArrayDirect(new byte[]{1,2,3}), (DbLongArray) null));
+        assertEquals(target, wstd(new byte[]{1,2,3,NULL_BYTE,5}, new LongVectorDirect(new long[]{4,5,6,7,NULL_LONG})));
+        assertEquals(NULL_DOUBLE, wstd((byte[])null, new LongVectorDirect(new long[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, wstd(new byte[]{1,2,3}, (LongVector) null));
 
-        assertEquals(target, wstd(new DbByteArrayDirect(new byte[]{1,2,3,NULL_BYTE,5}), new DbDoubleArrayDirect(new double[]{4,5,6,7,NULL_DOUBLE})));
-        assertEquals(NULL_DOUBLE, wstd((DbByteArray) null, new DbDoubleArrayDirect(new double[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, wstd(new DbByteArrayDirect(new byte[]{1,2,3}), (DbDoubleArray)null));
+        assertEquals(target, wstd(new byte[]{1,2,3,NULL_BYTE,5}, new DoubleVectorDirect(new double[]{4,5,6,7,NULL_DOUBLE})));
+        assertEquals(NULL_DOUBLE, wstd((byte[])null, new DoubleVectorDirect(new double[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, wstd(new byte[]{1,2,3}, (DoubleVector)null));
 
-        assertEquals(target, wstd(new DbByteArrayDirect(new byte[]{1,2,3,NULL_BYTE,5}), new DbFloatArrayDirect(new float[]{4,5,6,7,NULL_FLOAT})));
-        assertEquals(NULL_DOUBLE, wstd((DbByteArray) null, new DbFloatArrayDirect(new float[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, wstd(new DbByteArrayDirect(new byte[]{1,2,3}), (DbFloatArray)null));
+        assertEquals(target, wstd(new byte[]{1,2,3,NULL_BYTE,5}, new FloatVectorDirect(new float[]{4,5,6,7,NULL_FLOAT})));
+        assertEquals(NULL_DOUBLE, wstd((byte[])null, new FloatVectorDirect(new float[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, wstd(new byte[]{1,2,3}, (FloatVector)null));
+
+        /////
+
+        assertEquals(target, wstd(new ByteVectorDirect(new byte[]{1,2,3,NULL_BYTE,5}), new ByteVectorDirect(new byte[]{4,5,6,7,NULL_BYTE})));
+        assertEquals(NULL_DOUBLE, wstd((ByteVector) null, new ByteVectorDirect(new byte[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, wstd(new ByteVectorDirect(new byte[]{1,2,3}), (ByteVector) null));
+
+        assertEquals(target, wstd(new ByteVectorDirect(new byte[]{1,2,3,NULL_BYTE,5}), new IntVectorDirect(new int[]{4,5,6,7,NULL_INT})));
+        assertEquals(NULL_DOUBLE, wstd((ByteVector) null, new IntVectorDirect(new int[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, wstd(new ByteVectorDirect(new byte[]{1,2,3}), (IntVector) null));
+
+        assertEquals(target, wstd(new ByteVectorDirect(new byte[]{1,2,3,NULL_BYTE,5}), new LongVectorDirect(new long[]{4,5,6,7,NULL_LONG})));
+        assertEquals(NULL_DOUBLE, wstd((ByteVector) null, new LongVectorDirect(new long[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, wstd(new ByteVectorDirect(new byte[]{1,2,3}), (LongVector) null));
+
+        assertEquals(target, wstd(new ByteVectorDirect(new byte[]{1,2,3,NULL_BYTE,5}), new DoubleVectorDirect(new double[]{4,5,6,7,NULL_DOUBLE})));
+        assertEquals(NULL_DOUBLE, wstd((ByteVector) null, new DoubleVectorDirect(new double[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, wstd(new ByteVectorDirect(new byte[]{1,2,3}), (DoubleVector)null));
+
+        assertEquals(target, wstd(new ByteVectorDirect(new byte[]{1,2,3,NULL_BYTE,5}), new FloatVectorDirect(new float[]{4,5,6,7,NULL_FLOAT})));
+        assertEquals(NULL_DOUBLE, wstd((ByteVector) null, new FloatVectorDirect(new float[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, wstd(new ByteVectorDirect(new byte[]{1,2,3}), (FloatVector)null));
     }
 
     public void testWste() {
@@ -1429,69 +1429,69 @@ public class TestByteNumericPrimitives extends BaseArrayTestCase {
 
         /////
 
-        assertEquals(target, wste(new DbByteArrayDirect(new byte[]{1,2,3,NULL_BYTE,5}), new byte[]{4,5,6,7,NULL_BYTE}));
-        assertEquals(NULL_DOUBLE, wste((DbByteArray) null, new byte[]{4,5,6}));
-        assertEquals(NULL_DOUBLE, wste(new DbByteArrayDirect(new byte[]{1,2,3}), (byte[])null));
+        assertEquals(target, wste(new ByteVectorDirect(new byte[]{1,2,3,NULL_BYTE,5}), new byte[]{4,5,6,7,NULL_BYTE}));
+        assertEquals(NULL_DOUBLE, wste((ByteVector) null, new byte[]{4,5,6}));
+        assertEquals(NULL_DOUBLE, wste(new ByteVectorDirect(new byte[]{1,2,3}), (byte[])null));
 
-        assertEquals(target, wste(new DbByteArrayDirect(new byte[]{1,2,3,NULL_BYTE,5}), new int[]{4,5,6,7,NULL_INT}));
-        assertEquals(NULL_DOUBLE, wste((DbByteArray)null, new int[]{4,5,6}));
-        assertEquals(NULL_DOUBLE, wste(new DbByteArrayDirect(new byte[]{1,2,3}), (int[])null));
+        assertEquals(target, wste(new ByteVectorDirect(new byte[]{1,2,3,NULL_BYTE,5}), new int[]{4,5,6,7,NULL_INT}));
+        assertEquals(NULL_DOUBLE, wste((ByteVector)null, new int[]{4,5,6}));
+        assertEquals(NULL_DOUBLE, wste(new ByteVectorDirect(new byte[]{1,2,3}), (int[])null));
 
-        assertEquals(target, wste(new DbByteArrayDirect(new byte[]{1,2,3,NULL_BYTE,5}), new long[]{4,5,6,7,NULL_LONG}));
-        assertEquals(NULL_DOUBLE, wste((DbByteArray)null, new long[]{4,5,6}));
-        assertEquals(NULL_DOUBLE, wste(new DbByteArrayDirect(new byte[]{1,2,3}), (long[])null));
+        assertEquals(target, wste(new ByteVectorDirect(new byte[]{1,2,3,NULL_BYTE,5}), new long[]{4,5,6,7,NULL_LONG}));
+        assertEquals(NULL_DOUBLE, wste((ByteVector)null, new long[]{4,5,6}));
+        assertEquals(NULL_DOUBLE, wste(new ByteVectorDirect(new byte[]{1,2,3}), (long[])null));
 
-        assertEquals(target, wste(new DbByteArrayDirect(new byte[]{1,2,3,NULL_BYTE,5}), new double[]{4,5,6,7,NULL_DOUBLE}));
-        assertEquals(NULL_DOUBLE, wste((DbByteArray)null, new double[]{4,5,6}));
-        assertEquals(NULL_DOUBLE, wste(new DbByteArrayDirect(new byte[]{1,2,3}), (double[])null));
+        assertEquals(target, wste(new ByteVectorDirect(new byte[]{1,2,3,NULL_BYTE,5}), new double[]{4,5,6,7,NULL_DOUBLE}));
+        assertEquals(NULL_DOUBLE, wste((ByteVector)null, new double[]{4,5,6}));
+        assertEquals(NULL_DOUBLE, wste(new ByteVectorDirect(new byte[]{1,2,3}), (double[])null));
 
-        assertEquals(target, wste(new DbByteArrayDirect(new byte[]{1,2,3,NULL_BYTE,5}), new float[]{4,5,6,7,NULL_FLOAT}));
-        assertEquals(NULL_DOUBLE, wste((DbByteArray)null, new float[]{4,5,6}));
-        assertEquals(NULL_DOUBLE, wste(new DbByteArrayDirect(new byte[]{1,2,3}), (float[])null));
-
-        /////
-
-        assertEquals(target, wste(new byte[]{1,2,3,NULL_BYTE,5}, new DbByteArrayDirect(new byte[]{4,5,6,7,NULL_BYTE})));
-        assertEquals(NULL_DOUBLE, wste((byte[])null, new DbByteArrayDirect(new byte[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, wste(new byte[]{1,2,3}, (DbByteArray) null));
-
-        assertEquals(target, wste(new byte[]{1,2,3,NULL_BYTE,5}, new DbIntArrayDirect(new int[]{4,5,6,7,NULL_INT})));
-        assertEquals(NULL_DOUBLE, wste((byte[])null, new DbIntArrayDirect(new int[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, wste(new byte[]{1,2,3}, (DbIntArray) null));
-
-        assertEquals(target, wste(new byte[]{1,2,3,NULL_BYTE,5}, new DbLongArrayDirect(new long[]{4,5,6,7,NULL_LONG})));
-        assertEquals(NULL_DOUBLE, wste((byte[])null, new DbLongArrayDirect(new long[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, wste(new byte[]{1,2,3}, (DbLongArray) null));
-
-        assertEquals(target, wste(new byte[]{1,2,3,NULL_BYTE,5}, new DbDoubleArrayDirect(new double[]{4,5,6,7,NULL_DOUBLE})));
-        assertEquals(NULL_DOUBLE, wste((byte[])null, new DbDoubleArrayDirect(new double[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, wste(new byte[]{1,2,3}, (DbDoubleArray)null));
-
-        assertEquals(target, wste(new byte[]{1,2,3,NULL_BYTE,5}, new DbFloatArrayDirect(new float[]{4,5,6,7,NULL_FLOAT})));
-        assertEquals(NULL_DOUBLE, wste((byte[])null, new DbFloatArrayDirect(new float[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, wste(new byte[]{1,2,3}, (DbFloatArray)null));
+        assertEquals(target, wste(new ByteVectorDirect(new byte[]{1,2,3,NULL_BYTE,5}), new float[]{4,5,6,7,NULL_FLOAT}));
+        assertEquals(NULL_DOUBLE, wste((ByteVector)null, new float[]{4,5,6}));
+        assertEquals(NULL_DOUBLE, wste(new ByteVectorDirect(new byte[]{1,2,3}), (float[])null));
 
         /////
 
-        assertEquals(target, wste(new DbByteArrayDirect(new byte[]{1,2,3,NULL_BYTE,5}), new DbByteArrayDirect(new byte[]{4,5,6,7,NULL_BYTE})));
-        assertEquals(NULL_DOUBLE, wste((DbByteArray) null, new DbByteArrayDirect(new byte[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, wste(new DbByteArrayDirect(new byte[]{1,2,3}), (DbByteArray) null));
+        assertEquals(target, wste(new byte[]{1,2,3,NULL_BYTE,5}, new ByteVectorDirect(new byte[]{4,5,6,7,NULL_BYTE})));
+        assertEquals(NULL_DOUBLE, wste((byte[])null, new ByteVectorDirect(new byte[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, wste(new byte[]{1,2,3}, (ByteVector) null));
 
-        assertEquals(target, wste(new DbByteArrayDirect(new byte[]{1,2,3,NULL_BYTE,5}), new DbIntArrayDirect(new int[]{4,5,6,7,NULL_INT})));
-        assertEquals(NULL_DOUBLE, wste((DbByteArray) null, new DbIntArrayDirect(new int[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, wste(new DbByteArrayDirect(new byte[]{1,2,3}), (DbIntArray) null));
+        assertEquals(target, wste(new byte[]{1,2,3,NULL_BYTE,5}, new IntVectorDirect(new int[]{4,5,6,7,NULL_INT})));
+        assertEquals(NULL_DOUBLE, wste((byte[])null, new IntVectorDirect(new int[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, wste(new byte[]{1,2,3}, (IntVector) null));
 
-        assertEquals(target, wste(new DbByteArrayDirect(new byte[]{1,2,3,NULL_BYTE,5}), new DbLongArrayDirect(new long[]{4,5,6,7,NULL_LONG})));
-        assertEquals(NULL_DOUBLE, wste((DbByteArray) null, new DbLongArrayDirect(new long[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, wste(new DbByteArrayDirect(new byte[]{1,2,3}), (DbLongArray) null));
+        assertEquals(target, wste(new byte[]{1,2,3,NULL_BYTE,5}, new LongVectorDirect(new long[]{4,5,6,7,NULL_LONG})));
+        assertEquals(NULL_DOUBLE, wste((byte[])null, new LongVectorDirect(new long[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, wste(new byte[]{1,2,3}, (LongVector) null));
 
-        assertEquals(target, wste(new DbByteArrayDirect(new byte[]{1,2,3,NULL_BYTE,5}), new DbDoubleArrayDirect(new double[]{4,5,6,7,NULL_DOUBLE})));
-        assertEquals(NULL_DOUBLE, wste((DbByteArray) null, new DbDoubleArrayDirect(new double[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, wste(new DbByteArrayDirect(new byte[]{1,2,3}), (DbDoubleArray)null));
+        assertEquals(target, wste(new byte[]{1,2,3,NULL_BYTE,5}, new DoubleVectorDirect(new double[]{4,5,6,7,NULL_DOUBLE})));
+        assertEquals(NULL_DOUBLE, wste((byte[])null, new DoubleVectorDirect(new double[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, wste(new byte[]{1,2,3}, (DoubleVector)null));
 
-        assertEquals(target, wste(new DbByteArrayDirect(new byte[]{1,2,3,NULL_BYTE,5}), new DbFloatArrayDirect(new float[]{4,5,6,7,NULL_FLOAT})));
-        assertEquals(NULL_DOUBLE, wste((DbByteArray) null, new DbFloatArrayDirect(new float[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, wste(new DbByteArrayDirect(new byte[]{1,2,3}), (DbFloatArray)null));
+        assertEquals(target, wste(new byte[]{1,2,3,NULL_BYTE,5}, new FloatVectorDirect(new float[]{4,5,6,7,NULL_FLOAT})));
+        assertEquals(NULL_DOUBLE, wste((byte[])null, new FloatVectorDirect(new float[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, wste(new byte[]{1,2,3}, (FloatVector)null));
+
+        /////
+
+        assertEquals(target, wste(new ByteVectorDirect(new byte[]{1,2,3,NULL_BYTE,5}), new ByteVectorDirect(new byte[]{4,5,6,7,NULL_BYTE})));
+        assertEquals(NULL_DOUBLE, wste((ByteVector) null, new ByteVectorDirect(new byte[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, wste(new ByteVectorDirect(new byte[]{1,2,3}), (ByteVector) null));
+
+        assertEquals(target, wste(new ByteVectorDirect(new byte[]{1,2,3,NULL_BYTE,5}), new IntVectorDirect(new int[]{4,5,6,7,NULL_INT})));
+        assertEquals(NULL_DOUBLE, wste((ByteVector) null, new IntVectorDirect(new int[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, wste(new ByteVectorDirect(new byte[]{1,2,3}), (IntVector) null));
+
+        assertEquals(target, wste(new ByteVectorDirect(new byte[]{1,2,3,NULL_BYTE,5}), new LongVectorDirect(new long[]{4,5,6,7,NULL_LONG})));
+        assertEquals(NULL_DOUBLE, wste((ByteVector) null, new LongVectorDirect(new long[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, wste(new ByteVectorDirect(new byte[]{1,2,3}), (LongVector) null));
+
+        assertEquals(target, wste(new ByteVectorDirect(new byte[]{1,2,3,NULL_BYTE,5}), new DoubleVectorDirect(new double[]{4,5,6,7,NULL_DOUBLE})));
+        assertEquals(NULL_DOUBLE, wste((ByteVector) null, new DoubleVectorDirect(new double[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, wste(new ByteVectorDirect(new byte[]{1,2,3}), (DoubleVector)null));
+
+        assertEquals(target, wste(new ByteVectorDirect(new byte[]{1,2,3,NULL_BYTE,5}), new FloatVectorDirect(new float[]{4,5,6,7,NULL_FLOAT})));
+        assertEquals(NULL_DOUBLE, wste((ByteVector) null, new FloatVectorDirect(new float[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, wste(new ByteVectorDirect(new byte[]{1,2,3}), (FloatVector)null));
     }
 
     public void testWtstat() {
@@ -1519,68 +1519,68 @@ public class TestByteNumericPrimitives extends BaseArrayTestCase {
 
         /////
 
-        assertEquals(target, wtstat(new DbByteArrayDirect(new byte[]{1,2,3,NULL_BYTE,5}), new byte[]{4,5,6,7,NULL_BYTE}));
-        assertEquals(NULL_DOUBLE, wtstat((DbByteArray) null, new byte[]{4,5,6}));
-        assertEquals(NULL_DOUBLE, wtstat(new DbByteArrayDirect(new byte[]{1,2,3}), (byte[])null));
+        assertEquals(target, wtstat(new ByteVectorDirect(new byte[]{1,2,3,NULL_BYTE,5}), new byte[]{4,5,6,7,NULL_BYTE}));
+        assertEquals(NULL_DOUBLE, wtstat((ByteVector) null, new byte[]{4,5,6}));
+        assertEquals(NULL_DOUBLE, wtstat(new ByteVectorDirect(new byte[]{1,2,3}), (byte[])null));
 
-        assertEquals(target, wtstat(new DbByteArrayDirect(new byte[]{1,2,3,NULL_BYTE,5}), new int[]{4,5,6,7,NULL_INT}));
-        assertEquals(NULL_DOUBLE, wtstat((DbByteArray)null, new int[]{4,5,6}));
-        assertEquals(NULL_DOUBLE, wtstat(new DbByteArrayDirect(new byte[]{1,2,3}), (int[])null));
+        assertEquals(target, wtstat(new ByteVectorDirect(new byte[]{1,2,3,NULL_BYTE,5}), new int[]{4,5,6,7,NULL_INT}));
+        assertEquals(NULL_DOUBLE, wtstat((ByteVector)null, new int[]{4,5,6}));
+        assertEquals(NULL_DOUBLE, wtstat(new ByteVectorDirect(new byte[]{1,2,3}), (int[])null));
 
-        assertEquals(target, wtstat(new DbByteArrayDirect(new byte[]{1,2,3,NULL_BYTE,5}), new long[]{4,5,6,7,NULL_LONG}));
-        assertEquals(NULL_DOUBLE, wtstat((DbByteArray)null, new long[]{4,5,6}));
-        assertEquals(NULL_DOUBLE, wtstat(new DbByteArrayDirect(new byte[]{1,2,3}), (long[])null));
+        assertEquals(target, wtstat(new ByteVectorDirect(new byte[]{1,2,3,NULL_BYTE,5}), new long[]{4,5,6,7,NULL_LONG}));
+        assertEquals(NULL_DOUBLE, wtstat((ByteVector)null, new long[]{4,5,6}));
+        assertEquals(NULL_DOUBLE, wtstat(new ByteVectorDirect(new byte[]{1,2,3}), (long[])null));
 
-        assertEquals(target, wtstat(new DbByteArrayDirect(new byte[]{1,2,3,NULL_BYTE,5}), new double[]{4,5,6,7,NULL_DOUBLE}));
-        assertEquals(NULL_DOUBLE, wtstat((DbByteArray)null, new double[]{4,5,6}));
-        assertEquals(NULL_DOUBLE, wtstat(new DbByteArrayDirect(new byte[]{1,2,3}), (double[])null));
+        assertEquals(target, wtstat(new ByteVectorDirect(new byte[]{1,2,3,NULL_BYTE,5}), new double[]{4,5,6,7,NULL_DOUBLE}));
+        assertEquals(NULL_DOUBLE, wtstat((ByteVector)null, new double[]{4,5,6}));
+        assertEquals(NULL_DOUBLE, wtstat(new ByteVectorDirect(new byte[]{1,2,3}), (double[])null));
 
-        assertEquals(target, wtstat(new DbByteArrayDirect(new byte[]{1,2,3,NULL_BYTE,5}), new float[]{4,5,6,7,NULL_FLOAT}));
-        assertEquals(NULL_DOUBLE, wtstat((DbByteArray)null, new float[]{4,5,6}));
-        assertEquals(NULL_DOUBLE, wtstat(new DbByteArrayDirect(new byte[]{1,2,3}), (float[])null));
-
-        /////
-
-        assertEquals(target, wtstat(new byte[]{1,2,3,NULL_BYTE,5}, new DbByteArrayDirect(new byte[]{4,5,6,7,NULL_BYTE})));
-        assertEquals(NULL_DOUBLE, wtstat((byte[])null, new DbByteArrayDirect(new byte[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, wtstat(new byte[]{1,2,3}, (DbByteArray) null));
-
-        assertEquals(target, wtstat(new byte[]{1,2,3,NULL_BYTE,5}, new DbIntArrayDirect(new int[]{4,5,6,7,NULL_INT})));
-        assertEquals(NULL_DOUBLE, wtstat((byte[])null, new DbIntArrayDirect(new int[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, wtstat(new byte[]{1,2,3}, (DbIntArray) null));
-
-        assertEquals(target, wtstat(new byte[]{1,2,3,NULL_BYTE,5}, new DbLongArrayDirect(new long[]{4,5,6,7,NULL_LONG})));
-        assertEquals(NULL_DOUBLE, wtstat((byte[])null, new DbLongArrayDirect(new long[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, wtstat(new byte[]{1,2,3}, (DbLongArray) null));
-
-        assertEquals(target, wtstat(new byte[]{1,2,3,NULL_BYTE,5}, new DbDoubleArrayDirect(new double[]{4,5,6,7,NULL_DOUBLE})));
-        assertEquals(NULL_DOUBLE, wtstat((byte[])null, new DbDoubleArrayDirect(new double[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, wtstat(new byte[]{1,2,3}, (DbDoubleArray)null));
-
-        assertEquals(target, wtstat(new byte[]{1,2,3,NULL_BYTE,5}, new DbFloatArrayDirect(new float[]{4,5,6,7,NULL_FLOAT})));
-        assertEquals(NULL_DOUBLE, wtstat((byte[])null, new DbFloatArrayDirect(new float[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, wtstat(new byte[]{1,2,3}, (DbFloatArray)null));
+        assertEquals(target, wtstat(new ByteVectorDirect(new byte[]{1,2,3,NULL_BYTE,5}), new float[]{4,5,6,7,NULL_FLOAT}));
+        assertEquals(NULL_DOUBLE, wtstat((ByteVector)null, new float[]{4,5,6}));
+        assertEquals(NULL_DOUBLE, wtstat(new ByteVectorDirect(new byte[]{1,2,3}), (float[])null));
 
         /////
 
-        assertEquals(target, wtstat(new DbByteArrayDirect(new byte[]{1,2,3,NULL_BYTE,5}), new DbByteArrayDirect(new byte[]{4,5,6,7,NULL_BYTE})));
-        assertEquals(NULL_DOUBLE, wtstat((DbByteArray) null, new DbByteArrayDirect(new byte[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, wtstat(new DbByteArrayDirect(new byte[]{1,2,3}), (DbByteArray) null));
+        assertEquals(target, wtstat(new byte[]{1,2,3,NULL_BYTE,5}, new ByteVectorDirect(new byte[]{4,5,6,7,NULL_BYTE})));
+        assertEquals(NULL_DOUBLE, wtstat((byte[])null, new ByteVectorDirect(new byte[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, wtstat(new byte[]{1,2,3}, (ByteVector) null));
 
-        assertEquals(target, wtstat(new DbByteArrayDirect(new byte[]{1,2,3,NULL_BYTE,5}), new DbIntArrayDirect(new int[]{4,5,6,7,NULL_INT})));
-        assertEquals(NULL_DOUBLE, wtstat((DbByteArray) null, new DbIntArrayDirect(new int[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, wtstat(new DbByteArrayDirect(new byte[]{1,2,3}), (DbIntArray) null));
+        assertEquals(target, wtstat(new byte[]{1,2,3,NULL_BYTE,5}, new IntVectorDirect(new int[]{4,5,6,7,NULL_INT})));
+        assertEquals(NULL_DOUBLE, wtstat((byte[])null, new IntVectorDirect(new int[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, wtstat(new byte[]{1,2,3}, (IntVector) null));
 
-        assertEquals(target, wtstat(new DbByteArrayDirect(new byte[]{1,2,3,NULL_BYTE,5}), new DbLongArrayDirect(new long[]{4,5,6,7,NULL_LONG})));
-        assertEquals(NULL_DOUBLE, wtstat((DbByteArray) null, new DbLongArrayDirect(new long[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, wtstat(new DbByteArrayDirect(new byte[]{1,2,3}), (DbLongArray) null));
+        assertEquals(target, wtstat(new byte[]{1,2,3,NULL_BYTE,5}, new LongVectorDirect(new long[]{4,5,6,7,NULL_LONG})));
+        assertEquals(NULL_DOUBLE, wtstat((byte[])null, new LongVectorDirect(new long[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, wtstat(new byte[]{1,2,3}, (LongVector) null));
 
-        assertEquals(target, wtstat(new DbByteArrayDirect(new byte[]{1,2,3,NULL_BYTE,5}), new DbDoubleArrayDirect(new double[]{4,5,6,7,NULL_DOUBLE})));
-        assertEquals(NULL_DOUBLE, wtstat((DbByteArray) null, new DbDoubleArrayDirect(new double[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, wtstat(new DbByteArrayDirect(new byte[]{1,2,3}), (DbDoubleArray)null));
+        assertEquals(target, wtstat(new byte[]{1,2,3,NULL_BYTE,5}, new DoubleVectorDirect(new double[]{4,5,6,7,NULL_DOUBLE})));
+        assertEquals(NULL_DOUBLE, wtstat((byte[])null, new DoubleVectorDirect(new double[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, wtstat(new byte[]{1,2,3}, (DoubleVector)null));
 
-        assertEquals(target, wtstat(new DbByteArrayDirect(new byte[]{1,2,3,NULL_BYTE,5}), new DbFloatArrayDirect(new float[]{4,5,6,7,NULL_FLOAT})));
-        assertEquals(NULL_DOUBLE, wtstat((DbByteArray) null, new DbFloatArrayDirect(new float[]{4,5,6})));
-        assertEquals(NULL_DOUBLE, wtstat(new DbByteArrayDirect(new byte[]{1,2,3}), (DbFloatArray)null));
+        assertEquals(target, wtstat(new byte[]{1,2,3,NULL_BYTE,5}, new FloatVectorDirect(new float[]{4,5,6,7,NULL_FLOAT})));
+        assertEquals(NULL_DOUBLE, wtstat((byte[])null, new FloatVectorDirect(new float[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, wtstat(new byte[]{1,2,3}, (FloatVector)null));
+
+        /////
+
+        assertEquals(target, wtstat(new ByteVectorDirect(new byte[]{1,2,3,NULL_BYTE,5}), new ByteVectorDirect(new byte[]{4,5,6,7,NULL_BYTE})));
+        assertEquals(NULL_DOUBLE, wtstat((ByteVector) null, new ByteVectorDirect(new byte[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, wtstat(new ByteVectorDirect(new byte[]{1,2,3}), (ByteVector) null));
+
+        assertEquals(target, wtstat(new ByteVectorDirect(new byte[]{1,2,3,NULL_BYTE,5}), new IntVectorDirect(new int[]{4,5,6,7,NULL_INT})));
+        assertEquals(NULL_DOUBLE, wtstat((ByteVector) null, new IntVectorDirect(new int[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, wtstat(new ByteVectorDirect(new byte[]{1,2,3}), (IntVector) null));
+
+        assertEquals(target, wtstat(new ByteVectorDirect(new byte[]{1,2,3,NULL_BYTE,5}), new LongVectorDirect(new long[]{4,5,6,7,NULL_LONG})));
+        assertEquals(NULL_DOUBLE, wtstat((ByteVector) null, new LongVectorDirect(new long[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, wtstat(new ByteVectorDirect(new byte[]{1,2,3}), (LongVector) null));
+
+        assertEquals(target, wtstat(new ByteVectorDirect(new byte[]{1,2,3,NULL_BYTE,5}), new DoubleVectorDirect(new double[]{4,5,6,7,NULL_DOUBLE})));
+        assertEquals(NULL_DOUBLE, wtstat((ByteVector) null, new DoubleVectorDirect(new double[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, wtstat(new ByteVectorDirect(new byte[]{1,2,3}), (DoubleVector)null));
+
+        assertEquals(target, wtstat(new ByteVectorDirect(new byte[]{1,2,3,NULL_BYTE,5}), new FloatVectorDirect(new float[]{4,5,6,7,NULL_FLOAT})));
+        assertEquals(NULL_DOUBLE, wtstat((ByteVector) null, new FloatVectorDirect(new float[]{4,5,6})));
+        assertEquals(NULL_DOUBLE, wtstat(new ByteVectorDirect(new byte[]{1,2,3}), (FloatVector)null));
     }
 }

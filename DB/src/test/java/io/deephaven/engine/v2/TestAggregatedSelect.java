@@ -7,9 +7,9 @@ package io.deephaven.engine.v2;
 import io.deephaven.base.FileUtils;
 import io.deephaven.engine.tables.ColumnDefinition;
 import io.deephaven.engine.tables.*;
-import io.deephaven.engine.tables.dbarrays.DbArray;
-import io.deephaven.engine.tables.dbarrays.DbArrayBase;
-import io.deephaven.engine.tables.dbarrays.DbDoubleArray;
+import io.deephaven.engine.tables.dbarrays.DoubleVector;
+import io.deephaven.engine.tables.dbarrays.ObjectVector;
+import io.deephaven.engine.tables.dbarrays.Vector;
 import io.deephaven.engine.tables.utils.ArrayUtils;
 import io.deephaven.libs.primitives.DoubleNumericPrimitives;
 import io.deephaven.engine.tables.utils.TableTools;
@@ -186,32 +186,32 @@ public class TestAggregatedSelect extends TestCase {
         dumpColumn(result.getColumn("BidSize"));
 
         // noinspection unchecked
-        DataColumn<DbDoubleArray> bidColumn = result.getColumn("Bid");
+        DataColumn<DoubleVector> bidColumn = result.getColumn("Bid");
         // noinspection unchecked
-        DataColumn<DbArray<DbDoubleArray>> bidSizeColumn = result.getColumn("BidSize");
+        DataColumn<ObjectVector<DoubleVector>> bidSizeColumn = result.getColumn("BidSize");
 
-        TestCase.assertTrue(DbDoubleArray.class.isAssignableFrom(bidColumn.getType()));
+        TestCase.assertTrue(DoubleVector.class.isAssignableFrom(bidColumn.getType()));
         TestCase.assertEquals(double.class, bidColumn.getComponentType());
         TestCase.assertEquals(2, bidColumn.size());
 
-        TestCase.assertTrue(DbArray.class.isAssignableFrom(bidSizeColumn.getType()));
+        TestCase.assertTrue(ObjectVector.class.isAssignableFrom(bidSizeColumn.getType()));
         // The tables strip this of its desired Type, instead it becomes an object.
-        TestCase.assertTrue(DbDoubleArray.class.isAssignableFrom(bidSizeColumn.getComponentType()));
+        TestCase.assertTrue(DoubleVector.class.isAssignableFrom(bidSizeColumn.getComponentType()));
         TestCase.assertEquals(2, bidSizeColumn.size());
 
         int[] expectedSize = {1, 2};
         for (int ii = 0; ii < bidColumn.size(); ++ii) {
-            DbDoubleArray bidArray = bidColumn.get(ii);
-            DbArray<DbDoubleArray> bidSizeArray = bidSizeColumn.get(ii);
+            DoubleVector bidArray = bidColumn.get(ii);
+            ObjectVector<DoubleVector> bidSizeArray = bidSizeColumn.get(ii);
 
             TestCase.assertEquals(expectedSize[ii], bidArray.size());
             TestCase.assertEquals(expectedSize[ii], bidSizeArray.size());
 
             TestCase.assertTrue(double.class.isAssignableFrom(bidArray.getComponentType()));
-            TestCase.assertTrue(DbDoubleArray.class.isAssignableFrom(bidSizeArray.getComponentType()));
+            TestCase.assertTrue(DoubleVector.class.isAssignableFrom(bidSizeArray.getComponentType()));
 
             for (int jj = 0; jj < bidSizeArray.size(); ++jj) {
-                DbDoubleArray bidSizeInnerArray = bidSizeArray.get(jj);
+                DoubleVector bidSizeInnerArray = bidSizeArray.get(jj);
                 TestCase.assertTrue(double.class.isAssignableFrom(bidSizeInnerArray.getComponentType()));
             }
         }
@@ -225,29 +225,29 @@ public class TestAggregatedSelect extends TestCase {
     }
 
     private void dumpColumn(DataColumn dc) {
-        boolean isArray = DbArrayBase.class.isAssignableFrom(dc.getType());
+        boolean isArray = Vector.class.isAssignableFrom(dc.getType());
         System.out.println("Column Type: " + dc.getType().toString() + (isArray ? " (Array)" : "") + ", ComponentType: "
                 + dc.getComponentType());
 
         for (int ii = 0; ii < dc.size(); ++ii) {
             String prefix = dc.getName() + "[" + ii + "]";
             if (isArray) {
-                DbArrayBase dbArrayBase = (DbArrayBase) dc.get(ii);
-                dumpArray(prefix, dbArrayBase);
+                Vector vector = (Vector) dc.get(ii);
+                dumpArray(prefix, vector);
             } else {
                 System.out.println(prefix + ":" + dc.get(ii).toString());
             }
         }
     }
 
-    private void dumpArray(String prefix, DbArrayBase dbArrayBase) {
-        System.out.println(prefix + ": Array of " + dbArrayBase.getComponentType().toString());
+    private void dumpArray(String prefix, Vector vector) {
+        System.out.println(prefix + ": Array of " + vector.getComponentType().toString());
         String prefixsp = new String(new char[prefix.length()]).replace('\0', ' ');
-        final boolean containsArrays = DbArrayBase.class.isAssignableFrom(dbArrayBase.getComponentType());
-        final ArrayUtils.ArrayAccessor<?> arrayAccessor = ArrayUtils.getArrayAccessor(dbArrayBase.toArray());
-        for (int jj = 0; jj < dbArrayBase.size(); ++jj) {
+        final boolean containsArrays = Vector.class.isAssignableFrom(vector.getComponentType());
+        final ArrayUtils.ArrayAccessor<?> arrayAccessor = ArrayUtils.getArrayAccessor(vector.toArray());
+        for (int jj = 0; jj < vector.size(); ++jj) {
             if (containsArrays) {
-                dumpArray(prefix + "[" + jj + "] ", (DbArrayBase) arrayAccessor.get(jj));
+                dumpArray(prefix + "[" + jj + "] ", (Vector) arrayAccessor.get(jj));
             } else {
                 System.out.println(prefixsp + "[" + jj + "]: " + arrayAccessor.get(jj).toString());
             }

@@ -40,7 +40,7 @@ public class ParquetSchemaReader {
         public Class<?> baseType;
         /**
          * Some types require special annotations to support regular parquet tools and efficient DH handling. Examples
-         * are StringSet and DbArray; a parquet file with a DbIntArray special type metadata annotation, but storing
+         * are StringSet and Vector; a parquet file with a IntVector special type metadata annotation, but storing
          * types as repeated int, can be loaded both by other parquet tools and efficiently by DH.
          */
         public ColumnTypeInfo.SpecialType dhSpecialType;

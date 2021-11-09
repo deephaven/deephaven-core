@@ -1,7 +1,7 @@
 package io.deephaven.engine.v2.sources.chunk.util.factories;
 
-import io.deephaven.engine.tables.dbarrays.DbArrayDirect;
-import io.deephaven.engine.tables.dbarrays.DbArraySlice;
+import io.deephaven.engine.tables.dbarrays.ObjectVectorDirect;
+import io.deephaven.engine.tables.dbarrays.ObjectVectorSlice;
 import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Any;
 import io.deephaven.engine.v2.sources.chunk.page.ObjectChunkPage;
@@ -81,16 +81,16 @@ public final class ObjectChunkFactory<T> implements ChunkFactory {
     }
 
     @Override
-    public DbArrayDirect<T> dbArrayWrap(Object array) {
+    public ObjectVectorDirect<T> vectorWrap(Object array) {
         //noinspection unchecked
         T [] typedArray = (T[]) array;
-        return new DbArrayDirect<>(typedArray);
+        return new ObjectVectorDirect<>(typedArray);
     }
 
     @Override
-    public DbArraySlice<T> dbArrayWrap(Object array, int offset, int capacity) {
-        DbArrayDirect<T> dbArrayDirect = dbArrayWrap(array);
-        return new DbArraySlice<>(dbArrayDirect, offset, capacity);
+    public ObjectVectorSlice<T> vectorWrap(Object array, int offset, int capacity) {
+        ObjectVectorDirect<T> vectorDirect = vectorWrap(array);
+        return new ObjectVectorSlice<>(vectorDirect, offset, capacity);
     }
 
     @NotNull
