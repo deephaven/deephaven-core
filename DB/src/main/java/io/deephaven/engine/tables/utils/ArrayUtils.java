@@ -5,7 +5,8 @@
 package io.deephaven.engine.tables.utils;
 
 import io.deephaven.base.verify.Require;
-import io.deephaven.engine.tables.dbarrays.*;
+import io.deephaven.engine.vector.*;
+import io.deephaven.engine.vector.*;
 import io.deephaven.util.type.TypeUtils;
 
 import java.lang.reflect.Array;

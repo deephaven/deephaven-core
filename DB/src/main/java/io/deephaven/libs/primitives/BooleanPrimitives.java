@@ -4,9 +4,9 @@
 
 package io.deephaven.libs.primitives;
 
-import io.deephaven.engine.tables.dbarrays.BooleanVector;
-import io.deephaven.engine.tables.dbarrays.ObjectVector;
-import io.deephaven.engine.tables.dbarrays.BooleanVectorDirect;
+import io.deephaven.engine.vector.BooleanVector;
+import io.deephaven.engine.vector.ObjectVector;
+import io.deephaven.engine.vector.BooleanVectorDirect;
 
 import static io.deephaven.util.QueryConstants.NULL_BOOLEAN;
 

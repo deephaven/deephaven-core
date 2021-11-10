@@ -1,10 +1,11 @@
 package io.deephaven.engine.v2.tuples;
 
 import io.deephaven.datastructures.util.SmartKey;
+import io.deephaven.engine.rftable.DefaultChunkSource;
 import io.deephaven.engine.util.tuples.EmptyTuple;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.WritableSource;
-import io.deephaven.engine.v2.sources.chunk.*;
+import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.structures.RowSequence;
 import org.jetbrains.annotations.NotNull;
 

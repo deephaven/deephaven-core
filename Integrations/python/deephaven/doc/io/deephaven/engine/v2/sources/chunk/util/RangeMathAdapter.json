@@ -1,8 +1,8 @@
 {
- "className": "io.deephaven.engine.v2.sources.chunk.util.RangeMathAdapter",
+ "className": "io.deephaven.engine.chunk.util.RangeMathAdapter",
  "methods": {
-  "get": ":param hasRanges: boolean\n:return: io.deephaven.engine.v2.sources.chunk.util.RangeMathAdapter"
+  "get": ":param hasRanges: boolean\n:return: io.deephaven.engine.chunk.util.RangeMathAdapter"
  },
- "path": "io.deephaven.engine.v2.sources.chunk.util.RangeMathAdapter",
+ "path": "io.deephaven.engine.chunk.util.RangeMathAdapter",
  "typeName": "class"
 }

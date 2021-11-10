@@ -1,10 +1,10 @@
 package io.deephaven.engine.v2.locations.parquet.topage;
 
-import io.deephaven.engine.tables.dbarrays.ObjectVector;
-import io.deephaven.engine.tables.dbarrays.ObjectVectorDirect;
+import io.deephaven.engine.vector.ObjectVector;
+import io.deephaven.engine.vector.ObjectVectorDirect;
 import io.deephaven.util.BooleanUtils;
-import io.deephaven.engine.v2.sources.chunk.Attributes;
-import io.deephaven.engine.v2.sources.chunk.ChunkType;
+import io.deephaven.engine.chunk.Attributes;
+import io.deephaven.engine.chunk.ChunkType;
 import org.jetbrains.annotations.NotNull;
 
 import static io.deephaven.util.BooleanUtils.NULL_BOOLEAN_AS_BYTE_BOXED;
@@ -50,7 +50,7 @@ public class ToBooleanAsBytePage<ATTR extends Attributes.Any> implements ToPage<
 
     @Override
     @NotNull
-    public ObjectVector<Boolean> makeDbArray(byte[] result) {
+    public ObjectVector<Boolean> makeVector(byte[] result) {
         Boolean[] to = new Boolean[result.length];
 
         for (int i = 0; i < result.length; ++i) {

@@ -1,9 +1,9 @@
 package io.deephaven.engine.v2.sources.deltaaware;
 
 import io.deephaven.util.BooleanUtils;
-import io.deephaven.engine.v2.sources.chunk.ChunkSource;
+import io.deephaven.engine.rftable.ChunkSource;
 import io.deephaven.engine.v2.sources.WritableChunkSink;
-import io.deephaven.engine.v2.sources.chunk.*;
+import io.deephaven.engine.chunk.*;
 
 public class ChunkAdapter<T> {
     public static <T> ChunkAdapter<T> create(Class type, final WritableChunkSink baseline,

@@ -5,8 +5,8 @@ package io.deephaven.engine.v2.join.dupcompact;
 
 import io.deephaven.engine.util.DhDoubleComparisons;
 
-import io.deephaven.engine.v2.sources.chunk.*;
-import io.deephaven.engine.v2.sources.chunk.Attributes.Any;
+import io.deephaven.engine.chunk.*;
+import io.deephaven.engine.chunk.Attributes.Any;
 
 public class DoubleDupCompactKernel implements DupCompactKernel {
     static final DoubleDupCompactKernel INSTANCE = new DoubleDupCompactKernel();

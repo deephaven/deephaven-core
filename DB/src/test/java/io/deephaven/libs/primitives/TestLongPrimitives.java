@@ -8,8 +8,8 @@
 package io.deephaven.libs.primitives;
 
 import io.deephaven.base.testing.BaseArrayTestCase;
-import io.deephaven.engine.tables.dbarrays.LongVector;
-import io.deephaven.engine.tables.dbarrays.LongVectorDirect;
+import io.deephaven.engine.vector.LongVector;
+import io.deephaven.engine.vector.LongVectorDirect;
 
 import static io.deephaven.libs.primitives.LongPrimitives.*;
 import static io.deephaven.util.QueryConstants.NULL_LONG;

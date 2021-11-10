@@ -7,7 +7,7 @@
 package io.deephaven.numerics.suanshu;
 
 import io.deephaven.base.verify.Require;
-import io.deephaven.engine.tables.dbarrays.*;
+import io.deephaven.engine.vector.*;
 import io.deephaven.engine.util.GroovyDeephavenSession;
 import com.numericalmethod.suanshu.matrix.MatrixAccessException;
 import com.numericalmethod.suanshu.matrix.doubles.Matrix;
@@ -16,6 +16,7 @@ import com.numericalmethod.suanshu.matrix.doubles.matrixtype.mathoperation.Paral
 import com.numericalmethod.suanshu.number.Real;
 import com.numericalmethod.suanshu.vector.doubles.dense.DenseVector;
 import com.numericalmethod.suanshu.vector.doubles.dense.VectorMathOperation;
+import io.deephaven.engine.vector.*;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.Serializable;

@@ -1,8 +1,8 @@
 package io.deephaven.engine.v2.utils.copy;
 
-import io.deephaven.engine.v2.sources.chunk.*;
+import io.deephaven.engine.chunk.*;
 
-import static io.deephaven.engine.v2.sources.chunk.Attributes.*;
+import static io.deephaven.engine.chunk.Attributes.*;
 
 public class ObjectCopyKernel implements CopyKernel {
     public static final ObjectCopyKernel INSTANCE = new ObjectCopyKernel();

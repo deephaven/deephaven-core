@@ -2,24 +2,26 @@ package io.deephaven.engine.v2.select;
 // QueryLibrary internal version number: DEFAULT
 import java.lang.*;
 
-import io.deephaven.engine.v2.sources.chunk.Attributes;
-import io.deephaven.engine.v2.sources.chunk.Chunk;
-import io.deephaven.engine.v2.sources.chunk.IntChunk;
-import io.deephaven.engine.v2.sources.chunk.LongChunk;
-import io.deephaven.engine.v2.sources.chunk.WritableChunk;
-import io.deephaven.engine.v2.sources.chunk.WritableLongChunk;
+import io.deephaven.engine.chunk.Attributes;
+import io.deephaven.engine.chunk.Chunk;
+import io.deephaven.engine.chunk.IntChunk;
+import io.deephaven.engine.chunk.LongChunk;
+import io.deephaven.engine.chunk.WritableChunk;
+import io.deephaven.engine.chunk.WritableLongChunk;
+import io.deephaven.engine.vector.LongVector;
+import io.deephaven.engine.vector.Vector;
 
 import static io.deephaven.engine.tables.lang.LanguageFunctionUtil.*;
 
 public class FormulaKernelSample implements io.deephaven.engine.v2.select.formula.FormulaKernel {
     public static final io.deephaven.engine.v2.select.formula.FormulaKernelFactory __FORMULA_KERNEL_FACTORY = FormulaKernelSample::new;
 
-    private final io.deephaven.engine.tables.dbarrays.LongVector II_;
+    private final LongVector II_;
     private final java.lang.Integer q;
 
-    public FormulaKernelSample(io.deephaven.engine.tables.dbarrays.Vector[] __dbArrays,
-            io.deephaven.engine.tables.select.Param[] __params) {
-        II_ = (io.deephaven.engine.tables.dbarrays.LongVector)__dbArrays[0];
+    public FormulaKernelSample(Vector[] __dbArrays,
+                               io.deephaven.engine.tables.select.Param[] __params) {
+        II_ = (LongVector)__dbArrays[0];
         q = (java.lang.Integer)__params[0].getValue();
     }
 

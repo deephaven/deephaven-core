@@ -2,8 +2,8 @@ package io.deephaven.engine.v2.utils.rsp;
 
 import io.deephaven.configuration.Configuration;
 
-import io.deephaven.engine.v2.sources.chunk.Attributes;
-import io.deephaven.engine.v2.sources.chunk.WritableLongChunk;
+import io.deephaven.engine.chunk.Attributes;
+import io.deephaven.engine.chunk.WritableLongChunk;
 import io.deephaven.engine.v2.utils.rsp.container.Container;
 import io.deephaven.engine.v2.utils.rsp.container.SearchRangeIterator;
 import io.deephaven.engine.v2.utils.rsp.container.SingletonContainer;

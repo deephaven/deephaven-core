@@ -1,10 +1,11 @@
 package io.deephaven.kafka.publish;
 
+import io.deephaven.engine.rftable.ChunkSource;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.utils.DateTime;
 import io.deephaven.engine.util.string.StringUtils;
 import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.sources.chunk.*;
+import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;

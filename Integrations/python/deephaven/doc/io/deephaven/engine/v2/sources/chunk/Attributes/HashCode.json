@@ -1,7 +1,7 @@
 {
- "className": "io.deephaven.engine.v2.sources.chunk.Attributes$HashCode",
+ "className": "io.deephaven.engine.chunk.Attributes$HashCode",
  "methods": {},
- "path": "io.deephaven.engine.v2.sources.chunk.Attributes.HashCode",
+ "path": "io.deephaven.engine.chunk.Attributes.HashCode",
  "text": "The chunk contains integer hash codes.",
  "typeName": "interface"
 }

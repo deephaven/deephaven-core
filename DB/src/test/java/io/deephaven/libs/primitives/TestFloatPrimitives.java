@@ -8,8 +8,8 @@
 package io.deephaven.libs.primitives;
 
 import io.deephaven.base.testing.BaseArrayTestCase;
-import io.deephaven.engine.tables.dbarrays.FloatVector;
-import io.deephaven.engine.tables.dbarrays.FloatVectorDirect;
+import io.deephaven.engine.vector.FloatVector;
+import io.deephaven.engine.vector.FloatVectorDirect;
 
 import static io.deephaven.libs.primitives.FloatPrimitives.*;
 import static io.deephaven.util.QueryConstants.NULL_FLOAT;

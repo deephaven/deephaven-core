@@ -1,19 +1,19 @@
 {
- "className": "io.deephaven.engine.v2.sources.chunk.WritableChunkChunk",
+ "className": "io.deephaven.engine.chunk.WritableChunkChunk",
  "methods": {
-  "asWritableBooleanChunkChunk": ":return: io.deephaven.engine.v2.sources.chunk.WritableBooleanChunkChunk<WritableChunkChunk.ATTR>",
-  "asWritableByteChunkChunk": ":return: io.deephaven.engine.v2.sources.chunk.WritableByteChunkChunk<WritableChunkChunk.ATTR>",
-  "asWritableCharChunkChunk": ":return: io.deephaven.engine.v2.sources.chunk.WritableCharChunkChunk<WritableChunkChunk.ATTR>",
-  "asWritableDoubleChunkChunk": ":return: io.deephaven.engine.v2.sources.chunk.WritableDoubleChunkChunk<WritableChunkChunk.ATTR>",
-  "asWritableFloatChunkChunk": ":return: io.deephaven.engine.v2.sources.chunk.WritableFloatChunkChunk<WritableChunkChunk.ATTR>",
-  "asWritableIntChunkChunk": ":return: io.deephaven.engine.v2.sources.chunk.WritableIntChunkChunk<WritableChunkChunk.ATTR>",
-  "asWritableLongChunkChunk": ":return: io.deephaven.engine.v2.sources.chunk.WritableLongChunkChunk<WritableChunkChunk.ATTR>",
-  "asWritableObjectChunkChunk": "Note: Java generics information - <T>\n\n:return: io.deephaven.engine.v2.sources.chunk.WritableObjectChunkChunk<T,WritableChunkChunk.ATTR>",
-  "asWritableShortChunkChunk": ":return: io.deephaven.engine.v2.sources.chunk.WritableShortChunkChunk<WritableChunkChunk.ATTR>",
-  "getWritableChunk": ":param pos: int\n:return: io.deephaven.engine.v2.sources.chunk.WritableChunk<WritableChunkChunk.ATTR>",
-  "setWritableChunk": ":param pos: int\n:param chunk: io.deephaven.engine.v2.sources.chunk.WritableChunk<WritableChunkChunk.ATTR>",
-  "slice": ":param offset: int\n:param capacity: int\n:return: io.deephaven.engine.v2.sources.chunk.WritableChunkChunk<WritableChunkChunk.ATTR>"
+  "asWritableBooleanChunkChunk": ":return: io.deephaven.engine.chunk.WritableBooleanChunkChunk<WritableChunkChunk.ATTR>",
+  "asWritableByteChunkChunk": ":return: io.deephaven.engine.chunk.WritableByteChunkChunk<WritableChunkChunk.ATTR>",
+  "asWritableCharChunkChunk": ":return: io.deephaven.engine.chunk.WritableCharChunkChunk<WritableChunkChunk.ATTR>",
+  "asWritableDoubleChunkChunk": ":return: io.deephaven.engine.chunk.WritableDoubleChunkChunk<WritableChunkChunk.ATTR>",
+  "asWritableFloatChunkChunk": ":return: io.deephaven.engine.chunk.WritableFloatChunkChunk<WritableChunkChunk.ATTR>",
+  "asWritableIntChunkChunk": ":return: io.deephaven.engine.chunk.WritableIntChunkChunk<WritableChunkChunk.ATTR>",
+  "asWritableLongChunkChunk": ":return: io.deephaven.engine.chunk.WritableLongChunkChunk<WritableChunkChunk.ATTR>",
+  "asWritableObjectChunkChunk": "Note: Java generics information - <T>\n\n:return: io.deephaven.engine.chunk.WritableObjectChunkChunk<T,WritableChunkChunk.ATTR>",
+  "asWritableShortChunkChunk": ":return: io.deephaven.engine.chunk.WritableShortChunkChunk<WritableChunkChunk.ATTR>",
+  "getWritableChunk": ":param pos: int\n:return: io.deephaven.engine.chunk.WritableChunk<WritableChunkChunk.ATTR>",
+  "setWritableChunk": ":param pos: int\n:param chunk: io.deephaven.engine.chunk.WritableChunk<WritableChunkChunk.ATTR>",
+  "slice": ":param offset: int\n:param capacity: int\n:return: io.deephaven.engine.chunk.WritableChunkChunk<WritableChunkChunk.ATTR>"
  },
- "path": "io.deephaven.engine.v2.sources.chunk.WritableChunkChunk",
+ "path": "io.deephaven.engine.chunk.WritableChunkChunk",
  "typeName": "interface"
 }

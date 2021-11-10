@@ -5,8 +5,8 @@
 package io.deephaven.libs.primitives;
 
 import io.deephaven.base.testing.BaseArrayTestCase;
-import io.deephaven.engine.tables.dbarrays.ObjectVector;
-import io.deephaven.engine.tables.dbarrays.ObjectVectorDirect;
+import io.deephaven.engine.vector.ObjectVector;
+import io.deephaven.engine.vector.ObjectVectorDirect;
 import io.deephaven.util.QueryConstants;
 import org.apache.commons.lang3.ArrayUtils;
 import org.jetbrains.annotations.NotNull;

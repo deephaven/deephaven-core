@@ -5,9 +5,9 @@ import io.deephaven.engine.tables.select.MatchPair;
 import io.deephaven.engine.v2.BaseTable;
 import io.deephaven.engine.v2.StreamTableTools;
 import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
-import io.deephaven.engine.v2.sources.chunk.ChunkSource;
-import io.deephaven.engine.v2.sources.chunk.ChunkType;
+import io.deephaven.engine.chunk.Attributes.Values;
+import io.deephaven.engine.rftable.ChunkSource;
+import io.deephaven.engine.chunk.ChunkType;
 import io.deephaven.engine.v2.tuples.TupleSourceFactory;
 import org.jetbrains.annotations.NotNull;
 

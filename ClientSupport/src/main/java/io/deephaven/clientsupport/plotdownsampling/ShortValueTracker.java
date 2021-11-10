@@ -8,8 +8,8 @@ import io.deephaven.engine.v2.utils.MutableRowSet;
 import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.v2.sources.ShortArraySource;
-import io.deephaven.engine.v2.sources.chunk.Attributes;
-import io.deephaven.engine.v2.sources.chunk.Chunk;
+import io.deephaven.engine.chunk.Attributes;
+import io.deephaven.engine.chunk.Chunk;
 import org.jetbrains.annotations.Nullable;
 
 import static io.deephaven.util.QueryConstants.NULL_SHORT;

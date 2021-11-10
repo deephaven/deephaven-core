@@ -2,10 +2,10 @@ package io.deephaven.engine.v2.utils;
 
 import gnu.trove.procedure.TLongProcedure;
 import io.deephaven.engine.structures.RowSequence;
-import io.deephaven.engine.v2.sources.chunk.Attributes;
-import io.deephaven.engine.v2.sources.chunk.LongChunk;
-import io.deephaven.engine.v2.sources.chunk.util.LongChunkIterator;
-import io.deephaven.engine.v2.sources.chunk.util.LongChunkRangeIterator;
+import io.deephaven.engine.chunk.Attributes;
+import io.deephaven.engine.chunk.LongChunk;
+import io.deephaven.engine.chunk.util.LongChunkIterator;
+import io.deephaven.engine.chunk.util.LongChunkRangeIterator;
 
 import java.util.PrimitiveIterator;
 

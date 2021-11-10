@@ -1,22 +1,24 @@
 package io.deephaven.engine.v2.sources;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.rftable.ChunkSource;
+import io.deephaven.engine.rftable.SharedContext;
 import io.deephaven.engine.v2.utils.RowRedirection;
 import io.deephaven.util.BooleanUtils;
 import io.deephaven.engine.v2.join.dupexpand.DupExpandKernel;
 import io.deephaven.engine.v2.sort.permute.PermuteKernel;
 import io.deephaven.engine.v2.sort.timsort.LongIntTimsortKernel;
-import io.deephaven.engine.v2.sources.chunk.Attributes.ChunkLengths;
-import io.deephaven.engine.v2.sources.chunk.Attributes.ChunkPositions;
-import io.deephaven.engine.v2.sources.chunk.*;
+import io.deephaven.engine.chunk.Attributes.ChunkLengths;
+import io.deephaven.engine.chunk.Attributes.ChunkPositions;
+import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.structures.rowsequence.RowSequenceUtil;
 import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.util.type.TypeUtils;
 import org.jetbrains.annotations.NotNull;
 
-import static io.deephaven.engine.v2.sources.chunk.Attributes.RowKeys;
-import static io.deephaven.engine.v2.sources.chunk.Attributes.Values;
+import static io.deephaven.engine.chunk.Attributes.RowKeys;
+import static io.deephaven.engine.chunk.Attributes.Values;
 import static io.deephaven.util.QueryConstants.*;
 
 public class RedirectedColumnSource<T> extends AbstractColumnSource<T> implements UngroupableColumnSource {

@@ -3,13 +3,13 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.v2.hashing;
 
-import io.deephaven.engine.v2.sources.chunk.BooleanChunk;
-import io.deephaven.engine.v2.sources.chunk.Chunk;
-import io.deephaven.engine.v2.sources.chunk.WritableIntChunk;
+import io.deephaven.engine.chunk.BooleanChunk;
+import io.deephaven.engine.chunk.Chunk;
+import io.deephaven.engine.chunk.WritableIntChunk;
 import io.deephaven.util.type.TypeUtils;
 
 import static io.deephaven.engine.v2.hashing.ChunkHasher.scrambleHash;
-import static io.deephaven.engine.v2.sources.chunk.Attributes.*;
+import static io.deephaven.engine.chunk.Attributes.*;
 
 public class BooleanChunkHasher implements ChunkHasher {
     public static BooleanChunkHasher INSTANCE = new BooleanChunkHasher();

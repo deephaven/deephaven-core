@@ -1,8 +1,8 @@
 package io.deephaven.engine.v2.sources;
 
 
-import io.deephaven.engine.v2.sources.chunk.Attributes;
-import io.deephaven.engine.v2.sources.chunk.WritableLongChunk;
+import io.deephaven.engine.chunk.Attributes;
+import io.deephaven.engine.chunk.WritableLongChunk;
 import io.deephaven.engine.structures.RowSequence;
 import gnu.trove.set.TIntSet;
 import gnu.trove.set.hash.TIntHashSet;

@@ -14,7 +14,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
 /**
- * The primitive array types under the package {@code io.deephaven.engine.tables.dbarrays}.
+ * The primitive array types under the package {@code io.deephaven.engine.vector}.
  *
  * @param <T> the array type representing {@code this}
  * @param <ComponentType> the component type
@@ -24,14 +24,14 @@ import java.lang.reflect.Method;
 public abstract class PrimitiveVectorType<T, ComponentType>
         extends ArrayTypeBase<T, ComponentType> {
 
-    private static final String BOOLEAN_VECTOR = "io.deephaven.engine.tables.dbarrays.BooleanVector";
-    private static final String BYTE_VECTOR = "io.deephaven.engine.tables.dbarrays.ByteVector";
-    private static final String CHAR_VECTOR = "io.deephaven.engine.tables.dbarrays.CharVector";
-    private static final String SHORT_VECTOR = "io.deephaven.engine.tables.dbarrays.ShortVector";
-    private static final String INT_VECTOR = "io.deephaven.engine.tables.dbarrays.IntVector";
-    private static final String LONG_VECTOR = "io.deephaven.engine.tables.dbarrays.LongVector";
-    private static final String FLOAT_VECTOR = "io.deephaven.engine.tables.dbarrays.FloatVector";
-    private static final String DOUBLE_VECTOR = "io.deephaven.engine.tables.dbarrays.DoubleVector";
+    private static final String BOOLEAN_VECTOR = "io.deephaven.engine.vector.BooleanVector";
+    private static final String BYTE_VECTOR = "io.deephaven.engine.vector.ByteVector";
+    private static final String CHAR_VECTOR = "io.deephaven.engine.vector.CharVector";
+    private static final String SHORT_VECTOR = "io.deephaven.engine.vector.ShortVector";
+    private static final String INT_VECTOR = "io.deephaven.engine.vector.IntVector";
+    private static final String LONG_VECTOR = "io.deephaven.engine.vector.LongVector";
+    private static final String FLOAT_VECTOR = "io.deephaven.engine.vector.FloatVector";
+    private static final String DOUBLE_VECTOR = "io.deephaven.engine.vector.DoubleVector";
     private static final Set<String> VALID_CLASSES =
             Stream.of(BOOLEAN_VECTOR, BYTE_VECTOR, CHAR_VECTOR, SHORT_VECTOR, INT_VECTOR,
                     LONG_VECTOR, FLOAT_VECTOR, DOUBLE_VECTOR).collect(Collectors.toSet());

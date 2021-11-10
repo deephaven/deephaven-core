@@ -2,7 +2,7 @@
  "className": "io.deephaven.engine.v2.sort.megamerge.CharLongMegaMergeDescendingKernel",
  "methods": {
   "createContext": ":return: io.deephaven.engine.v2.sort.megamerge.CharLongMegaMergeDescendingKernel.CharLongMegaMergeDescendingKernelContext<ATTR,KEY_INDICES>",
-  "merge": ":param destinationKeys: io.deephaven.engine.v2.sources.LongArraySource\n:param destinationValues: io.deephaven.engine.v2.sources.CharacterArraySource\n:param destinationOffset: long\n:param destinationSize: long\n:param keysChunk: io.deephaven.engine.v2.sources.chunk.LongChunk<KEY_INDICES>\n:param valuesChunk: io.deephaven.engine.v2.sources.chunk.CharChunk<ATTR>"
+  "merge": ":param destinationKeys: io.deephaven.engine.v2.sources.LongArraySource\n:param destinationValues: io.deephaven.engine.v2.sources.CharacterArraySource\n:param destinationOffset: long\n:param destinationSize: long\n:param keysChunk: io.deephaven.engine.chunk.LongChunk<KEY_INDICES>\n:param valuesChunk: io.deephaven.engine.chunk.CharChunk<ATTR>"
  },
  "path": "io.deephaven.engine.v2.sort.megamerge.CharLongMegaMergeDescendingKernel",
  "typeName": "class"

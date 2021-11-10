@@ -8,8 +8,8 @@
 package io.deephaven.libs.primitives;
 
 import io.deephaven.base.testing.BaseArrayTestCase;
-import io.deephaven.engine.tables.dbarrays.ByteVector;
-import io.deephaven.engine.tables.dbarrays.ByteVectorDirect;
+import io.deephaven.engine.vector.ByteVector;
+import io.deephaven.engine.vector.ByteVectorDirect;
 
 import static io.deephaven.libs.primitives.BytePrimitives.*;
 import static io.deephaven.util.QueryConstants.NULL_BYTE;

@@ -4,11 +4,11 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.v2.hashing.ToLongCast;
 import io.deephaven.engine.v2.hashing.ToLongFunctor;
 import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.sources.chunk.Attributes.ChunkLengths;
-import io.deephaven.engine.v2.sources.chunk.Attributes.ChunkPositions;
-import io.deephaven.engine.v2.sources.chunk.Attributes.RowKeys;
-import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
-import io.deephaven.engine.v2.sources.chunk.*;
+import io.deephaven.engine.chunk.Attributes.ChunkLengths;
+import io.deephaven.engine.chunk.Attributes.ChunkPositions;
+import io.deephaven.engine.chunk.Attributes.RowKeys;
+import io.deephaven.engine.chunk.Attributes.Values;
+import io.deephaven.engine.chunk.*;
 
 import java.util.Collections;
 import java.util.Map;

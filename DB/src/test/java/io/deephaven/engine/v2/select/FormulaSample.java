@@ -6,14 +6,15 @@ import java.util.*;
 import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.util.LongSizedDataStructure;
 import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.sources.chunk.Attributes;
-import io.deephaven.engine.v2.sources.chunk.IntChunk;
-import io.deephaven.engine.v2.sources.chunk.LongChunk;
-import io.deephaven.engine.v2.sources.chunk.WritableChunk;
-import io.deephaven.engine.v2.sources.chunk.WritableIntChunk;
-import io.deephaven.engine.v2.sources.chunk.WritableLongChunk;
+import io.deephaven.engine.chunk.Attributes;
+import io.deephaven.engine.chunk.IntChunk;
+import io.deephaven.engine.chunk.LongChunk;
+import io.deephaven.engine.chunk.WritableChunk;
+import io.deephaven.engine.chunk.WritableIntChunk;
+import io.deephaven.engine.chunk.WritableLongChunk;
 import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.engine.v2.utils.TrackingRowSet;
+import io.deephaven.engine.vector.LongVector;
 import io.deephaven.util.type.TypeUtils;
 
 import java.util.concurrent.ConcurrentHashMap;
@@ -25,7 +26,7 @@ public class FormulaSample extends io.deephaven.engine.v2.select.Formula {
 
     private final io.deephaven.engine.v2.sources.ColumnSource<java.lang.Long> II;
     private final io.deephaven.engine.v2.sources.ColumnSource<java.lang.Integer> I;
-    private final io.deephaven.engine.tables.dbarrays.LongVector II_;
+    private final LongVector II_;
     private final java.lang.Integer q;
     private final Map<Object, Object> __lazyResultCache;
 
@@ -84,8 +85,8 @@ public class FormulaSample extends io.deephaven.engine.v2.select.Formula {
     }
 
     @Override
-    protected io.deephaven.engine.v2.sources.chunk.ChunkType getChunkType() {
-        return io.deephaven.engine.v2.sources.chunk.ChunkType.Long;
+    protected io.deephaven.engine.chunk.ChunkType getChunkType() {
+        return io.deephaven.engine.chunk.ChunkType.Long;
     }
 
     @Override

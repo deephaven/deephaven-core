@@ -1,22 +1,22 @@
 package io.deephaven.engine.v2.sources;
 
-import static io.deephaven.engine.v2.sources.chunk.Attributes.RowKeys;
-import static io.deephaven.engine.v2.sources.chunk.Attributes.Values;
+import static io.deephaven.engine.chunk.Attributes.RowKeys;
+import static io.deephaven.engine.chunk.Attributes.Values;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.v2.CrossJoinStateManager;
 import io.deephaven.engine.v2.join.dupexpand.DupExpandKernel;
 import io.deephaven.engine.v2.sort.permute.PermuteKernel;
 import io.deephaven.engine.v2.sort.timsort.LongIntTimsortKernel;
-import io.deephaven.engine.v2.sources.chunk.Attributes;
-import io.deephaven.engine.v2.sources.chunk.ChunkStream;
-import io.deephaven.engine.v2.sources.chunk.LongChunk;
-import io.deephaven.engine.v2.sources.chunk.ResettableWritableChunk;
-import io.deephaven.engine.v2.sources.chunk.ResettableWritableLongChunk;
-import io.deephaven.engine.v2.sources.chunk.SharedContext;
-import io.deephaven.engine.v2.sources.chunk.WritableChunk;
-import io.deephaven.engine.v2.sources.chunk.WritableIntChunk;
-import io.deephaven.engine.v2.sources.chunk.WritableLongChunk;
+import io.deephaven.engine.chunk.Attributes;
+import io.deephaven.engine.chunk.ChunkStream;
+import io.deephaven.engine.chunk.LongChunk;
+import io.deephaven.engine.chunk.ResettableWritableChunk;
+import io.deephaven.engine.chunk.ResettableWritableLongChunk;
+import io.deephaven.engine.rftable.SharedContext;
+import io.deephaven.engine.chunk.WritableChunk;
+import io.deephaven.engine.chunk.WritableIntChunk;
+import io.deephaven.engine.chunk.WritableLongChunk;
 import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.structures.rowsequence.RowSequenceUtil;
 import io.deephaven.engine.v2.utils.RowSet;

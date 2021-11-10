@@ -8,16 +8,15 @@
 
 package io.deephaven.libs;
 
-import io.deephaven.engine.tables.dbarrays.BooleanVector;
-import io.deephaven.engine.tables.dbarrays.ByteVector;
-import io.deephaven.engine.tables.dbarrays.CharVector;
-import io.deephaven.engine.tables.dbarrays.DoubleVector;
-import io.deephaven.engine.tables.dbarrays.FloatVector;
-import io.deephaven.engine.tables.dbarrays.IntVector;
-import io.deephaven.engine.tables.dbarrays.LongVector;
-import io.deephaven.engine.tables.dbarrays.ObjectVector;
-import io.deephaven.engine.tables.dbarrays.ShortVector;
-import io.deephaven.libs.primitives.BinSearch;
+import io.deephaven.engine.vector.BooleanVector;
+import io.deephaven.engine.vector.ByteVector;
+import io.deephaven.engine.vector.CharVector;
+import io.deephaven.engine.vector.DoubleVector;
+import io.deephaven.engine.vector.FloatVector;
+import io.deephaven.engine.vector.IntVector;
+import io.deephaven.engine.vector.LongVector;
+import io.deephaven.engine.vector.ObjectVector;
+import io.deephaven.engine.vector.ShortVector;
 import io.deephaven.libs.primitives.BooleanPrimitives;
 import io.deephaven.libs.primitives.ByteNumericPrimitives;
 import io.deephaven.libs.primitives.BytePrimitives;
@@ -39,16 +38,6 @@ import io.deephaven.libs.primitives.ShortNumericPrimitives;
 import io.deephaven.libs.primitives.ShortPrimitives;
 import io.deephaven.libs.primitives.SpecialPrimitives;
 import java.lang.Boolean;
-import java.lang.Byte;
-import java.lang.CharSequence;
-import java.lang.Character;
-import java.lang.Comparable;
-import java.lang.Double;
-import java.lang.Float;
-import java.lang.Integer;
-import java.lang.Long;
-import java.lang.Short;
-import java.lang.String;
 
 /**
  * Functions statically imported into Groovy.
@@ -92,18 +81,18 @@ public class GroovyStaticImports {
     public static  double absAvg( java.lang.Short[] values ) {return ShortNumericPrimitives.absAvg( values );}
     /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#absAvg(short[]) */
     public static  double absAvg( short[] values ) {return ShortNumericPrimitives.absAvg( values );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#absAvg(io.deephaven.engine.tables.dbarrays.ByteVector) */
-    public static  double absAvg( io.deephaven.engine.tables.dbarrays.ByteVector values ) {return ByteNumericPrimitives.absAvg( values );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#absAvg(io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  double absAvg( io.deephaven.engine.tables.dbarrays.DoubleVector values ) {return DoubleNumericPrimitives.absAvg( values );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#absAvg(io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  double absAvg( io.deephaven.engine.tables.dbarrays.FloatVector values ) {return FloatNumericPrimitives.absAvg( values );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#absAvg(io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  double absAvg( io.deephaven.engine.tables.dbarrays.IntVector values ) {return IntegerNumericPrimitives.absAvg( values );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#absAvg(io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  double absAvg( io.deephaven.engine.tables.dbarrays.LongVector values ) {return LongNumericPrimitives.absAvg( values );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#absAvg(io.deephaven.engine.tables.dbarrays.ShortVector) */
-    public static  double absAvg( io.deephaven.engine.tables.dbarrays.ShortVector values ) {return ShortNumericPrimitives.absAvg( values );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#absAvg(ByteVector) */
+    public static  double absAvg( ByteVector values ) {return ByteNumericPrimitives.absAvg( values );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#absAvg(DoubleVector) */
+    public static  double absAvg( DoubleVector values ) {return DoubleNumericPrimitives.absAvg( values );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#absAvg(FloatVector) */
+    public static  double absAvg( FloatVector values ) {return FloatNumericPrimitives.absAvg( values );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#absAvg(IntVector) */
+    public static  double absAvg( IntVector values ) {return IntegerNumericPrimitives.absAvg( values );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#absAvg(LongVector) */
+    public static  double absAvg( LongVector values ) {return LongNumericPrimitives.absAvg( values );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#absAvg(ShortVector) */
+    public static  double absAvg( ShortVector values ) {return ShortNumericPrimitives.absAvg( values );}
     /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#acos(byte) */
     public static  double acos( byte value ) {return ByteNumericPrimitives.acos( value );}
     /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#acos(double) */
@@ -120,28 +109,28 @@ public class GroovyStaticImports {
     public static  java.lang.Boolean and( java.lang.Boolean[] values ) {return BooleanPrimitives.and( values );}
     /** @see io.deephaven.libs.primitives.BooleanPrimitives#and(boolean[]) */
     public static  java.lang.Boolean and( boolean[] values ) {return BooleanPrimitives.and( values );}
-    /** @see io.deephaven.libs.primitives.BooleanPrimitives#and(io.deephaven.engine.tables.dbarrays.ObjectVector<java.lang.Boolean>) */
-    public static  java.lang.Boolean and( io.deephaven.engine.tables.dbarrays.ObjectVector<java.lang.Boolean> values ) {return BooleanPrimitives.and( values );}
+    /** @see io.deephaven.libs.primitives.BooleanPrimitives#and(ObjectVector <java.lang.Boolean>) */
+    public static  java.lang.Boolean and( ObjectVector<Boolean> values ) {return BooleanPrimitives.and( values );}
     /** @see io.deephaven.libs.primitives.BooleanPrimitives#and(java.lang.Boolean[],java.lang.Boolean) */
     public static  java.lang.Boolean and( java.lang.Boolean[] values, java.lang.Boolean nullValue ) {return BooleanPrimitives.and( values, nullValue );}
-    /** @see io.deephaven.libs.primitives.BooleanPrimitives#and(io.deephaven.engine.tables.dbarrays.ObjectVector<java.lang.Boolean>,java.lang.Boolean) */
-    public static  java.lang.Boolean and( io.deephaven.engine.tables.dbarrays.ObjectVector<java.lang.Boolean> values, java.lang.Boolean nullValue ) {return BooleanPrimitives.and( values, nullValue );}
+    /** @see io.deephaven.libs.primitives.BooleanPrimitives#and(ObjectVector <java.lang.Boolean>,java.lang.Boolean) */
+    public static  java.lang.Boolean and(ObjectVector<Boolean> values, java.lang.Boolean nullValue ) {return BooleanPrimitives.and( values, nullValue );}
     /** @see io.deephaven.libs.primitives.BytePrimitives#array(byte[]) */
-    public static  io.deephaven.engine.tables.dbarrays.ByteVector array( byte[] values ) {return BytePrimitives.array( values );}
+    public static ByteVector array(byte[] values ) {return BytePrimitives.array( values );}
     /** @see io.deephaven.libs.primitives.CharacterPrimitives#array(char[]) */
-    public static  io.deephaven.engine.tables.dbarrays.CharVector array( char[] values ) {return CharacterPrimitives.array( values );}
+    public static CharVector array(char[] values ) {return CharacterPrimitives.array( values );}
     /** @see io.deephaven.libs.primitives.DoublePrimitives#array(double[]) */
-    public static  io.deephaven.engine.tables.dbarrays.DoubleVector array( double[] values ) {return DoublePrimitives.array( values );}
+    public static DoubleVector array(double[] values ) {return DoublePrimitives.array( values );}
     /** @see io.deephaven.libs.primitives.FloatPrimitives#array(float[]) */
-    public static  io.deephaven.engine.tables.dbarrays.FloatVector array( float[] values ) {return FloatPrimitives.array( values );}
+    public static FloatVector array(float[] values ) {return FloatPrimitives.array( values );}
     /** @see io.deephaven.libs.primitives.IntegerPrimitives#array(int[]) */
-    public static  io.deephaven.engine.tables.dbarrays.IntVector array( int[] values ) {return IntegerPrimitives.array( values );}
+    public static IntVector array(int[] values ) {return IntegerPrimitives.array( values );}
     /** @see io.deephaven.libs.primitives.LongPrimitives#array(long[]) */
-    public static  io.deephaven.engine.tables.dbarrays.LongVector array( long[] values ) {return LongPrimitives.array( values );}
+    public static LongVector array(long[] values ) {return LongPrimitives.array( values );}
     /** @see io.deephaven.libs.primitives.BooleanPrimitives#array(java.lang.Boolean[]) */
-    public static  io.deephaven.engine.tables.dbarrays.BooleanVector array( java.lang.Boolean[] values ) {return BooleanPrimitives.array( values );}
+    public static BooleanVector array(java.lang.Boolean[] values ) {return BooleanPrimitives.array( values );}
     /** @see io.deephaven.libs.primitives.ShortPrimitives#array(short[]) */
-    public static  io.deephaven.engine.tables.dbarrays.ShortVector array( short[] values ) {return ShortPrimitives.array( values );}
+    public static ShortVector array(short[] values ) {return ShortPrimitives.array( values );}
     /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#asin(byte) */
     public static  double asin( byte value ) {return ByteNumericPrimitives.asin( value );}
     /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#asin(double) */
@@ -190,18 +179,18 @@ public class GroovyStaticImports {
     public static  double avg( java.lang.Short[] values ) {return ShortNumericPrimitives.avg( values );}
     /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#avg(short[]) */
     public static  double avg( short[] values ) {return ShortNumericPrimitives.avg( values );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#avg(io.deephaven.engine.tables.dbarrays.ByteVector) */
-    public static  double avg( io.deephaven.engine.tables.dbarrays.ByteVector values ) {return ByteNumericPrimitives.avg( values );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#avg(io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  double avg( io.deephaven.engine.tables.dbarrays.DoubleVector values ) {return DoubleNumericPrimitives.avg( values );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#avg(io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  double avg( io.deephaven.engine.tables.dbarrays.FloatVector values ) {return FloatNumericPrimitives.avg( values );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#avg(io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  double avg( io.deephaven.engine.tables.dbarrays.IntVector values ) {return IntegerNumericPrimitives.avg( values );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#avg(io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  double avg( io.deephaven.engine.tables.dbarrays.LongVector values ) {return LongNumericPrimitives.avg( values );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#avg(io.deephaven.engine.tables.dbarrays.ShortVector) */
-    public static  double avg( io.deephaven.engine.tables.dbarrays.ShortVector values ) {return ShortNumericPrimitives.avg( values );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#avg(ByteVector) */
+    public static  double avg( ByteVector values ) {return ByteNumericPrimitives.avg( values );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#avg(DoubleVector) */
+    public static  double avg( DoubleVector values ) {return DoubleNumericPrimitives.avg( values );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#avg(FloatVector) */
+    public static  double avg( FloatVector values ) {return FloatNumericPrimitives.avg( values );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#avg(IntVector) */
+    public static  double avg( IntVector values ) {return IntegerNumericPrimitives.avg( values );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#avg(LongVector) */
+    public static  double avg( LongVector values ) {return LongNumericPrimitives.avg( values );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#avg(ShortVector) */
+    public static  double avg( ShortVector values ) {return ShortNumericPrimitives.avg( values );}
     /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#binSearchIndex(byte[],byte,io.deephaven.libs.primitives.BinSearch) */
     public static  int binSearchIndex( byte[] values, byte key, io.deephaven.libs.primitives.BinSearch choiceWhenEquals ) {return ByteNumericPrimitives.binSearchIndex( values, key, choiceWhenEquals );}
     /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#binSearchIndex(double[],double,io.deephaven.libs.primitives.BinSearch) */
@@ -214,20 +203,20 @@ public class GroovyStaticImports {
     public static  int binSearchIndex( long[] values, long key, io.deephaven.libs.primitives.BinSearch choiceWhenEquals ) {return LongNumericPrimitives.binSearchIndex( values, key, choiceWhenEquals );}
     /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#binSearchIndex(short[],short,io.deephaven.libs.primitives.BinSearch) */
     public static  int binSearchIndex( short[] values, short key, io.deephaven.libs.primitives.BinSearch choiceWhenEquals ) {return ShortNumericPrimitives.binSearchIndex( values, key, choiceWhenEquals );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#binSearchIndex(io.deephaven.engine.tables.dbarrays.ByteVector,byte,io.deephaven.libs.primitives.BinSearch) */
-    public static  int binSearchIndex( io.deephaven.engine.tables.dbarrays.ByteVector values, byte key, io.deephaven.libs.primitives.BinSearch choiceWhenEquals ) {return ByteNumericPrimitives.binSearchIndex( values, key, choiceWhenEquals );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#binSearchIndex(io.deephaven.engine.tables.dbarrays.DoubleVector,double,io.deephaven.libs.primitives.BinSearch) */
-    public static  int binSearchIndex( io.deephaven.engine.tables.dbarrays.DoubleVector values, double key, io.deephaven.libs.primitives.BinSearch choiceWhenEquals ) {return DoubleNumericPrimitives.binSearchIndex( values, key, choiceWhenEquals );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#binSearchIndex(io.deephaven.engine.tables.dbarrays.FloatVector,float,io.deephaven.libs.primitives.BinSearch) */
-    public static  int binSearchIndex( io.deephaven.engine.tables.dbarrays.FloatVector values, float key, io.deephaven.libs.primitives.BinSearch choiceWhenEquals ) {return FloatNumericPrimitives.binSearchIndex( values, key, choiceWhenEquals );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#binSearchIndex(io.deephaven.engine.tables.dbarrays.IntVector,int,io.deephaven.libs.primitives.BinSearch) */
-    public static  int binSearchIndex( io.deephaven.engine.tables.dbarrays.IntVector values, int key, io.deephaven.libs.primitives.BinSearch choiceWhenEquals ) {return IntegerNumericPrimitives.binSearchIndex( values, key, choiceWhenEquals );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#binSearchIndex(io.deephaven.engine.tables.dbarrays.LongVector,long,io.deephaven.libs.primitives.BinSearch) */
-    public static  int binSearchIndex( io.deephaven.engine.tables.dbarrays.LongVector values, long key, io.deephaven.libs.primitives.BinSearch choiceWhenEquals ) {return LongNumericPrimitives.binSearchIndex( values, key, choiceWhenEquals );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#binSearchIndex(io.deephaven.engine.tables.dbarrays.ShortVector,short,io.deephaven.libs.primitives.BinSearch) */
-    public static  int binSearchIndex( io.deephaven.engine.tables.dbarrays.ShortVector values, short key, io.deephaven.libs.primitives.BinSearch choiceWhenEquals ) {return ShortNumericPrimitives.binSearchIndex( values, key, choiceWhenEquals );}
-    /** @see io.deephaven.libs.primitives.ObjectPrimitives#binSearchIndex(io.deephaven.engine.tables.dbarrays.ObjectVector,T,io.deephaven.libs.primitives.BinSearch) */
-    public static <T extends java.lang.Comparable<? super T>> int binSearchIndex( io.deephaven.engine.tables.dbarrays.ObjectVector<T> values, T key, io.deephaven.libs.primitives.BinSearch choiceWhenEquals ) {return ObjectPrimitives.binSearchIndex( values, key, choiceWhenEquals );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#binSearchIndex(ByteVector,byte,io.deephaven.libs.primitives.BinSearch) */
+    public static  int binSearchIndex(ByteVector values, byte key, io.deephaven.libs.primitives.BinSearch choiceWhenEquals ) {return ByteNumericPrimitives.binSearchIndex( values, key, choiceWhenEquals );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#binSearchIndex(DoubleVector,double,io.deephaven.libs.primitives.BinSearch) */
+    public static  int binSearchIndex(DoubleVector values, double key, io.deephaven.libs.primitives.BinSearch choiceWhenEquals ) {return DoubleNumericPrimitives.binSearchIndex( values, key, choiceWhenEquals );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#binSearchIndex(FloatVector,float,io.deephaven.libs.primitives.BinSearch) */
+    public static  int binSearchIndex(FloatVector values, float key, io.deephaven.libs.primitives.BinSearch choiceWhenEquals ) {return FloatNumericPrimitives.binSearchIndex( values, key, choiceWhenEquals );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#binSearchIndex(IntVector,int,io.deephaven.libs.primitives.BinSearch) */
+    public static  int binSearchIndex(IntVector values, int key, io.deephaven.libs.primitives.BinSearch choiceWhenEquals ) {return IntegerNumericPrimitives.binSearchIndex( values, key, choiceWhenEquals );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#binSearchIndex(LongVector,long,io.deephaven.libs.primitives.BinSearch) */
+    public static  int binSearchIndex(LongVector values, long key, io.deephaven.libs.primitives.BinSearch choiceWhenEquals ) {return LongNumericPrimitives.binSearchIndex( values, key, choiceWhenEquals );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#binSearchIndex(ShortVector,short,io.deephaven.libs.primitives.BinSearch) */
+    public static  int binSearchIndex(ShortVector values, short key, io.deephaven.libs.primitives.BinSearch choiceWhenEquals ) {return ShortNumericPrimitives.binSearchIndex( values, key, choiceWhenEquals );}
+    /** @see io.deephaven.libs.primitives.ObjectPrimitives#binSearchIndex(ObjectVector,T,io.deephaven.libs.primitives.BinSearch) */
+    public static <T extends java.lang.Comparable<? super T>> int binSearchIndex(ObjectVector<T> values, T key, io.deephaven.libs.primitives.BinSearch choiceWhenEquals ) {return ObjectPrimitives.binSearchIndex( values, key, choiceWhenEquals );}
     /** @see io.deephaven.libs.primitives.Casting#castDouble(byte[]) */
     public static  double[] castDouble( byte[] values ) {return Casting.castDouble( values );}
     /** @see io.deephaven.libs.primitives.Casting#castDouble(double[]) */
@@ -240,18 +229,18 @@ public class GroovyStaticImports {
     public static  double[] castDouble( long[] values ) {return Casting.castDouble( values );}
     /** @see io.deephaven.libs.primitives.Casting#castDouble(short[]) */
     public static  double[] castDouble( short[] values ) {return Casting.castDouble( values );}
-    /** @see io.deephaven.libs.primitives.Casting#castDouble(io.deephaven.engine.tables.dbarrays.ByteVector) */
-    public static  double[] castDouble( io.deephaven.engine.tables.dbarrays.ByteVector values ) {return Casting.castDouble( values );}
-    /** @see io.deephaven.libs.primitives.Casting#castDouble(io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  double[] castDouble( io.deephaven.engine.tables.dbarrays.DoubleVector values ) {return Casting.castDouble( values );}
-    /** @see io.deephaven.libs.primitives.Casting#castDouble(io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  double[] castDouble( io.deephaven.engine.tables.dbarrays.FloatVector values ) {return Casting.castDouble( values );}
-    /** @see io.deephaven.libs.primitives.Casting#castDouble(io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  double[] castDouble( io.deephaven.engine.tables.dbarrays.IntVector values ) {return Casting.castDouble( values );}
-    /** @see io.deephaven.libs.primitives.Casting#castDouble(io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  double[] castDouble( io.deephaven.engine.tables.dbarrays.LongVector values ) {return Casting.castDouble( values );}
-    /** @see io.deephaven.libs.primitives.Casting#castDouble(io.deephaven.engine.tables.dbarrays.ShortVector) */
-    public static  double[] castDouble( io.deephaven.engine.tables.dbarrays.ShortVector values ) {return Casting.castDouble( values );}
+    /** @see io.deephaven.libs.primitives.Casting#castDouble(ByteVector) */
+    public static  double[] castDouble( ByteVector values ) {return Casting.castDouble( values );}
+    /** @see io.deephaven.libs.primitives.Casting#castDouble(DoubleVector) */
+    public static  double[] castDouble( DoubleVector values ) {return Casting.castDouble( values );}
+    /** @see io.deephaven.libs.primitives.Casting#castDouble(FloatVector) */
+    public static  double[] castDouble( FloatVector values ) {return Casting.castDouble( values );}
+    /** @see io.deephaven.libs.primitives.Casting#castDouble(IntVector) */
+    public static  double[] castDouble( IntVector values ) {return Casting.castDouble( values );}
+    /** @see io.deephaven.libs.primitives.Casting#castDouble(LongVector) */
+    public static  double[] castDouble( LongVector values ) {return Casting.castDouble( values );}
+    /** @see io.deephaven.libs.primitives.Casting#castDouble(ShortVector) */
+    public static  double[] castDouble( ShortVector values ) {return Casting.castDouble( values );}
     /** @see io.deephaven.libs.primitives.Casting#castLong(byte[]) */
     public static  long[] castLong( byte[] values ) {return Casting.castLong( values );}
     /** @see io.deephaven.libs.primitives.Casting#castLong(int[]) */
@@ -260,14 +249,14 @@ public class GroovyStaticImports {
     public static  long[] castLong( long[] values ) {return Casting.castLong( values );}
     /** @see io.deephaven.libs.primitives.Casting#castLong(short[]) */
     public static  long[] castLong( short[] values ) {return Casting.castLong( values );}
-    /** @see io.deephaven.libs.primitives.Casting#castLong(io.deephaven.engine.tables.dbarrays.ByteVector) */
-    public static  long[] castLong( io.deephaven.engine.tables.dbarrays.ByteVector values ) {return Casting.castLong( values );}
-    /** @see io.deephaven.libs.primitives.Casting#castLong(io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  long[] castLong( io.deephaven.engine.tables.dbarrays.IntVector values ) {return Casting.castLong( values );}
-    /** @see io.deephaven.libs.primitives.Casting#castLong(io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  long[] castLong( io.deephaven.engine.tables.dbarrays.LongVector values ) {return Casting.castLong( values );}
-    /** @see io.deephaven.libs.primitives.Casting#castLong(io.deephaven.engine.tables.dbarrays.ShortVector) */
-    public static  long[] castLong( io.deephaven.engine.tables.dbarrays.ShortVector values ) {return Casting.castLong( values );}
+    /** @see io.deephaven.libs.primitives.Casting#castLong(ByteVector) */
+    public static  long[] castLong( ByteVector values ) {return Casting.castLong( values );}
+    /** @see io.deephaven.libs.primitives.Casting#castLong(IntVector) */
+    public static  long[] castLong( IntVector values ) {return Casting.castLong( values );}
+    /** @see io.deephaven.libs.primitives.Casting#castLong(LongVector) */
+    public static  long[] castLong( LongVector values ) {return Casting.castLong( values );}
+    /** @see io.deephaven.libs.primitives.Casting#castLong(ShortVector) */
+    public static  long[] castLong( ShortVector values ) {return Casting.castLong( values );}
     /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#ceil(byte) */
     public static  double ceil( byte value ) {return ByteNumericPrimitives.ceil( value );}
     /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#ceil(double) */
@@ -292,20 +281,20 @@ public class GroovyStaticImports {
     public static  long clamp( long value, long min, long max ) {return LongNumericPrimitives.clamp( value, min, max );}
     /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#clamp(short,short,short) */
     public static  short clamp( short value, short min, short max ) {return ShortNumericPrimitives.clamp( value, min, max );}
-    /** @see io.deephaven.libs.primitives.BytePrimitives#concat(io.deephaven.engine.tables.dbarrays.ByteVector[]) */
-    public static  byte[] concat( io.deephaven.engine.tables.dbarrays.ByteVector[] values ) {return BytePrimitives.concat( values );}
-    /** @see io.deephaven.libs.primitives.CharacterPrimitives#concat(io.deephaven.engine.tables.dbarrays.CharVector[]) */
-    public static  char[] concat( io.deephaven.engine.tables.dbarrays.CharVector[] values ) {return CharacterPrimitives.concat( values );}
-    /** @see io.deephaven.libs.primitives.DoublePrimitives#concat(io.deephaven.engine.tables.dbarrays.DoubleVector[]) */
-    public static  double[] concat( io.deephaven.engine.tables.dbarrays.DoubleVector[] values ) {return DoublePrimitives.concat( values );}
-    /** @see io.deephaven.libs.primitives.FloatPrimitives#concat(io.deephaven.engine.tables.dbarrays.FloatVector[]) */
-    public static  float[] concat( io.deephaven.engine.tables.dbarrays.FloatVector[] values ) {return FloatPrimitives.concat( values );}
-    /** @see io.deephaven.libs.primitives.IntegerPrimitives#concat(io.deephaven.engine.tables.dbarrays.IntVector[]) */
-    public static  int[] concat( io.deephaven.engine.tables.dbarrays.IntVector[] values ) {return IntegerPrimitives.concat( values );}
-    /** @see io.deephaven.libs.primitives.LongPrimitives#concat(io.deephaven.engine.tables.dbarrays.LongVector[]) */
-    public static  long[] concat( io.deephaven.engine.tables.dbarrays.LongVector[] values ) {return LongPrimitives.concat( values );}
-    /** @see io.deephaven.libs.primitives.ShortPrimitives#concat(io.deephaven.engine.tables.dbarrays.ShortVector[]) */
-    public static  short[] concat( io.deephaven.engine.tables.dbarrays.ShortVector[] values ) {return ShortPrimitives.concat( values );}
+    /** @see io.deephaven.libs.primitives.BytePrimitives#concat(ByteVector[]) */
+    public static  byte[] concat( ByteVector[] values ) {return BytePrimitives.concat( values );}
+    /** @see io.deephaven.libs.primitives.CharacterPrimitives#concat(CharVector[]) */
+    public static  char[] concat( CharVector[] values ) {return CharacterPrimitives.concat( values );}
+    /** @see io.deephaven.libs.primitives.DoublePrimitives#concat(DoubleVector[]) */
+    public static  double[] concat( DoubleVector[] values ) {return DoublePrimitives.concat( values );}
+    /** @see io.deephaven.libs.primitives.FloatPrimitives#concat(FloatVector[]) */
+    public static  float[] concat( FloatVector[] values ) {return FloatPrimitives.concat( values );}
+    /** @see io.deephaven.libs.primitives.IntegerPrimitives#concat(IntVector[]) */
+    public static  int[] concat( IntVector[] values ) {return IntegerPrimitives.concat( values );}
+    /** @see io.deephaven.libs.primitives.LongPrimitives#concat(LongVector[]) */
+    public static  long[] concat( LongVector[] values ) {return LongPrimitives.concat( values );}
+    /** @see io.deephaven.libs.primitives.ShortPrimitives#concat(ShortVector[]) */
+    public static  short[] concat( ShortVector[] values ) {return ShortPrimitives.concat( values );}
     /** @see io.deephaven.libs.primitives.BytePrimitives#concat(byte[][]) */
     public static  byte[] concat( byte[][] values ) {return BytePrimitives.concat( values );}
     /** @see io.deephaven.libs.primitives.CharacterPrimitives#concat(char[][]) */
@@ -332,52 +321,52 @@ public class GroovyStaticImports {
     public static  boolean containsNonNormal( java.lang.Float[] values ) {return FloatFpPrimitives.containsNonNormal( values );}
     /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#cor(byte[],byte[]) */
     public static  double cor( byte[] values0, byte[] values1 ) {return ByteNumericPrimitives.cor( values0, values1 );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#cor(byte[],io.deephaven.engine.tables.dbarrays.ByteVector) */
-    public static  double cor( byte[] values0, io.deephaven.engine.tables.dbarrays.ByteVector values1 ) {return ByteNumericPrimitives.cor( values0, values1 );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#cor(byte[], ByteVector) */
+    public static  double cor( byte[] values0, ByteVector values1 ) {return ByteNumericPrimitives.cor( values0, values1 );}
     /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#cor(double[],double[]) */
     public static  double cor( double[] values0, double[] values1 ) {return DoubleNumericPrimitives.cor( values0, values1 );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#cor(double[],io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  double cor( double[] values0, io.deephaven.engine.tables.dbarrays.DoubleVector values1 ) {return DoubleNumericPrimitives.cor( values0, values1 );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#cor(double[], DoubleVector) */
+    public static  double cor( double[] values0, DoubleVector values1 ) {return DoubleNumericPrimitives.cor( values0, values1 );}
     /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#cor(float[],float[]) */
     public static  double cor( float[] values0, float[] values1 ) {return FloatNumericPrimitives.cor( values0, values1 );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#cor(float[],io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  double cor( float[] values0, io.deephaven.engine.tables.dbarrays.FloatVector values1 ) {return FloatNumericPrimitives.cor( values0, values1 );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#cor(float[], FloatVector) */
+    public static  double cor( float[] values0, FloatVector values1 ) {return FloatNumericPrimitives.cor( values0, values1 );}
     /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#cor(int[],int[]) */
     public static  double cor( int[] values0, int[] values1 ) {return IntegerNumericPrimitives.cor( values0, values1 );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#cor(int[],io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  double cor( int[] values0, io.deephaven.engine.tables.dbarrays.IntVector values1 ) {return IntegerNumericPrimitives.cor( values0, values1 );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#cor(int[], IntVector) */
+    public static  double cor( int[] values0, IntVector values1 ) {return IntegerNumericPrimitives.cor( values0, values1 );}
     /** @see io.deephaven.libs.primitives.LongNumericPrimitives#cor(long[],long[]) */
     public static  double cor( long[] values0, long[] values1 ) {return LongNumericPrimitives.cor( values0, values1 );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#cor(long[],io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  double cor( long[] values0, io.deephaven.engine.tables.dbarrays.LongVector values1 ) {return LongNumericPrimitives.cor( values0, values1 );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#cor(long[], LongVector) */
+    public static  double cor( long[] values0, LongVector values1 ) {return LongNumericPrimitives.cor( values0, values1 );}
     /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#cor(short[],short[]) */
     public static  double cor( short[] values0, short[] values1 ) {return ShortNumericPrimitives.cor( values0, values1 );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#cor(short[],io.deephaven.engine.tables.dbarrays.ShortVector) */
-    public static  double cor( short[] values0, io.deephaven.engine.tables.dbarrays.ShortVector values1 ) {return ShortNumericPrimitives.cor( values0, values1 );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#cor(io.deephaven.engine.tables.dbarrays.ByteVector,byte[]) */
-    public static  double cor( io.deephaven.engine.tables.dbarrays.ByteVector values0, byte[] values1 ) {return ByteNumericPrimitives.cor( values0, values1 );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#cor(io.deephaven.engine.tables.dbarrays.ByteVector,io.deephaven.engine.tables.dbarrays.ByteVector) */
-    public static  double cor( io.deephaven.engine.tables.dbarrays.ByteVector values0, io.deephaven.engine.tables.dbarrays.ByteVector values1 ) {return ByteNumericPrimitives.cor( values0, values1 );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#cor(io.deephaven.engine.tables.dbarrays.DoubleVector,double[]) */
-    public static  double cor( io.deephaven.engine.tables.dbarrays.DoubleVector values0, double[] values1 ) {return DoubleNumericPrimitives.cor( values0, values1 );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#cor(io.deephaven.engine.tables.dbarrays.DoubleVector,io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  double cor( io.deephaven.engine.tables.dbarrays.DoubleVector values0, io.deephaven.engine.tables.dbarrays.DoubleVector values1 ) {return DoubleNumericPrimitives.cor( values0, values1 );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#cor(io.deephaven.engine.tables.dbarrays.FloatVector,float[]) */
-    public static  double cor( io.deephaven.engine.tables.dbarrays.FloatVector values0, float[] values1 ) {return FloatNumericPrimitives.cor( values0, values1 );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#cor(io.deephaven.engine.tables.dbarrays.FloatVector,io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  double cor( io.deephaven.engine.tables.dbarrays.FloatVector values0, io.deephaven.engine.tables.dbarrays.FloatVector values1 ) {return FloatNumericPrimitives.cor( values0, values1 );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#cor(io.deephaven.engine.tables.dbarrays.IntVector,int[]) */
-    public static  double cor( io.deephaven.engine.tables.dbarrays.IntVector values0, int[] values1 ) {return IntegerNumericPrimitives.cor( values0, values1 );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#cor(io.deephaven.engine.tables.dbarrays.IntVector,io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  double cor( io.deephaven.engine.tables.dbarrays.IntVector values0, io.deephaven.engine.tables.dbarrays.IntVector values1 ) {return IntegerNumericPrimitives.cor( values0, values1 );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#cor(io.deephaven.engine.tables.dbarrays.LongVector,long[]) */
-    public static  double cor( io.deephaven.engine.tables.dbarrays.LongVector values0, long[] values1 ) {return LongNumericPrimitives.cor( values0, values1 );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#cor(io.deephaven.engine.tables.dbarrays.LongVector,io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  double cor( io.deephaven.engine.tables.dbarrays.LongVector values0, io.deephaven.engine.tables.dbarrays.LongVector values1 ) {return LongNumericPrimitives.cor( values0, values1 );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#cor(io.deephaven.engine.tables.dbarrays.ShortVector,short[]) */
-    public static  double cor( io.deephaven.engine.tables.dbarrays.ShortVector values0, short[] values1 ) {return ShortNumericPrimitives.cor( values0, values1 );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#cor(io.deephaven.engine.tables.dbarrays.ShortVector,io.deephaven.engine.tables.dbarrays.ShortVector) */
-    public static  double cor( io.deephaven.engine.tables.dbarrays.ShortVector values0, io.deephaven.engine.tables.dbarrays.ShortVector values1 ) {return ShortNumericPrimitives.cor( values0, values1 );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#cor(short[], ShortVector) */
+    public static  double cor( short[] values0, ShortVector values1 ) {return ShortNumericPrimitives.cor( values0, values1 );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#cor(ByteVector,byte[]) */
+    public static  double cor(ByteVector values0, byte[] values1 ) {return ByteNumericPrimitives.cor( values0, values1 );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#cor(ByteVector, ByteVector) */
+    public static  double cor(ByteVector values0, ByteVector values1 ) {return ByteNumericPrimitives.cor( values0, values1 );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#cor(DoubleVector,double[]) */
+    public static  double cor(DoubleVector values0, double[] values1 ) {return DoubleNumericPrimitives.cor( values0, values1 );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#cor(DoubleVector, DoubleVector) */
+    public static  double cor(DoubleVector values0, DoubleVector values1 ) {return DoubleNumericPrimitives.cor( values0, values1 );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#cor(FloatVector,float[]) */
+    public static  double cor(FloatVector values0, float[] values1 ) {return FloatNumericPrimitives.cor( values0, values1 );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#cor(FloatVector, FloatVector) */
+    public static  double cor(FloatVector values0, FloatVector values1 ) {return FloatNumericPrimitives.cor( values0, values1 );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#cor(IntVector,int[]) */
+    public static  double cor(IntVector values0, int[] values1 ) {return IntegerNumericPrimitives.cor( values0, values1 );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#cor(IntVector, IntVector) */
+    public static  double cor(IntVector values0, IntVector values1 ) {return IntegerNumericPrimitives.cor( values0, values1 );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#cor(LongVector,long[]) */
+    public static  double cor(LongVector values0, long[] values1 ) {return LongNumericPrimitives.cor( values0, values1 );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#cor(LongVector, LongVector) */
+    public static  double cor(LongVector values0, LongVector values1 ) {return LongNumericPrimitives.cor( values0, values1 );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#cor(ShortVector,short[]) */
+    public static  double cor(ShortVector values0, short[] values1 ) {return ShortNumericPrimitives.cor( values0, values1 );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#cor(ShortVector, ShortVector) */
+    public static  double cor(ShortVector values0, ShortVector values1 ) {return ShortNumericPrimitives.cor( values0, values1 );}
     /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#cos(byte) */
     public static  double cos( byte value ) {return ByteNumericPrimitives.cos( value );}
     /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#cos(double) */
@@ -418,24 +407,24 @@ public class GroovyStaticImports {
     public static  int count( java.lang.Short[] values ) {return ShortPrimitives.count( values );}
     /** @see io.deephaven.libs.primitives.ShortPrimitives#count(short[]) */
     public static  int count( short[] values ) {return ShortPrimitives.count( values );}
-    /** @see io.deephaven.libs.primitives.BooleanPrimitives#count(io.deephaven.engine.tables.dbarrays.BooleanVector) */
-    public static  int count( io.deephaven.engine.tables.dbarrays.BooleanVector values ) {return BooleanPrimitives.count( values );}
-    /** @see io.deephaven.libs.primitives.BytePrimitives#count(io.deephaven.engine.tables.dbarrays.ByteVector) */
-    public static  int count( io.deephaven.engine.tables.dbarrays.ByteVector values ) {return BytePrimitives.count( values );}
-    /** @see io.deephaven.libs.primitives.CharacterPrimitives#count(io.deephaven.engine.tables.dbarrays.CharVector) */
-    public static  int count( io.deephaven.engine.tables.dbarrays.CharVector values ) {return CharacterPrimitives.count( values );}
-    /** @see io.deephaven.libs.primitives.DoublePrimitives#count(io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  int count( io.deephaven.engine.tables.dbarrays.DoubleVector values ) {return DoublePrimitives.count( values );}
-    /** @see io.deephaven.libs.primitives.FloatPrimitives#count(io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  int count( io.deephaven.engine.tables.dbarrays.FloatVector values ) {return FloatPrimitives.count( values );}
-    /** @see io.deephaven.libs.primitives.IntegerPrimitives#count(io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  int count( io.deephaven.engine.tables.dbarrays.IntVector values ) {return IntegerPrimitives.count( values );}
-    /** @see io.deephaven.libs.primitives.LongPrimitives#count(io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  int count( io.deephaven.engine.tables.dbarrays.LongVector values ) {return LongPrimitives.count( values );}
-    /** @see io.deephaven.libs.primitives.ShortPrimitives#count(io.deephaven.engine.tables.dbarrays.ShortVector) */
-    public static  int count( io.deephaven.engine.tables.dbarrays.ShortVector values ) {return ShortPrimitives.count( values );}
-    /** @see io.deephaven.libs.primitives.ObjectPrimitives#count(io.deephaven.engine.tables.dbarrays.ObjectVector) */
-    public static <T> int count( io.deephaven.engine.tables.dbarrays.ObjectVector<T> values ) {return ObjectPrimitives.count( values );}
+    /** @see io.deephaven.libs.primitives.BooleanPrimitives#count(BooleanVector) */
+    public static  int count( BooleanVector values ) {return BooleanPrimitives.count( values );}
+    /** @see io.deephaven.libs.primitives.BytePrimitives#count(ByteVector) */
+    public static  int count( ByteVector values ) {return BytePrimitives.count( values );}
+    /** @see io.deephaven.libs.primitives.CharacterPrimitives#count(CharVector) */
+    public static  int count( CharVector values ) {return CharacterPrimitives.count( values );}
+    /** @see io.deephaven.libs.primitives.DoublePrimitives#count(DoubleVector) */
+    public static  int count( DoubleVector values ) {return DoublePrimitives.count( values );}
+    /** @see io.deephaven.libs.primitives.FloatPrimitives#count(FloatVector) */
+    public static  int count( FloatVector values ) {return FloatPrimitives.count( values );}
+    /** @see io.deephaven.libs.primitives.IntegerPrimitives#count(IntVector) */
+    public static  int count( IntVector values ) {return IntegerPrimitives.count( values );}
+    /** @see io.deephaven.libs.primitives.LongPrimitives#count(LongVector) */
+    public static  int count( LongVector values ) {return LongPrimitives.count( values );}
+    /** @see io.deephaven.libs.primitives.ShortPrimitives#count(ShortVector) */
+    public static  int count( ShortVector values ) {return ShortPrimitives.count( values );}
+    /** @see io.deephaven.libs.primitives.ObjectPrimitives#count(ObjectVector) */
+    public static <T> int count( ObjectVector<T> values ) {return ObjectPrimitives.count( values );}
     /** @see io.deephaven.libs.primitives.BytePrimitives#countDistinct(byte[]) */
     public static  long countDistinct( byte[] values ) {return BytePrimitives.countDistinct( values );}
     /** @see io.deephaven.libs.primitives.CharacterPrimitives#countDistinct(char[]) */
@@ -450,22 +439,22 @@ public class GroovyStaticImports {
     public static  long countDistinct( long[] values ) {return LongPrimitives.countDistinct( values );}
     /** @see io.deephaven.libs.primitives.ShortPrimitives#countDistinct(short[]) */
     public static  long countDistinct( short[] values ) {return ShortPrimitives.countDistinct( values );}
-    /** @see io.deephaven.libs.primitives.BytePrimitives#countDistinct(io.deephaven.engine.tables.dbarrays.ByteVector) */
-    public static  long countDistinct( io.deephaven.engine.tables.dbarrays.ByteVector values ) {return BytePrimitives.countDistinct( values );}
-    /** @see io.deephaven.libs.primitives.CharacterPrimitives#countDistinct(io.deephaven.engine.tables.dbarrays.CharVector) */
-    public static  long countDistinct( io.deephaven.engine.tables.dbarrays.CharVector values ) {return CharacterPrimitives.countDistinct( values );}
-    /** @see io.deephaven.libs.primitives.DoublePrimitives#countDistinct(io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  long countDistinct( io.deephaven.engine.tables.dbarrays.DoubleVector values ) {return DoublePrimitives.countDistinct( values );}
-    /** @see io.deephaven.libs.primitives.FloatPrimitives#countDistinct(io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  long countDistinct( io.deephaven.engine.tables.dbarrays.FloatVector values ) {return FloatPrimitives.countDistinct( values );}
-    /** @see io.deephaven.libs.primitives.IntegerPrimitives#countDistinct(io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  long countDistinct( io.deephaven.engine.tables.dbarrays.IntVector values ) {return IntegerPrimitives.countDistinct( values );}
-    /** @see io.deephaven.libs.primitives.LongPrimitives#countDistinct(io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  long countDistinct( io.deephaven.engine.tables.dbarrays.LongVector values ) {return LongPrimitives.countDistinct( values );}
-    /** @see io.deephaven.libs.primitives.ShortPrimitives#countDistinct(io.deephaven.engine.tables.dbarrays.ShortVector) */
-    public static  long countDistinct( io.deephaven.engine.tables.dbarrays.ShortVector values ) {return ShortPrimitives.countDistinct( values );}
-    /** @see io.deephaven.libs.primitives.ObjectPrimitives#countDistinct(io.deephaven.engine.tables.dbarrays.ObjectVector) */
-    public static <T extends java.lang.Comparable<? super T>> long countDistinct( io.deephaven.engine.tables.dbarrays.ObjectVector<T> values ) {return ObjectPrimitives.countDistinct( values );}
+    /** @see io.deephaven.libs.primitives.BytePrimitives#countDistinct(ByteVector) */
+    public static  long countDistinct( ByteVector values ) {return BytePrimitives.countDistinct( values );}
+    /** @see io.deephaven.libs.primitives.CharacterPrimitives#countDistinct(CharVector) */
+    public static  long countDistinct( CharVector values ) {return CharacterPrimitives.countDistinct( values );}
+    /** @see io.deephaven.libs.primitives.DoublePrimitives#countDistinct(DoubleVector) */
+    public static  long countDistinct( DoubleVector values ) {return DoublePrimitives.countDistinct( values );}
+    /** @see io.deephaven.libs.primitives.FloatPrimitives#countDistinct(FloatVector) */
+    public static  long countDistinct( FloatVector values ) {return FloatPrimitives.countDistinct( values );}
+    /** @see io.deephaven.libs.primitives.IntegerPrimitives#countDistinct(IntVector) */
+    public static  long countDistinct( IntVector values ) {return IntegerPrimitives.countDistinct( values );}
+    /** @see io.deephaven.libs.primitives.LongPrimitives#countDistinct(LongVector) */
+    public static  long countDistinct( LongVector values ) {return LongPrimitives.countDistinct( values );}
+    /** @see io.deephaven.libs.primitives.ShortPrimitives#countDistinct(ShortVector) */
+    public static  long countDistinct( ShortVector values ) {return ShortPrimitives.countDistinct( values );}
+    /** @see io.deephaven.libs.primitives.ObjectPrimitives#countDistinct(ObjectVector) */
+    public static <T extends java.lang.Comparable<? super T>> long countDistinct( ObjectVector<T> values ) {return ObjectPrimitives.countDistinct( values );}
     /** @see io.deephaven.libs.primitives.BytePrimitives#countDistinct(byte[],boolean) */
     public static  long countDistinct( byte[] values, boolean countNull ) {return BytePrimitives.countDistinct( values, countNull );}
     /** @see io.deephaven.libs.primitives.CharacterPrimitives#countDistinct(char[],boolean) */
@@ -480,22 +469,22 @@ public class GroovyStaticImports {
     public static  long countDistinct( long[] values, boolean countNull ) {return LongPrimitives.countDistinct( values, countNull );}
     /** @see io.deephaven.libs.primitives.ShortPrimitives#countDistinct(short[],boolean) */
     public static  long countDistinct( short[] values, boolean countNull ) {return ShortPrimitives.countDistinct( values, countNull );}
-    /** @see io.deephaven.libs.primitives.BytePrimitives#countDistinct(io.deephaven.engine.tables.dbarrays.ByteVector,boolean) */
-    public static  long countDistinct( io.deephaven.engine.tables.dbarrays.ByteVector values, boolean countNull ) {return BytePrimitives.countDistinct( values, countNull );}
-    /** @see io.deephaven.libs.primitives.CharacterPrimitives#countDistinct(io.deephaven.engine.tables.dbarrays.CharVector,boolean) */
-    public static  long countDistinct( io.deephaven.engine.tables.dbarrays.CharVector values, boolean countNull ) {return CharacterPrimitives.countDistinct( values, countNull );}
-    /** @see io.deephaven.libs.primitives.DoublePrimitives#countDistinct(io.deephaven.engine.tables.dbarrays.DoubleVector,boolean) */
-    public static  long countDistinct( io.deephaven.engine.tables.dbarrays.DoubleVector values, boolean countNull ) {return DoublePrimitives.countDistinct( values, countNull );}
-    /** @see io.deephaven.libs.primitives.FloatPrimitives#countDistinct(io.deephaven.engine.tables.dbarrays.FloatVector,boolean) */
-    public static  long countDistinct( io.deephaven.engine.tables.dbarrays.FloatVector values, boolean countNull ) {return FloatPrimitives.countDistinct( values, countNull );}
-    /** @see io.deephaven.libs.primitives.IntegerPrimitives#countDistinct(io.deephaven.engine.tables.dbarrays.IntVector,boolean) */
-    public static  long countDistinct( io.deephaven.engine.tables.dbarrays.IntVector values, boolean countNull ) {return IntegerPrimitives.countDistinct( values, countNull );}
-    /** @see io.deephaven.libs.primitives.LongPrimitives#countDistinct(io.deephaven.engine.tables.dbarrays.LongVector,boolean) */
-    public static  long countDistinct( io.deephaven.engine.tables.dbarrays.LongVector values, boolean countNull ) {return LongPrimitives.countDistinct( values, countNull );}
-    /** @see io.deephaven.libs.primitives.ShortPrimitives#countDistinct(io.deephaven.engine.tables.dbarrays.ShortVector,boolean) */
-    public static  long countDistinct( io.deephaven.engine.tables.dbarrays.ShortVector values, boolean countNull ) {return ShortPrimitives.countDistinct( values, countNull );}
-    /** @see io.deephaven.libs.primitives.ObjectPrimitives#countDistinct(io.deephaven.engine.tables.dbarrays.ObjectVector,boolean) */
-    public static <T extends java.lang.Comparable<? super T>> long countDistinct( io.deephaven.engine.tables.dbarrays.ObjectVector<T> values, boolean countNull ) {return ObjectPrimitives.countDistinct( values, countNull );}
+    /** @see io.deephaven.libs.primitives.BytePrimitives#countDistinct(ByteVector,boolean) */
+    public static  long countDistinct(ByteVector values, boolean countNull ) {return BytePrimitives.countDistinct( values, countNull );}
+    /** @see io.deephaven.libs.primitives.CharacterPrimitives#countDistinct(CharVector,boolean) */
+    public static  long countDistinct(CharVector values, boolean countNull ) {return CharacterPrimitives.countDistinct( values, countNull );}
+    /** @see io.deephaven.libs.primitives.DoublePrimitives#countDistinct(DoubleVector,boolean) */
+    public static  long countDistinct(DoubleVector values, boolean countNull ) {return DoublePrimitives.countDistinct( values, countNull );}
+    /** @see io.deephaven.libs.primitives.FloatPrimitives#countDistinct(FloatVector,boolean) */
+    public static  long countDistinct(FloatVector values, boolean countNull ) {return FloatPrimitives.countDistinct( values, countNull );}
+    /** @see io.deephaven.libs.primitives.IntegerPrimitives#countDistinct(IntVector,boolean) */
+    public static  long countDistinct(IntVector values, boolean countNull ) {return IntegerPrimitives.countDistinct( values, countNull );}
+    /** @see io.deephaven.libs.primitives.LongPrimitives#countDistinct(LongVector,boolean) */
+    public static  long countDistinct(LongVector values, boolean countNull ) {return LongPrimitives.countDistinct( values, countNull );}
+    /** @see io.deephaven.libs.primitives.ShortPrimitives#countDistinct(ShortVector,boolean) */
+    public static  long countDistinct(ShortVector values, boolean countNull ) {return ShortPrimitives.countDistinct( values, countNull );}
+    /** @see io.deephaven.libs.primitives.ObjectPrimitives#countDistinct(ObjectVector,boolean) */
+    public static <T extends java.lang.Comparable<? super T>> long countDistinct(ObjectVector<T> values, boolean countNull ) {return ObjectPrimitives.countDistinct( values, countNull );}
     /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#countNeg(byte[]) */
     public static  int countNeg( byte[] values ) {return ByteNumericPrimitives.countNeg( values );}
     /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#countNeg(double[]) */
@@ -520,18 +509,18 @@ public class GroovyStaticImports {
     public static  int countNeg( java.lang.Short[] values ) {return ShortNumericPrimitives.countNeg( values );}
     /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#countNeg(short[]) */
     public static  int countNeg( short[] values ) {return ShortNumericPrimitives.countNeg( values );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#countNeg(io.deephaven.engine.tables.dbarrays.ByteVector) */
-    public static  int countNeg( io.deephaven.engine.tables.dbarrays.ByteVector values ) {return ByteNumericPrimitives.countNeg( values );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#countNeg(io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  int countNeg( io.deephaven.engine.tables.dbarrays.DoubleVector values ) {return DoubleNumericPrimitives.countNeg( values );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#countNeg(io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  int countNeg( io.deephaven.engine.tables.dbarrays.FloatVector values ) {return FloatNumericPrimitives.countNeg( values );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#countNeg(io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  int countNeg( io.deephaven.engine.tables.dbarrays.IntVector values ) {return IntegerNumericPrimitives.countNeg( values );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#countNeg(io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  int countNeg( io.deephaven.engine.tables.dbarrays.LongVector values ) {return LongNumericPrimitives.countNeg( values );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#countNeg(io.deephaven.engine.tables.dbarrays.ShortVector) */
-    public static  int countNeg( io.deephaven.engine.tables.dbarrays.ShortVector values ) {return ShortNumericPrimitives.countNeg( values );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#countNeg(ByteVector) */
+    public static  int countNeg( ByteVector values ) {return ByteNumericPrimitives.countNeg( values );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#countNeg(DoubleVector) */
+    public static  int countNeg( DoubleVector values ) {return DoubleNumericPrimitives.countNeg( values );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#countNeg(FloatVector) */
+    public static  int countNeg( FloatVector values ) {return FloatNumericPrimitives.countNeg( values );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#countNeg(IntVector) */
+    public static  int countNeg( IntVector values ) {return IntegerNumericPrimitives.countNeg( values );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#countNeg(LongVector) */
+    public static  int countNeg( LongVector values ) {return LongNumericPrimitives.countNeg( values );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#countNeg(ShortVector) */
+    public static  int countNeg( ShortVector values ) {return ShortNumericPrimitives.countNeg( values );}
     /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#countPos(byte[]) */
     public static  int countPos( byte[] values ) {return ByteNumericPrimitives.countPos( values );}
     /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#countPos(double[]) */
@@ -556,18 +545,18 @@ public class GroovyStaticImports {
     public static  int countPos( java.lang.Short[] values ) {return ShortNumericPrimitives.countPos( values );}
     /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#countPos(short[]) */
     public static  int countPos( short[] values ) {return ShortNumericPrimitives.countPos( values );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#countPos(io.deephaven.engine.tables.dbarrays.ByteVector) */
-    public static  int countPos( io.deephaven.engine.tables.dbarrays.ByteVector values ) {return ByteNumericPrimitives.countPos( values );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#countPos(io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  int countPos( io.deephaven.engine.tables.dbarrays.DoubleVector values ) {return DoubleNumericPrimitives.countPos( values );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#countPos(io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  int countPos( io.deephaven.engine.tables.dbarrays.FloatVector values ) {return FloatNumericPrimitives.countPos( values );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#countPos(io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  int countPos( io.deephaven.engine.tables.dbarrays.IntVector values ) {return IntegerNumericPrimitives.countPos( values );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#countPos(io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  int countPos( io.deephaven.engine.tables.dbarrays.LongVector values ) {return LongNumericPrimitives.countPos( values );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#countPos(io.deephaven.engine.tables.dbarrays.ShortVector) */
-    public static  int countPos( io.deephaven.engine.tables.dbarrays.ShortVector values ) {return ShortNumericPrimitives.countPos( values );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#countPos(ByteVector) */
+    public static  int countPos( ByteVector values ) {return ByteNumericPrimitives.countPos( values );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#countPos(DoubleVector) */
+    public static  int countPos( DoubleVector values ) {return DoubleNumericPrimitives.countPos( values );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#countPos(FloatVector) */
+    public static  int countPos( FloatVector values ) {return FloatNumericPrimitives.countPos( values );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#countPos(IntVector) */
+    public static  int countPos( IntVector values ) {return IntegerNumericPrimitives.countPos( values );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#countPos(LongVector) */
+    public static  int countPos( LongVector values ) {return LongNumericPrimitives.countPos( values );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#countPos(ShortVector) */
+    public static  int countPos( ShortVector values ) {return ShortNumericPrimitives.countPos( values );}
     /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#countZero(byte[]) */
     public static  int countZero( byte[] values ) {return ByteNumericPrimitives.countZero( values );}
     /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#countZero(double[]) */
@@ -592,66 +581,66 @@ public class GroovyStaticImports {
     public static  int countZero( java.lang.Short[] values ) {return ShortNumericPrimitives.countZero( values );}
     /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#countZero(short[]) */
     public static  int countZero( short[] values ) {return ShortNumericPrimitives.countZero( values );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#countZero(io.deephaven.engine.tables.dbarrays.ByteVector) */
-    public static  int countZero( io.deephaven.engine.tables.dbarrays.ByteVector values ) {return ByteNumericPrimitives.countZero( values );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#countZero(io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  int countZero( io.deephaven.engine.tables.dbarrays.DoubleVector values ) {return DoubleNumericPrimitives.countZero( values );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#countZero(io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  int countZero( io.deephaven.engine.tables.dbarrays.FloatVector values ) {return FloatNumericPrimitives.countZero( values );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#countZero(io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  int countZero( io.deephaven.engine.tables.dbarrays.IntVector values ) {return IntegerNumericPrimitives.countZero( values );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#countZero(io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  int countZero( io.deephaven.engine.tables.dbarrays.LongVector values ) {return LongNumericPrimitives.countZero( values );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#countZero(io.deephaven.engine.tables.dbarrays.ShortVector) */
-    public static  int countZero( io.deephaven.engine.tables.dbarrays.ShortVector values ) {return ShortNumericPrimitives.countZero( values );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#countZero(ByteVector) */
+    public static  int countZero( ByteVector values ) {return ByteNumericPrimitives.countZero( values );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#countZero(DoubleVector) */
+    public static  int countZero( DoubleVector values ) {return DoubleNumericPrimitives.countZero( values );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#countZero(FloatVector) */
+    public static  int countZero( FloatVector values ) {return FloatNumericPrimitives.countZero( values );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#countZero(IntVector) */
+    public static  int countZero( IntVector values ) {return IntegerNumericPrimitives.countZero( values );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#countZero(LongVector) */
+    public static  int countZero( LongVector values ) {return LongNumericPrimitives.countZero( values );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#countZero(ShortVector) */
+    public static  int countZero( ShortVector values ) {return ShortNumericPrimitives.countZero( values );}
     /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#cov(byte[],byte[]) */
     public static  double cov( byte[] values0, byte[] values1 ) {return ByteNumericPrimitives.cov( values0, values1 );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#cov(byte[],io.deephaven.engine.tables.dbarrays.ByteVector) */
-    public static  double cov( byte[] values0, io.deephaven.engine.tables.dbarrays.ByteVector values1 ) {return ByteNumericPrimitives.cov( values0, values1 );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#cov(byte[], ByteVector) */
+    public static  double cov( byte[] values0, ByteVector values1 ) {return ByteNumericPrimitives.cov( values0, values1 );}
     /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#cov(double[],double[]) */
     public static  double cov( double[] values0, double[] values1 ) {return DoubleNumericPrimitives.cov( values0, values1 );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#cov(double[],io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  double cov( double[] values0, io.deephaven.engine.tables.dbarrays.DoubleVector values1 ) {return DoubleNumericPrimitives.cov( values0, values1 );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#cov(double[], DoubleVector) */
+    public static  double cov( double[] values0, DoubleVector values1 ) {return DoubleNumericPrimitives.cov( values0, values1 );}
     /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#cov(float[],float[]) */
     public static  double cov( float[] values0, float[] values1 ) {return FloatNumericPrimitives.cov( values0, values1 );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#cov(float[],io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  double cov( float[] values0, io.deephaven.engine.tables.dbarrays.FloatVector values1 ) {return FloatNumericPrimitives.cov( values0, values1 );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#cov(float[], FloatVector) */
+    public static  double cov( float[] values0, FloatVector values1 ) {return FloatNumericPrimitives.cov( values0, values1 );}
     /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#cov(int[],int[]) */
     public static  double cov( int[] values0, int[] values1 ) {return IntegerNumericPrimitives.cov( values0, values1 );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#cov(int[],io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  double cov( int[] values0, io.deephaven.engine.tables.dbarrays.IntVector values1 ) {return IntegerNumericPrimitives.cov( values0, values1 );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#cov(int[], IntVector) */
+    public static  double cov( int[] values0, IntVector values1 ) {return IntegerNumericPrimitives.cov( values0, values1 );}
     /** @see io.deephaven.libs.primitives.LongNumericPrimitives#cov(long[],long[]) */
     public static  double cov( long[] values0, long[] values1 ) {return LongNumericPrimitives.cov( values0, values1 );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#cov(long[],io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  double cov( long[] values0, io.deephaven.engine.tables.dbarrays.LongVector values1 ) {return LongNumericPrimitives.cov( values0, values1 );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#cov(long[], LongVector) */
+    public static  double cov( long[] values0, LongVector values1 ) {return LongNumericPrimitives.cov( values0, values1 );}
     /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#cov(short[],short[]) */
     public static  double cov( short[] values0, short[] values1 ) {return ShortNumericPrimitives.cov( values0, values1 );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#cov(short[],io.deephaven.engine.tables.dbarrays.ShortVector) */
-    public static  double cov( short[] values0, io.deephaven.engine.tables.dbarrays.ShortVector values1 ) {return ShortNumericPrimitives.cov( values0, values1 );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#cov(io.deephaven.engine.tables.dbarrays.ByteVector,byte[]) */
-    public static  double cov( io.deephaven.engine.tables.dbarrays.ByteVector values0, byte[] values1 ) {return ByteNumericPrimitives.cov( values0, values1 );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#cov(io.deephaven.engine.tables.dbarrays.ByteVector,io.deephaven.engine.tables.dbarrays.ByteVector) */
-    public static  double cov( io.deephaven.engine.tables.dbarrays.ByteVector values0, io.deephaven.engine.tables.dbarrays.ByteVector values1 ) {return ByteNumericPrimitives.cov( values0, values1 );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#cov(io.deephaven.engine.tables.dbarrays.DoubleVector,double[]) */
-    public static  double cov( io.deephaven.engine.tables.dbarrays.DoubleVector values0, double[] values1 ) {return DoubleNumericPrimitives.cov( values0, values1 );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#cov(io.deephaven.engine.tables.dbarrays.DoubleVector,io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  double cov( io.deephaven.engine.tables.dbarrays.DoubleVector values0, io.deephaven.engine.tables.dbarrays.DoubleVector values1 ) {return DoubleNumericPrimitives.cov( values0, values1 );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#cov(io.deephaven.engine.tables.dbarrays.FloatVector,float[]) */
-    public static  double cov( io.deephaven.engine.tables.dbarrays.FloatVector values0, float[] values1 ) {return FloatNumericPrimitives.cov( values0, values1 );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#cov(io.deephaven.engine.tables.dbarrays.FloatVector,io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  double cov( io.deephaven.engine.tables.dbarrays.FloatVector values0, io.deephaven.engine.tables.dbarrays.FloatVector values1 ) {return FloatNumericPrimitives.cov( values0, values1 );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#cov(io.deephaven.engine.tables.dbarrays.IntVector,int[]) */
-    public static  double cov( io.deephaven.engine.tables.dbarrays.IntVector values0, int[] values1 ) {return IntegerNumericPrimitives.cov( values0, values1 );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#cov(io.deephaven.engine.tables.dbarrays.IntVector,io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  double cov( io.deephaven.engine.tables.dbarrays.IntVector values0, io.deephaven.engine.tables.dbarrays.IntVector values1 ) {return IntegerNumericPrimitives.cov( values0, values1 );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#cov(io.deephaven.engine.tables.dbarrays.LongVector,long[]) */
-    public static  double cov( io.deephaven.engine.tables.dbarrays.LongVector values0, long[] values1 ) {return LongNumericPrimitives.cov( values0, values1 );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#cov(io.deephaven.engine.tables.dbarrays.LongVector,io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  double cov( io.deephaven.engine.tables.dbarrays.LongVector values0, io.deephaven.engine.tables.dbarrays.LongVector values1 ) {return LongNumericPrimitives.cov( values0, values1 );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#cov(io.deephaven.engine.tables.dbarrays.ShortVector,short[]) */
-    public static  double cov( io.deephaven.engine.tables.dbarrays.ShortVector values0, short[] values1 ) {return ShortNumericPrimitives.cov( values0, values1 );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#cov(io.deephaven.engine.tables.dbarrays.ShortVector,io.deephaven.engine.tables.dbarrays.ShortVector) */
-    public static  double cov( io.deephaven.engine.tables.dbarrays.ShortVector values0, io.deephaven.engine.tables.dbarrays.ShortVector values1 ) {return ShortNumericPrimitives.cov( values0, values1 );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#cov(short[], ShortVector) */
+    public static  double cov( short[] values0, ShortVector values1 ) {return ShortNumericPrimitives.cov( values0, values1 );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#cov(ByteVector,byte[]) */
+    public static  double cov(ByteVector values0, byte[] values1 ) {return ByteNumericPrimitives.cov( values0, values1 );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#cov(ByteVector, ByteVector) */
+    public static  double cov(ByteVector values0, ByteVector values1 ) {return ByteNumericPrimitives.cov( values0, values1 );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#cov(DoubleVector,double[]) */
+    public static  double cov(DoubleVector values0, double[] values1 ) {return DoubleNumericPrimitives.cov( values0, values1 );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#cov(DoubleVector, DoubleVector) */
+    public static  double cov(DoubleVector values0, DoubleVector values1 ) {return DoubleNumericPrimitives.cov( values0, values1 );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#cov(FloatVector,float[]) */
+    public static  double cov(FloatVector values0, float[] values1 ) {return FloatNumericPrimitives.cov( values0, values1 );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#cov(FloatVector, FloatVector) */
+    public static  double cov(FloatVector values0, FloatVector values1 ) {return FloatNumericPrimitives.cov( values0, values1 );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#cov(IntVector,int[]) */
+    public static  double cov(IntVector values0, int[] values1 ) {return IntegerNumericPrimitives.cov( values0, values1 );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#cov(IntVector, IntVector) */
+    public static  double cov(IntVector values0, IntVector values1 ) {return IntegerNumericPrimitives.cov( values0, values1 );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#cov(LongVector,long[]) */
+    public static  double cov(LongVector values0, long[] values1 ) {return LongNumericPrimitives.cov( values0, values1 );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#cov(LongVector, LongVector) */
+    public static  double cov(LongVector values0, LongVector values1 ) {return LongNumericPrimitives.cov( values0, values1 );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#cov(ShortVector,short[]) */
+    public static  double cov(ShortVector values0, short[] values1 ) {return ShortNumericPrimitives.cov( values0, values1 );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#cov(ShortVector, ShortVector) */
+    public static  double cov(ShortVector values0, ShortVector values1 ) {return ShortNumericPrimitives.cov( values0, values1 );}
     /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#cumprod(byte[]) */
     public static  byte[] cumprod( byte[] values ) {return ByteNumericPrimitives.cumprod( values );}
     /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#cumprod(double[]) */
@@ -676,18 +665,18 @@ public class GroovyStaticImports {
     public static  short[] cumprod( java.lang.Short[] values ) {return ShortNumericPrimitives.cumprod( values );}
     /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#cumprod(short[]) */
     public static  short[] cumprod( short[] values ) {return ShortNumericPrimitives.cumprod( values );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#cumprod(io.deephaven.engine.tables.dbarrays.ByteVector) */
-    public static  byte[] cumprod( io.deephaven.engine.tables.dbarrays.ByteVector values ) {return ByteNumericPrimitives.cumprod( values );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#cumprod(io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  double[] cumprod( io.deephaven.engine.tables.dbarrays.DoubleVector values ) {return DoubleNumericPrimitives.cumprod( values );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#cumprod(io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  float[] cumprod( io.deephaven.engine.tables.dbarrays.FloatVector values ) {return FloatNumericPrimitives.cumprod( values );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#cumprod(io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  int[] cumprod( io.deephaven.engine.tables.dbarrays.IntVector values ) {return IntegerNumericPrimitives.cumprod( values );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#cumprod(io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  long[] cumprod( io.deephaven.engine.tables.dbarrays.LongVector values ) {return LongNumericPrimitives.cumprod( values );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#cumprod(io.deephaven.engine.tables.dbarrays.ShortVector) */
-    public static  short[] cumprod( io.deephaven.engine.tables.dbarrays.ShortVector values ) {return ShortNumericPrimitives.cumprod( values );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#cumprod(ByteVector) */
+    public static  byte[] cumprod( ByteVector values ) {return ByteNumericPrimitives.cumprod( values );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#cumprod(DoubleVector) */
+    public static  double[] cumprod( DoubleVector values ) {return DoubleNumericPrimitives.cumprod( values );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#cumprod(FloatVector) */
+    public static  float[] cumprod( FloatVector values ) {return FloatNumericPrimitives.cumprod( values );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#cumprod(IntVector) */
+    public static  int[] cumprod( IntVector values ) {return IntegerNumericPrimitives.cumprod( values );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#cumprod(LongVector) */
+    public static  long[] cumprod( LongVector values ) {return LongNumericPrimitives.cumprod( values );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#cumprod(ShortVector) */
+    public static  short[] cumprod( ShortVector values ) {return ShortNumericPrimitives.cumprod( values );}
     /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#cumsum(byte[]) */
     public static  byte[] cumsum( byte[] values ) {return ByteNumericPrimitives.cumsum( values );}
     /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#cumsum(double[]) */
@@ -712,18 +701,18 @@ public class GroovyStaticImports {
     public static  short[] cumsum( java.lang.Short[] values ) {return ShortNumericPrimitives.cumsum( values );}
     /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#cumsum(short[]) */
     public static  short[] cumsum( short[] values ) {return ShortNumericPrimitives.cumsum( values );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#cumsum(io.deephaven.engine.tables.dbarrays.ByteVector) */
-    public static  byte[] cumsum( io.deephaven.engine.tables.dbarrays.ByteVector values ) {return ByteNumericPrimitives.cumsum( values );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#cumsum(io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  double[] cumsum( io.deephaven.engine.tables.dbarrays.DoubleVector values ) {return DoubleNumericPrimitives.cumsum( values );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#cumsum(io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  float[] cumsum( io.deephaven.engine.tables.dbarrays.FloatVector values ) {return FloatNumericPrimitives.cumsum( values );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#cumsum(io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  int[] cumsum( io.deephaven.engine.tables.dbarrays.IntVector values ) {return IntegerNumericPrimitives.cumsum( values );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#cumsum(io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  long[] cumsum( io.deephaven.engine.tables.dbarrays.LongVector values ) {return LongNumericPrimitives.cumsum( values );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#cumsum(io.deephaven.engine.tables.dbarrays.ShortVector) */
-    public static  short[] cumsum( io.deephaven.engine.tables.dbarrays.ShortVector values ) {return ShortNumericPrimitives.cumsum( values );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#cumsum(ByteVector) */
+    public static  byte[] cumsum( ByteVector values ) {return ByteNumericPrimitives.cumsum( values );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#cumsum(DoubleVector) */
+    public static  double[] cumsum( DoubleVector values ) {return DoubleNumericPrimitives.cumsum( values );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#cumsum(FloatVector) */
+    public static  float[] cumsum( FloatVector values ) {return FloatNumericPrimitives.cumsum( values );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#cumsum(IntVector) */
+    public static  int[] cumsum( IntVector values ) {return IntegerNumericPrimitives.cumsum( values );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#cumsum(LongVector) */
+    public static  long[] cumsum( LongVector values ) {return LongNumericPrimitives.cumsum( values );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#cumsum(ShortVector) */
+    public static  short[] cumsum( ShortVector values ) {return ShortNumericPrimitives.cumsum( values );}
     /** @see io.deephaven.libs.primitives.BytePrimitives#distinct(byte[]) */
     public static  byte[] distinct( byte[] values ) {return BytePrimitives.distinct( values );}
     /** @see io.deephaven.libs.primitives.CharacterPrimitives#distinct(char[]) */
@@ -738,22 +727,22 @@ public class GroovyStaticImports {
     public static  long[] distinct( long[] values ) {return LongPrimitives.distinct( values );}
     /** @see io.deephaven.libs.primitives.ShortPrimitives#distinct(short[]) */
     public static  short[] distinct( short[] values ) {return ShortPrimitives.distinct( values );}
-    /** @see io.deephaven.libs.primitives.BytePrimitives#distinct(io.deephaven.engine.tables.dbarrays.ByteVector) */
-    public static  io.deephaven.engine.tables.dbarrays.ByteVector distinct( io.deephaven.engine.tables.dbarrays.ByteVector values ) {return BytePrimitives.distinct( values );}
-    /** @see io.deephaven.libs.primitives.CharacterPrimitives#distinct(io.deephaven.engine.tables.dbarrays.CharVector) */
-    public static  io.deephaven.engine.tables.dbarrays.CharVector distinct( io.deephaven.engine.tables.dbarrays.CharVector values ) {return CharacterPrimitives.distinct( values );}
-    /** @see io.deephaven.libs.primitives.DoublePrimitives#distinct(io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  io.deephaven.engine.tables.dbarrays.DoubleVector distinct( io.deephaven.engine.tables.dbarrays.DoubleVector values ) {return DoublePrimitives.distinct( values );}
-    /** @see io.deephaven.libs.primitives.FloatPrimitives#distinct(io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  io.deephaven.engine.tables.dbarrays.FloatVector distinct( io.deephaven.engine.tables.dbarrays.FloatVector values ) {return FloatPrimitives.distinct( values );}
-    /** @see io.deephaven.libs.primitives.IntegerPrimitives#distinct(io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  io.deephaven.engine.tables.dbarrays.IntVector distinct( io.deephaven.engine.tables.dbarrays.IntVector values ) {return IntegerPrimitives.distinct( values );}
-    /** @see io.deephaven.libs.primitives.LongPrimitives#distinct(io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  io.deephaven.engine.tables.dbarrays.LongVector distinct( io.deephaven.engine.tables.dbarrays.LongVector values ) {return LongPrimitives.distinct( values );}
-    /** @see io.deephaven.libs.primitives.ShortPrimitives#distinct(io.deephaven.engine.tables.dbarrays.ShortVector) */
-    public static  io.deephaven.engine.tables.dbarrays.ShortVector distinct( io.deephaven.engine.tables.dbarrays.ShortVector values ) {return ShortPrimitives.distinct( values );}
-    /** @see io.deephaven.libs.primitives.ObjectPrimitives#distinct(io.deephaven.engine.tables.dbarrays.ObjectVector) */
-    public static <T extends java.lang.Comparable<? super T>> io.deephaven.engine.tables.dbarrays.ObjectVector<T> distinct( io.deephaven.engine.tables.dbarrays.ObjectVector<T> values ) {return ObjectPrimitives.distinct( values );}
+    /** @see io.deephaven.libs.primitives.BytePrimitives#distinct(ByteVector) */
+    public static ByteVector distinct(ByteVector values ) {return BytePrimitives.distinct( values );}
+    /** @see io.deephaven.libs.primitives.CharacterPrimitives#distinct(CharVector) */
+    public static CharVector distinct(CharVector values ) {return CharacterPrimitives.distinct( values );}
+    /** @see io.deephaven.libs.primitives.DoublePrimitives#distinct(DoubleVector) */
+    public static DoubleVector distinct(DoubleVector values ) {return DoublePrimitives.distinct( values );}
+    /** @see io.deephaven.libs.primitives.FloatPrimitives#distinct(FloatVector) */
+    public static FloatVector distinct(FloatVector values ) {return FloatPrimitives.distinct( values );}
+    /** @see io.deephaven.libs.primitives.IntegerPrimitives#distinct(IntVector) */
+    public static IntVector distinct(IntVector values ) {return IntegerPrimitives.distinct( values );}
+    /** @see io.deephaven.libs.primitives.LongPrimitives#distinct(LongVector) */
+    public static LongVector distinct(LongVector values ) {return LongPrimitives.distinct( values );}
+    /** @see io.deephaven.libs.primitives.ShortPrimitives#distinct(ShortVector) */
+    public static ShortVector distinct(ShortVector values ) {return ShortPrimitives.distinct( values );}
+    /** @see io.deephaven.libs.primitives.ObjectPrimitives#distinct(ObjectVector) */
+    public static <T extends java.lang.Comparable<? super T>> ObjectVector<T> distinct(ObjectVector<T> values ) {return ObjectPrimitives.distinct( values );}
     /** @see io.deephaven.libs.primitives.BytePrimitives#distinct(byte[],boolean,boolean) */
     public static  byte[] distinct( byte[] values, boolean includeNull, boolean sort ) {return BytePrimitives.distinct( values, includeNull, sort );}
     /** @see io.deephaven.libs.primitives.CharacterPrimitives#distinct(char[],boolean,boolean) */
@@ -768,22 +757,22 @@ public class GroovyStaticImports {
     public static  long[] distinct( long[] values, boolean includeNull, boolean sort ) {return LongPrimitives.distinct( values, includeNull, sort );}
     /** @see io.deephaven.libs.primitives.ShortPrimitives#distinct(short[],boolean,boolean) */
     public static  short[] distinct( short[] values, boolean includeNull, boolean sort ) {return ShortPrimitives.distinct( values, includeNull, sort );}
-    /** @see io.deephaven.libs.primitives.BytePrimitives#distinct(io.deephaven.engine.tables.dbarrays.ByteVector,boolean,boolean) */
-    public static  io.deephaven.engine.tables.dbarrays.ByteVector distinct( io.deephaven.engine.tables.dbarrays.ByteVector values, boolean includeNull, boolean sort ) {return BytePrimitives.distinct( values, includeNull, sort );}
-    /** @see io.deephaven.libs.primitives.CharacterPrimitives#distinct(io.deephaven.engine.tables.dbarrays.CharVector,boolean,boolean) */
-    public static  io.deephaven.engine.tables.dbarrays.CharVector distinct( io.deephaven.engine.tables.dbarrays.CharVector values, boolean includeNull, boolean sort ) {return CharacterPrimitives.distinct( values, includeNull, sort );}
-    /** @see io.deephaven.libs.primitives.DoublePrimitives#distinct(io.deephaven.engine.tables.dbarrays.DoubleVector,boolean,boolean) */
-    public static  io.deephaven.engine.tables.dbarrays.DoubleVector distinct( io.deephaven.engine.tables.dbarrays.DoubleVector values, boolean includeNull, boolean sort ) {return DoublePrimitives.distinct( values, includeNull, sort );}
-    /** @see io.deephaven.libs.primitives.FloatPrimitives#distinct(io.deephaven.engine.tables.dbarrays.FloatVector,boolean,boolean) */
-    public static  io.deephaven.engine.tables.dbarrays.FloatVector distinct( io.deephaven.engine.tables.dbarrays.FloatVector values, boolean includeNull, boolean sort ) {return FloatPrimitives.distinct( values, includeNull, sort );}
-    /** @see io.deephaven.libs.primitives.IntegerPrimitives#distinct(io.deephaven.engine.tables.dbarrays.IntVector,boolean,boolean) */
-    public static  io.deephaven.engine.tables.dbarrays.IntVector distinct( io.deephaven.engine.tables.dbarrays.IntVector values, boolean includeNull, boolean sort ) {return IntegerPrimitives.distinct( values, includeNull, sort );}
-    /** @see io.deephaven.libs.primitives.LongPrimitives#distinct(io.deephaven.engine.tables.dbarrays.LongVector,boolean,boolean) */
-    public static  io.deephaven.engine.tables.dbarrays.LongVector distinct( io.deephaven.engine.tables.dbarrays.LongVector values, boolean includeNull, boolean sort ) {return LongPrimitives.distinct( values, includeNull, sort );}
-    /** @see io.deephaven.libs.primitives.ShortPrimitives#distinct(io.deephaven.engine.tables.dbarrays.ShortVector,boolean,boolean) */
-    public static  io.deephaven.engine.tables.dbarrays.ShortVector distinct( io.deephaven.engine.tables.dbarrays.ShortVector values, boolean includeNull, boolean sort ) {return ShortPrimitives.distinct( values, includeNull, sort );}
-    /** @see io.deephaven.libs.primitives.ObjectPrimitives#distinct(io.deephaven.engine.tables.dbarrays.ObjectVector,boolean,boolean) */
-    public static <T extends java.lang.Comparable<? super T>> io.deephaven.engine.tables.dbarrays.ObjectVector<T> distinct( io.deephaven.engine.tables.dbarrays.ObjectVector<T> values, boolean includeNull, boolean sort ) {return ObjectPrimitives.distinct( values, includeNull, sort );}
+    /** @see io.deephaven.libs.primitives.BytePrimitives#distinct(ByteVector,boolean,boolean) */
+    public static ByteVector distinct(ByteVector values, boolean includeNull, boolean sort ) {return BytePrimitives.distinct( values, includeNull, sort );}
+    /** @see io.deephaven.libs.primitives.CharacterPrimitives#distinct(CharVector,boolean,boolean) */
+    public static CharVector distinct(CharVector values, boolean includeNull, boolean sort ) {return CharacterPrimitives.distinct( values, includeNull, sort );}
+    /** @see io.deephaven.libs.primitives.DoublePrimitives#distinct(DoubleVector,boolean,boolean) */
+    public static DoubleVector distinct(DoubleVector values, boolean includeNull, boolean sort ) {return DoublePrimitives.distinct( values, includeNull, sort );}
+    /** @see io.deephaven.libs.primitives.FloatPrimitives#distinct(FloatVector,boolean,boolean) */
+    public static FloatVector distinct(FloatVector values, boolean includeNull, boolean sort ) {return FloatPrimitives.distinct( values, includeNull, sort );}
+    /** @see io.deephaven.libs.primitives.IntegerPrimitives#distinct(IntVector,boolean,boolean) */
+    public static IntVector distinct(IntVector values, boolean includeNull, boolean sort ) {return IntegerPrimitives.distinct( values, includeNull, sort );}
+    /** @see io.deephaven.libs.primitives.LongPrimitives#distinct(LongVector,boolean,boolean) */
+    public static LongVector distinct(LongVector values, boolean includeNull, boolean sort ) {return LongPrimitives.distinct( values, includeNull, sort );}
+    /** @see io.deephaven.libs.primitives.ShortPrimitives#distinct(ShortVector,boolean,boolean) */
+    public static ShortVector distinct(ShortVector values, boolean includeNull, boolean sort ) {return ShortPrimitives.distinct( values, includeNull, sort );}
+    /** @see io.deephaven.libs.primitives.ObjectPrimitives#distinct(ObjectVector,boolean,boolean) */
+    public static <T extends java.lang.Comparable<? super T>> ObjectVector<T> distinct(ObjectVector<T> values, boolean includeNull, boolean sort ) {return ObjectPrimitives.distinct( values, includeNull, sort );}
     /** @see io.deephaven.libs.primitives.BytePrimitives#enlist(byte[]) */
     public static  byte[] enlist( byte[] values ) {return BytePrimitives.enlist( values );}
     /** @see io.deephaven.libs.primitives.CharacterPrimitives#enlist(char[]) */
@@ -828,22 +817,22 @@ public class GroovyStaticImports {
     public static  short first( short[] values ) {return ShortPrimitives.first( values );}
     /** @see io.deephaven.libs.primitives.BooleanPrimitives#first(boolean[]) */
     public static  java.lang.Boolean first( boolean[] values ) {return BooleanPrimitives.first( values );}
-    /** @see io.deephaven.libs.primitives.BytePrimitives#first(io.deephaven.engine.tables.dbarrays.ByteVector) */
-    public static  byte first( io.deephaven.engine.tables.dbarrays.ByteVector values ) {return BytePrimitives.first( values );}
-    /** @see io.deephaven.libs.primitives.CharacterPrimitives#first(io.deephaven.engine.tables.dbarrays.CharVector) */
-    public static  char first( io.deephaven.engine.tables.dbarrays.CharVector values ) {return CharacterPrimitives.first( values );}
-    /** @see io.deephaven.libs.primitives.DoublePrimitives#first(io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  double first( io.deephaven.engine.tables.dbarrays.DoubleVector values ) {return DoublePrimitives.first( values );}
-    /** @see io.deephaven.libs.primitives.FloatPrimitives#first(io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  float first( io.deephaven.engine.tables.dbarrays.FloatVector values ) {return FloatPrimitives.first( values );}
-    /** @see io.deephaven.libs.primitives.IntegerPrimitives#first(io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  int first( io.deephaven.engine.tables.dbarrays.IntVector values ) {return IntegerPrimitives.first( values );}
-    /** @see io.deephaven.libs.primitives.LongPrimitives#first(io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  long first( io.deephaven.engine.tables.dbarrays.LongVector values ) {return LongPrimitives.first( values );}
-    /** @see io.deephaven.libs.primitives.ShortPrimitives#first(io.deephaven.engine.tables.dbarrays.ShortVector) */
-    public static  short first( io.deephaven.engine.tables.dbarrays.ShortVector values ) {return ShortPrimitives.first( values );}
-    /** @see io.deephaven.libs.primitives.ObjectPrimitives#first(io.deephaven.engine.tables.dbarrays.ObjectVector) */
-    public static <T> T first( io.deephaven.engine.tables.dbarrays.ObjectVector<T> values ) {return ObjectPrimitives.first( values );}
+    /** @see io.deephaven.libs.primitives.BytePrimitives#first(ByteVector) */
+    public static  byte first( ByteVector values ) {return BytePrimitives.first( values );}
+    /** @see io.deephaven.libs.primitives.CharacterPrimitives#first(CharVector) */
+    public static  char first( CharVector values ) {return CharacterPrimitives.first( values );}
+    /** @see io.deephaven.libs.primitives.DoublePrimitives#first(DoubleVector) */
+    public static  double first( DoubleVector values ) {return DoublePrimitives.first( values );}
+    /** @see io.deephaven.libs.primitives.FloatPrimitives#first(FloatVector) */
+    public static  float first( FloatVector values ) {return FloatPrimitives.first( values );}
+    /** @see io.deephaven.libs.primitives.IntegerPrimitives#first(IntVector) */
+    public static  int first( IntVector values ) {return IntegerPrimitives.first( values );}
+    /** @see io.deephaven.libs.primitives.LongPrimitives#first(LongVector) */
+    public static  long first( LongVector values ) {return LongPrimitives.first( values );}
+    /** @see io.deephaven.libs.primitives.ShortPrimitives#first(ShortVector) */
+    public static  short first( ShortVector values ) {return ShortPrimitives.first( values );}
+    /** @see io.deephaven.libs.primitives.ObjectPrimitives#first(ObjectVector) */
+    public static <T> T first( ObjectVector<T> values ) {return ObjectPrimitives.first( values );}
     /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#firstIndexOf(byte[],byte) */
     public static  int firstIndexOf( byte[] values, byte val ) {return ByteNumericPrimitives.firstIndexOf( values, val );}
     /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#firstIndexOf(double[],double) */
@@ -856,18 +845,18 @@ public class GroovyStaticImports {
     public static  int firstIndexOf( long[] values, long val ) {return LongNumericPrimitives.firstIndexOf( values, val );}
     /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#firstIndexOf(short[],short) */
     public static  int firstIndexOf( short[] values, short val ) {return ShortNumericPrimitives.firstIndexOf( values, val );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#firstIndexOf(io.deephaven.engine.tables.dbarrays.ByteVector,byte) */
-    public static  int firstIndexOf( io.deephaven.engine.tables.dbarrays.ByteVector values, byte val ) {return ByteNumericPrimitives.firstIndexOf( values, val );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#firstIndexOf(io.deephaven.engine.tables.dbarrays.DoubleVector,double) */
-    public static  int firstIndexOf( io.deephaven.engine.tables.dbarrays.DoubleVector values, double val ) {return DoubleNumericPrimitives.firstIndexOf( values, val );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#firstIndexOf(io.deephaven.engine.tables.dbarrays.FloatVector,float) */
-    public static  int firstIndexOf( io.deephaven.engine.tables.dbarrays.FloatVector values, float val ) {return FloatNumericPrimitives.firstIndexOf( values, val );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#firstIndexOf(io.deephaven.engine.tables.dbarrays.IntVector,int) */
-    public static  int firstIndexOf( io.deephaven.engine.tables.dbarrays.IntVector values, int val ) {return IntegerNumericPrimitives.firstIndexOf( values, val );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#firstIndexOf(io.deephaven.engine.tables.dbarrays.LongVector,long) */
-    public static  int firstIndexOf( io.deephaven.engine.tables.dbarrays.LongVector values, long val ) {return LongNumericPrimitives.firstIndexOf( values, val );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#firstIndexOf(io.deephaven.engine.tables.dbarrays.ShortVector,short) */
-    public static  int firstIndexOf( io.deephaven.engine.tables.dbarrays.ShortVector values, short val ) {return ShortNumericPrimitives.firstIndexOf( values, val );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#firstIndexOf(ByteVector,byte) */
+    public static  int firstIndexOf(ByteVector values, byte val ) {return ByteNumericPrimitives.firstIndexOf( values, val );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#firstIndexOf(DoubleVector,double) */
+    public static  int firstIndexOf(DoubleVector values, double val ) {return DoubleNumericPrimitives.firstIndexOf( values, val );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#firstIndexOf(FloatVector,float) */
+    public static  int firstIndexOf(FloatVector values, float val ) {return FloatNumericPrimitives.firstIndexOf( values, val );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#firstIndexOf(IntVector,int) */
+    public static  int firstIndexOf(IntVector values, int val ) {return IntegerNumericPrimitives.firstIndexOf( values, val );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#firstIndexOf(LongVector,long) */
+    public static  int firstIndexOf(LongVector values, long val ) {return LongNumericPrimitives.firstIndexOf( values, val );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#firstIndexOf(ShortVector,short) */
+    public static  int firstIndexOf(ShortVector values, short val ) {return ShortNumericPrimitives.firstIndexOf( values, val );}
     /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#floor(byte) */
     public static  double floor( byte value ) {return ByteNumericPrimitives.floor( value );}
     /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#floor(double) */
@@ -936,18 +925,18 @@ public class GroovyStaticImports {
     public static  int indexOfMax( java.lang.Short[] values ) {return ShortNumericPrimitives.indexOfMax( values );}
     /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#indexOfMax(short[]) */
     public static  int indexOfMax( short[] values ) {return ShortNumericPrimitives.indexOfMax( values );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#indexOfMax(io.deephaven.engine.tables.dbarrays.ByteVector) */
-    public static  int indexOfMax( io.deephaven.engine.tables.dbarrays.ByteVector values ) {return ByteNumericPrimitives.indexOfMax( values );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#indexOfMax(io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  int indexOfMax( io.deephaven.engine.tables.dbarrays.DoubleVector values ) {return DoubleNumericPrimitives.indexOfMax( values );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#indexOfMax(io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  int indexOfMax( io.deephaven.engine.tables.dbarrays.FloatVector values ) {return FloatNumericPrimitives.indexOfMax( values );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#indexOfMax(io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  int indexOfMax( io.deephaven.engine.tables.dbarrays.IntVector values ) {return IntegerNumericPrimitives.indexOfMax( values );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#indexOfMax(io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  int indexOfMax( io.deephaven.engine.tables.dbarrays.LongVector values ) {return LongNumericPrimitives.indexOfMax( values );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#indexOfMax(io.deephaven.engine.tables.dbarrays.ShortVector) */
-    public static  int indexOfMax( io.deephaven.engine.tables.dbarrays.ShortVector values ) {return ShortNumericPrimitives.indexOfMax( values );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#indexOfMax(ByteVector) */
+    public static  int indexOfMax( ByteVector values ) {return ByteNumericPrimitives.indexOfMax( values );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#indexOfMax(DoubleVector) */
+    public static  int indexOfMax( DoubleVector values ) {return DoubleNumericPrimitives.indexOfMax( values );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#indexOfMax(FloatVector) */
+    public static  int indexOfMax( FloatVector values ) {return FloatNumericPrimitives.indexOfMax( values );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#indexOfMax(IntVector) */
+    public static  int indexOfMax( IntVector values ) {return IntegerNumericPrimitives.indexOfMax( values );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#indexOfMax(LongVector) */
+    public static  int indexOfMax( LongVector values ) {return LongNumericPrimitives.indexOfMax( values );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#indexOfMax(ShortVector) */
+    public static  int indexOfMax( ShortVector values ) {return ShortNumericPrimitives.indexOfMax( values );}
     /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#indexOfMin(byte[]) */
     public static  int indexOfMin( byte[] values ) {return ByteNumericPrimitives.indexOfMin( values );}
     /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#indexOfMin(double[]) */
@@ -972,22 +961,22 @@ public class GroovyStaticImports {
     public static  int indexOfMin( java.lang.Short[] values ) {return ShortNumericPrimitives.indexOfMin( values );}
     /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#indexOfMin(short[]) */
     public static  int indexOfMin( short[] values ) {return ShortNumericPrimitives.indexOfMin( values );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#indexOfMin(io.deephaven.engine.tables.dbarrays.ByteVector) */
-    public static  int indexOfMin( io.deephaven.engine.tables.dbarrays.ByteVector values ) {return ByteNumericPrimitives.indexOfMin( values );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#indexOfMin(io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  int indexOfMin( io.deephaven.engine.tables.dbarrays.DoubleVector values ) {return DoubleNumericPrimitives.indexOfMin( values );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#indexOfMin(io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  int indexOfMin( io.deephaven.engine.tables.dbarrays.FloatVector values ) {return FloatNumericPrimitives.indexOfMin( values );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#indexOfMin(io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  int indexOfMin( io.deephaven.engine.tables.dbarrays.IntVector values ) {return IntegerNumericPrimitives.indexOfMin( values );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#indexOfMin(io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  int indexOfMin( io.deephaven.engine.tables.dbarrays.LongVector values ) {return LongNumericPrimitives.indexOfMin( values );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#indexOfMin(io.deephaven.engine.tables.dbarrays.ShortVector) */
-    public static  int indexOfMin( io.deephaven.engine.tables.dbarrays.ShortVector values ) {return ShortNumericPrimitives.indexOfMin( values );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#indexOfMin(ByteVector) */
+    public static  int indexOfMin( ByteVector values ) {return ByteNumericPrimitives.indexOfMin( values );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#indexOfMin(DoubleVector) */
+    public static  int indexOfMin( DoubleVector values ) {return DoubleNumericPrimitives.indexOfMin( values );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#indexOfMin(FloatVector) */
+    public static  int indexOfMin( FloatVector values ) {return FloatNumericPrimitives.indexOfMin( values );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#indexOfMin(IntVector) */
+    public static  int indexOfMin( IntVector values ) {return IntegerNumericPrimitives.indexOfMin( values );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#indexOfMin(LongVector) */
+    public static  int indexOfMin( LongVector values ) {return LongNumericPrimitives.indexOfMin( values );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#indexOfMin(ShortVector) */
+    public static  int indexOfMin( ShortVector values ) {return ShortNumericPrimitives.indexOfMin( values );}
     /** @see io.deephaven.libs.primitives.Casting#intToDouble(int[]) */
     public static  double[] intToDouble( int[] values ) {return Casting.intToDouble( values );}
-    /** @see io.deephaven.libs.primitives.Casting#intToDouble(io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  io.deephaven.engine.tables.dbarrays.DoubleVector intToDouble( io.deephaven.engine.tables.dbarrays.IntVector values ) {return Casting.intToDouble( values );}
+    /** @see io.deephaven.libs.primitives.Casting#intToDouble(IntVector) */
+    public static DoubleVector intToDouble(IntVector values ) {return Casting.intToDouble( values );}
     /** @see io.deephaven.libs.primitives.ObjectPrimitives#isDBNull(T) */
     public static <T> boolean isDBNull( T value ) {return ObjectPrimitives.isDBNull( value );}
     /** @see io.deephaven.libs.primitives.DoubleFpPrimitives#isInf(double) */
@@ -1038,22 +1027,22 @@ public class GroovyStaticImports {
     public static  short last( short[] values ) {return ShortPrimitives.last( values );}
     /** @see io.deephaven.libs.primitives.BooleanPrimitives#last(boolean[]) */
     public static  java.lang.Boolean last( boolean[] values ) {return BooleanPrimitives.last( values );}
-    /** @see io.deephaven.libs.primitives.BytePrimitives#last(io.deephaven.engine.tables.dbarrays.ByteVector) */
-    public static  byte last( io.deephaven.engine.tables.dbarrays.ByteVector values ) {return BytePrimitives.last( values );}
-    /** @see io.deephaven.libs.primitives.CharacterPrimitives#last(io.deephaven.engine.tables.dbarrays.CharVector) */
-    public static  char last( io.deephaven.engine.tables.dbarrays.CharVector values ) {return CharacterPrimitives.last( values );}
-    /** @see io.deephaven.libs.primitives.DoublePrimitives#last(io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  double last( io.deephaven.engine.tables.dbarrays.DoubleVector values ) {return DoublePrimitives.last( values );}
-    /** @see io.deephaven.libs.primitives.FloatPrimitives#last(io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  float last( io.deephaven.engine.tables.dbarrays.FloatVector values ) {return FloatPrimitives.last( values );}
-    /** @see io.deephaven.libs.primitives.IntegerPrimitives#last(io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  int last( io.deephaven.engine.tables.dbarrays.IntVector values ) {return IntegerPrimitives.last( values );}
-    /** @see io.deephaven.libs.primitives.LongPrimitives#last(io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  long last( io.deephaven.engine.tables.dbarrays.LongVector values ) {return LongPrimitives.last( values );}
-    /** @see io.deephaven.libs.primitives.ShortPrimitives#last(io.deephaven.engine.tables.dbarrays.ShortVector) */
-    public static  short last( io.deephaven.engine.tables.dbarrays.ShortVector values ) {return ShortPrimitives.last( values );}
-    /** @see io.deephaven.libs.primitives.ObjectPrimitives#last(io.deephaven.engine.tables.dbarrays.ObjectVector) */
-    public static <T> T last( io.deephaven.engine.tables.dbarrays.ObjectVector<T> values ) {return ObjectPrimitives.last( values );}
+    /** @see io.deephaven.libs.primitives.BytePrimitives#last(ByteVector) */
+    public static  byte last( ByteVector values ) {return BytePrimitives.last( values );}
+    /** @see io.deephaven.libs.primitives.CharacterPrimitives#last(CharVector) */
+    public static  char last( CharVector values ) {return CharacterPrimitives.last( values );}
+    /** @see io.deephaven.libs.primitives.DoublePrimitives#last(DoubleVector) */
+    public static  double last( DoubleVector values ) {return DoublePrimitives.last( values );}
+    /** @see io.deephaven.libs.primitives.FloatPrimitives#last(FloatVector) */
+    public static  float last( FloatVector values ) {return FloatPrimitives.last( values );}
+    /** @see io.deephaven.libs.primitives.IntegerPrimitives#last(IntVector) */
+    public static  int last( IntVector values ) {return IntegerPrimitives.last( values );}
+    /** @see io.deephaven.libs.primitives.LongPrimitives#last(LongVector) */
+    public static  long last( LongVector values ) {return LongPrimitives.last( values );}
+    /** @see io.deephaven.libs.primitives.ShortPrimitives#last(ShortVector) */
+    public static  short last( ShortVector values ) {return ShortPrimitives.last( values );}
+    /** @see io.deephaven.libs.primitives.ObjectPrimitives#last(ObjectVector) */
+    public static <T> T last( ObjectVector<T> values ) {return ObjectPrimitives.last( values );}
     /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#log(byte) */
     public static  double log( byte value ) {return ByteNumericPrimitives.log( value );}
     /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#log(double) */
@@ -1068,8 +1057,8 @@ public class GroovyStaticImports {
     public static  double log( short value ) {return ShortNumericPrimitives.log( value );}
     /** @see io.deephaven.libs.primitives.Casting#longToDouble(long[]) */
     public static  double[] longToDouble( long[] values ) {return Casting.longToDouble( values );}
-    /** @see io.deephaven.libs.primitives.Casting#longToDouble(io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  io.deephaven.engine.tables.dbarrays.DoubleVector longToDouble( io.deephaven.engine.tables.dbarrays.LongVector values ) {return Casting.longToDouble( values );}
+    /** @see io.deephaven.libs.primitives.Casting#longToDouble(LongVector) */
+    public static DoubleVector longToDouble(LongVector values ) {return Casting.longToDouble( values );}
     /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#lowerBin(byte,byte) */
     public static  byte lowerBin( byte value, byte interval ) {return ByteNumericPrimitives.lowerBin( value, interval );}
     /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#lowerBin(double,double) */
@@ -1122,20 +1111,20 @@ public class GroovyStaticImports {
     public static  short max( java.lang.Short[] values ) {return ShortNumericPrimitives.max( values );}
     /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#max(short[]) */
     public static  short max( short[] values ) {return ShortNumericPrimitives.max( values );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#max(io.deephaven.engine.tables.dbarrays.ByteVector) */
-    public static  byte max( io.deephaven.engine.tables.dbarrays.ByteVector values ) {return ByteNumericPrimitives.max( values );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#max(io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  double max( io.deephaven.engine.tables.dbarrays.DoubleVector values ) {return DoubleNumericPrimitives.max( values );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#max(io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  float max( io.deephaven.engine.tables.dbarrays.FloatVector values ) {return FloatNumericPrimitives.max( values );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#max(io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  int max( io.deephaven.engine.tables.dbarrays.IntVector values ) {return IntegerNumericPrimitives.max( values );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#max(io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  long max( io.deephaven.engine.tables.dbarrays.LongVector values ) {return LongNumericPrimitives.max( values );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#max(io.deephaven.engine.tables.dbarrays.ShortVector) */
-    public static  short max( io.deephaven.engine.tables.dbarrays.ShortVector values ) {return ShortNumericPrimitives.max( values );}
-    /** @see io.deephaven.libs.primitives.ObjectPrimitives#max(io.deephaven.engine.tables.dbarrays.ObjectVector) */
-    public static <T extends java.lang.Comparable> T max( io.deephaven.engine.tables.dbarrays.ObjectVector<T> values ) {return ObjectPrimitives.max( values );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#max(ByteVector) */
+    public static  byte max( ByteVector values ) {return ByteNumericPrimitives.max( values );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#max(DoubleVector) */
+    public static  double max( DoubleVector values ) {return DoubleNumericPrimitives.max( values );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#max(FloatVector) */
+    public static  float max( FloatVector values ) {return FloatNumericPrimitives.max( values );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#max(IntVector) */
+    public static  int max( IntVector values ) {return IntegerNumericPrimitives.max( values );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#max(LongVector) */
+    public static  long max( LongVector values ) {return LongNumericPrimitives.max( values );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#max(ShortVector) */
+    public static  short max( ShortVector values ) {return ShortNumericPrimitives.max( values );}
+    /** @see io.deephaven.libs.primitives.ObjectPrimitives#max(ObjectVector) */
+    public static <T extends java.lang.Comparable> T max( ObjectVector<T> values ) {return ObjectPrimitives.max( values );}
     /** @see io.deephaven.libs.primitives.ComparePrimitives#max(byte,byte) */
     public static  byte max( byte v1, byte v2 ) {return ComparePrimitives.max( v1, v2 );}
     /** @see io.deephaven.libs.primitives.ComparePrimitives#max(byte,double) */
@@ -1232,18 +1221,18 @@ public class GroovyStaticImports {
     public static  double median( java.lang.Short[] values ) {return ShortNumericPrimitives.median( values );}
     /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#median(short[]) */
     public static  double median( short[] values ) {return ShortNumericPrimitives.median( values );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#median(io.deephaven.engine.tables.dbarrays.ByteVector) */
-    public static  double median( io.deephaven.engine.tables.dbarrays.ByteVector values ) {return ByteNumericPrimitives.median( values );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#median(io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  double median( io.deephaven.engine.tables.dbarrays.DoubleVector values ) {return DoubleNumericPrimitives.median( values );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#median(io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  double median( io.deephaven.engine.tables.dbarrays.FloatVector values ) {return FloatNumericPrimitives.median( values );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#median(io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  double median( io.deephaven.engine.tables.dbarrays.IntVector values ) {return IntegerNumericPrimitives.median( values );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#median(io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  double median( io.deephaven.engine.tables.dbarrays.LongVector values ) {return LongNumericPrimitives.median( values );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#median(io.deephaven.engine.tables.dbarrays.ShortVector) */
-    public static  double median( io.deephaven.engine.tables.dbarrays.ShortVector values ) {return ShortNumericPrimitives.median( values );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#median(ByteVector) */
+    public static  double median( ByteVector values ) {return ByteNumericPrimitives.median( values );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#median(DoubleVector) */
+    public static  double median( DoubleVector values ) {return DoubleNumericPrimitives.median( values );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#median(FloatVector) */
+    public static  double median( FloatVector values ) {return FloatNumericPrimitives.median( values );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#median(IntVector) */
+    public static  double median( IntVector values ) {return IntegerNumericPrimitives.median( values );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#median(LongVector) */
+    public static  double median( LongVector values ) {return LongNumericPrimitives.median( values );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#median(ShortVector) */
+    public static  double median( ShortVector values ) {return ShortNumericPrimitives.median( values );}
     /** @see io.deephaven.libs.primitives.ObjectPrimitives#min(NUM[]) */
     public static <NUM extends java.lang.Number> NUM min( NUM[] values ) {return ObjectPrimitives.min( values );}
     /** @see io.deephaven.libs.primitives.ObjectPrimitives#min(T[]) */
@@ -1272,20 +1261,20 @@ public class GroovyStaticImports {
     public static  short min( java.lang.Short[] values ) {return ShortNumericPrimitives.min( values );}
     /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#min(short[]) */
     public static  short min( short[] values ) {return ShortNumericPrimitives.min( values );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#min(io.deephaven.engine.tables.dbarrays.ByteVector) */
-    public static  byte min( io.deephaven.engine.tables.dbarrays.ByteVector values ) {return ByteNumericPrimitives.min( values );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#min(io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  double min( io.deephaven.engine.tables.dbarrays.DoubleVector values ) {return DoubleNumericPrimitives.min( values );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#min(io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  float min( io.deephaven.engine.tables.dbarrays.FloatVector values ) {return FloatNumericPrimitives.min( values );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#min(io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  int min( io.deephaven.engine.tables.dbarrays.IntVector values ) {return IntegerNumericPrimitives.min( values );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#min(io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  long min( io.deephaven.engine.tables.dbarrays.LongVector values ) {return LongNumericPrimitives.min( values );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#min(io.deephaven.engine.tables.dbarrays.ShortVector) */
-    public static  short min( io.deephaven.engine.tables.dbarrays.ShortVector values ) {return ShortNumericPrimitives.min( values );}
-    /** @see io.deephaven.libs.primitives.ObjectPrimitives#min(io.deephaven.engine.tables.dbarrays.ObjectVector) */
-    public static <T extends java.lang.Comparable> T min( io.deephaven.engine.tables.dbarrays.ObjectVector<T> values ) {return ObjectPrimitives.min( values );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#min(ByteVector) */
+    public static  byte min( ByteVector values ) {return ByteNumericPrimitives.min( values );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#min(DoubleVector) */
+    public static  double min( DoubleVector values ) {return DoubleNumericPrimitives.min( values );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#min(FloatVector) */
+    public static  float min( FloatVector values ) {return FloatNumericPrimitives.min( values );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#min(IntVector) */
+    public static  int min( IntVector values ) {return IntegerNumericPrimitives.min( values );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#min(LongVector) */
+    public static  long min( LongVector values ) {return LongNumericPrimitives.min( values );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#min(ShortVector) */
+    public static  short min( ShortVector values ) {return ShortNumericPrimitives.min( values );}
+    /** @see io.deephaven.libs.primitives.ObjectPrimitives#min(ObjectVector) */
+    public static <T extends java.lang.Comparable> T min( ObjectVector<T> values ) {return ObjectPrimitives.min( values );}
     /** @see io.deephaven.libs.primitives.ComparePrimitives#min(byte,byte) */
     public static  byte min( byte v1, byte v2 ) {return ComparePrimitives.min( v1, v2 );}
     /** @see io.deephaven.libs.primitives.ComparePrimitives#min(byte,double) */
@@ -1378,24 +1367,24 @@ public class GroovyStaticImports {
     public static  java.lang.Boolean nth( int index, java.lang.Boolean[] values ) {return BooleanPrimitives.nth( index, values );}
     /** @see io.deephaven.libs.primitives.ShortPrimitives#nth(int,short[]) */
     public static  short nth( int index, short[] values ) {return ShortPrimitives.nth( index, values );}
-    /** @see io.deephaven.libs.primitives.BooleanPrimitives#nth(int,io.deephaven.engine.tables.dbarrays.BooleanVector) */
-    public static  java.lang.Boolean nth( int index, io.deephaven.engine.tables.dbarrays.BooleanVector values ) {return BooleanPrimitives.nth( index, values );}
-    /** @see io.deephaven.libs.primitives.BytePrimitives#nth(int,io.deephaven.engine.tables.dbarrays.ByteVector) */
-    public static  byte nth( int index, io.deephaven.engine.tables.dbarrays.ByteVector values ) {return BytePrimitives.nth( index, values );}
-    /** @see io.deephaven.libs.primitives.CharacterPrimitives#nth(int,io.deephaven.engine.tables.dbarrays.CharVector) */
-    public static  char nth( int index, io.deephaven.engine.tables.dbarrays.CharVector values ) {return CharacterPrimitives.nth( index, values );}
-    /** @see io.deephaven.libs.primitives.DoublePrimitives#nth(int,io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  double nth( int index, io.deephaven.engine.tables.dbarrays.DoubleVector values ) {return DoublePrimitives.nth( index, values );}
-    /** @see io.deephaven.libs.primitives.FloatPrimitives#nth(int,io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  float nth( int index, io.deephaven.engine.tables.dbarrays.FloatVector values ) {return FloatPrimitives.nth( index, values );}
-    /** @see io.deephaven.libs.primitives.IntegerPrimitives#nth(int,io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  int nth( int index, io.deephaven.engine.tables.dbarrays.IntVector values ) {return IntegerPrimitives.nth( index, values );}
-    /** @see io.deephaven.libs.primitives.LongPrimitives#nth(int,io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  long nth( int index, io.deephaven.engine.tables.dbarrays.LongVector values ) {return LongPrimitives.nth( index, values );}
-    /** @see io.deephaven.libs.primitives.ShortPrimitives#nth(int,io.deephaven.engine.tables.dbarrays.ShortVector) */
-    public static  short nth( int index, io.deephaven.engine.tables.dbarrays.ShortVector values ) {return ShortPrimitives.nth( index, values );}
-    /** @see io.deephaven.libs.primitives.ObjectPrimitives#nth(int,io.deephaven.engine.tables.dbarrays.ObjectVector) */
-    public static <T> T nth( int index, io.deephaven.engine.tables.dbarrays.ObjectVector<T> values ) {return ObjectPrimitives.nth( index, values );}
+    /** @see io.deephaven.libs.primitives.BooleanPrimitives#nth(int, BooleanVector) */
+    public static  java.lang.Boolean nth( int index, BooleanVector values ) {return BooleanPrimitives.nth( index, values );}
+    /** @see io.deephaven.libs.primitives.BytePrimitives#nth(int, ByteVector) */
+    public static  byte nth( int index, ByteVector values ) {return BytePrimitives.nth( index, values );}
+    /** @see io.deephaven.libs.primitives.CharacterPrimitives#nth(int, CharVector) */
+    public static  char nth( int index, CharVector values ) {return CharacterPrimitives.nth( index, values );}
+    /** @see io.deephaven.libs.primitives.DoublePrimitives#nth(int, DoubleVector) */
+    public static  double nth( int index, DoubleVector values ) {return DoublePrimitives.nth( index, values );}
+    /** @see io.deephaven.libs.primitives.FloatPrimitives#nth(int, FloatVector) */
+    public static  float nth( int index, FloatVector values ) {return FloatPrimitives.nth( index, values );}
+    /** @see io.deephaven.libs.primitives.IntegerPrimitives#nth(int, IntVector) */
+    public static  int nth( int index, IntVector values ) {return IntegerPrimitives.nth( index, values );}
+    /** @see io.deephaven.libs.primitives.LongPrimitives#nth(int, LongVector) */
+    public static  long nth( int index, LongVector values ) {return LongPrimitives.nth( index, values );}
+    /** @see io.deephaven.libs.primitives.ShortPrimitives#nth(int, ShortVector) */
+    public static  short nth( int index, ShortVector values ) {return ShortPrimitives.nth( index, values );}
+    /** @see io.deephaven.libs.primitives.ObjectPrimitives#nth(int, ObjectVector) */
+    public static <T> T nth( int index, ObjectVector<T> values ) {return ObjectPrimitives.nth( index, values );}
     /** @see io.deephaven.libs.primitives.ObjectPrimitives#nullToValue(T,T) */
     public static <T> T nullToValue( T value, T defaultValue ) {return ObjectPrimitives.nullToValue( value, defaultValue );}
     /** @see io.deephaven.libs.primitives.BytePrimitives#nullToValue(byte,byte) */
@@ -1424,24 +1413,24 @@ public class GroovyStaticImports {
     public static  float nullToValue( float value, float defaultValue ) {return FloatPrimitives.nullToValue( value, defaultValue );}
     /** @see io.deephaven.libs.primitives.IntegerPrimitives#nullToValue(int,int) */
     public static  int nullToValue( int value, int defaultValue ) {return IntegerPrimitives.nullToValue( value, defaultValue );}
-    /** @see io.deephaven.libs.primitives.BooleanPrimitives#nullToValue(io.deephaven.engine.tables.dbarrays.BooleanVector,boolean) */
-    public static  java.lang.Boolean[] nullToValue( io.deephaven.engine.tables.dbarrays.BooleanVector values, boolean defaultValue ) {return BooleanPrimitives.nullToValue( values, defaultValue );}
-    /** @see io.deephaven.libs.primitives.BytePrimitives#nullToValue(io.deephaven.engine.tables.dbarrays.ByteVector,byte) */
-    public static  byte[] nullToValue( io.deephaven.engine.tables.dbarrays.ByteVector values, byte defaultValue ) {return BytePrimitives.nullToValue( values, defaultValue );}
-    /** @see io.deephaven.libs.primitives.CharacterPrimitives#nullToValue(io.deephaven.engine.tables.dbarrays.CharVector,char) */
-    public static  char[] nullToValue( io.deephaven.engine.tables.dbarrays.CharVector values, char defaultValue ) {return CharacterPrimitives.nullToValue( values, defaultValue );}
-    /** @see io.deephaven.libs.primitives.DoublePrimitives#nullToValue(io.deephaven.engine.tables.dbarrays.DoubleVector,double) */
-    public static  double[] nullToValue( io.deephaven.engine.tables.dbarrays.DoubleVector values, double defaultValue ) {return DoublePrimitives.nullToValue( values, defaultValue );}
-    /** @see io.deephaven.libs.primitives.FloatPrimitives#nullToValue(io.deephaven.engine.tables.dbarrays.FloatVector,float) */
-    public static  float[] nullToValue( io.deephaven.engine.tables.dbarrays.FloatVector values, float defaultValue ) {return FloatPrimitives.nullToValue( values, defaultValue );}
-    /** @see io.deephaven.libs.primitives.IntegerPrimitives#nullToValue(io.deephaven.engine.tables.dbarrays.IntVector,int) */
-    public static  int[] nullToValue( io.deephaven.engine.tables.dbarrays.IntVector values, int defaultValue ) {return IntegerPrimitives.nullToValue( values, defaultValue );}
-    /** @see io.deephaven.libs.primitives.LongPrimitives#nullToValue(io.deephaven.engine.tables.dbarrays.LongVector,long) */
-    public static  long[] nullToValue( io.deephaven.engine.tables.dbarrays.LongVector values, long defaultValue ) {return LongPrimitives.nullToValue( values, defaultValue );}
-    /** @see io.deephaven.libs.primitives.ShortPrimitives#nullToValue(io.deephaven.engine.tables.dbarrays.ShortVector,short) */
-    public static  short[] nullToValue( io.deephaven.engine.tables.dbarrays.ShortVector values, short defaultValue ) {return ShortPrimitives.nullToValue( values, defaultValue );}
-    /** @see io.deephaven.libs.primitives.ObjectPrimitives#nullToValue(io.deephaven.engine.tables.dbarrays.ObjectVector,T) */
-    public static <T> T[] nullToValue( io.deephaven.engine.tables.dbarrays.ObjectVector<T> values, T defaultValue ) {return ObjectPrimitives.nullToValue( values, defaultValue );}
+    /** @see io.deephaven.libs.primitives.BooleanPrimitives#nullToValue(BooleanVector,boolean) */
+    public static  java.lang.Boolean[] nullToValue(BooleanVector values, boolean defaultValue ) {return BooleanPrimitives.nullToValue( values, defaultValue );}
+    /** @see io.deephaven.libs.primitives.BytePrimitives#nullToValue(ByteVector,byte) */
+    public static  byte[] nullToValue(ByteVector values, byte defaultValue ) {return BytePrimitives.nullToValue( values, defaultValue );}
+    /** @see io.deephaven.libs.primitives.CharacterPrimitives#nullToValue(CharVector,char) */
+    public static  char[] nullToValue(CharVector values, char defaultValue ) {return CharacterPrimitives.nullToValue( values, defaultValue );}
+    /** @see io.deephaven.libs.primitives.DoublePrimitives#nullToValue(DoubleVector,double) */
+    public static  double[] nullToValue(DoubleVector values, double defaultValue ) {return DoublePrimitives.nullToValue( values, defaultValue );}
+    /** @see io.deephaven.libs.primitives.FloatPrimitives#nullToValue(FloatVector,float) */
+    public static  float[] nullToValue(FloatVector values, float defaultValue ) {return FloatPrimitives.nullToValue( values, defaultValue );}
+    /** @see io.deephaven.libs.primitives.IntegerPrimitives#nullToValue(IntVector,int) */
+    public static  int[] nullToValue(IntVector values, int defaultValue ) {return IntegerPrimitives.nullToValue( values, defaultValue );}
+    /** @see io.deephaven.libs.primitives.LongPrimitives#nullToValue(LongVector,long) */
+    public static  long[] nullToValue(LongVector values, long defaultValue ) {return LongPrimitives.nullToValue( values, defaultValue );}
+    /** @see io.deephaven.libs.primitives.ShortPrimitives#nullToValue(ShortVector,short) */
+    public static  short[] nullToValue(ShortVector values, short defaultValue ) {return ShortPrimitives.nullToValue( values, defaultValue );}
+    /** @see io.deephaven.libs.primitives.ObjectPrimitives#nullToValue(ObjectVector,T) */
+    public static <T> T[] nullToValue(ObjectVector<T> values, T defaultValue ) {return ObjectPrimitives.nullToValue( values, defaultValue );}
     /** @see io.deephaven.libs.primitives.LongPrimitives#nullToValue(long,long) */
     public static  long nullToValue( long value, long defaultValue ) {return LongPrimitives.nullToValue( value, defaultValue );}
     /** @see io.deephaven.libs.primitives.ShortPrimitives#nullToValue(short,short) */
@@ -1464,18 +1453,18 @@ public class GroovyStaticImports {
     public static  double percentile( double percentile, long[] values ) {return LongNumericPrimitives.percentile( percentile, values );}
     /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#percentile(double,short[]) */
     public static  double percentile( double percentile, short[] values ) {return ShortNumericPrimitives.percentile( percentile, values );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#percentile(double,io.deephaven.engine.tables.dbarrays.ByteVector) */
-    public static  double percentile( double percentile, io.deephaven.engine.tables.dbarrays.ByteVector values ) {return ByteNumericPrimitives.percentile( percentile, values );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#percentile(double,io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  double percentile( double percentile, io.deephaven.engine.tables.dbarrays.IntVector values ) {return IntegerNumericPrimitives.percentile( percentile, values );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#percentile(double,io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  double percentile( double percentile, io.deephaven.engine.tables.dbarrays.LongVector values ) {return LongNumericPrimitives.percentile( percentile, values );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#percentile(double,io.deephaven.engine.tables.dbarrays.ShortVector) */
-    public static  double percentile( double percentile, io.deephaven.engine.tables.dbarrays.ShortVector values ) {return ShortNumericPrimitives.percentile( percentile, values );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#percentile(io.deephaven.engine.tables.dbarrays.DoubleVector,double) */
-    public static  double percentile( io.deephaven.engine.tables.dbarrays.DoubleVector values, double percentile ) {return DoubleNumericPrimitives.percentile( values, percentile );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#percentile(io.deephaven.engine.tables.dbarrays.FloatVector,double) */
-    public static  double percentile( io.deephaven.engine.tables.dbarrays.FloatVector values, double percentile ) {return FloatNumericPrimitives.percentile( values, percentile );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#percentile(double, ByteVector) */
+    public static  double percentile( double percentile, ByteVector values ) {return ByteNumericPrimitives.percentile( percentile, values );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#percentile(double, IntVector) */
+    public static  double percentile( double percentile, IntVector values ) {return IntegerNumericPrimitives.percentile( percentile, values );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#percentile(double, LongVector) */
+    public static  double percentile( double percentile, LongVector values ) {return LongNumericPrimitives.percentile( percentile, values );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#percentile(double, ShortVector) */
+    public static  double percentile( double percentile, ShortVector values ) {return ShortNumericPrimitives.percentile( percentile, values );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#percentile(DoubleVector,double) */
+    public static  double percentile(DoubleVector values, double percentile ) {return DoubleNumericPrimitives.percentile( values, percentile );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#percentile(FloatVector,double) */
+    public static  double percentile(FloatVector values, double percentile ) {return FloatNumericPrimitives.percentile( values, percentile );}
     /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#pow(byte,byte) */
     public static  double pow( byte a, byte b ) {return ByteNumericPrimitives.pow( a, b );}
     /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#pow(double,double) */
@@ -1500,18 +1489,18 @@ public class GroovyStaticImports {
     public static  long product( long[] values ) {return LongNumericPrimitives.product( values );}
     /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#product(short[]) */
     public static  short product( short[] values ) {return ShortNumericPrimitives.product( values );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#product(io.deephaven.engine.tables.dbarrays.ByteVector) */
-    public static  byte product( io.deephaven.engine.tables.dbarrays.ByteVector values ) {return ByteNumericPrimitives.product( values );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#product(io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  double product( io.deephaven.engine.tables.dbarrays.DoubleVector values ) {return DoubleNumericPrimitives.product( values );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#product(io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  float product( io.deephaven.engine.tables.dbarrays.FloatVector values ) {return FloatNumericPrimitives.product( values );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#product(io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  int product( io.deephaven.engine.tables.dbarrays.IntVector values ) {return IntegerNumericPrimitives.product( values );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#product(io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  long product( io.deephaven.engine.tables.dbarrays.LongVector values ) {return LongNumericPrimitives.product( values );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#product(io.deephaven.engine.tables.dbarrays.ShortVector) */
-    public static  short product( io.deephaven.engine.tables.dbarrays.ShortVector values ) {return ShortNumericPrimitives.product( values );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#product(ByteVector) */
+    public static  byte product( ByteVector values ) {return ByteNumericPrimitives.product( values );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#product(DoubleVector) */
+    public static  double product( DoubleVector values ) {return DoubleNumericPrimitives.product( values );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#product(FloatVector) */
+    public static  float product( FloatVector values ) {return FloatNumericPrimitives.product( values );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#product(IntVector) */
+    public static  int product( IntVector values ) {return IntegerNumericPrimitives.product( values );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#product(LongVector) */
+    public static  long product( LongVector values ) {return LongNumericPrimitives.product( values );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#product(ShortVector) */
+    public static  short product( ShortVector values ) {return ShortNumericPrimitives.product( values );}
     /** @see io.deephaven.libs.primitives.SpecialPrimitives#random() */
     public static  double random( ) {return SpecialPrimitives.random( );}
     /** @see io.deephaven.libs.primitives.SpecialPrimitives#randomBool() */
@@ -1550,20 +1539,20 @@ public class GroovyStaticImports {
     public static  int rawBinSearchIndex( long[] values, long key, io.deephaven.libs.primitives.BinSearch choiceWhenEquals ) {return LongNumericPrimitives.rawBinSearchIndex( values, key, choiceWhenEquals );}
     /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#rawBinSearchIndex(short[],short,io.deephaven.libs.primitives.BinSearch) */
     public static  int rawBinSearchIndex( short[] values, short key, io.deephaven.libs.primitives.BinSearch choiceWhenEquals ) {return ShortNumericPrimitives.rawBinSearchIndex( values, key, choiceWhenEquals );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#rawBinSearchIndex(io.deephaven.engine.tables.dbarrays.ByteVector,byte,io.deephaven.libs.primitives.BinSearch) */
-    public static  int rawBinSearchIndex( io.deephaven.engine.tables.dbarrays.ByteVector values, byte key, io.deephaven.libs.primitives.BinSearch choiceWhenEquals ) {return ByteNumericPrimitives.rawBinSearchIndex( values, key, choiceWhenEquals );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#rawBinSearchIndex(io.deephaven.engine.tables.dbarrays.DoubleVector,double,io.deephaven.libs.primitives.BinSearch) */
-    public static  int rawBinSearchIndex( io.deephaven.engine.tables.dbarrays.DoubleVector values, double key, io.deephaven.libs.primitives.BinSearch choiceWhenEquals ) {return DoubleNumericPrimitives.rawBinSearchIndex( values, key, choiceWhenEquals );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#rawBinSearchIndex(io.deephaven.engine.tables.dbarrays.FloatVector,float,io.deephaven.libs.primitives.BinSearch) */
-    public static  int rawBinSearchIndex( io.deephaven.engine.tables.dbarrays.FloatVector values, float key, io.deephaven.libs.primitives.BinSearch choiceWhenEquals ) {return FloatNumericPrimitives.rawBinSearchIndex( values, key, choiceWhenEquals );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#rawBinSearchIndex(io.deephaven.engine.tables.dbarrays.IntVector,int,io.deephaven.libs.primitives.BinSearch) */
-    public static  int rawBinSearchIndex( io.deephaven.engine.tables.dbarrays.IntVector values, int key, io.deephaven.libs.primitives.BinSearch choiceWhenEquals ) {return IntegerNumericPrimitives.rawBinSearchIndex( values, key, choiceWhenEquals );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#rawBinSearchIndex(io.deephaven.engine.tables.dbarrays.LongVector,long,io.deephaven.libs.primitives.BinSearch) */
-    public static  int rawBinSearchIndex( io.deephaven.engine.tables.dbarrays.LongVector values, long key, io.deephaven.libs.primitives.BinSearch choiceWhenEquals ) {return LongNumericPrimitives.rawBinSearchIndex( values, key, choiceWhenEquals );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#rawBinSearchIndex(io.deephaven.engine.tables.dbarrays.ShortVector,short,io.deephaven.libs.primitives.BinSearch) */
-    public static  int rawBinSearchIndex( io.deephaven.engine.tables.dbarrays.ShortVector values, short key, io.deephaven.libs.primitives.BinSearch choiceWhenEquals ) {return ShortNumericPrimitives.rawBinSearchIndex( values, key, choiceWhenEquals );}
-    /** @see io.deephaven.libs.primitives.ObjectPrimitives#rawBinSearchIndex(io.deephaven.engine.tables.dbarrays.ObjectVector,T,io.deephaven.libs.primitives.BinSearch) */
-    public static <T extends java.lang.Comparable<? super T>> int rawBinSearchIndex( io.deephaven.engine.tables.dbarrays.ObjectVector<T> values, T key, io.deephaven.libs.primitives.BinSearch choiceWhenEquals ) {return ObjectPrimitives.rawBinSearchIndex( values, key, choiceWhenEquals );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#rawBinSearchIndex(ByteVector,byte,io.deephaven.libs.primitives.BinSearch) */
+    public static  int rawBinSearchIndex(ByteVector values, byte key, io.deephaven.libs.primitives.BinSearch choiceWhenEquals ) {return ByteNumericPrimitives.rawBinSearchIndex( values, key, choiceWhenEquals );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#rawBinSearchIndex(DoubleVector,double,io.deephaven.libs.primitives.BinSearch) */
+    public static  int rawBinSearchIndex(DoubleVector values, double key, io.deephaven.libs.primitives.BinSearch choiceWhenEquals ) {return DoubleNumericPrimitives.rawBinSearchIndex( values, key, choiceWhenEquals );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#rawBinSearchIndex(FloatVector,float,io.deephaven.libs.primitives.BinSearch) */
+    public static  int rawBinSearchIndex(FloatVector values, float key, io.deephaven.libs.primitives.BinSearch choiceWhenEquals ) {return FloatNumericPrimitives.rawBinSearchIndex( values, key, choiceWhenEquals );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#rawBinSearchIndex(IntVector,int,io.deephaven.libs.primitives.BinSearch) */
+    public static  int rawBinSearchIndex(IntVector values, int key, io.deephaven.libs.primitives.BinSearch choiceWhenEquals ) {return IntegerNumericPrimitives.rawBinSearchIndex( values, key, choiceWhenEquals );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#rawBinSearchIndex(LongVector,long,io.deephaven.libs.primitives.BinSearch) */
+    public static  int rawBinSearchIndex(LongVector values, long key, io.deephaven.libs.primitives.BinSearch choiceWhenEquals ) {return LongNumericPrimitives.rawBinSearchIndex( values, key, choiceWhenEquals );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#rawBinSearchIndex(ShortVector,short,io.deephaven.libs.primitives.BinSearch) */
+    public static  int rawBinSearchIndex(ShortVector values, short key, io.deephaven.libs.primitives.BinSearch choiceWhenEquals ) {return ShortNumericPrimitives.rawBinSearchIndex( values, key, choiceWhenEquals );}
+    /** @see io.deephaven.libs.primitives.ObjectPrimitives#rawBinSearchIndex(ObjectVector,T,io.deephaven.libs.primitives.BinSearch) */
+    public static <T extends java.lang.Comparable<? super T>> int rawBinSearchIndex(ObjectVector<T> values, T key, io.deephaven.libs.primitives.BinSearch choiceWhenEquals ) {return ObjectPrimitives.rawBinSearchIndex( values, key, choiceWhenEquals );}
     /** @see io.deephaven.libs.primitives.BytePrimitives#repeat(byte,int) */
     public static  byte[] repeat( byte value, int size ) {return BytePrimitives.repeat( value, size );}
     /** @see io.deephaven.libs.primitives.CharacterPrimitives#repeat(char,int) */
@@ -1592,20 +1581,20 @@ public class GroovyStaticImports {
     public static  long[] reverse( long[] values ) {return LongPrimitives.reverse( values );}
     /** @see io.deephaven.libs.primitives.ShortPrimitives#reverse(short[]) */
     public static  short[] reverse( short[] values ) {return ShortPrimitives.reverse( values );}
-    /** @see io.deephaven.libs.primitives.BytePrimitives#reverse(io.deephaven.engine.tables.dbarrays.ByteVector) */
-    public static  byte[] reverse( io.deephaven.engine.tables.dbarrays.ByteVector values ) {return BytePrimitives.reverse( values );}
-    /** @see io.deephaven.libs.primitives.CharacterPrimitives#reverse(io.deephaven.engine.tables.dbarrays.CharVector) */
-    public static  char[] reverse( io.deephaven.engine.tables.dbarrays.CharVector values ) {return CharacterPrimitives.reverse( values );}
-    /** @see io.deephaven.libs.primitives.DoublePrimitives#reverse(io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  double[] reverse( io.deephaven.engine.tables.dbarrays.DoubleVector values ) {return DoublePrimitives.reverse( values );}
-    /** @see io.deephaven.libs.primitives.FloatPrimitives#reverse(io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  float[] reverse( io.deephaven.engine.tables.dbarrays.FloatVector values ) {return FloatPrimitives.reverse( values );}
-    /** @see io.deephaven.libs.primitives.IntegerPrimitives#reverse(io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  int[] reverse( io.deephaven.engine.tables.dbarrays.IntVector values ) {return IntegerPrimitives.reverse( values );}
-    /** @see io.deephaven.libs.primitives.LongPrimitives#reverse(io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  long[] reverse( io.deephaven.engine.tables.dbarrays.LongVector values ) {return LongPrimitives.reverse( values );}
-    /** @see io.deephaven.libs.primitives.ShortPrimitives#reverse(io.deephaven.engine.tables.dbarrays.ShortVector) */
-    public static  short[] reverse( io.deephaven.engine.tables.dbarrays.ShortVector values ) {return ShortPrimitives.reverse( values );}
+    /** @see io.deephaven.libs.primitives.BytePrimitives#reverse(ByteVector) */
+    public static  byte[] reverse( ByteVector values ) {return BytePrimitives.reverse( values );}
+    /** @see io.deephaven.libs.primitives.CharacterPrimitives#reverse(CharVector) */
+    public static  char[] reverse( CharVector values ) {return CharacterPrimitives.reverse( values );}
+    /** @see io.deephaven.libs.primitives.DoublePrimitives#reverse(DoubleVector) */
+    public static  double[] reverse( DoubleVector values ) {return DoublePrimitives.reverse( values );}
+    /** @see io.deephaven.libs.primitives.FloatPrimitives#reverse(FloatVector) */
+    public static  float[] reverse( FloatVector values ) {return FloatPrimitives.reverse( values );}
+    /** @see io.deephaven.libs.primitives.IntegerPrimitives#reverse(IntVector) */
+    public static  int[] reverse( IntVector values ) {return IntegerPrimitives.reverse( values );}
+    /** @see io.deephaven.libs.primitives.LongPrimitives#reverse(LongVector) */
+    public static  long[] reverse( LongVector values ) {return LongPrimitives.reverse( values );}
+    /** @see io.deephaven.libs.primitives.ShortPrimitives#reverse(ShortVector) */
+    public static  short[] reverse( ShortVector values ) {return ShortPrimitives.reverse( values );}
     /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#rint(byte) */
     public static  double rint( byte value ) {return ByteNumericPrimitives.rint( value );}
     /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#rint(double) */
@@ -1694,20 +1683,20 @@ public class GroovyStaticImports {
     public static  short[] sort( java.lang.Short[] values ) {return ShortNumericPrimitives.sort( values );}
     /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#sort(short[]) */
     public static  short[] sort( short[] values ) {return ShortNumericPrimitives.sort( values );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#sort(io.deephaven.engine.tables.dbarrays.ByteVector) */
-    public static  io.deephaven.engine.tables.dbarrays.ByteVector sort( io.deephaven.engine.tables.dbarrays.ByteVector values ) {return ByteNumericPrimitives.sort( values );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#sort(io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  io.deephaven.engine.tables.dbarrays.DoubleVector sort( io.deephaven.engine.tables.dbarrays.DoubleVector values ) {return DoubleNumericPrimitives.sort( values );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#sort(io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  io.deephaven.engine.tables.dbarrays.FloatVector sort( io.deephaven.engine.tables.dbarrays.FloatVector values ) {return FloatNumericPrimitives.sort( values );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#sort(io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  io.deephaven.engine.tables.dbarrays.IntVector sort( io.deephaven.engine.tables.dbarrays.IntVector values ) {return IntegerNumericPrimitives.sort( values );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#sort(io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  io.deephaven.engine.tables.dbarrays.LongVector sort( io.deephaven.engine.tables.dbarrays.LongVector values ) {return LongNumericPrimitives.sort( values );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#sort(io.deephaven.engine.tables.dbarrays.ShortVector) */
-    public static  io.deephaven.engine.tables.dbarrays.ShortVector sort( io.deephaven.engine.tables.dbarrays.ShortVector values ) {return ShortNumericPrimitives.sort( values );}
-    /** @see io.deephaven.libs.primitives.ObjectPrimitives#sort(io.deephaven.engine.tables.dbarrays.ObjectVector) */
-    public static <T extends java.lang.Comparable<? super T>> io.deephaven.engine.tables.dbarrays.ObjectVector<T> sort( io.deephaven.engine.tables.dbarrays.ObjectVector<T> values ) {return ObjectPrimitives.sort( values );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#sort(ByteVector) */
+    public static ByteVector sort(ByteVector values ) {return ByteNumericPrimitives.sort( values );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#sort(DoubleVector) */
+    public static DoubleVector sort(DoubleVector values ) {return DoubleNumericPrimitives.sort( values );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#sort(FloatVector) */
+    public static FloatVector sort(FloatVector values ) {return FloatNumericPrimitives.sort( values );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#sort(IntVector) */
+    public static IntVector sort(IntVector values ) {return IntegerNumericPrimitives.sort( values );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#sort(LongVector) */
+    public static LongVector sort(LongVector values ) {return LongNumericPrimitives.sort( values );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#sort(ShortVector) */
+    public static ShortVector sort(ShortVector values ) {return ShortNumericPrimitives.sort( values );}
+    /** @see io.deephaven.libs.primitives.ObjectPrimitives#sort(ObjectVector) */
+    public static <T extends java.lang.Comparable<? super T>> ObjectVector<T> sort(ObjectVector<T> values ) {return ObjectPrimitives.sort( values );}
     /** @see io.deephaven.libs.primitives.ObjectPrimitives#sortDescending(NUM[]) */
     public static <NUM extends java.lang.Number> NUM[] sortDescending( NUM[] values ) {return ObjectPrimitives.sortDescending( values );}
     /** @see io.deephaven.libs.primitives.ObjectPrimitives#sortDescending(T[]) */
@@ -1736,20 +1725,20 @@ public class GroovyStaticImports {
     public static  short[] sortDescending( java.lang.Short[] values ) {return ShortNumericPrimitives.sortDescending( values );}
     /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#sortDescending(short[]) */
     public static  short[] sortDescending( short[] values ) {return ShortNumericPrimitives.sortDescending( values );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#sortDescending(io.deephaven.engine.tables.dbarrays.ByteVector) */
-    public static  io.deephaven.engine.tables.dbarrays.ByteVector sortDescending( io.deephaven.engine.tables.dbarrays.ByteVector values ) {return ByteNumericPrimitives.sortDescending( values );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#sortDescending(io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  io.deephaven.engine.tables.dbarrays.DoubleVector sortDescending( io.deephaven.engine.tables.dbarrays.DoubleVector values ) {return DoubleNumericPrimitives.sortDescending( values );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#sortDescending(io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  io.deephaven.engine.tables.dbarrays.FloatVector sortDescending( io.deephaven.engine.tables.dbarrays.FloatVector values ) {return FloatNumericPrimitives.sortDescending( values );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#sortDescending(io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  io.deephaven.engine.tables.dbarrays.IntVector sortDescending( io.deephaven.engine.tables.dbarrays.IntVector values ) {return IntegerNumericPrimitives.sortDescending( values );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#sortDescending(io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  io.deephaven.engine.tables.dbarrays.LongVector sortDescending( io.deephaven.engine.tables.dbarrays.LongVector values ) {return LongNumericPrimitives.sortDescending( values );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#sortDescending(io.deephaven.engine.tables.dbarrays.ShortVector) */
-    public static  io.deephaven.engine.tables.dbarrays.ShortVector sortDescending( io.deephaven.engine.tables.dbarrays.ShortVector values ) {return ShortNumericPrimitives.sortDescending( values );}
-    /** @see io.deephaven.libs.primitives.ObjectPrimitives#sortDescending(io.deephaven.engine.tables.dbarrays.ObjectVector) */
-    public static <T extends java.lang.Comparable<? super T>> io.deephaven.engine.tables.dbarrays.ObjectVector<T> sortDescending( io.deephaven.engine.tables.dbarrays.ObjectVector<T> values ) {return ObjectPrimitives.sortDescending( values );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#sortDescending(ByteVector) */
+    public static ByteVector sortDescending(ByteVector values ) {return ByteNumericPrimitives.sortDescending( values );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#sortDescending(DoubleVector) */
+    public static DoubleVector sortDescending(DoubleVector values ) {return DoubleNumericPrimitives.sortDescending( values );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#sortDescending(FloatVector) */
+    public static FloatVector sortDescending(FloatVector values ) {return FloatNumericPrimitives.sortDescending( values );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#sortDescending(IntVector) */
+    public static IntVector sortDescending(IntVector values ) {return IntegerNumericPrimitives.sortDescending( values );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#sortDescending(LongVector) */
+    public static LongVector sortDescending(LongVector values ) {return LongNumericPrimitives.sortDescending( values );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#sortDescending(ShortVector) */
+    public static ShortVector sortDescending(ShortVector values ) {return ShortNumericPrimitives.sortDescending( values );}
+    /** @see io.deephaven.libs.primitives.ObjectPrimitives#sortDescending(ObjectVector) */
+    public static <T extends java.lang.Comparable<? super T>> ObjectVector<T> sortDescending(ObjectVector<T> values ) {return ObjectPrimitives.sortDescending( values );}
     /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#sqrt(byte) */
     public static  double sqrt( byte value ) {return ByteNumericPrimitives.sqrt( value );}
     /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#sqrt(double) */
@@ -1786,18 +1775,18 @@ public class GroovyStaticImports {
     public static  double std( java.lang.Short[] values ) {return ShortNumericPrimitives.std( values );}
     /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#std(short[]) */
     public static  double std( short[] values ) {return ShortNumericPrimitives.std( values );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#std(io.deephaven.engine.tables.dbarrays.ByteVector) */
-    public static  double std( io.deephaven.engine.tables.dbarrays.ByteVector values ) {return ByteNumericPrimitives.std( values );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#std(io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  double std( io.deephaven.engine.tables.dbarrays.DoubleVector values ) {return DoubleNumericPrimitives.std( values );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#std(io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  double std( io.deephaven.engine.tables.dbarrays.FloatVector values ) {return FloatNumericPrimitives.std( values );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#std(io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  double std( io.deephaven.engine.tables.dbarrays.IntVector values ) {return IntegerNumericPrimitives.std( values );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#std(io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  double std( io.deephaven.engine.tables.dbarrays.LongVector values ) {return LongNumericPrimitives.std( values );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#std(io.deephaven.engine.tables.dbarrays.ShortVector) */
-    public static  double std( io.deephaven.engine.tables.dbarrays.ShortVector values ) {return ShortNumericPrimitives.std( values );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#std(ByteVector) */
+    public static  double std( ByteVector values ) {return ByteNumericPrimitives.std( values );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#std(DoubleVector) */
+    public static  double std( DoubleVector values ) {return DoubleNumericPrimitives.std( values );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#std(FloatVector) */
+    public static  double std( FloatVector values ) {return FloatNumericPrimitives.std( values );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#std(IntVector) */
+    public static  double std( IntVector values ) {return IntegerNumericPrimitives.std( values );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#std(LongVector) */
+    public static  double std( LongVector values ) {return LongNumericPrimitives.std( values );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#std(ShortVector) */
+    public static  double std( ShortVector values ) {return ShortNumericPrimitives.std( values );}
     /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#ste(byte[]) */
     public static  double ste( byte[] values ) {return ByteNumericPrimitives.ste( values );}
     /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#ste(double[]) */
@@ -1822,18 +1811,18 @@ public class GroovyStaticImports {
     public static  double ste( java.lang.Short[] values ) {return ShortNumericPrimitives.ste( values );}
     /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#ste(short[]) */
     public static  double ste( short[] values ) {return ShortNumericPrimitives.ste( values );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#ste(io.deephaven.engine.tables.dbarrays.ByteVector) */
-    public static  double ste( io.deephaven.engine.tables.dbarrays.ByteVector values ) {return ByteNumericPrimitives.ste( values );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#ste(io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  double ste( io.deephaven.engine.tables.dbarrays.DoubleVector values ) {return DoubleNumericPrimitives.ste( values );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#ste(io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  double ste( io.deephaven.engine.tables.dbarrays.FloatVector values ) {return FloatNumericPrimitives.ste( values );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#ste(io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  double ste( io.deephaven.engine.tables.dbarrays.IntVector values ) {return IntegerNumericPrimitives.ste( values );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#ste(io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  double ste( io.deephaven.engine.tables.dbarrays.LongVector values ) {return LongNumericPrimitives.ste( values );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#ste(io.deephaven.engine.tables.dbarrays.ShortVector) */
-    public static  double ste( io.deephaven.engine.tables.dbarrays.ShortVector values ) {return ShortNumericPrimitives.ste( values );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#ste(ByteVector) */
+    public static  double ste( ByteVector values ) {return ByteNumericPrimitives.ste( values );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#ste(DoubleVector) */
+    public static  double ste( DoubleVector values ) {return DoubleNumericPrimitives.ste( values );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#ste(FloatVector) */
+    public static  double ste( FloatVector values ) {return FloatNumericPrimitives.ste( values );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#ste(IntVector) */
+    public static  double ste( IntVector values ) {return IntegerNumericPrimitives.ste( values );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#ste(LongVector) */
+    public static  double ste( LongVector values ) {return LongNumericPrimitives.ste( values );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#ste(ShortVector) */
+    public static  double ste( ShortVector values ) {return ShortNumericPrimitives.ste( values );}
     /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#sum(byte[]) */
     public static  byte sum( byte[] values ) {return ByteNumericPrimitives.sum( values );}
     /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#sum(double[]) */
@@ -1862,18 +1851,18 @@ public class GroovyStaticImports {
     public static  long[] sum( long[][] values ) {return LongNumericPrimitives.sum( values );}
     /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#sum(short[][]) */
     public static  short[] sum( short[][] values ) {return ShortNumericPrimitives.sum( values );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#sum(io.deephaven.engine.tables.dbarrays.ByteVector) */
-    public static  byte sum( io.deephaven.engine.tables.dbarrays.ByteVector values ) {return ByteNumericPrimitives.sum( values );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#sum(io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  double sum( io.deephaven.engine.tables.dbarrays.DoubleVector values ) {return DoubleNumericPrimitives.sum( values );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#sum(io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  float sum( io.deephaven.engine.tables.dbarrays.FloatVector values ) {return FloatNumericPrimitives.sum( values );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#sum(io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  int sum( io.deephaven.engine.tables.dbarrays.IntVector values ) {return IntegerNumericPrimitives.sum( values );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#sum(io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  long sum( io.deephaven.engine.tables.dbarrays.LongVector values ) {return LongNumericPrimitives.sum( values );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#sum(io.deephaven.engine.tables.dbarrays.ShortVector) */
-    public static  short sum( io.deephaven.engine.tables.dbarrays.ShortVector values ) {return ShortNumericPrimitives.sum( values );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#sum(ByteVector) */
+    public static  byte sum( ByteVector values ) {return ByteNumericPrimitives.sum( values );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#sum(DoubleVector) */
+    public static  double sum( DoubleVector values ) {return DoubleNumericPrimitives.sum( values );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#sum(FloatVector) */
+    public static  float sum( FloatVector values ) {return FloatNumericPrimitives.sum( values );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#sum(IntVector) */
+    public static  int sum( IntVector values ) {return IntegerNumericPrimitives.sum( values );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#sum(LongVector) */
+    public static  long sum( LongVector values ) {return LongNumericPrimitives.sum( values );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#sum(ShortVector) */
+    public static  short sum( ShortVector values ) {return ShortNumericPrimitives.sum( values );}
     /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#tan(byte) */
     public static  double tan( byte value ) {return ByteNumericPrimitives.tan( value );}
     /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#tan(double) */
@@ -1910,18 +1899,18 @@ public class GroovyStaticImports {
     public static  double tstat( java.lang.Short[] values ) {return ShortNumericPrimitives.tstat( values );}
     /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#tstat(short[]) */
     public static  double tstat( short[] values ) {return ShortNumericPrimitives.tstat( values );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#tstat(io.deephaven.engine.tables.dbarrays.ByteVector) */
-    public static  double tstat( io.deephaven.engine.tables.dbarrays.ByteVector values ) {return ByteNumericPrimitives.tstat( values );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#tstat(io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  double tstat( io.deephaven.engine.tables.dbarrays.DoubleVector values ) {return DoubleNumericPrimitives.tstat( values );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#tstat(io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  double tstat( io.deephaven.engine.tables.dbarrays.FloatVector values ) {return FloatNumericPrimitives.tstat( values );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#tstat(io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  double tstat( io.deephaven.engine.tables.dbarrays.IntVector values ) {return IntegerNumericPrimitives.tstat( values );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#tstat(io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  double tstat( io.deephaven.engine.tables.dbarrays.LongVector values ) {return LongNumericPrimitives.tstat( values );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#tstat(io.deephaven.engine.tables.dbarrays.ShortVector) */
-    public static  double tstat( io.deephaven.engine.tables.dbarrays.ShortVector values ) {return ShortNumericPrimitives.tstat( values );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#tstat(ByteVector) */
+    public static  double tstat( ByteVector values ) {return ByteNumericPrimitives.tstat( values );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#tstat(DoubleVector) */
+    public static  double tstat( DoubleVector values ) {return DoubleNumericPrimitives.tstat( values );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#tstat(FloatVector) */
+    public static  double tstat( FloatVector values ) {return FloatNumericPrimitives.tstat( values );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#tstat(IntVector) */
+    public static  double tstat( IntVector values ) {return IntegerNumericPrimitives.tstat( values );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#tstat(LongVector) */
+    public static  double tstat( LongVector values ) {return LongNumericPrimitives.tstat( values );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#tstat(ShortVector) */
+    public static  double tstat( ShortVector values ) {return ShortNumericPrimitives.tstat( values );}
     /** @see io.deephaven.libs.primitives.BytePrimitives#unbox(java.lang.Byte[]) */
     public static  byte[] unbox( java.lang.Byte[] values ) {return BytePrimitives.unbox( values );}
     /** @see io.deephaven.libs.primitives.CharacterPrimitives#unbox(java.lang.Character[]) */
@@ -1936,20 +1925,20 @@ public class GroovyStaticImports {
     public static  long[] unbox( java.lang.Long[] values ) {return LongPrimitives.unbox( values );}
     /** @see io.deephaven.libs.primitives.ShortPrimitives#unbox(java.lang.Short[]) */
     public static  short[] unbox( java.lang.Short[] values ) {return ShortPrimitives.unbox( values );}
-    /** @see io.deephaven.libs.primitives.BytePrimitives#uniqueValue(io.deephaven.engine.tables.dbarrays.ByteVector,boolean) */
-    public static  byte uniqueValue( io.deephaven.engine.tables.dbarrays.ByteVector arr, boolean countNull ) {return BytePrimitives.uniqueValue( arr, countNull );}
-    /** @see io.deephaven.libs.primitives.CharacterPrimitives#uniqueValue(io.deephaven.engine.tables.dbarrays.CharVector,boolean) */
-    public static  char uniqueValue( io.deephaven.engine.tables.dbarrays.CharVector arr, boolean countNull ) {return CharacterPrimitives.uniqueValue( arr, countNull );}
-    /** @see io.deephaven.libs.primitives.DoublePrimitives#uniqueValue(io.deephaven.engine.tables.dbarrays.DoubleVector,boolean) */
-    public static  double uniqueValue( io.deephaven.engine.tables.dbarrays.DoubleVector arr, boolean countNull ) {return DoublePrimitives.uniqueValue( arr, countNull );}
-    /** @see io.deephaven.libs.primitives.FloatPrimitives#uniqueValue(io.deephaven.engine.tables.dbarrays.FloatVector,boolean) */
-    public static  float uniqueValue( io.deephaven.engine.tables.dbarrays.FloatVector arr, boolean countNull ) {return FloatPrimitives.uniqueValue( arr, countNull );}
-    /** @see io.deephaven.libs.primitives.IntegerPrimitives#uniqueValue(io.deephaven.engine.tables.dbarrays.IntVector,boolean) */
-    public static  int uniqueValue( io.deephaven.engine.tables.dbarrays.IntVector arr, boolean countNull ) {return IntegerPrimitives.uniqueValue( arr, countNull );}
-    /** @see io.deephaven.libs.primitives.LongPrimitives#uniqueValue(io.deephaven.engine.tables.dbarrays.LongVector,boolean) */
-    public static  long uniqueValue( io.deephaven.engine.tables.dbarrays.LongVector arr, boolean countNull ) {return LongPrimitives.uniqueValue( arr, countNull );}
-    /** @see io.deephaven.libs.primitives.ShortPrimitives#uniqueValue(io.deephaven.engine.tables.dbarrays.ShortVector,boolean) */
-    public static  short uniqueValue( io.deephaven.engine.tables.dbarrays.ShortVector arr, boolean countNull ) {return ShortPrimitives.uniqueValue( arr, countNull );}
+    /** @see io.deephaven.libs.primitives.BytePrimitives#uniqueValue(ByteVector,boolean) */
+    public static  byte uniqueValue(ByteVector arr, boolean countNull ) {return BytePrimitives.uniqueValue( arr, countNull );}
+    /** @see io.deephaven.libs.primitives.CharacterPrimitives#uniqueValue(CharVector,boolean) */
+    public static  char uniqueValue(CharVector arr, boolean countNull ) {return CharacterPrimitives.uniqueValue( arr, countNull );}
+    /** @see io.deephaven.libs.primitives.DoublePrimitives#uniqueValue(DoubleVector,boolean) */
+    public static  double uniqueValue(DoubleVector arr, boolean countNull ) {return DoublePrimitives.uniqueValue( arr, countNull );}
+    /** @see io.deephaven.libs.primitives.FloatPrimitives#uniqueValue(FloatVector,boolean) */
+    public static  float uniqueValue(FloatVector arr, boolean countNull ) {return FloatPrimitives.uniqueValue( arr, countNull );}
+    /** @see io.deephaven.libs.primitives.IntegerPrimitives#uniqueValue(IntVector,boolean) */
+    public static  int uniqueValue(IntVector arr, boolean countNull ) {return IntegerPrimitives.uniqueValue( arr, countNull );}
+    /** @see io.deephaven.libs.primitives.LongPrimitives#uniqueValue(LongVector,boolean) */
+    public static  long uniqueValue(LongVector arr, boolean countNull ) {return LongPrimitives.uniqueValue( arr, countNull );}
+    /** @see io.deephaven.libs.primitives.ShortPrimitives#uniqueValue(ShortVector,boolean) */
+    public static  short uniqueValue(ShortVector arr, boolean countNull ) {return ShortPrimitives.uniqueValue( arr, countNull );}
     /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#upperBin(byte,byte) */
     public static  byte upperBin( byte value, byte interval ) {return ByteNumericPrimitives.upperBin( value, interval );}
     /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#upperBin(double,double) */
@@ -1998,36 +1987,36 @@ public class GroovyStaticImports {
     public static  double var( java.lang.Short[] values ) {return ShortNumericPrimitives.var( values );}
     /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#var(short[]) */
     public static  double var( short[] values ) {return ShortNumericPrimitives.var( values );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#var(io.deephaven.engine.tables.dbarrays.ByteVector) */
-    public static  double var( io.deephaven.engine.tables.dbarrays.ByteVector values ) {return ByteNumericPrimitives.var( values );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#var(io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  double var( io.deephaven.engine.tables.dbarrays.DoubleVector values ) {return DoubleNumericPrimitives.var( values );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#var(io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  double var( io.deephaven.engine.tables.dbarrays.FloatVector values ) {return FloatNumericPrimitives.var( values );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#var(io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  double var( io.deephaven.engine.tables.dbarrays.IntVector values ) {return IntegerNumericPrimitives.var( values );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#var(io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  double var( io.deephaven.engine.tables.dbarrays.LongVector values ) {return LongNumericPrimitives.var( values );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#var(io.deephaven.engine.tables.dbarrays.ShortVector) */
-    public static  double var( io.deephaven.engine.tables.dbarrays.ShortVector values ) {return ShortNumericPrimitives.var( values );}
-    /** @see io.deephaven.libs.primitives.BooleanPrimitives#vec(io.deephaven.engine.tables.dbarrays.BooleanVector) */
-    public static  java.lang.Boolean[] vec( io.deephaven.engine.tables.dbarrays.BooleanVector values ) {return BooleanPrimitives.vec( values );}
-    /** @see io.deephaven.libs.primitives.BytePrimitives#vec(io.deephaven.engine.tables.dbarrays.ByteVector) */
-    public static  byte[] vec( io.deephaven.engine.tables.dbarrays.ByteVector values ) {return BytePrimitives.vec( values );}
-    /** @see io.deephaven.libs.primitives.CharacterPrimitives#vec(io.deephaven.engine.tables.dbarrays.CharVector) */
-    public static  char[] vec( io.deephaven.engine.tables.dbarrays.CharVector values ) {return CharacterPrimitives.vec( values );}
-    /** @see io.deephaven.libs.primitives.DoublePrimitives#vec(io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  double[] vec( io.deephaven.engine.tables.dbarrays.DoubleVector values ) {return DoublePrimitives.vec( values );}
-    /** @see io.deephaven.libs.primitives.FloatPrimitives#vec(io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  float[] vec( io.deephaven.engine.tables.dbarrays.FloatVector values ) {return FloatPrimitives.vec( values );}
-    /** @see io.deephaven.libs.primitives.IntegerPrimitives#vec(io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  int[] vec( io.deephaven.engine.tables.dbarrays.IntVector values ) {return IntegerPrimitives.vec( values );}
-    /** @see io.deephaven.libs.primitives.LongPrimitives#vec(io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  long[] vec( io.deephaven.engine.tables.dbarrays.LongVector values ) {return LongPrimitives.vec( values );}
-    /** @see io.deephaven.libs.primitives.ShortPrimitives#vec(io.deephaven.engine.tables.dbarrays.ShortVector) */
-    public static  short[] vec( io.deephaven.engine.tables.dbarrays.ShortVector values ) {return ShortPrimitives.vec( values );}
-    /** @see io.deephaven.libs.primitives.ObjectPrimitives#vec(io.deephaven.engine.tables.dbarrays.ObjectVector) */
-    public static <T> T[] vec( io.deephaven.engine.tables.dbarrays.ObjectVector<T> values ) {return ObjectPrimitives.vec( values );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#var(ByteVector) */
+    public static  double var( ByteVector values ) {return ByteNumericPrimitives.var( values );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#var(DoubleVector) */
+    public static  double var( DoubleVector values ) {return DoubleNumericPrimitives.var( values );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#var(FloatVector) */
+    public static  double var( FloatVector values ) {return FloatNumericPrimitives.var( values );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#var(IntVector) */
+    public static  double var( IntVector values ) {return IntegerNumericPrimitives.var( values );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#var(LongVector) */
+    public static  double var( LongVector values ) {return LongNumericPrimitives.var( values );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#var(ShortVector) */
+    public static  double var( ShortVector values ) {return ShortNumericPrimitives.var( values );}
+    /** @see io.deephaven.libs.primitives.BooleanPrimitives#vec(BooleanVector) */
+    public static  java.lang.Boolean[] vec( BooleanVector values ) {return BooleanPrimitives.vec( values );}
+    /** @see io.deephaven.libs.primitives.BytePrimitives#vec(ByteVector) */
+    public static  byte[] vec( ByteVector values ) {return BytePrimitives.vec( values );}
+    /** @see io.deephaven.libs.primitives.CharacterPrimitives#vec(CharVector) */
+    public static  char[] vec( CharVector values ) {return CharacterPrimitives.vec( values );}
+    /** @see io.deephaven.libs.primitives.DoublePrimitives#vec(DoubleVector) */
+    public static  double[] vec( DoubleVector values ) {return DoublePrimitives.vec( values );}
+    /** @see io.deephaven.libs.primitives.FloatPrimitives#vec(FloatVector) */
+    public static  float[] vec( FloatVector values ) {return FloatPrimitives.vec( values );}
+    /** @see io.deephaven.libs.primitives.IntegerPrimitives#vec(IntVector) */
+    public static  int[] vec( IntVector values ) {return IntegerPrimitives.vec( values );}
+    /** @see io.deephaven.libs.primitives.LongPrimitives#vec(LongVector) */
+    public static  long[] vec( LongVector values ) {return LongPrimitives.vec( values );}
+    /** @see io.deephaven.libs.primitives.ShortPrimitives#vec(ShortVector) */
+    public static  short[] vec( ShortVector values ) {return ShortPrimitives.vec( values );}
+    /** @see io.deephaven.libs.primitives.ObjectPrimitives#vec(ObjectVector) */
+    public static <T> T[] vec( ObjectVector<T> values ) {return ObjectPrimitives.vec( values );}
     /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wavg(byte[],byte[]) */
     public static  double wavg( byte[] values, byte[] weights ) {return ByteNumericPrimitives.wavg( values, weights );}
     /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wavg(byte[],double[]) */
@@ -2038,16 +2027,16 @@ public class GroovyStaticImports {
     public static  double wavg( byte[] values, int[] weights ) {return ByteNumericPrimitives.wavg( values, weights );}
     /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wavg(byte[],long[]) */
     public static  double wavg( byte[] values, long[] weights ) {return ByteNumericPrimitives.wavg( values, weights );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wavg(byte[],io.deephaven.engine.tables.dbarrays.ByteVector) */
-    public static  double wavg( byte[] values, io.deephaven.engine.tables.dbarrays.ByteVector weights ) {return ByteNumericPrimitives.wavg( values, weights );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wavg(byte[],io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  double wavg( byte[] values, io.deephaven.engine.tables.dbarrays.DoubleVector weights ) {return ByteNumericPrimitives.wavg( values, weights );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wavg(byte[],io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  double wavg( byte[] values, io.deephaven.engine.tables.dbarrays.FloatVector weights ) {return ByteNumericPrimitives.wavg( values, weights );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wavg(byte[],io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  double wavg( byte[] values, io.deephaven.engine.tables.dbarrays.IntVector weights ) {return ByteNumericPrimitives.wavg( values, weights );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wavg(byte[],io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  double wavg( byte[] values, io.deephaven.engine.tables.dbarrays.LongVector weights ) {return ByteNumericPrimitives.wavg( values, weights );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wavg(byte[], ByteVector) */
+    public static  double wavg( byte[] values, ByteVector weights ) {return ByteNumericPrimitives.wavg( values, weights );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wavg(byte[], DoubleVector) */
+    public static  double wavg( byte[] values, DoubleVector weights ) {return ByteNumericPrimitives.wavg( values, weights );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wavg(byte[], FloatVector) */
+    public static  double wavg( byte[] values, FloatVector weights ) {return ByteNumericPrimitives.wavg( values, weights );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wavg(byte[], IntVector) */
+    public static  double wavg( byte[] values, IntVector weights ) {return ByteNumericPrimitives.wavg( values, weights );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wavg(byte[], LongVector) */
+    public static  double wavg( byte[] values, LongVector weights ) {return ByteNumericPrimitives.wavg( values, weights );}
     /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wavg(double[],double[]) */
     public static  double wavg( double[] values, double[] weights ) {return DoubleNumericPrimitives.wavg( values, weights );}
     /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wavg(double[],float[]) */
@@ -2058,16 +2047,16 @@ public class GroovyStaticImports {
     public static  double wavg( double[] values, long[] weights ) {return DoubleNumericPrimitives.wavg( values, weights );}
     /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wavg(double[],short[]) */
     public static  double wavg( double[] values, short[] weights ) {return DoubleNumericPrimitives.wavg( values, weights );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wavg(double[],io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  double wavg( double[] values, io.deephaven.engine.tables.dbarrays.DoubleVector weights ) {return DoubleNumericPrimitives.wavg( values, weights );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wavg(double[],io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  double wavg( double[] values, io.deephaven.engine.tables.dbarrays.FloatVector weights ) {return DoubleNumericPrimitives.wavg( values, weights );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wavg(double[],io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  double wavg( double[] values, io.deephaven.engine.tables.dbarrays.IntVector weights ) {return DoubleNumericPrimitives.wavg( values, weights );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wavg(double[],io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  double wavg( double[] values, io.deephaven.engine.tables.dbarrays.LongVector weights ) {return DoubleNumericPrimitives.wavg( values, weights );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wavg(double[],io.deephaven.engine.tables.dbarrays.ShortVector) */
-    public static  double wavg( double[] values, io.deephaven.engine.tables.dbarrays.ShortVector weights ) {return DoubleNumericPrimitives.wavg( values, weights );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wavg(double[], DoubleVector) */
+    public static  double wavg( double[] values, DoubleVector weights ) {return DoubleNumericPrimitives.wavg( values, weights );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wavg(double[], FloatVector) */
+    public static  double wavg( double[] values, FloatVector weights ) {return DoubleNumericPrimitives.wavg( values, weights );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wavg(double[], IntVector) */
+    public static  double wavg( double[] values, IntVector weights ) {return DoubleNumericPrimitives.wavg( values, weights );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wavg(double[], LongVector) */
+    public static  double wavg( double[] values, LongVector weights ) {return DoubleNumericPrimitives.wavg( values, weights );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wavg(double[], ShortVector) */
+    public static  double wavg( double[] values, ShortVector weights ) {return DoubleNumericPrimitives.wavg( values, weights );}
     /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wavg(float[],double[]) */
     public static  double wavg( float[] values, double[] weights ) {return FloatNumericPrimitives.wavg( values, weights );}
     /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wavg(float[],float[]) */
@@ -2078,16 +2067,16 @@ public class GroovyStaticImports {
     public static  double wavg( float[] values, long[] weights ) {return FloatNumericPrimitives.wavg( values, weights );}
     /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wavg(float[],short[]) */
     public static  double wavg( float[] values, short[] weights ) {return FloatNumericPrimitives.wavg( values, weights );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wavg(float[],io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  double wavg( float[] values, io.deephaven.engine.tables.dbarrays.DoubleVector weights ) {return FloatNumericPrimitives.wavg( values, weights );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wavg(float[],io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  double wavg( float[] values, io.deephaven.engine.tables.dbarrays.FloatVector weights ) {return FloatNumericPrimitives.wavg( values, weights );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wavg(float[],io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  double wavg( float[] values, io.deephaven.engine.tables.dbarrays.IntVector weights ) {return FloatNumericPrimitives.wavg( values, weights );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wavg(float[],io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  double wavg( float[] values, io.deephaven.engine.tables.dbarrays.LongVector weights ) {return FloatNumericPrimitives.wavg( values, weights );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wavg(float[],io.deephaven.engine.tables.dbarrays.ShortVector) */
-    public static  double wavg( float[] values, io.deephaven.engine.tables.dbarrays.ShortVector weights ) {return FloatNumericPrimitives.wavg( values, weights );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wavg(float[], DoubleVector) */
+    public static  double wavg( float[] values, DoubleVector weights ) {return FloatNumericPrimitives.wavg( values, weights );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wavg(float[], FloatVector) */
+    public static  double wavg( float[] values, FloatVector weights ) {return FloatNumericPrimitives.wavg( values, weights );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wavg(float[], IntVector) */
+    public static  double wavg( float[] values, IntVector weights ) {return FloatNumericPrimitives.wavg( values, weights );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wavg(float[], LongVector) */
+    public static  double wavg( float[] values, LongVector weights ) {return FloatNumericPrimitives.wavg( values, weights );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wavg(float[], ShortVector) */
+    public static  double wavg( float[] values, ShortVector weights ) {return FloatNumericPrimitives.wavg( values, weights );}
     /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wavg(int[],double[]) */
     public static  double wavg( int[] values, double[] weights ) {return IntegerNumericPrimitives.wavg( values, weights );}
     /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wavg(int[],float[]) */
@@ -2098,16 +2087,16 @@ public class GroovyStaticImports {
     public static  double wavg( int[] values, long[] weights ) {return IntegerNumericPrimitives.wavg( values, weights );}
     /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wavg(int[],short[]) */
     public static  double wavg( int[] values, short[] weights ) {return IntegerNumericPrimitives.wavg( values, weights );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wavg(int[],io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  double wavg( int[] values, io.deephaven.engine.tables.dbarrays.DoubleVector weights ) {return IntegerNumericPrimitives.wavg( values, weights );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wavg(int[],io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  double wavg( int[] values, io.deephaven.engine.tables.dbarrays.FloatVector weights ) {return IntegerNumericPrimitives.wavg( values, weights );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wavg(int[],io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  double wavg( int[] values, io.deephaven.engine.tables.dbarrays.IntVector weights ) {return IntegerNumericPrimitives.wavg( values, weights );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wavg(int[],io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  double wavg( int[] values, io.deephaven.engine.tables.dbarrays.LongVector weights ) {return IntegerNumericPrimitives.wavg( values, weights );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wavg(int[],io.deephaven.engine.tables.dbarrays.ShortVector) */
-    public static  double wavg( int[] values, io.deephaven.engine.tables.dbarrays.ShortVector weights ) {return IntegerNumericPrimitives.wavg( values, weights );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wavg(int[], DoubleVector) */
+    public static  double wavg( int[] values, DoubleVector weights ) {return IntegerNumericPrimitives.wavg( values, weights );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wavg(int[], FloatVector) */
+    public static  double wavg( int[] values, FloatVector weights ) {return IntegerNumericPrimitives.wavg( values, weights );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wavg(int[], IntVector) */
+    public static  double wavg( int[] values, IntVector weights ) {return IntegerNumericPrimitives.wavg( values, weights );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wavg(int[], LongVector) */
+    public static  double wavg( int[] values, LongVector weights ) {return IntegerNumericPrimitives.wavg( values, weights );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wavg(int[], ShortVector) */
+    public static  double wavg( int[] values, ShortVector weights ) {return IntegerNumericPrimitives.wavg( values, weights );}
     /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wavg(long[],double[]) */
     public static  double wavg( long[] values, double[] weights ) {return LongNumericPrimitives.wavg( values, weights );}
     /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wavg(long[],float[]) */
@@ -2118,16 +2107,16 @@ public class GroovyStaticImports {
     public static  double wavg( long[] values, long[] weights ) {return LongNumericPrimitives.wavg( values, weights );}
     /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wavg(long[],short[]) */
     public static  double wavg( long[] values, short[] weights ) {return LongNumericPrimitives.wavg( values, weights );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wavg(long[],io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  double wavg( long[] values, io.deephaven.engine.tables.dbarrays.DoubleVector weights ) {return LongNumericPrimitives.wavg( values, weights );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wavg(long[],io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  double wavg( long[] values, io.deephaven.engine.tables.dbarrays.FloatVector weights ) {return LongNumericPrimitives.wavg( values, weights );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wavg(long[],io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  double wavg( long[] values, io.deephaven.engine.tables.dbarrays.IntVector weights ) {return LongNumericPrimitives.wavg( values, weights );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wavg(long[],io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  double wavg( long[] values, io.deephaven.engine.tables.dbarrays.LongVector weights ) {return LongNumericPrimitives.wavg( values, weights );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wavg(long[],io.deephaven.engine.tables.dbarrays.ShortVector) */
-    public static  double wavg( long[] values, io.deephaven.engine.tables.dbarrays.ShortVector weights ) {return LongNumericPrimitives.wavg( values, weights );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wavg(long[], DoubleVector) */
+    public static  double wavg( long[] values, DoubleVector weights ) {return LongNumericPrimitives.wavg( values, weights );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wavg(long[], FloatVector) */
+    public static  double wavg( long[] values, FloatVector weights ) {return LongNumericPrimitives.wavg( values, weights );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wavg(long[], IntVector) */
+    public static  double wavg( long[] values, IntVector weights ) {return LongNumericPrimitives.wavg( values, weights );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wavg(long[], LongVector) */
+    public static  double wavg( long[] values, LongVector weights ) {return LongNumericPrimitives.wavg( values, weights );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wavg(long[], ShortVector) */
+    public static  double wavg( long[] values, ShortVector weights ) {return LongNumericPrimitives.wavg( values, weights );}
     /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wavg(short[],double[]) */
     public static  double wavg( short[] values, double[] weights ) {return ShortNumericPrimitives.wavg( values, weights );}
     /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wavg(short[],float[]) */
@@ -2138,136 +2127,136 @@ public class GroovyStaticImports {
     public static  double wavg( short[] values, long[] weights ) {return ShortNumericPrimitives.wavg( values, weights );}
     /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wavg(short[],short[]) */
     public static  double wavg( short[] values, short[] weights ) {return ShortNumericPrimitives.wavg( values, weights );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wavg(short[],io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  double wavg( short[] values, io.deephaven.engine.tables.dbarrays.DoubleVector weights ) {return ShortNumericPrimitives.wavg( values, weights );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wavg(short[],io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  double wavg( short[] values, io.deephaven.engine.tables.dbarrays.FloatVector weights ) {return ShortNumericPrimitives.wavg( values, weights );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wavg(short[],io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  double wavg( short[] values, io.deephaven.engine.tables.dbarrays.IntVector weights ) {return ShortNumericPrimitives.wavg( values, weights );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wavg(short[],io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  double wavg( short[] values, io.deephaven.engine.tables.dbarrays.LongVector weights ) {return ShortNumericPrimitives.wavg( values, weights );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wavg(short[],io.deephaven.engine.tables.dbarrays.ShortVector) */
-    public static  double wavg( short[] values, io.deephaven.engine.tables.dbarrays.ShortVector weights ) {return ShortNumericPrimitives.wavg( values, weights );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wavg(io.deephaven.engine.tables.dbarrays.ByteVector,byte[]) */
-    public static  double wavg( io.deephaven.engine.tables.dbarrays.ByteVector values, byte[] weights ) {return ByteNumericPrimitives.wavg( values, weights );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wavg(io.deephaven.engine.tables.dbarrays.ByteVector,double[]) */
-    public static  double wavg( io.deephaven.engine.tables.dbarrays.ByteVector values, double[] weights ) {return ByteNumericPrimitives.wavg( values, weights );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wavg(io.deephaven.engine.tables.dbarrays.ByteVector,float[]) */
-    public static  double wavg( io.deephaven.engine.tables.dbarrays.ByteVector values, float[] weights ) {return ByteNumericPrimitives.wavg( values, weights );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wavg(io.deephaven.engine.tables.dbarrays.ByteVector,int[]) */
-    public static  double wavg( io.deephaven.engine.tables.dbarrays.ByteVector values, int[] weights ) {return ByteNumericPrimitives.wavg( values, weights );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wavg(io.deephaven.engine.tables.dbarrays.ByteVector,long[]) */
-    public static  double wavg( io.deephaven.engine.tables.dbarrays.ByteVector values, long[] weights ) {return ByteNumericPrimitives.wavg( values, weights );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wavg(io.deephaven.engine.tables.dbarrays.ByteVector,io.deephaven.engine.tables.dbarrays.ByteVector) */
-    public static  double wavg( io.deephaven.engine.tables.dbarrays.ByteVector values, io.deephaven.engine.tables.dbarrays.ByteVector weights ) {return ByteNumericPrimitives.wavg( values, weights );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wavg(io.deephaven.engine.tables.dbarrays.ByteVector,io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  double wavg( io.deephaven.engine.tables.dbarrays.ByteVector values, io.deephaven.engine.tables.dbarrays.DoubleVector weights ) {return ByteNumericPrimitives.wavg( values, weights );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wavg(io.deephaven.engine.tables.dbarrays.ByteVector,io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  double wavg( io.deephaven.engine.tables.dbarrays.ByteVector values, io.deephaven.engine.tables.dbarrays.FloatVector weights ) {return ByteNumericPrimitives.wavg( values, weights );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wavg(io.deephaven.engine.tables.dbarrays.ByteVector,io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  double wavg( io.deephaven.engine.tables.dbarrays.ByteVector values, io.deephaven.engine.tables.dbarrays.IntVector weights ) {return ByteNumericPrimitives.wavg( values, weights );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wavg(io.deephaven.engine.tables.dbarrays.ByteVector,io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  double wavg( io.deephaven.engine.tables.dbarrays.ByteVector values, io.deephaven.engine.tables.dbarrays.LongVector weights ) {return ByteNumericPrimitives.wavg( values, weights );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wavg(io.deephaven.engine.tables.dbarrays.DoubleVector,double[]) */
-    public static  double wavg( io.deephaven.engine.tables.dbarrays.DoubleVector values, double[] weights ) {return DoubleNumericPrimitives.wavg( values, weights );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wavg(io.deephaven.engine.tables.dbarrays.DoubleVector,float[]) */
-    public static  double wavg( io.deephaven.engine.tables.dbarrays.DoubleVector values, float[] weights ) {return DoubleNumericPrimitives.wavg( values, weights );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wavg(io.deephaven.engine.tables.dbarrays.DoubleVector,int[]) */
-    public static  double wavg( io.deephaven.engine.tables.dbarrays.DoubleVector values, int[] weights ) {return DoubleNumericPrimitives.wavg( values, weights );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wavg(io.deephaven.engine.tables.dbarrays.DoubleVector,long[]) */
-    public static  double wavg( io.deephaven.engine.tables.dbarrays.DoubleVector values, long[] weights ) {return DoubleNumericPrimitives.wavg( values, weights );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wavg(io.deephaven.engine.tables.dbarrays.DoubleVector,short[]) */
-    public static  double wavg( io.deephaven.engine.tables.dbarrays.DoubleVector values, short[] weights ) {return DoubleNumericPrimitives.wavg( values, weights );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wavg(io.deephaven.engine.tables.dbarrays.DoubleVector,io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  double wavg( io.deephaven.engine.tables.dbarrays.DoubleVector values, io.deephaven.engine.tables.dbarrays.DoubleVector weights ) {return DoubleNumericPrimitives.wavg( values, weights );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wavg(io.deephaven.engine.tables.dbarrays.DoubleVector,io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  double wavg( io.deephaven.engine.tables.dbarrays.DoubleVector values, io.deephaven.engine.tables.dbarrays.FloatVector weights ) {return DoubleNumericPrimitives.wavg( values, weights );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wavg(io.deephaven.engine.tables.dbarrays.DoubleVector,io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  double wavg( io.deephaven.engine.tables.dbarrays.DoubleVector values, io.deephaven.engine.tables.dbarrays.IntVector weights ) {return DoubleNumericPrimitives.wavg( values, weights );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wavg(io.deephaven.engine.tables.dbarrays.DoubleVector,io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  double wavg( io.deephaven.engine.tables.dbarrays.DoubleVector values, io.deephaven.engine.tables.dbarrays.LongVector weights ) {return DoubleNumericPrimitives.wavg( values, weights );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wavg(io.deephaven.engine.tables.dbarrays.DoubleVector,io.deephaven.engine.tables.dbarrays.ShortVector) */
-    public static  double wavg( io.deephaven.engine.tables.dbarrays.DoubleVector values, io.deephaven.engine.tables.dbarrays.ShortVector weights ) {return DoubleNumericPrimitives.wavg( values, weights );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wavg(io.deephaven.engine.tables.dbarrays.FloatVector,double[]) */
-    public static  double wavg( io.deephaven.engine.tables.dbarrays.FloatVector values, double[] weights ) {return FloatNumericPrimitives.wavg( values, weights );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wavg(io.deephaven.engine.tables.dbarrays.FloatVector,float[]) */
-    public static  double wavg( io.deephaven.engine.tables.dbarrays.FloatVector values, float[] weights ) {return FloatNumericPrimitives.wavg( values, weights );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wavg(io.deephaven.engine.tables.dbarrays.FloatVector,int[]) */
-    public static  double wavg( io.deephaven.engine.tables.dbarrays.FloatVector values, int[] weights ) {return FloatNumericPrimitives.wavg( values, weights );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wavg(io.deephaven.engine.tables.dbarrays.FloatVector,long[]) */
-    public static  double wavg( io.deephaven.engine.tables.dbarrays.FloatVector values, long[] weights ) {return FloatNumericPrimitives.wavg( values, weights );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wavg(io.deephaven.engine.tables.dbarrays.FloatVector,short[]) */
-    public static  double wavg( io.deephaven.engine.tables.dbarrays.FloatVector values, short[] weights ) {return FloatNumericPrimitives.wavg( values, weights );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wavg(io.deephaven.engine.tables.dbarrays.FloatVector,io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  double wavg( io.deephaven.engine.tables.dbarrays.FloatVector values, io.deephaven.engine.tables.dbarrays.DoubleVector weights ) {return FloatNumericPrimitives.wavg( values, weights );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wavg(io.deephaven.engine.tables.dbarrays.FloatVector,io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  double wavg( io.deephaven.engine.tables.dbarrays.FloatVector values, io.deephaven.engine.tables.dbarrays.FloatVector weights ) {return FloatNumericPrimitives.wavg( values, weights );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wavg(io.deephaven.engine.tables.dbarrays.FloatVector,io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  double wavg( io.deephaven.engine.tables.dbarrays.FloatVector values, io.deephaven.engine.tables.dbarrays.IntVector weights ) {return FloatNumericPrimitives.wavg( values, weights );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wavg(io.deephaven.engine.tables.dbarrays.FloatVector,io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  double wavg( io.deephaven.engine.tables.dbarrays.FloatVector values, io.deephaven.engine.tables.dbarrays.LongVector weights ) {return FloatNumericPrimitives.wavg( values, weights );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wavg(io.deephaven.engine.tables.dbarrays.FloatVector,io.deephaven.engine.tables.dbarrays.ShortVector) */
-    public static  double wavg( io.deephaven.engine.tables.dbarrays.FloatVector values, io.deephaven.engine.tables.dbarrays.ShortVector weights ) {return FloatNumericPrimitives.wavg( values, weights );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wavg(io.deephaven.engine.tables.dbarrays.IntVector,double[]) */
-    public static  double wavg( io.deephaven.engine.tables.dbarrays.IntVector values, double[] weights ) {return IntegerNumericPrimitives.wavg( values, weights );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wavg(io.deephaven.engine.tables.dbarrays.IntVector,float[]) */
-    public static  double wavg( io.deephaven.engine.tables.dbarrays.IntVector values, float[] weights ) {return IntegerNumericPrimitives.wavg( values, weights );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wavg(io.deephaven.engine.tables.dbarrays.IntVector,int[]) */
-    public static  double wavg( io.deephaven.engine.tables.dbarrays.IntVector values, int[] weights ) {return IntegerNumericPrimitives.wavg( values, weights );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wavg(io.deephaven.engine.tables.dbarrays.IntVector,long[]) */
-    public static  double wavg( io.deephaven.engine.tables.dbarrays.IntVector values, long[] weights ) {return IntegerNumericPrimitives.wavg( values, weights );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wavg(io.deephaven.engine.tables.dbarrays.IntVector,short[]) */
-    public static  double wavg( io.deephaven.engine.tables.dbarrays.IntVector values, short[] weights ) {return IntegerNumericPrimitives.wavg( values, weights );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wavg(io.deephaven.engine.tables.dbarrays.IntVector,io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  double wavg( io.deephaven.engine.tables.dbarrays.IntVector values, io.deephaven.engine.tables.dbarrays.DoubleVector weights ) {return IntegerNumericPrimitives.wavg( values, weights );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wavg(io.deephaven.engine.tables.dbarrays.IntVector,io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  double wavg( io.deephaven.engine.tables.dbarrays.IntVector values, io.deephaven.engine.tables.dbarrays.FloatVector weights ) {return IntegerNumericPrimitives.wavg( values, weights );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wavg(io.deephaven.engine.tables.dbarrays.IntVector,io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  double wavg( io.deephaven.engine.tables.dbarrays.IntVector values, io.deephaven.engine.tables.dbarrays.IntVector weights ) {return IntegerNumericPrimitives.wavg( values, weights );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wavg(io.deephaven.engine.tables.dbarrays.IntVector,io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  double wavg( io.deephaven.engine.tables.dbarrays.IntVector values, io.deephaven.engine.tables.dbarrays.LongVector weights ) {return IntegerNumericPrimitives.wavg( values, weights );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wavg(io.deephaven.engine.tables.dbarrays.IntVector,io.deephaven.engine.tables.dbarrays.ShortVector) */
-    public static  double wavg( io.deephaven.engine.tables.dbarrays.IntVector values, io.deephaven.engine.tables.dbarrays.ShortVector weights ) {return IntegerNumericPrimitives.wavg( values, weights );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wavg(io.deephaven.engine.tables.dbarrays.LongVector,double[]) */
-    public static  double wavg( io.deephaven.engine.tables.dbarrays.LongVector values, double[] weights ) {return LongNumericPrimitives.wavg( values, weights );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wavg(io.deephaven.engine.tables.dbarrays.LongVector,float[]) */
-    public static  double wavg( io.deephaven.engine.tables.dbarrays.LongVector values, float[] weights ) {return LongNumericPrimitives.wavg( values, weights );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wavg(io.deephaven.engine.tables.dbarrays.LongVector,int[]) */
-    public static  double wavg( io.deephaven.engine.tables.dbarrays.LongVector values, int[] weights ) {return LongNumericPrimitives.wavg( values, weights );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wavg(io.deephaven.engine.tables.dbarrays.LongVector,long[]) */
-    public static  double wavg( io.deephaven.engine.tables.dbarrays.LongVector values, long[] weights ) {return LongNumericPrimitives.wavg( values, weights );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wavg(io.deephaven.engine.tables.dbarrays.LongVector,short[]) */
-    public static  double wavg( io.deephaven.engine.tables.dbarrays.LongVector values, short[] weights ) {return LongNumericPrimitives.wavg( values, weights );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wavg(io.deephaven.engine.tables.dbarrays.LongVector,io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  double wavg( io.deephaven.engine.tables.dbarrays.LongVector values, io.deephaven.engine.tables.dbarrays.DoubleVector weights ) {return LongNumericPrimitives.wavg( values, weights );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wavg(io.deephaven.engine.tables.dbarrays.LongVector,io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  double wavg( io.deephaven.engine.tables.dbarrays.LongVector values, io.deephaven.engine.tables.dbarrays.FloatVector weights ) {return LongNumericPrimitives.wavg( values, weights );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wavg(io.deephaven.engine.tables.dbarrays.LongVector,io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  double wavg( io.deephaven.engine.tables.dbarrays.LongVector values, io.deephaven.engine.tables.dbarrays.IntVector weights ) {return LongNumericPrimitives.wavg( values, weights );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wavg(io.deephaven.engine.tables.dbarrays.LongVector,io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  double wavg( io.deephaven.engine.tables.dbarrays.LongVector values, io.deephaven.engine.tables.dbarrays.LongVector weights ) {return LongNumericPrimitives.wavg( values, weights );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wavg(io.deephaven.engine.tables.dbarrays.LongVector,io.deephaven.engine.tables.dbarrays.ShortVector) */
-    public static  double wavg( io.deephaven.engine.tables.dbarrays.LongVector values, io.deephaven.engine.tables.dbarrays.ShortVector weights ) {return LongNumericPrimitives.wavg( values, weights );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wavg(io.deephaven.engine.tables.dbarrays.ShortVector,double[]) */
-    public static  double wavg( io.deephaven.engine.tables.dbarrays.ShortVector values, double[] weights ) {return ShortNumericPrimitives.wavg( values, weights );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wavg(io.deephaven.engine.tables.dbarrays.ShortVector,float[]) */
-    public static  double wavg( io.deephaven.engine.tables.dbarrays.ShortVector values, float[] weights ) {return ShortNumericPrimitives.wavg( values, weights );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wavg(io.deephaven.engine.tables.dbarrays.ShortVector,int[]) */
-    public static  double wavg( io.deephaven.engine.tables.dbarrays.ShortVector values, int[] weights ) {return ShortNumericPrimitives.wavg( values, weights );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wavg(io.deephaven.engine.tables.dbarrays.ShortVector,long[]) */
-    public static  double wavg( io.deephaven.engine.tables.dbarrays.ShortVector values, long[] weights ) {return ShortNumericPrimitives.wavg( values, weights );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wavg(io.deephaven.engine.tables.dbarrays.ShortVector,short[]) */
-    public static  double wavg( io.deephaven.engine.tables.dbarrays.ShortVector values, short[] weights ) {return ShortNumericPrimitives.wavg( values, weights );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wavg(io.deephaven.engine.tables.dbarrays.ShortVector,io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  double wavg( io.deephaven.engine.tables.dbarrays.ShortVector values, io.deephaven.engine.tables.dbarrays.DoubleVector weights ) {return ShortNumericPrimitives.wavg( values, weights );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wavg(io.deephaven.engine.tables.dbarrays.ShortVector,io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  double wavg( io.deephaven.engine.tables.dbarrays.ShortVector values, io.deephaven.engine.tables.dbarrays.FloatVector weights ) {return ShortNumericPrimitives.wavg( values, weights );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wavg(io.deephaven.engine.tables.dbarrays.ShortVector,io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  double wavg( io.deephaven.engine.tables.dbarrays.ShortVector values, io.deephaven.engine.tables.dbarrays.IntVector weights ) {return ShortNumericPrimitives.wavg( values, weights );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wavg(io.deephaven.engine.tables.dbarrays.ShortVector,io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  double wavg( io.deephaven.engine.tables.dbarrays.ShortVector values, io.deephaven.engine.tables.dbarrays.LongVector weights ) {return ShortNumericPrimitives.wavg( values, weights );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wavg(io.deephaven.engine.tables.dbarrays.ShortVector,io.deephaven.engine.tables.dbarrays.ShortVector) */
-    public static  double wavg( io.deephaven.engine.tables.dbarrays.ShortVector values, io.deephaven.engine.tables.dbarrays.ShortVector weights ) {return ShortNumericPrimitives.wavg( values, weights );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wavg(short[], DoubleVector) */
+    public static  double wavg( short[] values, DoubleVector weights ) {return ShortNumericPrimitives.wavg( values, weights );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wavg(short[], FloatVector) */
+    public static  double wavg( short[] values, FloatVector weights ) {return ShortNumericPrimitives.wavg( values, weights );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wavg(short[], IntVector) */
+    public static  double wavg( short[] values, IntVector weights ) {return ShortNumericPrimitives.wavg( values, weights );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wavg(short[], LongVector) */
+    public static  double wavg( short[] values, LongVector weights ) {return ShortNumericPrimitives.wavg( values, weights );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wavg(short[], ShortVector) */
+    public static  double wavg( short[] values, ShortVector weights ) {return ShortNumericPrimitives.wavg( values, weights );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wavg(ByteVector,byte[]) */
+    public static  double wavg(ByteVector values, byte[] weights ) {return ByteNumericPrimitives.wavg( values, weights );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wavg(ByteVector,double[]) */
+    public static  double wavg(ByteVector values, double[] weights ) {return ByteNumericPrimitives.wavg( values, weights );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wavg(ByteVector,float[]) */
+    public static  double wavg(ByteVector values, float[] weights ) {return ByteNumericPrimitives.wavg( values, weights );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wavg(ByteVector,int[]) */
+    public static  double wavg(ByteVector values, int[] weights ) {return ByteNumericPrimitives.wavg( values, weights );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wavg(ByteVector,long[]) */
+    public static  double wavg(ByteVector values, long[] weights ) {return ByteNumericPrimitives.wavg( values, weights );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wavg(ByteVector, ByteVector) */
+    public static  double wavg(ByteVector values, ByteVector weights ) {return ByteNumericPrimitives.wavg( values, weights );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wavg(ByteVector, DoubleVector) */
+    public static  double wavg(ByteVector values, DoubleVector weights ) {return ByteNumericPrimitives.wavg( values, weights );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wavg(ByteVector, FloatVector) */
+    public static  double wavg(ByteVector values, FloatVector weights ) {return ByteNumericPrimitives.wavg( values, weights );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wavg(ByteVector, IntVector) */
+    public static  double wavg(ByteVector values, IntVector weights ) {return ByteNumericPrimitives.wavg( values, weights );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wavg(ByteVector, LongVector) */
+    public static  double wavg(ByteVector values, LongVector weights ) {return ByteNumericPrimitives.wavg( values, weights );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wavg(DoubleVector,double[]) */
+    public static  double wavg(DoubleVector values, double[] weights ) {return DoubleNumericPrimitives.wavg( values, weights );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wavg(DoubleVector,float[]) */
+    public static  double wavg(DoubleVector values, float[] weights ) {return DoubleNumericPrimitives.wavg( values, weights );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wavg(DoubleVector,int[]) */
+    public static  double wavg(DoubleVector values, int[] weights ) {return DoubleNumericPrimitives.wavg( values, weights );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wavg(DoubleVector,long[]) */
+    public static  double wavg(DoubleVector values, long[] weights ) {return DoubleNumericPrimitives.wavg( values, weights );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wavg(DoubleVector,short[]) */
+    public static  double wavg(DoubleVector values, short[] weights ) {return DoubleNumericPrimitives.wavg( values, weights );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wavg(DoubleVector, DoubleVector) */
+    public static  double wavg(DoubleVector values, DoubleVector weights ) {return DoubleNumericPrimitives.wavg( values, weights );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wavg(DoubleVector, FloatVector) */
+    public static  double wavg(DoubleVector values, FloatVector weights ) {return DoubleNumericPrimitives.wavg( values, weights );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wavg(DoubleVector, IntVector) */
+    public static  double wavg(DoubleVector values, IntVector weights ) {return DoubleNumericPrimitives.wavg( values, weights );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wavg(DoubleVector, LongVector) */
+    public static  double wavg(DoubleVector values, LongVector weights ) {return DoubleNumericPrimitives.wavg( values, weights );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wavg(DoubleVector, ShortVector) */
+    public static  double wavg(DoubleVector values, ShortVector weights ) {return DoubleNumericPrimitives.wavg( values, weights );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wavg(FloatVector,double[]) */
+    public static  double wavg(FloatVector values, double[] weights ) {return FloatNumericPrimitives.wavg( values, weights );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wavg(FloatVector,float[]) */
+    public static  double wavg(FloatVector values, float[] weights ) {return FloatNumericPrimitives.wavg( values, weights );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wavg(FloatVector,int[]) */
+    public static  double wavg(FloatVector values, int[] weights ) {return FloatNumericPrimitives.wavg( values, weights );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wavg(FloatVector,long[]) */
+    public static  double wavg(FloatVector values, long[] weights ) {return FloatNumericPrimitives.wavg( values, weights );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wavg(FloatVector,short[]) */
+    public static  double wavg(FloatVector values, short[] weights ) {return FloatNumericPrimitives.wavg( values, weights );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wavg(FloatVector, DoubleVector) */
+    public static  double wavg(FloatVector values, DoubleVector weights ) {return FloatNumericPrimitives.wavg( values, weights );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wavg(FloatVector, FloatVector) */
+    public static  double wavg(FloatVector values, FloatVector weights ) {return FloatNumericPrimitives.wavg( values, weights );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wavg(FloatVector, IntVector) */
+    public static  double wavg(FloatVector values, IntVector weights ) {return FloatNumericPrimitives.wavg( values, weights );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wavg(FloatVector, LongVector) */
+    public static  double wavg(FloatVector values, LongVector weights ) {return FloatNumericPrimitives.wavg( values, weights );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wavg(FloatVector, ShortVector) */
+    public static  double wavg(FloatVector values, ShortVector weights ) {return FloatNumericPrimitives.wavg( values, weights );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wavg(IntVector,double[]) */
+    public static  double wavg(IntVector values, double[] weights ) {return IntegerNumericPrimitives.wavg( values, weights );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wavg(IntVector,float[]) */
+    public static  double wavg(IntVector values, float[] weights ) {return IntegerNumericPrimitives.wavg( values, weights );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wavg(IntVector,int[]) */
+    public static  double wavg(IntVector values, int[] weights ) {return IntegerNumericPrimitives.wavg( values, weights );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wavg(IntVector,long[]) */
+    public static  double wavg(IntVector values, long[] weights ) {return IntegerNumericPrimitives.wavg( values, weights );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wavg(IntVector,short[]) */
+    public static  double wavg(IntVector values, short[] weights ) {return IntegerNumericPrimitives.wavg( values, weights );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wavg(IntVector, DoubleVector) */
+    public static  double wavg(IntVector values, DoubleVector weights ) {return IntegerNumericPrimitives.wavg( values, weights );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wavg(IntVector, FloatVector) */
+    public static  double wavg(IntVector values, FloatVector weights ) {return IntegerNumericPrimitives.wavg( values, weights );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wavg(IntVector, IntVector) */
+    public static  double wavg(IntVector values, IntVector weights ) {return IntegerNumericPrimitives.wavg( values, weights );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wavg(IntVector, LongVector) */
+    public static  double wavg(IntVector values, LongVector weights ) {return IntegerNumericPrimitives.wavg( values, weights );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wavg(IntVector, ShortVector) */
+    public static  double wavg(IntVector values, ShortVector weights ) {return IntegerNumericPrimitives.wavg( values, weights );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wavg(LongVector,double[]) */
+    public static  double wavg(LongVector values, double[] weights ) {return LongNumericPrimitives.wavg( values, weights );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wavg(LongVector,float[]) */
+    public static  double wavg(LongVector values, float[] weights ) {return LongNumericPrimitives.wavg( values, weights );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wavg(LongVector,int[]) */
+    public static  double wavg(LongVector values, int[] weights ) {return LongNumericPrimitives.wavg( values, weights );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wavg(LongVector,long[]) */
+    public static  double wavg(LongVector values, long[] weights ) {return LongNumericPrimitives.wavg( values, weights );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wavg(LongVector,short[]) */
+    public static  double wavg(LongVector values, short[] weights ) {return LongNumericPrimitives.wavg( values, weights );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wavg(LongVector, DoubleVector) */
+    public static  double wavg(LongVector values, DoubleVector weights ) {return LongNumericPrimitives.wavg( values, weights );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wavg(LongVector, FloatVector) */
+    public static  double wavg(LongVector values, FloatVector weights ) {return LongNumericPrimitives.wavg( values, weights );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wavg(LongVector, IntVector) */
+    public static  double wavg(LongVector values, IntVector weights ) {return LongNumericPrimitives.wavg( values, weights );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wavg(LongVector, LongVector) */
+    public static  double wavg(LongVector values, LongVector weights ) {return LongNumericPrimitives.wavg( values, weights );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wavg(LongVector, ShortVector) */
+    public static  double wavg(LongVector values, ShortVector weights ) {return LongNumericPrimitives.wavg( values, weights );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wavg(ShortVector,double[]) */
+    public static  double wavg(ShortVector values, double[] weights ) {return ShortNumericPrimitives.wavg( values, weights );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wavg(ShortVector,float[]) */
+    public static  double wavg(ShortVector values, float[] weights ) {return ShortNumericPrimitives.wavg( values, weights );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wavg(ShortVector,int[]) */
+    public static  double wavg(ShortVector values, int[] weights ) {return ShortNumericPrimitives.wavg( values, weights );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wavg(ShortVector,long[]) */
+    public static  double wavg(ShortVector values, long[] weights ) {return ShortNumericPrimitives.wavg( values, weights );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wavg(ShortVector,short[]) */
+    public static  double wavg(ShortVector values, short[] weights ) {return ShortNumericPrimitives.wavg( values, weights );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wavg(ShortVector, DoubleVector) */
+    public static  double wavg(ShortVector values, DoubleVector weights ) {return ShortNumericPrimitives.wavg( values, weights );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wavg(ShortVector, FloatVector) */
+    public static  double wavg(ShortVector values, FloatVector weights ) {return ShortNumericPrimitives.wavg( values, weights );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wavg(ShortVector, IntVector) */
+    public static  double wavg(ShortVector values, IntVector weights ) {return ShortNumericPrimitives.wavg( values, weights );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wavg(ShortVector, LongVector) */
+    public static  double wavg(ShortVector values, LongVector weights ) {return ShortNumericPrimitives.wavg( values, weights );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wavg(ShortVector, ShortVector) */
+    public static  double wavg(ShortVector values, ShortVector weights ) {return ShortNumericPrimitives.wavg( values, weights );}
     /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#weightedAvg(byte[],byte[]) */
     public static  double weightedAvg( byte[] values, byte[] weights ) {return ByteNumericPrimitives.weightedAvg( values, weights );}
     /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#weightedAvg(byte[],double[]) */
@@ -2278,16 +2267,16 @@ public class GroovyStaticImports {
     public static  double weightedAvg( byte[] values, int[] weights ) {return ByteNumericPrimitives.weightedAvg( values, weights );}
     /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#weightedAvg(byte[],long[]) */
     public static  double weightedAvg( byte[] values, long[] weights ) {return ByteNumericPrimitives.weightedAvg( values, weights );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#weightedAvg(byte[],io.deephaven.engine.tables.dbarrays.ByteVector) */
-    public static  double weightedAvg( byte[] values, io.deephaven.engine.tables.dbarrays.ByteVector weights ) {return ByteNumericPrimitives.weightedAvg( values, weights );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#weightedAvg(byte[],io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  double weightedAvg( byte[] values, io.deephaven.engine.tables.dbarrays.DoubleVector weights ) {return ByteNumericPrimitives.weightedAvg( values, weights );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#weightedAvg(byte[],io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  double weightedAvg( byte[] values, io.deephaven.engine.tables.dbarrays.FloatVector weights ) {return ByteNumericPrimitives.weightedAvg( values, weights );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#weightedAvg(byte[],io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  double weightedAvg( byte[] values, io.deephaven.engine.tables.dbarrays.IntVector weights ) {return ByteNumericPrimitives.weightedAvg( values, weights );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#weightedAvg(byte[],io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  double weightedAvg( byte[] values, io.deephaven.engine.tables.dbarrays.LongVector weights ) {return ByteNumericPrimitives.weightedAvg( values, weights );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#weightedAvg(byte[], ByteVector) */
+    public static  double weightedAvg( byte[] values, ByteVector weights ) {return ByteNumericPrimitives.weightedAvg( values, weights );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#weightedAvg(byte[], DoubleVector) */
+    public static  double weightedAvg( byte[] values, DoubleVector weights ) {return ByteNumericPrimitives.weightedAvg( values, weights );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#weightedAvg(byte[], FloatVector) */
+    public static  double weightedAvg( byte[] values, FloatVector weights ) {return ByteNumericPrimitives.weightedAvg( values, weights );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#weightedAvg(byte[], IntVector) */
+    public static  double weightedAvg( byte[] values, IntVector weights ) {return ByteNumericPrimitives.weightedAvg( values, weights );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#weightedAvg(byte[], LongVector) */
+    public static  double weightedAvg( byte[] values, LongVector weights ) {return ByteNumericPrimitives.weightedAvg( values, weights );}
     /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#weightedAvg(double[],double[]) */
     public static  double weightedAvg( double[] values, double[] weights ) {return DoubleNumericPrimitives.weightedAvg( values, weights );}
     /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#weightedAvg(double[],float[]) */
@@ -2298,16 +2287,16 @@ public class GroovyStaticImports {
     public static  double weightedAvg( double[] values, long[] weights ) {return DoubleNumericPrimitives.weightedAvg( values, weights );}
     /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#weightedAvg(double[],short[]) */
     public static  double weightedAvg( double[] values, short[] weights ) {return DoubleNumericPrimitives.weightedAvg( values, weights );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#weightedAvg(double[],io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  double weightedAvg( double[] values, io.deephaven.engine.tables.dbarrays.DoubleVector weights ) {return DoubleNumericPrimitives.weightedAvg( values, weights );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#weightedAvg(double[],io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  double weightedAvg( double[] values, io.deephaven.engine.tables.dbarrays.FloatVector weights ) {return DoubleNumericPrimitives.weightedAvg( values, weights );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#weightedAvg(double[],io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  double weightedAvg( double[] values, io.deephaven.engine.tables.dbarrays.IntVector weights ) {return DoubleNumericPrimitives.weightedAvg( values, weights );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#weightedAvg(double[],io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  double weightedAvg( double[] values, io.deephaven.engine.tables.dbarrays.LongVector weights ) {return DoubleNumericPrimitives.weightedAvg( values, weights );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#weightedAvg(double[],io.deephaven.engine.tables.dbarrays.ShortVector) */
-    public static  double weightedAvg( double[] values, io.deephaven.engine.tables.dbarrays.ShortVector weights ) {return DoubleNumericPrimitives.weightedAvg( values, weights );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#weightedAvg(double[], DoubleVector) */
+    public static  double weightedAvg( double[] values, DoubleVector weights ) {return DoubleNumericPrimitives.weightedAvg( values, weights );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#weightedAvg(double[], FloatVector) */
+    public static  double weightedAvg( double[] values, FloatVector weights ) {return DoubleNumericPrimitives.weightedAvg( values, weights );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#weightedAvg(double[], IntVector) */
+    public static  double weightedAvg( double[] values, IntVector weights ) {return DoubleNumericPrimitives.weightedAvg( values, weights );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#weightedAvg(double[], LongVector) */
+    public static  double weightedAvg( double[] values, LongVector weights ) {return DoubleNumericPrimitives.weightedAvg( values, weights );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#weightedAvg(double[], ShortVector) */
+    public static  double weightedAvg( double[] values, ShortVector weights ) {return DoubleNumericPrimitives.weightedAvg( values, weights );}
     /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#weightedAvg(float[],double[]) */
     public static  double weightedAvg( float[] values, double[] weights ) {return FloatNumericPrimitives.weightedAvg( values, weights );}
     /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#weightedAvg(float[],float[]) */
@@ -2318,16 +2307,16 @@ public class GroovyStaticImports {
     public static  double weightedAvg( float[] values, long[] weights ) {return FloatNumericPrimitives.weightedAvg( values, weights );}
     /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#weightedAvg(float[],short[]) */
     public static  double weightedAvg( float[] values, short[] weights ) {return FloatNumericPrimitives.weightedAvg( values, weights );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#weightedAvg(float[],io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  double weightedAvg( float[] values, io.deephaven.engine.tables.dbarrays.DoubleVector weights ) {return FloatNumericPrimitives.weightedAvg( values, weights );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#weightedAvg(float[],io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  double weightedAvg( float[] values, io.deephaven.engine.tables.dbarrays.FloatVector weights ) {return FloatNumericPrimitives.weightedAvg( values, weights );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#weightedAvg(float[],io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  double weightedAvg( float[] values, io.deephaven.engine.tables.dbarrays.IntVector weights ) {return FloatNumericPrimitives.weightedAvg( values, weights );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#weightedAvg(float[],io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  double weightedAvg( float[] values, io.deephaven.engine.tables.dbarrays.LongVector weights ) {return FloatNumericPrimitives.weightedAvg( values, weights );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#weightedAvg(float[],io.deephaven.engine.tables.dbarrays.ShortVector) */
-    public static  double weightedAvg( float[] values, io.deephaven.engine.tables.dbarrays.ShortVector weights ) {return FloatNumericPrimitives.weightedAvg( values, weights );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#weightedAvg(float[], DoubleVector) */
+    public static  double weightedAvg( float[] values, DoubleVector weights ) {return FloatNumericPrimitives.weightedAvg( values, weights );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#weightedAvg(float[], FloatVector) */
+    public static  double weightedAvg( float[] values, FloatVector weights ) {return FloatNumericPrimitives.weightedAvg( values, weights );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#weightedAvg(float[], IntVector) */
+    public static  double weightedAvg( float[] values, IntVector weights ) {return FloatNumericPrimitives.weightedAvg( values, weights );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#weightedAvg(float[], LongVector) */
+    public static  double weightedAvg( float[] values, LongVector weights ) {return FloatNumericPrimitives.weightedAvg( values, weights );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#weightedAvg(float[], ShortVector) */
+    public static  double weightedAvg( float[] values, ShortVector weights ) {return FloatNumericPrimitives.weightedAvg( values, weights );}
     /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#weightedAvg(int[],double[]) */
     public static  double weightedAvg( int[] values, double[] weights ) {return IntegerNumericPrimitives.weightedAvg( values, weights );}
     /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#weightedAvg(int[],float[]) */
@@ -2338,16 +2327,16 @@ public class GroovyStaticImports {
     public static  double weightedAvg( int[] values, long[] weights ) {return IntegerNumericPrimitives.weightedAvg( values, weights );}
     /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#weightedAvg(int[],short[]) */
     public static  double weightedAvg( int[] values, short[] weights ) {return IntegerNumericPrimitives.weightedAvg( values, weights );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#weightedAvg(int[],io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  double weightedAvg( int[] values, io.deephaven.engine.tables.dbarrays.DoubleVector weights ) {return IntegerNumericPrimitives.weightedAvg( values, weights );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#weightedAvg(int[],io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  double weightedAvg( int[] values, io.deephaven.engine.tables.dbarrays.FloatVector weights ) {return IntegerNumericPrimitives.weightedAvg( values, weights );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#weightedAvg(int[],io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  double weightedAvg( int[] values, io.deephaven.engine.tables.dbarrays.IntVector weights ) {return IntegerNumericPrimitives.weightedAvg( values, weights );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#weightedAvg(int[],io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  double weightedAvg( int[] values, io.deephaven.engine.tables.dbarrays.LongVector weights ) {return IntegerNumericPrimitives.weightedAvg( values, weights );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#weightedAvg(int[],io.deephaven.engine.tables.dbarrays.ShortVector) */
-    public static  double weightedAvg( int[] values, io.deephaven.engine.tables.dbarrays.ShortVector weights ) {return IntegerNumericPrimitives.weightedAvg( values, weights );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#weightedAvg(int[], DoubleVector) */
+    public static  double weightedAvg( int[] values, DoubleVector weights ) {return IntegerNumericPrimitives.weightedAvg( values, weights );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#weightedAvg(int[], FloatVector) */
+    public static  double weightedAvg( int[] values, FloatVector weights ) {return IntegerNumericPrimitives.weightedAvg( values, weights );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#weightedAvg(int[], IntVector) */
+    public static  double weightedAvg( int[] values, IntVector weights ) {return IntegerNumericPrimitives.weightedAvg( values, weights );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#weightedAvg(int[], LongVector) */
+    public static  double weightedAvg( int[] values, LongVector weights ) {return IntegerNumericPrimitives.weightedAvg( values, weights );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#weightedAvg(int[], ShortVector) */
+    public static  double weightedAvg( int[] values, ShortVector weights ) {return IntegerNumericPrimitives.weightedAvg( values, weights );}
     /** @see io.deephaven.libs.primitives.LongNumericPrimitives#weightedAvg(long[],double[]) */
     public static  double weightedAvg( long[] values, double[] weights ) {return LongNumericPrimitives.weightedAvg( values, weights );}
     /** @see io.deephaven.libs.primitives.LongNumericPrimitives#weightedAvg(long[],float[]) */
@@ -2358,16 +2347,16 @@ public class GroovyStaticImports {
     public static  double weightedAvg( long[] values, long[] weights ) {return LongNumericPrimitives.weightedAvg( values, weights );}
     /** @see io.deephaven.libs.primitives.LongNumericPrimitives#weightedAvg(long[],short[]) */
     public static  double weightedAvg( long[] values, short[] weights ) {return LongNumericPrimitives.weightedAvg( values, weights );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#weightedAvg(long[],io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  double weightedAvg( long[] values, io.deephaven.engine.tables.dbarrays.DoubleVector weights ) {return LongNumericPrimitives.weightedAvg( values, weights );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#weightedAvg(long[],io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  double weightedAvg( long[] values, io.deephaven.engine.tables.dbarrays.FloatVector weights ) {return LongNumericPrimitives.weightedAvg( values, weights );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#weightedAvg(long[],io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  double weightedAvg( long[] values, io.deephaven.engine.tables.dbarrays.IntVector weights ) {return LongNumericPrimitives.weightedAvg( values, weights );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#weightedAvg(long[],io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  double weightedAvg( long[] values, io.deephaven.engine.tables.dbarrays.LongVector weights ) {return LongNumericPrimitives.weightedAvg( values, weights );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#weightedAvg(long[],io.deephaven.engine.tables.dbarrays.ShortVector) */
-    public static  double weightedAvg( long[] values, io.deephaven.engine.tables.dbarrays.ShortVector weights ) {return LongNumericPrimitives.weightedAvg( values, weights );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#weightedAvg(long[], DoubleVector) */
+    public static  double weightedAvg( long[] values, DoubleVector weights ) {return LongNumericPrimitives.weightedAvg( values, weights );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#weightedAvg(long[], FloatVector) */
+    public static  double weightedAvg( long[] values, FloatVector weights ) {return LongNumericPrimitives.weightedAvg( values, weights );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#weightedAvg(long[], IntVector) */
+    public static  double weightedAvg( long[] values, IntVector weights ) {return LongNumericPrimitives.weightedAvg( values, weights );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#weightedAvg(long[], LongVector) */
+    public static  double weightedAvg( long[] values, LongVector weights ) {return LongNumericPrimitives.weightedAvg( values, weights );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#weightedAvg(long[], ShortVector) */
+    public static  double weightedAvg( long[] values, ShortVector weights ) {return LongNumericPrimitives.weightedAvg( values, weights );}
     /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#weightedAvg(short[],double[]) */
     public static  double weightedAvg( short[] values, double[] weights ) {return ShortNumericPrimitives.weightedAvg( values, weights );}
     /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#weightedAvg(short[],float[]) */
@@ -2378,136 +2367,136 @@ public class GroovyStaticImports {
     public static  double weightedAvg( short[] values, long[] weights ) {return ShortNumericPrimitives.weightedAvg( values, weights );}
     /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#weightedAvg(short[],short[]) */
     public static  double weightedAvg( short[] values, short[] weights ) {return ShortNumericPrimitives.weightedAvg( values, weights );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#weightedAvg(short[],io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  double weightedAvg( short[] values, io.deephaven.engine.tables.dbarrays.DoubleVector weights ) {return ShortNumericPrimitives.weightedAvg( values, weights );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#weightedAvg(short[],io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  double weightedAvg( short[] values, io.deephaven.engine.tables.dbarrays.FloatVector weights ) {return ShortNumericPrimitives.weightedAvg( values, weights );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#weightedAvg(short[],io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  double weightedAvg( short[] values, io.deephaven.engine.tables.dbarrays.IntVector weights ) {return ShortNumericPrimitives.weightedAvg( values, weights );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#weightedAvg(short[],io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  double weightedAvg( short[] values, io.deephaven.engine.tables.dbarrays.LongVector weights ) {return ShortNumericPrimitives.weightedAvg( values, weights );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#weightedAvg(short[],io.deephaven.engine.tables.dbarrays.ShortVector) */
-    public static  double weightedAvg( short[] values, io.deephaven.engine.tables.dbarrays.ShortVector weights ) {return ShortNumericPrimitives.weightedAvg( values, weights );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#weightedAvg(io.deephaven.engine.tables.dbarrays.ByteVector,byte[]) */
-    public static  double weightedAvg( io.deephaven.engine.tables.dbarrays.ByteVector values, byte[] weights ) {return ByteNumericPrimitives.weightedAvg( values, weights );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#weightedAvg(io.deephaven.engine.tables.dbarrays.ByteVector,double[]) */
-    public static  double weightedAvg( io.deephaven.engine.tables.dbarrays.ByteVector values, double[] weights ) {return ByteNumericPrimitives.weightedAvg( values, weights );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#weightedAvg(io.deephaven.engine.tables.dbarrays.ByteVector,float[]) */
-    public static  double weightedAvg( io.deephaven.engine.tables.dbarrays.ByteVector values, float[] weights ) {return ByteNumericPrimitives.weightedAvg( values, weights );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#weightedAvg(io.deephaven.engine.tables.dbarrays.ByteVector,int[]) */
-    public static  double weightedAvg( io.deephaven.engine.tables.dbarrays.ByteVector values, int[] weights ) {return ByteNumericPrimitives.weightedAvg( values, weights );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#weightedAvg(io.deephaven.engine.tables.dbarrays.ByteVector,long[]) */
-    public static  double weightedAvg( io.deephaven.engine.tables.dbarrays.ByteVector values, long[] weights ) {return ByteNumericPrimitives.weightedAvg( values, weights );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#weightedAvg(io.deephaven.engine.tables.dbarrays.ByteVector,io.deephaven.engine.tables.dbarrays.ByteVector) */
-    public static  double weightedAvg( io.deephaven.engine.tables.dbarrays.ByteVector values, io.deephaven.engine.tables.dbarrays.ByteVector weights ) {return ByteNumericPrimitives.weightedAvg( values, weights );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#weightedAvg(io.deephaven.engine.tables.dbarrays.ByteVector,io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  double weightedAvg( io.deephaven.engine.tables.dbarrays.ByteVector values, io.deephaven.engine.tables.dbarrays.DoubleVector weights ) {return ByteNumericPrimitives.weightedAvg( values, weights );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#weightedAvg(io.deephaven.engine.tables.dbarrays.ByteVector,io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  double weightedAvg( io.deephaven.engine.tables.dbarrays.ByteVector values, io.deephaven.engine.tables.dbarrays.FloatVector weights ) {return ByteNumericPrimitives.weightedAvg( values, weights );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#weightedAvg(io.deephaven.engine.tables.dbarrays.ByteVector,io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  double weightedAvg( io.deephaven.engine.tables.dbarrays.ByteVector values, io.deephaven.engine.tables.dbarrays.IntVector weights ) {return ByteNumericPrimitives.weightedAvg( values, weights );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#weightedAvg(io.deephaven.engine.tables.dbarrays.ByteVector,io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  double weightedAvg( io.deephaven.engine.tables.dbarrays.ByteVector values, io.deephaven.engine.tables.dbarrays.LongVector weights ) {return ByteNumericPrimitives.weightedAvg( values, weights );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#weightedAvg(io.deephaven.engine.tables.dbarrays.DoubleVector,double[]) */
-    public static  double weightedAvg( io.deephaven.engine.tables.dbarrays.DoubleVector values, double[] weights ) {return DoubleNumericPrimitives.weightedAvg( values, weights );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#weightedAvg(io.deephaven.engine.tables.dbarrays.DoubleVector,float[]) */
-    public static  double weightedAvg( io.deephaven.engine.tables.dbarrays.DoubleVector values, float[] weights ) {return DoubleNumericPrimitives.weightedAvg( values, weights );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#weightedAvg(io.deephaven.engine.tables.dbarrays.DoubleVector,int[]) */
-    public static  double weightedAvg( io.deephaven.engine.tables.dbarrays.DoubleVector values, int[] weights ) {return DoubleNumericPrimitives.weightedAvg( values, weights );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#weightedAvg(io.deephaven.engine.tables.dbarrays.DoubleVector,long[]) */
-    public static  double weightedAvg( io.deephaven.engine.tables.dbarrays.DoubleVector values, long[] weights ) {return DoubleNumericPrimitives.weightedAvg( values, weights );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#weightedAvg(io.deephaven.engine.tables.dbarrays.DoubleVector,short[]) */
-    public static  double weightedAvg( io.deephaven.engine.tables.dbarrays.DoubleVector values, short[] weights ) {return DoubleNumericPrimitives.weightedAvg( values, weights );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#weightedAvg(io.deephaven.engine.tables.dbarrays.DoubleVector,io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  double weightedAvg( io.deephaven.engine.tables.dbarrays.DoubleVector values, io.deephaven.engine.tables.dbarrays.DoubleVector weights ) {return DoubleNumericPrimitives.weightedAvg( values, weights );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#weightedAvg(io.deephaven.engine.tables.dbarrays.DoubleVector,io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  double weightedAvg( io.deephaven.engine.tables.dbarrays.DoubleVector values, io.deephaven.engine.tables.dbarrays.FloatVector weights ) {return DoubleNumericPrimitives.weightedAvg( values, weights );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#weightedAvg(io.deephaven.engine.tables.dbarrays.DoubleVector,io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  double weightedAvg( io.deephaven.engine.tables.dbarrays.DoubleVector values, io.deephaven.engine.tables.dbarrays.IntVector weights ) {return DoubleNumericPrimitives.weightedAvg( values, weights );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#weightedAvg(io.deephaven.engine.tables.dbarrays.DoubleVector,io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  double weightedAvg( io.deephaven.engine.tables.dbarrays.DoubleVector values, io.deephaven.engine.tables.dbarrays.LongVector weights ) {return DoubleNumericPrimitives.weightedAvg( values, weights );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#weightedAvg(io.deephaven.engine.tables.dbarrays.DoubleVector,io.deephaven.engine.tables.dbarrays.ShortVector) */
-    public static  double weightedAvg( io.deephaven.engine.tables.dbarrays.DoubleVector values, io.deephaven.engine.tables.dbarrays.ShortVector weights ) {return DoubleNumericPrimitives.weightedAvg( values, weights );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#weightedAvg(io.deephaven.engine.tables.dbarrays.FloatVector,double[]) */
-    public static  double weightedAvg( io.deephaven.engine.tables.dbarrays.FloatVector values, double[] weights ) {return FloatNumericPrimitives.weightedAvg( values, weights );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#weightedAvg(io.deephaven.engine.tables.dbarrays.FloatVector,float[]) */
-    public static  double weightedAvg( io.deephaven.engine.tables.dbarrays.FloatVector values, float[] weights ) {return FloatNumericPrimitives.weightedAvg( values, weights );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#weightedAvg(io.deephaven.engine.tables.dbarrays.FloatVector,int[]) */
-    public static  double weightedAvg( io.deephaven.engine.tables.dbarrays.FloatVector values, int[] weights ) {return FloatNumericPrimitives.weightedAvg( values, weights );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#weightedAvg(io.deephaven.engine.tables.dbarrays.FloatVector,long[]) */
-    public static  double weightedAvg( io.deephaven.engine.tables.dbarrays.FloatVector values, long[] weights ) {return FloatNumericPrimitives.weightedAvg( values, weights );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#weightedAvg(io.deephaven.engine.tables.dbarrays.FloatVector,short[]) */
-    public static  double weightedAvg( io.deephaven.engine.tables.dbarrays.FloatVector values, short[] weights ) {return FloatNumericPrimitives.weightedAvg( values, weights );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#weightedAvg(io.deephaven.engine.tables.dbarrays.FloatVector,io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  double weightedAvg( io.deephaven.engine.tables.dbarrays.FloatVector values, io.deephaven.engine.tables.dbarrays.DoubleVector weights ) {return FloatNumericPrimitives.weightedAvg( values, weights );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#weightedAvg(io.deephaven.engine.tables.dbarrays.FloatVector,io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  double weightedAvg( io.deephaven.engine.tables.dbarrays.FloatVector values, io.deephaven.engine.tables.dbarrays.FloatVector weights ) {return FloatNumericPrimitives.weightedAvg( values, weights );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#weightedAvg(io.deephaven.engine.tables.dbarrays.FloatVector,io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  double weightedAvg( io.deephaven.engine.tables.dbarrays.FloatVector values, io.deephaven.engine.tables.dbarrays.IntVector weights ) {return FloatNumericPrimitives.weightedAvg( values, weights );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#weightedAvg(io.deephaven.engine.tables.dbarrays.FloatVector,io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  double weightedAvg( io.deephaven.engine.tables.dbarrays.FloatVector values, io.deephaven.engine.tables.dbarrays.LongVector weights ) {return FloatNumericPrimitives.weightedAvg( values, weights );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#weightedAvg(io.deephaven.engine.tables.dbarrays.FloatVector,io.deephaven.engine.tables.dbarrays.ShortVector) */
-    public static  double weightedAvg( io.deephaven.engine.tables.dbarrays.FloatVector values, io.deephaven.engine.tables.dbarrays.ShortVector weights ) {return FloatNumericPrimitives.weightedAvg( values, weights );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#weightedAvg(io.deephaven.engine.tables.dbarrays.IntVector,double[]) */
-    public static  double weightedAvg( io.deephaven.engine.tables.dbarrays.IntVector values, double[] weights ) {return IntegerNumericPrimitives.weightedAvg( values, weights );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#weightedAvg(io.deephaven.engine.tables.dbarrays.IntVector,float[]) */
-    public static  double weightedAvg( io.deephaven.engine.tables.dbarrays.IntVector values, float[] weights ) {return IntegerNumericPrimitives.weightedAvg( values, weights );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#weightedAvg(io.deephaven.engine.tables.dbarrays.IntVector,int[]) */
-    public static  double weightedAvg( io.deephaven.engine.tables.dbarrays.IntVector values, int[] weights ) {return IntegerNumericPrimitives.weightedAvg( values, weights );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#weightedAvg(io.deephaven.engine.tables.dbarrays.IntVector,long[]) */
-    public static  double weightedAvg( io.deephaven.engine.tables.dbarrays.IntVector values, long[] weights ) {return IntegerNumericPrimitives.weightedAvg( values, weights );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#weightedAvg(io.deephaven.engine.tables.dbarrays.IntVector,short[]) */
-    public static  double weightedAvg( io.deephaven.engine.tables.dbarrays.IntVector values, short[] weights ) {return IntegerNumericPrimitives.weightedAvg( values, weights );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#weightedAvg(io.deephaven.engine.tables.dbarrays.IntVector,io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  double weightedAvg( io.deephaven.engine.tables.dbarrays.IntVector values, io.deephaven.engine.tables.dbarrays.DoubleVector weights ) {return IntegerNumericPrimitives.weightedAvg( values, weights );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#weightedAvg(io.deephaven.engine.tables.dbarrays.IntVector,io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  double weightedAvg( io.deephaven.engine.tables.dbarrays.IntVector values, io.deephaven.engine.tables.dbarrays.FloatVector weights ) {return IntegerNumericPrimitives.weightedAvg( values, weights );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#weightedAvg(io.deephaven.engine.tables.dbarrays.IntVector,io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  double weightedAvg( io.deephaven.engine.tables.dbarrays.IntVector values, io.deephaven.engine.tables.dbarrays.IntVector weights ) {return IntegerNumericPrimitives.weightedAvg( values, weights );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#weightedAvg(io.deephaven.engine.tables.dbarrays.IntVector,io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  double weightedAvg( io.deephaven.engine.tables.dbarrays.IntVector values, io.deephaven.engine.tables.dbarrays.LongVector weights ) {return IntegerNumericPrimitives.weightedAvg( values, weights );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#weightedAvg(io.deephaven.engine.tables.dbarrays.IntVector,io.deephaven.engine.tables.dbarrays.ShortVector) */
-    public static  double weightedAvg( io.deephaven.engine.tables.dbarrays.IntVector values, io.deephaven.engine.tables.dbarrays.ShortVector weights ) {return IntegerNumericPrimitives.weightedAvg( values, weights );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#weightedAvg(io.deephaven.engine.tables.dbarrays.LongVector,double[]) */
-    public static  double weightedAvg( io.deephaven.engine.tables.dbarrays.LongVector values, double[] weights ) {return LongNumericPrimitives.weightedAvg( values, weights );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#weightedAvg(io.deephaven.engine.tables.dbarrays.LongVector,float[]) */
-    public static  double weightedAvg( io.deephaven.engine.tables.dbarrays.LongVector values, float[] weights ) {return LongNumericPrimitives.weightedAvg( values, weights );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#weightedAvg(io.deephaven.engine.tables.dbarrays.LongVector,int[]) */
-    public static  double weightedAvg( io.deephaven.engine.tables.dbarrays.LongVector values, int[] weights ) {return LongNumericPrimitives.weightedAvg( values, weights );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#weightedAvg(io.deephaven.engine.tables.dbarrays.LongVector,long[]) */
-    public static  double weightedAvg( io.deephaven.engine.tables.dbarrays.LongVector values, long[] weights ) {return LongNumericPrimitives.weightedAvg( values, weights );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#weightedAvg(io.deephaven.engine.tables.dbarrays.LongVector,short[]) */
-    public static  double weightedAvg( io.deephaven.engine.tables.dbarrays.LongVector values, short[] weights ) {return LongNumericPrimitives.weightedAvg( values, weights );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#weightedAvg(io.deephaven.engine.tables.dbarrays.LongVector,io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  double weightedAvg( io.deephaven.engine.tables.dbarrays.LongVector values, io.deephaven.engine.tables.dbarrays.DoubleVector weights ) {return LongNumericPrimitives.weightedAvg( values, weights );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#weightedAvg(io.deephaven.engine.tables.dbarrays.LongVector,io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  double weightedAvg( io.deephaven.engine.tables.dbarrays.LongVector values, io.deephaven.engine.tables.dbarrays.FloatVector weights ) {return LongNumericPrimitives.weightedAvg( values, weights );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#weightedAvg(io.deephaven.engine.tables.dbarrays.LongVector,io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  double weightedAvg( io.deephaven.engine.tables.dbarrays.LongVector values, io.deephaven.engine.tables.dbarrays.IntVector weights ) {return LongNumericPrimitives.weightedAvg( values, weights );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#weightedAvg(io.deephaven.engine.tables.dbarrays.LongVector,io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  double weightedAvg( io.deephaven.engine.tables.dbarrays.LongVector values, io.deephaven.engine.tables.dbarrays.LongVector weights ) {return LongNumericPrimitives.weightedAvg( values, weights );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#weightedAvg(io.deephaven.engine.tables.dbarrays.LongVector,io.deephaven.engine.tables.dbarrays.ShortVector) */
-    public static  double weightedAvg( io.deephaven.engine.tables.dbarrays.LongVector values, io.deephaven.engine.tables.dbarrays.ShortVector weights ) {return LongNumericPrimitives.weightedAvg( values, weights );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#weightedAvg(io.deephaven.engine.tables.dbarrays.ShortVector,double[]) */
-    public static  double weightedAvg( io.deephaven.engine.tables.dbarrays.ShortVector values, double[] weights ) {return ShortNumericPrimitives.weightedAvg( values, weights );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#weightedAvg(io.deephaven.engine.tables.dbarrays.ShortVector,float[]) */
-    public static  double weightedAvg( io.deephaven.engine.tables.dbarrays.ShortVector values, float[] weights ) {return ShortNumericPrimitives.weightedAvg( values, weights );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#weightedAvg(io.deephaven.engine.tables.dbarrays.ShortVector,int[]) */
-    public static  double weightedAvg( io.deephaven.engine.tables.dbarrays.ShortVector values, int[] weights ) {return ShortNumericPrimitives.weightedAvg( values, weights );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#weightedAvg(io.deephaven.engine.tables.dbarrays.ShortVector,long[]) */
-    public static  double weightedAvg( io.deephaven.engine.tables.dbarrays.ShortVector values, long[] weights ) {return ShortNumericPrimitives.weightedAvg( values, weights );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#weightedAvg(io.deephaven.engine.tables.dbarrays.ShortVector,short[]) */
-    public static  double weightedAvg( io.deephaven.engine.tables.dbarrays.ShortVector values, short[] weights ) {return ShortNumericPrimitives.weightedAvg( values, weights );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#weightedAvg(io.deephaven.engine.tables.dbarrays.ShortVector,io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  double weightedAvg( io.deephaven.engine.tables.dbarrays.ShortVector values, io.deephaven.engine.tables.dbarrays.DoubleVector weights ) {return ShortNumericPrimitives.weightedAvg( values, weights );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#weightedAvg(io.deephaven.engine.tables.dbarrays.ShortVector,io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  double weightedAvg( io.deephaven.engine.tables.dbarrays.ShortVector values, io.deephaven.engine.tables.dbarrays.FloatVector weights ) {return ShortNumericPrimitives.weightedAvg( values, weights );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#weightedAvg(io.deephaven.engine.tables.dbarrays.ShortVector,io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  double weightedAvg( io.deephaven.engine.tables.dbarrays.ShortVector values, io.deephaven.engine.tables.dbarrays.IntVector weights ) {return ShortNumericPrimitives.weightedAvg( values, weights );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#weightedAvg(io.deephaven.engine.tables.dbarrays.ShortVector,io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  double weightedAvg( io.deephaven.engine.tables.dbarrays.ShortVector values, io.deephaven.engine.tables.dbarrays.LongVector weights ) {return ShortNumericPrimitives.weightedAvg( values, weights );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#weightedAvg(io.deephaven.engine.tables.dbarrays.ShortVector,io.deephaven.engine.tables.dbarrays.ShortVector) */
-    public static  double weightedAvg( io.deephaven.engine.tables.dbarrays.ShortVector values, io.deephaven.engine.tables.dbarrays.ShortVector weights ) {return ShortNumericPrimitives.weightedAvg( values, weights );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#weightedAvg(short[], DoubleVector) */
+    public static  double weightedAvg( short[] values, DoubleVector weights ) {return ShortNumericPrimitives.weightedAvg( values, weights );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#weightedAvg(short[], FloatVector) */
+    public static  double weightedAvg( short[] values, FloatVector weights ) {return ShortNumericPrimitives.weightedAvg( values, weights );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#weightedAvg(short[], IntVector) */
+    public static  double weightedAvg( short[] values, IntVector weights ) {return ShortNumericPrimitives.weightedAvg( values, weights );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#weightedAvg(short[], LongVector) */
+    public static  double weightedAvg( short[] values, LongVector weights ) {return ShortNumericPrimitives.weightedAvg( values, weights );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#weightedAvg(short[], ShortVector) */
+    public static  double weightedAvg( short[] values, ShortVector weights ) {return ShortNumericPrimitives.weightedAvg( values, weights );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#weightedAvg(ByteVector,byte[]) */
+    public static  double weightedAvg(ByteVector values, byte[] weights ) {return ByteNumericPrimitives.weightedAvg( values, weights );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#weightedAvg(ByteVector,double[]) */
+    public static  double weightedAvg(ByteVector values, double[] weights ) {return ByteNumericPrimitives.weightedAvg( values, weights );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#weightedAvg(ByteVector,float[]) */
+    public static  double weightedAvg(ByteVector values, float[] weights ) {return ByteNumericPrimitives.weightedAvg( values, weights );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#weightedAvg(ByteVector,int[]) */
+    public static  double weightedAvg(ByteVector values, int[] weights ) {return ByteNumericPrimitives.weightedAvg( values, weights );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#weightedAvg(ByteVector,long[]) */
+    public static  double weightedAvg(ByteVector values, long[] weights ) {return ByteNumericPrimitives.weightedAvg( values, weights );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#weightedAvg(ByteVector, ByteVector) */
+    public static  double weightedAvg(ByteVector values, ByteVector weights ) {return ByteNumericPrimitives.weightedAvg( values, weights );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#weightedAvg(ByteVector, DoubleVector) */
+    public static  double weightedAvg(ByteVector values, DoubleVector weights ) {return ByteNumericPrimitives.weightedAvg( values, weights );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#weightedAvg(ByteVector, FloatVector) */
+    public static  double weightedAvg(ByteVector values, FloatVector weights ) {return ByteNumericPrimitives.weightedAvg( values, weights );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#weightedAvg(ByteVector, IntVector) */
+    public static  double weightedAvg(ByteVector values, IntVector weights ) {return ByteNumericPrimitives.weightedAvg( values, weights );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#weightedAvg(ByteVector, LongVector) */
+    public static  double weightedAvg(ByteVector values, LongVector weights ) {return ByteNumericPrimitives.weightedAvg( values, weights );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#weightedAvg(DoubleVector,double[]) */
+    public static  double weightedAvg(DoubleVector values, double[] weights ) {return DoubleNumericPrimitives.weightedAvg( values, weights );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#weightedAvg(DoubleVector,float[]) */
+    public static  double weightedAvg(DoubleVector values, float[] weights ) {return DoubleNumericPrimitives.weightedAvg( values, weights );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#weightedAvg(DoubleVector,int[]) */
+    public static  double weightedAvg(DoubleVector values, int[] weights ) {return DoubleNumericPrimitives.weightedAvg( values, weights );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#weightedAvg(DoubleVector,long[]) */
+    public static  double weightedAvg(DoubleVector values, long[] weights ) {return DoubleNumericPrimitives.weightedAvg( values, weights );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#weightedAvg(DoubleVector,short[]) */
+    public static  double weightedAvg(DoubleVector values, short[] weights ) {return DoubleNumericPrimitives.weightedAvg( values, weights );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#weightedAvg(DoubleVector, DoubleVector) */
+    public static  double weightedAvg(DoubleVector values, DoubleVector weights ) {return DoubleNumericPrimitives.weightedAvg( values, weights );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#weightedAvg(DoubleVector, FloatVector) */
+    public static  double weightedAvg(DoubleVector values, FloatVector weights ) {return DoubleNumericPrimitives.weightedAvg( values, weights );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#weightedAvg(DoubleVector, IntVector) */
+    public static  double weightedAvg(DoubleVector values, IntVector weights ) {return DoubleNumericPrimitives.weightedAvg( values, weights );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#weightedAvg(DoubleVector, LongVector) */
+    public static  double weightedAvg(DoubleVector values, LongVector weights ) {return DoubleNumericPrimitives.weightedAvg( values, weights );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#weightedAvg(DoubleVector, ShortVector) */
+    public static  double weightedAvg(DoubleVector values, ShortVector weights ) {return DoubleNumericPrimitives.weightedAvg( values, weights );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#weightedAvg(FloatVector,double[]) */
+    public static  double weightedAvg(FloatVector values, double[] weights ) {return FloatNumericPrimitives.weightedAvg( values, weights );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#weightedAvg(FloatVector,float[]) */
+    public static  double weightedAvg(FloatVector values, float[] weights ) {return FloatNumericPrimitives.weightedAvg( values, weights );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#weightedAvg(FloatVector,int[]) */
+    public static  double weightedAvg(FloatVector values, int[] weights ) {return FloatNumericPrimitives.weightedAvg( values, weights );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#weightedAvg(FloatVector,long[]) */
+    public static  double weightedAvg(FloatVector values, long[] weights ) {return FloatNumericPrimitives.weightedAvg( values, weights );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#weightedAvg(FloatVector,short[]) */
+    public static  double weightedAvg(FloatVector values, short[] weights ) {return FloatNumericPrimitives.weightedAvg( values, weights );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#weightedAvg(FloatVector, DoubleVector) */
+    public static  double weightedAvg(FloatVector values, DoubleVector weights ) {return FloatNumericPrimitives.weightedAvg( values, weights );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#weightedAvg(FloatVector, FloatVector) */
+    public static  double weightedAvg(FloatVector values, FloatVector weights ) {return FloatNumericPrimitives.weightedAvg( values, weights );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#weightedAvg(FloatVector, IntVector) */
+    public static  double weightedAvg(FloatVector values, IntVector weights ) {return FloatNumericPrimitives.weightedAvg( values, weights );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#weightedAvg(FloatVector, LongVector) */
+    public static  double weightedAvg(FloatVector values, LongVector weights ) {return FloatNumericPrimitives.weightedAvg( values, weights );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#weightedAvg(FloatVector, ShortVector) */
+    public static  double weightedAvg(FloatVector values, ShortVector weights ) {return FloatNumericPrimitives.weightedAvg( values, weights );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#weightedAvg(IntVector,double[]) */
+    public static  double weightedAvg(IntVector values, double[] weights ) {return IntegerNumericPrimitives.weightedAvg( values, weights );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#weightedAvg(IntVector,float[]) */
+    public static  double weightedAvg(IntVector values, float[] weights ) {return IntegerNumericPrimitives.weightedAvg( values, weights );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#weightedAvg(IntVector,int[]) */
+    public static  double weightedAvg(IntVector values, int[] weights ) {return IntegerNumericPrimitives.weightedAvg( values, weights );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#weightedAvg(IntVector,long[]) */
+    public static  double weightedAvg(IntVector values, long[] weights ) {return IntegerNumericPrimitives.weightedAvg( values, weights );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#weightedAvg(IntVector,short[]) */
+    public static  double weightedAvg(IntVector values, short[] weights ) {return IntegerNumericPrimitives.weightedAvg( values, weights );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#weightedAvg(IntVector, DoubleVector) */
+    public static  double weightedAvg(IntVector values, DoubleVector weights ) {return IntegerNumericPrimitives.weightedAvg( values, weights );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#weightedAvg(IntVector, FloatVector) */
+    public static  double weightedAvg(IntVector values, FloatVector weights ) {return IntegerNumericPrimitives.weightedAvg( values, weights );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#weightedAvg(IntVector, IntVector) */
+    public static  double weightedAvg(IntVector values, IntVector weights ) {return IntegerNumericPrimitives.weightedAvg( values, weights );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#weightedAvg(IntVector, LongVector) */
+    public static  double weightedAvg(IntVector values, LongVector weights ) {return IntegerNumericPrimitives.weightedAvg( values, weights );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#weightedAvg(IntVector, ShortVector) */
+    public static  double weightedAvg(IntVector values, ShortVector weights ) {return IntegerNumericPrimitives.weightedAvg( values, weights );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#weightedAvg(LongVector,double[]) */
+    public static  double weightedAvg(LongVector values, double[] weights ) {return LongNumericPrimitives.weightedAvg( values, weights );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#weightedAvg(LongVector,float[]) */
+    public static  double weightedAvg(LongVector values, float[] weights ) {return LongNumericPrimitives.weightedAvg( values, weights );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#weightedAvg(LongVector,int[]) */
+    public static  double weightedAvg(LongVector values, int[] weights ) {return LongNumericPrimitives.weightedAvg( values, weights );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#weightedAvg(LongVector,long[]) */
+    public static  double weightedAvg(LongVector values, long[] weights ) {return LongNumericPrimitives.weightedAvg( values, weights );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#weightedAvg(LongVector,short[]) */
+    public static  double weightedAvg(LongVector values, short[] weights ) {return LongNumericPrimitives.weightedAvg( values, weights );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#weightedAvg(LongVector, DoubleVector) */
+    public static  double weightedAvg(LongVector values, DoubleVector weights ) {return LongNumericPrimitives.weightedAvg( values, weights );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#weightedAvg(LongVector, FloatVector) */
+    public static  double weightedAvg(LongVector values, FloatVector weights ) {return LongNumericPrimitives.weightedAvg( values, weights );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#weightedAvg(LongVector, IntVector) */
+    public static  double weightedAvg(LongVector values, IntVector weights ) {return LongNumericPrimitives.weightedAvg( values, weights );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#weightedAvg(LongVector, LongVector) */
+    public static  double weightedAvg(LongVector values, LongVector weights ) {return LongNumericPrimitives.weightedAvg( values, weights );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#weightedAvg(LongVector, ShortVector) */
+    public static  double weightedAvg(LongVector values, ShortVector weights ) {return LongNumericPrimitives.weightedAvg( values, weights );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#weightedAvg(ShortVector,double[]) */
+    public static  double weightedAvg(ShortVector values, double[] weights ) {return ShortNumericPrimitives.weightedAvg( values, weights );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#weightedAvg(ShortVector,float[]) */
+    public static  double weightedAvg(ShortVector values, float[] weights ) {return ShortNumericPrimitives.weightedAvg( values, weights );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#weightedAvg(ShortVector,int[]) */
+    public static  double weightedAvg(ShortVector values, int[] weights ) {return ShortNumericPrimitives.weightedAvg( values, weights );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#weightedAvg(ShortVector,long[]) */
+    public static  double weightedAvg(ShortVector values, long[] weights ) {return ShortNumericPrimitives.weightedAvg( values, weights );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#weightedAvg(ShortVector,short[]) */
+    public static  double weightedAvg(ShortVector values, short[] weights ) {return ShortNumericPrimitives.weightedAvg( values, weights );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#weightedAvg(ShortVector, DoubleVector) */
+    public static  double weightedAvg(ShortVector values, DoubleVector weights ) {return ShortNumericPrimitives.weightedAvg( values, weights );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#weightedAvg(ShortVector, FloatVector) */
+    public static  double weightedAvg(ShortVector values, FloatVector weights ) {return ShortNumericPrimitives.weightedAvg( values, weights );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#weightedAvg(ShortVector, IntVector) */
+    public static  double weightedAvg(ShortVector values, IntVector weights ) {return ShortNumericPrimitives.weightedAvg( values, weights );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#weightedAvg(ShortVector, LongVector) */
+    public static  double weightedAvg(ShortVector values, LongVector weights ) {return ShortNumericPrimitives.weightedAvg( values, weights );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#weightedAvg(ShortVector, ShortVector) */
+    public static  double weightedAvg(ShortVector values, ShortVector weights ) {return ShortNumericPrimitives.weightedAvg( values, weights );}
     /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#weightedSum(byte[],byte[]) */
     public static  double weightedSum( byte[] values, byte[] weights ) {return ByteNumericPrimitives.weightedSum( values, weights );}
     /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#weightedSum(byte[],double[]) */
@@ -2518,16 +2507,16 @@ public class GroovyStaticImports {
     public static  double weightedSum( byte[] values, int[] weights ) {return ByteNumericPrimitives.weightedSum( values, weights );}
     /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#weightedSum(byte[],long[]) */
     public static  double weightedSum( byte[] values, long[] weights ) {return ByteNumericPrimitives.weightedSum( values, weights );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#weightedSum(byte[],io.deephaven.engine.tables.dbarrays.ByteVector) */
-    public static  double weightedSum( byte[] values, io.deephaven.engine.tables.dbarrays.ByteVector weights ) {return ByteNumericPrimitives.weightedSum( values, weights );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#weightedSum(byte[],io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  double weightedSum( byte[] values, io.deephaven.engine.tables.dbarrays.DoubleVector weights ) {return ByteNumericPrimitives.weightedSum( values, weights );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#weightedSum(byte[],io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  double weightedSum( byte[] values, io.deephaven.engine.tables.dbarrays.FloatVector weights ) {return ByteNumericPrimitives.weightedSum( values, weights );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#weightedSum(byte[],io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  double weightedSum( byte[] values, io.deephaven.engine.tables.dbarrays.IntVector weights ) {return ByteNumericPrimitives.weightedSum( values, weights );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#weightedSum(byte[],io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  double weightedSum( byte[] values, io.deephaven.engine.tables.dbarrays.LongVector weights ) {return ByteNumericPrimitives.weightedSum( values, weights );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#weightedSum(byte[], ByteVector) */
+    public static  double weightedSum( byte[] values, ByteVector weights ) {return ByteNumericPrimitives.weightedSum( values, weights );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#weightedSum(byte[], DoubleVector) */
+    public static  double weightedSum( byte[] values, DoubleVector weights ) {return ByteNumericPrimitives.weightedSum( values, weights );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#weightedSum(byte[], FloatVector) */
+    public static  double weightedSum( byte[] values, FloatVector weights ) {return ByteNumericPrimitives.weightedSum( values, weights );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#weightedSum(byte[], IntVector) */
+    public static  double weightedSum( byte[] values, IntVector weights ) {return ByteNumericPrimitives.weightedSum( values, weights );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#weightedSum(byte[], LongVector) */
+    public static  double weightedSum( byte[] values, LongVector weights ) {return ByteNumericPrimitives.weightedSum( values, weights );}
     /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#weightedSum(double[],double[]) */
     public static  double weightedSum( double[] values, double[] weights ) {return DoubleNumericPrimitives.weightedSum( values, weights );}
     /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#weightedSum(double[],float[]) */
@@ -2538,16 +2527,16 @@ public class GroovyStaticImports {
     public static  double weightedSum( double[] values, long[] weights ) {return DoubleNumericPrimitives.weightedSum( values, weights );}
     /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#weightedSum(double[],short[]) */
     public static  double weightedSum( double[] values, short[] weights ) {return DoubleNumericPrimitives.weightedSum( values, weights );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#weightedSum(double[],io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  double weightedSum( double[] values, io.deephaven.engine.tables.dbarrays.DoubleVector weights ) {return DoubleNumericPrimitives.weightedSum( values, weights );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#weightedSum(double[],io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  double weightedSum( double[] values, io.deephaven.engine.tables.dbarrays.FloatVector weights ) {return DoubleNumericPrimitives.weightedSum( values, weights );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#weightedSum(double[],io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  double weightedSum( double[] values, io.deephaven.engine.tables.dbarrays.IntVector weights ) {return DoubleNumericPrimitives.weightedSum( values, weights );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#weightedSum(double[],io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  double weightedSum( double[] values, io.deephaven.engine.tables.dbarrays.LongVector weights ) {return DoubleNumericPrimitives.weightedSum( values, weights );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#weightedSum(double[],io.deephaven.engine.tables.dbarrays.ShortVector) */
-    public static  double weightedSum( double[] values, io.deephaven.engine.tables.dbarrays.ShortVector weights ) {return DoubleNumericPrimitives.weightedSum( values, weights );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#weightedSum(double[], DoubleVector) */
+    public static  double weightedSum( double[] values, DoubleVector weights ) {return DoubleNumericPrimitives.weightedSum( values, weights );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#weightedSum(double[], FloatVector) */
+    public static  double weightedSum( double[] values, FloatVector weights ) {return DoubleNumericPrimitives.weightedSum( values, weights );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#weightedSum(double[], IntVector) */
+    public static  double weightedSum( double[] values, IntVector weights ) {return DoubleNumericPrimitives.weightedSum( values, weights );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#weightedSum(double[], LongVector) */
+    public static  double weightedSum( double[] values, LongVector weights ) {return DoubleNumericPrimitives.weightedSum( values, weights );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#weightedSum(double[], ShortVector) */
+    public static  double weightedSum( double[] values, ShortVector weights ) {return DoubleNumericPrimitives.weightedSum( values, weights );}
     /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#weightedSum(float[],double[]) */
     public static  double weightedSum( float[] values, double[] weights ) {return FloatNumericPrimitives.weightedSum( values, weights );}
     /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#weightedSum(float[],float[]) */
@@ -2558,16 +2547,16 @@ public class GroovyStaticImports {
     public static  double weightedSum( float[] values, long[] weights ) {return FloatNumericPrimitives.weightedSum( values, weights );}
     /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#weightedSum(float[],short[]) */
     public static  double weightedSum( float[] values, short[] weights ) {return FloatNumericPrimitives.weightedSum( values, weights );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#weightedSum(float[],io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  double weightedSum( float[] values, io.deephaven.engine.tables.dbarrays.DoubleVector weights ) {return FloatNumericPrimitives.weightedSum( values, weights );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#weightedSum(float[],io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  double weightedSum( float[] values, io.deephaven.engine.tables.dbarrays.FloatVector weights ) {return FloatNumericPrimitives.weightedSum( values, weights );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#weightedSum(float[],io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  double weightedSum( float[] values, io.deephaven.engine.tables.dbarrays.IntVector weights ) {return FloatNumericPrimitives.weightedSum( values, weights );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#weightedSum(float[],io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  double weightedSum( float[] values, io.deephaven.engine.tables.dbarrays.LongVector weights ) {return FloatNumericPrimitives.weightedSum( values, weights );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#weightedSum(float[],io.deephaven.engine.tables.dbarrays.ShortVector) */
-    public static  double weightedSum( float[] values, io.deephaven.engine.tables.dbarrays.ShortVector weights ) {return FloatNumericPrimitives.weightedSum( values, weights );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#weightedSum(float[], DoubleVector) */
+    public static  double weightedSum( float[] values, DoubleVector weights ) {return FloatNumericPrimitives.weightedSum( values, weights );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#weightedSum(float[], FloatVector) */
+    public static  double weightedSum( float[] values, FloatVector weights ) {return FloatNumericPrimitives.weightedSum( values, weights );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#weightedSum(float[], IntVector) */
+    public static  double weightedSum( float[] values, IntVector weights ) {return FloatNumericPrimitives.weightedSum( values, weights );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#weightedSum(float[], LongVector) */
+    public static  double weightedSum( float[] values, LongVector weights ) {return FloatNumericPrimitives.weightedSum( values, weights );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#weightedSum(float[], ShortVector) */
+    public static  double weightedSum( float[] values, ShortVector weights ) {return FloatNumericPrimitives.weightedSum( values, weights );}
     /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#weightedSum(int[],double[]) */
     public static  double weightedSum( int[] values, double[] weights ) {return IntegerNumericPrimitives.weightedSum( values, weights );}
     /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#weightedSum(int[],float[]) */
@@ -2578,16 +2567,16 @@ public class GroovyStaticImports {
     public static  double weightedSum( int[] values, long[] weights ) {return IntegerNumericPrimitives.weightedSum( values, weights );}
     /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#weightedSum(int[],short[]) */
     public static  double weightedSum( int[] values, short[] weights ) {return IntegerNumericPrimitives.weightedSum( values, weights );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#weightedSum(int[],io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  double weightedSum( int[] values, io.deephaven.engine.tables.dbarrays.DoubleVector weights ) {return IntegerNumericPrimitives.weightedSum( values, weights );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#weightedSum(int[],io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  double weightedSum( int[] values, io.deephaven.engine.tables.dbarrays.FloatVector weights ) {return IntegerNumericPrimitives.weightedSum( values, weights );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#weightedSum(int[],io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  double weightedSum( int[] values, io.deephaven.engine.tables.dbarrays.IntVector weights ) {return IntegerNumericPrimitives.weightedSum( values, weights );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#weightedSum(int[],io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  double weightedSum( int[] values, io.deephaven.engine.tables.dbarrays.LongVector weights ) {return IntegerNumericPrimitives.weightedSum( values, weights );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#weightedSum(int[],io.deephaven.engine.tables.dbarrays.ShortVector) */
-    public static  double weightedSum( int[] values, io.deephaven.engine.tables.dbarrays.ShortVector weights ) {return IntegerNumericPrimitives.weightedSum( values, weights );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#weightedSum(int[], DoubleVector) */
+    public static  double weightedSum( int[] values, DoubleVector weights ) {return IntegerNumericPrimitives.weightedSum( values, weights );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#weightedSum(int[], FloatVector) */
+    public static  double weightedSum( int[] values, FloatVector weights ) {return IntegerNumericPrimitives.weightedSum( values, weights );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#weightedSum(int[], IntVector) */
+    public static  double weightedSum( int[] values, IntVector weights ) {return IntegerNumericPrimitives.weightedSum( values, weights );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#weightedSum(int[], LongVector) */
+    public static  double weightedSum( int[] values, LongVector weights ) {return IntegerNumericPrimitives.weightedSum( values, weights );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#weightedSum(int[], ShortVector) */
+    public static  double weightedSum( int[] values, ShortVector weights ) {return IntegerNumericPrimitives.weightedSum( values, weights );}
     /** @see io.deephaven.libs.primitives.LongNumericPrimitives#weightedSum(long[],double[]) */
     public static  double weightedSum( long[] values, double[] weights ) {return LongNumericPrimitives.weightedSum( values, weights );}
     /** @see io.deephaven.libs.primitives.LongNumericPrimitives#weightedSum(long[],float[]) */
@@ -2598,16 +2587,16 @@ public class GroovyStaticImports {
     public static  double weightedSum( long[] values, long[] weights ) {return LongNumericPrimitives.weightedSum( values, weights );}
     /** @see io.deephaven.libs.primitives.LongNumericPrimitives#weightedSum(long[],short[]) */
     public static  double weightedSum( long[] values, short[] weights ) {return LongNumericPrimitives.weightedSum( values, weights );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#weightedSum(long[],io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  double weightedSum( long[] values, io.deephaven.engine.tables.dbarrays.DoubleVector weights ) {return LongNumericPrimitives.weightedSum( values, weights );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#weightedSum(long[],io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  double weightedSum( long[] values, io.deephaven.engine.tables.dbarrays.FloatVector weights ) {return LongNumericPrimitives.weightedSum( values, weights );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#weightedSum(long[],io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  double weightedSum( long[] values, io.deephaven.engine.tables.dbarrays.IntVector weights ) {return LongNumericPrimitives.weightedSum( values, weights );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#weightedSum(long[],io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  double weightedSum( long[] values, io.deephaven.engine.tables.dbarrays.LongVector weights ) {return LongNumericPrimitives.weightedSum( values, weights );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#weightedSum(long[],io.deephaven.engine.tables.dbarrays.ShortVector) */
-    public static  double weightedSum( long[] values, io.deephaven.engine.tables.dbarrays.ShortVector weights ) {return LongNumericPrimitives.weightedSum( values, weights );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#weightedSum(long[], DoubleVector) */
+    public static  double weightedSum( long[] values, DoubleVector weights ) {return LongNumericPrimitives.weightedSum( values, weights );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#weightedSum(long[], FloatVector) */
+    public static  double weightedSum( long[] values, FloatVector weights ) {return LongNumericPrimitives.weightedSum( values, weights );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#weightedSum(long[], IntVector) */
+    public static  double weightedSum( long[] values, IntVector weights ) {return LongNumericPrimitives.weightedSum( values, weights );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#weightedSum(long[], LongVector) */
+    public static  double weightedSum( long[] values, LongVector weights ) {return LongNumericPrimitives.weightedSum( values, weights );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#weightedSum(long[], ShortVector) */
+    public static  double weightedSum( long[] values, ShortVector weights ) {return LongNumericPrimitives.weightedSum( values, weights );}
     /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#weightedSum(short[],double[]) */
     public static  double weightedSum( short[] values, double[] weights ) {return ShortNumericPrimitives.weightedSum( values, weights );}
     /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#weightedSum(short[],float[]) */
@@ -2618,136 +2607,136 @@ public class GroovyStaticImports {
     public static  double weightedSum( short[] values, long[] weights ) {return ShortNumericPrimitives.weightedSum( values, weights );}
     /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#weightedSum(short[],short[]) */
     public static  double weightedSum( short[] values, short[] weights ) {return ShortNumericPrimitives.weightedSum( values, weights );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#weightedSum(short[],io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  double weightedSum( short[] values, io.deephaven.engine.tables.dbarrays.DoubleVector weights ) {return ShortNumericPrimitives.weightedSum( values, weights );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#weightedSum(short[],io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  double weightedSum( short[] values, io.deephaven.engine.tables.dbarrays.FloatVector weights ) {return ShortNumericPrimitives.weightedSum( values, weights );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#weightedSum(short[],io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  double weightedSum( short[] values, io.deephaven.engine.tables.dbarrays.IntVector weights ) {return ShortNumericPrimitives.weightedSum( values, weights );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#weightedSum(short[],io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  double weightedSum( short[] values, io.deephaven.engine.tables.dbarrays.LongVector weights ) {return ShortNumericPrimitives.weightedSum( values, weights );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#weightedSum(short[],io.deephaven.engine.tables.dbarrays.ShortVector) */
-    public static  double weightedSum( short[] values, io.deephaven.engine.tables.dbarrays.ShortVector weights ) {return ShortNumericPrimitives.weightedSum( values, weights );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#weightedSum(io.deephaven.engine.tables.dbarrays.ByteVector,byte[]) */
-    public static  double weightedSum( io.deephaven.engine.tables.dbarrays.ByteVector values, byte[] weights ) {return ByteNumericPrimitives.weightedSum( values, weights );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#weightedSum(io.deephaven.engine.tables.dbarrays.ByteVector,double[]) */
-    public static  double weightedSum( io.deephaven.engine.tables.dbarrays.ByteVector values, double[] weights ) {return ByteNumericPrimitives.weightedSum( values, weights );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#weightedSum(io.deephaven.engine.tables.dbarrays.ByteVector,float[]) */
-    public static  double weightedSum( io.deephaven.engine.tables.dbarrays.ByteVector values, float[] weights ) {return ByteNumericPrimitives.weightedSum( values, weights );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#weightedSum(io.deephaven.engine.tables.dbarrays.ByteVector,int[]) */
-    public static  double weightedSum( io.deephaven.engine.tables.dbarrays.ByteVector values, int[] weights ) {return ByteNumericPrimitives.weightedSum( values, weights );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#weightedSum(io.deephaven.engine.tables.dbarrays.ByteVector,long[]) */
-    public static  double weightedSum( io.deephaven.engine.tables.dbarrays.ByteVector values, long[] weights ) {return ByteNumericPrimitives.weightedSum( values, weights );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#weightedSum(io.deephaven.engine.tables.dbarrays.ByteVector,io.deephaven.engine.tables.dbarrays.ByteVector) */
-    public static  double weightedSum( io.deephaven.engine.tables.dbarrays.ByteVector values, io.deephaven.engine.tables.dbarrays.ByteVector weights ) {return ByteNumericPrimitives.weightedSum( values, weights );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#weightedSum(io.deephaven.engine.tables.dbarrays.ByteVector,io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  double weightedSum( io.deephaven.engine.tables.dbarrays.ByteVector values, io.deephaven.engine.tables.dbarrays.DoubleVector weights ) {return ByteNumericPrimitives.weightedSum( values, weights );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#weightedSum(io.deephaven.engine.tables.dbarrays.ByteVector,io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  double weightedSum( io.deephaven.engine.tables.dbarrays.ByteVector values, io.deephaven.engine.tables.dbarrays.FloatVector weights ) {return ByteNumericPrimitives.weightedSum( values, weights );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#weightedSum(io.deephaven.engine.tables.dbarrays.ByteVector,io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  double weightedSum( io.deephaven.engine.tables.dbarrays.ByteVector values, io.deephaven.engine.tables.dbarrays.IntVector weights ) {return ByteNumericPrimitives.weightedSum( values, weights );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#weightedSum(io.deephaven.engine.tables.dbarrays.ByteVector,io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  double weightedSum( io.deephaven.engine.tables.dbarrays.ByteVector values, io.deephaven.engine.tables.dbarrays.LongVector weights ) {return ByteNumericPrimitives.weightedSum( values, weights );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#weightedSum(io.deephaven.engine.tables.dbarrays.DoubleVector,double[]) */
-    public static  double weightedSum( io.deephaven.engine.tables.dbarrays.DoubleVector values, double[] weights ) {return DoubleNumericPrimitives.weightedSum( values, weights );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#weightedSum(io.deephaven.engine.tables.dbarrays.DoubleVector,float[]) */
-    public static  double weightedSum( io.deephaven.engine.tables.dbarrays.DoubleVector values, float[] weights ) {return DoubleNumericPrimitives.weightedSum( values, weights );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#weightedSum(io.deephaven.engine.tables.dbarrays.DoubleVector,int[]) */
-    public static  double weightedSum( io.deephaven.engine.tables.dbarrays.DoubleVector values, int[] weights ) {return DoubleNumericPrimitives.weightedSum( values, weights );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#weightedSum(io.deephaven.engine.tables.dbarrays.DoubleVector,long[]) */
-    public static  double weightedSum( io.deephaven.engine.tables.dbarrays.DoubleVector values, long[] weights ) {return DoubleNumericPrimitives.weightedSum( values, weights );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#weightedSum(io.deephaven.engine.tables.dbarrays.DoubleVector,short[]) */
-    public static  double weightedSum( io.deephaven.engine.tables.dbarrays.DoubleVector values, short[] weights ) {return DoubleNumericPrimitives.weightedSum( values, weights );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#weightedSum(io.deephaven.engine.tables.dbarrays.DoubleVector,io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  double weightedSum( io.deephaven.engine.tables.dbarrays.DoubleVector values, io.deephaven.engine.tables.dbarrays.DoubleVector weights ) {return DoubleNumericPrimitives.weightedSum( values, weights );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#weightedSum(io.deephaven.engine.tables.dbarrays.DoubleVector,io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  double weightedSum( io.deephaven.engine.tables.dbarrays.DoubleVector values, io.deephaven.engine.tables.dbarrays.FloatVector weights ) {return DoubleNumericPrimitives.weightedSum( values, weights );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#weightedSum(io.deephaven.engine.tables.dbarrays.DoubleVector,io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  double weightedSum( io.deephaven.engine.tables.dbarrays.DoubleVector values, io.deephaven.engine.tables.dbarrays.IntVector weights ) {return DoubleNumericPrimitives.weightedSum( values, weights );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#weightedSum(io.deephaven.engine.tables.dbarrays.DoubleVector,io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  double weightedSum( io.deephaven.engine.tables.dbarrays.DoubleVector values, io.deephaven.engine.tables.dbarrays.LongVector weights ) {return DoubleNumericPrimitives.weightedSum( values, weights );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#weightedSum(io.deephaven.engine.tables.dbarrays.DoubleVector,io.deephaven.engine.tables.dbarrays.ShortVector) */
-    public static  double weightedSum( io.deephaven.engine.tables.dbarrays.DoubleVector values, io.deephaven.engine.tables.dbarrays.ShortVector weights ) {return DoubleNumericPrimitives.weightedSum( values, weights );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#weightedSum(io.deephaven.engine.tables.dbarrays.FloatVector,double[]) */
-    public static  double weightedSum( io.deephaven.engine.tables.dbarrays.FloatVector values, double[] weights ) {return FloatNumericPrimitives.weightedSum( values, weights );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#weightedSum(io.deephaven.engine.tables.dbarrays.FloatVector,float[]) */
-    public static  double weightedSum( io.deephaven.engine.tables.dbarrays.FloatVector values, float[] weights ) {return FloatNumericPrimitives.weightedSum( values, weights );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#weightedSum(io.deephaven.engine.tables.dbarrays.FloatVector,int[]) */
-    public static  double weightedSum( io.deephaven.engine.tables.dbarrays.FloatVector values, int[] weights ) {return FloatNumericPrimitives.weightedSum( values, weights );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#weightedSum(io.deephaven.engine.tables.dbarrays.FloatVector,long[]) */
-    public static  double weightedSum( io.deephaven.engine.tables.dbarrays.FloatVector values, long[] weights ) {return FloatNumericPrimitives.weightedSum( values, weights );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#weightedSum(io.deephaven.engine.tables.dbarrays.FloatVector,short[]) */
-    public static  double weightedSum( io.deephaven.engine.tables.dbarrays.FloatVector values, short[] weights ) {return FloatNumericPrimitives.weightedSum( values, weights );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#weightedSum(io.deephaven.engine.tables.dbarrays.FloatVector,io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  double weightedSum( io.deephaven.engine.tables.dbarrays.FloatVector values, io.deephaven.engine.tables.dbarrays.DoubleVector weights ) {return FloatNumericPrimitives.weightedSum( values, weights );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#weightedSum(io.deephaven.engine.tables.dbarrays.FloatVector,io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  double weightedSum( io.deephaven.engine.tables.dbarrays.FloatVector values, io.deephaven.engine.tables.dbarrays.FloatVector weights ) {return FloatNumericPrimitives.weightedSum( values, weights );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#weightedSum(io.deephaven.engine.tables.dbarrays.FloatVector,io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  double weightedSum( io.deephaven.engine.tables.dbarrays.FloatVector values, io.deephaven.engine.tables.dbarrays.IntVector weights ) {return FloatNumericPrimitives.weightedSum( values, weights );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#weightedSum(io.deephaven.engine.tables.dbarrays.FloatVector,io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  double weightedSum( io.deephaven.engine.tables.dbarrays.FloatVector values, io.deephaven.engine.tables.dbarrays.LongVector weights ) {return FloatNumericPrimitives.weightedSum( values, weights );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#weightedSum(io.deephaven.engine.tables.dbarrays.FloatVector,io.deephaven.engine.tables.dbarrays.ShortVector) */
-    public static  double weightedSum( io.deephaven.engine.tables.dbarrays.FloatVector values, io.deephaven.engine.tables.dbarrays.ShortVector weights ) {return FloatNumericPrimitives.weightedSum( values, weights );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#weightedSum(io.deephaven.engine.tables.dbarrays.IntVector,double[]) */
-    public static  double weightedSum( io.deephaven.engine.tables.dbarrays.IntVector values, double[] weights ) {return IntegerNumericPrimitives.weightedSum( values, weights );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#weightedSum(io.deephaven.engine.tables.dbarrays.IntVector,float[]) */
-    public static  double weightedSum( io.deephaven.engine.tables.dbarrays.IntVector values, float[] weights ) {return IntegerNumericPrimitives.weightedSum( values, weights );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#weightedSum(io.deephaven.engine.tables.dbarrays.IntVector,int[]) */
-    public static  double weightedSum( io.deephaven.engine.tables.dbarrays.IntVector values, int[] weights ) {return IntegerNumericPrimitives.weightedSum( values, weights );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#weightedSum(io.deephaven.engine.tables.dbarrays.IntVector,long[]) */
-    public static  double weightedSum( io.deephaven.engine.tables.dbarrays.IntVector values, long[] weights ) {return IntegerNumericPrimitives.weightedSum( values, weights );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#weightedSum(io.deephaven.engine.tables.dbarrays.IntVector,short[]) */
-    public static  double weightedSum( io.deephaven.engine.tables.dbarrays.IntVector values, short[] weights ) {return IntegerNumericPrimitives.weightedSum( values, weights );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#weightedSum(io.deephaven.engine.tables.dbarrays.IntVector,io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  double weightedSum( io.deephaven.engine.tables.dbarrays.IntVector values, io.deephaven.engine.tables.dbarrays.DoubleVector weights ) {return IntegerNumericPrimitives.weightedSum( values, weights );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#weightedSum(io.deephaven.engine.tables.dbarrays.IntVector,io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  double weightedSum( io.deephaven.engine.tables.dbarrays.IntVector values, io.deephaven.engine.tables.dbarrays.FloatVector weights ) {return IntegerNumericPrimitives.weightedSum( values, weights );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#weightedSum(io.deephaven.engine.tables.dbarrays.IntVector,io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  double weightedSum( io.deephaven.engine.tables.dbarrays.IntVector values, io.deephaven.engine.tables.dbarrays.IntVector weights ) {return IntegerNumericPrimitives.weightedSum( values, weights );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#weightedSum(io.deephaven.engine.tables.dbarrays.IntVector,io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  double weightedSum( io.deephaven.engine.tables.dbarrays.IntVector values, io.deephaven.engine.tables.dbarrays.LongVector weights ) {return IntegerNumericPrimitives.weightedSum( values, weights );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#weightedSum(io.deephaven.engine.tables.dbarrays.IntVector,io.deephaven.engine.tables.dbarrays.ShortVector) */
-    public static  double weightedSum( io.deephaven.engine.tables.dbarrays.IntVector values, io.deephaven.engine.tables.dbarrays.ShortVector weights ) {return IntegerNumericPrimitives.weightedSum( values, weights );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#weightedSum(io.deephaven.engine.tables.dbarrays.LongVector,double[]) */
-    public static  double weightedSum( io.deephaven.engine.tables.dbarrays.LongVector values, double[] weights ) {return LongNumericPrimitives.weightedSum( values, weights );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#weightedSum(io.deephaven.engine.tables.dbarrays.LongVector,float[]) */
-    public static  double weightedSum( io.deephaven.engine.tables.dbarrays.LongVector values, float[] weights ) {return LongNumericPrimitives.weightedSum( values, weights );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#weightedSum(io.deephaven.engine.tables.dbarrays.LongVector,int[]) */
-    public static  double weightedSum( io.deephaven.engine.tables.dbarrays.LongVector values, int[] weights ) {return LongNumericPrimitives.weightedSum( values, weights );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#weightedSum(io.deephaven.engine.tables.dbarrays.LongVector,long[]) */
-    public static  double weightedSum( io.deephaven.engine.tables.dbarrays.LongVector values, long[] weights ) {return LongNumericPrimitives.weightedSum( values, weights );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#weightedSum(io.deephaven.engine.tables.dbarrays.LongVector,short[]) */
-    public static  double weightedSum( io.deephaven.engine.tables.dbarrays.LongVector values, short[] weights ) {return LongNumericPrimitives.weightedSum( values, weights );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#weightedSum(io.deephaven.engine.tables.dbarrays.LongVector,io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  double weightedSum( io.deephaven.engine.tables.dbarrays.LongVector values, io.deephaven.engine.tables.dbarrays.DoubleVector weights ) {return LongNumericPrimitives.weightedSum( values, weights );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#weightedSum(io.deephaven.engine.tables.dbarrays.LongVector,io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  double weightedSum( io.deephaven.engine.tables.dbarrays.LongVector values, io.deephaven.engine.tables.dbarrays.FloatVector weights ) {return LongNumericPrimitives.weightedSum( values, weights );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#weightedSum(io.deephaven.engine.tables.dbarrays.LongVector,io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  double weightedSum( io.deephaven.engine.tables.dbarrays.LongVector values, io.deephaven.engine.tables.dbarrays.IntVector weights ) {return LongNumericPrimitives.weightedSum( values, weights );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#weightedSum(io.deephaven.engine.tables.dbarrays.LongVector,io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  double weightedSum( io.deephaven.engine.tables.dbarrays.LongVector values, io.deephaven.engine.tables.dbarrays.LongVector weights ) {return LongNumericPrimitives.weightedSum( values, weights );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#weightedSum(io.deephaven.engine.tables.dbarrays.LongVector,io.deephaven.engine.tables.dbarrays.ShortVector) */
-    public static  double weightedSum( io.deephaven.engine.tables.dbarrays.LongVector values, io.deephaven.engine.tables.dbarrays.ShortVector weights ) {return LongNumericPrimitives.weightedSum( values, weights );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#weightedSum(io.deephaven.engine.tables.dbarrays.ShortVector,double[]) */
-    public static  double weightedSum( io.deephaven.engine.tables.dbarrays.ShortVector values, double[] weights ) {return ShortNumericPrimitives.weightedSum( values, weights );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#weightedSum(io.deephaven.engine.tables.dbarrays.ShortVector,float[]) */
-    public static  double weightedSum( io.deephaven.engine.tables.dbarrays.ShortVector values, float[] weights ) {return ShortNumericPrimitives.weightedSum( values, weights );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#weightedSum(io.deephaven.engine.tables.dbarrays.ShortVector,int[]) */
-    public static  double weightedSum( io.deephaven.engine.tables.dbarrays.ShortVector values, int[] weights ) {return ShortNumericPrimitives.weightedSum( values, weights );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#weightedSum(io.deephaven.engine.tables.dbarrays.ShortVector,long[]) */
-    public static  double weightedSum( io.deephaven.engine.tables.dbarrays.ShortVector values, long[] weights ) {return ShortNumericPrimitives.weightedSum( values, weights );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#weightedSum(io.deephaven.engine.tables.dbarrays.ShortVector,short[]) */
-    public static  double weightedSum( io.deephaven.engine.tables.dbarrays.ShortVector values, short[] weights ) {return ShortNumericPrimitives.weightedSum( values, weights );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#weightedSum(io.deephaven.engine.tables.dbarrays.ShortVector,io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  double weightedSum( io.deephaven.engine.tables.dbarrays.ShortVector values, io.deephaven.engine.tables.dbarrays.DoubleVector weights ) {return ShortNumericPrimitives.weightedSum( values, weights );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#weightedSum(io.deephaven.engine.tables.dbarrays.ShortVector,io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  double weightedSum( io.deephaven.engine.tables.dbarrays.ShortVector values, io.deephaven.engine.tables.dbarrays.FloatVector weights ) {return ShortNumericPrimitives.weightedSum( values, weights );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#weightedSum(io.deephaven.engine.tables.dbarrays.ShortVector,io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  double weightedSum( io.deephaven.engine.tables.dbarrays.ShortVector values, io.deephaven.engine.tables.dbarrays.IntVector weights ) {return ShortNumericPrimitives.weightedSum( values, weights );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#weightedSum(io.deephaven.engine.tables.dbarrays.ShortVector,io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  double weightedSum( io.deephaven.engine.tables.dbarrays.ShortVector values, io.deephaven.engine.tables.dbarrays.LongVector weights ) {return ShortNumericPrimitives.weightedSum( values, weights );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#weightedSum(io.deephaven.engine.tables.dbarrays.ShortVector,io.deephaven.engine.tables.dbarrays.ShortVector) */
-    public static  double weightedSum( io.deephaven.engine.tables.dbarrays.ShortVector values, io.deephaven.engine.tables.dbarrays.ShortVector weights ) {return ShortNumericPrimitives.weightedSum( values, weights );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#weightedSum(short[], DoubleVector) */
+    public static  double weightedSum( short[] values, DoubleVector weights ) {return ShortNumericPrimitives.weightedSum( values, weights );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#weightedSum(short[], FloatVector) */
+    public static  double weightedSum( short[] values, FloatVector weights ) {return ShortNumericPrimitives.weightedSum( values, weights );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#weightedSum(short[], IntVector) */
+    public static  double weightedSum( short[] values, IntVector weights ) {return ShortNumericPrimitives.weightedSum( values, weights );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#weightedSum(short[], LongVector) */
+    public static  double weightedSum( short[] values, LongVector weights ) {return ShortNumericPrimitives.weightedSum( values, weights );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#weightedSum(short[], ShortVector) */
+    public static  double weightedSum( short[] values, ShortVector weights ) {return ShortNumericPrimitives.weightedSum( values, weights );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#weightedSum(ByteVector,byte[]) */
+    public static  double weightedSum(ByteVector values, byte[] weights ) {return ByteNumericPrimitives.weightedSum( values, weights );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#weightedSum(ByteVector,double[]) */
+    public static  double weightedSum(ByteVector values, double[] weights ) {return ByteNumericPrimitives.weightedSum( values, weights );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#weightedSum(ByteVector,float[]) */
+    public static  double weightedSum(ByteVector values, float[] weights ) {return ByteNumericPrimitives.weightedSum( values, weights );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#weightedSum(ByteVector,int[]) */
+    public static  double weightedSum(ByteVector values, int[] weights ) {return ByteNumericPrimitives.weightedSum( values, weights );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#weightedSum(ByteVector,long[]) */
+    public static  double weightedSum(ByteVector values, long[] weights ) {return ByteNumericPrimitives.weightedSum( values, weights );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#weightedSum(ByteVector, ByteVector) */
+    public static  double weightedSum(ByteVector values, ByteVector weights ) {return ByteNumericPrimitives.weightedSum( values, weights );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#weightedSum(ByteVector, DoubleVector) */
+    public static  double weightedSum(ByteVector values, DoubleVector weights ) {return ByteNumericPrimitives.weightedSum( values, weights );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#weightedSum(ByteVector, FloatVector) */
+    public static  double weightedSum(ByteVector values, FloatVector weights ) {return ByteNumericPrimitives.weightedSum( values, weights );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#weightedSum(ByteVector, IntVector) */
+    public static  double weightedSum(ByteVector values, IntVector weights ) {return ByteNumericPrimitives.weightedSum( values, weights );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#weightedSum(ByteVector, LongVector) */
+    public static  double weightedSum(ByteVector values, LongVector weights ) {return ByteNumericPrimitives.weightedSum( values, weights );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#weightedSum(DoubleVector,double[]) */
+    public static  double weightedSum(DoubleVector values, double[] weights ) {return DoubleNumericPrimitives.weightedSum( values, weights );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#weightedSum(DoubleVector,float[]) */
+    public static  double weightedSum(DoubleVector values, float[] weights ) {return DoubleNumericPrimitives.weightedSum( values, weights );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#weightedSum(DoubleVector,int[]) */
+    public static  double weightedSum(DoubleVector values, int[] weights ) {return DoubleNumericPrimitives.weightedSum( values, weights );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#weightedSum(DoubleVector,long[]) */
+    public static  double weightedSum(DoubleVector values, long[] weights ) {return DoubleNumericPrimitives.weightedSum( values, weights );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#weightedSum(DoubleVector,short[]) */
+    public static  double weightedSum(DoubleVector values, short[] weights ) {return DoubleNumericPrimitives.weightedSum( values, weights );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#weightedSum(DoubleVector, DoubleVector) */
+    public static  double weightedSum(DoubleVector values, DoubleVector weights ) {return DoubleNumericPrimitives.weightedSum( values, weights );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#weightedSum(DoubleVector, FloatVector) */
+    public static  double weightedSum(DoubleVector values, FloatVector weights ) {return DoubleNumericPrimitives.weightedSum( values, weights );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#weightedSum(DoubleVector, IntVector) */
+    public static  double weightedSum(DoubleVector values, IntVector weights ) {return DoubleNumericPrimitives.weightedSum( values, weights );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#weightedSum(DoubleVector, LongVector) */
+    public static  double weightedSum(DoubleVector values, LongVector weights ) {return DoubleNumericPrimitives.weightedSum( values, weights );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#weightedSum(DoubleVector, ShortVector) */
+    public static  double weightedSum(DoubleVector values, ShortVector weights ) {return DoubleNumericPrimitives.weightedSum( values, weights );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#weightedSum(FloatVector,double[]) */
+    public static  double weightedSum(FloatVector values, double[] weights ) {return FloatNumericPrimitives.weightedSum( values, weights );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#weightedSum(FloatVector,float[]) */
+    public static  double weightedSum(FloatVector values, float[] weights ) {return FloatNumericPrimitives.weightedSum( values, weights );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#weightedSum(FloatVector,int[]) */
+    public static  double weightedSum(FloatVector values, int[] weights ) {return FloatNumericPrimitives.weightedSum( values, weights );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#weightedSum(FloatVector,long[]) */
+    public static  double weightedSum(FloatVector values, long[] weights ) {return FloatNumericPrimitives.weightedSum( values, weights );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#weightedSum(FloatVector,short[]) */
+    public static  double weightedSum(FloatVector values, short[] weights ) {return FloatNumericPrimitives.weightedSum( values, weights );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#weightedSum(FloatVector, DoubleVector) */
+    public static  double weightedSum(FloatVector values, DoubleVector weights ) {return FloatNumericPrimitives.weightedSum( values, weights );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#weightedSum(FloatVector, FloatVector) */
+    public static  double weightedSum(FloatVector values, FloatVector weights ) {return FloatNumericPrimitives.weightedSum( values, weights );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#weightedSum(FloatVector, IntVector) */
+    public static  double weightedSum(FloatVector values, IntVector weights ) {return FloatNumericPrimitives.weightedSum( values, weights );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#weightedSum(FloatVector, LongVector) */
+    public static  double weightedSum(FloatVector values, LongVector weights ) {return FloatNumericPrimitives.weightedSum( values, weights );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#weightedSum(FloatVector, ShortVector) */
+    public static  double weightedSum(FloatVector values, ShortVector weights ) {return FloatNumericPrimitives.weightedSum( values, weights );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#weightedSum(IntVector,double[]) */
+    public static  double weightedSum(IntVector values, double[] weights ) {return IntegerNumericPrimitives.weightedSum( values, weights );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#weightedSum(IntVector,float[]) */
+    public static  double weightedSum(IntVector values, float[] weights ) {return IntegerNumericPrimitives.weightedSum( values, weights );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#weightedSum(IntVector,int[]) */
+    public static  double weightedSum(IntVector values, int[] weights ) {return IntegerNumericPrimitives.weightedSum( values, weights );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#weightedSum(IntVector,long[]) */
+    public static  double weightedSum(IntVector values, long[] weights ) {return IntegerNumericPrimitives.weightedSum( values, weights );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#weightedSum(IntVector,short[]) */
+    public static  double weightedSum(IntVector values, short[] weights ) {return IntegerNumericPrimitives.weightedSum( values, weights );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#weightedSum(IntVector, DoubleVector) */
+    public static  double weightedSum(IntVector values, DoubleVector weights ) {return IntegerNumericPrimitives.weightedSum( values, weights );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#weightedSum(IntVector, FloatVector) */
+    public static  double weightedSum(IntVector values, FloatVector weights ) {return IntegerNumericPrimitives.weightedSum( values, weights );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#weightedSum(IntVector, IntVector) */
+    public static  double weightedSum(IntVector values, IntVector weights ) {return IntegerNumericPrimitives.weightedSum( values, weights );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#weightedSum(IntVector, LongVector) */
+    public static  double weightedSum(IntVector values, LongVector weights ) {return IntegerNumericPrimitives.weightedSum( values, weights );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#weightedSum(IntVector, ShortVector) */
+    public static  double weightedSum(IntVector values, ShortVector weights ) {return IntegerNumericPrimitives.weightedSum( values, weights );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#weightedSum(LongVector,double[]) */
+    public static  double weightedSum(LongVector values, double[] weights ) {return LongNumericPrimitives.weightedSum( values, weights );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#weightedSum(LongVector,float[]) */
+    public static  double weightedSum(LongVector values, float[] weights ) {return LongNumericPrimitives.weightedSum( values, weights );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#weightedSum(LongVector,int[]) */
+    public static  double weightedSum(LongVector values, int[] weights ) {return LongNumericPrimitives.weightedSum( values, weights );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#weightedSum(LongVector,long[]) */
+    public static  double weightedSum(LongVector values, long[] weights ) {return LongNumericPrimitives.weightedSum( values, weights );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#weightedSum(LongVector,short[]) */
+    public static  double weightedSum(LongVector values, short[] weights ) {return LongNumericPrimitives.weightedSum( values, weights );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#weightedSum(LongVector, DoubleVector) */
+    public static  double weightedSum(LongVector values, DoubleVector weights ) {return LongNumericPrimitives.weightedSum( values, weights );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#weightedSum(LongVector, FloatVector) */
+    public static  double weightedSum(LongVector values, FloatVector weights ) {return LongNumericPrimitives.weightedSum( values, weights );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#weightedSum(LongVector, IntVector) */
+    public static  double weightedSum(LongVector values, IntVector weights ) {return LongNumericPrimitives.weightedSum( values, weights );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#weightedSum(LongVector, LongVector) */
+    public static  double weightedSum(LongVector values, LongVector weights ) {return LongNumericPrimitives.weightedSum( values, weights );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#weightedSum(LongVector, ShortVector) */
+    public static  double weightedSum(LongVector values, ShortVector weights ) {return LongNumericPrimitives.weightedSum( values, weights );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#weightedSum(ShortVector,double[]) */
+    public static  double weightedSum(ShortVector values, double[] weights ) {return ShortNumericPrimitives.weightedSum( values, weights );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#weightedSum(ShortVector,float[]) */
+    public static  double weightedSum(ShortVector values, float[] weights ) {return ShortNumericPrimitives.weightedSum( values, weights );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#weightedSum(ShortVector,int[]) */
+    public static  double weightedSum(ShortVector values, int[] weights ) {return ShortNumericPrimitives.weightedSum( values, weights );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#weightedSum(ShortVector,long[]) */
+    public static  double weightedSum(ShortVector values, long[] weights ) {return ShortNumericPrimitives.weightedSum( values, weights );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#weightedSum(ShortVector,short[]) */
+    public static  double weightedSum(ShortVector values, short[] weights ) {return ShortNumericPrimitives.weightedSum( values, weights );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#weightedSum(ShortVector, DoubleVector) */
+    public static  double weightedSum(ShortVector values, DoubleVector weights ) {return ShortNumericPrimitives.weightedSum( values, weights );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#weightedSum(ShortVector, FloatVector) */
+    public static  double weightedSum(ShortVector values, FloatVector weights ) {return ShortNumericPrimitives.weightedSum( values, weights );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#weightedSum(ShortVector, IntVector) */
+    public static  double weightedSum(ShortVector values, IntVector weights ) {return ShortNumericPrimitives.weightedSum( values, weights );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#weightedSum(ShortVector, LongVector) */
+    public static  double weightedSum(ShortVector values, LongVector weights ) {return ShortNumericPrimitives.weightedSum( values, weights );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#weightedSum(ShortVector, ShortVector) */
+    public static  double weightedSum(ShortVector values, ShortVector weights ) {return ShortNumericPrimitives.weightedSum( values, weights );}
     /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wstd(byte[],byte[]) */
     public static  double wstd( byte[] values, byte[] weights ) {return ByteNumericPrimitives.wstd( values, weights );}
     /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wstd(byte[],double[]) */
@@ -2758,16 +2747,16 @@ public class GroovyStaticImports {
     public static  double wstd( byte[] values, int[] weights ) {return ByteNumericPrimitives.wstd( values, weights );}
     /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wstd(byte[],long[]) */
     public static  double wstd( byte[] values, long[] weights ) {return ByteNumericPrimitives.wstd( values, weights );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wstd(byte[],io.deephaven.engine.tables.dbarrays.ByteVector) */
-    public static  double wstd( byte[] values, io.deephaven.engine.tables.dbarrays.ByteVector weights ) {return ByteNumericPrimitives.wstd( values, weights );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wstd(byte[],io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  double wstd( byte[] values, io.deephaven.engine.tables.dbarrays.DoubleVector weights ) {return ByteNumericPrimitives.wstd( values, weights );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wstd(byte[],io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  double wstd( byte[] values, io.deephaven.engine.tables.dbarrays.FloatVector weights ) {return ByteNumericPrimitives.wstd( values, weights );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wstd(byte[],io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  double wstd( byte[] values, io.deephaven.engine.tables.dbarrays.IntVector weights ) {return ByteNumericPrimitives.wstd( values, weights );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wstd(byte[],io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  double wstd( byte[] values, io.deephaven.engine.tables.dbarrays.LongVector weights ) {return ByteNumericPrimitives.wstd( values, weights );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wstd(byte[], ByteVector) */
+    public static  double wstd( byte[] values, ByteVector weights ) {return ByteNumericPrimitives.wstd( values, weights );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wstd(byte[], DoubleVector) */
+    public static  double wstd( byte[] values, DoubleVector weights ) {return ByteNumericPrimitives.wstd( values, weights );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wstd(byte[], FloatVector) */
+    public static  double wstd( byte[] values, FloatVector weights ) {return ByteNumericPrimitives.wstd( values, weights );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wstd(byte[], IntVector) */
+    public static  double wstd( byte[] values, IntVector weights ) {return ByteNumericPrimitives.wstd( values, weights );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wstd(byte[], LongVector) */
+    public static  double wstd( byte[] values, LongVector weights ) {return ByteNumericPrimitives.wstd( values, weights );}
     /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wstd(double[],double[]) */
     public static  double wstd( double[] values, double[] weights ) {return DoubleNumericPrimitives.wstd( values, weights );}
     /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wstd(double[],float[]) */
@@ -2778,16 +2767,16 @@ public class GroovyStaticImports {
     public static  double wstd( double[] values, long[] weights ) {return DoubleNumericPrimitives.wstd( values, weights );}
     /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wstd(double[],short[]) */
     public static  double wstd( double[] values, short[] weights ) {return DoubleNumericPrimitives.wstd( values, weights );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wstd(double[],io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  double wstd( double[] values, io.deephaven.engine.tables.dbarrays.DoubleVector weights ) {return DoubleNumericPrimitives.wstd( values, weights );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wstd(double[],io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  double wstd( double[] values, io.deephaven.engine.tables.dbarrays.FloatVector weights ) {return DoubleNumericPrimitives.wstd( values, weights );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wstd(double[],io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  double wstd( double[] values, io.deephaven.engine.tables.dbarrays.IntVector weights ) {return DoubleNumericPrimitives.wstd( values, weights );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wstd(double[],io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  double wstd( double[] values, io.deephaven.engine.tables.dbarrays.LongVector weights ) {return DoubleNumericPrimitives.wstd( values, weights );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wstd(double[],io.deephaven.engine.tables.dbarrays.ShortVector) */
-    public static  double wstd( double[] values, io.deephaven.engine.tables.dbarrays.ShortVector weights ) {return DoubleNumericPrimitives.wstd( values, weights );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wstd(double[], DoubleVector) */
+    public static  double wstd( double[] values, DoubleVector weights ) {return DoubleNumericPrimitives.wstd( values, weights );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wstd(double[], FloatVector) */
+    public static  double wstd( double[] values, FloatVector weights ) {return DoubleNumericPrimitives.wstd( values, weights );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wstd(double[], IntVector) */
+    public static  double wstd( double[] values, IntVector weights ) {return DoubleNumericPrimitives.wstd( values, weights );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wstd(double[], LongVector) */
+    public static  double wstd( double[] values, LongVector weights ) {return DoubleNumericPrimitives.wstd( values, weights );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wstd(double[], ShortVector) */
+    public static  double wstd( double[] values, ShortVector weights ) {return DoubleNumericPrimitives.wstd( values, weights );}
     /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wstd(float[],double[]) */
     public static  double wstd( float[] values, double[] weights ) {return FloatNumericPrimitives.wstd( values, weights );}
     /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wstd(float[],float[]) */
@@ -2798,16 +2787,16 @@ public class GroovyStaticImports {
     public static  double wstd( float[] values, long[] weights ) {return FloatNumericPrimitives.wstd( values, weights );}
     /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wstd(float[],short[]) */
     public static  double wstd( float[] values, short[] weights ) {return FloatNumericPrimitives.wstd( values, weights );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wstd(float[],io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  double wstd( float[] values, io.deephaven.engine.tables.dbarrays.DoubleVector weights ) {return FloatNumericPrimitives.wstd( values, weights );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wstd(float[],io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  double wstd( float[] values, io.deephaven.engine.tables.dbarrays.FloatVector weights ) {return FloatNumericPrimitives.wstd( values, weights );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wstd(float[],io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  double wstd( float[] values, io.deephaven.engine.tables.dbarrays.IntVector weights ) {return FloatNumericPrimitives.wstd( values, weights );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wstd(float[],io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  double wstd( float[] values, io.deephaven.engine.tables.dbarrays.LongVector weights ) {return FloatNumericPrimitives.wstd( values, weights );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wstd(float[],io.deephaven.engine.tables.dbarrays.ShortVector) */
-    public static  double wstd( float[] values, io.deephaven.engine.tables.dbarrays.ShortVector weights ) {return FloatNumericPrimitives.wstd( values, weights );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wstd(float[], DoubleVector) */
+    public static  double wstd( float[] values, DoubleVector weights ) {return FloatNumericPrimitives.wstd( values, weights );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wstd(float[], FloatVector) */
+    public static  double wstd( float[] values, FloatVector weights ) {return FloatNumericPrimitives.wstd( values, weights );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wstd(float[], IntVector) */
+    public static  double wstd( float[] values, IntVector weights ) {return FloatNumericPrimitives.wstd( values, weights );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wstd(float[], LongVector) */
+    public static  double wstd( float[] values, LongVector weights ) {return FloatNumericPrimitives.wstd( values, weights );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wstd(float[], ShortVector) */
+    public static  double wstd( float[] values, ShortVector weights ) {return FloatNumericPrimitives.wstd( values, weights );}
     /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wstd(int[],double[]) */
     public static  double wstd( int[] values, double[] weights ) {return IntegerNumericPrimitives.wstd( values, weights );}
     /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wstd(int[],float[]) */
@@ -2818,16 +2807,16 @@ public class GroovyStaticImports {
     public static  double wstd( int[] values, long[] weights ) {return IntegerNumericPrimitives.wstd( values, weights );}
     /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wstd(int[],short[]) */
     public static  double wstd( int[] values, short[] weights ) {return IntegerNumericPrimitives.wstd( values, weights );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wstd(int[],io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  double wstd( int[] values, io.deephaven.engine.tables.dbarrays.DoubleVector weights ) {return IntegerNumericPrimitives.wstd( values, weights );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wstd(int[],io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  double wstd( int[] values, io.deephaven.engine.tables.dbarrays.FloatVector weights ) {return IntegerNumericPrimitives.wstd( values, weights );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wstd(int[],io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  double wstd( int[] values, io.deephaven.engine.tables.dbarrays.IntVector weights ) {return IntegerNumericPrimitives.wstd( values, weights );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wstd(int[],io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  double wstd( int[] values, io.deephaven.engine.tables.dbarrays.LongVector weights ) {return IntegerNumericPrimitives.wstd( values, weights );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wstd(int[],io.deephaven.engine.tables.dbarrays.ShortVector) */
-    public static  double wstd( int[] values, io.deephaven.engine.tables.dbarrays.ShortVector weights ) {return IntegerNumericPrimitives.wstd( values, weights );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wstd(int[], DoubleVector) */
+    public static  double wstd( int[] values, DoubleVector weights ) {return IntegerNumericPrimitives.wstd( values, weights );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wstd(int[], FloatVector) */
+    public static  double wstd( int[] values, FloatVector weights ) {return IntegerNumericPrimitives.wstd( values, weights );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wstd(int[], IntVector) */
+    public static  double wstd( int[] values, IntVector weights ) {return IntegerNumericPrimitives.wstd( values, weights );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wstd(int[], LongVector) */
+    public static  double wstd( int[] values, LongVector weights ) {return IntegerNumericPrimitives.wstd( values, weights );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wstd(int[], ShortVector) */
+    public static  double wstd( int[] values, ShortVector weights ) {return IntegerNumericPrimitives.wstd( values, weights );}
     /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wstd(long[],double[]) */
     public static  double wstd( long[] values, double[] weights ) {return LongNumericPrimitives.wstd( values, weights );}
     /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wstd(long[],float[]) */
@@ -2838,16 +2827,16 @@ public class GroovyStaticImports {
     public static  double wstd( long[] values, long[] weights ) {return LongNumericPrimitives.wstd( values, weights );}
     /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wstd(long[],short[]) */
     public static  double wstd( long[] values, short[] weights ) {return LongNumericPrimitives.wstd( values, weights );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wstd(long[],io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  double wstd( long[] values, io.deephaven.engine.tables.dbarrays.DoubleVector weights ) {return LongNumericPrimitives.wstd( values, weights );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wstd(long[],io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  double wstd( long[] values, io.deephaven.engine.tables.dbarrays.FloatVector weights ) {return LongNumericPrimitives.wstd( values, weights );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wstd(long[],io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  double wstd( long[] values, io.deephaven.engine.tables.dbarrays.IntVector weights ) {return LongNumericPrimitives.wstd( values, weights );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wstd(long[],io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  double wstd( long[] values, io.deephaven.engine.tables.dbarrays.LongVector weights ) {return LongNumericPrimitives.wstd( values, weights );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wstd(long[],io.deephaven.engine.tables.dbarrays.ShortVector) */
-    public static  double wstd( long[] values, io.deephaven.engine.tables.dbarrays.ShortVector weights ) {return LongNumericPrimitives.wstd( values, weights );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wstd(long[], DoubleVector) */
+    public static  double wstd( long[] values, DoubleVector weights ) {return LongNumericPrimitives.wstd( values, weights );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wstd(long[], FloatVector) */
+    public static  double wstd( long[] values, FloatVector weights ) {return LongNumericPrimitives.wstd( values, weights );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wstd(long[], IntVector) */
+    public static  double wstd( long[] values, IntVector weights ) {return LongNumericPrimitives.wstd( values, weights );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wstd(long[], LongVector) */
+    public static  double wstd( long[] values, LongVector weights ) {return LongNumericPrimitives.wstd( values, weights );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wstd(long[], ShortVector) */
+    public static  double wstd( long[] values, ShortVector weights ) {return LongNumericPrimitives.wstd( values, weights );}
     /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wstd(short[],double[]) */
     public static  double wstd( short[] values, double[] weights ) {return ShortNumericPrimitives.wstd( values, weights );}
     /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wstd(short[],float[]) */
@@ -2858,136 +2847,136 @@ public class GroovyStaticImports {
     public static  double wstd( short[] values, long[] weights ) {return ShortNumericPrimitives.wstd( values, weights );}
     /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wstd(short[],short[]) */
     public static  double wstd( short[] values, short[] weights ) {return ShortNumericPrimitives.wstd( values, weights );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wstd(short[],io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  double wstd( short[] values, io.deephaven.engine.tables.dbarrays.DoubleVector weights ) {return ShortNumericPrimitives.wstd( values, weights );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wstd(short[],io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  double wstd( short[] values, io.deephaven.engine.tables.dbarrays.FloatVector weights ) {return ShortNumericPrimitives.wstd( values, weights );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wstd(short[],io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  double wstd( short[] values, io.deephaven.engine.tables.dbarrays.IntVector weights ) {return ShortNumericPrimitives.wstd( values, weights );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wstd(short[],io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  double wstd( short[] values, io.deephaven.engine.tables.dbarrays.LongVector weights ) {return ShortNumericPrimitives.wstd( values, weights );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wstd(short[],io.deephaven.engine.tables.dbarrays.ShortVector) */
-    public static  double wstd( short[] values, io.deephaven.engine.tables.dbarrays.ShortVector weights ) {return ShortNumericPrimitives.wstd( values, weights );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wstd(io.deephaven.engine.tables.dbarrays.ByteVector,byte[]) */
-    public static  double wstd( io.deephaven.engine.tables.dbarrays.ByteVector values, byte[] weights ) {return ByteNumericPrimitives.wstd( values, weights );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wstd(io.deephaven.engine.tables.dbarrays.ByteVector,double[]) */
-    public static  double wstd( io.deephaven.engine.tables.dbarrays.ByteVector values, double[] weights ) {return ByteNumericPrimitives.wstd( values, weights );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wstd(io.deephaven.engine.tables.dbarrays.ByteVector,float[]) */
-    public static  double wstd( io.deephaven.engine.tables.dbarrays.ByteVector values, float[] weights ) {return ByteNumericPrimitives.wstd( values, weights );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wstd(io.deephaven.engine.tables.dbarrays.ByteVector,int[]) */
-    public static  double wstd( io.deephaven.engine.tables.dbarrays.ByteVector values, int[] weights ) {return ByteNumericPrimitives.wstd( values, weights );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wstd(io.deephaven.engine.tables.dbarrays.ByteVector,long[]) */
-    public static  double wstd( io.deephaven.engine.tables.dbarrays.ByteVector values, long[] weights ) {return ByteNumericPrimitives.wstd( values, weights );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wstd(io.deephaven.engine.tables.dbarrays.ByteVector,io.deephaven.engine.tables.dbarrays.ByteVector) */
-    public static  double wstd( io.deephaven.engine.tables.dbarrays.ByteVector values, io.deephaven.engine.tables.dbarrays.ByteVector weights ) {return ByteNumericPrimitives.wstd( values, weights );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wstd(io.deephaven.engine.tables.dbarrays.ByteVector,io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  double wstd( io.deephaven.engine.tables.dbarrays.ByteVector values, io.deephaven.engine.tables.dbarrays.DoubleVector weights ) {return ByteNumericPrimitives.wstd( values, weights );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wstd(io.deephaven.engine.tables.dbarrays.ByteVector,io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  double wstd( io.deephaven.engine.tables.dbarrays.ByteVector values, io.deephaven.engine.tables.dbarrays.FloatVector weights ) {return ByteNumericPrimitives.wstd( values, weights );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wstd(io.deephaven.engine.tables.dbarrays.ByteVector,io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  double wstd( io.deephaven.engine.tables.dbarrays.ByteVector values, io.deephaven.engine.tables.dbarrays.IntVector weights ) {return ByteNumericPrimitives.wstd( values, weights );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wstd(io.deephaven.engine.tables.dbarrays.ByteVector,io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  double wstd( io.deephaven.engine.tables.dbarrays.ByteVector values, io.deephaven.engine.tables.dbarrays.LongVector weights ) {return ByteNumericPrimitives.wstd( values, weights );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wstd(io.deephaven.engine.tables.dbarrays.DoubleVector,double[]) */
-    public static  double wstd( io.deephaven.engine.tables.dbarrays.DoubleVector values, double[] weights ) {return DoubleNumericPrimitives.wstd( values, weights );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wstd(io.deephaven.engine.tables.dbarrays.DoubleVector,float[]) */
-    public static  double wstd( io.deephaven.engine.tables.dbarrays.DoubleVector values, float[] weights ) {return DoubleNumericPrimitives.wstd( values, weights );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wstd(io.deephaven.engine.tables.dbarrays.DoubleVector,int[]) */
-    public static  double wstd( io.deephaven.engine.tables.dbarrays.DoubleVector values, int[] weights ) {return DoubleNumericPrimitives.wstd( values, weights );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wstd(io.deephaven.engine.tables.dbarrays.DoubleVector,long[]) */
-    public static  double wstd( io.deephaven.engine.tables.dbarrays.DoubleVector values, long[] weights ) {return DoubleNumericPrimitives.wstd( values, weights );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wstd(io.deephaven.engine.tables.dbarrays.DoubleVector,short[]) */
-    public static  double wstd( io.deephaven.engine.tables.dbarrays.DoubleVector values, short[] weights ) {return DoubleNumericPrimitives.wstd( values, weights );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wstd(io.deephaven.engine.tables.dbarrays.DoubleVector,io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  double wstd( io.deephaven.engine.tables.dbarrays.DoubleVector values, io.deephaven.engine.tables.dbarrays.DoubleVector weights ) {return DoubleNumericPrimitives.wstd( values, weights );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wstd(io.deephaven.engine.tables.dbarrays.DoubleVector,io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  double wstd( io.deephaven.engine.tables.dbarrays.DoubleVector values, io.deephaven.engine.tables.dbarrays.FloatVector weights ) {return DoubleNumericPrimitives.wstd( values, weights );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wstd(io.deephaven.engine.tables.dbarrays.DoubleVector,io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  double wstd( io.deephaven.engine.tables.dbarrays.DoubleVector values, io.deephaven.engine.tables.dbarrays.IntVector weights ) {return DoubleNumericPrimitives.wstd( values, weights );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wstd(io.deephaven.engine.tables.dbarrays.DoubleVector,io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  double wstd( io.deephaven.engine.tables.dbarrays.DoubleVector values, io.deephaven.engine.tables.dbarrays.LongVector weights ) {return DoubleNumericPrimitives.wstd( values, weights );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wstd(io.deephaven.engine.tables.dbarrays.DoubleVector,io.deephaven.engine.tables.dbarrays.ShortVector) */
-    public static  double wstd( io.deephaven.engine.tables.dbarrays.DoubleVector values, io.deephaven.engine.tables.dbarrays.ShortVector weights ) {return DoubleNumericPrimitives.wstd( values, weights );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wstd(io.deephaven.engine.tables.dbarrays.FloatVector,double[]) */
-    public static  double wstd( io.deephaven.engine.tables.dbarrays.FloatVector values, double[] weights ) {return FloatNumericPrimitives.wstd( values, weights );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wstd(io.deephaven.engine.tables.dbarrays.FloatVector,float[]) */
-    public static  double wstd( io.deephaven.engine.tables.dbarrays.FloatVector values, float[] weights ) {return FloatNumericPrimitives.wstd( values, weights );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wstd(io.deephaven.engine.tables.dbarrays.FloatVector,int[]) */
-    public static  double wstd( io.deephaven.engine.tables.dbarrays.FloatVector values, int[] weights ) {return FloatNumericPrimitives.wstd( values, weights );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wstd(io.deephaven.engine.tables.dbarrays.FloatVector,long[]) */
-    public static  double wstd( io.deephaven.engine.tables.dbarrays.FloatVector values, long[] weights ) {return FloatNumericPrimitives.wstd( values, weights );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wstd(io.deephaven.engine.tables.dbarrays.FloatVector,short[]) */
-    public static  double wstd( io.deephaven.engine.tables.dbarrays.FloatVector values, short[] weights ) {return FloatNumericPrimitives.wstd( values, weights );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wstd(io.deephaven.engine.tables.dbarrays.FloatVector,io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  double wstd( io.deephaven.engine.tables.dbarrays.FloatVector values, io.deephaven.engine.tables.dbarrays.DoubleVector weights ) {return FloatNumericPrimitives.wstd( values, weights );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wstd(io.deephaven.engine.tables.dbarrays.FloatVector,io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  double wstd( io.deephaven.engine.tables.dbarrays.FloatVector values, io.deephaven.engine.tables.dbarrays.FloatVector weights ) {return FloatNumericPrimitives.wstd( values, weights );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wstd(io.deephaven.engine.tables.dbarrays.FloatVector,io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  double wstd( io.deephaven.engine.tables.dbarrays.FloatVector values, io.deephaven.engine.tables.dbarrays.IntVector weights ) {return FloatNumericPrimitives.wstd( values, weights );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wstd(io.deephaven.engine.tables.dbarrays.FloatVector,io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  double wstd( io.deephaven.engine.tables.dbarrays.FloatVector values, io.deephaven.engine.tables.dbarrays.LongVector weights ) {return FloatNumericPrimitives.wstd( values, weights );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wstd(io.deephaven.engine.tables.dbarrays.FloatVector,io.deephaven.engine.tables.dbarrays.ShortVector) */
-    public static  double wstd( io.deephaven.engine.tables.dbarrays.FloatVector values, io.deephaven.engine.tables.dbarrays.ShortVector weights ) {return FloatNumericPrimitives.wstd( values, weights );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wstd(io.deephaven.engine.tables.dbarrays.IntVector,double[]) */
-    public static  double wstd( io.deephaven.engine.tables.dbarrays.IntVector values, double[] weights ) {return IntegerNumericPrimitives.wstd( values, weights );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wstd(io.deephaven.engine.tables.dbarrays.IntVector,float[]) */
-    public static  double wstd( io.deephaven.engine.tables.dbarrays.IntVector values, float[] weights ) {return IntegerNumericPrimitives.wstd( values, weights );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wstd(io.deephaven.engine.tables.dbarrays.IntVector,int[]) */
-    public static  double wstd( io.deephaven.engine.tables.dbarrays.IntVector values, int[] weights ) {return IntegerNumericPrimitives.wstd( values, weights );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wstd(io.deephaven.engine.tables.dbarrays.IntVector,long[]) */
-    public static  double wstd( io.deephaven.engine.tables.dbarrays.IntVector values, long[] weights ) {return IntegerNumericPrimitives.wstd( values, weights );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wstd(io.deephaven.engine.tables.dbarrays.IntVector,short[]) */
-    public static  double wstd( io.deephaven.engine.tables.dbarrays.IntVector values, short[] weights ) {return IntegerNumericPrimitives.wstd( values, weights );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wstd(io.deephaven.engine.tables.dbarrays.IntVector,io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  double wstd( io.deephaven.engine.tables.dbarrays.IntVector values, io.deephaven.engine.tables.dbarrays.DoubleVector weights ) {return IntegerNumericPrimitives.wstd( values, weights );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wstd(io.deephaven.engine.tables.dbarrays.IntVector,io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  double wstd( io.deephaven.engine.tables.dbarrays.IntVector values, io.deephaven.engine.tables.dbarrays.FloatVector weights ) {return IntegerNumericPrimitives.wstd( values, weights );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wstd(io.deephaven.engine.tables.dbarrays.IntVector,io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  double wstd( io.deephaven.engine.tables.dbarrays.IntVector values, io.deephaven.engine.tables.dbarrays.IntVector weights ) {return IntegerNumericPrimitives.wstd( values, weights );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wstd(io.deephaven.engine.tables.dbarrays.IntVector,io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  double wstd( io.deephaven.engine.tables.dbarrays.IntVector values, io.deephaven.engine.tables.dbarrays.LongVector weights ) {return IntegerNumericPrimitives.wstd( values, weights );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wstd(io.deephaven.engine.tables.dbarrays.IntVector,io.deephaven.engine.tables.dbarrays.ShortVector) */
-    public static  double wstd( io.deephaven.engine.tables.dbarrays.IntVector values, io.deephaven.engine.tables.dbarrays.ShortVector weights ) {return IntegerNumericPrimitives.wstd( values, weights );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wstd(io.deephaven.engine.tables.dbarrays.LongVector,double[]) */
-    public static  double wstd( io.deephaven.engine.tables.dbarrays.LongVector values, double[] weights ) {return LongNumericPrimitives.wstd( values, weights );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wstd(io.deephaven.engine.tables.dbarrays.LongVector,float[]) */
-    public static  double wstd( io.deephaven.engine.tables.dbarrays.LongVector values, float[] weights ) {return LongNumericPrimitives.wstd( values, weights );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wstd(io.deephaven.engine.tables.dbarrays.LongVector,int[]) */
-    public static  double wstd( io.deephaven.engine.tables.dbarrays.LongVector values, int[] weights ) {return LongNumericPrimitives.wstd( values, weights );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wstd(io.deephaven.engine.tables.dbarrays.LongVector,long[]) */
-    public static  double wstd( io.deephaven.engine.tables.dbarrays.LongVector values, long[] weights ) {return LongNumericPrimitives.wstd( values, weights );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wstd(io.deephaven.engine.tables.dbarrays.LongVector,short[]) */
-    public static  double wstd( io.deephaven.engine.tables.dbarrays.LongVector values, short[] weights ) {return LongNumericPrimitives.wstd( values, weights );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wstd(io.deephaven.engine.tables.dbarrays.LongVector,io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  double wstd( io.deephaven.engine.tables.dbarrays.LongVector values, io.deephaven.engine.tables.dbarrays.DoubleVector weights ) {return LongNumericPrimitives.wstd( values, weights );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wstd(io.deephaven.engine.tables.dbarrays.LongVector,io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  double wstd( io.deephaven.engine.tables.dbarrays.LongVector values, io.deephaven.engine.tables.dbarrays.FloatVector weights ) {return LongNumericPrimitives.wstd( values, weights );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wstd(io.deephaven.engine.tables.dbarrays.LongVector,io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  double wstd( io.deephaven.engine.tables.dbarrays.LongVector values, io.deephaven.engine.tables.dbarrays.IntVector weights ) {return LongNumericPrimitives.wstd( values, weights );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wstd(io.deephaven.engine.tables.dbarrays.LongVector,io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  double wstd( io.deephaven.engine.tables.dbarrays.LongVector values, io.deephaven.engine.tables.dbarrays.LongVector weights ) {return LongNumericPrimitives.wstd( values, weights );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wstd(io.deephaven.engine.tables.dbarrays.LongVector,io.deephaven.engine.tables.dbarrays.ShortVector) */
-    public static  double wstd( io.deephaven.engine.tables.dbarrays.LongVector values, io.deephaven.engine.tables.dbarrays.ShortVector weights ) {return LongNumericPrimitives.wstd( values, weights );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wstd(io.deephaven.engine.tables.dbarrays.ShortVector,double[]) */
-    public static  double wstd( io.deephaven.engine.tables.dbarrays.ShortVector values, double[] weights ) {return ShortNumericPrimitives.wstd( values, weights );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wstd(io.deephaven.engine.tables.dbarrays.ShortVector,float[]) */
-    public static  double wstd( io.deephaven.engine.tables.dbarrays.ShortVector values, float[] weights ) {return ShortNumericPrimitives.wstd( values, weights );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wstd(io.deephaven.engine.tables.dbarrays.ShortVector,int[]) */
-    public static  double wstd( io.deephaven.engine.tables.dbarrays.ShortVector values, int[] weights ) {return ShortNumericPrimitives.wstd( values, weights );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wstd(io.deephaven.engine.tables.dbarrays.ShortVector,long[]) */
-    public static  double wstd( io.deephaven.engine.tables.dbarrays.ShortVector values, long[] weights ) {return ShortNumericPrimitives.wstd( values, weights );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wstd(io.deephaven.engine.tables.dbarrays.ShortVector,short[]) */
-    public static  double wstd( io.deephaven.engine.tables.dbarrays.ShortVector values, short[] weights ) {return ShortNumericPrimitives.wstd( values, weights );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wstd(io.deephaven.engine.tables.dbarrays.ShortVector,io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  double wstd( io.deephaven.engine.tables.dbarrays.ShortVector values, io.deephaven.engine.tables.dbarrays.DoubleVector weights ) {return ShortNumericPrimitives.wstd( values, weights );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wstd(io.deephaven.engine.tables.dbarrays.ShortVector,io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  double wstd( io.deephaven.engine.tables.dbarrays.ShortVector values, io.deephaven.engine.tables.dbarrays.FloatVector weights ) {return ShortNumericPrimitives.wstd( values, weights );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wstd(io.deephaven.engine.tables.dbarrays.ShortVector,io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  double wstd( io.deephaven.engine.tables.dbarrays.ShortVector values, io.deephaven.engine.tables.dbarrays.IntVector weights ) {return ShortNumericPrimitives.wstd( values, weights );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wstd(io.deephaven.engine.tables.dbarrays.ShortVector,io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  double wstd( io.deephaven.engine.tables.dbarrays.ShortVector values, io.deephaven.engine.tables.dbarrays.LongVector weights ) {return ShortNumericPrimitives.wstd( values, weights );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wstd(io.deephaven.engine.tables.dbarrays.ShortVector,io.deephaven.engine.tables.dbarrays.ShortVector) */
-    public static  double wstd( io.deephaven.engine.tables.dbarrays.ShortVector values, io.deephaven.engine.tables.dbarrays.ShortVector weights ) {return ShortNumericPrimitives.wstd( values, weights );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wstd(short[], DoubleVector) */
+    public static  double wstd( short[] values, DoubleVector weights ) {return ShortNumericPrimitives.wstd( values, weights );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wstd(short[], FloatVector) */
+    public static  double wstd( short[] values, FloatVector weights ) {return ShortNumericPrimitives.wstd( values, weights );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wstd(short[], IntVector) */
+    public static  double wstd( short[] values, IntVector weights ) {return ShortNumericPrimitives.wstd( values, weights );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wstd(short[], LongVector) */
+    public static  double wstd( short[] values, LongVector weights ) {return ShortNumericPrimitives.wstd( values, weights );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wstd(short[], ShortVector) */
+    public static  double wstd( short[] values, ShortVector weights ) {return ShortNumericPrimitives.wstd( values, weights );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wstd(ByteVector,byte[]) */
+    public static  double wstd(ByteVector values, byte[] weights ) {return ByteNumericPrimitives.wstd( values, weights );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wstd(ByteVector,double[]) */
+    public static  double wstd(ByteVector values, double[] weights ) {return ByteNumericPrimitives.wstd( values, weights );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wstd(ByteVector,float[]) */
+    public static  double wstd(ByteVector values, float[] weights ) {return ByteNumericPrimitives.wstd( values, weights );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wstd(ByteVector,int[]) */
+    public static  double wstd(ByteVector values, int[] weights ) {return ByteNumericPrimitives.wstd( values, weights );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wstd(ByteVector,long[]) */
+    public static  double wstd(ByteVector values, long[] weights ) {return ByteNumericPrimitives.wstd( values, weights );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wstd(ByteVector, ByteVector) */
+    public static  double wstd(ByteVector values, ByteVector weights ) {return ByteNumericPrimitives.wstd( values, weights );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wstd(ByteVector, DoubleVector) */
+    public static  double wstd(ByteVector values, DoubleVector weights ) {return ByteNumericPrimitives.wstd( values, weights );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wstd(ByteVector, FloatVector) */
+    public static  double wstd(ByteVector values, FloatVector weights ) {return ByteNumericPrimitives.wstd( values, weights );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wstd(ByteVector, IntVector) */
+    public static  double wstd(ByteVector values, IntVector weights ) {return ByteNumericPrimitives.wstd( values, weights );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wstd(ByteVector, LongVector) */
+    public static  double wstd(ByteVector values, LongVector weights ) {return ByteNumericPrimitives.wstd( values, weights );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wstd(DoubleVector,double[]) */
+    public static  double wstd(DoubleVector values, double[] weights ) {return DoubleNumericPrimitives.wstd( values, weights );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wstd(DoubleVector,float[]) */
+    public static  double wstd(DoubleVector values, float[] weights ) {return DoubleNumericPrimitives.wstd( values, weights );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wstd(DoubleVector,int[]) */
+    public static  double wstd(DoubleVector values, int[] weights ) {return DoubleNumericPrimitives.wstd( values, weights );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wstd(DoubleVector,long[]) */
+    public static  double wstd(DoubleVector values, long[] weights ) {return DoubleNumericPrimitives.wstd( values, weights );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wstd(DoubleVector,short[]) */
+    public static  double wstd(DoubleVector values, short[] weights ) {return DoubleNumericPrimitives.wstd( values, weights );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wstd(DoubleVector, DoubleVector) */
+    public static  double wstd(DoubleVector values, DoubleVector weights ) {return DoubleNumericPrimitives.wstd( values, weights );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wstd(DoubleVector, FloatVector) */
+    public static  double wstd(DoubleVector values, FloatVector weights ) {return DoubleNumericPrimitives.wstd( values, weights );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wstd(DoubleVector, IntVector) */
+    public static  double wstd(DoubleVector values, IntVector weights ) {return DoubleNumericPrimitives.wstd( values, weights );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wstd(DoubleVector, LongVector) */
+    public static  double wstd(DoubleVector values, LongVector weights ) {return DoubleNumericPrimitives.wstd( values, weights );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wstd(DoubleVector, ShortVector) */
+    public static  double wstd(DoubleVector values, ShortVector weights ) {return DoubleNumericPrimitives.wstd( values, weights );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wstd(FloatVector,double[]) */
+    public static  double wstd(FloatVector values, double[] weights ) {return FloatNumericPrimitives.wstd( values, weights );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wstd(FloatVector,float[]) */
+    public static  double wstd(FloatVector values, float[] weights ) {return FloatNumericPrimitives.wstd( values, weights );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wstd(FloatVector,int[]) */
+    public static  double wstd(FloatVector values, int[] weights ) {return FloatNumericPrimitives.wstd( values, weights );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wstd(FloatVector,long[]) */
+    public static  double wstd(FloatVector values, long[] weights ) {return FloatNumericPrimitives.wstd( values, weights );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wstd(FloatVector,short[]) */
+    public static  double wstd(FloatVector values, short[] weights ) {return FloatNumericPrimitives.wstd( values, weights );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wstd(FloatVector, DoubleVector) */
+    public static  double wstd(FloatVector values, DoubleVector weights ) {return FloatNumericPrimitives.wstd( values, weights );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wstd(FloatVector, FloatVector) */
+    public static  double wstd(FloatVector values, FloatVector weights ) {return FloatNumericPrimitives.wstd( values, weights );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wstd(FloatVector, IntVector) */
+    public static  double wstd(FloatVector values, IntVector weights ) {return FloatNumericPrimitives.wstd( values, weights );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wstd(FloatVector, LongVector) */
+    public static  double wstd(FloatVector values, LongVector weights ) {return FloatNumericPrimitives.wstd( values, weights );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wstd(FloatVector, ShortVector) */
+    public static  double wstd(FloatVector values, ShortVector weights ) {return FloatNumericPrimitives.wstd( values, weights );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wstd(IntVector,double[]) */
+    public static  double wstd(IntVector values, double[] weights ) {return IntegerNumericPrimitives.wstd( values, weights );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wstd(IntVector,float[]) */
+    public static  double wstd(IntVector values, float[] weights ) {return IntegerNumericPrimitives.wstd( values, weights );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wstd(IntVector,int[]) */
+    public static  double wstd(IntVector values, int[] weights ) {return IntegerNumericPrimitives.wstd( values, weights );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wstd(IntVector,long[]) */
+    public static  double wstd(IntVector values, long[] weights ) {return IntegerNumericPrimitives.wstd( values, weights );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wstd(IntVector,short[]) */
+    public static  double wstd(IntVector values, short[] weights ) {return IntegerNumericPrimitives.wstd( values, weights );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wstd(IntVector, DoubleVector) */
+    public static  double wstd(IntVector values, DoubleVector weights ) {return IntegerNumericPrimitives.wstd( values, weights );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wstd(IntVector, FloatVector) */
+    public static  double wstd(IntVector values, FloatVector weights ) {return IntegerNumericPrimitives.wstd( values, weights );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wstd(IntVector, IntVector) */
+    public static  double wstd(IntVector values, IntVector weights ) {return IntegerNumericPrimitives.wstd( values, weights );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wstd(IntVector, LongVector) */
+    public static  double wstd(IntVector values, LongVector weights ) {return IntegerNumericPrimitives.wstd( values, weights );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wstd(IntVector, ShortVector) */
+    public static  double wstd(IntVector values, ShortVector weights ) {return IntegerNumericPrimitives.wstd( values, weights );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wstd(LongVector,double[]) */
+    public static  double wstd(LongVector values, double[] weights ) {return LongNumericPrimitives.wstd( values, weights );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wstd(LongVector,float[]) */
+    public static  double wstd(LongVector values, float[] weights ) {return LongNumericPrimitives.wstd( values, weights );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wstd(LongVector,int[]) */
+    public static  double wstd(LongVector values, int[] weights ) {return LongNumericPrimitives.wstd( values, weights );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wstd(LongVector,long[]) */
+    public static  double wstd(LongVector values, long[] weights ) {return LongNumericPrimitives.wstd( values, weights );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wstd(LongVector,short[]) */
+    public static  double wstd(LongVector values, short[] weights ) {return LongNumericPrimitives.wstd( values, weights );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wstd(LongVector, DoubleVector) */
+    public static  double wstd(LongVector values, DoubleVector weights ) {return LongNumericPrimitives.wstd( values, weights );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wstd(LongVector, FloatVector) */
+    public static  double wstd(LongVector values, FloatVector weights ) {return LongNumericPrimitives.wstd( values, weights );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wstd(LongVector, IntVector) */
+    public static  double wstd(LongVector values, IntVector weights ) {return LongNumericPrimitives.wstd( values, weights );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wstd(LongVector, LongVector) */
+    public static  double wstd(LongVector values, LongVector weights ) {return LongNumericPrimitives.wstd( values, weights );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wstd(LongVector, ShortVector) */
+    public static  double wstd(LongVector values, ShortVector weights ) {return LongNumericPrimitives.wstd( values, weights );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wstd(ShortVector,double[]) */
+    public static  double wstd(ShortVector values, double[] weights ) {return ShortNumericPrimitives.wstd( values, weights );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wstd(ShortVector,float[]) */
+    public static  double wstd(ShortVector values, float[] weights ) {return ShortNumericPrimitives.wstd( values, weights );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wstd(ShortVector,int[]) */
+    public static  double wstd(ShortVector values, int[] weights ) {return ShortNumericPrimitives.wstd( values, weights );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wstd(ShortVector,long[]) */
+    public static  double wstd(ShortVector values, long[] weights ) {return ShortNumericPrimitives.wstd( values, weights );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wstd(ShortVector,short[]) */
+    public static  double wstd(ShortVector values, short[] weights ) {return ShortNumericPrimitives.wstd( values, weights );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wstd(ShortVector, DoubleVector) */
+    public static  double wstd(ShortVector values, DoubleVector weights ) {return ShortNumericPrimitives.wstd( values, weights );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wstd(ShortVector, FloatVector) */
+    public static  double wstd(ShortVector values, FloatVector weights ) {return ShortNumericPrimitives.wstd( values, weights );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wstd(ShortVector, IntVector) */
+    public static  double wstd(ShortVector values, IntVector weights ) {return ShortNumericPrimitives.wstd( values, weights );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wstd(ShortVector, LongVector) */
+    public static  double wstd(ShortVector values, LongVector weights ) {return ShortNumericPrimitives.wstd( values, weights );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wstd(ShortVector, ShortVector) */
+    public static  double wstd(ShortVector values, ShortVector weights ) {return ShortNumericPrimitives.wstd( values, weights );}
     /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wste(byte[],byte[]) */
     public static  double wste( byte[] values, byte[] weights ) {return ByteNumericPrimitives.wste( values, weights );}
     /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wste(byte[],double[]) */
@@ -2998,16 +2987,16 @@ public class GroovyStaticImports {
     public static  double wste( byte[] values, int[] weights ) {return ByteNumericPrimitives.wste( values, weights );}
     /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wste(byte[],long[]) */
     public static  double wste( byte[] values, long[] weights ) {return ByteNumericPrimitives.wste( values, weights );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wste(byte[],io.deephaven.engine.tables.dbarrays.ByteVector) */
-    public static  double wste( byte[] values, io.deephaven.engine.tables.dbarrays.ByteVector weights ) {return ByteNumericPrimitives.wste( values, weights );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wste(byte[],io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  double wste( byte[] values, io.deephaven.engine.tables.dbarrays.DoubleVector weights ) {return ByteNumericPrimitives.wste( values, weights );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wste(byte[],io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  double wste( byte[] values, io.deephaven.engine.tables.dbarrays.FloatVector weights ) {return ByteNumericPrimitives.wste( values, weights );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wste(byte[],io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  double wste( byte[] values, io.deephaven.engine.tables.dbarrays.IntVector weights ) {return ByteNumericPrimitives.wste( values, weights );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wste(byte[],io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  double wste( byte[] values, io.deephaven.engine.tables.dbarrays.LongVector weights ) {return ByteNumericPrimitives.wste( values, weights );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wste(byte[], ByteVector) */
+    public static  double wste( byte[] values, ByteVector weights ) {return ByteNumericPrimitives.wste( values, weights );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wste(byte[], DoubleVector) */
+    public static  double wste( byte[] values, DoubleVector weights ) {return ByteNumericPrimitives.wste( values, weights );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wste(byte[], FloatVector) */
+    public static  double wste( byte[] values, FloatVector weights ) {return ByteNumericPrimitives.wste( values, weights );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wste(byte[], IntVector) */
+    public static  double wste( byte[] values, IntVector weights ) {return ByteNumericPrimitives.wste( values, weights );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wste(byte[], LongVector) */
+    public static  double wste( byte[] values, LongVector weights ) {return ByteNumericPrimitives.wste( values, weights );}
     /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wste(double[],double[]) */
     public static  double wste( double[] values, double[] weights ) {return DoubleNumericPrimitives.wste( values, weights );}
     /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wste(double[],float[]) */
@@ -3018,16 +3007,16 @@ public class GroovyStaticImports {
     public static  double wste( double[] values, long[] weights ) {return DoubleNumericPrimitives.wste( values, weights );}
     /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wste(double[],short[]) */
     public static  double wste( double[] values, short[] weights ) {return DoubleNumericPrimitives.wste( values, weights );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wste(double[],io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  double wste( double[] values, io.deephaven.engine.tables.dbarrays.DoubleVector weights ) {return DoubleNumericPrimitives.wste( values, weights );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wste(double[],io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  double wste( double[] values, io.deephaven.engine.tables.dbarrays.FloatVector weights ) {return DoubleNumericPrimitives.wste( values, weights );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wste(double[],io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  double wste( double[] values, io.deephaven.engine.tables.dbarrays.IntVector weights ) {return DoubleNumericPrimitives.wste( values, weights );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wste(double[],io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  double wste( double[] values, io.deephaven.engine.tables.dbarrays.LongVector weights ) {return DoubleNumericPrimitives.wste( values, weights );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wste(double[],io.deephaven.engine.tables.dbarrays.ShortVector) */
-    public static  double wste( double[] values, io.deephaven.engine.tables.dbarrays.ShortVector weights ) {return DoubleNumericPrimitives.wste( values, weights );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wste(double[], DoubleVector) */
+    public static  double wste( double[] values, DoubleVector weights ) {return DoubleNumericPrimitives.wste( values, weights );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wste(double[], FloatVector) */
+    public static  double wste( double[] values, FloatVector weights ) {return DoubleNumericPrimitives.wste( values, weights );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wste(double[], IntVector) */
+    public static  double wste( double[] values, IntVector weights ) {return DoubleNumericPrimitives.wste( values, weights );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wste(double[], LongVector) */
+    public static  double wste( double[] values, LongVector weights ) {return DoubleNumericPrimitives.wste( values, weights );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wste(double[], ShortVector) */
+    public static  double wste( double[] values, ShortVector weights ) {return DoubleNumericPrimitives.wste( values, weights );}
     /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wste(float[],double[]) */
     public static  double wste( float[] values, double[] weights ) {return FloatNumericPrimitives.wste( values, weights );}
     /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wste(float[],float[]) */
@@ -3038,16 +3027,16 @@ public class GroovyStaticImports {
     public static  double wste( float[] values, long[] weights ) {return FloatNumericPrimitives.wste( values, weights );}
     /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wste(float[],short[]) */
     public static  double wste( float[] values, short[] weights ) {return FloatNumericPrimitives.wste( values, weights );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wste(float[],io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  double wste( float[] values, io.deephaven.engine.tables.dbarrays.DoubleVector weights ) {return FloatNumericPrimitives.wste( values, weights );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wste(float[],io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  double wste( float[] values, io.deephaven.engine.tables.dbarrays.FloatVector weights ) {return FloatNumericPrimitives.wste( values, weights );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wste(float[],io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  double wste( float[] values, io.deephaven.engine.tables.dbarrays.IntVector weights ) {return FloatNumericPrimitives.wste( values, weights );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wste(float[],io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  double wste( float[] values, io.deephaven.engine.tables.dbarrays.LongVector weights ) {return FloatNumericPrimitives.wste( values, weights );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wste(float[],io.deephaven.engine.tables.dbarrays.ShortVector) */
-    public static  double wste( float[] values, io.deephaven.engine.tables.dbarrays.ShortVector weights ) {return FloatNumericPrimitives.wste( values, weights );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wste(float[], DoubleVector) */
+    public static  double wste( float[] values, DoubleVector weights ) {return FloatNumericPrimitives.wste( values, weights );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wste(float[], FloatVector) */
+    public static  double wste( float[] values, FloatVector weights ) {return FloatNumericPrimitives.wste( values, weights );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wste(float[], IntVector) */
+    public static  double wste( float[] values, IntVector weights ) {return FloatNumericPrimitives.wste( values, weights );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wste(float[], LongVector) */
+    public static  double wste( float[] values, LongVector weights ) {return FloatNumericPrimitives.wste( values, weights );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wste(float[], ShortVector) */
+    public static  double wste( float[] values, ShortVector weights ) {return FloatNumericPrimitives.wste( values, weights );}
     /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wste(int[],double[]) */
     public static  double wste( int[] values, double[] weights ) {return IntegerNumericPrimitives.wste( values, weights );}
     /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wste(int[],float[]) */
@@ -3058,16 +3047,16 @@ public class GroovyStaticImports {
     public static  double wste( int[] values, long[] weights ) {return IntegerNumericPrimitives.wste( values, weights );}
     /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wste(int[],short[]) */
     public static  double wste( int[] values, short[] weights ) {return IntegerNumericPrimitives.wste( values, weights );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wste(int[],io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  double wste( int[] values, io.deephaven.engine.tables.dbarrays.DoubleVector weights ) {return IntegerNumericPrimitives.wste( values, weights );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wste(int[],io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  double wste( int[] values, io.deephaven.engine.tables.dbarrays.FloatVector weights ) {return IntegerNumericPrimitives.wste( values, weights );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wste(int[],io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  double wste( int[] values, io.deephaven.engine.tables.dbarrays.IntVector weights ) {return IntegerNumericPrimitives.wste( values, weights );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wste(int[],io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  double wste( int[] values, io.deephaven.engine.tables.dbarrays.LongVector weights ) {return IntegerNumericPrimitives.wste( values, weights );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wste(int[],io.deephaven.engine.tables.dbarrays.ShortVector) */
-    public static  double wste( int[] values, io.deephaven.engine.tables.dbarrays.ShortVector weights ) {return IntegerNumericPrimitives.wste( values, weights );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wste(int[], DoubleVector) */
+    public static  double wste( int[] values, DoubleVector weights ) {return IntegerNumericPrimitives.wste( values, weights );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wste(int[], FloatVector) */
+    public static  double wste( int[] values, FloatVector weights ) {return IntegerNumericPrimitives.wste( values, weights );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wste(int[], IntVector) */
+    public static  double wste( int[] values, IntVector weights ) {return IntegerNumericPrimitives.wste( values, weights );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wste(int[], LongVector) */
+    public static  double wste( int[] values, LongVector weights ) {return IntegerNumericPrimitives.wste( values, weights );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wste(int[], ShortVector) */
+    public static  double wste( int[] values, ShortVector weights ) {return IntegerNumericPrimitives.wste( values, weights );}
     /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wste(long[],double[]) */
     public static  double wste( long[] values, double[] weights ) {return LongNumericPrimitives.wste( values, weights );}
     /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wste(long[],float[]) */
@@ -3078,16 +3067,16 @@ public class GroovyStaticImports {
     public static  double wste( long[] values, long[] weights ) {return LongNumericPrimitives.wste( values, weights );}
     /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wste(long[],short[]) */
     public static  double wste( long[] values, short[] weights ) {return LongNumericPrimitives.wste( values, weights );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wste(long[],io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  double wste( long[] values, io.deephaven.engine.tables.dbarrays.DoubleVector weights ) {return LongNumericPrimitives.wste( values, weights );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wste(long[],io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  double wste( long[] values, io.deephaven.engine.tables.dbarrays.FloatVector weights ) {return LongNumericPrimitives.wste( values, weights );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wste(long[],io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  double wste( long[] values, io.deephaven.engine.tables.dbarrays.IntVector weights ) {return LongNumericPrimitives.wste( values, weights );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wste(long[],io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  double wste( long[] values, io.deephaven.engine.tables.dbarrays.LongVector weights ) {return LongNumericPrimitives.wste( values, weights );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wste(long[],io.deephaven.engine.tables.dbarrays.ShortVector) */
-    public static  double wste( long[] values, io.deephaven.engine.tables.dbarrays.ShortVector weights ) {return LongNumericPrimitives.wste( values, weights );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wste(long[], DoubleVector) */
+    public static  double wste( long[] values, DoubleVector weights ) {return LongNumericPrimitives.wste( values, weights );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wste(long[], FloatVector) */
+    public static  double wste( long[] values, FloatVector weights ) {return LongNumericPrimitives.wste( values, weights );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wste(long[], IntVector) */
+    public static  double wste( long[] values, IntVector weights ) {return LongNumericPrimitives.wste( values, weights );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wste(long[], LongVector) */
+    public static  double wste( long[] values, LongVector weights ) {return LongNumericPrimitives.wste( values, weights );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wste(long[], ShortVector) */
+    public static  double wste( long[] values, ShortVector weights ) {return LongNumericPrimitives.wste( values, weights );}
     /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wste(short[],double[]) */
     public static  double wste( short[] values, double[] weights ) {return ShortNumericPrimitives.wste( values, weights );}
     /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wste(short[],float[]) */
@@ -3098,136 +3087,136 @@ public class GroovyStaticImports {
     public static  double wste( short[] values, long[] weights ) {return ShortNumericPrimitives.wste( values, weights );}
     /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wste(short[],short[]) */
     public static  double wste( short[] values, short[] weights ) {return ShortNumericPrimitives.wste( values, weights );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wste(short[],io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  double wste( short[] values, io.deephaven.engine.tables.dbarrays.DoubleVector weights ) {return ShortNumericPrimitives.wste( values, weights );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wste(short[],io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  double wste( short[] values, io.deephaven.engine.tables.dbarrays.FloatVector weights ) {return ShortNumericPrimitives.wste( values, weights );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wste(short[],io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  double wste( short[] values, io.deephaven.engine.tables.dbarrays.IntVector weights ) {return ShortNumericPrimitives.wste( values, weights );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wste(short[],io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  double wste( short[] values, io.deephaven.engine.tables.dbarrays.LongVector weights ) {return ShortNumericPrimitives.wste( values, weights );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wste(short[],io.deephaven.engine.tables.dbarrays.ShortVector) */
-    public static  double wste( short[] values, io.deephaven.engine.tables.dbarrays.ShortVector weights ) {return ShortNumericPrimitives.wste( values, weights );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wste(io.deephaven.engine.tables.dbarrays.ByteVector,byte[]) */
-    public static  double wste( io.deephaven.engine.tables.dbarrays.ByteVector values, byte[] weights ) {return ByteNumericPrimitives.wste( values, weights );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wste(io.deephaven.engine.tables.dbarrays.ByteVector,double[]) */
-    public static  double wste( io.deephaven.engine.tables.dbarrays.ByteVector values, double[] weights ) {return ByteNumericPrimitives.wste( values, weights );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wste(io.deephaven.engine.tables.dbarrays.ByteVector,float[]) */
-    public static  double wste( io.deephaven.engine.tables.dbarrays.ByteVector values, float[] weights ) {return ByteNumericPrimitives.wste( values, weights );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wste(io.deephaven.engine.tables.dbarrays.ByteVector,int[]) */
-    public static  double wste( io.deephaven.engine.tables.dbarrays.ByteVector values, int[] weights ) {return ByteNumericPrimitives.wste( values, weights );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wste(io.deephaven.engine.tables.dbarrays.ByteVector,long[]) */
-    public static  double wste( io.deephaven.engine.tables.dbarrays.ByteVector values, long[] weights ) {return ByteNumericPrimitives.wste( values, weights );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wste(io.deephaven.engine.tables.dbarrays.ByteVector,io.deephaven.engine.tables.dbarrays.ByteVector) */
-    public static  double wste( io.deephaven.engine.tables.dbarrays.ByteVector values, io.deephaven.engine.tables.dbarrays.ByteVector weights ) {return ByteNumericPrimitives.wste( values, weights );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wste(io.deephaven.engine.tables.dbarrays.ByteVector,io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  double wste( io.deephaven.engine.tables.dbarrays.ByteVector values, io.deephaven.engine.tables.dbarrays.DoubleVector weights ) {return ByteNumericPrimitives.wste( values, weights );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wste(io.deephaven.engine.tables.dbarrays.ByteVector,io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  double wste( io.deephaven.engine.tables.dbarrays.ByteVector values, io.deephaven.engine.tables.dbarrays.FloatVector weights ) {return ByteNumericPrimitives.wste( values, weights );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wste(io.deephaven.engine.tables.dbarrays.ByteVector,io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  double wste( io.deephaven.engine.tables.dbarrays.ByteVector values, io.deephaven.engine.tables.dbarrays.IntVector weights ) {return ByteNumericPrimitives.wste( values, weights );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wste(io.deephaven.engine.tables.dbarrays.ByteVector,io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  double wste( io.deephaven.engine.tables.dbarrays.ByteVector values, io.deephaven.engine.tables.dbarrays.LongVector weights ) {return ByteNumericPrimitives.wste( values, weights );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wste(io.deephaven.engine.tables.dbarrays.DoubleVector,double[]) */
-    public static  double wste( io.deephaven.engine.tables.dbarrays.DoubleVector values, double[] weights ) {return DoubleNumericPrimitives.wste( values, weights );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wste(io.deephaven.engine.tables.dbarrays.DoubleVector,float[]) */
-    public static  double wste( io.deephaven.engine.tables.dbarrays.DoubleVector values, float[] weights ) {return DoubleNumericPrimitives.wste( values, weights );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wste(io.deephaven.engine.tables.dbarrays.DoubleVector,int[]) */
-    public static  double wste( io.deephaven.engine.tables.dbarrays.DoubleVector values, int[] weights ) {return DoubleNumericPrimitives.wste( values, weights );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wste(io.deephaven.engine.tables.dbarrays.DoubleVector,long[]) */
-    public static  double wste( io.deephaven.engine.tables.dbarrays.DoubleVector values, long[] weights ) {return DoubleNumericPrimitives.wste( values, weights );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wste(io.deephaven.engine.tables.dbarrays.DoubleVector,short[]) */
-    public static  double wste( io.deephaven.engine.tables.dbarrays.DoubleVector values, short[] weights ) {return DoubleNumericPrimitives.wste( values, weights );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wste(io.deephaven.engine.tables.dbarrays.DoubleVector,io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  double wste( io.deephaven.engine.tables.dbarrays.DoubleVector values, io.deephaven.engine.tables.dbarrays.DoubleVector weights ) {return DoubleNumericPrimitives.wste( values, weights );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wste(io.deephaven.engine.tables.dbarrays.DoubleVector,io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  double wste( io.deephaven.engine.tables.dbarrays.DoubleVector values, io.deephaven.engine.tables.dbarrays.FloatVector weights ) {return DoubleNumericPrimitives.wste( values, weights );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wste(io.deephaven.engine.tables.dbarrays.DoubleVector,io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  double wste( io.deephaven.engine.tables.dbarrays.DoubleVector values, io.deephaven.engine.tables.dbarrays.IntVector weights ) {return DoubleNumericPrimitives.wste( values, weights );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wste(io.deephaven.engine.tables.dbarrays.DoubleVector,io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  double wste( io.deephaven.engine.tables.dbarrays.DoubleVector values, io.deephaven.engine.tables.dbarrays.LongVector weights ) {return DoubleNumericPrimitives.wste( values, weights );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wste(io.deephaven.engine.tables.dbarrays.DoubleVector,io.deephaven.engine.tables.dbarrays.ShortVector) */
-    public static  double wste( io.deephaven.engine.tables.dbarrays.DoubleVector values, io.deephaven.engine.tables.dbarrays.ShortVector weights ) {return DoubleNumericPrimitives.wste( values, weights );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wste(io.deephaven.engine.tables.dbarrays.FloatVector,double[]) */
-    public static  double wste( io.deephaven.engine.tables.dbarrays.FloatVector values, double[] weights ) {return FloatNumericPrimitives.wste( values, weights );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wste(io.deephaven.engine.tables.dbarrays.FloatVector,float[]) */
-    public static  double wste( io.deephaven.engine.tables.dbarrays.FloatVector values, float[] weights ) {return FloatNumericPrimitives.wste( values, weights );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wste(io.deephaven.engine.tables.dbarrays.FloatVector,int[]) */
-    public static  double wste( io.deephaven.engine.tables.dbarrays.FloatVector values, int[] weights ) {return FloatNumericPrimitives.wste( values, weights );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wste(io.deephaven.engine.tables.dbarrays.FloatVector,long[]) */
-    public static  double wste( io.deephaven.engine.tables.dbarrays.FloatVector values, long[] weights ) {return FloatNumericPrimitives.wste( values, weights );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wste(io.deephaven.engine.tables.dbarrays.FloatVector,short[]) */
-    public static  double wste( io.deephaven.engine.tables.dbarrays.FloatVector values, short[] weights ) {return FloatNumericPrimitives.wste( values, weights );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wste(io.deephaven.engine.tables.dbarrays.FloatVector,io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  double wste( io.deephaven.engine.tables.dbarrays.FloatVector values, io.deephaven.engine.tables.dbarrays.DoubleVector weights ) {return FloatNumericPrimitives.wste( values, weights );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wste(io.deephaven.engine.tables.dbarrays.FloatVector,io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  double wste( io.deephaven.engine.tables.dbarrays.FloatVector values, io.deephaven.engine.tables.dbarrays.FloatVector weights ) {return FloatNumericPrimitives.wste( values, weights );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wste(io.deephaven.engine.tables.dbarrays.FloatVector,io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  double wste( io.deephaven.engine.tables.dbarrays.FloatVector values, io.deephaven.engine.tables.dbarrays.IntVector weights ) {return FloatNumericPrimitives.wste( values, weights );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wste(io.deephaven.engine.tables.dbarrays.FloatVector,io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  double wste( io.deephaven.engine.tables.dbarrays.FloatVector values, io.deephaven.engine.tables.dbarrays.LongVector weights ) {return FloatNumericPrimitives.wste( values, weights );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wste(io.deephaven.engine.tables.dbarrays.FloatVector,io.deephaven.engine.tables.dbarrays.ShortVector) */
-    public static  double wste( io.deephaven.engine.tables.dbarrays.FloatVector values, io.deephaven.engine.tables.dbarrays.ShortVector weights ) {return FloatNumericPrimitives.wste( values, weights );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wste(io.deephaven.engine.tables.dbarrays.IntVector,double[]) */
-    public static  double wste( io.deephaven.engine.tables.dbarrays.IntVector values, double[] weights ) {return IntegerNumericPrimitives.wste( values, weights );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wste(io.deephaven.engine.tables.dbarrays.IntVector,float[]) */
-    public static  double wste( io.deephaven.engine.tables.dbarrays.IntVector values, float[] weights ) {return IntegerNumericPrimitives.wste( values, weights );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wste(io.deephaven.engine.tables.dbarrays.IntVector,int[]) */
-    public static  double wste( io.deephaven.engine.tables.dbarrays.IntVector values, int[] weights ) {return IntegerNumericPrimitives.wste( values, weights );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wste(io.deephaven.engine.tables.dbarrays.IntVector,long[]) */
-    public static  double wste( io.deephaven.engine.tables.dbarrays.IntVector values, long[] weights ) {return IntegerNumericPrimitives.wste( values, weights );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wste(io.deephaven.engine.tables.dbarrays.IntVector,short[]) */
-    public static  double wste( io.deephaven.engine.tables.dbarrays.IntVector values, short[] weights ) {return IntegerNumericPrimitives.wste( values, weights );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wste(io.deephaven.engine.tables.dbarrays.IntVector,io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  double wste( io.deephaven.engine.tables.dbarrays.IntVector values, io.deephaven.engine.tables.dbarrays.DoubleVector weights ) {return IntegerNumericPrimitives.wste( values, weights );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wste(io.deephaven.engine.tables.dbarrays.IntVector,io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  double wste( io.deephaven.engine.tables.dbarrays.IntVector values, io.deephaven.engine.tables.dbarrays.FloatVector weights ) {return IntegerNumericPrimitives.wste( values, weights );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wste(io.deephaven.engine.tables.dbarrays.IntVector,io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  double wste( io.deephaven.engine.tables.dbarrays.IntVector values, io.deephaven.engine.tables.dbarrays.IntVector weights ) {return IntegerNumericPrimitives.wste( values, weights );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wste(io.deephaven.engine.tables.dbarrays.IntVector,io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  double wste( io.deephaven.engine.tables.dbarrays.IntVector values, io.deephaven.engine.tables.dbarrays.LongVector weights ) {return IntegerNumericPrimitives.wste( values, weights );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wste(io.deephaven.engine.tables.dbarrays.IntVector,io.deephaven.engine.tables.dbarrays.ShortVector) */
-    public static  double wste( io.deephaven.engine.tables.dbarrays.IntVector values, io.deephaven.engine.tables.dbarrays.ShortVector weights ) {return IntegerNumericPrimitives.wste( values, weights );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wste(io.deephaven.engine.tables.dbarrays.LongVector,double[]) */
-    public static  double wste( io.deephaven.engine.tables.dbarrays.LongVector values, double[] weights ) {return LongNumericPrimitives.wste( values, weights );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wste(io.deephaven.engine.tables.dbarrays.LongVector,float[]) */
-    public static  double wste( io.deephaven.engine.tables.dbarrays.LongVector values, float[] weights ) {return LongNumericPrimitives.wste( values, weights );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wste(io.deephaven.engine.tables.dbarrays.LongVector,int[]) */
-    public static  double wste( io.deephaven.engine.tables.dbarrays.LongVector values, int[] weights ) {return LongNumericPrimitives.wste( values, weights );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wste(io.deephaven.engine.tables.dbarrays.LongVector,long[]) */
-    public static  double wste( io.deephaven.engine.tables.dbarrays.LongVector values, long[] weights ) {return LongNumericPrimitives.wste( values, weights );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wste(io.deephaven.engine.tables.dbarrays.LongVector,short[]) */
-    public static  double wste( io.deephaven.engine.tables.dbarrays.LongVector values, short[] weights ) {return LongNumericPrimitives.wste( values, weights );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wste(io.deephaven.engine.tables.dbarrays.LongVector,io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  double wste( io.deephaven.engine.tables.dbarrays.LongVector values, io.deephaven.engine.tables.dbarrays.DoubleVector weights ) {return LongNumericPrimitives.wste( values, weights );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wste(io.deephaven.engine.tables.dbarrays.LongVector,io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  double wste( io.deephaven.engine.tables.dbarrays.LongVector values, io.deephaven.engine.tables.dbarrays.FloatVector weights ) {return LongNumericPrimitives.wste( values, weights );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wste(io.deephaven.engine.tables.dbarrays.LongVector,io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  double wste( io.deephaven.engine.tables.dbarrays.LongVector values, io.deephaven.engine.tables.dbarrays.IntVector weights ) {return LongNumericPrimitives.wste( values, weights );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wste(io.deephaven.engine.tables.dbarrays.LongVector,io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  double wste( io.deephaven.engine.tables.dbarrays.LongVector values, io.deephaven.engine.tables.dbarrays.LongVector weights ) {return LongNumericPrimitives.wste( values, weights );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wste(io.deephaven.engine.tables.dbarrays.LongVector,io.deephaven.engine.tables.dbarrays.ShortVector) */
-    public static  double wste( io.deephaven.engine.tables.dbarrays.LongVector values, io.deephaven.engine.tables.dbarrays.ShortVector weights ) {return LongNumericPrimitives.wste( values, weights );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wste(io.deephaven.engine.tables.dbarrays.ShortVector,double[]) */
-    public static  double wste( io.deephaven.engine.tables.dbarrays.ShortVector values, double[] weights ) {return ShortNumericPrimitives.wste( values, weights );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wste(io.deephaven.engine.tables.dbarrays.ShortVector,float[]) */
-    public static  double wste( io.deephaven.engine.tables.dbarrays.ShortVector values, float[] weights ) {return ShortNumericPrimitives.wste( values, weights );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wste(io.deephaven.engine.tables.dbarrays.ShortVector,int[]) */
-    public static  double wste( io.deephaven.engine.tables.dbarrays.ShortVector values, int[] weights ) {return ShortNumericPrimitives.wste( values, weights );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wste(io.deephaven.engine.tables.dbarrays.ShortVector,long[]) */
-    public static  double wste( io.deephaven.engine.tables.dbarrays.ShortVector values, long[] weights ) {return ShortNumericPrimitives.wste( values, weights );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wste(io.deephaven.engine.tables.dbarrays.ShortVector,short[]) */
-    public static  double wste( io.deephaven.engine.tables.dbarrays.ShortVector values, short[] weights ) {return ShortNumericPrimitives.wste( values, weights );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wste(io.deephaven.engine.tables.dbarrays.ShortVector,io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  double wste( io.deephaven.engine.tables.dbarrays.ShortVector values, io.deephaven.engine.tables.dbarrays.DoubleVector weights ) {return ShortNumericPrimitives.wste( values, weights );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wste(io.deephaven.engine.tables.dbarrays.ShortVector,io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  double wste( io.deephaven.engine.tables.dbarrays.ShortVector values, io.deephaven.engine.tables.dbarrays.FloatVector weights ) {return ShortNumericPrimitives.wste( values, weights );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wste(io.deephaven.engine.tables.dbarrays.ShortVector,io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  double wste( io.deephaven.engine.tables.dbarrays.ShortVector values, io.deephaven.engine.tables.dbarrays.IntVector weights ) {return ShortNumericPrimitives.wste( values, weights );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wste(io.deephaven.engine.tables.dbarrays.ShortVector,io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  double wste( io.deephaven.engine.tables.dbarrays.ShortVector values, io.deephaven.engine.tables.dbarrays.LongVector weights ) {return ShortNumericPrimitives.wste( values, weights );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wste(io.deephaven.engine.tables.dbarrays.ShortVector,io.deephaven.engine.tables.dbarrays.ShortVector) */
-    public static  double wste( io.deephaven.engine.tables.dbarrays.ShortVector values, io.deephaven.engine.tables.dbarrays.ShortVector weights ) {return ShortNumericPrimitives.wste( values, weights );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wste(short[], DoubleVector) */
+    public static  double wste( short[] values, DoubleVector weights ) {return ShortNumericPrimitives.wste( values, weights );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wste(short[], FloatVector) */
+    public static  double wste( short[] values, FloatVector weights ) {return ShortNumericPrimitives.wste( values, weights );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wste(short[], IntVector) */
+    public static  double wste( short[] values, IntVector weights ) {return ShortNumericPrimitives.wste( values, weights );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wste(short[], LongVector) */
+    public static  double wste( short[] values, LongVector weights ) {return ShortNumericPrimitives.wste( values, weights );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wste(short[], ShortVector) */
+    public static  double wste( short[] values, ShortVector weights ) {return ShortNumericPrimitives.wste( values, weights );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wste(ByteVector,byte[]) */
+    public static  double wste(ByteVector values, byte[] weights ) {return ByteNumericPrimitives.wste( values, weights );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wste(ByteVector,double[]) */
+    public static  double wste(ByteVector values, double[] weights ) {return ByteNumericPrimitives.wste( values, weights );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wste(ByteVector,float[]) */
+    public static  double wste(ByteVector values, float[] weights ) {return ByteNumericPrimitives.wste( values, weights );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wste(ByteVector,int[]) */
+    public static  double wste(ByteVector values, int[] weights ) {return ByteNumericPrimitives.wste( values, weights );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wste(ByteVector,long[]) */
+    public static  double wste(ByteVector values, long[] weights ) {return ByteNumericPrimitives.wste( values, weights );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wste(ByteVector, ByteVector) */
+    public static  double wste(ByteVector values, ByteVector weights ) {return ByteNumericPrimitives.wste( values, weights );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wste(ByteVector, DoubleVector) */
+    public static  double wste(ByteVector values, DoubleVector weights ) {return ByteNumericPrimitives.wste( values, weights );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wste(ByteVector, FloatVector) */
+    public static  double wste(ByteVector values, FloatVector weights ) {return ByteNumericPrimitives.wste( values, weights );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wste(ByteVector, IntVector) */
+    public static  double wste(ByteVector values, IntVector weights ) {return ByteNumericPrimitives.wste( values, weights );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wste(ByteVector, LongVector) */
+    public static  double wste(ByteVector values, LongVector weights ) {return ByteNumericPrimitives.wste( values, weights );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wste(DoubleVector,double[]) */
+    public static  double wste(DoubleVector values, double[] weights ) {return DoubleNumericPrimitives.wste( values, weights );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wste(DoubleVector,float[]) */
+    public static  double wste(DoubleVector values, float[] weights ) {return DoubleNumericPrimitives.wste( values, weights );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wste(DoubleVector,int[]) */
+    public static  double wste(DoubleVector values, int[] weights ) {return DoubleNumericPrimitives.wste( values, weights );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wste(DoubleVector,long[]) */
+    public static  double wste(DoubleVector values, long[] weights ) {return DoubleNumericPrimitives.wste( values, weights );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wste(DoubleVector,short[]) */
+    public static  double wste(DoubleVector values, short[] weights ) {return DoubleNumericPrimitives.wste( values, weights );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wste(DoubleVector, DoubleVector) */
+    public static  double wste(DoubleVector values, DoubleVector weights ) {return DoubleNumericPrimitives.wste( values, weights );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wste(DoubleVector, FloatVector) */
+    public static  double wste(DoubleVector values, FloatVector weights ) {return DoubleNumericPrimitives.wste( values, weights );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wste(DoubleVector, IntVector) */
+    public static  double wste(DoubleVector values, IntVector weights ) {return DoubleNumericPrimitives.wste( values, weights );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wste(DoubleVector, LongVector) */
+    public static  double wste(DoubleVector values, LongVector weights ) {return DoubleNumericPrimitives.wste( values, weights );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wste(DoubleVector, ShortVector) */
+    public static  double wste(DoubleVector values, ShortVector weights ) {return DoubleNumericPrimitives.wste( values, weights );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wste(FloatVector,double[]) */
+    public static  double wste(FloatVector values, double[] weights ) {return FloatNumericPrimitives.wste( values, weights );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wste(FloatVector,float[]) */
+    public static  double wste(FloatVector values, float[] weights ) {return FloatNumericPrimitives.wste( values, weights );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wste(FloatVector,int[]) */
+    public static  double wste(FloatVector values, int[] weights ) {return FloatNumericPrimitives.wste( values, weights );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wste(FloatVector,long[]) */
+    public static  double wste(FloatVector values, long[] weights ) {return FloatNumericPrimitives.wste( values, weights );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wste(FloatVector,short[]) */
+    public static  double wste(FloatVector values, short[] weights ) {return FloatNumericPrimitives.wste( values, weights );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wste(FloatVector, DoubleVector) */
+    public static  double wste(FloatVector values, DoubleVector weights ) {return FloatNumericPrimitives.wste( values, weights );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wste(FloatVector, FloatVector) */
+    public static  double wste(FloatVector values, FloatVector weights ) {return FloatNumericPrimitives.wste( values, weights );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wste(FloatVector, IntVector) */
+    public static  double wste(FloatVector values, IntVector weights ) {return FloatNumericPrimitives.wste( values, weights );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wste(FloatVector, LongVector) */
+    public static  double wste(FloatVector values, LongVector weights ) {return FloatNumericPrimitives.wste( values, weights );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wste(FloatVector, ShortVector) */
+    public static  double wste(FloatVector values, ShortVector weights ) {return FloatNumericPrimitives.wste( values, weights );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wste(IntVector,double[]) */
+    public static  double wste(IntVector values, double[] weights ) {return IntegerNumericPrimitives.wste( values, weights );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wste(IntVector,float[]) */
+    public static  double wste(IntVector values, float[] weights ) {return IntegerNumericPrimitives.wste( values, weights );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wste(IntVector,int[]) */
+    public static  double wste(IntVector values, int[] weights ) {return IntegerNumericPrimitives.wste( values, weights );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wste(IntVector,long[]) */
+    public static  double wste(IntVector values, long[] weights ) {return IntegerNumericPrimitives.wste( values, weights );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wste(IntVector,short[]) */
+    public static  double wste(IntVector values, short[] weights ) {return IntegerNumericPrimitives.wste( values, weights );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wste(IntVector, DoubleVector) */
+    public static  double wste(IntVector values, DoubleVector weights ) {return IntegerNumericPrimitives.wste( values, weights );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wste(IntVector, FloatVector) */
+    public static  double wste(IntVector values, FloatVector weights ) {return IntegerNumericPrimitives.wste( values, weights );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wste(IntVector, IntVector) */
+    public static  double wste(IntVector values, IntVector weights ) {return IntegerNumericPrimitives.wste( values, weights );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wste(IntVector, LongVector) */
+    public static  double wste(IntVector values, LongVector weights ) {return IntegerNumericPrimitives.wste( values, weights );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wste(IntVector, ShortVector) */
+    public static  double wste(IntVector values, ShortVector weights ) {return IntegerNumericPrimitives.wste( values, weights );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wste(LongVector,double[]) */
+    public static  double wste(LongVector values, double[] weights ) {return LongNumericPrimitives.wste( values, weights );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wste(LongVector,float[]) */
+    public static  double wste(LongVector values, float[] weights ) {return LongNumericPrimitives.wste( values, weights );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wste(LongVector,int[]) */
+    public static  double wste(LongVector values, int[] weights ) {return LongNumericPrimitives.wste( values, weights );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wste(LongVector,long[]) */
+    public static  double wste(LongVector values, long[] weights ) {return LongNumericPrimitives.wste( values, weights );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wste(LongVector,short[]) */
+    public static  double wste(LongVector values, short[] weights ) {return LongNumericPrimitives.wste( values, weights );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wste(LongVector, DoubleVector) */
+    public static  double wste(LongVector values, DoubleVector weights ) {return LongNumericPrimitives.wste( values, weights );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wste(LongVector, FloatVector) */
+    public static  double wste(LongVector values, FloatVector weights ) {return LongNumericPrimitives.wste( values, weights );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wste(LongVector, IntVector) */
+    public static  double wste(LongVector values, IntVector weights ) {return LongNumericPrimitives.wste( values, weights );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wste(LongVector, LongVector) */
+    public static  double wste(LongVector values, LongVector weights ) {return LongNumericPrimitives.wste( values, weights );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wste(LongVector, ShortVector) */
+    public static  double wste(LongVector values, ShortVector weights ) {return LongNumericPrimitives.wste( values, weights );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wste(ShortVector,double[]) */
+    public static  double wste(ShortVector values, double[] weights ) {return ShortNumericPrimitives.wste( values, weights );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wste(ShortVector,float[]) */
+    public static  double wste(ShortVector values, float[] weights ) {return ShortNumericPrimitives.wste( values, weights );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wste(ShortVector,int[]) */
+    public static  double wste(ShortVector values, int[] weights ) {return ShortNumericPrimitives.wste( values, weights );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wste(ShortVector,long[]) */
+    public static  double wste(ShortVector values, long[] weights ) {return ShortNumericPrimitives.wste( values, weights );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wste(ShortVector,short[]) */
+    public static  double wste(ShortVector values, short[] weights ) {return ShortNumericPrimitives.wste( values, weights );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wste(ShortVector, DoubleVector) */
+    public static  double wste(ShortVector values, DoubleVector weights ) {return ShortNumericPrimitives.wste( values, weights );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wste(ShortVector, FloatVector) */
+    public static  double wste(ShortVector values, FloatVector weights ) {return ShortNumericPrimitives.wste( values, weights );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wste(ShortVector, IntVector) */
+    public static  double wste(ShortVector values, IntVector weights ) {return ShortNumericPrimitives.wste( values, weights );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wste(ShortVector, LongVector) */
+    public static  double wste(ShortVector values, LongVector weights ) {return ShortNumericPrimitives.wste( values, weights );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wste(ShortVector, ShortVector) */
+    public static  double wste(ShortVector values, ShortVector weights ) {return ShortNumericPrimitives.wste( values, weights );}
     /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wsum(byte[],byte[]) */
     public static  double wsum( byte[] values, byte[] weights ) {return ByteNumericPrimitives.wsum( values, weights );}
     /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wsum(byte[],double[]) */
@@ -3238,16 +3227,16 @@ public class GroovyStaticImports {
     public static  double wsum( byte[] values, int[] weights ) {return ByteNumericPrimitives.wsum( values, weights );}
     /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wsum(byte[],long[]) */
     public static  double wsum( byte[] values, long[] weights ) {return ByteNumericPrimitives.wsum( values, weights );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wsum(byte[],io.deephaven.engine.tables.dbarrays.ByteVector) */
-    public static  double wsum( byte[] values, io.deephaven.engine.tables.dbarrays.ByteVector weights ) {return ByteNumericPrimitives.wsum( values, weights );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wsum(byte[],io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  double wsum( byte[] values, io.deephaven.engine.tables.dbarrays.DoubleVector weights ) {return ByteNumericPrimitives.wsum( values, weights );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wsum(byte[],io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  double wsum( byte[] values, io.deephaven.engine.tables.dbarrays.FloatVector weights ) {return ByteNumericPrimitives.wsum( values, weights );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wsum(byte[],io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  double wsum( byte[] values, io.deephaven.engine.tables.dbarrays.IntVector weights ) {return ByteNumericPrimitives.wsum( values, weights );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wsum(byte[],io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  double wsum( byte[] values, io.deephaven.engine.tables.dbarrays.LongVector weights ) {return ByteNumericPrimitives.wsum( values, weights );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wsum(byte[], ByteVector) */
+    public static  double wsum( byte[] values, ByteVector weights ) {return ByteNumericPrimitives.wsum( values, weights );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wsum(byte[], DoubleVector) */
+    public static  double wsum( byte[] values, DoubleVector weights ) {return ByteNumericPrimitives.wsum( values, weights );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wsum(byte[], FloatVector) */
+    public static  double wsum( byte[] values, FloatVector weights ) {return ByteNumericPrimitives.wsum( values, weights );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wsum(byte[], IntVector) */
+    public static  double wsum( byte[] values, IntVector weights ) {return ByteNumericPrimitives.wsum( values, weights );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wsum(byte[], LongVector) */
+    public static  double wsum( byte[] values, LongVector weights ) {return ByteNumericPrimitives.wsum( values, weights );}
     /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wsum(double[],double[]) */
     public static  double wsum( double[] values, double[] weights ) {return DoubleNumericPrimitives.wsum( values, weights );}
     /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wsum(double[],float[]) */
@@ -3258,16 +3247,16 @@ public class GroovyStaticImports {
     public static  double wsum( double[] values, long[] weights ) {return DoubleNumericPrimitives.wsum( values, weights );}
     /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wsum(double[],short[]) */
     public static  double wsum( double[] values, short[] weights ) {return DoubleNumericPrimitives.wsum( values, weights );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wsum(double[],io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  double wsum( double[] values, io.deephaven.engine.tables.dbarrays.DoubleVector weights ) {return DoubleNumericPrimitives.wsum( values, weights );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wsum(double[],io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  double wsum( double[] values, io.deephaven.engine.tables.dbarrays.FloatVector weights ) {return DoubleNumericPrimitives.wsum( values, weights );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wsum(double[],io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  double wsum( double[] values, io.deephaven.engine.tables.dbarrays.IntVector weights ) {return DoubleNumericPrimitives.wsum( values, weights );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wsum(double[],io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  double wsum( double[] values, io.deephaven.engine.tables.dbarrays.LongVector weights ) {return DoubleNumericPrimitives.wsum( values, weights );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wsum(double[],io.deephaven.engine.tables.dbarrays.ShortVector) */
-    public static  double wsum( double[] values, io.deephaven.engine.tables.dbarrays.ShortVector weights ) {return DoubleNumericPrimitives.wsum( values, weights );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wsum(double[], DoubleVector) */
+    public static  double wsum( double[] values, DoubleVector weights ) {return DoubleNumericPrimitives.wsum( values, weights );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wsum(double[], FloatVector) */
+    public static  double wsum( double[] values, FloatVector weights ) {return DoubleNumericPrimitives.wsum( values, weights );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wsum(double[], IntVector) */
+    public static  double wsum( double[] values, IntVector weights ) {return DoubleNumericPrimitives.wsum( values, weights );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wsum(double[], LongVector) */
+    public static  double wsum( double[] values, LongVector weights ) {return DoubleNumericPrimitives.wsum( values, weights );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wsum(double[], ShortVector) */
+    public static  double wsum( double[] values, ShortVector weights ) {return DoubleNumericPrimitives.wsum( values, weights );}
     /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wsum(float[],double[]) */
     public static  double wsum( float[] values, double[] weights ) {return FloatNumericPrimitives.wsum( values, weights );}
     /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wsum(float[],float[]) */
@@ -3278,16 +3267,16 @@ public class GroovyStaticImports {
     public static  double wsum( float[] values, long[] weights ) {return FloatNumericPrimitives.wsum( values, weights );}
     /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wsum(float[],short[]) */
     public static  double wsum( float[] values, short[] weights ) {return FloatNumericPrimitives.wsum( values, weights );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wsum(float[],io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  double wsum( float[] values, io.deephaven.engine.tables.dbarrays.DoubleVector weights ) {return FloatNumericPrimitives.wsum( values, weights );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wsum(float[],io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  double wsum( float[] values, io.deephaven.engine.tables.dbarrays.FloatVector weights ) {return FloatNumericPrimitives.wsum( values, weights );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wsum(float[],io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  double wsum( float[] values, io.deephaven.engine.tables.dbarrays.IntVector weights ) {return FloatNumericPrimitives.wsum( values, weights );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wsum(float[],io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  double wsum( float[] values, io.deephaven.engine.tables.dbarrays.LongVector weights ) {return FloatNumericPrimitives.wsum( values, weights );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wsum(float[],io.deephaven.engine.tables.dbarrays.ShortVector) */
-    public static  double wsum( float[] values, io.deephaven.engine.tables.dbarrays.ShortVector weights ) {return FloatNumericPrimitives.wsum( values, weights );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wsum(float[], DoubleVector) */
+    public static  double wsum( float[] values, DoubleVector weights ) {return FloatNumericPrimitives.wsum( values, weights );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wsum(float[], FloatVector) */
+    public static  double wsum( float[] values, FloatVector weights ) {return FloatNumericPrimitives.wsum( values, weights );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wsum(float[], IntVector) */
+    public static  double wsum( float[] values, IntVector weights ) {return FloatNumericPrimitives.wsum( values, weights );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wsum(float[], LongVector) */
+    public static  double wsum( float[] values, LongVector weights ) {return FloatNumericPrimitives.wsum( values, weights );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wsum(float[], ShortVector) */
+    public static  double wsum( float[] values, ShortVector weights ) {return FloatNumericPrimitives.wsum( values, weights );}
     /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wsum(int[],double[]) */
     public static  double wsum( int[] values, double[] weights ) {return IntegerNumericPrimitives.wsum( values, weights );}
     /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wsum(int[],float[]) */
@@ -3298,16 +3287,16 @@ public class GroovyStaticImports {
     public static  double wsum( int[] values, long[] weights ) {return IntegerNumericPrimitives.wsum( values, weights );}
     /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wsum(int[],short[]) */
     public static  double wsum( int[] values, short[] weights ) {return IntegerNumericPrimitives.wsum( values, weights );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wsum(int[],io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  double wsum( int[] values, io.deephaven.engine.tables.dbarrays.DoubleVector weights ) {return IntegerNumericPrimitives.wsum( values, weights );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wsum(int[],io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  double wsum( int[] values, io.deephaven.engine.tables.dbarrays.FloatVector weights ) {return IntegerNumericPrimitives.wsum( values, weights );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wsum(int[],io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  double wsum( int[] values, io.deephaven.engine.tables.dbarrays.IntVector weights ) {return IntegerNumericPrimitives.wsum( values, weights );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wsum(int[],io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  double wsum( int[] values, io.deephaven.engine.tables.dbarrays.LongVector weights ) {return IntegerNumericPrimitives.wsum( values, weights );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wsum(int[],io.deephaven.engine.tables.dbarrays.ShortVector) */
-    public static  double wsum( int[] values, io.deephaven.engine.tables.dbarrays.ShortVector weights ) {return IntegerNumericPrimitives.wsum( values, weights );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wsum(int[], DoubleVector) */
+    public static  double wsum( int[] values, DoubleVector weights ) {return IntegerNumericPrimitives.wsum( values, weights );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wsum(int[], FloatVector) */
+    public static  double wsum( int[] values, FloatVector weights ) {return IntegerNumericPrimitives.wsum( values, weights );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wsum(int[], IntVector) */
+    public static  double wsum( int[] values, IntVector weights ) {return IntegerNumericPrimitives.wsum( values, weights );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wsum(int[], LongVector) */
+    public static  double wsum( int[] values, LongVector weights ) {return IntegerNumericPrimitives.wsum( values, weights );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wsum(int[], ShortVector) */
+    public static  double wsum( int[] values, ShortVector weights ) {return IntegerNumericPrimitives.wsum( values, weights );}
     /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wsum(long[],double[]) */
     public static  double wsum( long[] values, double[] weights ) {return LongNumericPrimitives.wsum( values, weights );}
     /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wsum(long[],float[]) */
@@ -3318,16 +3307,16 @@ public class GroovyStaticImports {
     public static  double wsum( long[] values, long[] weights ) {return LongNumericPrimitives.wsum( values, weights );}
     /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wsum(long[],short[]) */
     public static  double wsum( long[] values, short[] weights ) {return LongNumericPrimitives.wsum( values, weights );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wsum(long[],io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  double wsum( long[] values, io.deephaven.engine.tables.dbarrays.DoubleVector weights ) {return LongNumericPrimitives.wsum( values, weights );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wsum(long[],io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  double wsum( long[] values, io.deephaven.engine.tables.dbarrays.FloatVector weights ) {return LongNumericPrimitives.wsum( values, weights );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wsum(long[],io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  double wsum( long[] values, io.deephaven.engine.tables.dbarrays.IntVector weights ) {return LongNumericPrimitives.wsum( values, weights );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wsum(long[],io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  double wsum( long[] values, io.deephaven.engine.tables.dbarrays.LongVector weights ) {return LongNumericPrimitives.wsum( values, weights );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wsum(long[],io.deephaven.engine.tables.dbarrays.ShortVector) */
-    public static  double wsum( long[] values, io.deephaven.engine.tables.dbarrays.ShortVector weights ) {return LongNumericPrimitives.wsum( values, weights );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wsum(long[], DoubleVector) */
+    public static  double wsum( long[] values, DoubleVector weights ) {return LongNumericPrimitives.wsum( values, weights );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wsum(long[], FloatVector) */
+    public static  double wsum( long[] values, FloatVector weights ) {return LongNumericPrimitives.wsum( values, weights );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wsum(long[], IntVector) */
+    public static  double wsum( long[] values, IntVector weights ) {return LongNumericPrimitives.wsum( values, weights );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wsum(long[], LongVector) */
+    public static  double wsum( long[] values, LongVector weights ) {return LongNumericPrimitives.wsum( values, weights );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wsum(long[], ShortVector) */
+    public static  double wsum( long[] values, ShortVector weights ) {return LongNumericPrimitives.wsum( values, weights );}
     /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wsum(short[],double[]) */
     public static  double wsum( short[] values, double[] weights ) {return ShortNumericPrimitives.wsum( values, weights );}
     /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wsum(short[],float[]) */
@@ -3338,136 +3327,136 @@ public class GroovyStaticImports {
     public static  double wsum( short[] values, long[] weights ) {return ShortNumericPrimitives.wsum( values, weights );}
     /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wsum(short[],short[]) */
     public static  double wsum( short[] values, short[] weights ) {return ShortNumericPrimitives.wsum( values, weights );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wsum(short[],io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  double wsum( short[] values, io.deephaven.engine.tables.dbarrays.DoubleVector weights ) {return ShortNumericPrimitives.wsum( values, weights );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wsum(short[],io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  double wsum( short[] values, io.deephaven.engine.tables.dbarrays.FloatVector weights ) {return ShortNumericPrimitives.wsum( values, weights );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wsum(short[],io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  double wsum( short[] values, io.deephaven.engine.tables.dbarrays.IntVector weights ) {return ShortNumericPrimitives.wsum( values, weights );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wsum(short[],io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  double wsum( short[] values, io.deephaven.engine.tables.dbarrays.LongVector weights ) {return ShortNumericPrimitives.wsum( values, weights );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wsum(short[],io.deephaven.engine.tables.dbarrays.ShortVector) */
-    public static  double wsum( short[] values, io.deephaven.engine.tables.dbarrays.ShortVector weights ) {return ShortNumericPrimitives.wsum( values, weights );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wsum(io.deephaven.engine.tables.dbarrays.ByteVector,byte[]) */
-    public static  double wsum( io.deephaven.engine.tables.dbarrays.ByteVector values, byte[] weights ) {return ByteNumericPrimitives.wsum( values, weights );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wsum(io.deephaven.engine.tables.dbarrays.ByteVector,double[]) */
-    public static  double wsum( io.deephaven.engine.tables.dbarrays.ByteVector values, double[] weights ) {return ByteNumericPrimitives.wsum( values, weights );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wsum(io.deephaven.engine.tables.dbarrays.ByteVector,float[]) */
-    public static  double wsum( io.deephaven.engine.tables.dbarrays.ByteVector values, float[] weights ) {return ByteNumericPrimitives.wsum( values, weights );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wsum(io.deephaven.engine.tables.dbarrays.ByteVector,int[]) */
-    public static  double wsum( io.deephaven.engine.tables.dbarrays.ByteVector values, int[] weights ) {return ByteNumericPrimitives.wsum( values, weights );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wsum(io.deephaven.engine.tables.dbarrays.ByteVector,long[]) */
-    public static  double wsum( io.deephaven.engine.tables.dbarrays.ByteVector values, long[] weights ) {return ByteNumericPrimitives.wsum( values, weights );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wsum(io.deephaven.engine.tables.dbarrays.ByteVector,io.deephaven.engine.tables.dbarrays.ByteVector) */
-    public static  double wsum( io.deephaven.engine.tables.dbarrays.ByteVector values, io.deephaven.engine.tables.dbarrays.ByteVector weights ) {return ByteNumericPrimitives.wsum( values, weights );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wsum(io.deephaven.engine.tables.dbarrays.ByteVector,io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  double wsum( io.deephaven.engine.tables.dbarrays.ByteVector values, io.deephaven.engine.tables.dbarrays.DoubleVector weights ) {return ByteNumericPrimitives.wsum( values, weights );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wsum(io.deephaven.engine.tables.dbarrays.ByteVector,io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  double wsum( io.deephaven.engine.tables.dbarrays.ByteVector values, io.deephaven.engine.tables.dbarrays.FloatVector weights ) {return ByteNumericPrimitives.wsum( values, weights );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wsum(io.deephaven.engine.tables.dbarrays.ByteVector,io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  double wsum( io.deephaven.engine.tables.dbarrays.ByteVector values, io.deephaven.engine.tables.dbarrays.IntVector weights ) {return ByteNumericPrimitives.wsum( values, weights );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wsum(io.deephaven.engine.tables.dbarrays.ByteVector,io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  double wsum( io.deephaven.engine.tables.dbarrays.ByteVector values, io.deephaven.engine.tables.dbarrays.LongVector weights ) {return ByteNumericPrimitives.wsum( values, weights );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wsum(io.deephaven.engine.tables.dbarrays.DoubleVector,double[]) */
-    public static  double wsum( io.deephaven.engine.tables.dbarrays.DoubleVector values, double[] weights ) {return DoubleNumericPrimitives.wsum( values, weights );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wsum(io.deephaven.engine.tables.dbarrays.DoubleVector,float[]) */
-    public static  double wsum( io.deephaven.engine.tables.dbarrays.DoubleVector values, float[] weights ) {return DoubleNumericPrimitives.wsum( values, weights );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wsum(io.deephaven.engine.tables.dbarrays.DoubleVector,int[]) */
-    public static  double wsum( io.deephaven.engine.tables.dbarrays.DoubleVector values, int[] weights ) {return DoubleNumericPrimitives.wsum( values, weights );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wsum(io.deephaven.engine.tables.dbarrays.DoubleVector,long[]) */
-    public static  double wsum( io.deephaven.engine.tables.dbarrays.DoubleVector values, long[] weights ) {return DoubleNumericPrimitives.wsum( values, weights );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wsum(io.deephaven.engine.tables.dbarrays.DoubleVector,short[]) */
-    public static  double wsum( io.deephaven.engine.tables.dbarrays.DoubleVector values, short[] weights ) {return DoubleNumericPrimitives.wsum( values, weights );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wsum(io.deephaven.engine.tables.dbarrays.DoubleVector,io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  double wsum( io.deephaven.engine.tables.dbarrays.DoubleVector values, io.deephaven.engine.tables.dbarrays.DoubleVector weights ) {return DoubleNumericPrimitives.wsum( values, weights );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wsum(io.deephaven.engine.tables.dbarrays.DoubleVector,io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  double wsum( io.deephaven.engine.tables.dbarrays.DoubleVector values, io.deephaven.engine.tables.dbarrays.FloatVector weights ) {return DoubleNumericPrimitives.wsum( values, weights );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wsum(io.deephaven.engine.tables.dbarrays.DoubleVector,io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  double wsum( io.deephaven.engine.tables.dbarrays.DoubleVector values, io.deephaven.engine.tables.dbarrays.IntVector weights ) {return DoubleNumericPrimitives.wsum( values, weights );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wsum(io.deephaven.engine.tables.dbarrays.DoubleVector,io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  double wsum( io.deephaven.engine.tables.dbarrays.DoubleVector values, io.deephaven.engine.tables.dbarrays.LongVector weights ) {return DoubleNumericPrimitives.wsum( values, weights );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wsum(io.deephaven.engine.tables.dbarrays.DoubleVector,io.deephaven.engine.tables.dbarrays.ShortVector) */
-    public static  double wsum( io.deephaven.engine.tables.dbarrays.DoubleVector values, io.deephaven.engine.tables.dbarrays.ShortVector weights ) {return DoubleNumericPrimitives.wsum( values, weights );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wsum(io.deephaven.engine.tables.dbarrays.FloatVector,double[]) */
-    public static  double wsum( io.deephaven.engine.tables.dbarrays.FloatVector values, double[] weights ) {return FloatNumericPrimitives.wsum( values, weights );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wsum(io.deephaven.engine.tables.dbarrays.FloatVector,float[]) */
-    public static  double wsum( io.deephaven.engine.tables.dbarrays.FloatVector values, float[] weights ) {return FloatNumericPrimitives.wsum( values, weights );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wsum(io.deephaven.engine.tables.dbarrays.FloatVector,int[]) */
-    public static  double wsum( io.deephaven.engine.tables.dbarrays.FloatVector values, int[] weights ) {return FloatNumericPrimitives.wsum( values, weights );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wsum(io.deephaven.engine.tables.dbarrays.FloatVector,long[]) */
-    public static  double wsum( io.deephaven.engine.tables.dbarrays.FloatVector values, long[] weights ) {return FloatNumericPrimitives.wsum( values, weights );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wsum(io.deephaven.engine.tables.dbarrays.FloatVector,short[]) */
-    public static  double wsum( io.deephaven.engine.tables.dbarrays.FloatVector values, short[] weights ) {return FloatNumericPrimitives.wsum( values, weights );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wsum(io.deephaven.engine.tables.dbarrays.FloatVector,io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  double wsum( io.deephaven.engine.tables.dbarrays.FloatVector values, io.deephaven.engine.tables.dbarrays.DoubleVector weights ) {return FloatNumericPrimitives.wsum( values, weights );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wsum(io.deephaven.engine.tables.dbarrays.FloatVector,io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  double wsum( io.deephaven.engine.tables.dbarrays.FloatVector values, io.deephaven.engine.tables.dbarrays.FloatVector weights ) {return FloatNumericPrimitives.wsum( values, weights );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wsum(io.deephaven.engine.tables.dbarrays.FloatVector,io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  double wsum( io.deephaven.engine.tables.dbarrays.FloatVector values, io.deephaven.engine.tables.dbarrays.IntVector weights ) {return FloatNumericPrimitives.wsum( values, weights );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wsum(io.deephaven.engine.tables.dbarrays.FloatVector,io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  double wsum( io.deephaven.engine.tables.dbarrays.FloatVector values, io.deephaven.engine.tables.dbarrays.LongVector weights ) {return FloatNumericPrimitives.wsum( values, weights );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wsum(io.deephaven.engine.tables.dbarrays.FloatVector,io.deephaven.engine.tables.dbarrays.ShortVector) */
-    public static  double wsum( io.deephaven.engine.tables.dbarrays.FloatVector values, io.deephaven.engine.tables.dbarrays.ShortVector weights ) {return FloatNumericPrimitives.wsum( values, weights );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wsum(io.deephaven.engine.tables.dbarrays.IntVector,double[]) */
-    public static  double wsum( io.deephaven.engine.tables.dbarrays.IntVector values, double[] weights ) {return IntegerNumericPrimitives.wsum( values, weights );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wsum(io.deephaven.engine.tables.dbarrays.IntVector,float[]) */
-    public static  double wsum( io.deephaven.engine.tables.dbarrays.IntVector values, float[] weights ) {return IntegerNumericPrimitives.wsum( values, weights );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wsum(io.deephaven.engine.tables.dbarrays.IntVector,int[]) */
-    public static  double wsum( io.deephaven.engine.tables.dbarrays.IntVector values, int[] weights ) {return IntegerNumericPrimitives.wsum( values, weights );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wsum(io.deephaven.engine.tables.dbarrays.IntVector,long[]) */
-    public static  double wsum( io.deephaven.engine.tables.dbarrays.IntVector values, long[] weights ) {return IntegerNumericPrimitives.wsum( values, weights );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wsum(io.deephaven.engine.tables.dbarrays.IntVector,short[]) */
-    public static  double wsum( io.deephaven.engine.tables.dbarrays.IntVector values, short[] weights ) {return IntegerNumericPrimitives.wsum( values, weights );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wsum(io.deephaven.engine.tables.dbarrays.IntVector,io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  double wsum( io.deephaven.engine.tables.dbarrays.IntVector values, io.deephaven.engine.tables.dbarrays.DoubleVector weights ) {return IntegerNumericPrimitives.wsum( values, weights );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wsum(io.deephaven.engine.tables.dbarrays.IntVector,io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  double wsum( io.deephaven.engine.tables.dbarrays.IntVector values, io.deephaven.engine.tables.dbarrays.FloatVector weights ) {return IntegerNumericPrimitives.wsum( values, weights );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wsum(io.deephaven.engine.tables.dbarrays.IntVector,io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  double wsum( io.deephaven.engine.tables.dbarrays.IntVector values, io.deephaven.engine.tables.dbarrays.IntVector weights ) {return IntegerNumericPrimitives.wsum( values, weights );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wsum(io.deephaven.engine.tables.dbarrays.IntVector,io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  double wsum( io.deephaven.engine.tables.dbarrays.IntVector values, io.deephaven.engine.tables.dbarrays.LongVector weights ) {return IntegerNumericPrimitives.wsum( values, weights );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wsum(io.deephaven.engine.tables.dbarrays.IntVector,io.deephaven.engine.tables.dbarrays.ShortVector) */
-    public static  double wsum( io.deephaven.engine.tables.dbarrays.IntVector values, io.deephaven.engine.tables.dbarrays.ShortVector weights ) {return IntegerNumericPrimitives.wsum( values, weights );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wsum(io.deephaven.engine.tables.dbarrays.LongVector,double[]) */
-    public static  double wsum( io.deephaven.engine.tables.dbarrays.LongVector values, double[] weights ) {return LongNumericPrimitives.wsum( values, weights );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wsum(io.deephaven.engine.tables.dbarrays.LongVector,float[]) */
-    public static  double wsum( io.deephaven.engine.tables.dbarrays.LongVector values, float[] weights ) {return LongNumericPrimitives.wsum( values, weights );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wsum(io.deephaven.engine.tables.dbarrays.LongVector,int[]) */
-    public static  double wsum( io.deephaven.engine.tables.dbarrays.LongVector values, int[] weights ) {return LongNumericPrimitives.wsum( values, weights );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wsum(io.deephaven.engine.tables.dbarrays.LongVector,long[]) */
-    public static  double wsum( io.deephaven.engine.tables.dbarrays.LongVector values, long[] weights ) {return LongNumericPrimitives.wsum( values, weights );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wsum(io.deephaven.engine.tables.dbarrays.LongVector,short[]) */
-    public static  double wsum( io.deephaven.engine.tables.dbarrays.LongVector values, short[] weights ) {return LongNumericPrimitives.wsum( values, weights );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wsum(io.deephaven.engine.tables.dbarrays.LongVector,io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  double wsum( io.deephaven.engine.tables.dbarrays.LongVector values, io.deephaven.engine.tables.dbarrays.DoubleVector weights ) {return LongNumericPrimitives.wsum( values, weights );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wsum(io.deephaven.engine.tables.dbarrays.LongVector,io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  double wsum( io.deephaven.engine.tables.dbarrays.LongVector values, io.deephaven.engine.tables.dbarrays.FloatVector weights ) {return LongNumericPrimitives.wsum( values, weights );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wsum(io.deephaven.engine.tables.dbarrays.LongVector,io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  double wsum( io.deephaven.engine.tables.dbarrays.LongVector values, io.deephaven.engine.tables.dbarrays.IntVector weights ) {return LongNumericPrimitives.wsum( values, weights );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wsum(io.deephaven.engine.tables.dbarrays.LongVector,io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  double wsum( io.deephaven.engine.tables.dbarrays.LongVector values, io.deephaven.engine.tables.dbarrays.LongVector weights ) {return LongNumericPrimitives.wsum( values, weights );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wsum(io.deephaven.engine.tables.dbarrays.LongVector,io.deephaven.engine.tables.dbarrays.ShortVector) */
-    public static  double wsum( io.deephaven.engine.tables.dbarrays.LongVector values, io.deephaven.engine.tables.dbarrays.ShortVector weights ) {return LongNumericPrimitives.wsum( values, weights );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wsum(io.deephaven.engine.tables.dbarrays.ShortVector,double[]) */
-    public static  double wsum( io.deephaven.engine.tables.dbarrays.ShortVector values, double[] weights ) {return ShortNumericPrimitives.wsum( values, weights );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wsum(io.deephaven.engine.tables.dbarrays.ShortVector,float[]) */
-    public static  double wsum( io.deephaven.engine.tables.dbarrays.ShortVector values, float[] weights ) {return ShortNumericPrimitives.wsum( values, weights );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wsum(io.deephaven.engine.tables.dbarrays.ShortVector,int[]) */
-    public static  double wsum( io.deephaven.engine.tables.dbarrays.ShortVector values, int[] weights ) {return ShortNumericPrimitives.wsum( values, weights );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wsum(io.deephaven.engine.tables.dbarrays.ShortVector,long[]) */
-    public static  double wsum( io.deephaven.engine.tables.dbarrays.ShortVector values, long[] weights ) {return ShortNumericPrimitives.wsum( values, weights );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wsum(io.deephaven.engine.tables.dbarrays.ShortVector,short[]) */
-    public static  double wsum( io.deephaven.engine.tables.dbarrays.ShortVector values, short[] weights ) {return ShortNumericPrimitives.wsum( values, weights );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wsum(io.deephaven.engine.tables.dbarrays.ShortVector,io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  double wsum( io.deephaven.engine.tables.dbarrays.ShortVector values, io.deephaven.engine.tables.dbarrays.DoubleVector weights ) {return ShortNumericPrimitives.wsum( values, weights );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wsum(io.deephaven.engine.tables.dbarrays.ShortVector,io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  double wsum( io.deephaven.engine.tables.dbarrays.ShortVector values, io.deephaven.engine.tables.dbarrays.FloatVector weights ) {return ShortNumericPrimitives.wsum( values, weights );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wsum(io.deephaven.engine.tables.dbarrays.ShortVector,io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  double wsum( io.deephaven.engine.tables.dbarrays.ShortVector values, io.deephaven.engine.tables.dbarrays.IntVector weights ) {return ShortNumericPrimitives.wsum( values, weights );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wsum(io.deephaven.engine.tables.dbarrays.ShortVector,io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  double wsum( io.deephaven.engine.tables.dbarrays.ShortVector values, io.deephaven.engine.tables.dbarrays.LongVector weights ) {return ShortNumericPrimitives.wsum( values, weights );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wsum(io.deephaven.engine.tables.dbarrays.ShortVector,io.deephaven.engine.tables.dbarrays.ShortVector) */
-    public static  double wsum( io.deephaven.engine.tables.dbarrays.ShortVector values, io.deephaven.engine.tables.dbarrays.ShortVector weights ) {return ShortNumericPrimitives.wsum( values, weights );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wsum(short[], DoubleVector) */
+    public static  double wsum( short[] values, DoubleVector weights ) {return ShortNumericPrimitives.wsum( values, weights );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wsum(short[], FloatVector) */
+    public static  double wsum( short[] values, FloatVector weights ) {return ShortNumericPrimitives.wsum( values, weights );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wsum(short[], IntVector) */
+    public static  double wsum( short[] values, IntVector weights ) {return ShortNumericPrimitives.wsum( values, weights );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wsum(short[], LongVector) */
+    public static  double wsum( short[] values, LongVector weights ) {return ShortNumericPrimitives.wsum( values, weights );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wsum(short[], ShortVector) */
+    public static  double wsum( short[] values, ShortVector weights ) {return ShortNumericPrimitives.wsum( values, weights );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wsum(ByteVector,byte[]) */
+    public static  double wsum(ByteVector values, byte[] weights ) {return ByteNumericPrimitives.wsum( values, weights );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wsum(ByteVector,double[]) */
+    public static  double wsum(ByteVector values, double[] weights ) {return ByteNumericPrimitives.wsum( values, weights );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wsum(ByteVector,float[]) */
+    public static  double wsum(ByteVector values, float[] weights ) {return ByteNumericPrimitives.wsum( values, weights );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wsum(ByteVector,int[]) */
+    public static  double wsum(ByteVector values, int[] weights ) {return ByteNumericPrimitives.wsum( values, weights );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wsum(ByteVector,long[]) */
+    public static  double wsum(ByteVector values, long[] weights ) {return ByteNumericPrimitives.wsum( values, weights );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wsum(ByteVector, ByteVector) */
+    public static  double wsum(ByteVector values, ByteVector weights ) {return ByteNumericPrimitives.wsum( values, weights );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wsum(ByteVector, DoubleVector) */
+    public static  double wsum(ByteVector values, DoubleVector weights ) {return ByteNumericPrimitives.wsum( values, weights );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wsum(ByteVector, FloatVector) */
+    public static  double wsum(ByteVector values, FloatVector weights ) {return ByteNumericPrimitives.wsum( values, weights );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wsum(ByteVector, IntVector) */
+    public static  double wsum(ByteVector values, IntVector weights ) {return ByteNumericPrimitives.wsum( values, weights );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wsum(ByteVector, LongVector) */
+    public static  double wsum(ByteVector values, LongVector weights ) {return ByteNumericPrimitives.wsum( values, weights );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wsum(DoubleVector,double[]) */
+    public static  double wsum(DoubleVector values, double[] weights ) {return DoubleNumericPrimitives.wsum( values, weights );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wsum(DoubleVector,float[]) */
+    public static  double wsum(DoubleVector values, float[] weights ) {return DoubleNumericPrimitives.wsum( values, weights );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wsum(DoubleVector,int[]) */
+    public static  double wsum(DoubleVector values, int[] weights ) {return DoubleNumericPrimitives.wsum( values, weights );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wsum(DoubleVector,long[]) */
+    public static  double wsum(DoubleVector values, long[] weights ) {return DoubleNumericPrimitives.wsum( values, weights );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wsum(DoubleVector,short[]) */
+    public static  double wsum(DoubleVector values, short[] weights ) {return DoubleNumericPrimitives.wsum( values, weights );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wsum(DoubleVector, DoubleVector) */
+    public static  double wsum(DoubleVector values, DoubleVector weights ) {return DoubleNumericPrimitives.wsum( values, weights );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wsum(DoubleVector, FloatVector) */
+    public static  double wsum(DoubleVector values, FloatVector weights ) {return DoubleNumericPrimitives.wsum( values, weights );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wsum(DoubleVector, IntVector) */
+    public static  double wsum(DoubleVector values, IntVector weights ) {return DoubleNumericPrimitives.wsum( values, weights );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wsum(DoubleVector, LongVector) */
+    public static  double wsum(DoubleVector values, LongVector weights ) {return DoubleNumericPrimitives.wsum( values, weights );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wsum(DoubleVector, ShortVector) */
+    public static  double wsum(DoubleVector values, ShortVector weights ) {return DoubleNumericPrimitives.wsum( values, weights );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wsum(FloatVector,double[]) */
+    public static  double wsum(FloatVector values, double[] weights ) {return FloatNumericPrimitives.wsum( values, weights );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wsum(FloatVector,float[]) */
+    public static  double wsum(FloatVector values, float[] weights ) {return FloatNumericPrimitives.wsum( values, weights );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wsum(FloatVector,int[]) */
+    public static  double wsum(FloatVector values, int[] weights ) {return FloatNumericPrimitives.wsum( values, weights );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wsum(FloatVector,long[]) */
+    public static  double wsum(FloatVector values, long[] weights ) {return FloatNumericPrimitives.wsum( values, weights );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wsum(FloatVector,short[]) */
+    public static  double wsum(FloatVector values, short[] weights ) {return FloatNumericPrimitives.wsum( values, weights );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wsum(FloatVector, DoubleVector) */
+    public static  double wsum(FloatVector values, DoubleVector weights ) {return FloatNumericPrimitives.wsum( values, weights );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wsum(FloatVector, FloatVector) */
+    public static  double wsum(FloatVector values, FloatVector weights ) {return FloatNumericPrimitives.wsum( values, weights );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wsum(FloatVector, IntVector) */
+    public static  double wsum(FloatVector values, IntVector weights ) {return FloatNumericPrimitives.wsum( values, weights );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wsum(FloatVector, LongVector) */
+    public static  double wsum(FloatVector values, LongVector weights ) {return FloatNumericPrimitives.wsum( values, weights );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wsum(FloatVector, ShortVector) */
+    public static  double wsum(FloatVector values, ShortVector weights ) {return FloatNumericPrimitives.wsum( values, weights );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wsum(IntVector,double[]) */
+    public static  double wsum(IntVector values, double[] weights ) {return IntegerNumericPrimitives.wsum( values, weights );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wsum(IntVector,float[]) */
+    public static  double wsum(IntVector values, float[] weights ) {return IntegerNumericPrimitives.wsum( values, weights );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wsum(IntVector,int[]) */
+    public static  double wsum(IntVector values, int[] weights ) {return IntegerNumericPrimitives.wsum( values, weights );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wsum(IntVector,long[]) */
+    public static  double wsum(IntVector values, long[] weights ) {return IntegerNumericPrimitives.wsum( values, weights );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wsum(IntVector,short[]) */
+    public static  double wsum(IntVector values, short[] weights ) {return IntegerNumericPrimitives.wsum( values, weights );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wsum(IntVector, DoubleVector) */
+    public static  double wsum(IntVector values, DoubleVector weights ) {return IntegerNumericPrimitives.wsum( values, weights );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wsum(IntVector, FloatVector) */
+    public static  double wsum(IntVector values, FloatVector weights ) {return IntegerNumericPrimitives.wsum( values, weights );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wsum(IntVector, IntVector) */
+    public static  double wsum(IntVector values, IntVector weights ) {return IntegerNumericPrimitives.wsum( values, weights );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wsum(IntVector, LongVector) */
+    public static  double wsum(IntVector values, LongVector weights ) {return IntegerNumericPrimitives.wsum( values, weights );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wsum(IntVector, ShortVector) */
+    public static  double wsum(IntVector values, ShortVector weights ) {return IntegerNumericPrimitives.wsum( values, weights );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wsum(LongVector,double[]) */
+    public static  double wsum(LongVector values, double[] weights ) {return LongNumericPrimitives.wsum( values, weights );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wsum(LongVector,float[]) */
+    public static  double wsum(LongVector values, float[] weights ) {return LongNumericPrimitives.wsum( values, weights );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wsum(LongVector,int[]) */
+    public static  double wsum(LongVector values, int[] weights ) {return LongNumericPrimitives.wsum( values, weights );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wsum(LongVector,long[]) */
+    public static  double wsum(LongVector values, long[] weights ) {return LongNumericPrimitives.wsum( values, weights );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wsum(LongVector,short[]) */
+    public static  double wsum(LongVector values, short[] weights ) {return LongNumericPrimitives.wsum( values, weights );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wsum(LongVector, DoubleVector) */
+    public static  double wsum(LongVector values, DoubleVector weights ) {return LongNumericPrimitives.wsum( values, weights );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wsum(LongVector, FloatVector) */
+    public static  double wsum(LongVector values, FloatVector weights ) {return LongNumericPrimitives.wsum( values, weights );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wsum(LongVector, IntVector) */
+    public static  double wsum(LongVector values, IntVector weights ) {return LongNumericPrimitives.wsum( values, weights );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wsum(LongVector, LongVector) */
+    public static  double wsum(LongVector values, LongVector weights ) {return LongNumericPrimitives.wsum( values, weights );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wsum(LongVector, ShortVector) */
+    public static  double wsum(LongVector values, ShortVector weights ) {return LongNumericPrimitives.wsum( values, weights );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wsum(ShortVector,double[]) */
+    public static  double wsum(ShortVector values, double[] weights ) {return ShortNumericPrimitives.wsum( values, weights );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wsum(ShortVector,float[]) */
+    public static  double wsum(ShortVector values, float[] weights ) {return ShortNumericPrimitives.wsum( values, weights );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wsum(ShortVector,int[]) */
+    public static  double wsum(ShortVector values, int[] weights ) {return ShortNumericPrimitives.wsum( values, weights );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wsum(ShortVector,long[]) */
+    public static  double wsum(ShortVector values, long[] weights ) {return ShortNumericPrimitives.wsum( values, weights );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wsum(ShortVector,short[]) */
+    public static  double wsum(ShortVector values, short[] weights ) {return ShortNumericPrimitives.wsum( values, weights );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wsum(ShortVector, DoubleVector) */
+    public static  double wsum(ShortVector values, DoubleVector weights ) {return ShortNumericPrimitives.wsum( values, weights );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wsum(ShortVector, FloatVector) */
+    public static  double wsum(ShortVector values, FloatVector weights ) {return ShortNumericPrimitives.wsum( values, weights );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wsum(ShortVector, IntVector) */
+    public static  double wsum(ShortVector values, IntVector weights ) {return ShortNumericPrimitives.wsum( values, weights );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wsum(ShortVector, LongVector) */
+    public static  double wsum(ShortVector values, LongVector weights ) {return ShortNumericPrimitives.wsum( values, weights );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wsum(ShortVector, ShortVector) */
+    public static  double wsum(ShortVector values, ShortVector weights ) {return ShortNumericPrimitives.wsum( values, weights );}
     /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wtstat(byte[],byte[]) */
     public static  double wtstat( byte[] values, byte[] weights ) {return ByteNumericPrimitives.wtstat( values, weights );}
     /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wtstat(byte[],double[]) */
@@ -3478,16 +3467,16 @@ public class GroovyStaticImports {
     public static  double wtstat( byte[] values, int[] weights ) {return ByteNumericPrimitives.wtstat( values, weights );}
     /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wtstat(byte[],long[]) */
     public static  double wtstat( byte[] values, long[] weights ) {return ByteNumericPrimitives.wtstat( values, weights );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wtstat(byte[],io.deephaven.engine.tables.dbarrays.ByteVector) */
-    public static  double wtstat( byte[] values, io.deephaven.engine.tables.dbarrays.ByteVector weights ) {return ByteNumericPrimitives.wtstat( values, weights );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wtstat(byte[],io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  double wtstat( byte[] values, io.deephaven.engine.tables.dbarrays.DoubleVector weights ) {return ByteNumericPrimitives.wtstat( values, weights );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wtstat(byte[],io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  double wtstat( byte[] values, io.deephaven.engine.tables.dbarrays.FloatVector weights ) {return ByteNumericPrimitives.wtstat( values, weights );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wtstat(byte[],io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  double wtstat( byte[] values, io.deephaven.engine.tables.dbarrays.IntVector weights ) {return ByteNumericPrimitives.wtstat( values, weights );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wtstat(byte[],io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  double wtstat( byte[] values, io.deephaven.engine.tables.dbarrays.LongVector weights ) {return ByteNumericPrimitives.wtstat( values, weights );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wtstat(byte[], ByteVector) */
+    public static  double wtstat( byte[] values, ByteVector weights ) {return ByteNumericPrimitives.wtstat( values, weights );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wtstat(byte[], DoubleVector) */
+    public static  double wtstat( byte[] values, DoubleVector weights ) {return ByteNumericPrimitives.wtstat( values, weights );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wtstat(byte[], FloatVector) */
+    public static  double wtstat( byte[] values, FloatVector weights ) {return ByteNumericPrimitives.wtstat( values, weights );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wtstat(byte[], IntVector) */
+    public static  double wtstat( byte[] values, IntVector weights ) {return ByteNumericPrimitives.wtstat( values, weights );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wtstat(byte[], LongVector) */
+    public static  double wtstat( byte[] values, LongVector weights ) {return ByteNumericPrimitives.wtstat( values, weights );}
     /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wtstat(double[],double[]) */
     public static  double wtstat( double[] values, double[] weights ) {return DoubleNumericPrimitives.wtstat( values, weights );}
     /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wtstat(double[],float[]) */
@@ -3498,16 +3487,16 @@ public class GroovyStaticImports {
     public static  double wtstat( double[] values, long[] weights ) {return DoubleNumericPrimitives.wtstat( values, weights );}
     /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wtstat(double[],short[]) */
     public static  double wtstat( double[] values, short[] weights ) {return DoubleNumericPrimitives.wtstat( values, weights );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wtstat(double[],io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  double wtstat( double[] values, io.deephaven.engine.tables.dbarrays.DoubleVector weights ) {return DoubleNumericPrimitives.wtstat( values, weights );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wtstat(double[],io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  double wtstat( double[] values, io.deephaven.engine.tables.dbarrays.FloatVector weights ) {return DoubleNumericPrimitives.wtstat( values, weights );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wtstat(double[],io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  double wtstat( double[] values, io.deephaven.engine.tables.dbarrays.IntVector weights ) {return DoubleNumericPrimitives.wtstat( values, weights );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wtstat(double[],io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  double wtstat( double[] values, io.deephaven.engine.tables.dbarrays.LongVector weights ) {return DoubleNumericPrimitives.wtstat( values, weights );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wtstat(double[],io.deephaven.engine.tables.dbarrays.ShortVector) */
-    public static  double wtstat( double[] values, io.deephaven.engine.tables.dbarrays.ShortVector weights ) {return DoubleNumericPrimitives.wtstat( values, weights );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wtstat(double[], DoubleVector) */
+    public static  double wtstat( double[] values, DoubleVector weights ) {return DoubleNumericPrimitives.wtstat( values, weights );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wtstat(double[], FloatVector) */
+    public static  double wtstat( double[] values, FloatVector weights ) {return DoubleNumericPrimitives.wtstat( values, weights );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wtstat(double[], IntVector) */
+    public static  double wtstat( double[] values, IntVector weights ) {return DoubleNumericPrimitives.wtstat( values, weights );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wtstat(double[], LongVector) */
+    public static  double wtstat( double[] values, LongVector weights ) {return DoubleNumericPrimitives.wtstat( values, weights );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wtstat(double[], ShortVector) */
+    public static  double wtstat( double[] values, ShortVector weights ) {return DoubleNumericPrimitives.wtstat( values, weights );}
     /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wtstat(float[],double[]) */
     public static  double wtstat( float[] values, double[] weights ) {return FloatNumericPrimitives.wtstat( values, weights );}
     /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wtstat(float[],float[]) */
@@ -3518,16 +3507,16 @@ public class GroovyStaticImports {
     public static  double wtstat( float[] values, long[] weights ) {return FloatNumericPrimitives.wtstat( values, weights );}
     /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wtstat(float[],short[]) */
     public static  double wtstat( float[] values, short[] weights ) {return FloatNumericPrimitives.wtstat( values, weights );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wtstat(float[],io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  double wtstat( float[] values, io.deephaven.engine.tables.dbarrays.DoubleVector weights ) {return FloatNumericPrimitives.wtstat( values, weights );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wtstat(float[],io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  double wtstat( float[] values, io.deephaven.engine.tables.dbarrays.FloatVector weights ) {return FloatNumericPrimitives.wtstat( values, weights );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wtstat(float[],io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  double wtstat( float[] values, io.deephaven.engine.tables.dbarrays.IntVector weights ) {return FloatNumericPrimitives.wtstat( values, weights );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wtstat(float[],io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  double wtstat( float[] values, io.deephaven.engine.tables.dbarrays.LongVector weights ) {return FloatNumericPrimitives.wtstat( values, weights );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wtstat(float[],io.deephaven.engine.tables.dbarrays.ShortVector) */
-    public static  double wtstat( float[] values, io.deephaven.engine.tables.dbarrays.ShortVector weights ) {return FloatNumericPrimitives.wtstat( values, weights );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wtstat(float[], DoubleVector) */
+    public static  double wtstat( float[] values, DoubleVector weights ) {return FloatNumericPrimitives.wtstat( values, weights );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wtstat(float[], FloatVector) */
+    public static  double wtstat( float[] values, FloatVector weights ) {return FloatNumericPrimitives.wtstat( values, weights );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wtstat(float[], IntVector) */
+    public static  double wtstat( float[] values, IntVector weights ) {return FloatNumericPrimitives.wtstat( values, weights );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wtstat(float[], LongVector) */
+    public static  double wtstat( float[] values, LongVector weights ) {return FloatNumericPrimitives.wtstat( values, weights );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wtstat(float[], ShortVector) */
+    public static  double wtstat( float[] values, ShortVector weights ) {return FloatNumericPrimitives.wtstat( values, weights );}
     /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wtstat(int[],double[]) */
     public static  double wtstat( int[] values, double[] weights ) {return IntegerNumericPrimitives.wtstat( values, weights );}
     /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wtstat(int[],float[]) */
@@ -3538,16 +3527,16 @@ public class GroovyStaticImports {
     public static  double wtstat( int[] values, long[] weights ) {return IntegerNumericPrimitives.wtstat( values, weights );}
     /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wtstat(int[],short[]) */
     public static  double wtstat( int[] values, short[] weights ) {return IntegerNumericPrimitives.wtstat( values, weights );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wtstat(int[],io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  double wtstat( int[] values, io.deephaven.engine.tables.dbarrays.DoubleVector weights ) {return IntegerNumericPrimitives.wtstat( values, weights );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wtstat(int[],io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  double wtstat( int[] values, io.deephaven.engine.tables.dbarrays.FloatVector weights ) {return IntegerNumericPrimitives.wtstat( values, weights );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wtstat(int[],io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  double wtstat( int[] values, io.deephaven.engine.tables.dbarrays.IntVector weights ) {return IntegerNumericPrimitives.wtstat( values, weights );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wtstat(int[],io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  double wtstat( int[] values, io.deephaven.engine.tables.dbarrays.LongVector weights ) {return IntegerNumericPrimitives.wtstat( values, weights );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wtstat(int[],io.deephaven.engine.tables.dbarrays.ShortVector) */
-    public static  double wtstat( int[] values, io.deephaven.engine.tables.dbarrays.ShortVector weights ) {return IntegerNumericPrimitives.wtstat( values, weights );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wtstat(int[], DoubleVector) */
+    public static  double wtstat( int[] values, DoubleVector weights ) {return IntegerNumericPrimitives.wtstat( values, weights );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wtstat(int[], FloatVector) */
+    public static  double wtstat( int[] values, FloatVector weights ) {return IntegerNumericPrimitives.wtstat( values, weights );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wtstat(int[], IntVector) */
+    public static  double wtstat( int[] values, IntVector weights ) {return IntegerNumericPrimitives.wtstat( values, weights );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wtstat(int[], LongVector) */
+    public static  double wtstat( int[] values, LongVector weights ) {return IntegerNumericPrimitives.wtstat( values, weights );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wtstat(int[], ShortVector) */
+    public static  double wtstat( int[] values, ShortVector weights ) {return IntegerNumericPrimitives.wtstat( values, weights );}
     /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wtstat(long[],double[]) */
     public static  double wtstat( long[] values, double[] weights ) {return LongNumericPrimitives.wtstat( values, weights );}
     /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wtstat(long[],float[]) */
@@ -3558,16 +3547,16 @@ public class GroovyStaticImports {
     public static  double wtstat( long[] values, long[] weights ) {return LongNumericPrimitives.wtstat( values, weights );}
     /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wtstat(long[],short[]) */
     public static  double wtstat( long[] values, short[] weights ) {return LongNumericPrimitives.wtstat( values, weights );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wtstat(long[],io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  double wtstat( long[] values, io.deephaven.engine.tables.dbarrays.DoubleVector weights ) {return LongNumericPrimitives.wtstat( values, weights );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wtstat(long[],io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  double wtstat( long[] values, io.deephaven.engine.tables.dbarrays.FloatVector weights ) {return LongNumericPrimitives.wtstat( values, weights );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wtstat(long[],io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  double wtstat( long[] values, io.deephaven.engine.tables.dbarrays.IntVector weights ) {return LongNumericPrimitives.wtstat( values, weights );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wtstat(long[],io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  double wtstat( long[] values, io.deephaven.engine.tables.dbarrays.LongVector weights ) {return LongNumericPrimitives.wtstat( values, weights );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wtstat(long[],io.deephaven.engine.tables.dbarrays.ShortVector) */
-    public static  double wtstat( long[] values, io.deephaven.engine.tables.dbarrays.ShortVector weights ) {return LongNumericPrimitives.wtstat( values, weights );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wtstat(long[], DoubleVector) */
+    public static  double wtstat( long[] values, DoubleVector weights ) {return LongNumericPrimitives.wtstat( values, weights );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wtstat(long[], FloatVector) */
+    public static  double wtstat( long[] values, FloatVector weights ) {return LongNumericPrimitives.wtstat( values, weights );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wtstat(long[], IntVector) */
+    public static  double wtstat( long[] values, IntVector weights ) {return LongNumericPrimitives.wtstat( values, weights );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wtstat(long[], LongVector) */
+    public static  double wtstat( long[] values, LongVector weights ) {return LongNumericPrimitives.wtstat( values, weights );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wtstat(long[], ShortVector) */
+    public static  double wtstat( long[] values, ShortVector weights ) {return LongNumericPrimitives.wtstat( values, weights );}
     /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wtstat(short[],double[]) */
     public static  double wtstat( short[] values, double[] weights ) {return ShortNumericPrimitives.wtstat( values, weights );}
     /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wtstat(short[],float[]) */
@@ -3578,136 +3567,136 @@ public class GroovyStaticImports {
     public static  double wtstat( short[] values, long[] weights ) {return ShortNumericPrimitives.wtstat( values, weights );}
     /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wtstat(short[],short[]) */
     public static  double wtstat( short[] values, short[] weights ) {return ShortNumericPrimitives.wtstat( values, weights );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wtstat(short[],io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  double wtstat( short[] values, io.deephaven.engine.tables.dbarrays.DoubleVector weights ) {return ShortNumericPrimitives.wtstat( values, weights );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wtstat(short[],io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  double wtstat( short[] values, io.deephaven.engine.tables.dbarrays.FloatVector weights ) {return ShortNumericPrimitives.wtstat( values, weights );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wtstat(short[],io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  double wtstat( short[] values, io.deephaven.engine.tables.dbarrays.IntVector weights ) {return ShortNumericPrimitives.wtstat( values, weights );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wtstat(short[],io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  double wtstat( short[] values, io.deephaven.engine.tables.dbarrays.LongVector weights ) {return ShortNumericPrimitives.wtstat( values, weights );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wtstat(short[],io.deephaven.engine.tables.dbarrays.ShortVector) */
-    public static  double wtstat( short[] values, io.deephaven.engine.tables.dbarrays.ShortVector weights ) {return ShortNumericPrimitives.wtstat( values, weights );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wtstat(io.deephaven.engine.tables.dbarrays.ByteVector,byte[]) */
-    public static  double wtstat( io.deephaven.engine.tables.dbarrays.ByteVector values, byte[] weights ) {return ByteNumericPrimitives.wtstat( values, weights );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wtstat(io.deephaven.engine.tables.dbarrays.ByteVector,double[]) */
-    public static  double wtstat( io.deephaven.engine.tables.dbarrays.ByteVector values, double[] weights ) {return ByteNumericPrimitives.wtstat( values, weights );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wtstat(io.deephaven.engine.tables.dbarrays.ByteVector,float[]) */
-    public static  double wtstat( io.deephaven.engine.tables.dbarrays.ByteVector values, float[] weights ) {return ByteNumericPrimitives.wtstat( values, weights );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wtstat(io.deephaven.engine.tables.dbarrays.ByteVector,int[]) */
-    public static  double wtstat( io.deephaven.engine.tables.dbarrays.ByteVector values, int[] weights ) {return ByteNumericPrimitives.wtstat( values, weights );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wtstat(io.deephaven.engine.tables.dbarrays.ByteVector,long[]) */
-    public static  double wtstat( io.deephaven.engine.tables.dbarrays.ByteVector values, long[] weights ) {return ByteNumericPrimitives.wtstat( values, weights );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wtstat(io.deephaven.engine.tables.dbarrays.ByteVector,io.deephaven.engine.tables.dbarrays.ByteVector) */
-    public static  double wtstat( io.deephaven.engine.tables.dbarrays.ByteVector values, io.deephaven.engine.tables.dbarrays.ByteVector weights ) {return ByteNumericPrimitives.wtstat( values, weights );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wtstat(io.deephaven.engine.tables.dbarrays.ByteVector,io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  double wtstat( io.deephaven.engine.tables.dbarrays.ByteVector values, io.deephaven.engine.tables.dbarrays.DoubleVector weights ) {return ByteNumericPrimitives.wtstat( values, weights );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wtstat(io.deephaven.engine.tables.dbarrays.ByteVector,io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  double wtstat( io.deephaven.engine.tables.dbarrays.ByteVector values, io.deephaven.engine.tables.dbarrays.FloatVector weights ) {return ByteNumericPrimitives.wtstat( values, weights );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wtstat(io.deephaven.engine.tables.dbarrays.ByteVector,io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  double wtstat( io.deephaven.engine.tables.dbarrays.ByteVector values, io.deephaven.engine.tables.dbarrays.IntVector weights ) {return ByteNumericPrimitives.wtstat( values, weights );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wtstat(io.deephaven.engine.tables.dbarrays.ByteVector,io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  double wtstat( io.deephaven.engine.tables.dbarrays.ByteVector values, io.deephaven.engine.tables.dbarrays.LongVector weights ) {return ByteNumericPrimitives.wtstat( values, weights );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wtstat(io.deephaven.engine.tables.dbarrays.DoubleVector,double[]) */
-    public static  double wtstat( io.deephaven.engine.tables.dbarrays.DoubleVector values, double[] weights ) {return DoubleNumericPrimitives.wtstat( values, weights );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wtstat(io.deephaven.engine.tables.dbarrays.DoubleVector,float[]) */
-    public static  double wtstat( io.deephaven.engine.tables.dbarrays.DoubleVector values, float[] weights ) {return DoubleNumericPrimitives.wtstat( values, weights );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wtstat(io.deephaven.engine.tables.dbarrays.DoubleVector,int[]) */
-    public static  double wtstat( io.deephaven.engine.tables.dbarrays.DoubleVector values, int[] weights ) {return DoubleNumericPrimitives.wtstat( values, weights );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wtstat(io.deephaven.engine.tables.dbarrays.DoubleVector,long[]) */
-    public static  double wtstat( io.deephaven.engine.tables.dbarrays.DoubleVector values, long[] weights ) {return DoubleNumericPrimitives.wtstat( values, weights );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wtstat(io.deephaven.engine.tables.dbarrays.DoubleVector,short[]) */
-    public static  double wtstat( io.deephaven.engine.tables.dbarrays.DoubleVector values, short[] weights ) {return DoubleNumericPrimitives.wtstat( values, weights );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wtstat(io.deephaven.engine.tables.dbarrays.DoubleVector,io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  double wtstat( io.deephaven.engine.tables.dbarrays.DoubleVector values, io.deephaven.engine.tables.dbarrays.DoubleVector weights ) {return DoubleNumericPrimitives.wtstat( values, weights );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wtstat(io.deephaven.engine.tables.dbarrays.DoubleVector,io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  double wtstat( io.deephaven.engine.tables.dbarrays.DoubleVector values, io.deephaven.engine.tables.dbarrays.FloatVector weights ) {return DoubleNumericPrimitives.wtstat( values, weights );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wtstat(io.deephaven.engine.tables.dbarrays.DoubleVector,io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  double wtstat( io.deephaven.engine.tables.dbarrays.DoubleVector values, io.deephaven.engine.tables.dbarrays.IntVector weights ) {return DoubleNumericPrimitives.wtstat( values, weights );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wtstat(io.deephaven.engine.tables.dbarrays.DoubleVector,io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  double wtstat( io.deephaven.engine.tables.dbarrays.DoubleVector values, io.deephaven.engine.tables.dbarrays.LongVector weights ) {return DoubleNumericPrimitives.wtstat( values, weights );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wtstat(io.deephaven.engine.tables.dbarrays.DoubleVector,io.deephaven.engine.tables.dbarrays.ShortVector) */
-    public static  double wtstat( io.deephaven.engine.tables.dbarrays.DoubleVector values, io.deephaven.engine.tables.dbarrays.ShortVector weights ) {return DoubleNumericPrimitives.wtstat( values, weights );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wtstat(io.deephaven.engine.tables.dbarrays.FloatVector,double[]) */
-    public static  double wtstat( io.deephaven.engine.tables.dbarrays.FloatVector values, double[] weights ) {return FloatNumericPrimitives.wtstat( values, weights );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wtstat(io.deephaven.engine.tables.dbarrays.FloatVector,float[]) */
-    public static  double wtstat( io.deephaven.engine.tables.dbarrays.FloatVector values, float[] weights ) {return FloatNumericPrimitives.wtstat( values, weights );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wtstat(io.deephaven.engine.tables.dbarrays.FloatVector,int[]) */
-    public static  double wtstat( io.deephaven.engine.tables.dbarrays.FloatVector values, int[] weights ) {return FloatNumericPrimitives.wtstat( values, weights );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wtstat(io.deephaven.engine.tables.dbarrays.FloatVector,long[]) */
-    public static  double wtstat( io.deephaven.engine.tables.dbarrays.FloatVector values, long[] weights ) {return FloatNumericPrimitives.wtstat( values, weights );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wtstat(io.deephaven.engine.tables.dbarrays.FloatVector,short[]) */
-    public static  double wtstat( io.deephaven.engine.tables.dbarrays.FloatVector values, short[] weights ) {return FloatNumericPrimitives.wtstat( values, weights );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wtstat(io.deephaven.engine.tables.dbarrays.FloatVector,io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  double wtstat( io.deephaven.engine.tables.dbarrays.FloatVector values, io.deephaven.engine.tables.dbarrays.DoubleVector weights ) {return FloatNumericPrimitives.wtstat( values, weights );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wtstat(io.deephaven.engine.tables.dbarrays.FloatVector,io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  double wtstat( io.deephaven.engine.tables.dbarrays.FloatVector values, io.deephaven.engine.tables.dbarrays.FloatVector weights ) {return FloatNumericPrimitives.wtstat( values, weights );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wtstat(io.deephaven.engine.tables.dbarrays.FloatVector,io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  double wtstat( io.deephaven.engine.tables.dbarrays.FloatVector values, io.deephaven.engine.tables.dbarrays.IntVector weights ) {return FloatNumericPrimitives.wtstat( values, weights );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wtstat(io.deephaven.engine.tables.dbarrays.FloatVector,io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  double wtstat( io.deephaven.engine.tables.dbarrays.FloatVector values, io.deephaven.engine.tables.dbarrays.LongVector weights ) {return FloatNumericPrimitives.wtstat( values, weights );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wtstat(io.deephaven.engine.tables.dbarrays.FloatVector,io.deephaven.engine.tables.dbarrays.ShortVector) */
-    public static  double wtstat( io.deephaven.engine.tables.dbarrays.FloatVector values, io.deephaven.engine.tables.dbarrays.ShortVector weights ) {return FloatNumericPrimitives.wtstat( values, weights );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wtstat(io.deephaven.engine.tables.dbarrays.IntVector,double[]) */
-    public static  double wtstat( io.deephaven.engine.tables.dbarrays.IntVector values, double[] weights ) {return IntegerNumericPrimitives.wtstat( values, weights );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wtstat(io.deephaven.engine.tables.dbarrays.IntVector,float[]) */
-    public static  double wtstat( io.deephaven.engine.tables.dbarrays.IntVector values, float[] weights ) {return IntegerNumericPrimitives.wtstat( values, weights );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wtstat(io.deephaven.engine.tables.dbarrays.IntVector,int[]) */
-    public static  double wtstat( io.deephaven.engine.tables.dbarrays.IntVector values, int[] weights ) {return IntegerNumericPrimitives.wtstat( values, weights );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wtstat(io.deephaven.engine.tables.dbarrays.IntVector,long[]) */
-    public static  double wtstat( io.deephaven.engine.tables.dbarrays.IntVector values, long[] weights ) {return IntegerNumericPrimitives.wtstat( values, weights );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wtstat(io.deephaven.engine.tables.dbarrays.IntVector,short[]) */
-    public static  double wtstat( io.deephaven.engine.tables.dbarrays.IntVector values, short[] weights ) {return IntegerNumericPrimitives.wtstat( values, weights );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wtstat(io.deephaven.engine.tables.dbarrays.IntVector,io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  double wtstat( io.deephaven.engine.tables.dbarrays.IntVector values, io.deephaven.engine.tables.dbarrays.DoubleVector weights ) {return IntegerNumericPrimitives.wtstat( values, weights );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wtstat(io.deephaven.engine.tables.dbarrays.IntVector,io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  double wtstat( io.deephaven.engine.tables.dbarrays.IntVector values, io.deephaven.engine.tables.dbarrays.FloatVector weights ) {return IntegerNumericPrimitives.wtstat( values, weights );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wtstat(io.deephaven.engine.tables.dbarrays.IntVector,io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  double wtstat( io.deephaven.engine.tables.dbarrays.IntVector values, io.deephaven.engine.tables.dbarrays.IntVector weights ) {return IntegerNumericPrimitives.wtstat( values, weights );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wtstat(io.deephaven.engine.tables.dbarrays.IntVector,io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  double wtstat( io.deephaven.engine.tables.dbarrays.IntVector values, io.deephaven.engine.tables.dbarrays.LongVector weights ) {return IntegerNumericPrimitives.wtstat( values, weights );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wtstat(io.deephaven.engine.tables.dbarrays.IntVector,io.deephaven.engine.tables.dbarrays.ShortVector) */
-    public static  double wtstat( io.deephaven.engine.tables.dbarrays.IntVector values, io.deephaven.engine.tables.dbarrays.ShortVector weights ) {return IntegerNumericPrimitives.wtstat( values, weights );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wtstat(io.deephaven.engine.tables.dbarrays.LongVector,double[]) */
-    public static  double wtstat( io.deephaven.engine.tables.dbarrays.LongVector values, double[] weights ) {return LongNumericPrimitives.wtstat( values, weights );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wtstat(io.deephaven.engine.tables.dbarrays.LongVector,float[]) */
-    public static  double wtstat( io.deephaven.engine.tables.dbarrays.LongVector values, float[] weights ) {return LongNumericPrimitives.wtstat( values, weights );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wtstat(io.deephaven.engine.tables.dbarrays.LongVector,int[]) */
-    public static  double wtstat( io.deephaven.engine.tables.dbarrays.LongVector values, int[] weights ) {return LongNumericPrimitives.wtstat( values, weights );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wtstat(io.deephaven.engine.tables.dbarrays.LongVector,long[]) */
-    public static  double wtstat( io.deephaven.engine.tables.dbarrays.LongVector values, long[] weights ) {return LongNumericPrimitives.wtstat( values, weights );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wtstat(io.deephaven.engine.tables.dbarrays.LongVector,short[]) */
-    public static  double wtstat( io.deephaven.engine.tables.dbarrays.LongVector values, short[] weights ) {return LongNumericPrimitives.wtstat( values, weights );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wtstat(io.deephaven.engine.tables.dbarrays.LongVector,io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  double wtstat( io.deephaven.engine.tables.dbarrays.LongVector values, io.deephaven.engine.tables.dbarrays.DoubleVector weights ) {return LongNumericPrimitives.wtstat( values, weights );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wtstat(io.deephaven.engine.tables.dbarrays.LongVector,io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  double wtstat( io.deephaven.engine.tables.dbarrays.LongVector values, io.deephaven.engine.tables.dbarrays.FloatVector weights ) {return LongNumericPrimitives.wtstat( values, weights );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wtstat(io.deephaven.engine.tables.dbarrays.LongVector,io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  double wtstat( io.deephaven.engine.tables.dbarrays.LongVector values, io.deephaven.engine.tables.dbarrays.IntVector weights ) {return LongNumericPrimitives.wtstat( values, weights );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wtstat(io.deephaven.engine.tables.dbarrays.LongVector,io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  double wtstat( io.deephaven.engine.tables.dbarrays.LongVector values, io.deephaven.engine.tables.dbarrays.LongVector weights ) {return LongNumericPrimitives.wtstat( values, weights );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wtstat(io.deephaven.engine.tables.dbarrays.LongVector,io.deephaven.engine.tables.dbarrays.ShortVector) */
-    public static  double wtstat( io.deephaven.engine.tables.dbarrays.LongVector values, io.deephaven.engine.tables.dbarrays.ShortVector weights ) {return LongNumericPrimitives.wtstat( values, weights );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wtstat(io.deephaven.engine.tables.dbarrays.ShortVector,double[]) */
-    public static  double wtstat( io.deephaven.engine.tables.dbarrays.ShortVector values, double[] weights ) {return ShortNumericPrimitives.wtstat( values, weights );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wtstat(io.deephaven.engine.tables.dbarrays.ShortVector,float[]) */
-    public static  double wtstat( io.deephaven.engine.tables.dbarrays.ShortVector values, float[] weights ) {return ShortNumericPrimitives.wtstat( values, weights );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wtstat(io.deephaven.engine.tables.dbarrays.ShortVector,int[]) */
-    public static  double wtstat( io.deephaven.engine.tables.dbarrays.ShortVector values, int[] weights ) {return ShortNumericPrimitives.wtstat( values, weights );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wtstat(io.deephaven.engine.tables.dbarrays.ShortVector,long[]) */
-    public static  double wtstat( io.deephaven.engine.tables.dbarrays.ShortVector values, long[] weights ) {return ShortNumericPrimitives.wtstat( values, weights );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wtstat(io.deephaven.engine.tables.dbarrays.ShortVector,short[]) */
-    public static  double wtstat( io.deephaven.engine.tables.dbarrays.ShortVector values, short[] weights ) {return ShortNumericPrimitives.wtstat( values, weights );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wtstat(io.deephaven.engine.tables.dbarrays.ShortVector,io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  double wtstat( io.deephaven.engine.tables.dbarrays.ShortVector values, io.deephaven.engine.tables.dbarrays.DoubleVector weights ) {return ShortNumericPrimitives.wtstat( values, weights );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wtstat(io.deephaven.engine.tables.dbarrays.ShortVector,io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  double wtstat( io.deephaven.engine.tables.dbarrays.ShortVector values, io.deephaven.engine.tables.dbarrays.FloatVector weights ) {return ShortNumericPrimitives.wtstat( values, weights );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wtstat(io.deephaven.engine.tables.dbarrays.ShortVector,io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  double wtstat( io.deephaven.engine.tables.dbarrays.ShortVector values, io.deephaven.engine.tables.dbarrays.IntVector weights ) {return ShortNumericPrimitives.wtstat( values, weights );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wtstat(io.deephaven.engine.tables.dbarrays.ShortVector,io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  double wtstat( io.deephaven.engine.tables.dbarrays.ShortVector values, io.deephaven.engine.tables.dbarrays.LongVector weights ) {return ShortNumericPrimitives.wtstat( values, weights );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wtstat(io.deephaven.engine.tables.dbarrays.ShortVector,io.deephaven.engine.tables.dbarrays.ShortVector) */
-    public static  double wtstat( io.deephaven.engine.tables.dbarrays.ShortVector values, io.deephaven.engine.tables.dbarrays.ShortVector weights ) {return ShortNumericPrimitives.wtstat( values, weights );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wtstat(short[], DoubleVector) */
+    public static  double wtstat( short[] values, DoubleVector weights ) {return ShortNumericPrimitives.wtstat( values, weights );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wtstat(short[], FloatVector) */
+    public static  double wtstat( short[] values, FloatVector weights ) {return ShortNumericPrimitives.wtstat( values, weights );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wtstat(short[], IntVector) */
+    public static  double wtstat( short[] values, IntVector weights ) {return ShortNumericPrimitives.wtstat( values, weights );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wtstat(short[], LongVector) */
+    public static  double wtstat( short[] values, LongVector weights ) {return ShortNumericPrimitives.wtstat( values, weights );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wtstat(short[], ShortVector) */
+    public static  double wtstat( short[] values, ShortVector weights ) {return ShortNumericPrimitives.wtstat( values, weights );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wtstat(ByteVector,byte[]) */
+    public static  double wtstat(ByteVector values, byte[] weights ) {return ByteNumericPrimitives.wtstat( values, weights );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wtstat(ByteVector,double[]) */
+    public static  double wtstat(ByteVector values, double[] weights ) {return ByteNumericPrimitives.wtstat( values, weights );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wtstat(ByteVector,float[]) */
+    public static  double wtstat(ByteVector values, float[] weights ) {return ByteNumericPrimitives.wtstat( values, weights );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wtstat(ByteVector,int[]) */
+    public static  double wtstat(ByteVector values, int[] weights ) {return ByteNumericPrimitives.wtstat( values, weights );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wtstat(ByteVector,long[]) */
+    public static  double wtstat(ByteVector values, long[] weights ) {return ByteNumericPrimitives.wtstat( values, weights );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wtstat(ByteVector, ByteVector) */
+    public static  double wtstat(ByteVector values, ByteVector weights ) {return ByteNumericPrimitives.wtstat( values, weights );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wtstat(ByteVector, DoubleVector) */
+    public static  double wtstat(ByteVector values, DoubleVector weights ) {return ByteNumericPrimitives.wtstat( values, weights );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wtstat(ByteVector, FloatVector) */
+    public static  double wtstat(ByteVector values, FloatVector weights ) {return ByteNumericPrimitives.wtstat( values, weights );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wtstat(ByteVector, IntVector) */
+    public static  double wtstat(ByteVector values, IntVector weights ) {return ByteNumericPrimitives.wtstat( values, weights );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wtstat(ByteVector, LongVector) */
+    public static  double wtstat(ByteVector values, LongVector weights ) {return ByteNumericPrimitives.wtstat( values, weights );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wtstat(DoubleVector,double[]) */
+    public static  double wtstat(DoubleVector values, double[] weights ) {return DoubleNumericPrimitives.wtstat( values, weights );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wtstat(DoubleVector,float[]) */
+    public static  double wtstat(DoubleVector values, float[] weights ) {return DoubleNumericPrimitives.wtstat( values, weights );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wtstat(DoubleVector,int[]) */
+    public static  double wtstat(DoubleVector values, int[] weights ) {return DoubleNumericPrimitives.wtstat( values, weights );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wtstat(DoubleVector,long[]) */
+    public static  double wtstat(DoubleVector values, long[] weights ) {return DoubleNumericPrimitives.wtstat( values, weights );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wtstat(DoubleVector,short[]) */
+    public static  double wtstat(DoubleVector values, short[] weights ) {return DoubleNumericPrimitives.wtstat( values, weights );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wtstat(DoubleVector, DoubleVector) */
+    public static  double wtstat(DoubleVector values, DoubleVector weights ) {return DoubleNumericPrimitives.wtstat( values, weights );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wtstat(DoubleVector, FloatVector) */
+    public static  double wtstat(DoubleVector values, FloatVector weights ) {return DoubleNumericPrimitives.wtstat( values, weights );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wtstat(DoubleVector, IntVector) */
+    public static  double wtstat(DoubleVector values, IntVector weights ) {return DoubleNumericPrimitives.wtstat( values, weights );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wtstat(DoubleVector, LongVector) */
+    public static  double wtstat(DoubleVector values, LongVector weights ) {return DoubleNumericPrimitives.wtstat( values, weights );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wtstat(DoubleVector, ShortVector) */
+    public static  double wtstat(DoubleVector values, ShortVector weights ) {return DoubleNumericPrimitives.wtstat( values, weights );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wtstat(FloatVector,double[]) */
+    public static  double wtstat(FloatVector values, double[] weights ) {return FloatNumericPrimitives.wtstat( values, weights );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wtstat(FloatVector,float[]) */
+    public static  double wtstat(FloatVector values, float[] weights ) {return FloatNumericPrimitives.wtstat( values, weights );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wtstat(FloatVector,int[]) */
+    public static  double wtstat(FloatVector values, int[] weights ) {return FloatNumericPrimitives.wtstat( values, weights );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wtstat(FloatVector,long[]) */
+    public static  double wtstat(FloatVector values, long[] weights ) {return FloatNumericPrimitives.wtstat( values, weights );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wtstat(FloatVector,short[]) */
+    public static  double wtstat(FloatVector values, short[] weights ) {return FloatNumericPrimitives.wtstat( values, weights );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wtstat(FloatVector, DoubleVector) */
+    public static  double wtstat(FloatVector values, DoubleVector weights ) {return FloatNumericPrimitives.wtstat( values, weights );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wtstat(FloatVector, FloatVector) */
+    public static  double wtstat(FloatVector values, FloatVector weights ) {return FloatNumericPrimitives.wtstat( values, weights );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wtstat(FloatVector, IntVector) */
+    public static  double wtstat(FloatVector values, IntVector weights ) {return FloatNumericPrimitives.wtstat( values, weights );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wtstat(FloatVector, LongVector) */
+    public static  double wtstat(FloatVector values, LongVector weights ) {return FloatNumericPrimitives.wtstat( values, weights );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wtstat(FloatVector, ShortVector) */
+    public static  double wtstat(FloatVector values, ShortVector weights ) {return FloatNumericPrimitives.wtstat( values, weights );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wtstat(IntVector,double[]) */
+    public static  double wtstat(IntVector values, double[] weights ) {return IntegerNumericPrimitives.wtstat( values, weights );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wtstat(IntVector,float[]) */
+    public static  double wtstat(IntVector values, float[] weights ) {return IntegerNumericPrimitives.wtstat( values, weights );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wtstat(IntVector,int[]) */
+    public static  double wtstat(IntVector values, int[] weights ) {return IntegerNumericPrimitives.wtstat( values, weights );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wtstat(IntVector,long[]) */
+    public static  double wtstat(IntVector values, long[] weights ) {return IntegerNumericPrimitives.wtstat( values, weights );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wtstat(IntVector,short[]) */
+    public static  double wtstat(IntVector values, short[] weights ) {return IntegerNumericPrimitives.wtstat( values, weights );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wtstat(IntVector, DoubleVector) */
+    public static  double wtstat(IntVector values, DoubleVector weights ) {return IntegerNumericPrimitives.wtstat( values, weights );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wtstat(IntVector, FloatVector) */
+    public static  double wtstat(IntVector values, FloatVector weights ) {return IntegerNumericPrimitives.wtstat( values, weights );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wtstat(IntVector, IntVector) */
+    public static  double wtstat(IntVector values, IntVector weights ) {return IntegerNumericPrimitives.wtstat( values, weights );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wtstat(IntVector, LongVector) */
+    public static  double wtstat(IntVector values, LongVector weights ) {return IntegerNumericPrimitives.wtstat( values, weights );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wtstat(IntVector, ShortVector) */
+    public static  double wtstat(IntVector values, ShortVector weights ) {return IntegerNumericPrimitives.wtstat( values, weights );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wtstat(LongVector,double[]) */
+    public static  double wtstat(LongVector values, double[] weights ) {return LongNumericPrimitives.wtstat( values, weights );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wtstat(LongVector,float[]) */
+    public static  double wtstat(LongVector values, float[] weights ) {return LongNumericPrimitives.wtstat( values, weights );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wtstat(LongVector,int[]) */
+    public static  double wtstat(LongVector values, int[] weights ) {return LongNumericPrimitives.wtstat( values, weights );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wtstat(LongVector,long[]) */
+    public static  double wtstat(LongVector values, long[] weights ) {return LongNumericPrimitives.wtstat( values, weights );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wtstat(LongVector,short[]) */
+    public static  double wtstat(LongVector values, short[] weights ) {return LongNumericPrimitives.wtstat( values, weights );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wtstat(LongVector, DoubleVector) */
+    public static  double wtstat(LongVector values, DoubleVector weights ) {return LongNumericPrimitives.wtstat( values, weights );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wtstat(LongVector, FloatVector) */
+    public static  double wtstat(LongVector values, FloatVector weights ) {return LongNumericPrimitives.wtstat( values, weights );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wtstat(LongVector, IntVector) */
+    public static  double wtstat(LongVector values, IntVector weights ) {return LongNumericPrimitives.wtstat( values, weights );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wtstat(LongVector, LongVector) */
+    public static  double wtstat(LongVector values, LongVector weights ) {return LongNumericPrimitives.wtstat( values, weights );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wtstat(LongVector, ShortVector) */
+    public static  double wtstat(LongVector values, ShortVector weights ) {return LongNumericPrimitives.wtstat( values, weights );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wtstat(ShortVector,double[]) */
+    public static  double wtstat(ShortVector values, double[] weights ) {return ShortNumericPrimitives.wtstat( values, weights );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wtstat(ShortVector,float[]) */
+    public static  double wtstat(ShortVector values, float[] weights ) {return ShortNumericPrimitives.wtstat( values, weights );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wtstat(ShortVector,int[]) */
+    public static  double wtstat(ShortVector values, int[] weights ) {return ShortNumericPrimitives.wtstat( values, weights );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wtstat(ShortVector,long[]) */
+    public static  double wtstat(ShortVector values, long[] weights ) {return ShortNumericPrimitives.wtstat( values, weights );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wtstat(ShortVector,short[]) */
+    public static  double wtstat(ShortVector values, short[] weights ) {return ShortNumericPrimitives.wtstat( values, weights );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wtstat(ShortVector, DoubleVector) */
+    public static  double wtstat(ShortVector values, DoubleVector weights ) {return ShortNumericPrimitives.wtstat( values, weights );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wtstat(ShortVector, FloatVector) */
+    public static  double wtstat(ShortVector values, FloatVector weights ) {return ShortNumericPrimitives.wtstat( values, weights );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wtstat(ShortVector, IntVector) */
+    public static  double wtstat(ShortVector values, IntVector weights ) {return ShortNumericPrimitives.wtstat( values, weights );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wtstat(ShortVector, LongVector) */
+    public static  double wtstat(ShortVector values, LongVector weights ) {return ShortNumericPrimitives.wtstat( values, weights );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wtstat(ShortVector, ShortVector) */
+    public static  double wtstat(ShortVector values, ShortVector weights ) {return ShortNumericPrimitives.wtstat( values, weights );}
     /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wvar(byte[],byte[]) */
     public static  double wvar( byte[] values, byte[] weights ) {return ByteNumericPrimitives.wvar( values, weights );}
     /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wvar(byte[],double[]) */
@@ -3718,16 +3707,16 @@ public class GroovyStaticImports {
     public static  double wvar( byte[] values, int[] weights ) {return ByteNumericPrimitives.wvar( values, weights );}
     /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wvar(byte[],long[]) */
     public static  double wvar( byte[] values, long[] weights ) {return ByteNumericPrimitives.wvar( values, weights );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wvar(byte[],io.deephaven.engine.tables.dbarrays.ByteVector) */
-    public static  double wvar( byte[] values, io.deephaven.engine.tables.dbarrays.ByteVector weights ) {return ByteNumericPrimitives.wvar( values, weights );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wvar(byte[],io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  double wvar( byte[] values, io.deephaven.engine.tables.dbarrays.DoubleVector weights ) {return ByteNumericPrimitives.wvar( values, weights );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wvar(byte[],io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  double wvar( byte[] values, io.deephaven.engine.tables.dbarrays.FloatVector weights ) {return ByteNumericPrimitives.wvar( values, weights );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wvar(byte[],io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  double wvar( byte[] values, io.deephaven.engine.tables.dbarrays.IntVector weights ) {return ByteNumericPrimitives.wvar( values, weights );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wvar(byte[],io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  double wvar( byte[] values, io.deephaven.engine.tables.dbarrays.LongVector weights ) {return ByteNumericPrimitives.wvar( values, weights );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wvar(byte[], ByteVector) */
+    public static  double wvar( byte[] values, ByteVector weights ) {return ByteNumericPrimitives.wvar( values, weights );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wvar(byte[], DoubleVector) */
+    public static  double wvar( byte[] values, DoubleVector weights ) {return ByteNumericPrimitives.wvar( values, weights );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wvar(byte[], FloatVector) */
+    public static  double wvar( byte[] values, FloatVector weights ) {return ByteNumericPrimitives.wvar( values, weights );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wvar(byte[], IntVector) */
+    public static  double wvar( byte[] values, IntVector weights ) {return ByteNumericPrimitives.wvar( values, weights );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wvar(byte[], LongVector) */
+    public static  double wvar( byte[] values, LongVector weights ) {return ByteNumericPrimitives.wvar( values, weights );}
     /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wvar(double[],double[]) */
     public static  double wvar( double[] values, double[] weights ) {return DoubleNumericPrimitives.wvar( values, weights );}
     /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wvar(double[],float[]) */
@@ -3738,16 +3727,16 @@ public class GroovyStaticImports {
     public static  double wvar( double[] values, long[] weights ) {return DoubleNumericPrimitives.wvar( values, weights );}
     /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wvar(double[],short[]) */
     public static  double wvar( double[] values, short[] weights ) {return DoubleNumericPrimitives.wvar( values, weights );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wvar(double[],io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  double wvar( double[] values, io.deephaven.engine.tables.dbarrays.DoubleVector weights ) {return DoubleNumericPrimitives.wvar( values, weights );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wvar(double[],io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  double wvar( double[] values, io.deephaven.engine.tables.dbarrays.FloatVector weights ) {return DoubleNumericPrimitives.wvar( values, weights );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wvar(double[],io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  double wvar( double[] values, io.deephaven.engine.tables.dbarrays.IntVector weights ) {return DoubleNumericPrimitives.wvar( values, weights );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wvar(double[],io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  double wvar( double[] values, io.deephaven.engine.tables.dbarrays.LongVector weights ) {return DoubleNumericPrimitives.wvar( values, weights );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wvar(double[],io.deephaven.engine.tables.dbarrays.ShortVector) */
-    public static  double wvar( double[] values, io.deephaven.engine.tables.dbarrays.ShortVector weights ) {return DoubleNumericPrimitives.wvar( values, weights );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wvar(double[], DoubleVector) */
+    public static  double wvar( double[] values, DoubleVector weights ) {return DoubleNumericPrimitives.wvar( values, weights );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wvar(double[], FloatVector) */
+    public static  double wvar( double[] values, FloatVector weights ) {return DoubleNumericPrimitives.wvar( values, weights );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wvar(double[], IntVector) */
+    public static  double wvar( double[] values, IntVector weights ) {return DoubleNumericPrimitives.wvar( values, weights );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wvar(double[], LongVector) */
+    public static  double wvar( double[] values, LongVector weights ) {return DoubleNumericPrimitives.wvar( values, weights );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wvar(double[], ShortVector) */
+    public static  double wvar( double[] values, ShortVector weights ) {return DoubleNumericPrimitives.wvar( values, weights );}
     /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wvar(float[],double[]) */
     public static  double wvar( float[] values, double[] weights ) {return FloatNumericPrimitives.wvar( values, weights );}
     /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wvar(float[],float[]) */
@@ -3758,16 +3747,16 @@ public class GroovyStaticImports {
     public static  double wvar( float[] values, long[] weights ) {return FloatNumericPrimitives.wvar( values, weights );}
     /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wvar(float[],short[]) */
     public static  double wvar( float[] values, short[] weights ) {return FloatNumericPrimitives.wvar( values, weights );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wvar(float[],io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  double wvar( float[] values, io.deephaven.engine.tables.dbarrays.DoubleVector weights ) {return FloatNumericPrimitives.wvar( values, weights );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wvar(float[],io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  double wvar( float[] values, io.deephaven.engine.tables.dbarrays.FloatVector weights ) {return FloatNumericPrimitives.wvar( values, weights );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wvar(float[],io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  double wvar( float[] values, io.deephaven.engine.tables.dbarrays.IntVector weights ) {return FloatNumericPrimitives.wvar( values, weights );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wvar(float[],io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  double wvar( float[] values, io.deephaven.engine.tables.dbarrays.LongVector weights ) {return FloatNumericPrimitives.wvar( values, weights );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wvar(float[],io.deephaven.engine.tables.dbarrays.ShortVector) */
-    public static  double wvar( float[] values, io.deephaven.engine.tables.dbarrays.ShortVector weights ) {return FloatNumericPrimitives.wvar( values, weights );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wvar(float[], DoubleVector) */
+    public static  double wvar( float[] values, DoubleVector weights ) {return FloatNumericPrimitives.wvar( values, weights );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wvar(float[], FloatVector) */
+    public static  double wvar( float[] values, FloatVector weights ) {return FloatNumericPrimitives.wvar( values, weights );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wvar(float[], IntVector) */
+    public static  double wvar( float[] values, IntVector weights ) {return FloatNumericPrimitives.wvar( values, weights );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wvar(float[], LongVector) */
+    public static  double wvar( float[] values, LongVector weights ) {return FloatNumericPrimitives.wvar( values, weights );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wvar(float[], ShortVector) */
+    public static  double wvar( float[] values, ShortVector weights ) {return FloatNumericPrimitives.wvar( values, weights );}
     /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wvar(int[],double[]) */
     public static  double wvar( int[] values, double[] weights ) {return IntegerNumericPrimitives.wvar( values, weights );}
     /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wvar(int[],float[]) */
@@ -3778,16 +3767,16 @@ public class GroovyStaticImports {
     public static  double wvar( int[] values, long[] weights ) {return IntegerNumericPrimitives.wvar( values, weights );}
     /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wvar(int[],short[]) */
     public static  double wvar( int[] values, short[] weights ) {return IntegerNumericPrimitives.wvar( values, weights );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wvar(int[],io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  double wvar( int[] values, io.deephaven.engine.tables.dbarrays.DoubleVector weights ) {return IntegerNumericPrimitives.wvar( values, weights );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wvar(int[],io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  double wvar( int[] values, io.deephaven.engine.tables.dbarrays.FloatVector weights ) {return IntegerNumericPrimitives.wvar( values, weights );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wvar(int[],io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  double wvar( int[] values, io.deephaven.engine.tables.dbarrays.IntVector weights ) {return IntegerNumericPrimitives.wvar( values, weights );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wvar(int[],io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  double wvar( int[] values, io.deephaven.engine.tables.dbarrays.LongVector weights ) {return IntegerNumericPrimitives.wvar( values, weights );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wvar(int[],io.deephaven.engine.tables.dbarrays.ShortVector) */
-    public static  double wvar( int[] values, io.deephaven.engine.tables.dbarrays.ShortVector weights ) {return IntegerNumericPrimitives.wvar( values, weights );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wvar(int[], DoubleVector) */
+    public static  double wvar( int[] values, DoubleVector weights ) {return IntegerNumericPrimitives.wvar( values, weights );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wvar(int[], FloatVector) */
+    public static  double wvar( int[] values, FloatVector weights ) {return IntegerNumericPrimitives.wvar( values, weights );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wvar(int[], IntVector) */
+    public static  double wvar( int[] values, IntVector weights ) {return IntegerNumericPrimitives.wvar( values, weights );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wvar(int[], LongVector) */
+    public static  double wvar( int[] values, LongVector weights ) {return IntegerNumericPrimitives.wvar( values, weights );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wvar(int[], ShortVector) */
+    public static  double wvar( int[] values, ShortVector weights ) {return IntegerNumericPrimitives.wvar( values, weights );}
     /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wvar(long[],double[]) */
     public static  double wvar( long[] values, double[] weights ) {return LongNumericPrimitives.wvar( values, weights );}
     /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wvar(long[],float[]) */
@@ -3798,16 +3787,16 @@ public class GroovyStaticImports {
     public static  double wvar( long[] values, long[] weights ) {return LongNumericPrimitives.wvar( values, weights );}
     /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wvar(long[],short[]) */
     public static  double wvar( long[] values, short[] weights ) {return LongNumericPrimitives.wvar( values, weights );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wvar(long[],io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  double wvar( long[] values, io.deephaven.engine.tables.dbarrays.DoubleVector weights ) {return LongNumericPrimitives.wvar( values, weights );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wvar(long[],io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  double wvar( long[] values, io.deephaven.engine.tables.dbarrays.FloatVector weights ) {return LongNumericPrimitives.wvar( values, weights );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wvar(long[],io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  double wvar( long[] values, io.deephaven.engine.tables.dbarrays.IntVector weights ) {return LongNumericPrimitives.wvar( values, weights );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wvar(long[],io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  double wvar( long[] values, io.deephaven.engine.tables.dbarrays.LongVector weights ) {return LongNumericPrimitives.wvar( values, weights );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wvar(long[],io.deephaven.engine.tables.dbarrays.ShortVector) */
-    public static  double wvar( long[] values, io.deephaven.engine.tables.dbarrays.ShortVector weights ) {return LongNumericPrimitives.wvar( values, weights );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wvar(long[], DoubleVector) */
+    public static  double wvar( long[] values, DoubleVector weights ) {return LongNumericPrimitives.wvar( values, weights );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wvar(long[], FloatVector) */
+    public static  double wvar( long[] values, FloatVector weights ) {return LongNumericPrimitives.wvar( values, weights );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wvar(long[], IntVector) */
+    public static  double wvar( long[] values, IntVector weights ) {return LongNumericPrimitives.wvar( values, weights );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wvar(long[], LongVector) */
+    public static  double wvar( long[] values, LongVector weights ) {return LongNumericPrimitives.wvar( values, weights );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wvar(long[], ShortVector) */
+    public static  double wvar( long[] values, ShortVector weights ) {return LongNumericPrimitives.wvar( values, weights );}
     /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wvar(short[],double[]) */
     public static  double wvar( short[] values, double[] weights ) {return ShortNumericPrimitives.wvar( values, weights );}
     /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wvar(short[],float[]) */
@@ -3818,135 +3807,135 @@ public class GroovyStaticImports {
     public static  double wvar( short[] values, long[] weights ) {return ShortNumericPrimitives.wvar( values, weights );}
     /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wvar(short[],short[]) */
     public static  double wvar( short[] values, short[] weights ) {return ShortNumericPrimitives.wvar( values, weights );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wvar(short[],io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  double wvar( short[] values, io.deephaven.engine.tables.dbarrays.DoubleVector weights ) {return ShortNumericPrimitives.wvar( values, weights );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wvar(short[],io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  double wvar( short[] values, io.deephaven.engine.tables.dbarrays.FloatVector weights ) {return ShortNumericPrimitives.wvar( values, weights );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wvar(short[],io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  double wvar( short[] values, io.deephaven.engine.tables.dbarrays.IntVector weights ) {return ShortNumericPrimitives.wvar( values, weights );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wvar(short[],io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  double wvar( short[] values, io.deephaven.engine.tables.dbarrays.LongVector weights ) {return ShortNumericPrimitives.wvar( values, weights );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wvar(short[],io.deephaven.engine.tables.dbarrays.ShortVector) */
-    public static  double wvar( short[] values, io.deephaven.engine.tables.dbarrays.ShortVector weights ) {return ShortNumericPrimitives.wvar( values, weights );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wvar(io.deephaven.engine.tables.dbarrays.ByteVector,byte[]) */
-    public static  double wvar( io.deephaven.engine.tables.dbarrays.ByteVector values, byte[] weights ) {return ByteNumericPrimitives.wvar( values, weights );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wvar(io.deephaven.engine.tables.dbarrays.ByteVector,double[]) */
-    public static  double wvar( io.deephaven.engine.tables.dbarrays.ByteVector values, double[] weights ) {return ByteNumericPrimitives.wvar( values, weights );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wvar(io.deephaven.engine.tables.dbarrays.ByteVector,float[]) */
-    public static  double wvar( io.deephaven.engine.tables.dbarrays.ByteVector values, float[] weights ) {return ByteNumericPrimitives.wvar( values, weights );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wvar(io.deephaven.engine.tables.dbarrays.ByteVector,int[]) */
-    public static  double wvar( io.deephaven.engine.tables.dbarrays.ByteVector values, int[] weights ) {return ByteNumericPrimitives.wvar( values, weights );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wvar(io.deephaven.engine.tables.dbarrays.ByteVector,long[]) */
-    public static  double wvar( io.deephaven.engine.tables.dbarrays.ByteVector values, long[] weights ) {return ByteNumericPrimitives.wvar( values, weights );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wvar(io.deephaven.engine.tables.dbarrays.ByteVector,io.deephaven.engine.tables.dbarrays.ByteVector) */
-    public static  double wvar( io.deephaven.engine.tables.dbarrays.ByteVector values, io.deephaven.engine.tables.dbarrays.ByteVector weights ) {return ByteNumericPrimitives.wvar( values, weights );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wvar(io.deephaven.engine.tables.dbarrays.ByteVector,io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  double wvar( io.deephaven.engine.tables.dbarrays.ByteVector values, io.deephaven.engine.tables.dbarrays.DoubleVector weights ) {return ByteNumericPrimitives.wvar( values, weights );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wvar(io.deephaven.engine.tables.dbarrays.ByteVector,io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  double wvar( io.deephaven.engine.tables.dbarrays.ByteVector values, io.deephaven.engine.tables.dbarrays.FloatVector weights ) {return ByteNumericPrimitives.wvar( values, weights );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wvar(io.deephaven.engine.tables.dbarrays.ByteVector,io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  double wvar( io.deephaven.engine.tables.dbarrays.ByteVector values, io.deephaven.engine.tables.dbarrays.IntVector weights ) {return ByteNumericPrimitives.wvar( values, weights );}
-    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wvar(io.deephaven.engine.tables.dbarrays.ByteVector,io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  double wvar( io.deephaven.engine.tables.dbarrays.ByteVector values, io.deephaven.engine.tables.dbarrays.LongVector weights ) {return ByteNumericPrimitives.wvar( values, weights );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wvar(io.deephaven.engine.tables.dbarrays.DoubleVector,double[]) */
-    public static  double wvar( io.deephaven.engine.tables.dbarrays.DoubleVector values, double[] weights ) {return DoubleNumericPrimitives.wvar( values, weights );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wvar(io.deephaven.engine.tables.dbarrays.DoubleVector,float[]) */
-    public static  double wvar( io.deephaven.engine.tables.dbarrays.DoubleVector values, float[] weights ) {return DoubleNumericPrimitives.wvar( values, weights );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wvar(io.deephaven.engine.tables.dbarrays.DoubleVector,int[]) */
-    public static  double wvar( io.deephaven.engine.tables.dbarrays.DoubleVector values, int[] weights ) {return DoubleNumericPrimitives.wvar( values, weights );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wvar(io.deephaven.engine.tables.dbarrays.DoubleVector,long[]) */
-    public static  double wvar( io.deephaven.engine.tables.dbarrays.DoubleVector values, long[] weights ) {return DoubleNumericPrimitives.wvar( values, weights );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wvar(io.deephaven.engine.tables.dbarrays.DoubleVector,short[]) */
-    public static  double wvar( io.deephaven.engine.tables.dbarrays.DoubleVector values, short[] weights ) {return DoubleNumericPrimitives.wvar( values, weights );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wvar(io.deephaven.engine.tables.dbarrays.DoubleVector,io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  double wvar( io.deephaven.engine.tables.dbarrays.DoubleVector values, io.deephaven.engine.tables.dbarrays.DoubleVector weights ) {return DoubleNumericPrimitives.wvar( values, weights );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wvar(io.deephaven.engine.tables.dbarrays.DoubleVector,io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  double wvar( io.deephaven.engine.tables.dbarrays.DoubleVector values, io.deephaven.engine.tables.dbarrays.FloatVector weights ) {return DoubleNumericPrimitives.wvar( values, weights );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wvar(io.deephaven.engine.tables.dbarrays.DoubleVector,io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  double wvar( io.deephaven.engine.tables.dbarrays.DoubleVector values, io.deephaven.engine.tables.dbarrays.IntVector weights ) {return DoubleNumericPrimitives.wvar( values, weights );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wvar(io.deephaven.engine.tables.dbarrays.DoubleVector,io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  double wvar( io.deephaven.engine.tables.dbarrays.DoubleVector values, io.deephaven.engine.tables.dbarrays.LongVector weights ) {return DoubleNumericPrimitives.wvar( values, weights );}
-    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wvar(io.deephaven.engine.tables.dbarrays.DoubleVector,io.deephaven.engine.tables.dbarrays.ShortVector) */
-    public static  double wvar( io.deephaven.engine.tables.dbarrays.DoubleVector values, io.deephaven.engine.tables.dbarrays.ShortVector weights ) {return DoubleNumericPrimitives.wvar( values, weights );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wvar(io.deephaven.engine.tables.dbarrays.FloatVector,double[]) */
-    public static  double wvar( io.deephaven.engine.tables.dbarrays.FloatVector values, double[] weights ) {return FloatNumericPrimitives.wvar( values, weights );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wvar(io.deephaven.engine.tables.dbarrays.FloatVector,float[]) */
-    public static  double wvar( io.deephaven.engine.tables.dbarrays.FloatVector values, float[] weights ) {return FloatNumericPrimitives.wvar( values, weights );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wvar(io.deephaven.engine.tables.dbarrays.FloatVector,int[]) */
-    public static  double wvar( io.deephaven.engine.tables.dbarrays.FloatVector values, int[] weights ) {return FloatNumericPrimitives.wvar( values, weights );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wvar(io.deephaven.engine.tables.dbarrays.FloatVector,long[]) */
-    public static  double wvar( io.deephaven.engine.tables.dbarrays.FloatVector values, long[] weights ) {return FloatNumericPrimitives.wvar( values, weights );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wvar(io.deephaven.engine.tables.dbarrays.FloatVector,short[]) */
-    public static  double wvar( io.deephaven.engine.tables.dbarrays.FloatVector values, short[] weights ) {return FloatNumericPrimitives.wvar( values, weights );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wvar(io.deephaven.engine.tables.dbarrays.FloatVector,io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  double wvar( io.deephaven.engine.tables.dbarrays.FloatVector values, io.deephaven.engine.tables.dbarrays.DoubleVector weights ) {return FloatNumericPrimitives.wvar( values, weights );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wvar(io.deephaven.engine.tables.dbarrays.FloatVector,io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  double wvar( io.deephaven.engine.tables.dbarrays.FloatVector values, io.deephaven.engine.tables.dbarrays.FloatVector weights ) {return FloatNumericPrimitives.wvar( values, weights );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wvar(io.deephaven.engine.tables.dbarrays.FloatVector,io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  double wvar( io.deephaven.engine.tables.dbarrays.FloatVector values, io.deephaven.engine.tables.dbarrays.IntVector weights ) {return FloatNumericPrimitives.wvar( values, weights );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wvar(io.deephaven.engine.tables.dbarrays.FloatVector,io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  double wvar( io.deephaven.engine.tables.dbarrays.FloatVector values, io.deephaven.engine.tables.dbarrays.LongVector weights ) {return FloatNumericPrimitives.wvar( values, weights );}
-    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wvar(io.deephaven.engine.tables.dbarrays.FloatVector,io.deephaven.engine.tables.dbarrays.ShortVector) */
-    public static  double wvar( io.deephaven.engine.tables.dbarrays.FloatVector values, io.deephaven.engine.tables.dbarrays.ShortVector weights ) {return FloatNumericPrimitives.wvar( values, weights );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wvar(io.deephaven.engine.tables.dbarrays.IntVector,double[]) */
-    public static  double wvar( io.deephaven.engine.tables.dbarrays.IntVector values, double[] weights ) {return IntegerNumericPrimitives.wvar( values, weights );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wvar(io.deephaven.engine.tables.dbarrays.IntVector,float[]) */
-    public static  double wvar( io.deephaven.engine.tables.dbarrays.IntVector values, float[] weights ) {return IntegerNumericPrimitives.wvar( values, weights );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wvar(io.deephaven.engine.tables.dbarrays.IntVector,int[]) */
-    public static  double wvar( io.deephaven.engine.tables.dbarrays.IntVector values, int[] weights ) {return IntegerNumericPrimitives.wvar( values, weights );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wvar(io.deephaven.engine.tables.dbarrays.IntVector,long[]) */
-    public static  double wvar( io.deephaven.engine.tables.dbarrays.IntVector values, long[] weights ) {return IntegerNumericPrimitives.wvar( values, weights );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wvar(io.deephaven.engine.tables.dbarrays.IntVector,short[]) */
-    public static  double wvar( io.deephaven.engine.tables.dbarrays.IntVector values, short[] weights ) {return IntegerNumericPrimitives.wvar( values, weights );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wvar(io.deephaven.engine.tables.dbarrays.IntVector,io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  double wvar( io.deephaven.engine.tables.dbarrays.IntVector values, io.deephaven.engine.tables.dbarrays.DoubleVector weights ) {return IntegerNumericPrimitives.wvar( values, weights );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wvar(io.deephaven.engine.tables.dbarrays.IntVector,io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  double wvar( io.deephaven.engine.tables.dbarrays.IntVector values, io.deephaven.engine.tables.dbarrays.FloatVector weights ) {return IntegerNumericPrimitives.wvar( values, weights );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wvar(io.deephaven.engine.tables.dbarrays.IntVector,io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  double wvar( io.deephaven.engine.tables.dbarrays.IntVector values, io.deephaven.engine.tables.dbarrays.IntVector weights ) {return IntegerNumericPrimitives.wvar( values, weights );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wvar(io.deephaven.engine.tables.dbarrays.IntVector,io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  double wvar( io.deephaven.engine.tables.dbarrays.IntVector values, io.deephaven.engine.tables.dbarrays.LongVector weights ) {return IntegerNumericPrimitives.wvar( values, weights );}
-    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wvar(io.deephaven.engine.tables.dbarrays.IntVector,io.deephaven.engine.tables.dbarrays.ShortVector) */
-    public static  double wvar( io.deephaven.engine.tables.dbarrays.IntVector values, io.deephaven.engine.tables.dbarrays.ShortVector weights ) {return IntegerNumericPrimitives.wvar( values, weights );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wvar(io.deephaven.engine.tables.dbarrays.LongVector,double[]) */
-    public static  double wvar( io.deephaven.engine.tables.dbarrays.LongVector values, double[] weights ) {return LongNumericPrimitives.wvar( values, weights );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wvar(io.deephaven.engine.tables.dbarrays.LongVector,float[]) */
-    public static  double wvar( io.deephaven.engine.tables.dbarrays.LongVector values, float[] weights ) {return LongNumericPrimitives.wvar( values, weights );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wvar(io.deephaven.engine.tables.dbarrays.LongVector,int[]) */
-    public static  double wvar( io.deephaven.engine.tables.dbarrays.LongVector values, int[] weights ) {return LongNumericPrimitives.wvar( values, weights );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wvar(io.deephaven.engine.tables.dbarrays.LongVector,long[]) */
-    public static  double wvar( io.deephaven.engine.tables.dbarrays.LongVector values, long[] weights ) {return LongNumericPrimitives.wvar( values, weights );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wvar(io.deephaven.engine.tables.dbarrays.LongVector,short[]) */
-    public static  double wvar( io.deephaven.engine.tables.dbarrays.LongVector values, short[] weights ) {return LongNumericPrimitives.wvar( values, weights );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wvar(io.deephaven.engine.tables.dbarrays.LongVector,io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  double wvar( io.deephaven.engine.tables.dbarrays.LongVector values, io.deephaven.engine.tables.dbarrays.DoubleVector weights ) {return LongNumericPrimitives.wvar( values, weights );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wvar(io.deephaven.engine.tables.dbarrays.LongVector,io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  double wvar( io.deephaven.engine.tables.dbarrays.LongVector values, io.deephaven.engine.tables.dbarrays.FloatVector weights ) {return LongNumericPrimitives.wvar( values, weights );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wvar(io.deephaven.engine.tables.dbarrays.LongVector,io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  double wvar( io.deephaven.engine.tables.dbarrays.LongVector values, io.deephaven.engine.tables.dbarrays.IntVector weights ) {return LongNumericPrimitives.wvar( values, weights );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wvar(io.deephaven.engine.tables.dbarrays.LongVector,io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  double wvar( io.deephaven.engine.tables.dbarrays.LongVector values, io.deephaven.engine.tables.dbarrays.LongVector weights ) {return LongNumericPrimitives.wvar( values, weights );}
-    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wvar(io.deephaven.engine.tables.dbarrays.LongVector,io.deephaven.engine.tables.dbarrays.ShortVector) */
-    public static  double wvar( io.deephaven.engine.tables.dbarrays.LongVector values, io.deephaven.engine.tables.dbarrays.ShortVector weights ) {return LongNumericPrimitives.wvar( values, weights );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wvar(io.deephaven.engine.tables.dbarrays.ShortVector,double[]) */
-    public static  double wvar( io.deephaven.engine.tables.dbarrays.ShortVector values, double[] weights ) {return ShortNumericPrimitives.wvar( values, weights );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wvar(io.deephaven.engine.tables.dbarrays.ShortVector,float[]) */
-    public static  double wvar( io.deephaven.engine.tables.dbarrays.ShortVector values, float[] weights ) {return ShortNumericPrimitives.wvar( values, weights );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wvar(io.deephaven.engine.tables.dbarrays.ShortVector,int[]) */
-    public static  double wvar( io.deephaven.engine.tables.dbarrays.ShortVector values, int[] weights ) {return ShortNumericPrimitives.wvar( values, weights );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wvar(io.deephaven.engine.tables.dbarrays.ShortVector,long[]) */
-    public static  double wvar( io.deephaven.engine.tables.dbarrays.ShortVector values, long[] weights ) {return ShortNumericPrimitives.wvar( values, weights );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wvar(io.deephaven.engine.tables.dbarrays.ShortVector,short[]) */
-    public static  double wvar( io.deephaven.engine.tables.dbarrays.ShortVector values, short[] weights ) {return ShortNumericPrimitives.wvar( values, weights );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wvar(io.deephaven.engine.tables.dbarrays.ShortVector,io.deephaven.engine.tables.dbarrays.DoubleVector) */
-    public static  double wvar( io.deephaven.engine.tables.dbarrays.ShortVector values, io.deephaven.engine.tables.dbarrays.DoubleVector weights ) {return ShortNumericPrimitives.wvar( values, weights );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wvar(io.deephaven.engine.tables.dbarrays.ShortVector,io.deephaven.engine.tables.dbarrays.FloatVector) */
-    public static  double wvar( io.deephaven.engine.tables.dbarrays.ShortVector values, io.deephaven.engine.tables.dbarrays.FloatVector weights ) {return ShortNumericPrimitives.wvar( values, weights );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wvar(io.deephaven.engine.tables.dbarrays.ShortVector,io.deephaven.engine.tables.dbarrays.IntVector) */
-    public static  double wvar( io.deephaven.engine.tables.dbarrays.ShortVector values, io.deephaven.engine.tables.dbarrays.IntVector weights ) {return ShortNumericPrimitives.wvar( values, weights );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wvar(io.deephaven.engine.tables.dbarrays.ShortVector,io.deephaven.engine.tables.dbarrays.LongVector) */
-    public static  double wvar( io.deephaven.engine.tables.dbarrays.ShortVector values, io.deephaven.engine.tables.dbarrays.LongVector weights ) {return ShortNumericPrimitives.wvar( values, weights );}
-    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wvar(io.deephaven.engine.tables.dbarrays.ShortVector,io.deephaven.engine.tables.dbarrays.ShortVector) */
-    public static  double wvar( io.deephaven.engine.tables.dbarrays.ShortVector values, io.deephaven.engine.tables.dbarrays.ShortVector weights ) {return ShortNumericPrimitives.wvar( values, weights );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wvar(short[], DoubleVector) */
+    public static  double wvar( short[] values, DoubleVector weights ) {return ShortNumericPrimitives.wvar( values, weights );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wvar(short[], FloatVector) */
+    public static  double wvar( short[] values, FloatVector weights ) {return ShortNumericPrimitives.wvar( values, weights );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wvar(short[], IntVector) */
+    public static  double wvar( short[] values, IntVector weights ) {return ShortNumericPrimitives.wvar( values, weights );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wvar(short[], LongVector) */
+    public static  double wvar( short[] values, LongVector weights ) {return ShortNumericPrimitives.wvar( values, weights );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wvar(short[], ShortVector) */
+    public static  double wvar( short[] values, ShortVector weights ) {return ShortNumericPrimitives.wvar( values, weights );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wvar(ByteVector,byte[]) */
+    public static  double wvar(ByteVector values, byte[] weights ) {return ByteNumericPrimitives.wvar( values, weights );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wvar(ByteVector,double[]) */
+    public static  double wvar(ByteVector values, double[] weights ) {return ByteNumericPrimitives.wvar( values, weights );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wvar(ByteVector,float[]) */
+    public static  double wvar(ByteVector values, float[] weights ) {return ByteNumericPrimitives.wvar( values, weights );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wvar(ByteVector,int[]) */
+    public static  double wvar(ByteVector values, int[] weights ) {return ByteNumericPrimitives.wvar( values, weights );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wvar(ByteVector,long[]) */
+    public static  double wvar(ByteVector values, long[] weights ) {return ByteNumericPrimitives.wvar( values, weights );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wvar(ByteVector, ByteVector) */
+    public static  double wvar(ByteVector values, ByteVector weights ) {return ByteNumericPrimitives.wvar( values, weights );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wvar(ByteVector, DoubleVector) */
+    public static  double wvar(ByteVector values, DoubleVector weights ) {return ByteNumericPrimitives.wvar( values, weights );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wvar(ByteVector, FloatVector) */
+    public static  double wvar(ByteVector values, FloatVector weights ) {return ByteNumericPrimitives.wvar( values, weights );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wvar(ByteVector, IntVector) */
+    public static  double wvar(ByteVector values, IntVector weights ) {return ByteNumericPrimitives.wvar( values, weights );}
+    /** @see io.deephaven.libs.primitives.ByteNumericPrimitives#wvar(ByteVector, LongVector) */
+    public static  double wvar(ByteVector values, LongVector weights ) {return ByteNumericPrimitives.wvar( values, weights );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wvar(DoubleVector,double[]) */
+    public static  double wvar(DoubleVector values, double[] weights ) {return DoubleNumericPrimitives.wvar( values, weights );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wvar(DoubleVector,float[]) */
+    public static  double wvar(DoubleVector values, float[] weights ) {return DoubleNumericPrimitives.wvar( values, weights );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wvar(DoubleVector,int[]) */
+    public static  double wvar(DoubleVector values, int[] weights ) {return DoubleNumericPrimitives.wvar( values, weights );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wvar(DoubleVector,long[]) */
+    public static  double wvar(DoubleVector values, long[] weights ) {return DoubleNumericPrimitives.wvar( values, weights );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wvar(DoubleVector,short[]) */
+    public static  double wvar(DoubleVector values, short[] weights ) {return DoubleNumericPrimitives.wvar( values, weights );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wvar(DoubleVector, DoubleVector) */
+    public static  double wvar(DoubleVector values, DoubleVector weights ) {return DoubleNumericPrimitives.wvar( values, weights );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wvar(DoubleVector, FloatVector) */
+    public static  double wvar(DoubleVector values, FloatVector weights ) {return DoubleNumericPrimitives.wvar( values, weights );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wvar(DoubleVector, IntVector) */
+    public static  double wvar(DoubleVector values, IntVector weights ) {return DoubleNumericPrimitives.wvar( values, weights );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wvar(DoubleVector, LongVector) */
+    public static  double wvar(DoubleVector values, LongVector weights ) {return DoubleNumericPrimitives.wvar( values, weights );}
+    /** @see io.deephaven.libs.primitives.DoubleNumericPrimitives#wvar(DoubleVector, ShortVector) */
+    public static  double wvar(DoubleVector values, ShortVector weights ) {return DoubleNumericPrimitives.wvar( values, weights );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wvar(FloatVector,double[]) */
+    public static  double wvar(FloatVector values, double[] weights ) {return FloatNumericPrimitives.wvar( values, weights );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wvar(FloatVector,float[]) */
+    public static  double wvar(FloatVector values, float[] weights ) {return FloatNumericPrimitives.wvar( values, weights );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wvar(FloatVector,int[]) */
+    public static  double wvar(FloatVector values, int[] weights ) {return FloatNumericPrimitives.wvar( values, weights );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wvar(FloatVector,long[]) */
+    public static  double wvar(FloatVector values, long[] weights ) {return FloatNumericPrimitives.wvar( values, weights );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wvar(FloatVector,short[]) */
+    public static  double wvar(FloatVector values, short[] weights ) {return FloatNumericPrimitives.wvar( values, weights );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wvar(FloatVector, DoubleVector) */
+    public static  double wvar(FloatVector values, DoubleVector weights ) {return FloatNumericPrimitives.wvar( values, weights );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wvar(FloatVector, FloatVector) */
+    public static  double wvar(FloatVector values, FloatVector weights ) {return FloatNumericPrimitives.wvar( values, weights );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wvar(FloatVector, IntVector) */
+    public static  double wvar(FloatVector values, IntVector weights ) {return FloatNumericPrimitives.wvar( values, weights );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wvar(FloatVector, LongVector) */
+    public static  double wvar(FloatVector values, LongVector weights ) {return FloatNumericPrimitives.wvar( values, weights );}
+    /** @see io.deephaven.libs.primitives.FloatNumericPrimitives#wvar(FloatVector, ShortVector) */
+    public static  double wvar(FloatVector values, ShortVector weights ) {return FloatNumericPrimitives.wvar( values, weights );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wvar(IntVector,double[]) */
+    public static  double wvar(IntVector values, double[] weights ) {return IntegerNumericPrimitives.wvar( values, weights );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wvar(IntVector,float[]) */
+    public static  double wvar(IntVector values, float[] weights ) {return IntegerNumericPrimitives.wvar( values, weights );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wvar(IntVector,int[]) */
+    public static  double wvar(IntVector values, int[] weights ) {return IntegerNumericPrimitives.wvar( values, weights );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wvar(IntVector,long[]) */
+    public static  double wvar(IntVector values, long[] weights ) {return IntegerNumericPrimitives.wvar( values, weights );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wvar(IntVector,short[]) */
+    public static  double wvar(IntVector values, short[] weights ) {return IntegerNumericPrimitives.wvar( values, weights );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wvar(IntVector, DoubleVector) */
+    public static  double wvar(IntVector values, DoubleVector weights ) {return IntegerNumericPrimitives.wvar( values, weights );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wvar(IntVector, FloatVector) */
+    public static  double wvar(IntVector values, FloatVector weights ) {return IntegerNumericPrimitives.wvar( values, weights );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wvar(IntVector, IntVector) */
+    public static  double wvar(IntVector values, IntVector weights ) {return IntegerNumericPrimitives.wvar( values, weights );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wvar(IntVector, LongVector) */
+    public static  double wvar(IntVector values, LongVector weights ) {return IntegerNumericPrimitives.wvar( values, weights );}
+    /** @see io.deephaven.libs.primitives.IntegerNumericPrimitives#wvar(IntVector, ShortVector) */
+    public static  double wvar(IntVector values, ShortVector weights ) {return IntegerNumericPrimitives.wvar( values, weights );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wvar(LongVector,double[]) */
+    public static  double wvar(LongVector values, double[] weights ) {return LongNumericPrimitives.wvar( values, weights );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wvar(LongVector,float[]) */
+    public static  double wvar(LongVector values, float[] weights ) {return LongNumericPrimitives.wvar( values, weights );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wvar(LongVector,int[]) */
+    public static  double wvar(LongVector values, int[] weights ) {return LongNumericPrimitives.wvar( values, weights );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wvar(LongVector,long[]) */
+    public static  double wvar(LongVector values, long[] weights ) {return LongNumericPrimitives.wvar( values, weights );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wvar(LongVector,short[]) */
+    public static  double wvar(LongVector values, short[] weights ) {return LongNumericPrimitives.wvar( values, weights );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wvar(LongVector, DoubleVector) */
+    public static  double wvar(LongVector values, DoubleVector weights ) {return LongNumericPrimitives.wvar( values, weights );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wvar(LongVector, FloatVector) */
+    public static  double wvar(LongVector values, FloatVector weights ) {return LongNumericPrimitives.wvar( values, weights );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wvar(LongVector, IntVector) */
+    public static  double wvar(LongVector values, IntVector weights ) {return LongNumericPrimitives.wvar( values, weights );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wvar(LongVector, LongVector) */
+    public static  double wvar(LongVector values, LongVector weights ) {return LongNumericPrimitives.wvar( values, weights );}
+    /** @see io.deephaven.libs.primitives.LongNumericPrimitives#wvar(LongVector, ShortVector) */
+    public static  double wvar(LongVector values, ShortVector weights ) {return LongNumericPrimitives.wvar( values, weights );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wvar(ShortVector,double[]) */
+    public static  double wvar(ShortVector values, double[] weights ) {return ShortNumericPrimitives.wvar( values, weights );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wvar(ShortVector,float[]) */
+    public static  double wvar(ShortVector values, float[] weights ) {return ShortNumericPrimitives.wvar( values, weights );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wvar(ShortVector,int[]) */
+    public static  double wvar(ShortVector values, int[] weights ) {return ShortNumericPrimitives.wvar( values, weights );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wvar(ShortVector,long[]) */
+    public static  double wvar(ShortVector values, long[] weights ) {return ShortNumericPrimitives.wvar( values, weights );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wvar(ShortVector,short[]) */
+    public static  double wvar(ShortVector values, short[] weights ) {return ShortNumericPrimitives.wvar( values, weights );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wvar(ShortVector, DoubleVector) */
+    public static  double wvar(ShortVector values, DoubleVector weights ) {return ShortNumericPrimitives.wvar( values, weights );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wvar(ShortVector, FloatVector) */
+    public static  double wvar(ShortVector values, FloatVector weights ) {return ShortNumericPrimitives.wvar( values, weights );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wvar(ShortVector, IntVector) */
+    public static  double wvar(ShortVector values, IntVector weights ) {return ShortNumericPrimitives.wvar( values, weights );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wvar(ShortVector, LongVector) */
+    public static  double wvar(ShortVector values, LongVector weights ) {return ShortNumericPrimitives.wvar( values, weights );}
+    /** @see io.deephaven.libs.primitives.ShortNumericPrimitives#wvar(ShortVector, ShortVector) */
+    public static  double wvar(ShortVector values, ShortVector weights ) {return ShortNumericPrimitives.wvar( values, weights );}
 }
 

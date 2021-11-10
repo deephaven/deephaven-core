@@ -7,16 +7,14 @@
 
 package io.deephaven.extensions.barrage.chunk.array;
 
-import io.deephaven.engine.v2.sources.chunk.Attributes;
-import io.deephaven.engine.v2.sources.chunk.IntChunk;
-import io.deephaven.engine.v2.sources.chunk.Chunk;
-import io.deephaven.engine.v2.sources.chunk.IntChunk;
-import io.deephaven.engine.v2.sources.chunk.ObjectChunk;
-import io.deephaven.engine.v2.sources.chunk.WritableIntChunk;
-import io.deephaven.engine.v2.sources.chunk.WritableChunk;
-import io.deephaven.engine.v2.sources.chunk.WritableIntChunk;
-import io.deephaven.engine.v2.sources.chunk.WritableObjectChunk;
-import io.deephaven.engine.v2.sources.chunk.sized.SizedIntChunk;
+import io.deephaven.engine.chunk.Attributes;
+import io.deephaven.engine.chunk.IntChunk;
+import io.deephaven.engine.chunk.Chunk;
+import io.deephaven.engine.chunk.ObjectChunk;
+import io.deephaven.engine.chunk.WritableIntChunk;
+import io.deephaven.engine.chunk.WritableChunk;
+import io.deephaven.engine.chunk.WritableObjectChunk;
+import io.deephaven.engine.chunk.sized.SizedIntChunk;
 
 public class IntArrayExpansionKernel implements ArrayExpansionKernel {
     private final static int[] ZERO_LEN_ARRAY = new int[0];

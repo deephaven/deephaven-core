@@ -1,11 +1,11 @@
 package io.deephaven.engine.v2.utils;
 
 import io.deephaven.engine.structures.RowSequence;
-import io.deephaven.engine.v2.sources.chunk.Attributes;
-import io.deephaven.engine.v2.sources.chunk.LongChunk;
-import io.deephaven.engine.v2.sources.chunk.WritableLongChunk;
-import io.deephaven.engine.v2.sources.chunk.util.LongChunkAppender;
-import io.deephaven.engine.v2.sources.chunk.util.LongChunkIterator;
+import io.deephaven.engine.chunk.Attributes;
+import io.deephaven.engine.chunk.LongChunk;
+import io.deephaven.engine.chunk.WritableLongChunk;
+import io.deephaven.engine.chunk.util.LongChunkAppender;
+import io.deephaven.engine.chunk.util.LongChunkIterator;
 import io.deephaven.engine.v2.utils.rsp.RspBitmap;
 import io.deephaven.engine.v2.utils.singlerange.SingleRangeRowSequence;
 import io.deephaven.engine.v2.utils.singlerange.SingleRange;
@@ -14,7 +14,7 @@ import org.junit.Test;
 
 import java.util.function.Consumer;
 
-import static io.deephaven.engine.v2.sources.chunk.Attributes.OrderedRowKeys;
+import static io.deephaven.engine.chunk.Attributes.OrderedRowKeys;
 import static org.junit.Assert.*;
 
 public class SingleRangeTest {

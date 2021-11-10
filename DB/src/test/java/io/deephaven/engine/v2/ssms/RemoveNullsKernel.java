@@ -1,8 +1,8 @@
 package io.deephaven.engine.v2.ssms;
 
-import io.deephaven.engine.v2.sources.chunk.Attributes;
-import io.deephaven.engine.v2.sources.chunk.WritableCharChunk;
-import io.deephaven.engine.v2.sources.chunk.WritableChunk;
+import io.deephaven.engine.chunk.Attributes;
+import io.deephaven.engine.chunk.WritableCharChunk;
+import io.deephaven.engine.chunk.WritableChunk;
 import io.deephaven.util.QueryConstants;
 
 public interface RemoveNullsKernel {

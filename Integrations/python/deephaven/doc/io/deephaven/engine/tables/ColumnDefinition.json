@@ -22,7 +22,7 @@
   "ofBoolean": ":param name: java.lang.String\n:return: io.deephaven.engine.tables.ColumnDefinition<java.lang.Boolean>",
   "ofByte": ":param name: java.lang.String\n:return: io.deephaven.engine.tables.ColumnDefinition<java.lang.Byte>",
   "ofChar": ":param name: java.lang.String\n:return: io.deephaven.engine.tables.ColumnDefinition<java.lang.Character>",
-  "ofDbArray": "Note: Java generics information - <T extends io.deephaven.engine.tables.dbarrays.Vector<?>>\n\n:param name: java.lang.String\n:param dbArrayType: java.lang.Class<T>\n:return: io.deephaven.engine.tables.ColumnDefinition<T>",
+  "ofDbArray": "Note: Java generics information - <T extends io.deephaven.engine.vector.Vector<?>>\n\n:param name: java.lang.String\n:param dbArrayType: java.lang.Class<T>\n:return: io.deephaven.engine.tables.ColumnDefinition<T>",
   "ofDouble": ":param name: java.lang.String\n:return: io.deephaven.engine.tables.ColumnDefinition<java.lang.Double>",
   "ofFloat": ":param name: java.lang.String\n:return: io.deephaven.engine.tables.ColumnDefinition<java.lang.Float>",
   "ofInt": ":param name: java.lang.String\n:return: io.deephaven.engine.tables.ColumnDefinition<java.lang.Integer>",

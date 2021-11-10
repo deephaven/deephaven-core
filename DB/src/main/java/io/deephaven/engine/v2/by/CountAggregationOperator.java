@@ -3,8 +3,8 @@ package io.deephaven.engine.v2.by;
 import io.deephaven.engine.util.NullSafeAddition;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.LongArraySource;
-import io.deephaven.engine.v2.sources.chunk.*;
-import io.deephaven.engine.v2.sources.chunk.Attributes.*;
+import io.deephaven.engine.chunk.*;
+import io.deephaven.engine.chunk.Attributes.*;
 
 import java.util.Collections;
 import java.util.Map;

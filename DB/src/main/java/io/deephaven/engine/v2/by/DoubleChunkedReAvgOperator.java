@@ -7,10 +7,11 @@
 
 package io.deephaven.engine.v2.by;
 
+import io.deephaven.engine.rftable.ChunkSource;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.DoubleArraySource;
-import io.deephaven.engine.v2.sources.chunk.*;
-import io.deephaven.engine.v2.sources.chunk.Attributes.*;
+import io.deephaven.engine.chunk.*;
+import io.deephaven.engine.chunk.Attributes.*;
 import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.structures.rowsequence.RowSequenceUtil;
 

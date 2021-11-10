@@ -1,17 +1,18 @@
 package io.deephaven.engine.v2.sources.aggregate;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.rftable.SharedContext;
 import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.structures.rowsequence.RowSequenceUtil;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.UngroupedColumnSource;
-import io.deephaven.engine.v2.sources.chunk.Attributes.Any;
-import io.deephaven.engine.v2.sources.chunk.Attributes.ChunkLengths;
-import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedRowKeys;
-import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
-import io.deephaven.engine.v2.sources.chunk.*;
-import io.deephaven.engine.v2.sources.chunk.util.LongChunkAppender;
-import io.deephaven.engine.v2.sources.chunk.util.LongChunkIterator;
+import io.deephaven.engine.chunk.Attributes.Any;
+import io.deephaven.engine.chunk.Attributes.ChunkLengths;
+import io.deephaven.engine.chunk.Attributes.OrderedRowKeys;
+import io.deephaven.engine.chunk.Attributes.Values;
+import io.deephaven.engine.chunk.*;
+import io.deephaven.engine.chunk.util.LongChunkAppender;
+import io.deephaven.engine.chunk.util.LongChunkIterator;
 import io.deephaven.engine.v2.utils.RowSet;
 import org.jetbrains.annotations.NotNull;
 

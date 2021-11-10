@@ -5,8 +5,8 @@ import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.select.MatchPair;
 import io.deephaven.engine.tables.utils.NameValidator;
 import io.deephaven.engine.v2.BaseTable;
-import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
-import io.deephaven.engine.v2.sources.chunk.ChunkSource;
+import io.deephaven.engine.chunk.Attributes.Values;
+import io.deephaven.engine.rftable.ChunkSource;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;

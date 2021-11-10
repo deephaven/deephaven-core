@@ -12,7 +12,7 @@ import io.deephaven.configuration.Configuration;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.exceptions.QueryCancellationException;
 import io.deephaven.engine.tables.*;
-import io.deephaven.engine.tables.dbarrays.Vector;
+import io.deephaven.engine.vector.Vector;
 import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.tables.live.NotificationQueue;
 import io.deephaven.engine.tables.select.MatchPair;

@@ -2,7 +2,7 @@ package io.deephaven.engine.v2.select.codegen;
 
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.tables.ColumnDefinition;
-import io.deephaven.engine.tables.dbarrays.ObjectVector;
+import io.deephaven.engine.vector.ObjectVector;
 import io.deephaven.engine.tables.lang.LanguageParser;
 import io.deephaven.engine.tables.libs.QueryLibrary;
 import io.deephaven.engine.tables.select.Param;

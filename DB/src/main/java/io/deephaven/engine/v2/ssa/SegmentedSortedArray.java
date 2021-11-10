@@ -2,9 +2,9 @@ package io.deephaven.engine.v2.ssa;
 
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.util.LongSizedDataStructure;
-import io.deephaven.engine.v2.sources.chunk.*;
-import io.deephaven.engine.v2.sources.chunk.Attributes.Any;
-import io.deephaven.engine.v2.sources.chunk.Attributes.RowKeys;
+import io.deephaven.engine.chunk.*;
+import io.deephaven.engine.chunk.Attributes.Any;
+import io.deephaven.engine.chunk.Attributes.RowKeys;
 
 import java.util.function.LongConsumer;
 import java.util.function.Supplier;

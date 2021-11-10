@@ -8,9 +8,9 @@
 package io.deephaven.engine.v2.sources.regioned;
 
 import io.deephaven.util.QueryConstants;
-import io.deephaven.engine.v2.sources.chunk.Attributes;
-import io.deephaven.engine.v2.sources.chunk.WritableIntChunk;
-import io.deephaven.engine.v2.sources.chunk.WritableChunk;
+import io.deephaven.engine.chunk.Attributes;
+import io.deephaven.engine.chunk.WritableIntChunk;
+import io.deephaven.engine.chunk.WritableChunk;
 import io.deephaven.engine.page.Page;
 import io.deephaven.engine.structures.RowSequence;
 import junit.framework.TestCase;

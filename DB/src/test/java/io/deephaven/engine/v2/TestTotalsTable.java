@@ -3,7 +3,7 @@ package io.deephaven.engine.v2;
 import io.deephaven.compilertools.CompilerTools;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.dbarrays.DoubleVectorDirect;
+import io.deephaven.engine.vector.DoubleVectorDirect;
 import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.utils.UpdatePerformanceTracker;

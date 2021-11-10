@@ -1,7 +1,7 @@
 package io.deephaven.engine.v2.utils;
 
 import io.deephaven.engine.structures.RowSequence;
-import io.deephaven.engine.v2.sources.chunk.*;
+import io.deephaven.engine.chunk.*;
 import io.deephaven.benchmarking.BenchUtil;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.infra.Blackhole;

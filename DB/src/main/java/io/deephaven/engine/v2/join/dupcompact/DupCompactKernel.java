@@ -1,6 +1,7 @@
 package io.deephaven.engine.v2.join.dupcompact;
 
-import io.deephaven.engine.v2.sources.chunk.*;
+import io.deephaven.engine.rftable.Context;
+import io.deephaven.engine.chunk.*;
 
 public interface DupCompactKernel extends Context {
     static DupCompactKernel makeDupCompact(ChunkType chunkType, boolean reverse) {

@@ -1,11 +1,11 @@
 package io.deephaven.engine.structures.rowsequence;
 
 import io.deephaven.engine.structures.RowSequence;
-import io.deephaven.engine.v2.sources.chunk.Attributes;
-import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedRowKeys;
-import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedRowKeyRanges;
-import io.deephaven.engine.v2.sources.chunk.LongChunk;
-import io.deephaven.engine.v2.sources.chunk.WritableLongChunk;
+import io.deephaven.engine.chunk.Attributes;
+import io.deephaven.engine.chunk.Attributes.OrderedRowKeys;
+import io.deephaven.engine.chunk.Attributes.OrderedRowKeyRanges;
+import io.deephaven.engine.chunk.LongChunk;
+import io.deephaven.engine.chunk.WritableLongChunk;
 
 public abstract class RowSequenceAsChunkImpl implements RowSequence {
     private WritableLongChunk<OrderedRowKeys> keyIndicesChunk;

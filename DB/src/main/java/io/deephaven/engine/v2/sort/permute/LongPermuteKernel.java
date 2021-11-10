@@ -3,9 +3,9 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.v2.sort.permute;
 
-import io.deephaven.engine.v2.sources.chunk.*;
+import io.deephaven.engine.chunk.*;
 
-import static io.deephaven.engine.v2.sources.chunk.Attributes.*;
+import static io.deephaven.engine.chunk.Attributes.*;
 
 public class LongPermuteKernel {
     public static <T extends Any> void permute(LongChunk<? extends T> inputValues, IntChunk<ChunkPositions> outputPositions, WritableLongChunk<? super T> outputValues) {

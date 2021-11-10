@@ -1,22 +1,22 @@
 {
- "className": "io.deephaven.engine.tables.dbarrays.ByteVector",
+ "className": "io.deephaven.engine.vector.ByteVector",
  "methods": {
   "byteValToString": ":param val: java.lang.Object\n:return: java.lang.String",
-  "equals": "Helper method for implementing Object.equals(Object).\n\n:param aArray: (io.deephaven.engine.tables.dbarrays.ByteVector) - The LHS of the equality test (always a ByteVector)\n:param b: (java.lang.Object) - The RHS of the equality test\n:return: (boolean) Whether the two inputs are equal",
-  "fillChunk": ":param destChunk: io.deephaven.engine.v2.sources.chunk.WritableChunk",
+  "equals": "Helper method for implementing Object.equals(Object).\n\n:param aArray: (io.deephaven.engine.vector.ByteVector) - The LHS of the equality test (always a ByteVector)\n:param b: (java.lang.Object) - The RHS of the equality test\n:return: (boolean) Whether the two inputs are equal",
+  "fillChunk": ":param destChunk: io.deephaven.engine.chunk.WritableChunk",
   "get": ":param i: long\n:return: byte",
   "getComponentType": ":return: java.lang.Class",
-  "getDirect": "Return a version of this Vector that is flattened out to only reference memory.\n\n:return: io.deephaven.engine.tables.dbarrays.ByteVector",
-  "hashCode": "Helper method for implementing Object.hashCode(). Follows the pattern in\n Arrays.hashCode(Object[]).\n\n:param array: (io.deephaven.engine.tables.dbarrays.ByteVector) - The ByteVector to hash\n:return: (int) The hash code",
+  "getDirect": "Return a version of this Vector that is flattened out to only reference memory.\n\n:return: io.deephaven.engine.vector.ByteVector",
+  "hashCode": "Helper method for implementing Object.hashCode(). Follows the pattern in\n Arrays.hashCode(Object[]).\n\n:param array: (io.deephaven.engine.vector.ByteVector) - The ByteVector to hash\n:return: (int) The hash code",
   "primitiveByteValToString": ":param val: byte\n:return: java.lang.String",
   "size": "The size of this data structure.\n\n:return: (long) The size",
-  "subVector": ":param fromIndex: long\n:param toIndex: long\n:return: io.deephaven.engine.tables.dbarrays.ByteVector",
-  "subVectorByPositions": ":param positions: long[]\n:return: io.deephaven.engine.tables.dbarrays.ByteVector",
+  "subVector": ":param fromIndex: long\n:param toIndex: long\n:return: io.deephaven.engine.vector.ByteVector",
+  "subVectorByPositions": ":param positions: long[]\n:return: io.deephaven.engine.vector.ByteVector",
   "toArray": ":return: byte[]",
-  "toChunk": ":return: io.deephaven.engine.v2.sources.chunk.Chunk<io.deephaven.engine.v2.sources.chunk.Attributes.Values>",
-  "toString": "Helper method for implementing Object.toString().\n\n*Overload 1*  \n  :param prefixLength: int\n  :return: java.lang.String\n  \n*Overload 2*  \n  :param array: (io.deephaven.engine.tables.dbarrays.ByteVector) - The ByteVector to convert to a String\n  :param prefixLength: (int) - The maximum prefix of the array to convert\n  :return: (java.lang.String) The String representation of array",
-  "type": ":return: io.deephaven.qst.type.PrimitiveVectorType<io.deephaven.engine.tables.dbarrays.ByteVector,java.lang.Byte>"
+  "toChunk": ":return: io.deephaven.engine.chunk.Chunk<io.deephaven.engine.chunk.Attributes.Values>",
+  "toString": "Helper method for implementing Object.toString().\n\n*Overload 1*  \n  :param prefixLength: int\n  :return: java.lang.String\n  \n*Overload 2*  \n  :param array: (io.deephaven.engine.vector.ByteVector) - The ByteVector to convert to a String\n  :param prefixLength: (int) - The maximum prefix of the array to convert\n  :return: (java.lang.String) The String representation of array",
+  "type": ":return: io.deephaven.qst.type.PrimitiveVectorType<io.deephaven.engine.vector.ByteVector,java.lang.Byte>"
  },
- "path": "io.deephaven.engine.tables.dbarrays.ByteVector",
+ "path": "io.deephaven.engine.vector.ByteVector",
  "typeName": "interface"
 }

@@ -8,7 +8,8 @@ package io.deephaven.numerics.suanshu;
 
 import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.base.verify.RequirementFailure;
-import io.deephaven.engine.tables.dbarrays.*;
+import io.deephaven.engine.vector.*;
+import io.deephaven.engine.vector.*;
 import io.deephaven.util.QueryConstants;
 import com.numericalmethod.suanshu.matrix.doubles.Matrix;
 import com.numericalmethod.suanshu.matrix.doubles.matrixtype.dense.DenseMatrix;

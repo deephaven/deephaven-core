@@ -10,9 +10,9 @@ import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.util.DefensiveDrainable;
 import io.deephaven.engine.util.LongSizedDataStructure;
-import io.deephaven.engine.v2.sources.chunk.Attributes;
-import io.deephaven.engine.v2.sources.chunk.Chunk;
-import io.deephaven.engine.v2.sources.chunk.ChunkType;
+import io.deephaven.engine.chunk.Attributes;
+import io.deephaven.engine.chunk.Chunk;
+import io.deephaven.engine.chunk.ChunkType;
 import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.Nullable;
 

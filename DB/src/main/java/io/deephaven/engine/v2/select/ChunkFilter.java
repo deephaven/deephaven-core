@@ -3,9 +3,9 @@ package io.deephaven.engine.v2.select;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.exceptions.QueryCancellationException;
 import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.sources.chunk.*;
-import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedRowKeys;
-import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
+import io.deephaven.engine.chunk.*;
+import io.deephaven.engine.chunk.Attributes.OrderedRowKeys;
+import io.deephaven.engine.chunk.Attributes.Values;
 import io.deephaven.engine.v2.utils.*;
 import io.deephaven.engine.structures.RowSequence;
 

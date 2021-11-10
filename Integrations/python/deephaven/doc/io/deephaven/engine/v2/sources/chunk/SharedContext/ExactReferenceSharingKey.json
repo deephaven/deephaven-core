@@ -1,10 +1,10 @@
 {
- "className": "io.deephaven.engine.v2.sources.chunk.SharedContext$ExactReferenceSharingKey",
+ "className": "io.deephaven.engine.chunk.SharedContext$ExactReferenceSharingKey",
  "methods": {
   "equals": ":param other: java.lang.Object\n:return: boolean",
   "hashCode": ":return: int"
  },
- "path": "io.deephaven.engine.v2.sources.chunk.SharedContext.ExactReferenceSharingKey",
+ "path": "io.deephaven.engine.chunk.SharedContext.ExactReferenceSharingKey",
  "text": "Abstract SharedContext.Key implementation for use when a simple Object reference coupled with sub-class identity can\n determine equality for sharing purposes.",
  "typeName": "class"
 }

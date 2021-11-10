@@ -1,8 +1,8 @@
 package io.deephaven.engine.v2.locations.parquet.topage;
 
-import io.deephaven.engine.tables.dbarrays.Vector;
-import io.deephaven.engine.v2.sources.chunk.Attributes;
-import io.deephaven.engine.v2.sources.chunk.ChunkType;
+import io.deephaven.engine.vector.Vector;
+import io.deephaven.engine.chunk.Attributes;
+import io.deephaven.engine.chunk.ChunkType;
 import io.deephaven.parquet.DataWithOffsets;
 import org.jetbrains.annotations.NotNull;
 
@@ -56,7 +56,7 @@ public class ToVectorPage<ATTR extends Attributes.Any, RESULT, VECTOR_TYPE exten
 
         // noinspection unchecked
         final VECTOR_TYPE dataWrapper =
-                (VECTOR_TYPE) toPage.makeDbArray(toPage.convertResult(dataWithOffsets.materializeResult));
+                (VECTOR_TYPE) toPage.makeVector(toPage.convertResult(dataWithOffsets.materializeResult));
         final IntBuffer offsets = dataWithOffsets.offsets;
 
         // noinspection unchecked

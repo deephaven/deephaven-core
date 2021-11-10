@@ -3,7 +3,7 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.v2.sources;
 
-import io.deephaven.engine.tables.dbarrays.ObjectVector;
+import io.deephaven.engine.vector.ObjectVector;
 
 import static io.deephaven.util.QueryConstants.NULL_INT;
 

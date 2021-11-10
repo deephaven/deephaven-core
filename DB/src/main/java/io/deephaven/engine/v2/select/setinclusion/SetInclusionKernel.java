@@ -1,9 +1,9 @@
 package io.deephaven.engine.v2.select.setinclusion;
 
-import io.deephaven.engine.v2.sources.chunk.Attributes;
-import io.deephaven.engine.v2.sources.chunk.Chunk;
-import io.deephaven.engine.v2.sources.chunk.ChunkType;
-import io.deephaven.engine.v2.sources.chunk.WritableBooleanChunk;
+import io.deephaven.engine.chunk.Attributes;
+import io.deephaven.engine.chunk.Chunk;
+import io.deephaven.engine.chunk.ChunkType;
+import io.deephaven.engine.chunk.WritableBooleanChunk;
 
 import java.util.Collection;
 

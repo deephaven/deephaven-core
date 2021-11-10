@@ -2,13 +2,13 @@ package io.deephaven.engine.v2.by;
 
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.select.MatchPair;
-import io.deephaven.engine.v2.sources.chunk.*;
+import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.util.QueryConstants;
-import io.deephaven.engine.v2.sources.chunk.Attributes.ChunkLengths;
-import io.deephaven.engine.v2.sources.chunk.Attributes.ChunkPositions;
-import io.deephaven.engine.v2.sources.chunk.Attributes.RowKeys;
-import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
+import io.deephaven.engine.chunk.Attributes.ChunkLengths;
+import io.deephaven.engine.chunk.Attributes.ChunkPositions;
+import io.deephaven.engine.chunk.Attributes.RowKeys;
+import io.deephaven.engine.chunk.Attributes.Values;
 
 public class StaticFirstOrLastChunkedOperator extends BaseAddOnlyFirstOrLastChunkedOperator {
     StaticFirstOrLastChunkedOperator(boolean isFirst, MatchPair[] resultPairs, Table originalTable,

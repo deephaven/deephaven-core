@@ -2,6 +2,7 @@ package io.deephaven.engine.v2;
 
 import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.rftable.ChunkSource;
 import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.tables.SortingOrder;
 import io.deephaven.engine.tables.Table;
@@ -12,10 +13,10 @@ import io.deephaven.engine.v2.join.JoinListenerRecorder;
 import io.deephaven.engine.v2.join.ZeroKeyChunkedAjMergedListener;
 import io.deephaven.engine.v2.sort.LongSortKernel;
 import io.deephaven.engine.v2.sources.*;
-import io.deephaven.engine.v2.sources.chunk.*;
-import io.deephaven.engine.v2.sources.chunk.sized.SizedBooleanChunk;
-import io.deephaven.engine.v2.sources.chunk.sized.SizedChunk;
-import io.deephaven.engine.v2.sources.chunk.sized.SizedLongChunk;
+import io.deephaven.engine.chunk.*;
+import io.deephaven.engine.chunk.sized.SizedBooleanChunk;
+import io.deephaven.engine.chunk.sized.SizedChunk;
+import io.deephaven.engine.chunk.sized.SizedLongChunk;
 import io.deephaven.engine.v2.ssa.ChunkSsaStamp;
 import io.deephaven.engine.v2.ssa.SegmentedSortedArray;
 import io.deephaven.engine.v2.ssa.SsaSsaStamp;
@@ -31,7 +32,7 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import static io.deephaven.engine.v2.sources.chunk.Attributes.*;
+import static io.deephaven.engine.chunk.Attributes.*;
 
 public class AsOfJoinHelper {
 

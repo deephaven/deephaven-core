@@ -3,8 +3,8 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.v2.utils.copy;
 
-import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
-import io.deephaven.engine.v2.sources.chunk.WritableBooleanChunk;
+import io.deephaven.engine.chunk.Attributes.Values;
+import io.deephaven.engine.chunk.WritableBooleanChunk;
 import org.junit.Test;
 
 public class TestBooleanCopyKernel {

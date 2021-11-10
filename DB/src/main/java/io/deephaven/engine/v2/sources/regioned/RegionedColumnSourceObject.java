@@ -5,7 +5,7 @@ import io.deephaven.engine.v2.locations.ColumnLocation;
 import io.deephaven.engine.v2.locations.TableDataException;
 import io.deephaven.engine.v2.locations.TableLocationKey;
 import io.deephaven.engine.v2.sources.ColumnSourceGetDefaults;
-import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
+import io.deephaven.engine.chunk.Attributes.Values;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 

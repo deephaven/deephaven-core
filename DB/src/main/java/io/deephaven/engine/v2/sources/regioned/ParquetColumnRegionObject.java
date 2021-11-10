@@ -2,8 +2,8 @@ package io.deephaven.engine.v2.sources.regioned;
 
 import io.deephaven.engine.v2.locations.TableDataException;
 import io.deephaven.engine.v2.locations.parquet.ColumnChunkPageStore;
-import io.deephaven.engine.v2.sources.chunk.Attributes.Any;
-import io.deephaven.engine.v2.sources.chunk.Attributes.DictionaryKeys;
+import io.deephaven.engine.chunk.Attributes.Any;
+import io.deephaven.engine.chunk.Attributes.DictionaryKeys;
 import io.deephaven.engine.page.ChunkPage;
 import io.deephaven.engine.page.Page;
 import io.deephaven.engine.v2.utils.RowSet;

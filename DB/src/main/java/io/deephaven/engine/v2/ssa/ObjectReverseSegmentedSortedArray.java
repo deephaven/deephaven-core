@@ -5,13 +5,11 @@ package io.deephaven.engine.v2.ssa;
 
 import java.util.Objects;
 
-import java.util.Objects;
-
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.v2.sort.timsort.TimsortUtilities;
-import io.deephaven.engine.v2.sources.chunk.Attributes.Any;
-import io.deephaven.engine.v2.sources.chunk.Attributes.RowKeys;
-import io.deephaven.engine.v2.sources.chunk.*;
+import io.deephaven.engine.chunk.Attributes.Any;
+import io.deephaven.engine.chunk.Attributes.RowKeys;
+import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.util.annotations.VisibleForTesting;
 import gnu.trove.list.TIntList;

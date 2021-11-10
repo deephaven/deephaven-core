@@ -5,7 +5,7 @@
 package io.deephaven.engine.v2.sources;
 
 import io.deephaven.compilertools.ReplicateUtilities;
-import io.deephaven.engine.tables.dbarrays.Vector;
+import io.deephaven.engine.vector.Vector;
 import io.deephaven.util.BooleanUtils;
 import io.deephaven.engine.util.DhObjectComparisons;
 import org.apache.commons.io.FileUtils;
@@ -434,18 +434,6 @@ public class ReplicateSourcesAndChunks {
                 "DB/src/main/java/io/deephaven/engine/v2/sources/chunk/util/factories/CharChunkFactory.java");
         final File classFile = new File(className);
         List<String> classLines = FileUtils.readLines(classFile, Charset.defaultCharset());
-        classLines = ReplicateUtilities.replaceRegion(classLines, "vectorWrap", Arrays.asList(
-                "    @NotNull",
-                "    @Override",
-                "    public final BooleanVectorDirect vectorWrap(Object array) {",
-                "        throw new UnsupportedOperationException(\"No implementation for boolean primitive Vector exists\");",
-                "    }",
-                "",
-                "    @NotNull",
-                "    @Override",
-                "    public BooleanVectorSlice vectorWrap(Object array, int offset, int capacity) {",
-                "        throw new UnsupportedOperationException(\"No implementation for boolean primitive Vector exists\");",
-                "    }"));
         FileUtils.writeLines(classFile, classLines);
     }
 

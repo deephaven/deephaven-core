@@ -9,7 +9,7 @@ import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.compilertools.CompilerTools;
 import io.deephaven.engine.tables.DataColumn;
 import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.dbarrays.CharVector;
+import io.deephaven.engine.vector.CharVector;
 import io.deephaven.engine.tables.libs.QueryLibrary;
 import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.tables.utils.DateTime;

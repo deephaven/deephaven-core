@@ -3,8 +3,8 @@ package io.deephaven.engine.v2.utils;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.structures.rowsequence.RowSequenceAsChunkImpl;
-import io.deephaven.engine.v2.sources.chunk.Attributes.*;
-import io.deephaven.engine.v2.sources.chunk.WritableLongChunk;
+import io.deephaven.engine.chunk.Attributes.*;
+import io.deephaven.engine.chunk.WritableLongChunk;
 import org.apache.commons.lang3.mutable.MutableInt;
 
 public class ShiftedRowSequence extends RowSequenceAsChunkImpl implements RowSequence {

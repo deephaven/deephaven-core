@@ -1,12 +1,14 @@
 package io.deephaven.engine.v2.utils;
 
+import io.deephaven.engine.rftable.ChunkSource;
+import io.deephaven.engine.rftable.SharedContext;
 import io.deephaven.engine.tables.ColumnDefinition;
 import io.deephaven.engine.exceptions.ArgumentException;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.TableDefinition;
 import io.deephaven.engine.v2.QueryTable;
 import io.deephaven.engine.v2.sources.*;
-import io.deephaven.engine.v2.sources.chunk.*;
+import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.v2.tuples.TupleSourceFactory;
 import gnu.trove.impl.Constants;
 import gnu.trove.map.TObjectLongMap;

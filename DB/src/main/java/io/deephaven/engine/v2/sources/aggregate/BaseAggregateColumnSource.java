@@ -4,11 +4,11 @@
 
 package io.deephaven.engine.v2.sources.aggregate;
 
-import io.deephaven.engine.tables.dbarrays.Vector;
+import io.deephaven.engine.vector.Vector;
 import io.deephaven.engine.v2.sources.AbstractColumnSource;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.UngroupedColumnSource;
-import io.deephaven.engine.v2.sources.chunk.SharedContext;
+import io.deephaven.engine.rftable.SharedContext;
 import io.deephaven.engine.v2.utils.RowSet;
 import org.jetbrains.annotations.NotNull;
 

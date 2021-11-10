@@ -3,8 +3,8 @@
  "methods": {
   "appendKey": ":param rowKey: long",
   "appendKeys": ":param it: java.util.PrimitiveIterator.OfLong",
-  "appendOrderedRowKeyRangesChunk": ":param chunk: io.deephaven.engine.v2.sources.chunk.LongChunk<io.deephaven.engine.v2.sources.chunk.Attributes.OrderedRowKeyRanges>",
-  "appendOrderedRowKeysChunk": ":param chunk: io.deephaven.engine.v2.sources.chunk.LongChunk<io.deephaven.engine.v2.sources.chunk.Attributes.OrderedRowKeys>",
+  "appendOrderedRowKeyRangesChunk": ":param chunk: io.deephaven.engine.chunk.LongChunk<io.deephaven.engine.chunk.Attributes.OrderedRowKeyRanges>",
+  "appendOrderedRowKeysChunk": ":param chunk: io.deephaven.engine.chunk.LongChunk<io.deephaven.engine.chunk.Attributes.OrderedRowKeys>",
   "appendRange": ":param rangeFirstRowKey: long\n:param rangeLastRowKey: long",
   "appendRanges": ":param it: io.deephaven.engine.v2.utils.LongRangeIterator",
   "appendRowSequence": "Appends a RowSequence to this builder.\n\n:param rowSequence: (io.deephaven.engine.structures.RowSequence) - The RowSequence to append",

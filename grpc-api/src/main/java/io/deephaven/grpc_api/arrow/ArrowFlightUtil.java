@@ -22,7 +22,7 @@ import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.util.LongSizedDataStructure;
 import io.deephaven.engine.util.liveness.SingletonLivenessManager;
 import io.deephaven.engine.v2.QueryTable;
-import io.deephaven.engine.v2.sources.chunk.ChunkType;
+import io.deephaven.engine.chunk.ChunkType;
 import io.deephaven.grpc_api.barrage.BarrageMessageProducer;
 import io.deephaven.grpc_api.barrage.BarrageStreamGenerator;
 import io.deephaven.grpc_api.session.SessionState;

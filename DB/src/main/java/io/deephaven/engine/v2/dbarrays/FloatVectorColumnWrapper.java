@@ -10,11 +10,12 @@ package io.deephaven.engine.v2.dbarrays;
 import io.deephaven.base.ClampUtil;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.util.LongSizedDataStructure;
-import io.deephaven.engine.tables.dbarrays.*;
+import io.deephaven.engine.vector.*;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.engine.v2.utils.RowSetFactory;
 import io.deephaven.engine.v2.utils.RowSetBuilderRandom;
+import io.deephaven.engine.vector.FloatVector;
 import org.jetbrains.annotations.NotNull;
 
 import static io.deephaven.util.QueryConstants.NULL_FLOAT;

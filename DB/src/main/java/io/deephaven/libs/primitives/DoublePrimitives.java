@@ -7,8 +7,8 @@
 
 package io.deephaven.libs.primitives;
 
-import io.deephaven.engine.tables.dbarrays.DoubleVector;
-import io.deephaven.engine.tables.dbarrays.DoubleVectorDirect;
+import io.deephaven.engine.vector.DoubleVector;
+import io.deephaven.engine.vector.DoubleVectorDirect;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.util.LongSizedDataStructure;
 import gnu.trove.list.array.TDoubleArrayList;

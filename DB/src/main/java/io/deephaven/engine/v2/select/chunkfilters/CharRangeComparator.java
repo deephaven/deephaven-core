@@ -2,9 +2,9 @@ package io.deephaven.engine.v2.select.chunkfilters;
 
 import io.deephaven.engine.util.DhCharComparisons;
 import io.deephaven.engine.v2.select.ChunkFilter;
-import io.deephaven.engine.v2.sources.chunk.*;
-import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedRowKeys;
-import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
+import io.deephaven.engine.chunk.*;
+import io.deephaven.engine.chunk.Attributes.OrderedRowKeys;
+import io.deephaven.engine.chunk.Attributes.Values;
 
 public class CharRangeComparator {
     private CharRangeComparator() {} // static use only

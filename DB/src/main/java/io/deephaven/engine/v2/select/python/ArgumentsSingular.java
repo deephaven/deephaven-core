@@ -1,8 +1,8 @@
 package io.deephaven.engine.v2.select.python;
 
-import io.deephaven.engine.v2.sources.chunk.Attributes.Any;
-import io.deephaven.engine.v2.sources.chunk.*;
-import io.deephaven.engine.v2.sources.chunk.Chunk.Visitor;
+import io.deephaven.engine.chunk.Attributes.Any;
+import io.deephaven.engine.chunk.*;
+import io.deephaven.engine.chunk.Chunk.Visitor;
 import io.deephaven.util.PrimitiveArrayType;
 
 import java.util.Objects;

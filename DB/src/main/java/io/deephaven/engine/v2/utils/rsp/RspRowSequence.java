@@ -1,12 +1,12 @@
 package io.deephaven.engine.v2.utils.rsp;
 
-import static io.deephaven.engine.v2.sources.chunk.Attributes.OrderedRowKeyRanges;
+import static io.deephaven.engine.chunk.Attributes.OrderedRowKeyRanges;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.structures.rowsequence.RowSequenceAsChunkImpl;
-import io.deephaven.engine.v2.sources.chunk.Attributes.RowKeys;
-import io.deephaven.engine.v2.sources.chunk.WritableLongChunk;
+import io.deephaven.engine.chunk.Attributes.RowKeys;
+import io.deephaven.engine.chunk.WritableLongChunk;
 import io.deephaven.engine.v2.utils.*;
 import org.apache.commons.lang3.mutable.MutableLong;
 

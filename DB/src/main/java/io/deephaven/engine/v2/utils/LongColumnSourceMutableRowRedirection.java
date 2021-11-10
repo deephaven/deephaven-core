@@ -3,10 +3,10 @@ package io.deephaven.engine.v2.utils;
 import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.v2.sources.WritableChunkSink;
 import io.deephaven.engine.v2.sources.WritableSource;
-import io.deephaven.engine.v2.sources.chunk.Attributes.RowKeys;
-import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
-import io.deephaven.engine.v2.sources.chunk.Chunk;
-import io.deephaven.engine.v2.sources.chunk.WritableLongChunk;
+import io.deephaven.engine.chunk.Attributes.RowKeys;
+import io.deephaven.engine.chunk.Attributes.Values;
+import io.deephaven.engine.chunk.Chunk;
+import io.deephaven.engine.chunk.WritableLongChunk;
 import io.deephaven.util.QueryConstants;
 import org.jetbrains.annotations.NotNull;
 

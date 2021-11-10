@@ -7,7 +7,7 @@ package io.deephaven.engine.v2.select;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.compilertools.CompilerTools;
 import io.deephaven.engine.tables.ColumnDefinition;
-import io.deephaven.engine.tables.dbarrays.ObjectVector;
+import io.deephaven.engine.vector.ObjectVector;
 import io.deephaven.engine.tables.lang.LanguageParser;
 import io.deephaven.engine.tables.libs.QueryLibrary;
 import io.deephaven.engine.tables.select.Param;
@@ -26,7 +26,7 @@ import io.deephaven.engine.v2.select.formula.FormulaSourceDescriptor;
 import io.deephaven.engine.v2.select.python.DeephavenCompatibleFunction;
 import io.deephaven.engine.v2.select.python.FormulaColumnPython;
 import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.sources.chunk.ChunkType;
+import io.deephaven.engine.chunk.ChunkType;
 import io.deephaven.engine.v2.utils.codegen.CodeGenerator;
 import io.deephaven.engine.v2.utils.codegen.TypeAnalyzer;
 import io.deephaven.internal.log.LoggerFactory;
@@ -310,7 +310,7 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
                     fc.replace("COLUMN_NAME", ac.bareName);
 
                     final String vtp = getVectorType(ac.columnSource.getType()).getCanonicalName().replace(
-                            "io.deephaven.engine.tables.dbarrays",
+                            "io.deephaven.engine.vector",
                             "io.deephaven.engine.v2.dbarrays");
                     fc.replace("VECTOR_TYPE_PREFIX", vtp);
                     return null;

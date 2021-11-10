@@ -3,9 +3,9 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.v2.sort.permute;
 
-import io.deephaven.engine.v2.sources.chunk.Attributes;
-import io.deephaven.engine.v2.sources.chunk.WritableFloatChunk;
-import io.deephaven.engine.v2.sources.chunk.WritableIntChunk;
+import io.deephaven.engine.chunk.Attributes;
+import io.deephaven.engine.chunk.WritableFloatChunk;
+import io.deephaven.engine.chunk.WritableIntChunk;
 import junit.framework.TestCase;
 import org.junit.Test;
 

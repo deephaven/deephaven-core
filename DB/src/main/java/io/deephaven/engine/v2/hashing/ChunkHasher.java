@@ -1,10 +1,10 @@
 package io.deephaven.engine.v2.hashing;
 
-import io.deephaven.engine.v2.sources.chunk.Attributes.HashCode;
-import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
-import io.deephaven.engine.v2.sources.chunk.Chunk;
-import io.deephaven.engine.v2.sources.chunk.ChunkType;
-import io.deephaven.engine.v2.sources.chunk.WritableIntChunk;
+import io.deephaven.engine.chunk.Attributes.HashCode;
+import io.deephaven.engine.chunk.Attributes.Values;
+import io.deephaven.engine.chunk.Chunk;
+import io.deephaven.engine.chunk.ChunkType;
+import io.deephaven.engine.chunk.WritableIntChunk;
 
 public interface ChunkHasher {
     /**

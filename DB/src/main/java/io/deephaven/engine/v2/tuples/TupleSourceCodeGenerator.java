@@ -8,7 +8,7 @@ import io.deephaven.util.BooleanUtils;
 import io.deephaven.engine.util.tuples.TupleCodeGenerator;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.WritableSource;
-import io.deephaven.engine.v2.sources.chunk.*;
+import io.deephaven.engine.chunk.*;
 import io.deephaven.util.text.Indenter;
 import io.deephaven.util.type.TypeUtils;
 import org.jetbrains.annotations.NotNull;

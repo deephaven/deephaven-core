@@ -7,8 +7,8 @@
 
 package io.deephaven.libs.primitives;
 
-import io.deephaven.engine.tables.dbarrays.ByteVector;
-import io.deephaven.engine.tables.dbarrays.ByteVectorDirect;
+import io.deephaven.engine.vector.ByteVector;
+import io.deephaven.engine.vector.ByteVectorDirect;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.util.LongSizedDataStructure;
 import gnu.trove.list.array.TByteArrayList;

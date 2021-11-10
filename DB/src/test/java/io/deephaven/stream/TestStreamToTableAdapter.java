@@ -10,7 +10,7 @@ import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.v2.ModifiedColumnSet;
 import io.deephaven.engine.v2.SimpleListener;
 import io.deephaven.engine.v2.TstUtils;
-import io.deephaven.engine.v2.sources.chunk.*;
+import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.v2.utils.*;
 import io.deephaven.util.BooleanUtils;
 import junit.framework.TestCase;

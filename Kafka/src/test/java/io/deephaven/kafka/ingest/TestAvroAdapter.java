@@ -4,7 +4,7 @@ import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.tables.TableDefinition;
 import io.deephaven.engine.tables.utils.DateTime;
 import io.deephaven.engine.tables.utils.DateTimeUtils;
-import io.deephaven.engine.v2.sources.chunk.*;
+import io.deephaven.engine.chunk.*;
 import io.deephaven.util.BooleanUtils;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseableArray;

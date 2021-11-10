@@ -1,11 +1,13 @@
 package io.deephaven.engine.v2.locations.parquet.topage;
 
-import io.deephaven.engine.tables.dbarrays.Vector;
+import io.deephaven.engine.page.ChunkPageFactory;
+import io.deephaven.engine.vector.Vector;
 import io.deephaven.engine.page.ChunkPage;
+import io.deephaven.engine.vector.VectorFactory;
 import io.deephaven.engine.v2.sources.StringSetImpl;
-import io.deephaven.engine.v2.sources.chunk.Attributes;
-import io.deephaven.engine.v2.sources.chunk.Chunk;
-import io.deephaven.engine.v2.sources.chunk.ChunkType;
+import io.deephaven.engine.chunk.Attributes;
+import io.deephaven.engine.chunk.Chunk;
+import io.deephaven.engine.chunk.ChunkType;
 import io.deephaven.util.annotations.FinalDefault;
 import io.deephaven.parquet.ColumnPageReader;
 import org.jetbrains.annotations.NotNull;
@@ -63,8 +65,8 @@ public interface ToPage<ATTR extends Attributes.Any, RESULT> {
     /**
      * @return the method to create a Vector from RESULT.
      */
-    default Vector makeDbArray(RESULT result) {
-        return getChunkType().vectorWrap(result);
+    default Vector makeVector(RESULT result) {
+        return VectorFactory.forElementType(getNativeType()).vectorWrap(result);
     }
 
     /**
@@ -75,7 +77,8 @@ public interface ToPage<ATTR extends Attributes.Any, RESULT> {
     @FinalDefault
     default ChunkPage<ATTR> toPage(long offset, ColumnPageReader columnPageReader, long mask)
             throws IOException {
-        return getChunkType().pageWrap(offset, convertResult(getResult(columnPageReader)), mask);
+        return ChunkPageFactory.forChunkType(getChunkType())
+                .pageWrap(offset, convertResult(getResult(columnPageReader)), mask);
     }
 
     /**

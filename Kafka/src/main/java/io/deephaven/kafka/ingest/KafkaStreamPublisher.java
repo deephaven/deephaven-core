@@ -2,7 +2,7 @@ package io.deephaven.kafka.ingest;
 
 import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.v2.sources.chunk.*;
+import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.v2.utils.unboxer.ChunkUnboxer;
 import io.deephaven.kafka.StreamPublisherImpl;
 import io.deephaven.engine.tables.utils.DateTimeUtils;

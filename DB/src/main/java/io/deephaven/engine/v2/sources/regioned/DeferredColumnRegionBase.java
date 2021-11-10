@@ -1,7 +1,8 @@
 package io.deephaven.engine.v2.sources.regioned;
 
 import io.deephaven.base.verify.Require;
-import io.deephaven.engine.v2.sources.chunk.*;
+import io.deephaven.engine.rftable.SharedContext;
+import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.structures.RowSequence;
 import org.jetbrains.annotations.NotNull;
 

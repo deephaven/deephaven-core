@@ -8,7 +8,7 @@ import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.engine.tables.ColumnDefinition;
 import io.deephaven.engine.util.string.StringUtils;
-import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
+import io.deephaven.engine.chunk.Attributes.Values;
 import io.deephaven.engine.v2.sources.regioned.*;
 import io.deephaven.util.type.NamedImplementation;
 import org.jetbrains.annotations.NotNull;

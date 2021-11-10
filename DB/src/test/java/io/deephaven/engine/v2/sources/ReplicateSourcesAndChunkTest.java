@@ -5,8 +5,8 @@
 package io.deephaven.engine.v2.sources;
 
 import io.deephaven.util.BooleanUtils;
-import io.deephaven.engine.v2.sources.chunk.ObjectChunk;
-import io.deephaven.engine.v2.sources.chunk.WritableObjectChunk;
+import io.deephaven.engine.chunk.ObjectChunk;
+import io.deephaven.engine.chunk.WritableObjectChunk;
 import org.apache.commons.io.FileUtils;
 
 import java.io.File;
@@ -102,7 +102,7 @@ public class ReplicateSourcesAndChunkTest {
         lines = addImport(lines, WritableObjectChunk.class);
         lines = addImport(lines, ObjectChunk.class);
         if (!booleanPath.contains("Sparse")) {
-            lines = removeImport(lines, "import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedRowKeyRanges;");
+            lines = removeImport(lines, "import io.deephaven.engine.chunk.Attributes.OrderedRowKeyRanges;");
         }
         lines = simpleFixup(lines, "elementGet",
                 "getBoolean", "getByte");

@@ -2,10 +2,10 @@ package io.deephaven.engine.v2.utils;
 
 import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.structures.rowsequence.RowSequenceUtil;
-import io.deephaven.engine.v2.sources.chunk.Attributes;
-import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedRowKeys;
-import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedRowKeyRanges;
-import io.deephaven.engine.v2.sources.chunk.WritableLongChunk;
+import io.deephaven.engine.chunk.Attributes;
+import io.deephaven.engine.chunk.Attributes.OrderedRowKeys;
+import io.deephaven.engine.chunk.Attributes.OrderedRowKeyRanges;
+import io.deephaven.engine.chunk.WritableLongChunk;
 import io.deephaven.benchmarking.BenchUtil;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.openjdk.jmh.annotations.*;

@@ -3,9 +3,9 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.v2.utils.copy;
 
-import io.deephaven.engine.v2.sources.chunk.*;
+import io.deephaven.engine.chunk.*;
 
-import static io.deephaven.engine.v2.sources.chunk.Attributes.Any;
+import static io.deephaven.engine.chunk.Attributes.Any;
 
 public class DoubleCopyKernel implements CopyKernel {
     public static final DoubleCopyKernel INSTANCE = new DoubleCopyKernel();

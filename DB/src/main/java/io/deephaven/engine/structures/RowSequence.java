@@ -5,11 +5,11 @@
 package io.deephaven.engine.structures;
 
 import io.deephaven.engine.util.LongSizedDataStructure;
-import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedRowKeyRanges;
-import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedRowKeys;
-import io.deephaven.engine.v2.sources.chunk.Attributes.RowKeys;
-import io.deephaven.engine.v2.sources.chunk.LongChunk;
-import io.deephaven.engine.v2.sources.chunk.WritableLongChunk;
+import io.deephaven.engine.chunk.Attributes.OrderedRowKeyRanges;
+import io.deephaven.engine.chunk.Attributes.OrderedRowKeys;
+import io.deephaven.engine.chunk.Attributes.RowKeys;
+import io.deephaven.engine.chunk.LongChunk;
+import io.deephaven.engine.chunk.WritableLongChunk;
 import io.deephaven.engine.v2.utils.*;
 import io.deephaven.util.SafeCloseable;
 

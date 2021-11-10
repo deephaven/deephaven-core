@@ -5,8 +5,8 @@ package io.deephaven.engine.v2.join.dupcompact;
 
 import java.util.Objects;
 
-import io.deephaven.engine.v2.sources.chunk.*;
-import io.deephaven.engine.v2.sources.chunk.Attributes.Any;
+import io.deephaven.engine.chunk.*;
+import io.deephaven.engine.chunk.Attributes.Any;
 
 public class ObjectDupCompactKernel implements DupCompactKernel {
     static final ObjectDupCompactKernel INSTANCE = new ObjectDupCompactKernel();

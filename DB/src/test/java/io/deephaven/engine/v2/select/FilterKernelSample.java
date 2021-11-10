@@ -7,14 +7,14 @@ import io.deephaven.engine.tables.select.Param;
 
 import static io.deephaven.engine.v2.select.ConditionFilter.FilterKernel;
 
-import io.deephaven.engine.v2.sources.chunk.Chunk;
-import io.deephaven.engine.v2.sources.chunk.DoubleChunk;
-import io.deephaven.engine.v2.sources.chunk.LongChunk;
-import io.deephaven.engine.v2.sources.chunk.ShortChunk;
+import io.deephaven.engine.chunk.Chunk;
+import io.deephaven.engine.chunk.DoubleChunk;
+import io.deephaven.engine.chunk.LongChunk;
+import io.deephaven.engine.chunk.ShortChunk;
 import io.deephaven.engine.v2.utils.TrackingRowSet;
 
 import static io.deephaven.engine.tables.lang.LanguageFunctionUtil.*;
-import static io.deephaven.engine.v2.sources.chunk.Attributes.*;
+import static io.deephaven.engine.chunk.Attributes.*;
 
 public class FilterKernelSample implements io.deephaven.engine.v2.select.ConditionFilter.FilterKernel<FilterKernel.Context>{
 

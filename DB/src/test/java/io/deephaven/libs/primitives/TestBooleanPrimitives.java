@@ -5,8 +5,8 @@
 package io.deephaven.libs.primitives;
 
 import io.deephaven.base.testing.BaseArrayTestCase;
-import io.deephaven.engine.tables.dbarrays.BooleanVectorDirect;
-import io.deephaven.engine.tables.dbarrays.ObjectVectorDirect;
+import io.deephaven.engine.vector.BooleanVectorDirect;
+import io.deephaven.engine.vector.ObjectVectorDirect;
 
 import static io.deephaven.libs.primitives.BooleanPrimitives.*;
 import static io.deephaven.util.QueryConstants.NULL_BOOLEAN;

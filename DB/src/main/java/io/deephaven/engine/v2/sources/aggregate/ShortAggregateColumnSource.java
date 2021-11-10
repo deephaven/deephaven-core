@@ -4,14 +4,14 @@
 package io.deephaven.engine.v2.sources.aggregate;
 
 import io.deephaven.engine.structures.RowSequence;
-import io.deephaven.engine.tables.dbarrays.ShortVector;
+import io.deephaven.engine.vector.ShortVector;
 import io.deephaven.engine.v2.dbarrays.ShortVectorColumnWrapper;
 import io.deephaven.engine.v2.dbarrays.PrevShortVectorColumnWrapper;
 import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
-import io.deephaven.engine.v2.sources.chunk.ObjectChunk;
-import io.deephaven.engine.v2.sources.chunk.WritableChunk;
-import io.deephaven.engine.v2.sources.chunk.WritableObjectChunk;
+import io.deephaven.engine.chunk.Attributes.Values;
+import io.deephaven.engine.chunk.ObjectChunk;
+import io.deephaven.engine.chunk.WritableChunk;
+import io.deephaven.engine.chunk.WritableObjectChunk;
 import io.deephaven.engine.v2.utils.RowSet;
 import org.jetbrains.annotations.NotNull;
 

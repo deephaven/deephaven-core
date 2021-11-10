@@ -5,9 +5,9 @@ package io.deephaven.engine.v2.join.stamp;
 
 import java.util.Objects;
 
-import io.deephaven.engine.v2.sources.chunk.*;
-import io.deephaven.engine.v2.sources.chunk.Attributes.RowKeys;
-import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
+import io.deephaven.engine.chunk.*;
+import io.deephaven.engine.chunk.Attributes.RowKeys;
+import io.deephaven.engine.chunk.Attributes.Values;
 import io.deephaven.engine.v2.utils.RowSet;
 
 

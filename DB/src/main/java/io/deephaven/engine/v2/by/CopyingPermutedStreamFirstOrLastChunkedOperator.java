@@ -1,5 +1,7 @@
 package io.deephaven.engine.v2.by;
 
+import io.deephaven.engine.rftable.ChunkSource;
+import io.deephaven.engine.rftable.SharedContext;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.select.MatchPair;
 import io.deephaven.engine.v2.sort.permute.PermuteKernel;
@@ -7,7 +9,7 @@ import io.deephaven.engine.v2.sort.timsort.LongIntTimsortKernel;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.WritableChunkSink;
 import io.deephaven.engine.v2.sources.WritableSource;
-import io.deephaven.engine.v2.sources.chunk.*;
+import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.v2.utils.ChunkUtils;
 import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.structures.rowsequence.RowSequenceUtil;

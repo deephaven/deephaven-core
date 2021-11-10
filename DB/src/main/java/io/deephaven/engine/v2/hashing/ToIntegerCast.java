@@ -1,9 +1,9 @@
 package io.deephaven.engine.v2.hashing;
 
-import io.deephaven.engine.v2.sources.chunk.Attributes.Any;
-import io.deephaven.engine.v2.sources.chunk.Chunk;
-import io.deephaven.engine.v2.sources.chunk.ChunkType;
-import io.deephaven.engine.v2.sources.chunk.IntChunk;
+import io.deephaven.engine.chunk.Attributes.Any;
+import io.deephaven.engine.chunk.Chunk;
+import io.deephaven.engine.chunk.ChunkType;
+import io.deephaven.engine.chunk.IntChunk;
 
 public interface ToIntegerCast<T extends Any>  extends ToIntFunctor<T> {
     IntChunk<? extends T> apply(Chunk<? extends T> input);

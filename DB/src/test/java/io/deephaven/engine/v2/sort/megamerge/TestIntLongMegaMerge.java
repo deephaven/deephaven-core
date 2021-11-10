@@ -3,12 +3,13 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.v2.sort.megamerge;
 
+import io.deephaven.engine.rftable.ChunkSource;
 import io.deephaven.engine.v2.hashing.IntChunkEquals;
 import io.deephaven.engine.v2.hashing.LongChunkEquals;
 import io.deephaven.engine.v2.sources.IntegerArraySource;
 import io.deephaven.engine.v2.sources.LongArraySource;
-import io.deephaven.engine.v2.sources.chunk.*;
-import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
+import io.deephaven.engine.chunk.*;
+import io.deephaven.engine.chunk.Attributes.Values;
 import io.deephaven.engine.v2.utils.ChunkUtils;
 import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.structures.rowsequence.RowSequenceUtil;

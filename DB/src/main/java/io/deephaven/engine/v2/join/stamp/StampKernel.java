@@ -1,8 +1,9 @@
 package io.deephaven.engine.v2.join.stamp;
 
+import io.deephaven.engine.rftable.Context;
 import io.deephaven.engine.tables.SortingOrder;
-import io.deephaven.engine.v2.sources.chunk.*;
-import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
+import io.deephaven.engine.chunk.*;
+import io.deephaven.engine.chunk.Attributes.Values;
 import org.jetbrains.annotations.NotNull;
 
 public interface StampKernel extends Context {

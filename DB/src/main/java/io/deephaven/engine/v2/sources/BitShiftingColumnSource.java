@@ -2,10 +2,10 @@ package io.deephaven.engine.v2.sources;
 
 import io.deephaven.engine.v2.CrossJoinShiftState;
 import io.deephaven.engine.v2.join.dupexpand.DupExpandKernel;
-import io.deephaven.engine.v2.sources.chunk.SharedContext;
-import io.deephaven.engine.v2.sources.chunk.WritableChunk;
-import io.deephaven.engine.v2.sources.chunk.WritableIntChunk;
-import io.deephaven.engine.v2.sources.chunk.WritableLongChunk;
+import io.deephaven.engine.rftable.SharedContext;
+import io.deephaven.engine.chunk.WritableChunk;
+import io.deephaven.engine.chunk.WritableIntChunk;
+import io.deephaven.engine.chunk.WritableLongChunk;
 import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.structures.rowsequence.RowSequenceUtil;
 import io.deephaven.engine.v2.utils.RowSet;
@@ -13,7 +13,7 @@ import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.jetbrains.annotations.NotNull;
 
-import static io.deephaven.engine.v2.sources.chunk.Attributes.*;
+import static io.deephaven.engine.chunk.Attributes.*;
 import static io.deephaven.util.QueryConstants.*;
 
 public class BitShiftingColumnSource<T> extends AbstractColumnSource<T> implements UngroupableColumnSource {

@@ -1,10 +1,10 @@
 package io.deephaven.engine.page;
 
 import io.deephaven.engine.util.LongSizedDataStructure;
-import io.deephaven.engine.v2.sources.chunk.Attributes.Any;
-import io.deephaven.engine.v2.sources.chunk.ChunkSource;
-import io.deephaven.engine.v2.sources.chunk.DefaultChunkSource;
-import io.deephaven.engine.v2.sources.chunk.WritableChunk;
+import io.deephaven.engine.chunk.Attributes.Any;
+import io.deephaven.engine.rftable.ChunkSource;
+import io.deephaven.engine.rftable.DefaultChunkSource;
+import io.deephaven.engine.chunk.WritableChunk;
 import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.util.annotations.FinalDefault;

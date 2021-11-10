@@ -7,19 +7,21 @@ import io.deephaven.engine.tables.select.Param;
 
 import static io.deephaven.engine.v2.select.ConditionFilter.FilterKernel;
 
-import io.deephaven.engine.v2.sources.chunk.Chunk;
-import io.deephaven.engine.v2.sources.chunk.LongChunk;
+import io.deephaven.engine.chunk.Chunk;
+import io.deephaven.engine.chunk.LongChunk;
 import io.deephaven.engine.v2.utils.TrackingRowSet;
+import io.deephaven.engine.vector.DoubleVector;
+import io.deephaven.engine.vector.ShortVector;
 
 import static io.deephaven.engine.tables.lang.LanguageFunctionUtil.*;
-import static io.deephaven.engine.v2.sources.chunk.Attributes.*;
+import static io.deephaven.engine.chunk.Attributes.*;
 
 public class FilterKernelArraySample implements io.deephaven.engine.v2.select.ConditionFilter.FilterKernel<FilterKernel.Context>{
 
 
     // Array Column Variables
-    private final io.deephaven.engine.tables.dbarrays.DoubleVector v2_;
-    private final io.deephaven.engine.tables.dbarrays.ShortVector v1_;
+    private final DoubleVector v2_;
+    private final ShortVector v1_;
 
 
     public FilterKernelArraySample(Table table, TrackingRowSet fullSet, Param... params) {

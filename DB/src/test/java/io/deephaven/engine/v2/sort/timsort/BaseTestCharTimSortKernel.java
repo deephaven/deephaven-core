@@ -9,8 +9,8 @@ import io.deephaven.engine.v2.sort.findruns.CharFindRunsKernel;
 import io.deephaven.engine.v2.sort.partition.CharPartitionKernel;
 import io.deephaven.engine.v2.sources.AbstractColumnSource;
 import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.sources.chunk.*;
-import io.deephaven.engine.v2.sources.chunk.Attributes.*;
+import io.deephaven.engine.chunk.*;
+import io.deephaven.engine.chunk.Attributes.*;
 import junit.framework.TestCase;
 import org.jetbrains.annotations.NotNull;
 

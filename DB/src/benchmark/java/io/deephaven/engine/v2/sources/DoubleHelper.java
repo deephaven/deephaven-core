@@ -3,9 +3,9 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.v2.sources;
 
-import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedRowKeys;
-import io.deephaven.engine.v2.sources.chunk.LongChunk;
-import io.deephaven.engine.v2.sources.chunk.WritableDoubleChunk;
+import io.deephaven.engine.chunk.Attributes.OrderedRowKeys;
+import io.deephaven.engine.chunk.LongChunk;
+import io.deephaven.engine.chunk.WritableDoubleChunk;
 import io.deephaven.engine.structures.RowSequence;
 import org.openjdk.jmh.infra.Blackhole;
 

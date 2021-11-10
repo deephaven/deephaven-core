@@ -20,7 +20,7 @@ import io.deephaven.engine.util.ColumnFormattingValues;
 import io.deephaven.engine.util.config.MutableInputTable;
 import io.deephaven.engine.v2.HierarchicalTableInfo;
 import io.deephaven.engine.v2.RollupInfo;
-import io.deephaven.engine.v2.sources.chunk.ChunkType;
+import io.deephaven.engine.chunk.ChunkType;
 import io.deephaven.grpc_api.util.MessageHelper;
 import io.deephaven.grpc_api.util.SchemaHelper;
 import io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse;

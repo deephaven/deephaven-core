@@ -7,8 +7,8 @@
 
 package io.deephaven.libs.primitives;
 
-import io.deephaven.engine.tables.dbarrays.IntVector;
-import io.deephaven.engine.tables.dbarrays.IntVectorDirect;
+import io.deephaven.engine.vector.IntVector;
+import io.deephaven.engine.vector.IntVectorDirect;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.util.LongSizedDataStructure;
 import gnu.trove.list.array.TIntArrayList;

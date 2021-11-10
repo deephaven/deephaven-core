@@ -1,6 +1,8 @@
 package io.deephaven.engine.v2.sources;
 
-import io.deephaven.engine.v2.sources.chunk.*;
+import io.deephaven.engine.rftable.ChunkSource;
+import io.deephaven.engine.rftable.Context;
+import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.structures.RowSequence;
 import org.jetbrains.annotations.NotNull;
 

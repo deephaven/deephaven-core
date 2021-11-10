@@ -1,7 +1,7 @@
 package io.deephaven.engine.v2.locations.parquet.topage;
 
-import io.deephaven.engine.v2.sources.chunk.Attributes.Any;
-import io.deephaven.engine.v2.sources.chunk.ChunkType;
+import io.deephaven.engine.chunk.Attributes.Any;
+import io.deephaven.engine.chunk.ChunkType;
 import io.deephaven.util.codec.ObjectCodec;
 import org.apache.parquet.column.Dictionary;
 import org.apache.parquet.io.api.Binary;

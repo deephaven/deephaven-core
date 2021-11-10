@@ -1,7 +1,8 @@
 package io.deephaven.engine.v2.sort.findruns;
 
-import io.deephaven.engine.v2.sources.chunk.*;
-import io.deephaven.engine.v2.sources.chunk.Attributes.*;
+import io.deephaven.engine.rftable.Context;
+import io.deephaven.engine.chunk.*;
+import io.deephaven.engine.chunk.Attributes.*;
 
 public interface FindRunsKernel extends Context {
     static FindRunsKernel makeContext(ChunkType chunkType) {

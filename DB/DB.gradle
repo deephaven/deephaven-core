@@ -56,6 +56,10 @@ dependencies {
             project(':Container'),
             project(':table-api'),
             project(':qst'),
+            project(':engine-chunk'),
+            project(':engine-vector'),
+            project(':engine-tuple'),
+            project(':engine-time'),
             "org.flywaydb:flyway-core:5.2.4",
             'com.github.f4b6a3:uuid-creator:3.6.0'
 
@@ -214,7 +218,7 @@ createTestExecTask('replicateColumnSourceFillBenchmark', 'io.deephaven.engine.v2
 createMainExecTask('replicateSetInclusionKernel', 'io.deephaven.engine.v2.select.setinclusion.ReplicateSetInclusionKernel')
 createMainExecTask('replicateRegions', 'io.deephaven.engine.v2.sources.regioned.ReplicateRegionsAndRegionedSources')
 createMainExecTask('replicateToPage', 'io.deephaven.engine.v2.locations.parquet.topage.ReplicateToPage')
-createMainExecTask('replicateVectors', 'io.deephaven.engine.tables.dbarrays.ReplicateVectors')
+createMainExecTask('replicateVectors', 'io.deephaven.engine.vector.ReplicateVectors')
 createMainExecTask('replicateVectorColumnWrappers', 'io.deephaven.engine.v2.dbarrays.ReplicateVectorColumnWrappers')
 createMainExecTask('replicateCopyKernel', 'io.deephaven.engine.v2.utils.copy.ReplicateCopyKernel')
 createMainExecTask('replicateUnboxerKernel', 'io.deephaven.engine.v2.utils.unboxer.ReplicateUnboxerKernel')

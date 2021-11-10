@@ -7,9 +7,9 @@ import io.deephaven.engine.v2.BaseTable;
 import io.deephaven.engine.v2.ModifiedColumnSet;
 import io.deephaven.engine.v2.sortcheck.SortCheck;
 import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.sources.chunk.Attributes;
-import io.deephaven.engine.v2.sources.chunk.Chunk;
-import io.deephaven.engine.v2.sources.chunk.ChunkSource;
+import io.deephaven.engine.chunk.Attributes;
+import io.deephaven.engine.chunk.Chunk;
+import io.deephaven.engine.rftable.ChunkSource;
 import io.deephaven.engine.v2.utils.*;
 import io.deephaven.engine.structures.RowSequence;
 

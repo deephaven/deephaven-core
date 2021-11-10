@@ -1,8 +1,8 @@
 {
  "className": "io.deephaven.engine.v2.by.ssmcountdistinct.DateTimeSsmSourceWrapper",
  "methods": {
-  "get": ":param index: long\n:return: io.deephaven.engine.tables.dbarrays.ObjectVector<io.deephaven.engine.tables.utils.DateTime>",
-  "getPrev": ":param index: long\n:return: io.deephaven.engine.tables.dbarrays.ObjectVector<io.deephaven.engine.tables.utils.DateTime>",
+  "get": ":param index: long\n:return: io.deephaven.engine.vector.ObjectVector<io.deephaven.engine.tables.utils.DateTime>",
+  "getPrev": ":param index: long\n:return: io.deephaven.engine.vector.ObjectVector<io.deephaven.engine.tables.utils.DateTime>",
   "isImmutable": "Determine if this column source is immutable, meaning that the values at a given rowSet key never change.\n\n:return: (boolean) true if the values at a given rowSet of the column source never change, false otherwise",
   "startTrackingPrevValues": "ColumnSource implementations that track previous values have the option to not actually start tracking previous\n values until this method is called. This is an option, not an obligation: some simple ColumnSource\n implementations (like TSingleValueSource for various T) always track previous values; other implementations (like\n PrevColumnSource) never do; some (like TArrayColumnSource) only start tracking once this method is called.\n\n An immutable column source can not have distinct prev values; therefore it is implemented as a no-op."
  },

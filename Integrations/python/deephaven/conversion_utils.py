@@ -134,16 +134,16 @@ _boxedArrayTypes = {
 
 
 _javaTypeToVectorType = {
-    'java.lang.String': 'io.deephaven.engine.tables.dbarrays.ObjectVectorDirect',
-    'char': 'io.deephaven.engine.tables.dbarrays.CharVectorDirect',
-    'java.lang.Boolean': 'io.deephaven.engine.tables.dbarrays.ObjectVectorDirect',
-    'boolean': 'io.deephaven.engine.tables.dbarrays.ObjectVectorDirect',  # it really should be boxed...
-    'byte': 'io.deephaven.engine.tables.dbarrays.ByteVectorDirect',
-    'short': 'io.deephaven.engine.tables.dbarrays.ShortVectorDirect',
-    'int': 'io.deephaven.engine.tables.dbarrays.IntVectorDirect',
-    'long': 'io.deephaven.engine.tables.dbarrays.LongVectorDirect',
-    'float': 'io.deephaven.engine.tables.dbarrays.FloatVectorDirect',
-    'double': 'io.deephaven.engine.tables.dbarrays.DoubleVectorDirect',
+    'java.lang.String': 'ObjectVectorDirect',
+    'char': 'CharVectorDirect',
+    'java.lang.Boolean': 'ObjectVectorDirect',
+    'boolean': 'ObjectVectorDirect',  # it really should be boxed...
+    'byte': 'ByteVectorDirect',
+    'short': 'ShortVectorDirect',
+    'int': 'IntVectorDirect',
+    'long': 'LongVectorDirect',
+    'float': 'FloatVectorDirect',
+    'double': 'DoubleVectorDirect',
 }
 
 _javaTypeToImmutableColumnSource = {
@@ -429,7 +429,7 @@ def _arrayColumnSource(array, javaTypeString):
     if javaTypeString in _javaTypeToVectorType:
         arrayType = _javaTypeToVectorType[javaTypeString]
     elif javaTypeString in jpy.dtypes:
-        arrayType = 'io.deephaven.engine.tables.dbarrays.ObjectVectorDirect'
+        arrayType = 'ObjectVectorDirect'
 
     arrayCls = jpy.get_type(arrayType)
     if javaTypeString == 'java.lang.Boolean':
@@ -890,7 +890,7 @@ class NULL_CONVERSION(object):
         return cls.ERROR
 
 def _isVectorType(type_name): \
-        return type_name.startswith('io.deephaven.engine.tables.dbarrays.') or \
+        return type_name.startswith('io.deephaven.engine.vector.') or \
                type_name.startswith('io.deephaven.engine.v2.dbarrays.')
 
 def _isVector(obj):

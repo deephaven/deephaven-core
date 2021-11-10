@@ -1,10 +1,10 @@
 package io.deephaven.engine.v2.locations.parquet.topage;
 
-import io.deephaven.engine.tables.dbarrays.ObjectVector;
-import io.deephaven.engine.tables.dbarrays.ObjectVectorDirect;
+import io.deephaven.engine.vector.ObjectVector;
+import io.deephaven.engine.vector.ObjectVectorDirect;
 import io.deephaven.engine.tables.utils.DateTime;
 import io.deephaven.engine.tables.utils.DateTimeUtils;
-import io.deephaven.engine.v2.sources.chunk.Attributes;
+import io.deephaven.engine.chunk.Attributes;
 import org.apache.parquet.schema.LogicalTypeAnnotation;
 import org.jetbrains.annotations.NotNull;
 
@@ -70,7 +70,7 @@ public abstract class ToDateTimePage<ATTR extends Attributes.Any> extends ToLong
     private static final class ToDateTimePageFromNanos<ATTR extends Attributes.Any> extends ToDateTimePage<ATTR> {
         @Override
         @NotNull
-        public ObjectVector<DateTime> makeDbArray(long[] result) {
+        public ObjectVector<DateTime> makeVector(long[] result) {
             return makeDbArrayHelper(result, DateTimeUtils::nanosToTime);
         }
     }
@@ -78,7 +78,7 @@ public abstract class ToDateTimePage<ATTR extends Attributes.Any> extends ToLong
     private static final class ToDateTimePageFromMicros<ATTR extends Attributes.Any> extends ToDateTimePage<ATTR> {
         @Override
         @NotNull
-        public ObjectVector<DateTime> makeDbArray(long[] result) {
+        public ObjectVector<DateTime> makeVector(long[] result) {
             return makeDbArrayHelper(result, DateTimeUtils::microsToTime);
         }
 
@@ -91,7 +91,7 @@ public abstract class ToDateTimePage<ATTR extends Attributes.Any> extends ToLong
     private static final class ToDateTimePageFromMillis<ATTR extends Attributes.Any> extends ToDateTimePage<ATTR> {
         @Override
         @NotNull
-        public ObjectVector<DateTime> makeDbArray(long[] result) {
+        public ObjectVector<DateTime> makeVector(long[] result) {
             return makeDbArrayHelper(result, DateTimeUtils::millisToTime);
         }
 

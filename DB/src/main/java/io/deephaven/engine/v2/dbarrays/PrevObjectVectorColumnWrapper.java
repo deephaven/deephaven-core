@@ -6,8 +6,8 @@ package io.deephaven.engine.v2.dbarrays;
 
 import io.deephaven.base.ClampUtil;
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.tables.dbarrays.ObjectVector;
-import io.deephaven.engine.tables.dbarrays.ObjectVectorDirect;
+import io.deephaven.engine.vector.ObjectVector;
+import io.deephaven.engine.vector.ObjectVectorDirect;
 import io.deephaven.engine.util.LongSizedDataStructure;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.utils.RowSet;

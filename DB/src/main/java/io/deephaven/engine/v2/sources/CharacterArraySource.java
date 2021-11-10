@@ -6,12 +6,12 @@ package io.deephaven.engine.v2.sources;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.util.DhCharComparisons;
-import io.deephaven.engine.v2.sources.chunk.*;
-import io.deephaven.engine.v2.sources.chunk.Attributes.*;
-import io.deephaven.engine.v2.sources.chunk.ResettableWritableChunk;
-import io.deephaven.engine.v2.sources.chunk.WritableCharChunk;
-import io.deephaven.engine.v2.sources.chunk.WritableChunk;
-import io.deephaven.engine.v2.sources.chunk.LongChunk;
+import io.deephaven.engine.chunk.*;
+import io.deephaven.engine.chunk.Attributes.*;
+import io.deephaven.engine.chunk.ResettableWritableChunk;
+import io.deephaven.engine.chunk.WritableCharChunk;
+import io.deephaven.engine.chunk.WritableChunk;
+import io.deephaven.engine.chunk.LongChunk;
 import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.util.SoftRecycler;

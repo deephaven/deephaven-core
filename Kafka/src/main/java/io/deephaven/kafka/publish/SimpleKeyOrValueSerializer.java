@@ -2,10 +2,10 @@ package io.deephaven.kafka.publish;
 
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.sources.chunk.Attributes;
-import io.deephaven.engine.v2.sources.chunk.Chunk;
-import io.deephaven.engine.v2.sources.chunk.ChunkSource;
-import io.deephaven.engine.v2.sources.chunk.ObjectChunk;
+import io.deephaven.engine.chunk.Attributes;
+import io.deephaven.engine.chunk.Chunk;
+import io.deephaven.engine.rftable.ChunkSource;
+import io.deephaven.engine.chunk.ObjectChunk;
 import io.deephaven.engine.v2.utils.ChunkBoxer;
 import io.deephaven.engine.structures.RowSequence;
 

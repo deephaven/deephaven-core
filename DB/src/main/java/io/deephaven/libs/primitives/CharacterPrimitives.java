@@ -4,8 +4,8 @@
 
 package io.deephaven.libs.primitives;
 
-import io.deephaven.engine.tables.dbarrays.CharVector;
-import io.deephaven.engine.tables.dbarrays.CharVectorDirect;
+import io.deephaven.engine.vector.CharVector;
+import io.deephaven.engine.vector.CharVectorDirect;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.util.LongSizedDataStructure;
 import gnu.trove.list.array.TCharArrayList;

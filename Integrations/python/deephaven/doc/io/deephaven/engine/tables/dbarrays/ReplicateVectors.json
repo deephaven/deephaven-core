@@ -1,8 +1,8 @@
 {
- "className": "io.deephaven.engine.tables.dbarrays.ReplicateVectors",
+ "className": "io.deephaven.engine.vector.ReplicateVectors",
  "methods": {
   "main": ":param args: java.lang.String[]"
  },
- "path": "io.deephaven.engine.tables.dbarrays.ReplicateVectors",
+ "path": "io.deephaven.engine.vector.ReplicateVectors",
  "typeName": "class"
 }

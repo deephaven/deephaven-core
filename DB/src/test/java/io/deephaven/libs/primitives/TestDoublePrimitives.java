@@ -8,8 +8,8 @@
 package io.deephaven.libs.primitives;
 
 import io.deephaven.base.testing.BaseArrayTestCase;
-import io.deephaven.engine.tables.dbarrays.DoubleVector;
-import io.deephaven.engine.tables.dbarrays.DoubleVectorDirect;
+import io.deephaven.engine.vector.DoubleVector;
+import io.deephaven.engine.vector.DoubleVectorDirect;
 
 import static io.deephaven.libs.primitives.DoublePrimitives.*;
 import static io.deephaven.util.QueryConstants.NULL_DOUBLE;

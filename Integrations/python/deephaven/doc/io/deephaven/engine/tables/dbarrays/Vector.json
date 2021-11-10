@@ -1,9 +1,9 @@
 {
- "className": "io.deephaven.engine.tables.dbarrays.Vector",
+ "className": "io.deephaven.engine.vector.Vector",
  "methods": {
   "clampIndex": ":param validFromInclusive: long\n:param validToExclusive: long\n:param index: long\n:return: long",
   "classToHelper": ":param clazz: java.lang.Class\n:return: java.util.function.Function<java.lang.Object,java.lang.String>",
-  "fillChunk": ":param destChunk: io.deephaven.engine.v2.sources.chunk.WritableChunk",
+  "fillChunk": ":param destChunk: io.deephaven.engine.chunk.WritableChunk",
   "getComponentType": ":return: java.lang.Class",
   "getDirect": "Return a version of this Vector that is flattened out to only reference memory.\n\n:return: Vector.VECTOR_TYPE",
   "isEmpty": ":return: boolean",
@@ -12,9 +12,9 @@
   "subVector": ":param fromIndex: long\n:param toIndex: long\n:return: Vector.VECTOR_TYPE",
   "subVectorByPositions": ":param positions: long[]\n:return: Vector.VECTOR_TYPE",
   "toArray": ":return: java.lang.Object",
-  "toChunk": ":return: io.deephaven.engine.v2.sources.chunk.Chunk<io.deephaven.engine.v2.sources.chunk.Attributes.Values>",
+  "toChunk": ":return: io.deephaven.engine.chunk.Chunk<io.deephaven.engine.chunk.Attributes.Values>",
   "toString": ":param prefixLength: int\n:return: java.lang.String"
  },
- "path": "io.deephaven.engine.tables.dbarrays.Vector",
+ "path": "io.deephaven.engine.vector.Vector",
  "typeName": "interface"
 }

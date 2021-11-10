@@ -7,7 +7,7 @@ package io.deephaven.kafka.ingest;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.engine.tables.TableDefinition;
 import io.deephaven.engine.tables.utils.DateTime;
-import io.deephaven.engine.v2.sources.chunk.ChunkType;
+import io.deephaven.engine.chunk.ChunkType;
 
 import java.util.Map;
 import java.util.function.IntFunction;

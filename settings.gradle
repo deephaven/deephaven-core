@@ -139,6 +139,15 @@ include(':ParquetHadoop')
 include(':engine-chunk')
 project(':engine-chunk').projectDir = file('engine/chunk')
 
+include(':engine-vector')
+project(':engine-vector').projectDir = file('engine/vector')
+
+include(':engine-tuple')
+project(':engine-tuple').projectDir = file('engine/tuple')
+
+include(':engine-time')
+project(':engine-time').projectDir = file('engine/time')
+
 include(':envoy')
 
 include(':grpc-proxy')

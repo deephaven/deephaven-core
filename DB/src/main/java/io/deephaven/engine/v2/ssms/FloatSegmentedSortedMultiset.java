@@ -4,16 +4,16 @@
 package io.deephaven.engine.v2.ssms;
 
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.tables.dbarrays.FloatVector;
-import io.deephaven.engine.tables.dbarrays.FloatVectorDirect;
-import io.deephaven.engine.tables.dbarrays.ObjectVector;
+import io.deephaven.engine.vector.FloatVector;
+import io.deephaven.engine.vector.FloatVectorDirect;
+import io.deephaven.engine.vector.ObjectVector;
 import io.deephaven.engine.tables.utils.ArrayUtils;
 import io.deephaven.engine.util.DhFloatComparisons;
 import io.deephaven.engine.v2.by.SumIntChunk;
 import io.deephaven.engine.v2.sort.timsort.TimsortUtilities;
-import io.deephaven.engine.v2.sources.chunk.*;
-import io.deephaven.engine.v2.sources.chunk.Attributes.ChunkLengths;
-import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
+import io.deephaven.engine.chunk.*;
+import io.deephaven.engine.chunk.Attributes.ChunkLengths;
+import io.deephaven.engine.chunk.Attributes.Values;
 import io.deephaven.util.annotations.VisibleForTesting;
 import gnu.trove.set.hash.TFloatHashSet;
 import org.apache.commons.lang3.mutable.MutableInt;

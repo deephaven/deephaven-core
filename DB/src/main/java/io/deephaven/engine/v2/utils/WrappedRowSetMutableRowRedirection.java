@@ -4,11 +4,13 @@
 
 package io.deephaven.engine.v2.utils;
 
+import io.deephaven.engine.rftable.ChunkSource;
+import io.deephaven.engine.rftable.SharedContext;
 import io.deephaven.engine.structures.RowSequence;
-import io.deephaven.engine.v2.sources.chunk.*;
-import io.deephaven.engine.v2.sources.chunk.Attributes.RowKeys;
-import io.deephaven.engine.v2.sources.chunk.util.LongChunkAppender;
-import io.deephaven.engine.v2.sources.chunk.util.LongChunkIterator;
+import io.deephaven.engine.chunk.*;
+import io.deephaven.engine.chunk.Attributes.RowKeys;
+import io.deephaven.engine.chunk.util.LongChunkAppender;
+import io.deephaven.engine.chunk.util.LongChunkIterator;
 import org.jetbrains.annotations.NotNull;
 
 public class WrappedRowSetMutableRowRedirection implements MutableRowRedirection {

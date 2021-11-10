@@ -1,9 +1,10 @@
 package io.deephaven.engine.v2;
 
-import io.deephaven.engine.tables.dbarrays.*;
+import io.deephaven.engine.vector.*;
 import io.deephaven.engine.util.DhCharComparisons;
 import io.deephaven.engine.util.DhDoubleComparisons;
 import io.deephaven.engine.util.DhObjectComparisons;
+import io.deephaven.engine.vector.*;
 import io.deephaven.libs.GroovyStaticImports;
 import io.deephaven.libs.primitives.*;
 import io.deephaven.util.QueryConstants;

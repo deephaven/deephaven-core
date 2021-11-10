@@ -4,11 +4,13 @@
 
 package io.deephaven.engine.v2.sources.deltaaware;
 
+import io.deephaven.engine.rftable.ChunkSource;
+import io.deephaven.engine.rftable.SharedContext;
 import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.structures.rowsequence.RowSequenceUtil;
 import io.deephaven.engine.v2.sources.*;
-import io.deephaven.engine.v2.sources.chunk.*;
-import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
+import io.deephaven.engine.chunk.*;
+import io.deephaven.engine.chunk.Attributes.Values;
 import io.deephaven.engine.v2.utils.*;
 import org.jetbrains.annotations.NotNull;
 
@@ -274,8 +276,8 @@ public final class DeltaAwareColumnSource<T> extends AbstractColumnSource<T>
 
     @SuppressWarnings({"rawtypes", "unchecked"})
     private static Chunk<? super Values> getOrFillSimple(ChunkSource src, GetAndFillContexts ctx,
-            WritableChunk<? super Values> optionalDest,
-            RowSequence rowSequence) {
+                                                         WritableChunk<? super Values> optionalDest,
+                                                         RowSequence rowSequence) {
         if (optionalDest == null) {
             return src.getChunk(ctx.getContext, rowSequence);
         }

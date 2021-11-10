@@ -4,8 +4,8 @@
 
 package io.deephaven.engine.v2.sources;
 
-import io.deephaven.engine.tables.dbarrays.ObjectVector;
-import io.deephaven.engine.tables.dbarrays.Vector;
+import io.deephaven.engine.vector.ObjectVector;
+import io.deephaven.engine.vector.Vector;
 import io.deephaven.engine.v2.sources.aggregate.AggregateColumnSource;
 
 @AbstractColumnSource.IsSerializable(value = true)

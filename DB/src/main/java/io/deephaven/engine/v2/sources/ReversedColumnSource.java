@@ -5,9 +5,9 @@
 package io.deephaven.engine.v2.sources;
 
 import io.deephaven.engine.v2.ReverseOperation;
-import io.deephaven.engine.v2.sources.chunk.Attributes;
-import io.deephaven.engine.v2.sources.chunk.SharedContext;
-import io.deephaven.engine.v2.sources.chunk.WritableChunk;
+import io.deephaven.engine.chunk.Attributes;
+import io.deephaven.engine.rftable.SharedContext;
+import io.deephaven.engine.chunk.WritableChunk;
 import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.v2.utils.reverse.ReverseKernel;
 import org.jetbrains.annotations.NotNull;

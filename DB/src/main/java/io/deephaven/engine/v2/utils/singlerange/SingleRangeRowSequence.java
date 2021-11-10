@@ -1,11 +1,11 @@
 package io.deephaven.engine.v2.utils.singlerange;
 
-import static io.deephaven.engine.v2.sources.chunk.Attributes.OrderedRowKeyRanges;
+import static io.deephaven.engine.chunk.Attributes.OrderedRowKeyRanges;
 
 import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.structures.rowsequence.RowSequenceAsChunkImpl;
-import io.deephaven.engine.v2.sources.chunk.Attributes;
-import io.deephaven.engine.v2.sources.chunk.WritableLongChunk;
+import io.deephaven.engine.chunk.Attributes;
+import io.deephaven.engine.chunk.WritableLongChunk;
 import io.deephaven.engine.v2.utils.*;
 
 public class SingleRangeRowSequence extends RowSequenceAsChunkImpl implements SingleRangeMixin {

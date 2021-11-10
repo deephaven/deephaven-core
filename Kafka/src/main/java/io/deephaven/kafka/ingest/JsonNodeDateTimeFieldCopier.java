@@ -1,7 +1,7 @@
 package io.deephaven.kafka.ingest;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import io.deephaven.engine.v2.sources.chunk.*;
+import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.tables.utils.DateTimeUtils;
 
 public class JsonNodeDateTimeFieldCopier implements FieldCopier {

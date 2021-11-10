@@ -1,7 +1,7 @@
 {
- "className": "io.deephaven.engine.v2.sources.chunk.Attributes$EncodedObjects",
+ "className": "io.deephaven.engine.chunk.Attributes$EncodedObjects",
  "methods": {},
- "path": "io.deephaven.engine.v2.sources.chunk.Attributes.EncodedObjects",
+ "path": "io.deephaven.engine.chunk.Attributes.EncodedObjects",
  "text": "The chunk contains bytes of objects which need to be decoded.",
  "typeName": "interface"
 }

@@ -4,10 +4,10 @@
 
 package io.deephaven.kafka.ingest;
 
-import io.deephaven.engine.v2.sources.chunk.Attributes;
-import io.deephaven.engine.v2.sources.chunk.ObjectChunk;
-import io.deephaven.engine.v2.sources.chunk.WritableObjectChunk;
-import io.deephaven.engine.v2.sources.chunk.WritableChunk;
+import io.deephaven.engine.chunk.Attributes;
+import io.deephaven.engine.chunk.ObjectChunk;
+import io.deephaven.engine.chunk.WritableObjectChunk;
+import io.deephaven.engine.chunk.WritableChunk;
 import org.apache.avro.generic.GenericRecord;
 
 public class GenericRecordObjectFieldCopier implements FieldCopier {

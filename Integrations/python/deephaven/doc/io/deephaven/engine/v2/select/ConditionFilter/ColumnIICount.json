@@ -1,7 +1,7 @@
 {
  "className": "io.deephaven.engine.v2.select.ConditionFilter$ColumnIICount",
  "methods": {
-  "getChunk": ":param context: io.deephaven.engine.v2.sources.chunk.Context\n:param rowSequence: io.deephaven.engine.structures.RowSequence\n:return: io.deephaven.engine.v2.sources.chunk.Chunk"
+  "getChunk": ":param context: io.deephaven.engine.chunk.Context\n:param rowSequence: io.deephaven.engine.structures.RowSequence\n:return: io.deephaven.engine.chunk.Chunk"
  },
  "path": "io.deephaven.engine.v2.select.ConditionFilter.ColumnIICount",
  "typeName": "class"

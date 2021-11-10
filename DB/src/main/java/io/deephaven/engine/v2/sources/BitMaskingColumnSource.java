@@ -1,16 +1,16 @@
 package io.deephaven.engine.v2.sources;
 
-import io.deephaven.engine.v2.sources.chunk.Attributes;
-import io.deephaven.engine.v2.sources.chunk.SharedContext;
-import io.deephaven.engine.v2.sources.chunk.WritableChunk;
-import io.deephaven.engine.v2.sources.chunk.WritableLongChunk;
-import io.deephaven.engine.v2.sources.chunk.util.chunkfillers.ChunkFiller;
+import io.deephaven.engine.chunk.Attributes;
+import io.deephaven.engine.rftable.SharedContext;
+import io.deephaven.engine.chunk.WritableChunk;
+import io.deephaven.engine.chunk.WritableLongChunk;
+import io.deephaven.engine.rftable.chunkfillers.chunkfillers.ChunkFiller;
 import io.deephaven.engine.structures.RowSequence;
 import org.jetbrains.annotations.NotNull;
 
 import io.deephaven.engine.v2.CrossJoinShiftState;
-import static io.deephaven.engine.v2.sources.chunk.Attributes.RowKeys;
-import static io.deephaven.engine.v2.sources.chunk.Attributes.Values;
+import static io.deephaven.engine.chunk.Attributes.RowKeys;
+import static io.deephaven.engine.chunk.Attributes.Values;
 import static io.deephaven.util.QueryConstants.*;
 
 public class BitMaskingColumnSource<T> extends AbstractColumnSource<T> implements UngroupableColumnSource {

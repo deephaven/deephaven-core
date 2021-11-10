@@ -1,11 +1,11 @@
 {
- "className": "io.deephaven.engine.tables.dbarrays.BooleanVector$Indirect",
+ "className": "io.deephaven.engine.vector.BooleanVector$Indirect",
  "methods": {
   "equals": ":param obj: java.lang.Object\n:return: boolean",
   "hashCode": ":return: int",
   "toString": ":return: java.lang.String"
  },
- "path": "io.deephaven.engine.tables.dbarrays.BooleanVector.Indirect",
+ "path": "io.deephaven.engine.vector.BooleanVector.Indirect",
  "text": "Base class for all \"indirect\" BooleanVector implementations.",
  "typeName": "class"
 }

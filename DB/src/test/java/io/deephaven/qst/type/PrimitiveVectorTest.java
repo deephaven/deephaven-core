@@ -2,10 +2,11 @@ package io.deephaven.qst.type;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.deephaven.engine.tables.dbarrays.*;
-import io.deephaven.engine.tables.dbarrays.CharVector;
+import io.deephaven.engine.vector.*;
+import io.deephaven.engine.vector.*;
 
 import java.lang.reflect.InvocationTargetException;
+
 import org.junit.Test;
 
 public class PrimitiveVectorTest {

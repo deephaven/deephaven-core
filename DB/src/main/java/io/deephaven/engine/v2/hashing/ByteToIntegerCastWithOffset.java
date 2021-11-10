@@ -3,11 +3,11 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.v2.hashing;
 
-import io.deephaven.engine.v2.sources.chunk.Attributes.Any;
-import io.deephaven.engine.v2.sources.chunk.ByteChunk;
-import io.deephaven.engine.v2.sources.chunk.Chunk;
-import io.deephaven.engine.v2.sources.chunk.IntChunk;
-import io.deephaven.engine.v2.sources.chunk.WritableIntChunk;
+import io.deephaven.engine.chunk.Attributes.Any;
+import io.deephaven.engine.chunk.ByteChunk;
+import io.deephaven.engine.chunk.Chunk;
+import io.deephaven.engine.chunk.IntChunk;
+import io.deephaven.engine.chunk.WritableIntChunk;
 
 /**
  * Cast the values in the input chunk to an int and add the specified offset.

@@ -7,10 +7,10 @@ package io.deephaven.kafka.ingest;
 import gnu.trove.map.TObjectIntMap;
 import gnu.trove.map.hash.TObjectIntHashMap;
 import io.deephaven.engine.tables.TableDefinition;
-import io.deephaven.engine.v2.sources.chunk.Attributes;
-import io.deephaven.engine.v2.sources.chunk.ChunkType;
-import io.deephaven.engine.v2.sources.chunk.ObjectChunk;
-import io.deephaven.engine.v2.sources.chunk.WritableChunk;
+import io.deephaven.engine.chunk.Attributes;
+import io.deephaven.engine.chunk.ChunkType;
+import io.deephaven.engine.chunk.ObjectChunk;
+import io.deephaven.engine.chunk.WritableChunk;
 
 import java.util.Map;
 import java.util.function.IntFunction;

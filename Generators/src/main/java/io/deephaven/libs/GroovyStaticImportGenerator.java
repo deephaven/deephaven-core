@@ -413,7 +413,7 @@ public class GroovyStaticImportGenerator {
                 // skipping common erasure "sum"
                 Collections.singletonList((f) -> f.methodName.equals("sum") && f.parameterTypes.length == 1
                         && f.parameterTypes[0].getTypeName()
-                                .contains("io.deephaven.engine.tables.dbarrays.ObjectVector<")));
+                                .contains("ObjectVector<")));
 
         final String code = gen.generateCode();
         log.info("\n\n**************************************\n\n");

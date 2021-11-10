@@ -6,11 +6,13 @@ package io.deephaven.engine.tables.utils;
 
 import io.deephaven.base.Pair;
 import io.deephaven.datastructures.util.CollectionUtil;
+import io.deephaven.engine.rftable.Context;
+import io.deephaven.engine.rftable.SharedContext;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.v2.hashing.ChunkEquals;
 import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
-import io.deephaven.engine.v2.sources.chunk.*;
+import io.deephaven.engine.chunk.Attributes.Values;
+import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.v2.utils.ChunkUtils;
 import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.util.QueryConstants;
@@ -110,9 +112,9 @@ public class TableDiff {
         }
 
         try (final SafeCloseableList safeCloseables = new SafeCloseableList();
-                final SharedContext expectedSharedContext = SharedContext.makeSharedContext();
-                final SharedContext actualSharedContext = SharedContext.makeSharedContext();
-                final WritableBooleanChunk equalValues = WritableBooleanChunk.makeWritableChunk(chunkSize)) {
+             final SharedContext expectedSharedContext = SharedContext.makeSharedContext();
+             final SharedContext actualSharedContext = SharedContext.makeSharedContext();
+             final WritableBooleanChunk equalValues = WritableBooleanChunk.makeWritableChunk(chunkSize)) {
 
             final ColumnDiffContext[] columnContexts = columnNamesForDiff.stream()
                     .map(name -> safeCloseables.add(new ColumnDiffContext(name, expectedNameToColumnSource.get(name),

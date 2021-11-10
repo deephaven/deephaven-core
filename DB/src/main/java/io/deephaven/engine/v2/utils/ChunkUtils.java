@@ -6,14 +6,15 @@ package io.deephaven.engine.v2.utils;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.exceptions.SizeException;
+import io.deephaven.engine.rftable.SharedContext;
 import io.deephaven.engine.structures.RowSequence;
-import io.deephaven.engine.v2.sources.chunk.ChunkSource;
+import io.deephaven.engine.rftable.ChunkSource;
 import io.deephaven.engine.v2.sources.WritableChunkSink;
 import io.deephaven.engine.v2.sources.WritableSource;
-import io.deephaven.engine.v2.sources.chunk.*;
-import io.deephaven.engine.v2.sources.chunk.Attributes.Any;
-import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedRowKeys;
-import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedRowKeyRanges;
+import io.deephaven.engine.chunk.*;
+import io.deephaven.engine.chunk.Attributes.Any;
+import io.deephaven.engine.chunk.Attributes.OrderedRowKeys;
+import io.deephaven.engine.chunk.Attributes.OrderedRowKeyRanges;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseableArray;
 import io.deephaven.util.annotations.VisibleForTesting;
@@ -632,10 +633,10 @@ public class ChunkUtils {
         final WritableChunkSink.FillFromContext[] destContexts = new WritableChunkSink.FillFromContext[sources.length];
 
         try (final SharedContext sharedContext = SharedContext.makeSharedContext();
-                final RowSequence.Iterator srcIter = srcAllKeys.getRowSequenceIterator();
-                final RowSequence.Iterator destIter = destAllKeys.getRowSequenceIterator();
-                final SafeCloseableArray<ChunkSource.GetContext> ignored = new SafeCloseableArray<>(sourceContexts);
-                final SafeCloseableArray<WritableChunkSink.FillFromContext> ignored2 =
+             final RowSequence.Iterator srcIter = srcAllKeys.getRowSequenceIterator();
+             final RowSequence.Iterator destIter = destAllKeys.getRowSequenceIterator();
+             final SafeCloseableArray<ChunkSource.GetContext> ignored = new SafeCloseableArray<>(sourceContexts);
+             final SafeCloseableArray<WritableChunkSink.FillFromContext> ignored2 =
                         new SafeCloseableArray<>(destContexts)) {
 
             for (int ss = 0; ss < sources.length; ++ss) {

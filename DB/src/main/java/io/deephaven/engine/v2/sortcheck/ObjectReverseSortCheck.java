@@ -3,9 +3,9 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.v2.sortcheck;
 
-import io.deephaven.engine.v2.sources.chunk.Attributes;
-import io.deephaven.engine.v2.sources.chunk.ObjectChunk;
-import io.deephaven.engine.v2.sources.chunk.Chunk;
+import io.deephaven.engine.chunk.Attributes;
+import io.deephaven.engine.chunk.ObjectChunk;
+import io.deephaven.engine.chunk.Chunk;
 
 public class ObjectReverseSortCheck implements SortCheck {
     static final SortCheck INSTANCE = new ObjectReverseSortCheck();

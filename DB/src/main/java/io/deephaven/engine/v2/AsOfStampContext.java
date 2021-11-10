@@ -1,14 +1,15 @@
 package io.deephaven.engine.v2;
 
+import io.deephaven.engine.rftable.Context;
 import io.deephaven.engine.tables.SortingOrder;
 import io.deephaven.engine.v2.join.dupcompact.DupCompactKernel;
 import io.deephaven.engine.v2.join.stamp.StampKernel;
 import io.deephaven.engine.v2.sort.LongSortKernel;
-import io.deephaven.engine.v2.sources.chunk.ChunkSource;
+import io.deephaven.engine.rftable.ChunkSource;
 import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.sources.chunk.Attributes.RowKeys;
-import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
-import io.deephaven.engine.v2.sources.chunk.*;
+import io.deephaven.engine.chunk.Attributes.RowKeys;
+import io.deephaven.engine.chunk.Attributes.Values;
+import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.v2.utils.MutableRowRedirection;
 import io.deephaven.engine.v2.utils.RowSet;
 

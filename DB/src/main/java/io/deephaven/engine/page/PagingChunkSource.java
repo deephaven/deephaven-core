@@ -1,8 +1,8 @@
 package io.deephaven.engine.page;
 
-import io.deephaven.engine.v2.sources.chunk.ChunkSource;
-import io.deephaven.engine.v2.sources.chunk.Attributes;
-import io.deephaven.engine.v2.sources.chunk.WritableChunk;
+import io.deephaven.engine.rftable.ChunkSource;
+import io.deephaven.engine.chunk.Attributes;
+import io.deephaven.engine.chunk.WritableChunk;
 import io.deephaven.engine.structures.RowSequence;
 import org.jetbrains.annotations.NotNull;
 

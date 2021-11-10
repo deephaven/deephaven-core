@@ -2,7 +2,7 @@
  "className": "io.deephaven.engine.v2.sort.megamerge.DoubleLongMegaMergeKernel",
  "methods": {
   "createContext": ":return: io.deephaven.engine.v2.sort.megamerge.DoubleLongMegaMergeKernel.DoubleLongMegaMergeKernelContext<ATTR,KEY_INDICES>",
-  "merge": ":param destinationKeys: io.deephaven.engine.v2.sources.LongArraySource\n:param destinationValues: io.deephaven.engine.v2.sources.DoubleArraySource\n:param destinationOffset: long\n:param destinationSize: long\n:param keysChunk: io.deephaven.engine.v2.sources.chunk.LongChunk<KEY_INDICES>\n:param valuesChunk: io.deephaven.engine.v2.sources.chunk.DoubleChunk<ATTR>"
+  "merge": ":param destinationKeys: io.deephaven.engine.v2.sources.LongArraySource\n:param destinationValues: io.deephaven.engine.v2.sources.DoubleArraySource\n:param destinationOffset: long\n:param destinationSize: long\n:param keysChunk: io.deephaven.engine.chunk.LongChunk<KEY_INDICES>\n:param valuesChunk: io.deephaven.engine.chunk.DoubleChunk<ATTR>"
  },
  "path": "io.deephaven.engine.v2.sort.megamerge.DoubleLongMegaMergeKernel",
  "typeName": "class"

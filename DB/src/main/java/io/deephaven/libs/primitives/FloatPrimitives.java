@@ -7,8 +7,8 @@
 
 package io.deephaven.libs.primitives;
 
-import io.deephaven.engine.tables.dbarrays.FloatVector;
-import io.deephaven.engine.tables.dbarrays.FloatVectorDirect;
+import io.deephaven.engine.vector.FloatVector;
+import io.deephaven.engine.vector.FloatVectorDirect;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.util.LongSizedDataStructure;
 import gnu.trove.list.array.TFloatArrayList;

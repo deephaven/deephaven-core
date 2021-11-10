@@ -3,6 +3,7 @@ package io.deephaven.engine.v2.by;
 import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.datastructures.util.SmartKey;
+import io.deephaven.engine.rftable.ChunkSource;
 import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.structures.rowsequence.RowSequenceUtil;
 import io.deephaven.engine.tables.Table;
@@ -10,9 +11,9 @@ import io.deephaven.engine.v2.*;
 import io.deephaven.engine.v2.select.SelectColumn;
 import io.deephaven.engine.v2.sources.*;
 import io.deephaven.engine.v2.sources.aggregate.AggregateColumnSource;
-import io.deephaven.engine.v2.sources.chunk.Attributes.OrderedRowKeys;
-import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
-import io.deephaven.engine.v2.sources.chunk.*;
+import io.deephaven.engine.chunk.Attributes.OrderedRowKeys;
+import io.deephaven.engine.chunk.Attributes.Values;
+import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.v2.tuples.SmartKeySource;
 import io.deephaven.engine.v2.tuples.TupleSource;
 import io.deephaven.engine.v2.utils.*;
@@ -512,13 +513,13 @@ public class AggregationHelper {
         final int chunkSize = Math.min(numGroups, IncrementalChunkedByAggregationStateManager.CHUNK_SIZE);
 
         try (final RowSequence groupIndices = RowSetFactory.flat(numGroups);
-                final RowSequence.Iterator groupIndicesIterator = groupIndices.getRowSequenceIterator();
-                final ChunkSource.GetContext hashSlotGetContext = groupIndexToHashSlot.makeGetContext(chunkSize);
-                final WritableObjectChunk<TrackingMutableRowSet, Values> aggregatedIndexes =
+             final RowSequence.Iterator groupIndicesIterator = groupIndices.getRowSequenceIterator();
+             final ChunkSource.GetContext hashSlotGetContext = groupIndexToHashSlot.makeGetContext(chunkSize);
+             final WritableObjectChunk<TrackingMutableRowSet, Values> aggregatedIndexes =
                         WritableObjectChunk.makeWritableChunk(chunkSize);
-                final WritableLongChunk<OrderedRowKeys> mapKeySourceIndices =
+             final WritableLongChunk<OrderedRowKeys> mapKeySourceIndices =
                         WritableLongChunk.makeWritableChunk(chunkSize);
-                final ChunkSource.GetContext mapKeyGetContext = inputKeyIndexToMapKeySource.makeGetContext(chunkSize)) {
+             final ChunkSource.GetContext mapKeyGetContext = inputKeyIndexToMapKeySource.makeGetContext(chunkSize)) {
             while (groupIndicesIterator.hasMore()) {
                 final RowSequence groupIndexesForThisChunk =
                         groupIndicesIterator.getNextRowSequenceWithLength(chunkSize);

@@ -1,10 +1,10 @@
 package io.deephaven.engine.v2.utils.rsp;
 
-import static io.deephaven.engine.v2.sources.chunk.Attributes.OrderedRowKeys;
+import static io.deephaven.engine.chunk.Attributes.OrderedRowKeys;
 
 import io.deephaven.engine.structures.RowSequence;
-import io.deephaven.engine.v2.sources.chunk.Attributes;
-import io.deephaven.engine.v2.sources.chunk.WritableLongChunk;
+import io.deephaven.engine.chunk.Attributes;
+import io.deephaven.engine.chunk.WritableLongChunk;
 import io.deephaven.engine.v2.utils.*;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.Shuffle;

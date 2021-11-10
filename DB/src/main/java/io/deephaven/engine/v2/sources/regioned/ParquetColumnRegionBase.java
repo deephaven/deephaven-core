@@ -2,10 +2,10 @@ package io.deephaven.engine.v2.sources.regioned;
 
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.v2.locations.parquet.ColumnChunkPageStore;
-import io.deephaven.engine.v2.sources.chunk.Attributes.Any;
-import io.deephaven.engine.v2.sources.chunk.Chunk;
-import io.deephaven.engine.v2.sources.chunk.SharedContext;
-import io.deephaven.engine.v2.sources.chunk.WritableChunk;
+import io.deephaven.engine.chunk.Attributes.Any;
+import io.deephaven.engine.chunk.Chunk;
+import io.deephaven.engine.rftable.SharedContext;
+import io.deephaven.engine.chunk.WritableChunk;
 import io.deephaven.engine.page.ChunkPage;
 import io.deephaven.engine.structures.RowSequence;
 import org.jetbrains.annotations.NotNull;

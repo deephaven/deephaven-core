@@ -1,7 +1,7 @@
 package io.deephaven.engine.tables.remote.preview;
 
-import io.deephaven.engine.tables.dbarrays.Vector;
-import io.deephaven.engine.v2.sources.chunk.ChunkType;
+import io.deephaven.engine.vector.Vector;
+import io.deephaven.engine.vector.VectorFactory;
 import org.jpy.PyListWrapper;
 
 /**
@@ -25,7 +25,7 @@ public class ArrayPreview implements PreviewType {
         if (!array.getClass().isArray()) {
             throw new IllegalArgumentException("Input must be an array, instead input class is " + array.getClass());
         }
-        return new ArrayPreview(ChunkType.fromElementType(array.getClass().getComponentType()).vectorWrap(array)
+        return new ArrayPreview(VectorFactory.forElementType(array.getClass().getComponentType()).vectorWrap(array)
                 .toString(ARRAY_SIZE_CUTOFF));
     }
 

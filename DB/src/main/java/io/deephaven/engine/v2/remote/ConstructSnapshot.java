@@ -10,6 +10,7 @@ import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.datastructures.util.CollectionUtil;
+import io.deephaven.engine.rftable.SharedContext;
 import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.v2.ShiftObliviousInstrumentedListener;
 import io.deephaven.engine.v2.sources.ReinterpretUtilities;
@@ -30,7 +31,7 @@ import io.deephaven.engine.v2.BaseTable;
 import io.deephaven.engine.v2.NotificationStepSource;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.LogicalClock;
-import io.deephaven.engine.v2.sources.chunk.*;
+import io.deephaven.engine.chunk.*;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.internal.log.LoggerFactory;
@@ -41,7 +42,7 @@ import java.lang.reflect.Array;
 import java.util.*;
 import java.util.stream.Stream;
 
-import static io.deephaven.engine.v2.sources.chunk.Attributes.Values;
+import static io.deephaven.engine.chunk.Attributes.Values;
 
 /**
  * A Set of static utilities for computing values from a table while avoiding the use of the UGP lock. This class

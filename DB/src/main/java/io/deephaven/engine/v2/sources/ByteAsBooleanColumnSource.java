@@ -4,11 +4,11 @@
 
 package io.deephaven.engine.v2.sources;
 
+import io.deephaven.engine.rftable.SharedContext;
 import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.util.BooleanUtils;
-import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
-import io.deephaven.engine.v2.sources.chunk.*;
-import io.deephaven.util.QueryConstants;
+import io.deephaven.engine.chunk.Attributes.Values;
+import io.deephaven.engine.chunk.*;
 import org.jetbrains.annotations.NotNull;
 
 /**

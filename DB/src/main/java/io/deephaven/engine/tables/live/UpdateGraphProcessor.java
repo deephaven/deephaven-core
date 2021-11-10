@@ -19,7 +19,7 @@ import io.deephaven.engine.util.reference.CleanupReferenceProcessorInstance;
 import io.deephaven.engine.v2.DynamicNode;
 import io.deephaven.engine.v2.ShiftObliviousInstrumentedListener;
 import io.deephaven.engine.v2.sources.LogicalClock;
-import io.deephaven.engine.v2.sources.chunk.util.pools.MultiChunkPool;
+import io.deephaven.engine.chunk.util.pools.MultiChunkPool;
 import io.deephaven.engine.v2.utils.AbstractNotification;
 import io.deephaven.engine.v2.utils.TerminalNotification;
 import io.deephaven.internal.log.LoggerFactory;
