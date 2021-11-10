@@ -9,6 +9,7 @@ import io.deephaven.configuration.Configuration;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.UpdateErrorReporter;
 import io.deephaven.db.tables.live.LiveTableMonitor;
+import io.deephaven.db.tables.select.QueryScope;
 import io.deephaven.db.tables.utils.SystemicObjectTracker;
 import io.deephaven.db.util.liveness.LivenessScope;
 import io.deephaven.db.util.liveness.LivenessScopeStack;
@@ -35,6 +36,7 @@ abstract public class LiveTableTestCase extends BaseArrayTestCase implements Upd
     private UpdateErrorReporter oldReporter;
     private boolean expectError = false;
     private SafeCloseable scopeCloseable;
+    private QueryScope originalScope;
 
     List<Throwable> errors;
 
@@ -48,6 +50,7 @@ abstract public class LiveTableTestCase extends BaseArrayTestCase implements Upd
         oldReporter = AsyncClientErrorNotifier.setReporter(this);
         errors = null;
         scopeCloseable = LivenessScopeStack.open(new LivenessScope(true), true);
+        originalScope = QueryScope.getScope();
     }
 
     @Override
@@ -57,6 +60,7 @@ abstract public class LiveTableTestCase extends BaseArrayTestCase implements Upd
         LiveTableMonitor.DEFAULT.resetForUnitTests(true);
         QueryTable.setMemoizeResults(oldMemoize);
         AsyncClientErrorNotifier.setReporter(oldReporter);
+        QueryScope.setScope(originalScope);
     }
 
     @Override
