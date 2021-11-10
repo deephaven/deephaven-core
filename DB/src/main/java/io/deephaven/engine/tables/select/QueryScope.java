@@ -23,7 +23,7 @@ import java.util.*;
 public abstract class QueryScope implements LogOutputAppendable {
 
     // -----------------------------------------------------------------------------------------------------------------
-    // Singleton Management (ThreadLocal eliminated for the time being)
+    // ThreadLocal Management
     // -----------------------------------------------------------------------------------------------------------------
 
     private static volatile QueryScope defaultScope = null;
