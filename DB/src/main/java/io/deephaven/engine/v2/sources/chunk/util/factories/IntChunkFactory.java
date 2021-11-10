@@ -6,7 +6,7 @@ package io.deephaven.engine.v2.sources.chunk.util.factories;
 import io.deephaven.engine.tables.dbarrays.*;
 import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Any;
-import io.deephaven.engine.v2.sources.chunk.page.IntChunkPage;
+import io.deephaven.engine.page.IntChunkPage;
 
 import org.jetbrains.annotations.NotNull;
 import java.util.function.IntFunction;

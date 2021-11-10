@@ -5,7 +5,7 @@ import io.deephaven.engine.v2.locations.parquet.ColumnChunkPageStore;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Any;
 import io.deephaven.engine.v2.sources.chunk.WritableByteChunk;
 import io.deephaven.engine.v2.sources.chunk.WritableChunk;
-import io.deephaven.engine.v2.sources.chunk.page.ChunkPage;
+import io.deephaven.engine.page.ChunkPage;
 import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.structures.rowsequence.RowSequenceUtil;
 import org.jetbrains.annotations.NotNull;

@@ -136,6 +136,9 @@ include(':Container')
 
 include(':ParquetHadoop')
 
+include(':engine-chunk')
+project(':engine-chunk').projectDir = file('engine/chunk')
+
 include(':envoy')
 
 include(':grpc-proxy')

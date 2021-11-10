@@ -3,7 +3,7 @@ package io.deephaven.engine.v2.sources.regioned;
 import io.deephaven.engine.v2.sources.Releasable;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Any;
 import io.deephaven.engine.v2.sources.chunk.WritableChunk;
-import io.deephaven.engine.v2.sources.chunk.page.Page;
+import io.deephaven.engine.page.Page;
 import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
 

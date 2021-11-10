@@ -1,7 +1,7 @@
 package io.deephaven.engine.v2.sources.chunk;
 
 import io.deephaven.engine.tables.dbarrays.Vector;
-import io.deephaven.engine.v2.sources.chunk.page.ChunkPage;
+import io.deephaven.engine.page.ChunkPage;
 import io.deephaven.engine.v2.sources.chunk.util.*;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Any;
 import io.deephaven.engine.v2.sources.chunk.util.factories.*;

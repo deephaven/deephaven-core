@@ -3,7 +3,7 @@ package io.deephaven.engine.v2.locations.parquet;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Any;
-import io.deephaven.engine.v2.sources.chunk.page.ChunkPage;
+import io.deephaven.engine.page.ChunkPage;
 import io.deephaven.engine.v2.locations.parquet.topage.ToPage;
 import io.deephaven.parquet.ColumnChunkReader;
 import io.deephaven.parquet.ColumnPageReader;

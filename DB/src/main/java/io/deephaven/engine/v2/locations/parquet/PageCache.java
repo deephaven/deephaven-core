@@ -1,7 +1,7 @@
 package io.deephaven.engine.v2.locations.parquet;
 
 import io.deephaven.engine.v2.sources.chunk.Attributes.Any;
-import io.deephaven.engine.v2.sources.chunk.page.ChunkPage;
+import io.deephaven.engine.page.ChunkPage;
 import io.deephaven.util.datastructures.intrusive.IntrusiveSoftLRU;
 
 import java.lang.ref.WeakReference;

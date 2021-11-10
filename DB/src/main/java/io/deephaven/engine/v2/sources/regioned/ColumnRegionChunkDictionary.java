@@ -4,7 +4,7 @@ import io.deephaven.base.string.cache.StringCache;
 import io.deephaven.engine.util.string.StringUtils;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Any;
 import io.deephaven.engine.v2.sources.chunk.*;
-import io.deephaven.engine.v2.sources.chunk.page.Page;
+import io.deephaven.engine.page.Page;
 import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.engine.v2.utils.RowSetBuilderSequential;

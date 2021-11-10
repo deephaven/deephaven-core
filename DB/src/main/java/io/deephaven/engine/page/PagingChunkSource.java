@@ -1,4 +1,4 @@
-package io.deephaven.engine.v2.sources.chunk.page;
+package io.deephaven.engine.page;
 
 import io.deephaven.engine.v2.sources.chunk.ChunkSource;
 import io.deephaven.engine.v2.sources.chunk.Attributes;

@@ -4,7 +4,7 @@ import io.deephaven.engine.tables.dbarrays.ObjectVectorDirect;
 import io.deephaven.engine.tables.dbarrays.ObjectVectorSlice;
 import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Any;
-import io.deephaven.engine.v2.sources.chunk.page.ObjectChunkPage;
+import io.deephaven.engine.page.ObjectChunkPage;
 
 import org.jetbrains.annotations.NotNull;
 import java.util.function.IntFunction;
