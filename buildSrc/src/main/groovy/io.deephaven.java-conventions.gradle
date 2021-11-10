@@ -80,12 +80,13 @@ def extraJvmArgs = { runtimeJavaVersion ->
     return [
             '--add-opens', 'java.base/java.lang=ALL-UNNAMED',
             '-XX:CompileCommand=exclude,io.deephaven.db.v2.by.ssmpercentile.DoublePercentileTypeMedianHelper::setResult',
-            '-XX:CompileCommand=exclude,io.deephaven.db.v2.by.IncrementalChunkedByAggregationStateManager::buildTable',
             '-XX:CompileCommand=exclude,io.deephaven.db.v2.by.ssmpercentile.SsmChunkedPercentileOperator::addChunk',
+            '-XX:CompileCommand=exclude,io.deephaven.db.v2.by.IncrementalChunkedByAggregationStateManager::buildTable',
+            '-XX:CompileCommand=exclude,io.deephaven.db.v2.by.IncrementalChunkedOperatorAggregationStateManager::buildTable',
             '-XX:CompileCommand=exclude,io.deephaven.db.v2.RightIncrementalChunkedCrossJoinStateManager::addToIndex',
             '-XX:CompileCommand=exclude,io.deephaven.db.v2.IncrementalChunkedNaturalJoinStateManager::buildTable',
+            '-XX:CompileCommand=exclude,io.deephaven.db.v2.IncrementalChunkedNaturalJoinStateManager::decorationProbe',
             '-XX:CompileCommand=exclude,io.deephaven.db.v2.IncrementalChunkedOperatorAggregationStateManager::buildTable',
-            '-XX:CompileCommand=exclude,io.deephaven.db.v2.by.IncrementalChunkedOperatorAggregationStateManager::buildTable',
     ]
   }
   return []
