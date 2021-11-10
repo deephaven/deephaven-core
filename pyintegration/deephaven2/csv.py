@@ -13,11 +13,11 @@ from deephaven2 import DHError
 from deephaven2.dtypes import DType
 from deephaven2.table import Table
 
-CsvHelpers = jpy.get_type("io.deephaven.db.tables.utils.CsvHelpers")
-CsvSpecs = jpy.get_type("io.deephaven.db.tables.utils.csv.CsvSpecs")
-TableHeader = jpy.get_type("io.deephaven.qst.table.TableHeader")
-InferenceSpecs = jpy.get_type("io.deephaven.db.tables.utils.csv.InferenceSpecs")
-Charset = jpy.get_type("java.nio.charset.Charset")
+_JCsvHelpers = jpy.get_type("io.deephaven.db.tables.utils.CsvHelpers")
+_JCsvSpecs = jpy.get_type("io.deephaven.db.tables.utils.csv.CsvSpecs")
+_JTableHeader = jpy.get_type("io.deephaven.qst.table.TableHeader")
+_JInferenceSpecs = jpy.get_type("io.deephaven.db.tables.utils.csv.InferenceSpecs")
+_JCharset = jpy.get_type("java.nio.charset.Charset")
 
 
 class Inference(Enum):
@@ -26,22 +26,22 @@ class Inference(Enum):
     Inference specifications contains the configuration and logic for inferring an acceptable parser from string values.
     """
 
-    STRINGS = InferenceSpecs.strings()
+    STRINGS = _JInferenceSpecs.strings()
     """ The order of parsing: STRING, INSTANT, SHORT, INT, LONG, DOUBLE, BOOL, CHAR, BYTE, FLOAT. 
     The parsers after STRING are only relevant when a specific column data type is given.
     """
 
-    MINIMAL = InferenceSpecs.minimal()
+    MINIMAL = _JInferenceSpecs.minimal()
     """ The order of parsing: INSTANT, LONG, DOUBLE, BOOL, STRING, BYTE, SHORT, INT, FLOAT, CHAR.
     The parsers after STRING are only relevant when a specific column data type is given.
     """
 
-    STANDARD = InferenceSpecs.standard()
+    STANDARD = _JInferenceSpecs.standard()
     """ The order of parsing: INSTANT, SHORT, INT, LONG, DOUBLE, BOOL, CHAR, STRING, BYTE, FLOAT.
     The parsers after STRING are only relevant when a specific column data type is given.
     """
 
-    STANDARD_TIMES = InferenceSpecs.standardTimes()
+    STANDARD_TIMES = _JInferenceSpecs.standardTimes()
     """ The order of parsing: INSTANT, INSTANT_LEGACY, SECONDS, MILLISECONDS, MICROSECONDS, NANOSECONDS, SHORT, INT, 
     LONG, DOUBLE, BOOL, CHAR, STRING, BYTE, FLOAT.
      
@@ -55,7 +55,7 @@ def _build_header(header: Dict[str, DType] = None):
     if not header:
         return None
 
-    table_header_builder = TableHeader.builder()
+    table_header_builder = _JTableHeader.builder()
     for k, v in header.items():
         table_header_builder.putHeaders(k, v.value)
 
@@ -92,7 +92,7 @@ def read(path: str,
         DHError
     """
     try:
-        csv_specs_builder = CsvSpecs.builder()
+        csv_specs_builder = _JCsvSpecs.builder()
 
         # build the head spec
         table_header = _build_header(header)
@@ -105,10 +105,10 @@ def read(path: str,
                      .quote(ord(quote))
                      .ignoreSurroundingSpaces(ignore_surrounding_spaces)
                      .trim(trim)
-                     .charset(Charset.forName(charset))
+                     .charset(_JCharset.forName(charset))
                      .build())
 
-        j_table = CsvHelpers.readCsv(path, csv_specs)
+        j_table = _JCsvHelpers.readCsv(path, csv_specs)
 
         return Table(j_table=j_table)
     except Exception as e:

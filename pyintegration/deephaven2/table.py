@@ -13,8 +13,8 @@ from deephaven2.column import Column
 from deephaven2.combo_agg import ComboAggregation
 from deephaven2.constants import SortDirection
 
-TableTools = jpy.get_type("io.deephaven.db.tables.utils.TableTools")
-SortPair = jpy.get_type("io.deephaven.db.tables.SortPair")
+_JTableTools = jpy.get_type("io.deephaven.db.tables.utils.TableTools")
+_JSortPair = jpy.get_type("io.deephaven.db.tables.SortPair")
 
 
 #
@@ -33,7 +33,7 @@ def empty_table(size: int = 0) -> Table:
         DHError
     """
     try:
-        return Table(j_table=TableTools.emptyTable(size))
+        return Table(j_table=_JTableTools.emptyTable(size))
     except Exception as e:
         raise DHError(e, "failed to create an empty table.") from e
 
@@ -53,9 +53,9 @@ def time_table(period: str, start_time: str = None) -> Table:
     """
     try:
         if start_time:
-            return Table(j_table=TableTools.timeTable(start_time, period))
+            return Table(j_table=_JTableTools.timeTable(start_time, period))
         else:
-            return Table(j_table=TableTools.timeTable(period))
+            return Table(j_table=_JTableTools.timeTable(period))
 
     except Exception as e:
         raise DHError(e, "failed to create a time table.") from e
@@ -113,7 +113,7 @@ class Table:
             DHError
         """
         try:
-            return TableTools.string(self._j_table, num_rows, *cols)
+            return _JTableTools.string(self._j_table, num_rows, *cols)
         except Exception as e:
             raise DHError(e, "table to_string failed") from e
 
@@ -383,7 +383,7 @@ class Table:
         """
 
         def sort_pair(col, dir_):
-            return SortPair.descending(col) if dir_ == SortDirection.DESCENDING else SortPair.ascending(col)
+            return _JSortPair.descending(col) if dir_ == SortDirection.DESCENDING else _JSortPair.ascending(col)
 
         try:
             if order:
