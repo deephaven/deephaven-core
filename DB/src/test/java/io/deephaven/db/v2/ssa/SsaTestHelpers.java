@@ -9,7 +9,7 @@ import org.jetbrains.annotations.NotNull;
 public class SsaTestHelpers {
     @NotNull
     public static TstUtils.SortedIntGenerator getGeneratorForChar() {
-        return new TstUtils.SortedIntGenerator((int) Character.MIN_VALUE + 1, (int) Character.MAX_VALUE - 1);
+        return new TstUtils.SortedIntGenerator((int) Character.MIN_VALUE, (int) Character.MAX_VALUE - 1);
     }
 
     public static Table prepareTestTableForChar(QueryTable table) {

@@ -11,7 +11,7 @@ class Util {
     static final byte TRUE_BOOL = (byte) 1;
     static final byte FALSE_BOOL = (byte) 0;
 
-    static final char NULL_CHAR = Character.MAX_VALUE - 1;
+    static final char NULL_CHAR = Character.MAX_VALUE;
 
     static final double NULL_DOUBLE = -Double.MAX_VALUE;
 

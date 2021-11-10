@@ -29,7 +29,7 @@ public class QueryConstants {
     /**
      * Null char value.
      */
-    public static final char NULL_CHAR = Character.MAX_VALUE - 1;
+    public static final char NULL_CHAR = Character.MAX_VALUE;
 
     /**
      * Null boxed Character value.
