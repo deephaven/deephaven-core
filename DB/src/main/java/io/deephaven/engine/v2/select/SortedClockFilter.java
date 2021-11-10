@@ -58,7 +58,7 @@ public class SortedClockFilter extends ClockFilter {
         // External code is required to have sorted according to column before calling this, so we expect the input to
         // be flat. This is not actually a guarantee of the sort() method, but is something that happens to be true
         // because the input table must be historical, and the historical sort implementation uses a
-        // ContiguousRedirectionIndex.
+        // ContiguousRowRedirection.
         Require.requirement(table.isFlat(), "table.isFlat()");
         // This must be the first filter in a where-clause of its own, again because of the sort, hence selection must
         // be equal to fullSet.

@@ -3452,7 +3452,7 @@ public class QueryTableAggregationTest {
         source.listenForUpdates(soucePrinter);
 
         final QueryTable exposedLastBy = ChunkedOperatorAggregationHelper.aggregation(
-                new FirstOrLastByAggregationFactory(false, "ExposedRedirectionIndex"), source,
+                new FirstOrLastByAggregationFactory(false, "ExposedRowRedirection"), source,
                 SelectColumnFactory.getExpressions("Key"));
         final TableUpdateValidator validator = TableUpdateValidator.make(exposedLastBy);
         final QueryTable validatorResult = validator.getResultTable();

@@ -1,7 +1,8 @@
 package io.deephaven.engine.v2.utils;
 
 import io.deephaven.engine.structures.RowSequence;
-import io.deephaven.engine.v2.sources.chunk.Attributes;
+import io.deephaven.engine.v2.sources.chunk.Attributes.RowKeys;
+import io.deephaven.engine.v2.sources.chunk.ChunkSource;
 import io.deephaven.engine.v2.sources.chunk.ResettableWritableLongChunk;
 import io.deephaven.engine.v2.sources.chunk.WritableLongChunk;
 import org.apache.commons.lang3.mutable.MutableInt;
@@ -10,16 +11,16 @@ import org.jetbrains.annotations.NotNull;
 import java.util.Arrays;
 
 /**
- * The GroupedRedirectionIndex is intended for situations where you have several Indices that represent contiguous rows
- * of your output table and a flat output rowSet.
+ * The GroupedMutableRowRedirection is intended for situations where you have several Indices that represent contiguous
+ * rows of your output table and a flat output rowSet.
  *
- * When sorting a table by its grouping column, instead of using a large contiguous RedirectionIndex, we simply store
- * the row sets for each group and the accumulated cardinality. We then binary search in the accumulated cardinality for
- * a given key; and fetch the corresponding offset from that group's row set.
+ * When sorting a table by its grouping column, instead of using a large contiguous MutableRowRedirection, we simply
+ * store the row sets for each group and the accumulated cardinality. We then binary search in the accumulated
+ * cardinality for a given key; and fetch the corresponding offset from that group's row set.
  *
- * This RedirectionIndex does not support mutation.
+ * This MutableRowRedirection does not support mutation.
  */
-public class GroupedRedirectionIndex implements RedirectionIndex {
+public class GroupedMutableRowRedirection implements MutableRowRedirection {
     /**
      * The total size of the row redirection.
      */
@@ -41,26 +42,26 @@ public class GroupedRedirectionIndex implements RedirectionIndex {
      */
     private final ThreadLocal<SavedContext> threadContext = ThreadLocal.withInitial(SavedContext::new);
 
-    public GroupedRedirectionIndex(long size, long[] groupSizes, RowSet[] groups) {
+    public GroupedMutableRowRedirection(long size, long[] groupSizes, RowSet[] groups) {
         this.size = size;
         this.groupSizes = groupSizes;
         this.groups = groups;
     }
 
     @Override
-    public long get(long key) {
-        if (key < 0 || key >= size) {
+    public long get(long outerRowKey) {
+        if (outerRowKey < 0 || outerRowKey >= size) {
             return RowSet.NULL_ROW_KEY;
         }
 
         int slot;
 
         final SavedContext savedContext = threadContext.get();
-        if (savedContext.firstKey <= key && savedContext.lastKey >= key) {
+        if (savedContext.firstKey <= outerRowKey && savedContext.lastKey >= outerRowKey) {
             slot = savedContext.lastSlot;
         } else {
             // figure out which group we belong to
-            slot = Arrays.binarySearch(groupSizes, key);
+            slot = Arrays.binarySearch(groupSizes, outerRowKey);
             if (slot < 0) {
                 slot = ~slot;
             } else {
@@ -77,15 +78,15 @@ public class GroupedRedirectionIndex implements RedirectionIndex {
         }
 
         if (slot == 0) {
-            return groups[slot].get(key);
+            return groups[slot].get(outerRowKey);
         } else {
-            return groups[slot].get(key - groupSizes[slot - 1]);
+            return groups[slot].get(outerRowKey - groupSizes[slot - 1]);
         }
     }
 
     @Override
-    public long getPrev(long key) {
-        return get(key);
+    public long getPrev(long outerRowKey) {
+        return get(outerRowKey);
     }
 
     private static class SavedContext {
@@ -99,14 +100,14 @@ public class GroupedRedirectionIndex implements RedirectionIndex {
     }
 
     @Override
-    public void fillChunk(@NotNull FillContext fillContext,
-            @NotNull WritableLongChunk<Attributes.RowKeys> mappedKeysOut, @NotNull RowSequence keysToMap) {
+    public void fillChunk(@NotNull ChunkSource.FillContext fillContext,
+            @NotNull WritableLongChunk<? extends RowKeys> innerRowKeys, @NotNull RowSequence outerRowKeys) {
         final MutableInt outputPosition = new MutableInt(0);
         final MutableInt lastSlot = new MutableInt(0);
-        mappedKeysOut.setSize(keysToMap.intSize());
-        try (final ResettableWritableLongChunk<Attributes.RowKeys> resettableKeys =
+        innerRowKeys.setSize(outerRowKeys.intSize());
+        try (final ResettableWritableLongChunk<RowKeys> resettableKeys =
                 ResettableWritableLongChunk.makeResettableChunk()) {
-            keysToMap.forAllRowKeyRanges((begin, end) -> {
+            outerRowKeys.forAllRowKeyRanges((begin, end) -> {
                 while (begin <= end) {
                     // figure out which group we belong to, based on the first key in the range
                     int slot = Arrays.binarySearch(groupSizes, lastSlot.intValue(), groupSizes.length, begin);
@@ -125,8 +126,8 @@ public class GroupedRedirectionIndex implements RedirectionIndex {
                     final long size = end - begin + 1;
                     final int groupSize;
 
-                    final WritableLongChunk<Attributes.RowKeys> chunkToFill = resettableKeys.resetFromTypedChunk(
-                            mappedKeysOut, outputPosition.intValue(), mappedKeysOut.size() - outputPosition.intValue());
+                    final WritableLongChunk<? extends RowKeys> chunkToFill = resettableKeys.resetFromTypedChunk(
+                            innerRowKeys, outputPosition.intValue(), innerRowKeys.size() - outputPosition.intValue());
                     if (beginKeyWithOffset > 0 || (beginKeyWithOffset + size < groups[slot].size())) {
                         try (RowSequence rowSequenceByPosition =
                                 groups[slot].getRowSequenceByPosition(beginKeyWithOffset, size)) {
@@ -146,18 +147,18 @@ public class GroupedRedirectionIndex implements RedirectionIndex {
     }
 
     @Override
-    public void fillPrevChunk(@NotNull FillContext fillContext,
-            @NotNull WritableLongChunk<Attributes.RowKeys> mappedKeysOut, @NotNull RowSequence keysToMap) {
-        fillChunk(fillContext, mappedKeysOut, keysToMap);
+    public void fillPrevChunk(@NotNull ChunkSource.FillContext fillContext,
+            @NotNull WritableLongChunk<? extends RowKeys> innerRowKeys, @NotNull RowSequence outerRowKeys) {
+        fillChunk(fillContext, innerRowKeys, outerRowKeys);
     }
 
     @Override
-    public long remove(long leftIndex) {
+    public long remove(long outerRowKey) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public long put(long key, long index) {
+    public long put(long outerRowKey, long innerRowKey) {
         throw new UnsupportedOperationException();
     }
 

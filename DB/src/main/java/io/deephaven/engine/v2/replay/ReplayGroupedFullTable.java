@@ -15,11 +15,11 @@ public class ReplayGroupedFullTable extends QueryReplayGroupedTable {
     public ReplayGroupedFullTable(TrackingRowSet rowSet, Map<String, ? extends ColumnSource<?>> input,
             String timeColumn,
             Replayer replayer, String groupingColumn) {
-        super(rowSet, input, timeColumn, replayer, RedirectionIndex.FACTORY.createRedirectionIndex((int) rowSet.size()),
+        super(rowSet, input, timeColumn, replayer, MutableRowRedirection.FACTORY.createRowRedirection((int) rowSet.size()),
                 new String[] {groupingColumn});
         redirIndexSize = 0;
-        // We do not modify existing entries in the RedirectionIndex (we only add at the end), so there's no need to
-        // ask the RedirectionIndex to track previous values.
+        // We do not modify existing entries in the MutableRowRedirection (we only add at the end), so there's no need to
+        // ask the MutableRowRedirection to track previous values.
     }
 
     @Override
@@ -31,7 +31,7 @@ public class ReplayGroupedFullTable extends QueryReplayGroupedTable {
         while (!allIterators.isEmpty() && allIterators.peek().lastTime.getNanos() < replayer.currentTimeNanos()) {
             IteratorsAndNextTime currentIt = allIterators.poll();
             final long key = redirIndexSize++;
-            redirectionIndex.put(key, currentIt.lastIndex);
+            rowRedirection.put(key, currentIt.lastIndex);
             rowSetBuilder.addKey(key);
             currentIt = currentIt.next();
             if (currentIt != null) {

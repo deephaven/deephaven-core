@@ -3,19 +3,19 @@ package io.deephaven.engine.v2.utils;
 import io.deephaven.engine.v2.hashing.TNullableLongLongMap;
 import gnu.trove.map.TLongLongMap;
 
-class RedirectionIndexLockFreeFactory implements RedirectionIndex.Factory {
+class RowRedirectionLockFreeFactory implements MutableRowRedirection.Factory {
     @Override
     public TLongLongMap createUnderlyingMapWithCapacity(int initialCapacity) {
-        return RedirectionIndexLockFreeImpl.createMapWithCapacity(initialCapacity);
+        return MutableRowRedirectionLockFree.createMapWithCapacity(initialCapacity);
     }
 
     @Override
-    public RedirectionIndexLockFreeImpl createRedirectionIndex(int initialCapacity) {
-        return createRedirectionIndex(createUnderlyingMapWithCapacity(initialCapacity));
+    public MutableRowRedirectionLockFree createRowRedirection(int initialCapacity) {
+        return createRowRedirection(createUnderlyingMapWithCapacity(initialCapacity));
     }
 
     @Override
-    public RedirectionIndexLockFreeImpl createRedirectionIndex(TLongLongMap map) {
-        return new RedirectionIndexLockFreeImpl((TNullableLongLongMap) map);
+    public MutableRowRedirectionLockFree createRowRedirection(TLongLongMap map) {
+        return new MutableRowRedirectionLockFree((TNullableLongLongMap) map);
     }
 }

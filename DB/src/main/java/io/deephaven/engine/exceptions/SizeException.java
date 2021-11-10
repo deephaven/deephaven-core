@@ -1,6 +1,7 @@
 package io.deephaven.engine.exceptions;
 
 import io.deephaven.UncheckedDeephavenException;
+import io.deephaven.engine.v2.utils.MutableRowRedirection;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -9,7 +10,7 @@ import org.jetbrains.annotations.Nullable;
  * or {@link io.deephaven.engine.tables.DataColumn} operations are invoked (directly, or indirectly as data updates)
  * that cannot be completed correctly due to size constraints on the underlying data structures.
  * <p>
- * For example, the current implementations of {@link io.deephaven.engine.v2.utils.RedirectionIndex}, required for
+ * For example, the current implementations of {@link MutableRowRedirection}, required for
  * {@link io.deephaven.engine.tables.Table#sort}, can only support an 32-bit integer number of keys.
  */
 public class SizeException extends UncheckedDeephavenException {

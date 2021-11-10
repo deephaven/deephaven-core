@@ -158,7 +158,7 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
 
     // region extra variables
     // maintain a mapping from left rowSet to its slot
-    private final RedirectionIndex leftIndexToSlot;
+    private final MutableRowRedirection leftIndexToSlot;
     private final ColumnSource<?>[] leftKeySources;
     private final long EMPTY_RIGHT_SLOT = Long.MIN_VALUE;
     private final QueryTable leftTable;
@@ -210,7 +210,7 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
         // endmixin rehash
 
         // region constructor
-        leftIndexToSlot = RedirectionIndex.FACTORY.createRedirectionIndex(tableSize);
+        leftIndexToSlot = MutableRowRedirection.FACTORY.createRowRedirection(tableSize);
         this.leftKeySources = tableKeySources;
         this.leftTable = leftTable;
         // endregion constructor

@@ -4,13 +4,13 @@ import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.select.MatchPair;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.LongArraySource;
-import io.deephaven.engine.v2.sources.ReadOnlyRedirectedColumnSource;
+import io.deephaven.engine.v2.sources.RedirectedColumnSource;
 import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.sources.chunk.Attributes.ChunkLengths;
 import io.deephaven.engine.v2.sources.chunk.Attributes.ChunkPositions;
 import io.deephaven.engine.v2.sources.chunk.Attributes.RowKeys;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
-import io.deephaven.engine.v2.utils.LongColumnSourceRedirectionIndex;
+import io.deephaven.engine.v2.utils.LongColumnSourceMutableRowRedirection;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -18,20 +18,20 @@ import java.util.Map;
 abstract class BaseAddOnlyFirstOrLastChunkedOperator implements IterativeChunkedAggregationOperator {
     final boolean isFirst;
     final LongArraySource redirections;
-    private final LongColumnSourceRedirectionIndex redirectionIndex;
+    private final LongColumnSourceMutableRowRedirection rowRedirection;
     private final Map<String, ColumnSource<?>> resultColumns;
 
     BaseAddOnlyFirstOrLastChunkedOperator(boolean isFirst, MatchPair[] resultPairs, Table originalTable,
             String exposeRedirectionAs) {
         this.isFirst = isFirst;
         this.redirections = new LongArraySource();
-        this.redirectionIndex = new LongColumnSourceRedirectionIndex(redirections);
+        this.rowRedirection = new LongColumnSourceMutableRowRedirection(redirections);
 
         this.resultColumns = new LinkedHashMap<>(resultPairs.length);
         for (final MatchPair mp : resultPairs) {
             // noinspection unchecked
             resultColumns.put(mp.left(),
-                    new ReadOnlyRedirectedColumnSource(redirectionIndex, originalTable.getColumnSource(mp.right())));
+                    new RedirectedColumnSource(rowRedirection, originalTable.getColumnSource(mp.right())));
         }
         if (exposeRedirectionAs != null) {
             resultColumns.put(exposeRedirectionAs, redirections);
@@ -109,7 +109,7 @@ abstract class BaseAddOnlyFirstOrLastChunkedOperator implements IterativeChunked
 
     @Override
     public void startTrackingPrevValues() {
-        redirectionIndex.startTrackingPrevValues();
+        rowRedirection.startTrackingPrevValues();
     }
 
     @Override

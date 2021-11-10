@@ -23,7 +23,6 @@ import io.deephaven.engine.v2.utils.*;
 import java.util.Arrays;
 import io.deephaven.engine.v2.sort.permute.IntPermuteKernel;
 // @StateChunkTypeEnum@ from \QInt\E
-import io.deephaven.engine.v2.sort.permute.IntPermuteKernel;
 import io.deephaven.engine.v2.utils.compact.IntCompactKernel;
 import io.deephaven.engine.v2.utils.compact.LongCompactKernel;
 // endmixin rehash
@@ -1275,11 +1274,11 @@ class StaticChunkedOperatorAggregationStateManager
     // region extraction functions
     @Override
     public ColumnSource[] getKeyHashTableSources() {
-        final RedirectionIndex resultIndexToHashSlot = new IntColumnSourceRedirectionIndex(outputPositionToHashSlot);
+        final MutableRowRedirection resultIndexToHashSlot = new IntColumnSourceMutableRowRedirection(outputPositionToHashSlot);
         final ColumnSource[] keyHashTableSources = new ColumnSource[keyColumnCount];
         for (int kci = 0; kci < keyColumnCount; ++kci) {
             // noinspection unchecked
-            keyHashTableSources[kci] = new ReadOnlyRedirectedColumnSource(resultIndexToHashSlot, new HashTableColumnSource(keySources[kci], overflowKeySources[kci]));
+            keyHashTableSources[kci] = new RedirectedColumnSource(resultIndexToHashSlot, new HashTableColumnSource(keySources[kci], overflowKeySources[kci]));
         }
         return keyHashTableSources;
     }

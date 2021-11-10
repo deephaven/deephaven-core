@@ -237,7 +237,7 @@ public class AggregationHelper {
 
         // Compute result rowSet and redirection to hash slots
         final TrackingRowSet resultRowSet = RowSetFactory.flat(numGroups).toTracking();
-        final RedirectionIndex resultIndexToHashSlot = new IntColumnSourceRedirectionIndex(groupIndexToHashSlot);
+        final MutableRowRedirection resultIndexToHashSlot = new IntColumnSourceMutableRowRedirection(groupIndexToHashSlot);
 
         // Construct result column sources
         final ColumnSource<?>[] keyHashTableSources = stateManager.getKeyHashTableSources();
@@ -251,12 +251,12 @@ public class AggregationHelper {
                         ReinterpretUtilities.convertToOriginal(keyColumnSources[kci].getType(), resultKeyColumnSource);
             }
             resultColumnSourceMap.put(keyColumnNames[kci],
-                    new ReadOnlyRedirectedColumnSource<>(resultIndexToHashSlot, resultKeyColumnSource));
+                    new RedirectedColumnSource<>(resultIndexToHashSlot, resultKeyColumnSource));
         }
 
         // Gather the result aggregate columns
         final ColumnSource<TrackingMutableRowSet> resultIndexColumnSource =
-                new ReadOnlyRedirectedColumnSource<>(resultIndexToHashSlot, stateManager.getIndexHashTableSource());
+                new RedirectedColumnSource<>(resultIndexToHashSlot, stateManager.getIndexHashTableSource());
         Arrays.stream(aggregatedColumnNames)
                 .forEachOrdered((final String aggregatedColumnName) -> resultColumnSourceMap.put(aggregatedColumnName,
                         AggregateColumnSource.make(existingColumnSourceMap.get(aggregatedColumnName),
@@ -305,8 +305,8 @@ public class AggregationHelper {
 
                     }
                     // Compute result rowSet and redirection to hash slots
-                    final RedirectionIndex resultIndexToHashSlot =
-                            RedirectionIndexLockFreeImpl.FACTORY.createRedirectionIndex(updateTracker.size());
+                    final MutableRowRedirection resultIndexToHashSlot =
+                            MutableRowRedirectionLockFree.FACTORY.createRowRedirection(updateTracker.size());
                     final TrackingMutableRowSet resultRowSet = updateTracker.applyAddsAndMakeInitialIndex(
                             stateManager.getRowSetSource(), stateManager.getOverflowRowSetSource(),
                             resultIndexToHashSlot);
@@ -321,7 +321,7 @@ public class AggregationHelper {
 
                     // Gather the result aggregate columns
                     final ColumnSource<TrackingMutableRowSet> resultIndexColumnSource =
-                            new ReadOnlyRedirectedColumnSource<>(
+                            new RedirectedColumnSource<>(
                                     resultIndexToHashSlot, stateManager.getRowSetHashTableSource());
                     Arrays.stream(aggregatedColumnNames)
                             .forEachOrdered((final String aggregatedColumnName) -> {

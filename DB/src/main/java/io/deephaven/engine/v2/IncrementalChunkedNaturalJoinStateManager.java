@@ -2001,8 +2001,8 @@ class IncrementalChunkedNaturalJoinStateManager
     }
 
     // region extraction functions
-    RedirectionIndex buildRedirectionIndexFromRedirections(QueryTable leftTable, boolean exactMatch, LongArraySource leftRedirections, JoinControl.RedirectionType redirectionType) {
-        return buildRedirectionIndex(leftTable, exactMatch, leftRedirections::getUnsafe, redirectionType);
+    MutableRowRedirection buildRowRedirectionFromRedirections(QueryTable leftTable, boolean exactMatch, LongArraySource leftRedirections, JoinControl.RedirectionType redirectionType) {
+        return buildRowRedirection(leftTable, exactMatch, leftRedirections::getUnsafe, redirectionType);
     }
 
     static long overflowToSlot(long overflow) {

@@ -18,12 +18,12 @@ import org.junit.experimental.categories.Category;
 import static io.deephaven.base.ArrayUtil.swap;
 
 @Category(OutOfBandTest.class)
-public class RedirectionIndexLockFreeTest extends RefreshingTableTestCase {
+public class RowRedirectionLockFreeTest extends RefreshingTableTestCase {
     private static final long oneBillion = 1000000000L;
     private static final int testDurationInSeconds = 15;
 
-    public void testRedirectionIndex() throws InterruptedException {
-        final RedirectionIndexLockFreeImpl index = new RedirectionIndexLockFreeFactory().createRedirectionIndex(10);
+    public void testRowRedirection() throws InterruptedException {
+        final MutableRowRedirectionLockFree index = new RowRedirectionLockFreeFactory().createRowRedirection(10);
         index.startTrackingPrevValues();
         final long initialStep = LogicalClock.DEFAULT.currentStep();
         Writer writer = new Writer("writer", initialStep, index);
@@ -53,7 +53,7 @@ public class RedirectionIndexLockFreeTest extends RefreshingTableTestCase {
             failed |= rwb.hasFailed();
         }
         if (failed) {
-            fail("RedirectionIndex had some corrupt values");
+            fail("MutableRowRedirection had some corrupt values");
         }
     }
 
@@ -64,11 +64,11 @@ public class RedirectionIndexLockFreeTest extends RefreshingTableTestCase {
     private static abstract class RWBase implements Runnable, Cancellable {
         protected final String name;
         protected final long initialStep;
-        protected final RedirectionIndexLockFreeImpl index;
+        protected final MutableRowRedirectionLockFree index;
         protected int numIterations;
         protected volatile boolean cancelled;
 
-        protected RWBase(String name, long initialStep, RedirectionIndexLockFreeImpl index) {
+        protected RWBase(String name, long initialStep, MutableRowRedirectionLockFree index) {
             this.name = name;
             this.initialStep = initialStep;
             this.index = index;
@@ -100,7 +100,7 @@ public class RedirectionIndexLockFreeTest extends RefreshingTableTestCase {
         private int badUpdateCycles;
         private int incoherentCycles;
 
-        Reader(String name, long initialStep, RedirectionIndexLockFreeImpl index) {
+        Reader(String name, long initialStep, MutableRowRedirectionLockFree index) {
             super(name, initialStep, index);
             goodIdleCycles = 0;
             goodUpdateCycles = 0;
@@ -121,7 +121,7 @@ public class RedirectionIndexLockFreeTest extends RefreshingTableTestCase {
             final Random rng = new Random(step);
             final int numKeysToInsert = rng.nextInt(keysInThisGeneration);
             long[] keys = fillAndShuffle(rng, keysInThisGeneration);
-            final RedirectionIndexLockFreeImpl ix = index;
+            final MutableRowRedirectionLockFree ix = index;
 
             // Record the mismatches
             final TLongArrayList mmKeys = new TLongArrayList();
@@ -188,7 +188,7 @@ public class RedirectionIndexLockFreeTest extends RefreshingTableTestCase {
     }
 
     private static class Writer extends RWBase {
-        Writer(String name, long initialStep, RedirectionIndexLockFreeImpl index) {
+        Writer(String name, long initialStep, MutableRowRedirectionLockFree index) {
             super(name, initialStep, index);
         }
 
@@ -202,7 +202,7 @@ public class RedirectionIndexLockFreeTest extends RefreshingTableTestCase {
                 final int numKeysToInsert = rng.nextInt(keysInThisGeneration.getValue());
                 // A bit of a waste because we only look at the first 'numKeysToInsert' keys, but that's ok.
                 long[] keys = fillAndShuffle(rng, keysInThisGeneration.getValue());
-                final RedirectionIndexLockFreeImpl ix = index;
+                final MutableRowRedirectionLockFree ix = index;
                 for (int ii = 0; ii < numKeysToInsert; ++ii) {
                     final long key = keys[ii];
                     final long value = step * oneBillion + ii;
@@ -215,8 +215,8 @@ public class RedirectionIndexLockFreeTest extends RefreshingTableTestCase {
             });
 
             // waste some time doing something else
-            final RedirectionIndexLockFreeImpl privateIndex =
-                    new RedirectionIndexLockFreeFactory().createRedirectionIndex(10);
+            final MutableRowRedirectionLockFree privateIndex =
+                    new RowRedirectionLockFreeFactory().createRowRedirection(10);
             for (long ii = 0; ii < keysInThisGeneration.getValue() * 4; ++ii) {
                 privateIndex.put(ii, ii);
             }

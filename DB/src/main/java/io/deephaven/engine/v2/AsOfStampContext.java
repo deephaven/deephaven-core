@@ -9,7 +9,7 @@ import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.chunk.Attributes.RowKeys;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 import io.deephaven.engine.v2.sources.chunk.*;
-import io.deephaven.engine.v2.utils.RedirectionIndex;
+import io.deephaven.engine.v2.utils.MutableRowRedirection;
 import io.deephaven.engine.v2.utils.RowSet;
 
 class AsOfStampContext implements Context {
@@ -164,12 +164,12 @@ class AsOfStampContext implements Context {
      *
      * @param leftRowSet the indices of the left values to stamp
      * @param rightRowSet the indices of the right values in this state
-     * @param redirectionIndex the redirection rowSet to update
+     * @param rowRedirection the redirection rowSet to update
      */
-    void processEntry(RowSet leftRowSet, RowSet rightRowSet, RedirectionIndex redirectionIndex) {
+    void processEntry(RowSet leftRowSet, RowSet rightRowSet, MutableRowRedirection rowRedirection) {
         ensureRightCapacity(rightRowSet.intSize());
         getAndCompactStamps(rightRowSet, rightKeyIndicesChunk, rightStampChunk);
-        processEntry(leftRowSet, rightStampChunk, rightKeyIndicesChunk, redirectionIndex);
+        processEntry(leftRowSet, rightStampChunk, rightKeyIndicesChunk, rowRedirection);
     }
 
     /**
@@ -198,10 +198,10 @@ class AsOfStampContext implements Context {
      * @param leftRowSet the indices of the left values to stamp
      * @param rightStampChunk the right stamp values (already compacted)
      * @param rightKeyIndicesChunk the right key indices (already compacted)
-     * @param redirectionIndex the redirection rowSet to update
+     * @param rowRedirection the redirection rowSet to update
      */
     void processEntry(RowSet leftRowSet, Chunk<Values> rightStampChunk, LongChunk<RowKeys> rightKeyIndicesChunk,
-            RedirectionIndex redirectionIndex) {
+            MutableRowRedirection rowRedirection) {
         ensureLeftCapacity(leftRowSet.intSize());
 
         // read the left stamp column
@@ -213,17 +213,17 @@ class AsOfStampContext implements Context {
         sortKernel.sort(leftKeyIndicesChunk, leftStampChunk);
 
         // figure out our "merge"
-        computeRedirections(redirectionIndex, rightStampChunk, rightKeyIndicesChunk);
+        computeRedirections(rowRedirection, rightStampChunk, rightKeyIndicesChunk);
     }
 
-    private void computeRedirections(RedirectionIndex redirectionIndex, Chunk<Values> rightStampChunk,
-            LongChunk<RowKeys> rightKeyIndicesChunk) {
+    private void computeRedirections(MutableRowRedirection rowRedirection, Chunk<Values> rightStampChunk,
+                                     LongChunk<RowKeys> rightKeyIndicesChunk) {
         stampKernel.computeRedirections(leftStampChunk, rightStampChunk, rightKeyIndicesChunk, leftRedirections);
         for (int ii = 0; ii < leftKeyIndicesChunk.size(); ++ii) {
             final long rightKey = leftRedirections.get(ii);
             // the redirection rowSet defaults to NULL_KEY so we do not need to put it in there
             if (rightKey != RowSet.NULL_ROW_KEY) {
-                redirectionIndex.putVoid(leftKeyIndicesChunk.get(ii), rightKey);
+                rowRedirection.putVoid(leftKeyIndicesChunk.get(ii), rightKey);
             }
         }
     }

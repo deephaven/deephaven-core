@@ -5,7 +5,8 @@
 package io.deephaven.engine.v2.by;
 
 import io.deephaven.engine.v2.sources.*;
-import io.deephaven.engine.v2.utils.RedirectionIndex;
+import io.deephaven.engine.v2.utils.MutableRowRedirection;
+import io.deephaven.engine.v2.utils.RowRedirection;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.LinkedHashMap;
@@ -13,9 +14,9 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public abstract class IterativeIndexStateFactory extends ReaggregatableStatefactory {
-    static final String REDIRECTION_INDEX_PREFIX = "RedirectionIndex_";
+    static final String REDIRECTION_INDEX_PREFIX = "RowRedirection_";
     private final Map<String, ColumnSource> nameToDestColumns = new LinkedHashMap<>();
-    final protected RedirectionIndex redirectionIndex = RedirectionIndex.FACTORY.createRedirectionIndex(8);
+    final protected RowRedirection rowRedirection = MutableRowRedirection.FACTORY.createRowRedirection(8);
     private boolean firstTime;
     final boolean lowestRollup;
     final boolean secondRollup;
@@ -69,12 +70,12 @@ public abstract class IterativeIndexStateFactory extends ReaggregatableStatefact
 
         @Override
         public long getLong(long index) {
-            return redirectionIndex.get(index);
+            return rowRedirection.get(index);
         }
 
         @Override
         public long getPrevLong(long index) {
-            return redirectionIndex.getPrev(index);
+            return rowRedirection.getPrev(index);
         }
 
         @Override

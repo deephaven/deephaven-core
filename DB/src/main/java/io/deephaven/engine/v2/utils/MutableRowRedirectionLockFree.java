@@ -4,23 +4,24 @@
 
 package io.deephaven.engine.v2.utils;
 
+import gnu.trove.iterator.TLongLongIterator;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.structures.RowSequence;
-import io.deephaven.engine.v2.hashing.HashMapLockFreeK4V4;
 import io.deephaven.engine.v2.hashing.HashMapLockFreeK1V1;
 import io.deephaven.engine.v2.hashing.HashMapLockFreeK2V2;
+import io.deephaven.engine.v2.hashing.HashMapLockFreeK4V4;
 import io.deephaven.engine.v2.hashing.TNullableLongLongMap;
 import io.deephaven.engine.v2.sources.WritableChunkSink;
+import io.deephaven.engine.v2.sources.chunk.Attributes.RowKeys;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 import io.deephaven.engine.v2.sources.chunk.Chunk;
 import io.deephaven.engine.v2.sources.chunk.LongChunk;
-import gnu.trove.iterator.TLongLongIterator;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * This is a lock-free implementation of a RedirectionIndex. The rules for using this class are as follows.
+ * This is a lock-free implementation of a MutableRowRedirection. The rules for using this class are as follows.
  *
  * Users of this class fall into two roles: 1. Readers (snapshotters), of which there can be many. 2. Writers, of which
  * there can be only one.
@@ -106,9 +107,9 @@ import org.jetbrains.annotations.NotNull;
  * not have any special responsibility, but the first call to put() inside an Update generation causes a new
  * 'keysAndValues' array to be generated, which the Reader will start to see next time it looks.
  */
-public class RedirectionIndexLockFreeImpl implements RedirectionIndex {
+public class MutableRowRedirectionLockFree implements MutableRowRedirection {
     private static final float LOAD_FACTOR =
-            (float) Configuration.getInstance().getDoubleWithDefault("RedirectionIndexK4V4Impl.loadFactor", 0.5);
+            (float) Configuration.getInstance().getDoubleWithDefault("RowRedirectionK4V4Impl.loadFactor", 0.5);
     /**
      * The special "key not found" value used in the 'baseline' map is -1. However, for the 'updates' map, the "key not
      * found" value is -2. This allows us to use the updates map to remember removals and account for them properly.
@@ -128,9 +129,9 @@ public class RedirectionIndexLockFreeImpl implements RedirectionIndex {
      */
     private TNullableLongLongMap updates;
 
-    private UpdateCommitter<RedirectionIndexLockFreeImpl> updateCommitter;
+    private UpdateCommitter<MutableRowRedirectionLockFree> updateCommitter;
 
-    RedirectionIndexLockFreeImpl(TNullableLongLongMap map) {
+    MutableRowRedirectionLockFree(TNullableLongLongMap map) {
         this.baseline = map;
         // Initially, baseline == updates (i.e. they point to the same object). They will continue to point to the same
         // object until the first terminal listener notification after prev tracking is turned on (via
@@ -143,7 +144,7 @@ public class RedirectionIndexLockFreeImpl implements RedirectionIndex {
      * Commits the 'updates' map into the 'baseline' map, then resets the 'updates' map to empty. The only caller should
      * be Writer@Idle, via the TerminalNotification.
      */
-    private static void commitUpdates(@NotNull final RedirectionIndexLockFreeImpl instance) {
+    private static void commitUpdates(@NotNull final MutableRowRedirectionLockFree instance) {
         // This only gets called by the UpdateCommitter, and only as a result of a terminal listener notification (which
         // in turn can only happen once prev tracking has been turned on). We copy updates to baseline and reset the
         // updates map.
@@ -168,18 +169,18 @@ public class RedirectionIndexLockFreeImpl implements RedirectionIndex {
      * eventually noticing that this transition happened, throw away their work and start again.
      */
     @Override
-    public final long get(long key) {
-        if (key == -1) {
+    public final long get(long outerRowKey) {
+        if (outerRowKey == -1) {
             return BASELINE_KEY_NOT_FOUND;
         }
-        final long result = updates.get(key);
+        final long result = updates.get(outerRowKey);
         if (result != UPDATES_KEY_NOT_FOUND) {
             // The prior value from updates is either some ordinary previous value, or BASELINE_KEY_NOT_FOUND.
             // In either case, return it to the caller.
             return result;
         }
         // There's no entry in 'updates' so we return the entry in 'baseline'.
-        return baseline.get(key);
+        return baseline.get(outerRowKey);
     }
 
     /**
@@ -189,11 +190,11 @@ public class RedirectionIndexLockFreeImpl implements RedirectionIndex {
      * eventually noticing that this transition happened, throw away their work and start again.
      */
     @Override
-    public final long getPrev(long key) {
-        if (key == -1) {
+    public final long getPrev(long outerRowKey) {
+        if (outerRowKey == -1) {
             return BASELINE_KEY_NOT_FOUND;
         }
-        return baseline.get(key);
+        return baseline.get(outerRowKey);
     }
 
     /**
@@ -201,11 +202,11 @@ public class RedirectionIndexLockFreeImpl implements RedirectionIndex {
      * calling anything.
      */
     @Override
-    public final long put(long key, long value) {
-        if (value == BASELINE_KEY_NOT_FOUND) {
-            throw new IllegalArgumentException(value + " is an illegal value");
+    public final long put(long outerRowKey, long innerRowKey) {
+        if (innerRowKey == BASELINE_KEY_NOT_FOUND) {
+            throw new IllegalArgumentException(innerRowKey + " is an illegal value");
         }
-        return putImpl(key, value);
+        return putImpl(outerRowKey, innerRowKey);
     }
 
     /**
@@ -213,18 +214,18 @@ public class RedirectionIndexLockFreeImpl implements RedirectionIndex {
      * calling anything.
      */
     @Override
-    public long remove(long key) {
+    public long remove(long outerRowKey) {
         // A removal is modeled simply as a put, into the updates table, of the baseline "key_not_found" value.
-        return putImpl(key, BASELINE_KEY_NOT_FOUND);
+        return putImpl(outerRowKey, BASELINE_KEY_NOT_FOUND);
     }
 
     @Override
-    public void removeAll(final RowSequence keys) {
+    public void removeAll(final RowSequence outerRowKeys) {
         if (updateCommitter != null) {
             updateCommitter.maybeActivate();
         }
 
-        keys.forAllRowKeys(key -> updates.put(key, BASELINE_KEY_NOT_FOUND));
+        outerRowKeys.forAllRowKeys(key -> updates.put(key, BASELINE_KEY_NOT_FOUND));
     }
 
     @Override
@@ -232,7 +233,7 @@ public class RedirectionIndexLockFreeImpl implements RedirectionIndex {
         Assert.eqNull(updateCommitter, "updateCommitter");
         Assert.eq(baseline, "baseline", updates, "updates");
         updates = createUpdateMap();
-        updateCommitter = new UpdateCommitter<>(this, RedirectionIndexLockFreeImpl::commitUpdates);
+        updateCommitter = new UpdateCommitter<>(this, MutableRowRedirectionLockFree::commitUpdates);
     }
 
     /**
@@ -252,22 +253,23 @@ public class RedirectionIndexLockFreeImpl implements RedirectionIndex {
     }
 
     @Override
-    public void fillFromChunk(@NotNull WritableChunkSink.FillFromContext context, @NotNull Chunk<? extends Values> src,
-            @NotNull RowSequence rowSequence) {
+    public void fillFromChunk(@NotNull WritableChunkSink.FillFromContext context,
+            @NotNull Chunk<? extends RowKeys> innerRowKeys,
+            @NotNull RowSequence outerRowKeys) {
         if (updateCommitter != null) {
             updateCommitter.maybeActivate();
         }
 
         final MutableInt offset = new MutableInt();
-        final LongChunk<? extends Values> valuesLongChunk = src.asLongChunk();
-        rowSequence.forAllRowKeys(key -> {
+        final LongChunk<? extends Values> valuesLongChunk = innerRowKeys.asLongChunk();
+        outerRowKeys.forAllRowKeys(key -> {
             updates.put(key, valuesLongChunk.get(offset.intValue()));
             offset.increment();
         });
     }
 
     private static final int hashBucketWidth = Configuration.getInstance()
-            .getIntegerForClassWithDefault(RedirectionIndexLockFreeImpl.class, "hashBucketWidth", 1);
+            .getIntegerForClassWithDefault(MutableRowRedirectionLockFree.class, "hashBucketWidth", 1);
 
     @NotNull
     private static TNullableLongLongMap createUpdateMap() {

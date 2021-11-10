@@ -6,7 +6,7 @@ import io.deephaven.engine.tables.select.MatchPair;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.LongArraySource;
 import io.deephaven.engine.v2.sources.ObjectArraySource;
-import io.deephaven.engine.v2.sources.ReadOnlyRedirectedColumnSource;
+import io.deephaven.engine.v2.sources.RedirectedColumnSource;
 import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.sources.chunk.Attributes.*;
 import io.deephaven.engine.v2.utils.*;
@@ -18,7 +18,7 @@ public class FirstOrLastChunkedOperator implements IterativeChunkedAggregationOp
     private final boolean isFirst;
     private final LongArraySource redirections;
     private final ObjectArraySource<MutableRowSet> rowSets;
-    private final LongColumnSourceRedirectionIndex redirectionIndex;
+    private final LongColumnSourceMutableRowRedirection rowRedirection;
     private final Map<String, ColumnSource<?>> resultColumns;
     private final boolean exposeRedirections;
 
@@ -26,14 +26,14 @@ public class FirstOrLastChunkedOperator implements IterativeChunkedAggregationOp
             String exposeRedirectionAs) {
         this.isFirst = isFirst;
         this.redirections = new LongArraySource();
-        this.redirectionIndex = new LongColumnSourceRedirectionIndex(redirections);
+        this.rowRedirection = new LongColumnSourceMutableRowRedirection(redirections);
         this.rowSets = new ObjectArraySource<>(MutableRowSet.class);
 
         this.resultColumns = new LinkedHashMap<>(resultPairs.length);
         for (final MatchPair mp : resultPairs) {
             // noinspection unchecked
             resultColumns.put(mp.left(),
-                    new ReadOnlyRedirectedColumnSource(redirectionIndex, originalTable.getColumnSource(mp.right())));
+                    new RedirectedColumnSource(rowRedirection, originalTable.getColumnSource(mp.right())));
         }
         exposeRedirections = exposeRedirectionAs != null;
         if (exposeRedirectionAs != null) {
@@ -248,7 +248,7 @@ public class FirstOrLastChunkedOperator implements IterativeChunkedAggregationOp
 
     @Override
     public void startTrackingPrevValues() {
-        redirectionIndex.startTrackingPrevValues();
+        rowRedirection.startTrackingPrevValues();
     }
 
     @Override
@@ -259,7 +259,7 @@ public class FirstOrLastChunkedOperator implements IterativeChunkedAggregationOp
     IterativeChunkedAggregationOperator makeSecondaryOperator(boolean isFirst, MatchPair[] comboMatchPairs, Table table,
             String exposeRedirectionAs) {
         if (this.isFirst == isFirst) {
-            // we only need more output columns, the redirectionIndex and redirections column are totally fine
+            // we only need more output columns, the rowRedirection and redirections column are totally fine
             return new DuplicateOperator(comboMatchPairs, table, exposeRedirectionAs);
         } else {
             return new ComplementaryOperator(isFirst, comboMatchPairs, table, exposeRedirectionAs);
@@ -273,7 +273,7 @@ public class FirstOrLastChunkedOperator implements IterativeChunkedAggregationOp
             for (final MatchPair mp : resultPairs) {
                 // noinspection unchecked
                 resultColumns.put(mp.left(),
-                        new ReadOnlyRedirectedColumnSource(redirectionIndex, table.getColumnSource(mp.right())));
+                        new RedirectedColumnSource(rowRedirection, table.getColumnSource(mp.right())));
             }
             if (exposeRedirectionAs != null) {
                 resultColumns.put(exposeRedirectionAs, redirections);
@@ -426,7 +426,7 @@ public class FirstOrLastChunkedOperator implements IterativeChunkedAggregationOp
     private class ComplementaryOperator implements IterativeChunkedAggregationOperator {
         private final boolean isFirst;
         private final LongArraySource redirections;
-        private final LongColumnSourceRedirectionIndex redirectionIndex;
+        private final LongColumnSourceMutableRowRedirection rowRedirection;
         private final Map<String, ColumnSource<?>> resultColumns;
         private final boolean exposeRedirections;
 
@@ -435,13 +435,13 @@ public class FirstOrLastChunkedOperator implements IterativeChunkedAggregationOp
             this.isFirst = isFirst;
             redirections = new LongArraySource();
 
-            this.redirectionIndex = new LongColumnSourceRedirectionIndex(redirections);
+            this.rowRedirection = new LongColumnSourceMutableRowRedirection(redirections);
 
             this.resultColumns = new LinkedHashMap<>(resultPairs.length);
             for (final MatchPair mp : resultPairs) {
                 // noinspection unchecked
                 resultColumns.put(mp.left(),
-                        new ReadOnlyRedirectedColumnSource(redirectionIndex, table.getColumnSource(mp.right())));
+                        new RedirectedColumnSource(rowRedirection, table.getColumnSource(mp.right())));
             }
             exposeRedirections = exposeRedirectionAs != null;
             if (exposeRedirections) {
@@ -589,7 +589,7 @@ public class FirstOrLastChunkedOperator implements IterativeChunkedAggregationOp
 
         @Override
         public void startTrackingPrevValues() {
-            redirectionIndex.startTrackingPrevValues();
+            rowRedirection.startTrackingPrevValues();
         }
 
         @Override

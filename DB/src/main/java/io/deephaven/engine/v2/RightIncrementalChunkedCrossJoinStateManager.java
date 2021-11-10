@@ -23,7 +23,6 @@ import io.deephaven.engine.v2.utils.*;
 import java.util.Arrays;
 import io.deephaven.engine.v2.sort.permute.IntPermuteKernel;
 // @StateChunkTypeEnum@ from \QObject\E
-import io.deephaven.engine.v2.sort.permute.ObjectPermuteKernel;
 import io.deephaven.engine.v2.utils.compact.IntCompactKernel;
 import io.deephaven.engine.v2.utils.compact.LongCompactKernel;
 // endmixin rehash
@@ -161,8 +160,8 @@ class RightIncrementalChunkedCrossJoinStateManager
 
     // region extra variables
     // maintain a mapping from left rowSet to its slot
-    private final RedirectionIndex leftIndexToSlot;
-    private final RedirectionIndex rightIndexToSlot;
+    private final MutableRowRedirection leftIndexToSlot;
+    private final MutableRowRedirection rightIndexToSlot;
     private final ColumnSource<?>[] leftKeySources;
     private final ColumnSource<?>[] rightKeySources;
     private final ObjectArraySource<TrackingMutableRowSet> leftIndexSource
@@ -227,8 +226,8 @@ class RightIncrementalChunkedCrossJoinStateManager
         // endmixin rehash
 
         // region constructor
-        this.leftIndexToSlot = RedirectionIndex.FACTORY.createRedirectionIndex(tableSize);
-        this.rightIndexToSlot = RedirectionIndex.FACTORY.createRedirectionIndex(tableSize);
+        this.leftIndexToSlot = MutableRowRedirection.FACTORY.createRowRedirection(tableSize);
+        this.rightIndexToSlot = MutableRowRedirection.FACTORY.createRowRedirection(tableSize);
         this.leftKeySources = tableKeySources;
         this.rightKeySources = rightKeySources;
         this.isLeftTicking = leftTable.isRefreshing();
@@ -656,7 +655,7 @@ class RightIncrementalChunkedCrossJoinStateManager
         this.overflowRightIndexSource.startTrackingPrevValues();
     }
 
-    public void updateLeftRedirectionIndex(RowSet leftAdded, long slotLocation) {
+    public void updateLeftRowRedirection(RowSet leftAdded, long slotLocation) {
         if (slotLocation == RowSet.NULL_ROW_KEY) {
             leftAdded.forAllRowKeys(leftIndexToSlot::removeVoid);
         } else {

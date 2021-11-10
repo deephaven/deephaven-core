@@ -6,9 +6,10 @@ package io.deephaven.engine.v2.ssa;
 import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.sources.chunk.Attributes.RowKeys;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
+import io.deephaven.engine.v2.utils.MutableRowRedirection;
+import io.deephaven.engine.v2.utils.RowRedirection;
 import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.engine.v2.utils.RowSetBuilderRandom;
-import io.deephaven.engine.v2.utils.RedirectionIndex;
 
 /**
  * Stamp kernel for when the left hand side is a sorted chunk and the right hand side is a ticking SegmentedSortedArray.
@@ -63,11 +64,11 @@ public class IntReverseChunkSsaStamp implements ChunkSsaStamp {
     }
 
     @Override
-    public void processRemovals(Chunk<Values> leftStampValues, LongChunk<Attributes.RowKeys> leftStampKeys, Chunk<? extends Values> rightStampChunk, LongChunk<Attributes.RowKeys> rightKeys, WritableLongChunk<Attributes.RowKeys> priorRedirections, RedirectionIndex redirectionIndex, RowSetBuilderRandom modifiedBuilder, boolean disallowExactMatch) {
-        processRemovals(leftStampValues.asIntChunk(), leftStampKeys, rightStampChunk.asIntChunk(), rightKeys, priorRedirections, redirectionIndex, modifiedBuilder, disallowExactMatch);
+    public void processRemovals(Chunk<Values> leftStampValues, LongChunk<Attributes.RowKeys> leftStampKeys, Chunk<? extends Values> rightStampChunk, LongChunk<Attributes.RowKeys> rightKeys, WritableLongChunk<Attributes.RowKeys> priorRedirections, MutableRowRedirection rowRedirection, RowSetBuilderRandom modifiedBuilder, boolean disallowExactMatch) {
+        processRemovals(leftStampValues.asIntChunk(), leftStampKeys, rightStampChunk.asIntChunk(), rightKeys, priorRedirections, rowRedirection, modifiedBuilder, disallowExactMatch);
     }
 
-    private static void processRemovals(IntChunk<Values> leftStampValues, LongChunk<Attributes.RowKeys> leftStampKeys, IntChunk<? extends Values> rightStampChunk, LongChunk<RowKeys> rightKeys, WritableLongChunk<Attributes.RowKeys> nextRedirections, RedirectionIndex redirectionIndex, RowSetBuilderRandom modifiedBuilder, boolean disallowExactMatch) {
+    private static void processRemovals(IntChunk<Values> leftStampValues, LongChunk<Attributes.RowKeys> leftStampKeys, IntChunk<? extends Values> rightStampChunk, LongChunk<RowKeys> rightKeys, WritableLongChunk<Attributes.RowKeys> nextRedirections, MutableRowRedirection rowRedirection, RowSetBuilderRandom modifiedBuilder, boolean disallowExactMatch) {
         // When removing a row, record the stamp, redirection key, and prior redirection key.  Binary search
         // in the left for the removed key to find the smallest value geq the removed right.  Update all rows
         // with the removed redirection to the previous key.
@@ -83,13 +84,13 @@ public class IntReverseChunkSsaStamp implements ChunkSsaStamp {
 
             while (leftLowIdx < leftStampKeys.size()) {
                 final long leftKey = leftStampKeys.get(leftLowIdx);
-                final long leftRedirectionKey = redirectionIndex.get(leftKey);
+                final long leftRedirectionKey = rowRedirection.get(leftKey);
                 if (leftRedirectionKey == rightStampKey) {
                     modifiedBuilder.addKey(leftKey);
                     if (newRightStampKey == RowSet.NULL_ROW_KEY) {
-                        redirectionIndex.removeVoid(leftKey);
+                        rowRedirection.removeVoid(leftKey);
                     } else {
-                        redirectionIndex.putVoid(leftKey, newRightStampKey);
+                        rowRedirection.putVoid(leftKey, newRightStampKey);
                     }
                     leftLowIdx++;
                 } else {
@@ -100,11 +101,11 @@ public class IntReverseChunkSsaStamp implements ChunkSsaStamp {
     }
 
     @Override
-    public void processInsertion(Chunk<Values> leftStampValues, LongChunk<Attributes.RowKeys> leftStampKeys, Chunk<? extends Values> rightStampChunk, LongChunk<Attributes.RowKeys> rightKeys, Chunk<Values> nextRightValue, RedirectionIndex redirectionIndex, RowSetBuilderRandom modifiedBuilder, boolean endsWithLastValue, boolean disallowExactMatch) {
-        processInsertion(leftStampValues.asIntChunk(), leftStampKeys, rightStampChunk.asIntChunk(), rightKeys, nextRightValue.asIntChunk(), redirectionIndex, modifiedBuilder, endsWithLastValue, disallowExactMatch);
+    public void processInsertion(Chunk<Values> leftStampValues, LongChunk<Attributes.RowKeys> leftStampKeys, Chunk<? extends Values> rightStampChunk, LongChunk<Attributes.RowKeys> rightKeys, Chunk<Values> nextRightValue, MutableRowRedirection rowRedirection, RowSetBuilderRandom modifiedBuilder, boolean endsWithLastValue, boolean disallowExactMatch) {
+        processInsertion(leftStampValues.asIntChunk(), leftStampKeys, rightStampChunk.asIntChunk(), rightKeys, nextRightValue.asIntChunk(), rowRedirection, modifiedBuilder, endsWithLastValue, disallowExactMatch);
     }
 
-    private static void processInsertion(IntChunk<Values> leftStampValues, LongChunk<Attributes.RowKeys> leftStampKeys, IntChunk<? extends Values> rightStampChunk, LongChunk<Attributes.RowKeys> rightKeys, IntChunk<Values> nextRightValue, RedirectionIndex redirectionIndex, RowSetBuilderRandom modifiedBuilder, boolean endsWithLastValue, boolean disallowExactMatch) {
+    private static void processInsertion(IntChunk<Values> leftStampValues, LongChunk<Attributes.RowKeys> leftStampKeys, IntChunk<? extends Values> rightStampChunk, LongChunk<Attributes.RowKeys> rightKeys, IntChunk<Values> nextRightValue, MutableRowRedirection rowRedirection, RowSetBuilderRandom modifiedBuilder, boolean endsWithLastValue, boolean disallowExactMatch) {
         // We've already filtered out duplicate right stamps by the time we get here, which means that the rightStampChunk
         // contains only values that are the last in any given run; and thus are possible matches.
 
@@ -123,7 +124,7 @@ public class IntReverseChunkSsaStamp implements ChunkSsaStamp {
             if (ii == rightStampChunk.size() - 1 && endsWithLastValue) {
                 while (leftLowIdx < leftStampKeys.size()) {
                     final long leftKey = leftStampKeys.get(leftLowIdx);
-                    redirectionIndex.putVoid(leftKey, rightStampKey);
+                    rowRedirection.putVoid(leftKey, rightStampKey);
                     modifiedBuilder.addKey(leftKey);
                     leftLowIdx++;
                 }
@@ -133,7 +134,7 @@ public class IntReverseChunkSsaStamp implements ChunkSsaStamp {
                     final int leftValue = leftStampValues.get(leftLowIdx);
                     if (disallowExactMatch ? leq(leftValue, nextRight) : lt(leftValue, nextRight)) {
                         final long leftKey = leftStampKeys.get(leftLowIdx);
-                        redirectionIndex.putVoid(leftKey, rightStampKey);
+                        rowRedirection.putVoid(leftKey, rightStampKey);
                         modifiedBuilder.addKey(leftKey);
                         leftLowIdx++;
                     } else {
@@ -145,11 +146,11 @@ public class IntReverseChunkSsaStamp implements ChunkSsaStamp {
     }
 
     @Override
-    public int findModified(int first, Chunk<Values> leftStampValues, LongChunk<Attributes.RowKeys> leftStampKeys, RedirectionIndex redirectionIndex, Chunk<? extends Values> rightStampChunk, LongChunk<Attributes.RowKeys> rightStampIndices, RowSetBuilderRandom modifiedBuilder, boolean disallowExactMatch) {
-        return findModified(first, leftStampValues.asIntChunk(), leftStampKeys, redirectionIndex, rightStampChunk.asIntChunk(), rightStampIndices, modifiedBuilder, disallowExactMatch);
+    public int findModified(int first, Chunk<Values> leftStampValues, LongChunk<Attributes.RowKeys> leftStampKeys, RowRedirection rowRedirection, Chunk<? extends Values> rightStampChunk, LongChunk<Attributes.RowKeys> rightStampIndices, RowSetBuilderRandom modifiedBuilder, boolean disallowExactMatch) {
+        return findModified(first, leftStampValues.asIntChunk(), leftStampKeys, rowRedirection, rightStampChunk.asIntChunk(), rightStampIndices, modifiedBuilder, disallowExactMatch);
     }
 
-    private static int findModified(int leftLowIdx, IntChunk<Values> leftStampValues, LongChunk<Attributes.RowKeys> leftStampKeys, RedirectionIndex redirectionIndex, IntChunk<? extends Values> rightStampChunk, LongChunk<Attributes.RowKeys> rightStampIndices, RowSetBuilderRandom modifiedBuilder, boolean disallowExactMatch) {
+    private static int findModified(int leftLowIdx, IntChunk<Values> leftStampValues, LongChunk<Attributes.RowKeys> leftStampKeys, RowRedirection rowRedirection, IntChunk<? extends Values> rightStampChunk, LongChunk<Attributes.RowKeys> rightStampIndices, RowSetBuilderRandom modifiedBuilder, boolean disallowExactMatch) {
         for (int ii = 0; ii < rightStampChunk.size(); ++ii) {
             final int rightStampValue = rightStampChunk.get(ii);
 
@@ -158,7 +159,7 @@ public class IntReverseChunkSsaStamp implements ChunkSsaStamp {
 
             final long rightStampKey = rightStampIndices.get(ii);
             int checkIdx = leftLowIdx;
-            while (checkIdx < leftStampValues.size() && redirectionIndex.get(leftStampKeys.get(checkIdx)) == rightStampKey) {
+            while (checkIdx < leftStampValues.size() && rowRedirection.get(leftStampKeys.get(checkIdx)) == rightStampKey) {
                 modifiedBuilder.addKey(leftStampKeys.get(checkIdx));
                 checkIdx++;
             }
@@ -168,11 +169,11 @@ public class IntReverseChunkSsaStamp implements ChunkSsaStamp {
     }
 
     @Override
-    public void applyShift(Chunk<Values> leftStampValues, LongChunk<Attributes.RowKeys> leftStampKeys, Chunk<? extends Values> rightStampChunk, LongChunk<Attributes.RowKeys> rightStampKeys, long shiftDelta, RedirectionIndex redirectionIndex, boolean disallowExactMatch) {
-        applyShift(leftStampValues.asIntChunk(), leftStampKeys, rightStampChunk.asIntChunk(), rightStampKeys, shiftDelta, redirectionIndex, disallowExactMatch);
+    public void applyShift(Chunk<Values> leftStampValues, LongChunk<Attributes.RowKeys> leftStampKeys, Chunk<? extends Values> rightStampChunk, LongChunk<Attributes.RowKeys> rightStampKeys, long shiftDelta, MutableRowRedirection rowRedirection, boolean disallowExactMatch) {
+        applyShift(leftStampValues.asIntChunk(), leftStampKeys, rightStampChunk.asIntChunk(), rightStampKeys, shiftDelta, rowRedirection, disallowExactMatch);
     }
 
-    private void applyShift(IntChunk<Values> leftStampValues, LongChunk<Attributes.RowKeys> leftStampKeys, IntChunk<? extends Values> rightStampChunk, LongChunk<Attributes.RowKeys> rightStampKeys, long shiftDelta, RedirectionIndex redirectionIndex, boolean disallowExactMatch) {
+    private void applyShift(IntChunk<Values> leftStampValues, LongChunk<Attributes.RowKeys> leftStampKeys, IntChunk<? extends Values> rightStampChunk, LongChunk<Attributes.RowKeys> rightStampKeys, long shiftDelta, MutableRowRedirection rowRedirection, boolean disallowExactMatch) {
         int leftLowIdx = 0;
         for (int ii = 0; ii < rightStampChunk.size(); ++ii) {
             final int rightStampValue = rightStampChunk.get(ii);
@@ -182,8 +183,8 @@ public class IntReverseChunkSsaStamp implements ChunkSsaStamp {
 
             final long rightStampKey = rightStampKeys.get(ii);
             int checkIdx = leftLowIdx;
-            while (checkIdx < leftStampValues.size() && redirectionIndex.get(leftStampKeys.get(checkIdx)) == rightStampKey) {
-                redirectionIndex.putVoid(leftStampKeys.get(checkIdx), rightStampKey + shiftDelta);
+            while (checkIdx < leftStampValues.size() && rowRedirection.get(leftStampKeys.get(checkIdx)) == rightStampKey) {
+                rowRedirection.putVoid(leftStampKeys.get(checkIdx), rightStampKey + shiftDelta);
                 checkIdx++;
             }
         }

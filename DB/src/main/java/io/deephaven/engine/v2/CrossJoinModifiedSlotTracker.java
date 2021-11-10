@@ -506,7 +506,7 @@ class CrossJoinModifiedSlotTracker {
 
             final RowSet leftAdded = slotState.indexBuilder.build();
             slotState.leftRowSet.insert(leftAdded);
-            jsm.updateLeftRedirectionIndex(leftAdded, slotState.slotLocation);
+            jsm.updateLeftRowRedirection(leftAdded, slotState.slotLocation);
 
             slotState.indexBuilder = null;
             long size = slotState.rightRowSet.size();
@@ -532,7 +532,7 @@ class CrossJoinModifiedSlotTracker {
             }
             try (final RowSet moreLeftAdded = modifiedAdds.build()) {
                 slotState.leftRowSet.insert(moreLeftAdded);
-                jsm.updateLeftRedirectionIndex(moreLeftAdded, slotState.slotLocation);
+                jsm.updateLeftRowRedirection(moreLeftAdded, slotState.slotLocation);
             }
         }
         if (leftAdded == null) {
@@ -557,7 +557,7 @@ class CrossJoinModifiedSlotTracker {
             }
             final RowSet leftRemoved = slotState.indexBuilder.build();
             slotState.leftRowSet.remove(leftRemoved);
-            jsm.updateLeftRedirectionIndex(leftRemoved, RowSet.NULL_ROW_KEY);
+            jsm.updateLeftRowRedirection(leftRemoved, RowSet.NULL_ROW_KEY);
             slotState.indexBuilder = RowSetFactory.builderRandom();
             final long sizePrev = slotState.rightRowSet.sizePrev();
             if (sizePrev > 0) {

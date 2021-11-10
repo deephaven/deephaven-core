@@ -56,7 +56,7 @@ import org.jetbrains.annotations.NotNull;
  * To process results after steps 1, 4, and 5, the caller uses
  * {@link #applyRemovesToStates(ObjectArraySource, ObjectArraySource)},
  * {@link #applyAddsToStates(ObjectArraySource, ObjectArraySource)}, and
- * {@link #makeUpdateFromStates(ObjectArraySource, ObjectArraySource, MutableRowSet, RedirectionIndex, ModifiedColumnSetProducer)},
+ * {@link #makeUpdateFromStates(ObjectArraySource, ObjectArraySource, MutableRowSet, RowRedirection, ModifiedColumnSetProducer)},
  * respectively.
  */
 class IncrementalByAggregationUpdateTracker {
@@ -187,7 +187,7 @@ class IncrementalByAggregationUpdateTracker {
 
     /**
      * Record that an rowSet key has been added to a state on initial build, to be applied in
-     * {@link #applyAddsAndMakeInitialIndex(ObjectArraySource, ObjectArraySource, RedirectionIndex)}.
+     * {@link #applyAddsAndMakeInitialIndex(ObjectArraySource, ObjectArraySource, RowRedirection)}.
      *
      * @param cookie The last known cookie for the state
      * @param stateSlot The state's slot (in main table space)
@@ -352,18 +352,18 @@ class IncrementalByAggregationUpdateTracker {
     }
 
     /**
-     * Apply accumulated adds to their states, populate the result {@link RedirectionIndex}, and build the initial
+     * Apply accumulated adds to their states, populate the result {@link MutableRowRedirection}, and build the initial
      * result {@link TrackingMutableRowSet}.
      *
      * @param indexSource The {@link TrackingMutableRowSet} column source for the main table
      * @param overflowIndexSource The {@link TrackingMutableRowSet} column source for the overflow table
-     * @param redirectionIndex The result {@link RedirectionIndex} (from state first keys to state slots) to populate
+     * @param rowRedirection The result {@link MutableRowRedirection} (from state first keys to state slots) to populate
      * @return The result {@link TrackingMutableRowSet}
      */
     final TrackingMutableRowSet applyAddsAndMakeInitialIndex(
             @NotNull final ObjectArraySource<TrackingMutableRowSet> indexSource,
             @NotNull final ObjectArraySource<TrackingMutableRowSet> overflowIndexSource,
-            @NotNull final RedirectionIndex redirectionIndex) {
+            @NotNull final MutableRowRedirection rowRedirection) {
         final RowSetBuilderRandom resultBuilder = RowSetFactory.builderRandom();
         for (long trackerIndex = 0; trackerIndex < size; ++trackerIndex) {
             final long slotAndFlags = updatedStateSlotAndFlags.getLong(trackerIndex);
@@ -380,7 +380,7 @@ class IncrementalByAggregationUpdateTracker {
                 stateFirstKey = stateAddedRowSet.firstRowKey();
             }
 
-            redirectionIndex.putVoid(stateFirstKey, slot);
+            rowRedirection.putVoid(stateFirstKey, slot);
             resultBuilder.addKey(stateFirstKey);
         }
         // NB: We should not need to initialize previous value here, as the result rowSet was computed with no
@@ -473,12 +473,12 @@ class IncrementalByAggregationUpdateTracker {
 
     /**
      * Build an {@link Listener.Update} for this tracker's updated states, and update the result
-     * {@link TrackingMutableRowSet} and {@link RedirectionIndex}.
+     * {@link TrackingMutableRowSet} and {@link MutableRowRedirection}.
      *
      * @param indexSource The {@link TrackingMutableRowSet} column source for the main table
      * @param overflowIndexSource The {@link TrackingMutableRowSet} column source for the overflow table
      * @param rowSet The result {@link TrackingMutableRowSet} of visible keys to update
-     * @param redirectionIndex The result {@link RedirectionIndex} (from state first keys to state slots) to update
+     * @param rowRedirection The result {@link MutableRowRedirection} (from state first keys to state slots) to update
      * @param modifiedColumnSetProducer The {@link ModifiedColumnSetProducer} to use for computing the downstream
      *        {@link ModifiedColumnSet}
      * @return The result {@link Listener.Update}
@@ -486,7 +486,7 @@ class IncrementalByAggregationUpdateTracker {
     final Listener.Update makeUpdateFromStates(@NotNull final ObjectArraySource<TrackingMutableRowSet> indexSource,
             @NotNull final ObjectArraySource<TrackingMutableRowSet> overflowIndexSource,
             @NotNull final MutableRowSet rowSet,
-            @NotNull final RedirectionIndex redirectionIndex,
+            @NotNull final MutableRowRedirection rowRedirection,
             @NotNull final ModifiedColumnSetProducer modifiedColumnSetProducer) {
         // First pass: Removes are handled on their own, because if the key moved to a new state we may reinsert it
         final RowSetBuilderRandom removedBuilder = RowSetFactory.builderRandom();
@@ -503,14 +503,14 @@ class IncrementalByAggregationUpdateTracker {
             }
             if (current.isEmpty()) {
                 // We must have removed everything
-                redirectionIndex.removeVoid(previousFirstKey);
+                rowRedirection.removeVoid(previousFirstKey);
                 removedBuilder.addKey(previousFirstKey);
                 continue;
             }
             final long currentFirstKey = current.firstRowKey();
             if (previousFirstKey != currentFirstKey) {
                 // First key changed
-                redirectionIndex.removeVoid(previousFirstKey);
+                rowRedirection.removeVoid(previousFirstKey);
                 if (flags == FLAG_STATE_HAS_SHIFTS) {
                     ++numStatesWithShifts;
                 } else {
@@ -544,7 +544,7 @@ class IncrementalByAggregationUpdateTracker {
                 final long currentFirstKey = current.firstRowKey();
                 if (previousFirstKey == RowSet.NULL_ROW_KEY) {
                     // We must have added something
-                    redirectionIndex.putVoid(currentFirstKey, slot);
+                    rowRedirection.putVoid(currentFirstKey, slot);
                     addedBuilder.addKey(currentFirstKey);
                     continue;
                 }
@@ -557,7 +557,7 @@ class IncrementalByAggregationUpdateTracker {
                         modifiedBuilder.addKey(currentFirstKey);
                     }
                 } else {
-                    redirectionIndex.putVoid(currentFirstKey, slot);
+                    rowRedirection.putVoid(currentFirstKey, slot);
                     if (flags == FLAG_STATE_HAS_SHIFTS) {
                         previousShiftedFirstKeys.set(shiftChunkPosition, previousFirstKey);
                         currentShiftedFirstKeys.set(shiftChunkPosition, currentFirstKey);

@@ -22,7 +22,7 @@
   "getPrevInt": ":param index: long\n:return: int",
   "getPrevLong": ":param index: long\n:return: long",
   "getPrevShort": ":param index: long\n:return: short",
-  "getRedirectionIndex": ":return: io.deephaven.engine.v2.utils.RedirectionIndex",
+  "getRowRedirection": ":return: io.deephaven.engine.v2.utils.RowRedirection",
   "getShort": ":param index: long\n:return: short",
   "getUngrouped": "Reach into a grouped column source and pull one element out of the array.\n\n:param columnIndex: (long) - the rowSet within the column of the cell to get\n:param arrayIndex: (int) - the rowSet within the array at the specified cell\n:return: (ReadOnlyRedirectedColumnSource.T) Equivalent to ((Vector)columnSource.get(columnIndex)).get(arrayIndex)",
   "getUngroupedBoolean": ":param columnIndex: long\n:param arrayIndex: int\n:return: java.lang.Boolean",

@@ -1,5 +1,7 @@
 package io.deephaven.engine.v2.sources.chunk;
 
+import io.deephaven.engine.v2.sources.RedirectedColumnSource;
+import io.deephaven.engine.v2.utils.MutableRowRedirection;
 import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 
@@ -17,8 +19,8 @@ import java.util.function.Supplier;
  * an operation (usually a chunk of ordered keys).
  *
  * <p>
- * For example, {@link io.deephaven.engine.v2.sources.ReadOnlyRedirectedColumnSource}s that share the same
- * {@link io.deephaven.engine.v2.utils.RedirectionIndex} cache a chunk of redirections for the most recent chunk of
+ * For example, {@link RedirectedColumnSource}s that share the same
+ * {@link MutableRowRedirection} cache a chunk of redirections for the most recent chunk of
  * ordered keys they have been handed.
  *
  * <p>

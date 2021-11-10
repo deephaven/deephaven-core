@@ -9,8 +9,8 @@ import io.deephaven.engine.v2.select.SelectColumn;
 import io.deephaven.engine.v2.select.SourceColumn;
 import io.deephaven.engine.v2.select.SwitchColumn;
 import io.deephaven.engine.v2.sources.*;
+import io.deephaven.engine.v2.utils.MutableRowRedirection;
 import io.deephaven.engine.v2.utils.RowSet;
-import io.deephaven.engine.v2.utils.RedirectionIndex;
 import io.deephaven.engine.v2.utils.TrackingRowSet;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.SafeCloseablePair;
@@ -28,12 +28,12 @@ public abstract class SelectAndViewAnalyzer {
             SelectColumn... selectColumns) {
         SelectAndViewAnalyzer analyzer = createBaseLayer(columnSources, publishTheseSources);
         final Map<String, ColumnDefinition<?>> columnDefinitions = new LinkedHashMap<>();
-        final RedirectionIndex redirectionIndex;
+        final MutableRowRedirection rowRedirection;
         if (mode == Mode.SELECT_REDIRECTED_REFRESHING && rowSet.size() < Integer.MAX_VALUE) {
-            redirectionIndex = RedirectionIndex.FACTORY.createRedirectionIndex(rowSet.intSize());
-            analyzer = analyzer.createRedirectionLayer(rowSet, redirectionIndex);
+            rowRedirection = MutableRowRedirection.FACTORY.createRowRedirection(rowSet.intSize());
+            analyzer = analyzer.createRedirectionLayer(rowSet, rowRedirection);
         } else {
-            redirectionIndex = null;
+            rowRedirection = null;
         }
 
         for (final SelectColumn sc : selectColumns) {
@@ -84,12 +84,12 @@ public abstract class SelectAndViewAnalyzer {
                     // TODO(kosak): use DeltaAwareColumnSource
                     WritableSource<?> scs = sc.newDestInstance(targetSize);
                     WritableSource<?> underlyingSource = null;
-                    if (redirectionIndex != null) {
+                    if (rowRedirection != null) {
                         underlyingSource = scs;
-                        scs = new RedirectedColumnSource<>(redirectionIndex, underlyingSource, rowSet.intSize());
+                        scs = new WritableRedirectedColumnSource<>(rowRedirection, underlyingSource, rowSet.intSize());
                     }
                     analyzer = analyzer.createLayerForSelect(sc.getName(), sc, scs, underlyingSource, distinctDeps,
-                            mcsBuilder, redirectionIndex != null);
+                            mcsBuilder, rowRedirection != null);
                     break;
                 }
                 default:
@@ -104,8 +104,8 @@ public abstract class SelectAndViewAnalyzer {
         return new BaseLayer(sources, publishTheseSources);
     }
 
-    private RedirectionLayer createRedirectionLayer(TrackingRowSet resultRowSet, RedirectionIndex redirectionIndex) {
-        return new RedirectionLayer(this, resultRowSet, redirectionIndex);
+    private RedirectionLayer createRedirectionLayer(TrackingRowSet resultRowSet, MutableRowRedirection rowRedirection) {
+        return new RedirectionLayer(this, resultRowSet, rowRedirection);
     }
 
     private SelectAndViewAnalyzer createLayerForSelect(String name, SelectColumn sc,

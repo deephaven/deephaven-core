@@ -36,7 +36,7 @@ public class ZeroKeyChunkedAjMergedListener extends MergedListener {
     private final ChunkSsaStamp chunkSsaStamp;
     private final SegmentedSortedArray leftSsa;
     private final SegmentedSortedArray rightSsa;
-    private final RedirectionIndex redirectionIndex;
+    private final MutableRowRedirection rowRedirection;
     private final ModifiedColumnSet leftStampColumn;
     private final ModifiedColumnSet rightStampColumn;
     private final ModifiedColumnSet allRightColumns;
@@ -67,7 +67,7 @@ public class ZeroKeyChunkedAjMergedListener extends MergedListener {
             SsaSsaStamp ssaSsaStamp,
             SegmentedSortedArray leftSsa,
             SegmentedSortedArray rightSsa,
-            RedirectionIndex redirectionIndex,
+            MutableRowRedirection rowRedirection,
             JoinControl joinControl) {
         super(Arrays.asList(leftRecorder, rightRecorder), Collections.emptyList(), listenerDescription, result);
         this.leftRecorder = leftRecorder;
@@ -81,7 +81,7 @@ public class ZeroKeyChunkedAjMergedListener extends MergedListener {
         this.ssaSsaStamp = ssaSsaStamp;
         this.leftSsa = leftSsa;
         this.rightSsa = rightSsa;
-        this.redirectionIndex = redirectionIndex;
+        this.rowRedirection = rowRedirection;
 
         leftChunkSize = joinControl.leftChunkSize();
         rightChunkSize = joinControl.rightChunkSize();
@@ -138,7 +138,7 @@ public class ZeroKeyChunkedAjMergedListener extends MergedListener {
                 }
 
                 if (leftRestampRemovals.isNonempty()) {
-                    leftRestampRemovals.forAllRowKeys(redirectionIndex::removeVoid);
+                    leftRestampRemovals.forAllRowKeys(rowRedirection::removeVoid);
 
                     try (final RowSequence.Iterator leftRsIt = leftRestampRemovals.getRowSequenceIterator()) {
                         assert leftFillContext != null;
@@ -166,7 +166,7 @@ public class ZeroKeyChunkedAjMergedListener extends MergedListener {
                 if (leftShifted.nonempty()) {
                     // now we apply the left shifts, so that anything in our SSA is a relevant thing to stamp
                     try (final RowSet prevRowSet = leftTable.getRowSet().getPrevRowSet()) {
-                        redirectionIndex.applyShift(prevRowSet, leftShifted);
+                        rowRedirection.applyShift(prevRowSet, leftShifted);
                     }
                     ChunkedAjUtilities.bothIncrementalLeftSsaShift(leftShifted, leftSsa, leftRestampRemovals, leftTable,
                             leftChunkSize, leftStampSource);
@@ -211,7 +211,7 @@ public class ZeroKeyChunkedAjMergedListener extends MergedListener {
 
                             rightSsa.removeAndGetPrior(rightStampValues, rightStampKeys, priorRedirections);
                             ssaSsaStamp.processRemovals(leftSsa, rightStampValues, rightStampKeys, priorRedirections,
-                                    redirectionIndex, modifiedBuilder, disallowExactMatch);
+                                    rowRedirection, modifiedBuilder, disallowExactMatch);
                         }
                     }
 
@@ -246,7 +246,7 @@ public class ZeroKeyChunkedAjMergedListener extends MergedListener {
                                             shiftRightStampValues.get());
 
                                     ssaSsaStamp.applyShift(leftSsa, shiftRightStampValues.get(),
-                                            shiftRightStampKeys.get(), sit.shiftDelta(), redirectionIndex,
+                                            shiftRightStampKeys.get(), sit.shiftDelta(), rowRedirection,
                                             disallowExactMatch);
                                     rightSsa.applyShiftReverse(shiftRightStampValues.get(), shiftRightStampKeys.get(),
                                             sit.shiftDelta());
@@ -261,7 +261,7 @@ public class ZeroKeyChunkedAjMergedListener extends MergedListener {
 
                                             rightSsa.applyShift(rightStampValues, rightStampKeys, sit.shiftDelta());
                                             ssaSsaStamp.applyShift(leftSsa, rightStampValues, rightStampKeys,
-                                                    sit.shiftDelta(), redirectionIndex, disallowExactMatch);
+                                                    sit.shiftDelta(), rowRedirection, disallowExactMatch);
                                         }
                                     }
                                 }
@@ -319,7 +319,7 @@ public class ZeroKeyChunkedAjMergedListener extends MergedListener {
                                 stampCompact.compact(stampChunk, retainStamps);
 
                                 ssaSsaStamp.processInsertion(leftSsa, stampChunk, insertedIndices, nextRightValue,
-                                        redirectionIndex, modifiedBuilder, endsWithLastValue, disallowExactMatch);
+                                        rowRedirection, modifiedBuilder, endsWithLastValue, disallowExactMatch);
                             }
                         }
                     }
@@ -332,7 +332,7 @@ public class ZeroKeyChunkedAjMergedListener extends MergedListener {
                                 rightStampSource.fillChunk(fillContext, rightStampValues, chunkOk);
                                 chunkOk.fillRowKeyChunk(rightStampKeys);
                                 sortKernel.sort(rightStampKeys, rightStampValues);
-                                ssaSsaStamp.findModified(leftSsa, redirectionIndex, rightStampValues, rightStampKeys,
+                                ssaSsaStamp.findModified(leftSsa, rowRedirection, rightStampValues, rightStampKeys,
                                         modifiedBuilder, disallowExactMatch);
                             }
                         }
@@ -382,9 +382,9 @@ public class ZeroKeyChunkedAjMergedListener extends MergedListener {
                             final long leftKey = leftStampKeys.get(ii);
                             final long rightKey = rightKeysForLeft.get(ii);
                             if (rightKey == RowSet.NULL_ROW_KEY) {
-                                redirectionIndex.removeVoid(leftKey);
+                                rowRedirection.removeVoid(leftKey);
                             } else {
-                                redirectionIndex.putVoid(leftKey, rightKey);
+                                rowRedirection.putVoid(leftKey, rightKey);
                             }
                         }
                     }

@@ -52,7 +52,7 @@ public class SortListener extends BaseTable.ListenerImpl {
     private final ColumnSource<Comparable<?>>[] columnsToSortBy;
     private final MutableRowSet resultRowSet;
     private final SortingOrder[] order;
-    private final RedirectionIndex sortMapping;
+    private final MutableRowRedirection sortMapping;
     private final ColumnSource<Comparable<?>>[] sortedColumnsToSortBy;
     private final EffortTracker effortTracker;
 
@@ -62,9 +62,9 @@ public class SortListener extends BaseTable.ListenerImpl {
     private final ModifiedColumnSet sortColumnSet;
 
     public SortListener(Table parent, QueryTable result, HashMapK4V4 reverseLookup,
-            ColumnSource<Comparable<?>>[] columnsToSortBy, SortingOrder[] order,
-            RedirectionIndex sortMapping, ColumnSource<Comparable<?>>[] sortedColumnsToSortBy,
-            ModifiedColumnSet.Transformer mcsTransformer, ModifiedColumnSet sortColumnSet) {
+                        ColumnSource<Comparable<?>>[] columnsToSortBy, SortingOrder[] order,
+                        MutableRowRedirection sortMapping, ColumnSource<Comparable<?>>[] sortedColumnsToSortBy,
+                        ModifiedColumnSet.Transformer mcsTransformer, ModifiedColumnSet sortColumnSet) {
         super("sortInternal", parent, result);
         this.parent = parent;
         this.result = result;

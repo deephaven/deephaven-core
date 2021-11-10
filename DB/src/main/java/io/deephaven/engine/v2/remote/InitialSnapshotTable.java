@@ -12,7 +12,7 @@ import io.deephaven.engine.tables.utils.DateTime;
 import io.deephaven.engine.v2.QueryTable;
 import io.deephaven.engine.v2.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.sources.RedirectedColumnSource;
+import io.deephaven.engine.v2.sources.WritableRedirectedColumnSource;
 import io.deephaven.engine.v2.sources.WritableSource;
 import io.deephaven.engine.v2.utils.*;
 
@@ -27,12 +27,12 @@ public class InitialSnapshotTable extends QueryTable {
     protected final MutableRowSet populatedRows;
     protected final MutableRowSet[] populatedCells;
     protected WritableSource<?>[] writableSources;
-    protected RedirectionIndex redirectionIndex;
+    protected MutableRowRedirection rowRedirection;
 
     private final BitSet subscribedColumns;
 
     protected InitialSnapshotTable(Map<String, ? extends ColumnSource<?>> result, WritableSource<?>[] writableSources,
-            RedirectionIndex redirectionIndex, BitSet subscribedColumns) {
+                                   MutableRowRedirection rowRedirection, BitSet subscribedColumns) {
         super(RowSetFactory.empty().toTracking(), result);
         this.subscribedColumns = subscribedColumns;
         this.writableSources = writableSources;
@@ -42,7 +42,7 @@ public class InitialSnapshotTable extends QueryTable {
             setters[ii] = getSetter(writableSources[ii]);
             this.populatedCells[ii] = RowSetFactory.fromKeys();
         }
-        this.redirectionIndex = redirectionIndex;
+        this.rowRedirection = rowRedirection;
         this.populatedRows = RowSetFactory.fromKeys();
     }
 
@@ -118,7 +118,7 @@ public class InitialSnapshotTable extends QueryTable {
                             ((Setter) setters[ii]).set(snapshot.dataColumns[ii], arrayIndex, destIndex);
                         }
                     }
-                    final long prevIndex = redirectionIndex.put(addedKey, destIndex);
+                    final long prevIndex = rowRedirection.put(addedKey, destIndex);
                     Assert.assertion(prevIndex == -1, "prevIndex == -1", prevIndex, "prevIndex");
                     if (populationIt != null) {
                         nextInViewport = populationIt.hasNext() ? populationIt.nextLong() : -1;
@@ -187,20 +187,20 @@ public class InitialSnapshotTable extends QueryTable {
             BitSet subscribedColumns) {
         final ColumnDefinition<?>[] columns = definition.getColumns();
         WritableSource<?>[] writableSources = new WritableSource[columns.length];
-        RedirectionIndex redirectionIndex = RedirectionIndex.FACTORY.createRedirectionIndex(8);
+        MutableRowRedirection rowRedirection = MutableRowRedirection.FACTORY.createRowRedirection(8);
         LinkedHashMap<String, ColumnSource<?>> finalColumns = new LinkedHashMap<>();
         for (int i = 0; i < columns.length; i++) {
             writableSources[i] = ArrayBackedColumnSource.getMemoryColumnSource(0, columns[i].getDataType(),
                     columns[i].getComponentType());
             finalColumns.put(columns[i].getName(),
-                    new RedirectedColumnSource<>(redirectionIndex, writableSources[i], 0));
+                    new WritableRedirectedColumnSource<>(rowRedirection, writableSources[i], 0));
         }
         // This table does not run, so we don't need to tell our redirection rowSet or column source to start
         // tracking
         // prev values.
 
         InitialSnapshotTable initialSnapshotTable =
-                new InitialSnapshotTable(finalColumns, writableSources, redirectionIndex, subscribedColumns);
+                new InitialSnapshotTable(finalColumns, writableSources, rowRedirection, subscribedColumns);
         initialSnapshotTable.processInitialSnapshot(snapshot);
         return initialSnapshotTable;
     }

@@ -5,7 +5,6 @@
 package io.deephaven.engine.v2.hashing;
 
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.v2.utils.RedirectionIndex;
 import gnu.trove.TLongCollection;
 import gnu.trove.function.TLongFunction;
 import gnu.trove.impl.PrimeFinder;
@@ -170,9 +169,7 @@ public abstract class HashMapBase implements TNullableLongLongMap {
         // If the size reaches the max allowed value, then throw an exception.
         if (size >= sizeLimit) {
             throw new UnsupportedOperationException(
-                    String.format(
-                            "The Hashtable has exceeded its maximum capacity of %d elements. To get more space you can use the other hashtable implementation by setting the property %s to false",
-                            sizeLimit, RedirectionIndex.USE_LOCK_FREE_IMPL_PROPERTY_NAME));
+                    String.format("The Hashtable has exceeded its maximum capacity of %d elements", sizeLimit));
         }
     }
 

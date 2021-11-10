@@ -4,18 +4,18 @@
 
 package io.deephaven.engine.v2.utils;
 
+import gnu.trove.map.hash.TLongLongHashMap;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.structures.RowSequence;
-import io.deephaven.engine.v2.sources.chunk.Attributes;
+import io.deephaven.engine.v2.sources.chunk.Attributes.RowKeys;
+import io.deephaven.engine.v2.sources.chunk.ChunkSource;
 import io.deephaven.engine.v2.sources.chunk.WritableLongChunk;
-
-import gnu.trove.map.hash.TLongLongHashMap;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
 
-public class ContiguousRedirectionIndexImpl implements RedirectionIndex {
+public class ContiguousMutableRowRedirection implements MutableRowRedirection {
     private static final long UPDATES_KEY_NOT_FOUND = -2L;
 
     // The current state of the world.
@@ -24,10 +24,10 @@ public class ContiguousRedirectionIndexImpl implements RedirectionIndex {
     int size;
     // How things looked on the last clock tick
     private volatile TLongLongHashMap checkpoint;
-    private UpdateCommitter<ContiguousRedirectionIndexImpl> updateCommitter;
+    private UpdateCommitter<ContiguousMutableRowRedirection> updateCommitter;
 
     @SuppressWarnings("unused")
-    public ContiguousRedirectionIndexImpl(int initialCapacity) {
+    public ContiguousMutableRowRedirection(int initialCapacity) {
         redirections = new long[initialCapacity];
         Arrays.fill(redirections, RowSet.NULL_ROW_KEY);
         size = 0;
@@ -35,7 +35,7 @@ public class ContiguousRedirectionIndexImpl implements RedirectionIndex {
         updateCommitter = null;
     }
 
-    public ContiguousRedirectionIndexImpl(long[] redirections) {
+    public ContiguousMutableRowRedirection(long[] redirections) {
         this.redirections = redirections;
         size = redirections.length;
         checkpoint = null;
@@ -43,22 +43,23 @@ public class ContiguousRedirectionIndexImpl implements RedirectionIndex {
     }
 
     @Override
-    public long put(long key, long index) {
-        Require.requirement(key <= Integer.MAX_VALUE && key >= 0, "key <= Integer.MAX_VALUE && key >= 0", key, "key");
-        if (key >= redirections.length) {
-            final long[] newRedirections = new long[Math.max((int) key + 100, redirections.length * 2)];
+    public long put(long outerRowKey, long innerRowKey) {
+        Require.requirement(outerRowKey <= Integer.MAX_VALUE && outerRowKey >= 0,
+                "key <= Integer.MAX_VALUE && key >= 0", outerRowKey, "key");
+        if (outerRowKey >= redirections.length) {
+            final long[] newRedirections = new long[Math.max((int) outerRowKey + 100, redirections.length * 2)];
             System.arraycopy(redirections, 0, newRedirections, 0, redirections.length);
             Arrays.fill(newRedirections, redirections.length, newRedirections.length, RowSet.NULL_ROW_KEY);
             redirections = newRedirections;
         }
-        final long previous = redirections[(int) key];
+        final long previous = redirections[(int) outerRowKey];
         if (previous == RowSet.NULL_ROW_KEY) {
             size++;
         }
-        redirections[(int) key] = index;
+        redirections[(int) outerRowKey] = innerRowKey;
 
-        if (previous != index) {
-            onRemove(key, previous);
+        if (previous != innerRowKey) {
+            onRemove(outerRowKey, previous);
         }
         return previous;
     }
@@ -72,70 +73,70 @@ public class ContiguousRedirectionIndexImpl implements RedirectionIndex {
     }
 
     @Override
-    public long get(long key) {
-        if (key < 0 || key >= redirections.length) {
+    public long get(long outerRowKey) {
+        if (outerRowKey < 0 || outerRowKey >= redirections.length) {
             return RowSet.NULL_ROW_KEY;
         }
-        return redirections[(int) key];
+        return redirections[(int) outerRowKey];
     }
 
     @Override
     public void fillChunk(
-            @NotNull final FillContext fillContext,
-            @NotNull final WritableLongChunk<Attributes.RowKeys> mappedKeysOut,
-            @NotNull final RowSequence keysToMap) {
-        mappedKeysOut.setSize(0);
-        keysToMap.forAllRowKeyRanges((final long start, final long end) -> {
+            @NotNull final ChunkSource.FillContext fillContext,
+            @NotNull final WritableLongChunk<? extends RowKeys> innerRowKeys,
+            @NotNull final RowSequence outerRowKeys) {
+        innerRowKeys.setSize(0);
+        outerRowKeys.forAllRowKeyRanges((final long start, final long end) -> {
             for (long v = start; v <= end; ++v) {
-                mappedKeysOut.add(redirections[(int) v]);
+                innerRowKeys.add(redirections[(int) v]);
             }
         });
     }
 
     @Override
-    public long getPrev(long key) {
+    public long getPrev(long outerRowKey) {
         if (checkpoint != null) {
             synchronized (this) {
-                final long result = checkpoint.get(key);
+                final long result = checkpoint.get(outerRowKey);
                 if (result != UPDATES_KEY_NOT_FOUND) {
                     return result;
                 }
             }
         }
-        return get(key);
+        return get(outerRowKey);
     }
 
     @Override
     public void fillPrevChunk(
-            @NotNull final FillContext fillContext,
-            @NotNull final WritableLongChunk<Attributes.RowKeys> mappedKeysOut,
-            @NotNull final RowSequence keysToMap) {
+            @NotNull final ChunkSource.FillContext fillContext,
+            @NotNull final WritableLongChunk<? extends RowKeys> innerRowKeys,
+            @NotNull final RowSequence outerRowKeys) {
         if (checkpoint == null) {
-            fillChunk(fillContext, mappedKeysOut, keysToMap);
+            fillChunk(fillContext, innerRowKeys, outerRowKeys);
             return;
         }
 
         synchronized (this) {
-            mappedKeysOut.setSize(0);
-            keysToMap.forAllRowKeyRanges((final long start, final long end) -> {
+            innerRowKeys.setSize(0);
+            outerRowKeys.forAllRowKeyRanges((final long start, final long end) -> {
                 for (long v = start; v <= end; ++v) {
                     long result = checkpoint.get(v);
                     if (result == UPDATES_KEY_NOT_FOUND) {
                         result = redirections[(int) v];
                     }
-                    mappedKeysOut.add(result);
+                    innerRowKeys.add(result);
                 }
             });
         }
     }
 
     @Override
-    public long remove(long leftIndex) {
-        final long removed = redirections[(int) leftIndex];
-        redirections[(int) leftIndex] = RowSet.NULL_ROW_KEY;
+    public long remove(long outerRowKey) {
+        final long removed = redirections[(int) outerRowKey];
+        redirections[(int) outerRowKey] = RowSet.NULL_ROW_KEY;
         if (removed != RowSet.NULL_ROW_KEY) {
             size--;
-            onRemove(leftIndex, removed);
+            onRemove(outerRowKey, removed);
         }
         return removed;
     }
@@ -144,7 +145,7 @@ public class ContiguousRedirectionIndexImpl implements RedirectionIndex {
         Assert.eqNull(updateCommitter, "updateCommitter");
         checkpoint =
                 new TLongLongHashMap(Math.min(size, 1024 * 1024), 0.75f, UPDATES_KEY_NOT_FOUND, UPDATES_KEY_NOT_FOUND);
-        updateCommitter = new UpdateCommitter<>(this, ContiguousRedirectionIndexImpl::commitUpdates);
+        updateCommitter = new UpdateCommitter<>(this, ContiguousMutableRowRedirection::commitUpdates);
     }
 
     private synchronized void commitUpdates() {

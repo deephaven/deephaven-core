@@ -6,7 +6,6 @@ package io.deephaven.engine.v2;
 import io.deephaven.base.verify.Require;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.structures.RowSequence;
-import io.deephaven.engine.structures.rowsequence.RowSequenceUtil;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.v2.hashing.*;
 // this is ugly to have twice, but we do need it twice for replication
@@ -20,7 +19,6 @@ import io.deephaven.engine.v2.sources.chunk.Attributes.*;
 import io.deephaven.engine.v2.utils.*;
 
 
-import io.deephaven.util.SafeCloseableArray;
 import org.jetbrains.annotations.NotNull;
 
 // region extra imports
@@ -1189,15 +1187,15 @@ class StaticChunkedNaturalJoinStateManager
     }
 
     // region extraction functions
-    RedirectionIndex buildRedirectionIndexFromHashSlot(QueryTable leftTable, boolean exactMatch, LongArraySource leftHashSlots, JoinControl.RedirectionType redirectionType) {
-        return buildRedirectionIndex(leftTable, exactMatch, position -> getStateValue(leftHashSlots, position), redirectionType);
+    MutableRowRedirection buildRowRedirectionFromHashSlot(QueryTable leftTable, boolean exactMatch, LongArraySource leftHashSlots, JoinControl.RedirectionType redirectionType) {
+        return buildRowRedirection(leftTable, exactMatch, position -> getStateValue(leftHashSlots, position), redirectionType);
     }
 
-    RedirectionIndex buildRedirectionIndexFromRedirections(QueryTable leftTable, boolean exactMatch, LongArraySource leftRedirections, JoinControl.RedirectionType redirectionType) {
-        return buildRedirectionIndex(leftTable, exactMatch, leftRedirections::getLong, redirectionType);
+    MutableRowRedirection buildRowRedirectionFromRedirections(QueryTable leftTable, boolean exactMatch, LongArraySource leftRedirections, JoinControl.RedirectionType redirectionType) {
+        return buildRowRedirection(leftTable, exactMatch, leftRedirections::getLong, redirectionType);
     }
 
-    RedirectionIndex buildGroupedRedirectionIndex(QueryTable leftTable, boolean exactMatch, long groupingSize, LongArraySource leftHashSlots, ArrayBackedColumnSource<RowSet> leftIndices, JoinControl.RedirectionType redirectionType) {
+    MutableRowRedirection buildGroupedRowRedirection(QueryTable leftTable, boolean exactMatch, long groupingSize, LongArraySource leftHashSlots, ArrayBackedColumnSource<RowSet> leftIndices, JoinControl.RedirectionType redirectionType) {
         switch (redirectionType) {
             case Contiguous: {
                 if (!leftTable.isFlat()) {
@@ -1211,7 +1209,7 @@ class StaticChunkedNaturalJoinStateManager
                     final RowSet leftRowSetForKey = leftIndices.get(ii);
                     leftRowSetForKey.forAllRowKeys((long ll) -> innerIndex[(int) ll] = rightSide);
                 }
-                return new ContiguousRedirectionIndexImpl(innerIndex);
+                return new ContiguousMutableRowRedirection(innerIndex);
             }
             case Sparse: {
                 final LongSparseArraySource sparseRedirections = new LongSparseArraySource();
@@ -1225,10 +1223,10 @@ class StaticChunkedNaturalJoinStateManager
                         leftRowSetForKey.forAllRowKeys((long ll) -> sparseRedirections.set(ll, rightSide));
                     }
                 }
-                return new LongColumnSourceRedirectionIndex(sparseRedirections);
+                return new LongColumnSourceMutableRowRedirection(sparseRedirections);
             }
             case Hash: {
-                final RedirectionIndex redirectionIndex = RedirectionIndexLockFreeImpl.FACTORY.createRedirectionIndex(leftTable.intSize());
+                final MutableRowRedirection rowRedirection = MutableRowRedirectionLockFree.FACTORY.createRowRedirection(leftTable.intSize());
 
                 for (int ii = 0; ii < groupingSize; ++ii) {
                     final long rightSide = getStateValue(leftHashSlots, ii);
@@ -1236,11 +1234,11 @@ class StaticChunkedNaturalJoinStateManager
                     checkExactMatch(exactMatch, ii, rightSide);
                     if (rightSide != NO_RIGHT_ENTRY_VALUE) {
                         final RowSet leftRowSetForKey = leftIndices.get(ii);
-                        leftRowSetForKey.forAllRowKeys((long ll) -> redirectionIndex.put(ll, rightSide));
+                        leftRowSetForKey.forAllRowKeys((long ll) -> rowRedirection.put(ll, rightSide));
                     }
                 }
 
-                return redirectionIndex;
+                return rowRedirection;
             }
         }
         throw new IllegalStateException("Bad redirectionType: " + redirectionType);

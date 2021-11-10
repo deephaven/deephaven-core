@@ -9,6 +9,6 @@
   "set": "*Overload 1*  \n  :param key: long\n  :param value: RedirectedColumnSource.T\n  \n*Overload 2*  \n  :param key: long\n  :param value: byte\n  \n*Overload 3*  \n  :param key: long\n  :param value: char\n  \n*Overload 4*  \n  :param key: long\n  :param value: double\n  \n*Overload 5*  \n  :param key: long\n  :param value: float\n  \n*Overload 6*  \n  :param key: long\n  :param value: int\n  \n*Overload 7*  \n  :param key: long\n  :param value: long\n  \n*Overload 8*  \n  :param key: long\n  :param value: short"
  },
  "path": "io.deephaven.engine.v2.sources.RedirectedColumnSource",
- "text": "A ColumnSource that provides a redirected view into another ColumnSource by mapping keys using a\n RedirectionIndex.",
+ "text": "A ColumnSource that provides a redirected view into another ColumnSource by mapping keys using a\n RowRedirection.",
  "typeName": "class"
 }

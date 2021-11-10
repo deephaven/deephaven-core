@@ -1,5 +1,5 @@
 {
- "className": "io.deephaven.engine.v2.utils.LongColumnSourceRedirectionIndex",
+ "className": "io.deephaven.engine.v2.utils.LongColumnSourceRowRedirection",
  "methods": {
   "fillFromChunk": "Our default, inefficient, implementation. Inheritors who care should provide a better implementation.\n\n:param context: io.deephaven.engine.v2.sources.WritableChunkSink.FillFromContext\n:param src: io.deephaven.engine.v2.sources.chunk.Chunk<? extendsio.deephaven.engine.v2.sources.chunk.Attributes.Values>\n:param rowSequence: io.deephaven.engine.structures.RowSequence",
   "makeFillFromContext": "Provide a default, empty WritableChunkSink.FillFromContext for use with our default\n WritableSource.fillFromChunk(io.deephaven.engine.v2.sources.WritableChunkSink.FillFromContext, io.deephaven.engine.v2.sources.chunk.Chunk<? extends io.deephaven.engine.v2.sources.chunk.Attributes.Values>, io.deephaven.engine.structures.RowSequence).\n\n:param chunkCapacity: int\n:return: io.deephaven.engine.v2.sources.WritableChunkSink.FillFromContext",
@@ -9,7 +9,7 @@
   "removeAll": ":param keys: io.deephaven.engine.structures.RowSequence",
   "removeVoid": "Like remove, but we do not care about a return value.\n\n:param key: (long) - the key to remove"
  },
- "path": "io.deephaven.engine.v2.utils.LongColumnSourceRedirectionIndex",
- "text": "RedirectionIndex implementation that wraps a WritableSource of longs.",
+ "path": "io.deephaven.engine.v2.utils.LongColumnSourceRowRedirection",
+ "text": "RowRedirection implementation that wraps a WritableSource of longs.",
  "typeName": "class"
 }

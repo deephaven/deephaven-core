@@ -4,19 +4,19 @@
 
 package io.deephaven.engine.v2.join;
 
-import io.deephaven.engine.v2.utils.RedirectionIndex;
+import io.deephaven.engine.v2.utils.RowRedirection;
 
 public abstract class AbstractJoinKeyState implements JoinKeyState {
     private int slot1;
     private int slot2;
 
-    protected final RedirectionIndex redirectionIndex;
+    protected final RowRedirection rowRedirection;
     protected Object key;
     private boolean active = false;
 
-    AbstractJoinKeyState(Object key, RedirectionIndex redirectionIndex) {
+    AbstractJoinKeyState(Object key, RowRedirection rowRedirection) {
         this.key = key;
-        this.redirectionIndex = redirectionIndex;
+        this.rowRedirection = rowRedirection;
     }
 
     public Object getKey() {

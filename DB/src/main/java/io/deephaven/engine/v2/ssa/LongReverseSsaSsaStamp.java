@@ -7,9 +7,10 @@ import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.sources.chunk.Attributes.RowKeys;
 import io.deephaven.engine.v2.sources.chunk.Attributes.Values;
 import io.deephaven.engine.v2.sources.chunk.sized.SizedLongChunk;
+import io.deephaven.engine.v2.utils.MutableRowRedirection;
+import io.deephaven.engine.v2.utils.RowRedirection;
 import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.engine.v2.utils.RowSetBuilderRandom;
-import io.deephaven.engine.v2.utils.RedirectionIndex;
 
 /**
  * Stamp kernel for when the left hand side is a sorted chunk and the right hand side is a ticking SegmentedSortedArray.
@@ -20,14 +21,14 @@ public class LongReverseSsaSsaStamp implements SsaSsaStamp {
     private LongReverseSsaSsaStamp() {} // use the instance
 
     @Override
-    public void processEntry(SegmentedSortedArray leftSsa, SegmentedSortedArray rightSsa, RedirectionIndex redirectionIndex, boolean disallowExactMatch) {
-        processEntry((LongReverseSegmentedSortedArray)leftSsa, (LongReverseSegmentedSortedArray)rightSsa, redirectionIndex, disallowExactMatch);
+    public void processEntry(SegmentedSortedArray leftSsa, SegmentedSortedArray rightSsa, MutableRowRedirection rowRedirection, boolean disallowExactMatch) {
+        processEntry((LongReverseSegmentedSortedArray)leftSsa, (LongReverseSegmentedSortedArray)rightSsa, rowRedirection, disallowExactMatch);
     }
 
-    private static void processEntry(LongReverseSegmentedSortedArray leftSsa, LongReverseSegmentedSortedArray rightSsa, RedirectionIndex redirectionIndex, boolean disallowExactMatch) {
+    private static void processEntry(LongReverseSegmentedSortedArray leftSsa, LongReverseSegmentedSortedArray rightSsa, MutableRowRedirection rowRedirection, boolean disallowExactMatch) {
         final long rightSize = rightSsa.size();
         if (rightSize == 0) {
-            fillWithNull(redirectionIndex, leftSsa.iterator(disallowExactMatch, false));
+            fillWithNull(rowRedirection, leftSsa.iterator(disallowExactMatch, false));
             return;
         }
 
@@ -39,11 +40,11 @@ public class LongReverseSsaSsaStamp implements SsaSsaStamp {
             final long leftValue = leftIt.getValue();
             final int comparison = doComparison(leftValue, rightIt.getValue());
             if (disallowExactMatch ? comparison <= 0 : comparison < 0) {
-                redirectionIndex.removeVoid(leftIt.getKey());
+                rowRedirection.removeVoid(leftIt.getKey());
                 continue;
             }
             else if (comparison == 0) {
-                redirectionIndex.putVoid(leftIt.getKey(), rightIt.getKey());
+                rowRedirection.putVoid(leftIt.getKey(), rightIt.getKey());
                 continue;
             }
 
@@ -51,40 +52,40 @@ public class LongReverseSsaSsaStamp implements SsaSsaStamp {
 
             final long redirectionKey = rightIt.getKey();
             if (!rightIt.hasNext()) {
-                redirectionIndex.put(leftIt.getKey(), redirectionKey);
-                fillWithValue(redirectionIndex, leftIt, redirectionKey);
+                rowRedirection.put(leftIt.getKey(), redirectionKey);
+                fillWithValue(rowRedirection, leftIt, redirectionKey);
                 return;
             } else {
-                redirectionIndex.putVoid(leftIt.getKey(), redirectionKey);
+                rowRedirection.putVoid(leftIt.getKey(), redirectionKey);
                 final long nextRightValue = rightIt.nextValue();
                 while (leftIt.hasNext() && (disallowExactMatch ? leq(leftIt.nextValue(), nextRightValue) :  lt(leftIt.nextValue(), nextRightValue))) {
                     leftIt.next();
-                    redirectionIndex.put(leftIt.getKey(), redirectionKey);
+                    rowRedirection.put(leftIt.getKey(), redirectionKey);
                 }
             }
         }
     }
 
-    private static void fillWithNull(RedirectionIndex redirectionIndex, LongReverseSegmentedSortedArray.Iterator leftIt) {
+    private static void fillWithNull(MutableRowRedirection rowRedirection, LongReverseSegmentedSortedArray.Iterator leftIt) {
         while (leftIt.hasNext()) {
             leftIt.next();
-            redirectionIndex.removeVoid(leftIt.getKey());
+            rowRedirection.removeVoid(leftIt.getKey());
         }
     }
 
-    private static void fillWithValue(RedirectionIndex redirectionIndex, LongReverseSegmentedSortedArray.Iterator leftIt, long rightKey) {
+    private static void fillWithValue(MutableRowRedirection rowRedirection, LongReverseSegmentedSortedArray.Iterator leftIt, long rightKey) {
         while (leftIt.hasNext()) {
             leftIt.next();
-            redirectionIndex.putVoid(leftIt.getKey(), rightKey);
+            rowRedirection.putVoid(leftIt.getKey(), rightKey);
         }
     }
 
     @Override
-    public void processRemovals(SegmentedSortedArray leftSsa, Chunk<? extends Values> rightStampChunk, LongChunk<RowKeys> rightKeys, WritableLongChunk<RowKeys> priorRedirections, RedirectionIndex redirectionIndex, RowSetBuilderRandom modifiedBuilder, boolean disallowExactMatch) {
-        processRemovals((LongReverseSegmentedSortedArray)leftSsa, rightStampChunk.asLongChunk(), rightKeys, priorRedirections, redirectionIndex, modifiedBuilder, disallowExactMatch);
+    public void processRemovals(SegmentedSortedArray leftSsa, Chunk<? extends Values> rightStampChunk, LongChunk<RowKeys> rightKeys, WritableLongChunk<RowKeys> priorRedirections, MutableRowRedirection rowRedirection, RowSetBuilderRandom modifiedBuilder, boolean disallowExactMatch) {
+        processRemovals((LongReverseSegmentedSortedArray)leftSsa, rightStampChunk.asLongChunk(), rightKeys, priorRedirections, rowRedirection, modifiedBuilder, disallowExactMatch);
     }
 
-    static private void processRemovals(LongReverseSegmentedSortedArray leftSsa, LongChunk<? extends Values> rightStampChunk, LongChunk<Attributes.RowKeys> rightKeys, WritableLongChunk<Attributes.RowKeys> nextRedirections, RedirectionIndex redirectionIndex, RowSetBuilderRandom modifiedBuilder, boolean disallowExactMatch) {
+    static private void processRemovals(LongReverseSegmentedSortedArray leftSsa, LongChunk<? extends Values> rightStampChunk, LongChunk<Attributes.RowKeys> rightKeys, WritableLongChunk<Attributes.RowKeys> nextRedirections, MutableRowRedirection rowRedirection, RowSetBuilderRandom modifiedBuilder, boolean disallowExactMatch) {
         // When removing a row, record the stamp, redirection key, and prior redirection key.  Binary search
         // in the left for the removed key to find the smallest value geq the removed right.  Update all rows
         // with the removed redirection to the previous key.
@@ -105,7 +106,7 @@ public class LongReverseSsaSsaStamp implements SsaSsaStamp {
 
                 while (leftIt.hasNext()) {
                     final long leftKey = leftIt.nextKey();
-                    final long leftRedirectionKey = redirectionIndex.get(leftKey);
+                    final long leftRedirectionKey = rowRedirection.get(leftKey);
                     if (leftRedirectionKey == rightStampKey) {
                         if (mks == capacity) {
                             capacity *= 2;
@@ -113,9 +114,9 @@ public class LongReverseSsaSsaStamp implements SsaSsaStamp {
                         }
                         modifiedKeys.get().set(mks++, leftKey);
                         if (newRightStampKey == RowSet.NULL_ROW_KEY) {
-                            redirectionIndex.removeVoid(leftKey);
+                            rowRedirection.removeVoid(leftKey);
                         } else {
-                            redirectionIndex.putVoid(leftKey, newRightStampKey);
+                            rowRedirection.putVoid(leftKey, newRightStampKey);
                         }
                         leftIt.next();
                     } else {
@@ -133,11 +134,11 @@ public class LongReverseSsaSsaStamp implements SsaSsaStamp {
     }
 
     @Override
-    public void processInsertion(SegmentedSortedArray leftSsa, Chunk<? extends Values> rightStampChunk, LongChunk<Attributes.RowKeys> rightKeys, Chunk<Values> nextRightValue, RedirectionIndex redirectionIndex, RowSetBuilderRandom modifiedBuilder, boolean endsWithLastValue, boolean disallowExactMatch) {
-        processInsertion((LongReverseSegmentedSortedArray)leftSsa, rightStampChunk.asLongChunk(), rightKeys, nextRightValue.asLongChunk(), redirectionIndex, modifiedBuilder, endsWithLastValue, disallowExactMatch);
+    public void processInsertion(SegmentedSortedArray leftSsa, Chunk<? extends Values> rightStampChunk, LongChunk<Attributes.RowKeys> rightKeys, Chunk<Values> nextRightValue, MutableRowRedirection rowRedirection, RowSetBuilderRandom modifiedBuilder, boolean endsWithLastValue, boolean disallowExactMatch) {
+        processInsertion((LongReverseSegmentedSortedArray)leftSsa, rightStampChunk.asLongChunk(), rightKeys, nextRightValue.asLongChunk(), rowRedirection, modifiedBuilder, endsWithLastValue, disallowExactMatch);
     }
 
-    static private void processInsertion(LongReverseSegmentedSortedArray leftSsa, LongChunk<? extends Values> rightStampChunk, LongChunk<Attributes.RowKeys> rightKeys, LongChunk<Values> nextRightValue, RedirectionIndex redirectionIndex, RowSetBuilderRandom modifiedBuilder, boolean endsWithLastValue, boolean disallowExactMatch) {
+    static private void processInsertion(LongReverseSegmentedSortedArray leftSsa, LongChunk<? extends Values> rightStampChunk, LongChunk<Attributes.RowKeys> rightKeys, LongChunk<Values> nextRightValue, MutableRowRedirection rowRedirection, RowSetBuilderRandom modifiedBuilder, boolean endsWithLastValue, boolean disallowExactMatch) {
         // We've already filtered out duplicate right stamps by the time we get here, which means that the rightStampChunk
         // contains only values that are the last in any given run; and thus are possible matches.
 
@@ -162,7 +163,7 @@ public class LongReverseSsaSsaStamp implements SsaSsaStamp {
                     while (leftIt.hasNext()) {
                         leftIt.next();
                         final long leftKey = leftIt.getKey();
-                        redirectionIndex.putVoid(leftKey, rightStampKey);
+                        rowRedirection.putVoid(leftKey, rightStampKey);
                         if (mks == capacity) {
                             capacity *= 2;
                             modifiedKeys.ensureCapacityPreserve(capacity).setSize(capacity);
@@ -175,7 +176,7 @@ public class LongReverseSsaSsaStamp implements SsaSsaStamp {
                         final long leftValue = leftIt.nextValue();
                         if (disallowExactMatch ? leq(leftValue, nextRight) : lt(leftValue, nextRight)) {
                             final long leftKey = leftIt.nextKey();
-                            redirectionIndex.putVoid(leftKey, rightStampKey);
+                            rowRedirection.putVoid(leftKey, rightStampKey);
                             if (mks == capacity) {
                                 capacity *= 2;
                                 modifiedKeys.ensureCapacityPreserve(capacity).setSize(capacity);
@@ -197,11 +198,11 @@ public class LongReverseSsaSsaStamp implements SsaSsaStamp {
     }
 
     @Override
-    public void findModified(SegmentedSortedArray leftSsa, RedirectionIndex redirectionIndex, Chunk<? extends Values> rightStampChunk, LongChunk<Attributes.RowKeys> rightStampIndices, RowSetBuilderRandom modifiedBuilder, boolean disallowExactMatch) {
-        findModified((LongReverseSegmentedSortedArray)leftSsa, redirectionIndex, rightStampChunk.asLongChunk(), rightStampIndices, modifiedBuilder, disallowExactMatch);
+    public void findModified(SegmentedSortedArray leftSsa, RowRedirection rowRedirection, Chunk<? extends Values> rightStampChunk, LongChunk<Attributes.RowKeys> rightStampIndices, RowSetBuilderRandom modifiedBuilder, boolean disallowExactMatch) {
+        findModified((LongReverseSegmentedSortedArray)leftSsa, rowRedirection, rightStampChunk.asLongChunk(), rightStampIndices, modifiedBuilder, disallowExactMatch);
     }
 
-    private static void findModified(LongReverseSegmentedSortedArray leftSsa, RedirectionIndex redirectionIndex, LongChunk<? extends Values> rightStampChunk, LongChunk<Attributes.RowKeys> rightStampIndices, RowSetBuilderRandom modifiedBuilder, boolean disallowExactMatch) {
+    private static void findModified(LongReverseSegmentedSortedArray leftSsa, RowRedirection rowRedirection, LongChunk<? extends Values> rightStampChunk, LongChunk<Attributes.RowKeys> rightStampIndices, RowSetBuilderRandom modifiedBuilder, boolean disallowExactMatch) {
         final LongReverseSegmentedSortedArray.Iterator leftIt = leftSsa.iterator(disallowExactMatch, false);
 
         try (final SizedLongChunk<Attributes.RowKeys> modifiedKeys = new SizedLongChunk<>()) {
@@ -216,7 +217,7 @@ public class LongReverseSsaSsaStamp implements SsaSsaStamp {
                 leftIt.advanceToBeforeFirst(rightStampValue);
 
                 final long rightStampKey = rightStampIndices.get(ii);
-                while (leftIt.hasNext() && redirectionIndex.get(leftIt.nextKey()) == rightStampKey) {
+                while (leftIt.hasNext() && rowRedirection.get(leftIt.nextKey()) == rightStampKey) {
                     leftIt.next();
 
                     if (mks == capacity) {
@@ -236,11 +237,11 @@ public class LongReverseSsaSsaStamp implements SsaSsaStamp {
     }
 
     @Override
-    public void applyShift(SegmentedSortedArray leftSsa, Chunk<? extends Values> rightStampChunk, LongChunk<Attributes.RowKeys> rightStampKeys, long shiftDelta, RedirectionIndex redirectionIndex, boolean disallowExactMatch) {
-        applyShift((LongReverseSegmentedSortedArray)leftSsa, rightStampChunk.asLongChunk(), rightStampKeys, shiftDelta, redirectionIndex, disallowExactMatch);
+    public void applyShift(SegmentedSortedArray leftSsa, Chunk<? extends Values> rightStampChunk, LongChunk<Attributes.RowKeys> rightStampKeys, long shiftDelta, MutableRowRedirection rowRedirection, boolean disallowExactMatch) {
+        applyShift((LongReverseSegmentedSortedArray)leftSsa, rightStampChunk.asLongChunk(), rightStampKeys, shiftDelta, rowRedirection, disallowExactMatch);
     }
 
-    private void applyShift(LongReverseSegmentedSortedArray leftSsa, LongChunk<? extends Values> rightStampChunk, LongChunk<Attributes.RowKeys> rightStampKeys, long shiftDelta, RedirectionIndex redirectionIndex, boolean disallowExactMatch) {
+    private void applyShift(LongReverseSegmentedSortedArray leftSsa, LongChunk<? extends Values> rightStampChunk, LongChunk<Attributes.RowKeys> rightStampKeys, long shiftDelta, MutableRowRedirection rowRedirection, boolean disallowExactMatch) {
         final LongReverseSegmentedSortedArray.Iterator leftIt = leftSsa.iterator(disallowExactMatch, false);
 
         for (int ii = 0; ii < rightStampChunk.size(); ++ii) {
@@ -249,9 +250,9 @@ public class LongReverseSsaSsaStamp implements SsaSsaStamp {
             leftIt.advanceToBeforeFirst(rightStampValue);
 
             final long rightStampKey = rightStampKeys.get(ii);
-            while (leftIt.hasNext() && redirectionIndex.get(leftIt.nextKey()) == rightStampKey) {
+            while (leftIt.hasNext() && rowRedirection.get(leftIt.nextKey()) == rightStampKey) {
                 leftIt.next();
-                redirectionIndex.putVoid(leftIt.getKey(), rightStampKey + shiftDelta);
+                rowRedirection.putVoid(leftIt.getKey(), rightStampKey + shiftDelta);
             }
         }
     }

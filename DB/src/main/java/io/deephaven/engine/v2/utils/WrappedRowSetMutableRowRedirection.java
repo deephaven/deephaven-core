@@ -11,33 +11,33 @@ import io.deephaven.engine.v2.sources.chunk.util.LongChunkAppender;
 import io.deephaven.engine.v2.sources.chunk.util.LongChunkIterator;
 import org.jetbrains.annotations.NotNull;
 
-public class WrappedIndexRedirectionIndexImpl implements RedirectionIndex {
+public class WrappedRowSetMutableRowRedirection implements MutableRowRedirection {
 
     /**
      * {@link TrackingMutableRowSet} used to map from outer key (position in the rowSet) to inner key.
      */
     private final TrackingRowSet wrappedRowSet;
 
-    public WrappedIndexRedirectionIndexImpl(final TrackingRowSet wrappedRowSet) {
+    public WrappedRowSetMutableRowRedirection(final TrackingRowSet wrappedRowSet) {
         this.wrappedRowSet = wrappedRowSet;
     }
 
     @Override
-    public synchronized long put(long key, long index) {
+    public synchronized long put(long outerRowKey, long innerRowKey) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public synchronized long get(long key) {
-        return wrappedRowSet.get(key);
+    public synchronized long get(long outerRowKey) {
+        return wrappedRowSet.get(outerRowKey);
     }
 
     @Override
-    public synchronized long getPrev(long key) {
-        return wrappedRowSet.getPrev(key);
+    public synchronized long getPrev(long outerRowKey) {
+        return wrappedRowSet.getPrev(outerRowKey);
     }
 
-    private static final class FillContext implements RedirectionIndex.FillContext {
+    private static final class FillContext implements ChunkSource.FillContext {
 
         private final WritableLongChunk<RowKeys> indexPositions;
 
@@ -53,7 +53,7 @@ public class WrappedIndexRedirectionIndexImpl implements RedirectionIndex {
 
     /*
      * TODO: Switch to this version if we ever uncomment the override for fillChunkUnordered. private static final class
-     * FillContext implements RedirectionIndex.FillContext {
+     * FillContext implements MutableChunkSource.FillContext {
      * 
      * private final int chunkCapacity; private final WritableLongChunk<RowKeys> indexPositions;
      * 
@@ -75,39 +75,39 @@ public class WrappedIndexRedirectionIndexImpl implements RedirectionIndex {
      */
 
     @Override
-    public FillContext makeFillContext(final int chunkCapacity, final SharedContext sharedContext) {
-        // NB: No need to implement sharing at this level. ReadOnlyRedirectedColumnSource uses a SharedContext to share
-        // RedirectionIndex lookup results.
+    public ChunkSource.FillContext makeFillContext(final int chunkCapacity, final SharedContext sharedContext) {
+        // NB: No need to implement sharing at this level. RedirectedColumnSource uses a SharedContext to share
+        // MutableRowRedirection lookup results.
         return new FillContext(chunkCapacity);
     }
 
     @Override
-    public void fillChunk(@NotNull final RedirectionIndex.FillContext fillContext,
-            @NotNull final WritableLongChunk<RowKeys> mappedKeysOut,
-            @NotNull final RowSequence keysToMap) {
+    public void fillChunk(@NotNull final ChunkSource.FillContext fillContext,
+            @NotNull final WritableLongChunk<? extends RowKeys> innerRowKeys,
+            @NotNull final RowSequence outerRowKeys) {
         final WritableLongChunk<RowKeys> indexPositions = ((FillContext) fillContext).indexPositions;
-        keysToMap.fillRowKeyChunk(indexPositions);
-        wrappedRowSet.getKeysForPositions(new LongChunkIterator(indexPositions), new LongChunkAppender(mappedKeysOut));
-        mappedKeysOut.setSize(keysToMap.intSize());
+        outerRowKeys.fillRowKeyChunk(indexPositions);
+        wrappedRowSet.getKeysForPositions(new LongChunkIterator(indexPositions), new LongChunkAppender(innerRowKeys));
+        innerRowKeys.setSize(outerRowKeys.intSize());
     }
 
     @Override
-    public void fillPrevChunk(@NotNull final RedirectionIndex.FillContext fillContext,
-            @NotNull final WritableLongChunk<RowKeys> mappedKeysOut,
-            @NotNull final RowSequence keysToMap) {
+    public void fillPrevChunk(@NotNull final ChunkSource.FillContext fillContext,
+            @NotNull final WritableLongChunk<? extends RowKeys> innerRowKeys,
+            @NotNull final RowSequence outerRowKeys) {
         final WritableLongChunk<RowKeys> indexPositions = ((FillContext) fillContext).indexPositions;
-        keysToMap.fillRowKeyChunk(indexPositions);
+        outerRowKeys.fillRowKeyChunk(indexPositions);
         try (final RowSet prevWrappedIndex = wrappedRowSet.getPrevRowSet()) {
             prevWrappedIndex.getKeysForPositions(new LongChunkIterator(indexPositions),
-                    new LongChunkAppender(mappedKeysOut));
+                    new LongChunkAppender(innerRowKeys));
         }
-        mappedKeysOut.setSize(keysToMap.intSize());
+        innerRowKeys.setSize(outerRowKeys.intSize());
     }
 
     /*
-     * TODO: Uncomment and test this if we ever start using WrappedIndexRedirectionIndexImpl for unordered reads.
+     * TODO: Uncomment and test this if we ever start using WrappedRowSetMutableRowRedirection for unordered reads.
      * 
-     * @Override public void fillChunkUnordered(@NotNull final RedirectionIndex.FillContext fillContext,
+     * @Override public void fillChunkUnordered(@NotNull final MutableChunkSource.FillContext fillContext,
      * 
      * @NotNull final WritableLongChunk<RowKeys> mappedKeysOut,
      * 
@@ -135,7 +135,7 @@ public class WrappedIndexRedirectionIndexImpl implements RedirectionIndex {
     }
 
     @Override
-    public synchronized long remove(long leftIndex) {
+    public synchronized long remove(long outerRowKey) {
         throw new UnsupportedOperationException();
     }
 

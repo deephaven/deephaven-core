@@ -71,7 +71,7 @@ public class SortHelpers {
 
         boolean forEachLong(LongPredicate consumer);
 
-        RedirectionIndex makeHistoricalRedirectionIndex();
+        MutableRowRedirection makeHistoricalRowRedirection();
     }
 
     final static class ArraySortMapping implements SortMapping {
@@ -112,8 +112,8 @@ public class SortHelpers {
         }
 
         @Override
-        public RedirectionIndex makeHistoricalRedirectionIndex() {
-            return new ContiguousRedirectionIndexImpl(mapping);
+        public MutableRowRedirection makeHistoricalRowRedirection() {
+            return new ContiguousMutableRowRedirection(mapping);
         }
     }
 
@@ -155,8 +155,8 @@ public class SortHelpers {
         }
 
         @Override
-        public RedirectionIndex makeHistoricalRedirectionIndex() {
-            return new LongColumnSourceRedirectionIndex(columnSource);
+        public MutableRowRedirection makeHistoricalRowRedirection() {
+            return new LongColumnSourceMutableRowRedirection(columnSource);
         }
     }
 
@@ -202,8 +202,8 @@ public class SortHelpers {
         }
 
         @Override
-        public RedirectionIndex makeHistoricalRedirectionIndex() {
-            return new GroupedRedirectionIndex(size, groupSize, groups);
+        public MutableRowRedirection makeHistoricalRowRedirection() {
+            return new GroupedMutableRowRedirection(size, groupSize, groups);
         }
     }
 
@@ -735,8 +735,8 @@ public class SortHelpers {
     }
 
     @NotNull
-    static RedirectionIndex createSortRedirectionIndex() {
+    static MutableRowRedirection createSortRowRedirection() {
         final WritableSource<Long> sparseLongSource = new LongSparseArraySource();
-        return new LongColumnSourceRedirectionIndex(sparseLongSource);
+        return new LongColumnSourceMutableRowRedirection(sparseLongSource);
     }
 }

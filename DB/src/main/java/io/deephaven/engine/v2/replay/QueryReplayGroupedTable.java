@@ -9,7 +9,7 @@ import io.deephaven.base.verify.Require;
 import io.deephaven.engine.tables.utils.DateTime;
 import io.deephaven.engine.v2.QueryTable;
 import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.sources.ReadOnlyRedirectedColumnSource;
+import io.deephaven.engine.v2.sources.RedirectedColumnSource;
 import io.deephaven.engine.v2.tuples.TupleSource;
 import io.deephaven.engine.v2.tuples.TupleSourceFactory;
 import io.deephaven.engine.v2.utils.*;
@@ -22,16 +22,16 @@ import java.util.PriorityQueue;
 public abstract class QueryReplayGroupedTable extends QueryTable implements Runnable {
 
 
-    protected final RedirectionIndex redirectionIndex;
+    protected final MutableRowRedirection rowRedirection;
     final Replayer replayer;
     protected PriorityQueue<IteratorsAndNextTime> allIterators = new PriorityQueue<>();
 
     private static Map<String, ColumnSource<?>> getResultSources(Map<String, ? extends ColumnSource<?>> input,
-            RedirectionIndex redirectionIndex) {
+            MutableRowRedirection rowRedirection) {
         Map<String, ColumnSource<?>> result = new LinkedHashMap<>();
         for (Map.Entry<String, ? extends ColumnSource<?>> stringEntry : input.entrySet()) {
             ColumnSource<?> value = stringEntry.getValue();
-            result.put(stringEntry.getKey(), new ReadOnlyRedirectedColumnSource<>(redirectionIndex, value));
+            result.put(stringEntry.getKey(), new RedirectedColumnSource<>(rowRedirection, value));
         }
         return result;
     }
@@ -72,10 +72,10 @@ public abstract class QueryReplayGroupedTable extends QueryTable implements Runn
     }
 
     protected QueryReplayGroupedTable(TrackingRowSet rowSet, Map<String, ? extends ColumnSource<?>> input,
-            String timeColumn, Replayer replayer, RedirectionIndex redirectionIndex, String[] groupingColumns) {
+                                      String timeColumn, Replayer replayer, MutableRowRedirection rowRedirection, String[] groupingColumns) {
 
-        super(RowSetFactory.empty().toTracking(), getResultSources(input, redirectionIndex));
-        this.redirectionIndex = redirectionIndex;
+        super(RowSetFactory.empty().toTracking(), getResultSources(input, rowRedirection));
+        this.rowRedirection = rowRedirection;
         Map<Object, RowSet> grouping;
 
         final ColumnSource<?>[] columnSources =

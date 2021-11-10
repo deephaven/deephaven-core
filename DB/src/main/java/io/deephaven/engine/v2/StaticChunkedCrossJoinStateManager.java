@@ -155,7 +155,7 @@ class StaticChunkedCrossJoinStateManager
 
     // region extra variables
     // maintain a mapping from left rowSet to its slot
-    private final RedirectionIndex leftIndexToSlot;
+    private final MutableRowRedirection leftIndexToSlot;
     private long maxRightGroupSize = 0;
     // endregion extra variables
 
@@ -206,7 +206,7 @@ class StaticChunkedCrossJoinStateManager
         // endmixin rehash
 
         // region constructor
-        leftIndexToSlot = JoinRedirectionIndex.makeRedirectionIndex(control, leftTable);
+        leftIndexToSlot = JoinRowRedirection.makeRowRedirection(control, leftTable);
         // endregion constructor
 
         ensureCapacity(tableSize);

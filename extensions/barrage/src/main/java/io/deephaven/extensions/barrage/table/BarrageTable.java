@@ -17,17 +17,9 @@ import io.deephaven.engine.tables.live.UpdateSourceRegistrar;
 import io.deephaven.engine.tables.live.NotificationQueue;
 import io.deephaven.engine.v2.Listener;
 import io.deephaven.engine.v2.QueryTable;
-import io.deephaven.engine.v2.sources.ArrayBackedColumnSource;
-import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.sources.LogicalClock;
-import io.deephaven.engine.v2.sources.RedirectedColumnSource;
-import io.deephaven.engine.v2.sources.ReinterpretUtilities;
-import io.deephaven.engine.v2.sources.WritableChunkSink;
-import io.deephaven.engine.v2.sources.WritableSource;
-import io.deephaven.engine.v2.sources.chunk.Attributes;
-import io.deephaven.engine.v2.sources.chunk.Chunk;
-import io.deephaven.engine.v2.sources.chunk.ChunkType;
-import io.deephaven.engine.v2.sources.chunk.WritableLongChunk;
+import io.deephaven.engine.v2.sources.*;
+import io.deephaven.engine.v2.sources.WritableRedirectedColumnSource;
+import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.utils.*;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.log.LogEntry;
@@ -61,7 +53,7 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
     /** the reinterpretted destination writable sources */
     private final WritableSource<?>[] destSources;
     /** we compact the parent table's key-space and instead redirect; ideal for viewport */
-    private final RedirectionIndex redirectionIndex;
+    private final MutableRowRedirection rowRedirection;
     /** represents which rows in writable source exist but are not mapped to any parent rows */
     private MutableRowSet freeset = RowSetFactory.empty();
 
@@ -113,13 +105,13 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
             final NotificationQueue notificationQueue,
             final LinkedHashMap<String, ColumnSource<?>> columns,
             final WritableSource<?>[] writableSources,
-            final RedirectionIndex redirectionIndex,
+            final MutableRowRedirection rowRedirection,
             final boolean isViewPort) {
         super(RowSetFactory.empty().toTracking(), columns);
         this.registrar = registrar;
         this.notificationQueue = notificationQueue;
 
-        this.redirectionIndex = redirectionIndex;
+        this.rowRedirection = rowRedirection;
         this.refreshEntry = UpdatePerformanceTracker.getInstance()
                 .getEntry("BarrageTable run " + System.identityHashCode(this));
 
@@ -243,7 +235,7 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
 
             // shifts
             if (update.shifted.nonempty()) {
-                redirectionIndex.applyShift(currentRowSet, update.shifted);
+                rowRedirection.applyShift(currentRowSet, update.shifted);
                 update.shifted.apply(currentRowSet);
                 if (populatedRows != null) {
                     update.shifted.apply(populatedRows);
@@ -259,10 +251,10 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
 
             if (update.rowsIncluded.isNonempty()) {
                 try (final WritableChunkSink.FillFromContext redirContext =
-                        redirectionIndex.makeFillFromContext(update.rowsIncluded.intSize());
-                        final RowSet destinationRowSet = getFreeRows(update.rowsIncluded.size())) {
+                        rowRedirection.makeFillFromContext(update.rowsIncluded.intSize());
+                     final RowSet destinationRowSet = getFreeRows(update.rowsIncluded.size())) {
                     // Update redirection mapping:
-                    redirectionIndex.fillFromChunk(redirContext, destinationRowSet.asRowKeyChunk(),
+                    rowRedirection.fillFromChunk(redirContext, destinationRowSet.asRowKeyChunk(),
                             update.rowsIncluded);
 
                     // Update data chunk-wise:
@@ -289,11 +281,11 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
 
                 modifiedColumnSet.setColumnWithIndex(ii);
 
-                try (final RedirectionIndex.FillContext redirContext =
-                        redirectionIndex.makeFillContext(column.rowsModified.intSize(), null);
-                        final WritableLongChunk<Attributes.RowKeys> keys =
+                try (final ChunkSource.FillContext redirContext =
+                        rowRedirection.makeFillContext(column.rowsModified.intSize(), null);
+                     final WritableLongChunk<Attributes.RowKeys> keys =
                                 WritableLongChunk.makeWritableChunk(column.rowsModified.intSize())) {
-                    redirectionIndex.fillChunk(redirContext, keys, column.rowsModified);
+                    rowRedirection.fillChunk(redirContext, keys, column.rowsModified);
                     for (int i = 0; i < keys.size(); ++i) {
                         Assert.notEquals(keys.get(i), "keys[i]", RowSet.NULL_ROW_KEY, "RowSet.NULL_ROW_KEY");
                     }
@@ -374,7 +366,7 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
             redirectedRows.setSize(0);
 
             rowsToFree.forAllRowKeys(next -> {
-                final long prevIndex = redirectionIndex.remove(next);
+                final long prevIndex = rowRedirection.remove(next);
                 Assert.assertion(prevIndex != -1, "prevIndex != -1", prevIndex, "prevIndex", next, "next");
                 redirectedRows.add(prevIndex);
             });
@@ -516,12 +508,12 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
             final boolean isViewPort) {
         final ColumnDefinition<?>[] columns = tableDefinition.getColumns();
         final WritableSource<?>[] writableSources = new WritableSource[columns.length];
-        final RedirectionIndex redirectionIndex = RedirectionIndex.FACTORY.createRedirectionIndex(8);
+        final MutableRowRedirection rowRedirection = MutableRowRedirection.FACTORY.createRowRedirection(8);
         final LinkedHashMap<String, ColumnSource<?>> finalColumns =
-                makeColumns(columns, writableSources, redirectionIndex);
+                makeColumns(columns, writableSources, rowRedirection);
 
         final BarrageTable table =
-                new BarrageTable(registrar, queue, finalColumns, writableSources, redirectionIndex, isViewPort);
+                new BarrageTable(registrar, queue, finalColumns, writableSources, rowRedirection, isViewPort);
 
         // Even if this source table will eventually be static, the data isn't here already. Static tables need to
         // have refreshing set to false after processing data but prior to publishing the object to consumers.
@@ -533,18 +525,18 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
     /**
      * Set up the columns for the replicated table.
      *
-     * @apiNote emptyRedirectionIndex must be initialized and empty.
+     * @apiNote emptyRowRedirection must be initialized and empty.
      */
     @NotNull
     protected static LinkedHashMap<String, ColumnSource<?>> makeColumns(final ColumnDefinition<?>[] columns,
             final WritableSource<?>[] writableSources,
-            final RedirectionIndex emptyRedirectionIndex) {
+            final MutableRowRedirection emptyRowRedirection) {
         final LinkedHashMap<String, ColumnSource<?>> finalColumns = new LinkedHashMap<>();
         for (int ii = 0; ii < columns.length; ii++) {
             writableSources[ii] = ArrayBackedColumnSource.getMemoryColumnSource(0, columns[ii].getDataType(),
                     columns[ii].getComponentType());
             finalColumns.put(columns[ii].getName(),
-                    new RedirectedColumnSource<>(emptyRedirectionIndex, writableSources[ii], 0));
+                    new WritableRedirectedColumnSource<>(emptyRowRedirection, writableSources[ii], 0));
         }
 
         return finalColumns;
@@ -558,7 +550,7 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
         for (final WritableSource<?> ws : destSources) {
             ws.startTrackingPrevValues();
         }
-        redirectionIndex.startTrackingPrevValues();
+        rowRedirection.startTrackingPrevValues();
     }
 
     private void doWakeup() {

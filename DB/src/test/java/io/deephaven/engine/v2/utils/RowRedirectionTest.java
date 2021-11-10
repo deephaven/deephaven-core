@@ -9,91 +9,91 @@ import io.deephaven.engine.v2.RefreshingTableTestCase;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.internal.log.LoggerFactory;
 
-public class RedirectionIndexTest extends RefreshingTableTestCase {
-    private final Logger log = LoggerFactory.getLogger(RedirectionIndexTest.class);
+public class RowRedirectionTest extends RefreshingTableTestCase {
+    private final Logger log = LoggerFactory.getLogger(RowRedirectionTest.class);
 
     public void testBasic() {
-        final RedirectionIndex redirectionIndex = RedirectionIndex.FACTORY.createRedirectionIndex(8);
+        final MutableRowRedirection rowRedirection = MutableRowRedirection.FACTORY.createRowRedirection(8);
         for (int i = 0; i < 3; i++) {
-            redirectionIndex.put(i, i * 2);
+            rowRedirection.put(i, i * 2);
         }
-        final RedirectionIndex redirectionIndex1 = RedirectionIndex.FACTORY.createRedirectionIndex(8);
+        final MutableRowRedirection rowRedirection1 = MutableRowRedirection.FACTORY.createRowRedirection(8);
         for (int i = 0; i < 3; i++) {
-            redirectionIndex1.put(i * 2, i * 4);
+            rowRedirection1.put(i * 2, i * 4);
         }
         for (int i = 0; i < 3; i++) {
-            assertEquals(redirectionIndex.get(i), i * 2);
-            assertEquals(redirectionIndex1.get(i * 2), i * 4);
+            assertEquals(rowRedirection.get(i), i * 2);
+            assertEquals(rowRedirection1.get(i * 2), i * 4);
         }
-        redirectionIndex.startTrackingPrevValues();
-        redirectionIndex1.startTrackingPrevValues();
+        rowRedirection.startTrackingPrevValues();
+        rowRedirection1.startTrackingPrevValues();
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             for (int i = 0; i < 3; i++) {
-                redirectionIndex1.put(i * 2, i * 3);
+                rowRedirection1.put(i * 2, i * 3);
             }
             for (int i = 0; i < 3; i++) {
-                assertEquals(i * 2, redirectionIndex.get(i));
-                assertEquals(i * 2, redirectionIndex.getPrev(i));
+                assertEquals(i * 2, rowRedirection.get(i));
+                assertEquals(i * 2, rowRedirection.getPrev(i));
 
-                assertEquals(i * 3, redirectionIndex1.get(i * 2));
-                assertEquals(redirectionIndex1.getPrev(i * 2), i * 4);
+                assertEquals(i * 3, rowRedirection1.get(i * 2));
+                assertEquals(rowRedirection1.getPrev(i * 2), i * 4);
             }
         });
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             for (int i = 0; i < 3; i++) {
-                redirectionIndex.put((i + 1) % 3, i * 2);
+                rowRedirection.put((i + 1) % 3, i * 2);
             }
         });
     }
 
     public void testContiguous() {
-        final RedirectionIndex redirectionIndex = new ContiguousRedirectionIndexImpl(10);
+        final MutableRowRedirection rowRedirection = new ContiguousMutableRowRedirection(10);
 
         // Fill redirection rowSet with values 100 + ii * 2
         for (int ii = 0; ii < 100; ++ii) {
-            redirectionIndex.put(ii, 100 + ii * 2);
+            rowRedirection.put(ii, 100 + ii * 2);
         }
 
         // Check that 100 + ii * 2 comes back from get()
         for (int ii = 0; ii < 100; ++ii) {
-            assertEquals(100 + ii * 2, redirectionIndex.get(ii));
+            assertEquals(100 + ii * 2, rowRedirection.get(ii));
         }
 
-        assertEquals(-1, redirectionIndex.get(100));
-        assertEquals(-1, redirectionIndex.get(-1));
+        assertEquals(-1, rowRedirection.get(100));
+        assertEquals(-1, rowRedirection.get(-1));
 
         // As of startTrackingPrevValues, get() and getPrev() should both be returning 100 + ii * 2
-        redirectionIndex.startTrackingPrevValues();
+        rowRedirection.startTrackingPrevValues();
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             for (int ii = 0; ii < 100; ++ii) {
-                assertEquals(100 + ii * 2, redirectionIndex.get(ii));
+                assertEquals(100 + ii * 2, rowRedirection.get(ii));
             }
             for (int ii = 0; ii < 100; ++ii) {
-                assertEquals(100 + ii * 2, redirectionIndex.getPrev(ii));
+                assertEquals(100 + ii * 2, rowRedirection.getPrev(ii));
             }
 
             // Now set current values to 200 + ii * 3
             for (int ii = 0; ii < 100; ++ii) {
-                redirectionIndex.put(ii, 200 + ii * 3);
+                rowRedirection.put(ii, 200 + ii * 3);
             }
 
             // Confirm that get() returns 200 + ii * 3; meanwhile getPrev() still returns 100 + ii * 2
             for (int ii = 0; ii < 100; ++ii) {
-                assertEquals(200 + ii * 3, redirectionIndex.get(ii));
+                assertEquals(200 + ii * 3, rowRedirection.get(ii));
             }
             for (int ii = 0; ii < 100; ++ii) {
-                assertEquals(100 + ii * 2, redirectionIndex.getPrev(ii));
+                assertEquals(100 + ii * 2, rowRedirection.getPrev(ii));
             }
         });
 
         // After end of cycle, both should return 200 + ii * 3
         for (int ii = 0; ii < 100; ++ii) {
-            assertEquals(200 + ii * 3, redirectionIndex.get(ii));
+            assertEquals(200 + ii * 3, rowRedirection.get(ii));
         }
         for (int ii = 0; ii < 100; ++ii) {
-            assertEquals(200 + ii * 3, redirectionIndex.getPrev(ii));
+            assertEquals(200 + ii * 3, rowRedirection.getPrev(ii));
         }
     }
 }

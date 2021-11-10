@@ -9,12 +9,12 @@ import io.deephaven.engine.v2.sort.permute.LongPermuteKernel;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.LongArraySource;
 import io.deephaven.engine.v2.sources.ObjectArraySource;
-import io.deephaven.engine.v2.sources.ReadOnlyRedirectedColumnSource;
+import io.deephaven.engine.v2.sources.RedirectedColumnSource;
 import io.deephaven.engine.v2.sources.chunk.*;
 import io.deephaven.engine.v2.sources.chunk.Attributes.*;
 import io.deephaven.engine.v2.ssa.SegmentedSortedArray;
 import io.deephaven.engine.v2.utils.ChunkUtils;
-import io.deephaven.engine.v2.utils.LongColumnSourceRedirectionIndex;
+import io.deephaven.engine.v2.utils.LongColumnSourceMutableRowRedirection;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -25,7 +25,7 @@ public class SortedFirstOrLastChunkedOperator implements IterativeChunkedAggrega
     private final boolean isFirst;
     private final Supplier<SegmentedSortedArray> ssaFactory;
     private final LongArraySource redirections;
-    private final LongColumnSourceRedirectionIndex redirectionIndex;
+    private final LongColumnSourceMutableRowRedirection rowRedirection;
     private final Map<String, ColumnSource<?>> resultColumns;
     private final ObjectArraySource<SegmentedSortedArray> ssas;
 
@@ -35,14 +35,14 @@ public class SortedFirstOrLastChunkedOperator implements IterativeChunkedAggrega
         this.isFirst = isFirst;
         this.ssaFactory = SegmentedSortedArray.makeFactory(chunkType, false, 1024);
         this.redirections = new LongArraySource();
-        this.redirectionIndex = new LongColumnSourceRedirectionIndex(redirections);
+        this.rowRedirection = new LongColumnSourceMutableRowRedirection(redirections);
         this.ssas = new ObjectArraySource<>(SegmentedSortedArray.class);
 
         this.resultColumns = new LinkedHashMap<>();
         for (final MatchPair mp : resultNames) {
             // noinspection unchecked,rawtypes
             resultColumns.put(mp.left(),
-                    new ReadOnlyRedirectedColumnSource(redirectionIndex, originalTable.getColumnSource(mp.right())));
+                    new RedirectedColumnSource(rowRedirection, originalTable.getColumnSource(mp.right())));
         }
     }
 
@@ -442,7 +442,7 @@ public class SortedFirstOrLastChunkedOperator implements IterativeChunkedAggrega
 
     @Override
     public void startTrackingPrevValues() {
-        redirectionIndex.startTrackingPrevValues();
+        rowRedirection.startTrackingPrevValues();
     }
 
     @Override

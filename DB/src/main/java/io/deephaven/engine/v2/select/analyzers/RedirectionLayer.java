@@ -18,14 +18,14 @@ import java.util.*;
 final public class RedirectionLayer extends SelectAndViewAnalyzer {
     private final SelectAndViewAnalyzer inner;
     private final TrackingRowSet resultRowSet;
-    private final RedirectionIndex redirectionIndex;
+    private final MutableRowRedirection rowRedirection;
     private final MutableRowSet freeValues = RowSetFactory.empty();
     private long maxInnerIndex;
 
-    RedirectionLayer(SelectAndViewAnalyzer inner, TrackingRowSet resultRowSet, RedirectionIndex redirectionIndex) {
+    RedirectionLayer(SelectAndViewAnalyzer inner, TrackingRowSet resultRowSet, MutableRowRedirection rowRedirection) {
         this.inner = inner;
         this.resultRowSet = resultRowSet;
-        this.redirectionIndex = redirectionIndex;
+        this.rowRedirection = rowRedirection;
         this.maxInnerIndex = -1;
     }
 
@@ -46,7 +46,7 @@ final public class RedirectionLayer extends SelectAndViewAnalyzer {
         // we need to remove the removed values from our redirection rowSet, and add them to our free rowSet; so that
         // updating tables will not consume more space over the course of a day for abandoned rows
         final RowSetBuilderRandom innerToFreeBuilder = RowSetFactory.builderRandom();
-        upstream.removed.forAllRowKeys(key -> innerToFreeBuilder.addKey(redirectionIndex.remove(key)));
+        upstream.removed.forAllRowKeys(key -> innerToFreeBuilder.addKey(rowRedirection.remove(key)));
         freeValues.insert(innerToFreeBuilder.build());
 
         // we have to shift things that have not been removed, this handles the unmodified rows; but also the
@@ -65,9 +65,9 @@ final public class RedirectionLayer extends SelectAndViewAnalyzer {
                         if (localForwardIt.advance(begin)) {
                             for (long key = localForwardIt.currentValue(); localForwardIt.currentValue() <= end; key =
                                     localForwardIt.nextLong()) {
-                                final long inner = redirectionIndex.remove(key);
+                                final long inner = rowRedirection.remove(key);
                                 if (inner != RowSet.NULL_ROW_KEY) {
-                                    redirectionIndex.put(key + delta, inner);
+                                    rowRedirection.put(key + delta, inner);
                                 }
                                 if (!localForwardIt.hasNext()) {
                                     break;
@@ -79,9 +79,9 @@ final public class RedirectionLayer extends SelectAndViewAnalyzer {
                             if (reverseIt.advance(end)) {
                                 for (long key = reverseIt.currentValue(); reverseIt.currentValue() >= begin; key =
                                         reverseIt.nextLong()) {
-                                    final long inner = redirectionIndex.remove(key);
+                                    final long inner = rowRedirection.remove(key);
                                     if (inner != RowSet.NULL_ROW_KEY) {
-                                        redirectionIndex.put(key + delta, inner);
+                                        rowRedirection.put(key + delta, inner);
                                     }
                                     if (!reverseIt.hasNext()) {
                                         break;
@@ -108,7 +108,7 @@ final public class RedirectionLayer extends SelectAndViewAnalyzer {
             upstream.added.forAllRowKeys(outerKey -> {
                 final long innerKey = freeIt.hasNext() ? freeIt.nextLong() : ++maxInnerIndex;
                 lastAllocated.setValue(innerKey);
-                redirectionIndex.put(outerKey, innerKey);
+                rowRedirection.put(outerKey, innerKey);
             });
             freeValues.removeRange(0, lastAllocated.longValue());
         }
@@ -131,7 +131,7 @@ final public class RedirectionLayer extends SelectAndViewAnalyzer {
 
     @Override
     public void startTrackingPrev() {
-        redirectionIndex.startTrackingPrevValues();
+        rowRedirection.startTrackingPrevValues();
         inner.startTrackingPrev();
     }
 }

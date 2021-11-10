@@ -47,7 +47,7 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
     private final SsaSsaStamp ssaSsaStamp;
     private final ChunkSsaStamp chunkSsaStamp;
     private final RightIncrementalChunkedAsOfJoinStateManager asOfJoinStateManager;
-    private final RedirectionIndex redirectionIndex;
+    private final MutableRowRedirection rowRedirection;
     private final ModifiedColumnSet leftKeyColumns;
     private final ModifiedColumnSet rightKeyColumns;
     private final ModifiedColumnSet leftStampColumn;
@@ -87,7 +87,7 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
             boolean disallowExactMatch,
             SsaSsaStamp ssaSsaStamp,
             JoinControl control, RightIncrementalChunkedAsOfJoinStateManager asOfJoinStateManager,
-            RedirectionIndex redirectionIndex) {
+            MutableRowRedirection rowRedirection) {
         super(Arrays.asList(leftRecorder, rightRecorder), Collections.emptyList(), listenerDescription, result);
         this.leftRecorder = leftRecorder;
         this.rightRecorder = rightRecorder;
@@ -101,7 +101,7 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
         this.disallowExactMatch = disallowExactMatch;
         this.ssaSsaStamp = ssaSsaStamp;
         this.asOfJoinStateManager = asOfJoinStateManager;
-        this.redirectionIndex = redirectionIndex;
+        this.rowRedirection = rowRedirection;
 
         leftKeySources = leftSources;
         rightKeySources = rightSources;
@@ -170,7 +170,7 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
             slots.ensureCapacity(leftRestampRemovals.size());
 
             if (leftRestampRemovals.isNonempty()) {
-                leftRestampRemovals.forAllRowKeys(redirectionIndex::removeVoid);
+                leftRestampRemovals.forAllRowKeys(rowRedirection::removeVoid);
 
                 // We first do a probe pass, adding all of the removals to a builder in the as of join state manager
                 final int removedSlotCount = asOfJoinStateManager.markForRemoval(leftRestampRemovals, leftKeySources,
@@ -182,7 +182,7 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
                     final long slot = slots.getLong(slotIndex);
                     final RowSet leftRemoved = indexFromBuilder(slotIndex);
 
-                    leftRemoved.forAllRowKeys(redirectionIndex::removeVoid);
+                    leftRemoved.forAllRowKeys(rowRedirection::removeVoid);
 
 
                     final SegmentedSortedArray leftSsa = asOfJoinStateManager.getLeftSsaOrIndex(slot, leftIndexOutput);
@@ -222,7 +222,7 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
                         final RowSet previousToShift = fullPrevRowSet.minus(leftRestampRemovals);
                         final RowSet relevantShift = getRelevantShifts(leftShifted, previousToShift)) {
                     // now we apply the left shifts, so that anything in our SSA is a relevant thing to stamp
-                    redirectionIndex.applyShift(previousToShift, leftShifted);
+                    rowRedirection.applyShift(previousToShift, leftShifted);
 
                     if (relevantShift.isNonempty()) {
                         try (final SizedSafeCloseable<ColumnSource.FillContext> leftShiftFillContext =
@@ -339,7 +339,7 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
                                 rightSsa.removeAndGetPrior(rightStampValues, rightStampKeys, priorRedirections);
 
                                 ssaSsaStamp.processRemovals(leftSsa, rightStampValues, rightStampKeys,
-                                        priorRedirections, redirectionIndex, modifiedBuilder, disallowExactMatch);
+                                        priorRedirections, rowRedirection, modifiedBuilder, disallowExactMatch);
                             }
                         }
                     }
@@ -410,7 +410,7 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
                                                     rightStampValues.get());
 
                                             ssaSsaStamp.applyShift(leftSsa, rightStampValues.get(),
-                                                    rightStampKeys.get(), slotSit.shiftDelta(), redirectionIndex,
+                                                    rightStampKeys.get(), slotSit.shiftDelta(), rowRedirection,
                                                     disallowExactMatch);
                                             rightSsa.applyShiftReverse(rightStampValues.get(), rightStampKeys.get(),
                                                     slotSit.shiftDelta());
@@ -432,7 +432,7 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
                                                             slotSit.shiftDelta());
                                                     ssaSsaStamp.applyShift(leftSsa, rightStampValues.get(),
                                                             rightStampKeys.get(), slotSit.shiftDelta(),
-                                                            redirectionIndex, disallowExactMatch);
+                                                            rowRedirection, disallowExactMatch);
                                                 }
                                             }
                                         }
@@ -512,7 +512,7 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
                     final SegmentedSortedArray leftSsa = asOfJoinStateManager.getLeftSsa(slot, leftSsaFactory);
 
                     if (processInitial) {
-                        ssaSsaStamp.processEntry(leftSsa, rightSsa, redirectionIndex, disallowExactMatch);
+                        ssaSsaStamp.processEntry(leftSsa, rightSsa, rowRedirection, disallowExactMatch);
                         // we've modified everything in the leftssa
                         leftSsa.forAllKeys(modifiedBuilder::addKey);
                     }
@@ -551,7 +551,7 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
                             stampCompact.compact(stampChunk, retainStamps);
 
                             ssaSsaStamp.processInsertion(leftSsa, stampChunk, insertedIndices, nextRightValue,
-                                    redirectionIndex, modifiedBuilder, endsWithLastValue, disallowExactMatch);
+                                    rowRedirection, modifiedBuilder, endsWithLastValue, disallowExactMatch);
                         }
                     }
                 }
@@ -589,7 +589,7 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
                                 chunkOk.fillRowKeyChunk(rightStampIndices);
                                 sortKernel.sort(rightStampIndices, rightStampChunk);
 
-                                ssaSsaStamp.findModified(leftSsa, redirectionIndex, rightStampChunk, rightStampIndices,
+                                ssaSsaStamp.findModified(leftSsa, rowRedirection, rightStampChunk, rightStampIndices,
                                         modifiedBuilder, disallowExactMatch);
                             }
                         }
@@ -684,7 +684,7 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
                 final SegmentedSortedArray leftSsa = asOfJoinStateManager.getLeftSsa(slot, leftSsaFactory);
 
                 if (processInitial) {
-                    ssaSsaStamp.processEntry(leftSsa, rightSsa, redirectionIndex, disallowExactMatch);
+                    ssaSsaStamp.processEntry(leftSsa, rightSsa, rowRedirection, disallowExactMatch);
                     leftSsa.forAllKeys(modifiedBuilder::addKey);
                 }
 
@@ -711,9 +711,9 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
                             final long leftKey = leftStampKeys.get(ii);
                             final long rightKey = rightKeysForLeft.get(ii);
                             if (rightKey == RowSet.NULL_ROW_KEY) {
-                                redirectionIndex.removeVoid(leftKey);
+                                rowRedirection.removeVoid(leftKey);
                             } else {
-                                redirectionIndex.putVoid(leftKey, rightKey);
+                                rowRedirection.putVoid(leftKey, rightKey);
                             }
                         }
                     }

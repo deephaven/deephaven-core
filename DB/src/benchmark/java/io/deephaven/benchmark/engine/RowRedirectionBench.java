@@ -19,7 +19,7 @@ import java.util.concurrent.TimeUnit;
 @Measurement(iterations = 3, time = 20)
 @Timeout(time = 60)
 @Fork(1)
-public class RedirectionIndexBench extends RedirectionBenchBase {
+public class RowRedirectionBench extends RedirectionBenchBase {
     @Param({"10000000"})
     private int tableSize;
 
@@ -76,6 +76,6 @@ public class RedirectionIndexBench extends RedirectionBenchBase {
     }
 
     public static void main(String[] args) {
-        BenchUtil.run(RedirectionIndexBench.class);
+        BenchUtil.run(RowRedirectionBench.class);
     }
 }

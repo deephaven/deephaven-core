@@ -11,7 +11,7 @@ import io.deephaven.engine.tables.SortingOrder;
 import io.deephaven.engine.v2.hashing.HashMapK4V4;
 import io.deephaven.engine.v2.hashing.HashMapLockFreeK4V4;
 import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.sources.ReadOnlyRedirectedColumnSource;
+import io.deephaven.engine.v2.sources.RedirectedColumnSource;
 import io.deephaven.engine.v2.sources.SwitchColumnSource;
 import io.deephaven.engine.v2.sources.WritableChunkSink;
 import io.deephaven.engine.v2.sources.chunk.LongChunk;
@@ -31,7 +31,7 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
 
     private final QueryTable parent;
     private QueryTable resultTable;
-    private RedirectionIndex sortMapping;
+    private RowRedirection sortMapping;
 
     private final SortPair[] sortPairs;
     private final SortingOrder[] sortOrder;
@@ -85,7 +85,7 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
                 final boolean success = super.end(clockCycle);
                 if (success) {
                     QueryTable.startTrackingPrev(resultTable.getColumnSources());
-                    sortMapping.startTrackingPrevValues();
+                    sortMapping.mutableCast().startTrackingPrevValues();
                 }
                 return success;
             }
@@ -107,13 +107,13 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
             return this.parent;
         }
 
-        final RedirectionIndex sortMapping = sortedKeys.makeHistoricalRedirectionIndex();
+        final MutableRowRedirection sortMapping = sortedKeys.makeHistoricalRowRedirection();
         final TrackingRowSet resultRowSet = RowSetFactory.flat(sortedKeys.size()).toTracking();
 
         final Map<String, ColumnSource<?>> resultMap = new LinkedHashMap<>();
         for (Map.Entry<String, ColumnSource<?>> stringColumnSourceEntry : this.parent.getColumnSourceMap().entrySet()) {
             resultMap.put(stringColumnSourceEntry.getKey(),
-                    new ReadOnlyRedirectedColumnSource<>(sortMapping, stringColumnSourceEntry.getValue()));
+                    new RedirectedColumnSource<>(sortMapping, stringColumnSourceEntry.getValue()));
         }
 
         resultTable = new QueryTable(resultRowSet, resultMap);
@@ -138,14 +138,14 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
                     recycledInnerRedirectionSource.setValue(recycled);
                 });
 
-        sortMapping = new ReadOnlyLongColumnSourceRedirectionIndex<>(redirectionSource);
+        sortMapping = new LongColumnSourceRowRedirection<>(redirectionSource);
         final TrackingMutableRowSet resultRowSet =
                 RowSetFactory.flat(initialSortedKeys.size()).toTracking();
 
         final Map<String, ColumnSource<?>> resultMap = new LinkedHashMap<>();
         for (Map.Entry<String, ColumnSource<?>> stringColumnSourceEntry : parent.getColumnSourceMap().entrySet()) {
             resultMap.put(stringColumnSourceEntry.getKey(),
-                    new ReadOnlyRedirectedColumnSource<>(sortMapping, stringColumnSourceEntry.getValue()));
+                    new RedirectedColumnSource<>(sortMapping, stringColumnSourceEntry.getValue()));
         }
 
         resultTable = new QueryTable(resultRowSet, resultMap);
@@ -228,7 +228,7 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
                     SortHelpers.getSortedKeys(sortOrder, sortColumns, rowSetToSort, usePrev).getArrayMapping();
 
             final HashMapK4V4 reverseLookup = new HashMapLockFreeK4V4(sortedKeys.length, .75f, -3);
-            sortMapping = SortHelpers.createSortRedirectionIndex();
+            sortMapping = SortHelpers.createSortRowRedirection();
 
             // Center the keys around middleKeyToUse
             final long offset = SortListener.REBALANCE_MIDPOINT - sortedKeys.length / 2;
@@ -243,13 +243,13 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
             // fillFromChunk may convert the provided RowSequence to a KeyRanges (or RowKeys) chunk that is owned by
             // the RowSequence and is not closed until the RowSequence is closed.
             WritableChunkSink.FillFromContext fillFromContext =
-                    closer.add(sortMapping.makeFillFromContext(sortedKeys.length));
-            sortMapping.fillFromChunk(fillFromContext, LongChunk.chunkWrap(sortedKeys),
+                    closer.add(sortMapping.mutableCast().makeFillFromContext(sortedKeys.length));
+            sortMapping.mutableCast().fillFromChunk(fillFromContext, LongChunk.chunkWrap(sortedKeys),
                     closer.add(resultRowSet.copy()));
 
             for (Map.Entry<String, ColumnSource<?>> stringColumnSourceEntry : parent.getColumnSourceMap().entrySet()) {
                 resultMap.put(stringColumnSourceEntry.getKey(),
-                        new ReadOnlyRedirectedColumnSource<>(sortMapping, stringColumnSourceEntry.getValue()));
+                        new RedirectedColumnSource<>(sortMapping, stringColumnSourceEntry.getValue()));
             }
 
             // noinspection unchecked
@@ -267,7 +267,8 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
             parent.copyAttributes(resultTable, BaseTable.CopyAttributeOperation.Sort);
 
             final SortListener listener = new SortListener(parent, resultTable, reverseLookup, sortColumns, sortOrder,
-                    sortMapping, sortedColumnsToSortBy, parent.newModifiedColumnSetIdentityTransformer(resultTable),
+                    sortMapping.mutableCast(), sortedColumnsToSortBy,
+                    parent.newModifiedColumnSetIdentityTransformer(resultTable),
                     parent.newModifiedColumnSet(sortColumnNames));
 
             setSorted(resultTable);

@@ -1,7 +1,7 @@
 {
- "className": "io.deephaven.engine.v2.JoinRedirectionIndex",
+ "className": "io.deephaven.engine.v2.JoinRowRedirection",
  "methods": {},
- "path": "io.deephaven.engine.v2.JoinRedirectionIndex",
+ "path": "io.deephaven.engine.v2.JoinRowRedirection",
  "text": "Makes a redirection index based on the type provided by the join control.",
  "typeName": "class"
 }

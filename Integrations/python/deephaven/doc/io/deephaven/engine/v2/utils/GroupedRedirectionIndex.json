@@ -1,14 +1,14 @@
 {
- "className": "io.deephaven.engine.v2.utils.GroupedRedirectionIndex",
+ "className": "io.deephaven.engine.v2.utils.GroupedRowRedirection",
  "methods": {
-  "fillChunk": "Lookup each element in RowSequence and write the result to mappedKeysOut\n\n:param fillContext: (io.deephaven.engine.v2.utils.RedirectionIndex.FillContext) - the RedirectionIndex FillContext\n:param mappedKeysOut: (io.deephaven.engine.v2.sources.chunk.WritableLongChunk<io.deephaven.engine.v2.sources.chunk.Attributes.RowKeys>) - the result chunk\n:param keysToMap: (io.deephaven.engine.structures.RowSequence) - the keys to lookup in this redirection rowSet",
-  "fillPrevChunk": ":param fillContext: io.deephaven.engine.v2.utils.RedirectionIndex.FillContext\n:param mappedKeysOut: io.deephaven.engine.v2.sources.chunk.WritableLongChunk<io.deephaven.engine.v2.sources.chunk.Attributes.RowKeys>\n:param keysToMap: io.deephaven.engine.structures.RowSequence",
+  "fillChunk": "Lookup each element in RowSequence and write the result to mappedKeysOut\n\n:param fillContext: (io.deephaven.engine.v2.utils.RowRedirection.FillContext) - the RowRedirection FillContext\n:param mappedKeysOut: (io.deephaven.engine.v2.sources.chunk.WritableLongChunk<io.deephaven.engine.v2.sources.chunk.Attributes.RowKeys>) - the result chunk\n:param keysToMap: (io.deephaven.engine.structures.RowSequence) - the keys to lookup in this redirection rowSet",
+  "fillPrevChunk": ":param fillContext: io.deephaven.engine.v2.utils.RowRedirection.FillContext\n:param mappedKeysOut: io.deephaven.engine.v2.sources.chunk.WritableLongChunk<io.deephaven.engine.v2.sources.chunk.Attributes.RowKeys>\n:param keysToMap: io.deephaven.engine.structures.RowSequence",
   "get": ":param key: long\n:return: long",
   "getPrev": ":param key: long\n:return: long",
   "put": ":param key: long\n:param index: long\n:return: long",
   "remove": ":param leftIndex: long\n:return: long"
  },
- "path": "io.deephaven.engine.v2.utils.GroupedRedirectionIndex",
- "text": "The GroupedRedirectionIndex is intended for situations where you have several Indices that represent contiguous rows\n of your output table and a flat output rowSet.\n\n When sorting a table by its grouping column, instead of using a large contiguous RedirectionIndex, we simply store\n the row sets for each group and the accumulated cardinality. We then binary search in the accumulated cardinality for\n a given key; and fetch the corresponding offset from that group's row set.\n\n This RedirectionIndex does not support mutation.",
+ "path": "io.deephaven.engine.v2.utils.GroupedRowRedirection",
+ "text": "The GroupedRowRedirection is intended for situations where you have several Indices that represent contiguous rows\n of your output table and a flat output rowSet.\n\n When sorting a table by its grouping column, instead of using a large contiguous RowRedirection, we simply store\n the row sets for each group and the accumulated cardinality. We then binary search in the accumulated cardinality for\n a given key; and fetch the corresponding offset from that group's row set.\n\n This RowRedirection does not support mutation.",
  "typeName": "class"
 }

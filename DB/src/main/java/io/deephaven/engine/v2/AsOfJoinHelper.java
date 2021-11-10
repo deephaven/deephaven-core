@@ -52,7 +52,7 @@ public class AsOfJoinHelper {
         checkColumnConflicts(leftTable, columnsToAdd);
 
         if (!leftTable.isRefreshing() && leftTable.size() == 0) {
-            return makeResult(leftTable, rightTable, new StaticSingleValueRedirectionIndexImpl(RowSet.NULL_ROW_KEY),
+            return makeResult(leftTable, rightTable, new SingleValueRowRedirection(RowSet.NULL_ROW_KEY),
                     columnsToAdd, false);
         }
 
@@ -83,25 +83,25 @@ public class AsOfJoinHelper {
                     + leftStampSource.getType() + ", right=" + rightStampSource.getType());
         }
 
-        final RedirectionIndex redirectionIndex = JoinRedirectionIndex.makeRedirectionIndex(control, leftTable);
+        final MutableRowRedirection rowRedirection = JoinRowRedirection.makeRowRedirection(control, leftTable);
         if (keyColumnCount == 0) {
             return zeroKeyAj(control, leftTable, rightTable, columnsToAdd, stampPair, leftStampSource,
-                    originalRightStampSource, rightStampSource, order, disallowExactMatch, redirectionIndex);
+                    originalRightStampSource, rightStampSource, order, disallowExactMatch, rowRedirection);
         }
 
         if (rightTable.isRefreshing()) {
             if (leftTable.isRefreshing()) {
                 return bothIncrementalAj(control, leftTable, rightTable, columnsToMatch, columnsToAdd, order,
                         disallowExactMatch, stampPair,
-                        leftSources, rightSources, leftStampSource, rightStampSource, redirectionIndex);
+                        leftSources, rightSources, leftStampSource, rightStampSource, rowRedirection);
             }
             return rightTickingLeftStaticAj(control, leftTable, rightTable, columnsToMatch, columnsToAdd, order,
                     disallowExactMatch, stampPair, leftSources, rightSources, leftStampSource, rightStampSource,
-                    redirectionIndex);
+                    rowRedirection);
         } else {
             return rightStaticAj(control, leftTable, rightTable, columnsToMatch, columnsToAdd, order,
                     disallowExactMatch, stampPair, originalLeftSources, leftSources, rightSources, leftStampSource,
-                    originalRightStampSource, rightStampSource, redirectionIndex);
+                    originalRightStampSource, rightStampSource, rowRedirection);
         }
     }
 
@@ -120,7 +120,7 @@ public class AsOfJoinHelper {
             ColumnSource<?> leftStampSource,
             ColumnSource<?> originalRightStampSource,
             ColumnSource<?> rightStampSource,
-            RedirectionIndex redirectionIndex) {
+            MutableRowRedirection rowRedirection) {
         final LongArraySource slots = new LongArraySource();
         final int slotCount;
 
@@ -257,16 +257,16 @@ public class AsOfJoinHelper {
                 }
 
                 if (arrayValuesCache != null) {
-                    processLeftSlotWithRightCache(stampContext, leftRowSet, rightRowSet, redirectionIndex,
+                    processLeftSlotWithRightCache(stampContext, leftRowSet, rightRowSet, rowRedirection,
                             rightStampSource, keyChunk, valuesChunk, arrayValuesCache, slot);
                 } else {
-                    stampContext.processEntry(leftRowSet, rightRowSet, redirectionIndex);
+                    stampContext.processEntry(leftRowSet, rightRowSet, rowRedirection);
                 }
             }
         }
 
         final QueryTable result =
-                makeResult(leftTable, rightTable, redirectionIndex, columnsToAdd, leftTable.isRefreshing());
+                makeResult(leftTable, rightTable, rowRedirection, columnsToAdd, leftTable.isRefreshing());
         if (!leftTable.isRefreshing()) {
             return result;
         }
@@ -284,20 +284,20 @@ public class AsOfJoinHelper {
             public void onUpdate(Update upstream) {
                 final Update downstream = upstream.copy();
 
-                upstream.removed.forAllRowKeys(redirectionIndex::removeVoid);
+                upstream.removed.forAllRowKeys(rowRedirection::removeVoid);
 
                 final boolean keysModified = upstream.modifiedColumnSet.containsAny(leftKeysOrStamps);
 
                 final RowSet restampKeys;
                 if (keysModified) {
-                    upstream.getModifiedPreShift().forAllRowKeys(redirectionIndex::removeVoid);
+                    upstream.getModifiedPreShift().forAllRowKeys(rowRedirection::removeVoid);
                     restampKeys = upstream.modified.union(upstream.added);
                 } else {
                     restampKeys = upstream.added;
                 }
 
                 try (final RowSet prevLeftRowSet = leftTable.getRowSet().getPrevRowSet()) {
-                    redirectionIndex.applyShift(prevLeftRowSet, upstream.shifted);
+                    rowRedirection.applyShift(prevLeftRowSet, upstream.shifted);
                 }
 
                 if (restampKeys.isNonempty()) {
@@ -308,7 +308,7 @@ public class AsOfJoinHelper {
 
                     try (final RowSet foundKeys = foundBuilder.build();
                             final RowSet notFound = restampKeys.minus(foundKeys)) {
-                        notFound.forAllRowKeys(redirectionIndex::removeVoid);
+                        notFound.forAllRowKeys(rowRedirection::removeVoid);
                     }
 
                     try (final AsOfStampContext stampContext = new AsOfStampContext(order, disallowExactMatch,
@@ -323,7 +323,7 @@ public class AsOfJoinHelper {
                             final RowSet leftRowSet = asOfJoinStateManager.getLeftIndex(slot);
                             final RowSet rightRowSet = asOfJoinStateManager.getRightIndex(slot);
                             assert arrayValuesCache != null;
-                            processLeftSlotWithRightCache(stampContext, leftRowSet, rightRowSet, redirectionIndex,
+                            processLeftSlotWithRightCache(stampContext, leftRowSet, rightRowSet, rowRedirection,
                                     rightStampSource, keyChunk, valuesChunk, arrayValuesCache, slot);
                         }
                     }
@@ -409,7 +409,7 @@ public class AsOfJoinHelper {
     }
 
     private static void processLeftSlotWithRightCache(AsOfStampContext stampContext,
-            RowSet leftRowSet, RowSet rightRowSet, RedirectionIndex redirectionIndex,
+            RowSet leftRowSet, RowSet rightRowSet, MutableRowRedirection rowRedirection,
             ColumnSource<?> rightStampSource,
             ResettableWritableLongChunk<RowKeys> keyChunk, ResettableWritableChunk<Values> valuesChunk,
             ArrayValuesCache arrayValuesCache,
@@ -446,7 +446,7 @@ public class AsOfJoinHelper {
         }
 
         // noinspection unchecked
-        stampContext.processEntry(leftRowSet, valuesChunk, keyChunk, redirectionIndex);
+        stampContext.processEntry(leftRowSet, valuesChunk, keyChunk, rowRedirection);
     }
 
     /**
@@ -496,16 +496,16 @@ public class AsOfJoinHelper {
     private static Table zeroKeyAj(JoinControl control, QueryTable leftTable, QueryTable rightTable,
             MatchPair[] columnsToAdd, MatchPair stampPair, ColumnSource<?> leftStampSource,
             ColumnSource<?> originalRightStampSource, ColumnSource<?> rightStampSource, SortingOrder order,
-            boolean disallowExactMatch, final RedirectionIndex redirectionIndex) {
+            boolean disallowExactMatch, final MutableRowRedirection rowRedirection) {
         if (rightTable.isRefreshing() && leftTable.isRefreshing()) {
             return zeroKeyAjBothIncremental(control, leftTable, rightTable, columnsToAdd, stampPair, leftStampSource,
-                    rightStampSource, order, disallowExactMatch, redirectionIndex);
+                    rightStampSource, order, disallowExactMatch, rowRedirection);
         } else if (rightTable.isRefreshing()) {
             return zeroKeyAjRightIncremental(control, leftTable, rightTable, columnsToAdd, stampPair, leftStampSource,
-                    rightStampSource, order, disallowExactMatch, redirectionIndex);
+                    rightStampSource, order, disallowExactMatch, rowRedirection);
         } else {
             return zeroKeyAjRightStatic(leftTable, rightTable, columnsToAdd, stampPair, leftStampSource,
-                    originalRightStampSource, rightStampSource, order, disallowExactMatch, redirectionIndex);
+                    originalRightStampSource, rightStampSource, order, disallowExactMatch, rowRedirection);
         }
     }
 
@@ -521,7 +521,7 @@ public class AsOfJoinHelper {
             ColumnSource<?>[] rightSources,
             ColumnSource<?> leftStampSource,
             ColumnSource<?> rightStampSource,
-            RedirectionIndex redirectionIndex) {
+            MutableRowRedirection rowRedirection) {
         if (leftTable.isRefreshing()) {
             throw new IllegalStateException();
         }
@@ -595,7 +595,7 @@ public class AsOfJoinHelper {
                 for (int ii = 0; ii < leftKeyChunk.size(); ++ii) {
                     final long index = rightKeysForLeftChunk.get(ii);
                     if (index != RowSet.NULL_ROW_KEY) {
-                        redirectionIndex.put(leftKeyChunk.get(ii), index);
+                        rowRedirection.put(leftKeyChunk.get(ii), index);
                     }
                 }
             }
@@ -605,7 +605,7 @@ public class AsOfJoinHelper {
         SafeCloseable.closeArray(sortContext, leftStampFillContext, rightStampFillContext, rightValues, rightKeyIndices,
                 rightKeysForLeft);
 
-        final QueryTable result = makeResult(leftTable, rightTable, redirectionIndex, columnsToAdd, true);
+        final QueryTable result = makeResult(leftTable, rightTable, rowRedirection, columnsToAdd, true);
 
         final ModifiedColumnSet rightMatchColumns =
                 rightTable.newModifiedColumnSet(MatchPair.getRightColumns(columnsToMatch));
@@ -685,7 +685,7 @@ public class AsOfJoinHelper {
 
                         // noinspection unchecked
                         chunkSsaStamp.processRemovals(leftValuesChunk, leftKeyChunk, rightValues.get(),
-                                rightKeyIndices.get(), priorRedirections.get(), redirectionIndex, modifiedBuilder,
+                                rightKeyIndices.get(), priorRedirections.get(), rowRedirection, modifiedBuilder,
                                 disallowExactMatch);
 
                         rightRemoved.close();
@@ -743,14 +743,14 @@ public class AsOfJoinHelper {
                                                 // noinspection unchecked
                                                 chunkSsaStamp.applyShift(leftValuesChunk, leftKeyChunk,
                                                         rightValues.get(), rightKeyIndices.get(), sit.shiftDelta(),
-                                                        redirectionIndex, disallowExactMatch);
+                                                        rowRedirection, disallowExactMatch);
                                                 rightSsa.applyShiftReverse(rightValues.get(), rightKeyIndices.get(),
                                                         sit.shiftDelta());
                                             } else {
                                                 // noinspection unchecked
                                                 chunkSsaStamp.applyShift(leftValuesChunk, leftKeyChunk,
                                                         rightValues.get(), rightKeyIndices.get(), sit.shiftDelta(),
-                                                        redirectionIndex, disallowExactMatch);
+                                                        rowRedirection, disallowExactMatch);
                                                 rightSsa.applyShift(rightValues.get(), rightKeyIndices.get(),
                                                         sit.shiftDelta());
                                             }
@@ -829,7 +829,7 @@ public class AsOfJoinHelper {
 
                         // noinspection unchecked
                         chunkSsaStamp.processInsertion(leftValuesChunk, leftKeyChunk, rightStampChunk.get(),
-                                insertedIndices.get(), nextRightValue.get(), redirectionIndex, modifiedBuilder,
+                                insertedIndices.get(), nextRightValue.get(), rowRedirection, modifiedBuilder,
                                 endsWithLastValue, disallowExactMatch);
                     }
 
@@ -858,7 +858,7 @@ public class AsOfJoinHelper {
                                         leftValuesCache, slot);
 
                                 // noinspection unchecked
-                                chunkSsaStamp.findModified(0, leftValuesChunk, leftKeyChunk, redirectionIndex,
+                                chunkSsaStamp.findModified(0, leftValuesChunk, leftKeyChunk, rowRedirection,
                                         rightValues.get(), rightKeyIndices.get(), modifiedBuilder, disallowExactMatch);
                             }
                         }
@@ -904,7 +904,7 @@ public class AsOfJoinHelper {
             ColumnSource<?>[] rightSources,
             ColumnSource<?> leftStampSource,
             ColumnSource<?> rightStampSource,
-            RedirectionIndex redirectionIndex) {
+            MutableRowRedirection rowRedirection) {
         final boolean reverse = order == SortingOrder.Descending;
 
         final ChunkType stampChunkType = rightStampSource.getChunkType();
@@ -999,10 +999,10 @@ public class AsOfJoinHelper {
 
                 final SegmentedSortedArray rightSsa = asOfJoinStateManager.getRightSsa(slot, rightSsaFactory);
                 final SegmentedSortedArray leftSsa = asOfJoinStateManager.getLeftSsa(slot, leftSsaFactory);
-                ssaSsaStamp.processEntry(leftSsa, rightSsa, redirectionIndex, disallowExactMatch);
+                ssaSsaStamp.processEntry(leftSsa, rightSsa, rowRedirection, disallowExactMatch);
             }
 
-            result = makeResult(leftTable, rightTable, redirectionIndex, columnsToAdd, true);
+            result = makeResult(leftTable, rightTable, rowRedirection, columnsToAdd, true);
             closeableList.clear();
         }
 
@@ -1019,7 +1019,7 @@ public class AsOfJoinHelper {
                         leftSources,
                         rightSources, leftStampSource, rightStampSource,
                         leftSsaFactory, rightSsaFactory, order, disallowExactMatch,
-                        ssaSsaStamp, control, asOfJoinStateManager, redirectionIndex);
+                        ssaSsaStamp, control, asOfJoinStateManager, rowRedirection);
 
         leftRecorder.setMergedListener(mergedJoinListener);
         rightRecorder.setMergedListener(mergedJoinListener);
@@ -1038,7 +1038,7 @@ public class AsOfJoinHelper {
     private static Table zeroKeyAjBothIncremental(JoinControl control, QueryTable leftTable, QueryTable rightTable,
             MatchPair[] columnsToAdd, MatchPair stampPair, ColumnSource<?> leftStampSource,
             ColumnSource<?> rightStampSource, SortingOrder order, boolean disallowExactMatch,
-            final RedirectionIndex redirectionIndex) {
+            final MutableRowRedirection rowRedirection) {
         final boolean reverse = order == SortingOrder.Descending;
 
         final ChunkType stampChunkType = rightStampSource.getChunkType();
@@ -1051,9 +1051,9 @@ public class AsOfJoinHelper {
         fillSsaWithSort(leftTable, leftStampSource, leftNodeSize, leftSsa, order);
 
         final SsaSsaStamp ssaSsaStamp = SsaSsaStamp.make(stampChunkType, reverse);
-        ssaSsaStamp.processEntry(leftSsa, rightSsa, redirectionIndex, disallowExactMatch);
+        ssaSsaStamp.processEntry(leftSsa, rightSsa, rowRedirection, disallowExactMatch);
 
-        final QueryTable result = makeResult(leftTable, rightTable, redirectionIndex, columnsToAdd, true);
+        final QueryTable result = makeResult(leftTable, rightTable, rowRedirection, columnsToAdd, true);
 
         final String listenerDescription = makeListenerDescription(MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY, stampPair,
                 columnsToAdd, reverse, disallowExactMatch);
@@ -1066,7 +1066,7 @@ public class AsOfJoinHelper {
                 new ZeroKeyChunkedAjMergedListener(leftRecorder, rightRecorder,
                         listenerDescription, result, leftTable, rightTable, stampPair, columnsToAdd,
                         leftStampSource, rightStampSource, order, disallowExactMatch,
-                        ssaSsaStamp, leftSsa, rightSsa, redirectionIndex, control);
+                        ssaSsaStamp, leftSsa, rightSsa, rowRedirection, control);
 
         leftRecorder.setMergedListener(mergedJoinListener);
         rightRecorder.setMergedListener(mergedJoinListener);
@@ -1118,7 +1118,7 @@ public class AsOfJoinHelper {
     private static Table zeroKeyAjRightIncremental(JoinControl control, QueryTable leftTable, QueryTable rightTable,
             MatchPair[] columnsToAdd, MatchPair stampPair, ColumnSource<?> leftStampSource,
             ColumnSource<?> rightStampSource, SortingOrder order, boolean disallowExactMatch,
-            final RedirectionIndex redirectionIndex) {
+            final MutableRowRedirection rowRedirection) {
         final boolean reverse = order == SortingOrder.Descending;
 
         final ChunkType stampChunkType = rightStampSource.getChunkType();
@@ -1148,12 +1148,12 @@ public class AsOfJoinHelper {
             for (int ii = 0; ii < leftStampKeys.size(); ++ii) {
                 final long index = rightKeysForLeft.get(ii);
                 if (index != RowSet.NULL_ROW_KEY) {
-                    redirectionIndex.put(leftStampKeys.get(ii), index);
+                    rowRedirection.put(leftStampKeys.get(ii), index);
                 }
             }
         }
 
-        final QueryTable result = makeResult(leftTable, rightTable, redirectionIndex, columnsToAdd, true);
+        final QueryTable result = makeResult(leftTable, rightTable, rowRedirection, columnsToAdd, true);
         final ModifiedColumnSet rightStampColumn = rightTable.newModifiedColumnSet(stampPair.right());
         final ModifiedColumnSet allRightColumns = result.newModifiedColumnSet(MatchPair.getLeftColumns(columnsToAdd));
         final ModifiedColumnSet.Transformer rightTransformer =
@@ -1212,7 +1212,7 @@ public class AsOfJoinHelper {
 
                                     ssa.removeAndGetPrior(rightStampChunk, rightKeyIndices, priorRedirections);
                                     chunkSsaStamp.processRemovals(leftStampValues, leftStampKeys, rightStampChunk,
-                                            rightKeyIndices, priorRedirections, redirectionIndex, modifiedBuilder,
+                                            rightKeyIndices, priorRedirections, rowRedirection, modifiedBuilder,
                                             disallowExactMatch);
                                 }
                             }
@@ -1220,7 +1220,7 @@ public class AsOfJoinHelper {
                             if (upstream.shifted.nonempty()) {
                                 rightIncrementalApplySsaShift(upstream.shifted, ssa, sortKernel, fillContext,
                                         restampRemovals, rightTable, rightChunkSize, rightStampSource, chunkSsaStamp,
-                                        leftStampValues, leftStampKeys, redirectionIndex, disallowExactMatch);
+                                        leftStampValues, leftStampKeys, rowRedirection, disallowExactMatch);
                             }
 
                             // When adding a row to the right hand side: we need to know which left hand side might be
@@ -1274,7 +1274,7 @@ public class AsOfJoinHelper {
                                         stampCompact.compact(stampChunk, retainStamps);
 
                                         chunkSsaStamp.processInsertion(leftStampValues, leftStampKeys, stampChunk,
-                                                insertedIndices, nextRightValue, redirectionIndex, modifiedBuilder,
+                                                insertedIndices, nextRightValue, rowRedirection, modifiedBuilder,
                                                 endsWithLastValue, disallowExactMatch);
                                     }
                                 }
@@ -1295,7 +1295,7 @@ public class AsOfJoinHelper {
 
                                         sortKernel.sort(rightStampIndices, rightStampChunk);
 
-                                        chunkSsaStamp.findModified(0, leftStampValues, leftStampKeys, redirectionIndex,
+                                        chunkSsaStamp.findModified(0, leftStampValues, leftStampKeys, rowRedirection,
                                                 rightStampChunk, rightStampIndices, modifiedBuilder,
                                                 disallowExactMatch);
                                     }
@@ -1335,11 +1335,11 @@ public class AsOfJoinHelper {
     }
 
     private static void rightIncrementalApplySsaShift(RowSetShiftData shiftData, SegmentedSortedArray ssa,
-            LongSortKernel<Values, RowKeys> sortKernel, ChunkSource.FillContext fillContext,
-            RowSet restampRemovals, QueryTable table,
-            int chunkSize, ColumnSource<?> stampSource, ChunkSsaStamp chunkSsaStamp,
-            WritableChunk<Values> leftStampValues, WritableLongChunk<RowKeys> leftStampKeys,
-            RedirectionIndex redirectionIndex, boolean disallowExactMatch) {
+                                                      LongSortKernel<Values, RowKeys> sortKernel, ChunkSource.FillContext fillContext,
+                                                      RowSet restampRemovals, QueryTable table,
+                                                      int chunkSize, ColumnSource<?> stampSource, ChunkSsaStamp chunkSsaStamp,
+                                                      WritableChunk<Values> leftStampValues, WritableLongChunk<RowKeys> leftStampKeys,
+                                                      MutableRowRedirection rowRedirection, boolean disallowExactMatch) {
 
         try (final RowSet fullPrevRowSet = table.getRowSet().getPrevRowSet();
                 final RowSet previousToShift = fullPrevRowSet.minus(restampRemovals);
@@ -1375,7 +1375,7 @@ public class AsOfJoinHelper {
                         }
 
                         chunkSsaStamp.applyShift(leftStampValues, leftStampKeys, rightStampValues.get(),
-                                rightStampKeys.get(), sit.shiftDelta(), redirectionIndex, disallowExactMatch);
+                                rightStampKeys.get(), sit.shiftDelta(), rowRedirection, disallowExactMatch);
                         ssa.applyShiftReverse(rightStampValues.get(), rightStampKeys.get(), sit.shiftDelta());
                     } else {
                         if (rowSetToShift.size() > chunkSize) {
@@ -1391,7 +1391,7 @@ public class AsOfJoinHelper {
 
                                     ssa.applyShift(rightStampValues.get(), rightStampKeys.get(), sit.shiftDelta());
                                     chunkSsaStamp.applyShift(leftStampValues, leftStampKeys, rightStampValues.get(),
-                                            rightStampKeys.get(), sit.shiftDelta(), redirectionIndex,
+                                            rightStampKeys.get(), sit.shiftDelta(), rowRedirection,
                                             disallowExactMatch);
                                 }
                             }
@@ -1404,7 +1404,7 @@ public class AsOfJoinHelper {
 
                             ssa.applyShift(rightStampValues.get(), rightStampKeys.get(), sit.shiftDelta());
                             chunkSsaStamp.applyShift(leftStampValues, leftStampKeys, rightStampValues.get(),
-                                    rightStampKeys.get(), sit.shiftDelta(), redirectionIndex, disallowExactMatch);
+                                    rightStampKeys.get(), sit.shiftDelta(), rowRedirection, disallowExactMatch);
                         }
                     }
                 }
@@ -1415,7 +1415,7 @@ public class AsOfJoinHelper {
     private static Table zeroKeyAjRightStatic(QueryTable leftTable, Table rightTable, MatchPair[] columnsToAdd,
             MatchPair stampPair, ColumnSource<?> leftStampSource, ColumnSource<?> originalRightStampSource,
             ColumnSource<?> rightStampSource, SortingOrder order, boolean disallowExactMatch,
-            final RedirectionIndex redirectionIndex) {
+            final MutableRowRedirection rowRedirection) {
         final RowSet rightRowSet = rightTable.getRowSet();
 
         final WritableLongChunk<RowKeys> rightStampKeys = WritableLongChunk.makeWritableChunk(rightRowSet.intSize());
@@ -1427,10 +1427,10 @@ public class AsOfJoinHelper {
             try (final AsOfStampContext stampContext = new AsOfStampContext(order, disallowExactMatch, leftStampSource,
                     rightStampSource, originalRightStampSource)) {
                 stampContext.getAndCompactStamps(rightRowSet, rightStampKeys, rightStampValues);
-                stampContext.processEntry(leftTable.getRowSet(), rightStampValues, rightStampKeys, redirectionIndex);
+                stampContext.processEntry(leftTable.getRowSet(), rightStampValues, rightStampKeys, rowRedirection);
             }
             final QueryTable result =
-                    makeResult(leftTable, rightTable, redirectionIndex, columnsToAdd, leftTable.isRefreshing());
+                    makeResult(leftTable, rightTable, rowRedirection, columnsToAdd, leftTable.isRefreshing());
             if (!leftTable.isRefreshing()) {
                 return result;
             }
@@ -1465,28 +1465,28 @@ public class AsOfJoinHelper {
                                 public void onUpdate(Update upstream) {
                                     final Update downstream = upstream.copy();
 
-                                    upstream.removed.forAllRowKeys(redirectionIndex::removeVoid);
+                                    upstream.removed.forAllRowKeys(rowRedirection::removeVoid);
 
                                     final boolean stampModified = upstream.modified.isNonempty()
                                             && upstream.modifiedColumnSet.containsAny(leftStampColumn);
 
                                     final RowSet restampKeys;
                                     if (stampModified) {
-                                        upstream.getModifiedPreShift().forAllRowKeys(redirectionIndex::removeVoid);
+                                        upstream.getModifiedPreShift().forAllRowKeys(rowRedirection::removeVoid);
                                         restampKeys = upstream.modified.union(upstream.added);
                                     } else {
                                         restampKeys = upstream.added;
                                     }
 
                                     try (final RowSet prevLeftRowSet = leftTable.getRowSet().getPrevRowSet()) {
-                                        redirectionIndex.applyShift(prevLeftRowSet, upstream.shifted);
+                                        rowRedirection.applyShift(prevLeftRowSet, upstream.shifted);
                                     }
 
                                     try (final AsOfStampContext stampContext =
                                             new AsOfStampContext(order, disallowExactMatch, leftStampSource,
                                                     rightStampSource, originalRightStampSource)) {
                                         stampContext.processEntry(restampKeys, compactedRightStampValues,
-                                                compactedRightStampKeys, redirectionIndex);
+                                                compactedRightStampKeys, rowRedirection);
                                     }
 
                                     downstream.modifiedColumnSet = result.modifiedColumnSet;
@@ -1516,19 +1516,19 @@ public class AsOfJoinHelper {
     }
 
 
-    private static QueryTable makeResult(QueryTable leftTable, Table rightTable, RedirectionIndex redirectionIndex,
+    private static QueryTable makeResult(QueryTable leftTable, Table rightTable, RowRedirection rowRedirection,
             MatchPair[] columnsToAdd, boolean refreshing) {
         final Map<String, ColumnSource<?>> columnSources = new LinkedHashMap<>(leftTable.getColumnSourceMap());
         Arrays.stream(columnsToAdd).forEach(mp -> {
-            final ReadOnlyRedirectedColumnSource<?> rightSource =
-                    new ReadOnlyRedirectedColumnSource<>(redirectionIndex, rightTable.getColumnSource(mp.right()));
+            final RedirectedColumnSource<?> rightSource =
+                    new RedirectedColumnSource<>(rowRedirection, rightTable.getColumnSource(mp.right()));
             if (refreshing) {
                 rightSource.startTrackingPrevValues();
             }
             columnSources.put(mp.left(), rightSource);
         });
         if (refreshing) {
-            redirectionIndex.startTrackingPrevValues();
+            rowRedirection.mutableCast().startTrackingPrevValues();
         }
         return new QueryTable(leftTable.getRowSet(), columnSources);
     }

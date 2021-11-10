@@ -5,7 +5,7 @@
 package io.deephaven.engine.v2;
 
 import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.sources.ReadOnlyRedirectedColumnSource;
+import io.deephaven.engine.v2.sources.RedirectedColumnSource;
 import io.deephaven.engine.v2.utils.*;
 import org.apache.commons.lang3.mutable.MutableObject;
 
@@ -34,12 +34,12 @@ public class FlattenOperation implements QueryTable.MemoizableOperation<QueryTab
     public Result<QueryTable> initialize(boolean usePrev, long beforeClock) {
         final TrackingRowSet rowSet = parent.getRowSet();
         final Map<String, ColumnSource<?>> resultColumns = new LinkedHashMap<>();
-        final RedirectionIndex redirectionIndex = new WrappedIndexRedirectionIndexImpl(rowSet);
+        final MutableRowRedirection rowRedirection = new WrappedRowSetMutableRowRedirection(rowSet);
 
         final long size = usePrev ? rowSet.sizePrev() : rowSet.size();
 
         for (Map.Entry<String, ColumnSource<?>> entry : parent.getColumnSourceMap().entrySet()) {
-            resultColumns.put(entry.getKey(), new ReadOnlyRedirectedColumnSource<>(redirectionIndex, entry.getValue()));
+            resultColumns.put(entry.getKey(), new RedirectedColumnSource<>(rowRedirection, entry.getValue()));
         }
 
         resultTable = new QueryTable(RowSetFactory.flat(size).toTracking(), resultColumns);

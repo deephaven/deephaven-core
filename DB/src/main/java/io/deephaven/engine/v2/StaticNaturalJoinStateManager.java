@@ -36,7 +36,7 @@ abstract class StaticNaturalJoinStateManager {
         return "[" + Arrays.stream(keySourcesForErrorMessages).map(ls -> Objects.toString(ls.get(leftKey))).collect(Collectors.joining(", ")) + "]";
     }
 
-    RedirectionIndex buildRedirectionIndex(QueryTable leftTable, boolean exactMatch, LongUnaryOperator rightSideFromSlot, JoinControl.RedirectionType redirectionType) {
+    MutableRowRedirection buildRowRedirection(QueryTable leftTable, boolean exactMatch, LongUnaryOperator rightSideFromSlot, JoinControl.RedirectionType redirectionType) {
         switch (redirectionType) {
             case Contiguous: {
                 if (!leftTable.isFlat()) {
@@ -49,7 +49,7 @@ abstract class StaticNaturalJoinStateManager {
                     checkExactMatch(exactMatch, leftTable.getRowSet().get(ii), rightSide);
                     innerIndex[ii] = rightSide;
                 }
-                return new ContiguousRedirectionIndexImpl(innerIndex);
+                return new ContiguousMutableRowRedirection(innerIndex);
             }
             case Sparse: {
                 final LongSparseArraySource sparseRedirections = new LongSparseArraySource();
@@ -63,10 +63,10 @@ abstract class StaticNaturalJoinStateManager {
                         sparseRedirections.set(next, rightSide);
                     }
                 }
-                return new LongColumnSourceRedirectionIndex(sparseRedirections);
+                return new LongColumnSourceMutableRowRedirection(sparseRedirections);
             }
             case Hash: {
-                final RedirectionIndex redirectionIndex = RedirectionIndexLockFreeImpl.FACTORY.createRedirectionIndex(leftTable.intSize());
+                final MutableRowRedirection rowRedirection = MutableRowRedirectionLockFree.FACTORY.createRowRedirection(leftTable.intSize());
 
                 long leftPosition = 0;
                 for (final RowSet.Iterator it = leftTable.getRowSet().iterator(); it.hasNext(); ) {
@@ -74,11 +74,11 @@ abstract class StaticNaturalJoinStateManager {
                     final long rightSide = rightSideFromSlot.applyAsLong(leftPosition++);
                     checkExactMatch(exactMatch, leftTable.getRowSet().get(next), rightSide);
                     if (rightSide != NO_RIGHT_ENTRY_VALUE) {
-                        redirectionIndex.put(next, rightSide);
+                        rowRedirection.put(next, rightSide);
                     }
                 }
 
-                return redirectionIndex;
+                return rowRedirection;
             }
         }
         throw new IllegalStateException("Bad redirectionType: " + redirectionType);

@@ -6,7 +6,7 @@ import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.util.SortedBy;
 import io.deephaven.engine.v2.Listener.Update;
 import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.sources.ReadOnlyRedirectedColumnSource;
+import io.deephaven.engine.v2.sources.RedirectedColumnSource;
 import io.deephaven.engine.v2.utils.*;
 import io.deephaven.qst.table.EmptyTable;
 import io.deephaven.test.junit4.EngineCleanup;
@@ -65,10 +65,10 @@ public class StreamTableAggregationTest {
         } else {
             // Redirecting so we can present a zero-based TrackingMutableRowSet from the stream table
             streamInternalRowSet = RowSetFactory.empty().toTracking();
-            final RedirectionIndex streamRedirections = new WrappedIndexRedirectionIndexImpl(streamInternalRowSet);
+            final MutableRowRedirection streamRedirections = new WrappedRowSetMutableRowRedirection(streamInternalRowSet);
             streamSources = source.getColumnSourceMap().entrySet().stream().collect(Collectors.toMap(
                     Map.Entry::getKey,
-                    (entry -> new ReadOnlyRedirectedColumnSource<>(streamRedirections, entry.getValue())),
+                    (entry -> new RedirectedColumnSource<>(streamRedirections, entry.getValue())),
                     Assert::neverInvoked,
                     LinkedHashMap::new));
         }

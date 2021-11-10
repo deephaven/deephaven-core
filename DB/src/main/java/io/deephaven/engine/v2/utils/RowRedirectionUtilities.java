@@ -1,15 +1,15 @@
 package io.deephaven.engine.v2.utils;
 
-public class RedirectionIndexUtilities {
+public class RowRedirectionUtilities {
     private static final long SEARCH_ITERATOR_THRESHOLD = 512;
 
-    static void applyRedirectionShift(final RedirectionIndex redirectionIndex, final RowSet filterIndex,
-            final RowSetShiftData shiftData) {
+    static void applyRedirectionShift(final MutableRowRedirection rowRedirection, final RowSet filterIndex,
+                                      final RowSetShiftData shiftData) {
 
         final RowSetShiftData.SingleElementShiftCallback applyOneShift = (key, delta) -> {
-            final long oldKey = redirectionIndex.remove(key);
+            final long oldKey = rowRedirection.remove(key);
             if (oldKey != RowSet.NULL_ROW_KEY) {
-                redirectionIndex.putVoid(key + delta, oldKey);
+                rowRedirection.putVoid(key + delta, oldKey);
             }
         };
 
