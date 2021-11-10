@@ -17,8 +17,8 @@ import java.util.PriorityQueue;
 import java.util.Queue;
 
 /**
- * This will filter a table on a DateTime column for all rows greater than "now" according to a supplied clock. It
- * does not require any pre-sorting of the input table, instead preserving relative order in the initial output and each
+ * This will filter a table on a DateTime column for all rows greater than "now" according to a supplied clock. It does
+ * not require any pre-sorting of the input table, instead preserving relative order in the initial output and each
  * subsequent run. Relative to SortedClockFilter, this implementation may require less overall storage and do less
  * overall work for tables with relatively few monotonically nondecreasing ranges (that is, m (number of ranges)
  * &lt;&lt;&lt; n (size in rows)), but it will do more work on run().

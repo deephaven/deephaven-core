@@ -61,7 +61,8 @@ public class StreamTableOperationsTest {
         } else {
             // Redirecting so we can present a zero-based TrackingMutableRowSet from the stream table
             streamInternalRowSet = RowSetFactory.empty().toTracking();
-            final MutableRowRedirection streamRedirections = new WrappedRowSetMutableRowRedirection(streamInternalRowSet);
+            final MutableRowRedirection streamRedirections =
+                    new WrappedRowSetMutableRowRedirection(streamInternalRowSet);
             streamSources = source.getColumnSourceMap().entrySet().stream().collect(Collectors.toMap(
                     Map.Entry::getKey,
                     (entry -> new RedirectedColumnSource<>(streamRedirections, entry.getValue())),

@@ -193,7 +193,7 @@ public class TableTools {
      * @param columns varargs of column names to display
      */
     public static void showWithIndex(Table source, long maxRowCount, TimeZone timeZone, PrintStream out,
-                                     String... columns) {
+            String... columns) {
         show(source, maxRowCount, timeZone, "|", out, true, columns);
     }
 

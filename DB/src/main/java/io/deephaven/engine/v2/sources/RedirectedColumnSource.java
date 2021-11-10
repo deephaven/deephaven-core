@@ -24,7 +24,7 @@ public class RedirectedColumnSource<T> extends AbstractColumnSource<T> implement
     protected final ColumnSource<T> innerSource;
 
     public RedirectedColumnSource(@NotNull final RowRedirection rowRedirection,
-                                  @NotNull final ColumnSource<T> innerSource) {
+            @NotNull final ColumnSource<T> innerSource) {
         super(innerSource.getType());
         this.rowRedirection = rowRedirection;
         this.innerSource = innerSource;
@@ -429,7 +429,7 @@ public class RedirectedColumnSource<T> extends AbstractColumnSource<T> implement
         private final boolean booleanNullByte;
 
         FillContext(final RedirectedColumnSource cs, final int chunkCapacity, final SharedContext sharedContext,
-                    boolean booleanNullByte) {
+                boolean booleanNullByte) {
             this.booleanNullByte = booleanNullByte;
             shareable = sharedContext == null ? new Shareable(false, cs, chunkCapacity)
                     : sharedContext.getOrCreate(new SharingKey(cs.rowRedirection),

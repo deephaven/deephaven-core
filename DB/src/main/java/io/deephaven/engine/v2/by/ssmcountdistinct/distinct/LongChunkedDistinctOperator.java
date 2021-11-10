@@ -7,6 +7,7 @@
 
 package io.deephaven.engine.v2.by.ssmcountdistinct.distinct;
 
+import io.deephaven.engine.v2.sources.BoxedColumnSource;
 import io.deephaven.engine.tables.utils.DateTime;
 import io.deephaven.engine.v2.by.ssmcountdistinct.DateTimeSsmSourceWrapper;
 

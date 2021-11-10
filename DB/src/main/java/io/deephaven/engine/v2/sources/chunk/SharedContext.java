@@ -19,9 +19,8 @@ import java.util.function.Supplier;
  * an operation (usually a chunk of ordered keys).
  *
  * <p>
- * For example, {@link RedirectedColumnSource}s that share the same
- * {@link MutableRowRedirection} cache a chunk of redirections for the most recent chunk of
- * ordered keys they have been handed.
+ * For example, {@link RedirectedColumnSource}s that share the same {@link MutableRowRedirection} cache a chunk of
+ * redirections for the most recent chunk of ordered keys they have been handed.
  *
  * <p>
  * It's important that "nested" usage follows the convention of creating a new instance and passing that instance to

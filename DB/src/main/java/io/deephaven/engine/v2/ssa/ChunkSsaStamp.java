@@ -65,15 +65,15 @@ public interface ChunkSsaStamp {
             RowSetBuilderRandom modifiedBuilder, boolean disallowExactMatch);
 
     void processInsertion(Chunk<Values> leftStampValues, LongChunk<Attributes.RowKeys> leftStampKeys,
-                          Chunk<? extends Values> rightStampChunk, LongChunk<RowKeys> rightKeys, Chunk<Values> nextRightValue,
-                          MutableRowRedirection rowRedirection, RowSetBuilderRandom modifiedBuilder, boolean endsWithLastValue,
-                          boolean disallowExactMatch);
+            Chunk<? extends Values> rightStampChunk, LongChunk<RowKeys> rightKeys, Chunk<Values> nextRightValue,
+            MutableRowRedirection rowRedirection, RowSetBuilderRandom modifiedBuilder, boolean endsWithLastValue,
+            boolean disallowExactMatch);
 
     int findModified(int first, Chunk<Values> leftStampValues, LongChunk<Attributes.RowKeys> leftStampKeys,
-                     RowRedirection rowRedirection, Chunk<? extends Values> rightStampChunk,
-                     LongChunk<RowKeys> rightStampIndices, RowSetBuilderRandom modifiedBuilder, boolean disallowExactMatch);
+            RowRedirection rowRedirection, Chunk<? extends Values> rightStampChunk,
+            LongChunk<RowKeys> rightStampIndices, RowSetBuilderRandom modifiedBuilder, boolean disallowExactMatch);
 
     void applyShift(Chunk<Values> leftStampValues, LongChunk<Attributes.RowKeys> leftStampKeys,
-                    Chunk<? extends Values> rightStampChunk, LongChunk<RowKeys> rightStampKeys, long shiftDelta,
-                    MutableRowRedirection rowRedirection, boolean disallowExactMatch);
+            Chunk<? extends Values> rightStampChunk, LongChunk<RowKeys> rightStampKeys, long shiftDelta,
+            MutableRowRedirection rowRedirection, boolean disallowExactMatch);
 }

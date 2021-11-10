@@ -248,10 +248,10 @@ public class DateTimeUtils {
      *
      * @param dateTime The starting {@link DateTime} value.
      * @param nanos The long number of nanoseconds to add to dateTime.
-     * @return a null {@link DateTime} if either input is null; the starting {@link DateTime} plus the specified
-     *         number of nanoseconds, if the result is not too large for a {@link DateTime}; or throws a
-     *         {@link DateTimeOverflowException DateTimeOverflowException} if the resultant value is more than max
-     *         long nanoseconds from Epoch.
+     * @return a null {@link DateTime} if either input is null; the starting {@link DateTime} plus the specified number
+     *         of nanoseconds, if the result is not too large for a {@link DateTime}; or throws a
+     *         {@link DateTimeOverflowException DateTimeOverflowException} if the resultant value is more than max long
+     *         nanoseconds from Epoch.
      */
     public static DateTime plus(DateTime dateTime, long nanos) {
         if (dateTime == null || nanos == io.deephaven.util.QueryConstants.NULL_LONG) {
@@ -266,10 +266,10 @@ public class DateTimeUtils {
      *
      * @param dateTime The starting {@link DateTime} value.
      * @param nanos The long number of nanoseconds to subtract from dateTime.
-     * @return a null {@link DateTime} if either input is null; the starting {@link DateTime} minus the specified
-     *         number of nanoseconds, if the result is not too negative for a {@link DateTime}; or throws a
-     *         {@link DateTimeOverflowException DateTimeOverflowException} if the resultant value is more than min
-     *         long nanoseconds from Epoch.
+     * @return a null {@link DateTime} if either input is null; the starting {@link DateTime} minus the specified number
+     *         of nanoseconds, if the result is not too negative for a {@link DateTime}; or throws a
+     *         {@link DateTimeOverflowException DateTimeOverflowException} if the resultant value is more than min long
+     *         nanoseconds from Epoch.
      */
     public static DateTime minus(DateTime dateTime, long nanos) {
         if (dateTime == null || -nanos == io.deephaven.util.QueryConstants.NULL_LONG) {
@@ -284,8 +284,8 @@ public class DateTimeUtils {
      *
      * @param dateTime The starting {@link DateTime} value.
      * @param period The {@link Period} to add to dateTime.
-     * @return a null {@link DateTime} if either input is null; the starting {@link DateTime} plus the specified
-     *         period, if the result is not too large for a DateTime; or throws a {@link DateTimeOverflowException
+     * @return a null {@link DateTime} if either input is null; the starting {@link DateTime} plus the specified period,
+     *         if the result is not too large for a DateTime; or throws a {@link DateTimeOverflowException
      *         DateTimeOverflowException} if the resultant value is more than max long nanoseconds from Epoch.
      */
     public static DateTime plus(DateTime dateTime, Period period) {
@@ -309,8 +309,8 @@ public class DateTimeUtils {
      * @param period The {@link Period} to subtract from dateTime.
      * @return a null {@link DateTime} if either input is null; the starting {@link DateTime} minus the specified
      *         period, if the result is not too negative for a {@link DateTime}; or throws a
-     *         {@link DateTimeOverflowException DateTimeOverflowException} if the resultant value is more than min
-     *         long nanoseconds from Epoch.
+     *         {@link DateTimeOverflowException DateTimeOverflowException} if the resultant value is more than min long
+     *         nanoseconds from Epoch.
      */
     public static DateTime minus(DateTime dateTime, Period period) {
         if (dateTime == null || period == null) {
@@ -333,8 +333,8 @@ public class DateTimeUtils {
      * @param d2 The {@link DateTime} to subtract from d1.
      * @return {@link QueryConstants#NULL_LONG} if either input is null; the long nanoseconds from Epoch value of the
      *         first {@link DateTime} minus d2, if the result is not out of range for a long value; or throws a
-     *         {@link DateTimeOverflowException DateTimeOverflowException} if the resultant value would be more than
-     *         min long or max long nanoseconds from Epoch.
+     *         {@link DateTimeOverflowException DateTimeOverflowException} if the resultant value would be more than min
+     *         long or max long nanoseconds from Epoch.
      *         <P>
      *         Note that the subtraction is done based the nanosecond offsets of the two dates from Epoch, so, if either
      *         date is before Epoch (negative offset), the result may be unexpected.
@@ -370,8 +370,8 @@ public class DateTimeUtils {
      * @param d2 The second {@link DateTime}.
      * @return {@link QueryConstants#NULL_LONG} if either input is null; the long nanoseconds from Epoch value of the
      *         first {@link DateTime} minus d2, if the result is not out of range for a long value; or throws a
-     *         {@link DateTimeOverflowException DateTimeOverflowException} if the resultant value would be more than
-     *         min long or max long nanoseconds from Epoch.
+     *         {@link DateTimeOverflowException DateTimeOverflowException} if the resultant value would be more than min
+     *         long or max long nanoseconds from Epoch.
      *         <P>
      *         Note that the subtraction is done based the nanosecond offsets of the two dates from Epoch, so, if either
      *         date is before Epoch (negative offset), the result may be unexpected.
@@ -414,9 +414,9 @@ public class DateTimeUtils {
      * @param end The second {@link DateTime}.
      * @return {@link QueryConstants#NULL_LONG} if either input is null; a double value of the number of days obtained
      *         from the first {@link DateTime} value minus d2, if the intermediate value of nanoseconds difference
-     *         between the two dates is not out of range for a long value; or throws a
-     *         {@link DateTimeOverflowException DateTimeOverflowException} if the intermediate value would be more
-     *         than min long or max long nanoseconds from Epoch.
+     *         between the two dates is not out of range for a long value; or throws a {@link DateTimeOverflowException
+     *         DateTimeOverflowException} if the intermediate value would be more than min long or max long nanoseconds
+     *         from Epoch.
      *         <P>
      *         Note that the subtraction is done based the nanosecond offsets of the two dates from Epoch, so, if either
      *         date is before Epoch (negative offset), the result may be unexpected.
@@ -437,8 +437,8 @@ public class DateTimeUtils {
      *
      * @param dateTime {@link DateTime} for which the new value at midnight should be calculated.
      * @param timeZone {@link TimeZone} for which the new value at midnight should be calculated.
-     * @return A null {@link DateTime} if either input is null, otherwise a {@link DateTime} representing midnight
-     *         for the date and time zone of the inputs.
+     * @return A null {@link DateTime} if either input is null, otherwise a {@link DateTime} representing midnight for
+     *         the date and time zone of the inputs.
      */
     public static DateTime dateAtMidnight(DateTime dateTime, TimeZone timeZone) {
         if (dateTime == null || timeZone == null) {
@@ -464,8 +464,8 @@ public class DateTimeUtils {
     }
 
     /**
-     * Returns a {@link DateTime} representing midnight in a selected time zone on the date specified by the a number
-     * of milliseconds from Epoch.
+     * Returns a {@link DateTime} representing midnight in a selected time zone on the date specified by the a number of
+     * milliseconds from Epoch.
      *
      * @param millis A long value of the number of milliseconds from Epoch for which the {@link DateTime} is to be
      *        calculated.
@@ -632,8 +632,8 @@ public class DateTimeUtils {
     }
 
     /**
-     * Returns an int value of the day of the week for a {@link DateTime} in the New York time zone, with 1 being
-     * Monday and 7 being Sunday.
+     * Returns an int value of the day of the week for a {@link DateTime} in the New York time zone, with 1 being Monday
+     * and 7 being Sunday.
      *
      * @param dateTime The {@link DateTime} for which to find the day of the week.
      * @return A {@link QueryConstants#NULL_INT} if the input is null, otherwise, an int value of the day of the week
@@ -689,8 +689,8 @@ public class DateTimeUtils {
     }
 
     /**
-     * Returns an int value of the hour of the day for a {@link DateTime} in the New York time zone. The hour is on a
-     * 24 hour clock (0 - 23).
+     * Returns an int value of the hour of the day for a {@link DateTime} in the New York time zone. The hour is on a 24
+     * hour clock (0 - 23).
      *
      * @param dateTime The {@link DateTime} for which to find the hour of the day.
      * @return A {@link QueryConstants#NULL_INT} if the input is null, otherwise, an int value of the hour of the day
@@ -755,8 +755,8 @@ public class DateTimeUtils {
      *
      * @param dateTime The {@link DateTime} for which to find the milliseconds.
      * @return A {@link QueryConstants#NULL_INT} if the input is null, otherwise, an int value of milliseconds since the
-     *         top of the second for the date/time represented by the {@link DateTime} when interpreted in the New
-     *         York time zone.
+     *         top of the second for the date/time represented by the {@link DateTime} when interpreted in the New York
+     *         time zone.
      */
     public static int millisOfSecondNy(DateTime dateTime) {
         return millisOfSecond(dateTime, TimeZone.TZ_NY);
@@ -812,13 +812,12 @@ public class DateTimeUtils {
     }
 
     /**
-     * Returns a long value of nanoseconds since the top of the second for a {@link DateTime} in the New York time
-     * zone.
+     * Returns a long value of nanoseconds since the top of the second for a {@link DateTime} in the New York time zone.
      *
      * @param dateTime The {@link DateTime} for which to find the nanoseconds.
      * @return A {@link QueryConstants#NULL_LONG} if the input is null, otherwise, a long value of nanoseconds since the
-     *         top of the second for the date/time represented by the {@link DateTime} when interpreted in the New
-     *         York time zone.
+     *         top of the second for the date/time represented by the {@link DateTime} when interpreted in the New York
+     *         time zone.
      */
     public static long nanosOfSecondNy(DateTime dateTime) {
         return nanosOfSecond(dateTime, TimeZone.TZ_NY);
@@ -832,8 +831,8 @@ public class DateTimeUtils {
      * @param dateTime The {@link DateTime} for which to find the microseconds.
      * @param timeZone The {@link TimeZone} to use when interpreting the date/time.
      * @return A {@link QueryConstants#NULL_INT} if either input is null, otherwise, an int value of microseconds since
-     *         the top of the millisecond for the date/time represented by the {@link DateTime} when interpreted in
-     *         the specified time zone.
+     *         the top of the millisecond for the date/time represented by the {@link DateTime} when interpreted in the
+     *         specified time zone.
      */
     @SuppressWarnings("WeakerAccess")
     public static int microsOfMilli(DateTime dateTime, TimeZone timeZone) {
@@ -851,8 +850,8 @@ public class DateTimeUtils {
      *
      * @param dateTime The {@link DateTime} for which to find the microseconds.
      * @return A {@link QueryConstants#NULL_INT} if the input is null, otherwise, an int value of microseconds since the
-     *         top of the millisecond for the date/time represented by the {@link DateTime} when interpreted in the
-     *         New York time zone.
+     *         top of the millisecond for the date/time represented by the {@link DateTime} when interpreted in the New
+     *         York time zone.
      */
     @SuppressWarnings("WeakerAccess")
     public static int microsOfMilliNy(DateTime dateTime) {
@@ -924,8 +923,8 @@ public class DateTimeUtils {
      * @param dateTime The {@link DateTime} for which to find the month.
      * @param timeZone The {@link TimeZone} to use when interpreting the date/time.
      * @return A {@link QueryConstants#NULL_INT} if either input is null, otherwise, an int value of the month for the
-     *         date/time represented by the {@link DateTime} when interpreted in the specified time zone. January is
-     *         1, February is 2, etc.
+     *         date/time represented by the {@link DateTime} when interpreted in the specified time zone. January is 1,
+     *         February is 2, etc.
      */
     @SuppressWarnings("WeakerAccess")
     public static int monthOfYear(DateTime dateTime, TimeZone timeZone) {
@@ -983,8 +982,8 @@ public class DateTimeUtils {
      * @param dateTime The {@link DateTime} for which to find the seconds.
      * @param timeZone The {@link TimeZone} to use when interpreting the date/time.
      * @return A {@link QueryConstants#NULL_INT} if either input is null, otherwise, an int value of seconds since the
-     *         top of the minute for the date/time represented by the {@link DateTime} when interpreted in the
-     *         specified time zone.
+     *         top of the minute for the date/time represented by the {@link DateTime} when interpreted in the specified
+     *         time zone.
      */
     @SuppressWarnings("WeakerAccess")
     public static int secondOfMinute(DateTime dateTime, TimeZone timeZone) {
@@ -1000,8 +999,8 @@ public class DateTimeUtils {
      *
      * @param dateTime The {@link DateTime} for which to find the seconds.
      * @return A {@link QueryConstants#NULL_INT} if the input is null, otherwise, an int value of seconds since the top
-     *         of the minute for the date/time represented by the {@link DateTime} when interpreted in the New York
-     *         time zone.
+     *         of the minute for the date/time represented by the {@link DateTime} when interpreted in the New York time
+     *         zone.
      */
     public static int secondOfMinuteNy(DateTime dateTime) {
         return secondOfMinute(dateTime, TimeZone.TZ_NY);
@@ -1470,8 +1469,8 @@ public class DateTimeUtils {
     }
 
     /**
-     * Returns a {@link DateTime} value based on a starting value and a {@link Period} to add to it, but with a cap
-     * max value which is returned in case the starting value plus period exceeds the cap.
+     * Returns a {@link DateTime} value based on a starting value and a {@link Period} to add to it, but with a cap max
+     * value which is returned in case the starting value plus period exceeds the cap.
      *
      * @param original The starting {@link DateTime} value.
      * @param period The {@link Period} to add to dateTime.
@@ -1594,8 +1593,8 @@ public class DateTimeUtils {
     }
 
     /**
-     * Converts an expression, replacing DateTime and Period literals with references to constant
-     * DateTime/Period instances.
+     * Converts an expression, replacing DateTime and Period literals with references to constant DateTime/Period
+     * instances.
      *
      * @param formula The formula to convert.
      * @return A {@link Result} object, which includes the converted formula string, a string of instance variable
@@ -1651,7 +1650,8 @@ public class DateTimeUtils {
             } else if (convertPeriodQuiet(s) != null) {
                 matcher.appendReplacement(convertedFormula, "_period" + periodIndex);
                 instanceVariablesString.append("        private Period _period").append(periodIndex)
-                        .append("=DateTimeUtils.convertPeriod(\"").append(formula, matcher.start() + 1, matcher.end() - 1)
+                        .append("=DateTimeUtils.convertPeriod(\"")
+                        .append(formula, matcher.start() + 1, matcher.end() - 1)
                         .append("\");\n");
                 newVariables.put("_period" + periodIndex, Period.class);
 
@@ -1689,8 +1689,8 @@ public class DateTimeUtils {
      * @param formula The String to be evaluated and converted. Optionally, but preferred, enclosed in straight single
      *        ticks.
      * @return A long value representing an Epoch offset in nanoseconds for a time or date/time, or a duration in
-     *         nanoseconds for a period. Throws {@link DateTimeOverflowException} if the resultant value would be
-     *         longer than max long, or {@link IllegalArgumentException} if expression cannot be evaluated.
+     *         nanoseconds for a period. Throws {@link DateTimeOverflowException} if the resultant value would be longer
+     *         than max long, or {@link IllegalArgumentException} if expression cannot be evaluated.
      */
     public static long expressionToNanos(String formula) {
         if (!formula.startsWith("'")) {
@@ -1744,8 +1744,7 @@ public class DateTimeUtils {
      *
      * @param s String to be converted, usually in the form yyyy-MM-ddThh:mm:ss and with optional sub-seconds after an
      *        optional decimal point, followed by a mandatory time zone character code
-     * @throws RuntimeException if the String cannot be converted, otherwise a {@link DateTime} from the parsed
-     *         String.
+     * @throws RuntimeException if the String cannot be converted, otherwise a {@link DateTime} from the parsed String.
      */
     public static DateTime convertDateTime(String s) {
         DateTime ret = convertDateTimeQuiet(s);
@@ -1964,7 +1963,8 @@ public class DateTimeUtils {
         int micros = extractSixDigitNum(s, 20);
         int tzHours = (s.charAt(26) == '-' ? -1 : 1) * extractTwoDigitNum(s, 27);
         DateTimeZone timeZone = DateTimeZone.forOffsetHours(tzHours);
-        org.joda.time.DateTime d = new org.joda.time.DateTime(year, month, day, hour, min, sec, micros / 1000, timeZone);
+        org.joda.time.DateTime d =
+                new org.joda.time.DateTime(year, month, day, hour, min, sec, micros / 1000, timeZone);
         return new DateTime(millisToNanos(d.getMillis()) + (micros % 1000) * 1000);
     }
 
@@ -1997,7 +1997,8 @@ public class DateTimeUtils {
             }
             int decimalIndex = dateTimeString.indexOf('.');
             if (decimalIndex == -1) {
-                return new DateTime(millisToNanos(new org.joda.time.DateTime(dateTimeString, timeZone.getTimeZone()).getMillis()));
+                return new DateTime(
+                        millisToNanos(new org.joda.time.DateTime(dateTimeString, timeZone.getTimeZone()).getMillis()));
             } else {
                 final long subsecondNanos = parseNanos(dateTimeString.substring(decimalIndex + 1));
 
@@ -2047,7 +2048,8 @@ public class DateTimeUtils {
         int min = extractTwoDigitNum(s, 14);
         int sec = extractTwoDigitNum(s, 17);
         int micros = extractSixDigitNum(s, 20);
-        org.joda.time.DateTime d = new org.joda.time.DateTime(year, month, day, hour, min, sec, micros / 1000, timeZone);
+        org.joda.time.DateTime d =
+                new org.joda.time.DateTime(year, month, day, hour, min, sec, micros / 1000, timeZone);
         return new DateTime(millisToNanos(d.getMillis()) + (micros % 1000) * 1000);
     }
 

@@ -49,7 +49,7 @@ public class TestOHLCDataSeries extends BaseArrayTestCase {
     }
 
     private void checkOHLCDataSeriesArray(OHLCDataSeriesInternal dataSeries, DateTime[] time, double[] open,
-                                          double[] high, double[] low, double[] close) {
+            double[] high, double[] low, double[] close) {
         assertEquals(dataSeries.size(), time.length);
 
         for (int i = 0; i < dataSeries.size(); i++) {

@@ -273,7 +273,8 @@ public class ChunkedOperatorAggregationHelper {
                 } else if (keySources[ii].getType() == Boolean.class) {
                     final int fii = ii;
                     transformers.add(reinterpreted -> reinterpreted[fii] =
-                            reinterpreted[fii] == null ? null : BooleanUtils.booleanAsByte((Boolean) reinterpreted[fii]));
+                            reinterpreted[fii] == null ? null
+                                    : BooleanUtils.booleanAsByte((Boolean) reinterpreted[fii]));
                 }
             }
             if (transformers.isEmpty()) {

@@ -32,7 +32,7 @@
   "previousDay": "*Overload 1*  \n  :return: java.lang.String\n  \n*Overload 2*  \n  :param days: int\n  :return: java.lang.String\n  \n*Overload 3*  \n  :param time: io.deephaven.engine.tables.utils.DateTime\n  :return: java.lang.String\n  \n*Overload 4*  \n  :param time: io.deephaven.engine.tables.utils.DateTime\n  :param days: int\n  :return: java.lang.String\n  \n*Overload 5*  \n  :param date: java.lang.String\n  :return: java.lang.String\n  \n*Overload 6*  \n  :param date: java.lang.String\n  :param days: int\n  :return: java.lang.String",
   "previousNonBusinessDay": "*Overload 1*  \n  :return: java.lang.String\n  \n*Overload 2*  \n  :param days: int\n  :return: java.lang.String\n  \n*Overload 3*  \n  :param time: io.deephaven.engine.tables.utils.DateTime\n  :return: java.lang.String\n  \n*Overload 4*  \n  :param time: io.deephaven.engine.tables.utils.DateTime\n  :param days: int\n  :return: java.lang.String\n  \n*Overload 5*  \n  :param date: java.lang.String\n  :return: java.lang.String\n  \n*Overload 6*  \n  :param date: java.lang.String\n  :param days: int\n  :return: java.lang.String",
   "standardBusinessDayLengthNanos": ":return: long",
-  "timeZone": ":return: io.deephaven.engine.tables.utils.DBTimeZone"
+  "timeZone": ":return: io.deephaven.engine.tables.utils.TimeZone"
  },
  "path": "io.deephaven.util.calendar.StaticCalendarMethods",
  "text": "Convenience methods for BusinessCalendar and Calendar.",

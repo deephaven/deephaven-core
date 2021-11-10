@@ -8,21 +8,45 @@
 
 package io.deephaven.engine.plot;
 
+import groovy.lang.Closure;
 import io.deephaven.base.verify.Require;
+import io.deephaven.engine.plot.Axes;
+import io.deephaven.engine.plot.Axis;
+import io.deephaven.engine.plot.BaseFigure;
+import io.deephaven.engine.plot.Chart;
+import io.deephaven.engine.plot.Font;
+import io.deephaven.engine.plot.PlotStyle;
+import io.deephaven.engine.plot.Series;
+import io.deephaven.engine.plot.axisformatters.AxisFormat;
+import io.deephaven.engine.plot.axistransformations.AxisTransform;
 import io.deephaven.engine.plot.datasets.DataSeries;
 import io.deephaven.engine.plot.datasets.DataSeriesInternal;
 import io.deephaven.engine.plot.datasets.category.CategoryDataSeries;
+import io.deephaven.engine.plot.datasets.data.IndexableData;
+import io.deephaven.engine.plot.datasets.data.IndexableNumericData;
+import io.deephaven.engine.plot.datasets.interval.IntervalXYDataSeries;
 import io.deephaven.engine.plot.datasets.multiseries.MultiSeries;
+import io.deephaven.engine.plot.datasets.multiseries.MultiSeriesInternal;
+import io.deephaven.engine.plot.datasets.ohlc.OHLCDataSeries;
 import io.deephaven.engine.plot.datasets.xy.XYDataSeries;
 import io.deephaven.engine.plot.datasets.xy.XYDataSeriesFunction;
+import io.deephaven.engine.plot.datasets.xyerrorbar.XYErrorBarDataSeries;
 import io.deephaven.engine.plot.errors.PlotRuntimeException;
 import io.deephaven.engine.plot.errors.PlotUnsupportedOperationException;
+import io.deephaven.engine.plot.filters.SelectableDataSet;
+import io.deephaven.engine.plot.util.PlotUtils;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.utils.DateTime;
-
+import io.deephaven.gui.color.Paint;
+import io.deephaven.util.calendar.BusinessCalendar;
+import java.lang.Comparable;
+import java.lang.String;
+import java.util.Arrays;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.DoubleUnaryOperator;
 
 /** An interface for constructing plots.  A Figure is immutable, and all function calls return a new immutable Figure instance.*/
 @SuppressWarnings({"unused", "RedundantCast", "SameParameterValue"})
@@ -458,7 +482,7 @@ public class FigureImpl implements io.deephaven.engine.plot.Figure {
         return make(series);
     }
 
-    @Override public <T0 extends java.lang.Comparable> FigureImpl catErrorBar(java.lang.Comparable seriesName, T0[] categories, DateTime[] values, DateTime[] yLow, DateTime[] yHigh ) {
+    @Override public <T0 extends java.lang.Comparable> FigureImpl catErrorBar( java.lang.Comparable seriesName, T0[] categories, io.deephaven.engine.tables.utils.DateTime[] values, io.deephaven.engine.tables.utils.DateTime[] yLow, io.deephaven.engine.tables.utils.DateTime[] yHigh ) {
         final BaseFigureImpl fc = this.figure.copy();
         final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catErrorBar( seriesName, categories, values, yLow, yHigh);
         return make(series);
@@ -626,7 +650,7 @@ public class FigureImpl implements io.deephaven.engine.plot.Figure {
         return make(series);
     }
 
-    @Override public <T0 extends java.lang.Comparable> FigureImpl catPlot( java.lang.Comparable seriesName, T0[] categories, DateTime[] values ) {
+    @Override public <T0 extends java.lang.Comparable> FigureImpl catPlot( java.lang.Comparable seriesName, T0[] categories, io.deephaven.engine.tables.utils.DateTime[] values ) {
         final BaseFigureImpl fc = this.figure.copy();
         final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catPlot( seriesName, categories, values);
         return make(series);
@@ -686,7 +710,7 @@ public class FigureImpl implements io.deephaven.engine.plot.Figure {
         return make(series);
     }
 
-    @Override public <T0 extends java.lang.Comparable> FigureImpl catPlot( java.lang.Comparable seriesName, java.util.List<T0> categories, DateTime[] values ) {
+    @Override public <T0 extends java.lang.Comparable> FigureImpl catPlot( java.lang.Comparable seriesName, java.util.List<T0> categories, io.deephaven.engine.tables.utils.DateTime[] values ) {
         final BaseFigureImpl fc = this.figure.copy();
         final DataSeriesInternal series = (DataSeriesInternal) axes(fc).catPlot( seriesName, categories, values);
         return make(series);
@@ -830,7 +854,7 @@ public class FigureImpl implements io.deephaven.engine.plot.Figure {
         return make(series);
     }
 
-    @Override public <T0 extends java.lang.Number,T1 extends java.lang.Number,T2 extends java.lang.Number> FigureImpl errorBarX( java.lang.Comparable seriesName, T0[] x, T1[] xLow, T2[] xHigh, DateTime[] y ) {
+    @Override public <T0 extends java.lang.Number,T1 extends java.lang.Number,T2 extends java.lang.Number> FigureImpl errorBarX( java.lang.Comparable seriesName, T0[] x, T1[] xLow, T2[] xHigh, io.deephaven.engine.tables.utils.DateTime[] y ) {
         final BaseFigureImpl fc = this.figure.copy();
         final DataSeriesInternal series = (DataSeriesInternal) axes(fc).errorBarX( seriesName, x, xLow, xHigh, y);
         return make(series);
@@ -848,7 +872,7 @@ public class FigureImpl implements io.deephaven.engine.plot.Figure {
         return make(series);
     }
 
-    @Override public  FigureImpl errorBarX( java.lang.Comparable seriesName, double[] x, double[] xLow, double[] xHigh, DateTime[] y ) {
+    @Override public  FigureImpl errorBarX( java.lang.Comparable seriesName, double[] x, double[] xLow, double[] xHigh, io.deephaven.engine.tables.utils.DateTime[] y ) {
         final BaseFigureImpl fc = this.figure.copy();
         final DataSeriesInternal series = (DataSeriesInternal) axes(fc).errorBarX( seriesName, x, xLow, xHigh, y);
         return make(series);
@@ -866,7 +890,7 @@ public class FigureImpl implements io.deephaven.engine.plot.Figure {
         return make(series);
     }
 
-    @Override public  FigureImpl errorBarX( java.lang.Comparable seriesName, float[] x, float[] xLow, float[] xHigh, DateTime[] y ) {
+    @Override public  FigureImpl errorBarX( java.lang.Comparable seriesName, float[] x, float[] xLow, float[] xHigh, io.deephaven.engine.tables.utils.DateTime[] y ) {
         final BaseFigureImpl fc = this.figure.copy();
         final DataSeriesInternal series = (DataSeriesInternal) axes(fc).errorBarX( seriesName, x, xLow, xHigh, y);
         return make(series);
@@ -884,7 +908,7 @@ public class FigureImpl implements io.deephaven.engine.plot.Figure {
         return make(series);
     }
 
-    @Override public  FigureImpl errorBarX( java.lang.Comparable seriesName, int[] x, int[] xLow, int[] xHigh, DateTime[] y ) {
+    @Override public  FigureImpl errorBarX( java.lang.Comparable seriesName, int[] x, int[] xLow, int[] xHigh, io.deephaven.engine.tables.utils.DateTime[] y ) {
         final BaseFigureImpl fc = this.figure.copy();
         final DataSeriesInternal series = (DataSeriesInternal) axes(fc).errorBarX( seriesName, x, xLow, xHigh, y);
         return make(series);
@@ -902,7 +926,7 @@ public class FigureImpl implements io.deephaven.engine.plot.Figure {
         return make(series);
     }
 
-    @Override public  FigureImpl errorBarX( java.lang.Comparable seriesName, long[] x, long[] xLow, long[] xHigh, DateTime[] y ) {
+    @Override public  FigureImpl errorBarX( java.lang.Comparable seriesName, long[] x, long[] xLow, long[] xHigh, io.deephaven.engine.tables.utils.DateTime[] y ) {
         final BaseFigureImpl fc = this.figure.copy();
         final DataSeriesInternal series = (DataSeriesInternal) axes(fc).errorBarX( seriesName, x, xLow, xHigh, y);
         return make(series);
@@ -914,49 +938,49 @@ public class FigureImpl implements io.deephaven.engine.plot.Figure {
         return make(series);
     }
 
-    @Override public <T3 extends java.lang.Number> FigureImpl errorBarX(java.lang.Comparable seriesName, DateTime[] x, DateTime[] xLow, DateTime[] xHigh, T3[] y ) {
+    @Override public <T3 extends java.lang.Number> FigureImpl errorBarX( java.lang.Comparable seriesName, io.deephaven.engine.tables.utils.DateTime[] x, io.deephaven.engine.tables.utils.DateTime[] xLow, io.deephaven.engine.tables.utils.DateTime[] xHigh, T3[] y ) {
         final BaseFigureImpl fc = this.figure.copy();
         final DataSeriesInternal series = (DataSeriesInternal) axes(fc).errorBarX( seriesName, x, xLow, xHigh, y);
         return make(series);
     }
 
-    @Override public  FigureImpl errorBarX(java.lang.Comparable seriesName, DateTime[] x, DateTime[] xLow, DateTime[] xHigh, double[] y ) {
+    @Override public  FigureImpl errorBarX( java.lang.Comparable seriesName, io.deephaven.engine.tables.utils.DateTime[] x, io.deephaven.engine.tables.utils.DateTime[] xLow, io.deephaven.engine.tables.utils.DateTime[] xHigh, double[] y ) {
         final BaseFigureImpl fc = this.figure.copy();
         final DataSeriesInternal series = (DataSeriesInternal) axes(fc).errorBarX( seriesName, x, xLow, xHigh, y);
         return make(series);
     }
 
-    @Override public  FigureImpl errorBarX(java.lang.Comparable seriesName, DateTime[] x, DateTime[] xLow, DateTime[] xHigh, float[] y ) {
+    @Override public  FigureImpl errorBarX( java.lang.Comparable seriesName, io.deephaven.engine.tables.utils.DateTime[] x, io.deephaven.engine.tables.utils.DateTime[] xLow, io.deephaven.engine.tables.utils.DateTime[] xHigh, float[] y ) {
         final BaseFigureImpl fc = this.figure.copy();
         final DataSeriesInternal series = (DataSeriesInternal) axes(fc).errorBarX( seriesName, x, xLow, xHigh, y);
         return make(series);
     }
 
-    @Override public  FigureImpl errorBarX(java.lang.Comparable seriesName, DateTime[] x, DateTime[] xLow, DateTime[] xHigh, int[] y ) {
+    @Override public  FigureImpl errorBarX( java.lang.Comparable seriesName, io.deephaven.engine.tables.utils.DateTime[] x, io.deephaven.engine.tables.utils.DateTime[] xLow, io.deephaven.engine.tables.utils.DateTime[] xHigh, int[] y ) {
         final BaseFigureImpl fc = this.figure.copy();
         final DataSeriesInternal series = (DataSeriesInternal) axes(fc).errorBarX( seriesName, x, xLow, xHigh, y);
         return make(series);
     }
 
-    @Override public  FigureImpl errorBarX(java.lang.Comparable seriesName, DateTime[] x, DateTime[] xLow, DateTime[] xHigh, long[] y ) {
+    @Override public  FigureImpl errorBarX( java.lang.Comparable seriesName, io.deephaven.engine.tables.utils.DateTime[] x, io.deephaven.engine.tables.utils.DateTime[] xLow, io.deephaven.engine.tables.utils.DateTime[] xHigh, long[] y ) {
         final BaseFigureImpl fc = this.figure.copy();
         final DataSeriesInternal series = (DataSeriesInternal) axes(fc).errorBarX( seriesName, x, xLow, xHigh, y);
         return make(series);
     }
 
-    @Override public  FigureImpl errorBarX(java.lang.Comparable seriesName, DateTime[] x, DateTime[] xLow, DateTime[] xHigh, DateTime[] y ) {
+    @Override public  FigureImpl errorBarX( java.lang.Comparable seriesName, io.deephaven.engine.tables.utils.DateTime[] x, io.deephaven.engine.tables.utils.DateTime[] xLow, io.deephaven.engine.tables.utils.DateTime[] xHigh, io.deephaven.engine.tables.utils.DateTime[] y ) {
         final BaseFigureImpl fc = this.figure.copy();
         final DataSeriesInternal series = (DataSeriesInternal) axes(fc).errorBarX( seriesName, x, xLow, xHigh, y);
         return make(series);
     }
 
-    @Override public  FigureImpl errorBarX(java.lang.Comparable seriesName, DateTime[] x, DateTime[] xLow, DateTime[] xHigh, short[] y ) {
+    @Override public  FigureImpl errorBarX( java.lang.Comparable seriesName, io.deephaven.engine.tables.utils.DateTime[] x, io.deephaven.engine.tables.utils.DateTime[] xLow, io.deephaven.engine.tables.utils.DateTime[] xHigh, short[] y ) {
         final BaseFigureImpl fc = this.figure.copy();
         final DataSeriesInternal series = (DataSeriesInternal) axes(fc).errorBarX( seriesName, x, xLow, xHigh, y);
         return make(series);
     }
 
-    @Override public <T3 extends java.lang.Number> FigureImpl errorBarX(java.lang.Comparable seriesName, DateTime[] x, DateTime[] xLow, DateTime[] xHigh, java.util.List<T3> y ) {
+    @Override public <T3 extends java.lang.Number> FigureImpl errorBarX( java.lang.Comparable seriesName, io.deephaven.engine.tables.utils.DateTime[] x, io.deephaven.engine.tables.utils.DateTime[] xLow, io.deephaven.engine.tables.utils.DateTime[] xHigh, java.util.List<T3> y ) {
         final BaseFigureImpl fc = this.figure.copy();
         final DataSeriesInternal series = (DataSeriesInternal) axes(fc).errorBarX( seriesName, x, xLow, xHigh, y);
         return make(series);
@@ -1010,7 +1034,7 @@ public class FigureImpl implements io.deephaven.engine.plot.Figure {
         return make(series);
     }
 
-    @Override public  FigureImpl errorBarX( java.lang.Comparable seriesName, short[] x, short[] xLow, short[] xHigh, DateTime[] y ) {
+    @Override public  FigureImpl errorBarX( java.lang.Comparable seriesName, short[] x, short[] xLow, short[] xHigh, io.deephaven.engine.tables.utils.DateTime[] y ) {
         final BaseFigureImpl fc = this.figure.copy();
         final DataSeriesInternal series = (DataSeriesInternal) axes(fc).errorBarX( seriesName, x, xLow, xHigh, y);
         return make(series);
@@ -1028,7 +1052,7 @@ public class FigureImpl implements io.deephaven.engine.plot.Figure {
         return make(series);
     }
 
-    @Override public <T0 extends java.lang.Number,T1 extends java.lang.Number,T2 extends java.lang.Number> FigureImpl errorBarX( java.lang.Comparable seriesName, java.util.List<T0> x, java.util.List<T1> xLow, java.util.List<T2> xHigh, DateTime[] y ) {
+    @Override public <T0 extends java.lang.Number,T1 extends java.lang.Number,T2 extends java.lang.Number> FigureImpl errorBarX( java.lang.Comparable seriesName, java.util.List<T0> x, java.util.List<T1> xLow, java.util.List<T2> xHigh, io.deephaven.engine.tables.utils.DateTime[] y ) {
         final BaseFigureImpl fc = this.figure.copy();
         final DataSeriesInternal series = (DataSeriesInternal) axes(fc).errorBarX( seriesName, x, xLow, xHigh, y);
         return make(series);
@@ -1076,7 +1100,7 @@ public class FigureImpl implements io.deephaven.engine.plot.Figure {
         return make(series);
     }
 
-    @Override public <T0 extends java.lang.Number,T1 extends java.lang.Number,T2 extends java.lang.Number> FigureImpl errorBarXY(java.lang.Comparable seriesName, T0[] x, T1[] xLow, T2[] xHigh, DateTime[] y, DateTime[] yLow, DateTime[] yHigh ) {
+    @Override public <T0 extends java.lang.Number,T1 extends java.lang.Number,T2 extends java.lang.Number> FigureImpl errorBarXY( java.lang.Comparable seriesName, T0[] x, T1[] xLow, T2[] xHigh, io.deephaven.engine.tables.utils.DateTime[] y, io.deephaven.engine.tables.utils.DateTime[] yLow, io.deephaven.engine.tables.utils.DateTime[] yHigh ) {
         final BaseFigureImpl fc = this.figure.copy();
         final DataSeriesInternal series = (DataSeriesInternal) axes(fc).errorBarXY( seriesName, x, xLow, xHigh, y, yLow, yHigh);
         return make(series);
@@ -1094,7 +1118,7 @@ public class FigureImpl implements io.deephaven.engine.plot.Figure {
         return make(series);
     }
 
-    @Override public  FigureImpl errorBarXY(java.lang.Comparable seriesName, double[] x, double[] xLow, double[] xHigh, DateTime[] y, DateTime[] yLow, DateTime[] yHigh ) {
+    @Override public  FigureImpl errorBarXY( java.lang.Comparable seriesName, double[] x, double[] xLow, double[] xHigh, io.deephaven.engine.tables.utils.DateTime[] y, io.deephaven.engine.tables.utils.DateTime[] yLow, io.deephaven.engine.tables.utils.DateTime[] yHigh ) {
         final BaseFigureImpl fc = this.figure.copy();
         final DataSeriesInternal series = (DataSeriesInternal) axes(fc).errorBarXY( seriesName, x, xLow, xHigh, y, yLow, yHigh);
         return make(series);
@@ -1112,7 +1136,7 @@ public class FigureImpl implements io.deephaven.engine.plot.Figure {
         return make(series);
     }
 
-    @Override public  FigureImpl errorBarXY(java.lang.Comparable seriesName, float[] x, float[] xLow, float[] xHigh, DateTime[] y, DateTime[] yLow, DateTime[] yHigh ) {
+    @Override public  FigureImpl errorBarXY( java.lang.Comparable seriesName, float[] x, float[] xLow, float[] xHigh, io.deephaven.engine.tables.utils.DateTime[] y, io.deephaven.engine.tables.utils.DateTime[] yLow, io.deephaven.engine.tables.utils.DateTime[] yHigh ) {
         final BaseFigureImpl fc = this.figure.copy();
         final DataSeriesInternal series = (DataSeriesInternal) axes(fc).errorBarXY( seriesName, x, xLow, xHigh, y, yLow, yHigh);
         return make(series);
@@ -1130,7 +1154,7 @@ public class FigureImpl implements io.deephaven.engine.plot.Figure {
         return make(series);
     }
 
-    @Override public  FigureImpl errorBarXY(java.lang.Comparable seriesName, int[] x, int[] xLow, int[] xHigh, DateTime[] y, DateTime[] yLow, DateTime[] yHigh ) {
+    @Override public  FigureImpl errorBarXY( java.lang.Comparable seriesName, int[] x, int[] xLow, int[] xHigh, io.deephaven.engine.tables.utils.DateTime[] y, io.deephaven.engine.tables.utils.DateTime[] yLow, io.deephaven.engine.tables.utils.DateTime[] yHigh ) {
         final BaseFigureImpl fc = this.figure.copy();
         final DataSeriesInternal series = (DataSeriesInternal) axes(fc).errorBarXY( seriesName, x, xLow, xHigh, y, yLow, yHigh);
         return make(series);
@@ -1148,7 +1172,7 @@ public class FigureImpl implements io.deephaven.engine.plot.Figure {
         return make(series);
     }
 
-    @Override public  FigureImpl errorBarXY(java.lang.Comparable seriesName, long[] x, long[] xLow, long[] xHigh, DateTime[] y, DateTime[] yLow, DateTime[] yHigh ) {
+    @Override public  FigureImpl errorBarXY( java.lang.Comparable seriesName, long[] x, long[] xLow, long[] xHigh, io.deephaven.engine.tables.utils.DateTime[] y, io.deephaven.engine.tables.utils.DateTime[] yLow, io.deephaven.engine.tables.utils.DateTime[] yHigh ) {
         final BaseFigureImpl fc = this.figure.copy();
         final DataSeriesInternal series = (DataSeriesInternal) axes(fc).errorBarXY( seriesName, x, xLow, xHigh, y, yLow, yHigh);
         return make(series);
@@ -1160,49 +1184,49 @@ public class FigureImpl implements io.deephaven.engine.plot.Figure {
         return make(series);
     }
 
-    @Override public <T3 extends java.lang.Number,T4 extends java.lang.Number,T5 extends java.lang.Number> FigureImpl errorBarXY(java.lang.Comparable seriesName, DateTime[] x, DateTime[] xLow, DateTime[] xHigh, T3[] y, T4[] yLow, T5[] yHigh ) {
+    @Override public <T3 extends java.lang.Number,T4 extends java.lang.Number,T5 extends java.lang.Number> FigureImpl errorBarXY( java.lang.Comparable seriesName, io.deephaven.engine.tables.utils.DateTime[] x, io.deephaven.engine.tables.utils.DateTime[] xLow, io.deephaven.engine.tables.utils.DateTime[] xHigh, T3[] y, T4[] yLow, T5[] yHigh ) {
         final BaseFigureImpl fc = this.figure.copy();
         final DataSeriesInternal series = (DataSeriesInternal) axes(fc).errorBarXY( seriesName, x, xLow, xHigh, y, yLow, yHigh);
         return make(series);
     }
 
-    @Override public  FigureImpl errorBarXY(java.lang.Comparable seriesName, DateTime[] x, DateTime[] xLow, DateTime[] xHigh, double[] y, double[] yLow, double[] yHigh ) {
+    @Override public  FigureImpl errorBarXY( java.lang.Comparable seriesName, io.deephaven.engine.tables.utils.DateTime[] x, io.deephaven.engine.tables.utils.DateTime[] xLow, io.deephaven.engine.tables.utils.DateTime[] xHigh, double[] y, double[] yLow, double[] yHigh ) {
         final BaseFigureImpl fc = this.figure.copy();
         final DataSeriesInternal series = (DataSeriesInternal) axes(fc).errorBarXY( seriesName, x, xLow, xHigh, y, yLow, yHigh);
         return make(series);
     }
 
-    @Override public  FigureImpl errorBarXY(java.lang.Comparable seriesName, DateTime[] x, DateTime[] xLow, DateTime[] xHigh, float[] y, float[] yLow, float[] yHigh ) {
+    @Override public  FigureImpl errorBarXY( java.lang.Comparable seriesName, io.deephaven.engine.tables.utils.DateTime[] x, io.deephaven.engine.tables.utils.DateTime[] xLow, io.deephaven.engine.tables.utils.DateTime[] xHigh, float[] y, float[] yLow, float[] yHigh ) {
         final BaseFigureImpl fc = this.figure.copy();
         final DataSeriesInternal series = (DataSeriesInternal) axes(fc).errorBarXY( seriesName, x, xLow, xHigh, y, yLow, yHigh);
         return make(series);
     }
 
-    @Override public  FigureImpl errorBarXY(java.lang.Comparable seriesName, DateTime[] x, DateTime[] xLow, DateTime[] xHigh, int[] y, int[] yLow, int[] yHigh ) {
+    @Override public  FigureImpl errorBarXY( java.lang.Comparable seriesName, io.deephaven.engine.tables.utils.DateTime[] x, io.deephaven.engine.tables.utils.DateTime[] xLow, io.deephaven.engine.tables.utils.DateTime[] xHigh, int[] y, int[] yLow, int[] yHigh ) {
         final BaseFigureImpl fc = this.figure.copy();
         final DataSeriesInternal series = (DataSeriesInternal) axes(fc).errorBarXY( seriesName, x, xLow, xHigh, y, yLow, yHigh);
         return make(series);
     }
 
-    @Override public  FigureImpl errorBarXY(java.lang.Comparable seriesName, DateTime[] x, DateTime[] xLow, DateTime[] xHigh, long[] y, long[] yLow, long[] yHigh ) {
+    @Override public  FigureImpl errorBarXY( java.lang.Comparable seriesName, io.deephaven.engine.tables.utils.DateTime[] x, io.deephaven.engine.tables.utils.DateTime[] xLow, io.deephaven.engine.tables.utils.DateTime[] xHigh, long[] y, long[] yLow, long[] yHigh ) {
         final BaseFigureImpl fc = this.figure.copy();
         final DataSeriesInternal series = (DataSeriesInternal) axes(fc).errorBarXY( seriesName, x, xLow, xHigh, y, yLow, yHigh);
         return make(series);
     }
 
-    @Override public  FigureImpl errorBarXY(java.lang.Comparable seriesName, DateTime[] x, DateTime[] xLow, DateTime[] xHigh, DateTime[] y, DateTime[] yLow, DateTime[] yHigh ) {
+    @Override public  FigureImpl errorBarXY( java.lang.Comparable seriesName, io.deephaven.engine.tables.utils.DateTime[] x, io.deephaven.engine.tables.utils.DateTime[] xLow, io.deephaven.engine.tables.utils.DateTime[] xHigh, io.deephaven.engine.tables.utils.DateTime[] y, io.deephaven.engine.tables.utils.DateTime[] yLow, io.deephaven.engine.tables.utils.DateTime[] yHigh ) {
         final BaseFigureImpl fc = this.figure.copy();
         final DataSeriesInternal series = (DataSeriesInternal) axes(fc).errorBarXY( seriesName, x, xLow, xHigh, y, yLow, yHigh);
         return make(series);
     }
 
-    @Override public  FigureImpl errorBarXY(java.lang.Comparable seriesName, DateTime[] x, DateTime[] xLow, DateTime[] xHigh, short[] y, short[] yLow, short[] yHigh ) {
+    @Override public  FigureImpl errorBarXY( java.lang.Comparable seriesName, io.deephaven.engine.tables.utils.DateTime[] x, io.deephaven.engine.tables.utils.DateTime[] xLow, io.deephaven.engine.tables.utils.DateTime[] xHigh, short[] y, short[] yLow, short[] yHigh ) {
         final BaseFigureImpl fc = this.figure.copy();
         final DataSeriesInternal series = (DataSeriesInternal) axes(fc).errorBarXY( seriesName, x, xLow, xHigh, y, yLow, yHigh);
         return make(series);
     }
 
-    @Override public <T3 extends java.lang.Number,T4 extends java.lang.Number,T5 extends java.lang.Number> FigureImpl errorBarXY(java.lang.Comparable seriesName, DateTime[] x, DateTime[] xLow, DateTime[] xHigh, java.util.List<T3> y, java.util.List<T4> yLow, java.util.List<T5> yHigh ) {
+    @Override public <T3 extends java.lang.Number,T4 extends java.lang.Number,T5 extends java.lang.Number> FigureImpl errorBarXY( java.lang.Comparable seriesName, io.deephaven.engine.tables.utils.DateTime[] x, io.deephaven.engine.tables.utils.DateTime[] xLow, io.deephaven.engine.tables.utils.DateTime[] xHigh, java.util.List<T3> y, java.util.List<T4> yLow, java.util.List<T5> yHigh ) {
         final BaseFigureImpl fc = this.figure.copy();
         final DataSeriesInternal series = (DataSeriesInternal) axes(fc).errorBarXY( seriesName, x, xLow, xHigh, y, yLow, yHigh);
         return make(series);
@@ -1256,7 +1280,7 @@ public class FigureImpl implements io.deephaven.engine.plot.Figure {
         return make(series);
     }
 
-    @Override public  FigureImpl errorBarXY(java.lang.Comparable seriesName, short[] x, short[] xLow, short[] xHigh, DateTime[] y, DateTime[] yLow, DateTime[] yHigh ) {
+    @Override public  FigureImpl errorBarXY( java.lang.Comparable seriesName, short[] x, short[] xLow, short[] xHigh, io.deephaven.engine.tables.utils.DateTime[] y, io.deephaven.engine.tables.utils.DateTime[] yLow, io.deephaven.engine.tables.utils.DateTime[] yHigh ) {
         final BaseFigureImpl fc = this.figure.copy();
         final DataSeriesInternal series = (DataSeriesInternal) axes(fc).errorBarXY( seriesName, x, xLow, xHigh, y, yLow, yHigh);
         return make(series);
@@ -1274,7 +1298,7 @@ public class FigureImpl implements io.deephaven.engine.plot.Figure {
         return make(series);
     }
 
-    @Override public <T0 extends java.lang.Number,T1 extends java.lang.Number,T2 extends java.lang.Number> FigureImpl errorBarXY(java.lang.Comparable seriesName, java.util.List<T0> x, java.util.List<T1> xLow, java.util.List<T2> xHigh, DateTime[] y, DateTime[] yLow, DateTime[] yHigh ) {
+    @Override public <T0 extends java.lang.Number,T1 extends java.lang.Number,T2 extends java.lang.Number> FigureImpl errorBarXY( java.lang.Comparable seriesName, java.util.List<T0> x, java.util.List<T1> xLow, java.util.List<T2> xHigh, io.deephaven.engine.tables.utils.DateTime[] y, io.deephaven.engine.tables.utils.DateTime[] yLow, io.deephaven.engine.tables.utils.DateTime[] yHigh ) {
         final BaseFigureImpl fc = this.figure.copy();
         final DataSeriesInternal series = (DataSeriesInternal) axes(fc).errorBarXY( seriesName, x, xLow, xHigh, y, yLow, yHigh);
         return make(series);
@@ -1322,7 +1346,7 @@ public class FigureImpl implements io.deephaven.engine.plot.Figure {
         return make(series);
     }
 
-    @Override public <T0 extends java.lang.Number> FigureImpl errorBarY(java.lang.Comparable seriesName, T0[] x, DateTime[] y, DateTime[] yLow, DateTime[] yHigh ) {
+    @Override public <T0 extends java.lang.Number> FigureImpl errorBarY( java.lang.Comparable seriesName, T0[] x, io.deephaven.engine.tables.utils.DateTime[] y, io.deephaven.engine.tables.utils.DateTime[] yLow, io.deephaven.engine.tables.utils.DateTime[] yHigh ) {
         final BaseFigureImpl fc = this.figure.copy();
         final DataSeriesInternal series = (DataSeriesInternal) axes(fc).errorBarY( seriesName, x, y, yLow, yHigh);
         return make(series);
@@ -1340,7 +1364,7 @@ public class FigureImpl implements io.deephaven.engine.plot.Figure {
         return make(series);
     }
 
-    @Override public  FigureImpl errorBarY(java.lang.Comparable seriesName, double[] x, DateTime[] y, DateTime[] yLow, DateTime[] yHigh ) {
+    @Override public  FigureImpl errorBarY( java.lang.Comparable seriesName, double[] x, io.deephaven.engine.tables.utils.DateTime[] y, io.deephaven.engine.tables.utils.DateTime[] yLow, io.deephaven.engine.tables.utils.DateTime[] yHigh ) {
         final BaseFigureImpl fc = this.figure.copy();
         final DataSeriesInternal series = (DataSeriesInternal) axes(fc).errorBarY( seriesName, x, y, yLow, yHigh);
         return make(series);
@@ -1358,7 +1382,7 @@ public class FigureImpl implements io.deephaven.engine.plot.Figure {
         return make(series);
     }
 
-    @Override public  FigureImpl errorBarY(java.lang.Comparable seriesName, float[] x, DateTime[] y, DateTime[] yLow, DateTime[] yHigh ) {
+    @Override public  FigureImpl errorBarY( java.lang.Comparable seriesName, float[] x, io.deephaven.engine.tables.utils.DateTime[] y, io.deephaven.engine.tables.utils.DateTime[] yLow, io.deephaven.engine.tables.utils.DateTime[] yHigh ) {
         final BaseFigureImpl fc = this.figure.copy();
         final DataSeriesInternal series = (DataSeriesInternal) axes(fc).errorBarY( seriesName, x, y, yLow, yHigh);
         return make(series);
@@ -1376,7 +1400,7 @@ public class FigureImpl implements io.deephaven.engine.plot.Figure {
         return make(series);
     }
 
-    @Override public  FigureImpl errorBarY(java.lang.Comparable seriesName, int[] x, DateTime[] y, DateTime[] yLow, DateTime[] yHigh ) {
+    @Override public  FigureImpl errorBarY( java.lang.Comparable seriesName, int[] x, io.deephaven.engine.tables.utils.DateTime[] y, io.deephaven.engine.tables.utils.DateTime[] yLow, io.deephaven.engine.tables.utils.DateTime[] yHigh ) {
         final BaseFigureImpl fc = this.figure.copy();
         final DataSeriesInternal series = (DataSeriesInternal) axes(fc).errorBarY( seriesName, x, y, yLow, yHigh);
         return make(series);
@@ -1394,7 +1418,7 @@ public class FigureImpl implements io.deephaven.engine.plot.Figure {
         return make(series);
     }
 
-    @Override public  FigureImpl errorBarY(java.lang.Comparable seriesName, long[] x, DateTime[] y, DateTime[] yLow, DateTime[] yHigh ) {
+    @Override public  FigureImpl errorBarY( java.lang.Comparable seriesName, long[] x, io.deephaven.engine.tables.utils.DateTime[] y, io.deephaven.engine.tables.utils.DateTime[] yLow, io.deephaven.engine.tables.utils.DateTime[] yHigh ) {
         final BaseFigureImpl fc = this.figure.copy();
         final DataSeriesInternal series = (DataSeriesInternal) axes(fc).errorBarY( seriesName, x, y, yLow, yHigh);
         return make(series);
@@ -1406,49 +1430,49 @@ public class FigureImpl implements io.deephaven.engine.plot.Figure {
         return make(series);
     }
 
-    @Override public <T1 extends java.lang.Number,T2 extends java.lang.Number,T3 extends java.lang.Number> FigureImpl errorBarY(java.lang.Comparable seriesName, DateTime[] x, T1[] y, T2[] yLow, T3[] yHigh ) {
+    @Override public <T1 extends java.lang.Number,T2 extends java.lang.Number,T3 extends java.lang.Number> FigureImpl errorBarY( java.lang.Comparable seriesName, io.deephaven.engine.tables.utils.DateTime[] x, T1[] y, T2[] yLow, T3[] yHigh ) {
         final BaseFigureImpl fc = this.figure.copy();
         final DataSeriesInternal series = (DataSeriesInternal) axes(fc).errorBarY( seriesName, x, y, yLow, yHigh);
         return make(series);
     }
 
-    @Override public  FigureImpl errorBarY(java.lang.Comparable seriesName, DateTime[] x, double[] y, double[] yLow, double[] yHigh ) {
+    @Override public  FigureImpl errorBarY( java.lang.Comparable seriesName, io.deephaven.engine.tables.utils.DateTime[] x, double[] y, double[] yLow, double[] yHigh ) {
         final BaseFigureImpl fc = this.figure.copy();
         final DataSeriesInternal series = (DataSeriesInternal) axes(fc).errorBarY( seriesName, x, y, yLow, yHigh);
         return make(series);
     }
 
-    @Override public  FigureImpl errorBarY(java.lang.Comparable seriesName, DateTime[] x, float[] y, float[] yLow, float[] yHigh ) {
+    @Override public  FigureImpl errorBarY( java.lang.Comparable seriesName, io.deephaven.engine.tables.utils.DateTime[] x, float[] y, float[] yLow, float[] yHigh ) {
         final BaseFigureImpl fc = this.figure.copy();
         final DataSeriesInternal series = (DataSeriesInternal) axes(fc).errorBarY( seriesName, x, y, yLow, yHigh);
         return make(series);
     }
 
-    @Override public  FigureImpl errorBarY(java.lang.Comparable seriesName, DateTime[] x, int[] y, int[] yLow, int[] yHigh ) {
+    @Override public  FigureImpl errorBarY( java.lang.Comparable seriesName, io.deephaven.engine.tables.utils.DateTime[] x, int[] y, int[] yLow, int[] yHigh ) {
         final BaseFigureImpl fc = this.figure.copy();
         final DataSeriesInternal series = (DataSeriesInternal) axes(fc).errorBarY( seriesName, x, y, yLow, yHigh);
         return make(series);
     }
 
-    @Override public  FigureImpl errorBarY(java.lang.Comparable seriesName, DateTime[] x, long[] y, long[] yLow, long[] yHigh ) {
+    @Override public  FigureImpl errorBarY( java.lang.Comparable seriesName, io.deephaven.engine.tables.utils.DateTime[] x, long[] y, long[] yLow, long[] yHigh ) {
         final BaseFigureImpl fc = this.figure.copy();
         final DataSeriesInternal series = (DataSeriesInternal) axes(fc).errorBarY( seriesName, x, y, yLow, yHigh);
         return make(series);
     }
 
-    @Override public  FigureImpl errorBarY(java.lang.Comparable seriesName, DateTime[] x, DateTime[] y, DateTime[] yLow, DateTime[] yHigh ) {
+    @Override public  FigureImpl errorBarY( java.lang.Comparable seriesName, io.deephaven.engine.tables.utils.DateTime[] x, io.deephaven.engine.tables.utils.DateTime[] y, io.deephaven.engine.tables.utils.DateTime[] yLow, io.deephaven.engine.tables.utils.DateTime[] yHigh ) {
         final BaseFigureImpl fc = this.figure.copy();
         final DataSeriesInternal series = (DataSeriesInternal) axes(fc).errorBarY( seriesName, x, y, yLow, yHigh);
         return make(series);
     }
 
-    @Override public  FigureImpl errorBarY(java.lang.Comparable seriesName, DateTime[] x, short[] y, short[] yLow, short[] yHigh ) {
+    @Override public  FigureImpl errorBarY( java.lang.Comparable seriesName, io.deephaven.engine.tables.utils.DateTime[] x, short[] y, short[] yLow, short[] yHigh ) {
         final BaseFigureImpl fc = this.figure.copy();
         final DataSeriesInternal series = (DataSeriesInternal) axes(fc).errorBarY( seriesName, x, y, yLow, yHigh);
         return make(series);
     }
 
-    @Override public <T1 extends java.lang.Number,T2 extends java.lang.Number,T3 extends java.lang.Number> FigureImpl errorBarY(java.lang.Comparable seriesName, DateTime[] x, java.util.List<T1> y, java.util.List<T2> yLow, java.util.List<T3> yHigh ) {
+    @Override public <T1 extends java.lang.Number,T2 extends java.lang.Number,T3 extends java.lang.Number> FigureImpl errorBarY( java.lang.Comparable seriesName, io.deephaven.engine.tables.utils.DateTime[] x, java.util.List<T1> y, java.util.List<T2> yLow, java.util.List<T3> yHigh ) {
         final BaseFigureImpl fc = this.figure.copy();
         final DataSeriesInternal series = (DataSeriesInternal) axes(fc).errorBarY( seriesName, x, y, yLow, yHigh);
         return make(series);
@@ -1502,7 +1526,7 @@ public class FigureImpl implements io.deephaven.engine.plot.Figure {
         return make(series);
     }
 
-    @Override public  FigureImpl errorBarY(java.lang.Comparable seriesName, short[] x, DateTime[] y, DateTime[] yLow, DateTime[] yHigh ) {
+    @Override public  FigureImpl errorBarY( java.lang.Comparable seriesName, short[] x, io.deephaven.engine.tables.utils.DateTime[] y, io.deephaven.engine.tables.utils.DateTime[] yLow, io.deephaven.engine.tables.utils.DateTime[] yHigh ) {
         final BaseFigureImpl fc = this.figure.copy();
         final DataSeriesInternal series = (DataSeriesInternal) axes(fc).errorBarY( seriesName, x, y, yLow, yHigh);
         return make(series);
@@ -1520,7 +1544,7 @@ public class FigureImpl implements io.deephaven.engine.plot.Figure {
         return make(series);
     }
 
-    @Override public <T0 extends java.lang.Number> FigureImpl errorBarY(java.lang.Comparable seriesName, java.util.List<T0> x, DateTime[] y, DateTime[] yLow, DateTime[] yHigh ) {
+    @Override public <T0 extends java.lang.Number> FigureImpl errorBarY( java.lang.Comparable seriesName, java.util.List<T0> x, io.deephaven.engine.tables.utils.DateTime[] y, io.deephaven.engine.tables.utils.DateTime[] yLow, io.deephaven.engine.tables.utils.DateTime[] yHigh ) {
         final BaseFigureImpl fc = this.figure.copy();
         final DataSeriesInternal series = (DataSeriesInternal) axes(fc).errorBarY( seriesName, x, y, yLow, yHigh);
         return make(series);
@@ -1850,43 +1874,43 @@ public class FigureImpl implements io.deephaven.engine.plot.Figure {
         return make(chart);
     }
 
-    @Override public <T1 extends java.lang.Number,T2 extends java.lang.Number,T3 extends java.lang.Number,T4 extends java.lang.Number> FigureImpl ohlcPlot(java.lang.Comparable seriesName, DateTime[] time, T1[] open, T2[] high, T3[] low, T4[] close ) {
+    @Override public <T1 extends java.lang.Number,T2 extends java.lang.Number,T3 extends java.lang.Number,T4 extends java.lang.Number> FigureImpl ohlcPlot( java.lang.Comparable seriesName, io.deephaven.engine.tables.utils.DateTime[] time, T1[] open, T2[] high, T3[] low, T4[] close ) {
         final BaseFigureImpl fc = this.figure.copy();
         final DataSeriesInternal series = (DataSeriesInternal) axes(fc).ohlcPlot( seriesName, time, open, high, low, close);
         return make(series);
     }
 
-    @Override public  FigureImpl ohlcPlot(java.lang.Comparable seriesName, DateTime[] time, double[] open, double[] high, double[] low, double[] close ) {
+    @Override public  FigureImpl ohlcPlot( java.lang.Comparable seriesName, io.deephaven.engine.tables.utils.DateTime[] time, double[] open, double[] high, double[] low, double[] close ) {
         final BaseFigureImpl fc = this.figure.copy();
         final DataSeriesInternal series = (DataSeriesInternal) axes(fc).ohlcPlot( seriesName, time, open, high, low, close);
         return make(series);
     }
 
-    @Override public  FigureImpl ohlcPlot(java.lang.Comparable seriesName, DateTime[] time, float[] open, float[] high, float[] low, float[] close ) {
+    @Override public  FigureImpl ohlcPlot( java.lang.Comparable seriesName, io.deephaven.engine.tables.utils.DateTime[] time, float[] open, float[] high, float[] low, float[] close ) {
         final BaseFigureImpl fc = this.figure.copy();
         final DataSeriesInternal series = (DataSeriesInternal) axes(fc).ohlcPlot( seriesName, time, open, high, low, close);
         return make(series);
     }
 
-    @Override public  FigureImpl ohlcPlot(java.lang.Comparable seriesName, DateTime[] time, int[] open, int[] high, int[] low, int[] close ) {
+    @Override public  FigureImpl ohlcPlot( java.lang.Comparable seriesName, io.deephaven.engine.tables.utils.DateTime[] time, int[] open, int[] high, int[] low, int[] close ) {
         final BaseFigureImpl fc = this.figure.copy();
         final DataSeriesInternal series = (DataSeriesInternal) axes(fc).ohlcPlot( seriesName, time, open, high, low, close);
         return make(series);
     }
 
-    @Override public  FigureImpl ohlcPlot(java.lang.Comparable seriesName, DateTime[] time, long[] open, long[] high, long[] low, long[] close ) {
+    @Override public  FigureImpl ohlcPlot( java.lang.Comparable seriesName, io.deephaven.engine.tables.utils.DateTime[] time, long[] open, long[] high, long[] low, long[] close ) {
         final BaseFigureImpl fc = this.figure.copy();
         final DataSeriesInternal series = (DataSeriesInternal) axes(fc).ohlcPlot( seriesName, time, open, high, low, close);
         return make(series);
     }
 
-    @Override public  FigureImpl ohlcPlot(java.lang.Comparable seriesName, DateTime[] time, short[] open, short[] high, short[] low, short[] close ) {
+    @Override public  FigureImpl ohlcPlot( java.lang.Comparable seriesName, io.deephaven.engine.tables.utils.DateTime[] time, short[] open, short[] high, short[] low, short[] close ) {
         final BaseFigureImpl fc = this.figure.copy();
         final DataSeriesInternal series = (DataSeriesInternal) axes(fc).ohlcPlot( seriesName, time, open, high, low, close);
         return make(series);
     }
 
-    @Override public <T1 extends java.lang.Number,T2 extends java.lang.Number,T3 extends java.lang.Number,T4 extends java.lang.Number> FigureImpl ohlcPlot(java.lang.Comparable seriesName, DateTime[] time, java.util.List<T1> open, java.util.List<T2> high, java.util.List<T3> low, java.util.List<T4> close ) {
+    @Override public <T1 extends java.lang.Number,T2 extends java.lang.Number,T3 extends java.lang.Number,T4 extends java.lang.Number> FigureImpl ohlcPlot( java.lang.Comparable seriesName, io.deephaven.engine.tables.utils.DateTime[] time, java.util.List<T1> open, java.util.List<T2> high, java.util.List<T3> low, java.util.List<T4> close ) {
         final BaseFigureImpl fc = this.figure.copy();
         final DataSeriesInternal series = (DataSeriesInternal) axes(fc).ohlcPlot( seriesName, time, open, high, low, close);
         return make(series);
@@ -2108,7 +2132,7 @@ public class FigureImpl implements io.deephaven.engine.plot.Figure {
         return make(series);
     }
 
-    @Override public <T0 extends java.lang.Number> FigureImpl plot( java.lang.Comparable seriesName, T0[] x, DateTime[] y ) {
+    @Override public <T0 extends java.lang.Number> FigureImpl plot( java.lang.Comparable seriesName, T0[] x, io.deephaven.engine.tables.utils.DateTime[] y ) {
         final BaseFigureImpl fc = this.figure.copy();
         final DataSeriesInternal series = (DataSeriesInternal) axes(fc).plot( seriesName, x, y);
         return make(series);
@@ -2162,7 +2186,7 @@ public class FigureImpl implements io.deephaven.engine.plot.Figure {
         return make(series);
     }
 
-    @Override public  FigureImpl plot( java.lang.Comparable seriesName, double[] x, DateTime[] y ) {
+    @Override public  FigureImpl plot( java.lang.Comparable seriesName, double[] x, io.deephaven.engine.tables.utils.DateTime[] y ) {
         final BaseFigureImpl fc = this.figure.copy();
         final DataSeriesInternal series = (DataSeriesInternal) axes(fc).plot( seriesName, x, y);
         return make(series);
@@ -2216,7 +2240,7 @@ public class FigureImpl implements io.deephaven.engine.plot.Figure {
         return make(series);
     }
 
-    @Override public  FigureImpl plot( java.lang.Comparable seriesName, float[] x, DateTime[] y ) {
+    @Override public  FigureImpl plot( java.lang.Comparable seriesName, float[] x, io.deephaven.engine.tables.utils.DateTime[] y ) {
         final BaseFigureImpl fc = this.figure.copy();
         final DataSeriesInternal series = (DataSeriesInternal) axes(fc).plot( seriesName, x, y);
         return make(series);
@@ -2270,7 +2294,7 @@ public class FigureImpl implements io.deephaven.engine.plot.Figure {
         return make(series);
     }
 
-    @Override public  FigureImpl plot( java.lang.Comparable seriesName, int[] x, DateTime[] y ) {
+    @Override public  FigureImpl plot( java.lang.Comparable seriesName, int[] x, io.deephaven.engine.tables.utils.DateTime[] y ) {
         final BaseFigureImpl fc = this.figure.copy();
         final DataSeriesInternal series = (DataSeriesInternal) axes(fc).plot( seriesName, x, y);
         return make(series);
@@ -2324,7 +2348,7 @@ public class FigureImpl implements io.deephaven.engine.plot.Figure {
         return make(series);
     }
 
-    @Override public  FigureImpl plot( java.lang.Comparable seriesName, long[] x, DateTime[] y ) {
+    @Override public  FigureImpl plot( java.lang.Comparable seriesName, long[] x, io.deephaven.engine.tables.utils.DateTime[] y ) {
         final BaseFigureImpl fc = this.figure.copy();
         final DataSeriesInternal series = (DataSeriesInternal) axes(fc).plot( seriesName, x, y);
         return make(series);
@@ -2348,55 +2372,55 @@ public class FigureImpl implements io.deephaven.engine.plot.Figure {
         return make(series);
     }
 
-    @Override public <T1 extends java.lang.Number> FigureImpl plot(java.lang.Comparable seriesName, DateTime[] x, T1[] y ) {
+    @Override public <T1 extends java.lang.Number> FigureImpl plot( java.lang.Comparable seriesName, io.deephaven.engine.tables.utils.DateTime[] x, T1[] y ) {
         final BaseFigureImpl fc = this.figure.copy();
         final DataSeriesInternal series = (DataSeriesInternal) axes(fc).plot( seriesName, x, y);
         return make(series);
     }
 
-    @Override public  FigureImpl plot(java.lang.Comparable seriesName, DateTime[] x, double[] y ) {
+    @Override public  FigureImpl plot( java.lang.Comparable seriesName, io.deephaven.engine.tables.utils.DateTime[] x, double[] y ) {
         final BaseFigureImpl fc = this.figure.copy();
         final DataSeriesInternal series = (DataSeriesInternal) axes(fc).plot( seriesName, x, y);
         return make(series);
     }
 
-    @Override public  FigureImpl plot(java.lang.Comparable seriesName, DateTime[] x, float[] y ) {
+    @Override public  FigureImpl plot( java.lang.Comparable seriesName, io.deephaven.engine.tables.utils.DateTime[] x, float[] y ) {
         final BaseFigureImpl fc = this.figure.copy();
         final DataSeriesInternal series = (DataSeriesInternal) axes(fc).plot( seriesName, x, y);
         return make(series);
     }
 
-    @Override public  FigureImpl plot(java.lang.Comparable seriesName, DateTime[] x, int[] y ) {
+    @Override public  FigureImpl plot( java.lang.Comparable seriesName, io.deephaven.engine.tables.utils.DateTime[] x, int[] y ) {
         final BaseFigureImpl fc = this.figure.copy();
         final DataSeriesInternal series = (DataSeriesInternal) axes(fc).plot( seriesName, x, y);
         return make(series);
     }
 
-    @Override public  FigureImpl plot(java.lang.Comparable seriesName, DateTime[] x, long[] y ) {
+    @Override public  FigureImpl plot( java.lang.Comparable seriesName, io.deephaven.engine.tables.utils.DateTime[] x, long[] y ) {
         final BaseFigureImpl fc = this.figure.copy();
         final DataSeriesInternal series = (DataSeriesInternal) axes(fc).plot( seriesName, x, y);
         return make(series);
     }
 
-    @Override public  FigureImpl plot(java.lang.Comparable seriesName, DateTime[] x, DateTime[] y ) {
+    @Override public  FigureImpl plot( java.lang.Comparable seriesName, io.deephaven.engine.tables.utils.DateTime[] x, io.deephaven.engine.tables.utils.DateTime[] y ) {
         final BaseFigureImpl fc = this.figure.copy();
         final DataSeriesInternal series = (DataSeriesInternal) axes(fc).plot( seriesName, x, y);
         return make(series);
     }
 
-    @Override public  FigureImpl plot(java.lang.Comparable seriesName, DateTime[] x, java.util.Date[] y ) {
+    @Override public  FigureImpl plot( java.lang.Comparable seriesName, io.deephaven.engine.tables.utils.DateTime[] x, java.util.Date[] y ) {
         final BaseFigureImpl fc = this.figure.copy();
         final DataSeriesInternal series = (DataSeriesInternal) axes(fc).plot( seriesName, x, y);
         return make(series);
     }
 
-    @Override public  FigureImpl plot(java.lang.Comparable seriesName, DateTime[] x, short[] y ) {
+    @Override public  FigureImpl plot( java.lang.Comparable seriesName, io.deephaven.engine.tables.utils.DateTime[] x, short[] y ) {
         final BaseFigureImpl fc = this.figure.copy();
         final DataSeriesInternal series = (DataSeriesInternal) axes(fc).plot( seriesName, x, y);
         return make(series);
     }
 
-    @Override public <T1 extends java.lang.Number> FigureImpl plot(java.lang.Comparable seriesName, DateTime[] x, java.util.List<T1> y ) {
+    @Override public <T1 extends java.lang.Number> FigureImpl plot( java.lang.Comparable seriesName, io.deephaven.engine.tables.utils.DateTime[] x, java.util.List<T1> y ) {
         final BaseFigureImpl fc = this.figure.copy();
         final DataSeriesInternal series = (DataSeriesInternal) axes(fc).plot( seriesName, x, y);
         return make(series);
@@ -2432,7 +2456,7 @@ public class FigureImpl implements io.deephaven.engine.plot.Figure {
         return make(series);
     }
 
-    @Override public  FigureImpl plot( java.lang.Comparable seriesName, java.util.Date[] x, DateTime[] y ) {
+    @Override public  FigureImpl plot( java.lang.Comparable seriesName, java.util.Date[] x, io.deephaven.engine.tables.utils.DateTime[] y ) {
         final BaseFigureImpl fc = this.figure.copy();
         final DataSeriesInternal series = (DataSeriesInternal) axes(fc).plot( seriesName, x, y);
         return make(series);
@@ -2486,7 +2510,7 @@ public class FigureImpl implements io.deephaven.engine.plot.Figure {
         return make(series);
     }
 
-    @Override public  FigureImpl plot( java.lang.Comparable seriesName, short[] x, DateTime[] y ) {
+    @Override public  FigureImpl plot( java.lang.Comparable seriesName, short[] x, io.deephaven.engine.tables.utils.DateTime[] y ) {
         final BaseFigureImpl fc = this.figure.copy();
         final DataSeriesInternal series = (DataSeriesInternal) axes(fc).plot( seriesName, x, y);
         return make(series);
@@ -2540,7 +2564,7 @@ public class FigureImpl implements io.deephaven.engine.plot.Figure {
         return make(series);
     }
 
-    @Override public <T0 extends java.lang.Number> FigureImpl plot( java.lang.Comparable seriesName, java.util.List<T0> x, DateTime[] y ) {
+    @Override public <T0 extends java.lang.Number> FigureImpl plot( java.lang.Comparable seriesName, java.util.List<T0> x, io.deephaven.engine.tables.utils.DateTime[] y ) {
         final BaseFigureImpl fc = this.figure.copy();
         final DataSeriesInternal series = (DataSeriesInternal) axes(fc).plot( seriesName, x, y);
         return make(series);

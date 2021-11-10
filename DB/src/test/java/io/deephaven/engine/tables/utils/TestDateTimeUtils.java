@@ -45,7 +45,8 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         DateTime midnight = DateTimeUtils.dateAtMidnight(dateTime, TimeZone.TZ_NY);
 
         assertEquals(jodaMidnight.getMillis(), DateTimeUtils.millis(midnight));
-        assertEquals(jodaMidnight.getMillis(), DateTimeUtils.millisToDateAtMidnightNy(dateTime.getMillis()).getMillis());
+        assertEquals(jodaMidnight.getMillis(),
+                DateTimeUtils.millisToDateAtMidnightNy(dateTime.getMillis()).getMillis());
 
         assertNull(DateTimeUtils.millisToDateAtMidnightNy(io.deephaven.util.QueryConstants.NULL_LONG));
     }
@@ -249,24 +250,33 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         assertEquals(LocalDate.of(9999, 12, 31), DateTimeUtils.convertDateQuiet("9999-12-31"));
 
         // other variants
-        assertEquals(LocalDate.of(2018, 1, 1), DateTimeUtils.convertDateQuiet("01/01/2018", DateTimeUtils.DateStyle.MDY));
-        assertEquals(LocalDate.of(2018, 12, 31), DateTimeUtils.convertDateQuiet("12/31/2018", DateTimeUtils.DateStyle.MDY));
-        assertEquals(LocalDate.of(2018, 12, 31), DateTimeUtils.convertDateQuiet("12/31/18", DateTimeUtils.DateStyle.MDY));
+        assertEquals(LocalDate.of(2018, 1, 1),
+                DateTimeUtils.convertDateQuiet("01/01/2018", DateTimeUtils.DateStyle.MDY));
+        assertEquals(LocalDate.of(2018, 12, 31),
+                DateTimeUtils.convertDateQuiet("12/31/2018", DateTimeUtils.DateStyle.MDY));
+        assertEquals(LocalDate.of(2018, 12, 31),
+                DateTimeUtils.convertDateQuiet("12/31/18", DateTimeUtils.DateStyle.MDY));
         assertEquals(LocalDate.of(2024, 6, 25), DateTimeUtils.convertDateQuiet("6/25/24", DateTimeUtils.DateStyle.MDY));
         assertEquals(LocalDate.of(2024, 6, 2), DateTimeUtils.convertDateQuiet("6/2/24", DateTimeUtils.DateStyle.MDY));
         assertEquals(LocalDate.of(2024, 6, 2), DateTimeUtils.convertDateQuiet("6/2/2024", DateTimeUtils.DateStyle.MDY));
 
-        assertEquals(LocalDate.of(2018, 1, 1), DateTimeUtils.convertDateQuiet("01/01/2018", DateTimeUtils.DateStyle.DMY));
-        assertEquals(LocalDate.of(2018, 12, 31), DateTimeUtils.convertDateQuiet("31/12/2018", DateTimeUtils.DateStyle.DMY));
-        assertEquals(LocalDate.of(2018, 12, 31), DateTimeUtils.convertDateQuiet("31/12/18", DateTimeUtils.DateStyle.DMY));
+        assertEquals(LocalDate.of(2018, 1, 1),
+                DateTimeUtils.convertDateQuiet("01/01/2018", DateTimeUtils.DateStyle.DMY));
+        assertEquals(LocalDate.of(2018, 12, 31),
+                DateTimeUtils.convertDateQuiet("31/12/2018", DateTimeUtils.DateStyle.DMY));
+        assertEquals(LocalDate.of(2018, 12, 31),
+                DateTimeUtils.convertDateQuiet("31/12/18", DateTimeUtils.DateStyle.DMY));
         assertEquals(LocalDate.of(2024, 6, 25), DateTimeUtils.convertDateQuiet("25/6/24", DateTimeUtils.DateStyle.DMY));
         assertEquals(LocalDate.of(2024, 6, 2), DateTimeUtils.convertDateQuiet("2/6/24", DateTimeUtils.DateStyle.DMY));
         assertEquals(LocalDate.of(2024, 6, 2), DateTimeUtils.convertDateQuiet("2/6/2024", DateTimeUtils.DateStyle.DMY));
 
 
-        assertEquals(LocalDate.of(2018, 1, 1), DateTimeUtils.convertDateQuiet("2018/01/01", DateTimeUtils.DateStyle.YMD));
-        assertEquals(LocalDate.of(2018, 12, 31), DateTimeUtils.convertDateQuiet("2018/12/31", DateTimeUtils.DateStyle.YMD));
-        assertEquals(LocalDate.of(2018, 12, 31), DateTimeUtils.convertDateQuiet("18/12/31", DateTimeUtils.DateStyle.YMD));
+        assertEquals(LocalDate.of(2018, 1, 1),
+                DateTimeUtils.convertDateQuiet("2018/01/01", DateTimeUtils.DateStyle.YMD));
+        assertEquals(LocalDate.of(2018, 12, 31),
+                DateTimeUtils.convertDateQuiet("2018/12/31", DateTimeUtils.DateStyle.YMD));
+        assertEquals(LocalDate.of(2018, 12, 31),
+                DateTimeUtils.convertDateQuiet("18/12/31", DateTimeUtils.DateStyle.YMD));
         assertEquals(LocalDate.of(2024, 6, 25), DateTimeUtils.convertDateQuiet("24/6/25", DateTimeUtils.DateStyle.YMD));
         assertEquals(LocalDate.of(2024, 6, 2), DateTimeUtils.convertDateQuiet("24/6/2", DateTimeUtils.DateStyle.YMD));
         assertEquals(LocalDate.of(2024, 6, 2), DateTimeUtils.convertDateQuiet("2024/6/2", DateTimeUtils.DateStyle.YMD));
@@ -293,7 +303,8 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
 
         assertEquals(java.time.LocalTime.of(12, 0, 0), DateTimeUtils.convertLocalTimeQuiet("L12"));
         assertEquals(java.time.LocalTime.of(12, 59, 0), DateTimeUtils.convertLocalTimeQuiet("L1259"));
-        assertEquals(java.time.LocalTime.of(12, 59, 59, 123_000_000), DateTimeUtils.convertLocalTimeQuiet("L125959.123"));
+        assertEquals(java.time.LocalTime.of(12, 59, 59, 123_000_000),
+                DateTimeUtils.convertLocalTimeQuiet("L125959.123"));
         assertEquals(java.time.LocalTime.of(12, 59, 59, 123_456_000),
                 DateTimeUtils.convertLocalTimeQuiet("L125959.123456"));
         assertEquals(java.time.LocalTime.of(12, 59, 59, 123_456_789),
@@ -317,46 +328,58 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
     public void testConvertDateTimeQuiet() throws Exception {
         assertEquals(
                 new DateTime(
-                        new org.joda.time.DateTime("2010-01-01", DateTimeZone.forID("America/New_York")).getMillis() * 1000000),
+                        new org.joda.time.DateTime("2010-01-01", DateTimeZone.forID("America/New_York")).getMillis()
+                                * 1000000),
                 DateTimeUtils.convertDateTimeQuiet("2010-01-01 NY"));
         assertEquals(new DateTime(
-                new org.joda.time.DateTime("2010-01-01T12:00:00", DateTimeZone.forID("America/New_York")).getMillis() * 1000000),
+                new org.joda.time.DateTime("2010-01-01T12:00:00", DateTimeZone.forID("America/New_York")).getMillis()
+                        * 1000000),
                 DateTimeUtils.convertDateTimeQuiet("2010-01-01T12:00:00 NY"));
         assertEquals(new DateTime(
-                new org.joda.time.DateTime("2010-01-01T12:00:00.1", DateTimeZone.forID("America/New_York")).getMillis() * 1000000),
+                new org.joda.time.DateTime("2010-01-01T12:00:00.1", DateTimeZone.forID("America/New_York")).getMillis()
+                        * 1000000),
                 DateTimeUtils.convertDateTimeQuiet("2010-01-01T12:00:00.1 NY"));
         assertEquals(new DateTime(
-                new org.joda.time.DateTime("2010-01-01T12:00:00.123", DateTimeZone.forID("America/New_York")).getMillis() * 1000000),
+                new org.joda.time.DateTime("2010-01-01T12:00:00.123", DateTimeZone.forID("America/New_York"))
+                        .getMillis() * 1000000),
                 DateTimeUtils.convertDateTimeQuiet("2010-01-01T12:00:00.123 NY"));
         assertEquals(new DateTime(
-                new org.joda.time.DateTime("2010-01-01T12:00:00.123", DateTimeZone.forID("America/New_York")).getMillis() * 1000000
+                new org.joda.time.DateTime("2010-01-01T12:00:00.123", DateTimeZone.forID("America/New_York"))
+                        .getMillis() * 1000000
                         + 400000),
                 DateTimeUtils.convertDateTimeQuiet("2010-01-01T12:00:00.1234 NY"));
         assertEquals(
                 new DateTime(
-                        new org.joda.time.DateTime("2010-01-01T12:00:00.123", DateTimeZone.forID("America/New_York")).getMillis()
+                        new org.joda.time.DateTime("2010-01-01T12:00:00.123", DateTimeZone.forID("America/New_York"))
+                                .getMillis()
                                 * 1000000 + 456789),
                 DateTimeUtils.convertDateTimeQuiet("2010-01-01T12:00:00.123456789 NY"));
 
         assertEquals(
-                new DateTime(new org.joda.time.DateTime("2010-01-01", DateTimeZone.forID("America/Chicago")).getMillis() * 1000000),
+                new DateTime(new org.joda.time.DateTime("2010-01-01", DateTimeZone.forID("America/Chicago")).getMillis()
+                        * 1000000),
                 DateTimeUtils.convertDateTimeQuiet("2010-01-01 MN"));
         assertEquals(new DateTime(
-                new org.joda.time.DateTime("2010-01-01T12:00:00", DateTimeZone.forID("America/Chicago")).getMillis() * 1000000),
+                new org.joda.time.DateTime("2010-01-01T12:00:00", DateTimeZone.forID("America/Chicago")).getMillis()
+                        * 1000000),
                 DateTimeUtils.convertDateTimeQuiet("2010-01-01T12:00:00 MN"));
         assertEquals(new DateTime(
-                new org.joda.time.DateTime("2010-01-01T12:00:00.1", DateTimeZone.forID("America/Chicago")).getMillis() * 1000000),
+                new org.joda.time.DateTime("2010-01-01T12:00:00.1", DateTimeZone.forID("America/Chicago")).getMillis()
+                        * 1000000),
                 DateTimeUtils.convertDateTimeQuiet("2010-01-01T12:00:00.1 MN"));
         assertEquals(new DateTime(
-                new org.joda.time.DateTime("2010-01-01T12:00:00.123", DateTimeZone.forID("America/Chicago")).getMillis() * 1000000),
+                new org.joda.time.DateTime("2010-01-01T12:00:00.123", DateTimeZone.forID("America/Chicago")).getMillis()
+                        * 1000000),
                 DateTimeUtils.convertDateTimeQuiet("2010-01-01T12:00:00.123 MN"));
         assertEquals(new DateTime(
-                new org.joda.time.DateTime("2010-01-01T12:00:00.123", DateTimeZone.forID("America/Chicago")).getMillis() * 1000000
+                new org.joda.time.DateTime("2010-01-01T12:00:00.123", DateTimeZone.forID("America/Chicago")).getMillis()
+                        * 1000000
                         + 400000),
                 DateTimeUtils.convertDateTimeQuiet("2010-01-01T12:00:00.1234 MN"));
         assertEquals(
                 new DateTime(
-                        new org.joda.time.DateTime("2010-01-01T12:00:00.123", DateTimeZone.forID("America/Chicago")).getMillis()
+                        new org.joda.time.DateTime("2010-01-01T12:00:00.123", DateTimeZone.forID("America/Chicago"))
+                                .getMillis()
                                 * 1000000 + 456789),
                 DateTimeUtils.convertDateTimeQuiet("2010-01-01T12:00:00.123456789 MN"));
 
@@ -465,7 +488,8 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         assertEquals("3T2:00:00", DateTimeUtils.format(DateTimeUtils.convertTimeQuiet("3T2:00:00")));
         assertEquals("3T2:00:00.123000000", DateTimeUtils.format(DateTimeUtils.convertTimeQuiet("3T2:00:00.123")));
         assertEquals("3T2:00:00.123400000", DateTimeUtils.format(DateTimeUtils.convertTimeQuiet("3T2:00:00.1234")));
-        assertEquals("3T2:00:00.123456789", DateTimeUtils.format(DateTimeUtils.convertTimeQuiet("3T2:00:00.123456789")));
+        assertEquals("3T2:00:00.123456789",
+                DateTimeUtils.format(DateTimeUtils.convertTimeQuiet("3T2:00:00.123456789")));
     }
 
     public void testFormatDate() throws Exception {
@@ -608,17 +632,20 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         assertEquals(0, DateTimeUtils.microsOfMilliNy(DateTimeUtils.convertDateTime("2015-07-31T20:40:00 NY")));
         assertEquals(0, DateTimeUtils.microsOfMilliNy(DateTimeUtils.convertDateTime("2015-07-31T20:40:00.123 NY")));
         assertEquals(400, DateTimeUtils.microsOfMilliNy(DateTimeUtils.convertDateTime("2015-07-31T20:40:00.1234 NY")));
-        assertEquals(456, DateTimeUtils.microsOfMilliNy(DateTimeUtils.convertDateTime("2015-07-31T20:40:00.123456 NY")));
-        assertEquals(457, DateTimeUtils.microsOfMilliNy(DateTimeUtils.convertDateTime("2015-07-31T20:40:00.1234567 NY"))); // this
-                                                                                                                       // one
-                                                                                                                       // should
-                                                                                                                       // round
-                                                                                                                       // up
-        assertEquals(457, DateTimeUtils.microsOfMilliNy(DateTimeUtils.convertDateTime("2015-07-31T20:40:00.123456789 NY"))); // this
-                                                                                                                         // one
-                                                                                                                         // should
-                                                                                                                         // round
-                                                                                                                         // up
+        assertEquals(456,
+                DateTimeUtils.microsOfMilliNy(DateTimeUtils.convertDateTime("2015-07-31T20:40:00.123456 NY")));
+        assertEquals(457,
+                DateTimeUtils.microsOfMilliNy(DateTimeUtils.convertDateTime("2015-07-31T20:40:00.1234567 NY"))); // this
+        // one
+        // should
+        // round
+        // up
+        assertEquals(457,
+                DateTimeUtils.microsOfMilliNy(DateTimeUtils.convertDateTime("2015-07-31T20:40:00.123456789 NY"))); // this
+        // one
+        // should
+        // round
+        // up
 
     }
 

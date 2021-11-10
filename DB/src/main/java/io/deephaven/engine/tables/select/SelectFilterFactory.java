@@ -429,8 +429,10 @@ public class SelectFilterFactory {
                 dateUpper = finestUnit == null ? dateLower : dateLower.plus(1, finestUnit.getBaseUnit());
             }
 
-            this.dateUpper = dateUpper == null ? null : DateTimeUtils.millisToTime(dateUpper.toInstant().toEpochMilli());
-            this.dateLower = dateLower == null ? null : DateTimeUtils.millisToTime(dateLower.toInstant().toEpochMilli());
+            this.dateUpper =
+                    dateUpper == null ? null : DateTimeUtils.millisToTime(dateUpper.toInstant().toEpochMilli());
+            this.dateLower =
+                    dateLower == null ? null : DateTimeUtils.millisToTime(dateLower.toInstant().toEpochMilli());
         }
     }
 }

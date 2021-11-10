@@ -335,7 +335,7 @@ public abstract class AbstractFormulaColumn implements FormulaColumn {
         final ColumnSource<?> columnSource;
 
         public ColumnArrayParameter(String name, String bareName, Class<?> dataType, Class<?> vectorType,
-                                    String vectorTypeString, ColumnSource<?> columnSource) {
+                String vectorTypeString, ColumnSource<?> columnSource) {
             this.name = name;
             this.bareName = bareName;
             this.dataType = dataType;

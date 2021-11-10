@@ -18,7 +18,7 @@ public class DateTimeRangeFilter extends LongRangeFilter {
     }
 
     public DateTimeRangeFilter(String columnName, DateTime val1, DateTime val2, boolean lowerInclusive,
-                               boolean upperInclusive) {
+            boolean upperInclusive) {
         super(columnName, val1.getNanos(), val2.getNanos(), lowerInclusive, upperInclusive);
     }
 

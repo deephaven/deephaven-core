@@ -944,7 +944,8 @@ public class TestDefaultBusinessCalendar extends BaseArrayTestCase {
 
         assertNull(USNYSE.previousNonBusinessDay((DateTime) null, 0));
         assertNull(USNYSE.previousNonBusinessDay(DateTimeUtils.convertDateTime("2016-08-30T21:00:00.000000000 NY"), 0));
-        assertEquals(USNYSE.previousNonBusinessDay(DateTimeUtils.convertDateTime("2016-08-28T21:00:00.000000000 NY"), 0),
+        assertEquals(
+                USNYSE.previousNonBusinessDay(DateTimeUtils.convertDateTime("2016-08-28T21:00:00.000000000 NY"), 0),
                 "2016-08-28");
 
         // leap day
@@ -1065,8 +1066,10 @@ public class TestDefaultBusinessCalendar extends BaseArrayTestCase {
         assertEquals(USNYSE.previousBusinessSchedule(day1, -2).getSOBD().toDateString(TimeZone.TZ_NY),
                 day2.toDateString(TimeZone.TZ_NY));
 
-        assertEquals(USNYSE.previousBusinessSchedule(DateTimeUtils.convertDateTime("2016-08-30T15:00:00.000000000 NY"), 0)
-                .getSOBD().toDateString(TimeZone.TZ_NY), "2016-08-30");
+        assertEquals(
+                USNYSE.previousBusinessSchedule(DateTimeUtils.convertDateTime("2016-08-30T15:00:00.000000000 NY"), 0)
+                        .getSOBD().toDateString(TimeZone.TZ_NY),
+                "2016-08-30");
         assertNull(USNYSE.previousBusinessSchedule((DateTime) null, 0));
 
         // leap day

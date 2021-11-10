@@ -22,7 +22,7 @@ public abstract class ToDateTimePage<ATTR extends Attributes.Any> extends ToLong
 
     @SuppressWarnings("unchecked")
     public static <ATTR extends Attributes.Any> ToPage<ATTR, DateTime[]> create(@NotNull final Class<?> nativeType,
-                                                                                final LogicalTypeAnnotation.TimeUnit unit) {
+            final LogicalTypeAnnotation.TimeUnit unit) {
         if (DateTime.class.equals(nativeType)) {
             switch (unit) {
                 case MILLIS:
@@ -43,7 +43,7 @@ public abstract class ToDateTimePage<ATTR extends Attributes.Any> extends ToLong
     protected ToDateTimePage() {}
 
     protected static ObjectVector<DateTime> makeDbArrayHelper(final long[] result,
-                                                              final LongFunction<DateTime> unitToTime) {
+            final LongFunction<DateTime> unitToTime) {
         DateTime[] to = new DateTime[result.length];
 
         for (int i = 0; i < result.length; ++i) {

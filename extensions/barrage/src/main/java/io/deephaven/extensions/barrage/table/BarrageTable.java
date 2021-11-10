@@ -252,7 +252,7 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
             if (update.rowsIncluded.isNonempty()) {
                 try (final WritableChunkSink.FillFromContext redirContext =
                         rowRedirection.makeFillFromContext(update.rowsIncluded.intSize());
-                     final RowSet destinationRowSet = getFreeRows(update.rowsIncluded.size())) {
+                        final RowSet destinationRowSet = getFreeRows(update.rowsIncluded.size())) {
                     // Update redirection mapping:
                     rowRedirection.fillFromChunk(redirContext, destinationRowSet.asRowKeyChunk(),
                             update.rowsIncluded);
@@ -283,7 +283,7 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
 
                 try (final ChunkSource.FillContext redirContext =
                         rowRedirection.makeFillContext(column.rowsModified.intSize(), null);
-                     final WritableLongChunk<Attributes.RowKeys> keys =
+                        final WritableLongChunk<Attributes.RowKeys> keys =
                                 WritableLongChunk.makeWritableChunk(column.rowsModified.intSize())) {
                     rowRedirection.fillChunk(redirContext, keys, column.rowsModified);
                     for (int i = 0; i < keys.size(); ++i) {

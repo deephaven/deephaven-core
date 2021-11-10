@@ -853,9 +853,9 @@ public interface Table extends
     }
 
     /**
-     * Produce a new table with the same columns as this table, but with a new column presenting the specified
-     * DateTime column as a Long column (with each DateTime represented instead as the corresponding number of nanos
-     * since the epoch).
+     * Produce a new table with the same columns as this table, but with a new column presenting the specified DateTime
+     * column as a Long column (with each DateTime represented instead as the corresponding number of nanos since the
+     * epoch).
      * <p>
      * NOTE: This is a really just an updateView(), and behaves accordingly for column ordering and (re)placement. This
      * doesn't work on data that has been brought fully into memory (e.g. via select()). Use a view instead.
@@ -2202,8 +2202,8 @@ public interface Table extends
      * </p>
      *
      * <p>
-     * For example if you have a Table keyed by a String column named USym, and a DateTime column named Expiry; a
-     * value could be retrieved from the TableMap with
+     * For example if you have a Table keyed by a String column named USym, and a DateTime column named Expiry; a value
+     * could be retrieved from the TableMap with
      * {@code tableMap.get(new SmartKey("SPY";, DateTimeUtils.convertDateTime("2020-06-19T16:15:00 NY")))}. For a table
      * with an Integer column named Bucket, you simply use the desired value as in {@code tableMap.get(1)}.
      * </p>
@@ -2228,8 +2228,8 @@ public interface Table extends
      * </p>
      *
      * <p>
-     * For example if you have a Table keyed by a String column named USym, and a DateTime column named Expiry; a
-     * value could be retrieved from the TableMap with
+     * For example if you have a Table keyed by a String column named USym, and a DateTime column named Expiry; a value
+     * could be retrieved from the TableMap with
      * {@code tableMap.get(new SmartKey("SPY";, DateTimeUtils.convertDateTime("2020-06-19T16:15:00 NY")))}. For a table
      * with an Integer column named Bucket, you simply use the desired value as in {@code tableMap.get(1)}.
      * </p>

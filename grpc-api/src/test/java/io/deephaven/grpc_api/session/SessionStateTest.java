@@ -637,7 +637,8 @@ public class SessionStateTest {
     public void testVerifyExpirationSession() {
         final SessionState session = new SessionState(scheduler, AUTH_CONTEXT);
         final SessionService.TokenExpiration expiration =
-                new SessionService.TokenExpiration(UUID.randomUUID(), DateTimeUtils.nanosToTime(Long.MAX_VALUE), session);
+                new SessionService.TokenExpiration(UUID.randomUUID(), DateTimeUtils.nanosToTime(Long.MAX_VALUE),
+                        session);
         expectException(IllegalArgumentException.class, () -> this.session.initializeExpiration(expiration));
         expectException(IllegalArgumentException.class, () -> this.session.updateExpiration(expiration));
     }

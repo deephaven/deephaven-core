@@ -427,7 +427,7 @@ public class CsvHelpers {
      */
     @ScriptApi
     public static void writeCsvContents(Table source, BufferedWriter out, TimeZone timeZone, boolean nullsAsEmpty,
-                                        String... colNames) throws IOException {
+            String... colNames) throws IOException {
         writeCsvContents(source, out, timeZone, null, nullsAsEmpty, colNames);
     }
 

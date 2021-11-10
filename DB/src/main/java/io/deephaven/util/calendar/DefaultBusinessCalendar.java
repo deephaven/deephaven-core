@@ -283,7 +283,7 @@ public class DefaultBusinessCalendar extends AbstractBusinessCalendar implements
     }
 
     private static BusinessPeriod[] parseBusinessPeriods(final TimeZone timeZone, final LocalDate date,
-                                                         final List<String> businessPeriodStrings) {
+            final List<String> businessPeriodStrings) {
         final BusinessPeriod[] businessPeriods = new BusinessPeriod[businessPeriodStrings.size()];
         final Pattern hhmm = Pattern.compile("\\d{2}[:]\\d{2}");
         int i = 0;
@@ -413,7 +413,7 @@ public class DefaultBusinessCalendar extends AbstractBusinessCalendar implements
     }
 
     private static BusinessSchedule newBusinessDay(final LocalDate date, final Set<DayOfWeek> weekendDays,
-                                                   final TimeZone timeZone, final List<String> businessPeriodStrings) {
+            final TimeZone timeZone, final List<String> businessPeriodStrings) {
         if (date == null) {
             return null;
         }

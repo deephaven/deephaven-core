@@ -117,8 +117,8 @@ def autoEpochToTime(epoch):
 @_passThrough
 def cappedTimeOffset(original, period, cap):
     """
-    Returns a DateTime value based on a starting value and a Period to add to it, but with a cap
-     max value which is returned in case the starting value plus period exceeds the cap.
+    Returns a DateTime value based on a starting value and a Period to add to it, but with a cap max
+     value which is returned in case the starting value plus period exceeds the cap.
     
     :param original: (io.deephaven.engine.tables.utils.DateTime) - The starting DateTime value.
     :param period: (io.deephaven.engine.tables.utils.Period) - The Period to add to dateTime.
@@ -193,8 +193,8 @@ def convertDateTimeQuiet(s):
 @_passThrough
 def convertExpression(formula):
     """
-    Converts an expression, replacing DateTime and Period literals with references to constant
-     DateTime/Period instances.
+    Converts an expression, replacing DateTime and Period literals with references to constant DateTime/Period
+     instances.
     
     :param formula: (java.lang.String) - The formula to convert.
     :return: (io.deephaven.engine.tables.utils.DateTimeUtils.Result) A DateTimeUtils.Result object, which includes the converted formula string, a string of instance variable
@@ -326,8 +326,8 @@ def dateAtMidnight(dateTime, timeZone):
     
     :param dateTime: (io.deephaven.engine.tables.utils.DateTime) - DateTime for which the new value at midnight should be calculated.
     :param timeZone: (io.deephaven.engine.tables.utils.TimeZone) - TimeZone for which the new value at midnight should be calculated.
-    :return: (io.deephaven.engine.tables.utils.DateTime) A null DateTime if either input is null, otherwise a DateTime representing midnight
-             for the date and time zone of the inputs.
+    :return: (io.deephaven.engine.tables.utils.DateTime) A null DateTime if either input is null, otherwise a DateTime representing midnight for
+             the date and time zone of the inputs.
     """
     
     return _java_type_.dateAtMidnight(dateTime, timeZone)
@@ -378,8 +378,8 @@ def dayOfWeek(dateTime, timeZone):
 @_passThrough
 def dayOfWeekNy(dateTime):
     """
-    Returns an int value of the day of the week for a DateTime in the New York time zone, with 1 being
-     Monday and 7 being Sunday.
+    Returns an int value of the day of the week for a DateTime in the New York time zone, with 1 being Monday
+     and 7 being Sunday.
     
     :param dateTime: (io.deephaven.engine.tables.utils.DateTime) - The DateTime for which to find the day of the week.
     :return: (int) A QueryConstants.NULL_INT if the input is null, otherwise, an int value of the day of the week
@@ -425,9 +425,8 @@ def diffDay(start, end):
     :param end: (io.deephaven.engine.tables.utils.DateTime) - The second DateTime.
     :return: (double) QueryConstants.NULL_LONG if either input is null; a double value of the number of days obtained
              from the first DateTime value minus d2, if the intermediate value of nanoseconds difference
-             between the two dates is not out of range for a long value; or throws a
-             DateTimeOverflowException if the intermediate value would be more
-             than min long or max long nanoseconds from Epoch.
+             between the two dates is not out of range for a long value; or throws a DateTimeOverflowException if the intermediate value would be more than min long or max long nanoseconds
+             from Epoch.
              
              Note that the subtraction is done based the nanosecond offsets of the two dates from Epoch, so, if either
              date is before Epoch (negative offset), the result may be unexpected.
@@ -447,8 +446,8 @@ def diffNanos(d1, d2):
     :param d2: (io.deephaven.engine.tables.utils.DateTime) - The second DateTime.
     :return: (long) QueryConstants.NULL_LONG if either input is null; the long nanoseconds from Epoch value of the
              first DateTime minus d2, if the result is not out of range for a long value; or throws a
-             DateTimeOverflowException if the resultant value would be more than
-             min long or max long nanoseconds from Epoch.
+             DateTimeOverflowException if the resultant value would be more than min
+             long or max long nanoseconds from Epoch.
              
              Note that the subtraction is done based the nanosecond offsets of the two dates from Epoch, so, if either
              date is before Epoch (negative offset), the result may be unexpected.
@@ -499,8 +498,8 @@ def expressionToNanos(formula):
     :param formula: (java.lang.String) - The String to be evaluated and converted. Optionally, but preferred, enclosed in straight single
             ticks.
     :return: (long) A long value representing an Epoch offset in nanoseconds for a time or date/time, or a duration in
-             nanoseconds for a period. Throws DateTimeUtils.DateTimeOverflowException if the resultant value would be
-             longer than max long, or IllegalArgumentException if expression cannot be evaluated.
+             nanoseconds for a period. Throws DateTimeUtils.DateTimeOverflowException if the resultant value would be longer
+             than max long, or IllegalArgumentException if expression cannot be evaluated.
     """
     
     return _java_type_.expressionToNanos(formula)
@@ -701,8 +700,8 @@ def hourOfDay(dateTime, timeZone):
 @_passThrough
 def hourOfDayNy(dateTime):
     """
-    Returns an int value of the hour of the day for a DateTime in the New York time zone. The hour is on a
-     24 hour clock (0 - 23).
+    Returns an int value of the hour of the day for a DateTime in the New York time zone. The hour is on a 24
+     hour clock (0 - 23).
     
     :param dateTime: (io.deephaven.engine.tables.utils.DateTime) - The DateTime for which to find the hour of the day.
     :return: (int) A QueryConstants.NULL_INT if the input is null, otherwise, an int value of the hour of the day
@@ -792,8 +791,8 @@ def microsOfMilli(dateTime, timeZone):
     :param dateTime: (io.deephaven.engine.tables.utils.DateTime) - The DateTime for which to find the microseconds.
     :param timeZone: (io.deephaven.engine.tables.utils.TimeZone) - The TimeZone to use when interpreting the date/time.
     :return: (int) A QueryConstants.NULL_INT if either input is null, otherwise, an int value of microseconds since
-             the top of the millisecond for the date/time represented by the DateTime when interpreted in
-             the specified time zone.
+             the top of the millisecond for the date/time represented by the DateTime when interpreted in the
+             specified time zone.
     """
     
     return _java_type_.microsOfMilli(dateTime, timeZone)
@@ -808,8 +807,8 @@ def microsOfMilliNy(dateTime):
     
     :param dateTime: (io.deephaven.engine.tables.utils.DateTime) - The DateTime for which to find the microseconds.
     :return: (int) A QueryConstants.NULL_INT if the input is null, otherwise, an int value of microseconds since the
-             top of the millisecond for the date/time represented by the DateTime when interpreted in the
-             New York time zone.
+             top of the millisecond for the date/time represented by the DateTime when interpreted in the New
+             York time zone.
     """
     
     return _java_type_.microsOfMilliNy(dateTime)
@@ -908,8 +907,8 @@ def millisOfSecondNy(dateTime):
     
     :param dateTime: (io.deephaven.engine.tables.utils.DateTime) - The DateTime for which to find the milliseconds.
     :return: (int) A QueryConstants.NULL_INT if the input is null, otherwise, an int value of milliseconds since the
-             top of the second for the date/time represented by the DateTime when interpreted in the New
-             York time zone.
+             top of the second for the date/time represented by the DateTime when interpreted in the New York
+             time zone.
     """
     
     return _java_type_.millisOfSecondNy(dateTime)
@@ -918,8 +917,8 @@ def millisOfSecondNy(dateTime):
 @_passThrough
 def millisToDateAtMidnight(millis, timeZone):
     """
-    Returns a DateTime representing midnight in a selected time zone on the date specified by the a number
-     of milliseconds from Epoch.
+    Returns a DateTime representing midnight in a selected time zone on the date specified by the a number of
+     milliseconds from Epoch.
     
     :param millis: (long) - A long value of the number of milliseconds from Epoch for which the DateTime is to be
             calculated.
@@ -981,26 +980,26 @@ def minus(*args):
     *Overload 1*  
       :param dateTime: (io.deephaven.engine.tables.utils.DateTime) - The starting DateTime value.
       :param nanos: (long) - The long number of nanoseconds to subtract from dateTime.
-      :return: (io.deephaven.engine.tables.utils.DateTime) a null DateTime if either input is null; the starting DateTime minus the specified
-               number of nanoseconds, if the result is not too negative for a DateTime; or throws a
-               DateTimeOverflowException if the resultant value is more than min
-               long nanoseconds from Epoch.
+      :return: (io.deephaven.engine.tables.utils.DateTime) a null DateTime if either input is null; the starting DateTime minus the specified number
+               of nanoseconds, if the result is not too negative for a DateTime; or throws a
+               DateTimeOverflowException if the resultant value is more than min long
+               nanoseconds from Epoch.
       
     *Overload 2*  
       :param dateTime: (io.deephaven.engine.tables.utils.DateTime) - The starting DateTime value.
       :param period: (io.deephaven.engine.tables.utils.Period) - The Period to subtract from dateTime.
       :return: (io.deephaven.engine.tables.utils.DateTime) a null DateTime if either input is null; the starting DateTime minus the specified
                period, if the result is not too negative for a DateTime; or throws a
-               DateTimeOverflowException if the resultant value is more than min
-               long nanoseconds from Epoch.
+               DateTimeOverflowException if the resultant value is more than min long
+               nanoseconds from Epoch.
       
     *Overload 3*  
       :param d1: (io.deephaven.engine.tables.utils.DateTime) - The first DateTime.
       :param d2: (io.deephaven.engine.tables.utils.DateTime) - The DateTime to subtract from d1.
       :return: (long) QueryConstants.NULL_LONG if either input is null; the long nanoseconds from Epoch value of the
                first DateTime minus d2, if the result is not out of range for a long value; or throws a
-               DateTimeOverflowException if the resultant value would be more than
-               min long or max long nanoseconds from Epoch.
+               DateTimeOverflowException if the resultant value would be more than min
+               long or max long nanoseconds from Epoch.
                
                Note that the subtraction is done based the nanosecond offsets of the two dates from Epoch, so, if either
                date is before Epoch (negative offset), the result may be unexpected.
@@ -1074,8 +1073,8 @@ def monthOfYear(dateTime, timeZone):
     :param dateTime: (io.deephaven.engine.tables.utils.DateTime) - The DateTime for which to find the month.
     :param timeZone: (io.deephaven.engine.tables.utils.TimeZone) - The TimeZone to use when interpreting the date/time.
     :return: (int) A QueryConstants.NULL_INT if either input is null, otherwise, an int value of the month for the
-             date/time represented by the DateTime when interpreted in the specified time zone. January is
-             1, February is 2, etc.
+             date/time represented by the DateTime when interpreted in the specified time zone. January is 1,
+             February is 2, etc.
     """
     
     return _java_type_.monthOfYear(dateTime, timeZone)
@@ -1159,13 +1158,12 @@ def nanosOfSecond(dateTime, timeZone):
 @_passThrough
 def nanosOfSecondNy(dateTime):
     """
-    Returns a long value of nanoseconds since the top of the second for a DateTime in the New York time
-     zone.
+    Returns a long value of nanoseconds since the top of the second for a DateTime in the New York time zone.
     
     :param dateTime: (io.deephaven.engine.tables.utils.DateTime) - The DateTime for which to find the nanoseconds.
     :return: (long) A QueryConstants.NULL_LONG if the input is null, otherwise, a long value of nanoseconds since the
-             top of the second for the date/time represented by the DateTime when interpreted in the New
-             York time zone.
+             top of the second for the date/time represented by the DateTime when interpreted in the New York
+             time zone.
     """
     
     return _java_type_.nanosOfSecondNy(dateTime)
@@ -1229,16 +1227,16 @@ def plus(*args):
     *Overload 1*  
       :param dateTime: (io.deephaven.engine.tables.utils.DateTime) - The starting DateTime value.
       :param nanos: (long) - The long number of nanoseconds to add to dateTime.
-      :return: (io.deephaven.engine.tables.utils.DateTime) a null DateTime if either input is null; the starting DateTime plus the specified
-               number of nanoseconds, if the result is not too large for a DateTime; or throws a
-               DateTimeOverflowException if the resultant value is more than max
-               long nanoseconds from Epoch.
+      :return: (io.deephaven.engine.tables.utils.DateTime) a null DateTime if either input is null; the starting DateTime plus the specified number
+               of nanoseconds, if the result is not too large for a DateTime; or throws a
+               DateTimeOverflowException if the resultant value is more than max long
+               nanoseconds from Epoch.
       
     *Overload 2*  
       :param dateTime: (io.deephaven.engine.tables.utils.DateTime) - The starting DateTime value.
       :param period: (io.deephaven.engine.tables.utils.Period) - The Period to add to dateTime.
-      :return: (io.deephaven.engine.tables.utils.DateTime) a null DateTime if either input is null; the starting DateTime plus the specified
-               period, if the result is not too large for a DateTime; or throws a DateTimeOverflowException if the resultant value is more than max long nanoseconds from Epoch.
+      :return: (io.deephaven.engine.tables.utils.DateTime) a null DateTime if either input is null; the starting DateTime plus the specified period,
+               if the result is not too large for a DateTime; or throws a DateTimeOverflowException if the resultant value is more than max long nanoseconds from Epoch.
     """
     
     return _java_type_.plus(*args)
@@ -1281,8 +1279,8 @@ def secondOfMinute(dateTime, timeZone):
     :param dateTime: (io.deephaven.engine.tables.utils.DateTime) - The DateTime for which to find the seconds.
     :param timeZone: (io.deephaven.engine.tables.utils.TimeZone) - The TimeZone to use when interpreting the date/time.
     :return: (int) A QueryConstants.NULL_INT if either input is null, otherwise, an int value of seconds since the
-             top of the minute for the date/time represented by the DateTime when interpreted in the
-             specified time zone.
+             top of the minute for the date/time represented by the DateTime when interpreted in the specified
+             time zone.
     """
     
     return _java_type_.secondOfMinute(dateTime, timeZone)
@@ -1295,8 +1293,8 @@ def secondOfMinuteNy(dateTime):
     
     :param dateTime: (io.deephaven.engine.tables.utils.DateTime) - The DateTime for which to find the seconds.
     :return: (int) A QueryConstants.NULL_INT if the input is null, otherwise, an int value of seconds since the top
-             of the minute for the date/time represented by the DateTime when interpreted in the New York
-             time zone.
+             of the minute for the date/time represented by the DateTime when interpreted in the New York time
+             zone.
     """
     
     return _java_type_.secondOfMinuteNy(dateTime)

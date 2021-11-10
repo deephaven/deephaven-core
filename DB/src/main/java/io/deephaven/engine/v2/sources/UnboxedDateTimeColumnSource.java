@@ -8,8 +8,8 @@ import io.deephaven.engine.tables.utils.DateTime;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Reinterpret result for many {@link ColumnSource} implementations that internally represent {@link DateTime} values
- * as {@code long} values.
+ * Reinterpret result for many {@link ColumnSource} implementations that internally represent {@link DateTime} values as
+ * {@code long} values.
  */
 @AbstractColumnSource.IsSerializable(value = true)
 public class UnboxedDateTimeColumnSource extends AbstractColumnSource<Long>

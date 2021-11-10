@@ -205,7 +205,8 @@ public abstract class AbstractConditionFilter extends SelectFilterImpl {
         }
     }
 
-    protected abstract void generateFilterCode(TableDefinition tableDefinition, DateTimeUtils.Result timeConversionResult,
+    protected abstract void generateFilterCode(TableDefinition tableDefinition,
+            DateTimeUtils.Result timeConversionResult,
             LanguageParser.Result result) throws MalformedURLException, ClassNotFoundException;
 
     @Override

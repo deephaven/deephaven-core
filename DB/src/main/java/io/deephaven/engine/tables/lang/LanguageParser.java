@@ -78,11 +78,11 @@ public final class LanguageParser extends GenericVisitorAdapter<Class<?>, Langua
      * @throws QueryLanguageParseException If any exception or error is encountered
      */
     public LanguageParser(String expression,
-                          Collection<Package> packageImports,
-                          Collection<Class<?>> classImports,
-                          Collection<Class<?>> staticImports,
-                          Map<String, Class<?>> variables,
-                          Map<String, Class<?>[]> variableParameterizedTypes) throws QueryLanguageParseException {
+            Collection<Package> packageImports,
+            Collection<Class<?>> classImports,
+            Collection<Class<?>> staticImports,
+            Map<String, Class<?>> variables,
+            Map<String, Class<?>[]> variableParameterizedTypes) throws QueryLanguageParseException {
         this(expression, packageImports, classImports, staticImports, variables,
                 variableParameterizedTypes, true);
     }
@@ -103,11 +103,11 @@ public final class LanguageParser extends GenericVisitorAdapter<Class<?>, Langua
      * @throws QueryLanguageParseException If any exception or error is encountered
      */
     public LanguageParser(String expression,
-                          Collection<Package> packageImports,
-                          Collection<Class<?>> classImports,
-                          Collection<Class<?>> staticImports,
-                          Map<String, Class<?>> variables,
-                          Map<String, Class<?>[]> variableParameterizedTypes, boolean unboxArguments)
+            Collection<Package> packageImports,
+            Collection<Class<?>> classImports,
+            Collection<Class<?>> staticImports,
+            Map<String, Class<?>> variables,
+            Map<String, Class<?>[]> variableParameterizedTypes, boolean unboxArguments)
             throws QueryLanguageParseException {
         this.packageImports = packageImports == null ? Collections.emptySet()
                 : Require.notContainsNull(packageImports, "packageImports");
@@ -910,8 +910,8 @@ public final class LanguageParser extends GenericVisitorAdapter<Class<?>, Langua
          *
          * What matters here: 1) If it's a simple name (i.e. not a qualified name; doesn't contain a '.'), then 1. Check
          * whether it's in the scope 2. If it's not in the scope, see if it's a static import 3. If it's not a static
-         * import, then it's not a situation the LanguageParser has to worry about. 2) Qualified names -- we just
-         * throw them to 'findClass()'. Many details are not relevant here. For example, field access is handled by a
+         * import, then it's not a situation the LanguageParser has to worry about. 2) Qualified names -- we just throw
+         * them to 'findClass()'. Many details are not relevant here. For example, field access is handled by a
          * different method: visit(FieldAccessExpr, StringBuilder).
          */
         printer.append(n.getNameAsString());

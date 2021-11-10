@@ -537,7 +537,7 @@ public class JsonNodeUtil {
      */
     @Nullable
     public static DateTime getDateTime(@NotNull final JsonNode node, @NotNull final String key,
-                                         final boolean allowMissingKeys, final boolean allowNullValues) {
+            final boolean allowMissingKeys, final boolean allowNullValues) {
         final JsonNode tmpNode = checkAllowMissingOrNull(node, key, allowMissingKeys, allowNullValues);
         return getDateTime(tmpNode);
     }

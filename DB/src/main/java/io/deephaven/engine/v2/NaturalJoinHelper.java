@@ -673,7 +673,7 @@ class NaturalJoinHelper {
         boolean changedRedirection = false;
 
         private ModifiedSlotUpdater(IncrementalNaturalJoinStateManager jsm, RowSetBuilderRandom modifiedLeftBuilder,
-                                    MutableRowRedirection rowRedirection, boolean exactMatch, boolean rightAddedColumnsChanged) {
+                MutableRowRedirection rowRedirection, boolean exactMatch, boolean rightAddedColumnsChanged) {
             this.jsm = jsm;
             this.modifiedLeftBuilder = modifiedLeftBuilder;
             this.rowRedirection = rowRedirection;

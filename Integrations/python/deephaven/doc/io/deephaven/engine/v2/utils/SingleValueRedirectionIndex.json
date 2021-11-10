@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.engine.v2.utils.SingleValueRowRedirection",
- "methods": {
-  "getValue": ":return: long",
-  "setValue": ":param value: long"
- },
- "path": "io.deephaven.engine.v2.utils.SingleValueRowRedirection",
- "typeName": "interface"
-}

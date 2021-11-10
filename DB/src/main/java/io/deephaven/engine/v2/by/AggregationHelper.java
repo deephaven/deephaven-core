@@ -237,7 +237,8 @@ public class AggregationHelper {
 
         // Compute result rowSet and redirection to hash slots
         final TrackingRowSet resultRowSet = RowSetFactory.flat(numGroups).toTracking();
-        final MutableRowRedirection resultIndexToHashSlot = new IntColumnSourceMutableRowRedirection(groupIndexToHashSlot);
+        final MutableRowRedirection resultIndexToHashSlot =
+                new IntColumnSourceMutableRowRedirection(groupIndexToHashSlot);
 
         // Construct result column sources
         final ColumnSource<?>[] keyHashTableSources = stateManager.getKeyHashTableSources();

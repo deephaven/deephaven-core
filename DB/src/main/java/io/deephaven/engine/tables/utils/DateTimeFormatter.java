@@ -25,7 +25,7 @@ public class DateTimeFormatter {
     }
 
     public DateTimeFormatter(final boolean isISO, final boolean hasDate, final boolean hasTime,
-                             final int subsecondDigits, final boolean hasTZ) {
+            final int subsecondDigits, final boolean hasTZ) {
         this((hasDate ? "yyyy-MM-dd" : "") + (!hasDate || !hasTime ? "" : isISO ? "'T'" : " ") +
                 (hasTime ? "HH:mm:ss" : "") + (hasTime && subsecondDigits > 0 ? "." : "") +
                 (hasTime ? StringUtils.repeat("S", subsecondDigits) : "") + (hasTZ ? " %t" : ""));

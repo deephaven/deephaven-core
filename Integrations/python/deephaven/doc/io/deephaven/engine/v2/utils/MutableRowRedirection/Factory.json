@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.engine.v2.utils.MutableRowRedirection$Factory",
+ "methods": {
+  "createRowRedirection": "*Overload 1*  \n  :param initialCapacity: int\n  :return: io.deephaven.engine.v2.utils.MutableRowRedirection\n  \n*Overload 2*  \n  :param map: (gnu.trove.map.TLongLongMap) - The initial TLongLongMap to use for backing the result MutableRowRedirection. Needs to\n          have the same dynamic type as that returned by createUnderlyingMapWithCapacity(int).\n  :return: io.deephaven.engine.v2.utils.RowRedirection",
+  "createUnderlyingMapWithCapacity": ":param initialCapacity: int\n:return: gnu.trove.map.TLongLongMap"
+ },
+ "path": "io.deephaven.engine.v2.utils.MutableRowRedirection.Factory",
+ "text": "Factory for producing MutableRowSets and their components.",
+ "typeName": "interface"
+}

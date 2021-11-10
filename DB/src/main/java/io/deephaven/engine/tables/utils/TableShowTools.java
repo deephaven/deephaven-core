@@ -23,7 +23,7 @@ import java.util.Set;
 class TableShowTools {
 
     static void showInternal(Table source, long firstRow, long lastRowExclusive, TimeZone timeZone, String delimiter,
-                             PrintStream out, boolean showIndex, String[] columns) {
+            PrintStream out, boolean showIndex, String[] columns) {
         final QueryPerformanceNugget nugget = QueryPerformanceRecorder.getInstance().getNugget("TableTools.show()");
         try {
             if (columns.length == 0) {

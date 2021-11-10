@@ -1335,11 +1335,11 @@ public class AsOfJoinHelper {
     }
 
     private static void rightIncrementalApplySsaShift(RowSetShiftData shiftData, SegmentedSortedArray ssa,
-                                                      LongSortKernel<Values, RowKeys> sortKernel, ChunkSource.FillContext fillContext,
-                                                      RowSet restampRemovals, QueryTable table,
-                                                      int chunkSize, ColumnSource<?> stampSource, ChunkSsaStamp chunkSsaStamp,
-                                                      WritableChunk<Values> leftStampValues, WritableLongChunk<RowKeys> leftStampKeys,
-                                                      MutableRowRedirection rowRedirection, boolean disallowExactMatch) {
+            LongSortKernel<Values, RowKeys> sortKernel, ChunkSource.FillContext fillContext,
+            RowSet restampRemovals, QueryTable table,
+            int chunkSize, ColumnSource<?> stampSource, ChunkSsaStamp chunkSsaStamp,
+            WritableChunk<Values> leftStampValues, WritableLongChunk<RowKeys> leftStampKeys,
+            MutableRowRedirection rowRedirection, boolean disallowExactMatch) {
 
         try (final RowSet fullPrevRowSet = table.getRowSet().getPrevRowSet();
                 final RowSet previousToShift = fullPrevRowSet.minus(restampRemovals);

@@ -19,8 +19,8 @@ interface JoinKeyState {
 
     /**
      * After the right side has been changed (all additions, modifications, removals, etc.) have been completed; each
-     * state is visited calling propagateRightUpdates to update its MutableRowRedirection and the list of left indicesthat
-     * have been modified by right changes.
+     * state is visited calling propagateRightUpdates to update its MutableRowRedirection and the list of left
+     * indicesthat have been modified by right changes.
      */
     void propagateRightUpdates();
 

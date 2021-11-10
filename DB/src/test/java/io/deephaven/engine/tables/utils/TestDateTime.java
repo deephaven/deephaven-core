@@ -108,7 +108,8 @@ public class TestDateTime extends BaseArrayTestCase {
 
         // Now test the current time
         // (Straight business calendar and the DBUtils codepath)
-        String fromCal = Calendars.calendar().previousBusinessDay(DateTimeUtils.millisToTime(System.currentTimeMillis()));
+        String fromCal =
+                Calendars.calendar().previousBusinessDay(DateTimeUtils.millisToTime(System.currentTimeMillis()));
         assertEquals(DateTimeUtils.lastBusinessDateNy(), fromCal);
         // Test it a second time, since its cached
         assertEquals(DateTimeUtils.lastBusinessDateNy(), fromCal);
@@ -121,9 +122,10 @@ public class TestDateTime extends BaseArrayTestCase {
         today = "2013-11-27";
         dayBefore = "2013-11-26";
         assertEquals(dayBefore, DateTimeUtils.lastBusinessDateNy(getMillisFromDateStr(format, today) + 1)); // make sure
-                                                                                                          // it advances
-                                                                                                          // just past
-                                                                                                          // midnight
+                                                                                                            // it
+                                                                                                            // advances
+                                                                                                            // just past
+                                                                                                            // midnight
 
         // Rolling back should not work -- we have cached a later day
         today = "2013-11-26";

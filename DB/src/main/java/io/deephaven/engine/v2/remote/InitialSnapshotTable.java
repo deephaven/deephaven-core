@@ -32,7 +32,7 @@ public class InitialSnapshotTable extends QueryTable {
     private final BitSet subscribedColumns;
 
     protected InitialSnapshotTable(Map<String, ? extends ColumnSource<?>> result, WritableSource<?>[] writableSources,
-                                   MutableRowRedirection rowRedirection, BitSet subscribedColumns) {
+            MutableRowRedirection rowRedirection, BitSet subscribedColumns) {
         super(RowSetFactory.empty().toTracking(), result);
         this.subscribedColumns = subscribedColumns;
         this.writableSources = writableSources;

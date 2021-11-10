@@ -11,9 +11,9 @@ import gnu.trove.map.hash.TObjectIntHashMap;
 import static io.deephaven.util.QueryConstants.NULL_LONG;
 
 /**
- * Formatting methods from ColorUtil. Exists so that we can statically import the ColorUtil methods without
- * importing the color fields. TODO: remove once {@link ColorUtil} field and {@link Color} field conflicts are
- * resolved. TODO: This class won't be necessary once we can import ColorUtil as static again. TODO
+ * Formatting methods from ColorUtil. Exists so that we can statically import the ColorUtil methods without importing
+ * the color fields. TODO: remove once {@link ColorUtil} field and {@link Color} field conflicts are resolved. TODO:
+ * This class won't be necessary once we can import ColorUtil as static again. TODO
  * (deephaven/deephaven-core/issues/175): Move this to a new module and package
  */
 public class ColorUtilImpl {

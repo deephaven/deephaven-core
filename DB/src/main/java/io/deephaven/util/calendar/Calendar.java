@@ -25,9 +25,9 @@ import java.time.DayOfWeek;
  * a different time zone is considered a different calendar.
  *
  *
- * Frequently, the default implementation for methods on DateTimes is to call the corresponding method on a String
- * with {@code DateTime.toDateString}. This can be slower than methods written explicitly for DateTimes. If
- * performance is an issue, consider overriding these methods with other behavior.
+ * Frequently, the default implementation for methods on DateTimes is to call the corresponding method on a String with
+ * {@code DateTime.toDateString}. This can be slower than methods written explicitly for DateTimes. If performance is an
+ * issue, consider overriding these methods with other behavior.
  */
 public interface Calendar {
 

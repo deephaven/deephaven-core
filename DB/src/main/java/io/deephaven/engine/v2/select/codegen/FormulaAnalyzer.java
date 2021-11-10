@@ -80,8 +80,8 @@ public class FormulaAnalyzer {
     }
 
     public static LanguageParser.Result getCompiledFormula(Map<String, ColumnDefinition<?>> availableColumns,
-                                                           DateTimeUtils.Result timeConversionResult,
-                                                           Map<String, Class<?>> otherVariables) throws Exception {
+            DateTimeUtils.Result timeConversionResult,
+            Map<String, Class<?>> otherVariables) throws Exception {
         final Map<String, Class<?>> possibleVariables = new HashMap<>();
         possibleVariables.put("i", int.class);
         possibleVariables.put("ii", long.class);

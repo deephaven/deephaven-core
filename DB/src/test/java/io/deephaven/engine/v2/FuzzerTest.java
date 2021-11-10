@@ -302,7 +302,8 @@ public class FuzzerTest {
 
         final long loopEnd = System.currentTimeMillis();
         System.out.println("Elapsed time: " + (loopEnd - start) + "ms, loop: " + (loopEnd - loopStart) + "ms"
-                + (realtime ? "" : (", sim: " + (double) (now.longValue() - fakeStart.getNanos()) / DateTimeUtils.SECOND))
+                + (realtime ? ""
+                        : (", sim: " + (double) (now.longValue() - fakeStart.getNanos()) / DateTimeUtils.SECOND))
                 + ", ttSize: " + timeTable.size());
     }
 

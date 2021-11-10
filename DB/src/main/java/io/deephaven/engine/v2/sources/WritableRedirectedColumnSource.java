@@ -26,8 +26,8 @@ public class WritableRedirectedColumnSource<T> extends RedirectedColumnSource<T>
      * @param maxInnerIndex The maximum rowSet key available in innerSource
      */
     public WritableRedirectedColumnSource(@NotNull final MutableRowRedirection rowRedirection,
-                                          @NotNull final ColumnSource<T> innerSource,
-                                          final long maxInnerIndex) {
+            @NotNull final ColumnSource<T> innerSource,
+            final long maxInnerIndex) {
         super(rowRedirection, innerSource);
         this.maxInnerIndex = maxInnerIndex;
     }

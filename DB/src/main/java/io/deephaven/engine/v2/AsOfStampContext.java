@@ -217,7 +217,7 @@ class AsOfStampContext implements Context {
     }
 
     private void computeRedirections(MutableRowRedirection rowRedirection, Chunk<Values> rightStampChunk,
-                                     LongChunk<RowKeys> rightKeyIndicesChunk) {
+            LongChunk<RowKeys> rightKeyIndicesChunk) {
         stampKernel.computeRedirections(leftStampChunk, rightStampChunk, rightKeyIndicesChunk, leftRedirections);
         for (int ii = 0; ii < leftKeyIndicesChunk.size(); ++ii) {
             final long rightKey = leftRedirections.get(ii);

@@ -45,7 +45,7 @@ public class AsyncErrorLogger {
     }
 
     public static void log(DateTime time, UpdatePerformanceTracker.Entry entry,
-                           UpdatePerformanceTracker.Entry sourceEntry, Throwable originalException) throws IOException {
+            UpdatePerformanceTracker.Entry sourceEntry, Throwable originalException) throws IOException {
         timeSetter.set(time);
         if (entry != null) {
             evaluationNumberSetter.set(entry.getEvaluationNumber());
