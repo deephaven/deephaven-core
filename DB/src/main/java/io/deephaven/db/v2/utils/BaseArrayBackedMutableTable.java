@@ -15,9 +15,9 @@ import io.deephaven.db.v2.UpdatableTable;
 import io.deephaven.db.v2.sources.ArrayBackedColumnSource;
 import io.deephaven.db.v2.sources.ColumnSource;
 import io.deephaven.util.annotations.TestUseOnly;
-import io.deephaven.web.shared.data.InputTableDefinition;
 import org.jetbrains.annotations.NotNull;
 
+import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicLong;
@@ -27,7 +27,6 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
 
     private static final Object[] BOOLEAN_ENUM_ARRAY = new Object[] {true, false, null};
 
-    protected final InputTableDefinition inputTableDefinition;
     private final List<PendingChange> pendingChanges = Collections.synchronizedList(new ArrayList<>());
     private final AtomicLong nextSequence = new AtomicLong(0);
     private final AtomicLong processedSequence = new AtomicLong(0);
@@ -43,7 +42,6 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
             Map<String, Object[]> enumValues, ProcessPendingUpdater processPendingUpdater) {
         super(index, nameToColumnSource, processPendingUpdater);
         this.enumValues = enumValues;
-        this.inputTableDefinition = new InputTableDefinition();
         MutableInputTable mutableInputTable = makeHandler();
         setAttribute(Table.INPUT_TABLE_ATTRIBUTE, mutableInputTable);
         setRefreshing(true);
@@ -132,13 +130,7 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
 
     protected abstract String getDefaultDescription();
 
-    abstract void validateDelete(TableDefinition definition);
-
-    private void validateDefinition(final TableDefinition newDefinition) {
-        final TableDefinition thisDefinition = getDefinition();
-        thisDefinition.checkCompatibility(newDefinition);
-        newDefinition.checkCompatibility(thisDefinition);
-    }
+    protected abstract List<String> getKeyNames();
 
     protected static class ProcessPendingUpdater implements Updater {
         private BaseArrayBackedMutableTable baseArrayBackedMutableTable;
@@ -174,8 +166,8 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
 
     protected class ArrayBackedMutableInputTable implements MutableInputTable {
         @Override
-        public InputTableDefinition getDefinition() {
-            return inputTableDefinition;
+        public List<String> getKeyNames() {
+            return BaseArrayBackedMutableTable.this.getKeyNames();
         }
 
         @Override
@@ -184,9 +176,13 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
         }
 
         @Override
-        public void add(Table newData) {
-            final long sequence = enqueueAddition(newData, true).sequence;
+        public void add(Table newData) throws IOException {
+            PendingChange pendingChange = enqueueAddition(newData, true);
+            final long sequence = pendingChange.sequence;
             waitForSequence(sequence);
+            if (pendingChange.error != null) {
+                throw new IOException(pendingChange.error);
+            }
         }
 
         private void add(Table newData, boolean allowEdits, InputTableStatusListener listener) {
@@ -204,7 +200,7 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
         }
 
         private PendingChange enqueueAddition(Table newData, boolean allowEdits) {
-            validateDefinition(newData.getDefinition());
+            validateAddOrModify(newData);
             // we want to get a clean copy of the table; that can not change out from under us or result in long reads
             // during our LTM refresh
             final PendingChange pendingChange = new PendingChange(doSnap(newData), false, allowEdits);
@@ -228,12 +224,16 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
         }
 
         @Override
-        public void delete(Table table, Index index) {
-            validateDelete(table.getDefinition());
+        public void delete(Table table, Index index) throws IOException {
+            validateDelete(table);
             final PendingChange pendingChange = new PendingChange(doSnap(table, index), true, false);
             pendingChanges.add(pendingChange);
             onPendingChange.run();
             waitForSequence(pendingChange.sequence);
+
+            if (pendingChange.error != null) {
+                throw new IOException(pendingChange.error);
+            }
         }
 
         @Override

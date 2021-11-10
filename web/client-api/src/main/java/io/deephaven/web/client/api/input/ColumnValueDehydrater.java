@@ -111,7 +111,7 @@ public class ColumnValueDehydrater {
                         return Byte.toString((byte) val);
                     case "char":
                     case "java.lang.Character":
-                        return val == Character.MAX_VALUE - 1 ? nullSentinel() : String.valueOf(value).substring(0, 1);
+                        return val == Character.MAX_VALUE ? nullSentinel() : String.valueOf(value).substring(0, 1);
                     case "short":
                     case "java.lang.Short":
                         return val == Short.MIN_VALUE ? nullSentinel() : Short.toString((short) val);

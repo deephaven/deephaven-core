@@ -159,6 +159,7 @@ public class BarrageUtil {
         final Map<String, String> schemaMetadata = new HashMap<>();
 
         // copy primitives as strings
+        Set<String> unsentAttributes = new HashSet<>();
         for (final Map.Entry<String, Object> entry : attributes.entrySet()) {
             final String key = entry.getKey();
             final Object val = entry.getValue();
@@ -167,11 +168,14 @@ public class BarrageUtil {
                     val instanceof Character || val instanceof Boolean ||
                     (val instanceof String && ((String) val).length() < ATTR_STRING_LEN_CUTOFF)) {
                 putMetadata(schemaMetadata, "attribute." + key, val.toString());
+            } else {
+                unsentAttributes.add(key);
             }
         }
 
         // copy rollup details
         if (attributes.containsKey(Table.HIERARCHICAL_SOURCE_INFO_ATTRIBUTE)) {
+            unsentAttributes.remove(Table.HIERARCHICAL_SOURCE_INFO_ATTRIBUTE);
             final HierarchicalTableInfo hierarchicalTableInfo =
                     (HierarchicalTableInfo) attributes.remove(Table.HIERARCHICAL_SOURCE_INFO_ATTRIBUTE);
             final String hierarchicalSourceKeyPrefix = "attribute." + Table.HIERARCHICAL_SOURCE_INFO_ATTRIBUTE + ".";
@@ -188,6 +192,11 @@ public class BarrageUtil {
                     putMetadata(getExtraMetadata.apply(matchPair.left()), "rollup.sourceColumn", matchPair.right());
                 }
             }
+        }
+
+        // note which attributes have a value we couldn't send
+        for (String unsentAttribute : unsentAttributes) {
+            putMetadata(schemaMetadata, "unsent.attribute." + unsentAttribute, "");
         }
 
         final Map<String, Field> fields = new LinkedHashMap<>();
@@ -437,7 +446,7 @@ public class BarrageUtil {
             putMetadata(metadata, "description", description);
         }
         if (inputTable != null) {
-            putMetadata(metadata, "inputtable.isKey", Arrays.asList(inputTable.getKeyNames()).contains(name) + "");
+            putMetadata(metadata, "inputtable.isKey", inputTable.getKeyNames().contains(name) + "");
         }
 
         return arrowFieldFor(name, type, componentType, metadata);
