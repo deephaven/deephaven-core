@@ -48,7 +48,8 @@ public class Output {
      * @param scatterFunc function to scatter the results of a Python object into the table column.
      * @param type desired datatype of the new column.
      */
-    public Output(final String colName, final boolean isPythonScatterFunc, final Function<Object[], Object> scatterFunc, final String type) {
+    public Output(final String colName, final boolean isPythonScatterFunc, final Function<Object[], Object> scatterFunc,
+            final String type) {
 
         Require.neqNull(colName, "colName");
         Require.neqNull(scatterFunc, "scatterFunc");
