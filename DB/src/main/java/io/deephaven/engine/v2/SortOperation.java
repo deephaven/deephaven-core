@@ -85,7 +85,9 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
                 final boolean success = super.end(clockCycle);
                 if (success) {
                     QueryTable.startTrackingPrev(resultTable.getColumnSources());
-                    sortMapping.mutableCast().startTrackingPrevValues();
+                    if (sortMapping.isMutable()) {
+                        sortMapping.mutableCast().startTrackingPrevValues();
+                    }
                 }
                 return success;
             }
