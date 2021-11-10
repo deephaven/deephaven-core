@@ -2,23 +2,25 @@ import com.bmuschko.gradle.docker.tasks.image.DockerBuildImage
 import io.deephaven.tools.License
 
 plugins {
-  id 'com.bmuschko.docker-remote-api'
+    id 'com.bmuschko.docker-remote-api'
 }
 
-def dockerLicenses = License.createFrom(project).syncDockerLicense().get()
+def dockerLicenses = License.createFrom(project).syncDockerLicense()
 
-task prepareDocker(type: Sync) {
-  from 'Dockerfile'
-  from ('contents') {
-    into 'contents'
-  }
-  from (dockerLicenses.outputs) {
-    into 'contents'
-  }
-  into 'build/docker'
+def prepareDocker = project.tasks.register('prepareDocker', Sync) {
+    from 'Dockerfile'
+    from ('contents') {
+        into 'contents'
+    }
+    from (dockerLicenses.get().outputs) {
+        into 'contents'
+    }
+    into 'build/docker'
 }
 
-task buildDocker(type: DockerBuildImage) {
-  dependsOn prepareDocker
-  images.add('deephaven/grpc-proxy:local-build')
+def buildDocker = Docker.registerDockerImage(project, 'buildDocker') {
+    inputs.files prepareDocker.get().outputs.files
+    images.add('deephaven/grpc-proxy:local-build')
 }
+
+assemble.dependsOn buildDocker
