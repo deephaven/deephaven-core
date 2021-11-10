@@ -1,6 +1,6 @@
 FROM deephaven/proto-backplane-grpc:local-build AS proto-backplane-grpc
 
-FROM docker.io/library/node:14.16.0 AS sources
+FROM docker.io/library/node:14.18.1 AS sources
 WORKDIR /usr/src/app
 # Note: we are setting CI=true, even for local development, otherwise commands may run in dev-mode (ie,
 # `npm run test` watches the filesystem for changes)
