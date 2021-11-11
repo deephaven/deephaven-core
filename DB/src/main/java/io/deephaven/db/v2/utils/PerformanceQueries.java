@@ -242,6 +242,7 @@ public class PerformanceQueries {
         pm = pm.view(
                 "IntervalStart = IntervalStartTime",
                 "IntervalSeconds = IntervalDurationNanos / (1000 * 1000 * 1000.0)",
+                "UsedMemMiB = TotalMemMiB - FreeMemMiB",
                 "AvailMemMiB = MaxMemMiB - TotalMemMiB + FreeMemMiB",
                 "MaxMemMiB",
                 "AvailMemRatio = AvailMemMiB/MaxMemMiB",
