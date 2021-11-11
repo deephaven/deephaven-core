@@ -186,6 +186,9 @@ project(':deephaven2-wheel').projectDir = file('py/deephaven2-wheel')
 include(':docker-java-and-python')
 project(':docker-java-and-python').projectDir = file('docker/java-and-python')
 
+include(':docker-runtime-base')
+project(':docker-runtime-base').projectDir = file('docker/runtime-base')
+
 // Apply "vanity naming" (look for .gradle files matching ProjectName/ProjectName.gradle)
 File root = settings.rootDir
 mods.each {
