@@ -150,6 +150,11 @@ class Docker {
         List<String> entrypoint;
 
         /**
+         * Optional build arguments
+         */
+        Map<String, String> buildArgs;
+
+        /**
          * Logs are always printed from the build task when it runs, but entrypoint logs are only printed
          * when it fails. Set this flag to always show logs, even when entrypoint is successful.
          */
@@ -255,6 +260,11 @@ class Docker {
                 // specify tag, if provided
                 if (cfg.imageName) {
                     images.add(cfg.imageName)
+                }
+
+                // add build arguments, if provided
+                if (cfg.buildArgs) {
+                    buildArgs.putAll(cfg.buildArgs)
                 }
             }
         }
