@@ -9,11 +9,6 @@ sourceSets {
             srcDir 'java'
         }
     }
-    test {
-        java {
-            srcDir 'test'
-        }
-    }
 }
 
 dependencies {
@@ -22,6 +17,7 @@ dependencies {
 spotless {
     java {
         targetExclude(
+                '**/generated/**',
         )
     }
 }
