@@ -1,6 +1,6 @@
 package io.deephaven.engine.v2.sortcheck;
 
-import io.deephaven.engine.util.DhCharComparisons;
+import io.deephaven.util.compare.CharComparisons;
 import io.deephaven.engine.chunk.Attributes;
 import io.deephaven.engine.chunk.CharChunk;
 import io.deephaven.engine.chunk.Chunk;
@@ -31,7 +31,7 @@ public class CharReverseSortCheck implements SortCheck {
     // region comparison functions
     // note that this is a descending kernel, thus the comparisons here are backwards (e.g., the lt function is in terms of the sort direction, so is implemented by gt)
     private static int doComparison(char lhs, char rhs) {
-        return -1 * DhCharComparisons.compare(lhs, rhs);
+        return -1 * CharComparisons.compare(lhs, rhs);
     }
     // endregion comparison functions
 

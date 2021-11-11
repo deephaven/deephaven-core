@@ -1,8 +1,8 @@
 package io.deephaven.engine.v2.sources;
 
-import io.deephaven.engine.tables.utils.DateTime;
+import io.deephaven.engine.time.DateTime;
 
-import static io.deephaven.engine.tables.utils.DateTimeUtils.nanosToTime;
+import static io.deephaven.engine.time.DateTimeUtils.nanosToTime;
 import static io.deephaven.util.type.TypeUtils.box;
 
 /**

@@ -9,7 +9,7 @@ import io.deephaven.engine.tables.ColumnDefinition;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.vector.Vector;
 import io.deephaven.engine.tables.select.MatchPair;
-import io.deephaven.engine.tables.utils.NameValidator;
+import io.deephaven.util.NameValidator;
 import io.deephaven.engine.v2.NoSuchColumnException;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.SparseArrayColumnSource;

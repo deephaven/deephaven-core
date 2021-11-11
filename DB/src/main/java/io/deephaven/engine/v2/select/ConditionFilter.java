@@ -14,7 +14,7 @@ import io.deephaven.engine.tables.TableDefinition;
 import io.deephaven.engine.tables.lang.LanguageParser;
 import io.deephaven.engine.tables.libs.QueryLibrary;
 import io.deephaven.engine.tables.select.Param;
-import io.deephaven.engine.tables.utils.DateTimeUtils;
+import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.engine.tables.utils.QueryPerformanceNugget;
 import io.deephaven.engine.tables.utils.QueryPerformanceRecorder;
 import io.deephaven.engine.v2.sources.ColumnSource;

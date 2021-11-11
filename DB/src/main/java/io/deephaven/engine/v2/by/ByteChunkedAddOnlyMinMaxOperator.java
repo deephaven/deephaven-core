@@ -8,7 +8,7 @@
 package io.deephaven.engine.v2.by;
 
 import io.deephaven.util.QueryConstants;
-import io.deephaven.engine.util.DhByteComparisons;
+import io.deephaven.util.compare.ByteComparisons;
 import io.deephaven.engine.v2.sources.ByteArraySource;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.chunk.*;
@@ -45,7 +45,7 @@ class ByteChunkedAddOnlyMinMaxOperator implements IterativeChunkedAggregationOpe
             if (candidate != QueryConstants.NULL_BYTE) {
                 if (nonNull++ == 0) {
                     value = candidate;
-                } else if (DhByteComparisons.lt(candidate, value)) {
+                } else if (ByteComparisons.lt(candidate, value)) {
                     value = candidate;
                 }
             }
@@ -62,7 +62,7 @@ class ByteChunkedAddOnlyMinMaxOperator implements IterativeChunkedAggregationOpe
             if (candidate != QueryConstants.NULL_BYTE) {
                 if (nonNull++ == 0) {
                     value = candidate;
-                } else if (DhByteComparisons.gt(candidate, value)) {
+                } else if (ByteComparisons.gt(candidate, value)) {
                     value = candidate;
                 }
             }
@@ -72,11 +72,11 @@ class ByteChunkedAddOnlyMinMaxOperator implements IterativeChunkedAggregationOpe
     }
 
     private byte min(byte a, byte b) {
-        return DhByteComparisons.lt(a, b) ? a : b;
+        return ByteComparisons.lt(a, b) ? a : b;
     }
 
     private byte max(byte a, byte b) {
-        return DhByteComparisons.gt(a, b) ? a : b;
+        return ByteComparisons.gt(a, b) ? a : b;
     }
 
     @Override
@@ -134,7 +134,7 @@ class ByteChunkedAddOnlyMinMaxOperator implements IterativeChunkedAggregationOpe
         } else {
             result = minimum ? min(chunkValue, oldValue) : max(chunkValue, oldValue);
         }
-        if (!DhByteComparisons.eq(result, oldValue)) {
+        if (!ByteComparisons.eq(result, oldValue)) {
             resultColumn.set(destination, result);
             return true;
         } else {

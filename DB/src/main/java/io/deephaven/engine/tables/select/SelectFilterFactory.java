@@ -5,8 +5,8 @@
 package io.deephaven.engine.tables.select;
 
 import io.deephaven.base.Pair;
-import io.deephaven.engine.tables.utils.DateTime;
-import io.deephaven.engine.tables.utils.DateTimeUtils;
+import io.deephaven.engine.time.DateTime;
+import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.process.ProcessEnvironment;
 import io.deephaven.engine.tables.Table;

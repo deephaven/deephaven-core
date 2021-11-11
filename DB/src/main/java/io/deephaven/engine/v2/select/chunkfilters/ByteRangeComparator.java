@@ -3,7 +3,7 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.v2.select.chunkfilters;
 
-import io.deephaven.engine.util.DhByteComparisons;
+import io.deephaven.util.compare.ByteComparisons;
 import io.deephaven.engine.v2.select.ChunkFilter;
 import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.chunk.Attributes.OrderedRowKeys;
@@ -33,7 +33,7 @@ public class ByteRangeComparator {
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
                 final byte value = values.get(ii);
-                if (DhByteComparisons.geq(value, lower) && DhByteComparisons.leq(value, upper)) {
+                if (ByteComparisons.geq(value, lower) && ByteComparisons.leq(value, upper)) {
                     results.add(keys.get(ii));
                 }
             }
@@ -49,7 +49,7 @@ public class ByteRangeComparator {
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
                 final byte value = values.get(ii);
-                if (DhByteComparisons.geq(value, lower) && DhByteComparisons.lt(value, upper)) {
+                if (ByteComparisons.geq(value, lower) && ByteComparisons.lt(value, upper)) {
                     results.add(keys.get(ii));
                 }
             }
@@ -65,7 +65,7 @@ public class ByteRangeComparator {
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
                 final byte value = values.get(ii);
-                if (DhByteComparisons.gt(value, lower) && DhByteComparisons.leq(value, upper)) {
+                if (ByteComparisons.gt(value, lower) && ByteComparisons.leq(value, upper)) {
                     results.add(keys.get(ii));
                 }
             }
@@ -81,7 +81,7 @@ public class ByteRangeComparator {
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
                 final byte value = values.get(ii);
-                if (DhByteComparisons.gt(value, lower) && DhByteComparisons.lt(value, upper)) {
+                if (ByteComparisons.gt(value, lower) && ByteComparisons.lt(value, upper)) {
                     results.add(keys.get(ii));
                 }
             }

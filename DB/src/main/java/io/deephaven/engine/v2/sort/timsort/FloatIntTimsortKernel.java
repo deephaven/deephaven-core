@@ -6,7 +6,7 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.v2.sort.timsort;
 
-import io.deephaven.engine.util.DhFloatComparisons;
+import io.deephaven.util.compare.FloatComparisons;
 
 import io.deephaven.engine.v2.sort.IntSortKernel;
 import io.deephaven.engine.chunk.*;
@@ -176,7 +176,7 @@ public class FloatIntTimsortKernel {
 
     // region comparison functions
     private static int doComparison(float lhs, float rhs) {
-        return DhFloatComparisons.compare(lhs, rhs);
+        return FloatComparisons.compare(lhs, rhs);
     }
     // endregion comparison functions
 

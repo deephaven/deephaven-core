@@ -4,7 +4,7 @@ import io.deephaven.base.verify.AssertionFailure;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.tables.utils.TableTools;
-import io.deephaven.engine.util.DhCharComparisons;
+import io.deephaven.util.compare.CharComparisons;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.engine.util.liveness.LivenessScope;
 import io.deephaven.engine.util.liveness.LivenessScopeStack;
@@ -287,7 +287,7 @@ public class TestCharSegmentedSortedMultiset extends RefreshingTableTestCase {
             final LongChunk<?> counts = ssm.countChunk();
             int totalSize = 0;
 
-            final Map<Character, Integer> checkMap = new TreeMap<>(DhCharComparisons::compare);
+            final Map<Character, Integer> checkMap = new TreeMap<>(CharComparisons::compare);
             for (int ii = 0; ii < valueChunk.size(); ++ii) {
                 final char value = valueChunk.get(ii);
                 if (value == NULL_CHAR && !countNull) {

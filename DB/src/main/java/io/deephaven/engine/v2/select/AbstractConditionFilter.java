@@ -9,7 +9,7 @@ import io.deephaven.engine.tables.lang.LanguageParser;
 import io.deephaven.engine.tables.libs.QueryLibrary;
 import io.deephaven.engine.tables.select.Param;
 import io.deephaven.engine.tables.select.QueryScope;
-import io.deephaven.engine.tables.utils.DateTimeUtils;
+import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.engine.v2.select.python.DeephavenCompatibleFunction;
 import io.deephaven.engine.v2.utils.MutableRowSet;
 import io.deephaven.engine.v2.utils.RowSet;

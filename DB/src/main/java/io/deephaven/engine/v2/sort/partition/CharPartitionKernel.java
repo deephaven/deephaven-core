@@ -1,6 +1,6 @@
 package io.deephaven.engine.v2.sort.partition;
 
-import io.deephaven.engine.util.tuples.generated.CharLongTuple;
+import io.deephaven.engine.tuple.generated.CharLongTuple;
 import io.deephaven.engine.v2.sort.timsort.CharLongTimsortKernel;
 import io.deephaven.engine.v2.sort.LongSortKernel;
 import io.deephaven.engine.v2.sources.ColumnSource;

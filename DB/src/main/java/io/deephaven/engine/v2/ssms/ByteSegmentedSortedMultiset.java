@@ -7,8 +7,8 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.vector.ByteVector;
 import io.deephaven.engine.vector.ByteVectorDirect;
 import io.deephaven.engine.vector.ObjectVector;
+import io.deephaven.util.compare.ByteComparisons;
 import io.deephaven.util.type.ArrayTypeUtils;
-import io.deephaven.engine.util.DhByteComparisons;
 import io.deephaven.engine.v2.by.SumIntChunk;
 import io.deephaven.engine.v2.sort.timsort.TimsortUtilities;
 import io.deephaven.engine.chunk.*;
@@ -1137,7 +1137,7 @@ public final class ByteSegmentedSortedMultiset implements SegmentedSortedMultiSe
             Assert.gtZero(counts.get(ii), "counts.get(ii)");
             final byte prevValue = valuesToInsert.get(ii - 1);
             final byte curValue = valuesToInsert.get(ii);
-            Assert.assertion(DhByteComparisons.lt(prevValue, curValue), "DhByteComparisons.lt(prevValue, curValue)", prevValue, "prevValue", curValue, "curValue");
+            Assert.assertion(ByteComparisons.lt(prevValue, curValue), "ByteComparisons.lt(prevValue, curValue)", prevValue, "prevValue", curValue, "curValue");
         }
     }
 
@@ -1275,7 +1275,7 @@ public final class ByteSegmentedSortedMultiset implements SegmentedSortedMultiSe
     }
 
     private static int doComparison(byte lhs, byte rhs) {
-        return DhByteComparisons.compare(lhs, rhs);
+        return ByteComparisons.compare(lhs, rhs);
     }
 
     private static boolean gt(byte lhs, byte rhs) {

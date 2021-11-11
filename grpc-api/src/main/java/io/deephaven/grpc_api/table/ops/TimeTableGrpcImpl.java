@@ -4,7 +4,7 @@ import io.deephaven.base.verify.Assert;
 import com.google.rpc.Code;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.live.UpdateGraphProcessor;
-import io.deephaven.engine.tables.utils.DateTimeUtils;
+import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.engine.v2.TimeTable;
 import io.deephaven.grpc_api.session.SessionState;
 import io.deephaven.extensions.barrage.util.GrpcUtil;

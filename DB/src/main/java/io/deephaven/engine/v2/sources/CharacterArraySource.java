@@ -5,7 +5,7 @@
 package io.deephaven.engine.v2.sources;
 
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.util.DhCharComparisons;
+import io.deephaven.util.compare.CharComparisons;
 import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.chunk.Attributes.*;
 import io.deephaven.engine.chunk.ResettableWritableChunk;
@@ -98,7 +98,7 @@ public class CharacterArraySource extends ArraySourceHelper<Character, char[]> i
         final int blockIndex = (int) (index >> LOG_BLOCK_SIZE);
         final int indexWithinBlock = (int) (index & INDEX_MASK);
         final char oldValue = blocks[blockIndex][indexWithinBlock];
-        if (!DhCharComparisons.eq(oldValue, newValue)) {
+        if (!CharComparisons.eq(oldValue, newValue)) {
             if (shouldRecordPrevious(index, prevBlocks, recycler)) {
                 prevBlocks[blockIndex][indexWithinBlock] = oldValue;
             }

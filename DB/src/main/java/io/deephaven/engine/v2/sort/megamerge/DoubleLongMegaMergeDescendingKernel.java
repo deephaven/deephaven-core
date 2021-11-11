@@ -3,7 +3,7 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.v2.sort.megamerge;
 
-import io.deephaven.engine.util.DhDoubleComparisons;
+import io.deephaven.util.compare.DoubleComparisons;
 import io.deephaven.engine.v2.sort.LongMegaMergeKernel;
 import io.deephaven.engine.v2.sort.timsort.TimsortUtilities;
 import io.deephaven.engine.v2.sources.ArrayBackedColumnSource;
@@ -177,7 +177,7 @@ public class DoubleLongMegaMergeDescendingKernel {
     // region comparison functions
     // note that this is a descending kernel, thus the comparisons here are backwards (e.g., the lt function is in terms of the sort direction, so is implemented by gt)
     private static int doComparison(double lhs, double rhs) {
-        return -1 * DhDoubleComparisons.compare(lhs, rhs);
+        return -1 * DoubleComparisons.compare(lhs, rhs);
     }
     // endregion comparison functions
 

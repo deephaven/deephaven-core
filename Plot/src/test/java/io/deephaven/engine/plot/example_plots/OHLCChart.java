@@ -6,8 +6,8 @@ package io.deephaven.engine.plot.example_plots;
 
 import io.deephaven.engine.plot.Figure;
 import io.deephaven.engine.plot.FigureFactory;
-import io.deephaven.engine.tables.utils.DateTime;
-import io.deephaven.engine.tables.utils.DateTimeUtils;
+import io.deephaven.engine.time.DateTime;
+import io.deephaven.engine.time.DateTimeUtils;
 
 
 public class OHLCChart {

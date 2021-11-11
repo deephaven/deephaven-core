@@ -10,6 +10,8 @@ import io.deephaven.engine.tables.libs.QueryLibrary;
 import io.deephaven.engine.tables.libs.StringSet;
 import io.deephaven.engine.tables.select.QueryScope;
 import io.deephaven.engine.tables.utils.*;
+import io.deephaven.engine.time.DateTime;
+import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.util.BooleanUtils;
 import io.deephaven.engine.util.file.TrackedFileHandleFactory;
 import io.deephaven.engine.v2.QueryTable;

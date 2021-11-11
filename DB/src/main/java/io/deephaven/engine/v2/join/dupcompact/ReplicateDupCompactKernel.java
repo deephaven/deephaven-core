@@ -2,7 +2,7 @@ package io.deephaven.engine.v2.join.dupcompact;
 
 import io.deephaven.compilertools.ReplicatePrimitiveCode;
 import io.deephaven.compilertools.ReplicateUtilities;
-import io.deephaven.engine.util.DhCharComparisons;
+import io.deephaven.util.compare.CharComparisons;
 import io.deephaven.engine.v2.sort.ReplicateSortKernel;
 import io.deephaven.util.QueryConstants;
 import org.apache.commons.io.FileUtils;
@@ -63,7 +63,7 @@ public class ReplicateDupCompactKernel {
 
         List<String> lines = FileUtils.readLines(file, Charset.defaultCharset());
 
-        lines = ReplicateUtilities.addImport(lines, QueryConstants.class, DhCharComparisons.class);
+        lines = ReplicateUtilities.addImport(lines, QueryConstants.class, CharComparisons.class);
 
         // we always replicate ascending then invert
         lines = globalReplacements(ReplicateSortKernel.fixupCharNullComparisons(lines, true), oldName, newName);

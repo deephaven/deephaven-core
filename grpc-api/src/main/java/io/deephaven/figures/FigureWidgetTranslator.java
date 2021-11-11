@@ -37,7 +37,7 @@ import io.deephaven.proto.backplane.script.grpc.FigureDescriptor.*;
 import io.deephaven.proto.backplane.script.grpc.FigureDescriptor.BusinessCalendarDescriptor.BusinessPeriod;
 import io.deephaven.proto.backplane.script.grpc.FigureDescriptor.BusinessCalendarDescriptor.Holiday;
 import io.deephaven.proto.backplane.script.grpc.FigureDescriptor.BusinessCalendarDescriptor.LocalDate;
-import io.deephaven.util.calendar.BusinessCalendar;
+import io.deephaven.engine.time.calendar.BusinessCalendar;
 import org.jetbrains.annotations.NotNull;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;

@@ -3,7 +3,7 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.v2.select.chunkfilters;
 
-import io.deephaven.engine.util.DhLongComparisons;
+import io.deephaven.util.compare.LongComparisons;
 import io.deephaven.engine.v2.select.ChunkFilter;
 import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.chunk.Attributes.OrderedRowKeys;
@@ -33,7 +33,7 @@ public class LongRangeComparator {
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
                 final long value = values.get(ii);
-                if (DhLongComparisons.geq(value, lower) && DhLongComparisons.leq(value, upper)) {
+                if (LongComparisons.geq(value, lower) && LongComparisons.leq(value, upper)) {
                     results.add(keys.get(ii));
                 }
             }
@@ -49,7 +49,7 @@ public class LongRangeComparator {
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
                 final long value = values.get(ii);
-                if (DhLongComparisons.geq(value, lower) && DhLongComparisons.lt(value, upper)) {
+                if (LongComparisons.geq(value, lower) && LongComparisons.lt(value, upper)) {
                     results.add(keys.get(ii));
                 }
             }
@@ -65,7 +65,7 @@ public class LongRangeComparator {
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
                 final long value = values.get(ii);
-                if (DhLongComparisons.gt(value, lower) && DhLongComparisons.leq(value, upper)) {
+                if (LongComparisons.gt(value, lower) && LongComparisons.leq(value, upper)) {
                     results.add(keys.get(ii));
                 }
             }
@@ -81,7 +81,7 @@ public class LongRangeComparator {
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
                 final long value = values.get(ii);
-                if (DhLongComparisons.gt(value, lower) && DhLongComparisons.lt(value, upper)) {
+                if (LongComparisons.gt(value, lower) && LongComparisons.lt(value, upper)) {
                     results.add(keys.get(ii));
                 }
             }

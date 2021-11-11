@@ -4,8 +4,8 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.vector.CharVector;
 import io.deephaven.engine.vector.CharVectorDirect;
 import io.deephaven.engine.vector.ObjectVector;
+import io.deephaven.util.compare.CharComparisons;
 import io.deephaven.util.type.ArrayTypeUtils;
-import io.deephaven.engine.util.DhCharComparisons;
 import io.deephaven.engine.v2.by.SumIntChunk;
 import io.deephaven.engine.v2.sort.timsort.TimsortUtilities;
 import io.deephaven.engine.chunk.*;
@@ -1134,7 +1134,7 @@ public final class CharSegmentedSortedMultiset implements SegmentedSortedMultiSe
             Assert.gtZero(counts.get(ii), "counts.get(ii)");
             final char prevValue = valuesToInsert.get(ii - 1);
             final char curValue = valuesToInsert.get(ii);
-            Assert.assertion(DhCharComparisons.lt(prevValue, curValue), "DhCharComparisons.lt(prevValue, curValue)", prevValue, "prevValue", curValue, "curValue");
+            Assert.assertion(CharComparisons.lt(prevValue, curValue), "CharComparisons.lt(prevValue, curValue)", prevValue, "prevValue", curValue, "curValue");
         }
     }
 
@@ -1272,7 +1272,7 @@ public final class CharSegmentedSortedMultiset implements SegmentedSortedMultiSe
     }
 
     private static int doComparison(char lhs, char rhs) {
-        return DhCharComparisons.compare(lhs, rhs);
+        return CharComparisons.compare(lhs, rhs);
     }
 
     private static boolean gt(char lhs, char rhs) {

@@ -6,7 +6,7 @@ package io.deephaven.engine.plot.datasets.data;
 
 import io.deephaven.engine.plot.errors.PlotInfo;
 import io.deephaven.engine.plot.util.ArgumentValidations;
-import io.deephaven.engine.tables.utils.DateTime;
+import io.deephaven.engine.time.DateTime;
 
 /**
  * {@link IndexableNumericData} dataset comprised of an array of {@link DateTime}s.

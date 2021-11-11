@@ -17,7 +17,7 @@ import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.tables.live.NotificationQueue;
 import io.deephaven.engine.tables.select.MatchPair;
 import io.deephaven.engine.tables.select.WouldMatchPair;
-import io.deephaven.engine.tables.utils.DateTime;
+import io.deephaven.engine.time.DateTime;
 import io.deephaven.engine.tables.utils.QueryPerformanceRecorder;
 import io.deephaven.engine.tables.utils.SystemicObjectTracker;
 import io.deephaven.engine.util.IterableUtils;

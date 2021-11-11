@@ -12,7 +12,7 @@ import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.vector.CharVector;
 import io.deephaven.engine.tables.libs.QueryLibrary;
 import io.deephaven.engine.tables.live.UpdateGraphProcessor;
-import io.deephaven.engine.tables.utils.DateTime;
+import io.deephaven.engine.time.DateTime;
 import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.QueryConstants;
@@ -32,7 +32,7 @@ import java.util.Arrays;
 import java.util.Random;
 import org.junit.experimental.categories.Category;
 
-import static io.deephaven.engine.tables.utils.DateTimeUtils.convertDateTime;
+import static io.deephaven.engine.time.DateTimeUtils.convertDateTime;
 import static io.deephaven.engine.tables.utils.TableTools.*;
 import static io.deephaven.engine.v2.TstUtils.*;
 import static io.deephaven.engine.v2.by.ComboAggregateFactory.*;

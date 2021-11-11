@@ -1,6 +1,6 @@
 package io.deephaven.engine.v2.select.chunkfilters;
 
-import io.deephaven.engine.util.DhCharComparisons;
+import io.deephaven.util.compare.CharComparisons;
 import io.deephaven.engine.v2.select.ChunkFilter;
 import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.chunk.Attributes.OrderedRowKeys;
@@ -30,7 +30,7 @@ public class CharRangeComparator {
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
                 final char value = values.get(ii);
-                if (DhCharComparisons.geq(value, lower) && DhCharComparisons.leq(value, upper)) {
+                if (CharComparisons.geq(value, lower) && CharComparisons.leq(value, upper)) {
                     results.add(keys.get(ii));
                 }
             }
@@ -46,7 +46,7 @@ public class CharRangeComparator {
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
                 final char value = values.get(ii);
-                if (DhCharComparisons.geq(value, lower) && DhCharComparisons.lt(value, upper)) {
+                if (CharComparisons.geq(value, lower) && CharComparisons.lt(value, upper)) {
                     results.add(keys.get(ii));
                 }
             }
@@ -62,7 +62,7 @@ public class CharRangeComparator {
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
                 final char value = values.get(ii);
-                if (DhCharComparisons.gt(value, lower) && DhCharComparisons.leq(value, upper)) {
+                if (CharComparisons.gt(value, lower) && CharComparisons.leq(value, upper)) {
                     results.add(keys.get(ii));
                 }
             }
@@ -78,7 +78,7 @@ public class CharRangeComparator {
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
                 final char value = values.get(ii);
-                if (DhCharComparisons.gt(value, lower) && DhCharComparisons.lt(value, upper)) {
+                if (CharComparisons.gt(value, lower) && CharComparisons.lt(value, upper)) {
                     results.add(keys.get(ii));
                 }
             }

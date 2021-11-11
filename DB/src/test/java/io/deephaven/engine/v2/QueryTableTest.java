@@ -20,8 +20,8 @@ import io.deephaven.engine.tables.select.MatchPairFactory;
 import io.deephaven.engine.tables.select.QueryScope;
 import io.deephaven.engine.tables.select.SelectColumnFactory;
 import io.deephaven.engine.tables.select.SelectFilterFactory;
-import io.deephaven.engine.tables.utils.DateTime;
-import io.deephaven.engine.tables.utils.DateTimeUtils;
+import io.deephaven.engine.time.DateTime;
+import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.engine.tables.utils.ParquetTools;
 import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.util.liveness.LivenessScopeStack;
@@ -33,7 +33,6 @@ import io.deephaven.engine.v2.sources.AbstractColumnSource;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.LogicalClock;
 import io.deephaven.engine.v2.utils.*;
-import io.deephaven.engine.vector.*;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
@@ -810,7 +809,7 @@ public class QueryTableTest extends QueryTableTestBase {
         final Table t = TableTools.newTable(longCol("LV", 1, 2, -3, Long.MAX_VALUE, QueryConstants.NULL_LONG, 6))
                 .update("IV=i+1", "LV=LV==null ? null : java.math.BigInteger.valueOf(LV)");
         Table leq1 = t.where("LV <= 1");
-        Table leq1b = t.where("io.deephaven.engine.util.DhObjectComparisons.leq(LV, java.math.BigInteger.ONE)");
+        Table leq1b = t.where("io.deephaven.util.compare.ObjectComparisons.leq(LV, java.math.BigInteger.ONE)");
         Table leq1c = t.where("LV <= java.math.BigInteger.ONE");
 
         assertTableEquals(leq1b, leq1);
@@ -818,7 +817,7 @@ public class QueryTableTest extends QueryTableTestBase {
         assertTableEquals(TableTools.newTable(intCol("IV", 1, 3, 5)), leq1.dropColumns("LV"));
 
         Table geq1 = t.where("LV >= 1");
-        Table geq1b = t.where("io.deephaven.engine.util.DhObjectComparisons.geq(LV, java.math.BigInteger.ONE)");
+        Table geq1b = t.where("io.deephaven.util.compare.ObjectComparisons.geq(LV, java.math.BigInteger.ONE)");
         Table geq1c = t.where("LV >= java.math.BigInteger.ONE");
         TableTools.showWithIndex(geq1);
         TableTools.showWithIndex(geq1b);

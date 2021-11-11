@@ -10,7 +10,7 @@ import io.deephaven.engine.chunk.Attributes.Values;
 import io.deephaven.engine.rftable.ChunkSource;
 import io.deephaven.engine.chunk.ChunkType;
 import io.deephaven.engine.rftable.DefaultChunkSource;
-import io.deephaven.engine.v2.tuples.TupleSource;
+import io.deephaven.engine.tuplesource.TupleSource;
 import io.deephaven.engine.v2.utils.MutableRowSet;
 import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.engine.v2.utils.TrackingMutableRowSet;

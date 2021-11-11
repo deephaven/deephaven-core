@@ -3,7 +3,7 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.v2.join.dupcompact;
 
-import io.deephaven.engine.util.DhFloatComparisons;
+import io.deephaven.util.compare.FloatComparisons;
 
 import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.chunk.Attributes.Any;
@@ -52,7 +52,7 @@ public class FloatReverseDupCompactKernel implements DupCompactKernel {
 
     // region comparison functions
     private static int doComparison(float lhs, float rhs) {
-        return -1 * DhFloatComparisons.compare(lhs, rhs);
+        return -1 * FloatComparisons.compare(lhs, rhs);
     }
     // endregion comparison functions
 
@@ -62,7 +62,7 @@ public class FloatReverseDupCompactKernel implements DupCompactKernel {
 
     private static boolean eq(float lhs, float rhs) {
         // region equality function
-        return DhFloatComparisons.eq(lhs, rhs);
+        return FloatComparisons.eq(lhs, rhs);
         // endregion equality function
     }
 }

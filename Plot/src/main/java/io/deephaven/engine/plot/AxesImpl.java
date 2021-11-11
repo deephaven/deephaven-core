@@ -39,11 +39,11 @@ import io.deephaven.engine.plot.util.functions.ClosureDoubleUnaryOperator;
 import io.deephaven.engine.plot.util.tables.*;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.TableDefinition;
-import io.deephaven.engine.tables.utils.DateTime;
+import io.deephaven.engine.time.DateTime;
 import io.deephaven.engine.v2.by.ComboAggregateFactory;
 import io.deephaven.gui.color.Color;
 import io.deephaven.gui.color.Paint;
-import io.deephaven.util.calendar.BusinessCalendar;
+import io.deephaven.engine.time.calendar.BusinessCalendar;
 import groovy.lang.Closure;
 
 import java.io.Serializable;

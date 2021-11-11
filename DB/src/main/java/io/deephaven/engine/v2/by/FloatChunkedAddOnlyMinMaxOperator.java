@@ -8,7 +8,7 @@
 package io.deephaven.engine.v2.by;
 
 import io.deephaven.util.QueryConstants;
-import io.deephaven.engine.util.DhFloatComparisons;
+import io.deephaven.util.compare.FloatComparisons;
 import io.deephaven.engine.v2.sources.FloatArraySource;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.chunk.*;
@@ -45,7 +45,7 @@ class FloatChunkedAddOnlyMinMaxOperator implements IterativeChunkedAggregationOp
             if (candidate != QueryConstants.NULL_FLOAT) {
                 if (nonNull++ == 0) {
                     value = candidate;
-                } else if (DhFloatComparisons.lt(candidate, value)) {
+                } else if (FloatComparisons.lt(candidate, value)) {
                     value = candidate;
                 }
             }
@@ -62,7 +62,7 @@ class FloatChunkedAddOnlyMinMaxOperator implements IterativeChunkedAggregationOp
             if (candidate != QueryConstants.NULL_FLOAT) {
                 if (nonNull++ == 0) {
                     value = candidate;
-                } else if (DhFloatComparisons.gt(candidate, value)) {
+                } else if (FloatComparisons.gt(candidate, value)) {
                     value = candidate;
                 }
             }
@@ -72,11 +72,11 @@ class FloatChunkedAddOnlyMinMaxOperator implements IterativeChunkedAggregationOp
     }
 
     private float min(float a, float b) {
-        return DhFloatComparisons.lt(a, b) ? a : b;
+        return FloatComparisons.lt(a, b) ? a : b;
     }
 
     private float max(float a, float b) {
-        return DhFloatComparisons.gt(a, b) ? a : b;
+        return FloatComparisons.gt(a, b) ? a : b;
     }
 
     @Override
@@ -134,7 +134,7 @@ class FloatChunkedAddOnlyMinMaxOperator implements IterativeChunkedAggregationOp
         } else {
             result = minimum ? min(chunkValue, oldValue) : max(chunkValue, oldValue);
         }
-        if (!DhFloatComparisons.eq(result, oldValue)) {
+        if (!FloatComparisons.eq(result, oldValue)) {
             resultColumn.set(destination, result);
             return true;
         } else {

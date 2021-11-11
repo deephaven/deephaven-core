@@ -5,7 +5,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.v2.utils.unboxer.ChunkUnboxer;
 import io.deephaven.kafka.StreamPublisherImpl;
-import io.deephaven.engine.tables.utils.DateTimeUtils;
+import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.util.QueryConstants;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.record.TimestampType;

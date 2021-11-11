@@ -1,6 +1,6 @@
 package io.deephaven.engine.v2.by.ssmpercentile;
 
-import io.deephaven.engine.util.DhCharComparisons;
+import io.deephaven.util.compare.CharComparisons;
 import io.deephaven.engine.v2.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.v2.sources.CharacterArraySource;
 import io.deephaven.engine.chunk.Attributes;
@@ -63,7 +63,7 @@ public class CharPercentileTypeHelper implements SsmChunkedPercentileOperator.Pe
         final int result = upperBound(asCharChunk, startPosition, startPosition + runLength, hiValue);
 
         final long hiCount = ssmLo.getMaxCount();
-        if (result > startPosition && DhCharComparisons.eq(asCharChunk.get(result - 1), hiValue) && counts.get(result - 1) > hiCount) {
+        if (result > startPosition && CharComparisons.eq(asCharChunk.get(result - 1), hiValue) && counts.get(result - 1) > hiCount) {
             leftOvers.setValue((int)(counts.get(result - 1) - hiCount));
         } else {
             leftOvers.setValue(0);
@@ -108,7 +108,7 @@ public class CharPercentileTypeHelper implements SsmChunkedPercentileOperator.Pe
     }
 
     private static int doComparison(char lhs, char rhs) {
-        return DhCharComparisons.compare(lhs, rhs);
+        return CharComparisons.compare(lhs, rhs);
     }
 
     private static boolean gt(char lhs, char rhs) {

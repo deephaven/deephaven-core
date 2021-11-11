@@ -3,7 +3,7 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.v2.join.stamp;
 
-import io.deephaven.engine.util.DhDoubleComparisons;
+import io.deephaven.util.compare.DoubleComparisons;
 
 import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.chunk.Attributes.RowKeys;
@@ -72,7 +72,7 @@ public class DoubleNoExactReverseStampKernel implements StampKernel {
     }
     // region comparison functions
     private static int doComparison(double lhs, double rhs) {
-        return -1 * DhDoubleComparisons.compare(lhs, rhs);
+        return -1 * DoubleComparisons.compare(lhs, rhs);
     }
     // endregion comparison functions
 
@@ -86,7 +86,7 @@ public class DoubleNoExactReverseStampKernel implements StampKernel {
 
     private static boolean eq(double lhs, double rhs) {
         // region equality function
-        return DhDoubleComparisons.eq(lhs, rhs);
+        return DoubleComparisons.eq(lhs, rhs);
         // endregion equality function
     }
 }

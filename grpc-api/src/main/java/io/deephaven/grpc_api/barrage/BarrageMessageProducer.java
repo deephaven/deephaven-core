@@ -13,7 +13,7 @@ import io.deephaven.base.formatters.FormatBitSet;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.structures.rowsequence.RowSequenceUtil;
-import io.deephaven.engine.tables.utils.DateTimeUtils;
+import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.engine.v2.*;
 import io.deephaven.engine.v2.utils.*;
 import io.deephaven.extensions.barrage.util.BarrageMessageConsumer;

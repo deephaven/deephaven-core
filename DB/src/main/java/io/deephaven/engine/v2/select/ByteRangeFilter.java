@@ -5,7 +5,7 @@ package io.deephaven.engine.v2.select;
 
 import io.deephaven.engine.tables.ColumnDefinition;
 import io.deephaven.engine.tables.TableDefinition;
-import io.deephaven.engine.util.DhByteComparisons;
+import io.deephaven.util.compare.ByteComparisons;
 import io.deephaven.engine.v2.select.chunkfilters.ByteRangeComparator;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.utils.MutableRowSet;
@@ -21,7 +21,7 @@ public class ByteRangeFilter extends AbstractRangeFilter {
     public ByteRangeFilter(String columnName, byte val1, byte val2, boolean lowerInclusive, boolean upperInclusive) {
         super(columnName, lowerInclusive, upperInclusive);
 
-        if(DhByteComparisons.gt(val1, val2)) {
+        if(ByteComparisons.gt(val1, val2)) {
             upper = val1;
             lower = val2;
         } else {
@@ -107,7 +107,7 @@ public class ByteRangeFilter extends AbstractRangeFilter {
             final long midIdx = selection.get(midPos);
 
             final byte compareValue = usePrev ? longColumnSource.getPrevByte(midIdx) : longColumnSource.getByte(midIdx);
-            final int compareResult = compareSign * DhByteComparisons.compare(compareValue, targetValue);
+            final int compareResult = compareSign * ByteComparisons.compare(compareValue, targetValue);
 
             if (compareResult < 0) {
                 minPosition = midPos + 1;

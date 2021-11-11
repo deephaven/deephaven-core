@@ -2,7 +2,7 @@ package io.deephaven.engine.v2.select;
 
 import io.deephaven.engine.tables.ColumnDefinition;
 import io.deephaven.engine.tables.TableDefinition;
-import io.deephaven.engine.util.DhFloatComparisons;
+import io.deephaven.util.compare.FloatComparisons;
 import io.deephaven.engine.v2.select.chunkfilters.FloatRangeComparator;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.utils.MutableRowSet;
@@ -107,7 +107,7 @@ public class FloatRangeFilter extends AbstractRangeFilter {
             final long midIdx = selection.get(midPos);
 
             final float compareValue = usePrev ? floatColumnSource.getPrevFloat(midIdx) : floatColumnSource.getFloat(midIdx);
-            final int compareResult = compareSign * DhFloatComparisons.compare(compareValue, targetValue);
+            final int compareResult = compareSign * FloatComparisons.compare(compareValue, targetValue);
 
             if (compareResult < 0) {
                 minPosition = midPos + 1;

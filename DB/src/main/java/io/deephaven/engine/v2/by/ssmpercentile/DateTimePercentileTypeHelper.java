@@ -1,6 +1,6 @@
 package io.deephaven.engine.v2.by.ssmpercentile;
 
-import io.deephaven.engine.util.DhLongComparisons;
+import io.deephaven.util.compare.LongComparisons;
 import io.deephaven.engine.v2.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.v2.sources.DateTimeArraySource;
 import io.deephaven.engine.chunk.Attributes;
@@ -111,7 +111,7 @@ public class DateTimePercentileTypeHelper implements SsmChunkedPercentileOperato
     }
 
     private static int doComparison(long lhs, long rhs) {
-        return DhLongComparisons.compare(lhs, rhs);
+        return LongComparisons.compare(lhs, rhs);
     }
 
     private static boolean gt(long lhs, long rhs) {

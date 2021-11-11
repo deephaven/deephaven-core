@@ -8,7 +8,7 @@
 package io.deephaven.engine.v2.by;
 
 import io.deephaven.util.QueryConstants;
-import io.deephaven.engine.util.DhIntComparisons;
+import io.deephaven.util.compare.IntComparisons;
 import io.deephaven.engine.v2.sources.IntegerArraySource;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.chunk.*;
@@ -45,7 +45,7 @@ class IntChunkedAddOnlyMinMaxOperator implements IterativeChunkedAggregationOper
             if (candidate != QueryConstants.NULL_INT) {
                 if (nonNull++ == 0) {
                     value = candidate;
-                } else if (DhIntComparisons.lt(candidate, value)) {
+                } else if (IntComparisons.lt(candidate, value)) {
                     value = candidate;
                 }
             }
@@ -62,7 +62,7 @@ class IntChunkedAddOnlyMinMaxOperator implements IterativeChunkedAggregationOper
             if (candidate != QueryConstants.NULL_INT) {
                 if (nonNull++ == 0) {
                     value = candidate;
-                } else if (DhIntComparisons.gt(candidate, value)) {
+                } else if (IntComparisons.gt(candidate, value)) {
                     value = candidate;
                 }
             }
@@ -72,11 +72,11 @@ class IntChunkedAddOnlyMinMaxOperator implements IterativeChunkedAggregationOper
     }
 
     private int min(int a, int b) {
-        return DhIntComparisons.lt(a, b) ? a : b;
+        return IntComparisons.lt(a, b) ? a : b;
     }
 
     private int max(int a, int b) {
-        return DhIntComparisons.gt(a, b) ? a : b;
+        return IntComparisons.gt(a, b) ? a : b;
     }
 
     @Override
@@ -134,7 +134,7 @@ class IntChunkedAddOnlyMinMaxOperator implements IterativeChunkedAggregationOper
         } else {
             result = minimum ? min(chunkValue, oldValue) : max(chunkValue, oldValue);
         }
-        if (!DhIntComparisons.eq(result, oldValue)) {
+        if (!IntComparisons.eq(result, oldValue)) {
             resultColumn.set(destination, result);
             return true;
         } else {

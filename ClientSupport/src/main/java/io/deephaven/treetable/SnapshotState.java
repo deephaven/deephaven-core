@@ -10,7 +10,7 @@ import io.deephaven.engine.exceptions.UncheckedTableException;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.TableDefinition;
 import io.deephaven.engine.tables.select.MatchPair;
-import io.deephaven.engine.tables.utils.DateTime;
+import io.deephaven.engine.time.DateTime;
 import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.BooleanUtils;

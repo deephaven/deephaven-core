@@ -5,8 +5,8 @@
 package io.deephaven.engine.plot.axistransformations;
 
 import io.deephaven.base.testing.BaseArrayTestCase;
-import io.deephaven.util.calendar.BusinessCalendar;
-import io.deephaven.util.calendar.Calendars;
+import io.deephaven.engine.time.calendar.BusinessCalendar;
+import io.deephaven.engine.time.calendar.Calendars;
 
 import java.util.Arrays;
 import java.util.HashSet;

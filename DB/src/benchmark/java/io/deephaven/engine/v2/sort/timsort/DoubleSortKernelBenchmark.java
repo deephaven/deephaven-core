@@ -3,7 +3,7 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.v2.sort.timsort;
 
-import io.deephaven.engine.util.tuples.generated.DoubleLongTuple;
+import io.deephaven.engine.tuple.generated.DoubleLongTuple;
 import org.openjdk.jmh.annotations.*;
 
 import java.util.*;

@@ -7,6 +7,8 @@ package io.deephaven.engine.tables.utils;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.datastructures.util.SmartKey;
 import io.deephaven.engine.tables.Table;
+import io.deephaven.engine.time.DateTime;
+import io.deephaven.engine.time.TimeZone;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.util.type.ArrayTypeUtils;
@@ -24,7 +26,7 @@ import java.util.Set;
 class TableShowTools {
 
     static void showInternal(Table source, long firstRow, long lastRowExclusive, TimeZone timeZone, String delimiter,
-            PrintStream out, boolean showIndex, String[] columns) {
+                             PrintStream out, boolean showIndex, String[] columns) {
         final QueryPerformanceNugget nugget = QueryPerformanceRecorder.getInstance().getNugget("TableTools.show()");
         try {
             if (columns.length == 0) {

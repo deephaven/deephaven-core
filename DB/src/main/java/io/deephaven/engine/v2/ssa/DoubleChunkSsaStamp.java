@@ -3,7 +3,7 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.v2.ssa;
 
-import io.deephaven.engine.util.DhDoubleComparisons;
+import io.deephaven.util.compare.DoubleComparisons;
 
 import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.chunk.Attributes.RowKeys;
@@ -212,7 +212,7 @@ public class DoubleChunkSsaStamp implements ChunkSsaStamp {
 
     // region comparison functions
     private static int doComparison(double lhs, double rhs) {
-        return DhDoubleComparisons.compare(lhs, rhs);
+        return DoubleComparisons.compare(lhs, rhs);
     }
     // endregion comparison functions
 

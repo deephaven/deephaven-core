@@ -7,7 +7,7 @@ package io.deephaven.engine.v2.by;
 import io.deephaven.engine.rftable.ChunkSource;
 import io.deephaven.engine.rftable.SharedContext;
 import io.deephaven.util.QueryConstants;
-import io.deephaven.engine.util.DhFloatComparisons;
+import io.deephaven.util.compare.FloatComparisons;
 import io.deephaven.engine.util.NullSafeAddition;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.DoubleArraySource;
@@ -228,7 +228,7 @@ final class FloatChunkedSumOperator extends FpChunkedNonNormalCounter implements
             newValue = (float)newSum;
         }
         final float oldValue = resultColumn.getAndSetUnsafe(destination, newValue);
-        return !DhFloatComparisons.eq(oldValue, newValue);
+        return !FloatComparisons.eq(oldValue, newValue);
     }
 
     private float currentValueWithSum(long totalNormalCount, long totalNanCount, long totalPositiveInfinityCount, long totalNegativeInfinityCount, double newSum) {

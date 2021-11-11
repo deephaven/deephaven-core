@@ -1,7 +1,7 @@
 package io.deephaven.numerics.movingaverages;
 
 import io.deephaven.base.testing.RecordingMockObject;
-import io.deephaven.engine.tables.utils.DateTime;
+import io.deephaven.engine.time.DateTime;
 import io.deephaven.util.QueryConstants;
 import junit.framework.TestCase;
 

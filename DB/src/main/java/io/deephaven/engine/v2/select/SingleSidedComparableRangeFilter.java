@@ -3,7 +3,7 @@ package io.deephaven.engine.v2.select;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.tables.ColumnDefinition;
 import io.deephaven.engine.tables.TableDefinition;
-import io.deephaven.engine.util.DhObjectComparisons;
+import io.deephaven.util.compare.ObjectComparisons;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.chunk.Attributes.OrderedRowKeys;
@@ -88,7 +88,7 @@ public class SingleSidedComparableRangeFilter extends AbstractRangeFilter {
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
                 final Comparable<?> value = objectChunk.get(ii);
-                if (DhObjectComparisons.geq(value, pivot)) {
+                if (ObjectComparisons.geq(value, pivot)) {
                     results.add(keys.get(ii));
                 }
             }
@@ -110,7 +110,7 @@ public class SingleSidedComparableRangeFilter extends AbstractRangeFilter {
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
                 final Comparable<?> value = objectChunk.get(ii);
-                if (DhObjectComparisons.leq(value, pivot)) {
+                if (ObjectComparisons.leq(value, pivot)) {
                     results.add(keys.get(ii));
                 }
             }
@@ -132,7 +132,7 @@ public class SingleSidedComparableRangeFilter extends AbstractRangeFilter {
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
                 final Comparable<?> value = objectChunk.get(ii);
-                if (DhObjectComparisons.gt(value, pivot)) {
+                if (ObjectComparisons.gt(value, pivot)) {
                     results.add(keys.get(ii));
                 }
             }
@@ -154,7 +154,7 @@ public class SingleSidedComparableRangeFilter extends AbstractRangeFilter {
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
                 final Comparable<?> value = objectChunk.get(ii);
-                if (DhObjectComparisons.lt(value, pivot)) {
+                if (ObjectComparisons.lt(value, pivot)) {
                     results.add(keys.get(ii));
                 }
             }

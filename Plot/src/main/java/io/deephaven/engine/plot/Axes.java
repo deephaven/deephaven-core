@@ -18,9 +18,9 @@ import io.deephaven.engine.plot.datasets.xy.XYDataSeriesFunction;
 import io.deephaven.engine.plot.datasets.xyerrorbar.XYErrorBarDataSeries;
 import io.deephaven.engine.plot.filters.SelectableDataSet;
 import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.utils.DateTime;
+import io.deephaven.engine.time.DateTime;
 import io.deephaven.gui.color.Paint;
-import io.deephaven.util.calendar.BusinessCalendar;
+import io.deephaven.engine.time.calendar.BusinessCalendar;
 import groovy.lang.Closure;
 
 import java.io.Serializable;

@@ -8,7 +8,7 @@ import io.deephaven.engine.vector.ShortVector;
 import io.deephaven.engine.vector.ShortVectorDirect;
 import io.deephaven.engine.vector.ObjectVector;
 import io.deephaven.util.type.ArrayTypeUtils;
-import io.deephaven.engine.util.DhShortComparisons;
+import io.deephaven.util.compare.ShortComparisons;
 import io.deephaven.engine.v2.by.SumIntChunk;
 import io.deephaven.engine.v2.sort.timsort.TimsortUtilities;
 import io.deephaven.engine.chunk.*;
@@ -1137,7 +1137,7 @@ public final class ShortSegmentedSortedMultiset implements SegmentedSortedMultiS
             Assert.gtZero(counts.get(ii), "counts.get(ii)");
             final short prevValue = valuesToInsert.get(ii - 1);
             final short curValue = valuesToInsert.get(ii);
-            Assert.assertion(DhShortComparisons.lt(prevValue, curValue), "DhShortComparisons.lt(prevValue, curValue)", prevValue, "prevValue", curValue, "curValue");
+            Assert.assertion(ShortComparisons.lt(prevValue, curValue), "ShortComparisons.lt(prevValue, curValue)", prevValue, "prevValue", curValue, "curValue");
         }
     }
 
@@ -1275,7 +1275,7 @@ public final class ShortSegmentedSortedMultiset implements SegmentedSortedMultiS
     }
 
     private static int doComparison(short lhs, short rhs) {
-        return DhShortComparisons.compare(lhs, rhs);
+        return ShortComparisons.compare(lhs, rhs);
     }
 
     private static boolean gt(short lhs, short rhs) {

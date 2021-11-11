@@ -3,7 +3,7 @@ package io.deephaven.engine.v2.select;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.tables.ColumnDefinition;
 import io.deephaven.engine.tables.TableDefinition;
-import io.deephaven.engine.util.DhObjectComparisons;
+import io.deephaven.util.compare.ObjectComparisons;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.chunk.Attributes.OrderedRowKeys;
@@ -20,7 +20,7 @@ public class ComparableRangeFilter extends AbstractRangeFilter {
             boolean upperInclusive) {
         super(columnName, lowerInclusive, upperInclusive);
 
-        if (DhObjectComparisons.compare(val1, val2) > 0) {
+        if (ObjectComparisons.compare(val1, val2) > 0) {
             upper = val1;
             lower = val2;
         } else {
@@ -106,11 +106,11 @@ public class ComparableRangeFilter extends AbstractRangeFilter {
         }
 
         boolean meetsLowerBound(Comparable<?> value) {
-            return DhObjectComparisons.compare(lower, value) <= 0;
+            return ObjectComparisons.compare(lower, value) <= 0;
         }
 
         boolean meetsUpperBound(Comparable<?> value) {
-            return DhObjectComparisons.compare(upper, value) >= 0;
+            return ObjectComparisons.compare(upper, value) >= 0;
         }
     }
 
@@ -139,11 +139,11 @@ public class ComparableRangeFilter extends AbstractRangeFilter {
         }
 
         boolean meetsLowerBound(Comparable value) {
-            return DhObjectComparisons.compare(lower, value) <= 0;
+            return ObjectComparisons.compare(lower, value) <= 0;
         }
 
         boolean meetsUpperBound(Comparable value) {
-            return DhObjectComparisons.compare(upper, value) > 0;
+            return ObjectComparisons.compare(upper, value) > 0;
         }
     }
 
@@ -173,12 +173,12 @@ public class ComparableRangeFilter extends AbstractRangeFilter {
 
         boolean meetsLowerBound(Comparable value) {
             // noinspection unchecked
-            return DhObjectComparisons.compare(lower, value) < 0;
+            return ObjectComparisons.compare(lower, value) < 0;
         }
 
         boolean meetsUpperBound(Comparable value) {
             // noinspection unchecked
-            return DhObjectComparisons.compare(upper, value) >= 0;
+            return ObjectComparisons.compare(upper, value) >= 0;
         }
     }
 
@@ -208,12 +208,12 @@ public class ComparableRangeFilter extends AbstractRangeFilter {
 
         boolean meetsLowerBound(Comparable value) {
             // noinspection unchecked
-            return DhObjectComparisons.compare(lower, value) < 0;
+            return ObjectComparisons.compare(lower, value) < 0;
         }
 
         boolean meetsUpperBound(Comparable value) {
             // noinspection unchecked
-            return DhObjectComparisons.compare(upper, value) > 0;
+            return ObjectComparisons.compare(upper, value) > 0;
         }
     }
 
@@ -250,7 +250,7 @@ public class ComparableRangeFilter extends AbstractRangeFilter {
 
             final Comparable<?> compareValue =
                     usePrev ? comparableColumnSource.getPrev(midIdx) : comparableColumnSource.get(midIdx);
-            final int compareResult = compareSign * DhObjectComparisons.compare(compareValue, targetValue);
+            final int compareResult = compareSign * ObjectComparisons.compare(compareValue, targetValue);
 
             if (compareResult < 0) {
                 minPosition = midPos + 1;

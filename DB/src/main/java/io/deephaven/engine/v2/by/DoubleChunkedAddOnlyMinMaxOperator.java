@@ -8,7 +8,7 @@
 package io.deephaven.engine.v2.by;
 
 import io.deephaven.util.QueryConstants;
-import io.deephaven.engine.util.DhDoubleComparisons;
+import io.deephaven.util.compare.DoubleComparisons;
 import io.deephaven.engine.v2.sources.DoubleArraySource;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.chunk.*;
@@ -45,7 +45,7 @@ class DoubleChunkedAddOnlyMinMaxOperator implements IterativeChunkedAggregationO
             if (candidate != QueryConstants.NULL_DOUBLE) {
                 if (nonNull++ == 0) {
                     value = candidate;
-                } else if (DhDoubleComparisons.lt(candidate, value)) {
+                } else if (DoubleComparisons.lt(candidate, value)) {
                     value = candidate;
                 }
             }
@@ -62,7 +62,7 @@ class DoubleChunkedAddOnlyMinMaxOperator implements IterativeChunkedAggregationO
             if (candidate != QueryConstants.NULL_DOUBLE) {
                 if (nonNull++ == 0) {
                     value = candidate;
-                } else if (DhDoubleComparisons.gt(candidate, value)) {
+                } else if (DoubleComparisons.gt(candidate, value)) {
                     value = candidate;
                 }
             }
@@ -72,11 +72,11 @@ class DoubleChunkedAddOnlyMinMaxOperator implements IterativeChunkedAggregationO
     }
 
     private double min(double a, double b) {
-        return DhDoubleComparisons.lt(a, b) ? a : b;
+        return DoubleComparisons.lt(a, b) ? a : b;
     }
 
     private double max(double a, double b) {
-        return DhDoubleComparisons.gt(a, b) ? a : b;
+        return DoubleComparisons.gt(a, b) ? a : b;
     }
 
     @Override
@@ -134,7 +134,7 @@ class DoubleChunkedAddOnlyMinMaxOperator implements IterativeChunkedAggregationO
         } else {
             result = minimum ? min(chunkValue, oldValue) : max(chunkValue, oldValue);
         }
-        if (!DhDoubleComparisons.eq(result, oldValue)) {
+        if (!DoubleComparisons.eq(result, oldValue)) {
             resultColumn.set(destination, result);
             return true;
         } else {

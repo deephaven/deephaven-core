@@ -9,6 +9,8 @@ import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.tables.DataColumn;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.utils.csv.CsvSpecs;
+import io.deephaven.engine.time.DateTime;
+import io.deephaven.engine.time.TimeZone;
 import io.deephaven.engine.v2.InMemoryTable;
 import io.deephaven.io.streams.BzipFileOutputStream;
 import io.deephaven.util.annotations.ScriptApi;

@@ -3,7 +3,7 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.v2.sort.partition;
 
-import io.deephaven.engine.util.tuples.generated.LongLongTuple;
+import io.deephaven.engine.tuple.generated.LongLongTuple;
 import io.deephaven.engine.v2.sort.timsort.BaseTestLongTimSortKernel;
 import io.deephaven.engine.v2.sort.timsort.TestTimSortKernel;
 import io.deephaven.engine.v2.utils.RowSet;

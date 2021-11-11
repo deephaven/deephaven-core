@@ -2,8 +2,8 @@ package io.deephaven.grpc_api.table.ops.filter;
 
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.select.SelectFilterFactory;
-import io.deephaven.engine.tables.utils.DateTime;
-import io.deephaven.engine.tables.utils.TimeZone;
+import io.deephaven.engine.time.DateTime;
+import io.deephaven.engine.time.TimeZone;
 import io.deephaven.engine.v2.select.*;
 import io.deephaven.proto.backplane.grpc.CaseSensitivity;
 import io.deephaven.proto.backplane.grpc.CompareCondition;

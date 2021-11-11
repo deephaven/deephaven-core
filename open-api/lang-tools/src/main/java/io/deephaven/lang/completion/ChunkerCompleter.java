@@ -4,7 +4,7 @@ import io.deephaven.engine.tables.ColumnDefinition;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.TableDefinition;
 import io.deephaven.engine.tables.select.QueryScope.MissingVariableException;
-import io.deephaven.engine.tables.utils.DateTime;
+import io.deephaven.engine.time.DateTime;
 import io.deephaven.engine.util.VariableProvider;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.lang.api.HasScope;

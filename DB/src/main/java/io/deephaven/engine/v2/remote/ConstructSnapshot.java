@@ -22,7 +22,7 @@ import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.TableDefinition;
 import io.deephaven.engine.tables.live.NotificationQueue;
 import io.deephaven.engine.tables.live.WaitNotification;
-import io.deephaven.engine.tables.utils.DateTime;
+import io.deephaven.engine.time.DateTime;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.engine.util.liveness.LivenessManager;
 import io.deephaven.engine.util.liveness.LivenessScope;

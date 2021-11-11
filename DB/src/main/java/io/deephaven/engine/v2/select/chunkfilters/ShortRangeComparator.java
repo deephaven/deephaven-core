@@ -3,7 +3,7 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.v2.select.chunkfilters;
 
-import io.deephaven.engine.util.DhShortComparisons;
+import io.deephaven.util.compare.ShortComparisons;
 import io.deephaven.engine.v2.select.ChunkFilter;
 import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.chunk.Attributes.OrderedRowKeys;
@@ -33,7 +33,7 @@ public class ShortRangeComparator {
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
                 final short value = values.get(ii);
-                if (DhShortComparisons.geq(value, lower) && DhShortComparisons.leq(value, upper)) {
+                if (ShortComparisons.geq(value, lower) && ShortComparisons.leq(value, upper)) {
                     results.add(keys.get(ii));
                 }
             }
@@ -49,7 +49,7 @@ public class ShortRangeComparator {
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
                 final short value = values.get(ii);
-                if (DhShortComparisons.geq(value, lower) && DhShortComparisons.lt(value, upper)) {
+                if (ShortComparisons.geq(value, lower) && ShortComparisons.lt(value, upper)) {
                     results.add(keys.get(ii));
                 }
             }
@@ -65,7 +65,7 @@ public class ShortRangeComparator {
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
                 final short value = values.get(ii);
-                if (DhShortComparisons.gt(value, lower) && DhShortComparisons.leq(value, upper)) {
+                if (ShortComparisons.gt(value, lower) && ShortComparisons.leq(value, upper)) {
                     results.add(keys.get(ii));
                 }
             }
@@ -81,7 +81,7 @@ public class ShortRangeComparator {
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
                 final short value = values.get(ii);
-                if (DhShortComparisons.gt(value, lower) && DhShortComparisons.lt(value, upper)) {
+                if (ShortComparisons.gt(value, lower) && ShortComparisons.lt(value, upper)) {
                     results.add(keys.get(ii));
                 }
             }

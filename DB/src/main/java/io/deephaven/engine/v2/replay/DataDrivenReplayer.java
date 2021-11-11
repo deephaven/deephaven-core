@@ -4,8 +4,8 @@
 
 package io.deephaven.engine.v2.replay;
 
-import io.deephaven.engine.tables.utils.DateTime;
-import io.deephaven.engine.tables.utils.DateTimeUtils;
+import io.deephaven.engine.time.DateTime;
+import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import gnu.trove.list.array.TLongArrayList;
 import io.deephaven.engine.v2.utils.RowSet;

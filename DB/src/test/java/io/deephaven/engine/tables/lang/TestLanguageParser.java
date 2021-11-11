@@ -9,10 +9,9 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.vector.*;
+import io.deephaven.engine.time.DateTime;
 import io.deephaven.engine.vector.*;
 import io.deephaven.engine.tables.lang.LanguageParser.QueryLanguageParseException;
-import io.deephaven.engine.tables.utils.*;
 import io.deephaven.engine.vector.Vector;
 import io.deephaven.utils.test.PropertySaver;
 import io.deephaven.util.QueryConstants;
@@ -1513,23 +1512,23 @@ public class TestLanguageParser extends BaseArrayTestCase {
 
     public void testUnboxAndWiden() throws Exception {
         // ensure we can find the original method
-        String expression = "io.deephaven.engine.tables.utils.DateTimeUtils.plus(myDateTime, myLong)";
-        String resultExpression = "io.deephaven.engine.tables.utils.DateTimeUtils.plus(myDateTime, myLong)";
+        String expression = "io.deephaven.engine.time.DateTimeUtils.plus(myDateTime, myLong)";
+        String resultExpression = "io.deephaven.engine.time.DateTimeUtils.plus(myDateTime, myLong)";
         check(expression, resultExpression, DateTime.class, new String[] {"myDateTime", "myLong"});
 
         // check long unbox
-        expression = "io.deephaven.engine.tables.utils.DateTimeUtils.plus(myDateTime, myLongObj)";
-        resultExpression = "io.deephaven.engine.tables.utils.DateTimeUtils.plus(myDateTime, myLongObj.longValue())";
+        expression = "io.deephaven.engine.time.DateTimeUtils.plus(myDateTime, myLongObj)";
+        resultExpression = "io.deephaven.engine.time.DateTimeUtils.plus(myDateTime, myLongObj.longValue())";
         check(expression, resultExpression, DateTime.class, new String[] {"myDateTime", "myLongObj"});
 
         // check int widen
-        expression = "io.deephaven.engine.tables.utils.DateTimeUtils.plus(myDateTime, myInt)";
-        resultExpression = "io.deephaven.engine.tables.utils.DateTimeUtils.plus(myDateTime, longCast(myInt))";
+        expression = "io.deephaven.engine.time.DateTimeUtils.plus(myDateTime, myInt)";
+        resultExpression = "io.deephaven.engine.time.DateTimeUtils.plus(myDateTime, longCast(myInt))";
         check(expression, resultExpression, DateTime.class, new String[] {"myDateTime", "myInt"});
 
         // check int unbox and widen
-        expression = "io.deephaven.engine.tables.utils.DateTimeUtils.plus(myDateTime, myIntObj)";
-        resultExpression = "io.deephaven.engine.tables.utils.DateTimeUtils.plus(myDateTime, myIntObj.longValue())";
+        expression = "io.deephaven.engine.time.DateTimeUtils.plus(myDateTime, myIntObj)";
+        resultExpression = "io.deephaven.engine.time.DateTimeUtils.plus(myDateTime, myIntObj.longValue())";
         check(expression, resultExpression, DateTime.class, new String[] {"myDateTime", "myIntObj"});
 
         // check vararg widen
@@ -1754,8 +1753,8 @@ public class TestLanguageParser extends BaseArrayTestCase {
         resultExpression = "new LanguageParserDummyClass.StaticNestedClass()";
         check(expression, resultExpression, LanguageParserDummyClass.StaticNestedClass.class, new String[] {});
 
-        expression = "new io.deephaven.engine.tables.utils.DateTime(123L)";
-        resultExpression = "new io.deephaven.engine.tables.utils.DateTime(123L)";
+        expression = "new io.deephaven.engine.time.DateTime(123L)";
+        resultExpression = "new io.deephaven.engine.time.DateTime(123L)";
         check(expression, resultExpression, DateTime.class, new String[] {});
     }
 

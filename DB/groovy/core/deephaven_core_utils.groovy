@@ -36,12 +36,6 @@ removeVariable = {name ->
 
 ///////////////////// Performance /////////////////////
 
-
-import io.deephaven.engine.tables.utils.DateTime
-import io.deephaven.engine.tables.utils.DateTimeUtils
-import io.deephaven.engine.util.PerformanceQueries
-
-
 ///////////////////// Calendars /////////////////////
 import static io.deephaven.util.calendar.Calendars.calendar
 import static io.deephaven.util.calendar.Calendars.calendarNames

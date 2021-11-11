@@ -4,9 +4,9 @@
 
 package io.deephaven.engine.v2.sources.regioned;
 
-import io.deephaven.engine.tables.utils.DateTime;
-import io.deephaven.engine.tables.utils.DateTimeUtils;
-import io.deephaven.engine.tables.utils.TimeZone;
+import io.deephaven.engine.time.DateTime;
+import io.deephaven.engine.time.DateTimeUtils;
+import io.deephaven.engine.time.TimeZone;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.chunk.Attributes;

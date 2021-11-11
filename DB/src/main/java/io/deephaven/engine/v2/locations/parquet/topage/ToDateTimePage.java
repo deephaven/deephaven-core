@@ -2,8 +2,8 @@ package io.deephaven.engine.v2.locations.parquet.topage;
 
 import io.deephaven.engine.vector.ObjectVector;
 import io.deephaven.engine.vector.ObjectVectorDirect;
-import io.deephaven.engine.tables.utils.DateTime;
-import io.deephaven.engine.tables.utils.DateTimeUtils;
+import io.deephaven.engine.time.DateTime;
+import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.engine.chunk.Attributes;
 import org.apache.parquet.schema.LogicalTypeAnnotation;
 import org.jetbrains.annotations.NotNull;

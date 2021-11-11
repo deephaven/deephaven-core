@@ -5,7 +5,7 @@
 package io.deephaven.engine.v2.by;
 
 import io.deephaven.util.QueryConstants;
-import io.deephaven.engine.util.DhObjectComparisons;
+import io.deephaven.util.compare.ObjectComparisons;
 import io.deephaven.engine.v2.sources.BooleanArraySource;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.chunk.*;
@@ -37,7 +37,7 @@ class BooleanChunkedAddOnlyMinMaxOperator implements IterativeChunkedAggregation
             if (candidate != QueryConstants.NULL_BOOLEAN) {
                 if (nonNull++ == 0) {
                     value = candidate;
-                } else if (DhObjectComparisons.lt(candidate, value)) {
+                } else if (ObjectComparisons.lt(candidate, value)) {
                     value = candidate;
                 }
             }
@@ -54,7 +54,7 @@ class BooleanChunkedAddOnlyMinMaxOperator implements IterativeChunkedAggregation
             if (candidate != QueryConstants.NULL_BOOLEAN) {
                 if (nonNull++ == 0) {
                     value = candidate;
-                } else if (DhObjectComparisons.gt(candidate, value)) {
+                } else if (ObjectComparisons.gt(candidate, value)) {
                     value = candidate;
                 }
             }
@@ -64,11 +64,11 @@ class BooleanChunkedAddOnlyMinMaxOperator implements IterativeChunkedAggregation
     }
 
     private Boolean min(Boolean a, Boolean b) {
-        return DhObjectComparisons.lt(a, b) ? a : b;
+        return ObjectComparisons.lt(a, b) ? a : b;
     }
 
     private Boolean max(Boolean a, Boolean b) {
-        return DhObjectComparisons.gt(a, b) ? a : b;
+        return ObjectComparisons.gt(a, b) ? a : b;
     }
 
     @Override

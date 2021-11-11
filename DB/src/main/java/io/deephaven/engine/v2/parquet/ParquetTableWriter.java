@@ -6,7 +6,7 @@ import io.deephaven.engine.vector.Vector;
 import io.deephaven.engine.tables.libs.QueryLibrary;
 import io.deephaven.engine.tables.libs.StringSet;
 import io.deephaven.engine.tables.select.QueryScope;
-import io.deephaven.engine.tables.utils.DateTime;
+import io.deephaven.engine.time.DateTime;
 import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.v2.InMemoryTable;
 import io.deephaven.engine.v2.QueryTable;

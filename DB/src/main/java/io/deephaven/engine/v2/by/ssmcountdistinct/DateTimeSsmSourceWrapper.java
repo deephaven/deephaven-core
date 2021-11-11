@@ -3,17 +3,16 @@ package io.deephaven.engine.v2.by.ssmcountdistinct;
 import io.deephaven.engine.vector.LongVector;
 import io.deephaven.engine.vector.ObjectVector;
 import io.deephaven.engine.vector.ObjectVectorDirect;
-import io.deephaven.engine.tables.utils.DateTime;
+import io.deephaven.engine.time.DateTime;
 import io.deephaven.engine.v2.sources.AbstractColumnSource;
 import io.deephaven.engine.v2.sources.ColumnSourceGetDefaults;
 import io.deephaven.engine.v2.sources.MutableColumnSourceGetDefaults;
-import io.deephaven.engine.chunk.WritableChunk;
 import io.deephaven.engine.v2.ssms.LongSegmentedSortedMultiset;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Objects;
 
-import static io.deephaven.engine.tables.utils.DateTimeUtils.nanosToTime;
+import static io.deephaven.engine.time.DateTimeUtils.nanosToTime;
 
 /**
  * A {@link SsmBackedColumnSource} for Longs.

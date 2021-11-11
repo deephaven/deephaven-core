@@ -7,7 +7,7 @@ package io.deephaven.engine.v2.sources;
 import io.deephaven.base.Pair;
 import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.vector.*;
-import io.deephaven.engine.tables.utils.DateTime;
+import io.deephaven.engine.time.DateTime;
 import io.deephaven.engine.v2.utils.*;
 import io.deephaven.engine.vector.Vector;
 import io.deephaven.hash.KeyedObjectHashSet;

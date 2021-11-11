@@ -5,10 +5,10 @@
 package io.deephaven.engine.plot.axistransformations;
 
 import io.deephaven.base.testing.BaseArrayTestCase;
-import io.deephaven.engine.tables.utils.DateTime;
-import io.deephaven.engine.tables.utils.DateTimeUtils;
-import io.deephaven.engine.tables.utils.TimeZone;
-import io.deephaven.util.calendar.Calendars;
+import io.deephaven.engine.time.DateTime;
+import io.deephaven.engine.time.DateTimeUtils;
+import io.deephaven.engine.time.TimeZone;
+import io.deephaven.engine.time.calendar.Calendars;
 
 public class TestAxisTransformBusinessCalendar extends BaseArrayTestCase {
 

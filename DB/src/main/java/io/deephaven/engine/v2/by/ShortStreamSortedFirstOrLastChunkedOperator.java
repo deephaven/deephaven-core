@@ -6,7 +6,7 @@ package io.deephaven.engine.v2.by;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.select.MatchPair;
-import io.deephaven.engine.util.DhShortComparisons;
+import io.deephaven.util.compare.ShortComparisons;
 import io.deephaven.engine.v2.QueryTable;
 import io.deephaven.engine.v2.Listener;
 import io.deephaven.engine.v2.sources.ShortArraySource;
@@ -114,7 +114,7 @@ public class ShortStreamSortedFirstOrLastChunkedOperator extends CopyingPermuted
         for (int ii = newDestination ? 1 : 0; ii < length; ++ii) {
             final int chunkPos = start + ii;
             final short value = values.get(chunkPos);
-            final int comparison = DhShortComparisons.compare(value, bestValue);
+            final int comparison = ShortComparisons.compare(value, bestValue);
             // @formatter:off
             // No need to compare relative indices. A stream's logical rowSet is always monotonically increasing.
             final boolean better =

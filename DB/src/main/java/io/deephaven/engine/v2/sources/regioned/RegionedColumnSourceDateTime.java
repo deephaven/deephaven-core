@@ -1,7 +1,7 @@
 package io.deephaven.engine.v2.sources.regioned;
 
-import io.deephaven.engine.tables.utils.DateTime;
-import io.deephaven.engine.tables.utils.DateTimeUtils;
+import io.deephaven.engine.time.DateTime;
+import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.engine.v2.sources.ColumnSourceGetDefaults;
 import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.structures.RowSequence;

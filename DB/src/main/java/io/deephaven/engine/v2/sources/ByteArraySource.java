@@ -8,7 +8,7 @@
 package io.deephaven.engine.v2.sources;
 
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.util.DhByteComparisons;
+import io.deephaven.util.compare.ByteComparisons;
 import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.chunk.Attributes.*;
 import io.deephaven.engine.chunk.ResettableWritableChunk;
@@ -101,7 +101,7 @@ public class ByteArraySource extends ArraySourceHelper<Byte, byte[]> implements 
         final int blockIndex = (int) (index >> LOG_BLOCK_SIZE);
         final int indexWithinBlock = (int) (index & INDEX_MASK);
         final byte oldValue = blocks[blockIndex][indexWithinBlock];
-        if (!DhByteComparisons.eq(oldValue, newValue)) {
+        if (!ByteComparisons.eq(oldValue, newValue)) {
             if (shouldRecordPrevious(index, prevBlocks, recycler)) {
                 prevBlocks[blockIndex][indexWithinBlock] = oldValue;
             }

@@ -1,8 +1,8 @@
 package io.deephaven.grpc_api.util;
 
-import io.deephaven.engine.tables.utils.DateTime;
-import io.deephaven.engine.tables.utils.DateTimeUtils;
-import io.deephaven.engine.v2.utils.TimeProvider;
+import io.deephaven.engine.time.DateTime;
+import io.deephaven.engine.time.DateTimeUtils;
+import io.deephaven.engine.time.TimeProvider;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.concurrent.ExecutorService;

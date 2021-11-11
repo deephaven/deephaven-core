@@ -504,7 +504,7 @@ def _getJavaTypeFromArray(ndarray):
         else:
             return 'java.lang.String'
     elif dtype.startswith('datetime64'):
-        return 'io.deephaven.engine.tables.utils.DateTime'
+        return 'io.deephaven.engine.time.DateTime'
     elif dtype == 'object':
         # infer type from the first non-stupid element
         goodElement = None
@@ -791,7 +791,7 @@ def _convertNdarrayToImmutableSource(data, name, convertUnknownToString=False):
         return _stringColumnSource(data, name, type(data[0]))
     elif javaType == 'java.lang.Boolean':
         return _booleanColumnSource(data, name, type(data[0]))
-    elif javaType == 'io.deephaven.engine.tables.utils.DateTime':
+    elif javaType == 'io.deephaven.engine.time.DateTime':
         return __DatetimeColumnSource__, _makeJavaArray(data, 'long')
     elif javaType == 'datetime':
         return __DatetimeColumnSource__, jpy.array('long', [_datetimeToLong(el) for el in data])

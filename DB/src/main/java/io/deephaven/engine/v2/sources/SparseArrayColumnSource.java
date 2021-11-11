@@ -6,7 +6,7 @@ package io.deephaven.engine.v2.sources;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.util.type.ArrayTypeUtils;
-import io.deephaven.engine.tables.utils.DateTime;
+import io.deephaven.engine.time.DateTime;
 import io.deephaven.engine.chunk.Attributes;
 import io.deephaven.engine.chunk.Attributes.RowKeys;
 import io.deephaven.engine.chunk.Attributes.Values;

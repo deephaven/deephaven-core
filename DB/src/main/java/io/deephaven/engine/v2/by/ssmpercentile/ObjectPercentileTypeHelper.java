@@ -3,7 +3,7 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.v2.by.ssmpercentile;
 
-import io.deephaven.engine.util.DhObjectComparisons;
+import io.deephaven.util.compare.ObjectComparisons;
 import io.deephaven.engine.v2.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.v2.sources.ObjectArraySource;
 import io.deephaven.engine.chunk.Attributes;
@@ -65,7 +65,7 @@ public class ObjectPercentileTypeHelper implements SsmChunkedPercentileOperator.
         final int result = upperBound(asObjectChunk, startPosition, startPosition + runLength, hiValue);
 
         final long hiCount = ssmLo.getMaxCount();
-        if (result > startPosition && DhObjectComparisons.eq(asObjectChunk.get(result - 1), hiValue) && counts.get(result - 1) > hiCount) {
+        if (result > startPosition && ObjectComparisons.eq(asObjectChunk.get(result - 1), hiValue) && counts.get(result - 1) > hiCount) {
             leftOvers.setValue((int)(counts.get(result - 1) - hiCount));
         } else {
             leftOvers.setValue(0);
@@ -110,7 +110,7 @@ public class ObjectPercentileTypeHelper implements SsmChunkedPercentileOperator.
     }
 
     private static int doComparison(Object lhs, Object rhs) {
-        return DhObjectComparisons.compare(lhs, rhs);
+        return ObjectComparisons.compare(lhs, rhs);
     }
 
     private static boolean gt(Object lhs, Object rhs) {

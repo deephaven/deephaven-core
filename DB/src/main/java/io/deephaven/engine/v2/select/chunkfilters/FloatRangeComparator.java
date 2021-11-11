@@ -1,6 +1,6 @@
 package io.deephaven.engine.v2.select.chunkfilters;
 
-import io.deephaven.engine.util.DhFloatComparisons;
+import io.deephaven.util.compare.FloatComparisons;
 import io.deephaven.engine.v2.select.ChunkFilter;
 import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.chunk.Attributes.OrderedRowKeys;
@@ -30,7 +30,7 @@ public class FloatRangeComparator {
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
                 final float value = values.get(ii);
-                if (DhFloatComparisons.geq(value, lower) && DhFloatComparisons.leq(value, upper)) {
+                if (FloatComparisons.geq(value, lower) && FloatComparisons.leq(value, upper)) {
                     results.add(keys.get(ii));
                 }
             }
@@ -46,7 +46,7 @@ public class FloatRangeComparator {
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
                 final float value = values.get(ii);
-                if (DhFloatComparisons.geq(value, lower) && DhFloatComparisons.lt(value, upper)) {
+                if (FloatComparisons.geq(value, lower) && FloatComparisons.lt(value, upper)) {
                     results.add(keys.get(ii));
                 }
             }
@@ -62,7 +62,7 @@ public class FloatRangeComparator {
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
                 final float value = values.get(ii);
-                if (DhFloatComparisons.gt(value, lower) && DhFloatComparisons.leq(value, upper)) {
+                if (FloatComparisons.gt(value, lower) && FloatComparisons.leq(value, upper)) {
                     results.add(keys.get(ii));
                 }
             }
@@ -78,7 +78,7 @@ public class FloatRangeComparator {
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
                 final float value = values.get(ii);
-                if (DhFloatComparisons.gt(value, lower) && DhFloatComparisons.lt(value, upper)) {
+                if (FloatComparisons.gt(value, lower) && FloatComparisons.lt(value, upper)) {
                     results.add(keys.get(ii));
                 }
             }

@@ -2,8 +2,8 @@ package io.deephaven.engine.v2.utils;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.utils.DateTime;
-import io.deephaven.engine.tables.utils.DateTimeUtils;
+import io.deephaven.engine.time.DateTime;
+import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.engine.tables.utils.QueryPerformanceRecorder;
 import io.deephaven.engine.v2.BaseTable;
 import io.deephaven.engine.v2.ShiftObliviousInstrumentedListener;

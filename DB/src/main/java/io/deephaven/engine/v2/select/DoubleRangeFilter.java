@@ -5,7 +5,7 @@ package io.deephaven.engine.v2.select;
 
 import io.deephaven.engine.tables.ColumnDefinition;
 import io.deephaven.engine.tables.TableDefinition;
-import io.deephaven.engine.util.DhDoubleComparisons;
+import io.deephaven.util.compare.DoubleComparisons;
 import io.deephaven.engine.v2.select.chunkfilters.DoubleRangeComparator;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.utils.MutableRowSet;
@@ -110,7 +110,7 @@ public class DoubleRangeFilter extends AbstractRangeFilter {
             final long midIdx = selection.get(midPos);
 
             final double compareValue = usePrev ? doubleColumnSource.getPrevDouble(midIdx) : doubleColumnSource.getDouble(midIdx);
-            final int compareResult = compareSign * DhDoubleComparisons.compare(compareValue, targetValue);
+            final int compareResult = compareSign * DoubleComparisons.compare(compareValue, targetValue);
 
             if (compareResult < 0) {
                 minPosition = midPos + 1;

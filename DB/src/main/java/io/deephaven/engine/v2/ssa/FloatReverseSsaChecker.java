@@ -3,7 +3,7 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.v2.ssa;
 
-import io.deephaven.engine.util.DhFloatComparisons;
+import io.deephaven.util.compare.FloatComparisons;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.chunk.util.hashing.FloatChunkEquals;
@@ -71,7 +71,7 @@ public class FloatReverseSsaChecker implements SsaChecker {
 
     private static boolean eq(float lhs, float rhs) {
         // region equality function
-        return DhFloatComparisons.eq(lhs, rhs);
+        return FloatComparisons.eq(lhs, rhs);
         // endregion equality function
     }
 }

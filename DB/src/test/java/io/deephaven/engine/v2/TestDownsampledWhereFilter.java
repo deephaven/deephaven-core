@@ -5,7 +5,7 @@
 package io.deephaven.engine.v2;
 
 import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.utils.DateTimeUtils;
+import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.v2.select.DownsampledWhereFilter;
 import junit.framework.TestCase;

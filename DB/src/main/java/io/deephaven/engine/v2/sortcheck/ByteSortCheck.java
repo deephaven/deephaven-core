@@ -3,7 +3,7 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.v2.sortcheck;
 
-import io.deephaven.engine.util.DhByteComparisons;
+import io.deephaven.util.compare.ByteComparisons;
 import io.deephaven.engine.chunk.Attributes;
 import io.deephaven.engine.chunk.ByteChunk;
 import io.deephaven.engine.chunk.Chunk;
@@ -33,7 +33,7 @@ public class ByteSortCheck implements SortCheck {
 
     // region comparison functions
     private static int doComparison(byte lhs, byte rhs) {
-        return DhByteComparisons.compare(lhs, rhs);
+        return ByteComparisons.compare(lhs, rhs);
     }
     // endregion comparison functions
 

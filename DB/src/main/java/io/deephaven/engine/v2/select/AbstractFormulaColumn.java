@@ -13,7 +13,6 @@ import io.deephaven.engine.vector.Vector;
 import io.deephaven.engine.tables.select.MatchPair;
 import io.deephaven.engine.tables.select.Param;
 import io.deephaven.engine.tables.select.QueryScope;
-import io.deephaven.engine.tables.utils.*;
 import io.deephaven.engine.v2.dbarrays.*;
 import io.deephaven.engine.v2.select.formula.*;
 import io.deephaven.engine.v2.sources.*;
@@ -21,6 +20,7 @@ import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.engine.v2.utils.TrackingRowSet;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
+import io.deephaven.util.NameValidator;
 import org.jetbrains.annotations.NotNull;
 
 import java.net.MalformedURLException;

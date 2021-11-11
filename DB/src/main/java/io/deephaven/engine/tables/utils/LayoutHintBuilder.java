@@ -1,6 +1,7 @@
 package io.deephaven.engine.tables.utils;
 
 import io.deephaven.base.StringUtils;
+import io.deephaven.util.NameValidator;
 import io.deephaven.util.annotations.ScriptApi;
 import org.jetbrains.annotations.NotNull;
 

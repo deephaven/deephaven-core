@@ -2,7 +2,7 @@ package io.deephaven.engine.v2.select;
 
 import io.deephaven.engine.tables.ColumnDefinition;
 import io.deephaven.engine.tables.TableDefinition;
-import io.deephaven.engine.util.DhCharComparisons;
+import io.deephaven.util.compare.CharComparisons;
 import io.deephaven.engine.v2.select.chunkfilters.CharRangeComparator;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.utils.MutableRowSet;
@@ -18,7 +18,7 @@ public class CharRangeFilter extends AbstractRangeFilter {
     public CharRangeFilter(String columnName, char val1, char val2, boolean lowerInclusive, boolean upperInclusive) {
         super(columnName, lowerInclusive, upperInclusive);
 
-        if(DhCharComparisons.gt(val1, val2)) {
+        if(CharComparisons.gt(val1, val2)) {
             upper = val1;
             lower = val2;
         } else {
@@ -104,7 +104,7 @@ public class CharRangeFilter extends AbstractRangeFilter {
             final long midIdx = selection.get(midPos);
 
             final char compareValue = usePrev ? longColumnSource.getPrevChar(midIdx) : longColumnSource.getChar(midIdx);
-            final int compareResult = compareSign * DhCharComparisons.compare(compareValue, targetValue);
+            final int compareResult = compareSign * CharComparisons.compare(compareValue, targetValue);
 
             if (compareResult < 0) {
                 minPosition = midPos + 1;

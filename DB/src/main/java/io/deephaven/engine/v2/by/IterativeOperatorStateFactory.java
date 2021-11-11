@@ -4,7 +4,7 @@
 
 package io.deephaven.engine.v2.by;
 
-import io.deephaven.engine.tables.utils.DateTime;
+import io.deephaven.engine.time.DateTime;
 import io.deephaven.engine.v2.by.ssmcountdistinct.DistinctOperatorFactory;
 import io.deephaven.engine.v2.by.ssmminmax.SsmChunkedMinMaxOperator;
 import io.deephaven.engine.v2.by.ssmpercentile.SsmChunkedPercentileOperator;

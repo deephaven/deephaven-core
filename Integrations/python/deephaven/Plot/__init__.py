@@ -170,9 +170,9 @@ def catErrorBar(*args):
       
       :param seriesName: (java.lang.Comparable) - name of the created dataset
       :param categories: (T0[]) - discrete data
-      :param values: (io.deephaven.engine.tables.utils.DateTime[]) - numeric data
-      :param yLow: (io.deephaven.engine.tables.utils.DateTime[]) - low value in y dimension
-      :param yHigh: (io.deephaven.engine.tables.utils.DateTime[]) - high value in y dimension
+      :param values: (io.deephaven.engine.time.DateTime[]) - numeric data
+      :param yLow: (io.deephaven.engine.time.DateTime[]) - low value in y dimension
+      :param yHigh: (io.deephaven.engine.time.DateTime[]) - high value in y dimension
       :return: (io.deephaven.engine.plot.Figure) dataset created by the plot
       
     *Overload 7*  
@@ -424,7 +424,7 @@ def catPlot(*args):
       
       :param seriesName: (java.lang.Comparable) - name of the created dataset
       :param categories: (T0[]) - discrete data
-      :param values: (io.deephaven.engine.tables.utils.DateTime[]) - numeric data
+      :param values: (io.deephaven.engine.time.DateTime[]) - numeric data
       :return: (io.deephaven.engine.plot.Figure) dataset created for plot
       
     *Overload 7*  
@@ -506,7 +506,7 @@ def catPlot(*args):
       
       :param seriesName: (java.lang.Comparable) - name of the created dataset
       :param categories: (java.util.List<T0>) - discrete data
-      :param values: (io.deephaven.engine.tables.utils.DateTime[]) - numeric data
+      :param values: (io.deephaven.engine.time.DateTime[]) - numeric data
       :return: (io.deephaven.engine.plot.Figure) dataset created for plot
       
     *Overload 17*  
@@ -694,7 +694,7 @@ def errorBarX(*args):
       :param x: (T0[]) - x-values
       :param xLow: (T1[]) - low value in x dimension
       :param xHigh: (T2[]) - high value in x dimension
-      :param y: (io.deephaven.engine.tables.utils.DateTime[]) - y-values
+      :param y: (io.deephaven.engine.time.DateTime[]) - y-values
       :return: (io.deephaven.engine.plot.Figure) dataset created by the plot
       
     *Overload 3*  
@@ -718,7 +718,7 @@ def errorBarX(*args):
       :param x: (double[]) - x-values
       :param xLow: (double[]) - low value in x dimension
       :param xHigh: (double[]) - high value in x dimension
-      :param y: (io.deephaven.engine.tables.utils.DateTime[]) - y-values
+      :param y: (io.deephaven.engine.time.DateTime[]) - y-values
       :return: (io.deephaven.engine.plot.Figure) dataset created by the plot
       
     *Overload 6*  
@@ -742,7 +742,7 @@ def errorBarX(*args):
       :param x: (float[]) - x-values
       :param xLow: (float[]) - low value in x dimension
       :param xHigh: (float[]) - high value in x dimension
-      :param y: (io.deephaven.engine.tables.utils.DateTime[]) - y-values
+      :param y: (io.deephaven.engine.time.DateTime[]) - y-values
       :return: (io.deephaven.engine.plot.Figure) dataset created by the plot
       
     *Overload 9*  
@@ -766,7 +766,7 @@ def errorBarX(*args):
       :param x: (int[]) - x-values
       :param xLow: (int[]) - low value in x dimension
       :param xHigh: (int[]) - high value in x dimension
-      :param y: (io.deephaven.engine.tables.utils.DateTime[]) - y-values
+      :param y: (io.deephaven.engine.time.DateTime[]) - y-values
       :return: (io.deephaven.engine.plot.Figure) dataset created by the plot
       
     *Overload 12*  
@@ -790,7 +790,7 @@ def errorBarX(*args):
       :param x: (long[]) - x-values
       :param xLow: (long[]) - low value in x dimension
       :param xHigh: (long[]) - high value in x dimension
-      :param y: (io.deephaven.engine.tables.utils.DateTime[]) - y-values
+      :param y: (io.deephaven.engine.time.DateTime[]) - y-values
       :return: (io.deephaven.engine.plot.Figure) dataset created by the plot
       
     *Overload 15*  
@@ -805,57 +805,57 @@ def errorBarX(*args):
       Note: Java generics information - <T3 extends java.lang.Number>
       
       :param seriesName: (java.lang.Comparable) - name of the created dataset
-      :param x: (io.deephaven.engine.tables.utils.DateTime[]) - x-values
-      :param xLow: (io.deephaven.engine.tables.utils.DateTime[]) - low value in x dimension
-      :param xHigh: (io.deephaven.engine.tables.utils.DateTime[]) - high value in x dimension
+      :param x: (io.deephaven.engine.time.DateTime[]) - x-values
+      :param xLow: (io.deephaven.engine.time.DateTime[]) - low value in x dimension
+      :param xHigh: (io.deephaven.engine.time.DateTime[]) - high value in x dimension
       :param y: (T3[]) - y-values
       :return: (io.deephaven.engine.plot.Figure) dataset created by the plot
       
     *Overload 17*  
       :param seriesName: (java.lang.Comparable) - name of the created dataset
-      :param x: (io.deephaven.engine.tables.utils.DateTime[]) - x-values
-      :param xLow: (io.deephaven.engine.tables.utils.DateTime[]) - low value in x dimension
-      :param xHigh: (io.deephaven.engine.tables.utils.DateTime[]) - high value in x dimension
+      :param x: (io.deephaven.engine.time.DateTime[]) - x-values
+      :param xLow: (io.deephaven.engine.time.DateTime[]) - low value in x dimension
+      :param xHigh: (io.deephaven.engine.time.DateTime[]) - high value in x dimension
       :param y: (double[]) - y-values
       :return: (io.deephaven.engine.plot.Figure) dataset created by the plot
       
     *Overload 18*  
       :param seriesName: (java.lang.Comparable) - name of the created dataset
-      :param x: (io.deephaven.engine.tables.utils.DateTime[]) - x-values
-      :param xLow: (io.deephaven.engine.tables.utils.DateTime[]) - low value in x dimension
-      :param xHigh: (io.deephaven.engine.tables.utils.DateTime[]) - high value in x dimension
+      :param x: (io.deephaven.engine.time.DateTime[]) - x-values
+      :param xLow: (io.deephaven.engine.time.DateTime[]) - low value in x dimension
+      :param xHigh: (io.deephaven.engine.time.DateTime[]) - high value in x dimension
       :param y: (float[]) - y-values
       :return: (io.deephaven.engine.plot.Figure) dataset created by the plot
       
     *Overload 19*  
       :param seriesName: (java.lang.Comparable) - name of the created dataset
-      :param x: (io.deephaven.engine.tables.utils.DateTime[]) - x-values
-      :param xLow: (io.deephaven.engine.tables.utils.DateTime[]) - low value in x dimension
-      :param xHigh: (io.deephaven.engine.tables.utils.DateTime[]) - high value in x dimension
+      :param x: (io.deephaven.engine.time.DateTime[]) - x-values
+      :param xLow: (io.deephaven.engine.time.DateTime[]) - low value in x dimension
+      :param xHigh: (io.deephaven.engine.time.DateTime[]) - high value in x dimension
       :param y: (int[]) - y-values
       :return: (io.deephaven.engine.plot.Figure) dataset created by the plot
       
     *Overload 20*  
       :param seriesName: (java.lang.Comparable) - name of the created dataset
-      :param x: (io.deephaven.engine.tables.utils.DateTime[]) - x-values
-      :param xLow: (io.deephaven.engine.tables.utils.DateTime[]) - low value in x dimension
-      :param xHigh: (io.deephaven.engine.tables.utils.DateTime[]) - high value in x dimension
+      :param x: (io.deephaven.engine.time.DateTime[]) - x-values
+      :param xLow: (io.deephaven.engine.time.DateTime[]) - low value in x dimension
+      :param xHigh: (io.deephaven.engine.time.DateTime[]) - high value in x dimension
       :param y: (long[]) - y-values
       :return: (io.deephaven.engine.plot.Figure) dataset created by the plot
       
     *Overload 21*  
       :param seriesName: (java.lang.Comparable) - name of the created dataset
-      :param x: (io.deephaven.engine.tables.utils.DateTime[]) - x-values
-      :param xLow: (io.deephaven.engine.tables.utils.DateTime[]) - low value in x dimension
-      :param xHigh: (io.deephaven.engine.tables.utils.DateTime[]) - high value in x dimension
-      :param y: (io.deephaven.engine.tables.utils.DateTime[]) - y-values
+      :param x: (io.deephaven.engine.time.DateTime[]) - x-values
+      :param xLow: (io.deephaven.engine.time.DateTime[]) - low value in x dimension
+      :param xHigh: (io.deephaven.engine.time.DateTime[]) - high value in x dimension
+      :param y: (io.deephaven.engine.time.DateTime[]) - y-values
       :return: (io.deephaven.engine.plot.Figure) dataset created by the plot
       
     *Overload 22*  
       :param seriesName: (java.lang.Comparable) - name of the created dataset
-      :param x: (io.deephaven.engine.tables.utils.DateTime[]) - x-values
-      :param xLow: (io.deephaven.engine.tables.utils.DateTime[]) - low value in x dimension
-      :param xHigh: (io.deephaven.engine.tables.utils.DateTime[]) - high value in x dimension
+      :param x: (io.deephaven.engine.time.DateTime[]) - x-values
+      :param xLow: (io.deephaven.engine.time.DateTime[]) - low value in x dimension
+      :param xHigh: (io.deephaven.engine.time.DateTime[]) - high value in x dimension
       :param y: (short[]) - y-values
       :return: (io.deephaven.engine.plot.Figure) dataset created by the plot
       
@@ -863,9 +863,9 @@ def errorBarX(*args):
       Note: Java generics information - <T3 extends java.lang.Number>
       
       :param seriesName: (java.lang.Comparable) - name of the created dataset
-      :param x: (io.deephaven.engine.tables.utils.DateTime[]) - x-values
-      :param xLow: (io.deephaven.engine.tables.utils.DateTime[]) - low value in x dimension
-      :param xHigh: (io.deephaven.engine.tables.utils.DateTime[]) - high value in x dimension
+      :param x: (io.deephaven.engine.time.DateTime[]) - x-values
+      :param xLow: (io.deephaven.engine.time.DateTime[]) - low value in x dimension
+      :param xHigh: (io.deephaven.engine.time.DateTime[]) - high value in x dimension
       :param y: (java.util.List<T3>) - y-values
       :return: (io.deephaven.engine.plot.Figure) dataset created by the plot
       
@@ -942,7 +942,7 @@ def errorBarX(*args):
       :param x: (short[]) - x-values
       :param xLow: (short[]) - low value in x dimension
       :param xHigh: (short[]) - high value in x dimension
-      :param y: (io.deephaven.engine.tables.utils.DateTime[]) - y-values
+      :param y: (io.deephaven.engine.time.DateTime[]) - y-values
       :return: (io.deephaven.engine.plot.Figure) dataset created by the plot
       
     *Overload 33*  
@@ -966,7 +966,7 @@ def errorBarX(*args):
       :param x: (java.util.List<T0>) - x-values
       :param xLow: (java.util.List<T1>) - low value in x dimension
       :param xHigh: (java.util.List<T2>) - high value in x dimension
-      :param y: (io.deephaven.engine.tables.utils.DateTime[]) - y-values
+      :param y: (io.deephaven.engine.time.DateTime[]) - y-values
       :return: (io.deephaven.engine.plot.Figure) dataset created by the plot
       
     *Overload 36*  
@@ -1054,9 +1054,9 @@ def errorBarXY(*args):
       :param x: (T0[]) - x-values
       :param xLow: (T1[]) - low value in x dimension
       :param xHigh: (T2[]) - high value in x dimension
-      :param y: (io.deephaven.engine.tables.utils.DateTime[]) - y-values
-      :param yLow: (io.deephaven.engine.tables.utils.DateTime[]) - low value in y dimension
-      :param yHigh: (io.deephaven.engine.tables.utils.DateTime[]) - high value in y dimension
+      :param y: (io.deephaven.engine.time.DateTime[]) - y-values
+      :param yLow: (io.deephaven.engine.time.DateTime[]) - low value in y dimension
+      :param yHigh: (io.deephaven.engine.time.DateTime[]) - high value in y dimension
       :return: (io.deephaven.engine.plot.Figure) dataset created by the plot
       
     *Overload 3*  
@@ -1084,9 +1084,9 @@ def errorBarXY(*args):
       :param x: (double[]) - x-values
       :param xLow: (double[]) - low value in x dimension
       :param xHigh: (double[]) - high value in x dimension
-      :param y: (io.deephaven.engine.tables.utils.DateTime[]) - y-values
-      :param yLow: (io.deephaven.engine.tables.utils.DateTime[]) - low value in y dimension
-      :param yHigh: (io.deephaven.engine.tables.utils.DateTime[]) - high value in y dimension
+      :param y: (io.deephaven.engine.time.DateTime[]) - y-values
+      :param yLow: (io.deephaven.engine.time.DateTime[]) - low value in y dimension
+      :param yHigh: (io.deephaven.engine.time.DateTime[]) - high value in y dimension
       :return: (io.deephaven.engine.plot.Figure) dataset created by the plot
       
     *Overload 6*  
@@ -1114,9 +1114,9 @@ def errorBarXY(*args):
       :param x: (float[]) - x-values
       :param xLow: (float[]) - low value in x dimension
       :param xHigh: (float[]) - high value in x dimension
-      :param y: (io.deephaven.engine.tables.utils.DateTime[]) - y-values
-      :param yLow: (io.deephaven.engine.tables.utils.DateTime[]) - low value in y dimension
-      :param yHigh: (io.deephaven.engine.tables.utils.DateTime[]) - high value in y dimension
+      :param y: (io.deephaven.engine.time.DateTime[]) - y-values
+      :param yLow: (io.deephaven.engine.time.DateTime[]) - low value in y dimension
+      :param yHigh: (io.deephaven.engine.time.DateTime[]) - high value in y dimension
       :return: (io.deephaven.engine.plot.Figure) dataset created by the plot
       
     *Overload 9*  
@@ -1144,9 +1144,9 @@ def errorBarXY(*args):
       :param x: (int[]) - x-values
       :param xLow: (int[]) - low value in x dimension
       :param xHigh: (int[]) - high value in x dimension
-      :param y: (io.deephaven.engine.tables.utils.DateTime[]) - y-values
-      :param yLow: (io.deephaven.engine.tables.utils.DateTime[]) - low value in y dimension
-      :param yHigh: (io.deephaven.engine.tables.utils.DateTime[]) - high value in y dimension
+      :param y: (io.deephaven.engine.time.DateTime[]) - y-values
+      :param yLow: (io.deephaven.engine.time.DateTime[]) - low value in y dimension
+      :param yHigh: (io.deephaven.engine.time.DateTime[]) - high value in y dimension
       :return: (io.deephaven.engine.plot.Figure) dataset created by the plot
       
     *Overload 12*  
@@ -1174,9 +1174,9 @@ def errorBarXY(*args):
       :param x: (long[]) - x-values
       :param xLow: (long[]) - low value in x dimension
       :param xHigh: (long[]) - high value in x dimension
-      :param y: (io.deephaven.engine.tables.utils.DateTime[]) - y-values
-      :param yLow: (io.deephaven.engine.tables.utils.DateTime[]) - low value in y dimension
-      :param yHigh: (io.deephaven.engine.tables.utils.DateTime[]) - high value in y dimension
+      :param y: (io.deephaven.engine.time.DateTime[]) - y-values
+      :param yLow: (io.deephaven.engine.time.DateTime[]) - low value in y dimension
+      :param yHigh: (io.deephaven.engine.time.DateTime[]) - high value in y dimension
       :return: (io.deephaven.engine.plot.Figure) dataset created by the plot
       
     *Overload 15*  
@@ -1191,9 +1191,9 @@ def errorBarXY(*args):
       
     *Overload 16*  
       :param seriesName: (java.lang.Comparable) - name of the created dataset
-      :param x: (io.deephaven.engine.tables.utils.DateTime[]) - x-values
-      :param xLow: (io.deephaven.engine.tables.utils.DateTime[]) - low value in x dimension
-      :param xHigh: (io.deephaven.engine.tables.utils.DateTime[]) - high value in x dimension
+      :param x: (io.deephaven.engine.time.DateTime[]) - x-values
+      :param xLow: (io.deephaven.engine.time.DateTime[]) - low value in x dimension
+      :param xHigh: (io.deephaven.engine.time.DateTime[]) - high value in x dimension
       :param y: (T3[]) - y-values
       :param yLow: (T4[]) - low value in y dimension
       :param yHigh: (T5[]) - high value in y dimension
@@ -1201,9 +1201,9 @@ def errorBarXY(*args):
       
     *Overload 17*  
       :param seriesName: (java.lang.Comparable) - name of the created dataset
-      :param x: (io.deephaven.engine.tables.utils.DateTime[]) - x-values
-      :param xLow: (io.deephaven.engine.tables.utils.DateTime[]) - low value in x dimension
-      :param xHigh: (io.deephaven.engine.tables.utils.DateTime[]) - high value in x dimension
+      :param x: (io.deephaven.engine.time.DateTime[]) - x-values
+      :param xLow: (io.deephaven.engine.time.DateTime[]) - low value in x dimension
+      :param xHigh: (io.deephaven.engine.time.DateTime[]) - high value in x dimension
       :param y: (double[]) - y-values
       :param yLow: (double[]) - low value in y dimension
       :param yHigh: (double[]) - high value in y dimension
@@ -1211,9 +1211,9 @@ def errorBarXY(*args):
       
     *Overload 18*  
       :param seriesName: (java.lang.Comparable) - name of the created dataset
-      :param x: (io.deephaven.engine.tables.utils.DateTime[]) - x-values
-      :param xLow: (io.deephaven.engine.tables.utils.DateTime[]) - low value in x dimension
-      :param xHigh: (io.deephaven.engine.tables.utils.DateTime[]) - high value in x dimension
+      :param x: (io.deephaven.engine.time.DateTime[]) - x-values
+      :param xLow: (io.deephaven.engine.time.DateTime[]) - low value in x dimension
+      :param xHigh: (io.deephaven.engine.time.DateTime[]) - high value in x dimension
       :param y: (float[]) - y-values
       :param yLow: (float[]) - low value in y dimension
       :param yHigh: (float[]) - high value in y dimension
@@ -1221,9 +1221,9 @@ def errorBarXY(*args):
       
     *Overload 19*  
       :param seriesName: (java.lang.Comparable) - name of the created dataset
-      :param x: (io.deephaven.engine.tables.utils.DateTime[]) - x-values
-      :param xLow: (io.deephaven.engine.tables.utils.DateTime[]) - low value in x dimension
-      :param xHigh: (io.deephaven.engine.tables.utils.DateTime[]) - high value in x dimension
+      :param x: (io.deephaven.engine.time.DateTime[]) - x-values
+      :param xLow: (io.deephaven.engine.time.DateTime[]) - low value in x dimension
+      :param xHigh: (io.deephaven.engine.time.DateTime[]) - high value in x dimension
       :param y: (int[]) - y-values
       :param yLow: (int[]) - low value in y dimension
       :param yHigh: (int[]) - high value in y dimension
@@ -1231,9 +1231,9 @@ def errorBarXY(*args):
       
     *Overload 20*  
       :param seriesName: (java.lang.Comparable) - name of the created dataset
-      :param x: (io.deephaven.engine.tables.utils.DateTime[]) - x-values
-      :param xLow: (io.deephaven.engine.tables.utils.DateTime[]) - low value in x dimension
-      :param xHigh: (io.deephaven.engine.tables.utils.DateTime[]) - high value in x dimension
+      :param x: (io.deephaven.engine.time.DateTime[]) - x-values
+      :param xLow: (io.deephaven.engine.time.DateTime[]) - low value in x dimension
+      :param xHigh: (io.deephaven.engine.time.DateTime[]) - high value in x dimension
       :param y: (long[]) - y-values
       :param yLow: (long[]) - low value in y dimension
       :param yHigh: (long[]) - high value in y dimension
@@ -1241,19 +1241,19 @@ def errorBarXY(*args):
       
     *Overload 21*  
       :param seriesName: (java.lang.Comparable) - name of the created dataset
-      :param x: (io.deephaven.engine.tables.utils.DateTime[]) - x-values
-      :param xLow: (io.deephaven.engine.tables.utils.DateTime[]) - low value in x dimension
-      :param xHigh: (io.deephaven.engine.tables.utils.DateTime[]) - high value in x dimension
-      :param y: (io.deephaven.engine.tables.utils.DateTime[]) - y-values
-      :param yLow: (io.deephaven.engine.tables.utils.DateTime[]) - low value in y dimension
-      :param yHigh: (io.deephaven.engine.tables.utils.DateTime[]) - high value in y dimension
+      :param x: (io.deephaven.engine.time.DateTime[]) - x-values
+      :param xLow: (io.deephaven.engine.time.DateTime[]) - low value in x dimension
+      :param xHigh: (io.deephaven.engine.time.DateTime[]) - high value in x dimension
+      :param y: (io.deephaven.engine.time.DateTime[]) - y-values
+      :param yLow: (io.deephaven.engine.time.DateTime[]) - low value in y dimension
+      :param yHigh: (io.deephaven.engine.time.DateTime[]) - high value in y dimension
       :return: (io.deephaven.engine.plot.Figure) dataset created by the plot
       
     *Overload 22*  
       :param seriesName: (java.lang.Comparable) - name of the created dataset
-      :param x: (io.deephaven.engine.tables.utils.DateTime[]) - x-values
-      :param xLow: (io.deephaven.engine.tables.utils.DateTime[]) - low value in x dimension
-      :param xHigh: (io.deephaven.engine.tables.utils.DateTime[]) - high value in x dimension
+      :param x: (io.deephaven.engine.time.DateTime[]) - x-values
+      :param xLow: (io.deephaven.engine.time.DateTime[]) - low value in x dimension
+      :param xHigh: (io.deephaven.engine.time.DateTime[]) - high value in x dimension
       :param y: (short[]) - y-values
       :param yLow: (short[]) - low value in y dimension
       :param yHigh: (short[]) - high value in y dimension
@@ -1261,9 +1261,9 @@ def errorBarXY(*args):
       
     *Overload 23*  
       :param seriesName: (java.lang.Comparable) - name of the created dataset
-      :param x: (io.deephaven.engine.tables.utils.DateTime[]) - x-values
-      :param xLow: (io.deephaven.engine.tables.utils.DateTime[]) - low value in x dimension
-      :param xHigh: (io.deephaven.engine.tables.utils.DateTime[]) - high value in x dimension
+      :param x: (io.deephaven.engine.time.DateTime[]) - x-values
+      :param xLow: (io.deephaven.engine.time.DateTime[]) - low value in x dimension
+      :param xHigh: (io.deephaven.engine.time.DateTime[]) - high value in x dimension
       :param y: (java.util.List<T3>) - y-values
       :param yLow: (java.util.List<T4>) - low value in y dimension
       :param yHigh: (java.util.List<T5>) - high value in y dimension
@@ -1354,9 +1354,9 @@ def errorBarXY(*args):
       :param x: (short[]) - x-values
       :param xLow: (short[]) - low value in x dimension
       :param xHigh: (short[]) - high value in x dimension
-      :param y: (io.deephaven.engine.tables.utils.DateTime[]) - y-values
-      :param yLow: (io.deephaven.engine.tables.utils.DateTime[]) - low value in y dimension
-      :param yHigh: (io.deephaven.engine.tables.utils.DateTime[]) - high value in y dimension
+      :param y: (io.deephaven.engine.time.DateTime[]) - y-values
+      :param yLow: (io.deephaven.engine.time.DateTime[]) - low value in y dimension
+      :param yHigh: (io.deephaven.engine.time.DateTime[]) - high value in y dimension
       :return: (io.deephaven.engine.plot.Figure) dataset created by the plot
       
     *Overload 33*  
@@ -1384,9 +1384,9 @@ def errorBarXY(*args):
       :param x: (java.util.List<T0>) - x-values
       :param xLow: (java.util.List<T1>) - low value in x dimension
       :param xHigh: (java.util.List<T2>) - high value in x dimension
-      :param y: (io.deephaven.engine.tables.utils.DateTime[]) - y-values
-      :param yLow: (io.deephaven.engine.tables.utils.DateTime[]) - low value in y dimension
-      :param yHigh: (io.deephaven.engine.tables.utils.DateTime[]) - high value in y dimension
+      :param y: (io.deephaven.engine.time.DateTime[]) - y-values
+      :param yLow: (io.deephaven.engine.time.DateTime[]) - low value in y dimension
+      :param yHigh: (io.deephaven.engine.time.DateTime[]) - high value in y dimension
       :return: (io.deephaven.engine.plot.Figure) dataset created by the plot
       
     *Overload 36*  
@@ -1484,9 +1484,9 @@ def errorBarY(*args):
       
       :param seriesName: (java.lang.Comparable) - name of the created dataset
       :param x: (T0[]) - x-values
-      :param y: (io.deephaven.engine.tables.utils.DateTime[]) - y-values
-      :param yLow: (io.deephaven.engine.tables.utils.DateTime[]) - low value in y dimension
-      :param yHigh: (io.deephaven.engine.tables.utils.DateTime[]) - high value in y dimension
+      :param y: (io.deephaven.engine.time.DateTime[]) - y-values
+      :param yLow: (io.deephaven.engine.time.DateTime[]) - low value in y dimension
+      :param yHigh: (io.deephaven.engine.time.DateTime[]) - high value in y dimension
       :return: (io.deephaven.engine.plot.Figure) dataset created by the plot
       
     *Overload 3*  
@@ -1510,9 +1510,9 @@ def errorBarY(*args):
     *Overload 5*  
       :param seriesName: (java.lang.Comparable) - name of the created dataset
       :param x: (double[]) - x-values
-      :param y: (io.deephaven.engine.tables.utils.DateTime[]) - y-values
-      :param yLow: (io.deephaven.engine.tables.utils.DateTime[]) - low value in y dimension
-      :param yHigh: (io.deephaven.engine.tables.utils.DateTime[]) - high value in y dimension
+      :param y: (io.deephaven.engine.time.DateTime[]) - y-values
+      :param yLow: (io.deephaven.engine.time.DateTime[]) - low value in y dimension
+      :param yHigh: (io.deephaven.engine.time.DateTime[]) - high value in y dimension
       :return: (io.deephaven.engine.plot.Figure) dataset created by the plot
       
     *Overload 6*  
@@ -1534,9 +1534,9 @@ def errorBarY(*args):
     *Overload 8*  
       :param seriesName: (java.lang.Comparable) - name of the created dataset
       :param x: (float[]) - x-values
-      :param y: (io.deephaven.engine.tables.utils.DateTime[]) - y-values
-      :param yLow: (io.deephaven.engine.tables.utils.DateTime[]) - low value in y dimension
-      :param yHigh: (io.deephaven.engine.tables.utils.DateTime[]) - high value in y dimension
+      :param y: (io.deephaven.engine.time.DateTime[]) - y-values
+      :param yLow: (io.deephaven.engine.time.DateTime[]) - low value in y dimension
+      :param yHigh: (io.deephaven.engine.time.DateTime[]) - high value in y dimension
       :return: (io.deephaven.engine.plot.Figure) dataset created by the plot
       
     *Overload 9*  
@@ -1558,9 +1558,9 @@ def errorBarY(*args):
     *Overload 11*  
       :param seriesName: (java.lang.Comparable) - name of the created dataset
       :param x: (int[]) - x-values
-      :param y: (io.deephaven.engine.tables.utils.DateTime[]) - y-values
-      :param yLow: (io.deephaven.engine.tables.utils.DateTime[]) - low value in y dimension
-      :param yHigh: (io.deephaven.engine.tables.utils.DateTime[]) - high value in y dimension
+      :param y: (io.deephaven.engine.time.DateTime[]) - y-values
+      :param yLow: (io.deephaven.engine.time.DateTime[]) - low value in y dimension
+      :param yHigh: (io.deephaven.engine.time.DateTime[]) - high value in y dimension
       :return: (io.deephaven.engine.plot.Figure) dataset created by the plot
       
     *Overload 12*  
@@ -1582,9 +1582,9 @@ def errorBarY(*args):
     *Overload 14*  
       :param seriesName: (java.lang.Comparable) - name of the created dataset
       :param x: (long[]) - x-values
-      :param y: (io.deephaven.engine.tables.utils.DateTime[]) - y-values
-      :param yLow: (io.deephaven.engine.tables.utils.DateTime[]) - low value in y dimension
-      :param yHigh: (io.deephaven.engine.tables.utils.DateTime[]) - high value in y dimension
+      :param y: (io.deephaven.engine.time.DateTime[]) - y-values
+      :param yLow: (io.deephaven.engine.time.DateTime[]) - low value in y dimension
+      :param yHigh: (io.deephaven.engine.time.DateTime[]) - high value in y dimension
       :return: (io.deephaven.engine.plot.Figure) dataset created by the plot
       
     *Overload 15*  
@@ -1597,7 +1597,7 @@ def errorBarY(*args):
       
     *Overload 16*  
       :param seriesName: (java.lang.Comparable) - name of the created dataset
-      :param x: (io.deephaven.engine.tables.utils.DateTime[]) - x-values
+      :param x: (io.deephaven.engine.time.DateTime[]) - x-values
       :param y: (T1[]) - y-values
       :param yLow: (T2[]) - low value in y dimension
       :param yHigh: (T3[]) - high value in y dimension
@@ -1605,7 +1605,7 @@ def errorBarY(*args):
       
     *Overload 17*  
       :param seriesName: (java.lang.Comparable) - name of the created dataset
-      :param x: (io.deephaven.engine.tables.utils.DateTime[]) - x-values
+      :param x: (io.deephaven.engine.time.DateTime[]) - x-values
       :param y: (double[]) - y-values
       :param yLow: (double[]) - low value in y dimension
       :param yHigh: (double[]) - high value in y dimension
@@ -1613,7 +1613,7 @@ def errorBarY(*args):
       
     *Overload 18*  
       :param seriesName: (java.lang.Comparable) - name of the created dataset
-      :param x: (io.deephaven.engine.tables.utils.DateTime[]) - x-values
+      :param x: (io.deephaven.engine.time.DateTime[]) - x-values
       :param y: (float[]) - y-values
       :param yLow: (float[]) - low value in y dimension
       :param yHigh: (float[]) - high value in y dimension
@@ -1621,7 +1621,7 @@ def errorBarY(*args):
       
     *Overload 19*  
       :param seriesName: (java.lang.Comparable) - name of the created dataset
-      :param x: (io.deephaven.engine.tables.utils.DateTime[]) - x-values
+      :param x: (io.deephaven.engine.time.DateTime[]) - x-values
       :param y: (int[]) - y-values
       :param yLow: (int[]) - low value in y dimension
       :param yHigh: (int[]) - high value in y dimension
@@ -1629,7 +1629,7 @@ def errorBarY(*args):
       
     *Overload 20*  
       :param seriesName: (java.lang.Comparable) - name of the created dataset
-      :param x: (io.deephaven.engine.tables.utils.DateTime[]) - x-values
+      :param x: (io.deephaven.engine.time.DateTime[]) - x-values
       :param y: (long[]) - y-values
       :param yLow: (long[]) - low value in y dimension
       :param yHigh: (long[]) - high value in y dimension
@@ -1637,15 +1637,15 @@ def errorBarY(*args):
       
     *Overload 21*  
       :param seriesName: (java.lang.Comparable) - name of the created dataset
-      :param x: (io.deephaven.engine.tables.utils.DateTime[]) - x-values
-      :param y: (io.deephaven.engine.tables.utils.DateTime[]) - y-values
-      :param yLow: (io.deephaven.engine.tables.utils.DateTime[]) - low value in y dimension
-      :param yHigh: (io.deephaven.engine.tables.utils.DateTime[]) - high value in y dimension
+      :param x: (io.deephaven.engine.time.DateTime[]) - x-values
+      :param y: (io.deephaven.engine.time.DateTime[]) - y-values
+      :param yLow: (io.deephaven.engine.time.DateTime[]) - low value in y dimension
+      :param yHigh: (io.deephaven.engine.time.DateTime[]) - high value in y dimension
       :return: (io.deephaven.engine.plot.Figure) dataset created by the plot
       
     *Overload 22*  
       :param seriesName: (java.lang.Comparable) - name of the created dataset
-      :param x: (io.deephaven.engine.tables.utils.DateTime[]) - x-values
+      :param x: (io.deephaven.engine.time.DateTime[]) - x-values
       :param y: (short[]) - y-values
       :param yLow: (short[]) - low value in y dimension
       :param yHigh: (short[]) - high value in y dimension
@@ -1653,7 +1653,7 @@ def errorBarY(*args):
       
     *Overload 23*  
       :param seriesName: (java.lang.Comparable) - name of the created dataset
-      :param x: (io.deephaven.engine.tables.utils.DateTime[]) - x-values
+      :param x: (io.deephaven.engine.time.DateTime[]) - x-values
       :param y: (java.util.List<T1>) - y-values
       :param yLow: (java.util.List<T2>) - low value in y dimension
       :param yHigh: (java.util.List<T3>) - high value in y dimension
@@ -1726,9 +1726,9 @@ def errorBarY(*args):
     *Overload 32*  
       :param seriesName: (java.lang.Comparable) - name of the created dataset
       :param x: (short[]) - x-values
-      :param y: (io.deephaven.engine.tables.utils.DateTime[]) - y-values
-      :param yLow: (io.deephaven.engine.tables.utils.DateTime[]) - low value in y dimension
-      :param yHigh: (io.deephaven.engine.tables.utils.DateTime[]) - high value in y dimension
+      :param y: (io.deephaven.engine.time.DateTime[]) - y-values
+      :param yLow: (io.deephaven.engine.time.DateTime[]) - low value in y dimension
+      :param yHigh: (io.deephaven.engine.time.DateTime[]) - high value in y dimension
       :return: (io.deephaven.engine.plot.Figure) dataset created by the plot
       
     *Overload 33*  
@@ -1752,9 +1752,9 @@ def errorBarY(*args):
       
       :param seriesName: (java.lang.Comparable) - name of the created dataset
       :param x: (java.util.List<T0>) - x-values
-      :param y: (io.deephaven.engine.tables.utils.DateTime[]) - y-values
-      :param yLow: (io.deephaven.engine.tables.utils.DateTime[]) - low value in y dimension
-      :param yHigh: (io.deephaven.engine.tables.utils.DateTime[]) - high value in y dimension
+      :param y: (io.deephaven.engine.time.DateTime[]) - y-values
+      :param yLow: (io.deephaven.engine.time.DateTime[]) - low value in y dimension
+      :param yHigh: (io.deephaven.engine.time.DateTime[]) - high value in y dimension
       :return: (io.deephaven.engine.plot.Figure) dataset created by the plot
       
     *Overload 36*  
@@ -2153,7 +2153,7 @@ def ohlcPlot(*args):
     
     *Overload 1*  
       :param seriesName: (java.lang.Comparable) - name of the created dataset
-      :param time: (io.deephaven.engine.tables.utils.DateTime[]) - time data
+      :param time: (io.deephaven.engine.time.DateTime[]) - time data
       :param open: (T1[]) - open data
       :param high: (T2[]) - high data
       :param low: (T3[]) - low data
@@ -2162,7 +2162,7 @@ def ohlcPlot(*args):
       
     *Overload 2*  
       :param seriesName: (java.lang.Comparable) - name of the created dataset
-      :param time: (io.deephaven.engine.tables.utils.DateTime[]) - time data
+      :param time: (io.deephaven.engine.time.DateTime[]) - time data
       :param open: (double[]) - open data
       :param high: (double[]) - high data
       :param low: (double[]) - low data
@@ -2171,7 +2171,7 @@ def ohlcPlot(*args):
       
     *Overload 3*  
       :param seriesName: (java.lang.Comparable) - name of the created dataset
-      :param time: (io.deephaven.engine.tables.utils.DateTime[]) - time data
+      :param time: (io.deephaven.engine.time.DateTime[]) - time data
       :param open: (float[]) - open data
       :param high: (float[]) - high data
       :param low: (float[]) - low data
@@ -2180,7 +2180,7 @@ def ohlcPlot(*args):
       
     *Overload 4*  
       :param seriesName: (java.lang.Comparable) - name of the created dataset
-      :param time: (io.deephaven.engine.tables.utils.DateTime[]) - time data
+      :param time: (io.deephaven.engine.time.DateTime[]) - time data
       :param open: (int[]) - open data
       :param high: (int[]) - high data
       :param low: (int[]) - low data
@@ -2189,7 +2189,7 @@ def ohlcPlot(*args):
       
     *Overload 5*  
       :param seriesName: (java.lang.Comparable) - name of the created dataset
-      :param time: (io.deephaven.engine.tables.utils.DateTime[]) - time data
+      :param time: (io.deephaven.engine.time.DateTime[]) - time data
       :param open: (long[]) - open data
       :param high: (long[]) - high data
       :param low: (long[]) - low data
@@ -2198,7 +2198,7 @@ def ohlcPlot(*args):
       
     *Overload 6*  
       :param seriesName: (java.lang.Comparable) - name of the created dataset
-      :param time: (io.deephaven.engine.tables.utils.DateTime[]) - time data
+      :param time: (io.deephaven.engine.time.DateTime[]) - time data
       :param open: (short[]) - open data
       :param high: (short[]) - high data
       :param low: (short[]) - low data
@@ -2207,7 +2207,7 @@ def ohlcPlot(*args):
       
     *Overload 7*  
       :param seriesName: (java.lang.Comparable) - name of the created dataset
-      :param time: (io.deephaven.engine.tables.utils.DateTime[]) - time data
+      :param time: (io.deephaven.engine.time.DateTime[]) - time data
       :param open: (java.util.List<T1>) - open data
       :param high: (java.util.List<T2>) - high data
       :param low: (java.util.List<T3>) - low data
@@ -2598,7 +2598,7 @@ def plot(*args):
       
       :param seriesName: (java.lang.Comparable) - name of the created dataset
       :param x: (T0[]) - x-values
-      :param y: (io.deephaven.engine.tables.utils.DateTime[]) - y-values
+      :param y: (io.deephaven.engine.time.DateTime[]) - y-values
       :return: (io.deephaven.engine.plot.Figure) dataset created for plot
       
     *Overload 9*  
@@ -2661,7 +2661,7 @@ def plot(*args):
     *Overload 17*  
       :param seriesName: (java.lang.Comparable) - name of the created dataset
       :param x: (double[]) - x-values
-      :param y: (io.deephaven.engine.tables.utils.DateTime[]) - y-values
+      :param y: (io.deephaven.engine.time.DateTime[]) - y-values
       :return: (io.deephaven.engine.plot.Figure) dataset created for plot
       
     *Overload 18*  
@@ -2719,7 +2719,7 @@ def plot(*args):
     *Overload 26*  
       :param seriesName: (java.lang.Comparable) - name of the created dataset
       :param x: (float[]) - x-values
-      :param y: (io.deephaven.engine.tables.utils.DateTime[]) - y-values
+      :param y: (io.deephaven.engine.time.DateTime[]) - y-values
       :return: (io.deephaven.engine.plot.Figure) dataset created for plot
       
     *Overload 27*  
@@ -2777,7 +2777,7 @@ def plot(*args):
     *Overload 35*  
       :param seriesName: (java.lang.Comparable) - name of the created dataset
       :param x: (int[]) - x-values
-      :param y: (io.deephaven.engine.tables.utils.DateTime[]) - y-values
+      :param y: (io.deephaven.engine.time.DateTime[]) - y-values
       :return: (io.deephaven.engine.plot.Figure) dataset created for plot
       
     *Overload 36*  
@@ -2835,7 +2835,7 @@ def plot(*args):
     *Overload 44*  
       :param seriesName: (java.lang.Comparable) - name of the created dataset
       :param x: (long[]) - x-values
-      :param y: (io.deephaven.engine.tables.utils.DateTime[]) - y-values
+      :param y: (io.deephaven.engine.time.DateTime[]) - y-values
       :return: (io.deephaven.engine.plot.Figure) dataset created for plot
       
     *Overload 45*  
@@ -2862,49 +2862,49 @@ def plot(*args):
       Note: Java generics information - <T1 extends java.lang.Number>
       
       :param seriesName: (java.lang.Comparable) - name of the created dataset
-      :param x: (io.deephaven.engine.tables.utils.DateTime[]) - x-values
+      :param x: (io.deephaven.engine.time.DateTime[]) - x-values
       :param y: (T1[]) - y-values
       :return: (io.deephaven.engine.plot.Figure) dataset created for plot
       
     *Overload 49*  
       :param seriesName: (java.lang.Comparable) - name of the created dataset
-      :param x: (io.deephaven.engine.tables.utils.DateTime[]) - x-values
+      :param x: (io.deephaven.engine.time.DateTime[]) - x-values
       :param y: (double[]) - y-values
       :return: (io.deephaven.engine.plot.Figure) dataset created for plot
       
     *Overload 50*  
       :param seriesName: (java.lang.Comparable) - name of the created dataset
-      :param x: (io.deephaven.engine.tables.utils.DateTime[]) - x-values
+      :param x: (io.deephaven.engine.time.DateTime[]) - x-values
       :param y: (float[]) - y-values
       :return: (io.deephaven.engine.plot.Figure) dataset created for plot
       
     *Overload 51*  
       :param seriesName: (java.lang.Comparable) - name of the created dataset
-      :param x: (io.deephaven.engine.tables.utils.DateTime[]) - x-values
+      :param x: (io.deephaven.engine.time.DateTime[]) - x-values
       :param y: (int[]) - y-values
       :return: (io.deephaven.engine.plot.Figure) dataset created for plot
       
     *Overload 52*  
       :param seriesName: (java.lang.Comparable) - name of the created dataset
-      :param x: (io.deephaven.engine.tables.utils.DateTime[]) - x-values
+      :param x: (io.deephaven.engine.time.DateTime[]) - x-values
       :param y: (long[]) - y-values
       :return: (io.deephaven.engine.plot.Figure) dataset created for plot
       
     *Overload 53*  
       :param seriesName: (java.lang.Comparable) - name of the created dataset
-      :param x: (io.deephaven.engine.tables.utils.DateTime[]) - x-values
-      :param y: (io.deephaven.engine.tables.utils.DateTime[]) - y-values
+      :param x: (io.deephaven.engine.time.DateTime[]) - x-values
+      :param y: (io.deephaven.engine.time.DateTime[]) - y-values
       :return: (io.deephaven.engine.plot.Figure) dataset created for plot
       
     *Overload 54*  
       :param seriesName: (java.lang.Comparable) - name of the created dataset
-      :param x: (io.deephaven.engine.tables.utils.DateTime[]) - x-values
+      :param x: (io.deephaven.engine.time.DateTime[]) - x-values
       :param y: (java.util.Date[]) - y-values
       :return: (io.deephaven.engine.plot.Figure) dataset created for plot
       
     *Overload 55*  
       :param seriesName: (java.lang.Comparable) - name of the created dataset
-      :param x: (io.deephaven.engine.tables.utils.DateTime[]) - x-values
+      :param x: (io.deephaven.engine.time.DateTime[]) - x-values
       :param y: (short[]) - y-values
       :return: (io.deephaven.engine.plot.Figure) dataset created for plot
       
@@ -2912,7 +2912,7 @@ def plot(*args):
       Note: Java generics information - <T1 extends java.lang.Number>
       
       :param seriesName: (java.lang.Comparable) - name of the created dataset
-      :param x: (io.deephaven.engine.tables.utils.DateTime[]) - x-values
+      :param x: (io.deephaven.engine.time.DateTime[]) - x-values
       :param y: (java.util.List<T1>) - y-values
       :return: (io.deephaven.engine.plot.Figure) dataset created for plot
       
@@ -2951,7 +2951,7 @@ def plot(*args):
     *Overload 62*  
       :param seriesName: (java.lang.Comparable) - name of the created dataset
       :param x: (java.util.Date[]) - x-values
-      :param y: (io.deephaven.engine.tables.utils.DateTime[]) - y-values
+      :param y: (io.deephaven.engine.time.DateTime[]) - y-values
       :return: (io.deephaven.engine.plot.Figure) dataset created for plot
       
     *Overload 63*  
@@ -3009,7 +3009,7 @@ def plot(*args):
     *Overload 71*  
       :param seriesName: (java.lang.Comparable) - name of the created dataset
       :param x: (short[]) - x-values
-      :param y: (io.deephaven.engine.tables.utils.DateTime[]) - y-values
+      :param y: (io.deephaven.engine.time.DateTime[]) - y-values
       :return: (io.deephaven.engine.plot.Figure) dataset created for plot
       
     *Overload 72*  
@@ -3078,7 +3078,7 @@ def plot(*args):
       
       :param seriesName: (java.lang.Comparable) - name of the created dataset
       :param x: (java.util.List<T0>) - x-values
-      :param y: (io.deephaven.engine.tables.utils.DateTime[]) - y-values
+      :param y: (io.deephaven.engine.time.DateTime[]) - y-values
       :return: (io.deephaven.engine.plot.Figure) dataset created for plot
       
     *Overload 81*  

@@ -1,10 +1,9 @@
 package io.deephaven.engine.v2;
 
 import io.deephaven.engine.vector.*;
-import io.deephaven.engine.util.DhCharComparisons;
-import io.deephaven.engine.util.DhDoubleComparisons;
-import io.deephaven.engine.util.DhObjectComparisons;
-import io.deephaven.engine.vector.*;
+import io.deephaven.util.compare.CharComparisons;
+import io.deephaven.util.compare.DoubleComparisons;
+import io.deephaven.util.compare.ObjectComparisons;
 import io.deephaven.libs.GroovyStaticImports;
 import io.deephaven.libs.primitives.*;
 import io.deephaven.util.QueryConstants;
@@ -424,7 +423,7 @@ public class QueryTableAggregationTestFormulaStaticMethods {
             if (c != QueryConstants.NULL_CHAR) {
                 if (count++ == 0) {
                     min = c;
-                } else if (DhCharComparisons.lt(c, min)) {
+                } else if (CharComparisons.lt(c, min)) {
                     min = c;
                 }
             }
@@ -443,7 +442,7 @@ public class QueryTableAggregationTestFormulaStaticMethods {
             if (c != QueryConstants.NULL_CHAR) {
                 if (count++ == 0) {
                     max = c;
-                } else if (DhCharComparisons.gt(c, max)) {
+                } else if (CharComparisons.gt(c, max)) {
                     max = c;
                 }
             }
@@ -462,7 +461,7 @@ public class QueryTableAggregationTestFormulaStaticMethods {
             if (v != null) {
                 if (count++ == 0) {
                     min = v;
-                } else if (DhObjectComparisons.lt(v, min)) {
+                } else if (ObjectComparisons.lt(v, min)) {
                     min = v;
                 }
             }
@@ -481,7 +480,7 @@ public class QueryTableAggregationTestFormulaStaticMethods {
             if (v != null) {
                 if (count++ == 0) {
                     max = v;
-                } else if (DhObjectComparisons.gt(v, max)) {
+                } else if (ObjectComparisons.gt(v, max)) {
                     max = v;
                 }
             }
@@ -501,7 +500,7 @@ public class QueryTableAggregationTestFormulaStaticMethods {
                                                    // !Double.isNaN(v)) {
                 if (count++ == 0) {
                     min = v;
-                } else if (DhDoubleComparisons.lt(v, min)) {
+                } else if (DoubleComparisons.lt(v, min)) {
                     min = v;
                 }
             }
@@ -521,7 +520,7 @@ public class QueryTableAggregationTestFormulaStaticMethods {
                                                    // !Double.isNaN(v)) {
                 if (count++ == 0) {
                     min = v;
-                } else if (DhDoubleComparisons.gt(v, min)) {
+                } else if (DoubleComparisons.gt(v, min)) {
                     min = v;
                 }
             }

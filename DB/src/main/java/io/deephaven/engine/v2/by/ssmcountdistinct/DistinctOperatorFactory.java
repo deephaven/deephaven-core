@@ -1,7 +1,7 @@
 package io.deephaven.engine.v2.by.ssmcountdistinct;
 
 import io.deephaven.configuration.Configuration;
-import io.deephaven.engine.tables.utils.DateTime;
+import io.deephaven.engine.time.DateTime;
 import io.deephaven.engine.v2.by.IterativeChunkedAggregationOperator;
 import io.deephaven.engine.v2.by.ssmcountdistinct.count.*;
 import io.deephaven.engine.v2.by.ssmcountdistinct.distinct.*;

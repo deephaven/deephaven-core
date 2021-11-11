@@ -3,7 +3,7 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.v2.sort.megamerge;
 
-import io.deephaven.engine.util.DhByteComparisons;
+import io.deephaven.util.compare.ByteComparisons;
 import io.deephaven.engine.v2.sort.LongMegaMergeKernel;
 import io.deephaven.engine.v2.sort.timsort.TimsortUtilities;
 import io.deephaven.engine.v2.sources.ArrayBackedColumnSource;
@@ -176,7 +176,7 @@ public class ByteLongMegaMergeKernel {
 
     // region comparison functions
     private static int doComparison(byte lhs, byte rhs) {
-        return DhByteComparisons.compare(lhs, rhs);
+        return ByteComparisons.compare(lhs, rhs);
     }
     // endregion comparison functions
 

@@ -10,8 +10,8 @@ import java.util.Objects;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.vector.ObjectVector;
 import io.deephaven.engine.vector.ObjectVectorDirect;
+import io.deephaven.util.compare.ObjectComparisons;
 import io.deephaven.util.type.ArrayTypeUtils;
-import io.deephaven.engine.util.DhObjectComparisons;
 import io.deephaven.engine.v2.by.SumIntChunk;
 import io.deephaven.engine.v2.sort.timsort.TimsortUtilities;
 import io.deephaven.engine.chunk.*;
@@ -1146,7 +1146,7 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
             Assert.gtZero(counts.get(ii), "counts.get(ii)");
             final Object prevValue = valuesToInsert.get(ii - 1);
             final Object curValue = valuesToInsert.get(ii);
-            Assert.assertion(DhObjectComparisons.lt(prevValue, curValue), "DhObjectComparisons.lt(prevValue, curValue)", prevValue, "prevValue", curValue, "curValue");
+            Assert.assertion(ObjectComparisons.lt(prevValue, curValue), "ObjectComparisons.lt(prevValue, curValue)", prevValue, "prevValue", curValue, "curValue");
         }
     }
 
@@ -1284,7 +1284,7 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
     }
 
     private static int doComparison(Object lhs, Object rhs) {
-        return DhObjectComparisons.compare(lhs, rhs);
+        return ObjectComparisons.compare(lhs, rhs);
     }
 
     private static boolean gt(Object lhs, Object rhs) {

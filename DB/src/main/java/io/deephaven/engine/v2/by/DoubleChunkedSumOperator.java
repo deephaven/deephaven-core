@@ -10,7 +10,7 @@ package io.deephaven.engine.v2.by;
 import io.deephaven.engine.rftable.ChunkSource;
 import io.deephaven.engine.rftable.SharedContext;
 import io.deephaven.util.QueryConstants;
-import io.deephaven.engine.util.DhDoubleComparisons;
+import io.deephaven.util.compare.DoubleComparisons;
 import io.deephaven.engine.util.NullSafeAddition;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.DoubleArraySource;
@@ -230,7 +230,7 @@ final class DoubleChunkedSumOperator extends FpChunkedNonNormalCounter implement
             newValue = (double)newSum;
         }
         final double oldValue = resultColumn.getAndSetUnsafe(destination, newValue);
-        return !DhDoubleComparisons.eq(oldValue, newValue);
+        return !DoubleComparisons.eq(oldValue, newValue);
     }
 
     private double currentValueWithSum(long totalNormalCount, long totalNanCount, long totalPositiveInfinityCount, long totalNegativeInfinityCount, double newSum) {

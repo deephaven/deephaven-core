@@ -5,7 +5,7 @@
 package io.deephaven.engine.v2.replay;
 
 import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.utils.DateTime;
+import io.deephaven.engine.time.DateTime;
 
 import java.io.IOException;
 import java.util.TimerTask;

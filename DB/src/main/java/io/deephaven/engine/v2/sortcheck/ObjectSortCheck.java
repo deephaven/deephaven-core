@@ -3,7 +3,7 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.v2.sortcheck;
 
-import io.deephaven.engine.util.DhObjectComparisons;
+import io.deephaven.util.compare.ObjectComparisons;
 import io.deephaven.engine.chunk.Attributes;
 import io.deephaven.engine.chunk.ObjectChunk;
 import io.deephaven.engine.chunk.Chunk;
@@ -33,7 +33,7 @@ public class ObjectSortCheck implements SortCheck {
 
     // region comparison functions
     private static int doComparison(Object lhs, Object rhs) {
-        return DhObjectComparisons.compare(lhs, rhs);
+        return ObjectComparisons.compare(lhs, rhs);
     }
     // endregion comparison functions
 

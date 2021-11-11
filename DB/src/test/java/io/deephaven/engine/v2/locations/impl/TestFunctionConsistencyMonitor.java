@@ -1,6 +1,6 @@
 package io.deephaven.engine.v2.locations.impl;
 
-import io.deephaven.engine.tables.utils.DateTimeUtils;
+import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.util.SafeCloseable;
 import junit.framework.TestCase;
 import org.apache.commons.lang3.mutable.MutableBoolean;

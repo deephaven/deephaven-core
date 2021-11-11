@@ -7,7 +7,7 @@ import io.deephaven.base.verify.AssertionFailure;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.tables.utils.TableTools;
-import io.deephaven.engine.util.DhIntComparisons;
+import io.deephaven.util.compare.IntComparisons;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.engine.util.liveness.LivenessScope;
 import io.deephaven.engine.util.liveness.LivenessScopeStack;
@@ -290,7 +290,7 @@ public class TestIntSegmentedSortedMultiset extends RefreshingTableTestCase {
             final LongChunk<?> counts = ssm.countChunk();
             int totalSize = 0;
 
-            final Map<Integer, Integer> checkMap = new TreeMap<>(DhIntComparisons::compare);
+            final Map<Integer, Integer> checkMap = new TreeMap<>(IntComparisons::compare);
             for (int ii = 0; ii < valueChunk.size(); ++ii) {
                 final int value = valueChunk.get(ii);
                 if (value == NULL_INT && !countNull) {

@@ -3,7 +3,7 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.v2.by.ssmpercentile;
 
-import io.deephaven.engine.util.DhByteComparisons;
+import io.deephaven.util.compare.ByteComparisons;
 import io.deephaven.engine.v2.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.v2.sources.ByteArraySource;
 import io.deephaven.engine.chunk.Attributes;
@@ -66,7 +66,7 @@ public class BytePercentileTypeHelper implements SsmChunkedPercentileOperator.Pe
         final int result = upperBound(asByteChunk, startPosition, startPosition + runLength, hiValue);
 
         final long hiCount = ssmLo.getMaxCount();
-        if (result > startPosition && DhByteComparisons.eq(asByteChunk.get(result - 1), hiValue) && counts.get(result - 1) > hiCount) {
+        if (result > startPosition && ByteComparisons.eq(asByteChunk.get(result - 1), hiValue) && counts.get(result - 1) > hiCount) {
             leftOvers.setValue((int)(counts.get(result - 1) - hiCount));
         } else {
             leftOvers.setValue(0);
@@ -111,7 +111,7 @@ public class BytePercentileTypeHelper implements SsmChunkedPercentileOperator.Pe
     }
 
     private static int doComparison(byte lhs, byte rhs) {
-        return DhByteComparisons.compare(lhs, rhs);
+        return ByteComparisons.compare(lhs, rhs);
     }
 
     private static boolean gt(byte lhs, byte rhs) {

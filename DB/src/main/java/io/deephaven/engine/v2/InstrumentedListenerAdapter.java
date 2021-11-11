@@ -7,7 +7,7 @@ package io.deephaven.engine.v2;
 import io.deephaven.base.cache.RetentionCache;
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.utils.DateTimeUtils;
+import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.engine.util.liveness.Liveness;
 import io.deephaven.engine.v2.utils.AsyncErrorLogger;
 import io.deephaven.engine.v2.utils.AsyncClientErrorNotifier;

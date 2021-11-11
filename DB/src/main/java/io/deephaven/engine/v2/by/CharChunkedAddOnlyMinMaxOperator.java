@@ -5,7 +5,7 @@
 package io.deephaven.engine.v2.by;
 
 import io.deephaven.util.QueryConstants;
-import io.deephaven.engine.util.DhCharComparisons;
+import io.deephaven.util.compare.CharComparisons;
 import io.deephaven.engine.v2.sources.CharacterArraySource;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.chunk.*;
@@ -42,7 +42,7 @@ class CharChunkedAddOnlyMinMaxOperator implements IterativeChunkedAggregationOpe
             if (candidate != QueryConstants.NULL_CHAR) {
                 if (nonNull++ == 0) {
                     value = candidate;
-                } else if (DhCharComparisons.lt(candidate, value)) {
+                } else if (CharComparisons.lt(candidate, value)) {
                     value = candidate;
                 }
             }
@@ -59,7 +59,7 @@ class CharChunkedAddOnlyMinMaxOperator implements IterativeChunkedAggregationOpe
             if (candidate != QueryConstants.NULL_CHAR) {
                 if (nonNull++ == 0) {
                     value = candidate;
-                } else if (DhCharComparisons.gt(candidate, value)) {
+                } else if (CharComparisons.gt(candidate, value)) {
                     value = candidate;
                 }
             }
@@ -69,11 +69,11 @@ class CharChunkedAddOnlyMinMaxOperator implements IterativeChunkedAggregationOpe
     }
 
     private char min(char a, char b) {
-        return DhCharComparisons.lt(a, b) ? a : b;
+        return CharComparisons.lt(a, b) ? a : b;
     }
 
     private char max(char a, char b) {
-        return DhCharComparisons.gt(a, b) ? a : b;
+        return CharComparisons.gt(a, b) ? a : b;
     }
 
     @Override
@@ -131,7 +131,7 @@ class CharChunkedAddOnlyMinMaxOperator implements IterativeChunkedAggregationOpe
         } else {
             result = minimum ? min(chunkValue, oldValue) : max(chunkValue, oldValue);
         }
-        if (!DhCharComparisons.eq(result, oldValue)) {
+        if (!CharComparisons.eq(result, oldValue)) {
             resultColumn.set(destination, result);
             return true;
         } else {

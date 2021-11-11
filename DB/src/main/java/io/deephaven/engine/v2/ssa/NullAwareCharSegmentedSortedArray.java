@@ -3,7 +3,7 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.v2.ssa;
 
-import io.deephaven.engine.util.DhCharComparisons;
+import io.deephaven.util.compare.CharComparisons;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.v2.sort.timsort.TimsortUtilities;
@@ -1425,7 +1425,7 @@ public final class NullAwareCharSegmentedSortedArray implements SegmentedSortedA
 
     // region comparison functions
     private static int doComparison(char lhs, char rhs) {
-        return DhCharComparisons.compare(lhs, rhs);
+        return CharComparisons.compare(lhs, rhs);
     }
     // endregion comparison functions
 

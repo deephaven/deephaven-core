@@ -3,7 +3,7 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.v2.sortcheck;
 
-import io.deephaven.engine.util.DhIntComparisons;
+import io.deephaven.util.compare.IntComparisons;
 import io.deephaven.engine.chunk.Attributes;
 import io.deephaven.engine.chunk.IntChunk;
 import io.deephaven.engine.chunk.Chunk;
@@ -33,7 +33,7 @@ public class IntSortCheck implements SortCheck {
 
     // region comparison functions
     private static int doComparison(int lhs, int rhs) {
-        return DhIntComparisons.compare(lhs, rhs);
+        return IntComparisons.compare(lhs, rhs);
     }
     // endregion comparison functions
 

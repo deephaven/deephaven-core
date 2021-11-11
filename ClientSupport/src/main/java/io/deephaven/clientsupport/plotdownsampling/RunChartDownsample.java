@@ -2,7 +2,7 @@ package io.deephaven.clientsupport.plotdownsampling;
 
 import io.deephaven.base.Function;
 import io.deephaven.engine.structures.RowSequence;
-import io.deephaven.engine.tables.utils.DateTime;
+import io.deephaven.engine.time.DateTime;
 import io.deephaven.engine.v2.utils.*;
 import io.deephaven.hash.KeyedLongObjectHash;
 import io.deephaven.hash.KeyedLongObjectHashMap;

@@ -5,9 +5,9 @@
 package io.deephaven.engine.v2;
 
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.util.DhCharComparisons;
-import io.deephaven.engine.util.DhDoubleComparisons;
-import io.deephaven.engine.util.DhFloatComparisons;
+import io.deephaven.util.compare.CharComparisons;
+import io.deephaven.util.compare.DoubleComparisons;
+import io.deephaven.util.compare.FloatComparisons;
 import io.deephaven.engine.v2.sources.*;
 
 import java.util.function.Predicate;
@@ -46,7 +46,7 @@ public class ColumnComparatorFactory {
             };
         }
         if (provides.test(char.class)) {
-            return (lKey, rKey) -> DhCharComparisons.compare(lcs.getChar(lKey), rcs.getChar(rKey));
+            return (lKey, rKey) -> CharComparisons.compare(lcs.getChar(lKey), rcs.getChar(rKey));
         }
         if (provides.test(short.class)) {
             return (lKey, rKey) -> {
@@ -70,10 +70,10 @@ public class ColumnComparatorFactory {
             };
         }
         if (provides.test(float.class)) {
-            return (lKey, rKey) -> DhFloatComparisons.compare(lcs.getFloat(lKey), rcs.getFloat(rKey));
+            return (lKey, rKey) -> FloatComparisons.compare(lcs.getFloat(lKey), rcs.getFloat(rKey));
         }
         if (provides.test(double.class)) {
-            return (lKey, rKey) -> DhDoubleComparisons.compare(lcs.getDouble(lKey), rcs.getDouble(rKey));
+            return (lKey, rKey) -> DoubleComparisons.compare(lcs.getDouble(lKey), rcs.getDouble(rKey));
         }
         // fall through to Object interface
         return (lKey, rKey) -> {

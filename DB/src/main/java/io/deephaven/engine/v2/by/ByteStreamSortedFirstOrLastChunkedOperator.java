@@ -6,7 +6,7 @@ package io.deephaven.engine.v2.by;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.select.MatchPair;
-import io.deephaven.engine.util.DhByteComparisons;
+import io.deephaven.util.compare.ByteComparisons;
 import io.deephaven.engine.v2.QueryTable;
 import io.deephaven.engine.v2.Listener;
 import io.deephaven.engine.v2.sources.ByteArraySource;
@@ -114,7 +114,7 @@ public class ByteStreamSortedFirstOrLastChunkedOperator extends CopyingPermutedS
         for (int ii = newDestination ? 1 : 0; ii < length; ++ii) {
             final int chunkPos = start + ii;
             final byte value = values.get(chunkPos);
-            final int comparison = DhByteComparisons.compare(value, bestValue);
+            final int comparison = ByteComparisons.compare(value, bestValue);
             // @formatter:off
             // No need to compare relative indices. A stream's logical rowSet is always monotonically increasing.
             final boolean better =

@@ -8,7 +8,7 @@ import io.deephaven.api.ColumnName;
 import io.deephaven.api.agg.Pair;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.io.log.impl.LogOutputStringImpl;
-import io.deephaven.engine.tables.utils.NameValidator;
+import io.deephaven.util.NameValidator;
 
 import io.deephaven.api.JoinAddition;
 import io.deephaven.api.JoinMatch;

@@ -6,7 +6,7 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.v2.sort.timsort;
 
-import io.deephaven.engine.util.DhDoubleComparisons;
+import io.deephaven.util.compare.DoubleComparisons;
 
 import io.deephaven.engine.v2.sort.IntSortKernel;
 import io.deephaven.engine.chunk.*;
@@ -176,7 +176,7 @@ public class DoubleIntTimsortKernel {
 
     // region comparison functions
     private static int doComparison(double lhs, double rhs) {
-        return DhDoubleComparisons.compare(lhs, rhs);
+        return DoubleComparisons.compare(lhs, rhs);
     }
     // endregion comparison functions
 

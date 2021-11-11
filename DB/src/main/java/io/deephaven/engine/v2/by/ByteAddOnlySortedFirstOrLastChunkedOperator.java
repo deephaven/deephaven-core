@@ -5,7 +5,7 @@ package io.deephaven.engine.v2.by;
 
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.select.MatchPair;
-import io.deephaven.engine.util.DhByteComparisons;
+import io.deephaven.util.compare.ByteComparisons;
 import io.deephaven.engine.v2.sources.ByteArraySource;
 import io.deephaven.engine.chunk.Attributes.ChunkLengths;
 import io.deephaven.engine.chunk.Attributes.ChunkPositions;
@@ -89,7 +89,7 @@ public class ByteAddOnlySortedFirstOrLastChunkedOperator extends BaseAddOnlyFirs
         for (int ii = newDestination ? 1 : 0; ii < length; ++ii) {
             final long index = indices.get(start + ii);
             final byte value = values.get(start + ii);
-            final int comparison = DhByteComparisons.compare(value, bestValue);
+            final int comparison = ByteComparisons.compare(value, bestValue);
             // @formatter:off
             final boolean better =
                     ( isFirst && (comparison < 0 || (comparison == 0 && index < bestIndex))) ||

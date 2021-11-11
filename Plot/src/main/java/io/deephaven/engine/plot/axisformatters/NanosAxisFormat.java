@@ -4,8 +4,8 @@
 
 package io.deephaven.engine.plot.axisformatters;
 
-import io.deephaven.engine.tables.utils.DateTime;
-import io.deephaven.engine.tables.utils.TimeZone;
+import io.deephaven.engine.time.DateTime;
+import io.deephaven.engine.time.TimeZone;
 
 import java.io.Serializable;
 import java.text.FieldPosition;

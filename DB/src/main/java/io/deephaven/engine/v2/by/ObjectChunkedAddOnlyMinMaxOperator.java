@@ -7,7 +7,7 @@
 
 package io.deephaven.engine.v2.by;
 
-import io.deephaven.engine.util.DhObjectComparisons;
+import io.deephaven.util.compare.ObjectComparisons;
 import io.deephaven.engine.v2.sources.ObjectArraySource;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.chunk.*;
@@ -45,7 +45,7 @@ class ObjectChunkedAddOnlyMinMaxOperator implements IterativeChunkedAggregationO
             if (candidate != null) {
                 if (nonNull++ == 0) {
                     value = candidate;
-                } else if (DhObjectComparisons.lt(candidate, value)) {
+                } else if (ObjectComparisons.lt(candidate, value)) {
                     value = candidate;
                 }
             }
@@ -62,7 +62,7 @@ class ObjectChunkedAddOnlyMinMaxOperator implements IterativeChunkedAggregationO
             if (candidate != null) {
                 if (nonNull++ == 0) {
                     value = candidate;
-                } else if (DhObjectComparisons.gt(candidate, value)) {
+                } else if (ObjectComparisons.gt(candidate, value)) {
                     value = candidate;
                 }
             }
@@ -72,11 +72,11 @@ class ObjectChunkedAddOnlyMinMaxOperator implements IterativeChunkedAggregationO
     }
 
     private Object min(Object a, Object b) {
-        return DhObjectComparisons.lt(a, b) ? a : b;
+        return ObjectComparisons.lt(a, b) ? a : b;
     }
 
     private Object max(Object a, Object b) {
-        return DhObjectComparisons.gt(a, b) ? a : b;
+        return ObjectComparisons.gt(a, b) ? a : b;
     }
 
     @Override
@@ -134,7 +134,7 @@ class ObjectChunkedAddOnlyMinMaxOperator implements IterativeChunkedAggregationO
         } else {
             result = minimum ? min(chunkValue, oldValue) : max(chunkValue, oldValue);
         }
-        if (!DhObjectComparisons.eq(result, oldValue)) {
+        if (!ObjectComparisons.eq(result, oldValue)) {
             resultColumn.set(destination, result);
             return true;
         } else {

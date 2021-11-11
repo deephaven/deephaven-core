@@ -3,7 +3,7 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.v2.ssa;
 
-import io.deephaven.engine.util.DhFloatComparisons;
+import io.deephaven.util.compare.FloatComparisons;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.v2.sort.timsort.TimsortUtilities;
@@ -1425,7 +1425,7 @@ public final class FloatReverseSegmentedSortedArray implements SegmentedSortedAr
 
     // region comparison functions
     private static int doComparison(float lhs, float rhs) {
-        return -1 * DhFloatComparisons.compare(lhs, rhs);
+        return -1 * FloatComparisons.compare(lhs, rhs);
     }
     // endregion comparison functions
 
@@ -1447,7 +1447,7 @@ public final class FloatReverseSegmentedSortedArray implements SegmentedSortedAr
 
     private static boolean eq(float lhs, float rhs) {
         // region equality function
-        return DhFloatComparisons.eq(lhs, rhs);
+        return FloatComparisons.eq(lhs, rhs);
         // endregion equality function
     }
 

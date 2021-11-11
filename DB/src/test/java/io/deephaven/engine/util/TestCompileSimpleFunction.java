@@ -4,7 +4,7 @@
 
 package io.deephaven.engine.util;
 
-import io.deephaven.engine.tables.utils.DateTimeUtils;
+import io.deephaven.engine.time.DateTimeUtils;
 import junit.framework.TestCase;
 
 import java.util.Collections;

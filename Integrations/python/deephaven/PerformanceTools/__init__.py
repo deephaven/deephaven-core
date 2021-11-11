@@ -42,7 +42,7 @@ def _defineSymbols():
     global _java_type_DateTimeUtils
     if _java_type_DateTimeUtils is None:
         # This will raise an exception if the desired object is not the classpath
-        _java_type_DateTimeUtils = jpy.get_type("io.deephaven.engine.tables.utils.DateTimeUtils")
+        _java_type_DateTimeUtils = jpy.get_type("io.deephaven.engine.time.DateTimeUtils")
 
 
 # every module method should be decorated with @_passThrough

@@ -8,7 +8,7 @@
 package io.deephaven.engine.v2.sources;
 
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.util.DhShortComparisons;
+import io.deephaven.util.compare.ShortComparisons;
 import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.chunk.Attributes.*;
 import io.deephaven.engine.chunk.ResettableWritableChunk;
@@ -101,7 +101,7 @@ public class ShortArraySource extends ArraySourceHelper<Short, short[]> implemen
         final int blockIndex = (int) (index >> LOG_BLOCK_SIZE);
         final int indexWithinBlock = (int) (index & INDEX_MASK);
         final short oldValue = blocks[blockIndex][indexWithinBlock];
-        if (!DhShortComparisons.eq(oldValue, newValue)) {
+        if (!ShortComparisons.eq(oldValue, newValue)) {
             if (shouldRecordPrevious(index, prevBlocks, recycler)) {
                 prevBlocks[blockIndex][indexWithinBlock] = oldValue;
             }

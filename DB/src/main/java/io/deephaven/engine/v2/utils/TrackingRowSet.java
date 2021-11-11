@@ -1,7 +1,7 @@
 package io.deephaven.engine.v2.utils;
 
 import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.tuples.TupleSource;
+import io.deephaven.engine.tuplesource.TupleSource;
 
 import java.util.Map;
 import java.util.Set;

@@ -1,6 +1,7 @@
 import io.deephaven.tools.Tools
 
 configurations {
+    testCompile.extendsFrom junit
 }
 
 sourceSets {
@@ -17,6 +18,11 @@ sourceSets {
 }
 
 dependencies {
+    compile 'joda-time:joda-time:2.10',
+            project(':Base'),
+            project(':Util')
+
+    testCompile project(path: ':Base', configuration: 'tests')
 }
 
 spotless {

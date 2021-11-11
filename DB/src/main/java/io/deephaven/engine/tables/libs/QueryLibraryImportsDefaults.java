@@ -4,10 +4,10 @@ import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.engine.rftable.Context;
 import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.tables.lang.LanguageFunctionUtil;
-import io.deephaven.engine.tables.utils.DateTime;
-import io.deephaven.engine.tables.utils.DateTimeUtils;
-import io.deephaven.engine.tables.utils.Period;
-import io.deephaven.engine.tables.utils.TimeZone;
+import io.deephaven.engine.time.DateTime;
+import io.deephaven.engine.time.DateTimeUtils;
+import io.deephaven.engine.time.Period;
+import io.deephaven.engine.time.TimeZone;
 import io.deephaven.engine.util.ColorUtilImpl;
 import io.deephaven.engine.v2.utils.*;
 import io.deephaven.util.type.ArrayTypeUtils;
@@ -108,7 +108,7 @@ public class QueryLibraryImportsDefaults implements QueryLibraryImports {
                 io.deephaven.gui.color.Color.class,
                 ColorUtilImpl.class,
                 io.deephaven.engine.tables.verify.TableAssertions.class,
-                io.deephaven.util.calendar.StaticCalendarMethods.class,
+                io.deephaven.engine.time.calendar.StaticCalendarMethods.class,
                 io.deephaven.engine.chunk.Attributes.class));
     }
 }

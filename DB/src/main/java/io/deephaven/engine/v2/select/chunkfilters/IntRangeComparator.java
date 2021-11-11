@@ -3,7 +3,7 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.v2.select.chunkfilters;
 
-import io.deephaven.engine.util.DhIntComparisons;
+import io.deephaven.util.compare.IntComparisons;
 import io.deephaven.engine.v2.select.ChunkFilter;
 import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.chunk.Attributes.OrderedRowKeys;
@@ -33,7 +33,7 @@ public class IntRangeComparator {
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
                 final int value = values.get(ii);
-                if (DhIntComparisons.geq(value, lower) && DhIntComparisons.leq(value, upper)) {
+                if (IntComparisons.geq(value, lower) && IntComparisons.leq(value, upper)) {
                     results.add(keys.get(ii));
                 }
             }
@@ -49,7 +49,7 @@ public class IntRangeComparator {
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
                 final int value = values.get(ii);
-                if (DhIntComparisons.geq(value, lower) && DhIntComparisons.lt(value, upper)) {
+                if (IntComparisons.geq(value, lower) && IntComparisons.lt(value, upper)) {
                     results.add(keys.get(ii));
                 }
             }
@@ -65,7 +65,7 @@ public class IntRangeComparator {
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
                 final int value = values.get(ii);
-                if (DhIntComparisons.gt(value, lower) && DhIntComparisons.leq(value, upper)) {
+                if (IntComparisons.gt(value, lower) && IntComparisons.leq(value, upper)) {
                     results.add(keys.get(ii));
                 }
             }
@@ -81,7 +81,7 @@ public class IntRangeComparator {
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
                 final int value = values.get(ii);
-                if (DhIntComparisons.gt(value, lower) && DhIntComparisons.lt(value, upper)) {
+                if (IntComparisons.gt(value, lower) && IntComparisons.lt(value, upper)) {
                     results.add(keys.get(ii));
                 }
             }

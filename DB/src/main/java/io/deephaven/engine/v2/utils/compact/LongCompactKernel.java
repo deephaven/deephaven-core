@@ -3,7 +3,7 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.v2.utils.compact;
 
-import io.deephaven.engine.util.DhLongComparisons;
+import io.deephaven.util.compare.LongComparisons;
 import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.chunk.Attributes.Any;
 
@@ -74,7 +74,7 @@ public class LongCompactKernel implements CompactKernel {
             if (!countNull && shouldIgnore(nextValue)) {
                 continue;
             }
-            if (wpos == -1 || !DhLongComparisons.eq(nextValue, lastValue)) {
+            if (wpos == -1 || !LongComparisons.eq(nextValue, lastValue)) {
                 valueChunk.set(++wpos + start, nextValue);
                 counts.set(wpos + start, currentCount = 1);
                 lastValue = nextValue;

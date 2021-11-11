@@ -21,8 +21,10 @@ task all { // TODO-RWC: Find stragglers and add them. Relocate mains to here.
     dependsOn Tasks.registerMainExecTask(project, 'replicateSources', 'io.deephaven.replicators.ReplicateSourcesAndChunks')
     dependsOn Tasks.registerMainExecTask(project, 'replicateSourcesTest', 'io.deephaven.replicators.ReplicateSourcesAndChunkTest')
 
-    dependsOn Tasks.registerMainExecTask(project, 'replicateHashing', 'io.deephaven.engine.chunk.util.hashing.ReplicateHashing')
+    dependsOn Tasks.registerMainExecTask(project, 'replicateHashing', 'io.deephaven.replicators.ReplicateHashing')
 
+    dependsOn Tasks.registerMainExecTask(project, 'replicateTuples', 'io.deephaven.replicators.TupleCodeGenerator')
+    dependsOn Tasks.registerMainExecTask(project, 'replicateTupleSources', 'io.deephaven.replicators.TupleSourceCodeGenerator')
 
     dependsOn Tasks.registerMainExecTask(project, 'replicateSortKernelTests', 'io.deephaven.engine.v2.sort.timsort.ReplicateSortKernelTests')
     dependsOn Tasks.registerMainExecTask(project, 'replicateSortKernel', 'io.deephaven.engine.v2.sort.ReplicateSortKernel')

@@ -3,7 +3,7 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.v2.ssa;
 
-import io.deephaven.engine.util.DhDoubleComparisons;
+import io.deephaven.util.compare.DoubleComparisons;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.v2.sort.timsort.TimsortUtilities;
@@ -1425,7 +1425,7 @@ public final class DoubleReverseSegmentedSortedArray implements SegmentedSortedA
 
     // region comparison functions
     private static int doComparison(double lhs, double rhs) {
-        return -1 * DhDoubleComparisons.compare(lhs, rhs);
+        return -1 * DoubleComparisons.compare(lhs, rhs);
     }
     // endregion comparison functions
 
@@ -1447,7 +1447,7 @@ public final class DoubleReverseSegmentedSortedArray implements SegmentedSortedA
 
     private static boolean eq(double lhs, double rhs) {
         // region equality function
-        return DhDoubleComparisons.eq(lhs, rhs);
+        return DoubleComparisons.eq(lhs, rhs);
         // endregion equality function
     }
 

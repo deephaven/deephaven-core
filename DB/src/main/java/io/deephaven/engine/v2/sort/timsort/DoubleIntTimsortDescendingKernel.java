@@ -6,7 +6,7 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.v2.sort.timsort;
 
-import io.deephaven.engine.util.DhDoubleComparisons;
+import io.deephaven.util.compare.DoubleComparisons;
 
 import io.deephaven.engine.v2.sort.IntSortKernel;
 import io.deephaven.engine.chunk.*;
@@ -177,7 +177,7 @@ public class DoubleIntTimsortDescendingKernel {
     // region comparison functions
     // note that this is a descending kernel, thus the comparisons here are backwards (e.g., the lt function is in terms of the sort direction, so is implemented by gt)
     private static int doComparison(double lhs, double rhs) {
-        return -1 * DhDoubleComparisons.compare(lhs, rhs);
+        return -1 * DoubleComparisons.compare(lhs, rhs);
     }
     // endregion comparison functions
 

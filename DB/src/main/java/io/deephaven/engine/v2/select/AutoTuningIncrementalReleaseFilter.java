@@ -5,13 +5,13 @@
 package io.deephaven.engine.v2.select;
 
 import io.deephaven.engine.tables.live.UpdateGraphProcessor;
-import io.deephaven.engine.tables.utils.DateTime;
+import io.deephaven.engine.time.DateTime;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.clock.RealTimeClock;
 import io.deephaven.util.process.ProcessEnvironment;
-import io.deephaven.engine.v2.utils.ClockTimeProvider;
+import io.deephaven.engine.time.ClockTimeProvider;
 import io.deephaven.engine.v2.utils.TerminalNotification;
-import io.deephaven.engine.v2.utils.TimeProvider;
+import io.deephaven.engine.time.TimeProvider;
 import io.deephaven.util.annotations.ScriptApi;
 import org.jetbrains.annotations.NotNull;
 

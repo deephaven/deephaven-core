@@ -1,6 +1,6 @@
 package io.deephaven.engine.v2.sort.megamerge;
 
-import io.deephaven.engine.util.DhCharComparisons;
+import io.deephaven.util.compare.CharComparisons;
 import io.deephaven.engine.v2.sort.LongMegaMergeKernel;
 import io.deephaven.engine.v2.sort.timsort.TimsortUtilities;
 import io.deephaven.engine.v2.sources.ArrayBackedColumnSource;
@@ -173,7 +173,7 @@ public class CharLongMegaMergeKernel {
 
     // region comparison functions
     private static int doComparison(char lhs, char rhs) {
-        return DhCharComparisons.compare(lhs, rhs);
+        return CharComparisons.compare(lhs, rhs);
     }
     // endregion comparison functions
 

@@ -5,11 +5,11 @@
 package io.deephaven.engine.v2.utils;
 
 import io.deephaven.base.verify.Require;
-import io.deephaven.engine.util.tuples.EmptyTuple;
+import io.deephaven.engine.tuple.EmptyTuple;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.LogicalClock;
-import io.deephaven.engine.v2.tuples.TupleSource;
-import io.deephaven.engine.v2.tuples.TupleSourceFactory;
+import io.deephaven.engine.tuplesource.TupleSource;
+import io.deephaven.engine.tuplesource.TupleSourceFactory;
 
 import java.util.*;
 import java.util.function.BiConsumer;

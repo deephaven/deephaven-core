@@ -1,7 +1,7 @@
 package io.deephaven.engine.v2.by.ssmpercentile;
 
 import io.deephaven.util.BooleanUtils;
-import io.deephaven.engine.util.DhObjectComparisons;
+import io.deephaven.util.compare.ObjectComparisons;
 import io.deephaven.engine.v2.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.v2.sources.BooleanArraySource;
 import io.deephaven.engine.chunk.Attributes;
@@ -109,7 +109,7 @@ public class BooleanPercentileTypeHelper implements SsmChunkedPercentileOperator
     }
 
     private static int doComparison(Object lhs, Object rhs) {
-        return DhObjectComparisons.compare(lhs, rhs);
+        return ObjectComparisons.compare(lhs, rhs);
     }
 
     private static boolean gt(Object lhs, Object rhs) {

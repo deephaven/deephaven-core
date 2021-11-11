@@ -279,7 +279,7 @@ public class ReplicateSourcesAndChunks {
                         "    public final void fillWithBoxedValue(int offset, int size, Object value) {\n" +
                         "        fillWithValue(offset,size, (T)value);\n" +
                         "    }"));
-        lines = ReplicateUtilities.addImport(lines, "io.deephaven.engine.util.DhObjectComparisons");
+        lines = ReplicateUtilities.addImport(lines, "io.deephaven.engine.util.ObjectComparisons");
         lines = ReplicateUtilities.replaceRegion(lines, "sort", Arrays.asList(
                 "    private static final Comparator<Comparable<Object>> COMPARATOR = Comparator.nullsFirst(Comparator.naturalOrder());",
                 "",

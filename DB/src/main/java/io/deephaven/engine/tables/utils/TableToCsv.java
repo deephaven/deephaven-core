@@ -5,6 +5,7 @@
 package io.deephaven.engine.tables.utils;
 
 import io.deephaven.engine.tables.Table;
+import io.deephaven.engine.time.TimeZone;
 
 import java.io.IOException;
 

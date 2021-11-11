@@ -202,7 +202,7 @@ class TestTableDataframeConversion(unittest.TestCase):
                          ('longCol', 'long'),
                          ('floatCol', 'float'),
                          ('doubleCol', 'double'),
-                         ('datetimeCol', 'class io.deephaven.engine.tables.utils.DateTime'),
+                         ('datetimeCol', 'class io.deephaven.engine.time.DateTime'),
                          ('stringCol', 'class java.lang.String')
                          ]:
             with self.subTest(msg="data type for column {}".format(col)):
@@ -224,7 +224,7 @@ class TestTableDataframeConversion(unittest.TestCase):
         with self.subTest(msg="entry for column doubleCol"):
             self.assertEqual(getElement(tab, 'doubleCol'), 0)  # I'm guessing that Double() -> 0
         with self.subTest(msg="entry for column datetimeCol"):
-            cls = jpy.get_type('io.deephaven.engine.tables.utils.DateTime')
+            cls = jpy.get_type('io.deephaven.engine.time.DateTime')
             self.assertEqual(getElement(tab, 'datetimeCol'), cls(0))
         with self.subTest(msg="entry for column stringCol"):
             self.assertEqual(getElement(tab, 'stringCol'), u'test')

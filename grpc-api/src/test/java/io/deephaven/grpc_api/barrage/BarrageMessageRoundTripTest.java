@@ -14,7 +14,7 @@ import io.deephaven.client.impl.BarrageSubscriptionImpl;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.tables.live.UpdateSourceCombiner;
-import io.deephaven.engine.tables.utils.DateTimeUtils;
+import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.engine.tables.utils.TableDiff;
 import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.v2.*;

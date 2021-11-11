@@ -3,7 +3,7 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.v2.sortcheck;
 
-import io.deephaven.engine.util.DhShortComparisons;
+import io.deephaven.util.compare.ShortComparisons;
 import io.deephaven.engine.chunk.Attributes;
 import io.deephaven.engine.chunk.ShortChunk;
 import io.deephaven.engine.chunk.Chunk;
@@ -33,7 +33,7 @@ public class ShortSortCheck implements SortCheck {
 
     // region comparison functions
     private static int doComparison(short lhs, short rhs) {
-        return DhShortComparisons.compare(lhs, rhs);
+        return ShortComparisons.compare(lhs, rhs);
     }
     // endregion comparison functions
 

@@ -13,7 +13,7 @@ import io.deephaven.engine.tables.StringSetWrapper;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.libs.StringSet;
 import io.deephaven.util.type.ArrayTypeUtils;
-import io.deephaven.engine.tables.utils.DateTime;
+import io.deephaven.engine.time.DateTime;
 import io.deephaven.engine.tables.utils.TableDiff;
 import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.util.liveness.LivenessScopeStack;

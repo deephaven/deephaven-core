@@ -2,10 +2,10 @@ package io.deephaven.grpc_api.session;
 
 import com.github.f4b6a3.uuid.UuidCreator;
 import com.google.protobuf.ByteString;
-import io.deephaven.engine.tables.utils.DateTime;
+import io.deephaven.engine.time.DateTime;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.configuration.Configuration;
-import io.deephaven.engine.tables.utils.DateTimeUtils;
+import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.grpc_api.util.Scheduler;
 import io.deephaven.proto.backplane.grpc.TerminationNotificationResponse;
 import io.deephaven.util.auth.AuthContext;

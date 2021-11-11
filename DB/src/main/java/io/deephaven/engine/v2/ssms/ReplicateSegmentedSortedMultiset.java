@@ -2,8 +2,8 @@ package io.deephaven.engine.v2.ssms;
 
 import gnu.trove.set.hash.THashSet;
 import io.deephaven.engine.vector.ObjectVectorDirect;
-import io.deephaven.engine.tables.utils.DateTime;
-import io.deephaven.engine.tables.utils.DateTimeUtils;
+import io.deephaven.engine.time.DateTime;
+import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.engine.v2.by.ssmcountdistinct.DateTimeSsmSourceWrapper;
 import io.deephaven.engine.v2.sort.ReplicateSortKernel;
 import io.deephaven.engine.v2.sources.BoxedColumnSource;

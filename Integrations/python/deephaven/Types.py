@@ -113,8 +113,8 @@ def _defineSymbols():
         string = DataType(_qst_type_.stringType())
         bigdecimal = _typeFromJavaClassName('java.math.BigDecimal')
         stringset =  _typeFromJavaClassName('io.deephaven.engine.tables.libs.StringSet')
-        datetime = _typeFromJavaClassName('io.deephaven.engine.tables.utils.DateTime')
-        timeperiod = _typeFromJavaClassName('io.deephaven.engine.tables.utils.Period')
+        datetime = _typeFromJavaClassName('io.deephaven.engine.time.DateTime')
+        timeperiod = _typeFromJavaClassName('io.deephaven.engine.time.Period')
 
         # Array types.
         byte_array = DataType(byte.arrayType())
@@ -142,8 +142,8 @@ def _defineSymbols():
             string : jpy.get_type('java.lang.String'),
             bigdecimal : jpy.get_type('java.math.BigDecimal'),
             stringset : jpy.get_type('io.deephaven.engine.tables.libs.StringSet'),
-            datetime : jpy.get_type('io.deephaven.engine.tables.utils.DateTime'),
-            timeperiod : jpy.get_type('io.deephaven.engine.tables.utils.Period'),
+            datetime : jpy.get_type('io.deephaven.engine.time.DateTime'),
+            timeperiod : jpy.get_type('io.deephaven.engine.time.Period'),
             byte_array : jpy.get_type('[B'),
             short_array : jpy.get_type('[S'),
             int_array : jpy.get_type('[I'),

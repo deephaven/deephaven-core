@@ -2,7 +2,7 @@ package io.deephaven.engine.v2.locations.impl;
 
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.log.LogOutputAppendable;
-import io.deephaven.engine.util.DhObjectComparisons;
+import io.deephaven.util.compare.ObjectComparisons;
 import io.deephaven.engine.v2.locations.ImmutableTableLocationKey;
 import io.deephaven.engine.v2.locations.UnknownPartitionKeyException;
 import org.jetbrains.annotations.NotNull;
@@ -137,7 +137,7 @@ public abstract class PartitionedTableLocationKey implements ImmutableTableLocat
                 if (p2Value == MISSING_PARTITION_VALUE) {
                     throw new UnknownPartitionKeyException(partitionKey);
                 }
-                final int comparisonResult = DhObjectComparisons.compare(p1Value, p2Value);
+                final int comparisonResult = ObjectComparisons.compare(p1Value, p2Value);
                 if (comparisonResult != 0) {
                     return comparisonResult;
                 }

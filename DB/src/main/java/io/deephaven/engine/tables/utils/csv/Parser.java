@@ -1,6 +1,6 @@
 package io.deephaven.engine.tables.utils.csv;
 
-import io.deephaven.engine.tables.utils.DateTimeUtils;
+import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.qst.type.Type;
 
 import java.time.Duration;

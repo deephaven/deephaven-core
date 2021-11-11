@@ -2,8 +2,8 @@ package io.deephaven.grpc_api.util;
 
 import com.google.common.collect.Ordering;
 import com.google.common.collect.TreeMultimap;
-import io.deephaven.engine.tables.utils.DateTime;
-import io.deephaven.engine.tables.utils.DateTimeUtils;
+import io.deephaven.engine.time.DateTime;
+import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import org.jetbrains.annotations.NotNull;

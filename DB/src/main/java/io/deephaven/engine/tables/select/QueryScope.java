@@ -5,12 +5,15 @@
 package io.deephaven.engine.tables.select;
 
 import io.deephaven.base.CompareUtils;
+import io.deephaven.engine.time.DateTime;
+import io.deephaven.engine.time.DateTimeUtils;
+import io.deephaven.engine.time.Period;
 import io.deephaven.hash.KeyedObjectHashMap;
 import io.deephaven.hash.KeyedObjectKey;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.log.LogOutputAppendable;
-import io.deephaven.engine.tables.utils.*;
 import io.deephaven.engine.util.ScriptSession;
+import io.deephaven.util.NameValidator;
 import io.deephaven.util.QueryConstants;
 import org.jetbrains.annotations.NotNull;
 

@@ -1,7 +1,7 @@
 package io.deephaven.engine.tables.utils.csv;
 
 import io.deephaven.annotations.BuildableStyle;
-import io.deephaven.engine.tables.utils.NameValidator;
+import io.deephaven.util.NameValidator;
 import io.deephaven.qst.array.Array;
 import io.deephaven.qst.array.ArrayBuilder;
 import io.deephaven.qst.table.NewTable;
@@ -12,7 +12,6 @@ import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
 import org.immutables.value.Value.Default;
 import org.immutables.value.Value.Immutable;
-import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.io.InputStream;

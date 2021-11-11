@@ -6,7 +6,7 @@ import io.deephaven.appmode.CustomField;
 import io.deephaven.appmode.Field;
 import io.deephaven.engine.plot.FigureWidget;
 import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.utils.DateTimeUtils;
+import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.engine.util.ScriptSession;
 import io.deephaven.engine.util.liveness.LivenessArtifact;
 import io.deephaven.engine.util.liveness.LivenessReferent;

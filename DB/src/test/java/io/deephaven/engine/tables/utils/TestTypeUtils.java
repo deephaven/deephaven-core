@@ -1,6 +1,7 @@
 package io.deephaven.engine.tables.utils;
 
 import io.deephaven.base.verify.Require;
+import io.deephaven.engine.time.DateTime;
 import junit.framework.TestCase;
 import org.apache.commons.lang3.ArrayUtils;
 

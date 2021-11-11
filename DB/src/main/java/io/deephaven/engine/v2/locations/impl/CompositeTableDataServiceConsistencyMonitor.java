@@ -1,6 +1,6 @@
 package io.deephaven.engine.v2.locations.impl;
 
-import io.deephaven.engine.tables.utils.DateTimeUtils;
+import io.deephaven.engine.time.DateTimeUtils;
 
 import java.util.function.Supplier;
 

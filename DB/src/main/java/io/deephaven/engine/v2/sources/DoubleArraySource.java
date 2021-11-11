@@ -8,7 +8,7 @@
 package io.deephaven.engine.v2.sources;
 
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.util.DhDoubleComparisons;
+import io.deephaven.util.compare.DoubleComparisons;
 import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.chunk.Attributes.*;
 import io.deephaven.engine.chunk.ResettableWritableChunk;
@@ -101,7 +101,7 @@ public class DoubleArraySource extends ArraySourceHelper<Double, double[]> imple
         final int blockIndex = (int) (index >> LOG_BLOCK_SIZE);
         final int indexWithinBlock = (int) (index & INDEX_MASK);
         final double oldValue = blocks[blockIndex][indexWithinBlock];
-        if (!DhDoubleComparisons.eq(oldValue, newValue)) {
+        if (!DoubleComparisons.eq(oldValue, newValue)) {
             if (shouldRecordPrevious(index, prevBlocks, recycler)) {
                 prevBlocks[blockIndex][indexWithinBlock] = oldValue;
             }

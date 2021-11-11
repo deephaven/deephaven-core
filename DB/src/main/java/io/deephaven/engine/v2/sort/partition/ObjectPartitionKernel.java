@@ -5,7 +5,7 @@ package io.deephaven.engine.v2.sort.partition;
 
 import java.util.Objects;
 
-import io.deephaven.engine.util.tuples.generated.ObjectLongTuple;
+import io.deephaven.engine.tuple.generated.ObjectLongTuple;
 import io.deephaven.engine.v2.sort.timsort.ObjectLongTimsortKernel;
 import io.deephaven.engine.v2.sort.LongSortKernel;
 import io.deephaven.engine.v2.sources.ColumnSource;

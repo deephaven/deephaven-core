@@ -3,7 +3,7 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.v2.select.chunkfilters;
 
-import io.deephaven.engine.util.DhDoubleComparisons;
+import io.deephaven.util.compare.DoubleComparisons;
 import io.deephaven.engine.v2.select.ChunkFilter;
 import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.chunk.Attributes.OrderedRowKeys;
@@ -33,7 +33,7 @@ public class DoubleRangeComparator {
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
                 final double value = values.get(ii);
-                if (DhDoubleComparisons.geq(value, lower) && DhDoubleComparisons.leq(value, upper)) {
+                if (DoubleComparisons.geq(value, lower) && DoubleComparisons.leq(value, upper)) {
                     results.add(keys.get(ii));
                 }
             }
@@ -49,7 +49,7 @@ public class DoubleRangeComparator {
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
                 final double value = values.get(ii);
-                if (DhDoubleComparisons.geq(value, lower) && DhDoubleComparisons.lt(value, upper)) {
+                if (DoubleComparisons.geq(value, lower) && DoubleComparisons.lt(value, upper)) {
                     results.add(keys.get(ii));
                 }
             }
@@ -65,7 +65,7 @@ public class DoubleRangeComparator {
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
                 final double value = values.get(ii);
-                if (DhDoubleComparisons.gt(value, lower) && DhDoubleComparisons.leq(value, upper)) {
+                if (DoubleComparisons.gt(value, lower) && DoubleComparisons.leq(value, upper)) {
                     results.add(keys.get(ii));
                 }
             }
@@ -81,7 +81,7 @@ public class DoubleRangeComparator {
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
                 final double value = values.get(ii);
-                if (DhDoubleComparisons.gt(value, lower) && DhDoubleComparisons.lt(value, upper)) {
+                if (DoubleComparisons.gt(value, lower) && DoubleComparisons.lt(value, upper)) {
                     results.add(keys.get(ii));
                 }
             }

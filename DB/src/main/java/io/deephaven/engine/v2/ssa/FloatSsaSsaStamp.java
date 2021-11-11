@@ -3,7 +3,7 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.v2.ssa;
 
-import io.deephaven.engine.util.DhFloatComparisons;
+import io.deephaven.util.compare.FloatComparisons;
 
 import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.chunk.Attributes.RowKeys;
@@ -261,7 +261,7 @@ public class FloatSsaSsaStamp implements SsaSsaStamp {
 
     // region comparison functions
     private static int doComparison(float lhs, float rhs) {
-        return DhFloatComparisons.compare(lhs, rhs);
+        return FloatComparisons.compare(lhs, rhs);
     }
     // endregion comparison functions
 

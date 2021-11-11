@@ -1,7 +1,7 @@
 package io.deephaven.engine.v2.sort;
 
 import io.deephaven.compilertools.ReplicateUtilities;
-import io.deephaven.engine.util.DhCharComparisons;
+import io.deephaven.util.compare.CharComparisons;
 import io.deephaven.util.QueryConstants;
 import org.apache.commons.io.FileUtils;
 import org.jetbrains.annotations.NotNull;
@@ -311,7 +311,7 @@ public class ReplicateSortKernel {
 
         List<String> lines = FileUtils.readLines(file, Charset.defaultCharset());
 
-        lines = ReplicateUtilities.addImport(lines, QueryConstants.class, DhCharComparisons.class);
+        lines = ReplicateUtilities.addImport(lines, QueryConstants.class, CharComparisons.class);
 
         lines = globalReplacements(fixupCharNullComparisons(lines, ascending), oldName, newName);
 
@@ -327,7 +327,7 @@ public class ReplicateSortKernel {
     public static List<String> fixupCharNullComparisons(List<String> lines, boolean ascending) {
         lines = replaceRegion(lines, "comparison functions",
                 Arrays.asList("    private static int doComparison(char lhs, char rhs) {",
-                        "        return " + (ascending ? "" : "-1 * ") + "DhCharComparisons.compare(lhs, rhs);",
+                        "        return " + (ascending ? "" : "-1 * ") + "CharComparisons.compare(lhs, rhs);",
                         "    }"));
         return lines;
     }

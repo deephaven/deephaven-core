@@ -7,12 +7,12 @@
 
 package io.deephaven.engine.v2.by;
 
-import io.deephaven.engine.tables.utils.DateTime;
+import io.deephaven.engine.time.DateTime;
 import io.deephaven.engine.v2.sources.DateTimeArraySource;
 import io.deephaven.engine.v2.sources.LongArraySource;
 
 import io.deephaven.util.QueryConstants;
-import io.deephaven.engine.util.DhLongComparisons;
+import io.deephaven.util.compare.LongComparisons;
 import io.deephaven.engine.v2.sources.AbstractLongArraySource;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.chunk.*;
@@ -50,7 +50,7 @@ class LongChunkedAddOnlyMinMaxOperator implements IterativeChunkedAggregationOpe
             if (candidate != QueryConstants.NULL_LONG) {
                 if (nonNull++ == 0) {
                     value = candidate;
-                } else if (DhLongComparisons.lt(candidate, value)) {
+                } else if (LongComparisons.lt(candidate, value)) {
                     value = candidate;
                 }
             }
@@ -67,7 +67,7 @@ class LongChunkedAddOnlyMinMaxOperator implements IterativeChunkedAggregationOpe
             if (candidate != QueryConstants.NULL_LONG) {
                 if (nonNull++ == 0) {
                     value = candidate;
-                } else if (DhLongComparisons.gt(candidate, value)) {
+                } else if (LongComparisons.gt(candidate, value)) {
                     value = candidate;
                 }
             }
@@ -77,11 +77,11 @@ class LongChunkedAddOnlyMinMaxOperator implements IterativeChunkedAggregationOpe
     }
 
     private long min(long a, long b) {
-        return DhLongComparisons.lt(a, b) ? a : b;
+        return LongComparisons.lt(a, b) ? a : b;
     }
 
     private long max(long a, long b) {
-        return DhLongComparisons.gt(a, b) ? a : b;
+        return LongComparisons.gt(a, b) ? a : b;
     }
 
     @Override
@@ -139,7 +139,7 @@ class LongChunkedAddOnlyMinMaxOperator implements IterativeChunkedAggregationOpe
         } else {
             result = minimum ? min(chunkValue, oldValue) : max(chunkValue, oldValue);
         }
-        if (!DhLongComparisons.eq(result, oldValue)) {
+        if (!LongComparisons.eq(result, oldValue)) {
             resultColumn.set(destination, result);
             return true;
         } else {

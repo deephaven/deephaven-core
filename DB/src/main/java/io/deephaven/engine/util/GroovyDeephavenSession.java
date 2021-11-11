@@ -16,7 +16,7 @@ import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.exceptions.QueryCancellationException;
 import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.tables.select.QueryScope;
-import io.deephaven.engine.tables.utils.NameValidator;
+import io.deephaven.util.NameValidator;
 import io.deephaven.engine.util.scripts.ScriptPathLoader;
 import io.deephaven.engine.util.scripts.ScriptPathLoaderState;
 import io.deephaven.engine.util.scripts.StateOverrideScriptPathLoader;
@@ -515,20 +515,20 @@ public class GroovyDeephavenSession extends AbstractScriptSession implements Scr
                 "import java.lang.reflect.Array;\n" +
                 "import io.deephaven.util.type.TypeUtils;\n" +
                 "import io.deephaven.util.type.ArrayTypeUtils;\n" +
-                "import io.deephaven.engine.tables.utils.DateTime;\n" +
-                "import io.deephaven.engine.tables.utils.DateTimeUtils;\n" +
+                "import io.deephaven.engine.time.DateTime;\n" +
+                "import io.deephaven.engine.time.DateTimeUtils;\n" +
                 "import io.deephaven.base.string.cache.CompressedString;\n" +
                 "import static io.deephaven.base.string.cache.CompressedString.compress;\n" +
                 "import org.joda.time.LocalTime;\n" +
-                "import io.deephaven.engine.tables.utils.Period;\n" +
+                "import io.deephaven.engine.time.Period;\n" +
                 "import io.deephaven.engine.tables.select.Param;\n" +
                 "import io.deephaven.engine.tables.select.QueryScope;\n" +
                 "import java.util.*;\n" +
                 "import java.lang.*;\n" +
                 "import static io.deephaven.util.QueryConstants.*;\n" +
                 "import static io.deephaven.libs.GroovyStaticImports.*;\n" +
-                "import static io.deephaven.engine.tables.utils.DateTimeUtils.*;\n" +
-                "import static io.deephaven.engine.tables.utils.TimeZone.*;\n" +
+                "import static io.deephaven.engine.time.DateTimeUtils.*;\n" +
+                "import static io.deephaven.engine.time.TimeZone.*;\n" +
                 "import static io.deephaven.engine.tables.lang.LanguageFunctionUtil.*;\n" +
                 "import static io.deephaven.engine.v2.by.ComboAggregateFactory.*;\n" +
                 StringUtils.joinStrings(scriptImports, "\n") + "\n";

@@ -17,6 +17,7 @@ import io.deephaven.engine.tables.live.NotificationQueue;
 import io.deephaven.engine.tables.remote.*;
 import io.deephaven.engine.tables.select.*;
 import io.deephaven.engine.tables.utils.*;
+import io.deephaven.engine.time.DateTime;
 import io.deephaven.engine.util.ColumnFormattingValues;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.engine.util.liveness.LivenessNode;

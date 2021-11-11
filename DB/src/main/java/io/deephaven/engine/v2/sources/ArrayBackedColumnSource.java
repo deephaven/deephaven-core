@@ -6,7 +6,7 @@ package io.deephaven.engine.v2.sources;
 
 import io.deephaven.engine.rftable.DefaultGetContext;
 import io.deephaven.util.type.ArrayTypeUtils;
-import io.deephaven.engine.tables.utils.DateTime;
+import io.deephaven.engine.time.DateTime;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.chunk.Attributes.OrderedRowKeyRanges;

@@ -5,7 +5,7 @@
 package io.deephaven.engine.v2.sources;
 
 import io.deephaven.engine.rftable.DefaultChunkSource;
-import io.deephaven.engine.tables.utils.DateTime;
+import io.deephaven.engine.time.DateTime;
 import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.chunk.Attributes.Values;
 import io.deephaven.engine.rftable.chunkfillers.chunkfillers.ChunkFiller;

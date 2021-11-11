@@ -3,16 +3,16 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.v2.ssms;
 
-import io.deephaven.engine.tables.utils.DateTime;
+import io.deephaven.engine.time.DateTime;
 import io.deephaven.engine.vector.ObjectVectorDirect;
-import io.deephaven.engine.tables.utils.DateTimeUtils;
+import io.deephaven.engine.time.DateTimeUtils;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.vector.LongVector;
 import io.deephaven.engine.vector.LongVectorDirect;
 import io.deephaven.engine.vector.ObjectVector;
+import io.deephaven.util.compare.LongComparisons;
 import io.deephaven.util.type.ArrayTypeUtils;
-import io.deephaven.engine.util.DhLongComparisons;
 import io.deephaven.engine.v2.by.SumIntChunk;
 import io.deephaven.engine.v2.sort.timsort.TimsortUtilities;
 import io.deephaven.engine.chunk.*;
@@ -1141,7 +1141,7 @@ public final class LongSegmentedSortedMultiset implements SegmentedSortedMultiSe
             Assert.gtZero(counts.get(ii), "counts.get(ii)");
             final long prevValue = valuesToInsert.get(ii - 1);
             final long curValue = valuesToInsert.get(ii);
-            Assert.assertion(DhLongComparisons.lt(prevValue, curValue), "DhLongComparisons.lt(prevValue, curValue)", prevValue, "prevValue", curValue, "curValue");
+            Assert.assertion(LongComparisons.lt(prevValue, curValue), "LongComparisons.lt(prevValue, curValue)", prevValue, "prevValue", curValue, "curValue");
         }
     }
 
@@ -1279,7 +1279,7 @@ public final class LongSegmentedSortedMultiset implements SegmentedSortedMultiSe
     }
 
     private static int doComparison(long lhs, long rhs) {
-        return DhLongComparisons.compare(lhs, rhs);
+        return LongComparisons.compare(lhs, rhs);
     }
 
     private static boolean gt(long lhs, long rhs) {

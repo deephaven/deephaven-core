@@ -4,7 +4,7 @@
 
 package io.deephaven.engine.v2.by;
 
-import io.deephaven.engine.tables.utils.DateTime;
+import io.deephaven.engine.time.DateTime;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.v2.QueryTable;
 import io.deephaven.engine.v2.Listener;

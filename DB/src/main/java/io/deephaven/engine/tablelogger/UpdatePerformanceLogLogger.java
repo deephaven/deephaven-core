@@ -7,8 +7,8 @@ package io.deephaven.engine.tablelogger;
 import java.io.IOException;
 import io.deephaven.engine.tables.TableDefinition;
 import io.deephaven.engine.tables.utils.ColumnsSpecHelper;
-import io.deephaven.engine.tables.utils.DateTime;
-import io.deephaven.engine.tables.utils.DateTimeUtils;
+import io.deephaven.engine.time.DateTime;
+import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.tablelogger.*;
 
 import static io.deephaven.engine.v2.utils.UpdatePerformanceTracker.IntervalLevelDetails;
