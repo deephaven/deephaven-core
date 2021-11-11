@@ -1,6 +1,6 @@
 package io.deephaven.engine.v2.sources;
 
-import io.deephaven.engine.util.LongSizedDataStructure;
+import io.deephaven.util.datastructures.LongSizedDataStructure;
 
 /**
  * Interface for {@link ColumnSource}s that know their size.

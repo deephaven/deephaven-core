@@ -4,7 +4,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.vector.CharVector;
 import io.deephaven.engine.vector.CharVectorDirect;
 import io.deephaven.engine.vector.ObjectVector;
-import io.deephaven.engine.tables.utils.ArrayUtils;
+import io.deephaven.util.type.ArrayTypeUtils;
 import io.deephaven.engine.util.DhCharComparisons;
 import io.deephaven.engine.v2.by.SumIntChunk;
 import io.deephaven.engine.v2.sort.timsort.TimsortUtilities;
@@ -2150,7 +2150,7 @@ public final class CharSegmentedSortedMultiset implements SegmentedSortedMultiSe
      */
     private char[] keyArray(long first, long last) {
         if(isEmpty()) {
-            return ArrayUtils.EMPTY_CHAR_ARRAY;
+            return ArrayTypeUtils.EMPTY_CHAR_ARRAY;
         }
 
         final int totalSize = (int)(last - first + 1);
@@ -2483,7 +2483,7 @@ public final class CharSegmentedSortedMultiset implements SegmentedSortedMultiSe
     @Override
     public String toString() {
         if (leafCount == 1) {
-            return ArrayUtils.toString(directoryValues, 0, intSize());
+            return ArrayTypeUtils.toString(directoryValues, 0, intSize());
         } else if (leafCount > 0) {
             StringBuilder arrAsString = new StringBuilder("[");
             for (int li = 0; li < leafCount; ++li) {

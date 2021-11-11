@@ -8,7 +8,7 @@ import com.google.common.base.Charsets;
 import com.google.common.io.LittleEndianDataOutputStream;
 import gnu.trove.iterator.TLongIterator;
 import io.deephaven.UncheckedDeephavenException;
-import io.deephaven.engine.util.LongSizedDataStructure;
+import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.engine.chunk.Attributes;
 import io.deephaven.engine.chunk.IntChunk;
 import io.deephaven.engine.chunk.ObjectChunk;

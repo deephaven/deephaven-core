@@ -37,6 +37,8 @@ import java.util.regex.Pattern;
 @SuppressWarnings("UnusedDeclaration")
 public class DateTimeUtils {
 
+    public static final DateTime[] EMPTY_DATETIME_ARRAY = new DateTime[0];
+
     // The following 3 patterns support LocalDate literals. Note all LocalDate patterns must not have characters after
     // the date, to avoid confusion with DateTime literals.
 

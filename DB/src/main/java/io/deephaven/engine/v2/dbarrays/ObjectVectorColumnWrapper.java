@@ -9,7 +9,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.vector.ObjectVector;
 import io.deephaven.engine.vector.ObjectVectorDirect;
 import io.deephaven.engine.vector.Vector;
-import io.deephaven.engine.util.LongSizedDataStructure;
+import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.engine.v2.utils.RowSetFactory;

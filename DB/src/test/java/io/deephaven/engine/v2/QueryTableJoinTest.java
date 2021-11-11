@@ -7,7 +7,7 @@ import io.deephaven.engine.vector.ObjectVector;
 import io.deephaven.engine.vector.DoubleVector;
 import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.tables.select.QueryScope;
-import io.deephaven.engine.tables.utils.ArrayUtils;
+import io.deephaven.util.type.ArrayTypeUtils;
 import io.deephaven.test.junit4.EngineCleanup;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.QueryConstants;
@@ -1014,9 +1014,9 @@ public class QueryTableJoinTest {
         assertEquals(asList("c", "e"), asList(aggregateString[1].toArray()));
         assertEquals(asList("c", "e"), asList(aggregateString[2].toArray()));
         vValues = (IntVector[]) noPairMatch.getColumn("v").getDirect();
-        assertEquals(asList(1, 2), asList(ArrayUtils.getBoxedArray(vValues[0].toArray())));
-        assertEquals(asList(1, 2), asList(ArrayUtils.getBoxedArray(vValues[1].toArray())));
-        assertEquals(asList(1, 2), asList(ArrayUtils.getBoxedArray(vValues[2].toArray())));
+        assertEquals(asList(1, 2), asList(ArrayTypeUtils.getBoxedArray(vValues[0].toArray())));
+        assertEquals(asList(1, 2), asList(ArrayTypeUtils.getBoxedArray(vValues[1].toArray())));
+        assertEquals(asList(1, 2), asList(ArrayTypeUtils.getBoxedArray(vValues[2].toArray())));
 
         pairMatch = table1.leftJoin(table2, "String1=String2");
         assertEquals(3, pairMatch.size());

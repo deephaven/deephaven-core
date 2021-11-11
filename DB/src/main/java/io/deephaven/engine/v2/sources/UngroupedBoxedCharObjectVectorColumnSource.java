@@ -7,7 +7,7 @@ import static io.deephaven.util.QueryConstants.NULL_CHAR;
 /**
  * An Ungrouped Column sourced for the Boxed Type Character.
  * <p>
- * The UngroupedBoxedC-harDbArrayColumnSource is replicated to all other types with
+ * The UngroupedBoxedC-harVectorColumnSource is replicated to all other types with
  * io.deephaven.engine.v2.sources.Replicate.
  *
  * (C-har is deliberately spelled that way in order to prevent Replicate from altering this very comment).

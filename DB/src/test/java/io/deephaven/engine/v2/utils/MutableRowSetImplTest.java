@@ -11,6 +11,7 @@ import gnu.trove.set.hash.TLongHashSet;
 import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.AssertionFailure;
+import io.deephaven.util.datastructures.LongRangeIterator;
 import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.v2.TstUtils;
 import io.deephaven.engine.chunk.Attributes;

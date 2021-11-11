@@ -7,8 +7,6 @@ import io.deephaven.engine.tables.utils.DateTime;
 import io.deephaven.engine.v2.sources.AbstractColumnSource;
 import io.deephaven.engine.v2.sources.ColumnSourceGetDefaults;
 import io.deephaven.engine.v2.sources.MutableColumnSourceGetDefaults;
-import io.deephaven.engine.chunk.Attributes;
-import io.deephaven.engine.chunk.Chunk;
 import io.deephaven.engine.chunk.WritableChunk;
 import io.deephaven.engine.v2.ssms.LongSegmentedSortedMultiset;
 import org.jetbrains.annotations.NotNull;
@@ -90,16 +88,6 @@ public class DateTimeSsmSourceWrapper extends AbstractColumnSource<ObjectVector>
         @Override
         public Class<DateTime> getComponentType() {
             return DateTime.class;
-        }
-
-        @Override
-        public Chunk<Attributes.Values> toChunk() {
-            return underlying.toDateChunk();
-        }
-
-        @Override
-        public void fillChunk(WritableChunk destChunk) {
-            underlying.fillDateChunk(destChunk);
         }
 
         @Override

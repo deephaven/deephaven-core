@@ -1,5 +1,6 @@
 package io.deephaven.engine.tables.libs;
 
+import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.engine.rftable.Context;
 import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.tables.lang.LanguageFunctionUtil;
@@ -9,6 +10,7 @@ import io.deephaven.engine.tables.utils.Period;
 import io.deephaven.engine.tables.utils.TimeZone;
 import io.deephaven.engine.util.ColorUtilImpl;
 import io.deephaven.engine.v2.utils.*;
+import io.deephaven.util.type.ArrayTypeUtils;
 
 import java.util.Arrays;
 import java.util.LinkedHashSet;
@@ -31,7 +33,7 @@ public class QueryLibraryImportsDefaults implements QueryLibraryImports {
                 io.deephaven.util.type.TypeUtils.class,
                 io.deephaven.engine.tables.Table.class,
                 io.deephaven.engine.tables.DataColumn.class,
-                io.deephaven.engine.tables.utils.ArrayUtils.class,
+                ArrayTypeUtils.class,
                 DateTime.class,
                 DateTimeUtils.class,
                 io.deephaven.base.string.cache.CompressedString.class,
@@ -47,7 +49,7 @@ public class QueryLibraryImportsDefaults implements QueryLibraryImports {
                 RowSetFactory.class,
                 RowSetBuilderRandom.class,
                 RowSetBuilderSequential.class,
-                io.deephaven.engine.util.LongSizedDataStructure.class,
+                LongSizedDataStructure.class,
                 java.util.concurrent.ConcurrentHashMap.class,
                 io.deephaven.engine.chunk.Attributes.class,
                 io.deephaven.engine.chunk.Chunk.class,

@@ -3,7 +3,7 @@ package io.deephaven.engine.v2.utils.rsp;
 import io.deephaven.engine.chunk.Attributes;
 import io.deephaven.engine.chunk.Attributes.RowKeys;
 import io.deephaven.engine.chunk.WritableLongChunk;
-import io.deephaven.engine.v2.utils.LongAbortableConsumer;
+import io.deephaven.util.datastructures.LongAbortableConsumer;
 import io.deephaven.engine.v2.utils.rsp.container.Container;
 import io.deephaven.engine.v2.utils.rsp.container.ContainerShortBatchIterator;
 

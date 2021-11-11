@@ -14,7 +14,7 @@ import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.chunk.Attributes;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.engine.tables.SortingOrder;
-import io.deephaven.engine.v2.hashing.HashMapK4V4;
+import io.deephaven.util.datastructures.hash.HashMapK4V4;
 import io.deephaven.engine.v2.sort.LongSortKernel;
 import io.deephaven.engine.v2.sources.*;
 import io.deephaven.engine.chunk.Attributes.OrderedRowKeys;

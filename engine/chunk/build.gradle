@@ -1,0 +1,39 @@
+import io.deephaven.tools.Tools
+
+configurations {
+    testCompile.extendsFrom junit
+}
+
+sourceSets {
+    main {
+        java {
+            srcDir 'java'
+        }
+    }
+
+    test {
+        java {
+            srcDir 'test'
+        }
+    }
+}
+
+dependencies {
+    compile project(':Util')
+}
+
+spotless {
+    java {
+        targetExclude(
+                '**/*Boolean*Chunk.java',
+                '**/*Byte*Chunk.java',
+                '**/*Char*Chunk.java',
+                '**/*Short*Chunk.java',
+                '**/*Int*Chunk.java',
+                '**/*Long*Chunk.java',
+                '**/*Float*Chunk.java',
+                '**/*Double*Chunk.java',
+                '**/*Object*Chunk.java',
+        )
+    }
+}

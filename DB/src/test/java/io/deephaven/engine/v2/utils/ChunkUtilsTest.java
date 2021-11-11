@@ -5,7 +5,7 @@
 package io.deephaven.engine.v2.utils;
 
 import io.deephaven.base.Pair;
-import io.deephaven.engine.exceptions.SizeException;
+import io.deephaven.util.datastructures.SizeException;
 import io.deephaven.engine.chunk.Attributes;
 import io.deephaven.engine.chunk.Attributes.Any;
 import io.deephaven.engine.chunk.Attributes.OrderedRowKeys;

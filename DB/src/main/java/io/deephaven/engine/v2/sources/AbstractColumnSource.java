@@ -14,7 +14,6 @@ import io.deephaven.hash.KeyedObjectHashSet;
 import io.deephaven.hash.KeyedObjectKey;
 import io.deephaven.base.string.cache.CharSequenceUtils;
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.vector.*;
 import io.deephaven.engine.v2.select.ChunkFilter;
 import io.deephaven.engine.v2.select.chunkfilters.ChunkMatchFilterFactory;
 import io.deephaven.engine.chunk.Attributes.Values;
@@ -382,7 +381,7 @@ public abstract class AbstractColumnSource<T> implements ColumnSource<T>, Serial
     public final void defaultFillChunk(@SuppressWarnings("unused") @NotNull final FillContext context,
             @NotNull final WritableChunk<? super Values> destination,
             @NotNull final RowSequence rowSequence) {
-        final ChunkFiller filler = destination.getChunkFiller();
+        final ChunkFiller filler = ChunkFiller.forChunkType(destination.getChunkType());
         if (rowSequence.getAverageRunLengthEstimate() >= USE_RANGES_AVERAGE_RUN_LENGTH) {
             filler.fillByRanges(this, rowSequence, destination);
         } else {
@@ -399,7 +398,7 @@ public abstract class AbstractColumnSource<T> implements ColumnSource<T>, Serial
     final void defaultFillPrevChunk(@SuppressWarnings("unused") @NotNull final FillContext context,
             @NotNull final WritableChunk<? super Values> destination,
             @NotNull final RowSequence rowSequence) {
-        final ChunkFiller filler = destination.getChunkFiller();
+        final ChunkFiller filler = ChunkFiller.forChunkType(destination.getChunkType());
         if (rowSequence.getAverageRunLengthEstimate() >= USE_RANGES_AVERAGE_RUN_LENGTH) {
             filler.fillPrevByRanges(this, rowSequence, destination);
         } else {

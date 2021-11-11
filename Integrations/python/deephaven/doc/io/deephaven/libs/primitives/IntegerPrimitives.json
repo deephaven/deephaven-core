@@ -1,7 +1,7 @@
 {
  "className": "io.deephaven.libs.primitives.IntegerPrimitives",
  "methods": {
-  "array": "Converts a primitive array to a DB array.\n\n:param values: (int[]) - primitive array\n:return: (io.deephaven.engine.vector.IntVector) DB array.",
+  "array": "Converts a primitive array to a Vector.\n\n:param values: (int[]) - primitive array\n:return: (io.deephaven.engine.vector.IntVector) Vector.",
   "concat": "Returns the concatenation of multiple arrays into a single array.\n\n*Overload 1*  \n  :param values: (int[]...) - values.\n  :return: (int[]) concatenation of multiple arrays into a single array.\n  \n*Overload 2*  \n  :param values: (io.deephaven.engine.vector.IntVector...) - values.\n  :return: (int[]) concatenation of multiple arrays into a single array.",
   "count": "Counts the number of non-null values.\n\n*Overload 1*  \n  :param values: (java.lang.Integer[]) - values.\n  :return: (int) number of non-null values.\n  \n*Overload 2*  \n  :param values: (int[]) - values.\n  :return: (int) number of non-null values.\n  \n*Overload 3*  \n  :param values: (io.deephaven.engine.vector.IntVector) - values.\n  :return: (int) number of non-null values.",
   "countDistinct": "Counts the number of distinct elements in the array.\n\n*Overload 1*  \n  :param values: (int[]) - values.\n  :return: (long) number of distinct non-null values.\n  \n*Overload 2*  \n  :param values: (io.deephaven.engine.vector.IntVector) - values.\n  :return: (long) number of distinct non-null values.\n  \n*Overload 3*  \n  :param values: (int[]) - values.\n  :param countNull: (boolean) - true to count null values, and false to exclude null values.\n  :return: (long) number of distinct values.\n  \n*Overload 4*  \n  :param values: (io.deephaven.engine.vector.IntVector) - values.\n  :param countNull: (boolean) - true to count null values, and false to exclude null values.\n  :return: (long) number of distinct values.",
@@ -18,7 +18,7 @@
   "reverse": "Returns an array with the values reversed.\n\n*Overload 1*  \n  :param values: (int...) - values.\n  :return: (int[]) array with the values reversed.\n  \n*Overload 2*  \n  :param values: (io.deephaven.engine.vector.IntVector) - values.\n  :return: (int[]) array with the values reversed.",
   "unbox": "Unboxes a array of values.\n\n:param values: (java.lang.Integer...) - values.\n:return: (int[]) unboxed array of values.",
   "uniqueValue": "Get the single unique value in the array, or null if there are none, or there are more than 1 distinct values.\n\n:param arr: (io.deephaven.engine.vector.IntVector) - the array\n:param countNull: (boolean) - if nulls should count as values\n:return: (int) the single unique value in the array, or null.",
-  "vec": "Converts a DB array to a primitive array.\n\n:param values: (io.deephaven.engine.vector.IntVector) - DB array\n:return: (int[]) primitive array."
+  "vec": "Converts a Vector to a primitive array.\n\n:param values: (io.deephaven.engine.vector.IntVector) - Vector\n:return: (int[]) primitive array."
  },
  "path": "io.deephaven.libs.primitives.IntegerPrimitives",
  "text": "A set of commonly used functions that can be applied to Integer types.",

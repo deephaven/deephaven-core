@@ -4,8 +4,8 @@
 package io.deephaven.engine.v2.ssa;
 
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.v2.hashing.IntChunkEquals;
-import io.deephaven.engine.v2.hashing.LongChunkEquals;
+import io.deephaven.engine.chunk.util.hashing.IntChunkEquals;
+import io.deephaven.engine.chunk.util.hashing.LongChunkEquals;
 import io.deephaven.engine.chunk.Attributes;
 import io.deephaven.engine.chunk.Attributes.RowKeys;
 import io.deephaven.engine.chunk.Attributes.Values;

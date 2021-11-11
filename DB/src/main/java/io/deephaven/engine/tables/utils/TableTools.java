@@ -33,6 +33,7 @@ import io.deephaven.io.streams.BzipFileOutputStream;
 import io.deephaven.io.util.NullOutputStream;
 import io.deephaven.util.annotations.ScriptApi;
 import io.deephaven.util.process.ProcessEnvironment;
+import io.deephaven.util.type.ArrayTypeUtils;
 
 import java.io.*;
 import java.lang.reflect.Array;
@@ -894,19 +895,19 @@ public class TableTools {
      */
     public static <T> ColumnHolder col(String name, T... data) {
         if (data.getClass().getComponentType() == Long.class) {
-            return longCol(name, ArrayUtils.getUnboxedArray((Long[]) data));
+            return longCol(name, ArrayTypeUtils.getUnboxedArray((Long[]) data));
         } else if (data.getClass().getComponentType() == Integer.class) {
-            return intCol(name, ArrayUtils.getUnboxedArray((Integer[]) data));
+            return intCol(name, ArrayTypeUtils.getUnboxedArray((Integer[]) data));
         } else if (data.getClass().getComponentType() == Short.class) {
-            return shortCol(name, ArrayUtils.getUnboxedArray((Short[]) data));
+            return shortCol(name, ArrayTypeUtils.getUnboxedArray((Short[]) data));
         } else if (data.getClass().getComponentType() == Byte.class) {
-            return byteCol(name, ArrayUtils.getUnboxedArray((Byte[]) data));
+            return byteCol(name, ArrayTypeUtils.getUnboxedArray((Byte[]) data));
         } else if (data.getClass().getComponentType() == Character.class) {
-            return charCol(name, ArrayUtils.getUnboxedArray((Character[]) data));
+            return charCol(name, ArrayTypeUtils.getUnboxedArray((Character[]) data));
         } else if (data.getClass().getComponentType() == Double.class) {
-            return doubleCol(name, ArrayUtils.getUnboxedArray((Double[]) data));
+            return doubleCol(name, ArrayTypeUtils.getUnboxedArray((Double[]) data));
         } else if (data.getClass().getComponentType() == Float.class) {
-            return floatCol(name, ArrayUtils.getUnboxedArray((Float[]) data));
+            return floatCol(name, ArrayTypeUtils.getUnboxedArray((Float[]) data));
         }
         // noinspection unchecked
         return new ColumnHolder(name, data.getClass().getComponentType(),

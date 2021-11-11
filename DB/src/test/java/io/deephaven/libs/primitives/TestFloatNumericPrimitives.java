@@ -356,7 +356,7 @@ public class TestFloatNumericPrimitives extends BaseArrayTestCase {
         assertEquals(NULL_FLOAT, sum((float[]) null));
     }
 
-    public void testSumDbArray() {
+    public void testSumVector() {
         assertEquals(new float[]{4, 15}, sum(new ObjectVectorDirect<>(new float[][]{{5, 4}, {-3, 5}, {2, 6}})));
         assertEquals(new float[]{4, NULL_FLOAT}, sum(new ObjectVectorDirect<>(new float[][]{{5, NULL_FLOAT}, {-3, 5}, {2, 6}})));
         assertEquals(null, sum((ObjectVector<float[]>) null));
@@ -396,7 +396,7 @@ public class TestFloatNumericPrimitives extends BaseArrayTestCase {
         assertEquals(NULL_FLOAT, product((FloatVector) null));
     }
 
-//    public void testProdDbArray() {
+//    public void testProdVector() {
 //        assertEquals(new float[]{-30, 120}, product(new ObjectVectorDirect<>(new float[][]{{5, 4}, {-3, 5}, {2, 6}})));
 //        assertEquals(new float[]{-30, NULL_FLOAT}, product(new ObjectVectorDirect<>(new float[][]{{5, NULL_FLOAT}, {-3, 5}, {2, 6}})));
 //        assertEquals(null, product((Vector<float[]>) null));

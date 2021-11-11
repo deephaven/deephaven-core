@@ -86,7 +86,7 @@ public class SuanShuIntegration {
      */
     public static com.numericalmethod.suanshu.vector.doubles.Vector ssVec(final ByteVector byteVector) {
         Require.neqNull(byteVector, "byteVector");
-        return new AbstractDbArrayBaseVector(byteVector) {
+        return new AbstractVectorBaseVector(byteVector) {
             private static final long serialVersionUID = -7281244336713502788L;
 
             @Override
@@ -156,7 +156,7 @@ public class SuanShuIntegration {
      */
     public static com.numericalmethod.suanshu.vector.doubles.Vector ssVec(final ShortVector shortVector) {
         Require.neqNull(shortVector, "shortVector");
-        return new AbstractDbArrayBaseVector(shortVector) {
+        return new AbstractVectorBaseVector(shortVector) {
             private static final long serialVersionUID = -9088059653954005859L;
 
             @Override
@@ -226,7 +226,7 @@ public class SuanShuIntegration {
      */
     public static com.numericalmethod.suanshu.vector.doubles.Vector ssVec(final IntVector intVector) {
         Require.neqNull(intVector, "intVector");
-        return new AbstractDbArrayBaseVector(intVector) {
+        return new AbstractVectorBaseVector(intVector) {
             private static final long serialVersionUID = 6372881706069644361L;
 
             @Override
@@ -296,7 +296,7 @@ public class SuanShuIntegration {
      */
     public static com.numericalmethod.suanshu.vector.doubles.Vector ssVec(final FloatVector floatVector) {
         Require.neqNull(floatVector, "floatVector");
-        return new AbstractDbArrayBaseVector(floatVector) {
+        return new AbstractVectorBaseVector(floatVector) {
             private static final long serialVersionUID = 799668019339406883L;
 
             @Override
@@ -366,7 +366,7 @@ public class SuanShuIntegration {
      */
     public static com.numericalmethod.suanshu.vector.doubles.Vector ssVec(final LongVector longVector) {
         Require.neqNull(longVector, "longVector");
-        return new AbstractDbArrayBaseVector(longVector) {
+        return new AbstractVectorBaseVector(longVector) {
             private static final long serialVersionUID = 6215578121732116514L;
 
             @Override
@@ -436,7 +436,7 @@ public class SuanShuIntegration {
      */
     public static com.numericalmethod.suanshu.vector.doubles.Vector ssVec(final DoubleVector doubleVector) {
         Require.neqNull(doubleVector, "doubleVector");
-        return new AbstractDbArrayBaseVector(doubleVector) {
+        return new AbstractVectorBaseVector(doubleVector) {
             private static final long serialVersionUID = 905559534474469661L;
 
             @Override
@@ -538,7 +538,7 @@ public class SuanShuIntegration {
         Require.neqNull(vector, "vector");
         Require.requirement(Number.class.isAssignableFrom(vector.getComponentType()),
                 "vector of type " + Number.class + ", instead found " + vector.getComponentType());
-        return new AbstractDbArrayBaseVector(vector) {
+        return new AbstractVectorBaseVector(vector) {
             private static final long serialVersionUID = 905559534474469661L;
 
             @Override
@@ -614,7 +614,7 @@ public class SuanShuIntegration {
             @Override
             public com.numericalmethod.suanshu.vector.doubles.Vector getColumn(int column)
                     throws MatrixAccessException {
-                return new AbstractDbArrayBaseVector(byteVectors[column - 1]) {// Because 1-based row and column
+                return new AbstractVectorBaseVector(byteVectors[column - 1]) {// Because 1-based row and column
                                                                                // indices in
                                                                                // com.numericalmethod.suanshu.matrix.doubles.Matrix
                     private static final long serialVersionUID = 6151466803319078752L;
@@ -760,7 +760,7 @@ public class SuanShuIntegration {
             @Override
             public com.numericalmethod.suanshu.vector.doubles.Vector getColumn(int column)
                     throws MatrixAccessException {
-                return new AbstractDbArrayBaseVector(shortVectors[column - 1]) {// Because 1-based row and column
+                return new AbstractVectorBaseVector(shortVectors[column - 1]) {// Because 1-based row and column
                                                                                 // indices in
                                                                                 // com.numericalmethod.suanshu.matrix.doubles.Matrix
                     private static final long serialVersionUID = 6991137420725851810L;
@@ -906,7 +906,7 @@ public class SuanShuIntegration {
             @Override
             public com.numericalmethod.suanshu.vector.doubles.Vector getColumn(int column)
                     throws MatrixAccessException {
-                return new AbstractDbArrayBaseVector(intVectors[column - 1]) {// Because 1-based row and column indices
+                return new AbstractVectorBaseVector(intVectors[column - 1]) {// Because 1-based row and column indices
                                                                               // in
                                                                               // com.numericalmethod.suanshu.matrix.doubles.Matrix
                     private static final long serialVersionUID = 821557745996553552L;
@@ -1051,7 +1051,7 @@ public class SuanShuIntegration {
             @Override
             public com.numericalmethod.suanshu.vector.doubles.Vector getColumn(int column)
                     throws MatrixAccessException {
-                return new AbstractDbArrayBaseVector(floatVectors[column - 1]) {// Because 1-based row and column
+                return new AbstractVectorBaseVector(floatVectors[column - 1]) {// Because 1-based row and column
                                                                                 // indices in
                                                                                 // com.numericalmethod.suanshu.matrix.doubles.Matrix
                     private static final long serialVersionUID = -8535605234772136511L;
@@ -1197,7 +1197,7 @@ public class SuanShuIntegration {
             @Override
             public com.numericalmethod.suanshu.vector.doubles.Vector getColumn(int column)
                     throws MatrixAccessException {
-                return new AbstractDbArrayBaseVector(longVectors[column - 1]) {// Because 1-based row and column
+                return new AbstractVectorBaseVector(longVectors[column - 1]) {// Because 1-based row and column
                                                                                // indices in
                                                                                // com.numericalmethod.suanshu.matrix.doubles.Matrix
                     private static final long serialVersionUID = 4391740406197864817L;
@@ -1343,7 +1343,7 @@ public class SuanShuIntegration {
             @Override
             public com.numericalmethod.suanshu.vector.doubles.Vector getColumn(int column)
                     throws MatrixAccessException {
-                return new AbstractDbArrayBaseVector(doubleVectors[column - 1]) {// Because 1-based row and column
+                return new AbstractVectorBaseVector(doubleVectors[column - 1]) {// Because 1-based row and column
                                                                                  // indices in
                                                                                  // com.numericalmethod.suanshu.matrix.doubles.Matrix
                     private static final long serialVersionUID = 172294086541855763L;
@@ -1613,7 +1613,7 @@ public class SuanShuIntegration {
             @Override
             public com.numericalmethod.suanshu.vector.doubles.Vector getColumn(final int column)
                     throws MatrixAccessException {
-                return new AbstractDbArrayBaseVector(objectVector.get(column - 1)) {
+                return new AbstractVectorBaseVector(objectVector.get(column - 1)) {
                     private static final long serialVersionUID = 8517809020282279391L;
 
                     @Override
@@ -1853,12 +1853,12 @@ public class SuanShuIntegration {
         }
     }
 
-    private abstract static class AbstractDbArrayBaseVector extends AbstractVector {
+    private abstract static class AbstractVectorBaseVector extends AbstractVector {
 
         private static final long serialVersionUID = -8693469432136886358L;
         private final Vector vector;
 
-        private AbstractDbArrayBaseVector(final Vector vector) {
+        private AbstractVectorBaseVector(final Vector vector) {
             this.vector = vector;
         }
 

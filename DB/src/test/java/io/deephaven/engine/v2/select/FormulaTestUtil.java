@@ -8,7 +8,7 @@ import io.deephaven.engine.vector.ObjectVectorDirect;
 import io.deephaven.engine.vector.IntVectorDirect;
 import io.deephaven.engine.tables.libs.QueryLibrary;
 import io.deephaven.engine.tables.select.QueryScope;
-import io.deephaven.engine.tables.utils.ArrayUtils;
+import io.deephaven.util.type.ArrayTypeUtils;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.tables.utils.TableTools;
 import org.jetbrains.annotations.NotNull;
@@ -100,7 +100,7 @@ public class FormulaTestUtil {
         QueryLibrary.importPackage(Package.getPackage("java.util.concurrent"));
 
         QueryLibrary.importClass(Calendar.class);
-        QueryLibrary.importClass(ArrayUtils.class);
+        QueryLibrary.importClass(ArrayTypeUtils.class);
 
         QueryLibrary.importStatic(FormulaTestUtil.class);
     }
@@ -113,7 +113,7 @@ public class FormulaTestUtil {
 
         QueryScope.addParam("myIntArray", BASE_VALUES.clone());
         QueryScope.addParam("myDoubleArray", IntStream.of(BASE_VALUES).asDoubleStream().toArray());
-        QueryScope.addParam("myCharArray", ArrayUtils.getUnboxedArray(
+        QueryScope.addParam("myCharArray", ArrayTypeUtils.getUnboxedArray(
                 IntStream.of(BASE_VALUES).mapToObj((anInt) -> (char) anInt).toArray(Character[]::new)));
         QueryScope.addParam("myDoubleObjArray",
                 IntStream.of(BASE_VALUES).asDoubleStream().boxed().toArray(Double[]::new));
@@ -133,13 +133,13 @@ public class FormulaTestUtil {
                 new ArrayList<>(IntStream.of(BASE_VALUES).boxed().collect(Collectors.toList())));
         QueryScope.addParam("myHashMap",
                 new HashMap<>(Collections.singletonMap(QUERYSCOPE_OBJ_BASE_VALUE, QUERYSCOPE_OBJ_BASE_VALUE)));
-        QueryScope.addParam("myDBArray", new ObjectVectorDirect<>(IntStream.of(BASE_VALUES).boxed().toArray()));
+        QueryScope.addParam("myVector", new ObjectVectorDirect<>(IntStream.of(BASE_VALUES).boxed().toArray()));
         QueryScope.addParam("myEnumValue", TestFormulaColumnEnum.ONE);
-        QueryScope.addParam("myObjectDBArray", ObjectVector.class);
-        QueryScope.addParam("myIntDBArray", new IntVectorDirect(BASE_VALUES));
-        QueryScope.addParam("myByteDBArray", new ByteVectorDirect(ArrayUtils
+        QueryScope.addParam("myObjectVector", ObjectVector.class);
+        QueryScope.addParam("myIntVector", new IntVectorDirect(BASE_VALUES));
+        QueryScope.addParam("myByteVector", new ByteVectorDirect(ArrayTypeUtils
                 .getUnboxedArray(IntStream.of(BASE_VALUES).boxed().map(Integer::byteValue).toArray(Byte[]::new))));
-        // QueryScope.addParam("myBooleanDBArray", BooleanVector.class);
+        // QueryScope.addParam("myBooleanVector", BooleanVector.class);
 
         QueryScope.addParam("ExampleQuantity", 1);
         QueryScope.addParam("ExampleQuantity2", 2d);

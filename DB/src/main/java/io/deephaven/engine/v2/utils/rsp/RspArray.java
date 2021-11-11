@@ -2,11 +2,13 @@ package io.deephaven.engine.v2.utils.rsp;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
+import io.deephaven.util.datastructures.LongAbortableConsumer;
 import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.v2.utils.*;
 import io.deephaven.engine.v2.utils.singlerange.SingleRange;
 import io.deephaven.engine.v2.utils.sortedranges.SortedRanges;
 import io.deephaven.engine.v2.utils.sortedranges.SortedRangesInt;
+import io.deephaven.util.datastructures.LongRangeAbortableConsumer;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.apache.commons.lang3.mutable.MutableObject;
 import io.deephaven.engine.v2.utils.rsp.container.Container;

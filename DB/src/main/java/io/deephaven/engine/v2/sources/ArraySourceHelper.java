@@ -6,7 +6,7 @@ package io.deephaven.engine.v2.sources;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rftable.SharedContext;
-import io.deephaven.engine.util.LongSizedDataStructure;
+import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.v2.utils.UpdateCommitter;

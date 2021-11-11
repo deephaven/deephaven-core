@@ -4,7 +4,7 @@
 
 package io.deephaven.engine.tables;
 
-import io.deephaven.engine.util.LongSizedDataStructure;
+import io.deephaven.util.datastructures.LongSizedDataStructure;
 
 /**
  * Interface for positional column access to a Deephaven table column.

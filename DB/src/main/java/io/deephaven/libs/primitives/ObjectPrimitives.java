@@ -7,7 +7,7 @@ package io.deephaven.libs.primitives;
 import io.deephaven.engine.vector.ObjectVector;
 import io.deephaven.engine.vector.ObjectVectorDirect;
 import io.deephaven.util.QueryConstants;
-import io.deephaven.engine.util.LongSizedDataStructure;
+import io.deephaven.util.datastructures.LongSizedDataStructure;
 import gnu.trove.set.hash.THashSet;
 
 import java.lang.reflect.Array;
@@ -163,9 +163,9 @@ public class ObjectPrimitives {
 //    }
 
     /**
-     * Converts a DB array to a primitive array.
+     * Converts a Vector to a primitive array.
      *
-     * @param values DB array
+     * @param values Vector
      * @return primitive array.
      */
     public static <T> T[] vec(ObjectVector<T> values) {

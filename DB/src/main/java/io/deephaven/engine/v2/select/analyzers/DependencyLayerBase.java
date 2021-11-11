@@ -15,7 +15,7 @@ public abstract class DependencyLayerBase extends SelectAndViewAnalyzer {
     final SelectAndViewAnalyzer inner;
     final String name;
     final SelectColumn selectColumn;
-    final boolean selectColumnHoldsDbArray;
+    final boolean selectColumnHoldsVector;
     final ColumnSource<?> columnSource;
     // probably don't need this any more
     private final String[] dependencies;
@@ -27,7 +27,7 @@ public abstract class DependencyLayerBase extends SelectAndViewAnalyzer {
         this.inner = inner;
         this.name = name;
         this.selectColumn = selectColumn;
-        selectColumnHoldsDbArray = Vector.class.isAssignableFrom(selectColumn.getReturnedType());
+        selectColumnHoldsVector = Vector.class.isAssignableFrom(selectColumn.getReturnedType());
         this.columnSource = columnSource;
         this.dependencies = dependencies;
         final Set<String> remainingDepsToSatisfy = new HashSet<>(Arrays.asList(dependencies));

@@ -10,7 +10,7 @@ package io.deephaven.libs.primitives;
 import io.deephaven.engine.vector.LongVector;
 import io.deephaven.engine.vector.LongVectorDirect;
 import io.deephaven.util.QueryConstants;
-import io.deephaven.engine.util.LongSizedDataStructure;
+import io.deephaven.util.datastructures.LongSizedDataStructure;
 import gnu.trove.list.array.TLongArrayList;
 import gnu.trove.set.TLongSet;
 import gnu.trove.set.hash.TLongHashSet;
@@ -237,9 +237,9 @@ public class LongPrimitives {
     }
 
     /**
-     * Converts a DB array to a primitive array.
+     * Converts a Vector to a primitive array.
      *
-     * @param values DB array
+     * @param values Vector
      * @return primitive array.
      */
     public static long[] vec(LongVector values) {
@@ -251,10 +251,10 @@ public class LongPrimitives {
     }
 
     /**
-     * Converts a primitive array to a DB array.
+     * Converts a primitive array to a Vector.
      *
      * @param values primitive array
-     * @return DB array.
+     * @return Vector.
      */
     public static LongVector array(long[] values) {
         if(values == null){

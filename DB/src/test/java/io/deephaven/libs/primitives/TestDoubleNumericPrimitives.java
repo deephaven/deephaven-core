@@ -359,7 +359,7 @@ public class TestDoubleNumericPrimitives extends BaseArrayTestCase {
         assertEquals(NULL_DOUBLE, sum((double[]) null));
     }
 
-    public void testSumDbArray() {
+    public void testSumVector() {
         assertEquals(new double[]{4, 15}, sum(new ObjectVectorDirect<>(new double[][]{{5, 4}, {-3, 5}, {2, 6}})));
         assertEquals(new double[]{4, NULL_DOUBLE}, sum(new ObjectVectorDirect<>(new double[][]{{5, NULL_DOUBLE}, {-3, 5}, {2, 6}})));
         assertEquals(null, sum((ObjectVector<double[]>) null));
@@ -399,7 +399,7 @@ public class TestDoubleNumericPrimitives extends BaseArrayTestCase {
         assertEquals(NULL_DOUBLE, product((DoubleVector) null));
     }
 
-//    public void testProdDbArray() {
+//    public void testProdVector() {
 //        assertEquals(new double[]{-30, 120}, product(new ObjectVectorDirect<>(new double[][]{{5, 4}, {-3, 5}, {2, 6}})));
 //        assertEquals(new double[]{-30, NULL_DOUBLE}, product(new ObjectVectorDirect<>(new double[][]{{5, NULL_DOUBLE}, {-3, 5}, {2, 6}})));
 //        assertEquals(null, product((Vector<double[]>) null));

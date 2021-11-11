@@ -4,13 +4,16 @@
 
 package io.deephaven.engine.structures;
 
-import io.deephaven.engine.util.LongSizedDataStructure;
+import io.deephaven.util.datastructures.LongAbortableConsumer;
+import io.deephaven.util.datastructures.LongRangeConsumer;
+import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.engine.chunk.Attributes.OrderedRowKeyRanges;
 import io.deephaven.engine.chunk.Attributes.OrderedRowKeys;
 import io.deephaven.engine.chunk.Attributes.RowKeys;
 import io.deephaven.engine.chunk.LongChunk;
 import io.deephaven.engine.chunk.WritableLongChunk;
 import io.deephaven.engine.v2.utils.*;
+import io.deephaven.util.datastructures.LongRangeAbortableConsumer;
 import io.deephaven.util.SafeCloseable;
 
 /**

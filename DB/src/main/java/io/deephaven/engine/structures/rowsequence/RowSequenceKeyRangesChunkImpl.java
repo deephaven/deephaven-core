@@ -4,7 +4,8 @@
 
 package io.deephaven.engine.structures.rowsequence;
 
-import io.deephaven.engine.exceptions.SizeException;
+import io.deephaven.util.datastructures.LongAbortableConsumer;
+import io.deephaven.util.datastructures.SizeException;
 import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.chunk.Attributes;
 import io.deephaven.engine.chunk.Attributes.OrderedRowKeys;
@@ -13,6 +14,7 @@ import io.deephaven.engine.chunk.LongChunk;
 import io.deephaven.engine.chunk.OrderedChunkUtils;
 import io.deephaven.engine.chunk.WritableLongChunk;
 import io.deephaven.engine.v2.utils.*;
+import io.deephaven.util.datastructures.LongRangeAbortableConsumer;
 
 public class RowSequenceKeyRangesChunkImpl implements RowSequence {
 

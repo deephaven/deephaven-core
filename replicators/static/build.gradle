@@ -1,0 +1,48 @@
+import io.deephaven.tools.Tools
+
+sourceSets {
+    main {
+        java {
+            srcDir 'java'
+        }
+    }
+}
+
+dependencies {
+    compile project(':CompilerTools')
+}
+
+task all { // TODO-RWC: Find stragglers and add them. Relocate mains to here.
+    dependsOn Tasks.registerMainExecTask(project, 'replicateVectors', 'io.deephaven.replicators.ReplicateVectors')
+    dependsOn Tasks.registerMainExecTask(project, 'replicateVectorsTest', 'io.deephaven.replicators.ReplicateVectorsTst')
+
+    dependsOn Tasks.registerMainExecTask(project, 'replicatePrimitiveLibs', 'io.deephaven.replicators.ReplicatePrimitveLibs')
+
+    dependsOn Tasks.registerMainExecTask(project, 'replicateSources', 'io.deephaven.replicators.ReplicateSourcesAndChunks')
+    dependsOn Tasks.registerMainExecTask(project, 'replicateSourcesTest', 'io.deephaven.replicators.ReplicateSourcesAndChunkTest')
+
+    dependsOn Tasks.registerMainExecTask(project, 'replicateHashing', 'io.deephaven.engine.chunk.util.hashing.ReplicateHashing')
+
+
+    dependsOn Tasks.registerMainExecTask(project, 'replicateSortKernelTests', 'io.deephaven.engine.v2.sort.timsort.ReplicateSortKernelTests')
+    dependsOn Tasks.registerMainExecTask(project, 'replicateSortKernel', 'io.deephaven.engine.v2.sort.ReplicateSortKernel')
+    dependsOn Tasks.registerMainExecTask(project, 'replicateChunkFilters', 'io.deephaven.engine.v2.select.chunkfilters.ReplicateChunkFilters')
+    dependsOn Tasks.registerMainExecTask(project, 'replicateStampKernel', 'io.deephaven.engine.v2.join.stamp.ReplicateStampKernel')
+    dependsOn Tasks.registerMainExecTask(project, 'replicateDupCompactKernel', 'io.deephaven.engine.v2.join.dupcompact.ReplicateDupCompactKernel')
+    dependsOn Tasks.registerMainExecTask(project, 'replicateDupExpandKernel', 'io.deephaven.engine.v2.join.dupexpand.ReplicateDupExpandKernel');
+    dependsOn Tasks.registerMainExecTask(project, 'replicateColumnChunkPageStores', 'io.deephaven.engine.v2.locations.parquet.ReplicateColumnChunkPageStores')
+    dependsOn Tasks.registerMainExecTask(project, 'replicateReverseKernel', 'io.deephaven.engine.v2.utils.reverse.ReplicateReverseKernel')
+    dependsOn Tasks.registerMainExecTask(project, 'replicateSegmentedSortedArray', 'io.deephaven.engine.v2.ssa.ReplicateSegmentedSortedArray')
+    dependsOn Tasks.registerMainExecTask(project, 'replicateSegmentedSortedArrayTests', 'io.deephaven.engine.v2.ssa.ReplicateSegmentedSortedArrayTests')
+    dependsOn Tasks.registerMainExecTask(project, 'replicateSegmentedSortedMultiset', 'io.deephaven.engine.v2.ssms.ReplicateSegmentedSortedMultiset')
+    dependsOn Tasks.registerMainExecTask(project, 'replicateSegmentedSortedMultisetTests', 'io.deephaven.engine.v2.ssms.ReplicateSegmentedSortedMultisetTests')
+    dependsOn Tasks.registerMainExecTask(project, 'replicateColumnSourceFillBenchmark', 'io.deephaven.engine.v2.sources.ReplicateColumnSourceFillBenchmark')
+    dependsOn Tasks.registerMainExecTask(project, 'replicateSetInclusionKernel', 'io.deephaven.engine.v2.select.setinclusion.ReplicateSetInclusionKernel')
+    dependsOn Tasks.registerMainExecTask(project, 'replicateRegions', 'io.deephaven.engine.v2.sources.regioned.ReplicateRegionsAndRegionedSources')
+    dependsOn Tasks.registerMainExecTask(project, 'replicateToPage', 'io.deephaven.engine.v2.locations.parquet.topage.ReplicateToPage')
+    dependsOn Tasks.registerMainExecTask(project, 'replicateVectorColumnWrappers', 'io.deephaven.engine.v2.dbarrays.ReplicateVectorColumnWrappers')
+    dependsOn Tasks.registerMainExecTask(project, 'replicateCopyKernel', 'io.deephaven.engine.v2.utils.copy.ReplicateCopyKernel')
+    dependsOn Tasks.registerMainExecTask(project, 'replicateUnboxerKernel', 'io.deephaven.engine.v2.utils.unboxer.ReplicateUnboxerKernel')
+    dependsOn Tasks.registerMainExecTask(project, 'replicateOperators', 'io.deephaven.engine.v2.by.ReplicateOperators')
+    dependsOn Tasks.registerMainExecTask(project, 'replicateFreezeBy', 'io.deephaven.engine.v2.utils.freezeby.ReplicateFreezeBy')
+}

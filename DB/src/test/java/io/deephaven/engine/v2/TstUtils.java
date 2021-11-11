@@ -12,7 +12,7 @@ import io.deephaven.datastructures.util.SmartKey;
 import io.deephaven.engine.tables.StringSetWrapper;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.libs.StringSet;
-import io.deephaven.engine.tables.utils.ArrayUtils;
+import io.deephaven.util.type.ArrayTypeUtils;
 import io.deephaven.engine.tables.utils.DateTime;
 import io.deephaven.engine.tables.utils.TableDiff;
 import io.deephaven.engine.tables.utils.TableTools;
@@ -60,7 +60,7 @@ public class TstUtils {
                 throw new IllegalStateException("Added to the same column twice!");
             }
             final ColumnSource columnSource = table.getColumnSource(columnHolder.name);
-            final Object[] boxedArray = ArrayUtils.getBoxedArray(columnHolder.data);
+            final Object[] boxedArray = ArrayTypeUtils.getBoxedArray(columnHolder.data);
             final RowSet colRowSet = (boxedArray.length == 0) ? TstUtils.i() : rowSet;
             if (colRowSet.size() != boxedArray.length) {
                 throw new IllegalArgumentException(columnHolder.name + ": Invalid data addition: rowSet="
@@ -489,7 +489,7 @@ public class TstUtils {
     }
 
     public static QueryTable testTable(ColumnHolder... columnHolders) {
-        final Object[] boxedData = ArrayUtils.getBoxedArray(columnHolders[0].data);
+        final Object[] boxedData = ArrayTypeUtils.getBoxedArray(columnHolders[0].data);
         final TrackingRowSet rowSet = RowSetFactory.flat(boxedData.length).toTracking();
         return testTable(rowSet, columnHolders);
     }
@@ -530,7 +530,7 @@ public class TstUtils {
     }
 
     public static ColumnSource getTreeMapColumnSource(RowSet rowSet, ColumnHolder columnHolder) {
-        final Object[] boxedData = ArrayUtils.getBoxedArray(columnHolder.data);
+        final Object[] boxedData = ArrayTypeUtils.getBoxedArray(columnHolder.data);
 
         final AbstractColumnSource result;
         if (columnHolder instanceof ImmutableColumnHolder) {

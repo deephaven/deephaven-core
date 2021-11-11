@@ -358,7 +358,7 @@ public class TestLongNumericPrimitives extends BaseArrayTestCase {
         assertEquals(NULL_LONG, sum((long[]) null));
     }
 
-    public void testSumDbArray() {
+    public void testSumVector() {
         assertEquals(new long[]{4, 15}, sum(new ObjectVectorDirect<>(new long[][]{{5, 4}, {-3, 5}, {2, 6}})));
         assertEquals(new long[]{4, NULL_LONG}, sum(new ObjectVectorDirect<>(new long[][]{{5, NULL_LONG}, {-3, 5}, {2, 6}})));
         assertEquals(null, sum((ObjectVector<long[]>) null));
@@ -398,7 +398,7 @@ public class TestLongNumericPrimitives extends BaseArrayTestCase {
         assertEquals(NULL_LONG, product((LongVector) null));
     }
 
-//    public void testProdDbArray() {
+//    public void testProdVector() {
 //        assertEquals(new long[]{-30, 120}, product(new ObjectVectorDirect<>(new long[][]{{5, 4}, {-3, 5}, {2, 6}})));
 //        assertEquals(new long[]{-30, NULL_LONG}, product(new ObjectVectorDirect<>(new long[][]{{5, NULL_LONG}, {-3, 5}, {2, 6}})));
 //        assertEquals(null, product((Vector<long[]>) null));

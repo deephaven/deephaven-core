@@ -11,7 +11,7 @@ public class ArrayPreview implements PreviewType {
     private static final int ARRAY_SIZE_CUTOFF = 5;
     private final String displayString;
 
-    public static ArrayPreview fromDbArray(final Vector<?> vector) {
+    public static ArrayPreview fromVector(final Vector<?> vector) {
         if (vector == null) {
             return null;
         }

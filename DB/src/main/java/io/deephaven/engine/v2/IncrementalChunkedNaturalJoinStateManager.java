@@ -11,10 +11,10 @@ import io.deephaven.engine.rftable.SharedContext;
 import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.structures.rowsequence.RowSequenceUtil;
 import io.deephaven.util.QueryConstants;
-import io.deephaven.engine.v2.hashing.*;
+import io.deephaven.engine.chunk.util.hashing.*;
 // this is ugly to have twice, but we do need it twice for replication
 // @StateChunkIdentityName@ from LongChunk
-import io.deephaven.engine.v2.hashing.LongChunkEquals;
+import io.deephaven.engine.chunk.util.hashing.LongChunkEquals;
 import io.deephaven.engine.v2.sort.permute.PermuteKernel;
 import io.deephaven.engine.v2.sort.timsort.LongIntTimsortKernel;
 import io.deephaven.engine.v2.sources.*;

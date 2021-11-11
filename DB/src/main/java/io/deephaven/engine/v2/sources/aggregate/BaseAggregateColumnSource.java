@@ -23,10 +23,10 @@ abstract class BaseAggregateColumnSource<DB_ARRAY_TYPE extends Vector, COMPONENT
     final ColumnSource<COMPONENT_TYPE> aggregatedSource;
     final ColumnSource<? extends RowSet> groupRowSetSource;
 
-    BaseAggregateColumnSource(@NotNull final Class<DB_ARRAY_TYPE> dbArrayType,
+    BaseAggregateColumnSource(@NotNull final Class<DB_ARRAY_TYPE> vectorType,
             @NotNull final ColumnSource<COMPONENT_TYPE> aggregatedSource,
             @NotNull final ColumnSource<? extends RowSet> groupRowSetSource) {
-        super(dbArrayType, aggregatedSource.getType());
+        super(vectorType, aggregatedSource.getType());
         this.aggregatedSource = aggregatedSource;
         this.groupRowSetSource = groupRowSetSource;
     }

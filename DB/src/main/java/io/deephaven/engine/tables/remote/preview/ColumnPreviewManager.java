@@ -23,11 +23,11 @@ public class ColumnPreviewManager {
     // Maps types pt preview factories from the addPreview method
     private static final Map<Class<?>, PreviewColumnFactory<?, ?>> previewMap = new HashMap<>();
 
-    // Factories for arrays and DbArrays
+    // Factories for arrays and Vectors
     private static final PreviewColumnFactory<Object, ArrayPreview> arrayPreviewFactory =
             new PreviewColumnFactory<>(Object.class, ArrayPreview.class, ArrayPreview::fromArray);
-    private static final PreviewColumnFactory<Vector, ArrayPreview> dbArrayPreviewFactory =
-            new PreviewColumnFactory<>(Vector.class, ArrayPreview.class, ArrayPreview::fromDbArray);
+    private static final PreviewColumnFactory<Vector, ArrayPreview> vectorPreviewFactory =
+            new PreviewColumnFactory<>(Vector.class, ArrayPreview.class, ArrayPreview::fromVector);
     private static final PreviewColumnFactory<PyListWrapper, ArrayPreview> pyListWrapperPreviewFactory =
             new PreviewColumnFactory<>(PyListWrapper.class, ArrayPreview.class, ArrayPreview::fromPyListWrapper);
 
@@ -87,8 +87,8 @@ public class ColumnPreviewManager {
                 selectColumns.add(factory.makeColumn(name));
                 originalTypes.put(name, type.getName());
             } else if (Vector.class.isAssignableFrom(type)) {
-                // Always wrap DbArrays
-                selectColumns.add(dbArrayPreviewFactory.makeColumn(name));
+                // Always wrap Vectors
+                selectColumns.add(vectorPreviewFactory.makeColumn(name));
                 originalTypes.put(name, type.getName());
             } else if (PyListWrapper.class.isAssignableFrom(type)) {
                 // Always wrap PyListWrapper
@@ -142,7 +142,7 @@ public class ColumnPreviewManager {
      * @return true if the type can be displayed by the client, false otherwise.
      */
     public static boolean isColumnTypeDisplayable(Class<?> type) {
-        // Generally arrays and DbArrays will be wrapped in an ArrayPreview class. This check is here for correctness.
+        // Generally arrays and Vectors will be wrapped in an ArrayPreview class. This check is here for correctness.
         if (type.isArray() || Vector.class.isAssignableFrom(type)) {
             // For arrays, we need to check that the component type is displayable
             return isColumnTypeDisplayable(type.getComponentType());

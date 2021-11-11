@@ -1,0 +1,39 @@
+import io.deephaven.tools.Tools
+
+configurations {
+    testCompile.extendsFrom junit
+}
+
+sourceSets {
+    main {
+        java {
+            srcDir 'java'
+        }
+    }
+    test {
+        java {
+            srcDir 'test'
+        }
+    }
+}
+
+dependencies {
+    compile project(':Util'),
+            project(':qst')
+}
+
+spotless {
+    java {
+        targetExclude(
+                '**/Boolean*Vector*.java',
+                '**/Byte*Vector*.java',
+                '**/Char*Vector*.java',
+                '**/Short*Vector*.java',
+                '**/Int*Vector*.java',
+                '**/Long*Vector*.java',
+                '**/Float*Vector*.java',
+                '**/Double*Vector*.java',
+                '**/Object*Vector*.java'
+        )
+    }
+}

@@ -4,8 +4,8 @@
 package io.deephaven.engine.v2.sort.megamerge;
 
 import io.deephaven.engine.rftable.ChunkSource;
-import io.deephaven.engine.v2.hashing.FloatChunkEquals;
-import io.deephaven.engine.v2.hashing.LongChunkEquals;
+import io.deephaven.engine.chunk.util.hashing.FloatChunkEquals;
+import io.deephaven.engine.chunk.util.hashing.LongChunkEquals;
 import io.deephaven.engine.v2.sources.FloatArraySource;
 import io.deephaven.engine.v2.sources.LongArraySource;
 import io.deephaven.engine.chunk.*;

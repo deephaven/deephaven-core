@@ -7,7 +7,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.vector.DoubleVector;
 import io.deephaven.engine.vector.DoubleVectorDirect;
 import io.deephaven.engine.vector.ObjectVector;
-import io.deephaven.engine.tables.utils.ArrayUtils;
+import io.deephaven.util.type.ArrayTypeUtils;
 import io.deephaven.engine.util.DhDoubleComparisons;
 import io.deephaven.engine.v2.by.SumIntChunk;
 import io.deephaven.engine.v2.sort.timsort.TimsortUtilities;
@@ -2153,7 +2153,7 @@ public final class DoubleSegmentedSortedMultiset implements SegmentedSortedMulti
      */
     private double[] keyArray(long first, long last) {
         if(isEmpty()) {
-            return ArrayUtils.EMPTY_DOUBLE_ARRAY;
+            return ArrayTypeUtils.EMPTY_DOUBLE_ARRAY;
         }
 
         final int totalSize = (int)(last - first + 1);
@@ -2486,7 +2486,7 @@ public final class DoubleSegmentedSortedMultiset implements SegmentedSortedMulti
     @Override
     public String toString() {
         if (leafCount == 1) {
-            return ArrayUtils.toString(directoryValues, 0, intSize());
+            return ArrayTypeUtils.toString(directoryValues, 0, intSize());
         } else if (leafCount > 0) {
             StringBuilder arrAsString = new StringBuilder("[");
             for (int li = 0; li < leafCount; ++li) {

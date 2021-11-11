@@ -1,6 +1,7 @@
 package io.deephaven.engine.v2.utils.singlerange;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.util.datastructures.LongAbortableConsumer;
 import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.chunk.Attributes;
 import io.deephaven.engine.chunk.LongChunk;
@@ -8,6 +9,7 @@ import io.deephaven.engine.v2.utils.*;
 import io.deephaven.engine.v2.utils.rsp.RspArray;
 import io.deephaven.engine.v2.utils.rsp.RspBitmap;
 import io.deephaven.engine.v2.utils.sortedranges.SortedRanges;
+import io.deephaven.util.datastructures.LongRangeAbortableConsumer;
 
 import java.util.PrimitiveIterator;
 import java.util.function.LongConsumer;

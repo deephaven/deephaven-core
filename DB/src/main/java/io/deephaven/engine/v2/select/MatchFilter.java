@@ -10,7 +10,7 @@ import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.TableDefinition;
 import io.deephaven.engine.tables.remote.preview.DisplayWrapper;
 import io.deephaven.engine.tables.select.QueryScope;
-import io.deephaven.engine.tables.utils.ArrayUtils;
+import io.deephaven.util.type.ArrayTypeUtils;
 import io.deephaven.engine.tables.utils.DateTime;
 import io.deephaven.engine.tables.utils.DateTimeUtils;
 import io.deephaven.engine.v2.sources.ColumnSource;
@@ -121,7 +121,7 @@ public class MatchFilter extends SelectFilterImpl {
                 if (queryScope.hasParamName(strValues[valIdx])) {
                     Object paramValue = queryScope.readParamValue(strValues[valIdx]);
                     if (paramValue != null && paramValue.getClass().isArray()) {
-                        ArrayUtils.ArrayAccessor accessor = ArrayUtils.getArrayAccessor(paramValue);
+                        ArrayTypeUtils.ArrayAccessor accessor = ArrayTypeUtils.getArrayAccessor(paramValue);
                         for (int ai = 0; ai < accessor.length(); ++ai) {
                             valueList.add(convertor.convertParamValue(accessor.get(ai)));
                         }
@@ -143,7 +143,7 @@ public class MatchFilter extends SelectFilterImpl {
                     valueList.add(convertedValue);
                 }
             }
-            // values = (Object[])ArrayUtils.toArray(valueList, TypeUtils.getBoxedType(theColumn.getDataType()));
+            // values = (Object[])ArrayTypeUtils.toArray(valueList, TypeUtils.getBoxedType(theColumn.getDataType()));
             values = valueList.toArray();
             initialized = true;
         }

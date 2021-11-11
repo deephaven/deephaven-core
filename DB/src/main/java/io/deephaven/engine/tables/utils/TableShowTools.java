@@ -9,6 +9,7 @@ import io.deephaven.datastructures.util.SmartKey;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.utils.RowSet;
+import io.deephaven.util.type.ArrayTypeUtils;
 
 import java.io.PrintStream;
 import java.lang.annotation.Annotation;
@@ -263,7 +264,7 @@ class TableShowTools {
 
         @Override
         public void print(PrintStream out, Object value) {
-            printInternal(out, Arrays.toString(ArrayUtils.getBoxedArray(value)));
+            printInternal(out, Arrays.toString(ArrayTypeUtils.getBoxedArray(value)));
         }
     }
 }

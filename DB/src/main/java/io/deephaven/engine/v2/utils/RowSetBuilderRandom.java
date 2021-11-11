@@ -4,6 +4,7 @@
 
 package io.deephaven.engine.v2.utils;
 
+import io.deephaven.util.datastructures.LongRangeIterator;
 import io.deephaven.engine.chunk.Attributes;
 import io.deephaven.engine.chunk.IntChunk;
 import io.deephaven.engine.chunk.LongChunk;

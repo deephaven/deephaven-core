@@ -1,7 +1,7 @@
 package io.deephaven.engine.v2.ssms;
 
 import io.deephaven.configuration.Configuration;
-import io.deephaven.engine.util.LongSizedDataStructure;
+import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.engine.chunk.Attributes.ChunkLengths;
 import io.deephaven.engine.chunk.Attributes.Values;
 import io.deephaven.engine.chunk.*;

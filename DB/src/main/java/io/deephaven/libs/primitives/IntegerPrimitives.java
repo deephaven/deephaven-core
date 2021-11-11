@@ -10,7 +10,7 @@ package io.deephaven.libs.primitives;
 import io.deephaven.engine.vector.IntVector;
 import io.deephaven.engine.vector.IntVectorDirect;
 import io.deephaven.util.QueryConstants;
-import io.deephaven.engine.util.LongSizedDataStructure;
+import io.deephaven.util.datastructures.LongSizedDataStructure;
 import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.set.TIntSet;
 import gnu.trove.set.hash.TIntHashSet;
@@ -237,9 +237,9 @@ public class IntegerPrimitives {
     }
 
     /**
-     * Converts a DB array to a primitive array.
+     * Converts a Vector to a primitive array.
      *
-     * @param values DB array
+     * @param values Vector
      * @return primitive array.
      */
     public static int[] vec(IntVector values) {
@@ -251,10 +251,10 @@ public class IntegerPrimitives {
     }
 
     /**
-     * Converts a primitive array to a DB array.
+     * Converts a primitive array to a Vector.
      *
      * @param values primitive array
-     * @return DB array.
+     * @return Vector.
      */
     public static IntVector array(int[] values) {
         if(values == null){

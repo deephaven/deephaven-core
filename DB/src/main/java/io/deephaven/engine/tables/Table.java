@@ -18,7 +18,7 @@ import io.deephaven.engine.tables.remote.*;
 import io.deephaven.engine.tables.select.*;
 import io.deephaven.engine.tables.utils.*;
 import io.deephaven.engine.util.ColumnFormattingValues;
-import io.deephaven.engine.util.LongSizedDataStructure;
+import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.engine.util.liveness.LivenessNode;
 import io.deephaven.engine.util.liveness.LivenessScopeStack;
 import io.deephaven.engine.util.string.StringUtils;
@@ -2168,20 +2168,20 @@ public interface Table extends
         final Set<String> columnsNotToUnwrapSet = Arrays.stream(columnsNotToUngroup).collect(Collectors.toSet());
         return ungroup(getDefinition().getColumnStream()
                 .filter(c -> !columnsNotToUnwrapSet.contains(c.getName())
-                        && (c.getDataType().isArray() || LanguageParser.isDbArray(c.getDataType())))
+                        && (c.getDataType().isArray() || LanguageParser.isVector(c.getDataType())))
                 .map(ColumnDefinition::getName).toArray(String[]::new));
     }
 
     default Table ungroup() {
         return ungroup(getDefinition().getColumnStream()
-                .filter(c -> c.getDataType().isArray() || LanguageParser.isDbArray(c.getDataType()))
+                .filter(c -> c.getDataType().isArray() || LanguageParser.isVector(c.getDataType()))
                 .map(ColumnDefinition::getName).toArray(String[]::new));
     }
 
     default Table ungroup(boolean nullFill) {
         return ungroup(nullFill,
                 getDefinition().getColumnStream()
-                        .filter(c -> c.getDataType().isArray() || LanguageParser.isDbArray(c.getDataType()))
+                        .filter(c -> c.getDataType().isArray() || LanguageParser.isVector(c.getDataType()))
                         .map(ColumnDefinition::getName).toArray(String[]::new));
     }
 

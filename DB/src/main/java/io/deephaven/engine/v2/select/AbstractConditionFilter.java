@@ -100,17 +100,17 @@ public abstract class AbstractConditionFilter extends SelectFilterImpl {
 
             Class<?> compType;
             for (ColumnDefinition<?> column : tableDefinition.getColumns()) {
-                final Class<?> dbArrayType = DhFormulaColumn.getVectorType(column.getDataType());
+                final Class<?> vectorType = DhFormulaColumn.getVectorType(column.getDataType());
                 final String columnName = innerToOuterNames.getOrDefault(column.getName(), column.getName());
 
                 possibleVariables.put(columnName, column.getDataType());
-                possibleVariables.put(columnName + COLUMN_SUFFIX, dbArrayType);
+                possibleVariables.put(columnName + COLUMN_SUFFIX, vectorType);
 
                 compType = column.getComponentType();
                 if (compType != null && !compType.isPrimitive()) {
                     possibleVariableParameterizedTypes.put(columnName, new Class[] {compType});
                 }
-                if (dbArrayType == ObjectVector.class) {
+                if (vectorType == ObjectVector.class) {
                     possibleVariableParameterizedTypes.put(columnName + COLUMN_SUFFIX,
                             new Class[] {column.getDataType()});
                 }

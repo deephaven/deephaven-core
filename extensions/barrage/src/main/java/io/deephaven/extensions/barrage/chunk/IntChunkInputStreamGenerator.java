@@ -12,7 +12,7 @@ import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import com.google.common.io.LittleEndianDataOutputStream;
 import io.deephaven.UncheckedDeephavenException;
-import io.deephaven.engine.util.LongSizedDataStructure;
+import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.engine.chunk.Attributes;
 import io.deephaven.engine.chunk.IntChunk;
 import io.deephaven.engine.chunk.Chunk;

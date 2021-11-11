@@ -355,7 +355,7 @@ public class TestShortNumericPrimitives extends BaseArrayTestCase {
         assertEquals(NULL_SHORT, sum((short[]) null));
     }
 
-    public void testSumDbArray() {
+    public void testSumVector() {
         assertEquals(new short[]{4, 15}, sum(new ObjectVectorDirect<>(new short[][]{{5, 4}, {-3, 5}, {2, 6}})));
         assertEquals(new short[]{4, NULL_SHORT}, sum(new ObjectVectorDirect<>(new short[][]{{5, NULL_SHORT}, {-3, 5}, {2, 6}})));
         assertEquals(null, sum((ObjectVector<short[]>) null));
@@ -395,7 +395,7 @@ public class TestShortNumericPrimitives extends BaseArrayTestCase {
         assertEquals(NULL_SHORT, product((ShortVector) null));
     }
 
-//    public void testProdDbArray() {
+//    public void testProdVector() {
 //        assertEquals(new short[]{-30, 120}, product(new ObjectVectorDirect<>(new short[][]{{5, 4}, {-3, 5}, {2, 6}})));
 //        assertEquals(new short[]{-30, NULL_SHORT}, product(new ObjectVectorDirect<>(new short[][]{{5, NULL_SHORT}, {-3, 5}, {2, 6}})));
 //        assertEquals(null, product((Vector<short[]>) null));

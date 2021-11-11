@@ -144,8 +144,8 @@ class TypeHelper {
                 }
 
                 @Override
-                public void visit(PrimitiveVectorType<?, ?> dbArrayPrimitiveType) {
-                    addUnchecked(dbArrayPrimitiveType.clazz(), dbArrayPrimitiveType);
+                public void visit(PrimitiveVectorType<?, ?> vectorPrimitiveType) {
+                    addUnchecked(vectorPrimitiveType.clazz(), vectorPrimitiveType);
                 }
 
                 @Override

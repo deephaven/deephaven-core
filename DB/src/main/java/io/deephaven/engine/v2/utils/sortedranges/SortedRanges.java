@@ -2,6 +2,7 @@ package io.deephaven.engine.v2.utils.sortedranges;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
+import io.deephaven.util.datastructures.LongAbortableConsumer;
 import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.chunk.Attributes;
 import io.deephaven.engine.chunk.LongChunk;
@@ -9,6 +10,7 @@ import io.deephaven.engine.v2.utils.*;
 import io.deephaven.engine.v2.utils.metrics.IntCounterMetric;
 import io.deephaven.engine.v2.utils.rsp.RspBitmap;
 import io.deephaven.engine.v2.utils.singlerange.SingleRange;
+import io.deephaven.util.datastructures.LongRangeAbortableConsumer;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.apache.commons.lang3.mutable.MutableObject;

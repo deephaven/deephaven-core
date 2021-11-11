@@ -5,7 +5,7 @@
 package io.deephaven.engine.v2.sources;
 
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.tables.utils.ArrayUtils;
+import io.deephaven.util.type.ArrayTypeUtils;
 import io.deephaven.engine.tables.utils.DateTime;
 import io.deephaven.engine.chunk.Attributes;
 import io.deephaven.engine.chunk.Attributes.RowKeys;
@@ -351,7 +351,7 @@ public abstract class SparseArrayColumnSource<T>
 
     public static ColumnSource<?> getSparseMemoryColumnSource(Object dataArray) {
         if (dataArray instanceof boolean[]) {
-            return getSparseMemoryColumnSource(ArrayUtils.getBoxedArray((boolean[]) dataArray), Boolean.class);
+            return getSparseMemoryColumnSource(ArrayTypeUtils.getBoxedArray((boolean[]) dataArray), Boolean.class);
         } else if (dataArray instanceof byte[]) {
             return getSparseMemoryColumnSource((byte[]) dataArray);
         } else if (dataArray instanceof char[]) {
@@ -369,19 +369,19 @@ public abstract class SparseArrayColumnSource<T>
         } else if (dataArray instanceof Boolean[]) {
             return getSparseMemoryColumnSource((Boolean[]) dataArray, Boolean.class);
         } else if (dataArray instanceof Byte[]) {
-            return getSparseMemoryColumnSource(ArrayUtils.getUnboxedArray((Byte[]) dataArray));
+            return getSparseMemoryColumnSource(ArrayTypeUtils.getUnboxedArray((Byte[]) dataArray));
         } else if (dataArray instanceof Character[]) {
-            return getSparseMemoryColumnSource(ArrayUtils.getUnboxedArray((Character[]) dataArray));
+            return getSparseMemoryColumnSource(ArrayTypeUtils.getUnboxedArray((Character[]) dataArray));
         } else if (dataArray instanceof Double[]) {
-            return getSparseMemoryColumnSource(ArrayUtils.getUnboxedArray((Double[]) dataArray));
+            return getSparseMemoryColumnSource(ArrayTypeUtils.getUnboxedArray((Double[]) dataArray));
         } else if (dataArray instanceof Float[]) {
-            return getSparseMemoryColumnSource(ArrayUtils.getUnboxedArray((Float[]) dataArray));
+            return getSparseMemoryColumnSource(ArrayTypeUtils.getUnboxedArray((Float[]) dataArray));
         } else if (dataArray instanceof Integer[]) {
-            return getSparseMemoryColumnSource(ArrayUtils.getUnboxedArray((Integer[]) dataArray));
+            return getSparseMemoryColumnSource(ArrayTypeUtils.getUnboxedArray((Integer[]) dataArray));
         } else if (dataArray instanceof Long[]) {
-            return getSparseMemoryColumnSource(ArrayUtils.getUnboxedArray((Long[]) dataArray));
+            return getSparseMemoryColumnSource(ArrayTypeUtils.getUnboxedArray((Long[]) dataArray));
         } else if (dataArray instanceof Short[]) {
-            return getSparseMemoryColumnSource(ArrayUtils.getUnboxedArray((Short[]) dataArray));
+            return getSparseMemoryColumnSource(ArrayTypeUtils.getUnboxedArray((Short[]) dataArray));
         } else {
             // noinspection unchecked
             return getSparseMemoryColumnSource((Object[]) dataArray,

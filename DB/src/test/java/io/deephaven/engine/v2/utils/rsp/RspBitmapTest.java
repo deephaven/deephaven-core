@@ -2,6 +2,7 @@ package io.deephaven.engine.v2.utils.rsp;
 
 import static io.deephaven.engine.chunk.Attributes.OrderedRowKeys;
 
+import io.deephaven.util.datastructures.LongAbortableConsumer;
 import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.chunk.Attributes;
 import io.deephaven.engine.chunk.WritableLongChunk;

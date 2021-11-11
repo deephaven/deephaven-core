@@ -296,7 +296,7 @@ public class ReplicateSegmentedSortedMultiset {
                         "     */",
                         "    private DateTime[] keyArrayAsDate(long first, long last) {",
                         "        if(isEmpty()) {",
-                        "            return ArrayUtils.EMPTY_DATETIME_ARRAY;",
+                        "            return ArrayTypeUtils.EMPTY_DATETIME_ARRAY;",
                         "        }",
                         "",
                         "        final int totalSize = (int)(last - first + 1);",

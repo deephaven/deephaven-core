@@ -158,9 +158,9 @@ public class BooleanPrimitives {
     }
 
     /**
-     * Converts a DB array to a primitive array.
+     * Converts a Vector to a primitive array.
      *
-     * @param values DB array
+     * @param values Vector
      * @return primitive array.
      */
     public static Boolean[] vec(BooleanVector values) {
@@ -168,10 +168,10 @@ public class BooleanPrimitives {
     }
 
     /**
-     * Converts a primitive array to a DB array.
+     * Converts a primitive array to a Vector.
      *
      * @param values primitive array
-     * @return DB array.
+     * @return Vector.
      */
     public static BooleanVector array(Boolean[] values) {
         return new BooleanVectorDirect(values);

@@ -116,10 +116,10 @@ public class JavaKernelBuilder {
 
     private CodeGenerator generateKernelConstructor() {
         final CodeGenerator g = CodeGenerator.create(
-                "public $CLASSNAME$([[DBARRAYBASE_CANONICAL]][] __dbArrays,", CodeGenerator.indent(
+                "public $CLASSNAME$([[DBARRAYBASE_CANONICAL]][] __vectors,", CodeGenerator.indent(
                         "[[PARAM_CANONICAL]][] __params)"),
                 CodeGenerator.block(
-                        CodeGenerator.repeated("getDbArray", "[[NAME]] = ([[TYPE]])__dbArrays[[[INDEX]]];"),
+                        CodeGenerator.repeated("getVector", "[[NAME]] = ([[TYPE]])__vectors[[[INDEX]]];"),
                         CodeGenerator.repeated("getParam", "[[NAME]] = ([[TYPE]])__params[[[INDEX]]].getValue();")));
         g.replace("DBARRAYBASE_CANONICAL", Vector.class.getCanonicalName());
         g.replace("PARAM_CANONICAL", Param.class.getCanonicalName());
@@ -127,7 +127,7 @@ public class JavaKernelBuilder {
         final int[] nextParamIndex = {0};
         visitFormulaParameters(null,
                 ap -> {
-                    final CodeGenerator ag = g.instantiateNewRepeated("getDbArray");
+                    final CodeGenerator ag = g.instantiateNewRepeated("getVector");
                     ag.replace("NAME", ap.name);
                     ag.replace("TYPE", ap.arrayTypeAsString);
                     ag.replace("INDEX", "" + nextArrayIndex[0]++);
@@ -238,10 +238,10 @@ public class JavaKernelBuilder {
             for (Map.Entry<String, Class<?>> entry : arrays.entrySet()) {
                 final String name = entry.getKey() + DhFormulaColumn.COLUMN_SUFFIX;
                 final Class<?> dataType = entry.getValue();
-                final Class<?> dbArrayType = DhFormulaColumn.getVectorType(dataType);
-                final String dbArrayTypeAsString = dbArrayType.getCanonicalName() +
+                final Class<?> vectorType = DhFormulaColumn.getVectorType(dataType);
+                final String vectorTypeAsString = vectorType.getCanonicalName() +
                         (TypeUtils.isConvertibleToPrimitive(dataType) ? "" : "<" + dataType.getCanonicalName() + ">");
-                final ColumnArrayParameter cap = new ColumnArrayParameter(name, dbArrayType, dbArrayTypeAsString);
+                final ColumnArrayParameter cap = new ColumnArrayParameter(name, vectorType, vectorTypeAsString);
                 addIfNotNull(results, columnArrayLambda.apply(cap));
             }
         }

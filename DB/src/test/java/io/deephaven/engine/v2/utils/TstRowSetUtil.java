@@ -3,6 +3,7 @@ package io.deephaven.engine.v2.utils;
 import io.deephaven.engine.v2.utils.rsp.RspBitmap;
 import io.deephaven.engine.v2.utils.singlerange.SingleRange;
 import io.deephaven.engine.v2.utils.sortedranges.SortedRanges;
+import io.deephaven.util.datastructures.LongRangeAbortableConsumer;
 import org.apache.commons.lang3.mutable.MutableObject;
 
 public class TstRowSetUtil {

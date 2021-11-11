@@ -357,7 +357,7 @@ public class TestIntegerNumericPrimitives extends BaseArrayTestCase {
         assertEquals(NULL_INT, sum((int[]) null));
     }
 
-    public void testSumDbArray() {
+    public void testSumVector() {
         assertEquals(new int[]{4, 15}, sum(new ObjectVectorDirect<>(new int[][]{{5, 4}, {-3, 5}, {2, 6}})));
         assertEquals(new int[]{4, NULL_INT}, sum(new ObjectVectorDirect<>(new int[][]{{5, NULL_INT}, {-3, 5}, {2, 6}})));
         assertEquals(null, sum((ObjectVector<int[]>) null));
@@ -397,7 +397,7 @@ public class TestIntegerNumericPrimitives extends BaseArrayTestCase {
         assertEquals(NULL_INT, product((IntVector) null));
     }
 
-//    public void testProdDbArray() {
+//    public void testProdVector() {
 //        assertEquals(new int[]{-30, 120}, product(new ObjectVectorDirect<>(new int[][]{{5, 4}, {-3, 5}, {2, 6}})));
 //        assertEquals(new int[]{-30, NULL_INT}, product(new ObjectVectorDirect<>(new int[][]{{5, NULL_INT}, {-3, 5}, {2, 6}})));
 //        assertEquals(null, product((Vector<int[]>) null));

@@ -514,7 +514,7 @@ public class GroovyDeephavenSession extends AbstractScriptSession implements Scr
                 "import io.deephaven.engine.tables.Table;\n" +
                 "import java.lang.reflect.Array;\n" +
                 "import io.deephaven.util.type.TypeUtils;\n" +
-                "import io.deephaven.engine.tables.utils.ArrayUtils;\n" +
+                "import io.deephaven.util.type.ArrayTypeUtils;\n" +
                 "import io.deephaven.engine.tables.utils.DateTime;\n" +
                 "import io.deephaven.engine.tables.utils.DateTimeUtils;\n" +
                 "import io.deephaven.base.string.cache.CompressedString;\n" +

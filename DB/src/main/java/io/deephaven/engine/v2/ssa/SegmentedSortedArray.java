@@ -1,7 +1,7 @@
 package io.deephaven.engine.v2.ssa;
 
 import io.deephaven.configuration.Configuration;
-import io.deephaven.engine.util.LongSizedDataStructure;
+import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.chunk.Attributes.Any;
 import io.deephaven.engine.chunk.Attributes.RowKeys;

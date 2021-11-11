@@ -9,7 +9,7 @@ import io.deephaven.engine.rftable.SharedContext;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.v2.*;
-import io.deephaven.engine.v2.hashing.ChunkEquals;
+import io.deephaven.engine.chunk.util.hashing.ChunkEquals;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.v2.utils.RowSetBuilderSequential;

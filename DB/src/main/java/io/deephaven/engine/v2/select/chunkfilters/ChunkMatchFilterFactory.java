@@ -1,6 +1,6 @@
 package io.deephaven.engine.v2.select.chunkfilters;
 
-import io.deephaven.engine.tables.utils.ArrayUtils;
+import io.deephaven.util.type.ArrayTypeUtils;
 import io.deephaven.engine.v2.select.ChunkFilter;
 
 public class ChunkMatchFilterFactory {
@@ -16,31 +16,31 @@ public class ChunkMatchFilterFactory {
             }
         }
         if (type == char.class) {
-            final char[] charKeys = ArrayUtils.getUnboxedCharArray(keys);
+            final char[] charKeys = ArrayTypeUtils.getUnboxedCharArray(keys);
             return CharChunkMatchFilterFactory.makeFilter(invertMatch, charKeys);
         }
         if (type == byte.class) {
-            final byte[] byteKeys = ArrayUtils.getUnboxedByteArray(keys);
+            final byte[] byteKeys = ArrayTypeUtils.getUnboxedByteArray(keys);
             return ByteChunkMatchFilterFactory.makeFilter(invertMatch, byteKeys);
         }
         if (type == short.class) {
-            final short[] shortKeys = ArrayUtils.getUnboxedShortArray(keys);
+            final short[] shortKeys = ArrayTypeUtils.getUnboxedShortArray(keys);
             return ShortChunkMatchFilterFactory.makeFilter(invertMatch, shortKeys);
         }
         if (type == int.class) {
-            final int[] intKeys = ArrayUtils.getUnboxedIntArray(keys);
+            final int[] intKeys = ArrayTypeUtils.getUnboxedIntArray(keys);
             return IntChunkMatchFilterFactory.makeFilter(invertMatch, intKeys);
         }
         if (type == long.class) {
-            final long[] longKeys = ArrayUtils.getUnboxedLongArray(keys);
+            final long[] longKeys = ArrayTypeUtils.getUnboxedLongArray(keys);
             return LongChunkMatchFilterFactory.makeFilter(invertMatch, longKeys);
         }
         if (type == float.class) {
-            final float[] floatKeys = ArrayUtils.getUnboxedFloatArray(keys);
+            final float[] floatKeys = ArrayTypeUtils.getUnboxedFloatArray(keys);
             return FloatChunkMatchFilterFactory.makeFilter(invertMatch, floatKeys);
         }
         if (type == double.class) {
-            final double[] doubleKeys = ArrayUtils.getUnboxedDoubleArray(keys);
+            final double[] doubleKeys = ArrayTypeUtils.getUnboxedDoubleArray(keys);
             return DoubleChunkMatchFilterFactory.makeFilter(invertMatch, doubleKeys);
         }
         if (type == String.class && caseInsensitive) {

@@ -382,9 +382,9 @@ public class TestObjectPrimitives extends BaseArrayTestCase {
     }
 
     public void testSort() {
-        final ObjectVector<ComparableExtended> comparableExtendedDbArray = new ObjectVectorDirect<>(null, new ComparableExtended(1d), new ComparableExtended(12d), new ComparableExtended(0d)
+        final ObjectVector<ComparableExtended> comparableExtendedVector = new ObjectVectorDirect<>(null, new ComparableExtended(1d), new ComparableExtended(12d), new ComparableExtended(0d)
                 , new ComparableExtended(9.4d), null, new ComparableExtended(-5.6d), new ComparableExtended(-2.3d), new ComparableExtended(-2.3d));
-        ObjectVector<ComparableExtended> sort = sort(comparableExtendedDbArray);
+        ObjectVector<ComparableExtended> sort = sort(comparableExtendedVector);
         ObjectVector<ComparableExtended> expected = new ObjectVectorDirect<>(null, null, new ComparableExtended(-5.6d), new ComparableExtended(-2.3d), new ComparableExtended(-2.3d),
                 new ComparableExtended(0d), new ComparableExtended(1d), new ComparableExtended(9.4d), new ComparableExtended(12d));
         assertEquals(expected, sort);
@@ -402,12 +402,12 @@ public class TestObjectPrimitives extends BaseArrayTestCase {
         final Byte[] expectedSortedByteArray = new Byte[]{null, io.deephaven.util.QueryConstants.NULL_BYTE, null, io.deephaven.util.QueryConstants.NULL_BYTE, (byte) 1, (byte) 3, (byte) 9, (byte) 78};
         assertEquals(expectedSortedByteArray, sortBytesArray);
 
-        final ObjectVector<Byte> byteDbArray = new ObjectVectorDirect<>(null, (byte) 1, (byte) 9, (byte) 3, io.deephaven.util.QueryConstants.NULL_BYTE, null, (byte) 78, io.deephaven.util.QueryConstants
+        final ObjectVector<Byte> byteVector = new ObjectVectorDirect<>(null, (byte) 1, (byte) 9, (byte) 3, io.deephaven.util.QueryConstants.NULL_BYTE, null, (byte) 78, io.deephaven.util.QueryConstants
                 .NULL_BYTE);
-        final ObjectVector<Byte> sortedByteDbArray = sort(byteDbArray);
-        final ObjectVector<Byte> expectedSortedByteDbArray = new ObjectVectorDirect<>(null, io.deephaven.util.QueryConstants.NULL_BYTE, null, io.deephaven.util
+        final ObjectVector<Byte> sortedByteVector = sort(byteVector);
+        final ObjectVector<Byte> expectedSortedByteVector = new ObjectVectorDirect<>(null, io.deephaven.util.QueryConstants.NULL_BYTE, null, io.deephaven.util
                 .QueryConstants.NULL_BYTE, (byte) 1, (byte) 3, (byte) 9, (byte) 78);
-        assertEquals(expectedSortedByteDbArray, sortedByteDbArray);
+        assertEquals(expectedSortedByteVector, sortedByteVector);
 
         final Short[] shorts = new Short[]{null, (short) 1, (short) 9, (short) 3, io.deephaven.util.QueryConstants.NULL_SHORT, null, (short) 78, io.deephaven.util.QueryConstants
                 .NULL_SHORT};
@@ -416,12 +416,12 @@ public class TestObjectPrimitives extends BaseArrayTestCase {
                 .NULL_SHORT, (short) 1, (short) 3, (short) 9, (short) 78,};
         assertEquals(expectedSortedShortArray, sortShortsArray);
 
-        final ObjectVector<Short> shortDbArray = new ObjectVectorDirect<>(null, (short) 1, (short) 9, (short) 3, io.deephaven.util.QueryConstants.NULL_SHORT, null, (short) 78, io.deephaven.util.QueryConstants
+        final ObjectVector<Short> shortVector = new ObjectVectorDirect<>(null, (short) 1, (short) 9, (short) 3, io.deephaven.util.QueryConstants.NULL_SHORT, null, (short) 78, io.deephaven.util.QueryConstants
                 .NULL_SHORT);
-        final ObjectVector<Short> sortedShortDbArray = sort(shortDbArray);
-        final ObjectVector<Short> expectedSortedShortDbArray = new ObjectVectorDirect<>(null, io.deephaven.util.QueryConstants.NULL_SHORT, null, io.deephaven.util
+        final ObjectVector<Short> sortedShortVector = sort(shortVector);
+        final ObjectVector<Short> expectedSortedShortVector = new ObjectVectorDirect<>(null, io.deephaven.util.QueryConstants.NULL_SHORT, null, io.deephaven.util
                 .QueryConstants.NULL_SHORT, (short) 1, (short) 3, (short) 9, (short) 78);
-        assertEquals(expectedSortedShortDbArray, sortedShortDbArray);
+        assertEquals(expectedSortedShortVector, sortedShortVector);
 
         final Integer[] ints = new Integer[]{null, (int) 1, (int) 9, (int) 3, io.deephaven.util.QueryConstants.NULL_INT, null, (int) 78, io.deephaven.util.QueryConstants.NULL_INT};
         final Integer[] sortIntegersArray = sort(ints);
@@ -429,12 +429,12 @@ public class TestObjectPrimitives extends BaseArrayTestCase {
                 78,};
         assertEquals(expectedSortedIntegerArray, sortIntegersArray);
 
-        final ObjectVector<Integer> intDbArray = new ObjectVectorDirect<>(null, (int) 1, (int) 9, (int) 3, io.deephaven.util.QueryConstants.NULL_INT, null, (int) 78, io.deephaven.util.QueryConstants
+        final ObjectVector<Integer> intVector = new ObjectVectorDirect<>(null, (int) 1, (int) 9, (int) 3, io.deephaven.util.QueryConstants.NULL_INT, null, (int) 78, io.deephaven.util.QueryConstants
                 .NULL_INT);
-        final ObjectVector<Integer> sortedIntegerDbArray = sort(intDbArray);
-        final ObjectVector<Integer> expectedSortedIntegerDbArray = new ObjectVectorDirect<>(null, io.deephaven.util.QueryConstants.NULL_INT, null, io.deephaven.util
+        final ObjectVector<Integer> sortedIntegerVector = sort(intVector);
+        final ObjectVector<Integer> expectedSortedIntegerVector = new ObjectVectorDirect<>(null, io.deephaven.util.QueryConstants.NULL_INT, null, io.deephaven.util
                 .QueryConstants.NULL_INT, (int) 1, (int) 3, (int) 9, (int) 78);
-        assertEquals(expectedSortedIntegerDbArray, sortedIntegerDbArray);
+        assertEquals(expectedSortedIntegerVector, sortedIntegerVector);
 
         final Float[] floats = new Float[]{null, (float) 1, (float) 9, (float) 3, io.deephaven.util.QueryConstants.NULL_FLOAT, null, (float) 78, io.deephaven.util.QueryConstants
                 .NULL_FLOAT};
@@ -443,12 +443,12 @@ public class TestObjectPrimitives extends BaseArrayTestCase {
                 .NULL_FLOAT, (float) 1, (float) 3, (float) 9, (float) 78};
         assertEquals(expectedSortedFloatArray, sortFloatsArray);
 
-        final ObjectVector<Float> floatDbArray = new ObjectVectorDirect<>(null, (float) 1, (float) 9, (float) 3, io.deephaven.util.QueryConstants.NULL_FLOAT, null, (float) 78, io.deephaven.util.QueryConstants
+        final ObjectVector<Float> floatVector = new ObjectVectorDirect<>(null, (float) 1, (float) 9, (float) 3, io.deephaven.util.QueryConstants.NULL_FLOAT, null, (float) 78, io.deephaven.util.QueryConstants
                 .NULL_FLOAT);
-        final ObjectVector<Float> sortedFloatDbArray = sort(floatDbArray);
-        final ObjectVector<Float> expectedSortedFloatDbArray = new ObjectVectorDirect<>(null, io.deephaven.util.QueryConstants.NULL_FLOAT, null, io.deephaven.util
+        final ObjectVector<Float> sortedFloatVector = sort(floatVector);
+        final ObjectVector<Float> expectedSortedFloatVector = new ObjectVectorDirect<>(null, io.deephaven.util.QueryConstants.NULL_FLOAT, null, io.deephaven.util
                 .QueryConstants.NULL_FLOAT, (float) 1, (float) 3, (float) 9, (float) 78);
-        assertEquals(expectedSortedFloatDbArray, sortedFloatDbArray);
+        assertEquals(expectedSortedFloatVector, sortedFloatVector);
 
         final Long[] longs = new Long[]{null, (long) 1, (long) 9, (long) 3, io.deephaven.util.QueryConstants.NULL_LONG, null, (long) 78, io.deephaven.util.QueryConstants
                 .NULL_LONG};
@@ -456,12 +456,12 @@ public class TestObjectPrimitives extends BaseArrayTestCase {
         final Long[] expectedSortedLongArray = new Long[]{null, io.deephaven.util.QueryConstants.NULL_LONG, null, io.deephaven.util.QueryConstants.NULL_LONG, (long) 1, (long) 3, (long) 9, (long) 78};
         assertEquals(expectedSortedLongArray, sortLongsArray);
 
-        final ObjectVector<Long> longDbArray = new ObjectVectorDirect<>(null, (long) 1, (long) 9, (long) 3, io.deephaven.util.QueryConstants.NULL_LONG, null, (long) 78, io.deephaven.util.QueryConstants
+        final ObjectVector<Long> longVector = new ObjectVectorDirect<>(null, (long) 1, (long) 9, (long) 3, io.deephaven.util.QueryConstants.NULL_LONG, null, (long) 78, io.deephaven.util.QueryConstants
                 .NULL_LONG);
-        final ObjectVector<Long> sortedLongDbArray = sort(longDbArray);
-        final ObjectVector<Long> expectedSortedLongDbArray = new ObjectVectorDirect<>(null, io.deephaven.util.QueryConstants.NULL_LONG, null, io.deephaven.util
+        final ObjectVector<Long> sortedLongVector = sort(longVector);
+        final ObjectVector<Long> expectedSortedLongVector = new ObjectVectorDirect<>(null, io.deephaven.util.QueryConstants.NULL_LONG, null, io.deephaven.util
                 .QueryConstants.NULL_LONG, (long) 1, (long) 3, (long) 9, (long) 78);
-        assertEquals(expectedSortedLongDbArray, sortedLongDbArray);
+        assertEquals(expectedSortedLongVector, sortedLongVector);
 
         final Double[] doubles = new Double[]{null, (double) 1, (double) 9, (double) 3, io.deephaven.util.QueryConstants.NULL_DOUBLE, null, (double) 78, io.deephaven.util.QueryConstants
                 .NULL_DOUBLE};
@@ -470,12 +470,12 @@ public class TestObjectPrimitives extends BaseArrayTestCase {
                 .QueryConstants.NULL_DOUBLE, (double) 1, (double) 3, (double) 9, (double) 78};
         assertEquals(expectedSortedDoubleArray, sortDoublesArray);
 
-        final ObjectVector<Double> doubleDbArray = new ObjectVectorDirect<>(null, (double) 1, (double) 9, (double) 3, io.deephaven.util.QueryConstants.NULL_DOUBLE, null, (double) 78, io.deephaven.util.QueryConstants
+        final ObjectVector<Double> doubleVector = new ObjectVectorDirect<>(null, (double) 1, (double) 9, (double) 3, io.deephaven.util.QueryConstants.NULL_DOUBLE, null, (double) 78, io.deephaven.util.QueryConstants
                 .NULL_DOUBLE, Double.NaN);
-        final ObjectVector<Double> sortedDoubleDbArray = sort(doubleDbArray);
-        final ObjectVector<Double> expectedSortedDoubleDbArray = new ObjectVectorDirect<>(null, io.deephaven.util.QueryConstants.NULL_DOUBLE, null, io.deephaven
+        final ObjectVector<Double> sortedDoubleVector = sort(doubleVector);
+        final ObjectVector<Double> expectedSortedDoubleVector = new ObjectVectorDirect<>(null, io.deephaven.util.QueryConstants.NULL_DOUBLE, null, io.deephaven
                 .util.QueryConstants.NULL_DOUBLE, (double) 1, (double) 3, (double) 9, (double) 78, Double.NaN);
-        assertEquals(expectedSortedDoubleDbArray, sortedDoubleDbArray);
+        assertEquals(expectedSortedDoubleVector, sortedDoubleVector);
 
         assertEquals(new Number[]{null, io.deephaven.util.QueryConstants.NULL_INT, -9f, -3l, 1, 2d, (short) 3, 7d, (byte) 8}, sort(1, 2d, -3l, -9f, 7d, (byte) 8, (short) 3, null, io.deephaven.util
                 .QueryConstants.NULL_INT));
@@ -497,10 +497,10 @@ public class TestObjectPrimitives extends BaseArrayTestCase {
     }
 
     public void testSortDescending() {
-        final ObjectVector<ComparableExtended> comparableExtendedDbArray = new ObjectVectorDirect<>(null, new ComparableExtended(1d), new ComparableExtended(12d), new ComparableExtended(0d)
+        final ObjectVector<ComparableExtended> comparableExtendedVector = new ObjectVectorDirect<>(null, new ComparableExtended(1d), new ComparableExtended(12d), new ComparableExtended(0d)
                 , new ComparableExtended(9.4d), null, new ComparableExtended(-5.6d), new ComparableExtended(-2.3d), new ComparableExtended(-2.3d));
 
-        ObjectVector<ComparableExtended> sort = sortDescending(comparableExtendedDbArray);
+        ObjectVector<ComparableExtended> sort = sortDescending(comparableExtendedVector);
         ObjectVector<ComparableExtended> expected = new ObjectVectorDirect<>(new ComparableExtended(12d), new ComparableExtended(9.4d), new ComparableExtended(1d),
                 new ComparableExtended(0d), new ComparableExtended(-2.3d), new ComparableExtended(-2.3d), new ComparableExtended(-5.6d), null, null);
         assertEquals(expected, sort);
@@ -518,12 +518,12 @@ public class TestObjectPrimitives extends BaseArrayTestCase {
                 .NULL_BYTE};
         assertEquals(expectedSortedByteArray, sortedBytesArray);
 
-        final ObjectVector<Byte> byteDbArray = new ObjectVectorDirect<>(null, (byte) 1, (byte) 9, (byte) 3, io.deephaven.util.QueryConstants.NULL_BYTE, null, (byte) 78, io.deephaven.util.QueryConstants
+        final ObjectVector<Byte> byteVector = new ObjectVectorDirect<>(null, (byte) 1, (byte) 9, (byte) 3, io.deephaven.util.QueryConstants.NULL_BYTE, null, (byte) 78, io.deephaven.util.QueryConstants
                 .NULL_BYTE);
-        ObjectVector<Byte> sortedBytesDbArray = sortDescending(byteDbArray);
-        ObjectVector<Byte> expectedSortedBytesDbArray = new ObjectVectorDirect<>((byte) 78, (byte) 9, (byte) 3, (byte) 1, null, io.deephaven.util.QueryConstants.NULL_BYTE, null, io.deephaven.util.QueryConstants
+        ObjectVector<Byte> sortedBytesVector = sortDescending(byteVector);
+        ObjectVector<Byte> expectedSortedBytesVector = new ObjectVectorDirect<>((byte) 78, (byte) 9, (byte) 3, (byte) 1, null, io.deephaven.util.QueryConstants.NULL_BYTE, null, io.deephaven.util.QueryConstants
                 .NULL_BYTE);
-        assertEquals(expectedSortedBytesDbArray, sortedBytesDbArray);
+        assertEquals(expectedSortedBytesVector, sortedBytesVector);
 
         final Short[] shorts = new Short[]{null, (short) 1, (short) 9, (short) 3, io.deephaven.util.QueryConstants.NULL_SHORT, null, (short) 78, io.deephaven.util.QueryConstants
                 .NULL_SHORT};
@@ -532,13 +532,13 @@ public class TestObjectPrimitives extends BaseArrayTestCase {
                 .NULL_SHORT};
         assertEquals(expectedSortedShortArray, sortedShortsArray);
 
-        final ObjectVector<Short> shortDbArray = new ObjectVectorDirect<>(null, (short) 1, (short) 9, (short) 3, io.deephaven.util.QueryConstants.NULL_SHORT, null, (short) 78, io.deephaven.util.QueryConstants
+        final ObjectVector<Short> shortVector = new ObjectVectorDirect<>(null, (short) 1, (short) 9, (short) 3, io.deephaven.util.QueryConstants.NULL_SHORT, null, (short) 78, io.deephaven.util.QueryConstants
                 .NULL_SHORT);
-        ObjectVector<Short> sortedShortsDbArray = sortDescending(shortDbArray);
-        ObjectVector<Short> expectedSortedShortsDbArray = new ObjectVectorDirect<>((short) 78, (short) 9, (short) 3, (short) 1, null, io.deephaven.util.QueryConstants.NULL_SHORT, null, io.deephaven.util
+        ObjectVector<Short> sortedShortsVector = sortDescending(shortVector);
+        ObjectVector<Short> expectedSortedShortsVector = new ObjectVectorDirect<>((short) 78, (short) 9, (short) 3, (short) 1, null, io.deephaven.util.QueryConstants.NULL_SHORT, null, io.deephaven.util
                 .QueryConstants
                 .NULL_SHORT);
-        assertEquals(expectedSortedShortsDbArray, sortedShortsDbArray);
+        assertEquals(expectedSortedShortsVector, sortedShortsVector);
 
         final Integer[] ints = new Integer[]{null, (int) 1, (int) 9, (int) 3, io.deephaven.util.QueryConstants.NULL_INT, null, (int) 78, io.deephaven.util.QueryConstants
                 .NULL_INT};
@@ -547,12 +547,12 @@ public class TestObjectPrimitives extends BaseArrayTestCase {
                 .NULL_INT};
         assertEquals(expectedSortedIntegerArray, sortedIntegersArray);
 
-        final ObjectVector<Integer> intDbArray = new ObjectVectorDirect<>(null, (int) 1, (int) 9, (int) 3, io.deephaven.util.QueryConstants.NULL_INT, null, (int) 78, io.deephaven.util.QueryConstants
+        final ObjectVector<Integer> intVector = new ObjectVectorDirect<>(null, (int) 1, (int) 9, (int) 3, io.deephaven.util.QueryConstants.NULL_INT, null, (int) 78, io.deephaven.util.QueryConstants
                 .NULL_INT);
-        ObjectVector<Integer> sortedIntegersDbArray = sortDescending(intDbArray);
-        ObjectVector<Integer> expectedSortedIntegersDbArray = new ObjectVectorDirect<>((int) 78, (int) 9, (int) 3, (int) 1, null, io.deephaven.util.QueryConstants.NULL_INT, null, io.deephaven.util.QueryConstants
+        ObjectVector<Integer> sortedIntegersVector = sortDescending(intVector);
+        ObjectVector<Integer> expectedSortedIntegersVector = new ObjectVectorDirect<>((int) 78, (int) 9, (int) 3, (int) 1, null, io.deephaven.util.QueryConstants.NULL_INT, null, io.deephaven.util.QueryConstants
                 .NULL_INT);
-        assertEquals(expectedSortedIntegersDbArray, sortedIntegersDbArray);
+        assertEquals(expectedSortedIntegersVector, sortedIntegersVector);
 
         final Float[] floats = new Float[]{null, (float) 1, (float) 9, (float) 3, io.deephaven.util.QueryConstants.NULL_FLOAT, null, (float) 78, io.deephaven.util.QueryConstants
                 .NULL_FLOAT};
@@ -561,13 +561,13 @@ public class TestObjectPrimitives extends BaseArrayTestCase {
                 .NULL_FLOAT};
         assertEquals(expectedSortedFloatArray, sortedFloatsArray);
 
-        final ObjectVector<Float> floatDbArray = new ObjectVectorDirect<>(null, (float) 1, (float) 9, (float) 3, io.deephaven.util.QueryConstants.NULL_FLOAT, null, (float) 78, io.deephaven.util.QueryConstants
+        final ObjectVector<Float> floatVector = new ObjectVectorDirect<>(null, (float) 1, (float) 9, (float) 3, io.deephaven.util.QueryConstants.NULL_FLOAT, null, (float) 78, io.deephaven.util.QueryConstants
                 .NULL_FLOAT);
-        ObjectVector<Float> sortedFloatsDbArray = sortDescending(floatDbArray);
-        ObjectVector<Float> expectedSortedFloatsDbArray = new ObjectVectorDirect<>((float) 78, (float) 9, (float) 3, (float) 1, null, io.deephaven.util.QueryConstants.NULL_FLOAT, null, io.deephaven.util
+        ObjectVector<Float> sortedFloatsVector = sortDescending(floatVector);
+        ObjectVector<Float> expectedSortedFloatsVector = new ObjectVectorDirect<>((float) 78, (float) 9, (float) 3, (float) 1, null, io.deephaven.util.QueryConstants.NULL_FLOAT, null, io.deephaven.util
                 .QueryConstants
                 .NULL_FLOAT);
-        assertEquals(expectedSortedFloatsDbArray, sortedFloatsDbArray);
+        assertEquals(expectedSortedFloatsVector, sortedFloatsVector);
 
         final Long[] longs = new Long[]{null, (long) 1, (long) 9, (long) 3, io.deephaven.util.QueryConstants.NULL_LONG, null, (long) 78, io.deephaven.util.QueryConstants
                 .NULL_LONG};
@@ -576,12 +576,12 @@ public class TestObjectPrimitives extends BaseArrayTestCase {
                 .NULL_LONG};
         assertEquals(expectedSortedLongArray, sortedLongsArray);
 
-        final ObjectVector<Long> longDbArray = new ObjectVectorDirect<>(null, (long) 1, (long) 9, (long) 3, io.deephaven.util.QueryConstants.NULL_LONG, null, (long) 78, io.deephaven.util.QueryConstants
+        final ObjectVector<Long> longVector = new ObjectVectorDirect<>(null, (long) 1, (long) 9, (long) 3, io.deephaven.util.QueryConstants.NULL_LONG, null, (long) 78, io.deephaven.util.QueryConstants
                 .NULL_LONG);
-        ObjectVector<Long> sortedLongsDbArray = sortDescending(longDbArray);
-        ObjectVector<Long> expectedSortedLongsDbArray = new ObjectVectorDirect<>((long) 78, (long) 9, (long) 3, (long) 1, null, io.deephaven.util.QueryConstants.NULL_LONG, null, io.deephaven.util.QueryConstants
+        ObjectVector<Long> sortedLongsVector = sortDescending(longVector);
+        ObjectVector<Long> expectedSortedLongsVector = new ObjectVectorDirect<>((long) 78, (long) 9, (long) 3, (long) 1, null, io.deephaven.util.QueryConstants.NULL_LONG, null, io.deephaven.util.QueryConstants
                 .NULL_LONG);
-        assertEquals(expectedSortedLongsDbArray, sortedLongsDbArray);
+        assertEquals(expectedSortedLongsVector, sortedLongsVector);
 
         final Double[] doubles = new Double[]{null, (double) 1, (double) 9, (double) 3, io.deephaven.util.QueryConstants.NULL_DOUBLE, null, (double) 78, io.deephaven.util.QueryConstants
                 .NULL_DOUBLE};
@@ -590,12 +590,12 @@ public class TestObjectPrimitives extends BaseArrayTestCase {
                 .QueryConstants.NULL_DOUBLE};
         assertEquals(expectedSortedDoubleArray, sortedDoublesArray);
 
-        final ObjectVector<Double> doubleDbArray = new ObjectVectorDirect<>(null, (double) 1, (double) 9, (double) 3, io.deephaven.util.QueryConstants.NULL_DOUBLE, null, (double) 78, io.deephaven
+        final ObjectVector<Double> doubleVector = new ObjectVectorDirect<>(null, (double) 1, (double) 9, (double) 3, io.deephaven.util.QueryConstants.NULL_DOUBLE, null, (double) 78, io.deephaven
                 .util.QueryConstants.NULL_DOUBLE, Double.NaN);
-        ObjectVector<Double> sortedDoublesDbArray = sortDescending(doubleDbArray);
-        ObjectVector<Double> expectedSortedDoublesDbArray = new ObjectVectorDirect<>(Double.NaN, (double) 78, (double) 9, (double) 3, (double) 1, null, io.deephaven.util.QueryConstants.NULL_DOUBLE, null, io.deephaven.util
+        ObjectVector<Double> sortedDoublesVector = sortDescending(doubleVector);
+        ObjectVector<Double> expectedSortedDoublesVector = new ObjectVectorDirect<>(Double.NaN, (double) 78, (double) 9, (double) 3, (double) 1, null, io.deephaven.util.QueryConstants.NULL_DOUBLE, null, io.deephaven.util
                 .QueryConstants.NULL_DOUBLE);
-        assertEquals(expectedSortedDoublesDbArray, sortedDoublesDbArray);
+        assertEquals(expectedSortedDoublesVector, sortedDoublesVector);
 
         assertEquals(new Number[]{(byte) 8, 7d, (short) 3, 2d, 1, -3l, -9f, null, io.deephaven.util.QueryConstants.NULL_INT}, sortDescending(1, 2d, -3l, -9f, 7d,
                 (byte) 8, (short) 3, null, io.deephaven.util.QueryConstants.NULL_INT));
@@ -621,9 +621,9 @@ public class TestObjectPrimitives extends BaseArrayTestCase {
 
     public void testSortExceptions() {
         //sort
-        ObjectVector dbArrayToSort = null;
+        ObjectVector vectorToSort = null;
 
-        ObjectVector sort = sort(dbArrayToSort);
+        ObjectVector sort = sort(vectorToSort);
         assertNull(sort);
 
         BigDecimal[] bd = null;
@@ -646,7 +646,7 @@ public class TestObjectPrimitives extends BaseArrayTestCase {
 
         //sortDescending
 
-        sort = sortDescending(dbArrayToSort);
+        sort = sortDescending(vectorToSort);
         assertNull(sort);
 
         bd = null;

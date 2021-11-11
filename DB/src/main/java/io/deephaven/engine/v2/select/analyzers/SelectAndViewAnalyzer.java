@@ -71,7 +71,7 @@ public abstract class SelectAndViewAnalyzer {
                 }
                 case SELECT_STATIC: {
                     // We need to call newDestInstance because only newDestInstance has the knowledge to endow our
-                    // created array with the proper componentType (in the case of DbArrays).
+                    // created array with the proper componentType (in the case of Vectors).
                     final WritableSource<?> scs = sc.newDestInstance(targetSize);
                     analyzer =
                             analyzer.createLayerForSelect(sc.getName(), sc, scs, null, distinctDeps, mcsBuilder, false);
@@ -80,7 +80,7 @@ public abstract class SelectAndViewAnalyzer {
                 case SELECT_REDIRECTED_REFRESHING:
                 case SELECT_REFRESHING: {
                     // We need to call newDestInstance because only newDestInstance has the knowledge to endow our
-                    // created array with the proper componentType (in the case of DbArrays).
+                    // created array with the proper componentType (in the case of Vectors).
                     // TODO(kosak): use DeltaAwareColumnSource
                     WritableSource<?> scs = sc.newDestInstance(targetSize);
                     WritableSource<?> underlyingSource = null;

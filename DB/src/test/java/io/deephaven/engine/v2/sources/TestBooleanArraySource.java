@@ -9,6 +9,7 @@ import io.deephaven.engine.chunk.ObjectChunk;
 
 import io.deephaven.engine.chunk.WritableObjectChunk;
 
+import io.deephaven.engine.rftable.TestSourceSink;
 import io.deephaven.util.BooleanUtils;
 
 import io.deephaven.engine.tables.live.UpdateGraphProcessor;
@@ -28,7 +29,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.stream.LongStream;
 
-import static io.deephaven.engine.v2.sources.ArrayGenerator.indexDataGenerator;
+import static io.deephaven.engine.chunk.ArrayGenerator.indexDataGenerator;
 import static io.deephaven.util.QueryConstants.NULL_BOOLEAN;
 import static junit.framework.TestCase.*;
 

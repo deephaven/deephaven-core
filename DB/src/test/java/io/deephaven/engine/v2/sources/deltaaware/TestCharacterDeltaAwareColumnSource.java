@@ -1,7 +1,7 @@
 package io.deephaven.engine.v2.sources.deltaaware;
 
 import io.deephaven.engine.tables.live.UpdateGraphProcessor;
-import io.deephaven.engine.v2.sources.ArrayGenerator;
+import io.deephaven.engine.chunk.ArrayGenerator;
 import io.deephaven.engine.rftable.ChunkSource;
 import io.deephaven.engine.chunk.CharChunk;
 import io.deephaven.engine.chunk.Attributes.Values;

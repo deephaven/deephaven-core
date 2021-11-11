@@ -5,6 +5,8 @@
 package io.deephaven.engine.v2.utils;
 
 import io.deephaven.configuration.Configuration;
+import io.deephaven.util.datastructures.LongAbortableConsumer;
+import io.deephaven.util.datastructures.LongRangeConsumer;
 import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.chunk.Attributes;
 import io.deephaven.engine.chunk.Attributes.OrderedRowKeys;
@@ -12,6 +14,7 @@ import io.deephaven.engine.chunk.LongChunk;
 import io.deephaven.engine.v2.utils.singlerange.SingleRange;
 import io.deephaven.engine.v2.utils.sortedranges.SortedRanges;
 import io.deephaven.engine.v2.utils.rsp.RspBitmap;
+import io.deephaven.util.datastructures.LongRangeAbortableConsumer;
 import io.deephaven.util.annotations.FinalDefault;
 import io.deephaven.util.annotations.VisibleForTesting;
 

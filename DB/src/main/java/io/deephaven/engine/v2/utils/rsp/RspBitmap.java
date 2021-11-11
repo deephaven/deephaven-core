@@ -1,5 +1,7 @@
 package io.deephaven.engine.v2.utils.rsp;
 
+import io.deephaven.util.datastructures.LongAbortableConsumer;
+import io.deephaven.util.datastructures.LongRangeConsumer;
 import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.chunk.Attributes;
 import io.deephaven.engine.chunk.Attributes.OrderedRowKeys;
@@ -7,6 +9,7 @@ import io.deephaven.engine.chunk.LongChunk;
 import io.deephaven.engine.v2.utils.*;
 import io.deephaven.engine.v2.utils.singlerange.SingleRange;
 import io.deephaven.engine.v2.utils.sortedranges.SortedRanges;
+import io.deephaven.util.datastructures.LongRangeAbortableConsumer;
 import io.deephaven.util.annotations.VisibleForTesting;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;

@@ -41,7 +41,7 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
         if (chunkSource == null) {
             // noinspection unchecked
             chunkSource = selectColumn.getDataView();
-            if (selectColumnHoldsDbArray) {
+            if (selectColumnHoldsVector) {
                 chunkSource = new VectorChunkAdapter<>(chunkSource);
             }
         }

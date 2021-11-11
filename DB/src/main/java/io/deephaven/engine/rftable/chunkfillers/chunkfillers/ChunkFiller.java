@@ -10,7 +10,8 @@ import io.deephaven.engine.chunk.WritableChunk;
 import io.deephaven.engine.structures.RowSequence;
 
 public interface ChunkFiller {
-    static ChunkFiller fromChunkType(final ChunkType chunkType) {
+
+    static ChunkFiller forChunkType(final ChunkType chunkType) {
         switch (chunkType) {
             case Boolean:
                 return BooleanChunkFiller.INSTANCE;

@@ -389,7 +389,7 @@ public class TestSuanShuIntegration extends BaseArrayTestCase {
         testMatEquals(expected, actual);
     }
 
-    public void testConvertDbArrayBasesToMatrix() throws Exception {
+    public void testConvertVectorBasesToMatrix() throws Exception {
         final double[][] doubles = new double[][] {{1, 2, 3, 4, 5, 6}, {1, 2, 3, 4, 5, 6}, {1, 2, 3, 4, 5, 6},
                 {11, 12, 13, 14, 15, 16}, {21, 22, 23, 24, 25, 26}, {31, 32, 33, 34, 35, 36}, {0, 1, 0, 1, 0, 1}};
 
@@ -406,12 +406,12 @@ public class TestSuanShuIntegration extends BaseArrayTestCase {
         testMatEquals(expected, actual);
     }
 
-    public void testConvertDbArraysToMatrix() throws Exception {
+    public void testConvertVectorsToMatrix() throws Exception {
         final double[][] doubles = new double[][] {{1, 2, 3, 4, Double.NaN, 6}, {1, 2, 3, 4, Double.NaN, 6},
                 {1, 2, 3, 4, Double.NaN, 6}, {11, 12, 13, 14, Double.NaN, 16}, {21, 22, 23, 24, Double.NaN, 26},
                 {31, 32, 33, 34, Double.NaN, 36}, {0, 1, 0, 1, Double.NaN, 1}};
 
-        final ObjectVector dbArrays =
+        final ObjectVector vectors =
                 new ObjectVectorDirect(new ByteVectorDirect(new byte[] {1, 2, 3, 4, QueryConstants.NULL_BYTE, 6}),
                         new ShortVectorDirect(new short[] {1, 2, 3, 4, QueryConstants.NULL_SHORT, 6}),
                         new DoubleVectorDirect(1d, 2d, 3d, 4d, QueryConstants.NULL_DOUBLE, 6d),
@@ -423,12 +423,12 @@ public class TestSuanShuIntegration extends BaseArrayTestCase {
         Matrix expected = new DenseMatrix(doubles);
         expected = new SimpleMatrixMathOperation().transpose(expected);
 
-        final Matrix actual = ssMat(dbArrays);
+        final Matrix actual = ssMat(vectors);
         testAbstractMatrix(actual);
         testMatEquals(expected, actual);
     }
 
-    public void testConvertDbArrayBasesToMatrixException() throws Exception {
+    public void testConvertVectorBasesToMatrixException() throws Exception {
 
         Vector[] vectors = new Vector[] {new ObjectVectorDirect<>(1, 2, "3", 4, 5, 6)};
         try {

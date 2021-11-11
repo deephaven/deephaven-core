@@ -20,20 +20,20 @@ public class LanguageParserDummyClass {
         this.value = value;
     }
 
-    public static long arrayAndDbArrayFunction(int[] arr) {
+    public static long arrayAndVectorFunction(int[] arr) {
         return arr.length;
     }
 
-    public static long arrayAndDbArrayFunction(IntVector arr) {
+    public static long arrayAndVectorFunction(IntVector arr) {
         return arr.size();
     }
 
-    public static long dbArrayOnlyFunction(IntVector arr) {
-        return arrayAndDbArrayFunction(arr);
+    public static long vectorOnlyFunction(IntVector arr) {
+        return arrayAndVectorFunction(arr);
     }
 
     public static long arrayOnlyFunction(int[] arr) {
-        return arrayAndDbArrayFunction(arr);
+        return arrayAndVectorFunction(arr);
     }
 
     public static int functionWithInterfacesAsArgTypes(CharSequence cs, Serializable s) {

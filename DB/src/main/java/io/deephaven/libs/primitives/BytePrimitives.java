@@ -10,7 +10,7 @@ package io.deephaven.libs.primitives;
 import io.deephaven.engine.vector.ByteVector;
 import io.deephaven.engine.vector.ByteVectorDirect;
 import io.deephaven.util.QueryConstants;
-import io.deephaven.engine.util.LongSizedDataStructure;
+import io.deephaven.util.datastructures.LongSizedDataStructure;
 import gnu.trove.list.array.TByteArrayList;
 import gnu.trove.set.TByteSet;
 import gnu.trove.set.hash.TByteHashSet;
@@ -237,9 +237,9 @@ public class BytePrimitives {
     }
 
     /**
-     * Converts a DB array to a primitive array.
+     * Converts a Vector to a primitive array.
      *
-     * @param values DB array
+     * @param values Vector
      * @return primitive array.
      */
     public static byte[] vec(ByteVector values) {
@@ -251,10 +251,10 @@ public class BytePrimitives {
     }
 
     /**
-     * Converts a primitive array to a DB array.
+     * Converts a primitive array to a Vector.
      *
      * @param values primitive array
-     * @return DB array.
+     * @return Vector.
      */
     public static ByteVector array(byte[] values) {
         if(values == null){

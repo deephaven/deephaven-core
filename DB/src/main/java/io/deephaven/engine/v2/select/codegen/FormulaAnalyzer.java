@@ -91,11 +91,11 @@ public class FormulaAnalyzer {
 
         for (ColumnDefinition<?> columnDefinition : availableColumns.values()) {
             final String columnSuffix = DhFormulaColumn.COLUMN_SUFFIX;
-            final Class<?> dbArrayType = DhFormulaColumn.getVectorType(columnDefinition.getDataType());
+            final Class<?> vectorType = DhFormulaColumn.getVectorType(columnDefinition.getDataType());
 
-            possibleVariables.put(columnDefinition.getName() + columnSuffix, dbArrayType);
+            possibleVariables.put(columnDefinition.getName() + columnSuffix, vectorType);
 
-            if (dbArrayType == ObjectVector.class) {
+            if (vectorType == ObjectVector.class) {
                 possibleVariableParameterizedTypes.put(columnDefinition.getName() + columnSuffix,
                         new Class[] {columnDefinition.getDataType()});
             }

@@ -113,10 +113,10 @@ public class ColumnDefinition<TYPE> implements Externalizable, LogOutputAppendab
         return adapter.out();
     }
 
-    public static <T extends Vector<?>> ColumnDefinition<T> ofDbArray(@NotNull final String name,
-            @NotNull final Class<T> dbArrayType) {
-        ColumnDefinition<T> columnDefinition = new ColumnDefinition<>(name, dbArrayType);
-        columnDefinition.setComponentType(baseComponentTypeForVector(dbArrayType));
+    public static <T extends Vector<?>> ColumnDefinition<T> ofVector(@NotNull final String name,
+            @NotNull final Class<T> vectorType) {
+        ColumnDefinition<T> columnDefinition = new ColumnDefinition<>(name, vectorType);
+        columnDefinition.setComponentType(baseComponentTypeForVector(vectorType));
         return columnDefinition;
     }
 
@@ -208,7 +208,7 @@ public class ColumnDefinition<TYPE> implements Externalizable, LogOutputAppendab
         }
         if (Vector.class.isAssignableFrom(dataType)) {
             // noinspection unchecked
-            final Class<?> dbArrayComponentType =
+            final Class<?> vectorComponentType =
                     baseComponentTypeForVector((Class<? extends Vector<?>>) dataType);
             if (inputComponentType == null) {
                 /*
@@ -216,9 +216,9 @@ public class ColumnDefinition<TYPE> implements Externalizable, LogOutputAppendab
                  * to know component type if (Vector.class.isAssignableFrom(dataType)) { throw new
                  * IllegalArgumentException("Missing required component type for Vector data type " + dataType); }
                  */
-                return dbArrayComponentType;
+                return vectorComponentType;
             }
-            if (!dbArrayComponentType.isAssignableFrom(inputComponentType)) {
+            if (!vectorComponentType.isAssignableFrom(inputComponentType)) {
                 throw new IllegalArgumentException(
                         "Invalid component type " + inputComponentType + " for Vector data type " + dataType);
             }
@@ -335,9 +335,9 @@ public class ColumnDefinition<TYPE> implements Externalizable, LogOutputAppendab
                 }
 
                 @Override
-                public void visit(PrimitiveVectorType<?, ?> dbArrayPrimitiveType) {
+                public void visit(PrimitiveVectorType<?, ?> vectorPrimitiveType) {
                     // noinspection unchecked,rawtypes
-                    out = ofDbArray(name, (Class) dbArrayPrimitiveType.clazz());
+                    out = ofVector(name, (Class) vectorPrimitiveType.clazz());
                 }
 
                 @Override

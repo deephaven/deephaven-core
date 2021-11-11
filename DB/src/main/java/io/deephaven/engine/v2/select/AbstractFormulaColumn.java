@@ -240,7 +240,7 @@ public abstract class AbstractFormulaColumn implements FormulaColumn {
     }
 
     @SuppressWarnings("unchecked")
-    private static Vector<?> makeAppropriateDbArrayWrapper(ColumnSource<?> cs, RowSet rowSet) {
+    private static Vector<?> makeAppropriateVectorWrapper(ColumnSource<?> cs, RowSet rowSet) {
         final Class<?> type = cs.getType();
         if (type == Boolean.class) {
             return new ObjectVectorColumnWrapper<>((ColumnSource<Boolean>) cs, rowSet);
@@ -282,12 +282,12 @@ public abstract class AbstractFormulaColumn implements FormulaColumn {
                 netColumnSources.put(columnName, columnSourceToUse);
             }
 
-            final Vector<?>[] dbArrays = new Vector[sd.arrays.length];
+            final Vector<?>[] vectors = new Vector[sd.arrays.length];
             for (int ii = 0; ii < sd.arrays.length; ++ii) {
                 final ColumnSource<?> cs = columnsToData.get(sd.arrays[ii]);
-                dbArrays[ii] = makeAppropriateDbArrayWrapper(cs, rowSet);
+                vectors[ii] = makeAppropriateVectorWrapper(cs, rowSet);
             }
-            final FormulaKernel fk = formulaKernelFactory.createInstance(dbArrays, params);
+            final FormulaKernel fk = formulaKernelFactory.createInstance(vectors, params);
             return new FormulaKernelAdapter(rowSet, sd, netColumnSources, fk);
         };
     }

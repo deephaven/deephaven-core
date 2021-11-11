@@ -4,7 +4,7 @@ import io.deephaven.engine.chunk.Attributes;
 import io.deephaven.engine.chunk.Chunk;
 import io.deephaven.engine.chunk.ChunkType;
 import io.deephaven.engine.chunk.WritableChunk;
-import io.deephaven.engine.v2.utils.LongRangeConsumer;
+import io.deephaven.util.datastructures.LongRangeConsumer;
 import io.deephaven.engine.structures.RowSequence;
 import org.jetbrains.annotations.NotNull;
 

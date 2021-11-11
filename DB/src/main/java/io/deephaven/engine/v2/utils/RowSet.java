@@ -2,8 +2,9 @@ package io.deephaven.engine.v2.utils;
 
 import gnu.trove.list.array.TLongArrayList;
 import io.deephaven.base.log.LogOutputAppendable;
+import io.deephaven.util.datastructures.LongAbortableConsumer;
 import io.deephaven.engine.structures.RowSequence;
-import io.deephaven.engine.util.LongSizedDataStructure;
+import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.util.SafeCloseable;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.jetbrains.annotations.NotNull;

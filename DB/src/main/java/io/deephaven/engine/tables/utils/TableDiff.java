@@ -9,7 +9,7 @@ import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.rftable.Context;
 import io.deephaven.engine.rftable.SharedContext;
 import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.v2.hashing.ChunkEquals;
+import io.deephaven.engine.chunk.util.hashing.ChunkEquals;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.chunk.Attributes.Values;
 import io.deephaven.engine.chunk.*;
@@ -17,6 +17,7 @@ import io.deephaven.engine.v2.utils.ChunkUtils;
 import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseableList;
+import io.deephaven.util.type.ArrayTypeUtils;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
@@ -258,10 +259,10 @@ public class TableDiff {
                                 position + " encountered " + actualValue + " expected " + expectedValue);
                         return position;
                     }
-                    if (!ArrayUtils.equals(actualValue, expectedValue)) {
+                    if (!ArrayTypeUtils.equals(actualValue, expectedValue)) {
                         issues.add("Column " + name + " different from the expected set, first difference at row " +
-                                position + " encountered " + ArrayUtils.toString(actualValue) + " expected "
-                                + ArrayUtils.toString(expectedValue));
+                                position + " encountered " + ArrayTypeUtils.toString(actualValue) + " expected "
+                                + ArrayTypeUtils.toString(expectedValue));
                         return position;
                     }
                 } else if (chunkType == ChunkType.Float) {

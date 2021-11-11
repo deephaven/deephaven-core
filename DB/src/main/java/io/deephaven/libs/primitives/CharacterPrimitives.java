@@ -7,7 +7,7 @@ package io.deephaven.libs.primitives;
 import io.deephaven.engine.vector.CharVector;
 import io.deephaven.engine.vector.CharVectorDirect;
 import io.deephaven.util.QueryConstants;
-import io.deephaven.engine.util.LongSizedDataStructure;
+import io.deephaven.util.datastructures.LongSizedDataStructure;
 import gnu.trove.list.array.TCharArrayList;
 import gnu.trove.set.TCharSet;
 import gnu.trove.set.hash.TCharHashSet;
@@ -234,9 +234,9 @@ public class CharacterPrimitives {
     }
 
     /**
-     * Converts a DB array to a primitive array.
+     * Converts a Vector to a primitive array.
      *
-     * @param values DB array
+     * @param values Vector
      * @return primitive array.
      */
     public static char[] vec(CharVector values) {
@@ -248,10 +248,10 @@ public class CharacterPrimitives {
     }
 
     /**
-     * Converts a primitive array to a DB array.
+     * Converts a primitive array to a Vector.
      *
      * @param values primitive array
-     * @return DB array.
+     * @return Vector.
      */
     public static CharVector array(char[] values) {
         if(values == null){

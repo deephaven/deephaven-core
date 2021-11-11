@@ -8,6 +8,7 @@ import io.deephaven.engine.chunk.ObjectChunk;
 
 import io.deephaven.engine.chunk.WritableObjectChunk;
 
+import io.deephaven.engine.rftable.TestSourceSink;
 import io.deephaven.util.BooleanUtils;
 
 import io.deephaven.engine.tables.live.UpdateGraphProcessor;

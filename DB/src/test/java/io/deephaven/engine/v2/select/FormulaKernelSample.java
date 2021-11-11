@@ -19,9 +19,9 @@ public class FormulaKernelSample implements io.deephaven.engine.v2.select.formul
     private final LongVector II_;
     private final java.lang.Integer q;
 
-    public FormulaKernelSample(Vector[] __dbArrays,
+    public FormulaKernelSample(Vector[] __vectors,
                                io.deephaven.engine.tables.select.Param[] __params) {
-        II_ = (LongVector)__dbArrays[0];
+        II_ = (LongVector)__vectors[0];
         q = (java.lang.Integer)__params[0].getValue();
     }
 

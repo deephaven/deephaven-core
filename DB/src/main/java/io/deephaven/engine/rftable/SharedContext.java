@@ -1,7 +1,6 @@
 package io.deephaven.engine.rftable;
 
 import io.deephaven.engine.v2.sources.RedirectedColumnSource;
-import io.deephaven.engine.chunk.ResettableContext;
 import io.deephaven.engine.v2.utils.MutableRowRedirection;
 import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;

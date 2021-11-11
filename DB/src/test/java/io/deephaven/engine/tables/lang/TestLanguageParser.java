@@ -52,7 +52,7 @@ public class TestLanguageParser extends BaseArrayTestCase {
 
         classImports = new HashSet<>();
         classImports.add(Color.class);
-        classImports.add(ArrayUtils.class);
+        classImports.add(VectorConversions.class);
         classImports.add(HashSet.class);
         classImports.add(Vector.class);
         classImports.add(LanguageParserDummyClass.class);
@@ -98,14 +98,14 @@ public class TestLanguageParser extends BaseArrayTestCase {
         variables.put("myBooleanObj", Boolean.class);
         variables.put("myArrayList", ArrayList.class);
         variables.put("myHashMap", HashMap.class);
-        variables.put("myDBArray", ObjectVector.class);
+        variables.put("myVector", ObjectVector.class);
         variables.put("myEnumValue", LanguageParserDummyEnum.class);
-        variables.put("myObjectDBArray", ObjectVector.class);
-        variables.put("myIntDBArray", IntVector.class);
-        variables.put("myByteDBArray", ByteVector.class);
-        variables.put("myDoubleDBArray", DoubleVector.class);
+        variables.put("myObjectVector", ObjectVector.class);
+        variables.put("myIntVector", IntVector.class);
+        variables.put("myByteVector", ByteVector.class);
+        variables.put("myDoubleVector", DoubleVector.class);
         // noinspection deprecation
-        variables.put("myBooleanDBArray", BooleanVector.class);
+        variables.put("myBooleanVector", BooleanVector.class);
         variables.put("myDummyClass", LanguageParserDummyClass.class);
         variables.put("myDummyInnerClass", LanguageParserDummyClass.InnerClass.class);
         variables.put("myClosure", Closure.class);
@@ -123,7 +123,7 @@ public class TestLanguageParser extends BaseArrayTestCase {
         variableParameterizedTypes = new HashMap<>();
         variableParameterizedTypes.put("myArrayList", new Class[] {Long.class});
         variableParameterizedTypes.put("myHashMap", new Class[] {Integer.class, Double.class});
-        variableParameterizedTypes.put("myDBArray", new Class[] {Double.class});
+        variableParameterizedTypes.put("myVector", new Class[] {Double.class});
     }
 
     public void testSimpleCalculations() throws Exception {
@@ -1141,7 +1141,7 @@ public class TestLanguageParser extends BaseArrayTestCase {
     }
 
     /**
-     * Test implicit argument type conversions (e.g. primitive casts and converting DbArrays to Java arrays)
+     * Test implicit argument type conversions (e.g. primitive casts and converting Vectors to Java arrays)
      */
     public void testImplicitConversion() throws Exception {
         String expression = "testImplicitConversion1(myInt, myDouble, myLong, myInt, myDouble, myLong)";
@@ -1157,9 +1157,9 @@ public class TestLanguageParser extends BaseArrayTestCase {
         resultExpression = "testVarArgs(myInt, 'a', myDoubleArray)";
         check(expression, resultExpression, new double[0].getClass(), new String[] {"myDoubleArray", "myInt"});
 
-        expression = "testImplicitConversion1(myDoubleDBArray)";
-        resultExpression = "testImplicitConversion1(ArrayUtils.nullSafeVectorToArray(myDoubleDBArray))";
-        check(expression, resultExpression, new double[0].getClass(), new String[] {"myDoubleDBArray"});
+        expression = "testImplicitConversion1(myDoubleVector)";
+        resultExpression = "testImplicitConversion1(VectorConversions.nullSafeVectorToArray(myDoubleVector))";
+        check(expression, resultExpression, new double[0].getClass(), new String[] {"myDoubleVector"});
 
         expression = "testImplicitConversion2(myInt, myInt)";
         resultExpression = "testImplicitConversion2(new int[]{ myInt, myInt })";
@@ -1169,9 +1169,9 @@ public class TestLanguageParser extends BaseArrayTestCase {
         resultExpression = "testImplicitConversion3(myLongArray)";
         check(expression, resultExpression, new Object[0].getClass(), new String[] {"myLongArray"});
 
-        expression = "testImplicitConversion3(myDBArray)";
-        resultExpression = "testImplicitConversion3(ArrayUtils.nullSafeVectorToArray(myDBArray))";
-        check(expression, resultExpression, new Object[0].getClass(), new String[] {"myDBArray"});
+        expression = "testImplicitConversion3(myVector)";
+        resultExpression = "testImplicitConversion3(VectorConversions.nullSafeVectorToArray(myVector))";
+        check(expression, resultExpression, new Object[0].getClass(), new String[] {"myVector"});
 
         expression = "testImplicitConversion3(myDoubleArray)";
         resultExpression = "testImplicitConversion3(myDoubleArray)";
@@ -1185,30 +1185,30 @@ public class TestLanguageParser extends BaseArrayTestCase {
         resultExpression = "testImplicitConversion3(myDoubleArray, myInt)";
         check(expression, resultExpression, new Object[0].getClass(), new String[] {"myDoubleArray", "myInt"});
 
-        expression = "testImplicitConversion4(myInt, myDBArray)";
-        resultExpression = "testImplicitConversion4(doubleCast(myInt), ArrayUtils.nullSafeVectorToArray(myDBArray))";
-        check(expression, resultExpression, new Object[0].getClass(), new String[] {"myDBArray", "myInt"});
+        expression = "testImplicitConversion4(myInt, myVector)";
+        resultExpression = "testImplicitConversion4(doubleCast(myInt), VectorConversions.nullSafeVectorToArray(myVector))";
+        check(expression, resultExpression, new Object[0].getClass(), new String[] {"myVector", "myInt"});
 
-        expression = "testImplicitConversion4(myInt, myDBArray, myDouble)";
-        resultExpression = "testImplicitConversion4(doubleCast(myInt), myDBArray, myDouble)";
-        check(expression, resultExpression, new Object[0].getClass(), new String[] {"myDBArray", "myDouble", "myInt"});
+        expression = "testImplicitConversion4(myInt, myVector, myDouble)";
+        resultExpression = "testImplicitConversion4(doubleCast(myInt), myVector, myDouble)";
+        check(expression, resultExpression, new Object[0].getClass(), new String[] {"myVector", "myDouble", "myInt"});
 
-        expression = "testImplicitConversion4(myInt, myDouble, myDBArray)";
-        resultExpression = "testImplicitConversion4(doubleCast(myInt), myDouble, myDBArray)";
-        check(expression, resultExpression, new Object[0].getClass(), new String[] {"myDBArray", "myDouble", "myInt"});
+        expression = "testImplicitConversion4(myInt, myDouble, myVector)";
+        resultExpression = "testImplicitConversion4(doubleCast(myInt), myDouble, myVector)";
+        check(expression, resultExpression, new Object[0].getClass(), new String[] {"myVector", "myDouble", "myInt"});
 
-        // expression="testImplicitConversion5(myDBArray)"; // TODO: This test fails (declared arg type is
+        // expression="testImplicitConversion5(myVector)"; // TODO: This test fails (declared arg type is
         // "Vector...")
-        // resultExpression="testImplicitConversion5(myDBArray)"; // vararg of Vector -- don't convert!
-        // check(expression, resultExpression, new Object[0].getClass(), new String[]{"myDBArray"});
+        // resultExpression="testImplicitConversion5(myVector)"; // vararg of Vector -- don't convert!
+        // check(expression, resultExpression, new Object[0].getClass(), new String[]{"myVector"});
 
-        expression = "testImplicitConversion5((Vector) myDBArray)"; // Workaround for the above.
-        resultExpression = "testImplicitConversion5((Vector)myDBArray)"; // vararg of Vector -- don't convert!
-        check(expression, resultExpression, new Object[0].getClass(), new String[] {"myDBArray"});
+        expression = "testImplicitConversion5((Vector) myVector)"; // Workaround for the above.
+        resultExpression = "testImplicitConversion5((Vector)myVector)"; // vararg of Vector -- don't convert!
+        check(expression, resultExpression, new Object[0].getClass(), new String[] {"myVector"});
 
-        expression = "testImplicitConversion5(myDBArray, myDBArray)";
-        resultExpression = "testImplicitConversion5(myDBArray, myDBArray)"; // vararg of Vector -- don't convert!
-        check(expression, resultExpression, new Object[0].getClass(), new String[] {"myDBArray"});
+        expression = "testImplicitConversion5(myVector, myVector)";
+        resultExpression = "testImplicitConversion5(myVector, myVector)"; // vararg of Vector -- don't convert!
+        check(expression, resultExpression, new Object[0].getClass(), new String[] {"myVector"});
     }
 
 
@@ -1394,9 +1394,9 @@ public class TestLanguageParser extends BaseArrayTestCase {
              */
             try {
                 expression =
-                        "io.deephaven.engine.tables.lang.LanguageParserDummyClass.interpolate(myDoubleDBArray.toArray(),myDoubleDBArray.toArray(),new double[]{myDouble},io.deephaven.engine.tables.lang.NestedEnum.ONE,false)[0]";
+                        "io.deephaven.engine.tables.lang.LanguageParserDummyClass.interpolate(myDoubleVector.toArray(),myDoubleVector.toArray(),new double[]{myDouble},io.deephaven.engine.tables.lang.NestedEnum.ONE,false)[0]";
                 resultExpression =
-                        "io.deephaven.engine.tables.lang.LanguageParserDummyClass.interpolate(myDoubleDBArray.toArray(),myDoubleDBArray.toArray(),new double[]{myDouble},io.deephaven.engine.tables.lang.NestedEnum.ONE,false)[0]";
+                        "io.deephaven.engine.tables.lang.LanguageParserDummyClass.interpolate(myDoubleVector.toArray(),myDoubleVector.toArray(),new double[]{myDouble},io.deephaven.engine.tables.lang.NestedEnum.ONE,false)[0]";
                 check(expression, resultExpression, String.class, new String[] {});
                 fail("Should have thrown a LanguageParser.QueryLanguageParseException");
             } catch (LanguageParser.QueryLanguageParseException ex) {
@@ -1693,23 +1693,23 @@ public class TestLanguageParser extends BaseArrayTestCase {
     }
 
     public void testArraysAsArguments() throws Exception {
-        String expression = "LanguageParserDummyClass.arrayAndDbArrayFunction(myIntDBArray)";
-        String resultExpression = "LanguageParserDummyClass.arrayAndDbArrayFunction(myIntDBArray)";
-        check(expression, resultExpression, long.class, new String[] {"myIntDBArray"});
+        String expression = "LanguageParserDummyClass.arrayAndVectorFunction(myIntVector)";
+        String resultExpression = "LanguageParserDummyClass.arrayAndVectorFunction(myIntVector)";
+        check(expression, resultExpression, long.class, new String[] {"myIntVector"});
 
-        expression = "LanguageParserDummyClass.arrayAndDbArrayFunction(myIntArray)";
-        resultExpression = "LanguageParserDummyClass.arrayAndDbArrayFunction(myIntArray)";
+        expression = "LanguageParserDummyClass.arrayAndVectorFunction(myIntArray)";
+        resultExpression = "LanguageParserDummyClass.arrayAndVectorFunction(myIntArray)";
         check(expression, resultExpression, long.class, new String[] {"myIntArray"});
 
-        expression = "LanguageParserDummyClass.arrayOnlyFunction(myIntDBArray)";
+        expression = "LanguageParserDummyClass.arrayOnlyFunction(myIntVector)";
         resultExpression =
-                "LanguageParserDummyClass.arrayOnlyFunction(ArrayUtils.nullSafeVectorToArray(myIntDBArray))";
-        check(expression, resultExpression, long.class, new String[] {"myIntDBArray"});
+                "LanguageParserDummyClass.arrayOnlyFunction(VectorConversions.nullSafeVectorToArray(myIntVector))";
+        check(expression, resultExpression, long.class, new String[] {"myIntVector"});
 
-        expression = "LanguageParserDummyClass.dbArrayOnlyFunction(myIntArray)";
-        resultExpression = "LanguageParserDummyClass.dbArrayOnlyFunction(myIntArray)";
+        expression = "LanguageParserDummyClass.vectorOnlyFunction(myIntArray)";
+        resultExpression = "LanguageParserDummyClass.vectorOnlyFunction(myIntArray)";
         try {
-            // We don't (currently?) support converting primitive arrays to DB arrays.
+            // We don't (currently?) support converting primitive arrays to Vectors.
             check(expression, resultExpression, int.class, new String[] {"myIntArray"});
             fail("Should have thrown a LanguageParser.QueryLanguageParseException");
         } catch (LanguageParser.QueryLanguageParseException ex) {
@@ -1803,47 +1803,47 @@ public class TestLanguageParser extends BaseArrayTestCase {
         check(expression, resultExpression, Double.class, new String[] {"myHashMap"});
     }
 
-    public void testDBArrayUnboxing() throws Exception {
-        String expression = "genericArrayToSingle(myDBArray)";
-        String resultExpression = "genericArrayToSingle(ArrayUtils.nullSafeVectorToArray(myDBArray))";
-        check(expression, resultExpression, Double.class, new String[] {"myDBArray"});
+    public void testVectorUnboxing() throws Exception {
+        String expression = "genericArrayToSingle(myVector)";
+        String resultExpression = "genericArrayToSingle(VectorConversions.nullSafeVectorToArray(myVector))";
+        check(expression, resultExpression, Double.class, new String[] {"myVector"});
 
-        expression = "genericArraysToSingle(myDBArray, myIntegerObjArray)";
-        resultExpression = "genericArraysToSingle(ArrayUtils.nullSafeVectorToArray(myDBArray), myIntegerObjArray)";
-        check(expression, resultExpression, Integer.class, new String[] {"myDBArray", "myIntegerObjArray"});
+        expression = "genericArraysToSingle(myVector, myIntegerObjArray)";
+        resultExpression = "genericArraysToSingle(VectorConversions.nullSafeVectorToArray(myVector), myIntegerObjArray)";
+        check(expression, resultExpression, Integer.class, new String[] {"myVector", "myIntegerObjArray"});
 
-        expression = "genericArraysToSingle(myIntegerObjArray, myDBArray)";
-        resultExpression = "genericArraysToSingle(myIntegerObjArray, ArrayUtils.nullSafeVectorToArray(myDBArray))";
-        check(expression, resultExpression, Double.class, new String[] {"myDBArray", "myIntegerObjArray"});
+        expression = "genericArraysToSingle(myIntegerObjArray, myVector)";
+        resultExpression = "genericArraysToSingle(myIntegerObjArray, VectorConversions.nullSafeVectorToArray(myVector))";
+        check(expression, resultExpression, Double.class, new String[] {"myVector", "myIntegerObjArray"});
 
-        expression = "genericDBArray(myDBArray)";
-        resultExpression = "genericDBArray(myDBArray)";
-        check(expression, resultExpression, Double.class, new String[] {"myDBArray"});
+        expression = "genericVector(myVector)";
+        resultExpression = "genericVector(myVector)";
+        check(expression, resultExpression, Double.class, new String[] {"myVector"});
 
-        expression = "genericArrayToSingle(myObjectDBArray)";
-        resultExpression = "genericArrayToSingle(ArrayUtils.nullSafeVectorToArray(myObjectDBArray))";
-        check(expression, resultExpression, Object.class, new String[] {"myObjectDBArray"});
+        expression = "genericArrayToSingle(myObjectVector)";
+        resultExpression = "genericArrayToSingle(VectorConversions.nullSafeVectorToArray(myObjectVector))";
+        check(expression, resultExpression, Object.class, new String[] {"myObjectVector"});
 
-        expression = "intArrayToInt(myIntDBArray)";
-        resultExpression = "intArrayToInt(ArrayUtils.nullSafeVectorToArray(myIntDBArray))";
-        check(expression, resultExpression, int.class, new String[] {"myIntDBArray"});
+        expression = "intArrayToInt(myIntVector)";
+        resultExpression = "intArrayToInt(VectorConversions.nullSafeVectorToArray(myIntVector))";
+        check(expression, resultExpression, int.class, new String[] {"myIntVector"});
 
-        expression = "myIntDBArray==myIntDBArray";
+        expression = "myIntVector==myIntVector";
         resultExpression =
-                "eqArray(ArrayUtils.nullSafeVectorToArray(myIntDBArray), ArrayUtils.nullSafeVectorToArray(myIntDBArray))";
-        check(expression, resultExpression, boolean[].class, new String[] {"myIntDBArray"});
+                "eqArray(VectorConversions.nullSafeVectorToArray(myIntVector), VectorConversions.nullSafeVectorToArray(myIntVector))";
+        check(expression, resultExpression, boolean[].class, new String[] {"myIntVector"});
 
-        expression = "booleanArrayToBoolean(myBooleanDBArray)";
-        resultExpression = "booleanArrayToBoolean(ArrayUtils.nullSafeVectorToArray(myBooleanDBArray))";
-        check(expression, resultExpression, Boolean.class, new String[] {"myBooleanDBArray"});
+        expression = "booleanArrayToBoolean(myBooleanVector)";
+        resultExpression = "booleanArrayToBoolean(VectorConversions.nullSafeVectorToArray(myBooleanVector))";
+        check(expression, resultExpression, Boolean.class, new String[] {"myBooleanVector"});
 
         expression = "new String(myByteArray)";
         resultExpression = "new String(myByteArray)";
         check(expression, resultExpression, String.class, new String[] {"myByteArray"});
 
-        expression = "new String(myByteDBArray)";
-        resultExpression = "new String(ArrayUtils.nullSafeVectorToArray(myByteDBArray))";
-        check(expression, resultExpression, String.class, new String[] {"myByteDBArray"});
+        expression = "new String(myByteVector)";
+        resultExpression = "new String(VectorConversions.nullSafeVectorToArray(myByteVector))";
+        check(expression, resultExpression, String.class, new String[] {"myByteVector"});
     }
 
     public void testInnerClasses() throws Exception {
@@ -1881,17 +1881,17 @@ public class TestLanguageParser extends BaseArrayTestCase {
 
         // There is a test for an erroneous version of this expression in testBadFieldAccess():
         expression =
-                "io.deephaven.engine.tables.lang.LanguageParserDummyClass.interpolate(myDoubleDBArray.toArray(),myDoubleDBArray.toArray(),new double[]{myDouble},io.deephaven.engine.tables.lang.LanguageParserDummyClass.NestedEnum.ONE,false)[0]";
+                "io.deephaven.engine.tables.lang.LanguageParserDummyClass.interpolate(myDoubleVector.toArray(),myDoubleVector.toArray(),new double[]{myDouble},io.deephaven.engine.tables.lang.LanguageParserDummyClass.NestedEnum.ONE,false)[0]";
         resultExpression =
-                "io.deephaven.engine.tables.lang.LanguageParserDummyClass.interpolate(myDoubleDBArray.toArray(), myDoubleDBArray.toArray(), new double[]{ myDouble }, io.deephaven.engine.tables.lang.LanguageParserDummyClass.NestedEnum.ONE, false)[0]";
-        check(expression, resultExpression, double.class, new String[] {"myDouble", "myDoubleDBArray"});
+                "io.deephaven.engine.tables.lang.LanguageParserDummyClass.interpolate(myDoubleVector.toArray(), myDoubleVector.toArray(), new double[]{ myDouble }, io.deephaven.engine.tables.lang.LanguageParserDummyClass.NestedEnum.ONE, false)[0]";
+        check(expression, resultExpression, double.class, new String[] {"myDouble", "myDoubleVector"});
 
         // For good measure, same test as above w/ implicit array conversions:
         expression =
-                "LanguageParserDummyClass.interpolate(myDoubleDBArray,myDoubleDBArray,new double[]{myDouble},LanguageParserDummyClass.NestedEnum.ONE,false)[0]";
+                "LanguageParserDummyClass.interpolate(myDoubleVector,myDoubleVector,new double[]{myDouble},LanguageParserDummyClass.NestedEnum.ONE,false)[0]";
         resultExpression =
-                "LanguageParserDummyClass.interpolate(ArrayUtils.nullSafeVectorToArray(myDoubleDBArray), ArrayUtils.nullSafeVectorToArray(myDoubleDBArray), new double[]{ myDouble }, LanguageParserDummyClass.NestedEnum.ONE, false)[0]";
-        check(expression, resultExpression, double.class, new String[] {"myDouble", "myDoubleDBArray"});
+                "LanguageParserDummyClass.interpolate(VectorConversions.nullSafeVectorToArray(myDoubleVector), VectorConversions.nullSafeVectorToArray(myDoubleVector), new double[]{ myDouble }, LanguageParserDummyClass.NestedEnum.ONE, false)[0]";
+        check(expression, resultExpression, double.class, new String[] {"myDouble", "myDoubleVector"});
     }
 
     public void testUnsupportedOperators() throws Exception {
@@ -2322,7 +2322,7 @@ public class TestLanguageParser extends BaseArrayTestCase {
         return null;
     }
 
-    public static <T> T genericDBArray(ObjectVector<T> vector) {
+    public static <T> T genericVector(ObjectVector<T> vector) {
         return null;
     }
 

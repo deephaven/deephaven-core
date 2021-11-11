@@ -25,7 +25,6 @@ import com.github.javaparser.ast.stmt.*;
 import com.github.javaparser.ast.type.*;
 import com.github.javaparser.ast.type.WildcardType;
 import com.github.javaparser.ast.visitor.GenericVisitorAdapter;
-import io.deephaven.engine.vector.*;
 import io.deephaven.DeephavenException;
 import org.apache.commons.lang3.ClassUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
@@ -545,8 +544,8 @@ public final class LanguageParser extends GenericVisitorAdapter<Class<?>, Langua
         for (int i = 0; i < lengthWithoutVarArg; i++) {
             Class<?> paramType = paramTypes[i];
 
-            if (isDbArray(paramType) && candidateParamTypes[i].isArray()) {
-                paramType = convertDBArray(paramType, parameterizedTypes[i] == null ? null : parameterizedTypes[i][0]);
+            if (isVector(paramType) && candidateParamTypes[i].isArray()) {
+                paramType = convertVector(paramType, parameterizedTypes[i] == null ? null : parameterizedTypes[i][0]);
             }
 
             if (!canAssignType(candidateParamTypes[i], paramType)) {
@@ -561,8 +560,8 @@ public final class LanguageParser extends GenericVisitorAdapter<Class<?>, Langua
 
             Assert.eqTrue(candidateParamType.isArray(), "candidateParamType.isArray()");
 
-            if (isDbArray(paramType)) {
-                paramType = convertDBArray(paramType, parameterizedTypes[candidateParamTypes.length - 1] == null ? null
+            if (isVector(paramType)) {
+                paramType = convertVector(paramType, parameterizedTypes[candidateParamTypes.length - 1] == null ? null
                         : parameterizedTypes[candidateParamTypes.length - 1][0]);
             }
 
@@ -575,8 +574,8 @@ public final class LanguageParser extends GenericVisitorAdapter<Class<?>, Langua
             for (int i = candidateParamTypes.length - 1; i < paramTypes.length; i++) {
                 paramType = paramTypes[i];
 
-                if (isDbArray(paramType) && lastClass.isArray()) {
-                    paramType = convertDBArray(paramType,
+                if (isVector(paramType) && lastClass.isArray()) {
+                    paramType = convertVector(paramType,
                             parameterizedTypes[i] == null ? null : parameterizedTypes[i][0]);
                 }
 
@@ -643,7 +642,7 @@ public final class LanguageParser extends GenericVisitorAdapter<Class<?>, Langua
         }
 
         for (int i = 0; i < e1ParamTypes.length; i++) {
-            if (!canAssignType(e1ParamTypes[i], e2ParamTypes[i]) && !isDbArray(e2ParamTypes[i])) {
+            if (!canAssignType(e1ParamTypes[i], e2ParamTypes[i]) && !isVector(e2ParamTypes[i])) {
                 return false;
             }
         }
@@ -685,7 +684,7 @@ public final class LanguageParser extends GenericVisitorAdapter<Class<?>, Langua
         return parameterizedTypes;
     }
 
-    private static Class<?> convertDBArray(Class<?> type, Class<?> parameterizedType) {
+    private static Class<?> convertVector(Class<?> type, Class<?> parameterizedType) {
         if (ObjectVector.class.isAssignableFrom(type)) {
             return Array.newInstance(parameterizedType == null ? Object.class : parameterizedType, 0).getClass();
         }
@@ -786,17 +785,8 @@ public final class LanguageParser extends GenericVisitorAdapter<Class<?>, Langua
                 || type == char.class;
     }
 
-    public static boolean isDbArray(Class<?> type) {
-        // noinspection deprecation
-        return ObjectVector.class.isAssignableFrom(type) ||
-                IntVector.class.isAssignableFrom(type) ||
-                BooleanVector.class.isAssignableFrom(type) ||
-                DoubleVector.class.isAssignableFrom(type) ||
-                CharVector.class.isAssignableFrom(type) ||
-                ByteVector.class.isAssignableFrom(type) ||
-                ShortVector.class.isAssignableFrom(type) ||
-                LongVector.class.isAssignableFrom(type) ||
-                FloatVector.class.isAssignableFrom(type);
+    public static boolean isVector(Class<?> type) {
+        return Vector.class.isAssignableFrom(type);
     }
 
     /**
@@ -804,7 +794,7 @@ public final class LanguageParser extends GenericVisitorAdapter<Class<?>, Langua
      * types (expressionTypes) do not match the corresponding declared argument types ({@code argumentTypes}) may still
      * be used as arguments.
      *
-     * Conversions include casts & unwrapping of DB arrays to Java arrays.
+     * Conversions include casts & unwrapping of Vectors to Java arrays.
      *
      * @param executable The executable (method) to be called
      * @param argumentTypes The argument types of {@code executable}
@@ -828,10 +818,10 @@ public final class LanguageParser extends GenericVisitorAdapter<Class<?>, Langua
             } else if (unboxArguments && argumentTypes[ai].isPrimitive() && !expressionTypes[ai].isPrimitive()) {
                 expressions[ai] = new MethodCallExpr(expressions[ai],
                         argumentTypes[ai].getSimpleName() + "Value", new NodeList<>());
-            } else if (argumentTypes[ai].isArray() && isDbArray(expressionTypes[ai])) {
-                expressions[ai] = new MethodCallExpr(new NameExpr("ArrayUtils"), "nullSafeVectorToArray",
+            } else if (argumentTypes[ai].isArray() && isVector(expressionTypes[ai])) {
+                expressions[ai] = new MethodCallExpr(new NameExpr("VectorConversions"), "nullSafeVectorToArray",
                         new NodeList<>(expressions[ai]));
-                expressionTypes[ai] = convertDBArray(expressionTypes[ai],
+                expressionTypes[ai] = convertVector(expressionTypes[ai],
                         parameterizedTypes[ai] == null ? null : parameterizedTypes[ai][0]);
             }
         }
@@ -847,10 +837,10 @@ public final class LanguageParser extends GenericVisitorAdapter<Class<?>, Langua
             // *isn't* Vector, then convert the Vector to a Java array
             if (nArgExpressions == nArgs
                     && varArgType != expressionTypes[lastArgIndex]
-                    && isDbArray(expressionTypes[lastArgIndex])) {
-                expressions[lastArgIndex] = new MethodCallExpr(new NameExpr("ArrayUtils"), "nullSafeVectorToArray",
+                    && isVector(expressionTypes[lastArgIndex])) {
+                expressions[lastArgIndex] = new MethodCallExpr(new NameExpr("VectorConversions"), "nullSafeVectorToArray",
                         new NodeList<>(expressions[lastArgIndex]));
-                expressionTypes[lastArgIndex] = convertDBArray(expressionTypes[lastArgIndex],
+                expressionTypes[lastArgIndex] = convertVector(expressionTypes[lastArgIndex],
                         parameterizedTypes[lastArgIndex] == null ? null : parameterizedTypes[lastArgIndex][0]);
                 allExpressionTypesArePrimitive = false;
             } else if (nArgExpressions == nArgs
@@ -980,11 +970,11 @@ public final class LanguageParser extends GenericVisitorAdapter<Class<?>, Langua
     public Class<?> visit(ArrayAccessExpr n, VisitArgs printer) {
         /*
          * ArrayAccessExprs are permitted even when the 'array' is not really an array. The main use of this is for
-         * DbArrays, such as:
+         * Vectors, such as:
          *
          * t.view("Date", "Price").updateView("Return=Price/Price_[i-1]").
          *
-         * The "Price_[i-1]" is translated to "Price.get(i-1)". But we do this generically, not just for DbArrays. As an
+         * The "Price_[i-1]" is translated to "Price.get(i-1)". But we do this generically, not just for Vectors. As an
          * example, this works (column Blah will be set to "hello"):
          *
          * map = new HashMap(); map.put("a", "hello") t = emptyTable(1).update("Blah=map[`a`]")
@@ -1070,7 +1060,7 @@ public final class LanguageParser extends GenericVisitorAdapter<Class<?>, Langua
             op = BinaryExpr.Operator.EQUALS;
         }
 
-        boolean isArray = lhType.isArray() || rhType.isArray() || isDbArray(lhType) || isDbArray(rhType);
+        boolean isArray = lhType.isArray() || rhType.isArray() || isVector(lhType) || isVector(rhType);
 
         String methodName = getOperatorName(op) + (isArray ? "Array" : "");
 
@@ -1556,7 +1546,7 @@ public final class LanguageParser extends GenericVisitorAdapter<Class<?>, Langua
          * In java, you can't compile if your code contains an integer literal that's too big to fit in an int. You'd
          * need to add an "L" to the end, to indicate that it's a long.
          *
-         * But in the DB, we assume you don't mind extra precision and just want your query to work, so when an
+         * But in the engine, we assume you don't mind extra precision and just want your query to work, so when an
          * 'integer' literal is too big to fit in an int, we automatically add on the "L" to promote the literal from an
          * int to a long.
          *

@@ -10,7 +10,7 @@ package io.deephaven.libs.primitives;
 import io.deephaven.engine.vector.DoubleVector;
 import io.deephaven.engine.vector.DoubleVectorDirect;
 import io.deephaven.util.QueryConstants;
-import io.deephaven.engine.util.LongSizedDataStructure;
+import io.deephaven.util.datastructures.LongSizedDataStructure;
 import gnu.trove.list.array.TDoubleArrayList;
 import gnu.trove.set.TDoubleSet;
 import gnu.trove.set.hash.TDoubleHashSet;
@@ -237,9 +237,9 @@ public class DoublePrimitives {
     }
 
     /**
-     * Converts a DB array to a primitive array.
+     * Converts a Vector to a primitive array.
      *
-     * @param values DB array
+     * @param values Vector
      * @return primitive array.
      */
     public static double[] vec(DoubleVector values) {
@@ -251,10 +251,10 @@ public class DoublePrimitives {
     }
 
     /**
-     * Converts a primitive array to a DB array.
+     * Converts a primitive array to a Vector.
      *
      * @param values primitive array
-     * @return DB array.
+     * @return Vector.
      */
     public static DoubleVector array(double[] values) {
         if(values == null){

@@ -22,7 +22,7 @@ public class TestObjectVectorUngroup {
 
     @Before
     public void setUp() throws IOException {
-        dataDirectory = Files.createTempDirectory(Paths.get(""), "TestDbArrayUngroup-").toFile();
+        dataDirectory = Files.createTempDirectory(Paths.get(""), "TestVectorUngroup-").toFile();
     }
 
     @After

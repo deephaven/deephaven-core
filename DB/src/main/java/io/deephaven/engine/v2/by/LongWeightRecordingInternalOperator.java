@@ -1,8 +1,8 @@
 package io.deephaven.engine.v2.by;
 
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.v2.hashing.ToLongCast;
-import io.deephaven.engine.v2.hashing.ToLongFunctor;
+import io.deephaven.engine.chunk.util.hashing.ToLongCast;
+import io.deephaven.engine.chunk.util.hashing.ToLongFunctor;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.chunk.Attributes.ChunkLengths;
 import io.deephaven.engine.chunk.Attributes.ChunkPositions;

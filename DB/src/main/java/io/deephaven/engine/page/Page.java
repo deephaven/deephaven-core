@@ -1,6 +1,6 @@
 package io.deephaven.engine.page;
 
-import io.deephaven.engine.util.LongSizedDataStructure;
+import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.engine.chunk.Attributes.Any;
 import io.deephaven.engine.rftable.ChunkSource;
 import io.deephaven.engine.rftable.DefaultChunkSource;

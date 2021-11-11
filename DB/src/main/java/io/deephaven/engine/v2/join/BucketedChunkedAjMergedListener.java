@@ -5,7 +5,7 @@ import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.tables.SortingOrder;
 import io.deephaven.engine.tables.select.MatchPair;
 import io.deephaven.engine.v2.*;
-import io.deephaven.engine.v2.hashing.ChunkEquals;
+import io.deephaven.engine.chunk.util.hashing.ChunkEquals;
 import io.deephaven.engine.v2.sort.LongSortKernel;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.LongArraySource;

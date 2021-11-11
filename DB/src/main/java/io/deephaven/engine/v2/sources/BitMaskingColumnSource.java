@@ -462,7 +462,7 @@ public class BitMaskingColumnSource<T> extends AbstractColumnSource<T> implement
             }
         } else {
             // TODO: Apply the same approach as in RORCS
-            final ChunkFiller filler = destination.getChunkFiller();
+            final ChunkFiller filler = ChunkFiller.forChunkType(destination.getChunkType());
             if (usePrev) {
                 filler.fillPrevByIndices(innerSource, maskedKeys, destination);
             } else {

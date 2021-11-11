@@ -1,7 +1,7 @@
 package io.deephaven.engine.v2.utils.singlerange;
 
-import io.deephaven.engine.v2.utils.LongAbortableConsumer;
-import io.deephaven.engine.v2.utils.LongRangeAbortableConsumer;
+import io.deephaven.util.datastructures.LongAbortableConsumer;
+import io.deephaven.util.datastructures.LongRangeAbortableConsumer;
 import io.deephaven.engine.structures.RowSequence;
 
 /**

@@ -1,10 +1,12 @@
 package io.deephaven.engine.v2.utils;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.util.datastructures.LongAbortableConsumer;
 import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.structures.rowsequence.RowSequenceAsChunkImpl;
 import io.deephaven.engine.chunk.Attributes.*;
 import io.deephaven.engine.chunk.WritableLongChunk;
+import io.deephaven.util.datastructures.LongRangeAbortableConsumer;
 import org.apache.commons.lang3.mutable.MutableInt;
 
 public class ShiftedRowSequence extends RowSequenceAsChunkImpl implements RowSequence {

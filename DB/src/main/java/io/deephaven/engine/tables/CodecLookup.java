@@ -56,11 +56,11 @@ public class CodecLookup {
                 throw new IllegalArgumentException("Vector type " + dataType + " requires a component type");
             }
             if (ObjectVector.class.isAssignableFrom(dataType)) {
-                // DbArrays of basic types do not require codecs
+                // Vectors of basic types do not require codecs
                 return !(componentType == Boolean.class || componentType == DateTime.class
                         || componentType == String.class);
             }
-            // DbArrayBases of primitive types do not require codecs
+            // VectorBases of primitive types do not require codecs
             return false;
         }
         // Anything else must have a codec

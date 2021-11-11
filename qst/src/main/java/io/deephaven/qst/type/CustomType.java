@@ -51,9 +51,9 @@ public abstract class CustomType<T> extends GenericTypeBase<T> {
     }
 
     @Check
-    final void checkNotDbArray() {
+    final void checkNotVector() {
         if (clazz().getName().startsWith("io.deephaven.engine.vector.Db")) {
-            throw new IllegalArgumentException("Can't create DB array types as custom types");
+            throw new IllegalArgumentException("Can't create Vector types as custom types");
         }
     }
 }

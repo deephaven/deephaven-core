@@ -5,7 +5,7 @@ import io.deephaven.engine.rftable.DefaultGetContext;
 import io.deephaven.engine.rftable.SharedContext;
 import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.util.QueryConstants;
-import io.deephaven.engine.util.LongSizedDataStructure;
+import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.engine.util.NullSafeAddition;
 import io.deephaven.engine.v2.sources.*;
 import io.deephaven.engine.chunk.*;

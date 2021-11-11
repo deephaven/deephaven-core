@@ -1,6 +1,6 @@
 package io.deephaven.engine.v2.utils.cast;
 
-import io.deephaven.engine.v2.hashing.*;
+import io.deephaven.engine.chunk.util.hashing.*;
 import io.deephaven.engine.chunk.Chunk;
 import io.deephaven.engine.chunk.ChunkType;
 import io.deephaven.engine.chunk.DoubleChunk;

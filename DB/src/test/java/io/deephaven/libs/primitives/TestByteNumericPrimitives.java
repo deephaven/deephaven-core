@@ -358,7 +358,7 @@ public class TestByteNumericPrimitives extends BaseArrayTestCase {
         assertEquals(NULL_BYTE, sum((byte[]) null));
     }
 
-    public void testSumDbArray() {
+    public void testSumVector() {
         assertEquals(new byte[]{4, 15}, sum(new ObjectVectorDirect<>(new byte[][]{{5, 4}, {-3, 5}, {2, 6}})));
         assertEquals(new byte[]{4, NULL_BYTE}, sum(new ObjectVectorDirect<>(new byte[][]{{5, NULL_BYTE}, {-3, 5}, {2, 6}})));
         assertEquals(null, sum((ObjectVector<byte[]>) null));
@@ -398,7 +398,7 @@ public class TestByteNumericPrimitives extends BaseArrayTestCase {
         assertEquals(NULL_BYTE, product((ByteVector) null));
     }
 
-//    public void testProdDbArray() {
+//    public void testProdVector() {
 //        assertEquals(new byte[]{-30, 120}, product(new ObjectVectorDirect<>(new byte[][]{{5, 4}, {-3, 5}, {2, 6}})));
 //        assertEquals(new byte[]{-30, NULL_BYTE}, product(new ObjectVectorDirect<>(new byte[][]{{5, NULL_BYTE}, {-3, 5}, {2, 6}})));
 //        assertEquals(null, product((Vector<byte[]>) null));

@@ -604,7 +604,7 @@ public class QueryTableAggregationTestFormulaStaticMethods {
         switch (col) {
             case "bigI":
             case "bigD":
-                return "io.deephaven.utils.BigDecimalUtils.sqrt(" + varFunction(col) + ", 10)";
+                return "io.deephaven.util.BigDecimalUtils.sqrt(" + varFunction(col) + ", 10)";
             default:
                 return "Math.sqrt(" + varFunction(col) + ")";
         }

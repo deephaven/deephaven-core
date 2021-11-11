@@ -69,6 +69,7 @@ dependencies {
     compileOnly 'javax.inject:javax.inject:1'
 
     testCompile TestTools.projectDependency(project, 'Util'),
+            TestTools.projectDependency(project, 'engine-chunk'),
             project(':BenchmarkSupport'),
             'org.openjdk.jmh:jmh-core:1.21'
 
@@ -203,7 +204,7 @@ createMainExecTask('replicateSortKernel', 'io.deephaven.engine.v2.sort.Replicate
 createTestExecTask('replicateSourcesTest', 'io.deephaven.engine.v2.sources.ReplicateSourcesAndChunkTest')
 createMainExecTask('replicateSources', 'io.deephaven.engine.v2.sources.ReplicateSourcesAndChunks')
 createMainExecTask('replicateChunkFilters', 'io.deephaven.engine.v2.select.chunkfilters.ReplicateChunkFilters')
-createMainExecTask('replicateHashing', 'io.deephaven.engine.v2.hashing.ReplicateHashing')
+createMainExecTask('replicateHashing', 'io.deephaven.engine.chunk.util.hashing.ReplicateHashing')
 createMainExecTask('replicateStampKernel', 'io.deephaven.engine.v2.join.stamp.ReplicateStampKernel')
 createMainExecTask('replicateDupCompactKernel', 'io.deephaven.engine.v2.join.dupcompact.ReplicateDupCompactKernel')
 createMainExecTask('replicateDupExpandKernel', 'io.deephaven.engine.v2.join.dupexpand.ReplicateDupExpandKernel');

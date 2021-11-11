@@ -46,7 +46,7 @@ public class SnapshotUtils {
 
             // Fill the corresponding destination column
             final WritableSource<?> dest = destColumns.get(name);
-            final ChunkFiller destFiller = ChunkFiller.fromChunkType(src.getChunkType());
+            final ChunkFiller destFiller = ChunkFiller.forChunkType(src.getChunkType());
             destFiller.fillFromSingleValue(src, stampKey, dest, destRowSet);
         }
     }

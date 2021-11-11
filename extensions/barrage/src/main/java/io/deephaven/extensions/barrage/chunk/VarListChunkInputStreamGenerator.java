@@ -7,7 +7,7 @@ package io.deephaven.extensions.barrage.chunk;
 import com.google.common.io.LittleEndianDataOutputStream;
 import gnu.trove.iterator.TLongIterator;
 import io.deephaven.UncheckedDeephavenException;
-import io.deephaven.engine.util.LongSizedDataStructure;
+import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.engine.chunk.Attributes;
 import io.deephaven.engine.chunk.ChunkType;
 import io.deephaven.engine.chunk.ObjectChunk;

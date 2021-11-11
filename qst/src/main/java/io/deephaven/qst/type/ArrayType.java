@@ -23,7 +23,7 @@ public interface ArrayType<T, ComponentType> extends GenericType<T> {
     interface Visitor {
         void visit(NativeArrayType<?, ?> nativeArrayType);
 
-        void visit(PrimitiveVectorType<?, ?> dbArrayPrimitiveType);
+        void visit(PrimitiveVectorType<?, ?> vectorPrimitiveType);
 
         void visit(GenericVectorType<?, ?> genericVectorType);
     }

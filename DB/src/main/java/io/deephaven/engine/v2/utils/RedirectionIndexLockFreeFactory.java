@@ -1,6 +1,6 @@
 package io.deephaven.engine.v2.utils;
 
-import io.deephaven.engine.v2.hashing.TNullableLongLongMap;
+import io.deephaven.util.datastructures.hash.TNullableLongLongMap;
 import gnu.trove.map.TLongLongMap;
 
 class RowRedirectionLockFreeFactory implements MutableRowRedirection.Factory {

@@ -19,7 +19,7 @@ import io.deephaven.extensions.barrage.util.FlatBufferIteratorAdapter;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.util.LongSizedDataStructure;
+import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.engine.util.liveness.SingletonLivenessManager;
 import io.deephaven.engine.v2.QueryTable;
 import io.deephaven.engine.chunk.ChunkType;

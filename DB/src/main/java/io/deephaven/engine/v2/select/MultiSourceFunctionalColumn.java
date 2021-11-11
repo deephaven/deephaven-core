@@ -188,7 +188,7 @@ public class MultiSourceFunctionalColumn<D> implements SelectColumn {
         final ChunkFiller chunkFiller;
 
         FunctionalColumnFillContext(final ChunkType chunkType) {
-            chunkFiller = ChunkFiller.fromChunkType(chunkType);
+            chunkFiller = ChunkFiller.forChunkType(chunkType);
         }
     }
 

@@ -5,9 +5,9 @@
 package io.deephaven.engine.v2.sources;
 
 import io.deephaven.engine.rftable.DefaultGetContext;
-import io.deephaven.engine.tables.utils.ArrayUtils;
+import io.deephaven.util.type.ArrayTypeUtils;
 import io.deephaven.engine.tables.utils.DateTime;
-import io.deephaven.engine.util.LongSizedDataStructure;
+import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.chunk.Attributes.OrderedRowKeyRanges;
 import io.deephaven.engine.chunk.Attributes.Values;
@@ -392,7 +392,7 @@ public abstract class ArrayBackedColumnSource<T>
      *
      * @param size the capacity of the returned column source
      * @param dataType the data type of the resultant column source
-     * @param componentType the component type for column sources of arrays or DbArrays
+     * @param componentType the component type for column sources of arrays or Vectors
      * @param <T> the type parameter for the ColumnSource's type
      * @return an in-memory column source of the requested type
      */
@@ -466,7 +466,7 @@ public abstract class ArrayBackedColumnSource<T>
      *
      * @param dataArray the data to insert into the new column source
      * @param dataType the data type of the resultant column source
-     * @param componentType the component type for column sources of arrays or DbArrays
+     * @param componentType the component type for column sources of arrays or Vectors
      * @return a ColumnSource with the supplied data.
      */
     public static <T> WritableSource<T> getMemoryColumnSourceUntyped(@NotNull final Object dataArray,
@@ -474,7 +474,7 @@ public abstract class ArrayBackedColumnSource<T>
             @Nullable final Class<?> componentType) {
         final WritableSource<?> result;
         if (dataArray instanceof boolean[]) {
-            result = getMemoryColumnSource(ArrayUtils.getBoxedArray((boolean[]) dataArray), Boolean.class, null);
+            result = getMemoryColumnSource(ArrayTypeUtils.getBoxedArray((boolean[]) dataArray), Boolean.class, null);
         } else if (dataArray instanceof byte[]) {
             result = getMemoryColumnSource((byte[]) dataArray);
         } else if (dataArray instanceof char[]) {
@@ -492,19 +492,19 @@ public abstract class ArrayBackedColumnSource<T>
         } else if (dataArray instanceof Boolean[]) {
             result = getMemoryColumnSource((Boolean[]) dataArray, Boolean.class, null);
         } else if (dataArray instanceof Byte[]) {
-            result = getMemoryColumnSource(ArrayUtils.getUnboxedArray((Byte[]) dataArray));
+            result = getMemoryColumnSource(ArrayTypeUtils.getUnboxedArray((Byte[]) dataArray));
         } else if (dataArray instanceof Character[]) {
-            result = getMemoryColumnSource(ArrayUtils.getUnboxedArray((Character[]) dataArray));
+            result = getMemoryColumnSource(ArrayTypeUtils.getUnboxedArray((Character[]) dataArray));
         } else if (dataArray instanceof Double[]) {
-            result = getMemoryColumnSource(ArrayUtils.getUnboxedArray((Double[]) dataArray));
+            result = getMemoryColumnSource(ArrayTypeUtils.getUnboxedArray((Double[]) dataArray));
         } else if (dataArray instanceof Float[]) {
-            result = getMemoryColumnSource(ArrayUtils.getUnboxedArray((Float[]) dataArray));
+            result = getMemoryColumnSource(ArrayTypeUtils.getUnboxedArray((Float[]) dataArray));
         } else if (dataArray instanceof Integer[]) {
-            result = getMemoryColumnSource(ArrayUtils.getUnboxedArray((Integer[]) dataArray));
+            result = getMemoryColumnSource(ArrayTypeUtils.getUnboxedArray((Integer[]) dataArray));
         } else if (dataArray instanceof Long[]) {
-            result = getMemoryColumnSource(ArrayUtils.getUnboxedArray((Long[]) dataArray));
+            result = getMemoryColumnSource(ArrayTypeUtils.getUnboxedArray((Long[]) dataArray));
         } else if (dataArray instanceof Short[]) {
-            result = getMemoryColumnSource(ArrayUtils.getUnboxedArray((Short[]) dataArray));
+            result = getMemoryColumnSource(ArrayTypeUtils.getUnboxedArray((Short[]) dataArray));
         } else {
             // noinspection unchecked
             result = getMemoryColumnSource((T[]) dataArray, dataType, componentType);
@@ -537,7 +537,7 @@ public abstract class ArrayBackedColumnSource<T>
      *
      * @param dataArray The array to turn into a ColumnSource
      * @param dataType the data type of the resultant column source
-     * @param componentType the component type for column sources of arrays or DbArrays
+     * @param componentType the component type for column sources of arrays or Vectors
      * @return An Immutable ColumnSource that directly wraps the input array.
      */
     public static <T> ColumnSource<T> getImmutableMemoryColumnSource(@NotNull final Object dataArray,
@@ -567,19 +567,19 @@ public abstract class ArrayBackedColumnSource<T>
                     ? new ImmutableBooleanArraySource((byte[]) dataArray)
                     : new ImmutableBooleanArraySource((Boolean[]) dataArray);
         } else if (dataType == Byte.class) {
-            result = new ImmutableByteArraySource(ArrayUtils.getUnboxedArray((Byte[]) dataArray));
+            result = new ImmutableByteArraySource(ArrayTypeUtils.getUnboxedArray((Byte[]) dataArray));
         } else if (dataType == Character.class) {
-            result = new ImmutableCharArraySource(ArrayUtils.getUnboxedArray((Character[]) dataArray));
+            result = new ImmutableCharArraySource(ArrayTypeUtils.getUnboxedArray((Character[]) dataArray));
         } else if (dataType == Double.class) {
-            result = new ImmutableDoubleArraySource(ArrayUtils.getUnboxedArray((Double[]) dataArray));
+            result = new ImmutableDoubleArraySource(ArrayTypeUtils.getUnboxedArray((Double[]) dataArray));
         } else if (dataType == Float.class) {
-            result = new ImmutableFloatArraySource(ArrayUtils.getUnboxedArray((Float[]) dataArray));
+            result = new ImmutableFloatArraySource(ArrayTypeUtils.getUnboxedArray((Float[]) dataArray));
         } else if (dataType == Integer.class) {
-            result = new ImmutableIntArraySource(ArrayUtils.getUnboxedArray((Integer[]) dataArray));
+            result = new ImmutableIntArraySource(ArrayTypeUtils.getUnboxedArray((Integer[]) dataArray));
         } else if (dataType == Long.class) {
-            result = new ImmutableLongArraySource(ArrayUtils.getUnboxedArray((Long[]) dataArray));
+            result = new ImmutableLongArraySource(ArrayTypeUtils.getUnboxedArray((Long[]) dataArray));
         } else if (dataType == Short.class) {
-            result = new ImmutableShortArraySource(ArrayUtils.getUnboxedArray((Short[]) dataArray));
+            result = new ImmutableShortArraySource(ArrayTypeUtils.getUnboxedArray((Short[]) dataArray));
         } else if (dataType == DateTime.class && dataArray instanceof long[]) {
             result = new ImmutableDateTimeArraySource((long[]) dataArray);
         } else {

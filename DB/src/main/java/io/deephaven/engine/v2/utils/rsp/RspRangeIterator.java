@@ -1,7 +1,7 @@
 package io.deephaven.engine.v2.utils.rsp;
 
-import io.deephaven.engine.v2.utils.LongRangeAbortableConsumer;
-import io.deephaven.engine.v2.utils.LongRangeIterator;
+import io.deephaven.util.datastructures.LongRangeAbortableConsumer;
+import io.deephaven.util.datastructures.LongRangeIterator;
 import io.deephaven.engine.v2.utils.RowSetUtilities;
 import io.deephaven.engine.v2.utils.rsp.container.SingletonContainer;
 import io.deephaven.util.SafeCloseable;

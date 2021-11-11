@@ -1,10 +1,12 @@
 package io.deephaven.engine.v2.sources.deltaaware;
 
+import io.deephaven.util.datastructures.LongAbortableConsumer;
 import io.deephaven.engine.chunk.Attributes;
 import io.deephaven.engine.chunk.LongChunk;
 import io.deephaven.engine.chunk.WritableLongChunk;
 import io.deephaven.engine.v2.utils.*;
 import io.deephaven.engine.structures.RowSequence;
+import io.deephaven.util.datastructures.LongRangeAbortableConsumer;
 
 class SoleKey implements RowSequence {
     private long key;

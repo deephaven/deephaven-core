@@ -1,6 +1,6 @@
 package io.deephaven.engine.v2.sources;
 
-import io.deephaven.engine.tables.utils.ArrayUtils;
+import io.deephaven.util.type.ArrayTypeUtils;
 import io.deephaven.engine.tables.utils.DateTime;
 import io.deephaven.engine.v2.utils.RowSet;
 import io.deephaven.util.QueryConstants;
@@ -47,7 +47,7 @@ public class DateTimeTreeMapSource extends AbstractColumnSource<DateTime>
      */
     public DateTimeTreeMapSource(RowSet rowSet, long[] data) {
         super(DateTime.class);
-        final Long[] boxedData = ArrayUtils.getBoxedArray(data);
+        final Long[] boxedData = ArrayTypeUtils.getBoxedArray(data);
         this.treeMapSource = new TreeMapSource<>(Long.class, rowSet, boxedData);
         this.alternateColumnSource = new UnboxedDateTimeTreeMapSource(this, treeMapSource);
     }

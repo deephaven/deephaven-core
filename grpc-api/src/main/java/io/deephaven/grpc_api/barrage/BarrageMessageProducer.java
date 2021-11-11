@@ -19,7 +19,7 @@ import io.deephaven.engine.v2.utils.*;
 import io.deephaven.extensions.barrage.util.BarrageMessageConsumer;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.tables.TableDefinition;
-import io.deephaven.engine.util.LongSizedDataStructure;
+import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.engine.util.liveness.LivenessArtifact;
 import io.deephaven.engine.util.liveness.LivenessReferent;
 import io.deephaven.engine.v2.Listener;

@@ -54,7 +54,7 @@ public class DateTimeSparseArraySource extends AbstractSparseLongArraySource<Dat
     @Override
     public void fillChunk(@NotNull FillContext context, @NotNull WritableChunk<? super Values> dest,
             @NotNull RowSequence rowSequence) {
-        final ChunkFiller filler = dest.getChunkFiller();
+        final ChunkFiller filler = ChunkFiller.forChunkType(dest.getChunkType());
         if (rowSequence.getAverageRunLengthEstimate() > USE_RANGES_AVERAGE_RUN_LENGTH) {
             filler.fillByRanges(this, rowSequence, dest);
         } else {
@@ -65,7 +65,7 @@ public class DateTimeSparseArraySource extends AbstractSparseLongArraySource<Dat
     @Override
     public void fillPrevChunk(@NotNull FillContext context, @NotNull WritableChunk<? super Values> dest,
             @NotNull RowSequence rowSequence) {
-        final ChunkFiller filler = dest.getChunkFiller();
+        final ChunkFiller filler = ChunkFiller.forChunkType(dest.getChunkType());
         if (rowSequence.getAverageRunLengthEstimate() > USE_RANGES_AVERAGE_RUN_LENGTH) {
             filler.fillPrevByRanges(this, rowSequence, dest);
         } else {

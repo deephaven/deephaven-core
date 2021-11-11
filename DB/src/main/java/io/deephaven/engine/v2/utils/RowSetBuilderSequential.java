@@ -1,6 +1,8 @@
 package io.deephaven.engine.v2.utils;
 
 import gnu.trove.procedure.TLongProcedure;
+import io.deephaven.util.datastructures.LongRangeConsumer;
+import io.deephaven.util.datastructures.LongRangeIterator;
 import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.chunk.Attributes;
 import io.deephaven.engine.chunk.LongChunk;

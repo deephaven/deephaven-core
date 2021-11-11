@@ -10,7 +10,7 @@ import io.deephaven.engine.tables.*;
 import io.deephaven.engine.vector.DoubleVector;
 import io.deephaven.engine.vector.ObjectVector;
 import io.deephaven.engine.vector.Vector;
-import io.deephaven.engine.tables.utils.ArrayUtils;
+import io.deephaven.util.type.ArrayTypeUtils;
 import io.deephaven.libs.primitives.DoubleNumericPrimitives;
 import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.tables.utils.ParquetTools;
@@ -244,7 +244,7 @@ public class TestAggregatedSelect extends TestCase {
         System.out.println(prefix + ": Array of " + vector.getComponentType().toString());
         String prefixsp = new String(new char[prefix.length()]).replace('\0', ' ');
         final boolean containsArrays = Vector.class.isAssignableFrom(vector.getComponentType());
-        final ArrayUtils.ArrayAccessor<?> arrayAccessor = ArrayUtils.getArrayAccessor(vector.toArray());
+        final ArrayTypeUtils.ArrayAccessor<?> arrayAccessor = ArrayTypeUtils.getArrayAccessor(vector.toArray());
         for (int jj = 0; jj < vector.size(); ++jj) {
             if (containsArrays) {
                 dumpArray(prefix + "[" + jj + "] ", (Vector) arrayAccessor.get(jj));

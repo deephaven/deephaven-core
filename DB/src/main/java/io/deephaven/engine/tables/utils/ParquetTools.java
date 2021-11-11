@@ -568,9 +568,9 @@ public class ParquetTools {
                 if (parquetColDef.dhSpecialType == ColumnTypeInfo.SpecialType.StringSet) {
                     colDef = ColumnDefinition.fromGenericType(parquetColDef.name, StringSet.class, null);
                 } else if (parquetColDef.dhSpecialType == ColumnTypeInfo.SpecialType.Vector) {
-                    final Class<?> dbArrayType = DB_ARRAY_TYPE_MAP.get(baseType);
-                    if (dbArrayType != null) {
-                        colDef = ColumnDefinition.fromGenericType(parquetColDef.name, dbArrayType, baseType);
+                    final Class<?> vectorType = DB_ARRAY_TYPE_MAP.get(baseType);
+                    if (vectorType != null) {
+                        colDef = ColumnDefinition.fromGenericType(parquetColDef.name, vectorType, baseType);
                     } else {
                         colDef = ColumnDefinition.fromGenericType(parquetColDef.name, ObjectVector.class, baseType);
                     }
@@ -582,7 +582,7 @@ public class ParquetTools {
                     if (baseType == byte.class && parquetColDef.noLogicalType) {
                         colDef = ColumnDefinition.fromGenericType(parquetColDef.name, byte[].class, byte.class);
                     } else {
-                        // TODO: ParquetInstruction.loadAsDbArray
+                        // TODO: ParquetInstruction.loadAsVector
                         final Class<?> componentType = baseType;
                         // On Java 12, replace by: dataType = componentType.arrayType();
                         final Class<?> dataType = java.lang.reflect.Array.newInstance(componentType, 0).getClass();

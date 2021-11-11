@@ -5,7 +5,7 @@ import io.deephaven.engine.rftable.ChunkSource;
 import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.tables.utils.DateTime;
 import io.deephaven.engine.tables.utils.DateTimeUtils;
-import io.deephaven.engine.v2.hashing.IntChunkEquals;
+import io.deephaven.engine.chunk.util.hashing.IntChunkEquals;
 import io.deephaven.engine.v2.sources.ByteAsBooleanColumnSource;
 import io.deephaven.engine.v2.sources.LongAsDateTimeColumnSource;
 import io.deephaven.engine.chunk.*;

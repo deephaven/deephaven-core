@@ -1,6 +1,7 @@
 package io.deephaven.grpc_api.runner;
 
 import io.deephaven.engine.tables.live.UpdateGraphProcessor;
+import io.deephaven.engine.tables.utils.QueryPerformanceRecorder;
 import io.deephaven.engine.util.AbstractScriptSession;
 import io.deephaven.engine.v2.utils.MemoryTableLoggers;
 import io.deephaven.engine.v2.utils.ProcessMemoryTracker;
@@ -31,7 +32,7 @@ public class DeephavenApiServer {
     private static final Logger log = LoggerFactory.getLogger(DeephavenApiServer.class);
 
     private final Server server;
-    private final UpdateGraphProcessor ltm;
+    private final UpdateGraphProcessor ugp;
     private final LogInit logInit;
     private final ConsoleServiceGrpcImpl consoleService;
     private final ApplicationInjector applicationInjector;
@@ -41,14 +42,14 @@ public class DeephavenApiServer {
     @Inject
     public DeephavenApiServer(
             final Server server,
-            final UpdateGraphProcessor ltm,
+            final UpdateGraphProcessor ugp,
             final LogInit logInit,
             final ConsoleServiceGrpcImpl consoleService,
             final ApplicationInjector applicationInjector,
             final UriResolvers uriResolvers,
             final SessionService sessionService) {
         this.server = server;
-        this.ltm = ltm;
+        this.ugp = ugp;
         this.logInit = logInit;
         this.consoleService = consoleService;
         this.applicationInjector = applicationInjector;
@@ -105,9 +106,10 @@ public class DeephavenApiServer {
         consoleService.initializeGlobalScriptSession();
 
         log.info().append("Starting UGP...").endl();
-        ltm.start();
+        ugp.start();
 
         log.info().append("Starting Performance Trackers...").endl();
+        QueryPerformanceRecorder.installPoolAllocationRecorder();
         UpdatePerformanceTracker.start();
         ProcessMemoryTracker.start();
 

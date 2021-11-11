@@ -2,6 +2,7 @@ package io.deephaven.engine.v2.utils;
 
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.util.datastructures.LongRangeConsumer;
 import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.chunk.Attributes;
 import io.deephaven.engine.chunk.WritableLongChunk;

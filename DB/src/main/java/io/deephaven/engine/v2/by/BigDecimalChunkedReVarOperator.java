@@ -15,7 +15,7 @@ import io.deephaven.engine.chunk.Attributes.RowKeys;
 import io.deephaven.engine.chunk.Attributes.Values;
 import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.structures.rowsequence.RowSequenceUtil;
-import io.deephaven.utils.BigDecimalUtils;
+import io.deephaven.util.BigDecimalUtils;
 
 import java.math.BigDecimal;
 import java.util.Collections;

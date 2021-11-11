@@ -13,5 +13,6 @@ public class ReplicateVectorColumnWrappers {
     public static void main(String[] args) throws IOException {
         charToAllButBoolean("DB/src/main/java/io/deephaven/engine/v2/dbarrays/CharVectorColumnWrapper.java");
         charToAllButBoolean("DB/src/main/java/io/deephaven/engine/v2/dbarrays/PrevCharVectorColumnWrapper.java");
+        charToAllButBoolean("DB/src/test/java/io/deephaven/engine/v2/dbarrays/CharVectorColumnWrapperTest.java");
     }
 }

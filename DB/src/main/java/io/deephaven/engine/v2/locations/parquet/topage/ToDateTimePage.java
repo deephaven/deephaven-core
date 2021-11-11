@@ -42,7 +42,7 @@ public abstract class ToDateTimePage<ATTR extends Attributes.Any> extends ToLong
 
     protected ToDateTimePage() {}
 
-    protected static ObjectVector<DateTime> makeDbArrayHelper(final long[] result,
+    protected static ObjectVector<DateTime> makeVectorHelper(final long[] result,
             final LongFunction<DateTime> unitToTime) {
         DateTime[] to = new DateTime[result.length];
 
@@ -71,7 +71,7 @@ public abstract class ToDateTimePage<ATTR extends Attributes.Any> extends ToLong
         @Override
         @NotNull
         public ObjectVector<DateTime> makeVector(long[] result) {
-            return makeDbArrayHelper(result, DateTimeUtils::nanosToTime);
+            return makeVectorHelper(result, DateTimeUtils::nanosToTime);
         }
     }
 
@@ -79,7 +79,7 @@ public abstract class ToDateTimePage<ATTR extends Attributes.Any> extends ToLong
         @Override
         @NotNull
         public ObjectVector<DateTime> makeVector(long[] result) {
-            return makeDbArrayHelper(result, DateTimeUtils::microsToTime);
+            return makeVectorHelper(result, DateTimeUtils::microsToTime);
         }
 
         @Override
@@ -92,7 +92,7 @@ public abstract class ToDateTimePage<ATTR extends Attributes.Any> extends ToLong
         @Override
         @NotNull
         public ObjectVector<DateTime> makeVector(long[] result) {
-            return makeDbArrayHelper(result, DateTimeUtils::millisToTime);
+            return makeVectorHelper(result, DateTimeUtils::millisToTime);
         }
 
         @Override
