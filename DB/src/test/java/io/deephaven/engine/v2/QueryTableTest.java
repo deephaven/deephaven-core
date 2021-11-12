@@ -126,7 +126,7 @@ public class QueryTableTest extends QueryTableTestBase {
 
     /**
      * Test that the formula behaves correctly when there are are two initDefs() without an intervening request to
-     * compile the formula. Prior to the second update to IDS-6532, this threw an exception, although typically only by
+     * compile the formula. Prior to the second update to IDS-6532, this threw an exception, although typically only groupBy
      * OpenAPI code (because that code uses validateSelect() whereas other code tends not to). The issue is that this
      * sequence of operations works:
      *
@@ -1675,7 +1675,7 @@ public class QueryTableTest extends QueryTableTestBase {
 
         // Owned by setScope, rc == 1
         // It will also manage setTable whose rc == 3 after (1 ShiftObliviousSwapListener, one
-        // ShiftObliviousListenerImpl from by)
+        // ShiftObliviousListenerImpl from groupBy)
         final Table whereIn = toBeFiltered.whereIn(setTable, "Key");
 
         // Manage it rcs == (2,3)
@@ -2240,11 +2240,11 @@ public class QueryTableTest extends QueryTableTestBase {
                 c("Sym", "aa", "bc", "aa", "aa"),
                 c("Timestamp", DateTimeUtils.currentTime(), DateTimeUtils.currentTime(), DateTimeUtils.currentTime(),
                         DateTimeUtils.currentTime()));
-        assertEquals(queryTable.by("Sym").getDefinition().getColumn("Timestamp").getComponentType(), DateTime.class);
+        assertEquals(queryTable.groupBy("Sym").getDefinition().getColumn("Timestamp").getComponentType(), DateTime.class);
         show(queryTable.update("x = Timestamp_[0]"));
         show(queryTable.update("TimeinSeconds=round((max(Timestamp_)-min(Timestamp_))/1000000000)"));
-        show(queryTable.by("Sym").view("Sym", "x = Timestamp[0]"));
-        show(queryTable.by("Sym").view("Sym", "TimeinSeconds=round((max(Timestamp)-min(Timestamp))/1000000000)"));
+        show(queryTable.groupBy("Sym").view("Sym", "x = Timestamp[0]"));
+        show(queryTable.groupBy("Sym").view("Sym", "TimeinSeconds=round((max(Timestamp)-min(Timestamp))/1000000000)"));
     }
 
     public void testUngroupingAgnostic() {
@@ -2331,7 +2331,7 @@ public class QueryTableTest extends QueryTableTestBase {
         final Table table = testRefreshingTable(c("X", 1, 1, 2, 2, 3, 3, 4, 4), c("Int", 1, 2, 3, 4, 5, 6, 7, null),
                 c("Double", 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, null, 0.45),
                 c("String", "a", "b", "c", "d", "e", "f", "g", null));
-        final Table t1 = table.by("X");
+        final Table t1 = table.groupBy("X");
         final Table t2 = t1.ungroup();
 
         assertEquals(table.size(), t2.size());
@@ -2515,29 +2515,29 @@ public class QueryTableTest extends QueryTableTestBase {
                                 new String[] {"a", "b", "c"})));
 
         final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
-                EvalNugget.from(() -> table.by().ungroup(nullFill)),
-                EvalNugget.from(() -> table.by("C1").sort("C1").ungroup(nullFill)),
-                new UpdateValidatorNugget(table.by("C1").ungroup(nullFill)),
-                EvalNugget.from(() -> table.by().ungroup(nullFill, "C1")),
-                EvalNugget.from(() -> table.by("C1").sort("C1").ungroup(nullFill, "C2")),
-                EvalNugget.from(() -> table.by("C1").sort("C1").ungroup(nullFill, "C2").ungroup(nullFill, "Date")),
-                EvalNugget.from(() -> table.by("C1").sort("C1").ungroup(nullFill, "C2").ungroup(nullFill)),
-                EvalNugget.from(() -> table.by("C1", "C2").sort("C1", "C2").ungroup(nullFill)),
-                EvalNugget.from(() -> table.by().update("Date=Date.toArray()", "C1=C1.toArray()", "C2=C2.toArray()")
+                EvalNugget.from(() -> table.groupBy().ungroup(nullFill)),
+                EvalNugget.from(() -> table.groupBy("C1").sort("C1").ungroup(nullFill)),
+                new UpdateValidatorNugget(table.groupBy("C1").ungroup(nullFill)),
+                EvalNugget.from(() -> table.groupBy().ungroup(nullFill, "C1")),
+                EvalNugget.from(() -> table.groupBy("C1").sort("C1").ungroup(nullFill, "C2")),
+                EvalNugget.from(() -> table.groupBy("C1").sort("C1").ungroup(nullFill, "C2").ungroup(nullFill, "Date")),
+                EvalNugget.from(() -> table.groupBy("C1").sort("C1").ungroup(nullFill, "C2").ungroup(nullFill)),
+                EvalNugget.from(() -> table.groupBy("C1", "C2").sort("C1", "C2").ungroup(nullFill)),
+                EvalNugget.from(() -> table.groupBy().update("Date=Date.toArray()", "C1=C1.toArray()", "C2=C2.toArray()")
                         .ungroup(nullFill)),
-                EvalNugget.from(() -> table.by("C1").update("Date=Date.toArray()", "C2=C2.toArray()").sort("C1")
+                EvalNugget.from(() -> table.groupBy("C1").update("Date=Date.toArray()", "C2=C2.toArray()").sort("C1")
                         .ungroup(nullFill)),
-                EvalNugget.from(() -> table.by().update("Date=Date.toArray()", "C1=C1.toArray()", "C2=C2.toArray()")
+                EvalNugget.from(() -> table.groupBy().update("Date=Date.toArray()", "C1=C1.toArray()", "C2=C2.toArray()")
                         .ungroup(nullFill, "C1")),
-                EvalNugget.from(() -> table.by("C1").update("Date=Date.toArray()", "C2=C2.toArray()").sort("C1")
+                EvalNugget.from(() -> table.groupBy("C1").update("Date=Date.toArray()", "C2=C2.toArray()").sort("C1")
                         .ungroup(nullFill, "C2")),
-                EvalNugget.from(() -> table.by("C1").update("Date=Date.toArray()", "C2=C2.toArray()").sort("C1")
+                EvalNugget.from(() -> table.groupBy("C1").update("Date=Date.toArray()", "C2=C2.toArray()").sort("C1")
                         .ungroup(nullFill, "C2").ungroup(nullFill, "Date")),
-                EvalNugget.from(() -> table.by("C1").update("Date=Date.toArray()", "C2=C2.toArray()").sort("C1")
+                EvalNugget.from(() -> table.groupBy("C1").update("Date=Date.toArray()", "C2=C2.toArray()").sort("C1")
                         .ungroup(nullFill, "C2").ungroup(nullFill)),
                 EvalNugget.from(
-                        () -> table.by("C1", "C2").update("Date=Date.toArray()").sort("C1", "C2").ungroup(nullFill)),
-                EvalNugget.from(() -> table.by("C1").update("Date=Date.toArray()", "C2=C2.toArray()").sort("C1")
+                        () -> table.groupBy("C1", "C2").update("Date=Date.toArray()").sort("C1", "C2").ungroup(nullFill)),
+                EvalNugget.from(() -> table.groupBy("C1").update("Date=Date.toArray()", "C2=C2.toArray()").sort("C1")
                         .ungroup(nullFill)),
                 EvalNugget.from(() -> table.view("C3").ungroup(nullFill))
         };
@@ -2573,7 +2573,7 @@ public class QueryTableTest extends QueryTableTestBase {
                             new SetGenerator<>("a", "b", "c", "d"),
                             new IntGenerator(10, 100)));
 
-            final Table mismatch = table.by("Sym").sort("Sym").update("MyBoolean=boolArray", "MyDouble=doubleArray");
+            final Table mismatch = table.groupBy("Sym").sort("Sym").update("MyBoolean=boolArray", "MyDouble=doubleArray");
 
             final EvalNugget[] en = new EvalNugget[] {
                     new EvalNugget() {
@@ -2606,8 +2606,8 @@ public class QueryTableTest extends QueryTableTestBase {
                 c("BoCol", true, false),
                 c("OCol", new Pair<>(0, 1), new Pair<>(2, 3)));
 
-        final Table leftBy = left.by("Letter");
-        final Table rightBy = right.by("Letter");
+        final Table leftBy = left.groupBy("Letter");
+        final Table rightBy = right.groupBy("Letter");
 
         final Table joined = leftBy.naturalJoin(rightBy, "Letter")
                 .updateView("BValue = ((i%2) == 0) ? null : BValue");
@@ -2930,7 +2930,7 @@ public class QueryTableTest extends QueryTableTestBase {
         final Table source = emptyTable(10)
                 .updateView("Sentinel=i", "Symbol=syms[i % syms.length]",
                         "Timestamp=baseTime+dateOffset[i]*3600L*1000000000L", "Truthiness=booleans[i]")
-                .by("Symbol").ungroup();
+                .groupBy("Symbol").ungroup();
         testDirectory.mkdirs();
         final File dest = new File(testDirectory, "Table.parquet");
         try {

@@ -5,7 +5,7 @@ import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.select.MatchPair;
 import io.deephaven.engine.tables.select.SelectColumnFactory;
 import io.deephaven.engine.tables.utils.QueryPerformanceRecorder;
-import io.deephaven.engine.v2.by.AggregationStateFactory;
+import io.deephaven.engine.v2.by.AggregationSpec;
 import io.deephaven.engine.v2.by.ComboAggregateFactory;
 import io.deephaven.engine.v2.select.SelectColumn;
 import io.deephaven.engine.v2.select.SelectFilter;
@@ -203,9 +203,9 @@ public class HierarchicalTable extends QueryTable {
     }
 
     @Override
-    public Table by(@SuppressWarnings("rawtypes") AggregationStateFactory aggregationStateFactory,
+    public Table by(@SuppressWarnings("rawtypes") AggregationSpec aggregationSpec,
             SelectColumn... groupByColumns) {
-        return throwUnsupported("by()");
+        return throwUnsupported("groupBy()");
     }
 
     @Override
@@ -306,8 +306,8 @@ public class HierarchicalTable extends QueryTable {
     }
 
     @Override
-    public LocalTableMap byExternal(boolean dropKeys, String... keyColumnNames) {
-        return throwUnsupported("byExternal()");
+    public LocalTableMap partitionBy(boolean dropKeys, String... keyColumnNames) {
+        return throwUnsupported("partitionBy()");
     }
 
     @Override
@@ -367,7 +367,7 @@ public class HierarchicalTable extends QueryTable {
     static @NotNull HierarchicalTable createFrom(@NotNull QueryTable rootTable, @NotNull HierarchicalTableInfo info) {
         final Mutable<HierarchicalTable> resultHolder = new MutableObject<>();
 
-        // Create a copy of the root byExternal table as a HierarchicalTable, and wire it up for listeners.
+        // Create a copy of the root partitionBy table as a HierarchicalTable, and wire it up for listeners.
         final SwapListener swapListener =
                 rootTable.createSwapListenerIfRefreshing(SwapListener::new);
         rootTable.initializeWithSnapshot("-hierarchicalTable", swapListener, (usePrev, beforeClockValue) -> {

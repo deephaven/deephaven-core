@@ -58,7 +58,7 @@ import java.util.List;
  * <p>
  * When parallelizing a workload, you may want to divide it based on natural partitioning and then compute an overall
  * percentile. In these cases, you should use the {@link PercentileDefinition#exposeDigest} method to expose the
- * internal t-digest structure as a column. If you then perform an array aggregation ({@link Table#by}), you can call
+ * internal t-digest structure as a column. If you then perform an array aggregation ({@link Table#groupBy}), you can call
  * the {@link #accumulateDigests} function to produce a single digest that represents all of the constituent digests.
  * The amount of error introduced is related to the compression factor that you have selected for the digests. Once you
  * have a combined digest object, you can call the quantile or other functions to extract the desired percentile.
@@ -295,10 +295,10 @@ public class ApproximatePercentile {
      *
      * <p>
      * This function is intended to be used for parallelization. The first step is to independently compute approximate
-     * percentiles with an exposed digest column using your desired buckets. Next, call {@link Table#by(String...)} to
-     * produce arrays of Digests for each relevant bucket. Once the arrays are created, use this function to accumulate
-     * the arrays of digests within an {@link Table#update(String...)} statement. Finally, you may call the TDigest
-     * quantile function (or others) to produce the desired approximate percentile.
+     * percentiles with an exposed digest column using your desired buckets. Next, call {@link Table#groupBy(String...)}
+     * to produce arrays of Digests for each relevant bucket. Once the arrays are created, use this function to
+     * accumulate the arrays of digests within an {@link Table#update(String...)} statement. Finally, you may call the
+     * TDigest quantile function (or others) to produce the desired approximate percentile.
      * </p>
      *
      * @param array an array of TDigests

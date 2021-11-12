@@ -30,7 +30,7 @@ import java.util.stream.Collectors;
 import static io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_STRING_ARRAY;
 
 /**
- * Implementation for chunk-oriented aggregation operations, including {@link Table#by} and {@link Table#byExternal}.
+ * Implementation for chunk-oriented aggregation operations, including {@link Table#groupBy} and {@link Table#partitionBy}.
  */
 public class AggregationHelper {
 
@@ -106,7 +106,7 @@ public class AggregationHelper {
         final Mutable<QueryTable> resultHolder = new MutableObject<>();
         final SwapListener swapListener =
                 inputTable.createSwapListenerIfRefreshing(SwapListener::new);
-        inputTable.initializeWithSnapshot("by()-Snapshot", swapListener,
+        inputTable.initializeWithSnapshot("groupBy()-Snapshot", swapListener,
                 (final boolean usePrev, final long beforeClockValue) -> {
                     final ColumnSource<TrackingMutableRowSet> resultIndexColumnSource =
                             new SingleValueObjectColumnSource<>((TrackingMutableRowSet) inputTable.getRowSet());
@@ -131,7 +131,7 @@ public class AggregationHelper {
                                 resultTable.getDefinition().getColumnNames().stream()
                                         .map(resultTable::newModifiedColumnSet).toArray(ModifiedColumnSet[]::new));
                         final Listener aggregationUpdateListener =
-                                new BaseTable.ListenerImpl("by()", inputTable, resultTable) {
+                                new BaseTable.ListenerImpl("groupBy()", inputTable, resultTable) {
                                     @Override
                                     public void onUpdate(@NotNull final Update upstream) {
                                         final boolean wasEmpty =
@@ -281,7 +281,7 @@ public class AggregationHelper {
         final SwapListener swapListener =
                 inputTable.createSwapListenerIfRefreshing(SwapListener::new);
         assert swapListener != null;
-        inputTable.initializeWithSnapshot("by(" + String.join(",", keyColumnNames) + "-Snapshot", swapListener,
+        inputTable.initializeWithSnapshot("groupBy(" + String.join(",", keyColumnNames) + "-Snapshot", swapListener,
                 (final boolean usePrev, final long beforeClockValue) -> {
                     // Reinterpret key column sources as primitives where possible
                     final ColumnSource<?>[] maybeReinterpretedKeyColumnSources =
@@ -310,7 +310,7 @@ public class AggregationHelper {
                     // Compute result rowSet and redirection to hash slots
                     final MutableRowRedirection resultIndexToHashSlot =
                             MutableRowRedirectionLockFree.FACTORY.createRowRedirection(updateTracker.size());
-                    final TrackingMutableRowSet resultRowSet = updateTracker.applyAddsAndMakeInitialIndex(
+                    final TrackingMutableRowSet resultRowSet = updateTracker.applyAddsAndMakeInitialRowSet(
                             stateManager.getRowSetSource(), stateManager.getOverflowRowSetSource(),
                             resultIndexToHashSlot);
 
@@ -351,7 +351,7 @@ public class AggregationHelper {
 
                     // Handle updates
                     final Listener aggregationUpdateListener = new BaseTable.ListenerImpl(
-                            "by(" + String.join(",", keyColumnNames) + ')', inputTable, resultTable) {
+                            "groupBy(" + String.join(",", keyColumnNames) + ')', inputTable, resultTable) {
                         @Override
                         public void onUpdate(@NotNull final Update upstream) {
                             if (updateTracker.clear()) {
@@ -510,7 +510,7 @@ public class AggregationHelper {
 
         final TupleSource<?> inputKeyIndexToMapKeySource =
                 keyColumnSources.length == 1 ? keyColumnSources[0] : new SmartKeySource(keyColumnSources);
-        final ColumnSource<TrackingMutableRowSet> hashSlotToIndexSource = stateManager.getIndexHashTableSource();
+        final ColumnSource<TrackingMutableRowSet> hashSlotToRowSetSource = stateManager.getIndexHashTableSource();
         final int chunkSize = Math.min(numGroups, IncrementalChunkedByAggregationStateManager.CHUNK_SIZE);
 
         try (final RowSequence groupIndices = RowSetFactory.flat(numGroups);
@@ -528,7 +528,7 @@ public class AggregationHelper {
                 final LongChunk<Values> hashSlots =
                         groupIndexToHashSlot.getChunk(hashSlotGetContext, groupIndexesForThisChunk).asLongChunk();
                 for (int gi = 0; gi < groupsInThisChunk; ++gi) {
-                    final TrackingMutableRowSet rowSet = hashSlotToIndexSource.get(hashSlots.get(gi));
+                    final TrackingMutableRowSet rowSet = hashSlotToRowSetSource.get(hashSlots.get(gi));
                     aggregatedIndexes.set(gi, rowSet);
                     mapKeySourceIndices.set(gi, rowSet.firstRowKey());
                 }

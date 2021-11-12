@@ -44,9 +44,9 @@ public class TableSupplier extends LivenessArtifact implements InvocationHandler
                             .hasColumns((Collection<String>) args[0]));
             HIJACKED_DELEGATIONS.put(Table.class.getMethod("hasColumns", String[].class), (proxy, method,
                     args) -> ((TableSupplier) Proxy.getInvocationHandler(proxy)).hasColumns((String[]) args[0]));
-            HIJACKED_DELEGATIONS.put(Table.class.getMethod("byExternal", String[].class), (proxy, method,
-                    args) -> ((TableSupplier) Proxy.getInvocationHandler(proxy)).byExternal((String[]) args[0]));
-            HIJACKED_DELEGATIONS.put(Table.class.getMethod("byExternal", boolean.class, String[].class),
+            HIJACKED_DELEGATIONS.put(Table.class.getMethod("partitionBy", String[].class), (proxy, method,
+                                                                                            args) -> ((TableSupplier) Proxy.getInvocationHandler(proxy)).byExternal((String[]) args[0]));
+            HIJACKED_DELEGATIONS.put(Table.class.getMethod("partitionBy", boolean.class, String[].class),
                     (proxy, method, args) -> ((TableSupplier) Proxy.getInvocationHandler(proxy))
                             .byExternal((Boolean) args[0], (String[]) args[1]));
             HIJACKED_DELEGATIONS.put(Table.class.getMethod("apply", Function.Unary.class),
@@ -197,7 +197,7 @@ public class TableSupplier extends LivenessArtifact implements InvocationHandler
         // All TableMap operations should be hijacked
         if (TableMap.class.isAssignableFrom(method.getReturnType())) {
             throw new IllegalStateException(
-                    "TableSupplier byExternal methods should be hijacked but invoked " + method.getName());
+                    "TableSupplier partitionBy methods should be hijacked but invoked " + method.getName());
         }
 
         log.info().append("TableSupplier invoking on applied empty table ").append(method.getName()).endl();
@@ -286,7 +286,7 @@ public class TableSupplier extends LivenessArtifact implements InvocationHandler
     }
 
     private TableMap byExternal(boolean dropKeys, String... columnNames) {
-        return new TableMapSupplier(sourceTable.byExternal(dropKeys, columnNames), tableOperations,
+        return new TableMapSupplier(sourceTable.partitionBy(dropKeys, columnNames), tableOperations,
                 Collections.emptyList());
     }
 
@@ -341,7 +341,7 @@ public class TableSupplier extends LivenessArtifact implements InvocationHandler
      * A TableMapSupplier uses a source TableMap and applies a set of operations in the get method.
      */
     private static class TableMapSupplier implements TableMap {
-        // The source table map is from the byExternal on the source table
+        // The source table map is from the partitionBy on the source table
         private final TableMap sourceMap;
 
         // The list of table operations that were applied to the table supplier

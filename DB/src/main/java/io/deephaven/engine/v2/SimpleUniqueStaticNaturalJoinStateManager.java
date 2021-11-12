@@ -25,15 +25,15 @@ class SimpleUniqueStaticNaturalJoinStateManager extends StaticNaturalJoinStateMa
     private final int tableSize;
     private final ToIntFunctor<Values> transform;
 
-    private final LongArraySource rightIndexSource = new LongArraySource();
+    private final LongArraySource rightRowSetSource = new LongArraySource();
 
     SimpleUniqueStaticNaturalJoinStateManager(ColumnSource<?>[] tableKeySources, int tableSize, ToIntFunctor<Values> transform) {
         super(tableKeySources);
         this.tableSize = Require.gtZero(tableSize, "tableSize");
         this.transform = transform;
-        rightIndexSource.ensureCapacity(tableSize);
+        rightRowSetSource.ensureCapacity(tableSize);
         for (int ii = 0; ii < tableSize; ++ii) {
-            rightIndexSource.set(ii, RowSequence.NULL_ROW_KEY);
+            rightRowSetSource.set(ii, RowSequence.NULL_ROW_KEY);
         }
     }
 
@@ -54,11 +54,11 @@ class SimpleUniqueStaticNaturalJoinStateManager extends StaticNaturalJoinStateMa
                     if (tableLocation < 0 || tableLocation >= tableSize) {
                         return true;
                     }
-                    final long existingRight = rightIndexSource.getLong(tableLocation);
+                    final long existingRight = rightRowSetSource.getLong(tableLocation);
                     if (existingRight == RowSequence.NULL_ROW_KEY) {
-                        rightIndexSource.set(tableLocation, keyIndex);
+                        rightRowSetSource.set(tableLocation, keyIndex);
                     } else {
-                        rightIndexSource.set(tableLocation, DUPLICATE_RIGHT_VALUE);
+                        rightRowSetSource.set(tableLocation, DUPLICATE_RIGHT_VALUE);
                     }
                     return true;
                 });
@@ -90,7 +90,7 @@ class SimpleUniqueStaticNaturalJoinStateManager extends StaticNaturalJoinStateMa
                     if (tableLocation < 0 || tableLocation >= tableSize) {
                         continue;
                     }
-                    final long existingRight = rightIndexSource.getLong(tableLocation);
+                    final long existingRight = rightRowSetSource.getLong(tableLocation);
 
                     if (existingRight == DUPLICATE_RIGHT_VALUE) {
                         throw new IllegalStateException("More than one right side mapping for key " + keySourcesForErrorMessages[0].get(leftRowSet.get(offset + ii)));

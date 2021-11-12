@@ -84,8 +84,7 @@ import io.deephaven.proto.backplane.grpc.TimeTableRequest;
 import io.deephaven.proto.backplane.grpc.UnstructuredFilterTableRequest;
 import io.deephaven.qst.table.AggregationTable;
 import io.deephaven.qst.table.AsOfJoinTable;
-import io.deephaven.qst.table.ByTable;
-import io.deephaven.qst.table.ByTableBase;
+import io.deephaven.qst.table.GroupByTable;
 import io.deephaven.qst.table.EmptyTable;
 import io.deephaven.qst.table.ExactJoinTable;
 import io.deephaven.qst.table.HeadTable;
@@ -417,8 +416,8 @@ class BatchTableRequestBuilder {
         }
 
         @Override
-        public void visit(ByTable byTable) {
-            out = op(Builder::setComboAggregate, singleAgg(byTable, AggType.ARRAY));
+        public void visit(GroupByTable groupByTable) {
+            out = op(Builder::setComboAggregate, singleAgg(groupByTable, AggType.GROUP));
         }
 
         @Override

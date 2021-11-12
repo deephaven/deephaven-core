@@ -14,7 +14,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * A DB aware EMA which can compute "by" emas without grouping and then ungrouping.
+ * An EMA which can compute aggregated EMAs without grouping and then ungrouping.
  */
 public abstract class ByEma implements Serializable {
 

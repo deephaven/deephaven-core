@@ -9,7 +9,7 @@ import java.util.Collection;
 /**
  * Represents an aggregation that can be applied to a table.
  *
- * @see io.deephaven.api.TableOperations#by(Collection, Collection)
+ * @see io.deephaven.api.TableOperations#aggBy(Collection, Collection)
  */
 public interface Aggregation extends Serializable {
 

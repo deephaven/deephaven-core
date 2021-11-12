@@ -43,12 +43,12 @@ public class QueryTableSliceTest extends QueryTableTestBase {
                 EvalNugget.from(() -> queryTable.updateView("x = Indices").head(0)),
                 new EvalNugget() {
                     public Table e() {
-                        return queryTable.by("Sym").sort("Sym").head(0);
+                        return queryTable.groupBy("Sym").sort("Sym").head(0);
                     }
                 },
                 new EvalNugget() {
                     public Table e() {
-                        return queryTable.by("Sym", "intCol").sort("Sym", "intCol").head(0);
+                        return queryTable.groupBy("Sym", "intCol").sort("Sym", "intCol").head(0);
                     }
                 },
                 new EvalNugget() {
@@ -68,12 +68,12 @@ public class QueryTableSliceTest extends QueryTableTestBase {
                 },
                 new EvalNugget() {
                     public Table e() {
-                        return queryTable.by("Sym").sort("Sym").head(0).update("x=sum(intCol)").head(0);
+                        return queryTable.groupBy("Sym").sort("Sym").head(0).update("x=sum(intCol)").head(0);
                     }
                 },
                 new EvalNugget() {
                     public Table e() {
-                        return queryTable.by("Sym", "intCol").sort("Sym", "intCol").head(0).update("x=intCol+1");
+                        return queryTable.groupBy("Sym", "intCol").sort("Sym", "intCol").head(0).update("x=intCol+1");
                     }
                 },
                 new EvalNugget() {
@@ -89,12 +89,12 @@ public class QueryTableSliceTest extends QueryTableTestBase {
                 EvalNugget.from(() -> queryTable.updateView("x = Indices").head(1)),
                 new EvalNugget() {
                     public Table e() {
-                        return queryTable.by("Sym").sort("Sym").head(1);
+                        return queryTable.groupBy("Sym").sort("Sym").head(1);
                     }
                 },
                 new EvalNugget() {
                     public Table e() {
-                        return queryTable.by("Sym", "intCol").sort("Sym", "intCol").head(1);
+                        return queryTable.groupBy("Sym", "intCol").sort("Sym", "intCol").head(1);
                     }
                 },
                 new EvalNugget() {
@@ -114,12 +114,12 @@ public class QueryTableSliceTest extends QueryTableTestBase {
                 },
                 new EvalNugget() {
                     public Table e() {
-                        return queryTable.by("Sym").sort("Sym").head(1).update("x=sum(intCol)").head(1);
+                        return queryTable.groupBy("Sym").sort("Sym").head(1).update("x=sum(intCol)").head(1);
                     }
                 },
                 new EvalNugget() {
                     public Table e() {
-                        return queryTable.by("Sym", "intCol").sort("Sym", "intCol").head(1).update("x=intCol+1");
+                        return queryTable.groupBy("Sym", "intCol").sort("Sym", "intCol").head(1).update("x=intCol+1");
                     }
                 },
                 new EvalNugget() {
@@ -135,12 +135,12 @@ public class QueryTableSliceTest extends QueryTableTestBase {
                 EvalNugget.from(() -> queryTable.updateView("x = Indices").head(10)),
                 new EvalNugget() {
                     public Table e() {
-                        return queryTable.by("Sym").sort("Sym").head(10);
+                        return queryTable.groupBy("Sym").sort("Sym").head(10);
                     }
                 },
                 new EvalNugget() {
                     public Table e() {
-                        return queryTable.by("Sym", "intCol").sort("Sym", "intCol").head(10);
+                        return queryTable.groupBy("Sym", "intCol").sort("Sym", "intCol").head(10);
                     }
                 },
                 new EvalNugget() {
@@ -160,12 +160,12 @@ public class QueryTableSliceTest extends QueryTableTestBase {
                 },
                 new EvalNugget() {
                     public Table e() {
-                        return queryTable.by("Sym").sort("Sym").head(10).update("x=sum(intCol)").head(10);
+                        return queryTable.groupBy("Sym").sort("Sym").head(10).update("x=sum(intCol)").head(10);
                     }
                 },
                 new EvalNugget() {
                     public Table e() {
-                        return queryTable.by("Sym", "intCol").sort("Sym", "intCol").head(10).update("x=intCol+1");
+                        return queryTable.groupBy("Sym", "intCol").sort("Sym", "intCol").head(10).update("x=intCol+1");
                     }
                 },
                 new EvalNugget() {
@@ -181,12 +181,12 @@ public class QueryTableSliceTest extends QueryTableTestBase {
                 EvalNugget.from(() -> queryTable.updateView("x = Indices").tail(0)),
                 new EvalNugget() {
                     public Table e() {
-                        return queryTable.by("Sym").sort("Sym").tail(0);
+                        return queryTable.groupBy("Sym").sort("Sym").tail(0);
                     }
                 },
                 new EvalNugget() {
                     public Table e() {
-                        return queryTable.by("Sym", "intCol").sort("Sym").tail(0);
+                        return queryTable.groupBy("Sym", "intCol").sort("Sym").tail(0);
                     }
                 },
                 new EvalNugget() {
@@ -206,12 +206,12 @@ public class QueryTableSliceTest extends QueryTableTestBase {
                 },
                 new EvalNugget() {
                     public Table e() {
-                        return queryTable.by("Sym").sort("Sym").tail(0).update("x=sum(intCol)").tail(0);
+                        return queryTable.groupBy("Sym").sort("Sym").tail(0).update("x=sum(intCol)").tail(0);
                     }
                 },
                 new EvalNugget() {
                     public Table e() {
-                        return queryTable.by("Sym", "intCol").sort("Sym", "intCol").tail(0).update("x=intCol+1");
+                        return queryTable.groupBy("Sym", "intCol").sort("Sym", "intCol").tail(0).update("x=intCol+1");
                     }
                 },
                 new EvalNugget() {
@@ -232,12 +232,12 @@ public class QueryTableSliceTest extends QueryTableTestBase {
                 EvalNugget.from(() -> queryTable.updateView("x = Indices").tail(1)),
                 new EvalNugget() {
                     public Table e() {
-                        return queryTable.by("Sym").sort("Sym").tail(1);
+                        return queryTable.groupBy("Sym").sort("Sym").tail(1);
                     }
                 },
                 new EvalNugget() {
                     public Table e() {
-                        return queryTable.by("Sym", "intCol").sort("Sym", "intCol").tail(1);
+                        return queryTable.groupBy("Sym", "intCol").sort("Sym", "intCol").tail(1);
                     }
                 },
                 new EvalNugget() {
@@ -257,12 +257,12 @@ public class QueryTableSliceTest extends QueryTableTestBase {
                 },
                 new EvalNugget() {
                     public Table e() {
-                        return queryTable.by("Sym").sort("Sym").tail(1).update("x=sum(intCol)").tail(1);
+                        return queryTable.groupBy("Sym").sort("Sym").tail(1).update("x=sum(intCol)").tail(1);
                     }
                 },
                 new EvalNugget() {
                     public Table e() {
-                        return queryTable.by("Sym", "intCol").sort("Sym", "intCol").tail(1).update("x=intCol+1");
+                        return queryTable.groupBy("Sym", "intCol").sort("Sym", "intCol").tail(1).update("x=intCol+1");
                     }
                 },
                 new EvalNugget() {
@@ -278,12 +278,12 @@ public class QueryTableSliceTest extends QueryTableTestBase {
                 EvalNugget.from(() -> queryTable.updateView("x = Indices").tail(10)),
                 new EvalNugget() {
                     public Table e() {
-                        return queryTable.by("Sym").sort("Sym").tail(10);
+                        return queryTable.groupBy("Sym").sort("Sym").tail(10);
                     }
                 },
                 new EvalNugget() {
                     public Table e() {
-                        return queryTable.by("Sym", "intCol").sort("Sym", "intCol").tail(10);
+                        return queryTable.groupBy("Sym", "intCol").sort("Sym", "intCol").tail(10);
                     }
                 },
                 new EvalNugget() {
@@ -303,12 +303,12 @@ public class QueryTableSliceTest extends QueryTableTestBase {
                 },
                 new EvalNugget() {
                     public Table e() {
-                        return queryTable.by("Sym").sort("Sym").tail(10).update("x=sum(intCol)").tail(10);
+                        return queryTable.groupBy("Sym").sort("Sym").tail(10).update("x=sum(intCol)").tail(10);
                     }
                 },
                 new EvalNugget() {
                     public Table e() {
-                        return queryTable.by("Sym", "intCol").sort("Sym", "intCol").tail(10).update("x=intCol+1");
+                        return queryTable.groupBy("Sym", "intCol").sort("Sym", "intCol").tail(10).update("x=intCol+1");
                     }
                 },
                 new EvalNugget() {

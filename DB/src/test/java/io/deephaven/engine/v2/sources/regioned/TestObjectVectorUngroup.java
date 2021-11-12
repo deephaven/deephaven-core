@@ -35,7 +35,7 @@ public class TestObjectVectorUngroup {
         final Table theTable = TableTools.emptyTable(20).update("A=`a`+i%10", "B=`b`+i%5", "C=`i`+i");
         assertEquals(String.class, theTable.getDefinition().getColumn("C").getDataType());
 
-        final Table groupedTable = theTable.by("A", "B");
+        final Table groupedTable = theTable.groupBy("A", "B");
         assertTrue(ObjectVector.class.isAssignableFrom(groupedTable.getDefinition().getColumn("C").getDataType()));
         assertEquals(String.class, groupedTable.getDefinition().getColumn("C").getComponentType());
 

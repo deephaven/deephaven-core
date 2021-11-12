@@ -200,7 +200,7 @@ public abstract class BaseTable extends LivenessArtifact
         // new attributes
         DropColumns, View, Reverse,
         /**
-         * The result tables that go in a ByExternal TableMap
+         * The result tables that go in a PartitionBy TableMap
          */
         ByExternal, Coalesce, WouldMatch, LastBy, FirstBy,
 
@@ -227,7 +227,7 @@ public abstract class BaseTable extends LivenessArtifact
         tempMap.put(INPUT_TABLE_ATTRIBUTE, LEGACY_COPY_ATTRIBUTES);
         tempMap.put(DO_NOT_MAKE_REMOTE_ATTRIBUTE, LEGACY_COPY_ATTRIBUTES);
 
-        // byExternal was creating the sub table with a bespoke ACL copy; we should copy ACLs there in addition to the
+        // partitionBy was creating the sub table with a bespoke ACL copy; we should copy ACLs there in addition to the
         // legacy attributes
         final EnumSet<CopyAttributeOperation> aclCopyAttributes = EnumSet.copyOf(LEGACY_COPY_ATTRIBUTES);
         aclCopyAttributes.addAll(EnumSet.of(

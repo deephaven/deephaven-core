@@ -57,7 +57,7 @@ public class AnnotatedTables {
 
     public static final Adapter TAIL_2_ADAPTER = in -> tail(in, 2);
 
-    public static final Adapter BY_ADAPTER = AnnotatedTables::by;
+    public static final Adapter GROUP_BY_ADAPTER = AnnotatedTables::groupBy;
 
     public static final Adapter MERGE_2 = in -> {
         final TableCreationLogic merge2 = new TableCreationLogic() {
@@ -123,7 +123,7 @@ public class AnnotatedTables {
         map.put("TAIL_0", TAIL_0_ADAPTER);
         map.put("TAIL_1", TAIL_1_ADAPTER);
         map.put("TAIL_2", TAIL_2_ADAPTER);
-        map.put("BY", BY_ADAPTER);
+        map.put("BY", GROUP_BY_ADAPTER);
         map.put("MERGE_2", MERGE_2);
         map.put("MERGE_3", MERGE_3);
         return map;
@@ -262,8 +262,8 @@ public class AnnotatedTables {
         return new AnnotatedTable(in.logic().andThen(TableOperations::reverse), in.isStatic(), in.size());
     }
 
-    public static AnnotatedTable by(AnnotatedTable in) {
-        return new AnnotatedTable(in.logic().andThen(TableOperations::by), in.isStatic(), Math.min(in.size(), 1));
+    public static AnnotatedTable groupBy(AnnotatedTable in) {
+        return new AnnotatedTable(in.logic().andThen(TableOperations::groupBy), in.isStatic(), Math.min(in.size(), 1));
     }
 
     public static AnnotatedTable head(AnnotatedTable in, int size) {

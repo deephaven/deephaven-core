@@ -129,7 +129,7 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
     // we are going to also reuse this for our state entry, so that we do not need additional storage
     @ReplicateHashTable.StateColumnSource
     // @StateColumnSourceType@ from \QObjectArraySource<TrackingMutableRowSet>\E
-    private final ObjectArraySource<TrackingMutableRowSet> rightIndexSource
+    private final ObjectArraySource<TrackingMutableRowSet> rightRowSetSource
             // @StateColumnSourceConstructor@ from \QObjectArraySource<>(TrackingMutableRowSet.class)\E
             = new ObjectArraySource<>(TrackingMutableRowSet.class);
 
@@ -141,7 +141,7 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
     // the overflow buckets for the right TrackingMutableRowSet
     @ReplicateHashTable.OverflowStateColumnSource
     // @StateColumnSourceType@ from \QObjectArraySource<TrackingMutableRowSet>\E
-    private final ObjectArraySource<TrackingMutableRowSet> overflowRightIndexSource
+    private final ObjectArraySource<TrackingMutableRowSet> overflowRightRowSetSource
             // @StateColumnSourceConstructor@ from \QObjectArraySource<>(TrackingMutableRowSet.class)\E
             = new ObjectArraySource<>(TrackingMutableRowSet.class);
 
@@ -223,7 +223,7 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
     }
 
     private void ensureCapacity(int tableSize) {
-        rightIndexSource.ensureCapacity(tableSize);
+        rightRowSetSource.ensureCapacity(tableSize);
         overflowLocationSource.ensureCapacity(tableSize);
         for (int ii = 0; ii < keyColumnCount; ++ii) {
             keySources[ii].ensureCapacity(tableSize);
@@ -242,7 +242,7 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
         // endmixin rehash
         // altmixin rehash: final int newCapacity = nextOverflowLocation + locationsToAllocate;
         overflowOverflowLocationSource.ensureCapacity(newCapacity);
-        overflowRightIndexSource.ensureCapacity(newCapacity);
+        overflowRightRowSetSource.ensureCapacity(newCapacity);
         //noinspection ForLoopReplaceableByForEach
         for (int ii = 0; ii < overflowKeySources.length; ++ii) {
             overflowKeySources[ii].ensureCapacity(newCapacity);
@@ -262,9 +262,9 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
             try (final BuildContext bc = makeBuildContext(rightKeys, rightTable.size())) {
                 buildTable(bc, rightTable.getRowSet(), rightKeys, (slot, index) -> {
                     if (isOverflowLocation(slot)) {
-                        addToIndex(overflowRightIndexSource, hashLocationToOverflowLocation(slot), index, ignoreMissing);
+                        addToIndex(overflowRightRowSetSource, hashLocationToOverflowLocation(slot), index, ignoreMissing);
                     } else {
-                        addToIndex(rightIndexSource, slot, index, ignoreMissing);
+                        addToIndex(rightRowSetSource, slot, index, ignoreMissing);
                     }
                 });
             }
@@ -519,7 +519,7 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
             sourceIndexKeys = WritableLongChunk.makeWritableChunk(chunkSize);
             // endregion build context constructor
             sortContext = LongIntTimsortKernel.createContext(chunkSize);
-            stateSourceFillContext = rightIndexSource.makeFillContext(chunkSize);
+            stateSourceFillContext = rightRowSetSource.makeFillContext(chunkSize);
             overflowFillContext = overflowLocationSource.makeFillContext(chunkSize);
             overflowOverflowFillContext = overflowOverflowLocationSource.makeFillContext(chunkSize);
             hashChunk = WritableIntChunk.makeWritableChunk(chunkSize);
@@ -544,7 +544,7 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
             overflowLocations = WritableIntChunk.makeWritableChunk(chunkSize);
             // mixin rehash
             rehashLocations = WritableLongChunk.makeWritableChunk(chunkSize);
-            overflowStateSourceFillContext = overflowRightIndexSource.makeFillContext(chunkSize);
+            overflowStateSourceFillContext = overflowRightRowSetSource.makeFillContext(chunkSize);
             overflowLocationsToMigrate = WritableIntChunk.makeWritableChunk(chunkSize);
             overflowLocationsAsKeyIndices = WritableLongChunk.makeWritableChunk(chunkSize);
             shouldMoveBucket = WritableBooleanChunk.makeWritableChunk(chunkSize);
@@ -677,7 +677,7 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
                 fillKeys(bc.workingFillContexts, bc.workingKeyChunks, bc.tableLocationsChunk);
 
                 // and the corresponding states, if a value is null, we've found our insertion point
-                rightIndexSource.fillChunkUnordered(bc.stateSourceFillContext, bc.workingStateEntries, bc.tableLocationsChunk);
+                rightRowSetSource.fillChunkUnordered(bc.stateSourceFillContext, bc.workingStateEntries, bc.tableLocationsChunk);
 
                 // find things that exist
                 // @StateChunkIdentityName@ from \QObjectChunkIdentity\E
@@ -989,7 +989,7 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
 
             // now rehash the main entries
 
-            rightIndexSource.fillChunkUnordered(bc.stateSourceFillContext, bc.workingStateEntries, bc.rehashLocations);
+            rightRowSetSource.fillChunkUnordered(bc.stateSourceFillContext, bc.workingStateEntries, bc.rehashLocations);
             // @StateChunkIdentityName@ from \QObjectChunkIdentity\E
             ObjectChunkIdentityEquals.notEqual(bc.workingStateEntries, EMPTY_RIGHT_VALUE, bc.shouldMoveBucket);
 
@@ -1022,9 +1022,9 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
                     }
 
                     // @StateValueType@ from \QTrackingMutableRowSet\E
-                    final TrackingMutableRowSet stateValueToMove = rightIndexSource.getUnsafe(oldHashLocation);
-                    rightIndexSource.set(newHashLocation, stateValueToMove);
-                    rightIndexSource.set(oldHashLocation, EMPTY_RIGHT_VALUE);
+                    final TrackingMutableRowSet stateValueToMove = rightRowSetSource.getUnsafe(oldHashLocation);
+                    rightRowSetSource.set(newHashLocation, stateValueToMove);
+                    rightRowSetSource.set(oldHashLocation, EMPTY_RIGHT_VALUE);
                                 // region rehash move values
                     // endregion rehash move values
 
@@ -1065,7 +1065,7 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
                 // now fetch the overflow key values
                 fillOverflowKeys(bc.overflowContexts, bc.workingKeyChunks, bc.overflowLocationsAsKeyIndices);
                 // and their state values
-                overflowRightIndexSource.fillChunkUnordered(bc.overflowStateSourceFillContext, bc.workingStateEntries, bc.overflowLocationsAsKeyIndices);
+                overflowRightRowSetSource.fillChunkUnordered(bc.overflowStateSourceFillContext, bc.workingStateEntries, bc.overflowLocationsAsKeyIndices);
                 // and where their next pointer is
                 overflowOverflowLocationSource.fillChunkUnordered(bc.overflowOverflowFillContext, bc.overflowLocationsToMigrate, bc.overflowLocationsAsKeyIndices);
 
@@ -1153,9 +1153,9 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
              final SafeCloseableArray ignored2 = new SafeCloseableArray<>(keyChunks);
              // @StateChunkName@ from \QObjectChunk\E
              final WritableObjectChunk stateChunk = WritableObjectChunk.makeWritableChunk(maxSize);
-             final ChunkSource.FillContext fillContext = rightIndexSource.makeFillContext(maxSize)) {
+             final ChunkSource.FillContext fillContext = rightRowSetSource.makeFillContext(maxSize)) {
 
-            rightIndexSource.fillChunk(fillContext, stateChunk, RowSetFactory.flat(tableHashPivot));
+            rightRowSetSource.fillChunk(fillContext, stateChunk, RowSetFactory.flat(tableHashPivot));
 
             ChunkUtils.fillInOrder(positions);
 
@@ -1238,7 +1238,7 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
     // mixin allowUpdateWriteThroughState
     // @WritableStateChunkType@ from \QWritableObjectChunk<TrackingMutableRowSet,Values>\E
     private void updateWriteThroughState(ResettableWritableObjectChunk<TrackingMutableRowSet,Values> writeThroughState, long firstPosition, long expectedLastPosition) {
-        final long firstBackingChunkPosition = rightIndexSource.resetWritableChunkToBackingStore(writeThroughState, firstPosition);
+        final long firstBackingChunkPosition = rightRowSetSource.resetWritableChunkToBackingStore(writeThroughState, firstPosition);
         if (firstBackingChunkPosition != firstPosition) {
             throw new IllegalStateException("ArrayBackedColumnSources have different block sizes!");
         }
@@ -1302,7 +1302,7 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
         }
         // region nullOverflowObjectSources
         for (int ii = 0; ii < locationsToNull.size(); ++ii) {
-            overflowRightIndexSource.set(locationsToNull.get(ii), null);
+            overflowRightRowSetSource.set(locationsToNull.get(ii), null);
         }
         // endregion nullOverflowObjectSources
     }
@@ -1438,7 +1438,7 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
             // region probe context constructor
             keyIndices = WritableLongChunk.makeWritableChunk(chunkSize);
             // endregion probe context constructor
-            stateSourceFillContext = rightIndexSource.makeFillContext(chunkSize);
+            stateSourceFillContext = rightRowSetSource.makeFillContext(chunkSize);
             overflowFillContext = overflowLocationSource.makeFillContext(chunkSize);
             overflowOverflowFillContext = overflowOverflowLocationSource.makeFillContext(chunkSize);
             hashChunk = WritableIntChunk.makeWritableChunk(chunkSize);
@@ -1575,7 +1575,7 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
                 // - otherwise we check for equality; if we are equal, we have found our thing to set
                 //   (or to complain if we are already set)
                 // - if we are not equal, then we are an overflow block
-                rightIndexSource.fillChunkUnordered(pc.stateSourceFillContext, pc.workingStateEntries, pc.tableLocationsChunk);
+                rightRowSetSource.fillChunkUnordered(pc.stateSourceFillContext, pc.workingStateEntries, pc.tableLocationsChunk);
 
                 // @StateChunkIdentityName@ from \QObjectChunkIdentity\E
                 ObjectChunkIdentityEquals.notEqual(pc.workingStateEntries, EMPTY_RIGHT_VALUE, pc.equalValues);
@@ -1725,9 +1725,9 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
     public TrackingRowSet getRightIndex(long slot) {
         TrackingRowSet retVal;
         if (isOverflowLocation(slot)) {
-            retVal = overflowRightIndexSource.get(hashLocationToOverflowLocation(slot));
+            retVal = overflowRightRowSetSource.get(hashLocationToOverflowLocation(slot));
         } else {
-            retVal = rightIndexSource.get(slot);
+            retVal = rightRowSetSource.get(slot);
         }
         if (retVal == null) {
             retVal = RowSetFactory.empty().toTracking();

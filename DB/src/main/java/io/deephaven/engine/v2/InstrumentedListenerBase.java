@@ -120,7 +120,7 @@ public abstract class InstrumentedListenerBase extends LivenessArtifact
 
         // although we have notified the dependent tables, we should notify the client side as well. In pretty
         // much every case we would expect this notification to happen anyway, but in the case of a GuiTableMap
-        // from byExternal, the tables will have a hard reference, but would not actually have made it all the way
+        // from partitionBy, the tables will have a hard reference, but would not actually have made it all the way
         // back to the client. Thus, the need for this additional reporting.
         try {
             if (SystemicObjectTracker.isSystemic(dependent)) {

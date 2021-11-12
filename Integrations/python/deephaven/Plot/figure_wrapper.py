@@ -4418,7 +4418,7 @@ class FigureWrapper(object):
           :return: (io.deephaven.engine.plot.Figure) this data series.
           
         *Overload 28*  
-          :param factors: (long...) - factors to multiply the default size (1) by
+          :param factors: (long...) - factors to multiply the default size (1) groupBy
           :return: (io.deephaven.engine.plot.Figure) this XYDataSeries
           
         *Overload 29*  
@@ -4428,7 +4428,7 @@ class FigureWrapper(object):
           
         *Overload 30*  
           :param categories: (CATEGORY[]) - data points
-          :param factors: (NUMBER[]) - factors to multiply the default size (1) by
+          :param factors: (NUMBER[]) - factors to multiply the default size (1) groupBy
           :return: (io.deephaven.engine.plot.Figure) this CategoryDataSeries
           
         *Overload 31*  
@@ -4450,7 +4450,7 @@ class FigureWrapper(object):
           Note: Java generics information - <CATEGORY extends java.lang.Comparable>
           
           :param categories: (CATEGORY[]) - data points
-          :param factors: (double[]) - factors to multiply the default size (1) by
+          :param factors: (double[]) - factors to multiply the default size (1) groupBy
           :return: (io.deephaven.engine.plot.Figure) this CategoryDataSeries
           
         *Overload 35*  
@@ -4465,7 +4465,7 @@ class FigureWrapper(object):
           Note: Java generics information - <CATEGORY extends java.lang.Comparable>
           
           :param categories: (CATEGORY[]) - data points
-          :param factors: (int[]) - factors to multiply the default size (1) by
+          :param factors: (int[]) - factors to multiply the default size (1) groupBy
           :return: (io.deephaven.engine.plot.Figure) this CategoryDataSeries
           
         *Overload 37*  
@@ -4480,7 +4480,7 @@ class FigureWrapper(object):
           Note: Java generics information - <CATEGORY extends java.lang.Comparable>
           
           :param categories: (CATEGORY[]) - data points
-          :param factors: (long[]) - factors to multiply the default size (1) by
+          :param factors: (long[]) - factors to multiply the default size (1) groupBy
           :return: (io.deephaven.engine.plot.Figure) this CategoryDataSeries
           
         *Overload 39*  
@@ -4520,7 +4520,7 @@ class FigureWrapper(object):
         *Overload 44*  
           Note: Java generics information - <T extends java.lang.Number>
           
-          :param factors: (T[]) - factors to multiply the default size (1) by
+          :param factors: (T[]) - factors to multiply the default size (1) groupBy
           :return: (io.deephaven.engine.plot.Figure) this XYDataSeries
           
         *Overload 45*  

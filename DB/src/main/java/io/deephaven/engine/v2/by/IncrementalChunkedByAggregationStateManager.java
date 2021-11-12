@@ -157,7 +157,7 @@ class IncrementalChunkedByAggregationStateManager
     // we are going to also reuse this for our state entry, so that we do not need additional storage
     @ReplicateHashTable.StateColumnSource
     // @StateColumnSourceType@ from \QObjectArraySource<TrackingMutableRowSet>\E
-    private final ObjectArraySource<TrackingMutableRowSet> indexSource
+    private final ObjectArraySource<TrackingMutableRowSet> rowSetSource
             // @StateColumnSourceConstructor@ from \QObjectArraySource<>(TrackingMutableRowSet.class)\E
             = new ObjectArraySource<>(TrackingMutableRowSet.class);
 
@@ -169,7 +169,7 @@ class IncrementalChunkedByAggregationStateManager
     // the overflow buckets for the right TrackingMutableRowSet
     @ReplicateHashTable.OverflowStateColumnSource
     // @StateColumnSourceType@ from \QObjectArraySource<TrackingMutableRowSet>\E
-    private final ObjectArraySource<TrackingMutableRowSet> overflowIndexSource
+    private final ObjectArraySource<TrackingMutableRowSet> overflowRowSetSource
             // @StateColumnSourceConstructor@ from \QObjectArraySource<>(TrackingMutableRowSet.class)\E
             = new ObjectArraySource<>(TrackingMutableRowSet.class);
 
@@ -246,7 +246,7 @@ class IncrementalChunkedByAggregationStateManager
     }
 
     private void ensureCapacity(int tableSize) {
-        indexSource.ensureCapacity(tableSize);
+        rowSetSource.ensureCapacity(tableSize);
         overflowLocationSource.ensureCapacity(tableSize);
         for (int ii = 0; ii < keyColumnCount; ++ii) {
             keySources[ii].ensureCapacity(tableSize);
@@ -266,7 +266,7 @@ class IncrementalChunkedByAggregationStateManager
         // endmixin rehash
         // altmixin rehash: final int newCapacity = nextOverflowLocation + locationsToAllocate;
         overflowOverflowLocationSource.ensureCapacity(newCapacity);
-        overflowIndexSource.ensureCapacity(newCapacity);
+        overflowRowSetSource.ensureCapacity(newCapacity);
         //noinspection ForLoopReplaceableByForEach
         for (int ii = 0; ii < overflowKeySources.length; ++ii) {
             overflowKeySources[ii].ensureCapacity(newCapacity);
@@ -413,7 +413,7 @@ class IncrementalChunkedByAggregationStateManager
             // region build context constructor
             // endregion build context constructor
             sortContext = LongIntTimsortKernel.createContext(chunkSize);
-            stateSourceFillContext = indexSource.makeFillContext(chunkSize);
+            stateSourceFillContext = rowSetSource.makeFillContext(chunkSize);
             overflowFillContext = overflowLocationSource.makeFillContext(chunkSize);
             overflowOverflowFillContext = overflowOverflowLocationSource.makeFillContext(chunkSize);
             hashChunk = WritableIntChunk.makeWritableChunk(chunkSize);
@@ -438,7 +438,7 @@ class IncrementalChunkedByAggregationStateManager
             overflowLocations = WritableIntChunk.makeWritableChunk(chunkSize);
             // mixin rehash
             rehashLocations = WritableLongChunk.makeWritableChunk(chunkSize);
-            overflowStateSourceFillContext = overflowIndexSource.makeFillContext(chunkSize);
+            overflowStateSourceFillContext = overflowRowSetSource.makeFillContext(chunkSize);
             overflowLocationsToMigrate = WritableIntChunk.makeWritableChunk(chunkSize);
             overflowLocationsAsKeyIndices = WritableLongChunk.makeWritableChunk(chunkSize);
             shouldMoveBucket = WritableBooleanChunk.makeWritableChunk(chunkSize);
@@ -570,7 +570,7 @@ class IncrementalChunkedByAggregationStateManager
                 fillKeys(bc.workingFillContexts, bc.workingKeyChunks, bc.tableLocationsChunk);
 
                 // and the corresponding states, if a value is null, we've found our insertion point
-                indexSource.fillChunkUnordered(bc.stateSourceFillContext, bc.workingStateEntries, bc.tableLocationsChunk);
+                rowSetSource.fillChunkUnordered(bc.stateSourceFillContext, bc.workingStateEntries, bc.tableLocationsChunk);
 
                 // find things that exist
                 // @StateChunkIdentityName@ from \QObjectChunkIdentity\E
@@ -620,7 +620,7 @@ class IncrementalChunkedByAggregationStateManager
                     final long currentHashLocation = bc.insertTableLocations.get(ii);
 
                     // region main insert
-                    indexSource.set(currentHashLocation, RowSetFactory.empty().toTracking());
+                    rowSetSource.set(currentHashLocation, RowSetFactory.empty().toTracking());
                     cookieSource.set(currentHashLocation, trackingCallback.invoke(NULL_COOKIE, (int) currentHashLocation, sourceChunkIndexKeys.get(firstChunkPositionForHashLocation)));
                     // endregion main insert
                     // mixin rehash
@@ -763,7 +763,7 @@ class IncrementalChunkedByAggregationStateManager
                             overflowLocationSource.set(tableLocation, allocatedOverflowLocation);
 
                             // region build overflow insert
-                            overflowIndexSource.set(allocatedOverflowLocation, RowSetFactory.empty().toTracking());
+                            overflowRowSetSource.set(allocatedOverflowLocation, RowSetFactory.empty().toTracking());
                             overflowCookieSource.set(allocatedOverflowLocation, trackingCallback.invoke(NULL_COOKIE, overflowLocationToHashLocation(allocatedOverflowLocation), sourceChunkIndexKeys.get(chunkPosition)));
                             // endregion build overflow insert
 
@@ -880,7 +880,7 @@ class IncrementalChunkedByAggregationStateManager
 
             // now rehash the main entries
 
-            indexSource.fillChunkUnordered(bc.stateSourceFillContext, bc.workingStateEntries, bc.rehashLocations);
+            rowSetSource.fillChunkUnordered(bc.stateSourceFillContext, bc.workingStateEntries, bc.rehashLocations);
             // @StateChunkIdentityName@ from \QObjectChunkIdentity\E
             ObjectChunkIdentityEquals.notEqual(bc.workingStateEntries, EMPTY_VALUE, bc.shouldMoveBucket);
 
@@ -913,9 +913,9 @@ class IncrementalChunkedByAggregationStateManager
                     }
 
                     // @StateValueType@ from \QTrackingMutableRowSet\E
-                    final TrackingMutableRowSet stateValueToMove = indexSource.getUnsafe(oldHashLocation);
-                    indexSource.set(newHashLocation, stateValueToMove);
-                    indexSource.set(oldHashLocation, EMPTY_VALUE);
+                    final TrackingMutableRowSet stateValueToMove = rowSetSource.getUnsafe(oldHashLocation);
+                    rowSetSource.set(newHashLocation, stateValueToMove);
+                    rowSetSource.set(oldHashLocation, EMPTY_VALUE);
                                 // region rehash move values
                                 final long cookie = cookieSource.getLong(oldHashLocation);
                                 moveCallback.invoke(cookie, (int) newHashLocation);
@@ -959,7 +959,7 @@ class IncrementalChunkedByAggregationStateManager
                 // now fetch the overflow key values
                 fillOverflowKeys(bc.overflowContexts, bc.workingKeyChunks, bc.overflowLocationsAsKeyIndices);
                 // and their state values
-                overflowIndexSource.fillChunkUnordered(bc.overflowStateSourceFillContext, bc.workingStateEntries, bc.overflowLocationsAsKeyIndices);
+                overflowRowSetSource.fillChunkUnordered(bc.overflowStateSourceFillContext, bc.workingStateEntries, bc.overflowLocationsAsKeyIndices);
                 // and where their next pointer is
                 overflowOverflowLocationSource.fillChunkUnordered(bc.overflowOverflowFillContext, bc.overflowLocationsToMigrate, bc.overflowLocationsAsKeyIndices);
 
@@ -988,8 +988,8 @@ class IncrementalChunkedByAggregationStateManager
                         bc.destinationLocationPositionInWriteThrough.add((int)(tableLocation - firstBackingChunkLocation));
                                     // region promotion move
                                     final long overflowLocation = bc.overflowLocationsAsKeyIndices.get(ii);
-                                    indexSource.set(tableLocation, overflowIndexSource.get(overflowLocation));
-                                    overflowIndexSource.set(overflowLocation, EMPTY_VALUE);
+                                    rowSetSource.set(tableLocation, overflowRowSetSource.get(overflowLocation));
+                                    overflowRowSetSource.set(overflowLocation, EMPTY_VALUE);
                                     final long cookie = overflowCookieSource.getLong(overflowLocation);
                                     moveCallback.invoke(cookie, (int) tableLocation);
                                     cookieSource.set(tableLocation, cookie);
@@ -1042,9 +1042,9 @@ class IncrementalChunkedByAggregationStateManager
              final SafeCloseableArray ignored2 = new SafeCloseableArray<>(keyChunks);
              // @StateChunkName@ from \QObjectChunk\E
              final WritableObjectChunk stateChunk = WritableObjectChunk.makeWritableChunk(maxSize);
-             final ChunkSource.FillContext fillContext = indexSource.makeFillContext(maxSize)) {
+             final ChunkSource.FillContext fillContext = rowSetSource.makeFillContext(maxSize)) {
 
-            indexSource.fillChunk(fillContext, stateChunk, RowSetFactory.flat(tableHashPivot));
+            rowSetSource.fillChunk(fillContext, stateChunk, RowSetFactory.flat(tableHashPivot));
 
             ChunkUtils.fillInOrder(positions);
 
@@ -1179,7 +1179,7 @@ class IncrementalChunkedByAggregationStateManager
         }
         // region nullOverflowObjectSources
         for (int ii = 0; ii < locationsToNull.size(); ++ii) {
-            overflowIndexSource.set(locationsToNull.get(ii), EMPTY_VALUE);
+            overflowRowSetSource.set(locationsToNull.get(ii), EMPTY_VALUE);
         }
         // endregion nullOverflowObjectSources
     }
@@ -1338,7 +1338,7 @@ class IncrementalChunkedByAggregationStateManager
             // region probe context constructor
             keyIndices = WritableLongChunk.makeWritableChunk(CHUNK_SIZE);
             // endregion probe context constructor
-            stateSourceFillContext = indexSource.makeFillContext(chunkSize);
+            stateSourceFillContext = rowSetSource.makeFillContext(chunkSize);
             overflowFillContext = overflowLocationSource.makeFillContext(chunkSize);
             overflowOverflowFillContext = overflowOverflowLocationSource.makeFillContext(chunkSize);
             hashChunk = WritableIntChunk.makeWritableChunk(chunkSize);
@@ -1462,7 +1462,7 @@ class IncrementalChunkedByAggregationStateManager
                 // - otherwise we check for equality; if we are equal, we have found our thing to set
                 //   (or to complain if we are already set)
                 // - if we are not equal, then we are an overflow block
-                indexSource.fillChunkUnordered(pc.stateSourceFillContext, pc.workingStateEntries, pc.tableLocationsChunk);
+                rowSetSource.fillChunkUnordered(pc.stateSourceFillContext, pc.workingStateEntries, pc.tableLocationsChunk);
 
                 // @StateChunkIdentityName@ from \QObjectChunkIdentity\E
                 ObjectChunkIdentityEquals.notEqual(pc.workingStateEntries, EMPTY_VALUE, pc.equalValues);
@@ -1590,16 +1590,16 @@ class IncrementalChunkedByAggregationStateManager
 
     // region extraction functions
     ObjectArraySource<TrackingMutableRowSet> getRowSetSource() {
-        return indexSource;
+        return rowSetSource;
     }
 
     ObjectArraySource<TrackingMutableRowSet> getOverflowRowSetSource() {
-        return overflowIndexSource;
+        return overflowRowSetSource;
     }
 
     ColumnSource<TrackingMutableRowSet> getRowSetHashTableSource() {
         //noinspection unchecked
-        final ColumnSource<TrackingMutableRowSet> indexHashTableSource = new HashTableColumnSource(TrackingMutableRowSet.class, indexSource, overflowIndexSource);
+        final ColumnSource<TrackingMutableRowSet> indexHashTableSource = new HashTableColumnSource(TrackingMutableRowSet.class, rowSetSource, overflowRowSetSource);
         indexHashTableSource.startTrackingPrevValues();
         return indexHashTableSource;
     }
@@ -1618,12 +1618,12 @@ class IncrementalChunkedByAggregationStateManager
                     @NotNull final ShiftAppliedCallback shiftAppliedCallback) {
         if (isOverflowLocation(stateSlot)) {
             final int overflowSlot = hashLocationToOverflowLocation(stateSlot);
-            final MutableRowSet overflowStateRowSet = overflowIndexSource.get(overflowSlot);
+            final MutableRowSet overflowStateRowSet = overflowRowSetSource.get(overflowSlot);
             if (RowSetShiftData.applyShift(overflowStateRowSet, beginRange, endRange, shiftDelta)) {
                 overflowCookieSource.set(overflowSlot, shiftAppliedCallback.invoke(overflowCookieSource.getLong(overflowSlot), stateSlot));
             }
         } else {
-            final MutableRowSet stateRowSet = indexSource.get(stateSlot);
+            final MutableRowSet stateRowSet = rowSetSource.get(stateSlot);
             if (RowSetShiftData.applyShift(stateRowSet, beginRange, endRange, shiftDelta)) {
                 cookieSource.set(stateSlot, shiftAppliedCallback.invoke(cookieSource.getLong(stateSlot), stateSlot));
             }

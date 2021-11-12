@@ -21,7 +21,7 @@ import org.jetbrains.annotations.NotNull;
  * A TableMapSupplier uses a source TableMap and applies a set of operations in the get method.
  */
 public class TableMapSupplier implements TableMap {
-    // The source table map is from the byExternal on the source table
+    // The source table map is from the partitionBy on the source table
     private final TableMap sourceMap;
 
     // This list of functions is for table map transformations

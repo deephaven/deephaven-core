@@ -245,8 +245,8 @@ public class ParentsVisitor implements Visitor {
     }
 
     @Override
-    public void visit(ByTable byTable) {
-        out = single(byTable);
+    public void visit(GroupByTable groupByTable) {
+        out = single(groupByTable);
     }
 
     @Override

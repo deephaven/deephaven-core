@@ -141,7 +141,7 @@ public interface TableSpec extends TableOperations<TableSpec, TableSpec>, TableS
 
         void visit(UpdateTable updateTable);
 
-        void visit(ByTable byTable);
+        void visit(GroupByTable groupByTable);
 
         void visit(AggregationTable aggregationTable);
 

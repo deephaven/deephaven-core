@@ -540,12 +540,17 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
 
     // -------------------------------------------------------------------------------------------
 
-    TOPS by();
+    TOPS groupBy();
 
-    TOPS by(String... groupByColumns);
+    TOPS groupBy(String... groupByColumns);
 
-    TOPS by(Collection<? extends Selectable> groupByColumns);
+    TOPS groupBy(Collection<? extends Selectable> groupByColumns);
 
-    TOPS by(Collection<? extends Selectable> groupByColumns,
-            Collection<? extends Aggregation> aggregations);
+    // -------------------------------------------------------------------------------------------
+
+    TOPS aggBy(Collection<? extends Aggregation> aggregations);
+
+    TOPS aggBy(Collection<? extends Aggregation> aggregations, String... groupByColumns);
+
+    TOPS aggBy(Collection<? extends Aggregation> aggregations, Collection<? extends Selectable> groupByColumns);
 }

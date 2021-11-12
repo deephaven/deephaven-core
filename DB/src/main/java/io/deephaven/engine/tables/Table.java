@@ -6,7 +6,6 @@ package io.deephaven.engine.tables;
 
 import io.deephaven.api.*;
 import io.deephaven.api.agg.Aggregation;
-import io.deephaven.api.agg.Array;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.base.Function;
 import io.deephaven.engine.rowset.TrackingRowSet;
@@ -18,10 +17,6 @@ import io.deephaven.engine.tables.select.WouldMatchPair;
 import io.deephaven.engine.tables.utils.LayoutHintBuilder;
 import io.deephaven.engine.util.liveness.LivenessNode;
 import io.deephaven.engine.v2.*;
-import io.deephaven.engine.v2.by.AggregationFormulaStateFactory;
-import io.deephaven.engine.v2.by.AggregationIndexStateFactory;
-import io.deephaven.engine.v2.by.AggregationStateFactory;
-import io.deephaven.engine.v2.by.ComboAggregateFactory;
 import io.deephaven.engine.v2.iterators.*;
 import io.deephaven.engine.v2.select.SelectColumn;
 import io.deephaven.engine.v2.select.SelectFilter;
@@ -52,14 +47,6 @@ public interface Table extends
     static Table of(TableSpec table) {
         return TableCreatorImpl.create(table);
     }
-
-    /**
-     * Explicitly ensure that any work needed to make a table indexable, iterable, or queryable has been done, and
-     * return the coalesced child table if appropriate.
-     *
-     * @return This table, or a fully-coalesced child
-     */
-    Table coalesce();
 
     // -----------------------------------------------------------------------------------------------------------------
     // Metadata
@@ -125,6 +112,12 @@ public interface Table extends
      */
     boolean isEmpty();
 
+    /**
+     * Return true if this table is guaranteed to be flat. The RowSet of a flat table will be from 0...numRows-1.
+     */
+    @AsyncMethod
+    boolean isFlat();
+
     // -----------------------------------------------------------------------------------------------------------------
     // Attributes
     // -----------------------------------------------------------------------------------------------------------------
@@ -151,20 +144,18 @@ public interface Table extends
      * <p>
      * Most operations are supported as normal on stream tables, but aggregation operations are treated specially,
      * producing aggregate results that are valid over the entire observed stream from the time the operation is
-     * initiated. These semantics necessitate a few exclusions, i.e. unsupported operations:
+     * initiated. These semantics necessitate a few exclusions, i.e. unsupported operations that need to keep track of
+     * all rows:
      * <ol>
-     * <li>{@link #by(SelectColumn...) by()} as a rowSet-aggregation is unsupported. This means any of the overloads for
-     * {@link #by(AggregationStateFactory, SelectColumn...)} or {@link #by(Collection, Collection)} using
-     * {@link AggregationIndexStateFactory}, {@link AggregationFormulaStateFactory}, or {@link Array}.
-     * {@link ComboAggregateFactory#AggArray(String...)}, and
-     * {@link ComboAggregateFactory#AggFormula(String, String, String...)} are also unsupported.
-     * <li>{@link #byExternal(boolean, String...) byExternal()} is unsupported</li>
-     * <li>{@link #rollup(ComboAggregateFactory, boolean, SelectColumn...) rollup()} is unsupported if
+     * <li>{@link #groupBy} is unsupported
+     * <li>{@link #aggBy} is unsupported if {@link Aggregation#AggArray(String...)} is used
+     * <li>{@link #partitionBy} is unsupported</li>
+     * <li>{@link #rollup(Collection, boolean, SelectColumn...) rollup()} is unsupported if
      * {@code includeConstituents == true}</li>
      * <li>{@link #treeTable(String, String) treeTable()} is unsupported</li>
      * </ol>
      * <p>
-     * To disable these semantics, a {@link #dropStream()} method is offered.
+     * To disable these semantics, a {@link #dropStream() dropStream} method is offered.
      */
     String STREAM_TABLE_ATTRIBUTE = "StreamTable";
     /**
@@ -553,7 +544,7 @@ public interface Table extends
      * @return The new table, with the columns rearranged as explained above {@link #moveColumns(int, String...)}
      */
     @AsyncMethod
-    Table moveUpColumns(String... columnsToMove);
+    Table moveColumnsUp(String... columnsToMove);
 
     /**
      * Produce a new table with the specified columns moved to the rightmost position. Columns can be renamed with the
@@ -563,7 +554,7 @@ public interface Table extends
      * @return The new table, with the columns rearranged as explained above {@link #moveColumns(int, String...)}
      */
     @AsyncMethod
-    Table moveDownColumns(String... columnsToMove);
+    Table moveColumnsDown(String... columnsToMove);
 
     /**
      * Produce a new table with the specified columns moved to the specified {@code rowSet}. Column indices begin at 0.
@@ -1074,30 +1065,32 @@ public interface Table extends
     // -----------------------------------------------------------------------------------------------------------------
 
     @AsyncMethod
-    Table by(AggregationStateFactory aggregationStateFactory, SelectColumn... groupByColumns);
+    Table groupBy(SelectColumn... groupByColumns);
 
     @AsyncMethod
-    Table by(AggregationStateFactory aggregationStateFactory, String... groupByColumns);
+    Table groupBy(String... groupByColumns);
 
     @AsyncMethod
-    Table by(AggregationStateFactory aggregationStateFactory);
-
-    @AsyncMethod
-    Table by(SelectColumn... groupByColumns);
-
-    @AsyncMethod
-    Table by(String... groupByColumns);
-
-    @AsyncMethod
-    Table by();
+    Table groupBy();
 
     @Override
     @AsyncMethod
-    Table by(Collection<? extends Selectable> groupByColumns);
+    Table groupBy(Collection<? extends Selectable> groupByColumns);
+
+    @AsyncMethod
+    Table aggBy(Collection<? extends Aggregation> aggregations, SelectColumn... groupByColumns);
 
     @Override
     @AsyncMethod
-    Table by(Collection<? extends Selectable> groupByColumns, Collection<? extends Aggregation> aggregations);
+    Table aggBy(Collection<? extends Aggregation> aggregations);
+
+    @Override
+    @AsyncMethod
+    Table aggBy(Collection<? extends Aggregation> aggregations, String... groupByColumns);
+
+    @Override
+    @AsyncMethod
+    Table aggBy(Collection<? extends Aggregation> aggregations, Collection<? extends Selectable> groupByColumns);
 
     Table headBy(long nRows, SelectColumn... groupByColumns);
 
@@ -1118,7 +1111,7 @@ public interface Table extends
      *
      * @param formulaColumn Formula applied to each column
      * @param columnParamName The parameter name used as a placeholder for each column
-     * @param groupByColumns The grouping columns {@link Table#by(SelectColumn[])}
+     * @param groupByColumns The grouping columns {@link Table#groupBy(SelectColumn[])}
      */
     @AsyncMethod
     Table applyToAllBy(String formulaColumn, String columnParamName, SelectColumn... groupByColumns);
@@ -1129,7 +1122,7 @@ public interface Table extends
      *
      * @param formulaColumn Formula applied to each column, uses parameter <i>each</i> to refer to each colum it being
      *        applied to
-     * @param groupByColumns The grouping columns {@link Table#by(SelectColumn...)}
+     * @param groupByColumns The grouping columns {@link Table#groupBy(SelectColumn...)}
      */
     @AsyncMethod
     Table applyToAllBy(String formulaColumn, SelectColumn... groupByColumns);
@@ -1140,7 +1133,7 @@ public interface Table extends
      *
      * @param formulaColumn Formula applied to each column, uses parameter <i>each</i> to refer to each colum it being
      *        applied to
-     * @param groupByColumns The grouping columns {@link Table#by(String...)}
+     * @param groupByColumns The grouping columns {@link Table#groupBy(String...)}
      */
     @AsyncMethod
     Table applyToAllBy(String formulaColumn, String... groupByColumns);
@@ -1151,7 +1144,7 @@ public interface Table extends
     /**
      * Groups the data column according to <code>groupByColumns</code> and computes the sum for the rest of the fields
      *
-     * @param groupByColumns The grouping columns {@link Table#by(String...)}
+     * @param groupByColumns The grouping columns {@link Table#groupBy(String...)}
      */
     @AsyncMethod
     Table sumBy(SelectColumn... groupByColumns);
@@ -1159,7 +1152,7 @@ public interface Table extends
     /**
      * Groups the data column according to <code>groupByColumns</code> and computes the sum for the rest of the fields
      *
-     * @param groupByColumns The grouping columns {@link Table#by(String...)}
+     * @param groupByColumns The grouping columns {@link Table#groupBy(String...)}
      */
     @AsyncMethod
     Table sumBy(String... groupByColumns);
@@ -1167,7 +1160,7 @@ public interface Table extends
     /**
      * Groups the data column according to <code>groupByColumns</code> and computes the sum for the rest of the fields
      *
-     * @param groupByColumns The grouping columns {@link Table#by(String...)}
+     * @param groupByColumns The grouping columns {@link Table#groupBy(String...)}
      */
     @AsyncMethod
     Table sumBy(Collection<String> groupByColumns);
@@ -1184,7 +1177,7 @@ public interface Table extends
      * Groups the data column according to <code>groupByColumns</code> and computes the sum of the absolute values for
      * the rest of the fields
      *
-     * @param groupByColumns The grouping columns {@link Table#by(String...)}
+     * @param groupByColumns The grouping columns {@link Table#groupBy(String...)}
      */
     @AsyncMethod
     Table absSumBy(SelectColumn... groupByColumns);
@@ -1193,7 +1186,7 @@ public interface Table extends
      * Groups the data column according to <code>groupByColumns</code> and computes the sum of the absolute values for
      * the rest of the fields
      *
-     * @param groupByColumns The grouping columns {@link Table#by(String...)}
+     * @param groupByColumns The grouping columns {@link Table#groupBy(String...)}
      */
     @AsyncMethod
     Table absSumBy(String... groupByColumns);
@@ -1202,7 +1195,7 @@ public interface Table extends
      * Groups the data column according to <code>groupByColumns</code> and computes the sum of the absolute values for
      * the rest of the fields
      *
-     * @param groupByColumns The grouping columns {@link Table#by(String...)}
+     * @param groupByColumns The grouping columns {@link Table#groupBy(String...)}
      */
     @AsyncMethod
     Table absSumBy(Collection<String> groupByColumns);
@@ -1219,7 +1212,7 @@ public interface Table extends
      * Groups the data column according to <code>groupByColumns</code> and computes the average for the rest of the
      * fields
      *
-     * @param groupByColumns The grouping columns {@link Table#by(String...)}
+     * @param groupByColumns The grouping columns {@link Table#groupBy(String...)}
      */
     @AsyncMethod
     Table avgBy(SelectColumn... groupByColumns);
@@ -1228,7 +1221,7 @@ public interface Table extends
      * Groups the data column according to <code>groupByColumns</code> and computes the average for the rest of the
      * fields
      *
-     * @param groupByColumns The grouping columns {@link Table#by(String...)}
+     * @param groupByColumns The grouping columns {@link Table#groupBy(String...)}
      */
     @AsyncMethod
     Table avgBy(String... groupByColumns);
@@ -1237,7 +1230,7 @@ public interface Table extends
      * Groups the data column according to <code>groupByColumns</code> and computes the average for the rest of the
      * fields
      *
-     * @param groupByColumns The grouping columns {@link Table#by(String...)}
+     * @param groupByColumns The grouping columns {@link Table#groupBy(String...)}
      */
     @AsyncMethod
     Table avgBy(Collection<String> groupByColumns);
@@ -1255,7 +1248,7 @@ public interface Table extends
      * weightColumn for the rest of the fields
      *
      * @param weightColumn the column to use for the weight
-     * @param groupByColumns The grouping columns {@link Table#by(String...)}
+     * @param groupByColumns The grouping columns {@link Table#groupBy(String...)}
      */
     @AsyncMethod
     Table wavgBy(String weightColumn, SelectColumn... groupByColumns);
@@ -1265,7 +1258,7 @@ public interface Table extends
      * weightColumn for the rest of the fields
      *
      * @param weightColumn the column to use for the weight
-     * @param groupByColumns The grouping columns {@link Table#by(String...)}
+     * @param groupByColumns The grouping columns {@link Table#groupBy(String...)}
      */
     @AsyncMethod
     Table wavgBy(String weightColumn, String... groupByColumns);
@@ -1275,7 +1268,7 @@ public interface Table extends
      * weightColumn for the rest of the fields
      *
      * @param weightColumn the column to use for the weight
-     * @param groupByColumns The grouping columns {@link Table#by(String...)}
+     * @param groupByColumns The grouping columns {@link Table#groupBy(String...)}
      */
     @AsyncMethod
     Table wavgBy(String weightColumn, Collection<String> groupByColumns);
@@ -1299,7 +1292,7 @@ public interface Table extends
      * double results.
      *
      * @param weightColumn the column to use for the weight
-     * @param groupByColumns The grouping columns {@link Table#by(String...)}
+     * @param groupByColumns The grouping columns {@link Table#groupBy(String...)}
      */
     @AsyncMethod
     Table wsumBy(String weightColumn, SelectColumn... groupByColumns);
@@ -1325,7 +1318,7 @@ public interface Table extends
      * double results.
      *
      * @param weightColumn the column to use for the weight
-     * @param groupByColumns The grouping columns {@link Table#by(String...)}
+     * @param groupByColumns The grouping columns {@link Table#groupBy(String...)}
      */
     @AsyncMethod
     Table wsumBy(String weightColumn, String... groupByColumns);
@@ -1339,7 +1332,7 @@ public interface Table extends
      * double results.
      *
      * @param weightColumn the column to use for the weight
-     * @param groupByColumns The grouping columns {@link Table#by(String...)}
+     * @param groupByColumns The grouping columns {@link Table#groupBy(String...)}
      */
     @AsyncMethod
     Table wsumBy(String weightColumn, Collection<String> groupByColumns);
@@ -1351,7 +1344,7 @@ public interface Table extends
      * Groups the data column according to <code>groupByColumns</code> and computes the standard deviation for the rest
      * of the fields
      *
-     * @param groupByColumns The grouping columns {@link Table#by(String...)}
+     * @param groupByColumns The grouping columns {@link Table#groupBy(String...)}
      */
     @AsyncMethod
     Table stdBy(String... groupByColumns);
@@ -1360,7 +1353,7 @@ public interface Table extends
      * Groups the data column according to <code>groupByColumns</code> and computes the standard deviation for the rest
      * of the fields
      *
-     * @param groupByColumns The grouping columns {@link Table#by(String...)}
+     * @param groupByColumns The grouping columns {@link Table#groupBy(String...)}
      */
     @AsyncMethod
     Table stdBy(Collection<String> groupByColumns);
@@ -1376,7 +1369,7 @@ public interface Table extends
      * Groups the data column according to <code>groupByColumns</code> and computes the variance for the rest of the
      * fields
      *
-     * @param groupByColumns The grouping columns {@link Table#by(String...)}
+     * @param groupByColumns The grouping columns {@link Table#groupBy(String...)}
      */
     @AsyncMethod
     Table varBy(SelectColumn... groupByColumns);
@@ -1385,7 +1378,7 @@ public interface Table extends
      * Groups the data column according to <code>groupByColumns</code> and computes the variance for the rest of the
      * fields
      *
-     * @param groupByColumns The grouping columns {@link Table#by(String...)}
+     * @param groupByColumns The grouping columns {@link Table#groupBy(String...)}
      */
     @AsyncMethod
     Table varBy(String... groupByColumns);
@@ -1394,7 +1387,7 @@ public interface Table extends
      * Groups the data column according to <code>groupByColumns</code> and computes the variance for the rest of the
      * fields
      *
-     * @param groupByColumns The grouping columns {@link Table#by(String...)}
+     * @param groupByColumns The grouping columns {@link Table#groupBy(String...)}
      */
     @AsyncMethod
     Table varBy(Collection<String> groupByColumns);
@@ -1409,7 +1402,7 @@ public interface Table extends
     /**
      * Groups the data column according to <code>groupByColumns</code> and retrieves the last for the rest of the fields
      *
-     * @param groupByColumns The grouping columns {@link Table#by(String...)}
+     * @param groupByColumns The grouping columns {@link Table#groupBy(String...)}
      */
     @AsyncMethod
     Table lastBy(SelectColumn... groupByColumns);
@@ -1417,7 +1410,7 @@ public interface Table extends
     /**
      * Groups the data column according to <code>groupByColumns</code> and retrieves the last for the rest of the fields
      *
-     * @param groupByColumns The grouping columns {@link Table#by(String...)}
+     * @param groupByColumns The grouping columns {@link Table#groupBy(String...)}
      */
     @AsyncMethod
     Table lastBy(String... groupByColumns);
@@ -1425,7 +1418,7 @@ public interface Table extends
     /**
      * Groups the data column according to <code>groupByColumns</code> and retrieves the last for the rest of the fields
      *
-     * @param groupByColumns The grouping columns {@link Table#by(String...)}
+     * @param groupByColumns The grouping columns {@link Table#groupBy(String...)}
      */
     @AsyncMethod
     Table lastBy(Collection<String> groupByColumns);
@@ -1440,7 +1433,7 @@ public interface Table extends
      * Groups the data column according to <code>groupByColumns</code> and retrieves the first for the rest of the
      * fields
      *
-     * @param groupByColumns The grouping columns {@link Table#by(String...)}
+     * @param groupByColumns The grouping columns {@link Table#groupBy(String...)}
      */
     @AsyncMethod
     Table firstBy(SelectColumn... groupByColumns);
@@ -1449,7 +1442,7 @@ public interface Table extends
      * Groups the data column according to <code>groupByColumns</code> and retrieves the first for the rest of the
      * fields
      *
-     * @param groupByColumns The grouping columns {@link Table#by(String...)}
+     * @param groupByColumns The grouping columns {@link Table#groupBy(String...)}
      */
     @AsyncMethod
     Table firstBy(String... groupByColumns);
@@ -1458,7 +1451,7 @@ public interface Table extends
      * Groups the data column according to <code>groupByColumns</code> and retrieves the first for the rest of the
      * fields
      *
-     * @param groupByColumns The grouping columns {@link Table#by(String...)}
+     * @param groupByColumns The grouping columns {@link Table#groupBy(String...)}
      */
     @AsyncMethod
     Table firstBy(Collection<String> groupByColumns);
@@ -1472,7 +1465,7 @@ public interface Table extends
     /**
      * Groups the data column according to <code>groupByColumns</code> and computes the min for the rest of the fields
      *
-     * @param groupByColumns The grouping columns {@link Table#by(String...)}
+     * @param groupByColumns The grouping columns {@link Table#groupBy(String...)}
      */
     @AsyncMethod
     Table minBy(SelectColumn... groupByColumns);
@@ -1480,7 +1473,7 @@ public interface Table extends
     /**
      * Groups the data column according to <code>groupByColumns</code> and computes the min for the rest of the fields
      *
-     * @param groupByColumns The grouping columns {@link Table#by(String...)}
+     * @param groupByColumns The grouping columns {@link Table#groupBy(String...)}
      */
     @AsyncMethod
     Table minBy(String... groupByColumns);
@@ -1488,7 +1481,7 @@ public interface Table extends
     /**
      * Groups the data column according to <code>groupByColumns</code> and computes the min for the rest of the fields
      *
-     * @param groupByColumns The grouping columns {@link Table#by(String...)}
+     * @param groupByColumns The grouping columns {@link Table#groupBy(String...)}
      */
     @AsyncMethod
     Table minBy(Collection<String> groupByColumns);
@@ -1504,7 +1497,7 @@ public interface Table extends
     /**
      * Groups the data column according to <code>groupByColumns</code> and computes the max for the rest of the fields
      *
-     * @param groupByColumns The grouping columns {@link Table#by(String...)} }
+     * @param groupByColumns The grouping columns {@link Table#groupBy(String...)} }
      */
     @AsyncMethod
     Table maxBy(SelectColumn... groupByColumns);
@@ -1512,7 +1505,7 @@ public interface Table extends
     /**
      * Groups the data column according to <code>groupByColumns</code> and computes the max for the rest of the fields
      *
-     * @param groupByColumns The grouping columns {@link Table#by(String...)} }
+     * @param groupByColumns The grouping columns {@link Table#groupBy(String...)} }
      */
     @AsyncMethod
     Table maxBy(String... groupByColumns);
@@ -1520,7 +1513,7 @@ public interface Table extends
     /**
      * Groups the data column according to <code>groupByColumns</code> and computes the max for the rest of the fields
      *
-     * @param groupByColumns The grouping columns {@link Table#by(String...)} }
+     * @param groupByColumns The grouping columns {@link Table#groupBy(String...)} }
      */
     @AsyncMethod
     Table maxBy(Collection<String> groupByColumns);
@@ -1537,7 +1530,7 @@ public interface Table extends
      * Groups the data column according to <code>groupByColumns</code> and computes the median for the rest of the
      * fields
      *
-     * @param groupByColumns The grouping columns {@link Table#by(String...)} }
+     * @param groupByColumns The grouping columns {@link Table#groupBy(String...)} }
      */
     @AsyncMethod
     Table medianBy(SelectColumn... groupByColumns);
@@ -1546,7 +1539,7 @@ public interface Table extends
      * Groups the data column according to <code>groupByColumns</code> and computes the median for the rest of the
      * fields
      *
-     * @param groupByColumns The grouping columns {@link Table#by(String...)} }
+     * @param groupByColumns The grouping columns {@link Table#groupBy(String...)} }
      */
     @AsyncMethod
     Table medianBy(String... groupByColumns);
@@ -1555,7 +1548,7 @@ public interface Table extends
      * Groups the data column according to <code>groupByColumns</code> and computes the median for the rest of the
      * fields
      *
-     * @param groupByColumns The grouping columns {@link Table#by(String...)} }
+     * @param groupByColumns The grouping columns {@link Table#groupBy(String...)} }
      */
     @AsyncMethod
     Table medianBy(Collection<String> groupByColumns);
@@ -1639,7 +1632,7 @@ public interface Table extends
      * @return a TableMap keyed by keyColumnNames
      */
     @AsyncMethod
-    TableMap byExternal(boolean dropKeys, String... keyColumnNames);
+    TableMap partitionBy(boolean dropKeys, String... keyColumnNames);
 
     /**
      * Create a {@link TableMap} from this table, keyed by the specified columns.
@@ -1664,7 +1657,7 @@ public interface Table extends
      * @return a TableMap keyed by keyColumnNames
      */
     @AsyncMethod
-    TableMap byExternal(String... keyColumnNames);
+    TableMap partitionBy(String... keyColumnNames);
 
     // -----------------------------------------------------------------------------------------------------------------
     // Hierarchical table operations (rollup and treeTable).
@@ -1677,12 +1670,12 @@ public interface Table extends
      * using one less aggregation column on each level. The column that is no longer part of the aggregation key is
      * replaced with null on each level.
      *
-     * @param comboAggregateFactory the ComboAggregateFactory describing the aggregation
+     * @param aggregations The aggregations to perform
      * @param columns the columns to group by
      * @return a hierarchical table with the rollup applied
      */
     @AsyncMethod
-    Table rollup(ComboAggregateFactory comboAggregateFactory, Collection<String> columns);
+    Table rollup(Collection<Aggregation> aggregations, Collection<String> columns);
 
     /**
      * Create a rollup table.
@@ -1691,13 +1684,13 @@ public interface Table extends
      * using one less aggregation column on each level. The column that is no longer part of the aggregation key is
      * replaced with null on each level.
      *
-     * @param comboAggregateFactory the ComboAggregateFactory describing the aggregation
+     * @param aggregations The aggregations to perform
      * @param includeConstituents set to true to include the constituent rows at the leaf level
      * @param columns the columns to group by
      * @return a hierarchical table with the rollup applied
      */
     @AsyncMethod
-    Table rollup(ComboAggregateFactory comboAggregateFactory, boolean includeConstituents,
+    Table rollup(Collection<Aggregation> aggregations, boolean includeConstituents,
             Collection<String> columns);
 
     /**
@@ -1707,12 +1700,12 @@ public interface Table extends
      * using one less aggregation column on each level. The column that is no longer part of the aggregation key is
      * replaced with null on each level.
      *
-     * @param comboAggregateFactory the ComboAggregateFactory describing the aggregation
+     * @param aggregations The aggregations to perform
      * @param columns the columns to group by
      * @return a hierarchical table with the rollup applied
      */
     @AsyncMethod
-    Table rollup(ComboAggregateFactory comboAggregateFactory, String... columns);
+    Table rollup(Collection<Aggregation> aggregations, String... columns);
 
     /**
      * Create a rollup table.
@@ -1721,13 +1714,13 @@ public interface Table extends
      * using one less aggregation column on each level. The column that is no longer part of the aggregation key is
      * replaced with null on each level.
      *
-     * @param comboAggregateFactory the ComboAggregateFactory describing the aggregation
+     * @param aggregations The aggregations to perform
      * @param columns the columns to group by
      * @param includeConstituents set to true to include the constituent rows at the leaf level
      * @return a hierarchical table with the rollup applied
      */
     @AsyncMethod
-    Table rollup(ComboAggregateFactory comboAggregateFactory, boolean includeConstituents, String... columns);
+    Table rollup(Collection<Aggregation> aggregations, boolean includeConstituents, String... columns);
 
     /**
      * Create a rollup table.
@@ -1736,38 +1729,38 @@ public interface Table extends
      * using one less aggregation column on each level. The column that is no longer part of the aggregation key is
      * replaced with null on each level.
      *
-     * @param comboAggregateFactory the ComboAggregateFactory describing the aggregation
+     * @param aggregations The aggregations to perform
      * @param columns the columns to group by
      * @return a hierarchical table with the rollup applied
      */
     @AsyncMethod
-    Table rollup(ComboAggregateFactory comboAggregateFactory, SelectColumn... columns);
+    Table rollup(Collection<Aggregation> aggregations, SelectColumn... columns);
 
     /**
      * Create a rollup table.
      * <p>
      * A rollup table aggregates all rows of the table.
      *
-     * @param comboAggregateFactory the ComboAggregateFactory describing the aggregation
+     * @param aggregations The aggregations to perform
      * @return a hierarchical table with the rollup applied
      */
     @AsyncMethod
-    Table rollup(ComboAggregateFactory comboAggregateFactory);
+    Table rollup(Collection<Aggregation> aggregations);
 
     /**
      * Create a rollup table.
      * <p>
      * A rollup table aggregates all rows of the table.
      *
-     * @param comboAggregateFactory the ComboAggregateFactory describing the aggregation
+     * @param aggregations The aggregations to perform
      * @param includeConstituents set to true to include the constituent rows at the leaf level
      * @return a hierarchical table with the rollup applied
      */
     @AsyncMethod
-    Table rollup(ComboAggregateFactory comboAggregateFactory, boolean includeConstituents);
+    Table rollup(Collection<Aggregation> aggregations, boolean includeConstituents);
 
     @AsyncMethod
-    Table rollup(ComboAggregateFactory comboAggregateFactory, boolean includeConstituents, SelectColumn... columns);
+    Table rollup(Collection<Aggregation> aggregations, boolean includeConstituents, SelectColumn... columns);
 
     /**
      * Create a hierarchical tree table.
@@ -1858,6 +1851,14 @@ public interface Table extends
     // -----------------------------------------------------------------------------------------------------------------
 
     /**
+     * Explicitly ensure that any work needed to make a table addressable, iterable, or queryable has been done, and
+     * return the coalesced child table if appropriate.
+     *
+     * @return This table, or a fully-coalesced child
+     */
+    Table coalesce();
+
+    /**
      * Applies a function to this table.
      * <p>
      * This is useful if you have a reference to a table or a proxy and want to run a series of operations against the
@@ -1872,13 +1873,7 @@ public interface Table extends
     <R> R apply(Function.Unary<R, Table> function);
 
     /**
-     * Return true if this table is guaranteed to be flat. The rowSet of a flat table will be from 0...numRows-1.
-     */
-    @AsyncMethod
-    boolean isFlat();
-
-    /**
-     * Creates a version of this table with a flat rowSet (V2 only).
+     * Creates a version of this table with a flat RowSet.
      */
     @AsyncMethod
     Table flatten();

@@ -83,7 +83,7 @@ public class SingleTableKeyedStringOperations {
 
     @Benchmark
     public Table by() {
-        Table result = inputTable.by(keyColumns);
+        Table result = inputTable.groupBy(keyColumns);
         return result;
     }
 

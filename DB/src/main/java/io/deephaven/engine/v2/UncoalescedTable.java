@@ -11,7 +11,7 @@ import io.deephaven.engine.tables.select.WouldMatchPair;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.util.liveness.Liveness;
-import io.deephaven.engine.v2.by.AggregationStateFactory;
+import io.deephaven.engine.v2.by.AggregationSpec;
 import io.deephaven.engine.v2.by.ComboAggregateFactory;
 import io.deephaven.engine.v2.select.SelectColumn;
 import io.deephaven.engine.v2.select.SelectFilter;
@@ -272,8 +272,8 @@ public abstract class UncoalescedTable extends BaseTable implements TableWithDef
     }
 
     @Override
-    public Table by(AggregationStateFactory aggregationStateFactory, SelectColumn... groupByColumns) {
-        return coalesce().by(aggregationStateFactory, groupByColumns);
+    public Table by(AggregationSpec aggregationSpec, SelectColumn... groupByColumns) {
+        return coalesce().by(aggregationSpec, groupByColumns);
     }
 
     @Override
@@ -362,8 +362,8 @@ public abstract class UncoalescedTable extends BaseTable implements TableWithDef
     }
 
     @Override
-    public TableMap byExternal(boolean dropKeys, String... keyColumnNames) {
-        return coalesce().byExternal(dropKeys, keyColumnNames);
+    public TableMap partitionBy(boolean dropKeys, String... keyColumnNames) {
+        return coalesce().partitionBy(dropKeys, keyColumnNames);
     }
 
     @Override

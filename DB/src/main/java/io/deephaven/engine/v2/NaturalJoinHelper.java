@@ -127,7 +127,7 @@ class NaturalJoinHelper {
                                     bucketingContext.leftSources, control.tableSizeForLeftBuild(leftTable),
                                     bucketingContext.originalLeftSources);
 
-                    final ObjectArraySource<MutableRowSet> indexSource;
+                    final ObjectArraySource<MutableRowSet> rowSetSource;
                     final MutableInt groupingSize = new MutableInt();
                     if (bucketingContext.useLeftGrouping) {
                         final Map<?, RowSet> grouping =
@@ -139,7 +139,7 @@ class NaturalJoinHelper {
                                         (ColumnSource) bucketingContext.leftSources[0], grouping, leftTable.getRowSet(),
                                         groupingSize);
                         final ArrayBackedColumnSource<?> groupSource = flatResultColumnSources.getFirst();
-                        indexSource = flatResultColumnSources.getSecond();
+                        rowSetSource = flatResultColumnSources.getSecond();
 
                         final Table leftTableGrouped = new QueryTable(
                                 RowSetFactory.flat(groupingSize.intValue()).toTracking(),
@@ -147,16 +147,16 @@ class NaturalJoinHelper {
 
                         final ColumnSource<?>[] groupedSourceArray = {groupSource};
                         jsm.buildFromLeftSide(leftTableGrouped, groupedSourceArray, leftHashSlots);
-                        jsm.convertLeftGroups(groupingSize.intValue(), leftHashSlots, indexSource);
+                        jsm.convertLeftGroups(groupingSize.intValue(), leftHashSlots, rowSetSource);
                     } else {
                         jsm.buildFromLeftSide(leftTable, bucketingContext.leftSources, leftHashSlots);
-                        indexSource = null;
+                        rowSetSource = null;
                     }
 
                     jsm.addRightSide(rightTable.getRowSet(), bucketingContext.rightSources);
 
                     if (bucketingContext.useLeftGrouping) {
-                        rowRedirection = jsm.buildRowRedirectionFromHashSlotGrouped(leftTable, indexSource,
+                        rowRedirection = jsm.buildRowRedirectionFromHashSlotGrouped(leftTable, rowSetSource,
                                 groupingSize.intValue(), exactMatch, leftHashSlots,
                                 control.getRedirectionType(leftTable));
                     } else {
@@ -188,7 +188,7 @@ class NaturalJoinHelper {
                             AbstractColumnSource.groupingToFlatSources((ColumnSource) bucketingContext.leftSources[0],
                                     grouping, leftTable.getRowSet(), groupingSize);
                     final ArrayBackedColumnSource<?> groupSource = flatResultColumnSources.getFirst();
-                    final ObjectArraySource<RowSet> indexSource = flatResultColumnSources.getSecond();
+                    final ObjectArraySource<RowSet> rowSetSource = flatResultColumnSources.getSecond();
 
                     final Table leftTableGrouped = new QueryTable(
                             RowSetFactory.flat(groupingSize.intValue()).toTracking(),
@@ -202,7 +202,7 @@ class NaturalJoinHelper {
                     jsm.buildFromLeftSide(leftTableGrouped, groupedSourceArray, leftHashSlots);
                     jsm.decorateWithRightSide(rightTable, bucketingContext.rightSources);
                     rowRedirection = jsm.buildGroupedRowRedirection(leftTable, exactMatch, leftTableGrouped.size(),
-                            leftHashSlots, indexSource, control.getRedirectionType(leftTable));
+                            leftHashSlots, rowSetSource, control.getRedirectionType(leftTable));
                 } else if (control.buildLeft(leftTable, rightTable)) {
                     final StaticChunkedNaturalJoinStateManager jsm =
                             new StaticChunkedNaturalJoinStateManager(bucketingContext.leftSources,

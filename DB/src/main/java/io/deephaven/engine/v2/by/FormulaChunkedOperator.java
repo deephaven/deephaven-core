@@ -1,28 +1,28 @@
 package io.deephaven.engine.v2.by;
 
+import io.deephaven.engine.chunk.*;
+import io.deephaven.engine.chunk.Attributes.ChunkLengths;
+import io.deephaven.engine.chunk.Attributes.ChunkPositions;
+import io.deephaven.engine.chunk.Attributes.RowKeys;
+import io.deephaven.engine.chunk.Attributes.Values;
+import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.ChunkSource;
+import io.deephaven.engine.table.ChunkSource.GetContext;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.tables.ColumnDefinition;
 import io.deephaven.engine.tables.select.MatchPair;
 import io.deephaven.engine.tables.select.Utils;
 import io.deephaven.engine.util.liveness.LivenessReferent;
+import io.deephaven.engine.v2.Listener;
 import io.deephaven.engine.v2.ModifiedColumnSet;
 import io.deephaven.engine.v2.QueryTable;
-import io.deephaven.engine.v2.Listener;
 import io.deephaven.engine.v2.select.DhFormulaColumn;
 import io.deephaven.engine.v2.select.FormulaColumn;
 import io.deephaven.engine.v2.sources.ArrayBackedColumnSource;
-import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.v2.sources.WritableChunkSink.FillFromContext;
 import io.deephaven.engine.v2.sources.WritableSource;
-import io.deephaven.engine.chunk.Attributes.ChunkLengths;
-import io.deephaven.engine.chunk.Attributes.ChunkPositions;
-import io.deephaven.engine.chunk.Attributes.RowKeys;
-import io.deephaven.engine.chunk.Attributes.Values;
-import io.deephaven.engine.chunk.*;
-import io.deephaven.engine.table.ChunkSource.GetContext;
-import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.v2.utils.UpdatePerformanceTracker;
 import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
@@ -41,7 +41,7 @@ import static io.deephaven.engine.v2.sources.ArrayBackedColumnSource.BLOCK_SIZE;
  */
 class FormulaChunkedOperator implements IterativeChunkedAggregationOperator {
 
-    private final ByChunkedOperator by;
+    private final GroupByChunkedOperator groupBy;
     private final boolean delegateToBy;
     private final String[] inputColumnNames;
     private final String[] resultColumnNames;
@@ -64,20 +64,20 @@ class FormulaChunkedOperator implements IterativeChunkedAggregationOperator {
     /**
      * Construct an operator for applying a formula to a set of aggregation result columns.
      *
-     * @param by The {@link ByChunkedOperator} to use for tracking indices
-     * @param delegateToBy Whether this operator is responsible for passing methods through to {@code by}. Should be
-     *        false if {@code by} is updated by the helper (and {@code by} must come before this operator if so), or if
-     *        this is not the first operator sharing {@code by}.
+     * @param groupBy The {@link GroupByChunkedOperator} to use for tracking indices
+     * @param delegateToBy Whether this operator is responsible for passing methods through to {@code groupBy}. Should
+     *        be false if {@code groupBy} is updated by the helper (and {@code groupBy} must come before this operator
+     *        if so), or if this is not the first operator sharing {@code groupBy}.
      * @param formula The formula, before any column name substitutions
      * @param columnParamName The token to substitute column names for
      * @param resultColumnPairs The names for formula input and result columns
      */
-    FormulaChunkedOperator(@NotNull final ByChunkedOperator by,
+    FormulaChunkedOperator(@NotNull final GroupByChunkedOperator groupBy,
             final boolean delegateToBy,
             @NotNull final String formula,
             @NotNull final String columnParamName,
             @NotNull final MatchPair... resultColumnPairs) {
-        this.by = by;
+        this.groupBy = groupBy;
         this.delegateToBy = delegateToBy;
         this.inputColumnNames = MatchPair.getRightColumns(resultColumnPairs);
         this.resultColumnNames = MatchPair.getLeftColumns(resultColumnPairs);
@@ -88,7 +88,7 @@ class FormulaChunkedOperator implements IterativeChunkedAggregationOperator {
         resultColumns = new WritableSource[resultColumnPairs.length];
         resultColumnModifiedColumnSets = new ModifiedColumnSet[resultColumnPairs.length]; // Not populated until
                                                                                           // initializeRefreshing
-        final Map<String, ? extends ColumnSource<?>> byResultColumns = by.getResultColumns();
+        final Map<String, ? extends ColumnSource<?>> byResultColumns = groupBy.getResultColumns();
         for (int ci = 0; ci < resultColumnPairs.length; ++ci) {
             final String inputColumnName = inputColumnNames[ci];
             final String outputColumnName = resultColumnNames[ci];
@@ -110,7 +110,8 @@ class FormulaChunkedOperator implements IterativeChunkedAggregationOperator {
             @NotNull final IntChunk<RowKeys> destinations, @NotNull final IntChunk<ChunkPositions> startPositions,
             @NotNull final IntChunk<ChunkLengths> length, @NotNull final WritableBooleanChunk<Values> stateModified) {
         if (delegateToBy) {
-            by.addChunk(bucketedContext, values, inputIndices, destinations, startPositions, length, stateModified);
+            groupBy.addChunk(bucketedContext, values, inputIndices, destinations, startPositions, length,
+                    stateModified);
         }
     }
 
@@ -120,7 +121,8 @@ class FormulaChunkedOperator implements IterativeChunkedAggregationOperator {
             @NotNull final IntChunk<RowKeys> destinations, @NotNull final IntChunk<ChunkPositions> startPositions,
             @NotNull final IntChunk<ChunkLengths> length, @NotNull final WritableBooleanChunk<Values> stateModified) {
         if (delegateToBy) {
-            by.removeChunk(bucketedContext, values, inputIndices, destinations, startPositions, length, stateModified);
+            groupBy.removeChunk(bucketedContext, values, inputIndices, destinations, startPositions, length,
+                    stateModified);
         }
     }
 
@@ -131,7 +133,8 @@ class FormulaChunkedOperator implements IterativeChunkedAggregationOperator {
             @NotNull final IntChunk<RowKeys> destinations, @NotNull final IntChunk<ChunkPositions> startPositions,
             @NotNull final IntChunk<ChunkLengths> length, @NotNull final WritableBooleanChunk<Values> stateModified) {
         if (delegateToBy) {
-            by.modifyChunk(bucketedContext, previousValues, newValues, postShiftIndices, destinations, startPositions,
+            groupBy.modifyChunk(bucketedContext, previousValues, newValues, postShiftIndices, destinations,
+                    startPositions,
                     length, stateModified);
         }
     }
@@ -145,7 +148,8 @@ class FormulaChunkedOperator implements IterativeChunkedAggregationOperator {
             @NotNull final IntChunk<ChunkPositions> startPositions,
             @NotNull final IntChunk<ChunkLengths> length, @NotNull final WritableBooleanChunk<Values> stateModified) {
         if (delegateToBy) {
-            by.shiftChunk(bucketedContext, previousValues, newValues, preShiftIndices, postShiftIndices, destinations,
+            groupBy.shiftChunk(bucketedContext, previousValues, newValues, preShiftIndices, postShiftIndices,
+                    destinations,
                     startPositions, length, stateModified);
         }
     }
@@ -156,7 +160,7 @@ class FormulaChunkedOperator implements IterativeChunkedAggregationOperator {
             @NotNull final IntChunk<RowKeys> destinations, @NotNull final IntChunk<ChunkPositions> startPositions,
             @NotNull final IntChunk<ChunkLengths> length, @NotNull final WritableBooleanChunk<Values> stateModified) {
         if (delegateToBy) {
-            by.modifyIndices(context, inputIndices, destinations, startPositions, length, stateModified);
+            groupBy.modifyIndices(context, inputIndices, destinations, startPositions, length, stateModified);
         }
     }
 
@@ -165,7 +169,7 @@ class FormulaChunkedOperator implements IterativeChunkedAggregationOperator {
             final Chunk<? extends Values> values,
             @NotNull final LongChunk<? extends RowKeys> inputIndices, final long destination) {
         if (delegateToBy) {
-            return by.addChunk(singletonContext, chunkSize, values, inputIndices, destination);
+            return groupBy.addChunk(singletonContext, chunkSize, values, inputIndices, destination);
         } else {
             return false;
         }
@@ -176,7 +180,7 @@ class FormulaChunkedOperator implements IterativeChunkedAggregationOperator {
             final Chunk<? extends Values> values,
             @NotNull final LongChunk<? extends Attributes.RowKeys> inputIndices, final long destination) {
         if (delegateToBy) {
-            return by.removeChunk(singletonContext, chunkSize, values, inputIndices, destination);
+            return groupBy.removeChunk(singletonContext, chunkSize, values, inputIndices, destination);
         } else {
             return false;
         }
@@ -188,7 +192,7 @@ class FormulaChunkedOperator implements IterativeChunkedAggregationOperator {
             @NotNull final LongChunk<? extends RowKeys> postShiftIndices,
             final long destination) {
         if (delegateToBy) {
-            return by.modifyChunk(singletonContext, chunkSize, previousValues, newValues, postShiftIndices,
+            return groupBy.modifyChunk(singletonContext, chunkSize, previousValues, newValues, postShiftIndices,
                     destination);
         } else {
             return false;
@@ -202,7 +206,7 @@ class FormulaChunkedOperator implements IterativeChunkedAggregationOperator {
             @NotNull final LongChunk<? extends RowKeys> postInputIndices,
             final long destination) {
         if (delegateToBy) {
-            return by.shiftChunk(singletonContext, previousValues, newValues, preInputIndices, postInputIndices,
+            return groupBy.shiftChunk(singletonContext, previousValues, newValues, preInputIndices, postInputIndices,
                     destination);
         } else {
             return false;
@@ -214,7 +218,7 @@ class FormulaChunkedOperator implements IterativeChunkedAggregationOperator {
             @NotNull final LongChunk<? extends Attributes.RowKeys> indices,
             final long destination) {
         if (delegateToBy) {
-            return by.modifyIndices(context, indices, destination);
+            return groupBy.modifyIndices(context, indices, destination);
         } else {
             return false;
         }
@@ -228,7 +232,7 @@ class FormulaChunkedOperator implements IterativeChunkedAggregationOperator {
     @Override
     public void ensureCapacity(final long tableSize) {
         if (delegateToBy) {
-            by.ensureCapacity(tableSize);
+            groupBy.ensureCapacity(tableSize);
         }
         for (@NotNull
         final WritableSource<?> resultColumn : resultColumns) {
@@ -248,10 +252,10 @@ class FormulaChunkedOperator implements IterativeChunkedAggregationOperator {
     @Override
     public void propagateInitialState(@NotNull final QueryTable resultTable) {
         if (delegateToBy) {
-            by.propagateInitialState(resultTable);
+            groupBy.propagateInitialState(resultTable);
         }
 
-        final Map<String, ? extends ColumnSource<?>> byResultColumns = by.getResultColumns();
+        final Map<String, ? extends ColumnSource<?>> byResultColumns = groupBy.getResultColumns();
         for (int ci = 0; ci < inputColumnNames.length; ++ci) {
             final String inputColumnName = inputColumnNames[ci];
             final FormulaColumn formulaColumn = formulaColumns[ci];
@@ -271,7 +275,7 @@ class FormulaChunkedOperator implements IterativeChunkedAggregationOperator {
     @Override
     public void startTrackingPrevValues() {
         if (delegateToBy) {
-            by.startTrackingPrevValues();
+            groupBy.startTrackingPrevValues();
         }
         for (@NotNull
         final WritableSource<?> resultColumn : resultColumns) {
@@ -286,19 +290,20 @@ class FormulaChunkedOperator implements IterativeChunkedAggregationOperator {
             resultColumnModifiedColumnSets[ci] = resultTable.newModifiedColumnSet(resultColumnNames[ci]);
         }
         if (delegateToBy) {
-            // We cannot use the by's result MCS factory, because the result column names are not guaranteed to be the
+            // We cannot use the groupBy's result MCS factory, because the result column names are not guaranteed to be
+            // the
             // same.
-            by.initializeRefreshing(resultTable, aggregationUpdateListener);
+            groupBy.initializeRefreshing(resultTable, aggregationUpdateListener);
         }
         // Note that we also use the factory in propagateUpdates to identify the set of modified columns to handle.
         return inputToResultModifiedColumnSetFactory =
-                by.makeInputToResultModifiedColumnSetFactory(resultTable, resultColumnNames);
+                groupBy.makeInputToResultModifiedColumnSetFactory(resultTable, resultColumnNames);
     }
 
     @Override
     public void resetForStep(@NotNull final Listener.Update upstream) {
         if (delegateToBy) {
-            by.resetForStep(upstream);
+            groupBy.resetForStep(upstream);
         }
         updateUpstreamModifiedColumnSet =
                 upstream.modified.isEmpty() ? ModifiedColumnSet.EMPTY : upstream.modifiedColumnSet;
@@ -308,7 +313,7 @@ class FormulaChunkedOperator implements IterativeChunkedAggregationOperator {
     public void propagateUpdates(@NotNull final Listener.Update downstream,
             @NotNull final RowSet newDestinations) {
         if (delegateToBy) {
-            by.propagateUpdates(downstream, newDestinations);
+            groupBy.propagateUpdates(downstream, newDestinations);
         }
         final ModifiedColumnSet resultModifiedColumnSet =
                 inputToResultModifiedColumnSetFactory.apply(updateUpstreamModifiedColumnSet);
@@ -358,18 +363,18 @@ class FormulaChunkedOperator implements IterativeChunkedAggregationOperator {
     public void propagateFailure(@NotNull final Throwable originalException,
             @NotNull final UpdatePerformanceTracker.Entry sourceEntry) {
         if (delegateToBy) {
-            by.propagateFailure(originalException, sourceEntry);
+            groupBy.propagateFailure(originalException, sourceEntry);
         }
     }
 
     @Override
     public BucketedContext makeBucketedContext(final int size) {
-        return delegateToBy ? by.makeBucketedContext(size) : null;
+        return delegateToBy ? groupBy.makeBucketedContext(size) : null;
     }
 
     @Override
     public SingletonContext makeSingletonContext(final int size) {
-        return delegateToBy ? by.makeSingletonContext(size) : null;
+        return delegateToBy ? groupBy.makeSingletonContext(size) : null;
     }
 
     private class DataFillerContext implements SafeCloseable {

@@ -76,7 +76,7 @@ class StaticChunkedNaturalJoinStateManager
     // we are going to also reuse this for our state entry, so that we do not need additional storage
     @ReplicateHashTable.StateColumnSource
     // @StateColumnSourceType@ from \QLongArraySource\E
-    private final LongArraySource rightIndexSource
+    private final LongArraySource rightRowSetSource
             // @StateColumnSourceConstructor@ from \QLongArraySource()\E
             = new LongArraySource();
 
@@ -88,7 +88,7 @@ class StaticChunkedNaturalJoinStateManager
     // the overflow buckets for the right TrackingMutableRowSet
     @ReplicateHashTable.OverflowStateColumnSource
     // @StateColumnSourceType@ from \QLongArraySource\E
-    private final LongArraySource overflowRightIndexSource
+    private final LongArraySource overflowRightRowSetSource
             // @StateColumnSourceConstructor@ from \QLongArraySource()\E
             = new LongArraySource();
 
@@ -148,7 +148,7 @@ class StaticChunkedNaturalJoinStateManager
     }
 
     private void ensureCapacity(int tableSize) {
-        rightIndexSource.ensureCapacity(tableSize);
+        rightRowSetSource.ensureCapacity(tableSize);
         overflowLocationSource.ensureCapacity(tableSize);
         for (int ii = 0; ii < keyColumnCount; ++ii) {
             keySources[ii].ensureCapacity(tableSize);
@@ -161,7 +161,7 @@ class StaticChunkedNaturalJoinStateManager
         final int locationsToAllocate = chunkPositionsToInsertInOverflow.size();
         final int newCapacity = nextOverflowLocation + locationsToAllocate;
         overflowOverflowLocationSource.ensureCapacity(newCapacity);
-        overflowRightIndexSource.ensureCapacity(newCapacity);
+        overflowRightRowSetSource.ensureCapacity(newCapacity);
         //noinspection ForLoopReplaceableByForEach
         for (int ii = 0; ii < overflowKeySources.length; ++ii) {
             overflowKeySources[ii].ensureCapacity(newCapacity);
@@ -282,7 +282,7 @@ class StaticChunkedNaturalJoinStateManager
             // region build context constructor
             // endregion build context constructor
             sortContext = LongIntTimsortKernel.createContext(chunkSize);
-            stateSourceFillContext = rightIndexSource.makeFillContext(chunkSize);
+            stateSourceFillContext = rightRowSetSource.makeFillContext(chunkSize);
             overflowFillContext = overflowLocationSource.makeFillContext(chunkSize);
             overflowOverflowFillContext = overflowOverflowLocationSource.makeFillContext(chunkSize);
             hashChunk = WritableIntChunk.makeWritableChunk(chunkSize);
@@ -437,7 +437,7 @@ class StaticChunkedNaturalJoinStateManager
                 fillKeys(bc.workingFillContexts, bc.workingKeyChunks, bc.tableLocationsChunk);
 
                 // and the corresponding states, if a value is null, we've found our insertion point
-                rightIndexSource.fillChunkUnordered(bc.stateSourceFillContext, bc.workingStateEntries, bc.tableLocationsChunk);
+                rightRowSetSource.fillChunkUnordered(bc.stateSourceFillContext, bc.workingStateEntries, bc.tableLocationsChunk);
 
                 // find things that exist
                 // @StateChunkIdentityName@ from \QLongChunk\E
@@ -461,7 +461,7 @@ class StaticChunkedNaturalJoinStateManager
                             // we know what hash slot this maps to
                             sourceChunkLeftHashSlots.set(ii, tableLocation);
                         } else {
-                            rightIndexSource.set(tableLocation, DUPLICATE_RIGHT_VALUE);
+                            rightRowSetSource.set(tableLocation, DUPLICATE_RIGHT_VALUE);
                         }
                         // endregion build found main
                     } else if (bc.filledValues.get(ii)) {
@@ -493,11 +493,11 @@ class StaticChunkedNaturalJoinStateManager
 
                     // region main insert
                     if (isLeftSide) {
-                        rightIndexSource.set(currentHashLocation, NO_RIGHT_ENTRY_VALUE);
+                        rightRowSetSource.set(currentHashLocation, NO_RIGHT_ENTRY_VALUE);
                         sourceChunkLeftHashSlots.set(firstChunkPositionForHashLocation, currentHashLocation);
                     } else {
                         final long rightValue = rightSourceIndexKeys.get(firstChunkPositionForHashLocation);
-                        rightIndexSource.set(currentHashLocation, rightValue);
+                        rightRowSetSource.set(currentHashLocation, rightValue);
                     }
                     // endregion main insert
 
@@ -544,7 +544,7 @@ class StaticChunkedNaturalJoinStateManager
                             sourceChunkLeftHashSlots.set(chunkPosition, tableLocation);
                         } else {
                             // we match the first element, so need to mark this key as a duplicate
-                            rightIndexSource.set(tableLocation, DUPLICATE_RIGHT_VALUE);
+                            rightRowSetSource.set(tableLocation, DUPLICATE_RIGHT_VALUE);
                         }
                         // endregion build main duplicate
                     } else {
@@ -602,7 +602,7 @@ class StaticChunkedNaturalJoinStateManager
                                     // (represented as a negative number to indicate overflow)
                                     sourceChunkLeftHashSlots.set(chunkPosition, overflowLocationToHashLocation(overflowLocation));
                                 } else {
-                                    overflowRightIndexSource.set(overflowLocation, DUPLICATE_RIGHT_VALUE);
+                                    overflowRightRowSetSource.set(overflowLocation, DUPLICATE_RIGHT_VALUE);
                                 }
                                 // endregion build overflow found
                             } else {
@@ -656,7 +656,7 @@ class StaticChunkedNaturalJoinStateManager
                             } else {
                                 rightValue = rightSourceIndexKeys.get(chunkPosition);
                             }
-                            overflowRightIndexSource.set(allocatedOverflowLocation, rightValue);
+                            overflowRightRowSetSource.set(allocatedOverflowLocation, rightValue);
                             // endregion build overflow insert
 
 
@@ -693,7 +693,7 @@ class StaticChunkedNaturalJoinStateManager
                                 if (isLeftSide) {
                                     sourceChunkLeftHashSlots.set(chunkPosition, overflowLocationToHashLocation(insertedOverflowLocation));
                                 } else {
-                                    overflowRightIndexSource.set(insertedOverflowLocation, DUPLICATE_RIGHT_VALUE);
+                                    overflowRightRowSetSource.set(insertedOverflowLocation, DUPLICATE_RIGHT_VALUE);
                                 }
                                 // endregion build overflow duplicate
                             } else {
@@ -903,12 +903,12 @@ class StaticChunkedNaturalJoinStateManager
             probeContexts = makeGetContexts(probeSources, sharedProbeContext, chunkSize);
             // region probe context constructor
             if (isLeftSide) {
-                overflowStateFillContext = overflowRightIndexSource.makeFillContext(chunkSize);
+                overflowStateFillContext = overflowRightRowSetSource.makeFillContext(chunkSize);
             } else {
                 overflowStateFillContext = null;
             }
             // endregion probe context constructor
-            stateSourceFillContext = rightIndexSource.makeFillContext(chunkSize);
+            stateSourceFillContext = rightRowSetSource.makeFillContext(chunkSize);
             overflowFillContext = overflowLocationSource.makeFillContext(chunkSize);
             overflowOverflowFillContext = overflowOverflowLocationSource.makeFillContext(chunkSize);
             hashChunk = WritableIntChunk.makeWritableChunk(chunkSize);
@@ -1047,7 +1047,7 @@ class StaticChunkedNaturalJoinStateManager
                 // - otherwise we check for equality; if we are equal, we have found our thing to set
                 //   (or to complain if we are already set)
                 // - if we are not equal, then we are an overflow block
-                rightIndexSource.fillChunkUnordered(pc.stateSourceFillContext, pc.workingStateEntries, pc.tableLocationsChunk);
+                rightRowSetSource.fillChunkUnordered(pc.stateSourceFillContext, pc.workingStateEntries, pc.tableLocationsChunk);
 
                 // @StateChunkIdentityName@ from \QLongChunk\E
                 LongChunkEquals.notEqual(pc.workingStateEntries, EMPTY_RIGHT_VALUE, pc.equalValues);
@@ -1066,12 +1066,12 @@ class StaticChunkedNaturalJoinStateManager
 
                             // I don't love this individual access approach; but we don't otherwise know if we are going
                             // to be writing to the thing twice.  We could alternatively sort these.
-                            if (rightIndexSource.getLong(pc.tableLocationsChunk.get(ii)) != NO_RIGHT_ENTRY_VALUE) {
+                            if (rightRowSetSource.getLong(pc.tableLocationsChunk.get(ii)) != NO_RIGHT_ENTRY_VALUE) {
                                 throw new IllegalStateException("More than one right side mapping for " + ChunkUtils.extractKeyStringFromChunks(keyChunkTypes, sourceKeyChunks, ii));
                             }
 
                             // we know that there is no right hand side, so we should set it to our value!
-                            rightIndexSource.set(pc.tableLocationsChunk.get(ii), rightKeyIndices.get(ii));
+                            rightRowSetSource.set(pc.tableLocationsChunk.get(ii), rightKeyIndices.get(ii));
                         }
                         // endregion probe main found
                     } else if (pc.workingStateEntries.get(ii) != EMPTY_RIGHT_VALUE) {
@@ -1111,7 +1111,7 @@ class StaticChunkedNaturalJoinStateManager
                         // It would be possible to filter for equality before looking up the answers, but we are
                         // optimistic that we should find things in the overflow and there will not be overly long
                         // chains.
-                        overflowRightIndexSource.fillChunkUnordered(pc.overflowStateFillContext, pc.workingStateEntries, pc.overflowLocationsToFetch);
+                        overflowRightRowSetSource.fillChunkUnordered(pc.overflowStateFillContext, pc.workingStateEntries, pc.overflowLocationsToFetch);
                     }
                     // endregion probe overflow state source fill
 
@@ -1132,11 +1132,11 @@ class StaticChunkedNaturalJoinStateManager
                             } else {
                                 // if we are equal, then it's great and we can set our right hand side value
                                 final long rightValue = rightKeyIndices.get(pc.chunkPositionsForFetches.get(ii));
-                                final long existingRightValue = overflowRightIndexSource.getLong(overflowLocation);
+                                final long existingRightValue = overflowRightRowSetSource.getLong(overflowLocation);
                                 if (existingRightValue != NO_RIGHT_ENTRY_VALUE) {
                                     throw new IllegalStateException("More than one right side mapping for " + ChunkUtils.extractKeyStringFromChunks(keyChunkTypes, sourceKeyChunks, pc.chunkPositionsForFetches.get(ii)));
                                 }
-                                overflowRightIndexSource.set(overflowLocation, rightValue);
+                                overflowRightRowSetSource.set(overflowLocation, rightValue);
                             }
                             // endregion probe overflow found
                         } else {
@@ -1291,10 +1291,10 @@ class StaticChunkedNaturalJoinStateManager
     private long getStateValue(LongArraySource hashSlots, long locationInHashSlots) {
         final long hashSlot = hashSlots.getLong(locationInHashSlots);
         if (isOverflowLocation(hashSlot)) {
-            return overflowRightIndexSource.getLong(hashLocationToOverflowLocation(hashSlot));
+            return overflowRightRowSetSource.getLong(hashLocationToOverflowLocation(hashSlot));
         }
         else {
-            return rightIndexSource.getLong(hashSlot);
+            return rightRowSetSource.getLong(hashSlot);
         }
     }
     // endregion getStateValue

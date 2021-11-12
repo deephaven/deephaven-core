@@ -1043,7 +1043,7 @@ public class ParquetTableWriter {
     private static Table getGroupedTable() {
         Table t = getTableFlat();
         QueryLibrary.importClass(StringSetArrayWrapper.class);
-        Table result = t.by("groupKey = i % 100 + (int)(i/10)")
+        Table result = t.groupBy("groupKey = i % 100 + (int)(i/10)")
                 .update("someStringSet = new StringSetArrayWrapper(nonNullString)");
         TableTools.show(result);
         return result;

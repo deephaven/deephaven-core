@@ -36,7 +36,7 @@ public abstract class AbstractMultiSeries<SERIES extends DataSeriesInternal> ext
     private static final long serialVersionUID = 3548896765688007362L;
     private static final Logger log = LoggerFactory.getLogger(AbstractMultiSeries.class);
 
-    protected static final TableMap EMPTY_TABLE_MAP = emptyTable(0).byExternal();
+    protected static final TableMap EMPTY_TABLE_MAP = emptyTable(0).partitionBy();
     protected final String[] byColumns;
 
     protected transient Object tableMapLock;

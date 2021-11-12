@@ -51,7 +51,7 @@ public class TableMapTest extends RefreshingTableTestCase {
 
         final Table withK = queryTable.update("K=k");
 
-        final TableMap tableMap = withK.byExternal("Sym");
+        final TableMap tableMap = withK.partitionBy("Sym");
         final Table merged = tableMap.merge();
         final Table mergedByK = merged.sort("K");
 
@@ -84,7 +84,7 @@ public class TableMapTest extends RefreshingTableTestCase {
 
         final Table withK = queryTable.update("K=k");
 
-        final TableMap tableMap = withK.byExternal("Sym");
+        final TableMap tableMap = withK.partitionBy("Sym");
         tableMap.populateKeys("cc", "dd");
 
         final Table merged = tableMap.merge();
@@ -132,12 +132,12 @@ public class TableMapTest extends RefreshingTableTestCase {
         final EvalNugget en[] = new EvalNugget[] {
                 new EvalNugget() {
                     public Table e() {
-                        return table.byExternal("Sym").populateKeys((Object[]) syms).merge().sort("Sym");
+                        return table.partitionBy("Sym").populateKeys((Object[]) syms).merge().sort("Sym");
                     }
                 },
                 new EvalNugget() {
                     public Table e() {
-                        return table.byExternal("intCol")
+                        return table.partitionBy("intCol")
                                 .populateKeys(IntStream.rangeClosed(0, 20).boxed().toArray(Object[]::new)).merge()
                                 .sort("intCol");
                     }
@@ -192,18 +192,18 @@ public class TableMapTest extends RefreshingTableTestCase {
                 new TstUtils.SetGenerator<>("aa", "bb", "cc", "dd"),
                 new TstUtils.IntGenerator(100, 200)));
 
-        final TableMap map = withK.byExternal("Sym");
+        final TableMap map = withK.partitionBy("Sym");
         map.populateKeys("aa", "bb", "cc", "dd");
         final Table asTable = map.asTable(false, true, false);
 
-        final TableMap rightMap = rightTable.byExternal("Sym");
+        final TableMap rightMap = rightTable.partitionBy("Sym");
         rightMap.populateKeys("aa", "bb", "cc", "dd");
         final Table rightAsTable = rightMap.asTable(false, true, false);
 
         final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
                 new EvalNugget() {
                     public Table e() {
-                        return ((TransformableTableMap) table.update("K=Indices").byExternal("Sym")
+                        return ((TransformableTableMap) table.update("K=Indices").partitionBy("Sym")
                                 .populateKeys("aa", "bb", "cc", "dd").asTable(false, false, false)
                                 .update("K2=Indices*2")
                                 .select("K", "K2", "Half=doubleCol/2", "Sq=doubleCol*doubleCol",
@@ -228,7 +228,7 @@ public class TableMapTest extends RefreshingTableTestCase {
         final QueryTable sourceTable = TstUtils.testRefreshingTable(i(1).toTracking(),
                 intCol("Key", 1), intCol("Sentinel", 1), col("Sym", "a"), doubleCol("DoubleCol", 1.1));
 
-        final TableMap tableMap = sourceTable.byExternal("Key");
+        final TableMap tableMap = sourceTable.partitionBy("Key");
 
         final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
                 new EvalNugget() {
@@ -285,7 +285,7 @@ public class TableMapTest extends RefreshingTableTestCase {
 
         queryTable.setAttribute(Table.SORTABLE_COLUMNS_ATTRIBUTE, "bar");
 
-        final TableMap tableMap = queryTable.byExternal("Sym");
+        final TableMap tableMap = queryTable.partitionBy("Sym");
 
         for (Table table : tableMap.values()) {
             table.setAttribute("quux", "baz");
@@ -351,8 +351,8 @@ public class TableMapTest extends RefreshingTableTestCase {
                 c("Sym", "aa_1", "bb_1", "aa_2", "bb_2"),
                 c("RightSentinel", 30, 50, 70, 90));
 
-        final TableMap leftMap = left.byExternal("USym");
-        final TableMap rightMap = right.byExternal("USym");
+        final TableMap leftMap = left.partitionBy("USym");
+        final TableMap rightMap = right.partitionBy("USym");
 
         final Table leftAsTable = leftMap.asTableBuilder().sanityCheckJoin(true).allowCoalesce(false).build();
         final Table rightAsTable = rightMap.asTableBuilder().sanityCheckJoin(true).allowCoalesce(false).build();
@@ -385,7 +385,7 @@ public class TableMapTest extends RefreshingTableTestCase {
                 c("USym", "aa", "bb", "aa", "bb"),
                 c("Sentinel", 10, 20, 40, 60));
 
-        final TableMap result = sourceTable.byExternal("USym");
+        final TableMap result = sourceTable.partitionBy("USym");
         final Table aa = result.get("aa");
         final Table aa2 = aa.update("S2=Sentinel * 2");
         TableTools.show(aa2);
@@ -454,7 +454,7 @@ public class TableMapTest extends RefreshingTableTestCase {
                 c("USym2", "aa", "bb"),
                 c("Sentinel2", 30, 50));
 
-        final TableMap result = sourceTable.byExternal("USym");
+        final TableMap result = sourceTable.partitionBy("USym");
 
         final PauseHelper pauseHelper = new PauseHelper();
         final PauseHelper pauseHelper2 = new PauseHelper();
@@ -464,7 +464,7 @@ public class TableMapTest extends RefreshingTableTestCase {
         pauseHelper.release();
         pauseHelper2.release();
 
-        final TableMap result2 = sourceTable2.update("SlowItDown=pauseHelper.pauseValue(k)").byExternal("USym2")
+        final TableMap result2 = sourceTable2.update("SlowItDown=pauseHelper.pauseValue(k)").partitionBy("USym2")
                 .transformTables(t -> t.update("SlowItDown2=pauseHelper2.pauseValue(2 * k)"));
 
         // pauseHelper.pause();
@@ -540,14 +540,14 @@ public class TableMapTest extends RefreshingTableTestCase {
                 c("USym2", "aa", "bb", "dd"),
                 c("Sentinel2", 30, 50, 90));
 
-        final TableMap result = sourceTable.byExternal("USym");
+        final TableMap result = sourceTable.partitionBy("USym");
 
         final PauseHelper pauseHelper = new PauseHelper();
         QueryScope.addParam("pauseHelper", pauseHelper);
 
         pauseHelper.release();
 
-        final TableMap result2 = sourceTable2.byExternal("USym2")
+        final TableMap result2 = sourceTable2.partitionBy("USym2")
                 .transformTables(t -> t.update("SlowItDown2=pauseHelper.pauseValue(2 * k)"));
 
         final TableMap joined = result.transformTablesWithMap(result2, (l, r) -> {
@@ -595,7 +595,7 @@ public class TableMapTest extends RefreshingTableTestCase {
 
         final SafeCloseable scopeCloseable = LivenessScopeStack.open();
 
-        final TableMap map = table.byExternal("Key");
+        final TableMap map = table.partitionBy("Key");
         final Table value = map.get("A");
         assertNotNull(value);
 
@@ -645,13 +645,13 @@ public class TableMapTest extends RefreshingTableTestCase {
 
         final boolean old = QueryTable.setMemoizeResults(true);
         try {
-            testMemoize(sourceTable, t -> t.byExternal("USym"));
-            testMemoize(sourceTable, t -> t.byExternal("Sentinel"));
-            testMemoize(sourceTable, t -> t.byExternal(true, "USym"));
-            testMemoize(sourceTable, t -> t.byExternal(true, "Sentinel"));
-            testMemoize(sourceTable, t -> t.byExternal(false, "Sentinel"), t -> t.byExternal("Sentinel"));
-            testNoMemoize(sourceTable, t -> t.byExternal(true, "Sentinel"), t -> t.byExternal("Sentinel"));
-            testNoMemoize(sourceTable, t -> t.byExternal("USym"), t -> t.byExternal("Sentinel"));
+            testMemoize(sourceTable, t -> t.partitionBy("USym"));
+            testMemoize(sourceTable, t -> t.partitionBy("Sentinel"));
+            testMemoize(sourceTable, t -> t.partitionBy(true, "USym"));
+            testMemoize(sourceTable, t -> t.partitionBy(true, "Sentinel"));
+            testMemoize(sourceTable, t -> t.partitionBy(false, "Sentinel"), t -> t.partitionBy("Sentinel"));
+            testNoMemoize(sourceTable, t -> t.partitionBy(true, "Sentinel"), t -> t.partitionBy("Sentinel"));
+            testNoMemoize(sourceTable, t -> t.partitionBy("USym"), t -> t.partitionBy("Sentinel"));
         } finally {
             QueryTable.setMemoizeResults(old);
         }
@@ -663,7 +663,7 @@ public class TableMapTest extends RefreshingTableTestCase {
                 stringCol("Color", "Red", "Blue", "Red", "Blue", "Red", "Blue"),
                 intCol("Value", -1, 0, 1, 2, 3, 4));
 
-        final TableMap byKey = base.byExternal("Key");
+        final TableMap byKey = base.partitionBy("Key");
         final TableMapSupplier supplier =
                 new TableMapSupplier(byKey, Collections.singletonList(t -> t.where("Color=`Red`")));
 

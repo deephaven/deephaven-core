@@ -4,7 +4,7 @@
 
 package io.deephaven.engine.v2.by;
 
-import static io.deephaven.engine.v2.by.IterativeOperatorStateFactory.getMinMaxChunked;
+import static io.deephaven.engine.v2.by.IterativeOperatorSpec.getMinMaxChunked;
 
 /**
  * Factory for iterative sum aggregations.

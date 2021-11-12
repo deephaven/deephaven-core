@@ -7,7 +7,7 @@ import java.util.Objects;
 /**
  * Divide a table evenly into slices and put the slices into a TableMap.
  *
- * This enables the use of parallelism on a table without the full cost of a byExternal operation.
+ * This enables the use of parallelism on a table without the full cost of a partitionBy operation.
  */
 public class EvenlyDividedTableMap {
     private EvenlyDividedTableMap() {} // static use only
@@ -51,7 +51,7 @@ public class EvenlyDividedTableMap {
      *
      * <p>
      * This method is intended to be used to enable parallelism by creating a TableMap without the cost of a full
-     * byExternal. It is important to note that any natural boundaries in the data are not respected, thus when doing
+     * partitionBy. It is important to note that any natural boundaries in the data are not respected, thus when doing
      * operations in parallel and calling {@link TransformableTableMap#merge()} the result is very likely not the same
      * as doing the operations individually. Care must be taken to preserve your desired semantics.
      * </p>

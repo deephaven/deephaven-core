@@ -58,7 +58,7 @@ public class QueryFactory {
                     Character.class, short.class, byte.class, java.math.BigDecimal.class, java.math.BigInteger.class};
     // Copy and modify this block of code if you want to disable an operation.
     private static final String[] IMPLEMENTED_OPS = {"where", "merge", "flatten", "slice", "head", "tail", "headPct",
-            "tailPct", "reverse", "sort", "byOpp", "aggCombo", "byExternal"};
+            "tailPct", "reverse", "sort", "byOpp", "aggCombo", "partitionBy"};
     private static final String[] CHANGING_AGG =
             {"AggSum", "AggVar", "AggStd", "AggArray", "AggCount", "AggWAvg", "AggDistinct", "AggCountDistinct"};
     private static final String[] CHANGING_BY =
@@ -275,7 +275,7 @@ public class QueryFactory {
             opChain.append(tableNameOne).append(".head(1L)").append(", ");
             opChain.append(tableNameTwo).append(".head(1L)").append(")");
 
-            opChain.append(".byExternal(\"").append(columnNames[random.nextInt(columnNames.length)]).append("\");\n");
+            opChain.append(".partitionBy(\"").append(columnNames[random.nextInt(columnNames.length)]).append("\");\n");
             opChain.append("table").append(nameSeed).append("_").append(opNum).append(" = ");
             opChain.append("map.asTable().merge();\n");
         } else {
@@ -357,17 +357,17 @@ public class QueryFactory {
                 break;
 
             case "sortedFirstBy":
-                opChain.append(".by( new SortedFirstBy(").append(stringArrayToMultipleStringArgumentList(anyCols))
+                opChain.append(".groupBy( new SortedFirstBy(").append(stringArrayToMultipleStringArgumentList(anyCols))
                         .append("));\n");
                 break;
 
             case "sortedLastBy":
-                opChain.append(".by( new SortedLastBy(").append(stringArrayToMultipleStringArgumentList(anyCols))
+                opChain.append(".groupBy( new SortedLastBy(").append(stringArrayToMultipleStringArgumentList(anyCols))
                         .append("));\n");
                 break;
 
             case "percentileBy":
-                opChain.append(".by(new PercentileByStateFactoryImpl(0.25));\n");
+                opChain.append(".groupBy(new PercentileBySpecImpl(0.25));\n");
                 break;
 
 
@@ -459,7 +459,7 @@ public class QueryFactory {
         final StringBuilder mapName = new StringBuilder("map").append(nameSeed).append("_").append(opNum);
         final StringBuilder previousTableName =
                 new StringBuilder("table").append(nameSeed).append("_").append(opNum - 1);
-        opChain.append(mapName).append(" = ").append(previousTableName).append(".byExternal(\"")
+        opChain.append(mapName).append(" = ").append(previousTableName).append(".partitionBy(\"")
                 .append(columnNames[random.nextInt(columnNames.length)]).append("\");\n");
         opChain.append("table").append(nameSeed).append("_").append(opNum).append(" = ");
         opChain.append(mapName).append(".getKeySet().length == 0 ? ").append(previousTableName).append(" : ");
@@ -570,7 +570,7 @@ public class QueryFactory {
         }
 
 
-        opChain.append(".by(AggCombo(");
+        opChain.append(".groupBy(AggCombo(");
         for (int aggNum = 0; aggNum < activeAggs.size(); ++aggNum) {
             switch (activeAggs.get(aggNum)) {
                 case "AggSum":
@@ -811,7 +811,7 @@ public class QueryFactory {
                 addJoinOperation(opNum, opChain, random, nameSeed);
                 break;
 
-            case "byExternal":
+            case "partitionBy":
                 addByExternalOperation(opNum, opChain, random, nameSeed);
                 break;
 
@@ -836,9 +836,9 @@ public class QueryFactory {
     public String getTablePreamble(Long tableSeed) {
 
 
-        return "\n\nimport io.deephaven.engine.v2.by.SortedFirstBy;\n" +
-                "import io.deephaven.engine.v2.by.PercentileByStateFactoryImpl;\n" +
-                "import io.deephaven.engine.v2.by.SortedLastBy;\n\n\n" +
+        return "\n\nimport io.deephaven.engine.v2.groupBy.SortedFirstBy;\n" +
+                "import io.deephaven.engine.v2.groupBy.PercentileBySpecImpl;\n" +
+                "import io.deephaven.engine.v2.groupBy.SortedLastBy;\n\n\n" +
                 "tableSeed = " + tableSeed + " as long;\n" +
                 "size = 100 as int;\n" +
                 "scale = 1000 as int;\n" +

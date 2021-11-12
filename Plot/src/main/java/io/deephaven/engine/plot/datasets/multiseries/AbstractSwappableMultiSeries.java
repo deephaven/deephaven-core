@@ -79,7 +79,7 @@ public abstract class AbstractSwappableMultiSeries<SERIES extends DataSeriesInte
                 if (tableMap != null) {
                     return tableMap;
                 }
-                tableMap = localTable.byExternal(byColumns);
+                tableMap = localTable.partitionBy(byColumns);
             }
         }
 

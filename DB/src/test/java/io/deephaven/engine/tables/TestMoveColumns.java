@@ -83,55 +83,55 @@ public class TestMoveColumns extends TestCase {
 
     public void testMoveUpColumns() {
         // basic moving
-        checkColumnOrder(table.moveUpColumns("a"), "abcde");
+        checkColumnOrder(table.moveColumnsUp("a"), "abcde");
 
-        checkColumnOrder(table.moveUpColumns("b"), "bacde");
+        checkColumnOrder(table.moveColumnsUp("b"), "bacde");
 
-        checkColumnOrder(table.moveUpColumns("b", "c", "d", "e"), "bcdea");
+        checkColumnOrder(table.moveColumnsUp("b", "c", "d", "e"), "bcdea");
 
         // moving and renaming
-        Table temp = table.moveUpColumns("x=a");
+        Table temp = table.moveColumnsUp("x=a");
         checkColumnOrder(temp, "xbcde");
         checkColumnValueOrder(temp, "12345");
 
-        temp = table.moveUpColumns("x=e");
+        temp = table.moveColumnsUp("x=e");
         checkColumnOrder(temp, "xabcd");
         checkColumnValueOrder(temp, "51234");
 
-        temp = table.moveUpColumns("x=a", "x=b");
+        temp = table.moveColumnsUp("x=a", "x=b");
         checkColumnOrder(temp, "xcde");
         checkColumnValueOrder(temp, "2345");
 
-        temp = table.moveUpColumns("x=a", "y=a");
+        temp = table.moveColumnsUp("x=a", "y=a");
         checkColumnOrder(temp, "xybcde");
         checkColumnValueOrder(temp, "112345");
     }
 
     public void testMoveDownColumns() {
-        checkColumnOrder(table.moveDownColumns("a"), "bcdea");
+        checkColumnOrder(table.moveColumnsDown("a"), "bcdea");
 
-        checkColumnOrder(table.moveDownColumns("b"), "acdeb");
+        checkColumnOrder(table.moveColumnsDown("b"), "acdeb");
 
-        checkColumnOrder(table.moveDownColumns("a", "b", "c", "d"), "eabcd");
+        checkColumnOrder(table.moveColumnsDown("a", "b", "c", "d"), "eabcd");
 
         // moving and renaming
-        Table temp = table.moveDownColumns("x=a");
+        Table temp = table.moveColumnsDown("x=a");
         checkColumnOrder(temp, "bcdex");
         checkColumnValueOrder(temp, "23451");
 
-        temp = table.moveDownColumns("b=a", "a=b", "c");
+        temp = table.moveColumnsDown("b=a", "a=b", "c");
         checkColumnOrder(temp, "debac");
         checkColumnValueOrder(temp, "45113");
 
-        temp = table.moveDownColumns("b=a", "a=b", "c", "d=a");
+        temp = table.moveColumnsDown("b=a", "a=b", "c", "d=a");
         checkColumnOrder(temp, "ebacd");
         checkColumnValueOrder(temp, "51131");
 
-        temp = table.moveDownColumns("x=a", "x=b");
+        temp = table.moveColumnsDown("x=a", "x=b");
         checkColumnOrder(temp, "cdex");
         checkColumnValueOrder(temp, "3452");
 
-        temp = table.moveDownColumns("x=a", "y=a");
+        temp = table.moveColumnsDown("x=a", "y=a");
         checkColumnOrder(temp, "bcdexy");
         checkColumnValueOrder(temp, "234511");
     }

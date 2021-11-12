@@ -195,7 +195,7 @@ public class PercentileByBenchmark {
     private Function<Table, Table> getFunction() {
         final Function<Table, Table> fut;
         if (percentileMode.equals("normal")) {
-            fut = (t) -> t.by(new PercentileByStateFactoryImpl(0.99), keyColumnNames);
+            fut = (t) -> t.by(new PercentileBySpecImpl(0.99), keyColumnNames);
         } else if (percentileMode.equals("tdigest")) {
             fut = (t) -> {
                 final NonKeyColumnAggregationFactory aggregationContextFactory =

@@ -8,7 +8,7 @@ import io.deephaven.engine.tables.select.MatchPair;
 import io.deephaven.engine.tables.select.WouldMatchPair;
 import io.deephaven.engine.v2.BaseTable;
 import io.deephaven.engine.v2.TableMap;
-import io.deephaven.engine.v2.by.AggregationStateFactory;
+import io.deephaven.engine.v2.by.AggregationSpec;
 import io.deephaven.engine.v2.by.ComboAggregateFactory;
 import io.deephaven.engine.v2.select.SelectColumn;
 import io.deephaven.engine.v2.select.SelectFilter;
@@ -210,8 +210,8 @@ public abstract class WrappedDelegatingTable extends BaseTable {
     }
 
     @Override
-    public Table by(AggregationStateFactory aggregationStateFactory, SelectColumn... groupByColumns) {
-        return wrapTable.apply(parent.by(aggregationStateFactory, groupByColumns));
+    public Table by(AggregationSpec aggregationSpec, SelectColumn... groupByColumns) {
+        return wrapTable.apply(parent.by(aggregationSpec, groupByColumns));
     }
 
     @Override
@@ -300,8 +300,8 @@ public abstract class WrappedDelegatingTable extends BaseTable {
     }
 
     @Override
-    public TableMap byExternal(boolean dropKeys, String... keyColumnNames) {
-        return parent.byExternal(dropKeys, keyColumnNames).transformTables(wrapTable);
+    public TableMap partitionBy(boolean dropKeys, String... keyColumnNames) {
+        return parent.partitionBy(dropKeys, keyColumnNames).transformTables(wrapTable);
     }
 
     @Override

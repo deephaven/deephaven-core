@@ -9,6 +9,7 @@ import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.compilertools.CompilerTools;
 import io.deephaven.engine.tables.DataColumn;
 import io.deephaven.engine.tables.Table;
+import io.deephaven.engine.v2.by.*;
 import io.deephaven.engine.vector.CharVector;
 import io.deephaven.engine.tables.libs.QueryLibrary;
 import io.deephaven.engine.tables.live.UpdateGraphProcessor;
@@ -17,10 +18,8 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.tables.utils.TableTools;
-import io.deephaven.engine.v2.by.AggType;
-import io.deephaven.engine.v2.by.AggregationFormulaStateFactory;
-import io.deephaven.engine.v2.by.ComboAggregateFactory;
-import io.deephaven.engine.v2.by.MinMaxByStateFactoryImpl;
+import io.deephaven.engine.v2.by.AggregationFormulaSpec;
+import io.deephaven.engine.v2.by.MinMaxBySpecImpl;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.v2.utils.ColumnHolder;
 import io.deephaven.engine.v2.utils.UpdatePerformanceTracker;
@@ -53,10 +52,10 @@ public class TestComboBy extends RefreshingTableTestCase {
         Table table = TableTools.newTable(aHolder, bHolder);
         show(table);
         assertEquals(10, table.size());
-        assertEquals(2, table.by("A").size());
+        assertEquals(2, table.groupBy("A").size());
 
-        AggregationFormulaStateFactory minFactory = new AggregationFormulaStateFactory("min(each)", "each");
-        AggregationFormulaStateFactory maxFactory = new AggregationFormulaStateFactory("max(each)", "each");
+        AggregationFormulaSpec minFactory = new AggregationFormulaSpec("min(each)", "each");
+        AggregationFormulaSpec maxFactory = new AggregationFormulaSpec("max(each)", "each");
 
         ComboAggregateFactory minMaxFactory =
                 new ComboAggregateFactory(new ComboAggregateFactory.ComboByImpl(minFactory, "Min=B"),
@@ -92,8 +91,8 @@ public class TestComboBy extends RefreshingTableTestCase {
         // but more related to the underlying min and max.
 
         // Interestingly, the factories appear to be single use. If you try to reuse a factory it fails with an NPE.
-        // minFactory = new AggregationFormulaStateFactory("min(each)", "each");
-        // maxFactory = new AggregationFormulaStateFactory("max(each)", "each");
+        // minFactory = new AggregationFormulaSpec("min(each)", "each");
+        // maxFactory = new AggregationFormulaSpec("max(each)", "each");
 
         ComboAggregateFactory summaryStatisticsFactory = AggCombo(
                 AggCount("Count"),
@@ -129,7 +128,7 @@ public class TestComboBy extends RefreshingTableTestCase {
         show(summary);
 
         // System.out.println("Percentiles (keyed):");
-        // Table percentiles = table.by(percentilesFactory, "A");
+        // Table percentiles = table.groupBy(percentilesFactory, "A");
         // show(percentiles);
 
         System.out.println("\nPercentiles (overall):");
@@ -223,32 +222,32 @@ public class TestComboBy extends RefreshingTableTestCase {
                     }
                 },
                 new QueryTableTest.TableComparator(
-                        queryTable.by("Sym").view("Sym", "MinI=min(intCol)", "MinD=min(doubleCol)").sort("Sym"),
+                        queryTable.groupBy("Sym").view("Sym", "MinI=min(intCol)", "MinD=min(doubleCol)").sort("Sym"),
                         "UpdateView",
                         queryTable.by(
                                 new ComboAggregateFactory(
-                                        Agg(new MinMaxByStateFactoryImpl(true), "MinI=intCol", "MinD=doubleCol")),
+                                        Agg(new MinMaxBySpecImpl(true), "MinI=intCol", "MinD=doubleCol")),
                                 "Sym").sort("Sym"),
                         "ComboBy"),
                 new QueryTableTest.TableComparator(
-                        queryTable.by("Sym").view("Sym", "MaxI=max(intCol)", "MaxD=max(doubleCol)").sort("Sym"),
+                        queryTable.groupBy("Sym").view("Sym", "MaxI=max(intCol)", "MaxD=max(doubleCol)").sort("Sym"),
                         "UpdateView",
                         queryTable.by(AggCombo(Agg(AggType.Max, "MaxI=intCol", "MaxD=doubleCol")), "Sym").sort("Sym"),
                         "ComboBy"),
                 new QueryTableTest.TableComparator(
-                        queryTable.by("Sym").view("Sym", "MinI=min(intCol)", "MaxI=max(intCol)").sort("Sym"),
+                        queryTable.groupBy("Sym").view("Sym", "MinI=min(intCol)", "MaxI=max(intCol)").sort("Sym"),
                         "UpdateView",
-                        queryTable.by(new ComboAggregateFactory(Agg(new MinMaxByStateFactoryImpl(true), "MinI=intCol"),
-                                Agg(new MinMaxByStateFactoryImpl(false), "MaxI=intCol")), "Sym").sort("Sym"),
+                        queryTable.by(new ComboAggregateFactory(Agg(new MinMaxBySpecImpl(true), "MinI=intCol"),
+                                Agg(new MinMaxBySpecImpl(false), "MaxI=intCol")), "Sym").sort("Sym"),
                         "ComboBy"),
                 new QueryTableTest.TableComparator(
-                        queryTable.by("Sym").view("Sym", "MinD=min(doubleCol)", "MaxD=max(doubleCol)").sort("Sym"),
+                        queryTable.groupBy("Sym").view("Sym", "MinD=min(doubleCol)", "MaxD=max(doubleCol)").sort("Sym"),
                         "UpdateView",
-                        queryTable.by(AggCombo(Agg(new MinMaxByStateFactoryImpl(true), "MinD=doubleCol"),
-                                Agg(new MinMaxByStateFactoryImpl(false), "MaxD=doubleCol")), "Sym").sort("Sym"),
+                        queryTable.by(AggCombo(Agg(new MinMaxBySpecImpl(true), "MinD=doubleCol"),
+                                Agg(new MinMaxBySpecImpl(false), "MaxD=doubleCol")), "Sym").sort("Sym"),
                         "ComboBy"),
                 new QueryTableTest.TableComparator(
-                        queryTable.by("Sym")
+                        queryTable.groupBy("Sym")
                                 .view("Sym", "MinD=min(doubleCol)", "MaxI=max(intCol)", "FirstD=first(doubleCol)",
                                         "LastI=last(intCol)")
                                 .sort("Sym"),
@@ -260,7 +259,7 @@ public class TestComboBy extends RefreshingTableTestCase {
                                 AggLast("LastI=intCol")), "Sym").sort("Sym"),
                         "ComboBy"),
                 new QueryTableTest.TableComparator(
-                        queryTable.by("Sym")
+                        queryTable.groupBy("Sym")
                                 .view("Sym", "MinD=min(doubleCol)", "MaxD=max(doubleCol)", "MinI=min(intCol)",
                                         "MaxI=max(intCol)", "LastD=last(doubleCol)", "FirstD=first(doubleCol)",
                                         "FirstI=first(intCol)", "LastI=last(intCol)")
@@ -277,7 +276,7 @@ public class TestComboBy extends RefreshingTableTestCase {
                                 AggLast("LastI=intCol")), "Sym").sort("Sym"),
                         "ComboBy"),
                 new QueryTableTest.TableComparator(
-                        queryTable.by().view("MinD=min(doubleCol)", "MaxI=max(intCol)", "MaxD=max(doubleCol)",
+                        queryTable.groupBy().view("MinD=min(doubleCol)", "MaxI=max(intCol)", "MaxD=max(doubleCol)",
                                 "MinI=min(intCol)",
                                 "FirstD=first(doubleCol)", "LastI=last(intCol)", "LastD=last(doubleCol)",
                                 "FirstI=first(intCol)"),
@@ -293,7 +292,7 @@ public class TestComboBy extends RefreshingTableTestCase {
                                 AggFirst("FirstI=intCol"))),
                         "ComboBy"),
                 new QueryTableTest.TableComparator(
-                        queryTable.by("Sym")
+                        queryTable.groupBy("Sym")
                                 .view("Sym", "AvgD=avg(doubleCol)", "SumD=sum(doubleCol)", "VarD=var(doubleCol)",
                                         "StdD=std(doubleCol)", "intCol")
                                 .sort("Sym"),
@@ -306,7 +305,7 @@ public class TestComboBy extends RefreshingTableTestCase {
                                 AggArray("intCol")), "Sym").sort("Sym"),
                         "ComboBy"),
                 new QueryTableTest.TableComparator(
-                        queryTable.by("Sym").view("Sym",
+                        queryTable.groupBy("Sym").view("Sym",
                                 "MedD=median(doubleCol)",
                                 "Pct01D=percentile(doubleCol, 0.01)",
                                 "Pct01I=(int)TestComboBy.percentile(intCol, 0.01)",
@@ -345,7 +344,7 @@ public class TestComboBy extends RefreshingTableTestCase {
                         queryTable.view("Sym", "intCol", "doubleCol").countBy("Count"), "Count",
                         queryTable.by(AggCombo(reusedCount), CollectionUtil.ZERO_LENGTH_STRING_ARRAY), "AggCount"),
                 new QueryTableTestBase.TableComparator(
-                        queryTable.by("Sym").view("Sym",
+                        queryTable.groupBy("Sym").view("Sym",
                                 "cdi=countDistinct(intCol)",
                                 "ddi=countDistinct(doubleCol)",
                                 "cdiN=countDistinct(intColNulls, true)",

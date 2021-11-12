@@ -5,7 +5,7 @@ import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.select.MatchPair;
 import io.deephaven.engine.tables.select.WouldMatchPair;
 import io.deephaven.engine.v2.by.AggregationMemoKey;
-import io.deephaven.engine.v2.by.AggregationStateFactory;
+import io.deephaven.engine.v2.by.AggregationSpec;
 import io.deephaven.engine.v2.by.ComboAggregateFactory;
 import io.deephaven.engine.v2.select.*;
 import io.deephaven.engine.v2.sources.regioned.SymbolTableSource;
@@ -100,23 +100,23 @@ public abstract class MemoizedOperationKey {
         return new TreeTable(idColumn, parentColumn);
     }
 
-    public static MemoizedOperationKey by(AggregationStateFactory aggregationStateFactory,
-            SelectColumn[] groupByColumns) {
+    public static MemoizedOperationKey by(AggregationSpec aggregationSpec,
+                                          SelectColumn[] groupByColumns) {
         if (!isMemoizable(groupByColumns)) {
             return null;
         }
-        final AggregationMemoKey aggregationMemoKey = aggregationStateFactory.getMemoKey();
+        final AggregationMemoKey aggregationMemoKey = aggregationSpec.getMemoKey();
         if (aggregationMemoKey == null) {
             return null;
         }
-        return new By(aggregationMemoKey, groupByColumns);
+        return new GroupBy(aggregationMemoKey, groupByColumns);
     }
 
     public static MemoizedOperationKey byExternal(boolean dropKeys, SelectColumn[] groupByColumns) {
         if (!isMemoizable(groupByColumns)) {
             return null;
         }
-        return new ByExternal(dropKeys, groupByColumns);
+        return new PartitionBy(dropKeys, groupByColumns);
     }
 
     private static boolean isMemoizable(SelectColumn[] selectColumn) {
@@ -350,11 +350,11 @@ public abstract class MemoizedOperationKey {
         }
     }
 
-    private static class By extends AttributeAgnosticMemoizedOperationKey {
+    private static class GroupBy extends AttributeAgnosticMemoizedOperationKey {
         private final AggregationMemoKey aggregationKey;
         private final SelectColumn[] groupByColumns;
 
-        private By(@NotNull AggregationMemoKey aggregationKey, SelectColumn[] groupByColumns) {
+        private GroupBy(@NotNull AggregationMemoKey aggregationKey, SelectColumn[] groupByColumns) {
             this.aggregationKey = aggregationKey;
             this.groupByColumns = groupByColumns;
         }
@@ -365,9 +365,9 @@ public abstract class MemoizedOperationKey {
                 return true;
             if (o == null || getClass() != o.getClass())
                 return false;
-            final By by = (By) o;
-            return Objects.equals(aggregationKey, by.aggregationKey) &&
-                    Arrays.equals(groupByColumns, by.groupByColumns);
+            final GroupBy groupBy = (GroupBy) o;
+            return Objects.equals(aggregationKey, groupBy.aggregationKey) &&
+                    Arrays.equals(groupByColumns, groupBy.groupByColumns);
         }
 
         @Override
@@ -384,11 +384,11 @@ public abstract class MemoizedOperationKey {
         }
     }
 
-    static class ByExternal extends MemoizedOperationKey {
+    static class PartitionBy extends MemoizedOperationKey {
         private final boolean dropKeys;
         private final SelectColumn[] groupByColumns;
 
-        private ByExternal(boolean dropKeys, SelectColumn[] groupByColumns) {
+        private PartitionBy(boolean dropKeys, SelectColumn[] groupByColumns) {
             this.dropKeys = dropKeys;
             this.groupByColumns = groupByColumns;
         }
@@ -399,7 +399,7 @@ public abstract class MemoizedOperationKey {
                 return true;
             if (o == null || getClass() != o.getClass())
                 return false;
-            final ByExternal by = (ByExternal) o;
+            final PartitionBy by = (PartitionBy) o;
             return dropKeys == by.dropKeys &&
                     Arrays.equals(groupByColumns, by.groupByColumns);
         }
@@ -413,17 +413,17 @@ public abstract class MemoizedOperationKey {
     }
 
     private static class Rollup extends AttributeAgnosticMemoizedOperationKey {
-        private final By by;
+        private final GroupBy groupBy;
         private final boolean includeConstituents;
 
         Rollup(@NotNull AggregationMemoKey aggregationKey, SelectColumn[] groupByColumns, boolean includeConstituents) {
             this.includeConstituents = includeConstituents;
-            this.by = new By(aggregationKey, groupByColumns);
+            this.groupBy = new GroupBy(aggregationKey, groupByColumns);
         }
 
         @Override
         public int hashCode() {
-            return 31 * by.hashCode() + Boolean.hashCode(includeConstituents);
+            return 31 * groupBy.hashCode() + Boolean.hashCode(includeConstituents);
         }
 
         @Override
@@ -433,7 +433,7 @@ public abstract class MemoizedOperationKey {
             if (o == null || getClass() != o.getClass())
                 return false;
             final Rollup rollup = (Rollup) o;
-            return Objects.equals(by, rollup.by) && includeConstituents == rollup.includeConstituents;
+            return Objects.equals(groupBy, rollup.groupBy) && includeConstituents == rollup.includeConstituents;
         }
 
         @Override

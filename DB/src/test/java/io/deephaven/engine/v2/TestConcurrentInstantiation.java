@@ -464,7 +464,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
     public void testSortOfByExternal() throws ExecutionException, InterruptedException {
         final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6).toTracking(),
                 c("x", 1, 2, 3), c("y", "a", "a", "a"));
-        final TableMap tm = table.byExternal("y");
+        final TableMap tm = table.partitionBy("y");
 
         UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
 
@@ -1136,15 +1136,15 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
     public void testMinMaxBy() throws Exception {
         testByConcurrent(t -> t.maxBy("KeyColumn"));
         testByConcurrent(t -> t.minBy("KeyColumn"));
-        testByConcurrent(t -> t.by(new AddOnlyMinMaxByStateFactoryImpl(true), "KeyColumn"), true, false, false, true);
-        testByConcurrent(t -> t.by(new AddOnlyMinMaxByStateFactoryImpl(false), "KeyColumn"), true, false, false, true);
+        testByConcurrent(t -> t.by(new AddOnlyMinMaxBySpecImpl(true), "KeyColumn"), true, false, false, true);
+        testByConcurrent(t -> t.by(new AddOnlyMinMaxBySpecImpl(false), "KeyColumn"), true, false, false, true);
     }
 
     public void testFirstLastBy() throws Exception {
         testByConcurrent(t -> t.firstBy("KeyColumn"));
         testByConcurrent(t -> t.lastBy("KeyColumn"));
-        testByConcurrent(t -> t.by(new TrackingFirstByStateFactoryImpl(), "KeyColumn"));
-        testByConcurrent(t -> t.by(new TrackingLastByStateFactoryImpl(), "KeyColumn"));
+        testByConcurrent(t -> t.by(new TrackingFirstBySpecImpl(), "KeyColumn"));
+        testByConcurrent(t -> t.by(new TrackingLastBySpecImpl(), "KeyColumn"));
     }
 
     public void testSortedFirstLastBy() throws Exception {
@@ -1153,17 +1153,17 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
     }
 
     public void testKeyedBy() throws Exception {
-        testByConcurrent(t -> t.by("KeyColumn"));
+        testByConcurrent(t -> t.groupBy("KeyColumn"));
     }
 
     public void testNoKeyBy() throws Exception {
-        testByConcurrent(Table::by, false, false, true, true);
+        testByConcurrent(Table::groupBy, false, false, true, true);
     }
 
     public void testPercentileBy() throws Exception {
-        testByConcurrent(t -> t.dropColumns("KeyColumn").by(new PercentileByStateFactoryImpl(0.25)), false, false, true,
+        testByConcurrent(t -> t.dropColumns("KeyColumn").by(new PercentileBySpecImpl(0.25)), false, false, true,
                 true);
-        testByConcurrent(t -> t.dropColumns("KeyColumn").by(new PercentileByStateFactoryImpl(0.75)), false, false, true,
+        testByConcurrent(t -> t.dropColumns("KeyColumn").by(new PercentileBySpecImpl(0.75)), false, false, true,
                 true);
         testByConcurrent(t -> t.medianBy("KeyColumn"));
     }
@@ -1334,19 +1334,19 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
             QueryLibrary.importStatic(TestConcurrentInstantiation.class);
 
             slowed = table.updateView("KeyColumn=identitySleep(KeyColumn)");
-            callable = () -> slowed.byExternal("KeyColumn");
+            callable = () -> slowed.partitionBy("KeyColumn");
         } else {
             slowed = null;
-            callable = () -> table.byExternal("KeyColumn");
+            callable = () -> table.partitionBy("KeyColumn");
         }
 
         // We only care about the silent version of this table, as it's just a vessel to tick and ensure that the
         // resultant table
         // is computed using the appropriate version.
         final Table expected1 = UpdateGraphProcessor.DEFAULT.exclusiveLock()
-                .computeLocked(() -> table.silent().byExternal("KeyColumn").merge().select());
+                .computeLocked(() -> table.silent().partitionBy("KeyColumn").merge().select());
         final Table expected2 = UpdateGraphProcessor.DEFAULT.exclusiveLock()
-                .computeLocked(() -> table2.silent().byExternal("KeyColumn").merge().select());
+                .computeLocked(() -> table2.silent().partitionBy("KeyColumn").merge().select());
 
         UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
 

@@ -261,7 +261,7 @@ public class FlightMessageRoundTripTest {
                 TableTools.emptyTable(10).update("empty= ((i % 2) == 0) ? String.valueOf(i) : (String)null"));
 
         // list columns TODO(#755): support for Vector
-        // assertRoundTripDataEqual(TableTools.emptyTable(5).update("A=i").by().join(TableTools.emptyTable(5)));
+        // assertRoundTripDataEqual(TableTools.emptyTable(5).update("A=i").groupBy().join(TableTools.emptyTable(5)));
     }
 
     @Test

@@ -1,6 +1,6 @@
 package io.deephaven.engine.v2.by;
 
-public abstract class ReaggregatableStatefactory implements AggregationStateFactory {
+public abstract class ReaggregatableStatefactory implements AggregationSpec {
     /**
      * Returns true if this state factory supports rollup.
      *

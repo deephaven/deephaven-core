@@ -74,7 +74,7 @@ public class TestGroupingProviders {
     private void doTest(final boolean missingGroups) {
         final Table raw = TableTools.emptyTable(26 * 10 * 1000).update("Part=String.format(`%04d`, (long)(ii/1000))",
                 "Sym=(char)('A' + ii % 26)", "Other=ii");
-        final Table[] partitions = raw.byExternal("Part").transformTables(rp -> rp.by("Sym").ungroup()).values()
+        final Table[] partitions = raw.partitionBy("Part").transformTables(rp -> rp.groupBy("Sym").ungroup()).values()
                 .toArray(Table.ZERO_LENGTH_TABLE_ARRAY);
 
         if (!missingGroups) {
@@ -148,7 +148,7 @@ public class TestGroupingProviders {
             partitions[3] = partitions[3].updateView("Sym = NULL_CHAR");
         }
         final Table expected = TableTools.merge(partitions).view("Part", "Sym", "Other"); // Column ordering was changed
-                                                                                          // by by()/ungroup() above,
+                                                                                          // by groupBy()/ungroup() above,
                                                                                           // restore it here.
 
         final Table actual = ParquetTools.readPartitionedTable(
@@ -160,7 +160,7 @@ public class TestGroupingProviders {
 
         TestCase.assertEquals(missingGroups, actual.getColumnSource("Sym").getGroupToRange() == null);
 
-        TstUtils.assertTableEquals(expected.by("Sym").ungroup(), actual.by("Sym").ungroup());
+        TstUtils.assertTableEquals(expected.groupBy("Sym").ungroup(), actual.groupBy("Sym").ungroup());
     }
 
     @Test

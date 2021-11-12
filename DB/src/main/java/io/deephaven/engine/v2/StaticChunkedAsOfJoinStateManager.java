@@ -149,19 +149,19 @@ class StaticChunkedAsOfJoinStateManager
     private static final byte ENTRY_EXISTS = 1;
 
 
-    private final ObjectArraySource<RowSetBuilderSequential> leftIndexSource;
-    private final ObjectArraySource<RowSetBuilderSequential> overflowLeftIndexSource;
+    private final ObjectArraySource<RowSetBuilderSequential> leftRowSetSource;
+    private final ObjectArraySource<RowSetBuilderSequential> overflowLeftRowSetSource;
 
     /**
      * For the ticking case we need to reuse our right indices for more than one update.  We convert the
      * SequentialBuilders into actual RowSet objects.  Before the conversion (which must be during the build phase)
-     * we put the sequential builders into rightIndexSource and overflowRightIndexSource.  After the conversion, the
+     * we put the sequential builders into rightRowSetSource and overflowRightRowSetSource.  After the conversion, the
      * sources store actual indices.
      */
     private boolean rightBuildersConverted = false;
 
-    private final ObjectArraySource<Object> rightIndexSource;
-    private final ObjectArraySource<Object> overflowRightIndexSource;
+    private final ObjectArraySource<Object> rightRowSetSource;
+    private final ObjectArraySource<Object> overflowRightRowSetSource;
     // endregion extra variables
 
     StaticChunkedAsOfJoinStateManager(ColumnSource<?>[] tableKeySources
@@ -207,10 +207,10 @@ class StaticChunkedAsOfJoinStateManager
         // endmixin rehash
 
         // region constructor
-        leftIndexSource = new ObjectArraySource<>(RowSetBuilderSequential.class);
-        overflowLeftIndexSource = new ObjectArraySource<>(RowSetBuilderSequential.class);
-        rightIndexSource = new ObjectArraySource<>(Object.class);
-        overflowRightIndexSource = new ObjectArraySource<>(Object.class);
+        leftRowSetSource = new ObjectArraySource<>(RowSetBuilderSequential.class);
+        overflowLeftRowSetSource = new ObjectArraySource<>(RowSetBuilderSequential.class);
+        rightRowSetSource = new ObjectArraySource<>(Object.class);
+        overflowRightRowSetSource = new ObjectArraySource<>(Object.class);
         // endregion constructor
 
         ensureCapacity(tableSize);
@@ -223,8 +223,8 @@ class StaticChunkedAsOfJoinStateManager
             keySources[ii].ensureCapacity(tableSize);
         }
         // region ensureCapacity
-        leftIndexSource.ensureCapacity(tableSize);
-        rightIndexSource.ensureCapacity(tableSize);
+        leftRowSetSource.ensureCapacity(tableSize);
+        rightRowSetSource.ensureCapacity(tableSize);
         // endregion ensureCapacity
     }
 
@@ -244,8 +244,8 @@ class StaticChunkedAsOfJoinStateManager
             overflowKeySources[ii].ensureCapacity(newCapacity);
         }
         // region ensureOverflowCapacity
-        overflowLeftIndexSource.ensureCapacity(newCapacity);
-        overflowRightIndexSource.ensureCapacity(newCapacity);
+        overflowLeftRowSetSource.ensureCapacity(newCapacity);
+        overflowRightRowSetSource.ensureCapacity(newCapacity);
         // endregion ensureOverflowCapacity
     }
 
@@ -287,24 +287,24 @@ class StaticChunkedAsOfJoinStateManager
      * Returns true if this is the first left rowSet added to this slot.
      */
     private boolean addLeftIndex(long tableLocation, long keyToAdd) {
-        return addIndex(leftIndexSource, tableLocation, keyToAdd);
+        return addIndex(leftRowSetSource, tableLocation, keyToAdd);
     }
 
     /**
      * Returns true if this is the first left rowSet added to this slot.
      */
     private boolean addLeftIndexOverflow(long overflowLocation, long keyToAdd) {
-        return addIndex(overflowLeftIndexSource, overflowLocation, keyToAdd);
+        return addIndex(overflowLeftRowSetSource, overflowLocation, keyToAdd);
     }
 
     private void addRightIndex(long tableLocation, long keyToAdd) {
         //noinspection unchecked
-        addIndex((ObjectArraySource) rightIndexSource, tableLocation, keyToAdd);
+        addIndex((ObjectArraySource) rightRowSetSource, tableLocation, keyToAdd);
     }
 
     private void addRightIndexOverflow(long overflowLocation, long keyToAdd) {
         //noinspection unchecked
-        addIndex((ObjectArraySource) overflowRightIndexSource, overflowLocation, keyToAdd);
+        addIndex((ObjectArraySource) overflowRightRowSetSource, overflowLocation, keyToAdd);
     }
 
     // endregion build wrappers
@@ -976,11 +976,11 @@ class StaticChunkedAsOfJoinStateManager
                     stateSource.set(oldHashLocation, EMPTY_VALUE);
                                 // region rehash move values
 
-                                leftIndexSource.set(newHashLocation, leftIndexSource.get(oldHashLocation));
-                                leftIndexSource.set(oldHashLocation, null);
+                                leftRowSetSource.set(newHashLocation, leftRowSetSource.get(oldHashLocation));
+                                leftRowSetSource.set(oldHashLocation, null);
 
-                                rightIndexSource.set(newHashLocation, rightIndexSource.get(oldHashLocation));
-                                rightIndexSource.set(oldHashLocation, null);
+                                rightRowSetSource.set(newHashLocation, rightRowSetSource.get(oldHashLocation));
+                                rightRowSetSource.set(oldHashLocation, null);
 
                                 final int cookie = buildCookieSource.getInt(oldHashLocation);
                                 addedSlots.set(cookie, newHashLocation);
@@ -1061,11 +1061,11 @@ class StaticChunkedAsOfJoinStateManager
                         bc.destinationLocationPositionInWriteThrough.add((int)(tableLocation - firstBackingChunkLocation));
                                     // region promotion move
                                     final long overflowLocation = bc.overflowLocationsAsKeyIndices.get(ii);
-                                    leftIndexSource.set(tableLocation, overflowLeftIndexSource.get(overflowLocation));
-                                    overflowLeftIndexSource.set(overflowLocation, null);
+                                    leftRowSetSource.set(tableLocation, overflowLeftRowSetSource.get(overflowLocation));
+                                    overflowLeftRowSetSource.set(overflowLocation, null);
 
-                                    rightIndexSource.set(tableLocation, overflowRightIndexSource.get(overflowLocation));
-                                    overflowRightIndexSource.set(overflowLocation, null);
+                                    rightRowSetSource.set(tableLocation, overflowRightRowSetSource.get(overflowLocation));
+                                    overflowRightRowSetSource.set(overflowLocation, null);
 
                                     final int cookie = overflowBuildCookieSource.getInt(overflowLocation);
                                     addedSlots.set(cookie, tableLocation);
@@ -1273,7 +1273,7 @@ class StaticChunkedAsOfJoinStateManager
         }
         // region nullOverflowObjectSources
         for (int ii = 0; ii < locationsToNull.size(); ++ii) {
-            overflowLeftIndexSource.set(locationsToNull.get(ii), null);
+            overflowLeftRowSetSource.set(locationsToNull.get(ii), null);
         }
         // endregion nullOverflowObjectSources
     }
@@ -1719,11 +1719,11 @@ class StaticChunkedAsOfJoinStateManager
         final RowSetBuilderSequential builder;
         if (isOverflowLocation(slot)) {
             final long overflowLocation = hashLocationToOverflowLocation(slot);
-            builder = overflowLeftIndexSource.getUnsafe(overflowLocation);
-            overflowLeftIndexSource.set(overflowLocation, null);
+            builder = overflowLeftRowSetSource.getUnsafe(overflowLocation);
+            overflowLeftRowSetSource.set(overflowLocation, null);
         } else {
-            builder = leftIndexSource.getUnsafe(slot);
-            leftIndexSource.set(slot, null);
+            builder = leftRowSetSource.getUnsafe(slot);
+            leftRowSetSource.set(slot, null);
         }
         if (builder == null) {
             return null;
@@ -1736,65 +1736,65 @@ class StaticChunkedAsOfJoinStateManager
             final long slot = slots.getLong(slotIndex);
             if (isOverflowLocation(slot)) {
                 final long overflowLocation = hashLocationToOverflowLocation(slot);
-                final RowSetBuilderSequential sequentialBuilder = (RowSetBuilderSequential)overflowRightIndexSource.getUnsafe(overflowLocation);
+                final RowSetBuilderSequential sequentialBuilder = (RowSetBuilderSequential)overflowRightRowSetSource.getUnsafe(overflowLocation);
                 if (sequentialBuilder != null) {
-                    overflowRightIndexSource.set(overflowLocation, sequentialBuilder.build());
+                    overflowRightRowSetSource.set(overflowLocation, sequentialBuilder.build());
                 }
             } else {
-                final RowSetBuilderSequential sequentialBuilder = (RowSetBuilderSequential)rightIndexSource.getUnsafe(slot);
+                final RowSetBuilderSequential sequentialBuilder = (RowSetBuilderSequential)rightRowSetSource.getUnsafe(slot);
                 if (sequentialBuilder != null) {
-                    rightIndexSource.set(slot, sequentialBuilder.build());
+                    rightRowSetSource.set(slot, sequentialBuilder.build());
                 }
             }
         }
         rightBuildersConverted = true;
     }
 
-    void convertRightGrouping(LongArraySource slots, int slotCount, ObjectArraySource<RowSet> indexSource) {
+    void convertRightGrouping(LongArraySource slots, int slotCount, ObjectArraySource<RowSet> rowSetSource) {
         for (int slotIndex = 0; slotIndex < slotCount; ++slotIndex) {
             final long slot = slots.getLong(slotIndex);
             if (isOverflowLocation(slot)) {
                 final long overflowLocation = hashLocationToOverflowLocation(slot);
-                final RowSetBuilderSequential sequentialBuilder = (RowSetBuilderSequential)overflowRightIndexSource.getUnsafe(overflowLocation);
+                final RowSetBuilderSequential sequentialBuilder = (RowSetBuilderSequential)overflowRightRowSetSource.getUnsafe(overflowLocation);
                 if (sequentialBuilder != null) {
-                    overflowRightIndexSource.set(overflowLocation, getGroupedIndex(indexSource, sequentialBuilder));
+                    overflowRightRowSetSource.set(overflowLocation, getGroupedIndex(rowSetSource, sequentialBuilder));
                 }
             } else {
-                final RowSetBuilderSequential sequentialBuilder = (RowSetBuilderSequential)rightIndexSource.getUnsafe(slot);
+                final RowSetBuilderSequential sequentialBuilder = (RowSetBuilderSequential)rightRowSetSource.getUnsafe(slot);
                 if (sequentialBuilder != null) {
-                    rightIndexSource.set(slot, getGroupedIndex(indexSource, sequentialBuilder));
+                    rightRowSetSource.set(slot, getGroupedIndex(rowSetSource, sequentialBuilder));
                 }
             }
         }
         rightBuildersConverted = true;
     }
 
-    private RowSet getGroupedIndex(ObjectArraySource<RowSet> indexSource, RowSetBuilderSequential sequentialBuilder) {
+    private RowSet getGroupedIndex(ObjectArraySource<RowSet> rowSetSource, RowSetBuilderSequential sequentialBuilder) {
         final RowSet groupedRowSet = sequentialBuilder.build();
         if (groupedRowSet.size() != 1) {
             throw new IllegalStateException("Grouped rowSet should have exactly one value: " + groupedRowSet);
         }
-        return indexSource.getUnsafe(groupedRowSet.get(0));
+        return rowSetSource.getUnsafe(groupedRowSet.get(0));
     }
 
     RowSet getRightIndex(long slot) {
         if (rightBuildersConverted) {
             if (isOverflowLocation(slot)) {
                 final long overflowLocation = hashLocationToOverflowLocation(slot);
-                return (RowSet)overflowRightIndexSource.getUnsafe(overflowLocation);
+                return (RowSet)overflowRightRowSetSource.getUnsafe(overflowLocation);
             } else {
-                return (RowSet)rightIndexSource.getUnsafe(slot);
+                return (RowSet)rightRowSetSource.getUnsafe(slot);
             }
         }
 
         final RowSetBuilderSequential builder;
         if (isOverflowLocation(slot)) {
             final long overflowLocation = hashLocationToOverflowLocation(slot);
-            builder = (RowSetBuilderSequential)overflowRightIndexSource.getUnsafe(overflowLocation);
-            overflowRightIndexSource.set(overflowLocation, null);
+            builder = (RowSetBuilderSequential)overflowRightRowSetSource.getUnsafe(overflowLocation);
+            overflowRightRowSetSource.set(overflowLocation, null);
         } else {
-            builder = (RowSetBuilderSequential)rightIndexSource.getUnsafe(slot);
-            rightIndexSource.set(slot, null);
+            builder = (RowSetBuilderSequential)rightRowSetSource.getUnsafe(slot);
+            rightRowSetSource.set(slot, null);
         }
         if (builder == null) {
             return null;

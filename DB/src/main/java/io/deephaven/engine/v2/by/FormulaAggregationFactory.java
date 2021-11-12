@@ -41,10 +41,10 @@ public class FormulaAggregationFactory implements AggregationContextFactory {
                 inputTable.getDefinition().getColumnNames().stream().filter(cn -> !groupByColumnNameSet.contains(cn))
                         .map(MatchPairFactory::getExpression).toArray(MatchPair[]::new);
 
-        final ByChunkedOperator byChunkedOperator =
-                new ByChunkedOperator((QueryTable) inputTable, false, resultColumns);
+        final GroupByChunkedOperator groupByChunkedOperator =
+                new GroupByChunkedOperator((QueryTable) inputTable, false, resultColumns);
         final FormulaChunkedOperator formulaChunkedOperator =
-                new FormulaChunkedOperator(byChunkedOperator, true, formula, columnParamName, resultColumns);
+                new FormulaChunkedOperator(groupByChunkedOperator, true, formula, columnParamName, resultColumns);
 
         // noinspection unchecked
         return new AggregationContext(

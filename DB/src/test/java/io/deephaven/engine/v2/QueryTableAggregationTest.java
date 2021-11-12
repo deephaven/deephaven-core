@@ -65,7 +65,7 @@ public class QueryTableAggregationTest {
         ChunkPoolReleaseTracking.checkAndDisable();
     }
 
-    // region Static chunked by() tests
+    // region Static chunked groupBy() tests
 
     private static Table individualStaticByTest(@NotNull final Table input,
             @Nullable final AggregationControl aggregationControl, @NotNull final String... keyColumns) {
@@ -102,7 +102,7 @@ public class QueryTableAggregationTest {
             final SelectColumn[] keySelectColumns = SelectColumnFactory.getExpressions(keyColumns);
             final String[] keyNames =
                     Arrays.stream(keySelectColumns).map(SelectColumn::getName).distinct().toArray(String[]::new);
-            final Table aggregatedInput = ByAggregationFactory.by(
+            final Table aggregatedInput = GroupByAggregationFactory.by(
                     aggregationControl == null ? AggregationControl.DEFAULT : aggregationControl,
                     (QueryTable) adjustedInput, keySelectColumns);
             actualKeys = keyNames.length == 0
@@ -178,12 +178,12 @@ public class QueryTableAggregationTest {
                 "A=A / 2");
     }
 
-    // endregion Static chunked by() tests
+    // endregion Static chunked groupBy() tests
 
-    // region Incremental chunked by() tests
+    // region Incremental chunked groupBy() tests
 
     /**
-     * {@link Supplier} for {@link Table}s to use in testing incremental by().
+     * {@link Supplier} for {@link Table}s to use in testing incremental groupBy().
      */
     private static class IncrementalFirstStaticAfterByResultSupplier implements Supplier<Table> {
 
@@ -201,10 +201,10 @@ public class QueryTableAggregationTest {
         }
 
         /**
-         * Return an incremental by() result on first invocation, in order to establish the enclosing
-         * {@link EvalNugget}'s baseline "original table". Return a static by() result on subsequent invocations, in
+         * Return an incremental groupBy() result on first invocation, in order to establish the enclosing
+         * {@link EvalNugget}'s baseline "original table". Return a static groupBy() result on subsequent invocations, in
          * order to use the static implementation to validate the incremental implementation. Note that the static
-         * implementation is well tested by its own unit tests that don't rely on by().
+         * implementation is well tested by its own unit tests that don't rely on groupBy().
          *
          * @return The appropriate {@link Table}
          */
@@ -214,9 +214,9 @@ public class QueryTableAggregationTest {
             final String[] keyNames =
                     Arrays.stream(keySelectColumns).map(SelectColumn::getName).distinct().toArray(String[]::new);
             if (firstTime.compareAndSet(true, false)) {
-                return ByAggregationFactory.by(control, input, keySelectColumns).sort(keyNames);
+                return GroupByAggregationFactory.by(control, input, keySelectColumns).sort(keyNames);
             }
-            return ByAggregationFactory.by(control, (QueryTable) input.silent(), keySelectColumns).sort(keyNames);
+            return GroupByAggregationFactory.by(control, (QueryTable) input.silent(), keySelectColumns).sort(keyNames);
         }
     }
 
@@ -298,7 +298,7 @@ public class QueryTableAggregationTest {
                 new EvalNugget() {
                     @Override
                     protected final Table e() {
-                        return ByAggregationFactory.by(merged, "StrCol").update("IntColSum=sum(IntCol)");
+                        return GroupByAggregationFactory.by(merged, "StrCol").update("IntColSum=sum(IntCol)");
                     }
                 }
         };
@@ -374,7 +374,7 @@ public class QueryTableAggregationTest {
                 new EvalNugget() {
                     @Override
                     protected Table e() {
-                        return ByAggregationFactory.by(input1).update("IntColSum=sum(IntCol)");
+                        return GroupByAggregationFactory.by(input1).update("IntColSum=sum(IntCol)");
                     }
                 }
         };
@@ -422,41 +422,41 @@ public class QueryTableAggregationTest {
         TstUtils.validate(ens);
     }
 
-    // endregion Incremental chunked by() tests
+    // endregion Incremental chunked groupBy() tests
 
-    // region Legacy static by() tests
+    // region Legacy static groupBy() tests
 
     @Test
     public void testStaticBy() {
         Table table = newTable(0, new HashMap<>());
-        TestCase.assertEquals(0, table.by().size());
-        TestCase.assertEquals(0, table.by().getColumns().length);
+        TestCase.assertEquals(0, table.groupBy().size());
+        TestCase.assertEquals(0, table.groupBy().getColumns().length);
         try {
-            table.by("i");
+            table.groupBy("i");
             TestCase.fail("Previous statement should have thrown an exception");
         } catch (Exception e) {
             TestCase.assertEquals("Failed to get expression for all matched patterns", e.getMessage());
             TestCase.assertNotNull(e.getCause());
             TestCase.assertEquals("Invalid column name \"i\": \"i\" is a reserved keyword", e.getCause().getMessage());
         }
-        TestCase.assertEquals(0, table.by("j=i").size());
-        TestCase.assertEquals(1, table.by("j=i").getColumns().length);
-        TestCase.assertEquals(int.class, table.by("j=i").getColumnSource("j").getType());
+        TestCase.assertEquals(0, table.groupBy("j=i").size());
+        TestCase.assertEquals(1, table.groupBy("j=i").getColumns().length);
+        TestCase.assertEquals(int.class, table.groupBy("j=i").getColumnSource("j").getType());
 
         table = newTable(1, new HashMap<>());
-        TestCase.assertEquals(1, table.by("j=i").size());
-        TestCase.assertEquals(1, table.by("j=i").getColumns().length);
-        TestCase.assertEquals(int.class, table.by("j=i").getColumn("j").getType());
+        TestCase.assertEquals(1, table.groupBy("j=i").size());
+        TestCase.assertEquals(1, table.groupBy("j=i").getColumns().length);
+        TestCase.assertEquals(int.class, table.groupBy("j=i").getColumn("j").getType());
 
         table = TstUtils.testRefreshingTable(RowSetFactory.fromRange(0, 2).toTracking(),
                 c("S", "c", "e", "g"), c("I", 2, 4, 6));
 
-        TestCase.assertEquals(3, table.by("S").size());
-        TestCase.assertEquals(2, table.by("S").getColumns().length);
-        TestCase.assertEquals(String.class, table.by("S").getColumn("S").getType());
-        TestCase.assertEquals(IntVector.class, table.by("S").getColumn("I").getType());
-        TestCase.assertEquals(Arrays.asList("c", "e", "g"), Arrays.asList(table.by("S").getColumn("S").get(0, 3)));
-        IntVector intGroups[] = (IntVector[]) table.by("S").getColumn("I").getDirect();
+        TestCase.assertEquals(3, table.groupBy("S").size());
+        TestCase.assertEquals(2, table.groupBy("S").getColumns().length);
+        TestCase.assertEquals(String.class, table.groupBy("S").getColumn("S").getType());
+        TestCase.assertEquals(IntVector.class, table.groupBy("S").getColumn("I").getType());
+        TestCase.assertEquals(Arrays.asList("c", "e", "g"), Arrays.asList(table.groupBy("S").getColumn("S").get(0, 3)));
+        IntVector intGroups[] = (IntVector[]) table.groupBy("S").getColumn("I").getDirect();
         TestCase.assertEquals(3, intGroups.length);
         TestCase.assertEquals(1, intGroups[0].size());
         TestCase.assertEquals(1, intGroups[1].size());
@@ -469,12 +469,12 @@ public class QueryTableAggregationTest {
                 c("S", "e", "c", "g"),
                 c("I", 4, 2, 6));
 
-        TestCase.assertEquals(3, table.by("S").size());
-        TestCase.assertEquals(2, table.by("S").getColumns().length);
-        TestCase.assertEquals(String.class, table.by("S").getColumn("S").getType());
-        TestCase.assertEquals(IntVector.class, table.by("S").getColumn("I").getType());
-        TestCase.assertEquals(Arrays.asList("e", "c", "g"), Arrays.asList(table.by("S").getColumn("S").get(0, 3)));
-        intGroups = (IntVector[]) table.by("S").getColumn("I").getDirect();
+        TestCase.assertEquals(3, table.groupBy("S").size());
+        TestCase.assertEquals(2, table.groupBy("S").getColumns().length);
+        TestCase.assertEquals(String.class, table.groupBy("S").getColumn("S").getType());
+        TestCase.assertEquals(IntVector.class, table.groupBy("S").getColumn("I").getType());
+        TestCase.assertEquals(Arrays.asList("e", "c", "g"), Arrays.asList(table.groupBy("S").getColumn("S").get(0, 3)));
+        intGroups = (IntVector[]) table.groupBy("S").getColumn("I").getDirect();
         TestCase.assertEquals(3, intGroups.length);
         TestCase.assertEquals(1, intGroups[0].size());
         TestCase.assertEquals(1, intGroups[1].size());
@@ -487,13 +487,13 @@ public class QueryTableAggregationTest {
                 c("S", "e", "c", "g"),
                 c("X", 4, 2, 6),
                 c("Y", 1, 2, 3));
-        TestCase.assertEquals(3, table.by("Z=X+Y").size());
-        TestCase.assertEquals(4, table.by("Z=X+Y").getColumns().length);
-        TestCase.assertEquals(ObjectVector.class, table.by("Z=X+Y").getColumn("S").getType());
-        TestCase.assertEquals(IntVector.class, table.by("Z=X+Y").getColumn("X").getType());
-        TestCase.assertEquals(IntVector.class, table.by("Z=X+Y").getColumn("Y").getType());
-        TestCase.assertEquals(int.class, table.by("Z=X+Y").getColumn("Z").getType());
-        ObjectVector sValues[] = (ObjectVector[]) table.by("Z=X+Y").getColumn("S").getDirect();
+        TestCase.assertEquals(3, table.groupBy("Z=X+Y").size());
+        TestCase.assertEquals(4, table.groupBy("Z=X+Y").getColumns().length);
+        TestCase.assertEquals(ObjectVector.class, table.groupBy("Z=X+Y").getColumn("S").getType());
+        TestCase.assertEquals(IntVector.class, table.groupBy("Z=X+Y").getColumn("X").getType());
+        TestCase.assertEquals(IntVector.class, table.groupBy("Z=X+Y").getColumn("Y").getType());
+        TestCase.assertEquals(int.class, table.groupBy("Z=X+Y").getColumn("Z").getType());
+        ObjectVector sValues[] = (ObjectVector[]) table.groupBy("Z=X+Y").getColumn("S").getDirect();
         TestCase.assertEquals(3, sValues.length);
         TestCase.assertEquals(1, sValues[0].size());
         TestCase.assertEquals(1, sValues[1].size());
@@ -501,94 +501,94 @@ public class QueryTableAggregationTest {
         TestCase.assertEquals("e", sValues[0].get(0));
         TestCase.assertEquals("c", sValues[1].get(0));
         TestCase.assertEquals("g", sValues[2].get(0));
-        TestCase.assertEquals(Arrays.asList(5, 4, 9), Arrays.asList(table.by("Z=X+Y").getColumn("Z").get(0, 3)));
+        TestCase.assertEquals(Arrays.asList(5, 4, 9), Arrays.asList(table.groupBy("Z=X+Y").getColumn("Z").get(0, 3)));
 
         table = TstUtils.testRefreshingTable(
                 c("S", "e", "c", "g"),
                 c("X", 4, 2, 6),
                 c("Y", 4, 2, 2));
-        TestCase.assertEquals(2, table.by("Z=X+Y").size());
-        TestCase.assertEquals(4, table.by("Z=X+Y").getColumns().length);
-        TestCase.assertEquals(ObjectVector.class, table.by("Z=X+Y").getColumn("S").getType());
-        TestCase.assertEquals(IntVector.class, table.by("Z=X+Y").getColumn("X").getType());
-        TestCase.assertEquals(IntVector.class, table.by("Z=X+Y").getColumn("Y").getType());
-        TestCase.assertEquals(int.class, table.by("Z=X+Y").getColumn("Z").getType());
-        sValues = (ObjectVector[]) table.by("Z=X+Y").getColumn("S").getDirect();
+        TestCase.assertEquals(2, table.groupBy("Z=X+Y").size());
+        TestCase.assertEquals(4, table.groupBy("Z=X+Y").getColumns().length);
+        TestCase.assertEquals(ObjectVector.class, table.groupBy("Z=X+Y").getColumn("S").getType());
+        TestCase.assertEquals(IntVector.class, table.groupBy("Z=X+Y").getColumn("X").getType());
+        TestCase.assertEquals(IntVector.class, table.groupBy("Z=X+Y").getColumn("Y").getType());
+        TestCase.assertEquals(int.class, table.groupBy("Z=X+Y").getColumn("Z").getType());
+        sValues = (ObjectVector[]) table.groupBy("Z=X+Y").getColumn("S").getDirect();
         TestCase.assertEquals(2, sValues.length);
         TestCase.assertEquals(2, sValues[0].size());
         TestCase.assertEquals(1, sValues[1].size());
         TestCase.assertEquals("e", sValues[0].get(0));
         TestCase.assertEquals("c", sValues[1].get(0));
         TestCase.assertEquals("g", sValues[0].get(1));
-        TestCase.assertEquals(Arrays.asList(8, 4), Arrays.asList(table.by("Z=X+Y").getColumn("Z").get(0, 2)));
+        TestCase.assertEquals(Arrays.asList(8, 4), Arrays.asList(table.groupBy("Z=X+Y").getColumn("Z").get(0, 2)));
 
         table = TstUtils.testRefreshingTable(
                 c("S", "e", "c", "g"),
                 TstUtils.cG("X", 4, 2, 6),
                 c("Y", 4, 2, 2));
-        TestCase.assertEquals(2, table.by("Z=X+Y").size());
-        TestCase.assertEquals(4, table.by("Z=X+Y").getColumns().length);
-        TestCase.assertEquals(ObjectVector.class, table.by("Z=X+Y").getColumn("S").getType());
-        TestCase.assertEquals(IntVector.class, table.by("Z=X+Y").getColumn("X").getType());
-        TestCase.assertEquals(IntVector.class, table.by("Z=X+Y").getColumn("Y").getType());
-        TestCase.assertEquals(int.class, table.by("Z=X+Y").getColumn("Z").getType());
-        sValues = (ObjectVector[]) table.by("Z=X+Y").getColumn("S").getDirect();
+        TestCase.assertEquals(2, table.groupBy("Z=X+Y").size());
+        TestCase.assertEquals(4, table.groupBy("Z=X+Y").getColumns().length);
+        TestCase.assertEquals(ObjectVector.class, table.groupBy("Z=X+Y").getColumn("S").getType());
+        TestCase.assertEquals(IntVector.class, table.groupBy("Z=X+Y").getColumn("X").getType());
+        TestCase.assertEquals(IntVector.class, table.groupBy("Z=X+Y").getColumn("Y").getType());
+        TestCase.assertEquals(int.class, table.groupBy("Z=X+Y").getColumn("Z").getType());
+        sValues = (ObjectVector[]) table.groupBy("Z=X+Y").getColumn("S").getDirect();
         TestCase.assertEquals(2, sValues.length);
         TestCase.assertEquals(2, sValues[0].size());
         TestCase.assertEquals(1, sValues[1].size());
         TestCase.assertEquals("e", sValues[0].get(0));
         TestCase.assertEquals("c", sValues[1].get(0));
         TestCase.assertEquals("g", sValues[0].get(1));
-        TestCase.assertEquals(Arrays.asList(8, 4), Arrays.asList(table.by("Z=X+Y").getColumn("Z").get(0, 2)));
+        TestCase.assertEquals(Arrays.asList(8, 4), Arrays.asList(table.groupBy("Z=X+Y").getColumn("Z").get(0, 2)));
 
         table = TstUtils.testRefreshingTable(
                 c("S", "e", "c", "g"),
                 c("X", 4, 2, 6),
                 TstUtils.cG("Y", 4, 2, 2));
-        TestCase.assertEquals(2, table.by("Z=X+Y").size());
-        TestCase.assertEquals(4, table.by("Z=X+Y").getColumns().length);
-        TestCase.assertEquals(ObjectVector.class, table.by("Z=X+Y").getColumn("S").getType());
-        TestCase.assertEquals(IntVector.class, table.by("Z=X+Y").getColumn("X").getType());
-        TestCase.assertEquals(IntVector.class, table.by("Z=X+Y").getColumn("Y").getType());
-        TestCase.assertEquals(int.class, table.by("Z=X+Y").getColumn("Z").getType());
-        sValues = (ObjectVector[]) table.by("Z=X+Y").getColumn("S").getDirect();
+        TestCase.assertEquals(2, table.groupBy("Z=X+Y").size());
+        TestCase.assertEquals(4, table.groupBy("Z=X+Y").getColumns().length);
+        TestCase.assertEquals(ObjectVector.class, table.groupBy("Z=X+Y").getColumn("S").getType());
+        TestCase.assertEquals(IntVector.class, table.groupBy("Z=X+Y").getColumn("X").getType());
+        TestCase.assertEquals(IntVector.class, table.groupBy("Z=X+Y").getColumn("Y").getType());
+        TestCase.assertEquals(int.class, table.groupBy("Z=X+Y").getColumn("Z").getType());
+        sValues = (ObjectVector[]) table.groupBy("Z=X+Y").getColumn("S").getDirect();
         TestCase.assertEquals(2, sValues.length);
         TestCase.assertEquals(2, sValues[0].size());
         TestCase.assertEquals(1, sValues[1].size());
         TestCase.assertEquals("e", sValues[0].get(0));
         TestCase.assertEquals("c", sValues[1].get(0));
         TestCase.assertEquals("g", sValues[0].get(1));
-        TestCase.assertEquals(Arrays.asList(8, 4), Arrays.asList(table.by("Z=X+Y").getColumn("Z").get(0, 2)));
+        TestCase.assertEquals(Arrays.asList(8, 4), Arrays.asList(table.groupBy("Z=X+Y").getColumn("Z").get(0, 2)));
 
         table = TstUtils.testRefreshingTable(
                 c("S", "e", "c", "g"),
                 TstUtils.cG("X", 4, 2, 6),
                 TstUtils.cG("Y", 4, 3, 2));
-        TestCase.assertEquals(2, table.by("Z=X+Y").size());
-        TestCase.assertEquals(4, table.by("Z=X+Y").getColumns().length);
-        TestCase.assertEquals(ObjectVector.class, table.by("Z=X+Y").getColumn("S").getType());
-        TestCase.assertEquals(IntVector.class, table.by("Z=X+Y").getColumn("X").getType());
-        TestCase.assertEquals(IntVector.class, table.by("Z=X+Y").getColumn("Y").getType());
-        TestCase.assertEquals(int.class, table.by("Z=X+Y").getColumn("Z").getType());
-        sValues = (ObjectVector[]) table.by("Z=X+Y").getColumn("S").getDirect();
+        TestCase.assertEquals(2, table.groupBy("Z=X+Y").size());
+        TestCase.assertEquals(4, table.groupBy("Z=X+Y").getColumns().length);
+        TestCase.assertEquals(ObjectVector.class, table.groupBy("Z=X+Y").getColumn("S").getType());
+        TestCase.assertEquals(IntVector.class, table.groupBy("Z=X+Y").getColumn("X").getType());
+        TestCase.assertEquals(IntVector.class, table.groupBy("Z=X+Y").getColumn("Y").getType());
+        TestCase.assertEquals(int.class, table.groupBy("Z=X+Y").getColumn("Z").getType());
+        sValues = (ObjectVector[]) table.groupBy("Z=X+Y").getColumn("S").getDirect();
         TestCase.assertEquals(2, sValues.length);
         TestCase.assertEquals(2, sValues[0].size());
         TestCase.assertEquals(1, sValues[1].size());
         TestCase.assertEquals("e", sValues[0].get(0));
         TestCase.assertEquals("c", sValues[1].get(0));
         TestCase.assertEquals("g", sValues[0].get(1));
-        TestCase.assertEquals(Arrays.asList(8, 5), Arrays.asList(table.by("Z=X+Y").getColumn("Z").get(0, 2)));
+        TestCase.assertEquals(Arrays.asList(8, 5), Arrays.asList(table.groupBy("Z=X+Y").getColumn("Z").get(0, 2)));
 
         table = TstUtils.testRefreshingTable(
                 c("S", "c", null, "g"),
                 c("I", 2, 4, 6));
 
-        TestCase.assertEquals(3, table.by("S").size());
-        TestCase.assertEquals(2, table.by("S").getColumns().length);
-        TestCase.assertEquals(String.class, table.by("S").getColumn("S").getType());
-        TestCase.assertEquals(IntVector.class, table.by("S").getColumn("I").getType());
-        TestCase.assertEquals(Arrays.asList("c", null, "g"), Arrays.asList(table.by("S").getColumn("S").get(0, 3)));
-        intGroups = (IntVector[]) table.by("S").getColumn("I").getDirect();
+        TestCase.assertEquals(3, table.groupBy("S").size());
+        TestCase.assertEquals(2, table.groupBy("S").getColumns().length);
+        TestCase.assertEquals(String.class, table.groupBy("S").getColumn("S").getType());
+        TestCase.assertEquals(IntVector.class, table.groupBy("S").getColumn("I").getType());
+        TestCase.assertEquals(Arrays.asList("c", null, "g"), Arrays.asList(table.groupBy("S").getColumn("S").get(0, 3)));
+        intGroups = (IntVector[]) table.groupBy("S").getColumn("I").getDirect();
         TestCase.assertEquals(3, intGroups.length);
         TestCase.assertEquals(1, intGroups[0].size());
         TestCase.assertEquals(1, intGroups[1].size());
@@ -598,7 +598,7 @@ public class QueryTableAggregationTest {
         TestCase.assertEquals(6, intGroups[2].get(0));
     }
 
-    // endregion Legacy static by() tests
+    // endregion Legacy static groupBy() tests
 
     @Test
     public void testLastByIterative() {
@@ -696,13 +696,13 @@ public class QueryTableAggregationTest {
                 new UpdateValidatorNugget(table.sort("Sym", "intCol").firstBy("Sym")),
                 new UpdateValidatorNugget(table.sort("Sym", "intCol").lastBy("Sym")),
                 EvalNugget.from(
-                        () -> table.sort("Sym", "intCol").by(new TrackingLastByStateFactoryImpl(), "Sym").sort("Sym")),
+                        () -> table.sort("Sym", "intCol").by(new TrackingLastBySpecImpl(), "Sym").sort("Sym")),
                 EvalNugget.from(
-                        () -> table.sort("Sym", "intCol").by(new TrackingFirstByStateFactoryImpl(), "Sym").sort("Sym")),
+                        () -> table.sort("Sym", "intCol").by(new TrackingFirstBySpecImpl(), "Sym").sort("Sym")),
                 new io.deephaven.engine.v2.QueryTableTestBase.TableComparator(table.lastBy("Sym"),
-                        table.by(new TrackingLastByStateFactoryImpl(), "Sym")),
+                        table.by(new TrackingLastBySpecImpl(), "Sym")),
                 new io.deephaven.engine.v2.QueryTableTestBase.TableComparator(table.firstBy("Sym"),
-                        table.by(new TrackingFirstByStateFactoryImpl(), "Sym")),
+                        table.by(new TrackingFirstBySpecImpl(), "Sym")),
                 EvalNugget.from(() -> table.firstBy("boolCol").sort("boolCol")),
                 EvalNugget.from(() -> table.firstBy("boolCol", "Sym").sort("boolCol", "Sym")),
                 EvalNugget.from(() -> table.firstBy("Sym", "Sym2", "IntSet", "boolCol").sort("Sym", "Sym2", "IntSet",
@@ -758,7 +758,7 @@ public class QueryTableAggregationTest {
 
         final Table expectedFirstComposite =
                 table.update("First=skSet.add(new io.deephaven.datastructures.util.SmartKey(Sym, intCol))")
-                        .where("First").dropColumns("First").moveUpColumns("Sym", "intCol");
+                        .where("First").dropColumns("First").moveColumnsUp("Sym", "intCol");
         final Table firstByComposite = table.firstBy("Sym", "intCol");
         assertTableEquals(expectedFirstComposite, firstByComposite);
 
@@ -766,7 +766,7 @@ public class QueryTableAggregationTest {
         final Table lastByComposite = table.lastBy("Sym", "intCol").sort("Sym", "intCol");
         final Table expectedLastComposite =
                 table.reverse().update("First=skSet.add(new io.deephaven.datastructures.util.SmartKey(Sym, intCol))")
-                        .where("First").dropColumns("First").sort("Sym", "intCol").moveUpColumns("Sym", "intCol");
+                        .where("First").dropColumns("First").sort("Sym", "intCol").moveColumnsUp("Sym", "intCol");
         assertTableEquals(expectedLastComposite, lastByComposite);
     }
 
@@ -885,7 +885,7 @@ public class QueryTableAggregationTest {
         assertTableEquals(expected2, lastBy);
     }
 
-    // region Legacy incremental by() tests
+    // region Legacy incremental groupBy() tests
 
     @Test
     public void testIncrementalBy() {
@@ -897,7 +897,7 @@ public class QueryTableAggregationTest {
         final EvalNugget en[] = new EvalNugget[] {
                 new EvalNugget() {
                     public Table e() {
-                        return table.by();
+                        return table.groupBy();
                     }
                 },
                 new EvalNugget() {
@@ -907,7 +907,7 @@ public class QueryTableAggregationTest {
                 },
                 new EvalNugget() {
                     public Table e() {
-                        return table.by("Sym");
+                        return table.groupBy("Sym");
                     }
                 },
                 new EvalNugget() {
@@ -917,7 +917,7 @@ public class QueryTableAggregationTest {
                 },
                 new EvalNugget() {
                     public Table e() {
-                        return queryTable.by();
+                        return queryTable.groupBy();
                     }
                 },
                 new EvalNugget() {
@@ -927,7 +927,7 @@ public class QueryTableAggregationTest {
                 },
                 new EvalNugget() {
                     public Table e() {
-                        return queryTable.by("Sym");
+                        return queryTable.groupBy("Sym");
                     }
                 },
                 new EvalNugget() {
@@ -937,7 +937,7 @@ public class QueryTableAggregationTest {
                 },
                 new EvalNugget() {
                     public Table e() {
-                        return table.by().select();
+                        return table.groupBy().select();
                     }
                 },
                 new EvalNugget() {
@@ -947,7 +947,7 @@ public class QueryTableAggregationTest {
                 },
                 new EvalNugget() {
                     public Table e() {
-                        return table.by("Sym").select();
+                        return table.groupBy("Sym").select();
                     }
                 },
                 new EvalNugget() {
@@ -957,7 +957,7 @@ public class QueryTableAggregationTest {
                 },
                 new EvalNugget() {
                     public Table e() {
-                        return queryTable.by().select();
+                        return queryTable.groupBy().select();
                     }
                 },
                 new EvalNugget() {
@@ -967,7 +967,7 @@ public class QueryTableAggregationTest {
                 },
                 new EvalNugget() {
                     public Table e() {
-                        return queryTable.by("Sym").select();
+                        return queryTable.groupBy("Sym").select();
                     }
                 },
                 new EvalNugget() {
@@ -1038,7 +1038,7 @@ public class QueryTableAggregationTest {
         final EvalNuggetInterface en[] = new EvalNuggetInterface[] {
                 new EvalNugget() {
                     public Table e() {
-                        return table.by();
+                        return table.groupBy();
                     }
                 },
                 new EvalNugget() {
@@ -1048,7 +1048,7 @@ public class QueryTableAggregationTest {
                 },
                 new EvalNugget() {
                     public Table e() {
-                        return table.by("Sym").sort("Sym");
+                        return table.groupBy("Sym").sort("Sym");
                     }
                 },
                 new EvalNugget() {
@@ -1058,7 +1058,7 @@ public class QueryTableAggregationTest {
                 },
                 new EvalNugget() {
                     public Table e() {
-                        return table.by().select();
+                        return table.groupBy().select();
                     }
                 },
                 new EvalNugget() {
@@ -1068,7 +1068,7 @@ public class QueryTableAggregationTest {
                 },
                 new EvalNugget() {
                     public Table e() {
-                        return table.by("Sym").select().sort("Sym");
+                        return table.groupBy("Sym").select().sort("Sym");
                     }
                 },
                 new EvalNugget() {
@@ -1078,20 +1078,20 @@ public class QueryTableAggregationTest {
                 },
                 new EvalNugget() {
                     public Table e() {
-                        return table.by("Sym").update("intColSum=sum(intCol)").sort("Sym");
+                        return table.groupBy("Sym").update("intColSum=sum(intCol)").sort("Sym");
                     }
                 },
                 new EvalNugget() {
                     public Table e() {
-                        return table.by("Sym").update("intColSum=sum(intCol)").ungroup().sort("Sym");
+                        return table.groupBy("Sym").update("intColSum=sum(intCol)").ungroup().sort("Sym");
                     }
                 },
-                new UpdateValidatorNugget(table.by().update("intColSum=sum(intCol)")),
-                new UpdateValidatorNugget(table.by().update("intColSum=sum(intCol)").select()),
-                new UpdateValidatorNugget(table.by().update("intColSum=sum(intCol)").ungroup()),
-                new UpdateValidatorNugget(table.by("Sym").update("intColSum=sum(intCol)").ungroup()),
-                new UpdateValidatorNugget(table.by("Sym").update("intColSum=cumsum(intCol)").ungroup()),
-                new UpdateValidatorNugget(table.by("Sym").update("doubleColSum=cumsum(doubleCol)").ungroup()),
+                new UpdateValidatorNugget(table.groupBy().update("intColSum=sum(intCol)")),
+                new UpdateValidatorNugget(table.groupBy().update("intColSum=sum(intCol)").select()),
+                new UpdateValidatorNugget(table.groupBy().update("intColSum=sum(intCol)").ungroup()),
+                new UpdateValidatorNugget(table.groupBy("Sym").update("intColSum=sum(intCol)").ungroup()),
+                new UpdateValidatorNugget(table.groupBy("Sym").update("intColSum=cumsum(intCol)").ungroup()),
+                new UpdateValidatorNugget(table.groupBy("Sym").update("doubleColSum=cumsum(doubleCol)").ungroup()),
         };
 
         for (int step = 0; step < 100; ++step) {
@@ -1102,7 +1102,7 @@ public class QueryTableAggregationTest {
         }
     }
 
-    // endregion Legacy incremental by() tests
+    // endregion Legacy incremental groupBy() tests
 
     // TODO test aggregation in a dynamic setting:
     // a) adding to the same key
@@ -1268,7 +1268,7 @@ public class QueryTableAggregationTest {
         final List<String> updates = queryTable.getDefinition().getColumnNames().stream().filter(c -> !c.equals("Sym"))
                 .map(c -> c + "=" + QueryTableAggregationTestFormulaStaticMethods.sumFunction(c) + "(" + c + ")")
                 .collect(Collectors.toList());
-        final Table updateResult = queryTable.dropColumns("Sym").by().update(Selectable.from(updates));
+        final Table updateResult = queryTable.dropColumns("Sym").groupBy().update(Selectable.from(updates));
         assertTableEquals(updateResult, result, TableDiff.DiffItems.DoublesExact);
 
         final Table resultKeyed = queryTable.sumBy("Sym");
@@ -1276,7 +1276,7 @@ public class QueryTableAggregationTest {
                 .filter(c -> !c.equals("Sym"))
                 .map(c -> c + "=" + QueryTableAggregationTestFormulaStaticMethods.sumFunction(c) + "(" + c + ")")
                 .collect(Collectors.toList());
-        final Table updateKeyedResult = queryTable.by("Sym").update(Selectable.from(updateKeyed));
+        final Table updateKeyedResult = queryTable.groupBy("Sym").update(Selectable.from(updateKeyed));
         assertTableEquals(updateKeyedResult, resultKeyed, TableDiff.DiffItems.DoublesExact);
 
         final Table resultAbs = queryTable.dropColumns("Sym").absSumBy();
@@ -1284,7 +1284,7 @@ public class QueryTableAggregationTest {
                 queryTable.getDefinition().getColumnNames().stream().filter(c -> !c.equals("Sym"))
                         .map(c -> c + "=" + QueryTableAggregationTestFormulaStaticMethods.absSumFunction(c, c))
                         .collect(Collectors.toList());
-        final Table updateResultAbs = queryTable.dropColumns("Sym").by().update(Selectable.from(updatesAbs));
+        final Table updateResultAbs = queryTable.dropColumns("Sym").groupBy().update(Selectable.from(updatesAbs));
         TableTools.show(resultAbs);
         TableTools.show(updateResultAbs);
         assertTableEquals(updateResultAbs, resultAbs, TableDiff.DiffItems.DoublesExact);
@@ -1294,7 +1294,7 @@ public class QueryTableAggregationTest {
                 queryTable.getDefinition().getColumnNames().stream().filter(c -> !c.equals("Sym"))
                         .map(c -> c + "=" + QueryTableAggregationTestFormulaStaticMethods.absSumFunction(c, c))
                         .collect(Collectors.toList());
-        final Table updateKeyedResultAbs = queryTable.by("Sym").update(Selectable.from(updateKeyedAbs));
+        final Table updateKeyedResultAbs = queryTable.groupBy("Sym").update(Selectable.from(updateKeyedAbs));
         assertTableEquals(updateKeyedResultAbs, resultKeyedAbs, TableDiff.DiffItems.DoublesExact);
     }
 
@@ -1343,7 +1343,7 @@ public class QueryTableAggregationTest {
         final List<String> updates = queryTable.getDefinition().getColumnNames().stream()
                 .map(c -> c + "=" + QueryTableAggregationTestFormulaStaticMethods.minFunction(c))
                 .collect(Collectors.toList());
-        final Table updateResult = queryTable.by().update(Selectable.from(updates));
+        final Table updateResult = queryTable.groupBy().update(Selectable.from(updates));
         assertTableEquals(updateResult, result);
 
         final Table resultKeyed = queryTable.minBy("Sym");
@@ -1351,14 +1351,14 @@ public class QueryTableAggregationTest {
                 queryTable.getDefinition().getColumnNames().stream().filter(c -> !c.equals("Sym"))
                         .map(c -> c + "=" + QueryTableAggregationTestFormulaStaticMethods.minFunction(c))
                         .collect(Collectors.toList());
-        final Table updateKeyedResult = queryTable.by("Sym").update(Selectable.from(updateKeyed));
+        final Table updateKeyedResult = queryTable.groupBy("Sym").update(Selectable.from(updateKeyed));
         assertTableEquals(updateKeyedResult, resultKeyed);
 
         final Table resultMax = queryTable.maxBy();
         final List<String> updatesMax = queryTable.getDefinition().getColumnNames().stream()
                 .map(c -> c + "=" + QueryTableAggregationTestFormulaStaticMethods.maxFunction(c))
                 .collect(Collectors.toList());
-        final Table updateResultMax = queryTable.by().update(Selectable.from(updatesMax));
+        final Table updateResultMax = queryTable.groupBy().update(Selectable.from(updatesMax));
         TableTools.show(resultMax);
         TableTools.show(updateResultMax);
         assertTableEquals(updateResultMax, resultMax);
@@ -1368,7 +1368,7 @@ public class QueryTableAggregationTest {
                 queryTable.getDefinition().getColumnNames().stream().filter(c -> !c.equals("Sym"))
                         .map(c -> c + "=" + QueryTableAggregationTestFormulaStaticMethods.maxFunction(c))
                         .collect(Collectors.toList());
-        final Table updateKeyedResultMax = queryTable.by("Sym").update(Selectable.from(updateKeyedMax));
+        final Table updateKeyedResultMax = queryTable.groupBy("Sym").update(Selectable.from(updateKeyedMax));
         assertTableEquals(updateKeyedResultMax, resultKeyedMax);
     }
 
@@ -1417,12 +1417,12 @@ public class QueryTableAggregationTest {
                 queryTable.getDefinition().getColumnNames().stream().filter(c -> !c.equals("Sym"))
                         .flatMap(c -> Stream.of(c + "_Sum", c + "_Count")).collect(Collectors.toList());
         final Table updateResult =
-                queryTable.dropColumns("Sym").by().update(Selectable.from(updates)).dropColumns(sumsAndCounts);
+                queryTable.dropColumns("Sym").groupBy().update(Selectable.from(updates)).dropColumns(sumsAndCounts);
         assertTableEquals(updateResult, result, TableDiff.DiffItems.DoublesExact);
 
         final Table resultKeyed = queryTable.avgBy("Sym");
         final Table updateKeyedResult =
-                queryTable.by("Sym").update(Selectable.from(updates)).dropColumns(sumsAndCounts);
+                queryTable.groupBy("Sym").update(Selectable.from(updates)).dropColumns(sumsAndCounts);
         assertTableEquals(updateKeyedResult, resultKeyed, TableDiff.DiffItems.DoublesExact);
     }
 
@@ -1465,11 +1465,11 @@ public class QueryTableAggregationTest {
         final List<String> updates = queryTable.getDefinition().getColumnNames().stream().filter(c -> !c.equals("Sym"))
                 .map(c -> c + "=" + QueryTableAggregationTestFormulaStaticMethods.varFunction(c))
                 .collect(Collectors.toList());
-        final Table updateResult = queryTable.dropColumns("Sym").by().update(Selectable.from(updates));
+        final Table updateResult = queryTable.dropColumns("Sym").groupBy().update(Selectable.from(updates));
         assertTableEquals(updateResult, result, TableDiff.DiffItems.DoublesExact, TableDiff.DiffItems.DoubleFraction);
 
         final Table resultKeyed = queryTable.varBy("Sym");
-        final Table updateKeyedResult = queryTable.by("Sym").update(Selectable.from(updates));
+        final Table updateKeyedResult = queryTable.groupBy("Sym").update(Selectable.from(updates));
 
         TableTools.showWithIndex(queryTable.where("Sym=`mjku`"));
         assertTableEquals(updateKeyedResult, resultKeyed, TableDiff.DiffItems.DoublesExact,
@@ -1515,11 +1515,11 @@ public class QueryTableAggregationTest {
         final List<String> updates = queryTable.getDefinition().getColumnNames().stream().filter(c -> !c.equals("Sym"))
                 .map(c -> c + "=" + QueryTableAggregationTestFormulaStaticMethods.stdFunction(c))
                 .collect(Collectors.toList());
-        final Table updateResult = queryTable.dropColumns("Sym").by().update(Selectable.from(updates));
+        final Table updateResult = queryTable.dropColumns("Sym").groupBy().update(Selectable.from(updates));
         assertTableEquals(updateResult, result, TableDiff.DiffItems.DoublesExact);
 
         final Table resultKeyed = queryTable.stdBy("Sym");
-        final Table updateKeyedResult = queryTable.by("Sym").update(Selectable.from(updates));
+        final Table updateKeyedResult = queryTable.groupBy("Sym").update(Selectable.from(updates));
         assertTableEquals(updateKeyedResult, resultKeyed, TableDiff.DiffItems.DoublesExact);
     }
 
@@ -2105,7 +2105,7 @@ public class QueryTableAggregationTest {
                 EvalNugget.Sorted.from(() -> queryTable.wavgBy("byteCol", "Sym"), "Sym"),
                 EvalNugget.Sorted.from(() -> queryTable.wavgBy("shortCol", "Sym"), "Sym"),
                 new TableComparator(queryTable.view("intCol2", "intCol").wavgBy("intCol2"), "wavg",
-                        queryTable.updateView("W=intCol*intCol2").by()
+                        queryTable.updateView("W=intCol*intCol2").groupBy()
                                 .update("WSum=sum(W)", "C=sum(intCol2)", "intCol=WSum/C").view("intCol"),
                         "update"),
         };
@@ -2166,16 +2166,16 @@ public class QueryTableAggregationTest {
                 EvalNugget.Sorted.from(() -> queryTable.wsumBy("byteCol", "Sym"), "Sym"),
                 EvalNugget.Sorted.from(() -> queryTable.wsumBy("shortCol", "Sym"), "Sym"),
                 new TableComparator(queryTable.view("intCol2", "intCol").wsumBy("intCol2"), "wsum",
-                        queryTable.updateView("W=intCol*intCol2").by().update("intCol=(long)sum(W)").view("intCol"),
+                        queryTable.updateView("W=intCol*intCol2").groupBy().update("intCol=(long)sum(W)").view("intCol"),
                         "update"),
                 new TableComparator(queryTable.view("intCol2", "doubleCol").wsumBy("intCol2"), "wsum",
-                        queryTable.updateView("W=doubleCol*intCol2").by().update("doubleCol=sum(W)").view("doubleCol"),
+                        queryTable.updateView("W=doubleCol*intCol2").groupBy().update("doubleCol=sum(W)").view("doubleCol"),
                         "update"),
                 new TableComparator(queryTable.view("doubleCol", "intCol").wsumBy("doubleCol"), "wsum",
-                        queryTable.updateView("W=doubleCol*intCol").by().update("intCol=sum(W)").view("intCol"),
+                        queryTable.updateView("W=doubleCol*intCol").groupBy().update("intCol=sum(W)").view("intCol"),
                         "update"),
                 new TableComparator(queryTable.view("doubleCol", "doubleCol2").wsumBy("doubleCol2"), "wsum",
-                        queryTable.updateView("W=doubleCol*doubleCol2").by().update("doubleCol=sum(W)")
+                        queryTable.updateView("W=doubleCol*doubleCol2").groupBy().update("doubleCol=sum(W)")
                                 .view("doubleCol"),
                         "update"),
         };
@@ -2305,89 +2305,89 @@ public class QueryTableAggregationTest {
         final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
                 new EvalNugget() {
                     public Table e() {
-                        return queryTable.by(new AddOnlyMinMaxByStateFactoryImpl(false), "Sym").sort("Sym");
+                        return queryTable.by(new AddOnlyMinMaxBySpecImpl(false), "Sym").sort("Sym");
                     }
                 },
                 new EvalNugget() {
                     public Table e() {
                         return queryTable.dropColumns("Sym").update("x = k")
-                                .by(new AddOnlyMinMaxByStateFactoryImpl(false), "intCol").sort("intCol");
+                                .by(new AddOnlyMinMaxBySpecImpl(false), "intCol").sort("intCol");
                     }
                 },
                 new EvalNugget() {
                     public Table e() {
                         return queryTable.updateView("x = k")
-                                .by(new AddOnlyMinMaxByStateFactoryImpl(false), "Sym", "intCol").sort("Sym", "intCol");
+                                .by(new AddOnlyMinMaxBySpecImpl(false), "Sym", "intCol").sort("Sym", "intCol");
                     }
                 },
                 new EvalNugget() {
                     public Table e() {
-                        return queryTable.update("x=intCol+1").by(new AddOnlyMinMaxByStateFactoryImpl(false), "Sym")
+                        return queryTable.update("x=intCol+1").by(new AddOnlyMinMaxBySpecImpl(false), "Sym")
                                 .sort("Sym");
                     }
                 },
                 new EvalNugget() {
                     public Table e() {
                         return queryTable.update("x=intCol+1").dropColumns("Sym")
-                                .by(new AddOnlyMinMaxByStateFactoryImpl(false), "intCol").sort("intCol");
+                                .by(new AddOnlyMinMaxBySpecImpl(false), "intCol").sort("intCol");
                     }
                 },
                 new EvalNugget() {
                     public Table e() {
                         return queryTable.update("x=intCol+1")
-                                .by(new AddOnlyMinMaxByStateFactoryImpl(false), "Sym", "intCol").sort("Sym", "intCol");
+                                .by(new AddOnlyMinMaxBySpecImpl(false), "Sym", "intCol").sort("Sym", "intCol");
                     }
                 },
                 new EvalNugget() {
                     public Table e() {
-                        return queryTable.update("x=intCol+1").by(new AddOnlyMinMaxByStateFactoryImpl(false), "Sym")
+                        return queryTable.update("x=intCol+1").by(new AddOnlyMinMaxBySpecImpl(false), "Sym")
                                 .sort("Sym");
                     }
                 },
                 new EvalNugget() {
                     public Table e() {
-                        return queryTable.by(new AddOnlyMinMaxByStateFactoryImpl(true), "Sym").sort("Sym");
+                        return queryTable.by(new AddOnlyMinMaxBySpecImpl(true), "Sym").sort("Sym");
                     }
                 },
                 new EvalNugget() {
                     public Table e() {
                         return queryTable.dropColumns("Sym").update("x = k")
-                                .by(new AddOnlyMinMaxByStateFactoryImpl(true), "intCol").sort("intCol");
+                                .by(new AddOnlyMinMaxBySpecImpl(true), "intCol").sort("intCol");
                     }
                 },
                 new EvalNugget() {
                     public Table e() {
                         return queryTable.updateView("x = k")
-                                .by(new AddOnlyMinMaxByStateFactoryImpl(true), "Sym", "intCol").sort("Sym", "intCol");
+                                .by(new AddOnlyMinMaxBySpecImpl(true), "Sym", "intCol").sort("Sym", "intCol");
                     }
                 },
                 new EvalNugget() {
                     public Table e() {
-                        return queryTable.update("x=intCol+1").by(new AddOnlyMinMaxByStateFactoryImpl(true), "Sym")
+                        return queryTable.update("x=intCol+1").by(new AddOnlyMinMaxBySpecImpl(true), "Sym")
                                 .sort("Sym");
                     }
                 },
                 new EvalNugget() {
                     public Table e() {
                         return queryTable.update("x=intCol+1").dropColumns("Sym")
-                                .by(new AddOnlyMinMaxByStateFactoryImpl(true), "intCol").sort("intCol");
+                                .by(new AddOnlyMinMaxBySpecImpl(true), "intCol").sort("intCol");
                     }
                 },
                 new EvalNugget() {
                     public Table e() {
                         return queryTable.update("x=intCol+1")
-                                .by(new AddOnlyMinMaxByStateFactoryImpl(true), "Sym", "intCol").sort("Sym", "intCol");
+                                .by(new AddOnlyMinMaxBySpecImpl(true), "Sym", "intCol").sort("Sym", "intCol");
                     }
                 },
                 new EvalNugget() {
                     public Table e() {
-                        return queryTable.update("x=intCol+1").by(new AddOnlyMinMaxByStateFactoryImpl(true), "Sym")
+                        return queryTable.update("x=intCol+1").by(new AddOnlyMinMaxBySpecImpl(true), "Sym")
                                 .sort("Sym");
                     }
                 },
-                new TableComparator(queryTable.by(new AddOnlyMinMaxByStateFactoryImpl(false), "Sym").sort("Sym"),
+                new TableComparator(queryTable.by(new AddOnlyMinMaxBySpecImpl(false), "Sym").sort("Sym"),
                         queryTable.applyToAllBy("max(each)", "Sym").sort("Sym")),
-                new TableComparator(queryTable.by(new AddOnlyMinMaxByStateFactoryImpl(true), "Sym").sort("Sym"),
+                new TableComparator(queryTable.by(new AddOnlyMinMaxBySpecImpl(true), "Sym").sort("Sym"),
                         queryTable.applyToAllBy("min(each)", "Sym").sort("Sym")),
         };
         for (int step = 0; step < 50; step++) {
@@ -2432,11 +2432,11 @@ public class QueryTableAggregationTest {
                 EvalNugget.from(() -> queryTable.view("doubleCol").medianBy()),
                 EvalNugget.Sorted.from(() -> queryTable.medianBy("Sym"), "Sym"),
                 new UpdateValidatorNugget(queryTable.medianBy("Sym")),
-                EvalNugget.from(() -> withoutFloats.by(new PercentileByStateFactoryImpl(0.25), "Sym").sort("Sym")),
-                EvalNugget.from(() -> withoutFloats.by(new PercentileByStateFactoryImpl(0.75), "Sym").sort("Sym")),
-                EvalNugget.from(() -> withoutFloats.by(new PercentileByStateFactoryImpl(0.1), "Sym").sort("Sym")),
-                EvalNugget.from(() -> withoutFloats.by(new PercentileByStateFactoryImpl(0.99), "Sym").sort("Sym")),
-                EvalNugget.from(() -> withoutFloats.where("Sym=`a`").by(new PercentileByStateFactoryImpl(0.99), "Sym")
+                EvalNugget.from(() -> withoutFloats.by(new PercentileBySpecImpl(0.25), "Sym").sort("Sym")),
+                EvalNugget.from(() -> withoutFloats.by(new PercentileBySpecImpl(0.75), "Sym").sort("Sym")),
+                EvalNugget.from(() -> withoutFloats.by(new PercentileBySpecImpl(0.1), "Sym").sort("Sym")),
+                EvalNugget.from(() -> withoutFloats.by(new PercentileBySpecImpl(0.99), "Sym").sort("Sym")),
+                EvalNugget.from(() -> withoutFloats.where("Sym=`a`").by(new PercentileBySpecImpl(0.99), "Sym")
                         .sort("Sym"))
         };
         for (int step = 0; step < 50; step++) {
@@ -2521,8 +2521,8 @@ public class QueryTableAggregationTest {
                 ApproximatePercentile.approximatePercentiles(queryTable, definition.setCompression(100), "Sym");
         TableTools.showWithIndex(aggregatedBySym);
 
-        final Table accumulated = aggregatedBySym.dropColumns("Sym").by()
-                .update("Digest=io.deephaven.engine.v2.by.ApproximatePercentile.accumulateDigests(Digest)")
+        final Table accumulated = aggregatedBySym.dropColumns("Sym").groupBy()
+                .update("Digest=io.deephaven.engine.v2.groupBy.ApproximatePercentile.accumulateDigests(Digest)")
                 .update("P95=Digest.quantile(0.95)");
         TableTools.show(accumulated);
 
@@ -2745,8 +2745,8 @@ public class QueryTableAggregationTest {
         TableTools.showWithIndex(table);
 
         final Table median = table.medianBy();
-        final Table percentile10 = table.by(new PercentileByStateFactoryImpl(0.1));
-        final Table percentile90 = table.by(new PercentileByStateFactoryImpl(0.9));
+        final Table percentile10 = table.by(new PercentileBySpecImpl(0.1));
+        final Table percentile90 = table.by(new PercentileBySpecImpl(0.9));
         TableTools.showWithIndex(median);
         TableTools.showWithIndex(percentile10);
         TableTools.showWithIndex(percentile90);
@@ -3317,7 +3317,7 @@ public class QueryTableAggregationTest {
                 RowSetFactory.fromRange(0, 2).toTracking(),
                 cG("Key", "a", "b", "c"), c("I", 2, 4, 6));
         final IncrementalReleaseFilter filter = new IncrementalReleaseFilter(0, 10);
-        final Table byTable = table.where(filter).by("Key");
+        final Table byTable = table.where(filter).groupBy("Key");
         TableTools.showWithIndex(byTable);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(filter::run);
@@ -3340,7 +3340,7 @@ public class QueryTableAggregationTest {
                 stringCol("Key", keyValues), intCol("IntCol", sentinels));
 
         final Table flat = table.flatten();
-        final TableMap map = flat.byExternal("Key");
+        final TableMap map = flat.partitionBy("Key");
         final Table subTable = map.get("Key");
         assertTableEquals(subTable, table);
 
@@ -3501,7 +3501,7 @@ public class QueryTableAggregationTest {
                 col("Value", BigInteger.valueOf(0), new BigInteger("100"), BigInteger.valueOf(100),
                         new BigInteger("100"), new BigInteger("100"), new BigInteger("100"), new BigInteger("100"),
                         new BigInteger("100"), new BigInteger("100"), BigInteger.valueOf(200)));
-        final Table percentile = source.by(new PercentileByStateFactoryImpl(0.25));
+        final Table percentile = source.by(new PercentileBySpecImpl(0.25));
         TableTools.show(percentile);
         TestCase.assertEquals(BigInteger.valueOf(100), percentile.getColumn("Value").get(0));
 
@@ -3527,7 +3527,7 @@ public class QueryTableAggregationTest {
                 source.setRefreshing(true);
 
                 resultSets[substituteForThisIteration ? 1 : 0] = new Table[] {
-                        source.by("A"),
+                        source.groupBy("A"),
                         source.firstBy("A"),
                         source.lastBy("A"),
                         source.minBy("A"),
@@ -3551,7 +3551,7 @@ public class QueryTableAggregationTest {
 
     @Test
     public void testIds7553() {
-        final Table result = emptyTable(100).updateView("K=ii%10", "V=ii/10").by("K").ungroup();
+        final Table result = emptyTable(100).updateView("K=ii%10", "V=ii/10").groupBy("K").ungroup();
         final Table prevResult = prevTableColumnSources(result);
         assertTableEquals(result, prevResult);
     }

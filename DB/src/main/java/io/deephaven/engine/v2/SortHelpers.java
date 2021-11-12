@@ -348,7 +348,7 @@ public class SortHelpers {
         }
 
         final Table idMapping = symbolTable.sort(SymbolTableSource.SYMBOL_COLUMN_NAME)
-                .by(SymbolTableSource.SYMBOL_COLUMN_NAME).update(SORTED_INDEX_COLUMN_UPDATE).ungroup()
+                .groupBy(SymbolTableSource.SYMBOL_COLUMN_NAME).update(SORTED_INDEX_COLUMN_UPDATE).ungroup()
                 .view(SymbolTableSource.ID_COLUMN_NAME, SORTED_INDEX_COLUMN_NAME);
 
         final int symbolEntries = idMapping.intSize();
@@ -362,9 +362,9 @@ public class SortHelpers {
                 idSource.fillChunk(idContext, originalSymbol, idMapping.getRowSet());
             }
 
-            final ColumnSource sortedIndexSource = idMapping.getColumnSource(SORTED_INDEX_COLUMN_NAME);
-            try (final ColumnSource.FillContext sortedIndexContext = sortedIndexSource.makeFillContext(symbolEntries)) {
-                sortedIndexSource.fillChunk(sortedIndexContext, mappedIndex, idMapping.getRowSet());
+            final ColumnSource sortedRowSetSource = idMapping.getColumnSource(SORTED_INDEX_COLUMN_NAME);
+            try (final ColumnSource.FillContext sortedIndexContext = sortedRowSetSource.makeFillContext(symbolEntries)) {
+                sortedRowSetSource.fillChunk(sortedIndexContext, mappedIndex, idMapping.getRowSet());
             }
 
             mapping = SparseSymbolMapping.createMapping(originalSymbol, mappedIndex);

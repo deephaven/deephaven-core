@@ -67,7 +67,7 @@ public class Selectables {
         Require.neqNull(t, "t");
         // This allows a supplier to be used for one clicks
         final Table table = TableSupplier.complete(t);
-        return oneClick(t.byExternal(byColumns), table, requireAllFiltersToDisplay, byColumns);
+        return oneClick(t.partitionBy(byColumns), table, requireAllFiltersToDisplay, byColumns);
     }
 
     /**

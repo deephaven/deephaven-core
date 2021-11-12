@@ -28,7 +28,7 @@ class Sum extends FlightCannedTableBase implements TableCreationLogic {
     public <T extends TableOperations<T, T>> T create(TableCreator<T> c) {
         return c.of(TableSpec.empty(count))
                 .view("I=i")
-                .by(Collections.emptyList(), Collections.singleton(io.deephaven.api.agg.Sum.of("Sum=I")));
+                .aggBy(Collections.singleton(io.deephaven.api.agg.Sum.of("Sum=I")), Collections.emptyList());
     }
 
     public static void main(String[] args) {

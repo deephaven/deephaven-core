@@ -117,10 +117,10 @@ public class TestRedirectedColumnSource {
         final Table a = TableTools.emptyTable(1_000_000L).update("A=(long) (Math.random() * 1_000_000L)");
 
         final Table ab = a.update("B=A % 2");
-        final Table expected = ab.by("B", "A").sort("A");
+        final Table expected = ab.groupBy("B", "A").sort("A");
 
         final Table redirected = a.sort("A").update("B=A % 2");
-        final Table actual = redirected.by("B", "A");
+        final Table actual = redirected.groupBy("B", "A");
 
         assertTableEquals(expected, actual);
     }

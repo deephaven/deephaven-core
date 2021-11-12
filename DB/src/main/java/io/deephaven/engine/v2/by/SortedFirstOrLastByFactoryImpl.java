@@ -10,7 +10,7 @@ import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Objects;
 
-public class SortedFirstOrLastByFactoryImpl extends IterativeIndexStateFactory implements Serializable {
+public class SortedFirstOrLastByFactoryImpl extends IterativeIndexSpec implements Serializable {
 
     final private String[] sortColumnNames;
     final private boolean minimum;

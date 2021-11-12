@@ -939,14 +939,14 @@ public class QueryTableSelectUpdateTest {
                     public Table e() {
                         return SparseSelect
                                 .sparseSelect(TableTools.merge(sortedTable, sortedTable, sortedTable, sortedTable)
-                                        .by("Sym").sort("Sym").ungroup());
+                                        .groupBy("Sym").sort("Sym").ungroup());
                     }
                 },
                 new TableComparator(
-                        TableTools.merge(sortedTable, sortedTable, sortedTable, sortedTable).by("Sym").sort("Sym")
+                        TableTools.merge(sortedTable, sortedTable, sortedTable, sortedTable).groupBy("Sym").sort("Sym")
                                 .ungroup(),
                         SparseSelect.sparseSelect(TableTools.merge(sortedTable, sortedTable, sortedTable, sortedTable)
-                                .by("Sym").sort("Sym").ungroup())),
+                                .groupBy("Sym").sort("Sym").ungroup())),
                 new TableComparator(queryTable, SparseSelect.sparseSelect(queryTable)),
                 new TableComparator(queryTable,
                         SparseSelect.partialSparseSelect(queryTable, Arrays.asList("shortCol", "dateTime"))),

@@ -300,7 +300,7 @@ public class TestParquetTools {
         }
         final Table baseTable =
                 newTable(stringCol("USym", symbol), doubleCol("Bid", bid), doubleCol("BidSize", bidSize));
-        return baseTable.by("USym", "Bid").by("USym");
+        return baseTable.groupBy("USym", "Bid").groupBy("USym");
     }
 
     @Test
@@ -340,7 +340,7 @@ public class TestParquetTools {
         final Table expected = TableTools.merge(
                 table1.updateView("Date=`2021-07-20`", "Num=(short)100"),
                 table1.updateView("Date=`2021-07-20`", "Num=(short)200"),
-                table1.updateView("Date=`2021-07-21`", "Num=(short)300")).moveUpColumns("Date", "Num");
+                table1.updateView("Date=`2021-07-21`", "Num=(short)300")).moveColumnsUp("Date", "Num");
         TstUtils.assertTableEquals(expected, result);
     }
 }

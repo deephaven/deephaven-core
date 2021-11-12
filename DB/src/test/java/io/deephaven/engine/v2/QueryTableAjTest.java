@@ -519,9 +519,9 @@ public class QueryTableAjTest {
         } else {
             resultBucket = leftTable.aj(rightTable, "Bucket," + stampMatch, "RightSentinel");
         }
-        final TableMap bucketResults = resultBucket.byExternal("Bucket");
-        final TableMap leftBucket = leftTable.byExternal("Bucket");
-        final TableMap rightBucket = rightTable.byExternal("Bucket");
+        final TableMap bucketResults = resultBucket.partitionBy("Bucket");
+        final TableMap leftBucket = leftTable.partitionBy("Bucket");
+        final TableMap rightBucket = rightTable.partitionBy("Bucket");
 
         for (Object key : bucketResults.getKeySet()) {
             System.out.println("Bucket:" + key);
@@ -555,9 +555,9 @@ public class QueryTableAjTest {
                 (QueryTable) rightTable.reverse(), MatchPairFactory.getExpressions("Bucket", "LeftStamp=RightStamp"),
                 MatchPairFactory.getExpressions("RightStamp", "RightSentinel"), SortingOrder.Descending, true);
 
-        final TableMap bucketResults = result.byExternal("Bucket");
-        final TableMap leftBucket = leftTable.byExternal("Bucket");
-        final TableMap rightBucket = rightTable.byExternal("Bucket");
+        final TableMap bucketResults = result.partitionBy("Bucket");
+        final TableMap leftBucket = leftTable.partitionBy("Bucket");
+        final TableMap rightBucket = rightTable.partitionBy("Bucket");
 
         for (Object key : bucketResults.getKeySet()) {
             checkAjResult(leftBucket.get(key), rightBucket.get(key), bucketResults.get(key), true, true);
@@ -972,12 +972,12 @@ public class QueryTableAjTest {
                 showWithIndex(leftTable, 100);
                 System.out.println("Left Table (sorted):");
                 show(leftTable.update("TrackingMutableRowSet=k").sort("LeftStamp")
-                        .moveUpColumns("TrackingMutableRowSet"), 100);
+                        .moveColumnsUp("TrackingMutableRowSet"), 100);
                 System.out.println("Right Table:" + rightTable.size());
                 showWithIndex(rightTable, 100);
                 System.out.println("Right Table Sorted:" + rightSorted.size());
                 show(rightTable.update("TrackingMutableRowSet=k").sort("RightStamp")
-                        .moveUpColumns("TrackingMutableRowSet"), 100);
+                        .moveColumnsUp("TrackingMutableRowSet"), 100);
                 if (withReverse) {
                     System.out.println("Right Table (reversed):");
                     showWithIndex(rightReversed, 100);

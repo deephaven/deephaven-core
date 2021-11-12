@@ -40,14 +40,14 @@ public class TestSelectables extends BaseArrayTestCase {
             assertTrue(e.getMessage().contains("empty"));
         }
         testFilteredTable(Selectables.oneClick(table, byColumn));
-        testFilteredTable(new SelectableDataSetOneClick(table.byExternal(byColumn), table.getDefinition(),
+        testFilteredTable(new SelectableDataSetOneClick(table.partitionBy(byColumn), table.getDefinition(),
                 new String[] {byColumn}));
     }
 
     private void testFilteredTable(SelectableDataSet<String, Set<Object>> selectableDataSet) {
         SwappableTable swappableTable =
                 selectableDataSet.getSwappableTable("M", figure.newChart(), t -> t, byColumn, valueColumn);
-        testTableMapEquals(table.byExternal(byColumn), swappableTable.getTableMapHandle().getTableMap());
+        testTableMapEquals(table.partitionBy(byColumn), swappableTable.getTableMapHandle().getTableMap());
     }
 
     private void testTableMapEquals(final TableMap t1, final TableMap t2) {

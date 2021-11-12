@@ -83,7 +83,7 @@ public class ParquetTableReadWriteTest {
         Table t = getOneColumnTableFlat(size);
         QueryLibrary.importClass(StringSetArrayWrapper.class);
         QueryLibrary.importClass(StringSet.class);
-        Table result = t.by("groupKey = i % 100 + (int)(i/10)");
+        Table result = t.groupBy("groupKey = i % 100 + (int)(i/10)");
         result = result.select(result.getDefinition().getColumnNames().stream()
                 .map(name -> name.equals("groupKey") ? name
                         : (name + " = i % 5 == 0 ? null:(i%3 == 0?" + name + ".subVector(0,0):" + name
@@ -105,7 +105,7 @@ public class ParquetTableReadWriteTest {
         Table t = getTableFlat(size, includeSerializable);
         QueryLibrary.importClass(StringSetArrayWrapper.class);
         QueryLibrary.importClass(StringSet.class);
-        Table result = t.by("groupKey = i % 100 + (int)(i/10)");
+        Table result = t.groupBy("groupKey = i % 100 + (int)(i/10)");
         result = result.select(result.getDefinition().getColumnNames().stream()
                 .map(name -> name.equals("groupKey") ? name
                         : (name + " = i % 5 == 0 ? null:(i%3 == 0?" + name + ".subVector(0,0):" + name
@@ -192,7 +192,7 @@ public class ParquetTableReadWriteTest {
                 ColumnDefinition.ofLong("someLong").withGrouping());
         final Table testTable =
                 ((QueryTable) TableTools.emptyTable(10).select("someInt = i", "someLong  = ii % 3")
-                        .by("someLong").ungroup("someInt")).withDefinitionUnsafe(definition);
+                        .groupBy("someLong").ungroup("someInt")).withDefinitionUnsafe(definition);
         final File dest = new File(rootFile, "ParquetTest_groupByLong_test.parquet");
         ParquetTools.writeTable(testTable, dest);
         final Table fromDisk = ParquetTools.readTable(dest);
@@ -207,7 +207,7 @@ public class ParquetTableReadWriteTest {
                 ColumnDefinition.ofString("someString").withGrouping());
         final Table testTable =
                 ((QueryTable) TableTools.emptyTable(10).select("someInt = i", "someString  = `foo`")
-                        .where("i % 2 == 0").by("someString").ungroup("someInt"))
+                        .where("i % 2 == 0").groupBy("someString").ungroup("someInt"))
                                 .withDefinitionUnsafe(definition);
         final File dest = new File(rootFile, "ParquetTest_groupByString_test.parquet");
         ParquetTools.writeTable(testTable, dest);
@@ -224,7 +224,7 @@ public class ParquetTableReadWriteTest {
                 ColumnDefinition.fromGenericType("someBigInt", BigInteger.class).withGrouping());
         final Table testTable = ((QueryTable) TableTools.emptyTable(10)
                 .select("someInt = i", "someBigInt  =  BigInteger.valueOf(i % 3)").where("i % 2 == 0")
-                .by("someBigInt").ungroup("someInt")).withDefinitionUnsafe(definition);
+                .groupBy("someBigInt").ungroup("someInt")).withDefinitionUnsafe(definition);
         final File dest = new File(rootFile, "ParquetTest_groupByBigInt_test.parquet");
         ParquetTools.writeTable(testTable, dest);
         final Table fromDisk = ParquetTools.readTable(dest);

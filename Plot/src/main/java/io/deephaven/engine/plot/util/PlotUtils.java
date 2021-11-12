@@ -19,13 +19,13 @@ import io.deephaven.engine.tables.TableDefinition;
 import io.deephaven.engine.tables.select.MatchPair;
 import io.deephaven.engine.tables.select.QueryScope;
 import io.deephaven.engine.time.DateTime;
+import io.deephaven.engine.v2.by.KeyOnlyFirstOrLastBySpec;
 import io.deephaven.gui.color.ColorPaletteArray;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.v2.BaseTable;
 import io.deephaven.engine.v2.by.AggType;
 import io.deephaven.engine.v2.by.ComboAggregateFactory;
-import io.deephaven.engine.v2.by.KeyOnlyFirstOrLastByStateFactory;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.gui.color.Color;
 import io.deephaven.gui.color.ColorPalette;
@@ -738,7 +738,7 @@ public class PlotUtils {
 
     public static ComboAggregateFactory createCategoryComboAgg(ComboBy agg) {
         return AggCombo(
-                Agg(new KeyOnlyFirstOrLastByStateFactory(CategoryDataSeries.CAT_SERIES_ORDER_COLUMN, AggType.First),
+                Agg(new KeyOnlyFirstOrLastBySpec(CategoryDataSeries.CAT_SERIES_ORDER_COLUMN, AggType.First),
                         MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY),
                 agg);
     }

@@ -133,35 +133,35 @@ public class TestSelectOverheadLimiter extends RefreshingTableTestCase {
         final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
                 EvalNugget.Sorted.from(
                         () -> UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(
-                                () -> SelectOverheadLimiter.clampSelectOverhead(source.byExternal("Sym").merge(), 2.0)),
+                                () -> SelectOverheadLimiter.clampSelectOverhead(source.partitionBy("Sym").merge(), 2.0)),
                         "Sym"),
                 EvalNugget.Sorted.from(() -> UpdateGraphProcessor.DEFAULT.sharedLock()
                         .computeLocked(() -> SelectOverheadLimiter
-                                .clampSelectOverhead(source.byExternal("Sym").merge(), 2.0).select()),
+                                .clampSelectOverhead(source.partitionBy("Sym").merge(), 2.0).select()),
                         "Sym"),
                 EvalNugget.Sorted.from(
                         () -> UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(
-                                () -> SelectOverheadLimiter.clampSelectOverhead(source.byExternal("Sym").merge(), 4.0)),
+                                () -> SelectOverheadLimiter.clampSelectOverhead(source.partitionBy("Sym").merge(), 4.0)),
                         "Sym"),
                 EvalNugget.Sorted.from(
                         () -> UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(
-                                () -> SelectOverheadLimiter.clampSelectOverhead(source.byExternal("Sym").merge(), 4.5)),
+                                () -> SelectOverheadLimiter.clampSelectOverhead(source.partitionBy("Sym").merge(), 4.5)),
                         "Sym"),
                 EvalNugget.Sorted.from(() -> UpdateGraphProcessor.DEFAULT.sharedLock()
                         .computeLocked(() -> SelectOverheadLimiter
-                                .clampSelectOverhead(source.byExternal("Sym").merge(), 4.5).select()),
+                                .clampSelectOverhead(source.partitionBy("Sym").merge(), 4.5).select()),
                         "Sym"),
                 EvalNugget.Sorted.from(
                         () -> UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(
-                                () -> SelectOverheadLimiter.clampSelectOverhead(source.byExternal("Sym").merge(), 5.0)),
+                                () -> SelectOverheadLimiter.clampSelectOverhead(source.partitionBy("Sym").merge(), 5.0)),
                         "Sym"),
                 EvalNugget.Sorted.from(() -> UpdateGraphProcessor.DEFAULT.sharedLock()
                         .computeLocked(() -> SelectOverheadLimiter
-                                .clampSelectOverhead(source.byExternal("Sym").merge(), 10.0).select()),
+                                .clampSelectOverhead(source.partitionBy("Sym").merge(), 10.0).select()),
                         "Sym"),
                 EvalNugget.Sorted.from(() -> UpdateGraphProcessor.DEFAULT.sharedLock()
                         .computeLocked(() -> SelectOverheadLimiter
-                                .clampSelectOverhead(source.byExternal("Sym").merge(), 10.0).select()),
+                                .clampSelectOverhead(source.partitionBy("Sym").merge(), 10.0).select()),
                         "Sym"),
         };
 

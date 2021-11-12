@@ -4,6 +4,9 @@
 
 package io.deephaven.engine.v2;
 
+import io.deephaven.api.ColumnName;
+import io.deephaven.api.agg.Aggregation;
+import io.deephaven.api.agg.AggregationOutputs;
 import io.deephaven.base.Function;
 import io.deephaven.base.StringUtils;
 import io.deephaven.base.verify.Assert;
@@ -407,18 +410,18 @@ public class QueryTable extends BaseTable {
     }
 
     @Override
-    public LocalTableMap byExternal(final boolean dropKeys, final String... keyColumnNames) {
+    public LocalTableMap partitionBy(final boolean dropKeys, final String... keyColumnNames) {
         if (isStream()) {
-            throw streamUnsupported("byExternal");
+            throw streamUnsupported("partitionBy");
         }
         final SelectColumn[] groupByColumns =
                 Arrays.stream(keyColumnNames).map(SourceColumn::new).toArray(SelectColumn[]::new);
 
         return memoizeResult(MemoizedOperationKey.byExternal(dropKeys, groupByColumns),
                 () -> QueryPerformanceRecorder.withNugget(
-                        "byExternal(" + dropKeys + ", " + Arrays.toString(keyColumnNames) + ')',
+                        "partitionBy(" + dropKeys + ", " + Arrays.toString(keyColumnNames) + ')',
                         sizeForInstrumentation(),
-                        () -> ByExternalAggregationFactory.byExternal(this, dropKeys,
+                        () -> PartitionByAggregationFactory.byExternal(this, dropKeys,
                                 (pt, st) -> pt.copyAttributes(st, CopyAttributeOperation.ByExternal),
                                 Collections.emptyList(), groupByColumns)));
     }
@@ -480,7 +483,7 @@ public class QueryTable extends BaseTable {
             throw streamUnsupported("treeTable");
         }
         return memoizeResult(MemoizedOperationKey.treeTable(idColumn, parentColumn), () -> {
-            final LocalTableMap byExternalResult = ByExternalAggregationFactory.byExternal(this, false,
+            final LocalTableMap byExternalResult = PartitionByAggregationFactory.byExternal(this, false,
                     (pt, st) -> pt.copyAttributes(st, CopyAttributeOperation.ByExternal),
                     Collections.singletonList(null), parentColumn);
             final QueryTable rootTable = (QueryTable) byExternalResult.get(null);
@@ -553,7 +556,7 @@ public class QueryTable extends BaseTable {
                         rightColumnKeys[i] = match.rightColumn;
                     }
 
-                    Table groupedRight = table.by(rightColumnKeys);
+                    Table groupedRight = table.groupBy(rightColumnKeys);
                     return naturalJoin(groupedRight, columnsToMatch, columnsToAdd);
                 });
     }
@@ -568,12 +571,51 @@ public class QueryTable extends BaseTable {
     }
 
     @Override
+    public Table groupBy(SelectColumn... selectColumns) {
+        return QueryPerformanceRecorder.withNugget("groupBy(" + Arrays.toString(selectColumns) + ")",
+                sizeForInstrumentation(),
+                () -> by(new AggregationArraySpec(), selectColumns)
+        );
+    }
+
+    @Override
+    public Table aggBy(Collection<? extends Aggregation> aggregations, SelectColumn... groupByColumns) {
+        return QueryPerformanceRecorder.withNugget("lastBy(" + Arrays.toString(groupByColumns) + ")",
+                sizeForInstrumentation(),
+                () -> {
+                    List<ComboAggregateFactory.ComboBy> optimized = ComboAggregateFactory.ComboBy.optimize(aggregations);
+                    List<ColumnName> optimizedOrder = optimized.stream()
+                            .map(ComboAggregateFactory.ComboBy::getResultPairs)
+                            .flatMap(Stream::of)
+                            .map(MatchPair::left)
+                            .map(ColumnName::of)
+                            .collect(Collectors.toList());
+                    List<ColumnName> userOrder = AggregationOutputs.of(aggregations).collect(Collectors.toList());
+
+                    Table aggregationTable = by(
+                            new ComboAggregateFactory(optimized),
+                            groupByColumns);
+
+                    if (userOrder.equals(optimizedOrder)) {
+                        return aggregationTable;
+                    }
+
+                    // We need to re-order the columns to match the user-provided order
+                    List<ColumnName> newOrder =
+                            Stream.concat(Stream.of(groupByColumns).map(c -> ColumnName.of(c.getName())), userOrder.stream())
+                                    .collect(Collectors.toList());
+
+                    return aggregationTable.view(newOrder);
+                });
+    }
+
+    @Override
     public Table lastBy(SelectColumn... selectColumns) {
         return QueryPerformanceRecorder.withNugget("lastBy(" + Arrays.toString(selectColumns) + ")",
                 sizeForInstrumentation(),
                 () -> {
                     final Table result =
-                            by(TRACKED_LAST_BY ? new TrackingLastByStateFactoryImpl() : new LastByStateFactoryImpl(),
+                            by(TRACKED_LAST_BY ? new TrackingLastBySpecImpl() : new LastBySpecImpl(),
                                     selectColumns);
                     copyAttributes(result, CopyAttributeOperation.LastBy);
                     return result;
@@ -586,7 +628,7 @@ public class QueryTable extends BaseTable {
                 sizeForInstrumentation(),
                 () -> {
                     final Table result =
-                            by(TRACKED_FIRST_BY ? new TrackingFirstByStateFactoryImpl() : new FirstByStateFactoryImpl(),
+                            by(TRACKED_FIRST_BY ? new TrackingFirstBySpecImpl() : new FirstBySpecImpl(),
                                     selectColumns);
                     copyAttributes(result, CopyAttributeOperation.FirstBy);
                     return result;
@@ -598,9 +640,9 @@ public class QueryTable extends BaseTable {
         return QueryPerformanceRecorder.withNugget("minBy(" + Arrays.toString(selectColumns) + ")",
                 sizeForInstrumentation(), () -> {
                     if (isRefreshing()) {
-                        return by(new MinMaxByStateFactoryImpl(true), selectColumns);
+                        return by(new MinMaxBySpecImpl(true), selectColumns);
                     } else {
-                        return by(new AddOnlyMinMaxByStateFactoryImpl(true), selectColumns);
+                        return by(new AddOnlyMinMaxBySpecImpl(true), selectColumns);
                     }
                 });
     }
@@ -610,9 +652,9 @@ public class QueryTable extends BaseTable {
         return QueryPerformanceRecorder.withNugget("maxBy(" + Arrays.toString(selectColumns) + ")",
                 sizeForInstrumentation(), () -> {
                     if (isRefreshing()) {
-                        return by(new MinMaxByStateFactoryImpl(false), selectColumns);
+                        return by(new MinMaxBySpecImpl(false), selectColumns);
                     } else {
-                        return by(new AddOnlyMinMaxByStateFactoryImpl(false), selectColumns);
+                        return by(new AddOnlyMinMaxBySpecImpl(false), selectColumns);
                     }
                 });
     }
@@ -621,7 +663,7 @@ public class QueryTable extends BaseTable {
     public Table medianBy(SelectColumn... selectColumns) {
         return QueryPerformanceRecorder.withNugget("medianBy(" + Arrays.toString(selectColumns) + ")",
                 sizeForInstrumentation(),
-                () -> by(new PercentileByStateFactoryImpl(0.50, true), selectColumns));
+                () -> by(new PercentileBySpecImpl(0.50, true), selectColumns));
     }
 
     @Override
@@ -632,83 +674,83 @@ public class QueryTable extends BaseTable {
                     if (!COLUMN_NAME.matcher(countColumnName).matches()) { // TODO: Test more columns this way
                         throw new RuntimeException(countColumnName + " is not a valid column name");
                     }
-                    return by(new CountByStateFactoryImpl(countColumnName), groupByColumns);
+                    return by(new CountBySpecImpl(countColumnName), groupByColumns);
                 });
     }
 
-    public Table by(final AggregationStateFactory inputAggregationStateFactory, final SelectColumn... groupByColumns) {
-        return memoizeResult(MemoizedOperationKey.by(inputAggregationStateFactory, groupByColumns),
-                () -> byNoMemo(inputAggregationStateFactory, groupByColumns));
+    public Table by(final AggregationSpec inputAggregationSpec, final SelectColumn... groupByColumns) {
+        return memoizeResult(MemoizedOperationKey.by(inputAggregationSpec, groupByColumns),
+                () -> byNoMemo(inputAggregationSpec, groupByColumns));
     }
 
-    private QueryTable byNoMemo(AggregationStateFactory inputAggregationStateFactory,
-            final SelectColumn... groupByColumns) {
-        final String description = "by(" + inputAggregationStateFactory + ", " + Arrays.toString(groupByColumns) + ")";
+    private QueryTable byNoMemo(AggregationSpec inputAggregationSpec,
+                                final SelectColumn... groupByColumns) {
+        final String description = "by(" + inputAggregationSpec + ", " + Arrays.toString(groupByColumns) + ")";
 
         return QueryPerformanceRecorder.withNugget(description, sizeForInstrumentation(), () -> {
 
-            final boolean isBy = inputAggregationStateFactory.getClass() == AggregationIndexStateFactory.class;
+            final boolean isBy = inputAggregationSpec.getClass() == AggregationArraySpec.class;
             final boolean isApplyToAllBy =
-                    inputAggregationStateFactory.getClass() == AggregationFormulaStateFactory.class;
-            final boolean isNumeric = inputAggregationStateFactory.getClass() == SumStateFactory.class ||
-                    inputAggregationStateFactory.getClass() == AbsSumStateFactory.class ||
-                    inputAggregationStateFactory.getClass() == AvgStateFactory.class ||
-                    inputAggregationStateFactory.getClass() == VarStateFactory.class ||
-                    inputAggregationStateFactory.getClass() == StdStateFactory.class;
+                    inputAggregationSpec.getClass() == AggregationFormulaSpec.class;
+            final boolean isNumeric = inputAggregationSpec.getClass() == SumSpec.class ||
+                    inputAggregationSpec.getClass() == AbsSumSpec.class ||
+                    inputAggregationSpec.getClass() == AvgSpec.class ||
+                    inputAggregationSpec.getClass() == VarSpec.class ||
+                    inputAggregationSpec.getClass() == StdSpec.class;
             final boolean isSelectDistinct =
-                    inputAggregationStateFactory.getClass() == SelectDistinctStateFactoryImpl.class;
-            final boolean isCount = inputAggregationStateFactory.getClass() == CountByStateFactoryImpl.class;
-            final boolean isMinMax = inputAggregationStateFactory instanceof MinMaxByStateFactoryImpl;
-            final boolean isPercentile = inputAggregationStateFactory.getClass() == PercentileByStateFactoryImpl.class;
+                    inputAggregationSpec.getClass() == SelectDistinctSpecImpl.class;
+            final boolean isCount = inputAggregationSpec.getClass() == CountBySpecImpl.class;
+            final boolean isMinMax = inputAggregationSpec instanceof MinMaxBySpecImpl;
+            final boolean isPercentile = inputAggregationSpec.getClass() == PercentileBySpecImpl.class;
             final boolean isWeightedAvg =
-                    inputAggregationStateFactory.getClass() == WeightedAverageStateFactoryImpl.class;
-            final boolean isWeightedSum = inputAggregationStateFactory.getClass() == WeightedSumStateFactoryImpl.class;
-            final boolean isSortedFirstOrLast = inputAggregationStateFactory instanceof SortedFirstOrLastByFactoryImpl;
-            final boolean isFirst = inputAggregationStateFactory.getClass() == FirstByStateFactoryImpl.class
-                    || inputAggregationStateFactory.getClass() == TrackingFirstByStateFactoryImpl.class;
-            final boolean isLast = inputAggregationStateFactory.getClass() == LastByStateFactoryImpl.class
-                    || inputAggregationStateFactory.getClass() == TrackingLastByStateFactoryImpl.class;
-            final boolean isCombo = inputAggregationStateFactory instanceof ComboAggregateFactory;
+                    inputAggregationSpec.getClass() == WeightedAverageSpecImpl.class;
+            final boolean isWeightedSum = inputAggregationSpec.getClass() == WeightedSumSpecImpl.class;
+            final boolean isSortedFirstOrLast = inputAggregationSpec instanceof SortedFirstOrLastByFactoryImpl;
+            final boolean isFirst = inputAggregationSpec.getClass() == FirstBySpecImpl.class
+                    || inputAggregationSpec.getClass() == TrackingFirstBySpecImpl.class;
+            final boolean isLast = inputAggregationSpec.getClass() == LastBySpecImpl.class
+                    || inputAggregationSpec.getClass() == TrackingLastBySpecImpl.class;
+            final boolean isCombo = inputAggregationSpec instanceof ComboAggregateFactory;
 
             if (isBy) {
                 if (isStream()) {
-                    throw streamUnsupported("by");
+                    throw streamUnsupported("groupBy");
                 }
                 if (USE_OLDER_CHUNKED_BY) {
                     return AggregationHelper.by(this, groupByColumns);
                 }
-                return ByAggregationFactory.by(this, groupByColumns);
+                return GroupByAggregationFactory.by(this, groupByColumns);
             } else if (isApplyToAllBy) {
                 if (isStream()) {
                     throw streamUnsupported("applyToAllBy");
                 }
-                final String formula = ((AggregationFormulaStateFactory) inputAggregationStateFactory).getFormula();
+                final String formula = ((AggregationFormulaSpec) inputAggregationSpec).getFormula();
                 final String columnParamName =
-                        ((AggregationFormulaStateFactory) inputAggregationStateFactory).getColumnParamName();
+                        ((AggregationFormulaSpec) inputAggregationSpec).getColumnParamName();
                 return FormulaAggregationFactory.applyToAllBy(this, formula, columnParamName, groupByColumns);
             } else if (isNumeric) {
                 return ChunkedOperatorAggregationHelper.aggregation(new NonKeyColumnAggregationFactory(
-                        (IterativeChunkedOperatorFactory) inputAggregationStateFactory), this, groupByColumns);
+                        (IterativeChunkedOperatorFactory) inputAggregationSpec), this, groupByColumns);
             } else if (isSortedFirstOrLast) {
                 final boolean isSortedFirst =
-                        ((SortedFirstOrLastByFactoryImpl) inputAggregationStateFactory).isSortedFirst();
+                        ((SortedFirstOrLastByFactoryImpl) inputAggregationSpec).isSortedFirst();
                 return ChunkedOperatorAggregationHelper.aggregation(
                         new SortedFirstOrLastByAggregationFactory(isSortedFirst, false,
-                                ((SortedFirstOrLastByFactoryImpl) inputAggregationStateFactory).getSortColumnNames()),
+                                ((SortedFirstOrLastByFactoryImpl) inputAggregationSpec).getSortColumnNames()),
                         this, groupByColumns);
             } else if (isFirst || isLast) {
                 return ChunkedOperatorAggregationHelper.aggregation(new FirstOrLastByAggregationFactory(isFirst), this,
                         groupByColumns);
             } else if (isMinMax) {
-                final boolean isMin = ((MinMaxByStateFactoryImpl) inputAggregationStateFactory).isMinimum();
+                final boolean isMin = ((MinMaxBySpecImpl) inputAggregationSpec).isMinimum();
                 return ChunkedOperatorAggregationHelper.aggregation(
                         new NonKeyColumnAggregationFactory(
                                 new MinMaxIterativeOperatorFactory(isMin, isStream() || isAddOnly())),
                         this, groupByColumns);
             } else if (isPercentile) {
-                final double percentile = ((PercentileByStateFactoryImpl) inputAggregationStateFactory).getPercentile();
+                final double percentile = ((PercentileBySpecImpl) inputAggregationSpec).getPercentile();
                 final boolean averageMedian =
-                        ((PercentileByStateFactoryImpl) inputAggregationStateFactory).getAverageMedian();
+                        ((PercentileBySpecImpl) inputAggregationSpec).getAverageMedian();
                 return ChunkedOperatorAggregationHelper.aggregation(
                         new NonKeyColumnAggregationFactory(
                                 new PercentileIterativeOperatorFactory(percentile, averageMedian)),
@@ -716,16 +758,16 @@ public class QueryTable extends BaseTable {
             } else if (isWeightedAvg || isWeightedSum) {
                 final String weightName;
                 if (isWeightedAvg) {
-                    weightName = ((WeightedAverageStateFactoryImpl) inputAggregationStateFactory).getWeightName();
+                    weightName = ((WeightedAverageSpecImpl) inputAggregationSpec).getWeightName();
                 } else {
-                    weightName = ((WeightedSumStateFactoryImpl) inputAggregationStateFactory).getWeightName();
+                    weightName = ((WeightedSumSpecImpl) inputAggregationSpec).getWeightName();
                 }
                 return ChunkedOperatorAggregationHelper.aggregation(
                         new WeightedAverageSumAggregationFactory(weightName, isWeightedSum), this, groupByColumns);
             } else if (isCount) {
                 return ChunkedOperatorAggregationHelper.aggregation(
                         new CountAggregationFactory(
-                                ((CountByStateFactoryImpl) inputAggregationStateFactory).getCountName()),
+                                ((CountBySpecImpl) inputAggregationSpec).getCountName()),
                         this, groupByColumns);
             } else if (isSelectDistinct) {
                 if (getColumnSourceMap().isEmpty()) {
@@ -737,11 +779,11 @@ public class QueryTable extends BaseTable {
                         groupByColumns);
             } else if (isCombo) {
                 return ChunkedOperatorAggregationHelper.aggregation(
-                        ((ComboAggregateFactory) inputAggregationStateFactory).makeAggregationContextFactory(), this,
+                        ((ComboAggregateFactory) inputAggregationSpec).makeAggregationContextFactory(), this,
                         groupByColumns);
             }
 
-            throw new RuntimeException("Unknown aggregation factory: " + inputAggregationStateFactory);
+            throw new RuntimeException("Unknown aggregation : " + inputAggregationSpec);
         });
     }
 
@@ -799,7 +841,7 @@ public class QueryTable extends BaseTable {
             }
         }
 
-        return by(groupByColumns).updateView(updates).ungroup().updateView(casting);
+        return groupBy(groupByColumns).updateView(updates).ungroup().updateView(casting);
     }
 
     @NotNull
@@ -843,7 +885,7 @@ public class QueryTable extends BaseTable {
         return QueryPerformanceRecorder.withNugget(
                 "applyToAllBy(" + formulaColumn + ',' + columnParamName + ',' + Arrays.toString(groupByColumns) + ")",
                 sizeForInstrumentation(),
-                () -> noFormattingColumnsTable.by(new AggregationFormulaStateFactory(formulaColumn, columnParamName),
+                () -> noFormattingColumnsTable.by(new AggregationFormulaSpec(formulaColumn, columnParamName),
                         groupByColumns));
     }
 
@@ -851,49 +893,49 @@ public class QueryTable extends BaseTable {
     public Table sumBy(SelectColumn... groupByColumns) {
         return QueryPerformanceRecorder.withNugget("sumBy(" + Arrays.toString(groupByColumns) + ")",
                 sizeForInstrumentation(),
-                () -> by(new SumStateFactory(), groupByColumns));
+                () -> by(new SumSpec(), groupByColumns));
     }
 
     @Override
     public Table absSumBy(SelectColumn... groupByColumns) {
         return QueryPerformanceRecorder.withNugget("absSumBy(" + Arrays.toString(groupByColumns) + ")",
                 sizeForInstrumentation(),
-                () -> by(new AbsSumStateFactory(), groupByColumns));
+                () -> by(new AbsSumSpec(), groupByColumns));
     }
 
     @Override
     public Table avgBy(SelectColumn... groupByColumns) {
         return QueryPerformanceRecorder.withNugget("avgBy(" + Arrays.toString(groupByColumns) + ")",
                 sizeForInstrumentation(),
-                () -> by(new AvgStateFactory(), groupByColumns));
+                () -> by(new AvgSpec(), groupByColumns));
     }
 
     @Override
     public Table wavgBy(String weightColumn, SelectColumn... groupByColumns) {
         return QueryPerformanceRecorder.withNugget(
                 "wavgBy(" + weightColumn + ", " + Arrays.toString(groupByColumns) + ")", sizeForInstrumentation(),
-                () -> by(new WeightedAverageStateFactoryImpl(weightColumn), groupByColumns));
+                () -> by(new WeightedAverageSpecImpl(weightColumn), groupByColumns));
     }
 
     @Override
     public Table wsumBy(String weightColumn, SelectColumn... groupByColumns) {
         return QueryPerformanceRecorder.withNugget(
                 "wsumBy(" + weightColumn + ", " + Arrays.toString(groupByColumns) + ")", sizeForInstrumentation(),
-                () -> by(new WeightedSumStateFactoryImpl(weightColumn), groupByColumns));
+                () -> by(new WeightedSumSpecImpl(weightColumn), groupByColumns));
     }
 
     @Override
     public Table stdBy(SelectColumn... groupByColumns) {
         return QueryPerformanceRecorder.withNugget("stdBy(" + Arrays.toString(groupByColumns) + ")",
                 sizeForInstrumentation(),
-                () -> by(new StdStateFactory(), groupByColumns));
+                () -> by(new StdSpec(), groupByColumns));
     }
 
     @Override
     public Table varBy(SelectColumn... groupByColumns) {
         return QueryPerformanceRecorder.withNugget("varBy(" + Arrays.toString(groupByColumns) + ")",
                 sizeForInstrumentation(),
-                () -> by(new VarStateFactory(), groupByColumns));
+                () -> by(new VarSpec(), groupByColumns));
     }
 
     public static class FilteredTable extends QueryTable implements SelectFilter.RecomputeListener {
@@ -1912,7 +1954,7 @@ public class QueryTable extends BaseTable {
                         rightTable = rightTableCandidate;
                     }
 
-                    final Table rightGrouped = rightTable.by(rightColumnsToMatch)
+                    final Table rightGrouped = rightTable.groupBy(rightColumnsToMatch)
                             .view(columnsToAddSelectColumns.toArray(SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY));
                     final Table naturalJoinResult = naturalJoin(rightGrouped, columnsToMatch,
                             columnsToAddAfterRename.toArray(MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY));
@@ -2935,7 +2977,7 @@ public class QueryTable extends BaseTable {
     public Table selectDistinct(SelectColumn... columns) {
         return QueryPerformanceRecorder.withNugget("selectDistinct(" + Arrays.toString(columns) + ")",
                 sizeForInstrumentation(),
-                () -> by(new SelectDistinctStateFactoryImpl(), columns));
+                () -> by(new SelectDistinctSpecImpl(), columns));
     }
 
     @Override
@@ -2947,7 +2989,7 @@ public class QueryTable extends BaseTable {
             @Nullable final ModifiedColumnSet resultModifiedColumnSet,
             @NotNull final Object... parents) {
         return QueryPerformanceRecorder.withNugget("getSubTable", sizeForInstrumentation(), () -> {
-            // there is no operation check here, because byExternal calls it internally; and the TrackingMutableRowSet
+            // there is no operation check here, because partitionBy calls it internally; and the TrackingMutableRowSet
             // results are
             // not updated internally, but rather externally.
             final QueryTable result = new QueryTable(definition, rowSet, columns, resultModifiedColumnSet);

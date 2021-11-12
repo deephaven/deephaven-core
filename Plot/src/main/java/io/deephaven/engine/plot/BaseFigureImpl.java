@@ -496,7 +496,7 @@ public class BaseFigureImpl implements BaseFigure, PlotExceptionCause {
                 final TableMap map = byColMap.computeIfAbsent(keyColumns,
                         x -> {
                             final TableMap handleMap = h.getTableMap();
-                            return handleMap == null ? table.byExternal(keyColumnsArray) : handleMap;
+                            return handleMap == null ? table.partitionBy(keyColumnsArray) : handleMap;
                         });
 
                 h.setTableMap(map);

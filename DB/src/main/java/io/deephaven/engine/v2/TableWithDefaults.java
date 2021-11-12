@@ -6,7 +6,6 @@ package io.deephaven.engine.v2;
 
 import io.deephaven.api.*;
 import io.deephaven.api.agg.Aggregation;
-import io.deephaven.api.agg.AggregationOutputs;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.base.Function;
 import io.deephaven.base.Pair;
@@ -23,10 +22,7 @@ import io.deephaven.engine.tables.utils.WhereClause;
 import io.deephaven.engine.time.DateTime;
 import io.deephaven.engine.util.ColumnFormattingValues;
 import io.deephaven.engine.util.liveness.LivenessScopeStack;
-import io.deephaven.engine.v2.by.AggregationIndexStateFactory;
-import io.deephaven.engine.v2.by.AggregationStateFactory;
 import io.deephaven.engine.v2.by.ComboAggregateFactory;
-import io.deephaven.engine.v2.by.ComboAggregateFactory.ComboBy;
 import io.deephaven.engine.v2.iterators.*;
 import io.deephaven.engine.v2.select.ReinterpretedColumn;
 import io.deephaven.engine.v2.select.SelectColumn;
@@ -81,7 +77,8 @@ public interface TableWithDefaults extends Table {
                 columnGrouping.toArray(new Boolean[0]),
         };
 
-        return new InMemoryTable(resultColumnNames, resultValues);    }
+        return new InMemoryTable(resultColumnNames, resultValues);
+    }
 
     @Override
     @AsyncMethod
@@ -485,13 +482,13 @@ public interface TableWithDefaults extends Table {
 
     @Override
     @AsyncMethod
-    default Table moveUpColumns(String... columnsToMove) {
+    default Table moveColumnsUp(String... columnsToMove) {
         return moveColumns(0, columnsToMove);
     }
 
     @Override
     @AsyncMethod
-    default Table moveDownColumns(String... columnsToMove) {
+    default Table moveColumnsDown(String... columnsToMove) {
         return moveColumns(getDefinition().getColumns().length - columnsToMove.length, true, columnsToMove);
     }
 
@@ -829,66 +826,39 @@ public interface TableWithDefaults extends Table {
 
     @Override
     @AsyncMethod
-    default Table by(AggregationStateFactory aggregationStateFactory, String... groupByColumns) {
-        return by(aggregationStateFactory, SelectColumnFactory.getExpressions(groupByColumns));
+    default Table groupBy(String... groupByColumns) {
+        return groupBy(SelectColumnFactory.getExpressions(groupByColumns));
     }
 
     @Override
     @AsyncMethod
-    default Table by(AggregationStateFactory aggregationStateFactory) {
-        return by(aggregationStateFactory, SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY);
+    default Table groupBy() {
+        return groupBy(SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY);
     }
 
     @Override
     @AsyncMethod
-    default Table by(SelectColumn... groupByColumns) {
-        return by(new AggregationIndexStateFactory(), groupByColumns);
+    default Table groupBy(Collection<? extends Selectable> groupByColumns) {
+        return groupBy(SelectColumn.from(groupByColumns));
     }
 
     @Override
     @AsyncMethod
-    default Table by(String... groupByColumns) {
-        return by(SelectColumnFactory.getExpressions(groupByColumns));
+    default Table aggBy(Collection<? extends Aggregation> aggregations) {
+        return aggBy(aggregations, Collections.emptyList());
     }
 
     @Override
     @AsyncMethod
-    default Table by() {
-        return by(SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY);
+    default Table aggBy(Collection<? extends Aggregation> aggregations, String... groupByColumns) {
+        return aggBy(aggregations, Stream.of(groupByColumns).map(Selectable::parse).collect(Collectors.toList()));
     }
 
     @Override
     @AsyncMethod
-    default Table by(Collection<? extends Selectable> groupByColumns) {
-        return by(SelectColumn.from(groupByColumns));
-    }
-
-    @Override
-    @AsyncMethod
-    default Table by(Collection<? extends Selectable> groupByColumns, Collection<? extends Aggregation> aggregations) {
-        List<ComboBy> optimized = ComboBy.optimize(aggregations);
-        List<ColumnName> optimizedOrder = optimized.stream()
-                .map(ComboBy::getResultPairs)
-                .flatMap(Stream::of)
-                .map(MatchPair::left)
-                .map(ColumnName::of)
-                .collect(Collectors.toList());
-        List<ColumnName> userOrder = AggregationOutputs.of(aggregations).collect(Collectors.toList());
-
-        Table aggregationTable = by(
-                new ComboAggregateFactory(optimized),
-                SelectColumn.from(groupByColumns));
-
-        if (userOrder.equals(optimizedOrder)) {
-            return aggregationTable;
-        }
-
-        // We need to re-order the columns to match the user-provided order
-        List<ColumnName> newOrder =
-                Stream.concat(groupByColumns.stream().map(Selectable::newColumn), userOrder.stream())
-                        .collect(Collectors.toList());
-
-        return aggregationTable.view(newOrder);
+    default Table aggBy(Collection<? extends Aggregation> aggregations,
+            Collection<? extends Selectable> groupByColumns) {
+        return aggBy(aggregations, SelectColumn.from(groupByColumns));
     }
 
     @Override
@@ -1195,13 +1165,13 @@ public interface TableWithDefaults extends Table {
     }
 
     // -----------------------------------------------------------------------------------------------------------------
-    // ByExternal Operations
+    // PartitionBy Operations
     // -----------------------------------------------------------------------------------------------------------------
 
     @Override
     @AsyncMethod
-    default TableMap byExternal(String... keyColumnNames) {
-        return byExternal(false, keyColumnNames);
+    default TableMap partitionBy(String... keyColumnNames) {
+        return partitionBy(false, keyColumnNames);
     }
 
     // -----------------------------------------------------------------------------------------------------------------

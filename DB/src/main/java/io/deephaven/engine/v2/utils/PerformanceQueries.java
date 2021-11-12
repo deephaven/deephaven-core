@@ -51,7 +51,7 @@ public class PerformanceQueries {
                         "QueryMemFree = WorkerHeapSize - QueryMemUsed" // Remaining memory until the query runs into the
                                                                        // max heap size
                 )
-                .moveUpColumns(
+                .moveColumnsUp(
                         "ProcessUniqueId", "EvaluationNumber",
                         "QueryMemUsed", "QueryMemFree", "QueryMemUsedPct",
                         "EndTime", "TimeSecs", "NetMemoryChange");
@@ -84,7 +84,7 @@ public class PerformanceQueries {
                         "NetMemoryChange = FreeMemoryChange - TotalMemoryChange" // Change in memory usage delta while
                                                                                  // this query was executing
                 )
-                .moveUpColumns(
+                .moveColumnsUp(
                         "ProcessUniqueId", "EvaluationNumber", "OperationNumber",
                         "EndTime", "TimeSecs", "NetMemoryChange");
 
@@ -138,7 +138,7 @@ public class PerformanceQueries {
                         "RowsPerCPUSec = round(NRows / EntryIntervalUsage * 1.0e9)" // Approximation of how fast CPU
                                                                                     // handles row changes
                 )
-                .moveUpColumns(
+                .moveColumnsUp(
                         "ProcessUniqueId", "EvaluationNumber", "OperationNumber",
                         "Ratio", "QueryMemUsed", "QueryMemUsedPct", "IntervalEndTime",
                         "RowsPerSec", "RowsPerCPUSec", "EntryDescription");
@@ -186,7 +186,7 @@ public class PerformanceQueries {
         // Create a table with updates from the most recent performance recording. interval at the top. (Within each
         // interval, operations are still sorted with the greatest Ratio at the top.)
 
-        final Table updateMostRecent = updateWorst.sortDescending("IntervalEndTime").moveUpColumns("IntervalEndTime");
+        final Table updateMostRecent = updateWorst.sortDescending("IntervalEndTime").moveColumnsUp("IntervalEndTime");
         resultMap.put("UpdateMostRecent", updateMostRecent);
 
 

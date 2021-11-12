@@ -261,23 +261,32 @@ public abstract class TableOperationsAdapter<TOPS_1 extends TableOperations<TOPS
     }
 
     @Override
-    public final TOPS_1 by() {
-        return adapt(delegate.by());
+    public final TOPS_1 groupBy() {
+        return adapt(delegate.groupBy());
     }
 
     @Override
-    public final TOPS_1 by(String... groupByColumns) {
-        return adapt(delegate.by(groupByColumns));
+    public final TOPS_1 groupBy(String... groupByColumns) {
+        return adapt(delegate.groupBy(groupByColumns));
     }
 
     @Override
-    public final TOPS_1 by(Collection<? extends Selectable> groupByColumns) {
-        return adapt(delegate.by(groupByColumns));
+    public final TOPS_1 groupBy(Collection<? extends Selectable> groupByColumns) {
+        return adapt(delegate.groupBy(groupByColumns));
     }
 
     @Override
-    public final TOPS_1 by(Collection<? extends Selectable> groupByColumns,
-            Collection<? extends Aggregation> aggregations) {
-        return adapt(delegate.by(groupByColumns, aggregations));
+    public final TOPS_1 aggBy(Collection<? extends Aggregation> aggregations) {
+        return adapt(delegate.aggBy(aggregations));
+    }
+
+    @Override
+    public final TOPS_1 aggBy(Collection<? extends Aggregation> aggregations, String... groupByColumns) {
+        return adapt(delegate.aggBy(aggregations, groupByColumns));
+    }
+
+    @Override
+    public final TOPS_1 aggBy(Collection<? extends Aggregation> aggregations, Collection<? extends Selectable> groupByColumns) {
+        return adapt(delegate.aggBy(aggregations, groupByColumns));
     }
 }

@@ -1251,7 +1251,7 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
                 TstUtils.testRefreshingTable(i(0).toTracking(), intCol("IntCol", 0), charCol("CharCol", 'a'));
 
         final Table joined = testRefreshingTable.view("CharCol").join(testRefreshingTable, "CharCol", "IntCol");
-        final TableMap map = joined.byExternal("IntCol");
+        final TableMap map = joined.partitionBy("IntCol");
         final Table merged = map.merge();
 
         final long start = System.currentTimeMillis();

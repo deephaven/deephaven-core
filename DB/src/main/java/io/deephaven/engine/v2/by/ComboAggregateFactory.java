@@ -34,6 +34,7 @@ import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.datastructures.util.SmartKey;
 import io.deephaven.engine.tables.ColumnDefinition;
 import io.deephaven.engine.tables.Table;
+import io.deephaven.engine.v2.select.SelectColumn;
 import io.deephaven.engine.vector.Vector;
 import io.deephaven.engine.tables.select.MatchPair;
 import io.deephaven.engine.tables.select.MatchPairFactory;
@@ -75,7 +76,7 @@ import java.util.stream.Stream;
 
 /**
  * The ComboAggregateFactory combines one or more aggregations into an operator for use with
- * {@link Table#by(AggregationStateFactory)}.
+ * {@link QueryTable#by(AggregationSpec, SelectColumn...)}.
  *
  * <p>
  * The intended use of this class is to call the {@link #AggCombo(ComboBy...)} method with a set of aggregations defined
@@ -101,13 +102,8 @@ import java.util.stream.Stream;
  * <li>{@link #AggSortedFirst}</li>
  * <li>{@link #AggSortedLast}</li>
  * </ul>
- *
- * <p>
- * For example, to produce a table with several aggregations on the LastPrice of a Trades table:
- * {@code ohlc=trades.by(AggCombo(AggFirst("Open=LastPrice"), AggLast("Close=LastPrice"), AggMax("High=LastPrice"), AggMin("Low=LastPrice"), AggSum("Volume=Size"), AggWAvg("Size", "VWAP=LastPrice"), "Symbol")}
- * </p>
  */
-public class ComboAggregateFactory implements AggregationStateFactory {
+public class ComboAggregateFactory implements AggregationSpec {
     static final String ROLLUP_RUNNING_SUM_COLUMN_ID = "_RS_";
     static final String ROLLUP_RUNNING_SUM2_COLUMN_ID = "_RS2_";
     static final String ROLLUP_NONNULL_COUNT_COLUMN_ID = "_NNC_";
@@ -123,7 +119,8 @@ public class ComboAggregateFactory implements AggregationStateFactory {
     public static final String ROLLUP_COLUMN_SUFFIX = "__ROLLUP__";
 
     /**
-     * Create a new ComboAggregateFactory suitable for passing to {@link Table#by(AggregationStateFactory, String...)}.
+     * Create a new ComboAggregateFactory suitable for passing to
+     * {@link QueryTable#by(AggregationSpec, io.deephaven.engine.v2.select.SelectColumn...)}.
      *
      * @param aggregations the aggregations to compute
      *
@@ -143,7 +140,7 @@ public class ComboAggregateFactory implements AggregationStateFactory {
      * @return a ComboBy object suitable for passing to {@link #AggCombo(ComboBy...)}
      */
     public static ComboBy AggFormula(String formula, String formulaParam, final String... matchPairs) {
-        return new ComboByImpl(new AggregationFormulaStateFactory(formula, formulaParam), matchPairs);
+        return new ComboByImpl(new AggregationFormulaSpec(formula, formulaParam), matchPairs);
     }
 
     /**
@@ -221,7 +218,7 @@ public class ComboAggregateFactory implements AggregationStateFactory {
      * @return a ComboBy object suitable for passing to {@link #AggCombo(ComboBy...)}
      */
     public static ComboBy AggWAvg(final String weight, final String... matchPairs) {
-        return Agg(new WeightedAverageStateFactoryImpl(weight), matchPairs);
+        return Agg(new WeightedAverageSpecImpl(weight), matchPairs);
     }
 
     /**
@@ -233,7 +230,7 @@ public class ComboAggregateFactory implements AggregationStateFactory {
      * @return a ComboBy object suitable for passing to {@link #AggCombo(ComboBy...)}
      */
     public static ComboBy AggWSum(final String weight, final String... matchPairs) {
-        return Agg(new WeightedSumStateFactoryImpl(weight), matchPairs);
+        return Agg(new WeightedSumSpecImpl(weight), matchPairs);
     }
 
     /**
@@ -329,7 +326,7 @@ public class ComboAggregateFactory implements AggregationStateFactory {
     }
 
     /**
-     * Create an array aggregation, equivalent to {@link Table#by(String...)}.
+     * Create an array aggregation, equivalent to {@link Table#groupBy(String...)}.
      *
      * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
      *        the same name, then the column name can be specified.
@@ -374,7 +371,7 @@ public class ComboAggregateFactory implements AggregationStateFactory {
      * @return a ComboBy object suitable for passing to {@link #AggCombo(ComboBy...)}
      */
     public static ComboBy AggCountDistinct(boolean countNulls, final String... matchPairs) {
-        return Agg(new CountDistinctStateFactory(countNulls), matchPairs);
+        return Agg(new CountDistinctSpec(countNulls), matchPairs);
     }
 
     /**
@@ -402,7 +399,7 @@ public class ComboAggregateFactory implements AggregationStateFactory {
      * @return a ComboBy object suitable for passing to {@link #AggCombo(ComboBy...)}
      */
     public static ComboBy AggDistinct(boolean countNulls, final String... matchPairs) {
-        return Agg(new DistinctStateFactory(countNulls), matchPairs);
+        return Agg(new DistinctSpec(countNulls), matchPairs);
     }
 
     /**
@@ -420,7 +417,7 @@ public class ComboAggregateFactory implements AggregationStateFactory {
      * @return a ComboBy object suitable for passing to {@link #AggCombo(ComboBy...)}
      */
     public static ComboBy AggUnique(final String... matchPairs) {
-        return Agg(new UniqueStateFactory(false), matchPairs);
+        return Agg(new UniqueSpec(false), matchPairs);
     }
 
     /**
@@ -462,7 +459,7 @@ public class ComboAggregateFactory implements AggregationStateFactory {
      */
     public static ComboBy AggUnique(boolean countNulls, Object noKeyValue, Object nonUniqueValue,
             final String... matchPairs) {
-        return Agg(new UniqueStateFactory(countNulls, noKeyValue, nonUniqueValue), matchPairs);
+        return Agg(new UniqueSpec(countNulls, noKeyValue, nonUniqueValue), matchPairs);
     }
 
     /**
@@ -474,7 +471,7 @@ public class ComboAggregateFactory implements AggregationStateFactory {
      * @return a ComboBy object suitable for passing to {@link #AggCombo(ComboBy...)}
      */
     public static ComboBy AggPct(double percentile, final String... matchPairs) {
-        return Agg(new PercentileByStateFactoryImpl(percentile), matchPairs);
+        return Agg(new PercentileBySpecImpl(percentile), matchPairs);
     }
 
     /**
@@ -488,7 +485,7 @@ public class ComboAggregateFactory implements AggregationStateFactory {
      * @return a ComboBy object suitable for passing to {@link #AggCombo(ComboBy...)}
      */
     public static ComboBy AggPct(double percentile, boolean averageMedian, final String... matchPairs) {
-        return Agg(new PercentileByStateFactoryImpl(percentile, averageMedian), matchPairs);
+        return Agg(new PercentileBySpecImpl(percentile, averageMedian), matchPairs);
     }
 
     /**
@@ -499,7 +496,7 @@ public class ComboAggregateFactory implements AggregationStateFactory {
      *        the same name, then the column name can be specified.
      * @return a ComboBy object suitable for passing to {@link #AggCombo(ComboBy...)}
      */
-    public static ComboBy Agg(AggregationStateFactory factory, final String... matchPairs) {
+    public static ComboBy Agg(AggregationSpec factory, final String... matchPairs) {
         return new ComboByImpl(factory, matchPairs);
     }
 
@@ -510,7 +507,7 @@ public class ComboAggregateFactory implements AggregationStateFactory {
      * @param matchPairs the columns to apply the aggregation to.
      * @return a ComboBy object suitable for passing to {@link #AggCombo(ComboBy...)}
      */
-    public static ComboBy Agg(AggregationStateFactory factory, final MatchPair... matchPairs) {
+    public static ComboBy Agg(AggregationSpec factory, final MatchPair... matchPairs) {
         return new ComboByImpl(factory, matchPairs);
     }
 
@@ -534,46 +531,46 @@ public class ComboAggregateFactory implements AggregationStateFactory {
      * @return a ComboBy object suitable for passing to {@link #AggCombo(ComboBy...)}
      */
     public static ComboBy Agg(AggType factoryType, final MatchPair... matchPairs) {
-        final AggregationStateFactory factory;
+        final AggregationSpec factory;
         switch (factoryType) {
             case Min:
-                factory = new MinMaxByStateFactoryImpl(true);
+                factory = new MinMaxBySpecImpl(true);
                 break;
             case Max:
-                factory = new MinMaxByStateFactoryImpl(false);
+                factory = new MinMaxBySpecImpl(false);
                 break;
             case Sum:
-                factory = new SumStateFactory();
+                factory = new SumSpec();
                 break;
             case AbsSum:
-                factory = new AbsSumStateFactory();
+                factory = new AbsSumSpec();
                 break;
             case Avg:
-                factory = new AvgStateFactory();
+                factory = new AvgSpec();
                 break;
             case Var:
-                factory = new VarStateFactory();
+                factory = new VarSpec();
                 break;
             case Std:
-                factory = new StdStateFactory();
+                factory = new StdSpec();
                 break;
             case First:
-                factory = new FirstByStateFactoryImpl();
+                factory = new FirstBySpecImpl();
                 break;
             case Last:
-                factory = new LastByStateFactoryImpl();
+                factory = new LastBySpecImpl();
                 break;
             case Array:
-                factory = new AggregationIndexStateFactory();
+                factory = new AggregationArraySpec();
                 break;
             case CountDistinct:
-                factory = new CountDistinctStateFactory();
+                factory = new CountDistinctSpec();
                 break;
             case Distinct:
-                factory = new DistinctStateFactory();
+                factory = new DistinctSpec();
                 break;
             case Unique:
-                factory = new UniqueStateFactory();
+                factory = new UniqueSpec();
                 break;
             case Skip:
                 throw new IllegalArgumentException("Skip is not a valid aggregation type for AggCombo.");
@@ -590,7 +587,7 @@ public class ComboAggregateFactory implements AggregationStateFactory {
         // we want to leave off the null value column source for children; but add a by external combo for the rollup
         return new ComboAggregateFactory(
                 Stream.concat(underlyingAggregations.subList(0, underlyingAggregations.size() - 1).stream().map(x -> {
-                    final AggregationStateFactory underlyingStateFactory = x.getUnderlyingStateFactory();
+                    final AggregationSpec underlyingStateFactory = x.getUnderlyingStateFactory();
                     Assert.assertion(underlyingStateFactory instanceof ReaggregatableStatefactory,
                             "underlyingStateFactory instanceof ReaggregatableStatefactory", underlyingStateFactory,
                             "UnderlyingStateFactory");
@@ -673,7 +670,7 @@ public class ComboAggregateFactory implements AggregationStateFactory {
             return builder.build();
         }
 
-        AggregationStateFactory getUnderlyingStateFactory();
+        AggregationSpec getUnderlyingStateFactory();
 
         String[] getSourceColumns();
 
@@ -687,18 +684,18 @@ public class ComboAggregateFactory implements AggregationStateFactory {
     static public class ComboByImpl implements ComboBy {
         private final MatchPair[] matchPairs;
         private final String[] rightColumns;
-        private final AggregationStateFactory underlyingStateFactory;
+        private final AggregationSpec underlyingStateFactory;
 
-        public ComboByImpl(final AggregationStateFactory underlyingStateFactory, final String... matchPairs) {
+        public ComboByImpl(final AggregationSpec underlyingStateFactory, final String... matchPairs) {
             this(underlyingStateFactory, MatchPairFactory.getExpressions(matchPairs));
         }
 
         @SuppressWarnings("unused")
-        public ComboByImpl(final AggregationStateFactory underlyingStateFactory, final Collection<String> matchPairs) {
+        public ComboByImpl(final AggregationSpec underlyingStateFactory, final Collection<String> matchPairs) {
             this(underlyingStateFactory, MatchPairFactory.getExpressions(matchPairs));
         }
 
-        ComboByImpl(final AggregationStateFactory underlyingStateFactory, final MatchPair... matchPairs) {
+        ComboByImpl(final AggregationSpec underlyingStateFactory, final MatchPair... matchPairs) {
             this.matchPairs = matchPairs;
             this.underlyingStateFactory = underlyingStateFactory;
             this.rightColumns = new String[matchPairs.length];
@@ -708,7 +705,7 @@ public class ComboAggregateFactory implements AggregationStateFactory {
         }
 
         @Override
-        public AggregationStateFactory getUnderlyingStateFactory() {
+        public AggregationSpec getUnderlyingStateFactory() {
             return underlyingStateFactory;
         }
 
@@ -751,15 +748,15 @@ public class ComboAggregateFactory implements AggregationStateFactory {
 
     static public class CountComboBy implements ComboBy {
         private final String resultColumn;
-        private final CountByStateFactoryImpl underlyingStateFactory;
+        private final CountBySpecImpl underlyingStateFactory;
 
         public CountComboBy(String resultColumn) {
             this.resultColumn = resultColumn;
-            underlyingStateFactory = new CountByStateFactoryImpl(resultColumn);
+            underlyingStateFactory = new CountBySpecImpl(resultColumn);
         }
 
         @Override
-        public AggregationStateFactory getUnderlyingStateFactory() {
+        public AggregationSpec getUnderlyingStateFactory() {
             return underlyingStateFactory;
         }
 
@@ -792,15 +789,15 @@ public class ComboAggregateFactory implements AggregationStateFactory {
 
     static public class NullComboBy implements ComboBy {
         private final Map<String, Class<?>> resultColumns;
-        private final NullAggregationStateFactoryImpl underlyingStateFactory;
+        private final NullAggregationSpecImpl underlyingStateFactory;
 
         NullComboBy(Map<String, Class<?>> resultColumns) {
             this.resultColumns = resultColumns;
-            this.underlyingStateFactory = new NullAggregationStateFactoryImpl();
+            this.underlyingStateFactory = new NullAggregationSpecImpl();
         }
 
         @Override
-        public AggregationStateFactory getUnderlyingStateFactory() {
+        public AggregationSpec getUnderlyingStateFactory() {
             return underlyingStateFactory;
         }
 
@@ -838,7 +835,7 @@ public class ComboAggregateFactory implements AggregationStateFactory {
         }
 
         @Override
-        public AggregationStateFactory getUnderlyingStateFactory() {
+        public AggregationSpec getUnderlyingStateFactory() {
             throw new UnsupportedOperationException();
         }
 
@@ -1000,40 +997,40 @@ public class ComboAggregateFactory implements AggregationStateFactory {
                     inputColumns.add(null);
                     inputNames.add(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
                 } else if (comboBy instanceof ComboByImpl) {
-                    final AggregationStateFactory inputAggregationStateFactory = comboBy.getUnderlyingStateFactory();
+                    final AggregationSpec inputAggregationSpec = comboBy.getUnderlyingStateFactory();
 
-                    final boolean isNumeric = inputAggregationStateFactory.getClass() == SumStateFactory.class ||
-                            inputAggregationStateFactory.getClass() == AbsSumStateFactory.class ||
-                            inputAggregationStateFactory.getClass() == AvgStateFactory.class ||
-                            inputAggregationStateFactory.getClass() == VarStateFactory.class ||
-                            inputAggregationStateFactory.getClass() == StdStateFactory.class;
+                    final boolean isNumeric = inputAggregationSpec.getClass() == SumSpec.class ||
+                            inputAggregationSpec.getClass() == AbsSumSpec.class ||
+                            inputAggregationSpec.getClass() == AvgSpec.class ||
+                            inputAggregationSpec.getClass() == VarSpec.class ||
+                            inputAggregationSpec.getClass() == StdSpec.class;
                     final boolean isCountDistinct =
-                            inputAggregationStateFactory.getClass() == CountDistinctStateFactory.class;
-                    final boolean isDistinct = inputAggregationStateFactory.getClass() == DistinctStateFactory.class;
+                            inputAggregationSpec.getClass() == CountDistinctSpec.class;
+                    final boolean isDistinct = inputAggregationSpec.getClass() == DistinctSpec.class;
                     final boolean isSelectDistinct =
-                            inputAggregationStateFactory.getClass() == SelectDistinctStateFactoryImpl.class;
-                    final boolean isAggUnique = inputAggregationStateFactory.getClass() == UniqueStateFactory.class;
-                    final boolean isMinMax = inputAggregationStateFactory instanceof MinMaxByStateFactoryImpl;
+                            inputAggregationSpec.getClass() == SelectDistinctSpecImpl.class;
+                    final boolean isAggUnique = inputAggregationSpec.getClass() == UniqueSpec.class;
+                    final boolean isMinMax = inputAggregationSpec instanceof MinMaxBySpecImpl;
                     final boolean isPercentile =
-                            inputAggregationStateFactory.getClass() == PercentileByStateFactoryImpl.class;
+                            inputAggregationSpec.getClass() == PercentileBySpecImpl.class;
                     final boolean isSortedFirstOrLastBy =
-                            inputAggregationStateFactory instanceof SortedFirstOrLastByFactoryImpl;
-                    final boolean isFirst = inputAggregationStateFactory.getClass() == FirstByStateFactoryImpl.class ||
-                            inputAggregationStateFactory.getClass() == TrackingFirstByStateFactoryImpl.class ||
-                            (inputAggregationStateFactory.getClass() == KeyOnlyFirstOrLastByStateFactory.class &&
-                                    !((KeyOnlyFirstOrLastByStateFactory) inputAggregationStateFactory).isLast());
-                    final boolean isLast = inputAggregationStateFactory.getClass() == LastByStateFactoryImpl.class ||
-                            inputAggregationStateFactory.getClass() == TrackingLastByStateFactoryImpl.class ||
-                            (inputAggregationStateFactory.getClass() == KeyOnlyFirstOrLastByStateFactory.class &&
-                                    ((KeyOnlyFirstOrLastByStateFactory) inputAggregationStateFactory).isLast());
+                            inputAggregationSpec instanceof SortedFirstOrLastByFactoryImpl;
+                    final boolean isFirst = inputAggregationSpec.getClass() == FirstBySpecImpl.class ||
+                            inputAggregationSpec.getClass() == TrackingFirstBySpecImpl.class ||
+                            (inputAggregationSpec.getClass() == KeyOnlyFirstOrLastBySpec.class &&
+                                    !((KeyOnlyFirstOrLastBySpec) inputAggregationSpec).isLast());
+                    final boolean isLast = inputAggregationSpec.getClass() == LastBySpecImpl.class ||
+                            inputAggregationSpec.getClass() == TrackingLastBySpecImpl.class ||
+                            (inputAggregationSpec.getClass() == KeyOnlyFirstOrLastBySpec.class &&
+                                    ((KeyOnlyFirstOrLastBySpec) inputAggregationSpec).isLast());
                     final boolean isWeightedAverage =
-                            inputAggregationStateFactory.getClass() == WeightedAverageStateFactoryImpl.class;
+                            inputAggregationSpec.getClass() == WeightedAverageSpecImpl.class;
                     final boolean isWeightedSum =
-                            inputAggregationStateFactory.getClass() == WeightedSumStateFactoryImpl.class;
+                            inputAggregationSpec.getClass() == WeightedSumSpecImpl.class;
                     final boolean isAggArray =
-                            inputAggregationStateFactory.getClass() == AggregationIndexStateFactory.class;
+                            inputAggregationSpec.getClass() == AggregationArraySpec.class;
                     final boolean isFormula =
-                            inputAggregationStateFactory.getClass() == AggregationFormulaStateFactory.class;
+                            inputAggregationSpec.getClass() == AggregationFormulaSpec.class;
 
                     // noinspection StatementWithEmptyBody
                     if (isSelectDistinct) {
@@ -1043,7 +1040,7 @@ public class ComboAggregateFactory implements AggregationStateFactory {
                         if (isSortedFirstOrLastBy) {
                             // noinspection ConstantConditions
                             final SortedFirstOrLastByFactoryImpl sortedFirstOrLastByFactory =
-                                    (SortedFirstOrLastByFactoryImpl) inputAggregationStateFactory;
+                                    (SortedFirstOrLastByFactoryImpl) inputAggregationSpec;
                             final boolean isSortedFirstBy = sortedFirstOrLastByFactory.isSortedFirst();
 
                             final MatchPair[] updatedMatchPairs;
@@ -1073,11 +1070,11 @@ public class ComboAggregateFactory implements AggregationStateFactory {
                             Arrays.stream(comboMatchPairs).forEach(mp -> {
                                 if (isRollup && secondLevel) {
                                     final boolean isAverage =
-                                            inputAggregationStateFactory.getClass() == AvgStateFactory.class;
+                                            inputAggregationSpec.getClass() == AvgSpec.class;
                                     final boolean isStd =
-                                            inputAggregationStateFactory.getClass() == StdStateFactory.class;
+                                            inputAggregationSpec.getClass() == StdSpec.class;
                                     final boolean isVar =
-                                            inputAggregationStateFactory.getClass() == VarStateFactory.class;
+                                            inputAggregationSpec.getClass() == VarSpec.class;
                                     final boolean isStdVar = isStd || isVar;
                                     if (isAverage || isStdVar) {
                                         final String runningSumName =
@@ -1258,25 +1255,25 @@ public class ComboAggregateFactory implements AggregationStateFactory {
                                         if (isDistinct) {
                                             // noinspection ConstantConditions
                                             countNulls =
-                                                    ((DistinctStateFactory) inputAggregationStateFactory).countNulls();
-                                            op = IterativeOperatorStateFactory.getDistinctChunked(
+                                                    ((DistinctSpec) inputAggregationSpec).countNulls();
+                                            op = IterativeOperatorSpec.getDistinctChunked(
                                                     lastLevelResult.getComponentType(), mp.left(), countNulls, true,
                                                     true);
                                         } else if (isCountDistinct) {
                                             // noinspection ConstantConditions
-                                            countNulls = ((CountDistinctStateFactory) inputAggregationStateFactory)
+                                            countNulls = ((CountDistinctSpec) inputAggregationSpec)
                                                     .countNulls();
-                                            op = IterativeOperatorStateFactory.getCountDistinctChunked(
+                                            op = IterativeOperatorSpec.getCountDistinctChunked(
                                                     ssmSource.getComponentType(), mp.left(), countNulls, true, true);
                                         } else {
                                             // noinspection ConstantConditions
                                             countNulls =
-                                                    ((UniqueStateFactory) inputAggregationStateFactory).countNulls();
+                                                    ((UniqueSpec) inputAggregationSpec).countNulls();
                                             // noinspection ConstantConditions
-                                            op = IterativeOperatorStateFactory.getUniqueChunked(
+                                            op = IterativeOperatorSpec.getUniqueChunked(
                                                     lastLevelResult.getType(), mp.left(), countNulls, true,
-                                                    ((UniqueStateFactory) inputAggregationStateFactory).getNoKeyValue(),
-                                                    ((UniqueStateFactory) inputAggregationStateFactory)
+                                                    ((UniqueSpec) inputAggregationSpec).getNoKeyValue(),
+                                                    ((UniqueSpec) inputAggregationSpec)
                                                             .getNonUniqueValue(),
                                                     true);
                                         }
@@ -1299,7 +1296,7 @@ public class ComboAggregateFactory implements AggregationStateFactory {
                                 final boolean hasSource;
                                 if (isMinMax) {
                                     final boolean isMinimum =
-                                            ((MinMaxByStateFactoryImpl) inputAggregationStateFactory).isMinimum();
+                                            ((MinMaxBySpecImpl) inputAggregationSpec).isMinimum();
                                     final OptionalInt priorMinMax = IntStream.range(0, inputColumns.size())
                                             .filter(idx -> (inputColumns.get(idx) == inputSource)
                                                     && (operators.get(idx) instanceof SsmChunkedMinMaxOperator))
@@ -1311,7 +1308,7 @@ public class ComboAggregateFactory implements AggregationStateFactory {
                                                 ssmChunkedMinMaxOperator.makeSecondaryOperator(isMinimum, resultName));
                                         hasSource = false;
                                     } else {
-                                        operators.add(IterativeOperatorStateFactory.getMinMaxChunked(type, isMinimum,
+                                        operators.add(IterativeOperatorSpec.getMinMaxChunked(type, isMinimum,
                                                 isStream || isAddOnly, resultName));
                                         hasSource = true;
                                     }
@@ -1320,15 +1317,15 @@ public class ComboAggregateFactory implements AggregationStateFactory {
                                         throw new UnsupportedOperationException(
                                                 "Percentile or Median can not be used in a rollup!");
                                     }
-                                    operators.add(IterativeOperatorStateFactory.getPercentileChunked(type,
-                                            ((PercentileByStateFactoryImpl) inputAggregationStateFactory)
+                                    operators.add(IterativeOperatorSpec.getPercentileChunked(type,
+                                            ((PercentileBySpecImpl) inputAggregationSpec)
                                                     .getPercentile(),
-                                            ((PercentileByStateFactoryImpl) inputAggregationStateFactory)
+                                            ((PercentileBySpecImpl) inputAggregationSpec)
                                                     .getAverageMedian(),
                                             resultName));
                                     hasSource = true;
                                 } else {
-                                    operators.add(((IterativeOperatorStateFactory) inputAggregationStateFactory)
+                                    operators.add(((IterativeOperatorSpec) inputAggregationSpec)
                                             .getChunkedOperator(type, resultName, isRollup));
                                     hasSource = true;
                                 }
@@ -1345,9 +1342,9 @@ public class ComboAggregateFactory implements AggregationStateFactory {
                             final String exposeRedirectionAs;
                             if (isRollup) {
                                 exposeRedirectionAs =
-                                        makeRedirectionName((IterativeIndexStateFactory) inputAggregationStateFactory);
-                            } else if (inputAggregationStateFactory instanceof KeyOnlyFirstOrLastByStateFactory) {
-                                exposeRedirectionAs = ((KeyOnlyFirstOrLastByStateFactory) inputAggregationStateFactory)
+                                        makeRedirectionName((IterativeIndexSpec) inputAggregationSpec);
+                            } else if (inputAggregationSpec instanceof KeyOnlyFirstOrLastBySpec) {
+                                exposeRedirectionAs = ((KeyOnlyFirstOrLastBySpec) inputAggregationSpec)
                                         .getResultColumn();
                             } else {
                                 exposeRedirectionAs = null;
@@ -1384,19 +1381,19 @@ public class ComboAggregateFactory implements AggregationStateFactory {
                                 throw streamUnsupported("AggArray");
                             }
                             inputColumns.add(null);
-                            operators.add(new ByChunkedOperator((QueryTable) table, true, comboMatchPairs));
+                            operators.add(new GroupByChunkedOperator((QueryTable) table, true, comboMatchPairs));
                             inputNames.add(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
                         } else if (isFormula) {
                             if (isStream) {
                                 throw streamUnsupported("AggFormula");
                             }
-                            final AggregationFormulaStateFactory formulaStateFactory =
-                                    (AggregationFormulaStateFactory) inputAggregationStateFactory;
-                            final ByChunkedOperator byChunkedOperator = new ByChunkedOperator((QueryTable) table, false,
+                            final AggregationFormulaSpec formulaStateFactory =
+                                    (AggregationFormulaSpec) inputAggregationSpec;
+                            final GroupByChunkedOperator groupByChunkedOperator = new GroupByChunkedOperator((QueryTable) table, false,
                                     Arrays.stream(comboMatchPairs).map(MatchPair::right)
                                             .map(MatchPairFactory::getExpression).toArray(MatchPair[]::new));
                             final FormulaChunkedOperator formulaChunkedOperator = new FormulaChunkedOperator(
-                                    byChunkedOperator, true, formulaStateFactory.getFormula(),
+                                    groupByChunkedOperator, true, formulaStateFactory.getFormula(),
                                     formulaStateFactory.getColumnParamName(), comboMatchPairs);
                             inputColumns.add(null);
                             operators.add(formulaChunkedOperator);
@@ -1405,11 +1402,11 @@ public class ComboAggregateFactory implements AggregationStateFactory {
                             final String weightName;
 
                             if (isWeightedAverage) {
-                                weightName = ((WeightedAverageStateFactoryImpl) inputAggregationStateFactory)
+                                weightName = ((WeightedAverageSpecImpl) inputAggregationSpec)
                                         .getWeightName();
                             } else {
                                 weightName =
-                                        ((WeightedSumStateFactoryImpl) inputAggregationStateFactory).getWeightName();
+                                        ((WeightedSumSpecImpl) inputAggregationSpec).getWeightName();
                             }
 
                             final ColumnSource<?> weightSource = table.getColumnSource(weightName);
@@ -1436,7 +1433,7 @@ public class ComboAggregateFactory implements AggregationStateFactory {
                             });
                         } else {
                             throw new UnsupportedOperationException(
-                                    "Unknown ComboByImpl: " + inputAggregationStateFactory.getClass());
+                                    "Unknown ComboByImpl: " + inputAggregationSpec.getClass());
                         }
                     }
                 } else if (comboBy instanceof NullComboBy) {
@@ -1473,13 +1470,13 @@ public class ComboAggregateFactory implements AggregationStateFactory {
                         adjustedTable.setAttribute(Table.REVERSE_LOOKUP_ATTRIBUTE,
                                 parentTable.getAttribute(Table.REVERSE_LOOKUP_ATTRIBUTE));
                     }
-                    final ByExternalChunkedOperator.AttributeCopier copier;
+                    final PartitionByChunkedOperator.AttributeCopier copier;
                     if (includeConstituents) {
                         copier = RollupAttributeCopier.LEAF_WITHCONSTITUENTS_INSTANCE;
                     } else {
                         copier = RollupAttributeCopier.DEFAULT_INSTANCE;
                     }
-                    final ByExternalChunkedOperator tableMapOperator = new ByExternalChunkedOperator(parentTable,
+                    final PartitionByChunkedOperator tableMapOperator = new PartitionByChunkedOperator(parentTable,
                             adjustedTable, copier, Collections.emptyList(), groupByColumns);
                     operators.add(tableMapOperator);
 
@@ -1524,20 +1521,20 @@ public class ComboAggregateFactory implements AggregationStateFactory {
     }
 
     @NotNull
-    private static String makeRedirectionName(IterativeIndexStateFactory inputAggregationStateFactory) {
-        return IterativeIndexStateFactory.REDIRECTION_INDEX_PREFIX + inputAggregationStateFactory.rollupColumnIdentifier
+    private static String makeRedirectionName(IterativeIndexSpec inputAggregationStateFactory) {
+        return IterativeIndexSpec.REDIRECTION_INDEX_PREFIX + inputAggregationStateFactory.rollupColumnIdentifier
                 + ROLLUP_COLUMN_SUFFIX;
     }
 
     private static class RollupTableMapAndReverseLookupAttributeSetter implements AggregationContextTransformer {
-        private final ByExternalChunkedOperator tableMapOperator;
+        private final PartitionByChunkedOperator tableMapOperator;
         private final ComboAggregateFactory factory;
         private final boolean secondLevel;
         private final boolean includeConstituents;
         private ReverseLookup reverseLookup;
 
-        RollupTableMapAndReverseLookupAttributeSetter(ByExternalChunkedOperator tableMapOperator,
-                ComboAggregateFactory factory, boolean secondLevel, boolean includeConstituents) {
+        RollupTableMapAndReverseLookupAttributeSetter(PartitionByChunkedOperator tableMapOperator,
+                                                      ComboAggregateFactory factory, boolean secondLevel, boolean includeConstituents) {
             this.tableMapOperator = tableMapOperator;
             this.factory = factory;
             this.secondLevel = secondLevel;
@@ -1632,9 +1629,9 @@ public class ComboAggregateFactory implements AggregationStateFactory {
          *
          * ie:
          *
-         * {@code by(..., [ Sum.of(A), Sum.of(B), Avg.of(C), Avg.of(D) ] )} will not need to be re-ordered
+         * {@code aggBy([ Sum.of(A), Sum.of(B), Avg.of(C), Avg.of(D) ], ...)} will not need to be re-ordered
          *
-         * {@code by(..., [ Sum.of(A), Avg.of(C), Avg.of(D), Sum.of(B) ] )} will need to be re-ordered
+         * {@code aggBy([ Sum.of(A), Avg.of(C), Avg.of(D), Sum.of(B) ], ...)} will need to be re-ordered
          */
         private final LinkedHashSet<BuildLogic> buildOrder = new LinkedHashSet<>();
 
@@ -1677,14 +1674,14 @@ public class ComboAggregateFactory implements AggregationStateFactory {
 
         private void buildWSums(List<ComboBy> combos) {
             for (Map.Entry<ColumnName, List<Pair>> e : wSums.entrySet()) {
-                combos.add(Agg(new WeightedSumStateFactoryImpl(e.getKey().name()), MatchPair.fromPairs(e.getValue())));
+                combos.add(Agg(new WeightedSumSpecImpl(e.getKey().name()), MatchPair.fromPairs(e.getValue())));
             }
         }
 
         private void buildWAvgs(List<ComboBy> combos) {
             for (Map.Entry<ColumnName, List<Pair>> e : wAvgs.entrySet()) {
                 combos.add(
-                        Agg(new WeightedAverageStateFactoryImpl(e.getKey().name()), MatchPair.fromPairs(e.getValue())));
+                        Agg(new WeightedAverageSpecImpl(e.getKey().name()), MatchPair.fromPairs(e.getValue())));
             }
         }
 
@@ -1696,7 +1693,7 @@ public class ComboAggregateFactory implements AggregationStateFactory {
 
         private void buildUniques(List<ComboBy> combos) {
             for (Map.Entry<Boolean, List<Pair>> e : uniques.entrySet()) {
-                combos.add(Agg(new UniqueStateFactory(e.getKey()), MatchPair.fromPairs(e.getValue())));
+                combos.add(Agg(new UniqueSpec(e.getKey()), MatchPair.fromPairs(e.getValue())));
             }
         }
 
@@ -1732,7 +1729,7 @@ public class ComboAggregateFactory implements AggregationStateFactory {
 
         private void buildPcts(List<ComboBy> combos) {
             for (Map.Entry<ByteDoubleTuple, List<Pair>> e : pcts.entrySet()) {
-                combos.add(Agg(new PercentileByStateFactoryImpl(e.getKey().getSecondElement(),
+                combos.add(Agg(new PercentileBySpecImpl(e.getKey().getSecondElement(),
                         e.getKey().getFirstElement() != 0), MatchPair.fromPairs(e.getValue())));
             }
         }
@@ -1745,7 +1742,7 @@ public class ComboAggregateFactory implements AggregationStateFactory {
 
         private void buildMedians(List<ComboBy> combos) {
             for (Map.Entry<Boolean, List<Pair>> e : medians.entrySet()) {
-                combos.add(Agg(new PercentileByStateFactoryImpl(0.50d, e.getKey()), MatchPair.fromPairs(e.getValue())));
+                combos.add(Agg(new PercentileBySpecImpl(0.50d, e.getKey()), MatchPair.fromPairs(e.getValue())));
             }
         }
 
@@ -1769,13 +1766,13 @@ public class ComboAggregateFactory implements AggregationStateFactory {
 
         private void buildDistincts(List<ComboBy> combos) {
             for (Map.Entry<Boolean, List<Pair>> e : distincts.entrySet()) {
-                combos.add(Agg(new DistinctStateFactory(e.getKey()), MatchPair.fromPairs(e.getValue())));
+                combos.add(Agg(new DistinctSpec(e.getKey()), MatchPair.fromPairs(e.getValue())));
             }
         }
 
         private void buildCountDistincts(List<ComboBy> combos) {
             for (Map.Entry<Boolean, List<Pair>> e : countDistincts.entrySet()) {
-                combos.add(Agg(new CountDistinctStateFactory(e.getKey()), MatchPair.fromPairs(e.getValue())));
+                combos.add(Agg(new CountDistinctSpec(e.getKey()), MatchPair.fromPairs(e.getValue())));
             }
         }
 

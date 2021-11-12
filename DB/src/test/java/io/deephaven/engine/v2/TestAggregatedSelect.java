@@ -76,7 +76,7 @@ public class TestAggregatedSelect extends TestCase {
 
     Table doAggregatedQuery() {
         Table t = createTestTable();
-        Table t2 = t.by("USym", "Bid").by("USym");
+        Table t2 = t.groupBy("USym", "Bid").groupBy("USym");
         return t2;
     }
 

@@ -125,7 +125,7 @@ public class ComboAggregateGrpcImpl extends GrpcTableOperation<ComboAggregateReq
             case ABS_SUM:
                 return parent.absSumBy(groupByColumns);
             case ARRAY:
-                return parent.by(groupByColumns);
+                return parent.groupBy(groupByColumns);
             case AVG:
                 return parent.avgBy(groupByColumns);
             case COUNT:

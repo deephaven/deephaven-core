@@ -119,7 +119,7 @@ public class TrackingRowSetGroupingTest extends RefreshingTableTestCase {
                 new EvalNugget() {
                     public Table e() {
                         return UpdateGraphProcessor.DEFAULT.exclusiveLock().computeLocked(() -> queryTable
-                                .by("Sym", "intCol").sort("Sym", "intCol").view("doubleCol=max(doubleCol)"));
+                                .groupBy("Sym", "intCol").sort("Sym", "intCol").view("doubleCol=max(doubleCol)"));
                     }
                 },
                 new EvalNugget() {
@@ -135,7 +135,7 @@ public class TrackingRowSetGroupingTest extends RefreshingTableTestCase {
         }
 
         Table by = UpdateGraphProcessor.DEFAULT.exclusiveLock().computeLocked(() -> queryTable.avgBy("Sym"));
-        addGroupingValidator(by, "by");
+        addGroupingValidator(by, "groupBy");
         Table avgBy = UpdateGraphProcessor.DEFAULT.exclusiveLock().computeLocked(() -> queryTable.avgBy("Sym"));
         addGroupingValidator(avgBy, "avgBy");
         Table avgBy1 =

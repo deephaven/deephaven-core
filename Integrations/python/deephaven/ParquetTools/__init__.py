@@ -273,7 +273,7 @@ def writeParquetTables(sources, tableDefinition, writeInstructions, destinations
     """
     Writes tables to disk in parquet format to a supplied set of destinations. If you specify grouping columns, there
      must already be grouping information for those columns in the sources. This can be accomplished with
-     .by(<grouping columns>).ungroup() or .sort(<grouping column>).
+     .groupBy(<grouping columns>).ungroup() or .sort(<grouping column>).
     
     :param sources: (io.deephaven.engine.tables.Table[]) - The tables to write
     :param tableDefinition: (io.deephaven.engine.tables.TableDefinition) - The common schema for all the tables to write

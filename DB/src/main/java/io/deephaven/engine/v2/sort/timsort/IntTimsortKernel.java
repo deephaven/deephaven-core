@@ -511,9 +511,9 @@ public class IntTimsortKernel {
         context.temporaryKeys.copyFromChunk(indexKeys, mergeStartPosition, 0, remaining1);
     }
 
-    private static <ATTR extends Any, KEY_INDICES extends Indices> void copyToChunk(LongChunk<KEY_INDICES> indexSource, IntChunk<ATTR> valuesSource, WritableLongChunk<KEY_INDICES> indexDest, WritableIntChunk<ATTR> valuesDest, int sourceStart, int destStart, int length) {
+    private static <ATTR extends Any, KEY_INDICES extends Indices> void copyToChunk(LongChunk<KEY_INDICES> rowSetSource, IntChunk<ATTR> valuesSource, WritableLongChunk<KEY_INDICES> indexDest, WritableIntChunk<ATTR> valuesDest, int sourceStart, int destStart, int length) {
         valuesDest.copyFromChunk(valuesSource, sourceStart, destStart, length);
-        indexDest.copyFromChunk(indexSource, sourceStart, destStart, length);
+        indexDest.copyFromChunk(rowSetSource, sourceStart, destStart, length);
     }
 
     // when we binary search in 1, we must identify a position for search value that is *after* our test values;
