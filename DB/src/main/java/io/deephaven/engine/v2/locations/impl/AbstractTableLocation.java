@@ -7,7 +7,7 @@ package io.deephaven.engine.v2.locations.impl;
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.util.string.StringUtils;
 import io.deephaven.engine.v2.locations.*;
-import io.deephaven.engine.v2.utils.RowSet;
+import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.hash.KeyedObjectHashMap;
 import org.jetbrains.annotations.NotNull;
 

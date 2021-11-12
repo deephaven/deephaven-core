@@ -5,7 +5,8 @@
 package io.deephaven.engine.v2;
 
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.v2.sources.ColumnSource;
+import io.deephaven.engine.rowset.*;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.v2.sources.LogicalClock;
 import io.deephaven.engine.v2.sources.ReversedColumnSource;
 import io.deephaven.engine.v2.sources.UnionRedirection;

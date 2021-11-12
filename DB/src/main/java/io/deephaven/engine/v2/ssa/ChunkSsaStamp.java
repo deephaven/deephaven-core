@@ -5,7 +5,7 @@ import io.deephaven.engine.chunk.Attributes.RowKeys;
 import io.deephaven.engine.chunk.Attributes.Values;
 import io.deephaven.engine.v2.utils.MutableRowRedirection;
 import io.deephaven.engine.v2.utils.RowRedirection;
-import io.deephaven.engine.v2.utils.RowSetBuilderRandom;
+import io.deephaven.engine.rowset.RowSetBuilderRandom;
 
 public interface ChunkSsaStamp {
     static ChunkSsaStamp make(ChunkType type, boolean reverse) {

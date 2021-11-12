@@ -4,6 +4,7 @@ import static io.deephaven.engine.chunk.Attributes.RowKeys;
 import static io.deephaven.engine.chunk.Attributes.Values;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.v2.CrossJoinStateManager;
 import io.deephaven.engine.v2.join.dupexpand.DupExpandKernel;
 import io.deephaven.engine.v2.sort.permute.PermuteKernel;
@@ -13,14 +14,14 @@ import io.deephaven.engine.chunk.ChunkStream;
 import io.deephaven.engine.chunk.LongChunk;
 import io.deephaven.engine.chunk.ResettableWritableChunk;
 import io.deephaven.engine.chunk.ResettableWritableLongChunk;
-import io.deephaven.engine.rftable.SharedContext;
+import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.chunk.WritableChunk;
 import io.deephaven.engine.chunk.WritableIntChunk;
 import io.deephaven.engine.chunk.WritableLongChunk;
-import io.deephaven.engine.structures.RowSequence;
-import io.deephaven.engine.structures.rowsequence.RowSequenceUtil;
-import io.deephaven.engine.v2.utils.RowSet;
-import io.deephaven.engine.v2.utils.TrackingRowSet;
+import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.rowset.impl.RowSequenceUtil;
+import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.TrackingRowSet;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.jetbrains.annotations.NotNull;
@@ -505,10 +506,10 @@ public class CrossJoinRightColumnSource<T> extends AbstractColumnSource<T> imple
 
                 final MutableInt preMapOffset = new MutableInt();
                 final MutableInt postMapOffset = new MutableInt();
-                final MutableLong lastLeftIndex = new MutableLong(RowSet.NULL_ROW_KEY);
+                final MutableLong lastLeftIndex = new MutableLong(RowSequence.NULL_ROW_KEY);
 
                 final Runnable flush = () -> {
-                    if (lastLeftIndex.longValue() == RowSet.NULL_ROW_KEY) {
+                    if (lastLeftIndex.longValue() == RowSequence.NULL_ROW_KEY) {
                         return;
                     }
 
@@ -588,7 +589,7 @@ public class CrossJoinRightColumnSource<T> extends AbstractColumnSource<T> imple
                 compactedMappedKeys.setSize(uniqueKeyCount);
                 runLengths.setSize(uniqueKeyCount);
 
-                hasNulls = compactedMappedKeys.get(0) == RowSet.NULL_ROW_KEY;
+                hasNulls = compactedMappedKeys.get(0) == RowSequence.NULL_ROW_KEY;
                 final int keysToSkip = hasNulls ? 1 : 0;
                 innerRowSequence = RowSequenceUtil.wrapRowKeysChunkAsRowSequence(
                         LongChunk.downcast(nonNullCompactedMappedKeys.resetFromTypedChunk(compactedMappedKeys,
@@ -646,7 +647,7 @@ public class CrossJoinRightColumnSource<T> extends AbstractColumnSource<T> imple
         }
 
         private void doOrderedFillAndPermute(@NotNull final ColumnSource<?> innerSource, final boolean usePrev,
-                @NotNull final WritableChunk<? super Values> destination) {
+                                             @NotNull final WritableChunk<? super Values> destination) {
             shareable.ensureSortedFillContextInitialized();
 
             innerOrderedValues.setSize(shareable.uniqueKeyCount);

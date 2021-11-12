@@ -1,5 +1,7 @@
 package io.deephaven.engine.v2.sources;
 
+import io.deephaven.engine.table.ColumnSource;
+
 /**
  * Sub-interface of {@link ColumnSource} for implementations that always use return {@code true} from
  * {@link #isImmutable()} and delegate all {@code getPrev*} methods to their current (non-previous) equivalents.

@@ -1,6 +1,6 @@
 package io.deephaven.engine.v2.join.stamp;
 
-import io.deephaven.engine.rftable.Context;
+import io.deephaven.engine.table.Context;
 import io.deephaven.engine.tables.SortingOrder;
 import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.chunk.Attributes.Values;

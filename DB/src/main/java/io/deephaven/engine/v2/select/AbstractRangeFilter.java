@@ -3,9 +3,9 @@ package io.deephaven.engine.v2.select;
 import io.deephaven.engine.tables.SortingOrder;
 import io.deephaven.engine.v2.SortedColumnsAttribute;
 import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.utils.MutableRowSet;
-import io.deephaven.engine.v2.utils.RowSet;
+import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.rowset.MutableRowSet;
+import io.deephaven.engine.rowset.RowSet;
 
 import java.math.BigDecimal;
 import java.util.Collections;

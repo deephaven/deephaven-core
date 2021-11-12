@@ -4,8 +4,8 @@
 package io.deephaven.clientsupport.plotdownsampling;
 
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.v2.utils.MutableRowSet;
-import io.deephaven.engine.v2.utils.RowSet;
+import io.deephaven.engine.rowset.MutableRowSet;
+import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.v2.sources.ByteArraySource;
 import io.deephaven.engine.chunk.Attributes;

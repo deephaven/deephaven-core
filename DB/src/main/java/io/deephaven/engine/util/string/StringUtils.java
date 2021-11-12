@@ -78,12 +78,6 @@ public class StringUtils implements Serializable {
     // Other utilities
     // ------------------------------------------------------------------------------------------------------------------
 
-    public static Collection<String> splitToCollection(String string) {
-        return string.trim().isEmpty() ? Collections.emptyList()
-                : Arrays.stream(string.split(",")).map(String::trim).filter(s -> !s.isEmpty())
-                        .collect(Collectors.toList());
-    }
-
     /**
      * Convenience method to combine null and isEmpty checks on a String.
      *

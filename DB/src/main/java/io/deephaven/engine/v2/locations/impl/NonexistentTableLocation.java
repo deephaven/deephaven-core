@@ -4,7 +4,7 @@ import io.deephaven.engine.v2.locations.ColumnLocation;
 import io.deephaven.engine.v2.locations.TableKey;
 import io.deephaven.engine.v2.locations.TableLocation;
 import io.deephaven.engine.v2.locations.TableLocationKey;
-import io.deephaven.engine.v2.utils.RowSetFactory;
+import io.deephaven.engine.rowset.RowSetFactory;
 import org.jetbrains.annotations.NotNull;
 
 /**

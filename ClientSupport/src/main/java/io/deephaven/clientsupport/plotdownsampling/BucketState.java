@@ -1,7 +1,7 @@
 package io.deephaven.clientsupport.plotdownsampling;
 
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.structures.RowSequence;
+import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.v2.utils.*;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.chunk.Attributes;

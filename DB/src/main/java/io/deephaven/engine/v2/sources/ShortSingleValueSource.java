@@ -7,12 +7,13 @@
 
 package io.deephaven.engine.v2.sources;
 
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.chunk.Attributes;
 import io.deephaven.engine.chunk.ShortChunk;
 import io.deephaven.engine.chunk.Chunk;
 import io.deephaven.engine.chunk.LongChunk;
-import io.deephaven.engine.structures.RowSequence;
+import io.deephaven.engine.rowset.RowSequence;
 import org.jetbrains.annotations.NotNull;
 
 import static io.deephaven.util.type.TypeUtils.unbox;

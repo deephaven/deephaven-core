@@ -1,9 +1,9 @@
 package io.deephaven.engine.v2.sources;
 
-import io.deephaven.engine.rftable.ChunkSource;
-import io.deephaven.engine.rftable.Context;
+import io.deephaven.engine.table.ChunkSource;
+import io.deephaven.engine.table.Context;
 import io.deephaven.engine.chunk.*;
-import io.deephaven.engine.structures.RowSequence;
+import io.deephaven.engine.rowset.RowSequence;
 import org.jetbrains.annotations.NotNull;
 
 public interface WritableChunkSink<ATTR extends Attributes.Any> extends ChunkSource<ATTR> {

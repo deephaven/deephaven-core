@@ -1,11 +1,11 @@
 package io.deephaven.engine.v2.utils;
 
-import io.deephaven.engine.structures.RowSequence;
-import io.deephaven.engine.v2.sources.ColumnSource;
+import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.chunk.Attributes;
 import io.deephaven.engine.chunk.Attributes.RowKeys;
-import io.deephaven.engine.rftable.ChunkSource;
-import io.deephaven.engine.rftable.SharedContext;
+import io.deephaven.engine.table.ChunkSource;
+import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.chunk.WritableLongChunk;
 import io.deephaven.util.QueryConstants;
 import org.jetbrains.annotations.NotNull;
@@ -25,7 +25,7 @@ public class LongColumnSourceRowRedirection<CST extends ColumnSource<Long>> impl
     public final long get(final long outerRowKey) {
         final long innerIndex = columnSource.getLong(outerRowKey);
         if (innerIndex == QueryConstants.NULL_LONG) {
-            return RowSet.NULL_ROW_KEY;
+            return RowSequence.NULL_ROW_KEY;
         }
         return innerIndex;
     }
@@ -34,7 +34,7 @@ public class LongColumnSourceRowRedirection<CST extends ColumnSource<Long>> impl
     public final long getPrev(final long outerRowKey) {
         final long innerIndex = columnSource.getPrevLong(outerRowKey);
         if (innerIndex == QueryConstants.NULL_LONG) {
-            return RowSet.NULL_ROW_KEY;
+            return RowSequence.NULL_ROW_KEY;
         }
         return innerIndex;
     }
@@ -54,7 +54,7 @@ public class LongColumnSourceRowRedirection<CST extends ColumnSource<Long>> impl
         columnSource.fillChunk(effectiveContext.colSrcCtx, asValuesChunk, outerRowKeys);
         for (int ii = 0; ii < innerRowKeys.size(); ++ii) {
             if (innerRowKeys.get(ii) == QueryConstants.NULL_LONG) {
-                innerRowKeys.set(ii, RowSet.NULL_ROW_KEY);
+                innerRowKeys.set(ii, RowSequence.NULL_ROW_KEY);
             }
         }
     }
@@ -70,7 +70,7 @@ public class LongColumnSourceRowRedirection<CST extends ColumnSource<Long>> impl
         columnSource.fillPrevChunk(effectiveContext.colSrcCtx, asValuesChunk, outerRowKeys);
         for (int ii = 0; ii < innerRowKeys.size(); ++ii) {
             if (innerRowKeys.get(ii) == QueryConstants.NULL_LONG) {
-                innerRowKeys.set(ii, RowSet.NULL_ROW_KEY);
+                innerRowKeys.set(ii, RowSequence.NULL_ROW_KEY);
             }
         }
     }

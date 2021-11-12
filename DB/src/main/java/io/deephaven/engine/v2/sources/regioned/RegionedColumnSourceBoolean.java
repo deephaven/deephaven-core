@@ -3,9 +3,7 @@ package io.deephaven.engine.v2.sources.regioned;
 import io.deephaven.util.BooleanUtils;
 import io.deephaven.engine.v2.sources.ColumnSourceGetDefaults;
 import io.deephaven.engine.chunk.*;
-import io.deephaven.engine.structures.RowSequence;
-
-import static io.deephaven.engine.v2.utils.RowSet.NULL_ROW_KEY;
+import io.deephaven.engine.rowset.RowSequence;
 
 /**
  * Regioned column source implementation for columns of Booleans.
@@ -36,7 +34,7 @@ final class RegionedColumnSourceBoolean
 
     @Override
     public Boolean get(long elementIndex) {
-        return elementIndex == NULL_ROW_KEY ? null :
+        return elementIndex == RowSequence.NULL_ROW_KEY ? null :
                 BooleanUtils.byteAsBoolean(lookupRegion(elementIndex).getReferencedRegion().getByte(elementIndex));
     }
 }

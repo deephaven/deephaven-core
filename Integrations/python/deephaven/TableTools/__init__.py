@@ -84,7 +84,7 @@ def _custom_newTable(*args):
             if _isJavaArray(args[2]):
                 sources = convertToJavaList(args[2])
             else:
-                sources = convertToJavaList(jpy.array('io.deephaven.engine.v2.sources.ColumnSource', args[2]))
+                sources = convertToJavaList(jpy.array('io.deephaven.engine.table.ColumnSource', args[2]))
             return _java_type_.newTable(rows, names, sources)
 
     return _java_type_.newTable(*args)
@@ -436,7 +436,7 @@ def colSource(*args):
     Creates a column of appropriate type, used for creating in-memory tables.
         
     :param data: variable argument for the data
-    :return: (io.deephaven.engine.v2.sources.ColumnSource<T>) a Deephaven ColumnSource of inferred type
+    :return: (io.deephaven.engine.table.ColumnSource<T>) a Deephaven ColumnSource of inferred type
     
     data structure:
       * a java object, or list of java objects
@@ -572,7 +572,7 @@ def getKey(groupByColumnSources, row):
     """
     Returns a SmartKey for the specified row from a set of ColumnSources.
     
-    :param groupByColumnSources: (io.deephaven.engine.v2.sources.ColumnSource<?>[]) - a set of ColumnSources from which to retrieve the data
+    :param groupByColumnSources: (io.deephaven.engine.table.ColumnSource<?>[]) - a set of ColumnSources from which to retrieve the data
     :param row: (long) - the row number for which to retrieve data
     :return: (java.lang.Object) a Deephaven SmartKey object
     """
@@ -585,7 +585,7 @@ def getPrevKey(groupByColumnSources, row):
     """
     Returns a SmartKey for the row previous to the specified row from a set of ColumnSources.
     
-    :param groupByColumnSources: (io.deephaven.engine.v2.sources.ColumnSource<?>[]) - a set of ColumnSources from which to retrieve the data
+    :param groupByColumnSources: (io.deephaven.engine.table.ColumnSource<?>[]) - a set of ColumnSources from which to retrieve the data
     :param row: (long) - the row number for which to retrieve the previous row's data
     :return: (java.lang.Object) a Deephaven SmartKey object
     """
@@ -703,12 +703,12 @@ def newTable(*args):
     *Overload 1*  
       :param size: (long) - the number of rows to allocate
       :param names: (java.util.List<java.lang.String>) - a List of column names
-      :param columnSources: (java.util.List<io.deephaven.engine.v2.sources.ColumnSource<?>>) - a List of the ColumnSource(s)
+      :param columnSources: (java.util.List<io.deephaven.engine.table.ColumnSource<?>>) - a List of the ColumnSource(s)
       :return: (io.deephaven.engine.tables.Table) a Deephaven Table
       
     *Overload 2*  
       :param size: (long) - the number of rows to allocate
-      :param columns: (java.util.Map<java.lang.String,io.deephaven.engine.v2.sources.ColumnSource<?>>) - a Map of column names and ColumnSources
+      :param columns: (java.util.Map<java.lang.String,io.deephaven.engine.table.ColumnSource<?>>) - a Map of column names and ColumnSources
       :return: (io.deephaven.engine.tables.Table) a Deephaven Table
       
     *Overload 3*  
@@ -744,7 +744,7 @@ def objColSource(*values):
     Creates a column of appropriate object type, used for creating in-memory tables.
     
     :param data: variable argument for the data
-    :return: (io.deephaven.engine.v2.sources.ColumnSource) a Deephaven ColumnSource of inferred type
+    :return: (io.deephaven.engine.table.ColumnSource) a Deephaven ColumnSource of inferred type
     data structure:
         * a java object, or list of java objects
         * an int, bool, float, datetime, date, string or iterable of (one) such

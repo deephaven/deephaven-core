@@ -1,7 +1,7 @@
 package io.deephaven.engine.v2.locations;
 
-import io.deephaven.engine.v2.utils.RowSet;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
+import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.TrackingMutableRowSet;
 import org.jetbrains.annotations.NotNull;
 
 /**

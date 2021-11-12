@@ -12,8 +12,8 @@ import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.v2.LiveTableTestCase;
 import io.deephaven.engine.v2.TstUtils;
 import io.deephaven.engine.v2.select.*;
-import io.deephaven.engine.v2.utils.RowSet;
-import io.deephaven.engine.v2.utils.RowSetFactory;
+import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetFactory;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;

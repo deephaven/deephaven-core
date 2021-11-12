@@ -1,9 +1,12 @@
 package io.deephaven.engine.v2.utils;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.rowset.MutableRowSet;
+import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.v2.Listener;
 import io.deephaven.engine.v2.ModifiedColumnSet;
-import io.deephaven.engine.v2.sources.ColumnSource;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.v2.sources.ShortSingleValueSource;
 import org.junit.Test;
 

@@ -6,9 +6,9 @@ package io.deephaven.engine.v2.utils;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.util.datastructures.SizeException;
-import io.deephaven.engine.rftable.SharedContext;
-import io.deephaven.engine.structures.RowSequence;
-import io.deephaven.engine.rftable.ChunkSource;
+import io.deephaven.engine.table.SharedContext;
+import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.v2.sources.WritableChunkSink;
 import io.deephaven.engine.v2.sources.WritableSource;
 import io.deephaven.engine.chunk.*;

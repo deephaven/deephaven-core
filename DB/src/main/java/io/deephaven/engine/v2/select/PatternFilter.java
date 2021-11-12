@@ -7,9 +7,9 @@ package io.deephaven.engine.v2.select;
 import io.deephaven.engine.tables.ColumnDefinition;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.TableDefinition;
-import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.utils.MutableRowSet;
-import io.deephaven.engine.v2.utils.RowSet;
+import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.rowset.MutableRowSet;
+import io.deephaven.engine.rowset.RowSet;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collections;

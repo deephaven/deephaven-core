@@ -5,6 +5,7 @@
 package io.deephaven.engine.v2;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.tables.SortingOrder;
 import io.deephaven.engine.v2.sort.LongSortKernel;
 import io.deephaven.engine.v2.sources.ObjectArraySource;
@@ -13,7 +14,6 @@ import io.deephaven.engine.chunk.ChunkType;
 import io.deephaven.engine.chunk.WritableLongChunk;
 import io.deephaven.engine.chunk.sized.SizedLongChunk;
 import io.deephaven.engine.v2.utils.*;
-import io.deephaven.engine.structures.RowSequence;
 
 import java.util.function.Consumer;
 
@@ -557,7 +557,7 @@ class CrossJoinModifiedSlotTracker {
             }
             final RowSet leftRemoved = slotState.indexBuilder.build();
             slotState.leftRowSet.remove(leftRemoved);
-            jsm.updateLeftRowRedirection(leftRemoved, RowSet.NULL_ROW_KEY);
+            jsm.updateLeftRowRedirection(leftRemoved, RowSequence.NULL_ROW_KEY);
             slotState.indexBuilder = RowSetFactory.builderRandom();
             final long sizePrev = slotState.rightRowSet.sizePrev();
             if (sizePrev > 0) {

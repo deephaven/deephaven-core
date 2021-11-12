@@ -5,7 +5,7 @@ import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.live.NotificationQueue;
 import io.deephaven.engine.v2.*;
 import io.deephaven.engine.v2.select.SelectFilter;
-import io.deephaven.engine.v2.utils.TrackingRowSet;
+import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.table.sort.SortDirective;
 import org.jetbrains.annotations.NotNull;
 

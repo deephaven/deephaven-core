@@ -3,12 +3,12 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.v2.join.stamp;
 
+import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.util.compare.CharComparisons;
 
 import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.chunk.Attributes.RowKeys;
 import io.deephaven.engine.chunk.Attributes.Values;
-import io.deephaven.engine.v2.utils.RowSet;
 
 
 public class NullAwareCharNoExactStampKernel implements StampKernel {
@@ -24,7 +24,7 @@ public class NullAwareCharNoExactStampKernel implements StampKernel {
         final int leftSize = leftStamps.size();
         final int rightSize = rightStamps.size();
         if (rightSize == 0) {
-            leftRedirections.fillWithValue(0, leftSize, RowSet.NULL_ROW_KEY);
+            leftRedirections.fillWithValue(0, leftSize, RowSequence.NULL_ROW_KEY);
             leftRedirections.setSize(leftSize);
             return;
         }
@@ -37,7 +37,7 @@ public class NullAwareCharNoExactStampKernel implements StampKernel {
         for (int li = 0; li < leftSize; ) {
             final char leftValue = leftStamps.get(li);
             if (leq(leftValue, rightLowValue)) {
-                leftRedirections.set(li++, RowSet.NULL_ROW_KEY);
+                leftRedirections.set(li++, RowSequence.NULL_ROW_KEY);
                 continue;
             }
 

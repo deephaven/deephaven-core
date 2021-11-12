@@ -1,11 +1,12 @@
 package io.deephaven.engine.v2.sources;
 
 import io.deephaven.engine.chunk.Attributes;
-import io.deephaven.engine.rftable.SharedContext;
+import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.chunk.WritableChunk;
 import io.deephaven.engine.chunk.WritableLongChunk;
 import io.deephaven.engine.rftable.chunkfillers.chunkfillers.ChunkFiller;
-import io.deephaven.engine.structures.RowSequence;
+import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.table.ColumnSource;
 import org.jetbrains.annotations.NotNull;
 
 import io.deephaven.engine.v2.CrossJoinShiftState;

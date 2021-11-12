@@ -1,11 +1,11 @@
 package io.deephaven.engine.page;
 
-import io.deephaven.engine.rftable.ChunkSource;
-import io.deephaven.engine.rftable.DefaultChunkSource;
-import io.deephaven.engine.rftable.DefaultGetContext;
+import io.deephaven.engine.table.ChunkSource;
+import io.deephaven.engine.table.DefaultChunkSource;
+import io.deephaven.engine.table.DefaultGetContext;
 import io.deephaven.engine.chunk.*;
-import io.deephaven.engine.structures.RowSequence;
-import io.deephaven.engine.structures.rowsequence.RowSequenceUtil;
+import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.rowset.impl.RowSequenceUtil;
 import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
 

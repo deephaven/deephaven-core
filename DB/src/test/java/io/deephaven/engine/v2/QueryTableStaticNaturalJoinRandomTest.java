@@ -1,16 +1,16 @@
 package io.deephaven.engine.v2;
 
+import io.deephaven.base.StringUtils;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.datastructures.util.SmartKey;
-import io.deephaven.engine.v2.utils.RowSet;
+import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.io.logger.StreamLoggerImpl;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.select.MatchPairFactory;
 import io.deephaven.engine.tables.select.QueryScope;
 import io.deephaven.engine.tables.utils.TableTools;
-import io.deephaven.engine.util.string.StringUtils;
-import io.deephaven.engine.v2.sources.ColumnSource;
+import io.deephaven.engine.table.ColumnSource;
 import gnu.trove.map.TByteIntMap;
 import gnu.trove.map.TCharIntMap;
 import gnu.trove.map.TIntIntMap;

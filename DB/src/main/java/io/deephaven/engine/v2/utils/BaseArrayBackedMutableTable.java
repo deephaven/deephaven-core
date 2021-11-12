@@ -3,6 +3,10 @@ package io.deephaven.engine.v2.utils;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.datastructures.util.CollectionUtil;
+import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetBuilderSequential;
+import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.tables.ColumnDefinition;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.TableDefinition;
@@ -13,7 +17,7 @@ import io.deephaven.engine.util.config.MutableInputTable;
 import io.deephaven.engine.v2.QueryTable;
 import io.deephaven.engine.v2.UpdatableTable;
 import io.deephaven.engine.v2.sources.ArrayBackedColumnSource;
-import io.deephaven.engine.v2.sources.ColumnSource;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.util.annotations.TestUseOnly;
 import org.jetbrains.annotations.NotNull;
 
@@ -39,7 +43,7 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
     private long pendingProcessed = NULL_NOTIFICATION_STEP;
 
     public BaseArrayBackedMutableTable(TrackingRowSet rowSet, Map<String, ? extends ColumnSource<?>> nameToColumnSource,
-            Map<String, Object[]> enumValues, ProcessPendingUpdater processPendingUpdater) {
+                                       Map<String, Object[]> enumValues, ProcessPendingUpdater processPendingUpdater) {
         super(rowSet, nameToColumnSource, processPendingUpdater);
         this.enumValues = enumValues;
         MutableInputTable mutableInputTable = makeHandler();

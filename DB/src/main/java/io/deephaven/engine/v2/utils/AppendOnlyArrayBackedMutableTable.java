@@ -1,16 +1,19 @@
 package io.deephaven.engine.v2.utils;
 
 import io.deephaven.datastructures.util.CollectionUtil;
-import io.deephaven.engine.rftable.ChunkSource;
-import io.deephaven.engine.rftable.SharedContext;
-import io.deephaven.engine.structures.RowSequence;
-import io.deephaven.engine.structures.rowsequence.RowSequenceUtil;
+import io.deephaven.engine.table.ChunkSource;
+import io.deephaven.engine.table.SharedContext;
+import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.TrackingRowSet;
+import io.deephaven.engine.rowset.impl.RowSequenceUtil;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.TableDefinition;
 import io.deephaven.engine.util.config.InputTableStatusListener;
 import io.deephaven.engine.v2.QueryTable;
 import io.deephaven.engine.v2.sources.ArrayBackedColumnSource;
-import io.deephaven.engine.v2.sources.ColumnSource;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.v2.sources.NullValueColumnSource;
 import io.deephaven.engine.v2.sources.WritableChunkSink;
 import io.deephaven.engine.chunk.*;

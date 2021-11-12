@@ -2,7 +2,7 @@ package io.deephaven.engine.v2.by;
 
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.rftable.ChunkSource;
+import io.deephaven.engine.table.ChunkSource;
 import org.jetbrains.annotations.NotNull;
 
 /**

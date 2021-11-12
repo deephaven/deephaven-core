@@ -1,17 +1,20 @@
 package io.deephaven.engine.tables.verify;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetBuilderSequential;
+import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.tables.SortingOrder;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.v2.BaseTable;
 import io.deephaven.engine.v2.ModifiedColumnSet;
 import io.deephaven.engine.v2.sortcheck.SortCheck;
-import io.deephaven.engine.v2.sources.ColumnSource;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.chunk.Attributes;
 import io.deephaven.engine.chunk.Chunk;
-import io.deephaven.engine.rftable.ChunkSource;
+import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.v2.utils.*;
-import io.deephaven.engine.structures.RowSequence;
+import io.deephaven.engine.rowset.RowSequence;
 
 public class SortedAssertionInstrumentedListenerAdapter extends BaseTable.ListenerImpl {
     private static final int CHUNK_SIZE = 1 << 16;

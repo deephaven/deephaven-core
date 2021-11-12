@@ -4,9 +4,9 @@
 
 package io.deephaven.engine.v2.utils;
 
-import io.deephaven.engine.structures.RowSequence;
+import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.chunk.Attributes.RowKeys;
-import io.deephaven.engine.rftable.ChunkSource;
+import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.chunk.WritableLongChunk;
 import org.jetbrains.annotations.NotNull;
 

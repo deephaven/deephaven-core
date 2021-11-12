@@ -1,6 +1,8 @@
 package io.deephaven.engine.v2.utils;
 
-import io.deephaven.engine.structures.RowSequence;
+import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.tables.select.QueryScope;
 import io.deephaven.engine.tables.utils.TableTools;
@@ -11,7 +13,7 @@ import io.deephaven.engine.v2.InMemoryTable;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.v2.QueryTable;
 import io.deephaven.engine.v2.TstUtils;
-import io.deephaven.engine.v2.sources.ColumnSource;
+import io.deephaven.engine.table.ColumnSource;
 
 import static io.deephaven.engine.tables.utils.TableTools.intCol;
 import static io.deephaven.engine.v2.TstUtils.assertTableEquals;
@@ -19,7 +21,7 @@ import static io.deephaven.engine.v2.TstUtils.prevTable;
 import static io.deephaven.engine.chunk.Attributes.Values;
 
 import io.deephaven.engine.chunk.ByteChunk;
-import io.deephaven.engine.rftable.ChunkSource;
+import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.chunk.WritableObjectChunk;
 import io.deephaven.engine.v2.select.IncrementalReleaseFilter;
 

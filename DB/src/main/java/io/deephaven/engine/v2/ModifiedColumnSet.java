@@ -3,7 +3,7 @@ package io.deephaven.engine.v2;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.datastructures.util.CollectionUtil;
 import com.google.common.collect.Iterators;
-import io.deephaven.engine.v2.sources.ColumnSource;
+import io.deephaven.engine.table.ColumnSource;
 import gnu.trove.impl.Constants;
 import gnu.trove.map.hash.TObjectIntHashMap;
 
@@ -327,7 +327,7 @@ public class ModifiedColumnSet {
      * @param newColumns the column source map for result table
      * @return a simple Transformer that makes a cheap, but CSM compatible copy
      */
-    public Transformer newIdentityTransformer(final Map<String, ColumnSource<?>> newColumns) {
+    public Transformer newIdentityTransformer(final Map<String, ? extends ColumnSource<?>> newColumns) {
         if (columns == newColumns) {
             throw new IllegalArgumentException(
                     "Do not use a transformer when it is correct to pass-through the ModifiedColumnSet.");

@@ -1,6 +1,8 @@
 package io.deephaven.engine.v2;
 
-import io.deephaven.engine.v2.sources.ColumnSource;
+import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.v2.sources.LongArraySource;
 import io.deephaven.engine.v2.sources.LongSparseArraySource;
 import io.deephaven.engine.v2.utils.*;
@@ -13,7 +15,7 @@ import java.util.stream.Collectors;
 abstract class StaticNaturalJoinStateManager {
     static final int CHUNK_SIZE = 4096;
     static final long DUPLICATE_RIGHT_VALUE = -2;
-    static final long NO_RIGHT_ENTRY_VALUE = RowSet.NULL_ROW_KEY;
+    static final long NO_RIGHT_ENTRY_VALUE = RowSequence.NULL_ROW_KEY;
 
     final ColumnSource<?>[] keySourcesForErrorMessages;
 

@@ -12,7 +12,7 @@ import io.deephaven.base.verify.Require;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.datastructures.util.HashCodeUtil;
 import io.deephaven.engine.v2.InMemoryTable;
-import io.deephaven.engine.v2.sources.ColumnSource;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.qst.column.header.ColumnHeader;
 import java.util.Map.Entry;
 import org.jetbrains.annotations.NotNull;

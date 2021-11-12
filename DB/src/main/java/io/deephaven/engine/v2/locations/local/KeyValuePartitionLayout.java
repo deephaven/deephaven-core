@@ -9,7 +9,7 @@ import io.deephaven.engine.v2.locations.TableLocationKey;
 import io.deephaven.engine.v2.locations.impl.TableLocationKeyFinder;
 import io.deephaven.engine.v2.locations.parquet.local.ParquetTableLocationKey;
 import io.deephaven.engine.v2.parquet.ParquetTableWriter;
-import io.deephaven.engine.v2.sources.ColumnSource;
+import io.deephaven.engine.table.ColumnSource;
 import org.apache.commons.text.StringEscapeUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;

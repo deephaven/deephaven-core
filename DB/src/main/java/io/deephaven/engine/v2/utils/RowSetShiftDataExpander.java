@@ -3,6 +3,7 @@ package io.deephaven.engine.v2.utils;
 import io.deephaven.base.Base64;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.v2.BaseTable;
 import io.deephaven.engine.v2.Listener;
 import io.deephaven.engine.v2.ModifiedColumnSet;

@@ -5,13 +5,13 @@ import io.deephaven.engine.v2.Listener;
 import io.deephaven.engine.v2.ModifiedColumnSet;
 import io.deephaven.engine.v2.QueryTable;
 import io.deephaven.engine.v2.sort.permute.PermuteKernel;
-import io.deephaven.engine.v2.sources.ColumnSource;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.chunk.Attributes.Values;
-import io.deephaven.engine.rftable.ChunkSource;
-import io.deephaven.engine.rftable.SharedContext;
+import io.deephaven.engine.table.ChunkSource;
+import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.chunk.WritableChunk;
 import io.deephaven.engine.v2.utils.UpdateSizeCalculator;
-import io.deephaven.engine.v2.utils.RowSet;
+import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.v2.utils.UpdatePerformanceTracker;
 import org.jetbrains.annotations.NotNull;
 

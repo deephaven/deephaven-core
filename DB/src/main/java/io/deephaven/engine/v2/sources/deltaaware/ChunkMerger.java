@@ -4,7 +4,7 @@ import io.deephaven.engine.chunk.Attributes;
 import io.deephaven.engine.chunk.Chunk;
 import io.deephaven.engine.chunk.LongChunk;
 import io.deephaven.engine.chunk.WritableChunk;
-import io.deephaven.engine.structures.RowSequence;
+import io.deephaven.engine.rowset.RowSequence;
 
 class ChunkMerger<ATTR extends Attributes.Any> {
     // Copy the data back into the positions where it needs to go.

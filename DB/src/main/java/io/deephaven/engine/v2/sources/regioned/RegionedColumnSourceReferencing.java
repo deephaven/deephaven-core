@@ -2,10 +2,10 @@ package io.deephaven.engine.v2.sources.regioned;
 
 import io.deephaven.engine.tables.ColumnDefinition;
 import io.deephaven.engine.v2.locations.ColumnLocation;
-import io.deephaven.engine.v2.sources.ColumnSource;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.chunk.Attributes;
-import io.deephaven.engine.rftable.ChunkSource;
-import io.deephaven.engine.rftable.SharedContext;
+import io.deephaven.engine.table.ChunkSource;
+import io.deephaven.engine.table.SharedContext;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 

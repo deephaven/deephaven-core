@@ -6,8 +6,12 @@ package io.deephaven.engine.v2;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.datastructures.util.CollectionUtil;
+import io.deephaven.engine.rowset.MutableRowSet;
+import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.tables.utils.TableTools;
-import io.deephaven.engine.v2.sources.ColumnSource;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.v2.sources.DateTimeTreeMapSource;
 import io.deephaven.engine.v2.sources.TreeMapSource;
 import io.deephaven.engine.v2.utils.*;
@@ -306,8 +310,8 @@ public class GenerateTableUpdates {
                     for (final TstUtils.ColumnInfo<?, ?> info : columnInfo) {
                         info.move(idx, idx + delta);
                     }
-                    idx = iter.hasNext() ? iter.nextLong() : RowSet.NULL_ROW_KEY;
-                } while (idx != RowSet.NULL_ROW_KEY);
+                    idx = iter.hasNext() ? iter.nextLong() : RowSequence.NULL_ROW_KEY;
+                } while (idx != RowSequence.NULL_ROW_KEY);
             }
             for (final ColumnSource<?> column : table.getColumnSources()) {
                 if (column instanceof TreeMapSource) {

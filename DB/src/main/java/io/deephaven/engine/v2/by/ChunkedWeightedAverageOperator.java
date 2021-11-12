@@ -1,6 +1,7 @@
 package io.deephaven.engine.v2.by;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.util.NullSafeAddition;
 import io.deephaven.engine.v2.sources.*;

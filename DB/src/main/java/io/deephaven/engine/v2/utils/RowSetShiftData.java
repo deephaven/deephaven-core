@@ -11,7 +11,7 @@ import gnu.trove.list.array.TLongArrayList;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.structures.RowSequence;
+import io.deephaven.engine.rowset.*;
 import io.deephaven.io.log.impl.LogOutputStringImpl;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.SafeCloseablePair;
@@ -307,7 +307,7 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
         }
 
         try (final RowSet remove = toRemove.build();
-                final RowSet insert = toInsert.build()) {
+             final RowSet insert = toInsert.build()) {
             rowSet.remove(remove);
             rowSet.insert(insert);
         }
@@ -847,12 +847,12 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
          * delta, but do not include the intervening key we do not permit coalescing. If there is no intervening key, we
          * permit coalescing. RowSet.NULL_KEY indicates there is no intervening key of interest.
          */
-        private long interveningKey = RowSet.NULL_ROW_KEY;
+        private long interveningKey = RowSequence.NULL_ROW_KEY;
 
         /**
          * The last point at which we started the reverse iterator.
          */
-        private long lastReverseIteratorStart = RowSet.NULL_ROW_KEY;
+        private long lastReverseIteratorStart = RowSequence.NULL_ROW_KEY;
 
         /**
          * Make a builder that tries to coalesce non-adjacent ranges with the same delta if there are no intervening
@@ -889,7 +889,7 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
             final boolean reinitializeReverseIterator =
                     polarityReversed && (polarityChanged || beginRange > lastReverseIteratorStart);
             if (polarityChanged || reinitializeReverseIterator) {
-                interveningKey = RowSet.NULL_ROW_KEY;
+                interveningKey = RowSequence.NULL_ROW_KEY;
                 if (lastPolarityReversed) {
                     maybeReverseLastRun();
                     if (preShiftKeysIteratorReverse != null) {
@@ -907,7 +907,7 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
                 preShiftKeysIteratorReverse = preShiftKeys.reverseIterator();
                 lastReverseIteratorStart = endRange;
                 if (!preShiftKeysIteratorReverse.advance(endRange)) {
-                    nextReverseKey = RowSet.NULL_ROW_KEY;
+                    nextReverseKey = RowSequence.NULL_ROW_KEY;
                 } else {
                     nextReverseKey = preShiftKeysIteratorReverse.currentValue();
                 }
@@ -920,26 +920,26 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
                 if (preShiftKeysIteratorForward.hasNext()) {
                     nextForwardKey = preShiftKeysIteratorForward.nextLong();
                 } else {
-                    nextForwardKey = RowSet.NULL_ROW_KEY;
+                    nextForwardKey = RowSequence.NULL_ROW_KEY;
                 }
             }
 
             final long nextInterveningKey;
             if (polarityReversed) {
-                if (nextReverseKey == RowSet.NULL_ROW_KEY || nextReverseKey < beginRange) {
+                if (nextReverseKey == RowSequence.NULL_ROW_KEY || nextReverseKey < beginRange) {
                     return;
                 }
                 if (beginRange == 0 || !preShiftKeysIteratorReverse.advance(beginRange - 1)) {
-                    nextInterveningKey = nextReverseKey = RowSet.NULL_ROW_KEY;
+                    nextInterveningKey = nextReverseKey = RowSequence.NULL_ROW_KEY;
                 } else {
                     nextInterveningKey = nextReverseKey = preShiftKeysIteratorReverse.currentValue();
                 }
             } else {
-                if (nextForwardKey == RowSet.NULL_ROW_KEY || nextForwardKey > endRange) {
+                if (nextForwardKey == RowSequence.NULL_ROW_KEY || nextForwardKey > endRange) {
                     return;
                 }
                 if (endRange == Long.MAX_VALUE || !preShiftKeysIteratorForward.advance(endRange + 1)) {
-                    nextInterveningKey = nextForwardKey = RowSet.NULL_ROW_KEY;
+                    nextInterveningKey = nextForwardKey = RowSequence.NULL_ROW_KEY;
                 } else {
                     nextInterveningKey = nextForwardKey = preShiftKeysIteratorForward.currentValue();
                 }
@@ -951,7 +951,7 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
                 // if we had an intervening key between the last end (or begin) and the current begin (or end); then
                 // these two ranges can not be coalesced
                 if (polarityReversed) {
-                    if (interveningKey == RowSet.NULL_ROW_KEY || interveningKey <= endRange) {
+                    if (interveningKey == RowSequence.NULL_ROW_KEY || interveningKey <= endRange) {
                         // we must merge these ranges; this is not as simple as the forward case, because if we had the
                         // same reverse iterator as last time (i.e. the polarity was applied "correctly"), we should
                         // simply be able to update the beginning of the range. However, if the existing range is
@@ -974,7 +974,7 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
                         }
                     }
                 } else {
-                    if (interveningKey == RowSet.NULL_ROW_KEY || interveningKey >= beginRange) {
+                    if (interveningKey == RowSequence.NULL_ROW_KEY || interveningKey >= beginRange) {
                         shiftData.payload.set(currentRangeIndex * 3 + 1, endRange);
                         interveningKey = nextInterveningKey;
                         return;

@@ -1,9 +1,12 @@
 package io.deephaven.engine.v2.snapshot;
 
+import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.TrackingMutableRowSet;
 import io.deephaven.engine.v2.ListenerRecorder;
 import io.deephaven.engine.v2.MergedListener;
 import io.deephaven.engine.v2.QueryTable;
-import io.deephaven.engine.v2.sources.ColumnSource;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.v2.sources.SparseArrayColumnSource;
 import io.deephaven.engine.v2.utils.*;
 

@@ -11,7 +11,7 @@ import io.deephaven.engine.v2.sources.WritableSource;
 import io.deephaven.engine.chunk.LongChunk;
 import io.deephaven.engine.chunk.WritableObjectChunk;
 import io.deephaven.engine.chunk.WritableChunk;
-import io.deephaven.engine.structures.RowSequence;
+import io.deephaven.engine.rowset.RowSequence;
 import org.apache.commons.lang3.mutable.MutableInt;
 
 public final class ObjectChunkFiller implements ChunkFiller {

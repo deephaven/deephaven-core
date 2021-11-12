@@ -7,7 +7,7 @@ import io.deephaven.engine.tables.TableDefinition;
 import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.tables.live.NotificationQueue;
 import io.deephaven.engine.v2.*;
-import io.deephaven.engine.v2.sources.ColumnSource;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.v2.sources.UnionColumnSource;
 import io.deephaven.engine.v2.sources.UnionSourceManager;
 import org.jetbrains.annotations.Nullable;

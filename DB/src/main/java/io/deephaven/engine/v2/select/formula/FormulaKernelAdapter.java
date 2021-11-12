@@ -1,14 +1,14 @@
 package io.deephaven.engine.v2.select.formula;
 
 import io.deephaven.util.datastructures.LongSizedDataStructure;
-import io.deephaven.engine.v2.sources.ColumnSource;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.chunk.Attributes.OrderedRowKeys;
 import io.deephaven.engine.chunk.Attributes.Values;
-import io.deephaven.engine.v2.utils.RowSet;
-import io.deephaven.engine.v2.utils.RowSetFactory;
-import io.deephaven.engine.structures.RowSequence;
-import io.deephaven.engine.v2.utils.TrackingRowSet;
+import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.util.type.TypeUtils;
 import org.jetbrains.annotations.NotNull;
 

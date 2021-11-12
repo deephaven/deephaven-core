@@ -2,7 +2,7 @@ package io.deephaven.engine.v2;
 
 import io.deephaven.base.Function;
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.v2.utils.*;
+import io.deephaven.engine.rowset.*;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.engine.tables.Table;
@@ -11,7 +11,7 @@ import io.deephaven.engine.tables.live.WaitNotification;
 import io.deephaven.engine.tables.select.SelectFilterFactory;
 import io.deephaven.engine.v2.remote.ConstructSnapshot;
 import io.deephaven.engine.v2.select.SelectFilter;
-import io.deephaven.engine.v2.sources.ColumnSource;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.v2.sources.LogicalClock;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.ReferentialIntegrity;

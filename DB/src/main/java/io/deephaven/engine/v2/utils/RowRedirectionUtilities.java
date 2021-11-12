@@ -1,5 +1,8 @@
 package io.deephaven.engine.v2.utils;
 
+import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.rowset.RowSet;
+
 public class RowRedirectionUtilities {
     private static final long SEARCH_ITERATOR_THRESHOLD = 512;
 
@@ -8,7 +11,7 @@ public class RowRedirectionUtilities {
 
         final RowSetShiftData.SingleElementShiftCallback applyOneShift = (key, delta) -> {
             final long oldKey = rowRedirection.remove(key);
-            if (oldKey != RowSet.NULL_ROW_KEY) {
+            if (oldKey != RowSequence.NULL_ROW_KEY) {
                 rowRedirection.putVoid(key + delta, oldKey);
             }
         };

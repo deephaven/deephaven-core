@@ -1,13 +1,13 @@
 package io.deephaven.engine.v2.join;
 
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.structures.RowSequence;
+import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.tables.SortingOrder;
 import io.deephaven.engine.tables.select.MatchPair;
 import io.deephaven.engine.v2.*;
 import io.deephaven.engine.chunk.util.hashing.ChunkEquals;
 import io.deephaven.engine.v2.sort.LongSortKernel;
-import io.deephaven.engine.v2.sources.ColumnSource;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.v2.sources.LongArraySource;
 import io.deephaven.engine.v2.sources.ObjectArraySource;
 import io.deephaven.engine.chunk.*;
@@ -710,7 +710,7 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
                         for (int ii = 0; ii < leftStampKeys.size(); ++ii) {
                             final long leftKey = leftStampKeys.get(ii);
                             final long rightKey = rightKeysForLeft.get(ii);
-                            if (rightKey == RowSet.NULL_ROW_KEY) {
+                            if (rightKey == RowSequence.NULL_ROW_KEY) {
                                 rowRedirection.removeVoid(leftKey);
                             } else {
                                 rowRedirection.putVoid(leftKey, rightKey);

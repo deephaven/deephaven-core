@@ -6,7 +6,7 @@ package io.deephaven.engine.v2.remote;
 
 import io.deephaven.engine.v2.Listener;
 import io.deephaven.engine.v2.ModifiedColumnSet;
-import io.deephaven.engine.v2.utils.RowSet;
+import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.v2.utils.RowSetShiftData;
 
 import java.io.Serializable;

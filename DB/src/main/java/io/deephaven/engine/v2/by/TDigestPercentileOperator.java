@@ -4,6 +4,7 @@
 
 package io.deephaven.engine.v2.by;
 
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.time.DateTime;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.v2.QueryTable;
@@ -14,7 +15,7 @@ import io.deephaven.engine.chunk.Attributes.ChunkPositions;
 import io.deephaven.engine.chunk.Attributes.RowKeys;
 import io.deephaven.engine.chunk.Attributes.Values;
 import io.deephaven.engine.chunk.*;
-import io.deephaven.engine.v2.utils.RowSet;
+import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.v2.utils.cast.ToDoubleCast;
 import com.tdunning.math.stats.TDigest;
 import org.jetbrains.annotations.NotNull;

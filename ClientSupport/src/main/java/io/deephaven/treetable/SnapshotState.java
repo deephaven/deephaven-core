@@ -11,7 +11,7 @@ import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.TableDefinition;
 import io.deephaven.engine.tables.select.MatchPair;
 import io.deephaven.engine.time.DateTime;
-import io.deephaven.engine.v2.utils.RowSet;
+import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.BooleanUtils;
 import io.deephaven.engine.util.ColumnFormattingValues;
@@ -19,7 +19,7 @@ import io.deephaven.engine.v2.HierarchicalTable;
 import io.deephaven.engine.v2.HierarchicalTableInfo;
 import io.deephaven.engine.v2.RollupInfo;
 import io.deephaven.engine.v2.TableMap;
-import io.deephaven.engine.v2.sources.ColumnSource;
+import io.deephaven.engine.table.ColumnSource;
 
 import java.lang.reflect.Array;
 import java.util.*;

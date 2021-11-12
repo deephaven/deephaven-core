@@ -5,10 +5,10 @@
 package io.deephaven.engine.v2;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.util.compare.CharComparisons;
 import io.deephaven.util.compare.DoubleComparisons;
 import io.deephaven.util.compare.FloatComparisons;
-import io.deephaven.engine.v2.sources.*;
 
 import java.util.function.Predicate;
 

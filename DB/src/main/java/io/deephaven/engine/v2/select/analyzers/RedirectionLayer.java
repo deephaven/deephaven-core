@@ -1,9 +1,10 @@
 package io.deephaven.engine.v2.select.analyzers;
 
+import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.tables.ColumnDefinition;
 import io.deephaven.engine.v2.Listener;
 import io.deephaven.engine.v2.ModifiedColumnSet;
-import io.deephaven.engine.v2.sources.ColumnSource;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.v2.utils.*;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.apache.commons.lang3.mutable.MutableObject;
@@ -66,7 +67,7 @@ final public class RedirectionLayer extends SelectAndViewAnalyzer {
                             for (long key = localForwardIt.currentValue(); localForwardIt.currentValue() <= end; key =
                                     localForwardIt.nextLong()) {
                                 final long inner = rowRedirection.remove(key);
-                                if (inner != RowSet.NULL_ROW_KEY) {
+                                if (inner != RowSequence.NULL_ROW_KEY) {
                                     rowRedirection.put(key + delta, inner);
                                 }
                                 if (!localForwardIt.hasNext()) {
@@ -80,7 +81,7 @@ final public class RedirectionLayer extends SelectAndViewAnalyzer {
                                 for (long key = reverseIt.currentValue(); reverseIt.currentValue() >= begin; key =
                                         reverseIt.nextLong()) {
                                     final long inner = rowRedirection.remove(key);
-                                    if (inner != RowSet.NULL_ROW_KEY) {
+                                    if (inner != RowSequence.NULL_ROW_KEY) {
                                         rowRedirection.put(key + delta, inner);
                                     }
                                     if (!reverseIt.hasNext()) {

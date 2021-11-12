@@ -7,9 +7,9 @@ package io.deephaven.engine.v2.sources;
 import io.deephaven.engine.v2.select.Formula;
 import io.deephaven.engine.chunk.Attributes.Values;
 import io.deephaven.engine.chunk.Chunk;
-import io.deephaven.engine.rftable.SharedContext;
+import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.chunk.WritableChunk;
-import io.deephaven.engine.structures.RowSequence;
+import io.deephaven.engine.rowset.RowSequence;
 import org.jetbrains.annotations.NotNull;
 
 import java.net.MalformedURLException;

@@ -5,11 +5,15 @@ package io.deephaven.engine.v2.by;
 
 import io.deephaven.base.verify.Require;
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.rftable.ChunkSource;
-import io.deephaven.engine.rftable.Context;
-import io.deephaven.engine.rftable.SharedContext;
-import io.deephaven.engine.structures.RowSequence;
-import io.deephaven.engine.structures.rowsequence.RowSequenceUtil;
+import io.deephaven.engine.table.ChunkSource;
+import io.deephaven.engine.table.Context;
+import io.deephaven.engine.table.SharedContext;
+import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.rowset.RowSetBuilderSequential;
+import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.TrackingMutableRowSet;
+import io.deephaven.engine.rowset.impl.RowSequenceUtil;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.chunk.util.hashing.*;
 // this is ugly to have twice, but we do need it twice for replication

@@ -2,10 +2,11 @@ package io.deephaven.engine.rftable;
 
 import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.chunk.util.hashing.ChunkEquals;
+import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.v2.sources.WritableChunkSink;
 import io.deephaven.engine.chunk.Attributes.Values;
-import io.deephaven.engine.structures.RowSequence;
-import io.deephaven.engine.structures.rowsequence.RowSequenceUtil;
+import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.rowset.impl.RowSequenceUtil;
 import junit.framework.TestCase;
 
 import java.util.Random;

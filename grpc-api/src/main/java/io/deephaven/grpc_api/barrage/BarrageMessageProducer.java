@@ -11,8 +11,8 @@ import dagger.assisted.AssistedFactory;
 import dagger.assisted.AssistedInject;
 import io.deephaven.base.formatters.FormatBitSet;
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.structures.RowSequence;
-import io.deephaven.engine.structures.rowsequence.RowSequenceUtil;
+import io.deephaven.engine.rowset.*;
+import io.deephaven.engine.rowset.impl.RowSequenceUtil;
 import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.engine.v2.*;
 import io.deephaven.engine.v2.utils.*;
@@ -25,7 +25,7 @@ import io.deephaven.engine.util.liveness.LivenessReferent;
 import io.deephaven.engine.v2.Listener;
 import io.deephaven.engine.v2.remote.ConstructSnapshot;
 import io.deephaven.engine.v2.sources.ArrayBackedColumnSource;
-import io.deephaven.engine.v2.sources.ColumnSource;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.v2.sources.FillUnordered;
 import io.deephaven.engine.v2.sources.LogicalClock;
 import io.deephaven.engine.v2.sources.ObjectArraySource;
@@ -33,10 +33,10 @@ import io.deephaven.engine.v2.sources.ReinterpretUtilities;
 import io.deephaven.engine.v2.sources.WritableChunkSink;
 import io.deephaven.engine.v2.sources.WritableSource;
 import io.deephaven.engine.chunk.Attributes;
-import io.deephaven.engine.rftable.ChunkSource;
+import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.chunk.LongChunk;
 import io.deephaven.engine.chunk.ResettableWritableObjectChunk;
-import io.deephaven.engine.rftable.SharedContext;
+import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.chunk.WritableChunk;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.grpc_api.util.Scheduler;
@@ -1365,8 +1365,8 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
 
                 retval.addedMapping = new long[localAdded.intSize()];
                 retval.modifiedMapping = new long[retval.recordedMods.intSize()];
-                Arrays.fill(retval.addedMapping, RowSet.NULL_ROW_KEY);
-                Arrays.fill(retval.modifiedMapping, RowSet.NULL_ROW_KEY);
+                Arrays.fill(retval.addedMapping, RowSequence.NULL_ROW_KEY);
+                Arrays.fill(retval.modifiedMapping, RowSequence.NULL_ROW_KEY);
 
                 final MutableRowSet unfilledAdds = localAdded.isEmpty() ? RowSetFactory.empty()
                         : RowSetFactory.fromRange(0, retval.addedMapping.length - 1);
@@ -1507,7 +1507,7 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
         final RowSet.Iterator vit = values.iterator();
         keys.forAllRowKeys(lkey -> {
             final int key = LongSizedDataStructure.intSize("applyRedirMapping", lkey);
-            Assert.eq(mapping[key], "mapping[key]", RowSet.NULL_ROW_KEY, "RowSet.NULL_ROW_KEY");
+            Assert.eq(mapping[key], "mapping[key]", RowSequence.NULL_ROW_KEY, "RowSet.NULL_ROW_KEY");
             mapping[key] = vit.nextLong();
         });
     }

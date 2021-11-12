@@ -1,5 +1,6 @@
 package io.deephaven.engine.v2.sources;
 
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.time.DateTime;
 
 /**

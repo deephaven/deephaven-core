@@ -5,6 +5,7 @@
 package io.deephaven.engine.v2.utils;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.qst.column.header.ColumnHeader;
 import io.deephaven.qst.table.TableHeader;
 import io.deephaven.qst.type.Type;
@@ -17,7 +18,7 @@ import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.v2.UpdateSourceQueryTable;
 import io.deephaven.engine.v2.sources.ArrayBackedColumnSource;
-import io.deephaven.engine.v2.sources.ColumnSource;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.v2.sources.SingleValueColumnSource;
 import org.jetbrains.annotations.NotNull;
 

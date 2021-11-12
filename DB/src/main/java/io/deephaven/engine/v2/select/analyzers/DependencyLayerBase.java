@@ -4,7 +4,7 @@ import io.deephaven.engine.tables.ColumnDefinition;
 import io.deephaven.engine.vector.Vector;
 import io.deephaven.engine.v2.ModifiedColumnSet;
 import io.deephaven.engine.v2.select.SelectColumn;
-import io.deephaven.engine.v2.sources.ColumnSource;
+import io.deephaven.engine.table.ColumnSource;
 
 import java.util.Arrays;
 import java.util.HashSet;

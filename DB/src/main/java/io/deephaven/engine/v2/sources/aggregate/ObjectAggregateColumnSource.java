@@ -3,13 +3,13 @@ package io.deephaven.engine.v2.sources.aggregate;
 import io.deephaven.engine.vector.ObjectVector;
 import io.deephaven.engine.v2.dbarrays.ObjectVectorColumnWrapper;
 import io.deephaven.engine.v2.dbarrays.PrevObjectVectorColumnWrapper;
-import io.deephaven.engine.v2.sources.ColumnSource;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.chunk.Attributes.Values;
 import io.deephaven.engine.chunk.ObjectChunk;
 import io.deephaven.engine.chunk.WritableChunk;
 import io.deephaven.engine.chunk.WritableObjectChunk;
-import io.deephaven.engine.structures.RowSequence;
-import io.deephaven.engine.v2.utils.RowSet;
+import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.rowset.RowSet;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -24,7 +24,7 @@ public final class ObjectAggregateColumnSource<COMPONENT_TYPE> extends BaseAggre
 
     @Override
     public final ObjectVector<COMPONENT_TYPE> get(final long rowKey) {
-        if (rowKey == RowSet.NULL_ROW_KEY) {
+        if (rowKey == RowSequence.NULL_ROW_KEY) {
             return null;
         }
         return new ObjectVectorColumnWrapper<>(aggregatedSource, groupRowSetSource.get(rowKey));
@@ -32,7 +32,7 @@ public final class ObjectAggregateColumnSource<COMPONENT_TYPE> extends BaseAggre
 
     @Override
     public final ObjectVector<COMPONENT_TYPE> getPrev(final long rowKey) {
-        if (rowKey == RowSet.NULL_ROW_KEY) {
+        if (rowKey == RowSequence.NULL_ROW_KEY) {
             return null;
         }
         return new PrevObjectVectorColumnWrapper<>(aggregatedSource, getPrevGroupRowSet(rowKey));

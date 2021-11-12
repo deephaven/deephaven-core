@@ -4,13 +4,14 @@
 
 package io.deephaven.engine.v2.sources;
 
-import io.deephaven.engine.rftable.SharedContext;
+import io.deephaven.engine.table.SharedContext;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.time.DateTime;
 import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.chunk.Attributes.Values;
 import io.deephaven.engine.rftable.chunkfillers.chunkfillers.ChunkFiller;
-import io.deephaven.engine.structures.RowSequence;
+import io.deephaven.engine.rowset.RowSequence;
 import org.jetbrains.annotations.NotNull;
 
 import static io.deephaven.util.QueryConstants.NULL_LONG;
@@ -67,7 +68,7 @@ public class DateTimeArraySource extends AbstractLongArraySource<DateTime> {
 
     @Override
     public void fillPrevChunk(@NotNull ColumnSource.FillContext context, @NotNull WritableChunk<? super Values> dest,
-            @NotNull RowSequence rowSequence) {
+                              @NotNull RowSequence rowSequence) {
         final ChunkFiller filler = ChunkFiller.forChunkType(dest.getChunkType());
         if (rowSequence.getAverageRunLengthEstimate() > USE_RANGES_AVERAGE_RUN_LENGTH) {
             filler.fillPrevByRanges(this, rowSequence, dest);

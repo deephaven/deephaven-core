@@ -1,11 +1,12 @@
 package io.deephaven.engine.v2.utils;
 
 
-import io.deephaven.engine.v2.utils.rsp.RspArray;
-import io.deephaven.engine.v2.utils.rsp.RspBitmap;
-import io.deephaven.engine.v2.utils.sortedranges.SortedRanges;
-import io.deephaven.engine.v2.utils.sortedranges.SortedRangesInt;
-import io.deephaven.engine.v2.utils.sortedranges.SortedRangesLong;
+import io.deephaven.engine.rowset.impl.OrderedLongSetBuilderSequential;
+import io.deephaven.engine.rowset.impl.rsp.RspArray;
+import io.deephaven.engine.rowset.impl.rsp.RspBitmap;
+import io.deephaven.engine.rowset.impl.sortedranges.SortedRanges;
+import io.deephaven.engine.rowset.impl.sortedranges.SortedRangesInt;
+import io.deephaven.engine.rowset.impl.sortedranges.SortedRangesLong;
 import gnu.trove.set.hash.TIntHashSet;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.infra.Blackhole;

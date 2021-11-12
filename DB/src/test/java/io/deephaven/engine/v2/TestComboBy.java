@@ -13,7 +13,7 @@ import io.deephaven.engine.vector.CharVector;
 import io.deephaven.engine.tables.libs.QueryLibrary;
 import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.time.DateTime;
-import io.deephaven.engine.v2.utils.RowSet;
+import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.tables.utils.TableTools;
@@ -21,7 +21,7 @@ import io.deephaven.engine.v2.by.AggType;
 import io.deephaven.engine.v2.by.AggregationFormulaStateFactory;
 import io.deephaven.engine.v2.by.ComboAggregateFactory;
 import io.deephaven.engine.v2.by.MinMaxByStateFactoryImpl;
-import io.deephaven.engine.v2.sources.ColumnSource;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.v2.utils.ColumnHolder;
 import io.deephaven.engine.v2.utils.UpdatePerformanceTracker;
 

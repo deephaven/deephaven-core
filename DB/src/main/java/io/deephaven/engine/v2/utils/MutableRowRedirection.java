@@ -5,7 +5,8 @@
 package io.deephaven.engine.v2.utils;
 
 import gnu.trove.map.TLongLongMap;
-import io.deephaven.engine.structures.RowSequence;
+import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.v2.sources.WritableChunkSink;
 import io.deephaven.engine.chunk.Attributes.RowKeys;
 import io.deephaven.engine.chunk.Chunk;
@@ -119,7 +120,7 @@ public interface MutableRowRedirection extends RowRedirection {
         final LongChunk<? extends RowKeys> innerRowKeysLongChunk = innerRowKeys.asLongChunk();
         outerRowKeys.forAllRowKeys(outerRowKey -> {
             final long innerRowKey = innerRowKeysLongChunk.get(offset.intValue());
-            if (innerRowKey == RowSet.NULL_ROW_KEY) {
+            if (innerRowKey == RowSequence.NULL_ROW_KEY) {
                 removeVoid(outerRowKey);
             } else {
                 putVoid(outerRowKey, innerRowKey);

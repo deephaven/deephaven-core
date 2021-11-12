@@ -26,7 +26,7 @@ import io.deephaven.engine.v2.BaseTable;
 import io.deephaven.engine.v2.by.AggType;
 import io.deephaven.engine.v2.by.ComboAggregateFactory;
 import io.deephaven.engine.v2.by.KeyOnlyFirstOrLastByStateFactory;
-import io.deephaven.engine.v2.sources.ColumnSource;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.gui.color.Color;
 import io.deephaven.gui.color.ColorPalette;
 import io.deephaven.gui.color.Paint;

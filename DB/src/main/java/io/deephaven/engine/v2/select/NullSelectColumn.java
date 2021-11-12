@@ -1,10 +1,11 @@
 package io.deephaven.engine.v2.select;
 
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.tables.ColumnDefinition;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.select.MatchPair;
 import io.deephaven.engine.v2.sources.*;
-import io.deephaven.engine.v2.utils.TrackingRowSet;
+import io.deephaven.engine.rowset.TrackingRowSet;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collections;

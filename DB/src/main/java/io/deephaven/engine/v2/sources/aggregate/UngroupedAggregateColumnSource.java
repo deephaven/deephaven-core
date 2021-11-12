@@ -1,10 +1,10 @@
 package io.deephaven.engine.v2.sources.aggregate;
 
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.rftable.SharedContext;
-import io.deephaven.engine.structures.RowSequence;
-import io.deephaven.engine.structures.rowsequence.RowSequenceUtil;
-import io.deephaven.engine.v2.sources.ColumnSource;
+import io.deephaven.engine.table.SharedContext;
+import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.rowset.impl.RowSequenceUtil;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.v2.sources.UngroupedColumnSource;
 import io.deephaven.engine.chunk.Attributes.Any;
 import io.deephaven.engine.chunk.Attributes.ChunkLengths;
@@ -13,10 +13,9 @@ import io.deephaven.engine.chunk.Attributes.Values;
 import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.chunk.util.LongChunkAppender;
 import io.deephaven.engine.chunk.util.LongChunkIterator;
-import io.deephaven.engine.v2.utils.RowSet;
+import io.deephaven.engine.rowset.RowSet;
 import org.jetbrains.annotations.NotNull;
 
-import static io.deephaven.engine.v2.utils.RowSet.NULL_ROW_KEY;
 import static io.deephaven.util.QueryConstants.*;
 
 /**
@@ -33,7 +32,7 @@ final class UngroupedAggregateColumnSource<DATA_TYPE> extends UngroupedColumnSou
 
     @Override
     public DATA_TYPE get(final long rowKey) {
-        if (rowKey == NULL_ROW_KEY) {
+        if (rowKey == RowSequence.NULL_ROW_KEY) {
             return null;
         }
         final long groupIndexKey = getGroupIndexKey(rowKey, base);
@@ -44,7 +43,7 @@ final class UngroupedAggregateColumnSource<DATA_TYPE> extends UngroupedColumnSou
 
     @Override
     public Boolean getBoolean(final long rowKey) {
-        if (rowKey == NULL_ROW_KEY) {
+        if (rowKey == RowSequence.NULL_ROW_KEY) {
             return NULL_BOOLEAN;
         }
         final long groupIndexKey = getGroupIndexKey(rowKey, base);
@@ -54,7 +53,7 @@ final class UngroupedAggregateColumnSource<DATA_TYPE> extends UngroupedColumnSou
 
     @Override
     public byte getByte(final long rowKey) {
-        if (rowKey == NULL_ROW_KEY) {
+        if (rowKey == RowSequence.NULL_ROW_KEY) {
             return NULL_BYTE;
         }
         final long groupIndexKey = getGroupIndexKey(rowKey, base);
@@ -64,7 +63,7 @@ final class UngroupedAggregateColumnSource<DATA_TYPE> extends UngroupedColumnSou
 
     @Override
     public char getChar(final long rowKey) {
-        if (rowKey == NULL_ROW_KEY) {
+        if (rowKey == RowSequence.NULL_ROW_KEY) {
             return NULL_CHAR;
         }
         final long groupIndexKey = getGroupIndexKey(rowKey, base);
@@ -74,7 +73,7 @@ final class UngroupedAggregateColumnSource<DATA_TYPE> extends UngroupedColumnSou
 
     @Override
     public double getDouble(final long rowKey) {
-        if (rowKey == NULL_ROW_KEY) {
+        if (rowKey == RowSequence.NULL_ROW_KEY) {
             return NULL_DOUBLE;
         }
         final long groupIndexKey = getGroupIndexKey(rowKey, base);
@@ -84,7 +83,7 @@ final class UngroupedAggregateColumnSource<DATA_TYPE> extends UngroupedColumnSou
 
     @Override
     public float getFloat(final long rowKey) {
-        if (rowKey == NULL_ROW_KEY) {
+        if (rowKey == RowSequence.NULL_ROW_KEY) {
             return NULL_FLOAT;
         }
         final long groupIndexKey = getGroupIndexKey(rowKey, base);
@@ -94,7 +93,7 @@ final class UngroupedAggregateColumnSource<DATA_TYPE> extends UngroupedColumnSou
 
     @Override
     public int getInt(final long rowKey) {
-        if (rowKey == NULL_ROW_KEY) {
+        if (rowKey == RowSequence.NULL_ROW_KEY) {
             return NULL_INT;
         }
         final long groupIndexKey = getGroupIndexKey(rowKey, base);
@@ -104,7 +103,7 @@ final class UngroupedAggregateColumnSource<DATA_TYPE> extends UngroupedColumnSou
 
     @Override
     public long getLong(final long rowKey) {
-        if (rowKey == NULL_ROW_KEY) {
+        if (rowKey == RowSequence.NULL_ROW_KEY) {
             return NULL_LONG;
         }
         final long groupIndexKey = getGroupIndexKey(rowKey, base);
@@ -114,7 +113,7 @@ final class UngroupedAggregateColumnSource<DATA_TYPE> extends UngroupedColumnSou
 
     @Override
     public short getShort(final long rowKey) {
-        if (rowKey == NULL_ROW_KEY) {
+        if (rowKey == RowSequence.NULL_ROW_KEY) {
             return NULL_SHORT;
         }
         final long groupIndexKey = getGroupIndexKey(rowKey, base);
@@ -124,7 +123,7 @@ final class UngroupedAggregateColumnSource<DATA_TYPE> extends UngroupedColumnSou
 
     @Override
     public DATA_TYPE getPrev(final long rowKey) {
-        if (rowKey == NULL_ROW_KEY) {
+        if (rowKey == RowSequence.NULL_ROW_KEY) {
             return null;
         }
         final long prevBase = getPrevBase();
@@ -136,7 +135,7 @@ final class UngroupedAggregateColumnSource<DATA_TYPE> extends UngroupedColumnSou
 
     @Override
     public Boolean getPrevBoolean(final long rowKey) {
-        if (rowKey == NULL_ROW_KEY) {
+        if (rowKey == RowSequence.NULL_ROW_KEY) {
             return NULL_BOOLEAN;
         }
         final long prevBase = getPrevBase();
@@ -147,7 +146,7 @@ final class UngroupedAggregateColumnSource<DATA_TYPE> extends UngroupedColumnSou
 
     @Override
     public byte getPrevByte(final long rowKey) {
-        if (rowKey == NULL_ROW_KEY) {
+        if (rowKey == RowSequence.NULL_ROW_KEY) {
             return NULL_BYTE;
         }
         final long prevBase = getPrevBase();
@@ -158,7 +157,7 @@ final class UngroupedAggregateColumnSource<DATA_TYPE> extends UngroupedColumnSou
 
     @Override
     public char getPrevChar(final long rowKey) {
-        if (rowKey == NULL_ROW_KEY) {
+        if (rowKey == RowSequence.NULL_ROW_KEY) {
             return NULL_CHAR;
         }
         final long prevBase = getPrevBase();
@@ -169,7 +168,7 @@ final class UngroupedAggregateColumnSource<DATA_TYPE> extends UngroupedColumnSou
 
     @Override
     public double getPrevDouble(final long rowKey) {
-        if (rowKey == NULL_ROW_KEY) {
+        if (rowKey == RowSequence.NULL_ROW_KEY) {
             return NULL_DOUBLE;
         }
         final long prevBase = getPrevBase();
@@ -180,7 +179,7 @@ final class UngroupedAggregateColumnSource<DATA_TYPE> extends UngroupedColumnSou
 
     @Override
     public float getPrevFloat(final long rowKey) {
-        if (rowKey == NULL_ROW_KEY) {
+        if (rowKey == RowSequence.NULL_ROW_KEY) {
             return NULL_FLOAT;
         }
         final long prevBase = getPrevBase();
@@ -191,7 +190,7 @@ final class UngroupedAggregateColumnSource<DATA_TYPE> extends UngroupedColumnSou
 
     @Override
     public int getPrevInt(final long rowKey) {
-        if (rowKey == NULL_ROW_KEY) {
+        if (rowKey == RowSequence.NULL_ROW_KEY) {
             return NULL_INT;
         }
         final long prevBase = getPrevBase();
@@ -202,7 +201,7 @@ final class UngroupedAggregateColumnSource<DATA_TYPE> extends UngroupedColumnSou
 
     @Override
     public long getPrevLong(final long rowKey) {
-        if (rowKey == NULL_ROW_KEY) {
+        if (rowKey == RowSequence.NULL_ROW_KEY) {
             return NULL_LONG;
         }
         final long prevBase = getPrevBase();
@@ -213,7 +212,7 @@ final class UngroupedAggregateColumnSource<DATA_TYPE> extends UngroupedColumnSou
 
     @Override
     public short getPrevShort(final long rowKey) {
-        if (rowKey == NULL_ROW_KEY) {
+        if (rowKey == RowSequence.NULL_ROW_KEY) {
             return NULL_SHORT;
         }
         final long prevBase = getPrevBase();

@@ -2,19 +2,18 @@ package io.deephaven.engine.v2.by;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.datastructures.util.CollectionUtil;
-import io.deephaven.engine.rftable.ChunkSource;
+import io.deephaven.engine.table.ChunkSource;
+import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.tables.select.MatchPair;
 import io.deephaven.engine.util.liveness.LivenessReferent;
 import io.deephaven.engine.v2.ModifiedColumnSet;
 import io.deephaven.engine.v2.QueryTable;
 import io.deephaven.engine.v2.Listener;
-import io.deephaven.engine.v2.sources.ColumnSource;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.v2.sources.ObjectArraySource;
 import io.deephaven.engine.v2.sources.aggregate.AggregateColumnSource;
 import io.deephaven.engine.chunk.Attributes.*;
 import io.deephaven.engine.chunk.*;
-import io.deephaven.engine.v2.utils.*;
-import io.deephaven.engine.structures.RowSequence;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;

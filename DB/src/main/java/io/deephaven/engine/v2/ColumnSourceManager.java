@@ -6,9 +6,7 @@ package io.deephaven.engine.v2;
 
 import io.deephaven.engine.v2.locations.TableLocation;
 import io.deephaven.engine.v2.sources.DeferredGroupingColumnSource;
-import io.deephaven.engine.v2.utils.MutableRowSet;
-import io.deephaven.engine.v2.utils.RowSet;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
+import io.deephaven.engine.rowset.MutableRowSet;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collection;

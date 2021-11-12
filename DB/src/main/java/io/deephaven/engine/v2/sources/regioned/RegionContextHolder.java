@@ -1,6 +1,6 @@
 package io.deephaven.engine.v2.sources.regioned;
 
-import io.deephaven.engine.rftable.ChunkSource;
+import io.deephaven.engine.table.ChunkSource;
 
 public class RegionContextHolder implements ChunkSource.FillContext {
     // Currently mo column regions use a non-default context.

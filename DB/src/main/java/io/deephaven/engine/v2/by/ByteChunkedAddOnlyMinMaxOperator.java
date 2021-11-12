@@ -10,7 +10,7 @@ package io.deephaven.engine.v2.by;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.compare.ByteComparisons;
 import io.deephaven.engine.v2.sources.ByteArraySource;
-import io.deephaven.engine.v2.sources.ColumnSource;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.chunk.Attributes.*;
 import org.apache.commons.lang3.mutable.MutableInt;

@@ -11,10 +11,10 @@ import io.deephaven.engine.vector.Vector;
 import io.deephaven.engine.tables.select.MatchPair;
 import io.deephaven.util.NameValidator;
 import io.deephaven.engine.v2.NoSuchColumnException;
-import io.deephaven.engine.v2.sources.ColumnSource;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.v2.sources.SparseArrayColumnSource;
 import io.deephaven.engine.v2.sources.WritableSource;
-import io.deephaven.engine.v2.utils.TrackingRowSet;
+import io.deephaven.engine.rowset.TrackingRowSet;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collections;

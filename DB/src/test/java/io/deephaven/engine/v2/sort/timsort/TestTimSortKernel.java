@@ -2,7 +2,9 @@ package io.deephaven.engine.v2.sort.timsort;
 
 import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.chunk.Attributes.*;
-import io.deephaven.engine.v2.utils.*;
+import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetBuilderSequential;
+import io.deephaven.engine.rowset.RowSetFactory;
 
 import org.jetbrains.annotations.Nullable;
 
@@ -161,7 +163,7 @@ public abstract class TestTimSortKernel {
     @FunctionalInterface
     interface PartitionKernelStuffFactory<T> {
         PartitionKernelStuff<T> apply(List<T> javaTuples, RowSet rowSet, int chunkSize, int nPartitions,
-                boolean preserveEquality);
+                                      boolean preserveEquality);
     }
 
     <T> void partitionCorrectnessTest(int dataSize, int chunkSize, int nPartitions,

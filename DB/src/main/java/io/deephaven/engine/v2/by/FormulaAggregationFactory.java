@@ -7,7 +7,7 @@ import io.deephaven.engine.tables.select.MatchPairFactory;
 import io.deephaven.engine.tables.select.SelectColumnFactory;
 import io.deephaven.engine.v2.QueryTable;
 import io.deephaven.engine.v2.select.SelectColumn;
-import io.deephaven.engine.rftable.ChunkSource;
+import io.deephaven.engine.table.ChunkSource;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;

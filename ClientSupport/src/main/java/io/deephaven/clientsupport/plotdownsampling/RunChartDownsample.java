@@ -1,7 +1,7 @@
 package io.deephaven.clientsupport.plotdownsampling;
 
 import io.deephaven.base.Function;
-import io.deephaven.engine.structures.RowSequence;
+import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.time.DateTime;
 import io.deephaven.engine.v2.utils.*;
 import io.deephaven.hash.KeyedLongObjectHash;
@@ -14,7 +14,7 @@ import io.deephaven.util.process.ProcessEnvironment;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.utils.QueryPerformanceRecorder;
 import io.deephaven.engine.v2.*;
-import io.deephaven.engine.v2.sources.ColumnSource;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.v2.sources.ReinterpretUtilities;
 import io.deephaven.engine.chunk.Attributes;
 import io.deephaven.engine.chunk.Chunk;

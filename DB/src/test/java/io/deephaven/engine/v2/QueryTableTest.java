@@ -10,6 +10,10 @@ import io.deephaven.base.FileUtils;
 import io.deephaven.base.Pair;
 import io.deephaven.base.verify.AssertionFailure;
 import io.deephaven.datastructures.util.CollectionUtil;
+import io.deephaven.engine.rowset.MutableRowSet;
+import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.TrackingMutableRowSet;
 import io.deephaven.engine.tables.ColumnDefinition;
 import io.deephaven.engine.tables.DataColumn;
 import io.deephaven.engine.tables.Table;
@@ -30,7 +34,7 @@ import io.deephaven.engine.v2.remote.ConstructSnapshot;
 import io.deephaven.engine.v2.remote.InitialSnapshotTable;
 import io.deephaven.engine.v2.select.*;
 import io.deephaven.engine.v2.sources.AbstractColumnSource;
-import io.deephaven.engine.v2.sources.ColumnSource;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.v2.sources.LogicalClock;
 import io.deephaven.engine.v2.utils.*;
 import io.deephaven.test.types.OutOfBandTest;
@@ -3059,26 +3063,6 @@ public class QueryTableTest extends QueryTableTestBase {
         update.modified = i();
         update.shifted = RowSetShiftData.EMPTY;
         update.modifiedColumnSet = ModifiedColumnSet.EMPTY;
-
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            TstUtils.addToTable(src, update.added);
-            src.notifyListeners(update);
-        });
-        Assert.assertNull(update.added);
-    }
-
-    public void testNotifyListenersReleasesUpdateDirectListener() {
-        final QueryTable src = TstUtils.testRefreshingTable(RowSetFactory.flat(100).toTracking());
-        final Listener.Update update = new Listener.Update();
-        update.added = RowSetFactory.fromRange(200, 220); // must be a non-empty update
-        update.removed = i();
-        update.modified = i();
-        update.shifted = RowSetShiftData.EMPTY;
-        update.modifiedColumnSet = ModifiedColumnSet.EMPTY;
-
-        // we want to specifically test the direct listener path
-        final ShiftObliviousListener listener = new SimpleShiftObliviousListener(src);
-        src.listenForDirectUpdates(listener);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(src, update.added);

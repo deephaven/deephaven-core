@@ -1,6 +1,6 @@
 package io.deephaven.engine.v2.utils;
 
-import io.deephaven.engine.structures.RowSequence;
+import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.v2.sources.WritableChunkSink;
 import io.deephaven.engine.v2.sources.WritableSource;
 import io.deephaven.engine.chunk.Attributes.RowKeys;
@@ -26,7 +26,7 @@ public final class LongColumnSourceMutableRowRedirection extends LongColumnSourc
 
         columnSource.set(outerRowKey, innerRowKey);
 
-        return previous == QueryConstants.NULL_LONG ? RowSet.NULL_ROW_KEY : previous;
+        return previous == QueryConstants.NULL_LONG ? RowSequence.NULL_ROW_KEY : previous;
     }
 
     @Override
@@ -38,7 +38,7 @@ public final class LongColumnSourceMutableRowRedirection extends LongColumnSourc
     public final long remove(long outerRowKey) {
         final long previous = columnSource.getLong(outerRowKey);
         if (previous == QueryConstants.NULL_LONG) {
-            return RowSet.NULL_ROW_KEY;
+            return RowSequence.NULL_ROW_KEY;
         }
         columnSource.set(outerRowKey, QueryConstants.NULL_LONG);
         return previous;

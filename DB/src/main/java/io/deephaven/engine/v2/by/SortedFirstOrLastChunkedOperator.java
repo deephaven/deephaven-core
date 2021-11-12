@@ -6,7 +6,7 @@ import io.deephaven.engine.tables.select.MatchPair;
 import io.deephaven.engine.v2.sort.IntSortKernel;
 import io.deephaven.engine.v2.sort.LongSortKernel;
 import io.deephaven.engine.v2.sort.permute.LongPermuteKernel;
-import io.deephaven.engine.v2.sources.ColumnSource;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.v2.sources.LongArraySource;
 import io.deephaven.engine.v2.sources.ObjectArraySource;
 import io.deephaven.engine.v2.sources.RedirectedColumnSource;

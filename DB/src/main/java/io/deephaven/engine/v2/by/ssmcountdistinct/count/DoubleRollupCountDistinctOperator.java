@@ -7,6 +7,9 @@
 
 package io.deephaven.engine.v2.by.ssmcountdistinct.count;
 
+import io.deephaven.engine.rowset.MutableRowSet;
+import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.v2.Listener;
 import io.deephaven.engine.v2.by.ComboAggregateFactory;
 import io.deephaven.engine.v2.by.IterativeChunkedAggregationOperator;
@@ -14,7 +17,7 @@ import io.deephaven.engine.v2.by.ssmcountdistinct.BucketSsmDistinctRollupContext
 import io.deephaven.engine.v2.by.ssmcountdistinct.DoubleSsmBackedSource;
 import io.deephaven.engine.v2.by.ssmcountdistinct.DistinctOperatorFactory;
 import io.deephaven.engine.v2.by.ssmcountdistinct.SsmDistinctRollupContext;
-import io.deephaven.engine.v2.sources.ColumnSource;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.v2.sources.LongArraySource;
 import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.chunk.Attributes.ChunkLengths;

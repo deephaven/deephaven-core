@@ -1,12 +1,12 @@
 package io.deephaven.engine.v2.sources.regioned;
 
 import io.deephaven.engine.chunk.Attributes.Any;
-import io.deephaven.engine.rftable.ChunkSource;
-import io.deephaven.engine.rftable.GetContextMaker;
-import io.deephaven.engine.rftable.SharedContext;
+import io.deephaven.engine.table.ChunkSource;
+import io.deephaven.engine.table.GetContextMaker;
+import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.chunk.WritableChunk;
 import io.deephaven.engine.page.Page;
-import io.deephaven.engine.structures.RowSequence;
+import io.deephaven.engine.rowset.RowSequence;
 import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.OverridingMethodsMustInvokeSuper;

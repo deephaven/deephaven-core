@@ -11,7 +11,7 @@ import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.engine.tuple.generated.CharShortLongTuple;
 import io.deephaven.engine.tuplesource.AbstractTupleSource;
 import io.deephaven.engine.tuplesource.ThreeColumnTupleSourceFactory;
-import io.deephaven.engine.tuplesource.TupleSource;
+import io.deephaven.engine.table.TupleSource;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.WritableSource;
 import io.deephaven.util.type.TypeUtils;

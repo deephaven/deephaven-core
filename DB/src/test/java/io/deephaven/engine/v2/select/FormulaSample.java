@@ -3,17 +3,17 @@ package io.deephaven.engine.v2.select;
 import java.lang.*;
 import java.util.*;
 
-import io.deephaven.engine.structures.RowSequence;
+import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
-import io.deephaven.engine.v2.sources.ColumnSource;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.chunk.Attributes;
 import io.deephaven.engine.chunk.IntChunk;
 import io.deephaven.engine.chunk.LongChunk;
 import io.deephaven.engine.chunk.WritableChunk;
 import io.deephaven.engine.chunk.WritableIntChunk;
 import io.deephaven.engine.chunk.WritableLongChunk;
-import io.deephaven.engine.v2.utils.RowSet;
-import io.deephaven.engine.v2.utils.TrackingRowSet;
+import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.vector.LongVector;
 import io.deephaven.util.type.TypeUtils;
 
@@ -24,8 +24,8 @@ import static io.deephaven.engine.tables.lang.LanguageFunctionUtil.*;
 public class FormulaSample extends io.deephaven.engine.v2.select.Formula {
     public static final io.deephaven.engine.v2.select.formula.FormulaFactory __FORMULA_FACTORY = FormulaSample::new;
 
-    private final io.deephaven.engine.v2.sources.ColumnSource<java.lang.Long> II;
-    private final io.deephaven.engine.v2.sources.ColumnSource<java.lang.Integer> I;
+    private final ColumnSource<Long> II;
+    private final ColumnSource<Integer> I;
     private final LongVector II_;
     private final java.lang.Integer q;
     private final Map<Object, Object> __lazyResultCache;
@@ -33,7 +33,7 @@ public class FormulaSample extends io.deephaven.engine.v2.select.Formula {
 
     public FormulaSample(final TrackingRowSet rowSet,
             final boolean __lazy,
-            final java.util.Map<String, ? extends io.deephaven.engine.v2.sources.ColumnSource> __columnsToData,
+            final java.util.Map<String, ? extends ColumnSource> __columnsToData,
             final io.deephaven.engine.tables.select.Param... __params) {
         super(rowSet);
         II = __columnsToData.get("II");

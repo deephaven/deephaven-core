@@ -4,8 +4,12 @@
 
 package io.deephaven.engine.v2.replay;
 
+import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetBuilderRandom;
+import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.time.DateTime;
-import io.deephaven.engine.v2.sources.ColumnSource;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.v2.utils.*;
 
 import java.util.Map;
@@ -13,8 +17,8 @@ import java.util.Map;
 public class ReplayLastByGroupedTable extends QueryReplayGroupedTable {
 
     public ReplayLastByGroupedTable(TrackingRowSet rowSet, Map<String, ? extends ColumnSource<?>> input,
-            String timeColumn,
-            Replayer replayer, String[] groupingColumns) {
+                                    String timeColumn,
+                                    Replayer replayer, String[] groupingColumns) {
         super(rowSet, input, timeColumn, replayer, MutableRowRedirection.FACTORY.createRowRedirection(100),
                 groupingColumns);
         // noinspection unchecked

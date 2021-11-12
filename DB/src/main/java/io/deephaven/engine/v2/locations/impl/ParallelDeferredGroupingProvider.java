@@ -7,11 +7,13 @@ package io.deephaven.engine.v2.locations.impl;
 import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
+import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetBuilderSequential;
+import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.tables.ColumnDefinition;
 import io.deephaven.engine.tables.utils.QueryPerformanceRecorder;
 import io.deephaven.engine.v2.locations.ColumnLocation;
 import io.deephaven.engine.v2.locations.KeyRangeGroupingProvider;
-import io.deephaven.engine.v2.utils.*;
 import org.jetbrains.annotations.NotNull;
 
 import java.lang.ref.SoftReference;

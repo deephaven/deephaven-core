@@ -6,6 +6,10 @@ package io.deephaven.engine.v2.select;
 
 import io.deephaven.base.clock.Clock;
 import io.deephaven.base.verify.Require;
+import io.deephaven.engine.rowset.MutableRowSet;
+import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetBuilderRandom;
+import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.TableDefinition;
 import io.deephaven.engine.tables.lang.LanguageFunctionUtil;
@@ -13,8 +17,7 @@ import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.time.DateTime;
 import io.deephaven.engine.v2.DynamicNode;
 import io.deephaven.engine.v2.QueryTable;
-import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.utils.*;
+import io.deephaven.engine.table.ColumnSource;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -55,7 +58,7 @@ public abstract class ClockFilter extends SelectFilterLivenessArtifactImpl imple
 
     @Override
     public final MutableRowSet filter(@NotNull final RowSet selection, @NotNull final RowSet fullSet,
-            @NotNull final Table table, boolean usePrev) {
+                                      @NotNull final Table table, boolean usePrev) {
         if (usePrev) {
             throw new PreviousFilteringNotSupported();
         }
@@ -141,8 +144,8 @@ public abstract class ClockFilter extends SelectFilterLivenessArtifactImpl imple
 
         @Nullable
         RowSetBuilderRandom consumeKeysAndAppendAdded(final ColumnSource<Long> nanosColumnSource,
-                final long nowNanos,
-                @Nullable RowSetBuilderRandom addedBuilder) {
+                                                      final long nowNanos,
+                                                      @Nullable RowSetBuilderRandom addedBuilder) {
             final long firstKeyAdded = nextKey;
             long lastKeyAdded = -1L;
             while (nextKey <= lastKey

@@ -78,7 +78,7 @@ def _custom_newTable(*args):
             if _isJavaArray(args[2]):
                 sources = convertToJavaList(args[2])
             else:
-                sources = convertToJavaList(jpy.array('io.deephaven.engine.v2.sources.ColumnSource', args[2]))
+                sources = convertToJavaList(jpy.array('io.deephaven.engine.table.ColumnSource', args[2]))
             return _java_type_.newTable(rows, names, sources)
 
     return _java_type_.newTable(*args)

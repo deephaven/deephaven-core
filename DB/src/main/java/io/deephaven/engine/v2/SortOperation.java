@@ -6,11 +6,15 @@ package io.deephaven.engine.v2;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
+import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.TrackingMutableRowSet;
+import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.tables.SortPair;
 import io.deephaven.engine.tables.SortingOrder;
 import io.deephaven.util.datastructures.hash.HashMapK4V4;
 import io.deephaven.util.datastructures.hash.HashMapLockFreeK4V4;
-import io.deephaven.engine.v2.sources.ColumnSource;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.v2.sources.RedirectedColumnSource;
 import io.deephaven.engine.v2.sources.SwitchColumnSource;
 import io.deephaven.engine.v2.sources.WritableChunkSink;

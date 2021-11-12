@@ -9,7 +9,7 @@ import static io.deephaven.engine.v2.select.ConditionFilter.FilterKernel;
 
 import io.deephaven.engine.chunk.Chunk;
 import io.deephaven.engine.chunk.LongChunk;
-import io.deephaven.engine.v2.utils.TrackingRowSet;
+import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.vector.DoubleVector;
 import io.deephaven.engine.vector.ShortVector;
 

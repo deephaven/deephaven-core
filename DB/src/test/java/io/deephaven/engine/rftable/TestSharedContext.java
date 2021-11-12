@@ -2,7 +2,8 @@ package io.deephaven.engine.rftable;
 
 import static io.deephaven.engine.v2.TstUtils.getTable;
 
-import io.deephaven.engine.rftable.SharedContext;
+import io.deephaven.engine.table.ResettableContext;
+import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.v2.QueryTable;

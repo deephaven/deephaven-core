@@ -4,10 +4,10 @@ import io.deephaven.engine.v2.sources.*;
 import io.deephaven.engine.chunk.Attributes.Values;
 import io.deephaven.engine.chunk.Chunk;
 import io.deephaven.engine.chunk.ChunkType;
-import io.deephaven.engine.rftable.Context;
+import io.deephaven.engine.table.Context;
 import io.deephaven.engine.chunk.WritableChunk;
-import io.deephaven.engine.structures.RowSequence;
-import io.deephaven.engine.v2.utils.TrackingRowSet;
+import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.rowset.TrackingRowSet;
 import org.jetbrains.annotations.NotNull;
 
 import static io.deephaven.util.QueryConstants.*;

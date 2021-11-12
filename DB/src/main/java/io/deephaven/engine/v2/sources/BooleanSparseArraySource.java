@@ -7,6 +7,10 @@
 
 package io.deephaven.engine.v2.sources;
 
+import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetBuilderSequential;
+import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.util.BooleanUtils;
 
 import static io.deephaven.util.BooleanUtils.NULL_BOOLEAN_AS_BYTE;
@@ -20,7 +24,7 @@ import io.deephaven.engine.chunk.Attributes.OrderedRowKeys;
 import io.deephaven.engine.v2.sources.sparse.ByteOneOrN;
 import io.deephaven.engine.v2.sources.sparse.LongOneOrN;
 import io.deephaven.engine.v2.utils.*;
-import io.deephaven.engine.structures.RowSequence;
+import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.util.SoftRecycler;
 import gnu.trove.list.array.TLongArrayList;
 import org.jetbrains.annotations.NotNull;
@@ -525,7 +529,7 @@ public class BooleanSparseArraySource extends SparseArrayColumnSource<Boolean> i
         final WritableObjectChunk<Boolean, ? super Values> booleanObjectChunk = dest.asWritableObjectChunk();
         for (int ii = 0; ii < keys.size(); ) {
             final long firstKey = keys.get(ii);
-            if (firstKey == RowSet.NULL_ROW_KEY) {
+            if (firstKey == RowSequence.NULL_ROW_KEY) {
                 booleanObjectChunk.set(ii++, NULL_BOOLEAN);
                 continue;
             }
@@ -559,7 +563,7 @@ public class BooleanSparseArraySource extends SparseArrayColumnSource<Boolean> i
         final WritableObjectChunk<Boolean, ? super Values> booleanObjectChunk = dest.asWritableObjectChunk();
         for (int ii = 0; ii < keys.size(); ) {
             final long firstKey = keys.get(ii);
-            if (firstKey == RowSet.NULL_ROW_KEY) {
+            if (firstKey == RowSequence.NULL_ROW_KEY) {
                 booleanObjectChunk.set(ii++, NULL_BOOLEAN);
                 continue;
             }
@@ -927,7 +931,7 @@ public class BooleanSparseArraySource extends SparseArrayColumnSource<Boolean> i
             // This implementation is in "key" style (rather than range style).
             for (int ii = 0; ii < indices.size(); ) {
                 final long firstRowKey = indices.get(ii);
-                if (firstRowKey == RowSet.NULL_ROW_KEY) {
+                if (firstRowKey == RowSequence.NULL_ROW_KEY) {
                     chunk.set(ii++, NULL_BOOLEAN_AS_BYTE);
                     continue;
                 }
@@ -960,7 +964,7 @@ public class BooleanSparseArraySource extends SparseArrayColumnSource<Boolean> i
             final WritableByteChunk<? super Values> booleanObjectChunk = destGeneric.asWritableByteChunk();
             for (int ii = 0; ii < indices.size(); ) {
                 final long firstRowKey = indices.get(ii);
-                if (firstRowKey == RowSet.NULL_ROW_KEY) {
+                if (firstRowKey == RowSequence.NULL_ROW_KEY) {
                     booleanObjectChunk.set(ii++, NULL_BOOLEAN_AS_BYTE);
                     continue;
                 }

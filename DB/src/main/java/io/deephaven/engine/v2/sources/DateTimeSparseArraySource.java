@@ -4,13 +4,13 @@
 
 package io.deephaven.engine.v2.sources;
 
-import io.deephaven.engine.rftable.DefaultChunkSource;
+import io.deephaven.engine.table.DefaultChunkSource;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.time.DateTime;
 import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.chunk.Attributes.Values;
 import io.deephaven.engine.rftable.chunkfillers.chunkfillers.ChunkFiller;
-import io.deephaven.engine.structures.RowSequence;
-import io.deephaven.engine.v2.utils.RowSet;
+import io.deephaven.engine.rowset.RowSequence;
 import org.jetbrains.annotations.NotNull;
 
 import static io.deephaven.util.QueryConstants.NULL_LONG;
@@ -89,7 +89,7 @@ public class DateTimeSparseArraySource extends AbstractSparseLongArraySource<Dat
         final WritableObjectChunk<DateTime, ? super Values> objectChunk = dest.asWritableObjectChunk();
         for (int ii = 0; ii < keys.size();) {
             final long firstKey = keys.get(ii);
-            if (firstKey == RowSet.NULL_ROW_KEY) {
+            if (firstKey == RowSequence.NULL_ROW_KEY) {
                 objectChunk.set(ii++, null);
                 continue;
             }
@@ -124,7 +124,7 @@ public class DateTimeSparseArraySource extends AbstractSparseLongArraySource<Dat
         final WritableObjectChunk<DateTime, ? super Values> objectChunk = dest.asWritableObjectChunk();
         for (int ii = 0; ii < keys.size();) {
             final long firstKey = keys.get(ii);
-            if (firstKey == RowSet.NULL_ROW_KEY) {
+            if (firstKey == RowSequence.NULL_ROW_KEY) {
                 objectChunk.set(ii++, null);
                 continue;
             }

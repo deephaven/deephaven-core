@@ -7,6 +7,8 @@
 
 package io.deephaven.engine.v2.sources;
 
+import io.deephaven.engine.table.ColumnSource;
+
 import static io.deephaven.util.QueryConstants.NULL_FLOAT;
 
 public class UngroupedFloatArrayColumnSource extends UngroupedColumnSource<Float> implements MutableColumnSourceGetDefaults.ForFloat {

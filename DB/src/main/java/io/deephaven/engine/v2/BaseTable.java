@@ -6,6 +6,8 @@ package io.deephaven.engine.v2;
 
 import io.deephaven.base.Base64;
 import io.deephaven.base.StringUtils;
+import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.hash.KeyedObjectHashSet;
 import io.deephaven.base.log.LogOutput;
@@ -32,7 +34,7 @@ import io.deephaven.engine.v2.remote.ConstructSnapshot;
 import io.deephaven.engine.v2.select.SelectColumn;
 import io.deephaven.engine.v2.select.SourceColumn;
 import io.deephaven.engine.v2.select.SwitchColumn;
-import io.deephaven.engine.v2.sources.ColumnSource;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.v2.sources.LogicalClock;
 import io.deephaven.engine.v2.utils.*;
 import io.deephaven.util.annotations.ReferentialIntegrity;
@@ -59,7 +61,7 @@ import java.util.stream.Stream;
  * Base abstract class all standard table implementations.
  */
 public abstract class BaseTable extends LivenessArtifact
-        implements Table, Serializable, NotificationStepReceiver, NotificationStepSource {
+        implements TableWithOperationDefaults, Serializable, NotificationStepReceiver, NotificationStepSource {
 
     private static final long serialVersionUID = 1L;
 
@@ -590,16 +592,6 @@ public abstract class BaseTable extends LivenessArtifact
     }
 
     @Override
-    public void listenForDirectUpdates(final ShiftObliviousListener listener) {
-        if (isFailed) {
-            throw new IllegalStateException("Can not listen to failed table " + description);
-        }
-        if (isRefreshing()) {
-            directChildListenerReferences.add(listener);
-        }
-    }
-
-    @Override
     public void removeUpdateListener(final ShiftObliviousListener listenerToRemove) {
         childListenerReferences.remove(listenerToRemove);
     }
@@ -609,31 +601,8 @@ public abstract class BaseTable extends LivenessArtifact
         childShiftAwareListenerReferences.remove(listenerToRemove);
     }
 
-    @Override
     public void removeDirectUpdateListener(final ShiftObliviousListener listenerToRemove) {
         directChildListenerReferences.remove(listenerToRemove);
-    }
-
-    @Override
-    public final void notifyListenersOnError(final Throwable e,
-            @Nullable final UpdatePerformanceTracker.Entry sourceEntry) {
-        isFailed = true;
-        UpdateGraphProcessor.DEFAULT.requestSignal(updateGraphProcessorCondition);
-
-        // Notify Legacy Listeners
-        directChildListenerReferences.forEach((listenerRef, listener) -> {
-            // Missing async error handler invocation, and sourceEntry assignment in some cases.
-            listener.onFailure(e, sourceEntry);
-        });
-
-        lastNotificationStep = LogicalClock.DEFAULT.currentStep();
-
-        childListenerReferences.forEach((listenerRef, listener) -> UpdateGraphProcessor.DEFAULT
-                .addNotification(listener.getErrorNotification(e, sourceEntry)));
-
-        // Notify ShiftAwareListeners
-        childShiftAwareListenerReferences.forEach((listenerRef, listener) -> UpdateGraphProcessor.DEFAULT
-                .addNotification(listener.getErrorNotification(e, sourceEntry)));
     }
 
     @Override
@@ -656,7 +625,27 @@ public abstract class BaseTable extends LivenessArtifact
                 || !childShiftAwareListenerReferences.isEmpty();
     }
 
-    @Override
+    /**
+     * Initiate update delivery to this table's listeners. Will notify direct listeners before completing, and enqueue
+     * notifications for all other listeners.
+     *
+     * @param added rowSet Row keys added to the table
+     * @param removed rowSet Row keys removed from the table
+     * @param modified rowSet Row keys modified in the table.
+     */
+    public final void notifyListeners(RowSet added, RowSet removed, RowSet modified) {
+        notifyListeners(new Listener.Update(added, removed, modified, RowSetShiftData.EMPTY,
+                modified.isEmpty() ? ModifiedColumnSet.EMPTY : ModifiedColumnSet.ALL));
+    }
+
+    /**
+     * Initiate update delivery to this table's listeners. Will notify direct listeners before completing, and enqueue
+     * notifications for all other listeners.
+     *
+     * @param update The set of table changes to propagate. The caller gives this update object away; the invocation of
+     *        {@code notifyListeners} takes ownership, and will call {@code release} on it once it is not used anymore;
+     *        callers should pass a {@code copy} for updates they intend to further use.
+     */
     public final void notifyListeners(final Listener.Update update) {
         Assert.eqTrue(update.valid(), "update.valid()");
         if (update.empty()) {
@@ -841,6 +830,40 @@ public abstract class BaseTable extends LivenessArtifact
     }
 
     /**
+     * Initiate failure delivery to this table's listeners. Will notify direct listeners before completing, and enqueue
+     * notifications for all other listeners.
+     *
+     * @param e error
+     * @param sourceEntry performance tracking
+     */ /**
+     * Initiate failure delivery to this table's listeners. Will notify direct listeners before completing, and enqueue
+     * notifications for all other listeners.
+     *
+     * @param e error
+     * @param sourceEntry performance tracking
+     */
+    public final void notifyListenersOnError(final Throwable e,
+                                             @Nullable final UpdatePerformanceTracker.Entry sourceEntry) {
+        isFailed = true;
+        UpdateGraphProcessor.DEFAULT.requestSignal(updateGraphProcessorCondition);
+
+        // Notify Legacy Listeners
+        directChildListenerReferences.forEach((listenerRef, listener) -> {
+            // Missing async error handler invocation, and sourceEntry assignment in some cases.
+            listener.onFailure(e, sourceEntry);
+        });
+
+        lastNotificationStep = LogicalClock.DEFAULT.currentStep();
+
+        childListenerReferences.forEach((listenerRef, listener) -> UpdateGraphProcessor.DEFAULT
+                .addNotification(listener.getErrorNotification(e, sourceEntry)));
+
+        // Notify ShiftAwareListeners
+        childShiftAwareListenerReferences.forEach((listenerRef, listener) -> UpdateGraphProcessor.DEFAULT
+                .addNotification(listener.getErrorNotification(e, sourceEntry)));
+    }
+
+    /**
      * Get the notification queue to insert notifications into as they are generated by listeners during
      * {@link #notifyListeners(RowSet, RowSet, RowSet)}. This method may be overridden to provide a different
      * notification queue than the {@link UpdateGraphProcessor#DEFAULT} instance for more complex behavior.
@@ -882,9 +905,9 @@ public abstract class BaseTable extends LivenessArtifact
 
         @ReferentialIntegrity
         private final Table parent;
-        private final Table dependent;
+        private final Table dependent; // TODO-RWC: Should I make this a BaseTable?
 
-        public ShiftObliviousListenerImpl(String description, Table parent, Table dependent) {
+        public ShiftObliviousListenerImpl(String description, Table parent, BaseTable dependent) {
             super(description);
             this.parent = parent;
             this.dependent = dependent;
@@ -896,7 +919,7 @@ public abstract class BaseTable extends LivenessArtifact
 
         @Override
         public void onUpdate(RowSet added, RowSet removed, RowSet modified) {
-            dependent.notifyListeners(new Listener.Update(added.copy(), removed.copy(), modified.copy(),
+            ((BaseTable) dependent).notifyListeners(new Listener.Update(added.copy(), removed.copy(), modified.copy(),
                     RowSetShiftData.EMPTY, ModifiedColumnSet.ALL));
         }
 
@@ -914,7 +937,6 @@ public abstract class BaseTable extends LivenessArtifact
         protected void destroy() {
             super.destroy();
             parent.removeUpdateListener(this);
-            parent.removeDirectUpdateListener(this);
         }
     }
 
@@ -958,7 +980,7 @@ public abstract class BaseTable extends LivenessArtifact
             } else {
                 downstream = upstream.acquire();
             }
-            dependent.notifyListeners(downstream);
+            ((BaseTable) dependent).notifyListeners(downstream);
         }
 
         @Override

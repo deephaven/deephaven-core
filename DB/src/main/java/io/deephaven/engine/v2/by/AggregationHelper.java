@@ -3,9 +3,10 @@ package io.deephaven.engine.v2.by;
 import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.datastructures.util.SmartKey;
-import io.deephaven.engine.rftable.ChunkSource;
-import io.deephaven.engine.structures.RowSequence;
-import io.deephaven.engine.structures.rowsequence.RowSequenceUtil;
+import io.deephaven.engine.table.ChunkSource;
+import io.deephaven.engine.rowset.*;
+import io.deephaven.engine.rowset.impl.RowSequenceUtil;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.v2.*;
 import io.deephaven.engine.v2.select.SelectColumn;
@@ -15,7 +16,7 @@ import io.deephaven.engine.chunk.Attributes.OrderedRowKeys;
 import io.deephaven.engine.chunk.Attributes.Values;
 import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.tuplesource.SmartKeySource;
-import io.deephaven.engine.tuplesource.TupleSource;
+import io.deephaven.engine.table.TupleSource;
 import io.deephaven.engine.v2.utils.*;
 import io.deephaven.util.annotations.VisibleForTesting;
 import org.apache.commons.lang3.mutable.Mutable;
@@ -110,7 +111,7 @@ public class AggregationHelper {
                     final ColumnSource<TrackingMutableRowSet> resultIndexColumnSource =
                             new SingleValueObjectColumnSource<>((TrackingMutableRowSet) inputTable.getRowSet());
                     final boolean empty =
-                            usePrev ? inputTable.getRowSet().firstRowKeyPrev() == RowSet.NULL_ROW_KEY
+                            usePrev ? inputTable.getRowSet().firstRowKeyPrev() == RowSequence.NULL_ROW_KEY
                                     : inputTable.isEmpty();
                     final QueryTable resultTable = new QueryTable(
                             RowSetFactory.flat(empty ? 0 : 1).toTracking(),
@@ -134,7 +135,7 @@ public class AggregationHelper {
                                     @Override
                                     public void onUpdate(@NotNull final Update upstream) {
                                         final boolean wasEmpty =
-                                                inputTable.getRowSet().firstRowKeyPrev() == RowSet.NULL_ROW_KEY;
+                                                inputTable.getRowSet().firstRowKeyPrev() == RowSequence.NULL_ROW_KEY;
                                         final boolean isEmpty = inputTable.getRowSet().isEmpty();
                                         final RowSet added;
                                         final RowSet removed;

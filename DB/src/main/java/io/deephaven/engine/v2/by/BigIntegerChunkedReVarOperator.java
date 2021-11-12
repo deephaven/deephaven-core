@@ -5,16 +5,16 @@
 package io.deephaven.engine.v2.by;
 
 import io.deephaven.configuration.Configuration;
-import io.deephaven.engine.rftable.ChunkSource;
-import io.deephaven.engine.v2.sources.ColumnSource;
+import io.deephaven.engine.table.ChunkSource;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.v2.sources.ObjectArraySource;
 import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.chunk.Attributes.ChunkLengths;
 import io.deephaven.engine.chunk.Attributes.ChunkPositions;
 import io.deephaven.engine.chunk.Attributes.RowKeys;
 import io.deephaven.engine.chunk.Attributes.Values;
-import io.deephaven.engine.structures.RowSequence;
-import io.deephaven.engine.structures.rowsequence.RowSequenceUtil;
+import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.rowset.impl.RowSequenceUtil;
 import io.deephaven.util.BigDecimalUtils;
 
 import java.math.BigDecimal;

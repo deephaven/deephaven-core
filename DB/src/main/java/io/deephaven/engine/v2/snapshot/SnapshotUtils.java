@@ -1,10 +1,10 @@
 package io.deephaven.engine.v2.snapshot;
 
-import io.deephaven.engine.v2.sources.ColumnSource;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.v2.sources.WritableSource;
 import io.deephaven.engine.rftable.chunkfillers.chunkfillers.ChunkFiller;
 import io.deephaven.engine.v2.utils.ChunkUtils;
-import io.deephaven.engine.v2.utils.RowSet;
+import io.deephaven.engine.rowset.RowSet;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.LinkedHashMap;

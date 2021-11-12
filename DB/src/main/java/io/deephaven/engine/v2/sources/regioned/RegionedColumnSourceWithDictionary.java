@@ -1,18 +1,18 @@
 package io.deephaven.engine.v2.sources.regioned;
 
+import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.tables.ColumnDefinition;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.utils.QueryPerformanceRecorder;
 import io.deephaven.engine.v2.*;
 import io.deephaven.engine.v2.locations.ColumnLocation;
-import io.deephaven.engine.v2.sources.ColumnSource;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.v2.sources.ColumnSourceGetDefaults;
 import io.deephaven.engine.v2.sources.Releasable;
 import io.deephaven.engine.v2.sources.RowIdSource;
 import io.deephaven.engine.chunk.Attributes.DictionaryKeys;
 import io.deephaven.engine.chunk.Attributes.Values;
 import io.deephaven.engine.v2.utils.*;
-import io.deephaven.engine.structures.RowSequence;
 import org.apache.commons.lang3.mutable.Mutable;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
@@ -23,8 +23,6 @@ import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
-
-import static io.deephaven.engine.v2.utils.RowSet.NULL_ROW_KEY;
 
 /**
  * {@link RegionedColumnSourceObject} with support for dictionary access via {@link SymbolTableSource} methods. Note
@@ -73,7 +71,7 @@ class RegionedColumnSourceWithDictionary<DATA_TYPE>
 
         @Override
         public long getLong(final long elementIndex) {
-            return (elementIndex == NULL_ROW_KEY ? getNullRegion() : lookupRegion(elementIndex)).getLong(elementIndex);
+            return (elementIndex == RowSequence.NULL_ROW_KEY ? getNullRegion() : lookupRegion(elementIndex)).getLong(elementIndex);
         }
 
         @Override
@@ -162,7 +160,7 @@ class RegionedColumnSourceWithDictionary<DATA_TYPE>
 
         @Override
         public DATA_TYPE get(final long elementIndex) {
-            return (elementIndex == NULL_ROW_KEY ? getNullRegion() : lookupRegion(elementIndex))
+            return (elementIndex == RowSequence.NULL_ROW_KEY ? getNullRegion() : lookupRegion(elementIndex))
                     .getObject(elementIndex);
         }
 

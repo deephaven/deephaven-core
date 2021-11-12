@@ -12,8 +12,8 @@ import io.deephaven.engine.v2.by.AggregationStateFactory;
 import io.deephaven.engine.v2.by.ComboAggregateFactory;
 import io.deephaven.engine.v2.select.SelectColumn;
 import io.deephaven.engine.v2.select.SelectFilter;
-import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.utils.TrackingRowSet;
+import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.rowset.TrackingRowSet;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -66,7 +66,7 @@ public abstract class WrappedDelegatingTable extends BaseTable {
     }
 
     @Override
-    public ColumnSource<?> getColumnSource(String sourceName) {
+    public <T> ColumnSource<T> getColumnSource(String sourceName) {
         return parent.getColumnSource(sourceName);
     }
 

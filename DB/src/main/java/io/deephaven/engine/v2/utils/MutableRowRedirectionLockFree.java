@@ -7,7 +7,7 @@ package io.deephaven.engine.v2.utils;
 import gnu.trove.iterator.TLongLongIterator;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
-import io.deephaven.engine.structures.RowSequence;
+import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.util.datastructures.hash.HashMapLockFreeK1V1;
 import io.deephaven.util.datastructures.hash.HashMapLockFreeK2V2;
 import io.deephaven.util.datastructures.hash.HashMapLockFreeK4V4;
@@ -116,7 +116,7 @@ public class MutableRowRedirectionLockFree implements MutableRowRedirection {
      */
     private static final long BASELINE_KEY_NOT_FOUND = -1L;
     static {
-        Assert.eq(BASELINE_KEY_NOT_FOUND, "BASELINE_KEY_NOT_FOUND", RowSet.NULL_ROW_KEY, "RowSet.NULL_ROW_KEY");
+        Assert.eq(BASELINE_KEY_NOT_FOUND, "BASELINE_KEY_NOT_FOUND", RowSequence.NULL_ROW_KEY, "RowSet.NULL_ROW_KEY");
     }
     private static final long UPDATES_KEY_NOT_FOUND = -2L;
 

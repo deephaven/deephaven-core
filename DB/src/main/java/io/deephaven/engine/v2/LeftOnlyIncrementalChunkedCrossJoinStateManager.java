@@ -5,11 +5,12 @@ package io.deephaven.engine.v2;
 
 import io.deephaven.base.verify.Require;
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.rftable.ChunkSource;
-import io.deephaven.engine.rftable.Context;
-import io.deephaven.engine.rftable.SharedContext;
-import io.deephaven.engine.structures.RowSequence;
-import io.deephaven.engine.structures.rowsequence.RowSequenceUtil;
+import io.deephaven.engine.table.ChunkSource;
+import io.deephaven.engine.table.Context;
+import io.deephaven.engine.table.SharedContext;
+import io.deephaven.engine.rowset.*;
+import io.deephaven.engine.rowset.impl.RowSequenceUtil;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.chunk.util.hashing.*;
 // this is ugly to have twice, but we do need it twice for replication
@@ -1737,7 +1738,7 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
     @Override
     public TrackingRowSet getRightIndexFromLeftIndex(long leftIndex) {
         long slot = leftIndexToSlot.get(leftIndex);
-        if (slot == RowSet.NULL_ROW_KEY) {
+        if (slot == RowSequence.NULL_ROW_KEY) {
             return RowSetFactory.empty().toTracking();
         }
         return getRightIndex(slot);
@@ -1746,7 +1747,7 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
     @Override
     public TrackingRowSet getRightIndexFromPrevLeftIndex(long leftIndex) {
         long slot = leftIndexToSlot.getPrev(leftIndex);
-        if (slot == RowSet.NULL_ROW_KEY) {
+        if (slot == RowSequence.NULL_ROW_KEY) {
             return RowSetFactory.empty().toTracking();
         }
         return getRightIndex(slot);

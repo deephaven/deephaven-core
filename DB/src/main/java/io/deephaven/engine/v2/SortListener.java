@@ -8,8 +8,9 @@ import io.deephaven.base.LongRingBuffer;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.datastructures.util.CollectionUtil;
-import io.deephaven.engine.structures.RowSequence;
-import io.deephaven.engine.structures.rowsequence.RowSequenceUtil;
+import io.deephaven.engine.rowset.*;
+import io.deephaven.engine.rowset.impl.RowSequenceUtil;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.chunk.Attributes;
 import io.deephaven.io.logger.Logger;
@@ -62,9 +63,9 @@ public class SortListener extends BaseTable.ListenerImpl {
     private final ModifiedColumnSet sortColumnSet;
 
     public SortListener(Table parent, QueryTable result, HashMapK4V4 reverseLookup,
-            ColumnSource<Comparable<?>>[] columnsToSortBy, SortingOrder[] order,
-            MutableRowRedirection sortMapping, ColumnSource<Comparable<?>>[] sortedColumnsToSortBy,
-            ModifiedColumnSet.Transformer mcsTransformer, ModifiedColumnSet sortColumnSet) {
+                        ColumnSource<Comparable<?>>[] columnsToSortBy, SortingOrder[] order,
+                        MutableRowRedirection sortMapping, ColumnSource<Comparable<?>>[] sortedColumnsToSortBy,
+                        ModifiedColumnSet.Transformer mcsTransformer, ModifiedColumnSet sortColumnSet) {
         super("sortInternal", parent, result);
         this.parent = parent;
         this.result = result;
@@ -548,7 +549,7 @@ public class SortListener extends BaseTable.ListenerImpl {
         // evict any existing rows in the gap
         if (gapEvictionIter != null && gapEvictionIter.advance(destinationSlot)) {
             while (qs.isBefore(gapEvictionIter.currentValue(), gapEnd)) {
-                mappingChanges.append(gapEvictionIter.currentValue(), RowSet.NULL_ROW_KEY);
+                mappingChanges.append(gapEvictionIter.currentValue(), RowSequence.NULL_ROW_KEY);
                 if (gapEvictionIter.hasNext()) {
                     gapEvictionIter.nextLong();
                 } else {
@@ -654,7 +655,7 @@ public class SortListener extends BaseTable.ListenerImpl {
 
                 for (int jj = 0; jj < thisSize; ++jj) {
                     final long index = valuesChunk.get(jj);
-                    if (index != RowSet.NULL_ROW_KEY) {
+                    if (index != RowSequence.NULL_ROW_KEY) {
                         reverseLookup.put(index, keysChunk.get(jj));
                     } else {
                         reverseLookup.remove(index);

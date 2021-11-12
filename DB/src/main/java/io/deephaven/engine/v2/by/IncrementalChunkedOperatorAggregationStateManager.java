@@ -5,11 +5,13 @@ package io.deephaven.engine.v2.by;
 
 import io.deephaven.base.verify.Require;
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.rftable.ChunkSource;
-import io.deephaven.engine.rftable.Context;
-import io.deephaven.engine.rftable.SharedContext;
-import io.deephaven.engine.structures.RowSequence;
-import io.deephaven.engine.structures.rowsequence.RowSequenceUtil;
+import io.deephaven.engine.table.ChunkSource;
+import io.deephaven.engine.table.Context;
+import io.deephaven.engine.table.SharedContext;
+import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.impl.RowSequenceUtil;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.chunk.util.hashing.*;
 // this is ugly to have twice, but we do need it twice for replication
@@ -501,7 +503,7 @@ class IncrementalChunkedOperatorAggregationStateManager
         outputPositions.setSize(buildIndex.intSize());
         int maxAddedPosition = -1;
         bc.addedSlotsByPosition.setSize(outputPositions.size());
-        bc.addedSlotsByPosition.fillWithValue(0, bc.addedSlotsByPosition.size(), RowSet.NULL_ROW_KEY);
+        bc.addedSlotsByPosition.fillWithValue(0, bc.addedSlotsByPosition.size(), RowSequence.NULL_ROW_KEY);
         bc.duplicatePositions.setSize(0);
 
         if (reincarnatedPositions != null) {
@@ -817,7 +819,7 @@ class IncrementalChunkedOperatorAggregationStateManager
                 outputPositionToHashSlot.ensureCapacity(nextOutputPosition.intValue() + maxAddedPosition + 1);
                 for (int ii = 0; ii <= maxAddedPosition; ++ii) {
                     final long longSlot = bc.addedSlotsByPosition.get(ii);
-                    if (longSlot != RowSet.NULL_ROW_KEY) {
+                    if (longSlot != RowSequence.NULL_ROW_KEY) {
                         final int intSlot = (int) longSlot;
 
                         outputPositions.set(ii, nextOutputPosition.intValue());

@@ -6,6 +6,7 @@ package io.deephaven.engine.v2.by.ssmpercentile;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.time.DateTime;
 import io.deephaven.engine.v2.by.IterativeChunkedAggregationOperator;
 import io.deephaven.engine.v2.sources.*;

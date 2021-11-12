@@ -1,14 +1,14 @@
 package io.deephaven.engine.v2.sources.regioned;
 
 import io.deephaven.base.string.cache.StringCache;
-import io.deephaven.engine.rftable.DefaultChunkSource;
+import io.deephaven.engine.table.DefaultChunkSource;
 import io.deephaven.engine.util.string.StringUtils;
 import io.deephaven.engine.chunk.Attributes.Any;
 import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.page.Page;
-import io.deephaven.engine.structures.RowSequence;
-import io.deephaven.engine.v2.utils.RowSet;
-import io.deephaven.engine.v2.utils.RowSetBuilderSequential;
+import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.function.Function;

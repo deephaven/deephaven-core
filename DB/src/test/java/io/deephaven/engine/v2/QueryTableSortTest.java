@@ -2,6 +2,9 @@ package io.deephaven.engine.v2;
 
 import io.deephaven.base.FileUtils;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.TrackingMutableRowSet;
 import io.deephaven.engine.tables.ColumnDefinition;
 import io.deephaven.engine.tables.*;
 import io.deephaven.engine.tables.live.UpdateGraphProcessor;

@@ -12,6 +12,8 @@ sourceSets {
 }
 
 dependencies {
+    compile project(':engine-tuple'),
+            project(':engine-api')
 }
 
 spotless {

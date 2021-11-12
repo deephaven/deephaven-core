@@ -4,14 +4,14 @@
 
 package io.deephaven.engine.v2.sources;
 
-import io.deephaven.engine.structures.RowSequence;
-import io.deephaven.engine.v2.utils.RowSet;
-import io.deephaven.engine.v2.utils.ShiftedRowSequence;
+import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.rowset.impl.ShiftedRowSequence;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.hash.KeyedObjectHashMap;
 import io.deephaven.hash.KeyedObjectKey;
 import io.deephaven.engine.chunk.Attributes.*;
 import io.deephaven.engine.chunk.ResettableWritableChunk;
-import io.deephaven.engine.rftable.SharedContext;
+import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.chunk.WritableChunk;
 import io.deephaven.base.verify.Assert;
 import org.jetbrains.annotations.NotNull;
@@ -66,7 +66,7 @@ public class UnionColumnSource<T> extends AbstractColumnSource<T> {
 
     @Override
     public Boolean getBoolean(long index) {
-        if (index == RowSet.NULL_ROW_KEY) {
+        if (index == RowSequence.NULL_ROW_KEY) {
             return null;
         }
         final int tid = unionRedirection.tidForIndex(index);
@@ -77,7 +77,7 @@ public class UnionColumnSource<T> extends AbstractColumnSource<T> {
 
     @Override
     public byte getByte(long index) {
-        if (index == RowSet.NULL_ROW_KEY) {
+        if (index == RowSequence.NULL_ROW_KEY) {
             return NULL_BYTE;
         }
         final int tid = unionRedirection.tidForIndex(index);
@@ -88,7 +88,7 @@ public class UnionColumnSource<T> extends AbstractColumnSource<T> {
 
     @Override
     public char getChar(long index) {
-        if (index == RowSet.NULL_ROW_KEY) {
+        if (index == RowSequence.NULL_ROW_KEY) {
             return NULL_CHAR;
         }
         final int tid = unionRedirection.tidForIndex(index);
@@ -99,7 +99,7 @@ public class UnionColumnSource<T> extends AbstractColumnSource<T> {
 
     @Override
     public double getDouble(long index) {
-        if (index == RowSet.NULL_ROW_KEY) {
+        if (index == RowSequence.NULL_ROW_KEY) {
             return NULL_DOUBLE;
         }
         final int tid = unionRedirection.tidForIndex(index);
@@ -110,7 +110,7 @@ public class UnionColumnSource<T> extends AbstractColumnSource<T> {
 
     @Override
     public float getFloat(long index) {
-        if (index == RowSet.NULL_ROW_KEY) {
+        if (index == RowSequence.NULL_ROW_KEY) {
             return NULL_FLOAT;
         }
         final int tid = unionRedirection.tidForIndex(index);
@@ -121,7 +121,7 @@ public class UnionColumnSource<T> extends AbstractColumnSource<T> {
 
     @Override
     public int getInt(long index) {
-        if (index == RowSet.NULL_ROW_KEY) {
+        if (index == RowSequence.NULL_ROW_KEY) {
             return NULL_INT;
         }
         final int tid = unionRedirection.tidForIndex(index);
@@ -132,7 +132,7 @@ public class UnionColumnSource<T> extends AbstractColumnSource<T> {
 
     @Override
     public long getLong(long index) {
-        if (index == RowSet.NULL_ROW_KEY) {
+        if (index == RowSequence.NULL_ROW_KEY) {
             return NULL_LONG;
         }
         final int tid = unionRedirection.tidForIndex(index);
@@ -143,7 +143,7 @@ public class UnionColumnSource<T> extends AbstractColumnSource<T> {
 
     @Override
     public short getShort(long index) {
-        if (index == RowSet.NULL_ROW_KEY) {
+        if (index == RowSequence.NULL_ROW_KEY) {
             return NULL_SHORT;
         }
         final int tid = unionRedirection.tidForIndex(index);
@@ -154,7 +154,7 @@ public class UnionColumnSource<T> extends AbstractColumnSource<T> {
 
     @Override
     public T get(long index) {
-        if (index == RowSet.NULL_ROW_KEY) {
+        if (index == RowSequence.NULL_ROW_KEY) {
             return null;
         }
         final int tid = unionRedirection.tidForIndex(index);
@@ -172,7 +172,7 @@ public class UnionColumnSource<T> extends AbstractColumnSource<T> {
 
     @Override
     public T getPrev(long index) {
-        if (index == RowSet.NULL_ROW_KEY) {
+        if (index == RowSequence.NULL_ROW_KEY) {
             return null;
         }
         final int tid = unionRedirection.tidForPrevIndex(index);
@@ -183,7 +183,7 @@ public class UnionColumnSource<T> extends AbstractColumnSource<T> {
 
     @Override
     public Boolean getPrevBoolean(long index) {
-        if (index == RowSet.NULL_ROW_KEY) {
+        if (index == RowSequence.NULL_ROW_KEY) {
             return null;
         }
         final int tid = unionRedirection.tidForPrevIndex(index);
@@ -194,7 +194,7 @@ public class UnionColumnSource<T> extends AbstractColumnSource<T> {
 
     @Override
     public byte getPrevByte(long index) {
-        if (index == RowSet.NULL_ROW_KEY) {
+        if (index == RowSequence.NULL_ROW_KEY) {
             return NULL_BYTE;
         }
         final int tid = unionRedirection.tidForPrevIndex(index);
@@ -205,7 +205,7 @@ public class UnionColumnSource<T> extends AbstractColumnSource<T> {
 
     @Override
     public char getPrevChar(long index) {
-        if (index == RowSet.NULL_ROW_KEY) {
+        if (index == RowSequence.NULL_ROW_KEY) {
             return NULL_CHAR;
         }
         final int tid = unionRedirection.tidForPrevIndex(index);
@@ -216,7 +216,7 @@ public class UnionColumnSource<T> extends AbstractColumnSource<T> {
 
     @Override
     public double getPrevDouble(long index) {
-        if (index == RowSet.NULL_ROW_KEY) {
+        if (index == RowSequence.NULL_ROW_KEY) {
             return NULL_DOUBLE;
         }
         final int tid = unionRedirection.tidForPrevIndex(index);
@@ -227,7 +227,7 @@ public class UnionColumnSource<T> extends AbstractColumnSource<T> {
 
     @Override
     public float getPrevFloat(long index) {
-        if (index == RowSet.NULL_ROW_KEY) {
+        if (index == RowSequence.NULL_ROW_KEY) {
             return NULL_FLOAT;
         }
         final int tid = unionRedirection.tidForPrevIndex(index);
@@ -238,7 +238,7 @@ public class UnionColumnSource<T> extends AbstractColumnSource<T> {
 
     @Override
     public int getPrevInt(long index) {
-        if (index == RowSet.NULL_ROW_KEY) {
+        if (index == RowSequence.NULL_ROW_KEY) {
             return NULL_INT;
         }
         final int tid = unionRedirection.tidForPrevIndex(index);
@@ -249,7 +249,7 @@ public class UnionColumnSource<T> extends AbstractColumnSource<T> {
 
     @Override
     public long getPrevLong(long index) {
-        if (index == RowSet.NULL_ROW_KEY) {
+        if (index == RowSequence.NULL_ROW_KEY) {
             return NULL_LONG;
         }
         final int tid = unionRedirection.tidForPrevIndex(index);
@@ -260,7 +260,7 @@ public class UnionColumnSource<T> extends AbstractColumnSource<T> {
 
     @Override
     public short getPrevShort(long index) {
-        if (index == RowSet.NULL_ROW_KEY) {
+        if (index == RowSequence.NULL_ROW_KEY) {
             return NULL_SHORT;
         }
         final int tid = unionRedirection.tidForPrevIndex(index);

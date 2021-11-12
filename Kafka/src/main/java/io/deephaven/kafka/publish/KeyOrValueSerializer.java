@@ -2,7 +2,7 @@ package io.deephaven.kafka.publish;
 
 import io.deephaven.engine.chunk.Attributes;
 import io.deephaven.engine.chunk.ObjectChunk;
-import io.deephaven.engine.structures.RowSequence;
+import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.util.SafeCloseable;
 
 /**

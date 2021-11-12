@@ -1,7 +1,9 @@
 package io.deephaven.engine.v2.utils;
 
-import io.deephaven.engine.v2.utils.rsp.RspBitmap;
-import io.deephaven.engine.v2.utils.rsp.RspIterator;
+import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.impl.TrackingMutableRowSetImpl;
+import io.deephaven.engine.rowset.impl.rsp.RspBitmap;
+import io.deephaven.engine.rowset.impl.rsp.RspIterator;
 import gnu.trove.iterator.TLongIterator;
 import gnu.trove.set.hash.TLongHashSet;
 import io.deephaven.benchmarking.BenchUtil;

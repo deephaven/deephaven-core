@@ -8,14 +8,14 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.tables.*;
 import io.deephaven.engine.tables.select.MatchPair;
 import io.deephaven.engine.tables.select.WouldMatchPair;
-import io.deephaven.engine.v2.utils.TrackingRowSet;
+import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.util.liveness.Liveness;
 import io.deephaven.engine.v2.by.AggregationStateFactory;
 import io.deephaven.engine.v2.by.ComboAggregateFactory;
 import io.deephaven.engine.v2.select.SelectColumn;
 import io.deephaven.engine.v2.select.SelectFilter;
-import io.deephaven.engine.v2.sources.ColumnSource;
+import io.deephaven.engine.table.ColumnSource;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -26,7 +26,7 @@ import java.util.Map;
  * Abstract class for uncoalesced tables. These tables have deferred work that must be done before data can be operated
  * on.
  */
-public abstract class UncoalescedTable extends BaseTable implements Table {
+public abstract class UncoalescedTable extends BaseTable implements TableWithOperationDefaults {
 
     private final Object coalescingLock = new Object();
 
@@ -113,16 +113,6 @@ public abstract class UncoalescedTable extends BaseTable implements Table {
     }
 
     @Override
-    public void listenForDirectUpdates(ShiftObliviousListener listener) {
-        coalesce().listenForDirectUpdates(listener);
-    }
-
-    @Override
-    public void removeDirectUpdateListener(ShiftObliviousListener listener) {
-        coalesce().removeUpdateListener(listener);
-    }
-
-    @Override
     public TrackingRowSet getRowSet() {
         return coalesce().getRowSet();
     }
@@ -138,7 +128,7 @@ public abstract class UncoalescedTable extends BaseTable implements Table {
     }
 
     @Override
-    public ColumnSource<?> getColumnSource(String sourceName) {
+    public <T> ColumnSource<T> getColumnSource(String sourceName) {
         return coalesce().getColumnSource(sourceName);
     }
 
@@ -420,12 +410,6 @@ public abstract class UncoalescedTable extends BaseTable implements Table {
     @Override
     public Table flatten() {
         return coalesce().flatten();
-    }
-
-    @Override
-    @Deprecated
-    public void addColumnGrouping(String columnName) {
-        coalesce().addColumnGrouping(columnName);
     }
 
     @Override

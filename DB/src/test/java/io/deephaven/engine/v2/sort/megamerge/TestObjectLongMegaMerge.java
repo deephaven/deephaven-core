@@ -3,7 +3,7 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.v2.sort.megamerge;
 
-import io.deephaven.engine.rftable.ChunkSource;
+import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.chunk.util.hashing.ObjectChunkEquals;
 import io.deephaven.engine.chunk.util.hashing.LongChunkEquals;
 import io.deephaven.engine.v2.sources.ObjectArraySource;
@@ -11,8 +11,8 @@ import io.deephaven.engine.v2.sources.LongArraySource;
 import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.chunk.Attributes.Values;
 import io.deephaven.engine.v2.utils.ChunkUtils;
-import io.deephaven.engine.structures.RowSequence;
-import io.deephaven.engine.structures.rowsequence.RowSequenceUtil;
+import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.rowset.impl.RowSequenceUtil;
 import junit.framework.TestCase;
 import org.junit.Test;
 

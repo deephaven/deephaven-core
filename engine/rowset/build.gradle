@@ -1,0 +1,31 @@
+import io.deephaven.tools.Tools
+
+configurations {
+    testCompile.extendsFrom junit
+}
+
+sourceSets {
+    main {
+        java {
+            srcDir 'java'
+        }
+    }
+    test {
+        java {
+            srcDir 'test'
+        }
+    }
+}
+
+dependencies {
+    compile project(':engine-api'),
+            project(':Container'),
+            project(':engine-chunk')
+}
+
+spotless {
+    java {
+        targetExclude(
+        )
+    }
+}

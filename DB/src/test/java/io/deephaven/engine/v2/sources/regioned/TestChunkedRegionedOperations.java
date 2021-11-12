@@ -20,10 +20,10 @@ import io.deephaven.engine.v2.locations.local.DeephavenNestedPartitionLayout;
 import io.deephaven.engine.v2.parquet.ParquetInstructions;
 import io.deephaven.engine.v2.select.ReinterpretedColumn;
 import io.deephaven.engine.v2.sources.AbstractColumnSource;
-import io.deephaven.engine.v2.sources.ColumnSource;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.chunk.Attributes.Values;
-import io.deephaven.engine.structures.RowSequence;
+import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.SafeCloseableList;
 import io.deephaven.util.codec.BigIntegerCodec;
@@ -48,7 +48,7 @@ import static org.junit.Assert.assertTrue;
 
 /**
  * High-level unit tests for {@link RegionedColumnSource} implementations of
- * {@link io.deephaven.engine.v2.sources.ColumnSource#fillChunk(ColumnSource.FillContext, WritableChunk, RowSequence)}.
+ * {@link ColumnSource#fillChunk(ColumnSource.FillContext, WritableChunk, RowSequence)}.
  */
 @Category(OutOfBandTest.class)
 public class TestChunkedRegionedOperations {

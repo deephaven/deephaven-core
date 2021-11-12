@@ -5,7 +5,7 @@
 package io.deephaven.engine.v2.sources.regioned;
 
 import io.deephaven.util.BooleanUtils;
-import io.deephaven.engine.v2.sources.ColumnSource;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.chunk.Attributes;
 import io.deephaven.util.type.TypeUtils;
 import org.junit.Test;

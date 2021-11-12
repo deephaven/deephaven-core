@@ -4,6 +4,7 @@
 
 package io.deephaven.engine.v2.by;
 
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.v2.sources.*;
 import io.deephaven.engine.v2.utils.MutableRowRedirection;
 import io.deephaven.engine.v2.utils.RowRedirection;

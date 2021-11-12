@@ -6,8 +6,8 @@ package io.deephaven.integrations.python;
 
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.v2.ShiftObliviousInstrumentedListenerAdapter;
-import io.deephaven.engine.v2.utils.RowSet;
-import io.deephaven.engine.v2.utils.RowSetFactory;
+import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.util.annotations.ScriptApi;
 import org.jpy.PyObject;
 

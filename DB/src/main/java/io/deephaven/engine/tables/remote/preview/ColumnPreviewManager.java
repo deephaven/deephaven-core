@@ -7,7 +7,7 @@ import io.deephaven.engine.v2.BaseTable;
 import io.deephaven.engine.v2.HierarchicalTable;
 import io.deephaven.engine.v2.select.FunctionalColumn;
 import io.deephaven.engine.v2.select.SelectColumn;
-import io.deephaven.engine.v2.sources.ColumnSource;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.util.type.TypeUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.jpy.PyListWrapper;

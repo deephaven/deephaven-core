@@ -1,5 +1,7 @@
 package io.deephaven.engine.v2.utils;
 
+import io.deephaven.engine.rowset.MutableRowSet;
+import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.v2.Listener;
 import io.deephaven.engine.v2.ModifiedColumnSet;
 import io.deephaven.util.SafeCloseableList;

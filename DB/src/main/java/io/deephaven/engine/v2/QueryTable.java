@@ -11,6 +11,8 @@ import io.deephaven.base.verify.Require;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.exceptions.QueryCancellationException;
+import io.deephaven.engine.rowset.*;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.tables.*;
 import io.deephaven.engine.vector.Vector;
 import io.deephaven.engine.tables.live.UpdateGraphProcessor;
@@ -295,16 +297,6 @@ public class QueryTable extends BaseTable {
         return result;
     }
 
-    @Override
-    public ModifiedColumnSet newModifiedColumnSet(final String... columnNames) {
-        if (columnNames.length == 0) {
-            return ModifiedColumnSet.EMPTY;
-        }
-        final ModifiedColumnSet newSet = new ModifiedColumnSet(modifiedColumnSet);
-        newSet.setAll(columnNames);
-        return newSet;
-    }
-
     /**
      * Producers of tables should use the modified column set embedded within the table for their result.
      *
@@ -317,24 +309,94 @@ public class QueryTable extends BaseTable {
         return modifiedColumnSet;
     }
 
-    @Override
+    /**
+     * Create a {@link ModifiedColumnSet} to use when propagating updates from this table.
+     *
+     * @param columnNames The columns that should belong to the resulting set
+     * @return The resulting ModifiedColumnSet for the given columnNames
+     */
+    public ModifiedColumnSet newModifiedColumnSet(final String... columnNames) {
+        if (columnNames.length == 0) {
+            return ModifiedColumnSet.EMPTY;
+        }
+        final ModifiedColumnSet newSet = new ModifiedColumnSet(modifiedColumnSet);
+        newSet.setAll(columnNames);
+        return newSet;
+    }
+
+    /**
+     * Create a {@link ModifiedColumnSet.Transformer} that can be used to propagate dirty columns from this table to
+     * listeners of the provided resultTable.
+     *
+     * @param resultTable the destination table
+     * @param columnNames the columns that map one-to-one with the result table
+     * @return a transformer that passes dirty details via an identity mapping
+     */
+    public ModifiedColumnSet.Transformer newModifiedColumnSetTransformer(QueryTable resultTable,
+                                                                         String... columnNames) {
+        final ModifiedColumnSet[] columnSets = new ModifiedColumnSet[columnNames.length];
+        for (int i = 0; i < columnNames.length; ++i) {
+            columnSets[i] = resultTable.newModifiedColumnSet(columnNames[i]);
+        }
+        return newModifiedColumnSetTransformer(columnNames, columnSets);
+    }
+
+    /**
+     * Create a {@link ModifiedColumnSet.Transformer} that can be used to propagate dirty columns from this table to
+     * listeners of the provided resultTable.
+     *
+     * @param resultTable the destination table
+     * @param matchPairs the columns that map one-to-one with the result table
+     * @return a transformer that passes dirty details via an identity mapping
+     */
+    public ModifiedColumnSet.Transformer newModifiedColumnSetTransformer(QueryTable resultTable,
+                                                                         MatchPair... matchPairs) {
+        final ModifiedColumnSet[] columnSets = new ModifiedColumnSet[matchPairs.length];
+        for (int ii = 0; ii < matchPairs.length; ++ii) {
+            columnSets[ii] = resultTable.newModifiedColumnSet(matchPairs[ii].left());
+        }
+        return newModifiedColumnSetTransformer(MatchPair.getRightColumns(matchPairs), columnSets);
+    }
+
+    /**
+     * Create a {@link ModifiedColumnSet.Transformer} that can be used to propagate dirty columns from this table to
+     * listeners of the table used to construct columnSets. It is an error if {@code columnNames} and {@code columnSets}
+     * are not the same length. The transformer will mark {@code columnSets[i]} as dirty if the column represented by
+     * {@code columnNames[i]} is dirty.
+     *
+     * @param columnNames the source columns
+     * @param columnSets the destination columns in the convenient ModifiedColumnSet form
+     * @return a transformer that knows the dirty details
+     */
     public ModifiedColumnSet.Transformer newModifiedColumnSetTransformer(final String[] columnNames,
             final ModifiedColumnSet[] columnSets) {
         return modifiedColumnSet.newTransformer(columnNames, columnSets);
     }
 
-    @Override
+    /**
+     * Create a transformer that uses an identity mapping from one ColumnSourceMap to another. The two CSMs must have
+     * equivalent column names and column ordering.
+     *
+     * @param newColumns the column source map for result table
+     * @return a simple Transformer that makes a cheap, but CSM compatible copy
+     */
     public ModifiedColumnSet.Transformer newModifiedColumnSetIdentityTransformer(
             final Map<String, ColumnSource<?>> newColumns) {
         return modifiedColumnSet.newIdentityTransformer(newColumns);
     }
 
-    @Override
+    /**
+     * Create a transformer that uses an identity mapping from one Table another. The two tables must have equivalent
+     * column names and column ordering.
+     *
+     * @param other the result table
+     * @return a simple Transformer that makes a cheap, but CSM compatible copy
+     */
     public ModifiedColumnSet.Transformer newModifiedColumnSetIdentityTransformer(final Table other) {
         if (other instanceof QueryTable) {
             return modifiedColumnSet.newIdentityTransformer(((QueryTable) other).columns);
         }
-        return super.newModifiedColumnSetIdentityTransformer(other);
+        return modifiedColumnSet.newIdentityTransformer(other.getColumnSourceMap());
     }
 
     @Override
@@ -900,7 +962,7 @@ public class QueryTable extends BaseTable {
          * @param modifiedColumnSet the set of columns that have any changes to indices in {@code modified}
          */
         private void doRefilter(final RowSet upstreamAdded, final RowSet upstreamRemoved, final RowSet upstreamModified,
-                final RowSetShiftData shiftData, final ModifiedColumnSet modifiedColumnSet) {
+                                final RowSetShiftData shiftData, final ModifiedColumnSet modifiedColumnSet) {
 
             // Remove upstream keys first, so that keys at rows that were removed and then added are propagated as such.
             // Note that it is a failure to propagate these as modifies, since modifiedColumnSet may not mark that all

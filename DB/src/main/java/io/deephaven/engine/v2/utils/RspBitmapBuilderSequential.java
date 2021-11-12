@@ -1,12 +1,14 @@
 package io.deephaven.engine.v2.utils;
 
-import io.deephaven.engine.v2.utils.rsp.DisposableRspBitmap;
-import io.deephaven.engine.v2.utils.rsp.RspArray;
-import io.deephaven.engine.v2.utils.rsp.RspBitmap;
-import io.deephaven.engine.v2.utils.rsp.container.Container;
+import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.rowset.impl.OrderedLongSet;
+import io.deephaven.engine.rowset.impl.rsp.DisposableRspBitmap;
+import io.deephaven.engine.rowset.impl.rsp.RspArray;
+import io.deephaven.engine.rowset.impl.rsp.RspBitmap;
+import io.deephaven.engine.rowset.impl.rsp.container.Container;
 
-import static io.deephaven.engine.v2.utils.rsp.RspArray.*;
-import static io.deephaven.engine.v2.utils.rsp.RspBitmap.*;
+import static io.deephaven.engine.rowset.impl.rsp.RspArray.*;
+import static io.deephaven.engine.rowset.impl.rsp.RspBitmap.*;
 
 public class RspBitmapBuilderSequential implements BuilderSequential {
     protected final boolean disposable;
@@ -28,7 +30,7 @@ public class RspBitmapBuilderSequential implements BuilderSequential {
 
     @Override
     public void setDomain(final long minRowKey, final long maxRowKey) {
-        maxKeyHint = (maxRowKey == RowSet.NULL_ROW_KEY) ? -1 : maxRowKey;
+        maxKeyHint = (maxRowKey == RowSequence.NULL_ROW_KEY) ? -1 : maxRowKey;
     }
 
     @Override

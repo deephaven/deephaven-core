@@ -1,7 +1,7 @@
 package io.deephaven.engine.v2.dbarrays;
 
 import io.deephaven.engine.v2.sources.ArrayBackedColumnSource;
-import io.deephaven.engine.v2.utils.RowSetFactory;
+import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.vector.CharVector;
 import junit.framework.TestCase;
 

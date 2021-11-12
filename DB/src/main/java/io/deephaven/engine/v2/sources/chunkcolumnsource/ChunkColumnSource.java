@@ -1,7 +1,7 @@
 package io.deephaven.engine.chunkcolumnsource;
 
 import gnu.trove.list.array.TLongArrayList;
-import io.deephaven.engine.v2.sources.ColumnSource;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.chunk.Attributes;
 import io.deephaven.engine.chunk.ChunkType;
 import io.deephaven.engine.chunk.WritableChunk;

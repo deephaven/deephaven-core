@@ -1,7 +1,8 @@
 package io.deephaven.engine.v2.sources;
 
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.time.DateTime;
-import io.deephaven.engine.v2.utils.RowSet;
+import io.deephaven.engine.rowset.RowSet;
 
 /**
  * Wrap a regular {@code TreeMapSource<Long>} to make it reinterpretable as a DateTime column source.
@@ -12,7 +13,7 @@ public class UnboxedDateTimeTreeMapSource extends UnboxedDateTimeColumnSource im
     private final TreeMapSource<Long> treeMapSource;
 
     public UnboxedDateTimeTreeMapSource(ColumnSource<DateTime> alternateColumnSource,
-            TreeMapSource<Long> treeMapSource) {
+                                        TreeMapSource<Long> treeMapSource) {
         super(alternateColumnSource);
         this.treeMapSource = treeMapSource;
     }

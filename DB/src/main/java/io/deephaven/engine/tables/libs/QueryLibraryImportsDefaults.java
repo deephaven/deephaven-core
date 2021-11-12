@@ -1,15 +1,15 @@
 package io.deephaven.engine.tables.libs;
 
+import io.deephaven.engine.rowset.*;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
-import io.deephaven.engine.rftable.Context;
-import io.deephaven.engine.structures.RowSequence;
+import io.deephaven.engine.table.Context;
 import io.deephaven.engine.tables.lang.LanguageFunctionUtil;
 import io.deephaven.engine.time.DateTime;
 import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.engine.time.Period;
 import io.deephaven.engine.time.TimeZone;
 import io.deephaven.engine.util.ColorUtilImpl;
-import io.deephaven.engine.v2.utils.*;
 import io.deephaven.util.type.ArrayTypeUtils;
 
 import java.util.Arrays;
@@ -41,7 +41,7 @@ public class QueryLibraryImportsDefaults implements QueryLibraryImports {
                 org.joda.time.LocalTime.class,
                 Period.class,
                 io.deephaven.engine.tables.select.Param.class,
-                io.deephaven.engine.v2.sources.ColumnSource.class,
+                ColumnSource.class,
                 RowSet.class,
                 MutableRowSet.class,
                 TrackingRowSet.class,

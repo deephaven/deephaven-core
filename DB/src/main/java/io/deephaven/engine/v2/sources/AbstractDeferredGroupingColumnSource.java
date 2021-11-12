@@ -6,7 +6,7 @@ package io.deephaven.engine.v2.sources;
 
 import io.deephaven.base.Pair;
 import io.deephaven.engine.v2.locations.GroupingProvider;
-import io.deephaven.engine.v2.utils.RowSet;
+import io.deephaven.engine.rowset.RowSet;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Map;

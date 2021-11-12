@@ -2,6 +2,7 @@ package io.deephaven.engine.tuplesource;
 
 import io.deephaven.datastructures.util.SmartKey;
 import io.deephaven.engine.rftable.DefaultChunkSource;
+import io.deephaven.engine.table.TupleSource;
 import io.deephaven.engine.tuple.EmptyTuple;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.WritableSource;

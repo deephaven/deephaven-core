@@ -4,6 +4,10 @@
 
 package io.deephaven.engine.v2.utils;
 
+import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetBuilderRandom;
+import io.deephaven.engine.rowset.RowSetBuilderSequential;
+import io.deephaven.engine.rowset.RowSetFactory;
 import junit.framework.TestCase;
 
 import java.util.*;

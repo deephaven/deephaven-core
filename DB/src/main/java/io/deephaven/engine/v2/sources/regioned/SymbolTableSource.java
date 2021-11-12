@@ -1,15 +1,15 @@
 package io.deephaven.engine.v2.sources.regioned;
 
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.v2.QueryTable;
-import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
-import io.deephaven.engine.v2.utils.RowSet;
+import io.deephaven.engine.rowset.TrackingMutableRowSet;
+import io.deephaven.engine.rowset.RowSet;
 import org.jetbrains.annotations.NotNull;
 
 /**
  * <p>
- * Interface for {@link io.deephaven.engine.v2.sources.ColumnSource}s that can provide a {@link Table} view of their
+ * Interface for {@link ColumnSource}s that can provide a {@link Table} view of their
  * symbol tables, providing a many:1 or 1:1 mapping of unique {@code long} identifiers to the symbol values in this
  * source.
  * <p>

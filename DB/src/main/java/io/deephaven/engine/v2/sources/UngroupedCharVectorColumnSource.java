@@ -4,7 +4,7 @@
 
 package io.deephaven.engine.v2.sources;
 
-import io.deephaven.engine.vector.*;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.vector.CharVector;
 
 import static io.deephaven.util.QueryConstants.NULL_CHAR;

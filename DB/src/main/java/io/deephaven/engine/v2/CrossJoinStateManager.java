@@ -1,7 +1,6 @@
 package io.deephaven.engine.v2;
 
-import io.deephaven.engine.v2.utils.RowSet;
-import io.deephaven.engine.v2.utils.TrackingRowSet;
+import io.deephaven.engine.rowset.TrackingRowSet;
 
 public interface CrossJoinStateManager {
     TrackingRowSet getRightIndexFromLeftIndex(long leftIndex);

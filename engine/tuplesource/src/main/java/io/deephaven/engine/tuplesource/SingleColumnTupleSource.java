@@ -3,6 +3,7 @@ package io.deephaven.engine.tuplesource;
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.rftable.DefaultChunkSource;
 import io.deephaven.engine.rftable.SharedContext;
+import io.deephaven.engine.table.TupleSource;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.WritableSource;
 import io.deephaven.engine.chunk.*;

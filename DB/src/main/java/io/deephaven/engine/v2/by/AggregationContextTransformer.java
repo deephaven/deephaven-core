@@ -1,7 +1,7 @@
 package io.deephaven.engine.v2.by;
 
 import io.deephaven.engine.v2.QueryTable;
-import io.deephaven.engine.v2.sources.ColumnSource;
+import io.deephaven.engine.table.ColumnSource;
 
 import java.util.Map;
 import java.util.function.ToIntFunction;

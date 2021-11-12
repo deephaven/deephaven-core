@@ -1,8 +1,9 @@
 package io.deephaven.engine.v2.sources;
 
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.rftable.ChunkSource;
-import io.deephaven.engine.rftable.SharedContext;
+import io.deephaven.engine.table.ChunkSource;
+import io.deephaven.engine.table.SharedContext;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.v2.utils.RowRedirection;
 import io.deephaven.util.BooleanUtils;
 import io.deephaven.engine.v2.join.dupexpand.DupExpandKernel;
@@ -11,9 +12,8 @@ import io.deephaven.engine.v2.sort.timsort.LongIntTimsortKernel;
 import io.deephaven.engine.chunk.Attributes.ChunkLengths;
 import io.deephaven.engine.chunk.Attributes.ChunkPositions;
 import io.deephaven.engine.chunk.*;
-import io.deephaven.engine.structures.RowSequence;
-import io.deephaven.engine.structures.rowsequence.RowSequenceUtil;
-import io.deephaven.engine.v2.utils.RowSet;
+import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.rowset.impl.RowSequenceUtil;
 import io.deephaven.util.type.TypeUtils;
 import org.jetbrains.annotations.NotNull;
 
@@ -569,7 +569,7 @@ public class RedirectedColumnSource<T> extends AbstractColumnSource<T> implement
                 compactedMappedKeys.setSize(uniqueKeyCount);
                 runLengths.setSize(uniqueKeyCount);
 
-                hasNulls = compactedMappedKeys.get(0) == RowSet.NULL_ROW_KEY;
+                hasNulls = compactedMappedKeys.get(0) == RowSequence.NULL_ROW_KEY;
                 final int keysToSkip = hasNulls ? 1 : 0;
                 innerRowSequence = RowSequenceUtil.wrapRowKeysChunkAsRowSequence(
                         LongChunk.downcast(nonNullCompactedMappedKeys.resetFromTypedChunk(compactedMappedKeys,

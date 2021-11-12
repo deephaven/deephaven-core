@@ -1,6 +1,7 @@
 package io.deephaven.engine.v2.select.analyzers;
 
 import io.deephaven.datastructures.util.CollectionUtil;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.tables.ColumnDefinition;
 import io.deephaven.engine.vector.Vector;
 import io.deephaven.engine.v2.ModifiedColumnSet;
@@ -10,8 +11,8 @@ import io.deephaven.engine.v2.select.SourceColumn;
 import io.deephaven.engine.v2.select.SwitchColumn;
 import io.deephaven.engine.v2.sources.*;
 import io.deephaven.engine.v2.utils.MutableRowRedirection;
-import io.deephaven.engine.v2.utils.RowSet;
-import io.deephaven.engine.v2.utils.TrackingRowSet;
+import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.SafeCloseablePair;
 

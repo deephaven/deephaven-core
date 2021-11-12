@@ -1,6 +1,6 @@
 package io.deephaven.engine.v2.sort;
 
-import io.deephaven.engine.rftable.Context;
+import io.deephaven.engine.table.Context;
 import io.deephaven.engine.tables.SortingOrder;
 import io.deephaven.engine.v2.sort.radix.BooleanLongRadixSortKernel;
 import io.deephaven.engine.v2.sort.timsort.*;

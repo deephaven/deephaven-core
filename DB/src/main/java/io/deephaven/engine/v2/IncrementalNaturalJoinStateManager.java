@@ -1,6 +1,6 @@
 package io.deephaven.engine.v2;
 
-import io.deephaven.engine.v2.utils.RowSet;
+import io.deephaven.engine.rowset.RowSet;
 
 interface IncrementalNaturalJoinStateManager {
     long getRightIndex(long slot);

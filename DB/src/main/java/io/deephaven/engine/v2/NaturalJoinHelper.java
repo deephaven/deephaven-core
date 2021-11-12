@@ -3,8 +3,9 @@ package io.deephaven.engine.v2;
 import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.datastructures.util.CollectionUtil;
-import io.deephaven.engine.rftable.SharedContext;
-import io.deephaven.engine.structures.RowSequence;
+import io.deephaven.engine.table.SharedContext;
+import io.deephaven.engine.rowset.*;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.select.MatchPair;
 import io.deephaven.engine.v2.join.JoinListenerRecorder;
@@ -246,7 +247,7 @@ class NaturalJoinHelper {
                         "naturalJoin with zero key columns may not have more than one row in the right hand side table!");
             }
             // we don't care where it goes
-            rowRedirection = getSingleValueRowRedirection(rightRefreshing, RowSet.NULL_ROW_KEY);
+            rowRedirection = getSingleValueRowRedirection(rightRefreshing, RowSequence.NULL_ROW_KEY);
         } else if (rightTable.size() == 1) {
             rowRedirection = getSingleValueRowRedirection(rightRefreshing, rightTable.getRowSet().firstRowKey());
         } else {
@@ -254,7 +255,7 @@ class NaturalJoinHelper {
                 throw new RuntimeException(
                         "exactJoin with zero key columns must have exactly one row in the right hand side table!");
             }
-            rowRedirection = getSingleValueRowRedirection(rightRefreshing, RowSet.NULL_ROW_KEY);
+            rowRedirection = getSingleValueRowRedirection(rightRefreshing, RowSequence.NULL_ROW_KEY);
         }
 
         final QueryTable result = makeResult(leftTable, rightTable, columnsToAdd, rowRedirection, rightRefreshing);
@@ -363,9 +364,9 @@ class NaturalJoinHelper {
     private static boolean updateRightRedirection(QueryTable rightTable, SingleValueRowRedirection rowRedirection) {
         final boolean changed;
         if (rightTable.size() == 0) {
-            changed = rowRedirection.getValue() != RowSet.NULL_ROW_KEY;
+            changed = rowRedirection.getValue() != RowSequence.NULL_ROW_KEY;
             if (changed) {
-                rowRedirection.mutableSingleValueCast().setValue(RowSet.NULL_ROW_KEY);
+                rowRedirection.mutableSingleValueCast().setValue(RowSequence.NULL_ROW_KEY);
             }
         } else {
             final long value = rightTable.getRowSet().firstRowKey();
@@ -522,7 +523,7 @@ class NaturalJoinHelper {
                 downstream.modified.forAllRowKeys((long modifiedKey) -> {
                     final long newRedirection = newLeftRedirections.getLong(position.intValue());
                     final long old;
-                    if (newRedirection == RowSet.NULL_ROW_KEY) {
+                    if (newRedirection == RowSequence.NULL_ROW_KEY) {
                         old = rowRedirection.remove(modifiedKey);
                     } else {
                         old = rowRedirection.put(modifiedKey, newRedirection);
@@ -543,7 +544,7 @@ class NaturalJoinHelper {
             final MutableInt position = new MutableInt(0);
             downstream.added.forAllRowKeys((long ll) -> {
                 final long newRedirection = newLeftRedirections.getLong(position.intValue());
-                if (newRedirection != RowSet.NULL_ROW_KEY) {
+                if (newRedirection != RowSequence.NULL_ROW_KEY) {
                     rowRedirection.putVoid(ll, newRedirection);
                 }
                 position.increment();
@@ -719,7 +720,7 @@ class NaturalJoinHelper {
 
             changedRedirection = true;
 
-            if (rightIndex == RowSet.NULL_ROW_KEY) {
+            if (rightIndex == RowSequence.NULL_ROW_KEY) {
                 jsm.checkExactMatch(exactMatch, leftIndices.firstRowKey(), rightIndex);
                 leftIndices.forAllRowKeys(rowRedirection::removeVoid);
             } else {
@@ -976,7 +977,7 @@ class NaturalJoinHelper {
             leftRows.forAllRowKeys((long ll) -> {
                 final long rightKey = leftRedirections.getLong(position.intValue());
                 jsm.checkExactMatch(exactMatch, ll, rightKey);
-                if (rightKey == RowSet.NULL_ROW_KEY) {
+                if (rightKey == RowSequence.NULL_ROW_KEY) {
                     rowRedirection.removeVoid(ll);
                 } else {
                     rowRedirection.putVoid(ll, rightKey);

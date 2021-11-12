@@ -4,6 +4,8 @@
 
 package io.deephaven.engine.v2.sources;
 
+import io.deephaven.engine.table.ColumnSource;
+
 public interface TableSource {
     ColumnSource getColumnSource(String columnName);
 }

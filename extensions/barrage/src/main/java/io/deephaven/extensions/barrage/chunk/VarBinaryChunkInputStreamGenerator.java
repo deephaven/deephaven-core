@@ -16,7 +16,7 @@ import io.deephaven.engine.chunk.WritableIntChunk;
 import io.deephaven.engine.chunk.WritableLongChunk;
 import io.deephaven.engine.chunk.WritableObjectChunk;
 import io.deephaven.engine.chunk.util.pools.PoolableChunk;
-import io.deephaven.engine.v2.utils.RowSet;
+import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.util.BarrageProtoUtil;
 import org.apache.commons.lang3.mutable.MutableInt;

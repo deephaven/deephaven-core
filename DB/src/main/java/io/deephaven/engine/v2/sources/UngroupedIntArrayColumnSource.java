@@ -7,6 +7,8 @@
 
 package io.deephaven.engine.v2.sources;
 
+import io.deephaven.engine.table.ColumnSource;
+
 import static io.deephaven.util.QueryConstants.NULL_INT;
 
 public class UngroupedIntArrayColumnSource extends UngroupedColumnSource<Integer> implements MutableColumnSourceGetDefaults.ForInt {

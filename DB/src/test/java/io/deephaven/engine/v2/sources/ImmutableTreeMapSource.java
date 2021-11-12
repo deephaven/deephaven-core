@@ -4,7 +4,7 @@
 
 package io.deephaven.engine.v2.sources;
 
-import io.deephaven.engine.v2.utils.RowSet;
+import io.deephaven.engine.rowset.RowSet;
 
 /**
  * A simple extension to the TreeMapSource that will not actually change any map values, and is thus immutable. We need

@@ -1,5 +1,9 @@
 package io.deephaven.engine.v2.snapshot;
 
+import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.TrackingMutableRowSet;
+import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.live.NotificationQueue;
 import io.deephaven.engine.v2.BaseTable;
@@ -7,7 +11,6 @@ import io.deephaven.engine.v2.LazySnapshotTable;
 import io.deephaven.engine.v2.QueryTable;
 import io.deephaven.engine.v2.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.v2.sources.SingleValueColumnSource;
-import io.deephaven.engine.v2.utils.*;
 
 import java.util.Map;
 

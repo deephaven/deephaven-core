@@ -3,16 +3,16 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.v2.sources;
 
-import io.deephaven.engine.rftable.ChunkSource;
-import io.deephaven.engine.rftable.DefaultGetContext;
+import io.deephaven.engine.table.ChunkSource;
+import io.deephaven.engine.table.DefaultGetContext;
 import io.deephaven.engine.rftable.TestSourceSink;
+import io.deephaven.engine.rowset.*;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.v2.select.FormulaColumn;
 import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.chunk.Attributes.OrderedRowKeyRanges;
 import io.deephaven.engine.chunk.Attributes.Values;
-import io.deephaven.engine.v2.utils.*;
-import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.util.Shuffle;
 import junit.framework.TestCase;
 import org.junit.After;
@@ -548,7 +548,7 @@ public class TestLongArraySource {
             source.set(ii, data[ii]);
         }
 
-        final long [] keys = LongStream.concat(LongStream.of(RowSet.NULL_ROW_KEY), LongStream.range(0, data.length - 1)).toArray();
+        final long [] keys = LongStream.concat(LongStream.of(RowSequence.NULL_ROW_KEY), LongStream.range(0, data.length - 1)).toArray();
         Shuffle.shuffleArray(rng, keys);
 
         try (final ChunkSource.FillContext ctx = source.makeFillContext(keys.length);
@@ -558,7 +558,7 @@ public class TestLongArraySource {
             source.fillChunkUnordered(ctx, dest, rlc);
             assertEquals(keys.length, dest.size());
             for (int ii = 0; ii < keys.length; ++ii) {
-                if (keys[ii] == RowSet.NULL_ROW_KEY) {
+                if (keys[ii] == RowSequence.NULL_ROW_KEY) {
                     assertEquals(NULL_LONG, dest.get(ii));
                 } else {
                     checkFromValues(data[(int)keys[ii]], dest.get(ii));

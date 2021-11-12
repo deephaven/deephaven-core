@@ -8,6 +8,7 @@
 package io.deephaven.engine.v2.sources;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.util.compare.IntComparisons;
 import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.chunk.Attributes.*;
@@ -15,8 +16,7 @@ import io.deephaven.engine.chunk.ResettableWritableChunk;
 import io.deephaven.engine.chunk.WritableIntChunk;
 import io.deephaven.engine.chunk.WritableChunk;
 import io.deephaven.engine.chunk.LongChunk;
-import io.deephaven.engine.structures.RowSequence;
-import io.deephaven.engine.v2.utils.RowSet;
+import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.util.SoftRecycler;
 import org.jetbrains.annotations.NotNull;
 
@@ -297,7 +297,7 @@ public class IntegerArraySource extends ArraySourceHelper<Integer, int[]> implem
         final int sz = indices.size();
         for (int ii = 0; ii < sz; ++ii) {
             final long fromIndex = indices.get(ii);
-            if (fromIndex == RowSet.NULL_ROW_KEY) {
+            if (fromIndex == RowSequence.NULL_ROW_KEY) {
                 dest.set(ii, NULL_INT);
                 continue;
             }
@@ -318,7 +318,7 @@ public class IntegerArraySource extends ArraySourceHelper<Integer, int[]> implem
         final int sz = indices.size();
         for (int ii = 0; ii < sz; ++ii) {
             final long fromIndex = indices.get(ii);
-            if (fromIndex == RowSet.NULL_ROW_KEY) {
+            if (fromIndex == RowSequence.NULL_ROW_KEY) {
                 dest.set(ii, NULL_INT);
                 continue;
             }

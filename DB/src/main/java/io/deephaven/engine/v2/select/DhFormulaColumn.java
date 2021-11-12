@@ -25,7 +25,7 @@ import io.deephaven.engine.v2.select.formula.FormulaKernelFactory;
 import io.deephaven.engine.v2.select.formula.FormulaSourceDescriptor;
 import io.deephaven.engine.v2.select.python.DeephavenCompatibleFunction;
 import io.deephaven.engine.v2.select.python.FormulaColumnPython;
-import io.deephaven.engine.v2.sources.ColumnSource;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.chunk.ChunkType;
 import io.deephaven.engine.v2.utils.codegen.CodeGenerator;
 import io.deephaven.engine.v2.utils.codegen.TypeAnalyzer;

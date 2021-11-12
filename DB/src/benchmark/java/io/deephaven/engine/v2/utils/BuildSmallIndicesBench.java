@@ -1,7 +1,9 @@
 package io.deephaven.engine.v2.utils;
 
-import io.deephaven.engine.v2.utils.rsp.RspBitmap;
-import io.deephaven.engine.v2.utils.singlerange.SingleRange;
+import io.deephaven.engine.rowset.RowSetBuilderSequential;
+import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.impl.rsp.RspBitmap;
+import io.deephaven.engine.rowset.impl.singlerange.SingleRange;
 import io.deephaven.benchmarking.BenchUtil;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.infra.Blackhole;

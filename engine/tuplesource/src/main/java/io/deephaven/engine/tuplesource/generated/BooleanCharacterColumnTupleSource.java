@@ -8,7 +8,7 @@ import io.deephaven.engine.chunk.WritableChunk;
 import io.deephaven.engine.chunk.WritableObjectChunk;
 import io.deephaven.engine.tuple.generated.ByteCharTuple;
 import io.deephaven.engine.tuplesource.AbstractTupleSource;
-import io.deephaven.engine.tuplesource.TupleSource;
+import io.deephaven.engine.table.TupleSource;
 import io.deephaven.engine.tuplesource.TwoColumnTupleSourceFactory;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.WritableSource;

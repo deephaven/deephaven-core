@@ -3,16 +3,16 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.v2.sources.aggregate;
 
-import io.deephaven.engine.structures.RowSequence;
+import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.vector.DoubleVector;
 import io.deephaven.engine.v2.dbarrays.DoubleVectorColumnWrapper;
 import io.deephaven.engine.v2.dbarrays.PrevDoubleVectorColumnWrapper;
-import io.deephaven.engine.v2.sources.ColumnSource;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.chunk.Attributes.Values;
 import io.deephaven.engine.chunk.ObjectChunk;
 import io.deephaven.engine.chunk.WritableChunk;
 import io.deephaven.engine.chunk.WritableObjectChunk;
-import io.deephaven.engine.v2.utils.RowSet;
+import io.deephaven.engine.rowset.RowSet;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -27,7 +27,7 @@ public final class DoubleAggregateColumnSource extends BaseAggregateColumnSource
 
     @Override
     public DoubleVector get(final long rowKey) {
-        if (rowKey == RowSet.NULL_ROW_KEY) {
+        if (rowKey == RowSequence.NULL_ROW_KEY) {
             return null;
         }
         return new DoubleVectorColumnWrapper(aggregatedSource, groupRowSetSource.get(rowKey));
@@ -35,7 +35,7 @@ public final class DoubleAggregateColumnSource extends BaseAggregateColumnSource
 
     @Override
     public DoubleVector getPrev(final long rowKey) {
-        if (rowKey == RowSet.NULL_ROW_KEY) {
+        if (rowKey == RowSequence.NULL_ROW_KEY) {
             return null;
         }
         return new PrevDoubleVectorColumnWrapper(aggregatedSource, getPrevGroupRowSet(rowKey));

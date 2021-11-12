@@ -4,7 +4,7 @@
 
 package io.deephaven.engine.v2.sources.regioned;
 
-import io.deephaven.engine.structures.RowSequence;
+import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.chunk.Attributes;
 import io.deephaven.engine.chunk.WritableCharChunk;

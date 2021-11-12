@@ -5,12 +5,12 @@
 package io.deephaven.engine.v2.sources;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.vector.Vector;
 import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.chunk.Attributes.RowKeys;
 import io.deephaven.engine.chunk.Attributes.Values;
-import io.deephaven.engine.structures.RowSequence;
-import io.deephaven.engine.v2.utils.RowSet;
+import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.util.SoftRecycler;
 import org.jetbrains.annotations.NotNull;
 
@@ -230,7 +230,7 @@ public class ObjectArraySource<T> extends ArraySourceHelper<T, T[]> implements M
         final int sz = indices.size();
         for (int ii = 0; ii < sz; ++ii) {
             final long fromIndex = indices.get(ii);
-            if (fromIndex == RowSet.NULL_ROW_KEY) {
+            if (fromIndex == RowSequence.NULL_ROW_KEY) {
                 dest.set(ii, null);
                 continue;
             }
@@ -251,7 +251,7 @@ public class ObjectArraySource<T> extends ArraySourceHelper<T, T[]> implements M
         final int sz = indices.size();
         for (int ii = 0; ii < sz; ++ii) {
             final long fromIndex = indices.get(ii);
-            if (fromIndex == RowSet.NULL_ROW_KEY) {
+            if (fromIndex == RowSequence.NULL_ROW_KEY) {
                 dest.set(ii, null);
                 continue;
             }

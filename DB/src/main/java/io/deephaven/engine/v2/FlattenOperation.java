@@ -4,7 +4,11 @@
 
 package io.deephaven.engine.v2;
 
-import io.deephaven.engine.v2.sources.ColumnSource;
+import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.TrackingRowSet;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.v2.sources.RedirectedColumnSource;
 import io.deephaven.engine.v2.utils.*;
 import org.apache.commons.lang3.mutable.MutableObject;
@@ -116,9 +120,9 @@ public class FlattenOperation implements QueryTable.MemoizableOperation<QueryTab
         long currMarker = 0; // everything less than this marker is accounted for
 
         while (rmIt.getValue() != null || addIt.getValue() != null) {
-            final long nextRm = rmIt.getValue() == null ? RowSet.NULL_ROW_KEY
+            final long nextRm = rmIt.getValue() == null ? RowSequence.NULL_ROW_KEY
                     : rmIt.getValue().currentRangeStart();
-            final long nextAdd = addIt.getValue() == null ? RowSet.NULL_ROW_KEY
+            final long nextAdd = addIt.getValue() == null ? RowSequence.NULL_ROW_KEY
                     : addIt.getValue().currentRangeStart() - currDelta;
 
             if (nextRm == nextAdd) { // note neither can be null in this case
@@ -134,7 +138,7 @@ public class FlattenOperation implements QueryTable.MemoizableOperation<QueryTab
 
                 updateIt.accept(rmIt);
                 updateIt.accept(addIt);
-            } else if (nextAdd == RowSet.NULL_ROW_KEY || (nextRm != RowSet.NULL_ROW_KEY && nextRm < nextAdd)) {
+            } else if (nextAdd == RowSequence.NULL_ROW_KEY || (nextRm != RowSequence.NULL_ROW_KEY && nextRm < nextAdd)) {
                 // rmIt cannot be null
                 final long dtRm = rmIt.getValue().currentRangeEnd() - rmIt.getValue().currentRangeStart() + 1;
 

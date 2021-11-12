@@ -1,5 +1,6 @@
 package io.deephaven.engine.tuplesource;
 
+import io.deephaven.engine.table.TupleSource;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import org.jetbrains.annotations.NotNull;
 

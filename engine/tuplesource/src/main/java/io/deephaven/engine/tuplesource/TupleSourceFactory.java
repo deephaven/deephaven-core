@@ -2,6 +2,7 @@ package io.deephaven.engine.tuplesource;
 
 import io.deephaven.base.Pair;
 import io.deephaven.engine.chunk.ChunkType;
+import io.deephaven.engine.table.TupleSource;
 import io.deephaven.engine.time.DateTime;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import org.jetbrains.annotations.NotNull;

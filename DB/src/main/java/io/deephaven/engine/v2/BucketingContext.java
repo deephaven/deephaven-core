@@ -7,7 +7,7 @@ import io.deephaven.util.BooleanUtils;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.engine.chunk.util.hashing.ToIntFunctor;
 import io.deephaven.engine.chunk.util.hashing.ToIntegerCast;
-import io.deephaven.engine.v2.sources.ColumnSource;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.v2.sources.IntegerSparseArraySource;
 import io.deephaven.engine.v2.sources.ReinterpretUtilities;
 import io.deephaven.engine.chunk.Attributes;

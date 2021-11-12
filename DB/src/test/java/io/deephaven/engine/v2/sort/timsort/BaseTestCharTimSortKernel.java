@@ -1,14 +1,17 @@
 package io.deephaven.engine.v2.sort.timsort;
 
-import io.deephaven.engine.structures.rowsequence.RowSequenceUtil;
-import io.deephaven.engine.v2.utils.*;
+import io.deephaven.engine.rowset.MutableRowSet;
+import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetBuilderRandom;
+import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.impl.RowSequenceUtil;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.tuple.generated.CharLongLongTuple;
 import io.deephaven.engine.tuple.generated.CharLongTuple;
 import io.deephaven.engine.v2.sort.findruns.CharFindRunsKernel;
 import io.deephaven.engine.v2.sort.partition.CharPartitionKernel;
 import io.deephaven.engine.v2.sources.AbstractColumnSource;
-import io.deephaven.engine.v2.sources.ColumnSource;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.chunk.Attributes.*;
 import junit.framework.TestCase;

@@ -2,6 +2,10 @@ package io.deephaven.engine.v2.utils;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
+import io.deephaven.engine.rowset.MutableRowSet;
+import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.TrackingMutableRowSet;
 import io.deephaven.engine.v2.ShiftObliviousListener;
 
 /**
@@ -23,14 +27,14 @@ public class ShiftObliviousUpdateCoalescer {
      * them before passing them if they are shared.
      */
     public ShiftObliviousUpdateCoalescer(final TrackingMutableRowSet added, final TrackingMutableRowSet removed,
-            final TrackingMutableRowSet modified) {
+                                         final TrackingMutableRowSet modified) {
         this.added = added;
         this.removed = removed;
         this.modified = modified;
     }
 
     public void update(final RowSet addedOnUpdate, final RowSet removedOnUpdate,
-            final RowSet modifiedOnUpdate) {
+                       final RowSet modifiedOnUpdate) {
         // Note: extract removes matching ranges from the source rowSet
         try (final RowSet addedBack = this.removed.extract(addedOnUpdate);
                 final RowSet actuallyAdded = addedOnUpdate.minus(addedBack)) {

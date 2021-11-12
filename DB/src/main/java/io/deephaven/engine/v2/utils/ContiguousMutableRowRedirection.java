@@ -7,9 +7,9 @@ package io.deephaven.engine.v2.utils;
 import gnu.trove.map.hash.TLongLongHashMap;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
-import io.deephaven.engine.structures.RowSequence;
+import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.chunk.Attributes.RowKeys;
-import io.deephaven.engine.rftable.ChunkSource;
+import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.chunk.WritableLongChunk;
 import org.jetbrains.annotations.NotNull;
 
@@ -29,7 +29,7 @@ public class ContiguousMutableRowRedirection implements MutableRowRedirection {
     @SuppressWarnings("unused")
     public ContiguousMutableRowRedirection(int initialCapacity) {
         redirections = new long[initialCapacity];
-        Arrays.fill(redirections, RowSet.NULL_ROW_KEY);
+        Arrays.fill(redirections, RowSequence.NULL_ROW_KEY);
         size = 0;
         checkpoint = null;
         updateCommitter = null;
@@ -49,11 +49,11 @@ public class ContiguousMutableRowRedirection implements MutableRowRedirection {
         if (outerRowKey >= redirections.length) {
             final long[] newRedirections = new long[Math.max((int) outerRowKey + 100, redirections.length * 2)];
             System.arraycopy(redirections, 0, newRedirections, 0, redirections.length);
-            Arrays.fill(newRedirections, redirections.length, newRedirections.length, RowSet.NULL_ROW_KEY);
+            Arrays.fill(newRedirections, redirections.length, newRedirections.length, RowSequence.NULL_ROW_KEY);
             redirections = newRedirections;
         }
         final long previous = redirections[(int) outerRowKey];
-        if (previous == RowSet.NULL_ROW_KEY) {
+        if (previous == RowSequence.NULL_ROW_KEY) {
             size++;
         }
         redirections[(int) outerRowKey] = innerRowKey;
@@ -75,7 +75,7 @@ public class ContiguousMutableRowRedirection implements MutableRowRedirection {
     @Override
     public long get(long outerRowKey) {
         if (outerRowKey < 0 || outerRowKey >= redirections.length) {
-            return RowSet.NULL_ROW_KEY;
+            return RowSequence.NULL_ROW_KEY;
         }
         return redirections[(int) outerRowKey];
     }
@@ -133,8 +133,8 @@ public class ContiguousMutableRowRedirection implements MutableRowRedirection {
     @Override
     public long remove(long outerRowKey) {
         final long removed = redirections[(int) outerRowKey];
-        redirections[(int) outerRowKey] = RowSet.NULL_ROW_KEY;
-        if (removed != RowSet.NULL_ROW_KEY) {
+        redirections[(int) outerRowKey] = RowSequence.NULL_ROW_KEY;
+        if (removed != RowSequence.NULL_ROW_KEY) {
             size--;
             onRemove(outerRowKey, removed);
         }
@@ -158,7 +158,7 @@ public class ContiguousMutableRowRedirection implements MutableRowRedirection {
         builder.append("{ size = ").append(size);
         int printed = 0;
         for (int ii = 0; printed < size && ii < redirections.length; ii++) {
-            if (redirections[ii] == RowSet.NULL_ROW_KEY) {
+            if (redirections[ii] == RowSequence.NULL_ROW_KEY) {
                 builder.append(", nil");
             } else {
                 builder.append(", ").append(ii).append("=").append(redirections[ii]);

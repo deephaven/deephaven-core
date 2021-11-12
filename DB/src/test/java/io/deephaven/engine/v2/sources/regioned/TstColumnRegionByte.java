@@ -9,7 +9,7 @@ import io.deephaven.engine.chunk.Attributes;
 import io.deephaven.engine.chunk.WritableByteChunk;
 import io.deephaven.engine.chunk.WritableChunk;
 import io.deephaven.engine.page.Page;
-import io.deephaven.engine.structures.RowSequence;
+import io.deephaven.engine.rowset.RowSequence;
 import junit.framework.TestCase;
 import org.jetbrains.annotations.NotNull;
 

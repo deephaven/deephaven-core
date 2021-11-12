@@ -5,10 +5,11 @@
 package io.deephaven.engine.v2.sources;
 
 import io.deephaven.base.Pair;
-import io.deephaven.engine.structures.RowSequence;
+import io.deephaven.engine.rowset.*;
+import io.deephaven.engine.rowset.impl.GroupingRowSetHelper;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.vector.*;
 import io.deephaven.engine.time.DateTime;
-import io.deephaven.engine.v2.utils.*;
 import io.deephaven.engine.vector.Vector;
 import io.deephaven.hash.KeyedObjectHashSet;
 import io.deephaven.hash.KeyedObjectKey;
@@ -116,7 +117,7 @@ public abstract class AbstractColumnSource<T> implements ColumnSource<T>, Serial
 
     @Override
     public MutableRowSet match(boolean invertMatch, boolean usePrev, boolean caseInsensitive, RowSet mapper,
-            final Object... keys) {
+                               final Object... keys) {
         final Map<T, RowSet> groupToRange = (isImmutable() || !usePrev) ? getGroupToRange(mapper) : null;
         if (groupToRange != null) {
             RowSetBuilderRandom allInMatchingGroups = RowSetFactory.builderRandom();

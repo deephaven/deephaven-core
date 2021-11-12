@@ -1,7 +1,7 @@
 package io.deephaven.engine.v2.sources.deltaaware;
 
 import io.deephaven.util.BooleanUtils;
-import io.deephaven.engine.rftable.ChunkSource;
+import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.v2.sources.WritableChunkSink;
 import io.deephaven.engine.chunk.*;
 

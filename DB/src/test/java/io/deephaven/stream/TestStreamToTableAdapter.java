@@ -1,6 +1,7 @@
 package io.deephaven.stream;
 
 import io.deephaven.datastructures.util.CollectionUtil;
+import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.TableDefinition;
 import io.deephaven.engine.tables.live.UpdateGraphProcessor;

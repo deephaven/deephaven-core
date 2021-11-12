@@ -7,7 +7,7 @@ package io.deephaven.engine.v2.utils.freezeby;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.v2.by.IterativeChunkedAggregationOperator;
 import io.deephaven.engine.v2.sources.ByteArraySource;
-import io.deephaven.engine.v2.sources.ColumnSource;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.chunk.*;
 
 import java.util.Collections;

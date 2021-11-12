@@ -4,8 +4,8 @@ import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.tables.ColumnDefinition;
 import io.deephaven.engine.v2.Listener;
 import io.deephaven.engine.v2.ModifiedColumnSet;
-import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.utils.RowSet;
+import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.rowset.RowSet;
 
 import java.util.*;
 

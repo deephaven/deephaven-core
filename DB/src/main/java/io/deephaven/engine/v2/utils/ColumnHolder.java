@@ -8,7 +8,7 @@ import io.deephaven.engine.vector.ObjectVector;
 import io.deephaven.engine.time.DateTime;
 import io.deephaven.util.NameValidator;
 import io.deephaven.engine.v2.sources.ArrayBackedColumnSource;
-import io.deephaven.engine.v2.sources.ColumnSource;
+import io.deephaven.engine.table.ColumnSource;
 
 /**
  * Data to construct a data column.

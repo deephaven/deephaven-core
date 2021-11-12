@@ -4,7 +4,7 @@ import io.deephaven.engine.chunk.Attributes;
 import io.deephaven.engine.chunk.WritableLongChunk;
 import gnu.trove.list.array.TLongArrayList;
 import gnu.trove.set.hash.TLongHashSet;
-import io.deephaven.engine.v2.utils.RowSet;
+import io.deephaven.engine.rowset.RowSet;
 
 import java.util.Random;
 

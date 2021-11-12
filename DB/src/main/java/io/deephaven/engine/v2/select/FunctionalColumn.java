@@ -10,14 +10,14 @@ import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.select.MatchPair;
 import io.deephaven.util.NameValidator;
 import io.deephaven.engine.v2.NoSuchColumnException;
-import io.deephaven.engine.v2.sources.ColumnSource;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.v2.sources.ViewColumnSource;
 import io.deephaven.engine.v2.sources.WritableSource;
 import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.chunk.Attributes.Values;
 import io.deephaven.engine.rftable.chunkfillers.chunkfillers.ChunkFiller;
-import io.deephaven.engine.structures.RowSequence;
-import io.deephaven.engine.v2.utils.TrackingRowSet;
+import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.util.type.TypeUtils;
 import org.jetbrains.annotations.NotNull;
 

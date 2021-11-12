@@ -1,6 +1,6 @@
 package io.deephaven.engine.v2.parquet;
 
-import io.deephaven.engine.rftable.Context;
+import io.deephaven.engine.table.Context;
 import io.deephaven.engine.tables.*;
 import io.deephaven.engine.vector.Vector;
 import io.deephaven.engine.tables.libs.QueryLibrary;
@@ -19,14 +19,14 @@ import io.deephaven.engine.v2.select.FormulaColumn;
 import io.deephaven.engine.v2.select.NullSelectColumn;
 import io.deephaven.engine.v2.select.SelectColumn;
 import io.deephaven.engine.v2.select.SourceColumn;
-import io.deephaven.engine.rftable.ChunkSource;
-import io.deephaven.engine.v2.sources.ColumnSource;
+import io.deephaven.engine.table.ChunkSource;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.v2.sources.ReinterpretUtilities;
 import io.deephaven.engine.chunk.Attributes.Values;
 import io.deephaven.engine.chunk.*;
-import io.deephaven.engine.v2.utils.RowSet;
-import io.deephaven.engine.structures.RowSequence;
-import io.deephaven.engine.v2.utils.TrackingRowSet;
+import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.codec.ObjectCodec;
 import io.deephaven.util.type.TypeUtils;

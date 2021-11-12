@@ -2,8 +2,9 @@ package io.deephaven.engine.v2.utils;
 
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.util.datastructures.LongRangeConsumer;
-import io.deephaven.engine.structures.RowSequence;
+import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.chunk.Attributes;
 import io.deephaven.engine.chunk.WritableLongChunk;
 import gnu.trove.list.array.TLongArrayList;
@@ -188,8 +189,8 @@ public class RowSetUtilities {
     public static void forAllInvertedLongRanges(final RowSet sourceRowSet, final RowSet destRowSet,
             final LongRangeConsumer lrc) {
         final MutableBoolean hasPending = new MutableBoolean();
-        final MutableLong pendingStart = new MutableLong(RowSet.NULL_ROW_KEY);
-        final MutableLong pendingEnd = new MutableLong(RowSet.NULL_ROW_KEY);
+        final MutableLong pendingStart = new MutableLong(RowSequence.NULL_ROW_KEY);
+        final MutableLong pendingEnd = new MutableLong(RowSequence.NULL_ROW_KEY);
         final RowSequence.Iterator sourceProbe = sourceRowSet.getRowSequenceIterator();
         final MutableLong sourceOffset = new MutableLong();
         destRowSet.forAllRowKeyRanges((start, end) -> {

@@ -58,8 +58,11 @@ dependencies {
             project(':qst'),
             project(':engine-chunk'),
             project(':engine-vector'),
-            project(':engine-tuple'),
             project(':engine-time'),
+            project(':engine-tuple'),
+            project(':engine-rowset'),
+            project(':engine-api'),
+            project(':engine-tuplesource'),
             "org.flywaydb:flyway-core:5.2.4",
             'com.github.f4b6a3:uuid-creator:3.6.0'
 

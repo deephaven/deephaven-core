@@ -4,6 +4,8 @@
 
 package io.deephaven.engine.v2.sources;
 
+import io.deephaven.engine.table.ColumnSource;
+
 import static io.deephaven.util.QueryConstants.NULL_CHAR;
 
 public class UngroupedCharArrayColumnSource extends UngroupedColumnSource<Character> implements MutableColumnSourceGetDefaults.ForChar {

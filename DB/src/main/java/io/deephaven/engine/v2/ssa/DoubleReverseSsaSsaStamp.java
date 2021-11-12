@@ -3,6 +3,7 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.v2.ssa;
 
+import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.util.compare.DoubleComparisons;
 
 import io.deephaven.engine.chunk.*;
@@ -11,8 +12,7 @@ import io.deephaven.engine.chunk.Attributes.Values;
 import io.deephaven.engine.chunk.sized.SizedLongChunk;
 import io.deephaven.engine.v2.utils.MutableRowRedirection;
 import io.deephaven.engine.v2.utils.RowRedirection;
-import io.deephaven.engine.v2.utils.RowSet;
-import io.deephaven.engine.v2.utils.RowSetBuilderRandom;
+import io.deephaven.engine.rowset.RowSetBuilderRandom;
 
 /**
  * Stamp kernel for when the left hand side is a sorted chunk and the right hand side is a ticking SegmentedSortedArray.
@@ -115,7 +115,7 @@ public class DoubleReverseSsaSsaStamp implements SsaSsaStamp {
                             modifiedKeys.ensureCapacityPreserve(capacity).setSize(capacity);
                         }
                         modifiedKeys.get().set(mks++, leftKey);
-                        if (newRightStampKey == RowSet.NULL_ROW_KEY) {
+                        if (newRightStampKey == RowSequence.NULL_ROW_KEY) {
                             rowRedirection.removeVoid(leftKey);
                         } else {
                             rowRedirection.putVoid(leftKey, newRightStampKey);

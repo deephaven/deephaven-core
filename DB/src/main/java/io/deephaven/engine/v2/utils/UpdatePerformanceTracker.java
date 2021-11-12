@@ -8,6 +8,7 @@ import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
+import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.tablelogger.UpdatePerformanceLogLogger;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.TableDefinition;
@@ -348,7 +349,7 @@ public class UpdatePerformanceTracker {
         }
 
         public final void onUpdateStart(final RowSet added, final RowSet removed, final RowSet modified,
-                final RowSetShiftData shifted) {
+                                        final RowSetShiftData shifted) {
             intervalAdded += added.size();
             intervalRemoved += removed.size();
             intervalModified += modified.size();

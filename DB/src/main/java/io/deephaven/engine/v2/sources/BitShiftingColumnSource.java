@@ -1,14 +1,14 @@
 package io.deephaven.engine.v2.sources;
 
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.v2.CrossJoinShiftState;
 import io.deephaven.engine.v2.join.dupexpand.DupExpandKernel;
-import io.deephaven.engine.rftable.SharedContext;
+import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.chunk.WritableChunk;
 import io.deephaven.engine.chunk.WritableIntChunk;
 import io.deephaven.engine.chunk.WritableLongChunk;
-import io.deephaven.engine.structures.RowSequence;
-import io.deephaven.engine.structures.rowsequence.RowSequenceUtil;
-import io.deephaven.engine.v2.utils.RowSet;
+import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.rowset.impl.RowSequenceUtil;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.jetbrains.annotations.NotNull;
@@ -402,14 +402,14 @@ public class BitShiftingColumnSource<T> extends AbstractColumnSource<T> implemen
 
                 currentRunLength.setValue(0);
                 currentRunPosition.setValue(0);
-                currentRunInnerIndexKey.setValue(RowSet.NULL_ROW_KEY);
+                currentRunInnerIndexKey.setValue(RowSequence.NULL_ROW_KEY);
 
                 rowSequence.forAllRowKeys((final long indexKey) -> {
                     final long lastInnerIndexKey = currentRunInnerIndexKey.longValue();
                     final long innerIndexKey =
                             usePrev ? shiftState.getPrevShifted(indexKey) : shiftState.getShifted(indexKey);
                     if (innerIndexKey != lastInnerIndexKey) {
-                        if (lastInnerIndexKey != RowSet.NULL_ROW_KEY) {
+                        if (lastInnerIndexKey != RowSequence.NULL_ROW_KEY) {
                             uniqueIndices.set(currentRunPosition.intValue(), lastInnerIndexKey);
                             runLengths.set(currentRunPosition.intValue(), currentRunLength.intValue());
                             currentRunPosition.increment();

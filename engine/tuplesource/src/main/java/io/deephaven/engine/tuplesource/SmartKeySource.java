@@ -3,6 +3,7 @@ package io.deephaven.engine.tuplesource;
 import io.deephaven.datastructures.util.SmartKey;
 import io.deephaven.engine.rftable.ChunkSource;
 import io.deephaven.engine.rftable.SharedContext;
+import io.deephaven.engine.table.TupleSource;
 import io.deephaven.engine.v2.sources.*;
 import io.deephaven.engine.chunk.Attributes.Values;
 import io.deephaven.engine.chunk.*;

@@ -1,8 +1,9 @@
 package io.deephaven.engine.v2.sources;
 
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.util.type.ArrayTypeUtils;
 import io.deephaven.engine.time.DateTime;
-import io.deephaven.engine.v2.utils.RowSet;
+import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.util.QueryConstants;
 import org.jetbrains.annotations.NotNull;
 

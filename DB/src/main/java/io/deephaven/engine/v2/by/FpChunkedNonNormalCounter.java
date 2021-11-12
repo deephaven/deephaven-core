@@ -1,9 +1,10 @@
 package io.deephaven.engine.v2.by;
 
-import io.deephaven.engine.rftable.ChunkSource;
-import io.deephaven.engine.rftable.DefaultGetContext;
-import io.deephaven.engine.rftable.SharedContext;
-import io.deephaven.engine.structures.RowSequence;
+import io.deephaven.engine.table.ChunkSource;
+import io.deephaven.engine.table.DefaultGetContext;
+import io.deephaven.engine.table.SharedContext;
+import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.engine.util.NullSafeAddition;

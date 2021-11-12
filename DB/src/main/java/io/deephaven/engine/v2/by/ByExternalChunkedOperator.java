@@ -1,8 +1,11 @@
 package io.deephaven.engine.v2.by;
 
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.rftable.ChunkSource;
-import io.deephaven.engine.structures.RowSequence;
+import io.deephaven.engine.table.ChunkSource;
+import io.deephaven.engine.rowset.*;
+import io.deephaven.engine.rowset.impl.MutableRowSetImpl;
+import io.deephaven.engine.rowset.impl.OrderedLongSet;
+import io.deephaven.engine.rowset.impl.OrderedLongSetBuilderSequential;
 import io.deephaven.engine.tables.ColumnDefinition;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.live.UpdateGraphProcessor;
@@ -11,7 +14,7 @@ import io.deephaven.engine.tables.utils.QueryPerformanceRecorder;
 import io.deephaven.engine.util.liveness.LivenessReferent;
 import io.deephaven.engine.v2.*;
 import io.deephaven.engine.v2.sources.ArrayBackedColumnSource;
-import io.deephaven.engine.v2.sources.ColumnSource;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.v2.sources.ObjectArraySource;
 import io.deephaven.engine.chunk.Attributes.*;
 import io.deephaven.engine.chunk.*;

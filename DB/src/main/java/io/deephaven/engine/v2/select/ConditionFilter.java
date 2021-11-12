@@ -6,8 +6,9 @@ package io.deephaven.engine.v2.select;
 
 import io.deephaven.base.Pair;
 import io.deephaven.compilertools.CompilerTools;
-import io.deephaven.engine.rftable.Context;
-import io.deephaven.engine.rftable.SharedContext;
+import io.deephaven.engine.table.Context;
+import io.deephaven.engine.table.SharedContext;
+import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.tables.ColumnDefinition;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.TableDefinition;
@@ -17,11 +18,9 @@ import io.deephaven.engine.tables.select.Param;
 import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.engine.tables.utils.QueryPerformanceNugget;
 import io.deephaven.engine.tables.utils.QueryPerformanceRecorder;
-import io.deephaven.engine.v2.sources.ColumnSource;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.chunk.Attributes.OrderedRowKeys;
-import io.deephaven.engine.v2.utils.*;
-import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.text.Indenter;
 import io.deephaven.util.type.TypeUtils;
@@ -78,7 +77,7 @@ public class ConditionFilter extends AbstractConditionFilter {
 
     public interface FilterKernel<CONTEXT extends FilterKernel.Context> {
 
-        class Context implements io.deephaven.engine.rftable.Context {
+        class Context implements io.deephaven.engine.table.Context {
             public final WritableLongChunk<Attributes.OrderedRowKeys> resultChunk;
 
             public Context(int maxChunkSize) {
@@ -121,7 +120,7 @@ public class ConditionFilter extends AbstractConditionFilter {
             this.invertedIterator = inverted.getRowSequenceIterator();
         }
 
-        static class Context implements io.deephaven.engine.rftable.Context {
+        static class Context implements io.deephaven.engine.table.Context {
             private final WritableLongChunk<Attributes.OrderedRowKeys> chunk;
 
             Context(int chunkSize) {
@@ -139,7 +138,7 @@ public class ConditionFilter extends AbstractConditionFilter {
         }
 
         @Override
-        public Chunk getChunk(@NotNull io.deephaven.engine.rftable.Context context,
+        public Chunk getChunk(@NotNull io.deephaven.engine.table.Context context,
                 @NotNull RowSequence rowSequence) {
             final WritableLongChunk<OrderedRowKeys> wlc = ((Context) context).chunk;
             final RowSequence valuesForChunk = invertedIterator.getNextRowSequenceWithLength(rowSequence.size());
@@ -175,7 +174,7 @@ public class ConditionFilter extends AbstractConditionFilter {
         }
 
         @Override
-        public Chunk getChunk(@NotNull io.deephaven.engine.rftable.Context context,
+        public Chunk getChunk(@NotNull io.deephaven.engine.table.Context context,
                 @NotNull RowSequence rowSequence) {
             final LongChunk lc = super.getChunk(context, rowSequence).asLongChunk();
             final WritableIntChunk<Attributes.Any> wic = ((IntegerContext) context).intChunk;
@@ -194,7 +193,7 @@ public class ConditionFilter extends AbstractConditionFilter {
             this.chunkType = chunkType;
         }
 
-        class Context implements io.deephaven.engine.rftable.Context {
+        class Context implements io.deephaven.engine.table.Context {
             private final WritableChunk chunk;
             long pos = 0;
 
@@ -221,7 +220,7 @@ public class ConditionFilter extends AbstractConditionFilter {
         }
 
         @Override
-        public Chunk getChunk(@NotNull io.deephaven.engine.rftable.Context context,
+        public Chunk getChunk(@NotNull io.deephaven.engine.table.Context context,
                 @NotNull RowSequence rowSequence) {
             final Context ctx = (Context) context;
             final WritableLongChunk wlc = ctx.chunk.asWritableLongChunk();
@@ -239,7 +238,7 @@ public class ConditionFilter extends AbstractConditionFilter {
         }
 
         @Override
-        public Chunk getChunk(@NotNull io.deephaven.engine.rftable.Context context,
+        public Chunk getChunk(@NotNull io.deephaven.engine.table.Context context,
                 @NotNull RowSequence rowSequence) {
             final Context ctx = (Context) context;
             final WritableIntChunk wic = ctx.chunk.asWritableIntChunk();
@@ -317,8 +316,8 @@ public class ConditionFilter extends AbstractConditionFilter {
 
         @Override
         public MutableRowSet filter(final RowSet selection, final RowSet fullSet, final Table table,
-                final boolean usePrev,
-                String formula, final Param... params) {
+                                    final boolean usePrev,
+                                    String formula, final Param... params) {
             try (final FilterKernel.Context context = filterKernel.getContext(chunkSize);
                     final RowSequence.Iterator rsIterator = selection.getRowSequenceIterator()) {
                 final ChunkGetter[] chunkGetters = new ChunkGetter[columnNames.length];

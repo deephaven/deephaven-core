@@ -3,6 +3,7 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.v2.sources;
 
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.vector.ObjectVector;
 
 import static io.deephaven.util.QueryConstants.NULL_DOUBLE;

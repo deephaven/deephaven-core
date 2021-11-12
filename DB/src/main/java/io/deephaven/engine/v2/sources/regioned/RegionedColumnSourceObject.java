@@ -1,5 +1,6 @@
 package io.deephaven.engine.v2.sources.regioned;
 
+import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.tables.ColumnDefinition;
 import io.deephaven.engine.v2.locations.ColumnLocation;
 import io.deephaven.engine.v2.locations.TableDataException;
@@ -8,8 +9,6 @@ import io.deephaven.engine.v2.sources.ColumnSourceGetDefaults;
 import io.deephaven.engine.chunk.Attributes.Values;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
-import static io.deephaven.engine.v2.utils.RowSet.NULL_ROW_KEY;
 
 abstract class RegionedColumnSourceObject<DATA_TYPE, ATTR extends Values>
         extends RegionedColumnSourceArray<DATA_TYPE, ATTR, ColumnRegionObject<DATA_TYPE, ATTR>>
@@ -24,7 +23,7 @@ abstract class RegionedColumnSourceObject<DATA_TYPE, ATTR extends Values>
 
     @Override
     public final DATA_TYPE get(final long elementIndex) {
-        return (elementIndex == NULL_ROW_KEY ? getNullRegion() : lookupRegion(elementIndex)).getObject(elementIndex);
+        return (elementIndex == RowSequence.NULL_ROW_KEY ? getNullRegion() : lookupRegion(elementIndex)).getObject(elementIndex);
     }
 
     public static class AsValues<DATA_TYPE> extends RegionedColumnSourceObject<DATA_TYPE, Values> {

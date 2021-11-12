@@ -1,6 +1,6 @@
 package io.deephaven.engine.v2.by;
 
-import io.deephaven.engine.v2.sources.ColumnSource;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.v2.sources.NullValueColumnSource;
 
 import java.util.LinkedHashMap;

@@ -4,7 +4,8 @@
 
 package io.deephaven.engine.v2.sources;
 
-import io.deephaven.engine.rftable.DefaultGetContext;
+import io.deephaven.engine.table.DefaultGetContext;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.util.type.ArrayTypeUtils;
 import io.deephaven.engine.time.DateTime;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
@@ -21,8 +22,8 @@ import io.deephaven.engine.v2.sources.immutable.ImmutableIntArraySource;
 import io.deephaven.engine.v2.sources.immutable.ImmutableLongArraySource;
 import io.deephaven.engine.v2.sources.immutable.ImmutableObjectArraySource;
 import io.deephaven.engine.v2.sources.immutable.ImmutableShortArraySource;
-import io.deephaven.engine.structures.RowSequence;
-import io.deephaven.engine.structures.rowsequence.RowSequenceUtil;
+import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.rowset.impl.RowSequenceUtil;
 import io.deephaven.engine.v2.utils.ShiftData;
 import io.deephaven.qst.array.Array;
 import io.deephaven.qst.array.BooleanArray;

@@ -4,13 +4,14 @@
 
 package io.deephaven.engine.v2.utils.freezeby;
 
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.time.DateTime;
 import io.deephaven.engine.v2.Listener;
 import io.deephaven.engine.v2.by.IterativeChunkedAggregationOperator;
 import io.deephaven.engine.v2.sources.*;
 import io.deephaven.engine.chunk.*;
-import io.deephaven.engine.structures.RowSequence;
-import io.deephaven.engine.v2.utils.RowSet;
+import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.rowset.RowSet;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collections;

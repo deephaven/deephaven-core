@@ -3,6 +3,7 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.v2.sources.regioned;
 
+import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.tables.ColumnDefinition;
 import io.deephaven.engine.v2.locations.ColumnLocation;
 import io.deephaven.engine.v2.locations.TableDataException;
@@ -11,7 +12,6 @@ import io.deephaven.engine.v2.sources.ColumnSourceGetDefaults;
 import io.deephaven.engine.chunk.Attributes.Values;
 import org.jetbrains.annotations.NotNull;
 
-import static io.deephaven.engine.v2.utils.RowSet.NULL_ROW_KEY;
 import static io.deephaven.util.type.TypeUtils.unbox;
 
 /**
@@ -28,7 +28,7 @@ abstract class RegionedColumnSourceDouble<ATTR extends Values>
 
     @Override
     public double getDouble(final long elementIndex) {
-        return (elementIndex == NULL_ROW_KEY ? getNullRegion() : lookupRegion(elementIndex)).getDouble(elementIndex);
+        return (elementIndex == RowSequence.NULL_ROW_KEY ? getNullRegion() : lookupRegion(elementIndex)).getDouble(elementIndex);
     }
 
     interface MakeRegionDefault extends MakeRegion<Values, ColumnRegionDouble<Values>> {
@@ -65,7 +65,7 @@ abstract class RegionedColumnSourceDouble<ATTR extends Values>
 
         @Override
         public double getDouble(final long elementIndex) {
-            return (elementIndex == NULL_ROW_KEY ? getNullRegion() : lookupRegion(elementIndex)).getDouble(elementIndex);
+            return (elementIndex == RowSequence.NULL_ROW_KEY ? getNullRegion() : lookupRegion(elementIndex)).getDouble(elementIndex);
         }
 
         static final class AsValues<DATA_TYPE> extends NativeType<DATA_TYPE, Values> implements MakeRegionDefault {

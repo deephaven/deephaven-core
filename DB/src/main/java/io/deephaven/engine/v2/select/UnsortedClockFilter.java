@@ -6,9 +6,9 @@ package io.deephaven.engine.v2.select;
 
 import io.deephaven.base.clock.Clock;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.lang.LanguageFunctionUtil;
-import io.deephaven.engine.v2.utils.*;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -67,7 +67,7 @@ public class UnsortedClockFilter extends ClockFilter {
     @Override
     @Nullable
     protected MutableRowSet initializeAndGetInitialIndex(@NotNull final RowSet selection, @NotNull final RowSet fullSet,
-            @NotNull final Table table) {
+                                                         @NotNull final Table table) {
         rangesByNextTime = new PriorityQueue<>(INITIAL_RANGE_QUEUE_CAPACITY, new RangeComparator());
 
         if (selection.isEmpty()) {

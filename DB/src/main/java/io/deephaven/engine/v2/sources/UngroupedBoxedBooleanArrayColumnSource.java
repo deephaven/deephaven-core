@@ -1,5 +1,7 @@
 package io.deephaven.engine.v2.sources;
 
+import io.deephaven.engine.table.ColumnSource;
+
 public class UngroupedBoxedBooleanArrayColumnSource extends UngroupedColumnSource<Boolean> implements MutableColumnSourceGetDefaults.ForBoolean {
     private ColumnSource<Boolean[]> innerSource;
 

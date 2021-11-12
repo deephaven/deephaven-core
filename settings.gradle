@@ -154,11 +154,11 @@ project(':engine-tuple').projectDir = file('engine/tuple')
 include(':engine-time')
 project(':engine-time').projectDir = file('engine/time')
 
+include(':engine-api')
+project(':engine-api').projectDir = file('engine/api')
+
 include(':engine-rowset')
 project(':engine-rowset').projectDir = file('engine/rowset')
-
-include(':engine-interface')
-project(':engine-interface').projectDir = file('engine/interface')
 
 include(':engine-tuplesource')
 project(':engine-tuplesource').projectDir = file('engine/tuplesource')

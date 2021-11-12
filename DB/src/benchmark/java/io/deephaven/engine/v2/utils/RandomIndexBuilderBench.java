@@ -1,6 +1,8 @@
 package io.deephaven.engine.v2.utils;
 
-import io.deephaven.engine.v2.utils.rsp.RspBitmap;
+import io.deephaven.engine.rowset.RowSetBuilderRandom;
+import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.impl.rsp.RspBitmap;
 import gnu.trove.set.hash.TLongHashSet;
 import io.deephaven.benchmarking.BenchUtil;
 import org.openjdk.jmh.annotations.*;

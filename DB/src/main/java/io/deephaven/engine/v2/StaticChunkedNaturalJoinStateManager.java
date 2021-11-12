@@ -5,10 +5,12 @@ package io.deephaven.engine.v2;
 
 import io.deephaven.base.verify.Require;
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.rftable.ChunkSource;
-import io.deephaven.engine.rftable.Context;
-import io.deephaven.engine.rftable.SharedContext;
-import io.deephaven.engine.structures.RowSequence;
+import io.deephaven.engine.table.ChunkSource;
+import io.deephaven.engine.table.Context;
+import io.deephaven.engine.table.SharedContext;
+import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.chunk.util.hashing.*;
 // this is ugly to have twice, but we do need it twice for replication
@@ -1025,7 +1027,7 @@ class StaticChunkedNaturalJoinStateManager
 
                 // region probe loop initialization
                 if (isLeftSide) {
-                    workingLeftRedirections.fillWithValue(0, chunkSize, RowSet.NULL_ROW_KEY);
+                    workingLeftRedirections.fillWithValue(0, chunkSize, RowSequence.NULL_ROW_KEY);
                     workingLeftRedirections.setSize(chunkSize);
                 } else {
                     chunkOk.fillRowKeyChunk(rightKeyIndices);

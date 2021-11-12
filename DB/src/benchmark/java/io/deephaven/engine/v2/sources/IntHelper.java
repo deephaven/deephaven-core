@@ -6,7 +6,8 @@ package io.deephaven.engine.v2.sources;
 import io.deephaven.engine.chunk.Attributes.OrderedRowKeys;
 import io.deephaven.engine.chunk.LongChunk;
 import io.deephaven.engine.chunk.WritableIntChunk;
-import io.deephaven.engine.structures.RowSequence;
+import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.table.ColumnSource;
 import org.openjdk.jmh.infra.Blackhole;
 
 import java.util.Random;

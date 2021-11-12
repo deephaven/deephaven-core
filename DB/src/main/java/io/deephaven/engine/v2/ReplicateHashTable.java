@@ -3,7 +3,7 @@ package io.deephaven.engine.v2;
 import gnu.trove.stack.TIntStack;
 import gnu.trove.stack.array.TIntArrayStack;
 import io.deephaven.base.verify.Require;
-import io.deephaven.engine.v2.sources.ColumnSource;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.chunk.ChunkType;
 import org.apache.commons.io.FileUtils;
 import org.jetbrains.annotations.NotNull;

@@ -3,13 +3,13 @@ package io.deephaven.engine.v2;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.chunk.util.hashing.ToIntFunctor;
-import io.deephaven.engine.v2.sources.ColumnSource;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.v2.sources.LongArraySource;
 import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.chunk.Attributes.Values;
-import io.deephaven.engine.structures.RowSequence;
+import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.v2.utils.MutableRowRedirection;
-import io.deephaven.engine.v2.utils.RowSet;
+import io.deephaven.engine.rowset.RowSet;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 
@@ -33,7 +33,7 @@ class SimpleUniqueStaticNaturalJoinStateManager extends StaticNaturalJoinStateMa
         this.transform = transform;
         rightIndexSource.ensureCapacity(tableSize);
         for (int ii = 0; ii < tableSize; ++ii) {
-            rightIndexSource.set(ii, RowSet.NULL_ROW_KEY);
+            rightIndexSource.set(ii, RowSequence.NULL_ROW_KEY);
         }
     }
 
@@ -55,7 +55,7 @@ class SimpleUniqueStaticNaturalJoinStateManager extends StaticNaturalJoinStateMa
                         return true;
                     }
                     final long existingRight = rightIndexSource.getLong(tableLocation);
-                    if (existingRight == RowSet.NULL_ROW_KEY) {
+                    if (existingRight == RowSequence.NULL_ROW_KEY) {
                         rightIndexSource.set(tableLocation, keyIndex);
                     } else {
                         rightIndexSource.set(tableLocation, DUPLICATE_RIGHT_VALUE);

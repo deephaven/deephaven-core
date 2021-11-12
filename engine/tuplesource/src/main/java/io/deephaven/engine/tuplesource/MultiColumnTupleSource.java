@@ -4,6 +4,7 @@ import io.deephaven.datastructures.util.SmartKey;
 import io.deephaven.engine.rftable.ChunkSource;
 import io.deephaven.engine.rftable.DefaultChunkSource;
 import io.deephaven.engine.rftable.SharedContext;
+import io.deephaven.engine.table.TupleSource;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.tuple.ArrayTuple;
 import io.deephaven.engine.v2.sources.WritableSource;

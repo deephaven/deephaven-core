@@ -1,7 +1,7 @@
 package io.deephaven.engine.v2.locations;
 
 import io.deephaven.engine.v2.sources.regioned.RegionedColumnSource;
-import io.deephaven.engine.v2.utils.RowSet;
+import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
 

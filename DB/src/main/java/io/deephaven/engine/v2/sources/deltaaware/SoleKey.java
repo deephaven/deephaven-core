@@ -1,11 +1,12 @@
 package io.deephaven.engine.v2.sources.deltaaware;
 
+import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.util.datastructures.LongAbortableConsumer;
 import io.deephaven.engine.chunk.Attributes;
 import io.deephaven.engine.chunk.LongChunk;
 import io.deephaven.engine.chunk.WritableLongChunk;
-import io.deephaven.engine.v2.utils.*;
-import io.deephaven.engine.structures.RowSequence;
+import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.util.datastructures.LongRangeAbortableConsumer;
 
 class SoleKey implements RowSequence {
@@ -128,7 +129,7 @@ class SoleKey implements RowSequence {
 
         @Override
         public long peekNextKey() {
-            return hasMore ? key : RowSet.NULL_ROW_KEY;
+            return hasMore ? key : RowSequence.NULL_ROW_KEY;
         }
 
         @Override

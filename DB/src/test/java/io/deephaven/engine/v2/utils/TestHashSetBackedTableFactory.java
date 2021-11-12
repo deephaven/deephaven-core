@@ -5,6 +5,7 @@
 package io.deephaven.engine.v2.utils;
 
 import io.deephaven.datastructures.util.SmartKey;
+import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.v2.EvalNuggetInterface;
@@ -13,7 +14,7 @@ import io.deephaven.engine.v2.EvalNugget;
 import io.deephaven.engine.v2.RefreshingTableTestCase;
 import io.deephaven.engine.v2.TstUtils;
 import io.deephaven.engine.v2.UpdateValidatorNugget;
-import io.deephaven.engine.v2.sources.ColumnSource;
+import io.deephaven.engine.table.ColumnSource;
 
 import java.util.HashSet;
 import java.util.Iterator;

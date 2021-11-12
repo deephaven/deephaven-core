@@ -1,6 +1,7 @@
 package io.deephaven.engine.v2.by;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.v2.Listener;
 import io.deephaven.engine.v2.ModifiedColumnSet;
 import io.deephaven.engine.v2.sort.timsort.LongLongTimsortKernel;
@@ -497,7 +498,7 @@ class IncrementalByAggregationUpdateTracker {
             final int slot = (int) (slotAndFlags >> FLAG_SHIFT);
             final TrackingRowSet current = slotToIndex(indexSource, overflowIndexSource, slot);
             final long previousFirstKey = current.firstRowKeyPrev();
-            if (previousFirstKey == RowSet.NULL_ROW_KEY) {
+            if (previousFirstKey == RowSequence.NULL_ROW_KEY) {
                 // Nothing to remove
                 continue;
             }
@@ -542,7 +543,7 @@ class IncrementalByAggregationUpdateTracker {
                 }
                 final long previousFirstKey = current.firstRowKeyPrev();
                 final long currentFirstKey = current.firstRowKey();
-                if (previousFirstKey == RowSet.NULL_ROW_KEY) {
+                if (previousFirstKey == RowSequence.NULL_ROW_KEY) {
                     // We must have added something
                     rowRedirection.putVoid(currentFirstKey, slot);
                     addedBuilder.addKey(currentFirstKey);

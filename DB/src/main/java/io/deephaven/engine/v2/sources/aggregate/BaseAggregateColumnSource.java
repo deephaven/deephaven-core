@@ -4,12 +4,13 @@
 
 package io.deephaven.engine.v2.sources.aggregate;
 
+import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.vector.Vector;
 import io.deephaven.engine.v2.sources.AbstractColumnSource;
-import io.deephaven.engine.v2.sources.ColumnSource;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.v2.sources.UngroupedColumnSource;
-import io.deephaven.engine.rftable.SharedContext;
-import io.deephaven.engine.v2.utils.RowSet;
+import io.deephaven.engine.table.SharedContext;
+import io.deephaven.engine.rowset.RowSet;
 import org.jetbrains.annotations.NotNull;
 
 import static io.deephaven.util.QueryConstants.*;
@@ -69,7 +70,7 @@ abstract class BaseAggregateColumnSource<DB_ARRAY_TYPE extends Vector, COMPONENT
 
     @Override
     public final long getUngroupedSize(final long groupIndexKey) {
-        if (groupIndexKey == RowSet.NULL_ROW_KEY) {
+        if (groupIndexKey == RowSequence.NULL_ROW_KEY) {
             return 0;
         }
         return groupRowSetSource.get(groupIndexKey).size();
@@ -77,7 +78,7 @@ abstract class BaseAggregateColumnSource<DB_ARRAY_TYPE extends Vector, COMPONENT
 
     @Override
     public final long getUngroupedPrevSize(final long groupIndexKey) {
-        if (groupIndexKey == RowSet.NULL_ROW_KEY) {
+        if (groupIndexKey == RowSequence.NULL_ROW_KEY) {
             return 0;
         }
         final RowSet groupRowSetPrev = groupRowSetSource.getPrev(groupIndexKey);
@@ -102,7 +103,7 @@ abstract class BaseAggregateColumnSource<DB_ARRAY_TYPE extends Vector, COMPONENT
 
     @Override
     public final Object getUngrouped(final long groupIndexKey, final int offsetInGroup) {
-        if (groupIndexKey == RowSet.NULL_ROW_KEY) {
+        if (groupIndexKey == RowSequence.NULL_ROW_KEY) {
             return null;
         }
         return aggregatedSource.get(groupRowSetSource.get(groupIndexKey).get(offsetInGroup));
@@ -110,7 +111,7 @@ abstract class BaseAggregateColumnSource<DB_ARRAY_TYPE extends Vector, COMPONENT
 
     @Override
     public final Object getUngroupedPrev(final long groupIndexKey, final int offsetInGroup) {
-        if (groupIndexKey == RowSet.NULL_ROW_KEY) {
+        if (groupIndexKey == RowSequence.NULL_ROW_KEY) {
             return null;
         }
         return aggregatedSource.getPrev(getPrevRowKey(groupIndexKey, offsetInGroup));
@@ -118,7 +119,7 @@ abstract class BaseAggregateColumnSource<DB_ARRAY_TYPE extends Vector, COMPONENT
 
     @Override
     public final Boolean getUngroupedBoolean(final long groupIndexKey, final int offsetInGroup) {
-        if (groupIndexKey == RowSet.NULL_ROW_KEY) {
+        if (groupIndexKey == RowSequence.NULL_ROW_KEY) {
             return NULL_BOOLEAN;
         }
         return aggregatedSource.getBoolean(groupRowSetSource.get(groupIndexKey).get(offsetInGroup));
@@ -126,7 +127,7 @@ abstract class BaseAggregateColumnSource<DB_ARRAY_TYPE extends Vector, COMPONENT
 
     @Override
     public final Boolean getUngroupedPrevBoolean(final long groupIndexKey, final int offsetInGroup) {
-        if (groupIndexKey == RowSet.NULL_ROW_KEY) {
+        if (groupIndexKey == RowSequence.NULL_ROW_KEY) {
             return NULL_BOOLEAN;
         }
         return aggregatedSource.getPrevBoolean(getPrevRowKey(groupIndexKey, offsetInGroup));
@@ -134,7 +135,7 @@ abstract class BaseAggregateColumnSource<DB_ARRAY_TYPE extends Vector, COMPONENT
 
     @Override
     public final double getUngroupedDouble(final long groupIndexKey, final int offsetInGroup) {
-        if (groupIndexKey == RowSet.NULL_ROW_KEY) {
+        if (groupIndexKey == RowSequence.NULL_ROW_KEY) {
             return NULL_DOUBLE;
         }
         return aggregatedSource.getDouble(groupRowSetSource.get(groupIndexKey).get(offsetInGroup));
@@ -142,7 +143,7 @@ abstract class BaseAggregateColumnSource<DB_ARRAY_TYPE extends Vector, COMPONENT
 
     @Override
     public final double getUngroupedPrevDouble(final long groupIndexKey, final int offsetInGroup) {
-        if (groupIndexKey == RowSet.NULL_ROW_KEY) {
+        if (groupIndexKey == RowSequence.NULL_ROW_KEY) {
             return NULL_DOUBLE;
         }
         return aggregatedSource.getPrevDouble(getPrevRowKey(groupIndexKey, offsetInGroup));
@@ -150,7 +151,7 @@ abstract class BaseAggregateColumnSource<DB_ARRAY_TYPE extends Vector, COMPONENT
 
     @Override
     public final float getUngroupedFloat(final long groupIndexKey, final int offsetInGroup) {
-        if (groupIndexKey == RowSet.NULL_ROW_KEY) {
+        if (groupIndexKey == RowSequence.NULL_ROW_KEY) {
             return NULL_FLOAT;
         }
         return aggregatedSource.getFloat(groupRowSetSource.get(groupIndexKey).get(offsetInGroup));
@@ -158,7 +159,7 @@ abstract class BaseAggregateColumnSource<DB_ARRAY_TYPE extends Vector, COMPONENT
 
     @Override
     public final float getUngroupedPrevFloat(final long groupIndexKey, final int offsetInGroup) {
-        if (groupIndexKey == RowSet.NULL_ROW_KEY) {
+        if (groupIndexKey == RowSequence.NULL_ROW_KEY) {
             return NULL_FLOAT;
         }
         return aggregatedSource.getPrevFloat(getPrevRowKey(groupIndexKey, offsetInGroup));
@@ -166,7 +167,7 @@ abstract class BaseAggregateColumnSource<DB_ARRAY_TYPE extends Vector, COMPONENT
 
     @Override
     public final byte getUngroupedByte(final long groupIndexKey, final int offsetInGroup) {
-        if (groupIndexKey == RowSet.NULL_ROW_KEY) {
+        if (groupIndexKey == RowSequence.NULL_ROW_KEY) {
             return NULL_BYTE;
         }
         return aggregatedSource.getByte(groupRowSetSource.get(groupIndexKey).get(offsetInGroup));
@@ -174,7 +175,7 @@ abstract class BaseAggregateColumnSource<DB_ARRAY_TYPE extends Vector, COMPONENT
 
     @Override
     public final byte getUngroupedPrevByte(final long groupIndexKey, final int offsetInGroup) {
-        if (groupIndexKey == RowSet.NULL_ROW_KEY) {
+        if (groupIndexKey == RowSequence.NULL_ROW_KEY) {
             return NULL_BYTE;
         }
         return aggregatedSource.getPrevByte(getPrevRowKey(groupIndexKey, offsetInGroup));
@@ -182,7 +183,7 @@ abstract class BaseAggregateColumnSource<DB_ARRAY_TYPE extends Vector, COMPONENT
 
     @Override
     public final char getUngroupedChar(final long groupIndexKey, final int offsetInGroup) {
-        if (groupIndexKey == RowSet.NULL_ROW_KEY) {
+        if (groupIndexKey == RowSequence.NULL_ROW_KEY) {
             return NULL_CHAR;
         }
         return aggregatedSource.getChar(groupRowSetSource.get(groupIndexKey).get(offsetInGroup));
@@ -190,7 +191,7 @@ abstract class BaseAggregateColumnSource<DB_ARRAY_TYPE extends Vector, COMPONENT
 
     @Override
     public final char getUngroupedPrevChar(final long groupIndexKey, final int offsetInGroup) {
-        if (groupIndexKey == RowSet.NULL_ROW_KEY) {
+        if (groupIndexKey == RowSequence.NULL_ROW_KEY) {
             return NULL_CHAR;
         }
         return aggregatedSource.getPrevChar(getPrevRowKey(groupIndexKey, offsetInGroup));
@@ -198,7 +199,7 @@ abstract class BaseAggregateColumnSource<DB_ARRAY_TYPE extends Vector, COMPONENT
 
     @Override
     public final short getUngroupedShort(final long groupIndexKey, final int offsetInGroup) {
-        if (groupIndexKey == RowSet.NULL_ROW_KEY) {
+        if (groupIndexKey == RowSequence.NULL_ROW_KEY) {
             return NULL_SHORT;
         }
         return aggregatedSource.getShort(groupRowSetSource.get(groupIndexKey).get(offsetInGroup));
@@ -206,7 +207,7 @@ abstract class BaseAggregateColumnSource<DB_ARRAY_TYPE extends Vector, COMPONENT
 
     @Override
     public final short getUngroupedPrevShort(final long groupIndexKey, final int offsetInGroup) {
-        if (groupIndexKey == RowSet.NULL_ROW_KEY) {
+        if (groupIndexKey == RowSequence.NULL_ROW_KEY) {
             return NULL_SHORT;
         }
         return aggregatedSource.getPrevShort(getPrevRowKey(groupIndexKey, offsetInGroup));
@@ -214,7 +215,7 @@ abstract class BaseAggregateColumnSource<DB_ARRAY_TYPE extends Vector, COMPONENT
 
     @Override
     public final int getUngroupedInt(final long groupIndexKey, final int offsetInGroup) {
-        if (groupIndexKey == RowSet.NULL_ROW_KEY) {
+        if (groupIndexKey == RowSequence.NULL_ROW_KEY) {
             return NULL_INT;
         }
         return aggregatedSource.getInt(groupRowSetSource.get(groupIndexKey).get(offsetInGroup));
@@ -222,7 +223,7 @@ abstract class BaseAggregateColumnSource<DB_ARRAY_TYPE extends Vector, COMPONENT
 
     @Override
     public final int getUngroupedPrevInt(final long groupIndexKey, final int offsetInGroup) {
-        if (groupIndexKey == RowSet.NULL_ROW_KEY) {
+        if (groupIndexKey == RowSequence.NULL_ROW_KEY) {
             return NULL_INT;
         }
         return aggregatedSource.getPrevInt(getPrevRowKey(groupIndexKey, offsetInGroup));
@@ -230,7 +231,7 @@ abstract class BaseAggregateColumnSource<DB_ARRAY_TYPE extends Vector, COMPONENT
 
     @Override
     public final long getUngroupedLong(final long groupIndexKey, final int offsetInGroup) {
-        if (groupIndexKey == RowSet.NULL_ROW_KEY) {
+        if (groupIndexKey == RowSequence.NULL_ROW_KEY) {
             return NULL_LONG;
         }
         return aggregatedSource.getLong(groupRowSetSource.get(groupIndexKey).get(offsetInGroup));
@@ -238,7 +239,7 @@ abstract class BaseAggregateColumnSource<DB_ARRAY_TYPE extends Vector, COMPONENT
 
     @Override
     public final long getUngroupedPrevLong(final long groupIndexKey, final int offsetInGroup) {
-        if (groupIndexKey == RowSet.NULL_ROW_KEY) {
+        if (groupIndexKey == RowSequence.NULL_ROW_KEY) {
             return NULL_LONG;
         }
         return aggregatedSource.getPrevLong(getPrevRowKey(groupIndexKey, offsetInGroup));

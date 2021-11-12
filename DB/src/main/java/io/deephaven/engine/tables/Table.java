@@ -11,19 +11,19 @@ import io.deephaven.api.agg.Array;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.base.Function;
 import io.deephaven.base.Pair;
+import io.deephaven.base.StringUtils;
 import io.deephaven.datastructures.util.CollectionUtil;
-import io.deephaven.engine.tables.lang.LanguageParser;
 import io.deephaven.engine.tables.live.NotificationQueue;
 import io.deephaven.engine.tables.remote.*;
 import io.deephaven.engine.tables.select.*;
 import io.deephaven.engine.tables.utils.*;
 import io.deephaven.engine.time.DateTime;
 import io.deephaven.engine.util.ColumnFormattingValues;
+import io.deephaven.engine.v2.*;
+import io.deephaven.engine.vector.Vector;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.engine.util.liveness.LivenessNode;
 import io.deephaven.engine.util.liveness.LivenessScopeStack;
-import io.deephaven.engine.util.string.StringUtils;
-import io.deephaven.engine.v2.*;
 import io.deephaven.engine.v2.by.AggregationFormulaStateFactory;
 import io.deephaven.engine.v2.by.AggregationIndexStateFactory;
 import io.deephaven.engine.v2.by.AggregationStateFactory;
@@ -33,11 +33,8 @@ import io.deephaven.engine.v2.iterators.*;
 import io.deephaven.engine.v2.select.ReinterpretedColumn;
 import io.deephaven.engine.v2.select.SelectColumn;
 import io.deephaven.engine.v2.select.SelectFilter;
-import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.utils.RowSet;
-import io.deephaven.engine.v2.utils.RowSetShiftData;
-import io.deephaven.engine.v2.utils.TrackingRowSet;
-import io.deephaven.engine.v2.utils.UpdatePerformanceTracker;
+import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.qst.table.TableSpec;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -280,6 +277,9 @@ public interface Table extends
         return this;
     }
 
+    /**
+     * @return The {@link TrackingRowSet} that exposes the row keys present in this Table
+     */
     TrackingRowSet getRowSet();
 
     default long sizeForInstrumentation() {
@@ -508,34 +508,6 @@ public interface Table extends
     @Override
     default Table whereNotIn(Table rightTable, Collection<? extends JoinMatch> columnsToMatch) {
         return whereNotIn(rightTable, MatchPair.fromMatches(columnsToMatch));
-    }
-
-    /**
-     * Use the whereIn method call instead.
-     */
-    @Deprecated
-    default Table whereDynamic(Table rightTable, boolean inclusion, MatchPair... columnsToMatch) {
-        return whereIn(rightTable, inclusion, columnsToMatch);
-    }
-
-    @Deprecated
-    default Table whereDynamicIn(Table rightTable, MatchPair... columnsToMatch) {
-        return whereIn(rightTable, columnsToMatch);
-    }
-
-    @Deprecated
-    default Table whereDynamicNotIn(Table rightTable, MatchPair... columnsToMatch) {
-        return whereIn(rightTable, columnsToMatch);
-    }
-
-    @Deprecated
-    default Table whereDynamicIn(Table rightTable, String... columnsToMatch) {
-        return whereIn(rightTable, columnsToMatch);
-    }
-
-    @Deprecated
-    default Table whereDynamicNotIn(Table rightTable, String... columnsToMatch) {
-        return whereNotIn(rightTable, columnsToMatch);
     }
 
     /**
@@ -984,12 +956,12 @@ public interface Table extends
     default Table leftJoin(Table rightTable, String columnsToMatch, String columnsToAdd) {
         return leftJoin(
                 rightTable,
-                MatchPairFactory.getExpressions(StringUtils.splitToCollection(columnsToMatch)),
-                MatchPairFactory.getExpressions(StringUtils.splitToCollection(columnsToAdd)));
+                MatchPairFactory.getExpressions(io.deephaven.base.StringUtils.splitToCollection(columnsToMatch)),
+                MatchPairFactory.getExpressions(io.deephaven.base.StringUtils.splitToCollection(columnsToAdd)));
     }
 
     default Table leftJoin(Table rightTable, String columnsToMatch) {
-        return leftJoin(rightTable, StringUtils.splitToCollection(columnsToMatch));
+        return leftJoin(rightTable, io.deephaven.base.StringUtils.splitToCollection(columnsToMatch));
     }
 
     default Table leftJoin(Table rightTable) {
@@ -1010,14 +982,14 @@ public interface Table extends
     default Table exactJoin(Table rightTable, String columnsToMatch, String columnsToAdd) {
         return exactJoin(
                 rightTable,
-                MatchPairFactory.getExpressions(StringUtils.splitToCollection(columnsToMatch)),
-                MatchPairFactory.getExpressions(StringUtils.splitToCollection(columnsToAdd)));
+                MatchPairFactory.getExpressions(io.deephaven.base.StringUtils.splitToCollection(columnsToMatch)),
+                MatchPairFactory.getExpressions(io.deephaven.base.StringUtils.splitToCollection(columnsToAdd)));
     }
 
     default Table exactJoin(Table rightTable, String columnsToMatch) {
         return exactJoin(
                 rightTable,
-                MatchPairFactory.getExpressions(StringUtils.splitToCollection(columnsToMatch)),
+                MatchPairFactory.getExpressions(io.deephaven.base.StringUtils.splitToCollection(columnsToMatch)),
                 MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY);
     }
 
@@ -1117,16 +1089,16 @@ public interface Table extends
 
     default Table aj(Table rightTable, String columnsToMatch, String columnsToAdd) {
         Pair<MatchPair[], AsOfMatchRule> expressions =
-                AjMatchPairFactory.getExpressions(false, StringUtils.splitToCollection(columnsToMatch));
+                AjMatchPairFactory.getExpressions(false, io.deephaven.base.StringUtils.splitToCollection(columnsToMatch));
         return aj(
                 rightTable,
                 expressions.getFirst(),
-                MatchPairFactory.getExpressions(StringUtils.splitToCollection(columnsToAdd)),
+                MatchPairFactory.getExpressions(io.deephaven.base.StringUtils.splitToCollection(columnsToAdd)),
                 expressions.getSecond());
     }
 
     default Table aj(Table rightTable, String columnsToMatch) {
-        return aj(rightTable, StringUtils.splitToCollection(columnsToMatch));
+        return aj(rightTable, io.deephaven.base.StringUtils.splitToCollection(columnsToMatch));
     }
 
     /**
@@ -1225,16 +1197,16 @@ public interface Table extends
      */
     default Table raj(Table rightTable, String columnsToMatch, String columnsToAdd) {
         Pair<MatchPair[], AsOfMatchRule> expressions =
-                AjMatchPairFactory.getExpressions(true, StringUtils.splitToCollection(columnsToMatch));
+                AjMatchPairFactory.getExpressions(true, io.deephaven.base.StringUtils.splitToCollection(columnsToMatch));
         return raj(
                 rightTable,
                 expressions.getFirst(),
-                MatchPairFactory.getExpressions(StringUtils.splitToCollection(columnsToAdd)),
+                MatchPairFactory.getExpressions(io.deephaven.base.StringUtils.splitToCollection(columnsToAdd)),
                 expressions.getSecond());
     }
 
     default Table raj(Table rightTable, String columnsToMatch) {
-        return raj(rightTable, StringUtils.splitToCollection(columnsToMatch));
+        return raj(rightTable, io.deephaven.base.StringUtils.splitToCollection(columnsToMatch));
     }
 
     Table naturalJoin(Table rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd);
@@ -1251,14 +1223,14 @@ public interface Table extends
     default Table naturalJoin(Table rightTable, String columnsToMatch, String columnsToAdd) {
         return naturalJoin(
                 rightTable,
-                MatchPairFactory.getExpressions(StringUtils.splitToCollection(columnsToMatch)),
-                MatchPairFactory.getExpressions(StringUtils.splitToCollection(columnsToAdd)));
+                MatchPairFactory.getExpressions(io.deephaven.base.StringUtils.splitToCollection(columnsToMatch)),
+                MatchPairFactory.getExpressions(io.deephaven.base.StringUtils.splitToCollection(columnsToAdd)));
     }
 
     default Table naturalJoin(Table rightTable, String columnsToMatch) {
         return naturalJoin(
                 rightTable,
-                MatchPairFactory.getExpressions(StringUtils.splitToCollection(columnsToMatch)),
+                MatchPairFactory.getExpressions(io.deephaven.base.StringUtils.splitToCollection(columnsToMatch)),
                 MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY);
     }
 
@@ -1327,7 +1299,7 @@ public interface Table extends
     default Table join(Table rightTable, String columnsToMatch) {
         return join(
                 rightTable,
-                MatchPairFactory.getExpressions(StringUtils.splitToCollection(columnsToMatch)),
+                MatchPairFactory.getExpressions(io.deephaven.base.StringUtils.splitToCollection(columnsToMatch)),
                 MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY);
     }
 
@@ -1364,7 +1336,7 @@ public interface Table extends
     default Table join(Table rightTable, String columnsToMatch, int numRightBitsToReserve) {
         return join(
                 rightTable,
-                MatchPairFactory.getExpressions(StringUtils.splitToCollection(columnsToMatch)),
+                MatchPairFactory.getExpressions(io.deephaven.base.StringUtils.splitToCollection(columnsToMatch)),
                 MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY,
                 numRightBitsToReserve);
     }
@@ -1372,8 +1344,8 @@ public interface Table extends
     default Table join(Table rightTable, String columnsToMatch, String columnsToAdd) {
         return join(
                 rightTable,
-                MatchPairFactory.getExpressions(StringUtils.splitToCollection(columnsToMatch)),
-                MatchPairFactory.getExpressions(StringUtils.splitToCollection(columnsToAdd)));
+                MatchPairFactory.getExpressions(io.deephaven.base.StringUtils.splitToCollection(columnsToMatch)),
+                MatchPairFactory.getExpressions(io.deephaven.base.StringUtils.splitToCollection(columnsToAdd)));
     }
 
     /**
@@ -1410,7 +1382,7 @@ public interface Table extends
     default Table join(Table rightTable, String columnsToMatch, String columnsToAdd, int numRightBitsToReserve) {
         return join(
                 rightTable,
-                MatchPairFactory.getExpressions(StringUtils.splitToCollection(columnsToMatch)),
+                MatchPairFactory.getExpressions(io.deephaven.base.StringUtils.splitToCollection(columnsToMatch)),
                 MatchPairFactory.getExpressions(StringUtils.splitToCollection(columnsToAdd)),
                 numRightBitsToReserve);
     }
@@ -2169,20 +2141,20 @@ public interface Table extends
         final Set<String> columnsNotToUnwrapSet = Arrays.stream(columnsNotToUngroup).collect(Collectors.toSet());
         return ungroup(getDefinition().getColumnStream()
                 .filter(c -> !columnsNotToUnwrapSet.contains(c.getName())
-                        && (c.getDataType().isArray() || LanguageParser.isVector(c.getDataType())))
+                        && (c.getDataType().isArray() || Vector.class.isAssignableFrom(c.getDataType())))
                 .map(ColumnDefinition::getName).toArray(String[]::new));
     }
 
     default Table ungroup() {
         return ungroup(getDefinition().getColumnStream()
-                .filter(c -> c.getDataType().isArray() || LanguageParser.isVector(c.getDataType()))
+                .filter(c -> c.getDataType().isArray() || Vector.class.isAssignableFrom(c.getDataType()))
                 .map(ColumnDefinition::getName).toArray(String[]::new));
     }
 
     default Table ungroup(boolean nullFill) {
         return ungroup(nullFill,
                 getDefinition().getColumnStream()
-                        .filter(c -> c.getDataType().isArray() || LanguageParser.isVector(c.getDataType()))
+                        .filter(c -> c.getDataType().isArray() || Vector.class.isAssignableFrom(c.getDataType()))
                         .map(ColumnDefinition::getName).toArray(String[]::new));
     }
 
@@ -2590,13 +2562,6 @@ public interface Table extends
     default void releaseCachedResources() {}
 
     // -----------------------------------------------------------------------------------------------------------------
-    // Legacy Column-Oriented Grouping
-    // -----------------------------------------------------------------------------------------------------------------
-
-    @Deprecated
-    void addColumnGrouping(String columnName);
-
-    // -----------------------------------------------------------------------------------------------------------------
     // Methods for dynamic tables
     // -----------------------------------------------------------------------------------------------------------------
 
@@ -2626,8 +2591,8 @@ public interface Table extends
     boolean awaitUpdate(long timeout) throws InterruptedException;
 
     /**
-     * Subscribe for updates to this table. ShiftObliviousListener will be invoked via the UpdateGraphProcessor
-     * notification queue associated with this Table.
+     * Subscribe for updates to this table. {@code listener} will be invoked via the {@link NotificationQueue}
+     * associated with this Table.
      *
      * @param listener listener for updates
      */
@@ -2636,30 +2601,22 @@ public interface Table extends
     }
 
     /**
-     * Subscribe for updates to this table. After the optional initial image, listener will be invoked via the
-     * UpdateGraphProcessor notification queue associated with this Table.
+     * Subscribe for updates to this table. After the optional initial image, {@code listener} will be invoked via the
+     * {@link NotificationQueue} associated with this Table.
      *
      * @param listener listener for updates
-     * @param replayInitialImage true to process updates for all initial rows in the table plus all new row changes;
-     *        false to only process new row changes
+     * @param replayInitialImage true to process updates for all initial rows in the table plus all changes;
+     *        false to only process changes
      */
     void listenForUpdates(ShiftObliviousListener listener, boolean replayInitialImage);
 
     /**
-     * Subscribe for updates to this table. ShiftObliviousListener will be invoked via the UpdateGraphProcessor
-     * notification queue associated with this Table.
+     * Subscribe for updates to this table. {@code listener} will be invoked via the {@link NotificationQueue}
+     * associated with this Table.
      *
      * @param listener listener for updates
      */
     void listenForUpdates(Listener listener);
-
-    /**
-     * Subscribe for updates to this table. Direct listeners are invoked immediately when changes are published, rather
-     * than via a UpdateGraphProcessor notification queue.
-     *
-     * @param listener listener for updates
-     */
-    void listenForDirectUpdates(ShiftObliviousListener listener);
 
     /**
      * Unsubscribe the supplied listener.
@@ -2675,131 +2632,12 @@ public interface Table extends
      */
     void removeUpdateListener(Listener listener);
 
-    /**
-     * Unsubscribe the supplied listener.
-     *
-     * @param listener listener for updates
-     */
-    void removeDirectUpdateListener(final ShiftObliviousListener listener);
-
-    /**
-     * Initiate update delivery to this table's listeners. Will notify direct listeners before completing, and enqueue
-     * notifications for all other listeners.
-     *
-     * @param added rowSet values added to the table
-     * @param removed rowSet values removed from the table
-     * @param modified rowSet values modified in the table.
-     */
-    default void notifyListeners(RowSet added, RowSet removed, RowSet modified) {
-        notifyListeners(new Listener.Update(added, removed, modified, RowSetShiftData.EMPTY,
-                modified.isEmpty() ? ModifiedColumnSet.EMPTY : ModifiedColumnSet.ALL));
-    }
-
-    /**
-     * Initiate update delivery to this table's listeners. Will notify direct listeners before completing, and enqueue
-     * notifications for all other listeners.
-     *
-     * @param update the set of table changes to propagate The caller gives this update object away; the invocation of
-     *        {@code notifyListeners} takes ownership, and will call {@code release} on it once it is not used anymore;
-     *        callers should pass a {@code copy} for updates they intend to further use.
-     */
-    void notifyListeners(Listener.Update update);
-
-    /**
-     * Initiate failure delivery to this table's listeners. Will notify direct listeners before completing, and enqueue
-     * notifications for all other listeners.
-     *
-     * @param e error
-     * @param sourceEntry performance tracking
-     */
-    void notifyListenersOnError(Throwable e, @Nullable UpdatePerformanceTracker.Entry sourceEntry);
-
+    // TODO-RWC: LogOutputAppendable marker interface instead of UPT.E.
+    // TODO-RWC: Collapse ShiftObliviousListener into Listener from Table, and delete direct?
     /**
      * @return true if this table is in a failure state.
      */
     default boolean isFailed() {
         return false;
-    }
-
-    /**
-     * Retrieve the {@link ModifiedColumnSet} that will be used when propagating updates from this table.
-     *
-     * @param columnNames the columns that should belong to the resulting set.
-     * @return the resulting ModifiedColumnSet for the given columnNames
-     */
-    default ModifiedColumnSet newModifiedColumnSet(String... columnNames) {
-        throw new UnsupportedOperationException();
-    }
-
-    /**
-     * Create a {@link ModifiedColumnSet.Transformer} that can be used to propagate dirty columns from this table to
-     * listeners of the table used to construct columnSets. It is an error if {@code columnNames} and {@code columnSets}
-     * are not the same length. The transformer will mark {@code columnSets[i]} as dirty if the column represented by
-     * {@code columnNames[i]} is dirty.
-     *
-     * @param columnNames the source columns
-     * @param columnSets the destination columns in the convenient ModifiedColumnSet form
-     * @return a transformer that knows the dirty details
-     */
-    default ModifiedColumnSet.Transformer newModifiedColumnSetTransformer(String[] columnNames,
-            ModifiedColumnSet[] columnSets) {
-        throw new UnsupportedOperationException();
-    }
-
-    /**
-     * Create a {@link ModifiedColumnSet.Transformer} that can be used to propagate dirty columns from this table to
-     * listeners of the provided resultTable.
-     *
-     * @param resultTable the destination table
-     * @param columnNames the columns that map one-to-one with the result table
-     * @return a transformer that passes dirty details via an identity mapping
-     */
-    default ModifiedColumnSet.Transformer newModifiedColumnSetTransformer(Table resultTable,
-            String... columnNames) {
-        final ModifiedColumnSet[] columnSets = new ModifiedColumnSet[columnNames.length];
-        for (int i = 0; i < columnNames.length; ++i) {
-            columnSets[i] = resultTable.newModifiedColumnSet(columnNames[i]);
-        }
-        return newModifiedColumnSetTransformer(columnNames, columnSets);
-    }
-
-    /**
-     * Create a {@link ModifiedColumnSet.Transformer} that can be used to propagate dirty columns from this table to
-     * listeners of the provided resultTable.
-     *
-     * @param resultTable the destination table
-     * @param matchPairs the columns that map one-to-one with the result table
-     * @return a transformer that passes dirty details via an identity mapping
-     */
-    default ModifiedColumnSet.Transformer newModifiedColumnSetTransformer(Table resultTable,
-            MatchPair... matchPairs) {
-        final ModifiedColumnSet[] columnSets = new ModifiedColumnSet[matchPairs.length];
-        for (int ii = 0; ii < matchPairs.length; ++ii) {
-            columnSets[ii] = resultTable.newModifiedColumnSet(matchPairs[ii].left());
-        }
-        return newModifiedColumnSetTransformer(MatchPair.getRightColumns(matchPairs), columnSets);
-    }
-
-    /**
-     * Create a transformer that uses an identity mapping from one ColumnSourceMap to another. The two CSMs must have
-     * equivalent column names and column ordering.
-     *
-     * @param newColumns the column source map for result table
-     * @return a simple Transformer that makes a cheap, but CSM compatible copy
-     */
-    default ModifiedColumnSet.Transformer newModifiedColumnSetIdentityTransformer(
-            final Map<String, ColumnSource<?>> newColumns) {
-        throw new UnsupportedOperationException();
-    }
-
-    /**
-     * Create a transformer that uses an identity mapping from one Table another. The two tables must have equivalent
-     * column names and column ordering.
-     *
-     * @param other the result table
-     * @return a simple Transformer that makes a cheap, but CSM compatible copy
-     */
-    default ModifiedColumnSet.Transformer newModifiedColumnSetIdentityTransformer(Table other) {
-        throw new UnsupportedOperationException();
     }
 }

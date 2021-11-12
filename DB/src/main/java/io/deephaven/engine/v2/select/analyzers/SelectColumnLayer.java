@@ -9,11 +9,11 @@ import io.deephaven.engine.v2.select.SelectColumn;
 import io.deephaven.engine.v2.sources.WritableChunkSink;
 import io.deephaven.engine.v2.sources.WritableSource;
 import io.deephaven.engine.chunk.Attributes;
-import io.deephaven.engine.rftable.ChunkSource;
+import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.chunk.WritableChunk;
 import io.deephaven.engine.v2.utils.ChunkUtils;
-import io.deephaven.engine.structures.RowSequence;
-import io.deephaven.engine.v2.utils.RowSet;
+import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.rowset.RowSet;
 
 import java.util.function.LongToIntFunction;
 

@@ -1,8 +1,8 @@
 package io.deephaven.engine.v2.select;
 
 import io.deephaven.engine.tables.ColumnDefinition;
-import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.utils.RowSet;
+import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.rowset.RowSet;
 
 import java.util.List;
 import java.util.Map;

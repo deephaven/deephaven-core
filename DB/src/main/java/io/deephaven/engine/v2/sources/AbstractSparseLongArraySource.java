@@ -7,15 +7,19 @@
 
 package io.deephaven.engine.v2.sources;
 
-import io.deephaven.engine.rftable.DefaultGetContext;
+import io.deephaven.engine.table.DefaultGetContext;
 import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.chunk.Attributes.OrderedRowKeyRanges;
 import io.deephaven.engine.chunk.Attributes.RowKeys;
 import io.deephaven.engine.chunk.Attributes.Values;
 import io.deephaven.engine.chunk.Attributes.OrderedRowKeys;
+import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetBuilderSequential;
+import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.v2.sources.sparse.LongOneOrN;
 import io.deephaven.engine.v2.utils.*;
-import io.deephaven.engine.structures.RowSequence;
+import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.util.SoftRecycler;
 import gnu.trove.list.array.TLongArrayList;
 import org.jetbrains.annotations.NotNull;
@@ -496,7 +500,7 @@ abstract public class AbstractSparseLongArraySource<T> extends SparseArrayColumn
         final WritableLongChunk<? super Values> longChunk = dest.asWritableLongChunk();
         for (int ii = 0; ii < keys.size(); ) {
             final long firstKey = keys.get(ii);
-            if (firstKey == RowSet.NULL_ROW_KEY) {
+            if (firstKey == RowSequence.NULL_ROW_KEY) {
                 longChunk.set(ii++, NULL_LONG);
                 continue;
             }
@@ -530,7 +534,7 @@ abstract public class AbstractSparseLongArraySource<T> extends SparseArrayColumn
         final WritableLongChunk<? super Values> longChunk = dest.asWritableLongChunk();
         for (int ii = 0; ii < keys.size(); ) {
             final long firstKey = keys.get(ii);
-            if (firstKey == RowSet.NULL_ROW_KEY) {
+            if (firstKey == RowSequence.NULL_ROW_KEY) {
                 longChunk.set(ii++, NULL_LONG);
                 continue;
             }

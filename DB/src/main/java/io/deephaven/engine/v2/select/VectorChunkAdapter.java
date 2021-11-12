@@ -1,11 +1,11 @@
 package io.deephaven.engine.v2.select;
 
-import io.deephaven.engine.rftable.DefaultChunkSource;
-import io.deephaven.engine.rftable.SharedContext;
+import io.deephaven.engine.table.DefaultChunkSource;
+import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.vector.Vector;
-import io.deephaven.engine.rftable.ChunkSource;
+import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.chunk.*;
-import io.deephaven.engine.structures.RowSequence;
+import io.deephaven.engine.rowset.RowSequence;
 import org.jetbrains.annotations.NotNull;
 
 /**

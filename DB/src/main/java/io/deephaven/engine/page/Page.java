@@ -2,11 +2,11 @@ package io.deephaven.engine.page;
 
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.engine.chunk.Attributes.Any;
-import io.deephaven.engine.rftable.ChunkSource;
-import io.deephaven.engine.rftable.DefaultChunkSource;
+import io.deephaven.engine.table.ChunkSource;
+import io.deephaven.engine.table.DefaultChunkSource;
 import io.deephaven.engine.chunk.WritableChunk;
-import io.deephaven.engine.structures.RowSequence;
-import io.deephaven.engine.v2.utils.RowSet;
+import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
 

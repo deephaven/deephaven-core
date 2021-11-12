@@ -4,7 +4,7 @@
 
 package io.deephaven.engine.v2.join;
 
-import io.deephaven.engine.v2.utils.RowSet;
+import io.deephaven.engine.rowset.RowSet;
 
 interface JoinKeyState {
     void addLeftIndices(RowSet leftIndices);

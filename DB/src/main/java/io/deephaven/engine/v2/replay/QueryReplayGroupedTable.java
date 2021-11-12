@@ -6,11 +6,14 @@ package io.deephaven.engine.v2.replay;
 
 
 import io.deephaven.base.verify.Require;
+import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.time.DateTime;
 import io.deephaven.engine.v2.QueryTable;
-import io.deephaven.engine.v2.sources.ColumnSource;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.v2.sources.RedirectedColumnSource;
-import io.deephaven.engine.tuplesource.TupleSource;
+import io.deephaven.engine.table.TupleSource;
 import io.deephaven.engine.tuplesource.TupleSourceFactory;
 import io.deephaven.engine.v2.utils.*;
 
@@ -72,7 +75,7 @@ public abstract class QueryReplayGroupedTable extends QueryTable implements Runn
     }
 
     protected QueryReplayGroupedTable(TrackingRowSet rowSet, Map<String, ? extends ColumnSource<?>> input,
-            String timeColumn, Replayer replayer, MutableRowRedirection rowRedirection, String[] groupingColumns) {
+                                      String timeColumn, Replayer replayer, MutableRowRedirection rowRedirection, String[] groupingColumns) {
 
         super(RowSetFactory.empty().toTracking(), getResultSources(input, rowRedirection));
         this.rowRedirection = rowRedirection;

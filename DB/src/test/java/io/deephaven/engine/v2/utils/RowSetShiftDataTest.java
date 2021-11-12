@@ -1,5 +1,9 @@
 package io.deephaven.engine.v2.utils;
 
+import io.deephaven.engine.rowset.MutableRowSet;
+import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetBuilderSequential;
+import io.deephaven.engine.rowset.RowSetFactory;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.junit.Test;
 import static org.junit.Assert.*;

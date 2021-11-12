@@ -7,9 +7,9 @@ package io.deephaven.engine.v2;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.tables.TableDefinition;
 import io.deephaven.engine.v2.sources.ArrayBackedColumnSource;
-import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.utils.RowSetFactory;
-import io.deephaven.engine.v2.utils.TrackingRowSet;
+import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.qst.column.Column;
 import io.deephaven.qst.table.NewTable;
 

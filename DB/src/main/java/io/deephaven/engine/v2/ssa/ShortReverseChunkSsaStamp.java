@@ -6,9 +6,9 @@ package io.deephaven.engine.v2.ssa;
 import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.chunk.Attributes.RowKeys;
 import io.deephaven.engine.chunk.Attributes.Values;
+import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.v2.utils.RowRedirection;
-import io.deephaven.engine.v2.utils.RowSet;
-import io.deephaven.engine.v2.utils.RowSetBuilderRandom;
+import io.deephaven.engine.rowset.RowSetBuilderRandom;
 import io.deephaven.engine.v2.utils.MutableRowRedirection;
 
 /**
@@ -28,7 +28,7 @@ public class ShortReverseChunkSsaStamp implements ChunkSsaStamp {
         final int leftSize = leftStampKeys.size();
         final long rightSize = ssa.size();
         if (rightSize == 0) {
-            rightKeysForLeft.fillWithValue(0, leftSize, RowSet.NULL_ROW_KEY);
+            rightKeysForLeft.fillWithValue(0, leftSize, RowSequence.NULL_ROW_KEY);
             rightKeysForLeft.setSize(leftSize);
             return;
         }
@@ -39,7 +39,7 @@ public class ShortReverseChunkSsaStamp implements ChunkSsaStamp {
             final short leftValue = leftStampValues.get(li);
             final int comparison = doComparison(leftValue, ssaIt.getValue());
             if (disallowExactMatch ? comparison <= 0 : comparison < 0) {
-                rightKeysForLeft.set(li++, RowSet.NULL_ROW_KEY);
+                rightKeysForLeft.set(li++, RowSequence.NULL_ROW_KEY);
                 continue;
             }
             else if (comparison == 0) {
@@ -87,7 +87,7 @@ public class ShortReverseChunkSsaStamp implements ChunkSsaStamp {
                 final long leftRedirectionKey = rowRedirection.get(leftKey);
                 if (leftRedirectionKey == rightStampKey) {
                     modifiedBuilder.addKey(leftKey);
-                    if (newRightStampKey == RowSet.NULL_ROW_KEY) {
+                    if (newRightStampKey == RowSequence.NULL_ROW_KEY) {
                         rowRedirection.removeVoid(leftKey);
                     } else {
                         rowRedirection.putVoid(leftKey, newRightStampKey);

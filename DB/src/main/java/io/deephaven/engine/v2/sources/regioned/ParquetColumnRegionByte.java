@@ -6,8 +6,8 @@ import io.deephaven.engine.chunk.Attributes.Any;
 import io.deephaven.engine.chunk.WritableByteChunk;
 import io.deephaven.engine.chunk.WritableChunk;
 import io.deephaven.engine.page.ChunkPage;
-import io.deephaven.engine.structures.RowSequence;
-import io.deephaven.engine.structures.rowsequence.RowSequenceUtil;
+import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.rowset.impl.RowSequenceUtil;
 import org.jetbrains.annotations.NotNull;
 
 /**

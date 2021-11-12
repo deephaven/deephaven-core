@@ -2,8 +2,9 @@ package io.deephaven.engine.v2;
 
 import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.rftable.ChunkSource;
-import io.deephaven.engine.structures.RowSequence;
+import io.deephaven.engine.table.ChunkSource;
+import io.deephaven.engine.rowset.*;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.tables.SortingOrder;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.select.MatchPair;
@@ -53,7 +54,7 @@ public class AsOfJoinHelper {
         checkColumnConflicts(leftTable, columnsToAdd);
 
         if (!leftTable.isRefreshing() && leftTable.size() == 0) {
-            return makeResult(leftTable, rightTable, new SingleValueRowRedirection(RowSet.NULL_ROW_KEY),
+            return makeResult(leftTable, rightTable, new SingleValueRowRedirection(RowSequence.NULL_ROW_KEY),
                     columnsToAdd, false);
         }
 
@@ -595,7 +596,7 @@ public class AsOfJoinHelper {
 
                 for (int ii = 0; ii < leftKeyChunk.size(); ++ii) {
                     final long index = rightKeysForLeftChunk.get(ii);
-                    if (index != RowSet.NULL_ROW_KEY) {
+                    if (index != RowSequence.NULL_ROW_KEY) {
                         rowRedirection.put(leftKeyChunk.get(ii), index);
                     }
                 }
@@ -1148,7 +1149,7 @@ public class AsOfJoinHelper {
 
             for (int ii = 0; ii < leftStampKeys.size(); ++ii) {
                 final long index = rightKeysForLeft.get(ii);
-                if (index != RowSet.NULL_ROW_KEY) {
+                if (index != RowSequence.NULL_ROW_KEY) {
                     rowRedirection.put(leftStampKeys.get(ii), index);
                 }
             }

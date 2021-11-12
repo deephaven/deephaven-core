@@ -4,9 +4,12 @@
 
 package io.deephaven.engine.v2.sources.regioned;
 
+import io.deephaven.engine.rowset.MutableRowSet;
+import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetBuilderSequential;
+import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.v2.ColumnToCodecMappings;
 import io.deephaven.engine.v2.locations.impl.TableLocationUpdateSubscriptionBuffer;
-import io.deephaven.engine.v2.utils.*;
 import io.deephaven.hash.KeyedObjectHashMap;
 import io.deephaven.hash.KeyedObjectKey;
 import io.deephaven.base.verify.Assert;

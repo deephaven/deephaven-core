@@ -1,0 +1,30 @@
+import io.deephaven.tools.Tools
+
+configurations {
+}
+
+sourceSets {
+    main {
+        java {
+            srcDir 'java'
+        }
+    }
+    test {
+        java {
+            srcDir 'test'
+        }
+    }
+}
+
+dependencies {
+    compile project(':qst'),
+            project(':engine-chunk'),
+            project(':engine-vector')
+}
+
+spotless {
+    java {
+        targetExclude(
+        )
+    }
+}

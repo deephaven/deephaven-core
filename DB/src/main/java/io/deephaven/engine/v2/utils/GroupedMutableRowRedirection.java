@@ -1,10 +1,11 @@
 package io.deephaven.engine.v2.utils;
 
-import io.deephaven.engine.structures.RowSequence;
+import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.chunk.Attributes.RowKeys;
-import io.deephaven.engine.rftable.ChunkSource;
+import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.chunk.ResettableWritableLongChunk;
 import io.deephaven.engine.chunk.WritableLongChunk;
+import io.deephaven.engine.rowset.RowSet;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 
@@ -51,7 +52,7 @@ public class GroupedMutableRowRedirection implements MutableRowRedirection {
     @Override
     public long get(long outerRowKey) {
         if (outerRowKey < 0 || outerRowKey >= size) {
-            return RowSet.NULL_ROW_KEY;
+            return RowSequence.NULL_ROW_KEY;
         }
 
         int slot;

@@ -1,12 +1,12 @@
 package io.deephaven.engine.v2.utils;
 
-import io.deephaven.engine.structures.RowSequence;
-import io.deephaven.engine.v2.sources.ColumnSource;
+import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.v2.sources.WritableSource;
 import io.deephaven.engine.chunk.Attributes.RowKeys;
 import io.deephaven.engine.chunk.Attributes.Values;
-import io.deephaven.engine.rftable.ChunkSource;
-import io.deephaven.engine.rftable.SharedContext;
+import io.deephaven.engine.table.ChunkSource;
+import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.chunk.WritableIntChunk;
 import io.deephaven.engine.chunk.WritableLongChunk;
 import io.deephaven.util.QueryConstants;
@@ -26,7 +26,7 @@ public final class IntColumnSourceMutableRowRedirection implements MutableRowRed
 
         columnSource.set(outerRowKey, (int) innerRowKey);
 
-        return previous == QueryConstants.NULL_INT ? RowSet.NULL_ROW_KEY : previous;
+        return previous == QueryConstants.NULL_INT ? RowSequence.NULL_ROW_KEY : previous;
     }
 
     @Override
@@ -38,7 +38,7 @@ public final class IntColumnSourceMutableRowRedirection implements MutableRowRed
     public final long get(long outerRowKey) {
         final int innerIndex = columnSource.getInt(outerRowKey);
         if (innerIndex == QueryConstants.NULL_INT) {
-            return RowSet.NULL_ROW_KEY;
+            return RowSequence.NULL_ROW_KEY;
         }
         return innerIndex;
     }
@@ -47,7 +47,7 @@ public final class IntColumnSourceMutableRowRedirection implements MutableRowRed
     public final long getPrev(long outerRowKey) {
         final int innerIndex = columnSource.getPrevInt(outerRowKey);
         if (innerIndex == QueryConstants.NULL_INT) {
-            return RowSet.NULL_ROW_KEY;
+            return RowSequence.NULL_ROW_KEY;
         }
         return innerIndex;
     }
@@ -84,7 +84,7 @@ public final class IntColumnSourceMutableRowRedirection implements MutableRowRed
         final int sz = outerRowKeys.intSize();
         for (int ii = 0; ii < sz; ++ii) {
             final int innerIndex = effectiveContext.intChunk.get(ii);
-            innerRowKeys.set(ii, innerIndex == QueryConstants.NULL_INT ? RowSet.NULL_ROW_KEY : innerIndex);
+            innerRowKeys.set(ii, innerIndex == QueryConstants.NULL_INT ? RowSequence.NULL_ROW_KEY : innerIndex);
         }
         innerRowKeys.setSize(sz);
     }
@@ -99,7 +99,7 @@ public final class IntColumnSourceMutableRowRedirection implements MutableRowRed
         final int sz = outerRowKeys.intSize();
         for (int ii = 0; ii < sz; ++ii) {
             final int innerIndex = effectiveContext.intChunk.get(ii);
-            innerRowKeys.set(ii, innerIndex == QueryConstants.NULL_INT ? RowSet.NULL_ROW_KEY : innerIndex);
+            innerRowKeys.set(ii, innerIndex == QueryConstants.NULL_INT ? RowSequence.NULL_ROW_KEY : innerIndex);
         }
         innerRowKeys.setSize(sz);
     }
@@ -108,7 +108,7 @@ public final class IntColumnSourceMutableRowRedirection implements MutableRowRed
     public final long remove(long outerRowKey) {
         final int previous = columnSource.getInt(outerRowKey);
         if (previous == QueryConstants.NULL_INT) {
-            return RowSet.NULL_ROW_KEY;
+            return RowSequence.NULL_ROW_KEY;
         }
         columnSource.set(outerRowKey, QueryConstants.NULL_INT);
         return previous;

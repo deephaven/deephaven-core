@@ -4,7 +4,7 @@ import io.deephaven.engine.exceptions.ArgumentException;
 import io.deephaven.engine.tables.ColumnDefinition;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.TableDefinition;
-import io.deephaven.engine.v2.utils.TrackingRowSet;
+import io.deephaven.engine.rowset.TrackingRowSet;
 
 import java.io.IOException;
 import java.util.List;

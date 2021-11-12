@@ -7,6 +7,9 @@
 
 package io.deephaven.engine.v2.by.ssmcountdistinct.count;
 
+import io.deephaven.engine.rowset.MutableRowSet;
+import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.v2.utils.*;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.v2.Listener;
@@ -16,7 +19,7 @@ import io.deephaven.engine.v2.by.ssmcountdistinct.BucketSsmDistinctContext;
 import io.deephaven.engine.v2.by.ssmcountdistinct.ObjectSsmBackedSource;
 import io.deephaven.engine.v2.by.ssmcountdistinct.DistinctOperatorFactory;
 import io.deephaven.engine.v2.by.ssmcountdistinct.SsmDistinctContext;
-import io.deephaven.engine.v2.sources.ColumnSource;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.v2.sources.LongArraySource;
 import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.chunk.Attributes.ChunkLengths;
