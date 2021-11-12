@@ -9,9 +9,7 @@ import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
-import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.datastructures.util.HashCodeUtil;
-import io.deephaven.engine.v2.InMemoryTable;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.qst.column.header.ColumnHeader;
 import java.util.Map.Entry;
@@ -503,32 +501,6 @@ public class TableDefinition implements Externalizable, LogOutputAppendable, Cop
     }
 
     // TODO: Keep cleaning up. ImmutableColumnDefinition, or ImmutableADO? Builder pattern?
-
-    public Table getColumnDefinitionsTable() {
-        List<String> columnNames = new ArrayList<>();
-        List<String> columnDataTypes = new ArrayList<>();
-        List<String> columnTypes = new ArrayList<>();
-        List<Boolean> columnPartitioning = new ArrayList<>();
-        List<Boolean> columnGrouping = new ArrayList<>();
-        for (ColumnDefinition<?> cDef : columns) {
-            columnNames.add(cDef.getName());
-            columnDataTypes.add(cDef.getDataType().getName());
-            columnTypes.add(ColumnDefinition.COLUMN_TYPE_FORMATTER.format(cDef.getColumnType()));
-            columnPartitioning.add(cDef.isPartitioning());
-            columnGrouping.add(cDef.isGrouping());
-
-        }
-        final String[] resultColumnNames = {"Name", "DataType", "ColumnType", "IsPartitioning", "IsGrouping"};
-        final Object[] resultValues = {
-                columnNames.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY),
-                columnDataTypes.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY),
-                columnTypes.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY),
-                columnPartitioning.toArray(new Boolean[0]),
-                columnGrouping.toArray(new Boolean[0]),
-        };
-
-        return new InMemoryTable(resultColumnNames, resultValues);
-    }
 
     /**
      * Helper method to assist with definition creation for user-namespace partitioned tables. This version

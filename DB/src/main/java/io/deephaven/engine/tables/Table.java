@@ -6,42 +6,35 @@ package io.deephaven.engine.tables;
 
 import io.deephaven.api.*;
 import io.deephaven.api.agg.Aggregation;
-import io.deephaven.api.agg.AggregationOutputs;
 import io.deephaven.api.agg.Array;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.base.Function;
-import io.deephaven.base.Pair;
-import io.deephaven.base.StringUtils;
-import io.deephaven.datastructures.util.CollectionUtil;
+import io.deephaven.engine.rowset.TrackingRowSet;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.tables.live.NotificationQueue;
-import io.deephaven.engine.tables.remote.*;
-import io.deephaven.engine.tables.select.*;
-import io.deephaven.engine.tables.utils.*;
-import io.deephaven.engine.time.DateTime;
-import io.deephaven.engine.util.ColumnFormattingValues;
-import io.deephaven.engine.v2.*;
-import io.deephaven.engine.vector.Vector;
-import io.deephaven.util.datastructures.LongSizedDataStructure;
+import io.deephaven.engine.tables.remote.AsyncMethod;
+import io.deephaven.engine.tables.select.MatchPair;
+import io.deephaven.engine.tables.select.WouldMatchPair;
+import io.deephaven.engine.tables.utils.LayoutHintBuilder;
 import io.deephaven.engine.util.liveness.LivenessNode;
-import io.deephaven.engine.util.liveness.LivenessScopeStack;
+import io.deephaven.engine.v2.*;
 import io.deephaven.engine.v2.by.AggregationFormulaStateFactory;
 import io.deephaven.engine.v2.by.AggregationIndexStateFactory;
 import io.deephaven.engine.v2.by.AggregationStateFactory;
 import io.deephaven.engine.v2.by.ComboAggregateFactory;
-import io.deephaven.engine.v2.by.ComboAggregateFactory.ComboBy;
 import io.deephaven.engine.v2.iterators.*;
-import io.deephaven.engine.v2.select.ReinterpretedColumn;
 import io.deephaven.engine.v2.select.SelectColumn;
 import io.deephaven.engine.v2.select.SelectFilter;
-import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.qst.table.TableSpec;
+import io.deephaven.util.datastructures.LongSizedDataStructure;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.*;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.UnaryOperator;
 
 /**
  * A Deephaven table.
@@ -60,6 +53,14 @@ public interface Table extends
         return TableCreatorImpl.create(table);
     }
 
+    /**
+     * Explicitly ensure that any work needed to make a table indexable, iterable, or queryable has been done, and
+     * return the coalesced child table if appropriate.
+     *
+     * @return This table, or a fully-coalesced child
+     */
+    Table coalesce();
+
     // -----------------------------------------------------------------------------------------------------------------
     // Metadata
     // -----------------------------------------------------------------------------------------------------------------
@@ -74,9 +75,7 @@ public interface Table extends
      * @return A Table of metadata about this Table's columns.
      */
     @AsyncMethod
-    default Table getMeta() {
-        return getDefinition().getColumnDefinitionsTable();
-    }
+    Table getMeta();
 
     @AsyncMethod
     String getDescription();
@@ -89,12 +88,7 @@ public interface Table extends
      *         {@code false} if any element of {@code columnNames} is <b>not</b> the name of a column in this table
      */
     @AsyncMethod
-    default boolean hasColumns(final String... columnNames) {
-        if (columnNames == null) {
-            throw new IllegalArgumentException("columnNames cannot be null!");
-        }
-        return hasColumns(Arrays.asList(columnNames));
-    }
+    boolean hasColumns(String... columnNames);
 
     /**
      * Determines whether this Table contains a column for each string in the specified collection of
@@ -107,12 +101,33 @@ public interface Table extends
      *         this table
      */
     @AsyncMethod
-    default boolean hasColumns(Collection<String> columnNames) {
-        if (columnNames == null) {
-            throw new IllegalArgumentException("columnNames cannot be null!");
-        }
-        return getDefinition().getColumnNameMap().keySet().containsAll(columnNames);
-    }
+    boolean hasColumns(Collection<String> columnNames);
+
+    @Override
+    @AsyncMethod
+    boolean isRefreshing();
+
+    /**
+     * @return The {@link TrackingRowSet} that exposes the row keys present in this Table
+     */
+    TrackingRowSet getRowSet();
+
+    /**
+     * @return {@link #size() Size} if it is currently known without subsequent steps to coalesce the Table, else
+     *         {@link io.deephaven.util.QueryConstants#NULL_LONG null}
+     */
+    long sizeForInstrumentation();
+
+    /**
+     * Returns {@code true} if this table has no rows (i.e. {@code size() == 0}).
+     *
+     * @return {@code true} if this table has no rows
+     */
+    boolean isEmpty();
+
+    // -----------------------------------------------------------------------------------------------------------------
+    // Attributes
+    // -----------------------------------------------------------------------------------------------------------------
 
     String DO_NOT_MAKE_REMOTE_ATTRIBUTE = "DoNotMakeRemote";
     String INPUT_TABLE_ATTRIBUTE = "InputTable";
@@ -138,12 +153,11 @@ public interface Table extends
      * producing aggregate results that are valid over the entire observed stream from the time the operation is
      * initiated. These semantics necessitate a few exclusions, i.e. unsupported operations:
      * <ol>
-     * <li>{@link #by(SelectColumn...) by()} as an rowSet-aggregation is unsupported. This means any of the overloads
-     * for {@link #by(AggregationStateFactory, SelectColumn...)} or {@link #by(Collection, Collection)} using
+     * <li>{@link #by(SelectColumn...) by()} as a rowSet-aggregation is unsupported. This means any of the overloads for
+     * {@link #by(AggregationStateFactory, SelectColumn...)} or {@link #by(Collection, Collection)} using
      * {@link AggregationIndexStateFactory}, {@link AggregationFormulaStateFactory}, or {@link Array}.
-     * {@link io.deephaven.engine.v2.by.ComboAggregateFactory#AggArray(java.lang.String...)}, and
-     * {@link ComboAggregateFactory#AggFormula(java.lang.String, java.lang.String, java.lang.String...)} are also
-     * unsupported.
+     * {@link ComboAggregateFactory#AggArray(String...)}, and
+     * {@link ComboAggregateFactory#AggFormula(String, String, String...)} are also unsupported.
      * <li>{@link #byExternal(boolean, String...) byExternal()} is unsupported</li>
      * <li>{@link #rollup(ComboAggregateFactory, boolean, SelectColumn...) rollup()} is unsupported if
      * {@code includeConstituents == true}</li>
@@ -158,7 +172,6 @@ public interface Table extends
      */
     String SORTED_COLUMNS_ATTRIBUTE = "SortedColumns";
     String SYSTEMIC_TABLE_ATTRIBUTE = "SystemicTable";
-
     // TODO: Might be good to take a pass through these and see what we can condense into
     // TODO: TreeTableInfo and RollupInfo to reduce the attribute noise.
     String ROLLUP_LEAF_ATTRIBUTE = "RollupLeaf";
@@ -169,15 +182,12 @@ public interface Table extends
     String REVERSE_LOOKUP_ATTRIBUTE = "ReverseLookup";
     String PREPARED_RLL_ATTRIBUTE = "PreparedRll";
     String PREDEFINED_ROLLUP_ATTRIBUTE = "PredefinedRollup";
-
     String SNAPSHOT_VIEWPORT_TYPE = "Snapshot";
-
     /**
      * This attribute is used internally by TableTools.merge to detect successive merges. Its presence indicates that it
      * is safe to decompose the table into its multiple constituent parts.
      */
     String MERGED_TABLE_ATTRIBUTE = "MergedTable";
-
     /**
      * <p>
      * This attribute is applied to source tables, and takes on Boolean values.
@@ -188,17 +198,14 @@ public interface Table extends
      * </ul>
      */
     String EMPTY_SOURCE_TABLE_ATTRIBUTE = "EmptySourceTable";
-
     /**
      * This attribute stores a reference to a table that is the parent table for a Preview Table.
      */
     String PREVIEW_PARENT_TABLE = "PreviewParentTable";
-
     /**
      * Set this attribute for tables that should not be displayed in the UI.
      */
     String NON_DISPLAY_TABLE = "NonDisplayTable";
-
     /**
      * Set this attribute to load a plugin for this table in the Web Client
      */
@@ -239,7 +246,7 @@ public interface Table extends
      * @return true if the attribute exists
      */
     @AsyncMethod
-    boolean hasAttribute(final @NotNull String name);
+    boolean hasAttribute(@NotNull String name);
 
     /**
      * Get all of the attributes from the table.
@@ -247,9 +254,7 @@ public interface Table extends
      * @return A map containing all of the attributes.
      */
     @AsyncMethod
-    default Map<String, Object> getAttributes() {
-        return getAttributes(Collections.emptySet());
-    }
+    Map<String, Object> getAttributes();
 
     /**
      * Get all attributes from the desired table except the items that appear in excluded.
@@ -260,43 +265,8 @@ public interface Table extends
     @AsyncMethod
     Map<String, Object> getAttributes(Collection<String> excluded);
 
-    @Override
-    @AsyncMethod
-    boolean isRefreshing();
-
-    /**
-     * Explicitly ensure that any work needed to make a table indexable, iterable, or queryable has been done, and
-     * return the coalesced child table if appropriate.
-     *
-     * @return This table, or a fully-coalesced child
-     */
-    default Table coalesce() {
-        if (isRefreshing()) {
-            LivenessScopeStack.peek().manage(this);
-        }
-        return this;
-    }
-
-    /**
-     * @return The {@link TrackingRowSet} that exposes the row keys present in this Table
-     */
-    TrackingRowSet getRowSet();
-
-    default long sizeForInstrumentation() {
-        return size();
-    }
-
-    /**
-     * Returns {@code true} if this table has no rows (i.e. {@code size() == 0}).
-     *
-     * @return {@code true} if this table has no rows
-     */
-    default boolean isEmpty() {
-        return size() == 0;
-    }
-
     // -----------------------------------------------------------------------------------------------------------------
-    // Column Sources - for fetching data by rowSet key
+    // ColumnSources for fetching data by row key
     // -----------------------------------------------------------------------------------------------------------------
 
     /**
@@ -318,28 +288,19 @@ public interface Table extends
      * @param <T> The target type, as a type parameter. Intended to be inferred from {@code clazz}.
      * @return The column source for {@code sourceName}, parameterized by {@code T}
      */
-    default <T> ColumnSource<T> getColumnSource(String sourceName, Class<? extends T> clazz) {
-        @SuppressWarnings("rawtypes")
-        ColumnSource rawColumnSource = getColumnSource(sourceName);
-        // noinspection unchecked
-        return rawColumnSource.cast(clazz);
-    }
+    <T> ColumnSource<T> getColumnSource(String sourceName, Class<? extends T> clazz);
 
     Map<String, ? extends ColumnSource<?>> getColumnSourceMap();
 
     Collection<? extends ColumnSource<?>> getColumnSources();
 
     // -----------------------------------------------------------------------------------------------------------------
-    // Data Columns - for fetching data by position
+    // DataColumns for fetching data by row position; generally much less efficient than ColumnSource
     // -----------------------------------------------------------------------------------------------------------------
 
-    default DataColumn[] getColumns() {
-        return getDefinition().getColumnStream().map(c -> getColumn(c.getName())).toArray(DataColumn[]::new);
-    }
+    DataColumn[] getColumns();
 
-    default DataColumn getColumn(int columnIndex) {
-        return getColumn(this.getDefinition().getColumns()[columnIndex].getName());
-    }
+    DataColumn getColumn(int columnIndex);
 
     DataColumn getColumn(String columnName);
 
@@ -347,61 +308,24 @@ public interface Table extends
     // Column Iterators
     // -----------------------------------------------------------------------------------------------------------------
 
-    default <TYPE> Iterator<TYPE> columnIterator(@NotNull final String columnName) {
-        // noinspection rawtypes
-        Iterator result;
-        final Class<TYPE> type = getDefinition().<TYPE>getColumn(columnName).getDataType();
-        if (type == byte.class || type == Byte.class) {
-            result = byteColumnIterator(columnName);
-        } else if (type == char.class || type == Character.class) {
-            result = characterColumnIterator(columnName);
-        } else if (type == double.class || type == Double.class) {
-            result = doubleColumnIterator(columnName);
-        } else if (type == float.class || type == Float.class) {
-            result = floatColumnIterator(columnName);
-        } else if (type == int.class || type == Integer.class) {
-            result = integerColumnIterator(columnName);
-        } else if (type == long.class || type == Long.class) {
-            result = longColumnIterator(columnName);
-        } else if (type == short.class || type == Short.class) {
-            result = shortColumnIterator(columnName);
-        } else {
-            result = new ColumnIterator<>(this, columnName);
-        }
-        // noinspection unchecked
-        return result;
-    }
+    <TYPE> Iterator<TYPE> columnIterator(@NotNull String columnName);
 
-    default ByteColumnIterator byteColumnIterator(@NotNull final String columnName) {
-        return new ByteColumnIterator(this, columnName);
-    }
+    ByteColumnIterator byteColumnIterator(@NotNull String columnName);
 
-    default CharacterColumnIterator characterColumnIterator(@NotNull final String columnName) {
-        return new CharacterColumnIterator(this, columnName);
-    }
+    CharacterColumnIterator characterColumnIterator(@NotNull String columnName);
 
-    default DoubleColumnIterator doubleColumnIterator(@NotNull final String columnName) {
-        return new DoubleColumnIterator(this, columnName);
-    }
+    DoubleColumnIterator doubleColumnIterator(@NotNull String columnName);
 
-    default FloatColumnIterator floatColumnIterator(@NotNull final String columnName) {
-        return new FloatColumnIterator(this, columnName);
-    }
+    FloatColumnIterator floatColumnIterator(@NotNull String columnName);
 
-    default IntegerColumnIterator integerColumnIterator(@NotNull final String columnName) {
-        return new IntegerColumnIterator(this, columnName);
-    }
+    IntegerColumnIterator integerColumnIterator(@NotNull String columnName);
 
-    default LongColumnIterator longColumnIterator(@NotNull final String columnName) {
-        return new LongColumnIterator(this, columnName);
-    }
+    LongColumnIterator longColumnIterator(@NotNull String columnName);
 
-    default ShortColumnIterator shortColumnIterator(@NotNull final String columnName) {
-        return new ShortColumnIterator(this, columnName);
-    }
+    ShortColumnIterator shortColumnIterator(@NotNull String columnName);
 
     // -----------------------------------------------------------------------------------------------------------------
-    // Convenience data fetching
+    // Convenience data fetching; highly inefficient
     // -----------------------------------------------------------------------------------------------------------------
 
     Object[] getRecord(long rowNo, String... columnNames);
@@ -414,25 +338,17 @@ public interface Table extends
     Table where(SelectFilter... filters);
 
     @AsyncMethod
-    default Table where(String... filters) {
-        return where(SelectFilterFactory.getExpressions(filters));
-    }
+    Table where(String... filters);
 
     @Override
     @AsyncMethod
-    default Table where(Collection<? extends Filter> filters) {
-        return where(SelectFilter.from(filters));
-    }
+    Table where(Collection<? extends Filter> filters);
 
     @AsyncMethod
-    default Table where() {
-        return where(SelectFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY);
-    }
+    Table where();
 
     @AsyncMethod
-    default Table wouldMatch(String... expressions) {
-        return wouldMatch(WouldMatchPairFactory.getExpressions(expressions));
-    }
+    Table wouldMatch(String... expressions);
 
     /**
      * A table operation that applies the supplied predicate to each row in the table and produces columns containing
@@ -456,59 +372,33 @@ public interface Table extends
      */
     Table whereIn(GroupStrategy groupStrategy, Table rightTable, boolean inclusion, MatchPair... columnsToMatch);
 
-    default Table whereIn(Table rightTable, boolean inclusion, MatchPair... columnsToMatch) {
-        return whereIn(GroupStrategy.DEFAULT, rightTable, inclusion, columnsToMatch);
-    }
+    Table whereIn(Table rightTable, boolean inclusion, MatchPair... columnsToMatch);
 
-    default Table whereIn(Table rightTable, boolean inclusion, String... columnsToMatch) {
-        return whereIn(GroupStrategy.DEFAULT, rightTable, inclusion, MatchPairFactory.getExpressions(columnsToMatch));
-    }
+    Table whereIn(Table rightTable, boolean inclusion, String... columnsToMatch);
 
-    default Table whereIn(Table rightTable, String... columnsToMatch) {
-        return whereIn(GroupStrategy.DEFAULT, rightTable, true, MatchPairFactory.getExpressions(columnsToMatch));
-    }
+    Table whereIn(Table rightTable, String... columnsToMatch);
 
-    default Table whereIn(Table rightTable, MatchPair... columnsToMatch) {
-        return whereIn(GroupStrategy.DEFAULT, rightTable, true, columnsToMatch);
-    }
+    Table whereIn(Table rightTable, MatchPair... columnsToMatch);
 
-    default Table whereNotIn(Table rightTable, String... columnsToMatch) {
-        return whereIn(GroupStrategy.DEFAULT, rightTable, false, MatchPairFactory.getExpressions(columnsToMatch));
-    }
+    Table whereNotIn(Table rightTable, String... columnsToMatch);
 
-    default Table whereNotIn(Table rightTable, MatchPair... columnsToMatch) {
-        return whereIn(GroupStrategy.DEFAULT, rightTable, false, columnsToMatch);
-    }
+    Table whereNotIn(Table rightTable, MatchPair... columnsToMatch);
 
-    default Table whereIn(GroupStrategy groupStrategy, Table rightTable, String... columnsToMatch) {
-        return whereIn(groupStrategy, rightTable, true, columnsToMatch);
-    }
+    Table whereIn(GroupStrategy groupStrategy, Table rightTable, String... columnsToMatch);
 
-    default Table whereIn(GroupStrategy groupStrategy, Table rightTable, MatchPair... columnsToMatch) {
-        return whereIn(groupStrategy, rightTable, true, columnsToMatch);
-    }
+    Table whereIn(GroupStrategy groupStrategy, Table rightTable, MatchPair... columnsToMatch);
 
-    default Table whereNotIn(GroupStrategy groupStrategy, Table rightTable, String... columnsToMatch) {
-        return whereIn(groupStrategy, rightTable, false, columnsToMatch);
-    }
+    Table whereNotIn(GroupStrategy groupStrategy, Table rightTable, String... columnsToMatch);
 
-    default Table whereNotIn(GroupStrategy groupStrategy, Table rightTable, MatchPair... columnsToMatch) {
-        return whereIn(groupStrategy, rightTable, false, columnsToMatch);
-    }
+    Table whereNotIn(GroupStrategy groupStrategy, Table rightTable, MatchPair... columnsToMatch);
 
-    default Table whereIn(GroupStrategy groupStrategy, Table rightTable, boolean inclusion, String... columnsToMatch) {
-        return whereIn(groupStrategy, rightTable, inclusion, MatchPairFactory.getExpressions(columnsToMatch));
-    }
+    Table whereIn(GroupStrategy groupStrategy, Table rightTable, boolean inclusion, String... columnsToMatch);
 
     @Override
-    default Table whereIn(Table rightTable, Collection<? extends JoinMatch> columnsToMatch) {
-        return whereIn(rightTable, MatchPair.fromMatches(columnsToMatch));
-    }
+    Table whereIn(Table rightTable, Collection<? extends JoinMatch> columnsToMatch);
 
     @Override
-    default Table whereNotIn(Table rightTable, Collection<? extends JoinMatch> columnsToMatch) {
-        return whereNotIn(rightTable, MatchPair.fromMatches(columnsToMatch));
-    }
+    Table whereNotIn(Table rightTable, Collection<? extends JoinMatch> columnsToMatch);
 
     /**
      * Filters according to an expression in disjunctive normal form.
@@ -521,9 +411,7 @@ public interface Table extends
      */
     @SuppressWarnings("unchecked")
     @AsyncMethod
-    default Table whereOneOf(Collection<SelectFilter>... filtersToApply) {
-        return where(WhereClause.createDisjunctiveFilter(filtersToApply));
-    }
+    Table whereOneOf(Collection<SelectFilter>... filtersToApply);
 
     /**
      * Applies the provided filters to the table disjunctively.
@@ -532,18 +420,10 @@ public interface Table extends
      * @return a new table, with the filters applied
      */
     @AsyncMethod
-    default Table whereOneOf(String... filtersToApplyStrings) {
-        // noinspection unchecked, generic array creation is not possible
-        final Collection<SelectFilter>[] filtersToApplyArrayOfCollections =
-                (Collection<SelectFilter>[]) Arrays.stream(SelectFilterFactory.getExpressions(filtersToApplyStrings))
-                        .map(Collections::singleton).toArray(Collection[]::new);
-        return whereOneOf(filtersToApplyArrayOfCollections);
-    }
+    Table whereOneOf(String... filtersToApplyStrings);
 
     @AsyncMethod
-    default Table whereOneOf() {
-        return where(SelectFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY);
-    }
+    Table whereOneOf();
 
     /**
      * Get a {@link Table} that contains a sub-set of the rows from {@code this}.
@@ -559,54 +439,36 @@ public interface Table extends
 
     Table select(SelectColumn... columns);
 
-    default Table select(String... columns) {
-        return select(SelectColumnFactory.getExpressions(columns));
-    }
+    Table select(String... columns);
 
     @Override
-    default Table select(Collection<? extends Selectable> columns) {
-        return select(SelectColumn.from(columns));
-    }
+    Table select(Collection<? extends Selectable> columns);
 
-    default Table select() {
-        return select(getDefinition().getColumnNamesArray());
-    }
+    Table select();
 
     @AsyncMethod
     Table selectDistinct(SelectColumn... columns);
 
     @AsyncMethod
-    default Table selectDistinct(String... columns) {
-        return selectDistinct(SelectColumnFactory.getExpressions(columns));
-    }
+    Table selectDistinct(String... columns);
 
     @AsyncMethod
-    default Table selectDistinct(Collection<String> columns) {
-        return selectDistinct(SelectColumnFactory.getExpressions(columns));
-    }
+    Table selectDistinct(Collection<String> columns);
 
     @AsyncMethod
-    default Table selectDistinct() {
-        return selectDistinct(getDefinition().getColumnNamesArray());
-    }
+    Table selectDistinct();
 
     Table update(SelectColumn... newColumns);
 
-    default Table update(String... newColumns) {
-        return update(SelectColumnFactory.getExpressions(newColumns));
-    }
+    Table update(String... newColumns);
 
     @Override
-    default Table update(Collection<? extends Selectable> columns) {
-        return update(SelectColumn.from(columns));
-    }
+    Table update(Collection<? extends Selectable> columns);
 
     /**
      * DO NOT USE -- this API is in flux and may change or disappear in the future.
      */
-    default SelectValidationResult validateSelect(String... columns) {
-        return validateSelect(SelectColumnFactory.getExpressions(columns));
-    }
+    SelectValidationResult validateSelect(String... columns);
 
     /**
      * DO NOT USE -- this API is in flux and may change or disappear in the future.
@@ -629,117 +491,59 @@ public interface Table extends
      * </p>
      *
      * @param newColumns the columns to add
-     *
      * @return a new Table with the columns added; to be computed on demand
      */
     Table lazyUpdate(SelectColumn... newColumns);
 
-    default Table lazyUpdate(String... newColumns) {
-        return lazyUpdate(SelectColumnFactory.getExpressions(newColumns));
-    }
+    Table lazyUpdate(String... newColumns);
 
-    default Table lazyUpdate(Collection<String> newColumns) {
-        return lazyUpdate(SelectColumnFactory.getExpressions(newColumns));
-    }
+    Table lazyUpdate(Collection<String> newColumns);
 
     @AsyncMethod
     Table view(SelectColumn... columns);
 
     @AsyncMethod
-    default Table view(String... columns) {
-        return view(SelectColumnFactory.getExpressions(columns));
-    }
+    Table view(String... columns);
 
     @Override
     @AsyncMethod
-    default Table view(Collection<? extends Selectable> columns) {
-        return view(SelectColumn.from(columns));
-    }
+    Table view(Collection<? extends Selectable> columns);
 
     @AsyncMethod
     Table updateView(SelectColumn... newColumns);
 
     @AsyncMethod
-    default Table updateView(String... newColumns) {
-        return updateView(SelectColumnFactory.getExpressions(newColumns));
-    }
+    Table updateView(String... newColumns);
 
     @Override
     @AsyncMethod
-    default Table updateView(Collection<? extends Selectable> columns) {
-        return updateView(SelectColumn.from(columns));
-    }
+    Table updateView(Collection<? extends Selectable> columns);
 
     @AsyncMethod
     Table dropColumns(String... columnNames);
 
     @AsyncMethod
-    default Table dropColumnFormats() {
-        String[] columnAry = getDefinition().getColumnStream()
-                .map(ColumnDefinition::getName)
-                .filter(ColumnFormattingValues::isFormattingColumn)
-                .toArray(String[]::new);
-        return dropColumns(columnAry);
-    }
+    Table dropColumnFormats();
 
     @AsyncMethod
-    default Table dropColumns(Collection<String> columnNames) {
-        return dropColumns(columnNames.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
-    }
+    Table dropColumns(Collection<String> columnNames);
 
     Table renameColumns(MatchPair... pairs);
 
-    default Table renameColumns(String... columns) {
-        return renameColumns(MatchPairFactory.getExpressions(columns));
-    }
+    Table renameColumns(String... columns);
 
-    default Table renameColumns(Collection<String> columns) {
-        return renameColumns(MatchPairFactory.getExpressions(columns));
-    }
+    Table renameColumns(Collection<String> columns);
 
-    @FunctionalInterface
-    interface RenameFunction {
-        String rename(String currentName);
-    }
-
-    default Table renameAllColumns(RenameFunction renameFunction) {
-        return renameColumns(getDefinition().getColumnStream().map(ColumnDefinition::getName)
-                .map(n -> new MatchPair(renameFunction.rename(n), n)).toArray(MatchPair[]::new));
-    }
+    Table renameAllColumns(UnaryOperator<String> renameFunction);
 
     @AsyncMethod
-    default Table formatColumns(String... columnFormats) {
-        final SelectColumn[] selectColumns = SelectColumnFactory.getFormatExpressions(columnFormats);
-
-        final Set<String> existingColumns = getDefinition().getColumnNames()
-                .stream()
-                .filter(column -> !ColumnFormattingValues.isFormattingColumn(column))
-                .collect(Collectors.toSet());
-
-        final String[] unknownColumns = Arrays.stream(selectColumns)
-                .map(SelectColumnFactory::getFormatBaseColumn)
-                .filter(column -> (column != null && !column.equals("*") && !existingColumns.contains(column)))
-                .toArray(String[]::new);
-
-        if (unknownColumns.length > 0) {
-            throw new RuntimeException(
-                    "Unknown columns: " + Arrays.toString(unknownColumns) + ", available columns = " + existingColumns);
-        }
-
-        return updateView(selectColumns);
-    }
+    Table formatColumns(String... columnFormats);
 
     @AsyncMethod
-    default Table formatRowWhere(String condition, String formula) {
-        return formatColumnWhere(ColumnFormattingValues.ROW_FORMAT_NAME, condition, formula);
-    }
+    Table formatRowWhere(String condition, String formula);
 
     @AsyncMethod
-    default Table formatColumnWhere(String columnName, String condition, String formula) {
-        return formatColumns(
-                columnName + " = (" + condition + ") ? io.deephaven.engine.util.ColorUtil.toLong(" + formula
-                        + ") : io.deephaven.engine.util.ColorUtil.toLong(NO_FORMATTING)");
-    }
+    Table formatColumnWhere(String columnName, String condition, String formula);
 
     /**
      * Produce a new table with the specified columns moved to the leftmost position. Columns can be renamed with the
@@ -749,9 +553,7 @@ public interface Table extends
      * @return The new table, with the columns rearranged as explained above {@link #moveColumns(int, String...)}
      */
     @AsyncMethod
-    default Table moveUpColumns(String... columnsToMove) {
-        return moveColumns(0, columnsToMove);
-    }
+    Table moveUpColumns(String... columnsToMove);
 
     /**
      * Produce a new table with the specified columns moved to the rightmost position. Columns can be renamed with the
@@ -761,9 +563,7 @@ public interface Table extends
      * @return The new table, with the columns rearranged as explained above {@link #moveColumns(int, String...)}
      */
     @AsyncMethod
-    default Table moveDownColumns(String... columnsToMove) {
-        return moveColumns(getDefinition().getColumns().length - columnsToMove.length, true, columnsToMove);
-    }
+    Table moveDownColumns(String... columnsToMove);
 
     /**
      * Produce a new table with the specified columns moved to the specified {@code rowSet}. Column indices begin at 0.
@@ -774,56 +574,10 @@ public interface Table extends
      * @return The new table, with the columns rearranged as explained above
      */
     @AsyncMethod
-    default Table moveColumns(int index, String... columnsToMove) {
-        return moveColumns(index, false, columnsToMove);
-    }
+    Table moveColumns(int index, String... columnsToMove);
 
     @AsyncMethod
-    default Table moveColumns(int index, boolean moveToEnd, String... columnsToMove) {
-        // Get the current columns
-        final List<String> currentColumns = getDefinition().getColumnNames();
-
-        // Create a Set from columnsToMove. This way, we can rename and rearrange columns at once.
-        final Set<String> leftColsToMove = new HashSet<>();
-        final Set<String> rightColsToMove = new HashSet<>();
-        int extraCols = 0;
-
-        for (final String columnToMove : columnsToMove) {
-            final String left = MatchPairFactory.getExpression(columnToMove).leftColumn;
-            final String right = MatchPairFactory.getExpression(columnToMove).rightColumn;
-
-            if (!leftColsToMove.add(left) || !currentColumns.contains(left) || (rightColsToMove.contains(left)
-                    && !left.equals(right) && leftColsToMove.stream().anyMatch(col -> col.equals(right)))) {
-                extraCols++;
-            }
-            if (currentColumns.stream().anyMatch(currentColumn -> currentColumn.equals(right)) && !left.equals(right)
-                    && rightColsToMove.add(right) && !rightColsToMove.contains(left)) {
-                extraCols--;
-            }
-        }
-        index += moveToEnd ? extraCols : 0;
-
-        // vci for write, cci for currentColumns, ctmi for columnsToMove
-        final SelectColumn[] viewColumns = new SelectColumn[currentColumns.size() + extraCols];
-        for (int vci = 0, cci = 0, ctmi = 0; vci < viewColumns.length;) {
-            if (vci >= index && ctmi < columnsToMove.length) {
-                viewColumns[vci++] = SelectColumnFactory.getExpression(columnsToMove[ctmi++]);
-            } else {
-                // Don't add the column if it's one of the columns we're moving or if it has been renamed.
-                final String currentColumn = currentColumns.get(cci++);
-                if (!leftColsToMove.contains(currentColumn)
-                        && Arrays.stream(viewColumns).noneMatch(
-                                viewCol -> viewCol != null && viewCol.getMatchPair().leftColumn.equals(currentColumn))
-                        && Arrays.stream(columnsToMove)
-                                .noneMatch(colToMove -> MatchPairFactory.getExpression(colToMove).rightColumn
-                                        .equals(currentColumn))) {
-
-                    viewColumns[vci++] = SelectColumnFactory.getExpression(currentColumn);
-                }
-            }
-        }
-        return view(viewColumns);
-    }
+    Table moveColumns(int index, boolean moveToEnd, String... columnsToMove);
 
     /**
      * Produce a new table with the same columns as this table, but with a new column presenting the specified DateTime
@@ -838,21 +592,17 @@ public interface Table extends
      * @return The new table, constructed as explained above.
      */
     @AsyncMethod
-    default Table dateTimeColumnAsNanos(String dateTimeColumnName, String nanosColumnName) {
-        return updateView(new ReinterpretedColumn<>(dateTimeColumnName, DateTime.class, nanosColumnName, long.class));
-    }
+    Table dateTimeColumnAsNanos(String dateTimeColumnName, String nanosColumnName);
 
     /**
      * @param columnName name of column to convert from DateTime to nanos
      * @return The result of dateTimeColumnAsNanos(columnName, columnName).
      */
     @AsyncMethod
-    default Table dateTimeColumnAsNanos(String columnName) {
-        return dateTimeColumnAsNanos(columnName, columnName);
-    }
+    Table dateTimeColumnAsNanos(String columnName);
 
     // -----------------------------------------------------------------------------------------------------------------
-    // Head / Tail Operations
+    // Slice Operations
     // -----------------------------------------------------------------------------------------------------------------
 
     @AsyncMethod
@@ -863,24 +613,23 @@ public interface Table extends
 
     /**
      * Extracts a subset of a table by row position.
-     *
+     * <p>
      * If both firstPosition and lastPosition are positive, then the rows are counted from the beginning of the table.
      * The firstPosition is inclusive, and the lastPosition is exclusive. The {@link #head}(N) call is equivalent to
      * slice(0, N). The firstPosition must be less than or equal to the lastPosition.
-     *
+     * <p>
      * If firstPosition is positive and lastPosition is negative, then the firstRow is counted from the beginning of the
      * table, inclusively. The lastPosition is counted from the end of the table. For example, slice(1, -1) includes all
      * rows but the first and last. If the lastPosition would be before the firstRow, the result is an emptyTable.
-     *
+     * <p>
      * If firstPosition is negative, and lastPosition is zero, then the firstRow is counted from the end of the table,
      * and the end of the slice is the size of the table. slice(-N, 0) is equivalent to {@link #tail}(N).
-     *
+     * <p>
      * If the firstPosition is nega tive and the lastPosition is negative, they are both counted from the end of the
      * table. For example, slice(-2, -1) returns the second to last row of the table.
      *
      * @param firstPositionInclusive the first position to include in the result
      * @param lastPositionExclusive the last position to include in the result
-     *
      * @return a new Table, which is the request subset of rows from the original table
      */
     @AsyncMethod
@@ -899,12 +648,12 @@ public interface Table extends
     Table tailPct(double percent);
 
     // -----------------------------------------------------------------------------------------------------------------
-    // Grouping - used for various operations
+    // GroupingStrategy used for various join and aggregation operations
     // -----------------------------------------------------------------------------------------------------------------
 
     /**
-     * GroupStrategy is used for joins and other operations that can choose one of several ways to make use of grouping
-     * information.
+     * GroupStrategy is used for joins and aggregation operations that can choose one of several ways to make use of
+     * grouping information.
      */
     enum GroupStrategy {
         DEFAULT, LINEAR, USE_EXISTING_GROUPS, CREATE_GROUPS,
@@ -919,7 +668,7 @@ public interface Table extends
      * the input table (right table) columns listed in the columns to add (or all the columns whose names don't overlap
      * with the name of a column from the source table if the columnsToAdd is length zero). The new columns (those
      * corresponding to the input table) contain an aggregation of all values from the left side that match the join
-     * criteria. Consequently the types of all right side columns not involved in a join criteria, is an array of the
+     * criteria. Consequently, the types of all right side columns not involved in a join criteria, is an array of the
      * original column type. If the two tables have columns with matching names then the method will fail with an
      * exception unless the columns with corresponding names are found in one of the matching criteria.
      * <p>
@@ -938,85 +687,53 @@ public interface Table extends
      */
     Table leftJoin(Table rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd);
 
-    default Table leftJoin(Table rightTable, Collection<? extends JoinMatch> columnsToMatch,
-            Collection<? extends JoinAddition> columnsToAdd) {
-        return leftJoin(
-                rightTable,
-                MatchPair.fromMatches(columnsToMatch),
-                MatchPair.fromAddition(columnsToAdd));
-    }
+    Table leftJoin(Table rightTable, Collection<? extends JoinMatch> columnsToMatch,
+            Collection<? extends JoinAddition> columnsToAdd);
 
-    default Table leftJoin(Table rightTable, Collection<String> columnsToMatch) {
-        return leftJoin(
-                rightTable,
-                MatchPairFactory.getExpressions(columnsToMatch),
-                MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY);
-    }
+    Table leftJoin(Table rightTable, Collection<String> columnsToMatch);
 
-    default Table leftJoin(Table rightTable, String columnsToMatch, String columnsToAdd) {
-        return leftJoin(
-                rightTable,
-                MatchPairFactory.getExpressions(io.deephaven.base.StringUtils.splitToCollection(columnsToMatch)),
-                MatchPairFactory.getExpressions(io.deephaven.base.StringUtils.splitToCollection(columnsToAdd)));
-    }
+    Table leftJoin(Table rightTable, String columnsToMatch, String columnsToAdd);
 
-    default Table leftJoin(Table rightTable, String columnsToMatch) {
-        return leftJoin(rightTable, io.deephaven.base.StringUtils.splitToCollection(columnsToMatch));
-    }
+    Table leftJoin(Table rightTable, String columnsToMatch);
 
-    default Table leftJoin(Table rightTable) {
-        return leftJoin(rightTable, Collections.emptyList());
-    }
+    Table leftJoin(Table rightTable);
 
     Table exactJoin(Table rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd);
 
     @Override
-    default Table exactJoin(Table rightTable, Collection<? extends JoinMatch> columnsToMatch,
-            Collection<? extends JoinAddition> columnsToAdd) {
-        return exactJoin(
-                rightTable,
-                MatchPair.fromMatches(columnsToMatch),
-                MatchPair.fromAddition(columnsToAdd));
-    }
+    Table exactJoin(Table rightTable, Collection<? extends JoinMatch> columnsToMatch,
+            Collection<? extends JoinAddition> columnsToAdd);
 
-    default Table exactJoin(Table rightTable, String columnsToMatch, String columnsToAdd) {
-        return exactJoin(
-                rightTable,
-                MatchPairFactory.getExpressions(io.deephaven.base.StringUtils.splitToCollection(columnsToMatch)),
-                MatchPairFactory.getExpressions(io.deephaven.base.StringUtils.splitToCollection(columnsToAdd)));
-    }
+    Table exactJoin(Table rightTable, String columnsToMatch, String columnsToAdd);
 
-    default Table exactJoin(Table rightTable, String columnsToMatch) {
-        return exactJoin(
-                rightTable,
-                MatchPairFactory.getExpressions(io.deephaven.base.StringUtils.splitToCollection(columnsToMatch)),
-                MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY);
-    }
+    Table exactJoin(Table rightTable, String columnsToMatch);
 
+    /**
+     * Rules for the inexact matching performed on the final column to match by in {@link #aj} and {@link #raj}.
+     */
     enum AsOfMatchRule {
         LESS_THAN_EQUAL, LESS_THAN, GREATER_THAN_EQUAL, GREATER_THAN;
 
-        static AsOfMatchRule of(AsOfJoinRule rule) {
+        public static AsOfMatchRule of(AsOfJoinRule rule) {
             switch (rule) {
                 case LESS_THAN_EQUAL:
-                    return AsOfMatchRule.LESS_THAN_EQUAL;
+                    return Table.AsOfMatchRule.LESS_THAN_EQUAL;
                 case LESS_THAN:
-                    return AsOfMatchRule.LESS_THAN;
+                    return Table.AsOfMatchRule.LESS_THAN;
             }
             throw new IllegalStateException("Unexpected rule " + rule);
         }
 
-        static AsOfMatchRule of(ReverseAsOfJoinRule rule) {
+        public static AsOfMatchRule of(ReverseAsOfJoinRule rule) {
             switch (rule) {
                 case GREATER_THAN_EQUAL:
-                    return AsOfMatchRule.GREATER_THAN_EQUAL;
+                    return Table.AsOfMatchRule.GREATER_THAN_EQUAL;
                 case GREATER_THAN:
-                    return AsOfMatchRule.GREATER_THAN;
+                    return Table.AsOfMatchRule.GREATER_THAN;
             }
             throw new IllegalStateException("Unexpected rule " + rule);
         }
     }
-
 
     /**
      * Looks up the columns in the rightTable that meet the match conditions in the columnsToMatch list. Matching is
@@ -1033,7 +750,6 @@ public interface Table extends
      */
     Table aj(Table rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd, AsOfMatchRule asOfMatchRule);
 
-
     /**
      * Looks up the columns in the rightTable that meet the match conditions in the columnsToMatch list. Matching is
      * done exactly for the first n-1 columns and via a binary search for the last match pair. The columns of the
@@ -1047,26 +763,13 @@ public interface Table extends
      *        side as a result of the match.
      * @return a new table joined according to the specification in columnsToMatch and columnsToAdd
      */
-    default Table aj(Table rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd) {
-        return aj(rightTable, columnsToMatch, columnsToAdd, AsOfMatchRule.LESS_THAN_EQUAL);
-    }
+    Table aj(Table rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd);
 
-    default Table aj(Table rightTable, Collection<? extends JoinMatch> columnsToMatch,
-            Collection<? extends JoinAddition> columnsToAdd) {
-        return aj(
-                rightTable,
-                MatchPair.fromMatches(columnsToMatch),
-                MatchPair.fromAddition(columnsToAdd));
-    }
+    Table aj(Table rightTable, Collection<? extends JoinMatch> columnsToMatch,
+            Collection<? extends JoinAddition> columnsToAdd);
 
-    default Table aj(Table rightTable, Collection<? extends JoinMatch> columnsToMatch,
-            Collection<? extends JoinAddition> columnsToAdd, AsOfJoinRule asOfJoinRule) {
-        return aj(
-                rightTable,
-                MatchPair.fromMatches(columnsToMatch),
-                MatchPair.fromAddition(columnsToAdd),
-                AsOfMatchRule.of(asOfJoinRule));
-    }
+    Table aj(Table rightTable, Collection<? extends JoinMatch> columnsToMatch,
+            Collection<? extends JoinAddition> columnsToAdd, AsOfJoinRule asOfJoinRule);
 
     /**
      * Looks up the columns in the rightTable that meet the match conditions in the columnsToMatch list. Matching is
@@ -1078,28 +781,11 @@ public interface Table extends
      *        "columnFoundInBoth")
      * @return a new table joined according to the specification in columnsToMatch and columnsToAdd
      */
-    default Table aj(Table rightTable, Collection<String> columnsToMatch) {
-        Pair<MatchPair[], AsOfMatchRule> expressions = AjMatchPairFactory.getExpressions(false, columnsToMatch);
-        return aj(
-                rightTable,
-                expressions.getFirst(),
-                MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY,
-                expressions.getSecond());
-    }
+    Table aj(Table rightTable, Collection<String> columnsToMatch);
 
-    default Table aj(Table rightTable, String columnsToMatch, String columnsToAdd) {
-        Pair<MatchPair[], AsOfMatchRule> expressions =
-                AjMatchPairFactory.getExpressions(false, io.deephaven.base.StringUtils.splitToCollection(columnsToMatch));
-        return aj(
-                rightTable,
-                expressions.getFirst(),
-                MatchPairFactory.getExpressions(io.deephaven.base.StringUtils.splitToCollection(columnsToAdd)),
-                expressions.getSecond());
-    }
+    Table aj(Table rightTable, String columnsToMatch, String columnsToAdd);
 
-    default Table aj(Table rightTable, String columnsToMatch) {
-        return aj(rightTable, io.deephaven.base.StringUtils.splitToCollection(columnsToMatch));
-    }
+    Table aj(Table rightTable, String columnsToMatch);
 
     /**
      * Just like .aj(), but the matching on the last column is in reverse order, so that you find the row after the
@@ -1119,7 +805,6 @@ public interface Table extends
      */
     Table raj(Table rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd, AsOfMatchRule asOfMatchRule);
 
-
     /**
      * Just like .aj(), but the matching on the last column is in reverse order, so that you find the row after the
      * given timestamp instead of the row before.
@@ -1136,26 +821,13 @@ public interface Table extends
      *        side as a result of the match.
      * @return a new table joined according to the specification in columnsToMatch and columnsToAdd
      */
-    default Table raj(Table rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd) {
-        return raj(rightTable, columnsToMatch, columnsToAdd, AsOfMatchRule.GREATER_THAN_EQUAL);
-    }
+    Table raj(Table rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd);
 
-    default Table raj(Table rightTable, Collection<? extends JoinMatch> columnsToMatch,
-            Collection<? extends JoinAddition> columnsToAdd) {
-        return raj(
-                rightTable,
-                MatchPair.fromMatches(columnsToMatch),
-                MatchPair.fromAddition(columnsToAdd));
-    }
+    Table raj(Table rightTable, Collection<? extends JoinMatch> columnsToMatch,
+            Collection<? extends JoinAddition> columnsToAdd);
 
-    default Table raj(Table rightTable, Collection<? extends JoinMatch> columnsToMatch,
-            Collection<? extends JoinAddition> columnsToAdd, ReverseAsOfJoinRule reverseAsOfJoinRule) {
-        return raj(
-                rightTable,
-                MatchPair.fromMatches(columnsToMatch),
-                MatchPair.fromAddition(columnsToAdd),
-                AsOfMatchRule.of(reverseAsOfJoinRule));
-    }
+    Table raj(Table rightTable, Collection<? extends JoinMatch> columnsToMatch,
+            Collection<? extends JoinAddition> columnsToAdd, ReverseAsOfJoinRule reverseAsOfJoinRule);
 
     /**
      * Just like .aj(), but the matching on the last column is in reverse order, so that you find the row after the
@@ -1170,14 +842,7 @@ public interface Table extends
      *        "columnFoundInBoth")
      * @return a new table joined according to the specification in columnsToMatch and columnsToAdd
      */
-    default Table raj(Table rightTable, Collection<String> columnsToMatch) {
-        Pair<MatchPair[], AsOfMatchRule> expressions = AjMatchPairFactory.getExpressions(true, columnsToMatch);
-        return raj(
-                rightTable,
-                expressions.getFirst(),
-                MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY,
-                expressions.getSecond());
-    }
+    Table raj(Table rightTable, Collection<String> columnsToMatch);
 
     /**
      * Just like .aj(), but the matching on the last column is in reverse order, so that you find the row after the
@@ -1195,44 +860,19 @@ public interface Table extends
      *        side as a result of the match.
      * @return a new table joined according to the specification in columnsToMatch and columnsToAdd
      */
-    default Table raj(Table rightTable, String columnsToMatch, String columnsToAdd) {
-        Pair<MatchPair[], AsOfMatchRule> expressions =
-                AjMatchPairFactory.getExpressions(true, io.deephaven.base.StringUtils.splitToCollection(columnsToMatch));
-        return raj(
-                rightTable,
-                expressions.getFirst(),
-                MatchPairFactory.getExpressions(io.deephaven.base.StringUtils.splitToCollection(columnsToAdd)),
-                expressions.getSecond());
-    }
+    Table raj(Table rightTable, String columnsToMatch, String columnsToAdd);
 
-    default Table raj(Table rightTable, String columnsToMatch) {
-        return raj(rightTable, io.deephaven.base.StringUtils.splitToCollection(columnsToMatch));
-    }
+    Table raj(Table rightTable, String columnsToMatch);
 
     Table naturalJoin(Table rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd);
 
     @Override
-    default Table naturalJoin(Table rightTable, Collection<? extends JoinMatch> columnsToMatch,
-            Collection<? extends JoinAddition> columnsToAdd) {
-        return naturalJoin(
-                rightTable,
-                MatchPair.fromMatches(columnsToMatch),
-                MatchPair.fromAddition(columnsToAdd));
-    }
+    Table naturalJoin(Table rightTable, Collection<? extends JoinMatch> columnsToMatch,
+            Collection<? extends JoinAddition> columnsToAdd);
 
-    default Table naturalJoin(Table rightTable, String columnsToMatch, String columnsToAdd) {
-        return naturalJoin(
-                rightTable,
-                MatchPairFactory.getExpressions(io.deephaven.base.StringUtils.splitToCollection(columnsToMatch)),
-                MatchPairFactory.getExpressions(io.deephaven.base.StringUtils.splitToCollection(columnsToAdd)));
-    }
+    Table naturalJoin(Table rightTable, String columnsToMatch, String columnsToAdd);
 
-    default Table naturalJoin(Table rightTable, String columnsToMatch) {
-        return naturalJoin(
-                rightTable,
-                MatchPairFactory.getExpressions(io.deephaven.base.StringUtils.splitToCollection(columnsToMatch)),
-                MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY);
-    }
+    Table naturalJoin(Table rightTable, String columnsToMatch);
 
     /**
      * Perform a cross join with the right table.
@@ -1259,12 +899,7 @@ public interface Table extends
      * @param rightTable The right side table on the join.
      * @return a new table joined according to the specification with zero key-columns and includes all right columns
      */
-    default Table join(Table rightTable) {
-        return join(
-                rightTable,
-                MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY,
-                MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY);
-    }
+    Table join(Table rightTable);
 
     /**
      * Perform a cross join with the right table.
@@ -1292,16 +927,9 @@ public interface Table extends
      * @param numRightBitsToReserve The number of bits to reserve for rightTable groups.
      * @return a new table joined according to the specification with zero key-columns and includes all right columns
      */
-    default Table join(Table rightTable, int numRightBitsToReserve) {
-        return join(rightTable, Collections.emptyList(), Collections.emptyList(), numRightBitsToReserve);
-    }
+    Table join(Table rightTable, int numRightBitsToReserve);
 
-    default Table join(Table rightTable, String columnsToMatch) {
-        return join(
-                rightTable,
-                MatchPairFactory.getExpressions(io.deephaven.base.StringUtils.splitToCollection(columnsToMatch)),
-                MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY);
-    }
+    Table join(Table rightTable, String columnsToMatch);
 
     /**
      * Perform a cross join with the right table.
@@ -1333,20 +961,9 @@ public interface Table extends
      * @return a new table joined according to the specification in columnsToMatch and includes all non-key-columns from
      *         the right table
      */
-    default Table join(Table rightTable, String columnsToMatch, int numRightBitsToReserve) {
-        return join(
-                rightTable,
-                MatchPairFactory.getExpressions(io.deephaven.base.StringUtils.splitToCollection(columnsToMatch)),
-                MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY,
-                numRightBitsToReserve);
-    }
+    Table join(Table rightTable, String columnsToMatch, int numRightBitsToReserve);
 
-    default Table join(Table rightTable, String columnsToMatch, String columnsToAdd) {
-        return join(
-                rightTable,
-                MatchPairFactory.getExpressions(io.deephaven.base.StringUtils.splitToCollection(columnsToMatch)),
-                MatchPairFactory.getExpressions(io.deephaven.base.StringUtils.splitToCollection(columnsToAdd)));
-    }
+    Table join(Table rightTable, String columnsToMatch, String columnsToAdd);
 
     /**
      * Perform a cross join with the right table.
@@ -1379,13 +996,7 @@ public interface Table extends
      * @param numRightBitsToReserve The number of bits to reserve for rightTable groups.
      * @return a new table joined according to the specification in columnsToMatch and columnsToAdd
      */
-    default Table join(Table rightTable, String columnsToMatch, String columnsToAdd, int numRightBitsToReserve) {
-        return join(
-                rightTable,
-                MatchPairFactory.getExpressions(io.deephaven.base.StringUtils.splitToCollection(columnsToMatch)),
-                MatchPairFactory.getExpressions(StringUtils.splitToCollection(columnsToAdd)),
-                numRightBitsToReserve);
-    }
+    Table join(Table rightTable, String columnsToMatch, String columnsToAdd, int numRightBitsToReserve);
 
     /**
      * Perform a cross join with the right table.
@@ -1416,9 +1027,7 @@ public interface Table extends
      *        result of the match.
      * @return a new table joined according to the specification in columnsToMatch and columnsToAdd
      */
-    default Table join(Table rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd) {
-        return join(rightTable, columnsToMatch, columnsToAdd, CrossJoinHelper.DEFAULT_NUM_RIGHT_BITS_TO_RESERVE);
-    }
+    Table join(Table rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd);
 
     /**
      * Perform a cross join with the right table.
@@ -1453,23 +1062,12 @@ public interface Table extends
     Table join(Table rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd, int numRightBitsToReserve);
 
     @Override
-    default Table join(Table rightTable, Collection<? extends JoinMatch> columnsToMatch,
-            Collection<? extends JoinAddition> columnsToAdd) {
-        return join(
-                rightTable,
-                MatchPair.fromMatches(columnsToMatch),
-                MatchPair.fromAddition(columnsToAdd));
-    }
+    Table join(Table rightTable, Collection<? extends JoinMatch> columnsToMatch,
+            Collection<? extends JoinAddition> columnsToAdd);
 
     @Override
-    default Table join(Table rightTable, Collection<? extends JoinMatch> columnsToMatch,
-            Collection<? extends JoinAddition> columnsToAdd, int numRightBitsToReserve) {
-        return join(
-                rightTable,
-                MatchPair.fromMatches(columnsToMatch),
-                MatchPair.fromAddition(columnsToAdd),
-                numRightBitsToReserve);
-    }
+    Table join(Table rightTable, Collection<? extends JoinMatch> columnsToMatch,
+            Collection<? extends JoinAddition> columnsToAdd, int numRightBitsToReserve);
 
     // -----------------------------------------------------------------------------------------------------------------
     // Aggregation Operations
@@ -1479,83 +1077,39 @@ public interface Table extends
     Table by(AggregationStateFactory aggregationStateFactory, SelectColumn... groupByColumns);
 
     @AsyncMethod
-    default Table by(AggregationStateFactory aggregationStateFactory, String... groupByColumns) {
-        return by(aggregationStateFactory, SelectColumnFactory.getExpressions(groupByColumns));
-    }
+    Table by(AggregationStateFactory aggregationStateFactory, String... groupByColumns);
 
     @AsyncMethod
-    default Table by(AggregationStateFactory aggregationStateFactory) {
-        return by(aggregationStateFactory, SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY);
-    }
+    Table by(AggregationStateFactory aggregationStateFactory);
 
     @AsyncMethod
-    default Table by(SelectColumn... groupByColumns) {
-        return by(new AggregationIndexStateFactory(), groupByColumns);
-    }
+    Table by(SelectColumn... groupByColumns);
 
     @AsyncMethod
-    default Table by(String... groupByColumns) {
-        return by(SelectColumnFactory.getExpressions(groupByColumns));
-    }
+    Table by(String... groupByColumns);
 
     @AsyncMethod
-    default Table by() {
-        return by(SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY);
-    }
+    Table by();
 
     @Override
     @AsyncMethod
-    default Table by(Collection<? extends Selectable> groupByColumns) {
-        return by(SelectColumn.from(groupByColumns));
-    }
+    Table by(Collection<? extends Selectable> groupByColumns);
 
     @Override
     @AsyncMethod
-    default Table by(Collection<? extends Selectable> groupByColumns, Collection<? extends Aggregation> aggregations) {
-        List<ComboBy> optimized = ComboBy.optimize(aggregations);
-        List<ColumnName> optimizedOrder = optimized.stream()
-                .map(ComboBy::getResultPairs)
-                .flatMap(Stream::of)
-                .map(MatchPair::left)
-                .map(ColumnName::of)
-                .collect(Collectors.toList());
-        List<ColumnName> userOrder = AggregationOutputs.of(aggregations).collect(Collectors.toList());
+    Table by(Collection<? extends Selectable> groupByColumns, Collection<? extends Aggregation> aggregations);
 
-        Table aggregationTable = by(
-                new ComboAggregateFactory(optimized),
-                SelectColumn.from(groupByColumns));
-
-        if (userOrder.equals(optimizedOrder)) {
-            return aggregationTable;
-        }
-
-        // We need to re-order the columns to match the user-provided order
-        List<ColumnName> newOrder =
-                Stream.concat(groupByColumns.stream().map(Selectable::newColumn), userOrder.stream())
-                        .collect(Collectors.toList());
-
-        return aggregationTable.view(newOrder);
-    }
-
-    default Table headBy(long nRows, SelectColumn... groupByColumns) {
-        throw new UnsupportedOperationException();
-    }
+    Table headBy(long nRows, SelectColumn... groupByColumns);
 
     Table headBy(long nRows, String... groupByColumns);
 
-    default Table headBy(long nRows, Collection<String> groupByColumns) {
-        return headBy(nRows, groupByColumns.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
-    }
+    Table headBy(long nRows, Collection<String> groupByColumns);
 
-    default Table tailBy(long nRows, SelectColumn... groupByColumns) {
-        throw new UnsupportedOperationException();
-    }
+    Table tailBy(long nRows, SelectColumn... groupByColumns);
 
     Table tailBy(long nRows, String... groupByColumns);
 
-    default Table tailBy(long nRows, Collection<String> groupByColumns) {
-        return tailBy(nRows, groupByColumns.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
-    }
+    Table tailBy(long nRows, Collection<String> groupByColumns);
 
     /**
      * Groups data according to groupByColumns and applies formulaColumn to each of columns not altered by the grouping
@@ -1578,9 +1132,7 @@ public interface Table extends
      * @param groupByColumns The grouping columns {@link Table#by(SelectColumn...)}
      */
     @AsyncMethod
-    default Table applyToAllBy(String formulaColumn, SelectColumn... groupByColumns) {
-        return applyToAllBy(formulaColumn, "each", groupByColumns);
-    }
+    Table applyToAllBy(String formulaColumn, SelectColumn... groupByColumns);
 
     /**
      * Groups data according to groupByColumns and applies formulaColumn to each of columns not altered by the grouping
@@ -1591,19 +1143,15 @@ public interface Table extends
      * @param groupByColumns The grouping columns {@link Table#by(String...)}
      */
     @AsyncMethod
-    default Table applyToAllBy(String formulaColumn, String... groupByColumns) {
-        return applyToAllBy(formulaColumn, SelectColumnFactory.getExpressions(groupByColumns));
-    }
+    Table applyToAllBy(String formulaColumn, String... groupByColumns);
 
     @AsyncMethod
-    default Table applyToAllBy(String formulaColumn, String groupByColumn) {
-        return applyToAllBy(formulaColumn, SelectColumnFactory.getExpression(groupByColumn));
-    }
+    Table applyToAllBy(String formulaColumn, String groupByColumn);
 
     /**
      * Groups the data column according to <code>groupByColumns</code> and computes the sum for the rest of the fields
      *
-     * @param groupByColumns The grouping columns {@link io.deephaven.engine.tables.Table#by(String...)}
+     * @param groupByColumns The grouping columns {@link Table#by(String...)}
      */
     @AsyncMethod
     Table sumBy(SelectColumn... groupByColumns);
@@ -1611,38 +1159,32 @@ public interface Table extends
     /**
      * Groups the data column according to <code>groupByColumns</code> and computes the sum for the rest of the fields
      *
-     * @param groupByColumns The grouping columns {@link io.deephaven.engine.tables.Table#by(String...)}
+     * @param groupByColumns The grouping columns {@link Table#by(String...)}
      */
     @AsyncMethod
-    default Table sumBy(String... groupByColumns) {
-        return sumBy(SelectColumnFactory.getExpressions(groupByColumns));
-    }
+    Table sumBy(String... groupByColumns);
 
     /**
      * Groups the data column according to <code>groupByColumns</code> and computes the sum for the rest of the fields
      *
-     * @param groupByColumns The grouping columns {@link io.deephaven.engine.tables.Table#by(String...)}
+     * @param groupByColumns The grouping columns {@link Table#by(String...)}
      */
     @AsyncMethod
-    default Table sumBy(Collection<String> groupByColumns) {
-        return sumBy(SelectColumnFactory.getExpressions(groupByColumns));
-    }
+    Table sumBy(Collection<String> groupByColumns);
 
     /**
      * Produces a single row table with the sum of each column.
-     *
+     * <p>
      * When the input table is empty, zero output rows are produced.
      */
     @AsyncMethod
-    default Table sumBy() {
-        return sumBy(SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY);
-    }
+    Table sumBy();
 
     /**
      * Groups the data column according to <code>groupByColumns</code> and computes the sum of the absolute values for
      * the rest of the fields
      *
-     * @param groupByColumns The grouping columns {@link io.deephaven.engine.tables.Table#by(String...)}
+     * @param groupByColumns The grouping columns {@link Table#by(String...)}
      */
     @AsyncMethod
     Table absSumBy(SelectColumn... groupByColumns);
@@ -1651,39 +1193,33 @@ public interface Table extends
      * Groups the data column according to <code>groupByColumns</code> and computes the sum of the absolute values for
      * the rest of the fields
      *
-     * @param groupByColumns The grouping columns {@link io.deephaven.engine.tables.Table#by(String...)}
+     * @param groupByColumns The grouping columns {@link Table#by(String...)}
      */
     @AsyncMethod
-    default Table absSumBy(String... groupByColumns) {
-        return absSumBy(SelectColumnFactory.getExpressions(groupByColumns));
-    }
+    Table absSumBy(String... groupByColumns);
 
     /**
      * Groups the data column according to <code>groupByColumns</code> and computes the sum of the absolute values for
      * the rest of the fields
      *
-     * @param groupByColumns The grouping columns {@link io.deephaven.engine.tables.Table#by(String...)}
+     * @param groupByColumns The grouping columns {@link Table#by(String...)}
      */
     @AsyncMethod
-    default Table absSumBy(Collection<String> groupByColumns) {
-        return absSumBy(SelectColumnFactory.getExpressions(groupByColumns));
-    }
+    Table absSumBy(Collection<String> groupByColumns);
 
     /**
      * Produces a single row table with the absolute sum of each column.
-     *
+     * <p>
      * When the input table is empty, zero output rows are produced.
      */
     @AsyncMethod
-    default Table absSumBy() {
-        return absSumBy(SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY);
-    }
+    Table absSumBy();
 
     /**
      * Groups the data column according to <code>groupByColumns</code> and computes the average for the rest of the
      * fields
      *
-     * @param groupByColumns The grouping columns {@link io.deephaven.engine.tables.Table#by(String...)}
+     * @param groupByColumns The grouping columns {@link Table#by(String...)}
      */
     @AsyncMethod
     Table avgBy(SelectColumn... groupByColumns);
@@ -1692,40 +1228,34 @@ public interface Table extends
      * Groups the data column according to <code>groupByColumns</code> and computes the average for the rest of the
      * fields
      *
-     * @param groupByColumns The grouping columns {@link io.deephaven.engine.tables.Table#by(String...)}
+     * @param groupByColumns The grouping columns {@link Table#by(String...)}
      */
     @AsyncMethod
-    default Table avgBy(String... groupByColumns) {
-        return avgBy(SelectColumnFactory.getExpressions(groupByColumns));
-    }
+    Table avgBy(String... groupByColumns);
 
     /**
      * Groups the data column according to <code>groupByColumns</code> and computes the average for the rest of the
      * fields
      *
-     * @param groupByColumns The grouping columns {@link io.deephaven.engine.tables.Table#by(String...)}
+     * @param groupByColumns The grouping columns {@link Table#by(String...)}
      */
     @AsyncMethod
-    default Table avgBy(Collection<String> groupByColumns) {
-        return avgBy(SelectColumnFactory.getExpressions(groupByColumns));
-    }
+    Table avgBy(Collection<String> groupByColumns);
 
     /**
      * Produces a single row table with the average of each column.
-     *
+     * <p>
      * When the input table is empty, zero output rows are produced.
      */
     @AsyncMethod
-    default Table avgBy() {
-        return avgBy(SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY);
-    }
+    Table avgBy();
 
     /**
      * Groups the data column according to <code>groupByColumns</code> and computes the weighted average using
      * weightColumn for the rest of the fields
      *
      * @param weightColumn the column to use for the weight
-     * @param groupByColumns The grouping columns {@link io.deephaven.engine.tables.Table#by(String...)}
+     * @param groupByColumns The grouping columns {@link Table#by(String...)}
      */
     @AsyncMethod
     Table wavgBy(String weightColumn, SelectColumn... groupByColumns);
@@ -1735,54 +1265,48 @@ public interface Table extends
      * weightColumn for the rest of the fields
      *
      * @param weightColumn the column to use for the weight
-     * @param groupByColumns The grouping columns {@link io.deephaven.engine.tables.Table#by(String...)}
+     * @param groupByColumns The grouping columns {@link Table#by(String...)}
      */
     @AsyncMethod
-    default Table wavgBy(String weightColumn, String... groupByColumns) {
-        return wavgBy(weightColumn, SelectColumnFactory.getExpressions(groupByColumns));
-    }
+    Table wavgBy(String weightColumn, String... groupByColumns);
 
     /**
      * Groups the data column according to <code>groupByColumns</code> and computes the weighted average using
      * weightColumn for the rest of the fields
      *
      * @param weightColumn the column to use for the weight
-     * @param groupByColumns The grouping columns {@link io.deephaven.engine.tables.Table#by(String...)}
+     * @param groupByColumns The grouping columns {@link Table#by(String...)}
      */
     @AsyncMethod
-    default Table wavgBy(String weightColumn, Collection<String> groupByColumns) {
-        return wavgBy(weightColumn, SelectColumnFactory.getExpressions(groupByColumns));
-    }
+    Table wavgBy(String weightColumn, Collection<String> groupByColumns);
 
     /**
      * Produces a single row table with the weighted average using weightColumn for the rest of the fields
-     *
+     * <p>
      * When the input table is empty, zero output rows are produced.
      *
      * @param weightColumn the column to use for the weight
      */
     @AsyncMethod
-    default Table wavgBy(String weightColumn) {
-        return wavgBy(weightColumn, SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY);
-    }
+    Table wavgBy(String weightColumn);
 
     /**
      * Groups the data column according to <code>groupByColumns</code> and computes the weighted sum using weightColumn
      * for the rest of the fields
-     *
+     * <p>
      * If the weight column is a floating point type, all result columns will be doubles. If the weight column is an
      * integral type, all integral input columns will have long results and all floating point input columns will have
      * double results.
      *
      * @param weightColumn the column to use for the weight
-     * @param groupByColumns The grouping columns {@link io.deephaven.engine.tables.Table#by(String...)}
+     * @param groupByColumns The grouping columns {@link Table#by(String...)}
      */
     @AsyncMethod
     Table wsumBy(String weightColumn, SelectColumn... groupByColumns);
 
     /**
      * Computes the weighted sum for all rows in the table using weightColumn for the rest of the fields
-     *
+     * <p>
      * If the weight column is a floating point type, all result columns will be doubles. If the weight column is an
      * integral type, all integral input columns will have long results and all floating point input columns will have
      * double results.
@@ -1790,41 +1314,35 @@ public interface Table extends
      * @param weightColumn the column to use for the weight
      */
     @AsyncMethod
-    default Table wsumBy(String weightColumn) {
-        return wsumBy(weightColumn, SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY);
-    }
+    Table wsumBy(String weightColumn);
 
     /**
      * Groups the data column according to <code>groupByColumns</code> and computes the weighted sum using weightColumn
      * for the rest of the fields
-     *
+     * <p>
      * If the weight column is a floating point type, all result columns will be doubles. If the weight column is an
      * integral type, all integral input columns will have long results and all floating point input columns will have
      * double results.
      *
      * @param weightColumn the column to use for the weight
-     * @param groupByColumns The grouping columns {@link io.deephaven.engine.tables.Table#by(String...)}
+     * @param groupByColumns The grouping columns {@link Table#by(String...)}
      */
     @AsyncMethod
-    default Table wsumBy(String weightColumn, String... groupByColumns) {
-        return wsumBy(weightColumn, SelectColumnFactory.getExpressions(groupByColumns));
-    }
+    Table wsumBy(String weightColumn, String... groupByColumns);
 
     /**
      * Groups the data column according to <code>groupByColumns</code> and computes the weighted sum using weightColumn
      * for the rest of the fields
-     *
+     * <p>
      * If the weight column is a floating point type, all result columns will be doubles. If the weight column is an
      * integral type, all integral input columns will have long results and all floating point input columns will have
      * double results.
      *
      * @param weightColumn the column to use for the weight
-     * @param groupByColumns The grouping columns {@link io.deephaven.engine.tables.Table#by(String...)}
+     * @param groupByColumns The grouping columns {@link Table#by(String...)}
      */
     @AsyncMethod
-    default Table wsumBy(String weightColumn, Collection<String> groupByColumns) {
-        return wsumBy(weightColumn, SelectColumnFactory.getExpressions(groupByColumns));
-    }
+    Table wsumBy(String weightColumn, Collection<String> groupByColumns);
 
     @AsyncMethod
     Table stdBy(SelectColumn... groupByColumns);
@@ -1833,38 +1351,32 @@ public interface Table extends
      * Groups the data column according to <code>groupByColumns</code> and computes the standard deviation for the rest
      * of the fields
      *
-     * @param groupByColumns The grouping columns {@link io.deephaven.engine.tables.Table#by(String...)}
+     * @param groupByColumns The grouping columns {@link Table#by(String...)}
      */
     @AsyncMethod
-    default Table stdBy(String... groupByColumns) {
-        return stdBy(SelectColumnFactory.getExpressions(groupByColumns));
-    }
+    Table stdBy(String... groupByColumns);
 
     /**
      * Groups the data column according to <code>groupByColumns</code> and computes the standard deviation for the rest
      * of the fields
      *
-     * @param groupByColumns The grouping columns {@link io.deephaven.engine.tables.Table#by(String...)}
+     * @param groupByColumns The grouping columns {@link Table#by(String...)}
      */
     @AsyncMethod
-    default Table stdBy(Collection<String> groupByColumns) {
-        return stdBy(SelectColumnFactory.getExpressions(groupByColumns));
-    }
+    Table stdBy(Collection<String> groupByColumns);
 
     /**
      * Produces a single row table with the standard deviation of each column.
-     *
+     * <p>
      * When the input table is empty, zero output rows are produced.
      */
-    default Table stdBy() {
-        return stdBy(SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY);
-    }
+    Table stdBy();
 
     /**
      * Groups the data column according to <code>groupByColumns</code> and computes the variance for the rest of the
      * fields
      *
-     * @param groupByColumns The grouping columns {@link io.deephaven.engine.tables.Table#by(String...)}
+     * @param groupByColumns The grouping columns {@link Table#by(String...)}
      */
     @AsyncMethod
     Table varBy(SelectColumn... groupByColumns);
@@ -1873,37 +1385,31 @@ public interface Table extends
      * Groups the data column according to <code>groupByColumns</code> and computes the variance for the rest of the
      * fields
      *
-     * @param groupByColumns The grouping columns {@link io.deephaven.engine.tables.Table#by(String...)}
+     * @param groupByColumns The grouping columns {@link Table#by(String...)}
      */
     @AsyncMethod
-    default Table varBy(String... groupByColumns) {
-        return varBy(SelectColumnFactory.getExpressions(groupByColumns));
-    }
+    Table varBy(String... groupByColumns);
 
     /**
      * Groups the data column according to <code>groupByColumns</code> and computes the variance for the rest of the
      * fields
      *
-     * @param groupByColumns The grouping columns {@link io.deephaven.engine.tables.Table#by(String...)}
+     * @param groupByColumns The grouping columns {@link Table#by(String...)}
      */
     @AsyncMethod
-    default Table varBy(Collection<String> groupByColumns) {
-        return varBy(SelectColumnFactory.getExpressions(groupByColumns));
-    }
+    Table varBy(Collection<String> groupByColumns);
 
     /**
      * Produces a single row table with the variance of each column.
-     *
+     * <p>
      * When the input table is empty, zero output rows are produced.
      */
-    default Table varBy() {
-        return varBy(SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY);
-    }
+    Table varBy();
 
     /**
      * Groups the data column according to <code>groupByColumns</code> and retrieves the last for the rest of the fields
      *
-     * @param groupByColumns The grouping columns {@link io.deephaven.engine.tables.Table#by(String...)}
+     * @param groupByColumns The grouping columns {@link Table#by(String...)}
      */
     @AsyncMethod
     Table lastBy(SelectColumn... groupByColumns);
@@ -1911,36 +1417,30 @@ public interface Table extends
     /**
      * Groups the data column according to <code>groupByColumns</code> and retrieves the last for the rest of the fields
      *
-     * @param groupByColumns The grouping columns {@link io.deephaven.engine.tables.Table#by(String...)}
+     * @param groupByColumns The grouping columns {@link Table#by(String...)}
      */
     @AsyncMethod
-    default Table lastBy(String... groupByColumns) {
-        return lastBy(SelectColumnFactory.getExpressions(groupByColumns));
-    }
+    Table lastBy(String... groupByColumns);
 
     /**
      * Groups the data column according to <code>groupByColumns</code> and retrieves the last for the rest of the fields
      *
-     * @param groupByColumns The grouping columns {@link io.deephaven.engine.tables.Table#by(String...)}
+     * @param groupByColumns The grouping columns {@link Table#by(String...)}
      */
     @AsyncMethod
-    default Table lastBy(Collection<String> groupByColumns) {
-        return lastBy(SelectColumnFactory.getExpressions(groupByColumns));
-    }
+    Table lastBy(Collection<String> groupByColumns);
 
     /**
      * Returns the last row of the given table.
      */
     @AsyncMethod
-    default Table lastBy() {
-        return lastBy(SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY);
-    }
+    Table lastBy();
 
     /**
      * Groups the data column according to <code>groupByColumns</code> and retrieves the first for the rest of the
      * fields
      *
-     * @param groupByColumns The grouping columns {@link io.deephaven.engine.tables.Table#by(String...)}
+     * @param groupByColumns The grouping columns {@link Table#by(String...)}
      */
     @AsyncMethod
     Table firstBy(SelectColumn... groupByColumns);
@@ -1949,36 +1449,30 @@ public interface Table extends
      * Groups the data column according to <code>groupByColumns</code> and retrieves the first for the rest of the
      * fields
      *
-     * @param groupByColumns The grouping columns {@link io.deephaven.engine.tables.Table#by(String...)}
+     * @param groupByColumns The grouping columns {@link Table#by(String...)}
      */
     @AsyncMethod
-    default Table firstBy(String... groupByColumns) {
-        return firstBy(SelectColumnFactory.getExpressions(groupByColumns));
-    }
+    Table firstBy(String... groupByColumns);
 
     /**
      * Groups the data column according to <code>groupByColumns</code> and retrieves the first for the rest of the
      * fields
      *
-     * @param groupByColumns The grouping columns {@link io.deephaven.engine.tables.Table#by(String...)}
+     * @param groupByColumns The grouping columns {@link Table#by(String...)}
      */
     @AsyncMethod
-    default Table firstBy(Collection<String> groupByColumns) {
-        return firstBy(SelectColumnFactory.getExpressions(groupByColumns));
-    }
+    Table firstBy(Collection<String> groupByColumns);
 
     /**
      * Returns the first row of the given table.
      */
     @AsyncMethod
-    default Table firstBy() {
-        return firstBy(SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY);
-    }
+    Table firstBy();
 
     /**
      * Groups the data column according to <code>groupByColumns</code> and computes the min for the rest of the fields
      *
-     * @param groupByColumns The grouping columns {@link io.deephaven.engine.tables.Table#by(String...)}
+     * @param groupByColumns The grouping columns {@link Table#by(String...)}
      */
     @AsyncMethod
     Table minBy(SelectColumn... groupByColumns);
@@ -1986,37 +1480,31 @@ public interface Table extends
     /**
      * Groups the data column according to <code>groupByColumns</code> and computes the min for the rest of the fields
      *
-     * @param groupByColumns The grouping columns {@link io.deephaven.engine.tables.Table#by(String...)}
+     * @param groupByColumns The grouping columns {@link Table#by(String...)}
      */
     @AsyncMethod
-    default Table minBy(String... groupByColumns) {
-        return minBy(SelectColumnFactory.getExpressions(groupByColumns));
-    }
+    Table minBy(String... groupByColumns);
 
     /**
      * Groups the data column according to <code>groupByColumns</code> and computes the min for the rest of the fields
      *
-     * @param groupByColumns The grouping columns {@link io.deephaven.engine.tables.Table#by(String...)}
+     * @param groupByColumns The grouping columns {@link Table#by(String...)}
      */
     @AsyncMethod
-    default Table minBy(Collection<String> groupByColumns) {
-        return minBy(SelectColumnFactory.getExpressions(groupByColumns));
-    }
+    Table minBy(Collection<String> groupByColumns);
 
     /**
      * Produces a single row table with the minimum of each column.
-     *
+     * <p>
      * When the input table is empty, zero output rows are produced.
      */
     @AsyncMethod
-    default Table minBy() {
-        return minBy(SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY);
-    }
+    Table minBy();
 
     /**
      * Groups the data column according to <code>groupByColumns</code> and computes the max for the rest of the fields
      *
-     * @param groupByColumns The grouping columns {@link io.deephaven.engine.tables.Table#by(String...)} }
+     * @param groupByColumns The grouping columns {@link Table#by(String...)} }
      */
     @AsyncMethod
     Table maxBy(SelectColumn... groupByColumns);
@@ -2024,38 +1512,32 @@ public interface Table extends
     /**
      * Groups the data column according to <code>groupByColumns</code> and computes the max for the rest of the fields
      *
-     * @param groupByColumns The grouping columns {@link io.deephaven.engine.tables.Table#by(String...)} }
+     * @param groupByColumns The grouping columns {@link Table#by(String...)} }
      */
     @AsyncMethod
-    default Table maxBy(String... groupByColumns) {
-        return maxBy(SelectColumnFactory.getExpressions(groupByColumns));
-    }
+    Table maxBy(String... groupByColumns);
 
     /**
      * Groups the data column according to <code>groupByColumns</code> and computes the max for the rest of the fields
      *
-     * @param groupByColumns The grouping columns {@link io.deephaven.engine.tables.Table#by(String...)} }
+     * @param groupByColumns The grouping columns {@link Table#by(String...)} }
      */
     @AsyncMethod
-    default Table maxBy(Collection<String> groupByColumns) {
-        return maxBy(SelectColumnFactory.getExpressions(groupByColumns));
-    }
+    Table maxBy(Collection<String> groupByColumns);
 
     /**
      * Produces a single row table with the maximum of each column.
-     *
+     * <p>
      * When the input table is empty, zero output rows are produced.
      */
     @AsyncMethod
-    default Table maxBy() {
-        return maxBy(SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY);
-    }
+    Table maxBy();
 
     /**
      * Groups the data column according to <code>groupByColumns</code> and computes the median for the rest of the
      * fields
      *
-     * @param groupByColumns The grouping columns {@link io.deephaven.engine.tables.Table#by(String...)} }
+     * @param groupByColumns The grouping columns {@link Table#by(String...)} }
      */
     @AsyncMethod
     Table medianBy(SelectColumn... groupByColumns);
@@ -2064,51 +1546,39 @@ public interface Table extends
      * Groups the data column according to <code>groupByColumns</code> and computes the median for the rest of the
      * fields
      *
-     * @param groupByColumns The grouping columns {@link io.deephaven.engine.tables.Table#by(String...)} }
+     * @param groupByColumns The grouping columns {@link Table#by(String...)} }
      */
     @AsyncMethod
-    default Table medianBy(String... groupByColumns) {
-        return medianBy(SelectColumnFactory.getExpressions(groupByColumns));
-    }
+    Table medianBy(String... groupByColumns);
 
     /**
      * Groups the data column according to <code>groupByColumns</code> and computes the median for the rest of the
      * fields
      *
-     * @param groupByColumns The grouping columns {@link io.deephaven.engine.tables.Table#by(String...)} }
+     * @param groupByColumns The grouping columns {@link Table#by(String...)} }
      */
     @AsyncMethod
-    default Table medianBy(Collection<String> groupByColumns) {
-        return medianBy(SelectColumnFactory.getExpressions(groupByColumns));
-    }
+    Table medianBy(Collection<String> groupByColumns);
 
     /**
      * Produces a single row table with the median of each column.
-     *
+     * <p>
      * When the input table is empty, zero output rows are produced.
      */
     @AsyncMethod
-    default Table medianBy() {
-        return medianBy(SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY);
-    }
+    Table medianBy();
 
     @AsyncMethod
     Table countBy(String countColumnName, SelectColumn... groupByColumns);
 
     @AsyncMethod
-    default Table countBy(String countColumnName, String... groupByColumns) {
-        return countBy(countColumnName, SelectColumnFactory.getExpressions(groupByColumns));
-    }
+    Table countBy(String countColumnName, String... groupByColumns);
 
     @AsyncMethod
-    default Table countBy(String countColumnName, Collection<String> groupByColumns) {
-        return countBy(countColumnName, SelectColumnFactory.getExpressions(groupByColumns));
-    }
+    Table countBy(String countColumnName, Collection<String> groupByColumns);
 
     @AsyncMethod
-    default Table countBy(String countColumnName) {
-        return countBy(countColumnName, SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY);
-    }
+    Table countBy(String countColumnName);
 
     /**
      * If this table is a stream table, i.e. it has {@link #STREAM_TABLE_ATTRIBUTE} set to {@code true}, return a child
@@ -2133,30 +1603,13 @@ public interface Table extends
      */
     Table ungroup(boolean nullFill, String... columnsToUngroup);
 
-    default Table ungroup(String... columnsToUngroup) {
-        return ungroup(false, columnsToUngroup);
-    }
+    Table ungroup(String... columnsToUngroup);
 
-    default Table ungroupAllBut(String... columnsNotToUngroup) {
-        final Set<String> columnsNotToUnwrapSet = Arrays.stream(columnsNotToUngroup).collect(Collectors.toSet());
-        return ungroup(getDefinition().getColumnStream()
-                .filter(c -> !columnsNotToUnwrapSet.contains(c.getName())
-                        && (c.getDataType().isArray() || Vector.class.isAssignableFrom(c.getDataType())))
-                .map(ColumnDefinition::getName).toArray(String[]::new));
-    }
+    Table ungroupAllBut(String... columnsNotToUngroup);
 
-    default Table ungroup() {
-        return ungroup(getDefinition().getColumnStream()
-                .filter(c -> c.getDataType().isArray() || Vector.class.isAssignableFrom(c.getDataType()))
-                .map(ColumnDefinition::getName).toArray(String[]::new));
-    }
+    Table ungroup();
 
-    default Table ungroup(boolean nullFill) {
-        return ungroup(nullFill,
-                getDefinition().getColumnStream()
-                        .filter(c -> c.getDataType().isArray() || Vector.class.isAssignableFrom(c.getDataType()))
-                        .map(ColumnDefinition::getName).toArray(String[]::new));
-    }
+    Table ungroup(boolean nullFill);
 
     // -----------------------------------------------------------------------------------------------------------------
     // ByExternal Operations
@@ -2211,9 +1664,7 @@ public interface Table extends
      * @return a TableMap keyed by keyColumnNames
      */
     @AsyncMethod
-    default TableMap byExternal(String... keyColumnNames) {
-        return byExternal(false, keyColumnNames);
-    }
+    TableMap byExternal(String... keyColumnNames);
 
     // -----------------------------------------------------------------------------------------------------------------
     // Hierarchical table operations (rollup and treeTable).
@@ -2221,7 +1672,7 @@ public interface Table extends
 
     /**
      * Create a rollup table.
-     *
+     * <p>
      * A rollup table aggregates by the specified columns, and then creates a hierarchical table which re-aggregates
      * using one less aggregation column on each level. The column that is no longer part of the aggregation key is
      * replaced with null on each level.
@@ -2231,13 +1682,11 @@ public interface Table extends
      * @return a hierarchical table with the rollup applied
      */
     @AsyncMethod
-    default Table rollup(ComboAggregateFactory comboAggregateFactory, Collection<String> columns) {
-        return rollup(comboAggregateFactory, SelectColumnFactory.getExpressions(columns));
-    }
+    Table rollup(ComboAggregateFactory comboAggregateFactory, Collection<String> columns);
 
     /**
      * Create a rollup table.
-     *
+     * <p>
      * A rollup table aggregates by the specified columns, and then creates a hierarchical table which re-aggregates
      * using one less aggregation column on each level. The column that is no longer part of the aggregation key is
      * replaced with null on each level.
@@ -2245,18 +1694,15 @@ public interface Table extends
      * @param comboAggregateFactory the ComboAggregateFactory describing the aggregation
      * @param includeConstituents set to true to include the constituent rows at the leaf level
      * @param columns the columns to group by
-     *
      * @return a hierarchical table with the rollup applied
      */
     @AsyncMethod
-    default Table rollup(ComboAggregateFactory comboAggregateFactory, boolean includeConstituents,
-            Collection<String> columns) {
-        return rollup(comboAggregateFactory, includeConstituents, SelectColumnFactory.getExpressions(columns));
-    }
+    Table rollup(ComboAggregateFactory comboAggregateFactory, boolean includeConstituents,
+            Collection<String> columns);
 
     /**
      * Create a rollup table.
-     *
+     * <p>
      * A rollup table aggregates by the specified columns, and then creates a hierarchical table which re-aggregates
      * using one less aggregation column on each level. The column that is no longer part of the aggregation key is
      * replaced with null on each level.
@@ -2266,13 +1712,11 @@ public interface Table extends
      * @return a hierarchical table with the rollup applied
      */
     @AsyncMethod
-    default Table rollup(ComboAggregateFactory comboAggregateFactory, String... columns) {
-        return rollup(comboAggregateFactory, SelectColumnFactory.getExpressions(columns));
-    }
+    Table rollup(ComboAggregateFactory comboAggregateFactory, String... columns);
 
     /**
      * Create a rollup table.
-     *
+     * <p>
      * A rollup table aggregates by the specified columns, and then creates a hierarchical table which re-aggregates
      * using one less aggregation column on each level. The column that is no longer part of the aggregation key is
      * replaced with null on each level.
@@ -2280,17 +1724,14 @@ public interface Table extends
      * @param comboAggregateFactory the ComboAggregateFactory describing the aggregation
      * @param columns the columns to group by
      * @param includeConstituents set to true to include the constituent rows at the leaf level
-     *
      * @return a hierarchical table with the rollup applied
      */
     @AsyncMethod
-    default Table rollup(ComboAggregateFactory comboAggregateFactory, boolean includeConstituents, String... columns) {
-        return rollup(comboAggregateFactory, includeConstituents, SelectColumnFactory.getExpressions(columns));
-    }
+    Table rollup(ComboAggregateFactory comboAggregateFactory, boolean includeConstituents, String... columns);
 
     /**
      * Create a rollup table.
-     *
+     * <p>
      * A rollup table aggregates by the specified columns, and then creates a hierarchical table which re-aggregates
      * using one less aggregation column on each level. The column that is no longer part of the aggregation key is
      * replaced with null on each level.
@@ -2300,26 +1741,22 @@ public interface Table extends
      * @return a hierarchical table with the rollup applied
      */
     @AsyncMethod
-    default Table rollup(ComboAggregateFactory comboAggregateFactory, SelectColumn... columns) {
-        return rollup(comboAggregateFactory, false, columns);
-    }
+    Table rollup(ComboAggregateFactory comboAggregateFactory, SelectColumn... columns);
 
     /**
      * Create a rollup table.
-     *
+     * <p>
      * A rollup table aggregates all rows of the table.
      *
      * @param comboAggregateFactory the ComboAggregateFactory describing the aggregation
      * @return a hierarchical table with the rollup applied
      */
     @AsyncMethod
-    default Table rollup(ComboAggregateFactory comboAggregateFactory) {
-        return rollup(comboAggregateFactory, false, SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY);
-    }
+    Table rollup(ComboAggregateFactory comboAggregateFactory);
 
     /**
      * Create a rollup table.
-     *
+     * <p>
      * A rollup table aggregates all rows of the table.
      *
      * @param comboAggregateFactory the ComboAggregateFactory describing the aggregation
@@ -2327,16 +1764,14 @@ public interface Table extends
      * @return a hierarchical table with the rollup applied
      */
     @AsyncMethod
-    default Table rollup(ComboAggregateFactory comboAggregateFactory, boolean includeConstituents) {
-        return rollup(comboAggregateFactory, includeConstituents, SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY);
-    }
+    Table rollup(ComboAggregateFactory comboAggregateFactory, boolean includeConstituents);
 
     @AsyncMethod
     Table rollup(ComboAggregateFactory comboAggregateFactory, boolean includeConstituents, SelectColumn... columns);
 
     /**
      * Create a hierarchical tree table.
-     *
+     * <p>
      * The structure of the table is encoded by an "id" and a "parent" column. The id column should represent a unique
      * identifier for a given row, and the parent column indicates which row is the parent for a given row. Rows that
      * have a null parent, are shown in the main table. It is possible for rows to be "orphaned", if their parent
@@ -2358,20 +1793,14 @@ public interface Table extends
     Table sort(SortPair... sortPairs);
 
     @AsyncMethod
-    default Table sort(String... columnsToSortBy) {
-        return sort(SortPair.ascendingPairs(columnsToSortBy));
-    }
+    Table sort(String... columnsToSortBy);
 
     @AsyncMethod
-    default Table sortDescending(String... columnsToSortBy) {
-        return sort(SortPair.descendingPairs(columnsToSortBy));
-    }
+    Table sortDescending(String... columnsToSortBy);
 
     @Override
     @AsyncMethod
-    default Table sort(Collection<SortColumn> columnsToSortBy) {
-        return sort(SortPair.from(columnsToSortBy));
-    }
+    Table sort(Collection<SortColumn> columnsToSortBy);
 
     @AsyncMethod
     Table reverse();
@@ -2382,7 +1811,6 @@ public interface Table extends
      * </p>
      *
      * @param allowedSortingColumns The columns on which sorting is allowed.
-     *
      * @return The same table this was invoked on.
      */
     @AsyncMethod
@@ -2396,10 +1824,10 @@ public interface Table extends
      * <p>
      * Note that this table operates on the table it was invoked on and does not create a new table. So in the following
      * code <code>T1 = baseTable.where(...)
-     *          T2 = T1.restrictSortTo("C1")
-     *          T3 = T2.clearSortingRestrictions()
-     *    </code>
-     *
+     * T2 = T1.restrictSortTo("C1")
+     * T3 = T2.clearSortingRestrictions()
+     * </code>
+     * <p>
      * T1 == T2 == T3 and the result has no restrictions on sorting.
      * </p>
      *
@@ -2414,23 +1842,16 @@ public interface Table extends
 
     Table snapshot(Table baseTable, boolean doInitialSnapshot, String... stampColumns);
 
-    default Table snapshot(Table baseTable, String... stampColumns) {
-        return snapshot(baseTable, true, stampColumns);
-    }
+    Table snapshot(Table baseTable, String... stampColumns);
 
     Table snapshotIncremental(Table rightTable, boolean doInitialSnapshot, String... stampColumns);
 
-    default Table snapshotIncremental(Table rightTable, String... stampColumns) {
-        return snapshotIncremental(rightTable, false, stampColumns);
-    }
+    Table snapshotIncremental(Table rightTable, String... stampColumns);
 
-    Table snapshotHistory(final Table rightTable);
+    Table snapshotHistory(Table rightTable);
 
     @Override
-    default Table snapshot(Table baseTable, boolean doInitialSnapshot, Collection<ColumnName> stampColumns) {
-        return snapshot(baseTable, doInitialSnapshot,
-                stampColumns.stream().map(ColumnName::name).toArray(String[]::new));
-    }
+    Table snapshot(Table baseTable, boolean doInitialSnapshot, Collection<ColumnName> stampColumns);
 
     // -----------------------------------------------------------------------------------------------------------------
     // Miscellaneous Operations
@@ -2442,23 +1863,13 @@ public interface Table extends
      * This is useful if you have a reference to a table or a proxy and want to run a series of operations against the
      * table without each individual operation resulting in an RMI.
      *
-     * @implNote If the UGP is not required the {@link Function.Unary#call(Object)} method should be annotated with
-     *           {@link AsyncMethod}.
-     *
      * @param function the function to run, its single argument will be this table
      * @param <R> the return type of function
      * @return the return value of function
+     * @implNote If the UGP is not required the {@link Function.Unary#call(Object)} method should be annotated with
+     *           {@link AsyncMethod}.
      */
-    default <R> R apply(Function.Unary<R, Table> function) {
-        final QueryPerformanceNugget nugget =
-                QueryPerformanceRecorder.getInstance().getNugget("apply(" + function + ")");
-
-        try {
-            return function.call(this);
-        } finally {
-            nugget.done();
-        }
-    }
+    <R> R apply(Function.Unary<R, Table> function);
 
     /**
      * Return true if this table is guaranteed to be flat. The rowSet of a flat table will be from 0...numRows-1.
@@ -2492,9 +1903,7 @@ public interface Table extends
     Table layoutHints(String hints);
 
     @AsyncMethod
-    default Table layoutHints(LayoutHintBuilder builder) {
-        return layoutHints(builder.build());
-    }
+    Table layoutHints(LayoutHintBuilder builder);
 
     @AsyncMethod
     Table withTableDescription(String description);
@@ -2505,13 +1914,10 @@ public interface Table extends
      *
      * @param column the name of the column
      * @param description the column description
-     *
      * @return a copy of the source table with the description applied
      */
     @AsyncMethod
-    default Table withColumnDescription(String column, String description) {
-        return withColumnDescription(Collections.singletonMap(column, description));
-    }
+    Table withColumnDescription(String column, String description);
 
     /**
      * Add a set of column descriptions to the table.
@@ -2550,19 +1956,17 @@ public interface Table extends
      *
      * @apiNote In practice, implementations usually just invoke {@link #releaseCachedResources()}.
      */
-    default void close() {
-        releaseCachedResources();
-    }
+    void close();
 
     /**
      * Attempt to release cached resources held by this table. Unlike {@link #close()}, this must not render the table
      * unusable for subsequent read operations. Implementations should be sure to call
      * {@code super.releaseCachedResources()}.
      */
-    default void releaseCachedResources() {}
+    void releaseCachedResources();
 
     // -----------------------------------------------------------------------------------------------------------------
-    // Methods for dynamic tables
+    // Methods for refreshing tables
     // -----------------------------------------------------------------------------------------------------------------
 
     /**
@@ -2584,7 +1988,6 @@ public interface Table extends
      * java.util.concurrent.locks.Condition#await()).
      *
      * @param timeout The maximum time to wait in milliseconds.
-     *
      * @return false if the timeout elapses without notification, true otherwise.
      * @throws InterruptedException In the event this thread is interrupted
      */
@@ -2596,17 +1999,15 @@ public interface Table extends
      *
      * @param listener listener for updates
      */
-    default void listenForUpdates(ShiftObliviousListener listener) {
-        listenForUpdates(listener, false);
-    }
+    void listenForUpdates(ShiftObliviousListener listener);
 
     /**
      * Subscribe for updates to this table. After the optional initial image, {@code listener} will be invoked via the
      * {@link NotificationQueue} associated with this Table.
      *
      * @param listener listener for updates
-     * @param replayInitialImage true to process updates for all initial rows in the table plus all changes;
-     *        false to only process changes
+     * @param replayInitialImage true to process updates for all initial rows in the table plus all changes; false to
+     *        only process changes
      */
     void listenForUpdates(ShiftObliviousListener listener, boolean replayInitialImage);
 
@@ -2632,12 +2033,9 @@ public interface Table extends
      */
     void removeUpdateListener(Listener listener);
 
-    // TODO-RWC: LogOutputAppendable marker interface instead of UPT.E.
-    // TODO-RWC: Collapse ShiftObliviousListener into Listener from Table, and delete direct?
     /**
      * @return true if this table is in a failure state.
      */
-    default boolean isFailed() {
-        return false;
-    }
+    boolean isFailed();
+
 }

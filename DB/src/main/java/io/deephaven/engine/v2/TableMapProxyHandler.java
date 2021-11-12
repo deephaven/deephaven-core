@@ -96,7 +96,7 @@ public class TableMapProxyHandler extends LivenessArtifact implements Invocation
                 new TableMapProxyHandler(localTableMap, strictKeys, allowCoalesce, sanityCheckJoins));
     }
 
-    public interface TableMapProxy extends TableWithOperationDefaults, TransformableTableMap {
+    public interface TableMapProxy extends TableWithDefaults, TransformableTableMap {
         /**
          * Initiate update delivery to this table's listeners. Will notify direct listeners before completing, and enqueue
          * notifications for all other listeners.

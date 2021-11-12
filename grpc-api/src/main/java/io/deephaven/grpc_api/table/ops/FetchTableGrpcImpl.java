@@ -2,7 +2,6 @@ package io.deephaven.grpc_api.table.ops;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.remote.preview.ColumnPreviewManager;
 import io.deephaven.grpc_api.session.SessionState;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
 import io.deephaven.proto.backplane.grpc.FetchTableRequest;

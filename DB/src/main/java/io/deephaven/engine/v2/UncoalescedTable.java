@@ -26,7 +26,7 @@ import java.util.Map;
  * Abstract class for uncoalesced tables. These tables have deferred work that must be done before data can be operated
  * on.
  */
-public abstract class UncoalescedTable extends BaseTable implements TableWithOperationDefaults {
+public abstract class UncoalescedTable extends BaseTable implements TableWithDefaults {
 
     private final Object coalescingLock = new Object();
 
