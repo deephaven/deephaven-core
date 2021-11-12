@@ -1,9 +1,9 @@
 package io.deephaven.engine.v2.utils;
 
-import io.deephaven.engine.v2.utils.metrics.IntCounterMetric;
-import io.deephaven.engine.v2.utils.metrics.LongCounterLog2HistogramMetric;
-import io.deephaven.engine.v2.utils.metrics.LongCounterMetric;
-import io.deephaven.engine.v2.utils.metrics.MetricsManager;
+import io.deephaven.util.metrics.IntCounterMetric;
+import io.deephaven.util.metrics.LongCounterLog2HistogramMetric;
+import io.deephaven.util.metrics.LongCounterMetric;
+import io.deephaven.util.metrics.MetricsManager;
 import io.deephaven.engine.v2.utils.rsp.RspBitmap;
 import io.deephaven.engine.v2.utils.singlerange.IntStartLongDeltaSingleRange;
 import io.deephaven.engine.v2.utils.singlerange.LongStartIntDeltaSingleRange;

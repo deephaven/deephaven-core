@@ -7,7 +7,7 @@ import io.deephaven.engine.structures.RowSequence;
 import io.deephaven.engine.chunk.Attributes;
 import io.deephaven.engine.chunk.LongChunk;
 import io.deephaven.engine.v2.utils.*;
-import io.deephaven.engine.v2.utils.metrics.IntCounterMetric;
+import io.deephaven.util.metrics.IntCounterMetric;
 import io.deephaven.engine.v2.utils.rsp.RspBitmap;
 import io.deephaven.engine.v2.utils.singlerange.SingleRange;
 import io.deephaven.util.datastructures.LongRangeAbortableConsumer;

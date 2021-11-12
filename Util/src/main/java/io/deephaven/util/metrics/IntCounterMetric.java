@@ -1,4 +1,4 @@
-package io.deephaven.engine.v2.utils.metrics;
+package io.deephaven.util.metrics;
 
 public class IntCounterMetric implements IntMetric {
     private final int id;

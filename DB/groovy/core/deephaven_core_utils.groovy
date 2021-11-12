@@ -74,13 +74,13 @@ colorTable = {
 //////////////////// Count Metrics //////////////////////////
 
 resetMetricsCounts = {
-    io.deephaven.engine.v2.utils.metrics.MetricsManager.resetCounters()
+    io.deephaven.util.metrics.MetricsManager.resetCounters()
 }
 
 getMetricsCounts = {
-    io.deephaven.engine.v2.utils.metrics.MetricsManager.getCounters()
+    io.deephaven.util.metrics.MetricsManager.getCounters()
 }
 
 printMetricsCounts = {
-    println(io.deephaven.engine.v2.utils.metrics.MetricsManager.getCounters())
+    println(io.deephaven.util.metrics.MetricsManager.getCounters())
 }

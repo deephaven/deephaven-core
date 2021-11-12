@@ -2,7 +2,7 @@ package io.deephaven.benchmark.engine;
 
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.live.UpdateGraphProcessor;
-import io.deephaven.engine.v2.utils.metrics.MetricsManager;
+import io.deephaven.util.metrics.MetricsManager;
 import io.deephaven.benchmarking.*;
 import io.deephaven.benchmarking.generator.ColumnGenerator;
 import io.deephaven.benchmarking.generator.EnumStringColumnGenerator;

@@ -1,4 +1,4 @@
-package io.deephaven.engine.v2.utils.metrics;
+package io.deephaven.util.metrics;
 
 import io.deephaven.configuration.Configuration;
 import io.deephaven.io.logger.Logger;

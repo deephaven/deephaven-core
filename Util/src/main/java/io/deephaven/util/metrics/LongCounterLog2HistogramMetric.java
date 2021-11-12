@@ -1,4 +1,4 @@
-package io.deephaven.engine.v2.utils.metrics;
+package io.deephaven.util.metrics;
 
 public class LongCounterLog2HistogramMetric implements LongMetric {
     private final int id;
