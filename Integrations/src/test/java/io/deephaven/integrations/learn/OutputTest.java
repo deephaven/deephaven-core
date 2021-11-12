@@ -71,6 +71,7 @@ public class OutputTest {
 
         Assert.assertEquals("Output{" +
                 "colName='" + colName + '\'' +
+                ", isPythonScatterFunc=" + output.isPythonScatterFunc() +
                 ", scatterFunc=" + func +
                 ", type='" + type + '\'' +
                 '}', output.toString());
