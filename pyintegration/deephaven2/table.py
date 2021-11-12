@@ -20,6 +20,7 @@ _JSortPair = jpy.get_type("io.deephaven.db.tables.SortPair")
 #
 # module level functions
 #
+# region factory methods
 def empty_table(size: int = 0) -> Table:
     """ Create an empty table.
 
@@ -61,11 +62,15 @@ def time_table(period: str, start_time: str = None) -> Table:
         raise DHError(e, "failed to create a time table.") from e
 
 
+# endregion
+
+
 class Table:
     """ A Table represents a Deephaven table. It allows applications to perform powerful Deephaven table operations.
 
     Note: It should not be instantiated directly by user code. Tables are mostly created by factory methods,
     data ingestion operations, queries, aggregations, joins, etc.
+
     """
 
     def __init__(self, j_table):
@@ -117,9 +122,18 @@ class Table:
         except Exception as e:
             raise DHError(e, "table to_string failed") from e
 
+    # def snapshot(self):
+    #     """ Take a snapshot of the table. """
+    #     try:
+    #         return empty_table(0).snapshot(self._j_table)
+    #     except Exception as e:
+    #         raise DHError("") from e
+    #
+
     #
     # Table operation category: Select
     #
+    # region Select
     def drop_columns(self, cols: List[str]) -> Table:
         """ The drop_columns method creates a new table with the same size as this table but omits any of specified
         columns.
@@ -316,9 +330,12 @@ class Table:
         except Exception as e:
             raise DHError(e, "table select_distinct operation failed.") from e
 
+    # endregion
+
     #
     # Table operation category: Sort
     #
+    # region Sort
     def restrict_sort_to(self, cols: List[str]):
         """ The restrict_sort_to method only allows sorting on specified table columns. This can be useful to prevent
         users from accidentally performing expensive sort operations as they interact with tables in the UI.
@@ -394,9 +411,12 @@ class Table:
         except Exception as e:
             raise DHError(e, "table sort operation failed.") from e
 
+    # endregion
+
     #
     # Table operation category: Filter
     #
+    # region Filter
     def where(self, filters: List[str] = []) -> Table:
         """ The where method creates a new table with only the rows meeting the filter criteria in the column(s) of
         the table.
@@ -418,7 +438,7 @@ class Table:
         except Exception as e:
             raise DHError(e, "table where operation failed.") from e
 
-    def where_in(self, filter_table, cols: List[str]) -> Table:
+    def where_in(self, filter_table: Table, cols: List[str]) -> Table:
         """ The where_in method creates a new table containing rows from the source table, where the rows match
         values in the filter table. The filter is updated whenever either table changes.
 
@@ -437,7 +457,7 @@ class Table:
         except Exception as e:
             raise DHError(e, "table where_in operation failed.") from e
 
-    def where_not_in(self, filter_table, cols: List[str]) -> Table:
+    def where_not_in(self, filter_table: Table, cols: List[str]) -> Table:
         """ The where_not_in method creates a new table containing rows from the source table, where the rows do not
         match values in the filter table.
 
@@ -544,10 +564,12 @@ class Table:
             return Table(j_table=self._j_table.tailPct(pct))
         except Exception as e:
             raise DHError(e, "table tail_pct operation failed.") from e
+    # endregion
 
     #
     # Table operation category: Join
     #
+    # region Join
     def natural_join(self, table: Table, on: List[str], joins: List[str] = []) -> Table:
         """ The natural_join method creates a new table containing all of the rows and columns of this table,
         plus additional columns containing data from the right table. For columns appended to the left table (joins),
@@ -711,10 +733,11 @@ class Table:
                 return Table(j_table=self._j_table.raj(table._j_table, ",".join(on)))
         except Exception as e:
             raise DHError(e, "table reverse-as-of join operation failed.") from e
+    # endregion
 
     #
     # Table operation category: Aggregation
-    #
+    # region Aggregation
     def head_by(self, num_rows: int, by: List[str]) -> Table:
         """ The head_by method creates a new table containing the first number of rows for each group.
 
@@ -734,10 +757,10 @@ class Table:
             raise DHError(e, "table head_by operation failed.") from e
 
     def tail_by(self, num_rows: int, by: List[str]) -> Table:
-        """ The head_by method creates a new table containing the last number of rows for each group.
+        """ The tail_by method creates a new table containing the last number of rows for each group.
 
         Args:
-            num_rows (int): the number of rows at the beginning of each group
+            num_rows (int): the number of rows at the end of each group
             by (List[str]): the group-by column names
 
         Returns:
@@ -1013,10 +1036,5 @@ class Table:
             return Table(j_table=self._j_table.by(combo_agg.combo, *by))
         except Exception as e:
             raise DHError(e, "table combo_by operation failed.") from e
+    # endregion
 
-    # def snapshot(self):
-    #     """ Take a snapshot of the table. """
-    #     try:
-    #         return empty_table(0).snapshot(self._j_table)
-    #     except Exception as e:
-    #         raise DHError("") from e
