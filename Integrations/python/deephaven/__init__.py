@@ -79,7 +79,6 @@ from .conversion_utils import convertToJavaArray, convertToJavaList, convertToJa
 
 
 from . import Calendars as cals, \
-    ComboAggregateFactory as caf, \
     DateTimeUtils as dtu, \
     MovingAverages as mavg, \
     ConsumeKafka as ck, \
