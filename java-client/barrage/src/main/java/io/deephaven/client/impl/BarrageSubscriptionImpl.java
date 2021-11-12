@@ -44,11 +44,10 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
     private static final Logger log = LoggerFactory.getLogger(BarrageSubscriptionImpl.class);
 
     private final String logName;
-    private final Export export;
+    private final TableHandle tableHandle;
     private final BarrageSubscriptionOptions options;
     private final ClientCall<Flight.FlightData, BarrageMessage> call;
 
-    private Runnable performRelease;
     private BarrageTable resultTable;
 
     private boolean subscribed = false;
@@ -57,22 +56,19 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
     /**
      * Represents a BarrageSubscription.
      *
-     * @param session the deephaven session that this export belongs to
-     * @param export the export to subscribe to (ownership is transferred to the subscription)
+     * @param session the Deephaven session that this export belongs to
+     * @param tableHandle the tableHandle to subscribe to (ownership is transferred to the subscription)
      * @param options the transport level options for this subscription
-     * @param tableDefinition the expected table definition
-     * @param performRelease a callback that is invoked when this subscription is closed/destroyed/garbage-collected
      */
     public BarrageSubscriptionImpl(
-            final BarrageSession session, final Export export, final BarrageSubscriptionOptions options,
-            final TableDefinition tableDefinition, @Nullable final Runnable performRelease) {
+            final BarrageSession session, final TableHandle tableHandle, final BarrageSubscriptionOptions options) {
         super(false);
 
-        this.logName = ExportTicketHelper.toReadableString(export.ticket(), "export.ticket()");
+        this.logName = ExportTicketHelper.toReadableString(tableHandle.ticket(), "tableHandle.ticket()");
         this.options = options;
-        this.performRelease = performRelease;
-        this.export = export;
+        this.tableHandle = tableHandle;
 
+        final TableDefinition tableDefinition = BarrageUtil.convertArrowSchema(tableHandle.response()).tableDef;
         resultTable = BarrageTable.make(tableDefinition, false);
         resultTable.addParentReference(this);
 
@@ -173,12 +169,8 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
 
     private void cleanup() {
         this.connected = false;
-        this.export.close();
+        this.tableHandle.close();
         resultTable = null;
-        if (performRelease != null) {
-            performRelease.run();
-            performRelease = null;
-        }
     }
 
     @Override
@@ -208,7 +200,7 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
         }
 
         final int ticOffset = BarrageSubscriptionRequest.createTicketVector(metadata,
-                export.ticket().getTicket().asReadOnlyByteBuffer());
+                tableHandle.ticket().getTicket().asReadOnlyByteBuffer());
         BarrageSubscriptionRequest.startBarrageSubscriptionRequest(metadata);
         BarrageSubscriptionRequest.addColumns(metadata, colOffset);
         BarrageSubscriptionRequest.addViewport(metadata, vpOffset);

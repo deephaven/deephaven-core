@@ -10,7 +10,7 @@ import sys
 import jpy
 import os
 
-from deephaven import KafkaTools as kt
+from deephaven import ConsumeKafka as ck
 from deephaven import Types as dh
 
 if sys.version_info[0] < 3:
@@ -21,9 +21,9 @@ else:
     import unittest
 
 
-class TestTableTools(unittest.TestCase):
+class TestConsumeKafka(unittest.TestCase):
     """
-    Test cases for the deephaven.KafkaTools module (performed locally) -
+    Test cases for the deephaven.ConsumeKafka  module (performed locally) -
     """
 
     def _assertCommonCols(self, cols):
@@ -40,26 +40,26 @@ class TestTableTools(unittest.TestCase):
         Check that the basic constants are imported and visible.
         """
         
-        self.assertIsNotNone(kt.SEEK_TO_BEGINNING)
-        self.assertIsNotNone(kt.DONT_SEEK)
-        self.assertIsNotNone(kt.SEEK_TO_END)
-        self.assertIsNotNone(kt.FROM_PROPERTIES)
-        self.assertIsNotNone(kt.IGNORE)
-        self.assertIsNotNone(kt.ALL_PARTITIONS)
-        self.assertIsNotNone(kt.ALL_PARTITIONS_SEEK_TO_BEGINNING)
-        self.assertIsNotNone(kt.ALL_PARTITIONS_SEEK_TO_END)
-        self.assertIsNotNone(kt.ALL_PARTITIONS_DONT_SEEK)
+        self.assertIsNotNone(ck.SEEK_TO_BEGINNING)
+        self.assertIsNotNone(ck.DONT_SEEK)
+        self.assertIsNotNone(ck.SEEK_TO_END)
+        self.assertIsNotNone(ck.FROM_PROPERTIES)
+        self.assertIsNotNone(ck.IGNORE)
+        self.assertIsNotNone(ck.ALL_PARTITIONS)
+        self.assertIsNotNone(ck.ALL_PARTITIONS_SEEK_TO_BEGINNING)
+        self.assertIsNotNone(ck.ALL_PARTITIONS_SEEK_TO_END)
+        self.assertIsNotNone(ck.ALL_PARTITIONS_DONT_SEEK)
 
 
     def testSimple(self):
         """
         Check a simple Kafka subscription creates the right table.
         """
-        t = kt.consumeToTable(
+        t = ck.consumeToTable(
             {'bootstrap.servers' : 'redpanda:29092'},
             'orders',
-            key = kt.IGNORE,
-            value = kt.simple('Price', dh.double))
+            key = ck.IGNORE,
+            value = ck.simple('Price', dh.double))
 
         cols = t.getDefinition().getColumns()
         self.assertEquals(4, len(cols))
@@ -73,11 +73,11 @@ class TestTableTools(unittest.TestCase):
         Check a JSON Kafka subscription creates the right table.
         """
 
-        t = kt.consumeToTable(
+        t = ck.consumeToTable(
             {'bootstrap.servers' : 'redpanda:29092'},
             'orders',
-            key = kt.IGNORE,
-            value = kt.json(
+            key = ck.IGNORE,
+            value = ck.json(
                 [ ('Symbol', dh.string),
                   ('Side', dh.string),
                   ('Price', dh.double),
@@ -135,12 +135,12 @@ class TestTableTools(unittest.TestCase):
         r = os.system(sys_str)
         self.assertEquals(0, r)
         
-        t = kt.consumeToTable(
-            {'bootstrap.servers' : 'redpanda:29092',
-             'schema.registry.url' : 'http://registry:8080/api/ccompat'},
+        t = ck.consumeToTable(
+            { 'bootstrap.servers' : 'redpanda:29092',
+              'schema.registry.url' : 'http://registry:8080/api/ccompat' },
             'share_price',
-            key = kt.IGNORE,
-            value = kt.avro('share_price_record', schema_version='1'),
+            key = ck.IGNORE,
+            value = ck.avro('share_price_record', schema_version='1'),
             table_type='append'
         )
 

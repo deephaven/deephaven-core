@@ -23,7 +23,7 @@ import java.util.*;
 /**
  * A simple wrapper around a Python List object that implements a java List of PyObjects.
  */
-class PyListWrapper implements List<PyObject> {
+public class PyListWrapper implements List<PyObject> {
     // todo: https://docs.python.org/3/c-api/list.html vs https://docs.python.org/3/c-api/sequence.html
     private PyObject pyObject;
 
@@ -234,5 +234,29 @@ class PyListWrapper implements List<PyObject> {
     @Override
     public List<PyObject> subList(int fromIndex, int toIndex) {
         throw new UnsupportedOperationException();
+    }
+
+    /**
+     * Return a summarized preview of this list.
+     *
+     * @param prefixLength The maximum prefix of the array to convert
+     * @return The String representation of array
+     */
+    public String toString(final int prefixLength) {
+        if (isEmpty()) {
+            return "[]";
+        }
+        final StringBuilder builder = new StringBuilder("[");
+        final int displaySize = Math.min(size(), prefixLength);
+        builder.append(get(0).str());
+        for (int ei = 1; ei < displaySize; ++ei) {
+            builder.append(", ").append(get(ei).str());
+        }
+        if (displaySize == size()) {
+            builder.append(']');
+        } else {
+            builder.append(", ...]");
+        }
+        return builder.toString();
     }
 }

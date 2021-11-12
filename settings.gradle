@@ -140,6 +140,9 @@ include(':envoy')
 
 include(':grpc-proxy')
 
+include(':uri')
+project(':uri').projectDir = file('java-client/uri')
+
 include(':java-client-session')
 project(':java-client-session').projectDir = file('java-client/session')
 

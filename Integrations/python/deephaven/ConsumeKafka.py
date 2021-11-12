@@ -3,13 +3,6 @@
 # Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
 #
 
-##############################################################################
-#               This code is auto generated. DO NOT EDIT FILE!
-# Run generatePythonIntegrationStaticMethods or
-# "./gradlew :Generators:generatePythonIntegrationStaticMethods" to generate
-##############################################################################
-
-
 import collections
 import sys
 import jpy
@@ -17,15 +10,16 @@ import wrapt
 
 import deephaven.Types as dh
 
-from ..conversion_utils import _isJavaType, _isStr, \
-    _typeFromName, _dictToProperties, _dictToMap, IDENTITY
+from deephaven.conversion_utils import _isStr, \
+    _dictToProperties, _dictToMap, IDENTITY
 
-from ..Types import _jclassFromType
+from deephaven.Types import _jclassFromType
 
 # None until the first _defineSymbols() call
 _java_type_ = None
 _stream_table_tools_ = None
 _avro_schema_jtype_ = None
+_consume_jtype_ = None
 SEEK_TO_BEGINNING = None
 DONT_SEEK = None
 SEEK_TO_END = None
@@ -46,7 +40,7 @@ def _defineSymbols():
     if not jpy.has_jvm():
         raise SystemError("No java functionality can be used until the JVM has been initialized through the jpy module")
 
-    global _java_type_, _stream_table_tools_, _avro_schema_jtype_, \
+    global _java_type_, _stream_table_tools_, _avro_schema_jtype_, _consume_jtype_, \
         SEEK_TO_BEGINNING, DONT_SEEK, SEEK_TO_END, FROM_PROPERTIES, IGNORE, \
         ALL_PARTITIONS, ALL_PARTITIONS_SEEK_TO_BEGINNING, ALL_PARTITIONS_DONT_SEEK, ALL_PARTITIONS_SEEK_TO_END
     if _java_type_ is None:
@@ -54,11 +48,12 @@ def _defineSymbols():
         _java_type_ = jpy.get_type("io.deephaven.kafka.KafkaTools")
         _stream_table_tools_ = jpy.get_type("io.deephaven.db.v2.StreamTableTools")
         _avro_schema_jtype_ = jpy.get_type("org.apache.avro.Schema")
+        _consume_jtype_= jpy.get_type("io.deephaven.kafka.KafkaTools$Consume")
         SEEK_TO_BEGINNING = getattr(_java_type_, 'SEEK_TO_BEGINNING')
         DONT_SEEK = getattr(_java_type_, 'DONT_SEEK')
         SEEK_TO_END = getattr(_java_type_, 'SEEK_TO_END')
         FROM_PROPERTIES = getattr(_java_type_, 'FROM_PROPERTIES')
-        IGNORE = getattr(_java_type_, 'IGNORE')
+        IGNORE = getattr(_consume_jtype_, 'IGNORE')
         ALL_PARTITIONS = getattr(_java_type_, 'ALL_PARTITIONS')
         ALL_PARTITIONS_SEEK_TO_BEGINNING = getattr(_java_type_, 'ALL_PARTITIONS_SEEK_TO_BEGINNING')
         ALL_PARTITIONS_DONT_SEEK = getattr(_java_type_, 'ALL_PARTITIONS_DONT_SEEK')
@@ -256,14 +251,14 @@ def avro(schema, schema_version:str = None, mapping:dict = None, mapping_only:di
 
     if have_mapping:
         if have_actual_schema:
-            return _java_type_.avroSpec(schema, mapping)
+            return _consume_jtype_.avroSpec(schema, mapping)
         else:
-            return _java_type_.avroSpec(schema, schema_version, mapping)
+            return _consume_jtype_.avroSpec(schema, schema_version, mapping)
     else:
         if have_actual_schema:
-            return _java_type_.avroSpec(schema)
+            return _consume_jtype_.avroSpec(schema)
         else:
-            return _java_type_.avroSpec(schema, schema_version)
+            return _consume_jtype_.avroSpec(schema, schema_version)
     
 
 @_passThrough
@@ -289,13 +284,13 @@ def json(col_defs, mapping:dict = None):
     except Exception as e:
         raise Exception("could not create column definitions from " + str(col_defs)) from e
     if mapping is None:
-        return _java_type_.jsonSpec(col_defs)
+        return _consume_jtype_.jsonSpec(col_defs)
     if not isinstance(mapping, dict):
         raise TypeError(
             "argument 'mapping' is expected to be of dict type, " +
             "instead got " + str(mapping) + " of type " + type(mapping).__name__)
     mapping = _dictToMap(mapping)
-    return _java_type_.jsonSpec(col_defs, mapping)
+    return _consume_jtype_.jsonSpec(col_defs, mapping)
 
 
 @_passThrough
@@ -312,8 +307,9 @@ def simple(column_name:str, data_type:dh.DataType = None):
         raise TypeError(
             "'column_name' argument needs to be of str type, instead got " + str(column_name))
     if data_type is None:
-        return _java_type_.simpleSpec(column_name)
-    return _java_type_.simpleSpec(column_name, _jclassFromType(data_type))
+        return _consume_jtype_.simpleSpec(column_name)
+    return _consume_jtype_.simpleSpec(column_name, _jclassFromType(data_type))
+
 
 
 @_passThrough

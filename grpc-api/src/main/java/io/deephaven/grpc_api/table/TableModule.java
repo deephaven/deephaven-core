@@ -5,6 +5,7 @@ import dagger.MapKey;
 import dagger.Module;
 import dagger.multibindings.IntoMap;
 import dagger.multibindings.IntoSet;
+import io.deephaven.grpc_api.table.ops.ApplyPreviewColumnsGrpcImpl;
 import io.deephaven.grpc_api.table.ops.ComboAggregateGrpcImpl;
 import io.deephaven.grpc_api.table.ops.DropColumnsGrpcImpl;
 import io.deephaven.grpc_api.table.ops.EmptyTableGrpcImpl;
@@ -178,4 +179,9 @@ public interface TableModule {
     @IntoMap
     @BatchOpCode(BatchTableRequest.Operation.OpCase.FETCH_TABLE)
     GrpcTableOperation<?> bindFetchTable(FetchTableGrpcImpl op);
+
+    @Binds
+    @IntoMap
+    @BatchOpCode(BatchTableRequest.Operation.OpCase.APPLY_PREVIEW_COLUMNS)
+    GrpcTableOperation<?> bindApplyPreviewColumns(ApplyPreviewColumnsGrpcImpl op);
 }

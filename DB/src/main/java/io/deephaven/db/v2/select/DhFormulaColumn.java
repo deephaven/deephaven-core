@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+ */
+
 package io.deephaven.db.v2.select;
 
 import io.deephaven.configuration.Configuration;
@@ -199,8 +203,9 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
 
         // check if this is a column to be created with a numba vectorized function
         for (Param<?> param : params) {
-            if (param.getValue().getClass() == NumbaCallableWrapper.class) {
-                NumbaCallableWrapper numbaCallableWrapper = (NumbaCallableWrapper) param.getValue();
+            final Object value = param.getValue();
+            if (value != null && value.getClass() == NumbaCallableWrapper.class) {
+                NumbaCallableWrapper numbaCallableWrapper = (NumbaCallableWrapper) value;
                 formulaColumnPython = FormulaColumnPython.create(this.columnName,
                         DeephavenCompatibleFunction.create(numbaCallableWrapper.getPyObject(),
                                 numbaCallableWrapper.getReturnType(), this.analyzedFormula.sourceDescriptor.sources,
@@ -664,7 +669,7 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
         if (paramLambda != null) {
             for (int ii = 0; ii < params.length; ++ii) {
                 final Param<?> p = params[ii];
-                final ParamParameter pp = new ParamParameter(ii, p.getName(), p.getDeclaredType(),
+                final ParamParameter pp = new ParamParameter(ii, p.getName(), p.getDeclaredClass(),
                         p.getDeclaredTypeName());
                 addIfNotNull(results, paramLambda.apply(pp));
             }
@@ -687,7 +692,7 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
         final Map<String, Class<?>> arrayDict = makeNameToTypeDict(sd.arrays, columnSources);
         final Map<String, Class<?>> allParamDict = new HashMap<>();
         for (final Param<?> param : params) {
-            allParamDict.put(param.getName(), param.getDeclaredType());
+            allParamDict.put(param.getName(), param.getDeclaredClass());
         }
         final Map<String, Class<?>> paramDict = new HashMap<>();
         for (final String p : sd.params) {

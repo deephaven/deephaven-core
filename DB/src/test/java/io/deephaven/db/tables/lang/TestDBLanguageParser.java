@@ -19,6 +19,7 @@ import groovy.lang.Closure;
 import org.apache.commons.text.StringEscapeUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.jetbrains.annotations.NotNull;
+import org.jpy.PyObject;
 import org.junit.Before;
 
 import java.awt.*;
@@ -79,6 +80,7 @@ public class TestDBLanguageParser extends BaseArrayTestCase {
         variables.put("myTestClass", TestClass.class);
         variables.put("myIntArray", new int[0].getClass());
         variables.put("myDoubleArray", new double[0].getClass());
+        variables.put("myLongArray", new long[0].getClass());
         variables.put("myCharArray", new char[0].getClass());
         variables.put("myTestClassArray", new TestClass[0].getClass());
         variables.put("myDoubleObjArray", new Double[0].getClass());
@@ -108,6 +110,7 @@ public class TestDBLanguageParser extends BaseArrayTestCase {
         variables.put("myDBDateTime", DBDateTime.class);
 
         variables.put("myTable", Table.class);
+        variables.put("myPyObject", PyObject.class);
 
         variables.put("ExampleQuantity", int.class);
         variables.put("ExampleQuantity2", double.class);
@@ -116,6 +119,7 @@ public class TestDBLanguageParser extends BaseArrayTestCase {
         variables.put("ExampleStr", String.class);
 
         variableParameterizedTypes = new HashMap<>();
+        variableParameterizedTypes.put("myArrayList", new Class[] {Long.class});
         variableParameterizedTypes.put("myHashMap", new Class[] {Integer.class, Double.class});
         variableParameterizedTypes.put("myDBArray", new Class[] {Double.class});
     }
@@ -833,6 +837,48 @@ public class TestDBLanguageParser extends BaseArrayTestCase {
         }
     }
 
+    public void testPyObjectToPrimitiveCasts() throws Exception {
+        String expression = "(int)myPyObject";
+        String resultExpression = "intPyCast(myPyObject)";
+        check(expression, resultExpression, int.class, new String[] {"myPyObject"});
+
+        expression = "(double)myPyObject";
+        resultExpression = "doublePyCast(myPyObject)";
+        check(expression, resultExpression, double.class, new String[] {"myPyObject"});
+
+        expression = "(long)myPyObject";
+        resultExpression = "longPyCast(myPyObject)";
+        check(expression, resultExpression, long.class, new String[] {"myPyObject"});
+
+        expression = "(float)myPyObject";
+        resultExpression = "floatPyCast(myPyObject)";
+        check(expression, resultExpression, float.class, new String[] {"myPyObject"});
+
+        expression = "(char)myPyObject";
+        resultExpression = "charPyCast(myPyObject)";
+        check(expression, resultExpression, char.class, new String[] {"myPyObject"});
+
+        expression = "(byte)myPyObject";
+        resultExpression = "bytePyCast(myPyObject)";
+        check(expression, resultExpression, byte.class, new String[] {"myPyObject"});
+
+        expression = "(short)myPyObject";
+        resultExpression = "shortPyCast(myPyObject)";
+        check(expression, resultExpression, short.class, new String[] {"myPyObject"});
+
+        expression = "(String)myPyObject";
+        resultExpression = "doStringPyCast(myPyObject)";
+        check(expression, resultExpression, String.class, new String[] {"myPyObject"});
+
+        expression = "(boolean)myPyObject";
+        resultExpression = "booleanPyCast(myPyObject)";
+        check(expression, resultExpression, boolean.class, new String[] {"myPyObject"});
+
+        expression = "(Boolean)myPyObject";
+        resultExpression = "doBooleanPyCast(myPyObject)";
+        check(expression, resultExpression, Boolean.class, new String[] {"myPyObject"});
+    }
+
     public void testVariables() throws Exception {
         String expression = "1+myInt";
         String resultExpression = "plus(1, myInt)";
@@ -944,11 +990,11 @@ public class TestDBLanguageParser extends BaseArrayTestCase {
 
         expression = "myArrayList[15]";
         resultExpression = "myArrayList.get(15)";
-        check(expression, resultExpression, Object.class, new String[] {"myArrayList"});
+        check(expression, resultExpression, Long.class, new String[] {"myArrayList"});
 
         expression = "myHashMap[\"test\"]";
         resultExpression = "myHashMap.get(\"test\")";
-        check(expression, resultExpression, Object.class, new String[] {"myHashMap"});
+        check(expression, resultExpression, Double.class, new String[] {"myHashMap"});
 
         expression = "myIntArray==myDoubleArray";
         resultExpression = "eqArray(myIntArray, myDoubleArray)";
@@ -1117,14 +1163,17 @@ public class TestDBLanguageParser extends BaseArrayTestCase {
         resultExpression = "testImplicitConversion2(new int[]{ myInt, myInt })";
         check(expression, resultExpression, new int[0].getClass(), new String[] {"myInt"});
 
+        expression = "testImplicitConversion3(myLongArray)";
+        resultExpression = "testImplicitConversion3(myLongArray)";
+        check(expression, resultExpression, new Object[0].getClass(), new String[] {"myLongArray"});
+
         expression = "testImplicitConversion3(myDBArray)";
         resultExpression = "testImplicitConversion3(ArrayUtils.nullSafeDbArrayToArray(myDBArray))";
         check(expression, resultExpression, new Object[0].getClass(), new String[] {"myDBArray"});
 
-        // expression="testImplicitConversion3(myDoubleArray)"; // TODO: This test fails.
-        // resultExpression="testImplicitConversion3(myDoubleArray)"; // we should *not* convert from DbDoubleArray to
-        // Object[]!
-        // check(expression, resultExpression, new Object[0].getClass(), new String[]{"myDoubleArray"});
+        expression = "testImplicitConversion3(myDoubleArray)";
+        resultExpression = "testImplicitConversion3(myDoubleArray)";
+        check(expression, resultExpression, new Object[0].getClass(), new String[] {"myDoubleArray"});
 
         expression = "testImplicitConversion3((Object) myDoubleArray)";
         resultExpression = "testImplicitConversion3((Object)myDoubleArray)"; // test a workaround for the above

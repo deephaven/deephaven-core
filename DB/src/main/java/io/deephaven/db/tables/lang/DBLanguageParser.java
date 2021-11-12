@@ -555,31 +555,37 @@ public final class DBLanguageParser extends GenericVisitorAdapter<Class<?>, DBLa
         // If the paramTypes includes 1+ varArgs check the classes match -- no need to check if there are 0 varArgs
         if (candidate.isVarArgs() && paramTypes.length >= candidateParamTypes.length) {
             Class<?> paramType = paramTypes[candidateParamTypes.length - 1];
+            Class<?> candidateParamType = candidateParamTypes[candidateParamTypes.length - 1];
 
-            if (isDbArray(paramType) && candidateParamTypes[candidateParamTypes.length - 1].isArray()) {
+            Assert.eqTrue(candidateParamType.isArray(), "candidateParamType.isArray()");
+
+            if (isDbArray(paramType)) {
                 paramType = convertDBArray(paramType, parameterizedTypes[candidateParamTypes.length - 1] == null ? null
                         : parameterizedTypes[candidateParamTypes.length - 1][0]);
             }
 
-            if (candidateParamTypes.length == paramTypes.length && paramType.isArray()) {
-                if (!canAssignType(candidateParamTypes[candidateParamTypes.length - 1], paramType)) {
-                    return;
+            boolean canAssignVarArgs = candidateParamTypes.length == paramTypes.length && paramType.isArray()
+                    && canAssignType(candidateParamType, paramType);
+
+            boolean canAssignParamsToVarArgs = true;
+            final Class<?> lastClass = candidateParamType.getComponentType();
+
+            for (int i = candidateParamTypes.length - 1; i < paramTypes.length; i++) {
+                paramType = paramTypes[i];
+
+                if (isDbArray(paramType) && lastClass.isArray()) {
+                    paramType = convertDBArray(paramType,
+                            parameterizedTypes[i] == null ? null : parameterizedTypes[i][0]);
                 }
-            } else {
-                final Class<?> lastClass = candidateParamTypes[candidateParamTypes.length - 1].getComponentType();
 
-                for (int i = candidateParamTypes.length - 1; i < paramTypes.length; i++) {
-                    paramType = paramTypes[i];
-
-                    if (isDbArray(paramType) && lastClass.isArray()) {
-                        paramType = convertDBArray(paramType,
-                                parameterizedTypes[i] == null ? null : parameterizedTypes[i][0]);
-                    }
-
-                    if (!canAssignType(lastClass, paramType)) {
-                        return;
-                    }
+                if (!canAssignType(lastClass, paramType)) {
+                    canAssignParamsToVarArgs = false;
+                    break;
                 }
+            }
+
+            if (!canAssignVarArgs && !canAssignParamsToVarArgs) {
+                return;
             }
         }
 
@@ -997,11 +1003,22 @@ public final class DBLanguageParser extends GenericVisitorAdapter<Class<?>, DBLa
             Class<?> paramType = n.getIndex().accept(this, printer);
             printer.append(')');
 
-            if (DbArray.class.isAssignableFrom(type) && (n.getName() instanceof NameExpr)) {
-                Class<?> ret = variableParameterizedTypes.get(((NameExpr) n.getName()).getNameAsString())[0];
+            // We'll check for a known component type if this a NameExpr.
+            if (n.getName() instanceof NameExpr) {
+                Class<?>[] classes = variableParameterizedTypes.get(((NameExpr) n.getName()).getNameAsString());
 
-                if (ret != null) {
-                    return ret;
+                if (classes != null) {
+                    Class<?> ret = null;
+
+                    if (classes.length == 1) {
+                        ret = classes[0]; // scenario 1: this is a list-like type
+                    } else if (classes.length == 2) {
+                        ret = classes[1]; // scenario 2: this is a map-like type
+                    }
+
+                    if (ret != null) {
+                        return ret;
+                    }
                 }
             }
 
@@ -1160,14 +1177,27 @@ public final class DBLanguageParser extends GenericVisitorAdapter<Class<?>, DBLa
          * Now actually print the cast. For casts to primitives (except boolean), we use special null-safe functions
          * (e.g. intCast()) to perform the cast.
          *
-         * There is no "booleanCast()" function.
+         * There is no "booleanCast()" function. However, we do try to cast to String and Boolean from PyObjects.
          *
          * There are also no special functions for the identity conversion -- e.g. "intCast(int)"
          */
-        if (toPrimitive && !ret.equals(boolean.class) && !ret.equals(exprType)) {
+        final boolean isPyUpgrade =
+                ((ret.equals(boolean.class) || ret.equals(Boolean.class) || ret.equals(String.class))
+                        && exprType.equals(PyObject.class));
+
+        if ((toPrimitive && !ret.equals(boolean.class) && !ret.equals(exprType)) || isPyUpgrade) {
             // Casting to a primitive, except booleans and the identity conversion
+            if (!toPrimitive) {
+                // these methods look like `doStringPyCast` and `doBooleanPyCast`
+                printer.append("do");
+            }
             printer.append(ret.getSimpleName());
-            printer.append("Cast(");
+
+            if (exprType != NULL_CLASS && isAssignableFrom(PyObject.class, exprType)) {
+                printer.append("PyCast(");
+            } else {
+                printer.append("Cast(");
+            }
 
             /*
              * When unboxing to a wider type, do an unboxing conversion followed by a widening conversion. See table
@@ -1482,6 +1512,8 @@ public final class DBLanguageParser extends GenericVisitorAdapter<Class<?>, DBLa
                 // The to-be-cast expr is a Python object field accessor
                 final String clsName = printer.pythonCastContext.getSimpleName();
                 printer.append(", " + clsName + ".class");
+                // Let's advertise to the caller the cast context type
+                ret = printer.pythonCastContext;
             }
             printer.append(')');
         } else {
@@ -1620,16 +1652,23 @@ public final class DBLanguageParser extends GenericVisitorAdapter<Class<?>, DBLa
         if (isPotentialImplicitCall(method.getDeclaringClass())) {
             if (scope == null) { // python func call or Groovy closure call
                 /*
-                 * python func call 1. the func is defined at the main module level and already wrapped in
-                 * CallableWrapper 2. the func will be called via CallableWrapper.call() method
+                 * @formatter:off
+                 * python func call
+                 * 1. the func is defined at the main module level and already wrapped in CallableWrapper
+                 * 2. the func will be called via CallableWrapper.call() method
+                 * @formatter:on
                  */
                 printer.append(innerPrinter);
                 printer.append(n.getNameAsString());
                 printer.append(".call");
             } else {
                 /*
-                 * python method call 1. need to reference the method with PyObject.getAttribute(); 2. wrap the method
-                 * reference in CallableWrapper() 3. the method will be called via CallableWrapper.call()
+                 * @formatter:off
+                 * python method call
+                 * 1. need to reference the method with PyObject.getAttribute();
+                 * 2. wrap the method reference in CallableWrapper()
+                 * 3. the method will be called via CallableWrapper.call()
+                 * @formatter:on
                  */
                 if (!n.getNameAsString().equals("call")) {
                     // to be backwards compatible with the syntax func.call(...)

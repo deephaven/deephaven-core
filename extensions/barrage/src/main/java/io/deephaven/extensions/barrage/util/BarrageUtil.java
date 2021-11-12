@@ -21,6 +21,9 @@ import io.deephaven.db.util.config.MutableInputTable;
 import io.deephaven.db.v2.HierarchicalTableInfo;
 import io.deephaven.db.v2.RollupInfo;
 import io.deephaven.db.v2.sources.chunk.ChunkType;
+import io.deephaven.grpc_api.util.SchemaHelper;
+import io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse;
+import io.deephaven.util.type.TypeUtils;
 import org.apache.arrow.flatbuf.KeyValue;
 import org.apache.arrow.flatbuf.Message;
 import org.apache.arrow.flatbuf.MetadataVersion;
@@ -38,7 +41,16 @@ import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.time.LocalDate;
 import java.time.LocalTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -54,6 +66,13 @@ public class BarrageUtil {
     public static final ArrowType.FixedSizeBinary LOCAL_DATE_TYPE = new ArrowType.FixedSizeBinary(6);
     // hour, minute, second are each one byte, nano is 4 bytes
     public static final ArrowType.FixedSizeBinary LOCAL_TIME_TYPE = new ArrowType.FixedSizeBinary(7);
+
+    /**
+     * Note that arrow's wire format states that Timestamps without timezones are not UTC -- that they are no timezone
+     * at all. It's very important that we mark these times as UTC.
+     */
+    public static final ArrowType.Timestamp NANO_SINCE_EPOCH_TYPE =
+            new ArrowType.Timestamp(TimeUnit.NANOSECOND, "UTC");
 
     private static final int ATTR_STRING_LEN_CUTOFF = 1024;
 
@@ -310,6 +329,10 @@ public class BarrageUtil {
         result.conversionFactors[i] = factor;
     }
 
+    public static ConvertedArrowSchema convertArrowSchema(final ExportedTableCreationResponse response) {
+        return convertArrowSchema(SchemaHelper.flatbufSchema(response));
+    }
+
     public static ConvertedArrowSchema convertArrowSchema(
             final org.apache.arrow.flatbuf.Schema schema) {
         return convertArrowSchema(
@@ -376,6 +399,16 @@ public class BarrageUtil {
         return result;
     }
 
+    private static boolean isTypeNativelySupported(final Class<?> typ) {
+        if (typ.isPrimitive() || TypeUtils.isBoxedType(typ) || supportedTypes.contains(typ)) {
+            return true;
+        }
+        if (typ.isArray()) {
+            return isTypeNativelySupported(typ.getComponentType());
+        }
+        return false;
+    }
+
     private static Field arrowFieldFor(final String name, final ColumnDefinition<?> column, final String description,
             final MutableInputTable inputTable, final Map<String, String> extraMetadata) {
         List<Field> children = Collections.emptyList();
@@ -385,7 +418,7 @@ public class BarrageUtil {
         final Class<?> componentType = column.getComponentType();
         final Map<String, String> metadata = new HashMap<>(extraMetadata);
 
-        if (type.isPrimitive() || supportedTypes.contains(type)) {
+        if (isTypeNativelySupported(type)) {
             putMetadata(metadata, "type", type.getCanonicalName());
         } else {
             // otherwise will be converted to a string
@@ -407,11 +440,18 @@ public class BarrageUtil {
             putMetadata(metadata, "inputtable.isKey", Arrays.asList(inputTable.getKeyNames()).contains(name) + "");
         }
 
+        return arrowFieldFor(name, type, componentType, metadata);
+    }
+
+    private static Field arrowFieldFor(
+            final String name, final Class<?> type, final Class<?> componentType, final Map<String, String> metadata) {
+        List<Field> children = Collections.emptyList();
+
         final FieldType fieldType = arrowFieldTypeFor(type, componentType, metadata);
         if (fieldType.getType().isComplex()) {
             if (type.isArray()) {
-                children = Collections.singletonList(
-                        new Field("", arrowFieldTypeFor(componentType, null, metadata), Collections.emptyList()));
+                children = Collections.singletonList(arrowFieldFor(
+                        "", componentType, componentType.getComponentType(), Collections.emptyMap()));
             } else {
                 throw new UnsupportedOperationException("Arrow Complex Type Not Supported: " + fieldType.getType());
             }
@@ -459,7 +499,7 @@ public class BarrageUtil {
                     return Types.MinorType.VARBINARY.getType();
                 }
                 if (type == DBDateTime.class) {
-                    return Types.MinorType.BIGINT.getType();
+                    return NANO_SINCE_EPOCH_TYPE;
                 }
 
                 // everything gets converted to a string

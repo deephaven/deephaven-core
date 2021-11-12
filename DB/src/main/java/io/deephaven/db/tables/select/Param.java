@@ -9,18 +9,16 @@ import io.deephaven.util.type.TypeUtils;
 import groovy.lang.Closure;
 
 import java.lang.reflect.Modifier;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public class Param<T> {
 
-    public static final Param[] ZERO_LENGTH_PARAM_ARRAY = new Param[0];
+    public static final Param<?>[] ZERO_LENGTH_PARAM_ARRAY = new Param[0];
 
     private final String name;
     private final T value;
@@ -38,29 +36,69 @@ public class Param<T> {
         this.value = value;
     }
 
-    public Class<?> getDeclaredType() {
-        final Class type = value == null ? Object.class
-                : value instanceof Enum ? ((Enum) value).getDeclaringClass()
-                        // in newer versions of groovy, our closures will be subtypes that evade the logic in
-                        // getDeclaredType
-                        // (they will return a null Class#getCanonicalName b/c they are dynamic classes).
-                        : value instanceof Closure ? Closure.class
-                                : value.getClass();
+    public Class<?> getDeclaredClass() {
+        Type declaredType = getDeclaredType();
+        Class<?> cls = classFromType(declaredType);
+
+        if (cls == null) {
+            throw new IllegalStateException("Unexpected declared type of type '"
+                    + declaredType.getClass().getCanonicalName() + "'");
+        }
+
+        return cls;
+    }
+
+    public static Class<?> classFromType(final Type declaredType) {
+        if (declaredType instanceof Class<?>) {
+            return (Class<?>) declaredType;
+        }
+        if (declaredType instanceof ParameterizedType) {
+            return (Class<?>) ((ParameterizedType) declaredType).getRawType();
+        }
+        return null;
+    }
+
+    public Type getDeclaredType() {
+        // in newer versions of groovy, our closures will be subtypes that evade the logic in getDeclaredType
+        // (they will return a null Class#getCanonicalName b/c they are dynamic classes).
+        final Class<?> type;
+        if (value == null) {
+            type = Object.class;
+        } else if (value instanceof Enum) {
+            type = ((Enum<?>) value).getDeclaringClass();
+        } else if (value instanceof Closure) {
+            type = Closure.class;
+        } else {
+            type = value.getClass();
+        }
         return getDeclaredType(type);
     }
 
-    protected static Class getDeclaredType(Class type) {
-        OUTER: while (type != Object.class) {
+    protected static Type getDeclaredType(final Class<?> origType) {
+        Class<?> type = origType;
+        while (type != Object.class) {
             if (Modifier.isPublic(type.getModifiers()) && !type.isAnonymousClass()) {
                 break;
             }
-            Class<?>[] interfaces = type.getInterfaces();
-            for (Class<?> iface : interfaces) {
-                if (iface.getMethods().length > 0) {
-                    type = iface;
-                    break OUTER;
+
+            Type[] interfaces = type.getGenericInterfaces();
+            for (Type ityp : interfaces) {
+                Class<?> iface = null;
+                if (ityp instanceof Class<?>) {
+                    iface = (Class<?>) ityp;
+                } else if (ityp instanceof ParameterizedType) {
+                    ParameterizedType pt = (ParameterizedType) ityp;
+                    Type rawType = pt.getRawType();
+                    if (rawType instanceof Class<?>) {
+                        iface = (Class<?>) rawType;
+                    }
+                }
+
+                if (iface != null && Modifier.isPublic(iface.getModifiers()) && iface.getMethods().length > 0) {
+                    return ityp;
                 }
             }
+
             type = type.getSuperclass();
         }
 
@@ -68,22 +106,18 @@ public class Param<T> {
     }
 
     public String getDeclaredTypeName() {
-        return getDeclaredType().getCanonicalName();
+        return getDeclaredClass().getCanonicalName();
     }
 
     public String getPrimitiveTypeNameIfAvailable() {
         if (value == null) {
             return getDeclaredTypeName();
         }
-        Class type = getDeclaredType();
+        Class<?> type = getDeclaredClass();
         if (io.deephaven.util.type.TypeUtils.isBoxedType(type)) {
             return TypeUtils.getUnboxedType(type).getCanonicalName();
         }
         return getDeclaredTypeName();
-    }
-
-    protected static String getDeclaredTypeName(Class type) {
-        return getDeclaredType(type).getCanonicalName();
     }
 
     /**
@@ -100,7 +134,7 @@ public class Param<T> {
 
     private static void visitParameterClass(final Map<String, Class<?>> found, Class<?> cls) {
         while (cls.isArray()) {
-            cls = getDeclaredType(cls.getComponentType());
+            cls = classFromType(cls.getComponentType());
         }
 
         final String name = cls.getName();

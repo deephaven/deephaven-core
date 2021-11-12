@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+ */
+
 package io.deephaven.db.util;
 
 import io.deephaven.base.FileUtils;
@@ -70,7 +74,8 @@ public class PythonDeephavenSession extends AbstractScriptSession implements Scr
      * @param isDefaultScriptSession true if this is in the default context of a worker jvm
      * @throws IOException if an IO error occurs running initialization scripts
      */
-    public PythonDeephavenSession(final Listener listener, boolean runInitScripts, boolean isDefaultScriptSession)
+    public PythonDeephavenSession(
+            @Nullable final Listener listener, boolean runInitScripts, boolean isDefaultScriptSession)
             throws IOException {
         super(listener, isDefaultScriptSession);
 

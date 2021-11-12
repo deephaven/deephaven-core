@@ -16,6 +16,8 @@ import io.deephaven.db.v2.utils.Index;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.util.*;
 
 public class FormulaAnalyzer {
@@ -101,7 +103,16 @@ public class FormulaAnalyzer {
 
         final QueryScope queryScope = QueryScope.getScope();
         for (Param<?> param : queryScope.getParams(queryScope.getParamNames())) {
-            possibleVariables.put(param.getName(), param.getDeclaredType());
+            possibleVariables.put(param.getName(), param.getDeclaredClass());
+
+            Type declaredType = param.getDeclaredType();
+            if (declaredType instanceof ParameterizedType) {
+                ParameterizedType pt = (ParameterizedType) declaredType;
+                Class<?>[] paramTypes = Arrays.stream(pt.getActualTypeArguments())
+                        .map(Param::classFromType)
+                        .toArray(Class<?>[]::new);
+                possibleVariableParameterizedTypes.put(param.getName(), paramTypes);
+            }
         }
 
         for (ColumnDefinition<?> columnDefinition : availableColumns.values()) {
