@@ -1,6 +1,7 @@
 package io.deephaven.web.client.api.i18n;
 
 import com.google.gwt.core.client.GWT;
+import com.google.gwt.i18n.client.ConstantsWithLookup;
 import com.google.gwt.i18n.client.TimeZone;
 import com.google.gwt.i18n.client.constants.TimeZoneConstants;
 import jsinterop.annotations.JsIgnore;
@@ -8,9 +9,15 @@ import jsinterop.annotations.JsProperty;
 import jsinterop.annotations.JsType;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.MissingResourceException;
 
 @JsType(name = "TimeZone", namespace = "dh.i18n")
 public class JsTimeZone {
+    // ConstantsWithLookup is an explicit opt-in "keep every possible option compiled in, and I'll do runtime lookups, prevent the compiler from helping me"
+    interface TimeZoneLookup extends TimeZoneConstants, ConstantsWithLookup {}
+
+    private static final TimeZoneLookup constants = GWT.create(TimeZoneLookup.class);
+
     // Cache the time zones that are parsed so we don't need to recalculate them
     private static final Map<String, JsTimeZone> timeZoneCache = new HashMap<>();
 
@@ -26,103 +33,89 @@ public class JsTimeZone {
     }
 
     private static String getJsonForCode(String tzCode) {
-        TimeZoneConstants constants = GWT.create(TimeZoneConstants.class);
+        if (tzCode.contains("/")) {
+            String[] parts = tzCode.split("/");
+            String key = parts[0].toLowerCase() + parts[1];
+            try {
+                return constants.getString(key);
+            } catch (MissingResourceException e) {
+                // ignore and continue
+            }
+        }
         switch (tzCode) {
-            case "Asia/Tokyo":
             case "JP":
             case "JST":
                 return constants.asiaTokyo();
-            case "Asia/Seoul":
             case "KR":
             case "KST":
                 return constants.asiaSeoul();
-            case "Asia/Hong_Kong":
             case "HK":
             case "HKT":
                 return constants.asiaHongKong();
-            case "Asia/Singapore":
             case "SG":
             case "SGT":
                 return constants.asiaSingapore();
-            case "Asia/Calcutta":
             case "Asia/Kolkata":
             case "IN":
             case "IST":
                 return constants.asiaCalcutta();
-            case "Asia/Taipei":
             case "TW":
                 return constants.asiaTaipei();
-            case "Europe/Amsterdam":
             case "NL":
                 return constants.europeAmsterdam();
-            case "Europe/Berlin":
             case "CE":
             case "CET":
             case "CEST":
                 return constants.europeBerlin();
-            case "Europe/London":
             case "LON":
             case "BST":
                 return constants.europeLondon();
-            case "Europe/Zurich":
             case "CH":
                 return constants.europeZurich();
-            case "America/Sao_Paulo":
             case "BT":
             case "BRST":
             case "BRT":
                 return constants.americaSaoPaulo();
-            case "America/St_Johns":
             case "NF":
             case "NST":
             case "NDT":
                 return constants.americaStJohns();
-            case "America/Halifax":
             case "AT":
             case "AST":
             case "ADT":
                 return constants.americaHalifax();
-            case "America/New_York":
             case "NY":
             case "ET":
             case "EST":
             case "EDT":
                 return constants.americaNewYork();
-            case "America/Chicago":
             case "MN":
             case "CT":
             case "CST":
             case "CDT":
                 return constants.americaChicago();
-            case "America/Denver":
             case "MT":
             case "MST":
             case "MDT":
                 return constants.americaDenver();
-            case "America/Los_Angeles":
             case "PT":
             case "PST":
             case "PDT":
                 return constants.americaLosAngeles();
-            case "America/Anchorage":
             case "AL":
             case "AKST":
             case "AKDT":
                 return constants.americaAnchorage();
-            case "Pacific/Honolulu":
             case "HI":
             case "HST":
             case "HDT":
                 return constants.pacificHonolulu();
-            case "Australia/Sydney":
             case "SYD":
             case "AEST":
             case "AEDT":
                 return constants.australiaSydney();
-            case "Europe/Moscow":
             case "MOS":
                 return constants.europeMoscow();
-            case "Asia/Shanghai":
             case "SHG":
                 return constants.asiaShanghai();
             default:
