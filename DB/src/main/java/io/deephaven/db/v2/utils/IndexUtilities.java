@@ -116,10 +116,10 @@ public class IndexUtilities {
     }
 
     static boolean equals(final ReadOnlyIndex index, final Object other) {
-        if (!(other instanceof Index)) {
+        if (!(other instanceof ReadOnlyIndex)) {
             return false;
         }
-        final Index otherIndex = (Index) other;
+        final ReadOnlyIndex otherIndex = (ReadOnlyIndex) other;
         return index.size() == otherIndex.size() && IndexUtilities.equalsDeepImpl(index, otherIndex);
     }
 
