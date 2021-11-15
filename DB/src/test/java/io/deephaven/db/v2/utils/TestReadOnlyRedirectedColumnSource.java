@@ -98,10 +98,11 @@ public class TestReadOnlyRedirectedColumnSource {
         final IncrementalReleaseFilter incFilter = new IncrementalReleaseFilter(stepSz, stepSz);
         final Table live = t.where(incFilter).sort("IntsCol");
         final int chunkSz = stepSz - 7;
-        final WritableObjectChunk<String, Values> chunk = WritableObjectChunk.makeWritableChunk(chunkSz);
-        while (live.size() < t.size()) {
-            LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(incFilter::refresh);
-            doFillAndCheck(live, "StringsCol", chunk, chunkSz);
+        try (final WritableObjectChunk<String, Values> chunk = WritableObjectChunk.makeWritableChunk(chunkSz)) {
+            while (live.size() < t.size()) {
+                LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(incFilter::refresh);
+                doFillAndCheck(live, "StringsCol", chunk, chunkSz);
+            }
         }
     }
 
