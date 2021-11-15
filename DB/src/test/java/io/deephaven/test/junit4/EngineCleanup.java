@@ -1,15 +1,15 @@
 package io.deephaven.test.junit4;
 
-import io.deephaven.db.v2.LiveTableTestCase;
-import io.deephaven.db.v2.QueryTableTestBase;
+import io.deephaven.engine.v2.QueryTableTestBase;
+import io.deephaven.engine.v2.RefreshingTableTestCase;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
 /**
- * When you want to extend LiveTableTestCase/QueryTableTestBase but you need to use JUnit 4 annotations, like @Category
- * or @RunWith(Suite.class), then instead of extending LiveTableTestCase, you should instead create a `@Rule public
- * final EngineCleanup field = new EngineCleanup();`.
+ * When you want to extend RefreshingTableTestCase/QueryTableTestBase but you need to use JUnit 4 annotations, like
+ * {@code @Category} or {@code @RunWith(Suite.class)}, then instead of extending RefreshingTableTestCase, you should
+ * instead create a {@code @Rule public final EngineCleanup field = new EngineCleanup();}.
  */
 public class EngineCleanup extends QueryTableTestBase implements TestRule {
     @Override
@@ -27,7 +27,7 @@ public class EngineCleanup extends QueryTableTestBase implements TestRule {
     public void testMethodSoThisIsValidJUnit3() {}
 
     public static boolean printTableUpdates() {
-        return LiveTableTestCase.printTableUpdates;
+        return RefreshingTableTestCase.printTableUpdates;
     }
 
     @Override

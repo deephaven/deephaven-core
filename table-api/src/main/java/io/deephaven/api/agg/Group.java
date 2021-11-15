@@ -6,13 +6,13 @@ import org.immutables.value.Value.Parameter;
 
 @Immutable
 @SimpleStyle
-public abstract class Array implements Aggregation {
+public abstract class Group implements Aggregation {
 
-    public static Array of(Pair pair) {
-        return ImmutableArray.of(pair);
+    public static Group of(Pair pair) {
+        return ImmutableaGroup.of(pair);
     }
 
-    public static Array of(String x) {
+    public static Group of(String x) {
         return of(Pair.parse(x));
     }
 

@@ -22,7 +22,7 @@ import org.junit.Rule;
 import org.junit.experimental.categories.Category;
 
 import static io.deephaven.engine.tables.utils.TableTools.*;
-import static io.deephaven.engine.v2.LiveTableTestCase.printTableUpdates;
+import static io.deephaven.engine.v2.RefreshingTableTestCase.printTableUpdates;
 import static io.deephaven.engine.v2.TstUtils.*;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.*;

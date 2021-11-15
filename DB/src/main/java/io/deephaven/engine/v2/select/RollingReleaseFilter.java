@@ -17,7 +17,7 @@ import java.util.List;
 /**
  * This will filter a table starting off with the first N rows, and then adding new rows to the table on each run.
  */
-public class RollingReleaseFilter extends SelectFilterLivenessArtifactImpl implements Runnable {
+public class RollingReleaseFilter extends WhereFilterLivenessArtifactImpl implements Runnable {
     private final long workingSize;
     private final long rollingSize;
     private long offset = 0;

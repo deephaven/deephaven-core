@@ -34,7 +34,7 @@ public class FirstBySpecImpl extends IterativeIndexSpec {
     @Override
     ReaggregatableStatefactory rollupFactory() {
         return new SortedFirstOrLastByFactoryImpl(true, false, true, rollupColumnIdentifier,
-                REDIRECTION_INDEX_PREFIX + rollupColumnIdentifier + ComboAggregateFactory.ROLLUP_COLUMN_SUFFIX);
+                REDIRECTION_INDEX_PREFIX + rollupColumnIdentifier + AggregationFactory.ROLLUP_COLUMN_SUFFIX);
     }
 
     @Override

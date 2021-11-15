@@ -61,7 +61,7 @@ import java.util.stream.LongStream;
 
 import static io.deephaven.engine.tables.utils.TableTools.*;
 import static io.deephaven.engine.v2.TstUtils.*;
-import static io.deephaven.engine.v2.by.ComboAggregateFactory.*;
+import static io.deephaven.engine.v2.by.AggregationFactory.*;
 import static org.junit.Assert.assertArrayEquals;
 
 /**
@@ -126,7 +126,7 @@ public class QueryTableTest extends QueryTableTestBase {
 
     /**
      * Test that the formula behaves correctly when there are are two initDefs() without an intervening request to
-     * compile the formula. Prior to the second update to IDS-6532, this threw an exception, although typically only groupBy
+     * compile the formula. Prior to the second update to IDS-6532, this threw an exception, although typically only by
      * OpenAPI code (because that code uses validateSelect() whereas other code tends not to). The issue is that this
      * sequence of operations works:
      *
@@ -719,7 +719,7 @@ public class QueryTableTest extends QueryTableTestBase {
                         new TstUtils.SetGenerator<>(10.1, 20.1, 30.1)));
 
         final EvalNugget en[] = new EvalNugget[] {
-                EvalNugget.from(() -> queryTable.renameColumns(CollectionUtil.listFromArray())),
+                EvalNugget.from(() -> queryTable.renameColumns()),
                 EvalNugget.from(() -> queryTable.renameColumns("Symbol=Sym")),
                 EvalNugget.from(() -> queryTable.renameColumns("Symbol=Sym", "Symbols=Sym")),
                 EvalNugget.from(() -> queryTable.renameColumns("Sym2=Sym", "intCol2=intCol", "doubleCol2=doubleCol")),
@@ -739,7 +739,7 @@ public class QueryTableTest extends QueryTableTestBase {
     }
 
     public void testStringContainsFilter() {
-        Function<String, SelectFilter> filter = ConditionFilter::createConditionFilter;
+        Function<String, WhereFilter> filter = ConditionFilter::createConditionFilter;
         final Random random = new Random(0);
 
         final int size = 500;
@@ -832,7 +832,7 @@ public class QueryTableTest extends QueryTableTestBase {
     }
 
     public void testDoubleRangeFilter() {
-        Function<String, SelectFilter> filter = ConditionFilter::createConditionFilter;
+        Function<String, WhereFilter> filter = ConditionFilter::createConditionFilter;
         final Random random = new Random(0);
 
         final int size = 500;
@@ -875,7 +875,7 @@ public class QueryTableTest extends QueryTableTestBase {
     }
 
     public void testDateTimeRangeFilter() {
-        Function<String, SelectFilter> filter = ConditionFilter::createConditionFilter;
+        Function<String, WhereFilter> filter = ConditionFilter::createConditionFilter;
         final Random random = new Random(0);
 
         final int size = 500;
@@ -936,7 +936,7 @@ public class QueryTableTest extends QueryTableTestBase {
     }
 
     public void testDateTimeRangeFilterNulls() {
-        final Function<String, SelectFilter> filter = ConditionFilter::createConditionFilter;
+        final Function<String, WhereFilter> filter = ConditionFilter::createConditionFilter;
         final Random random = new Random(0);
 
         final int size = 500;
@@ -1577,7 +1577,7 @@ public class QueryTableTest extends QueryTableTestBase {
         final DynamicWhereFilter dynamicFilter2 =
                 new DynamicWhereFilter(setTable2, true, MatchPairFactory.getExpressions("B"));
 
-        final SelectFilter composedFilter = DisjunctiveFilter.makeDisjunctiveFilter(dynamicFilter1, dynamicFilter2);
+        final WhereFilter composedFilter = DisjunctiveFilter.makeDisjunctiveFilter(dynamicFilter1, dynamicFilter2);
         final Table composed = tableToFilter.where(composedFilter);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {

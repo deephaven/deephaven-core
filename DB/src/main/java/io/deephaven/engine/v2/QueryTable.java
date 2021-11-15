@@ -5,9 +5,11 @@
 package io.deephaven.engine.v2;
 
 import io.deephaven.api.ColumnName;
+import io.deephaven.api.JoinMatch;
+import io.deephaven.api.Selectable;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.agg.AggregationOutputs;
-import io.deephaven.base.Function;
+import io.deephaven.api.filter.Filter;
 import io.deephaven.base.StringUtils;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
@@ -57,6 +59,8 @@ import java.lang.ref.WeakReference;
 import java.lang.reflect.Array;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -417,30 +421,35 @@ public class QueryTable extends BaseTable {
         final SelectColumn[] groupByColumns =
                 Arrays.stream(keyColumnNames).map(SourceColumn::new).toArray(SelectColumn[]::new);
 
-        return memoizeResult(MemoizedOperationKey.byExternal(dropKeys, groupByColumns),
+        return memoizeResult(MemoizedOperationKey.partitionBy(dropKeys, groupByColumns),
                 () -> QueryPerformanceRecorder.withNugget(
                         "partitionBy(" + dropKeys + ", " + Arrays.toString(keyColumnNames) + ')',
                         sizeForInstrumentation(),
-                        () -> PartitionByAggregationFactory.byExternal(this, dropKeys,
-                                (pt, st) -> pt.copyAttributes(st, CopyAttributeOperation.ByExternal),
+                        () -> PartitionByAggregationFactory.partitionBy(this, dropKeys,
+                                (pt, st) -> pt.copyAttributes(st, CopyAttributeOperation.PartitionBy),
                                 Collections.emptyList(), groupByColumns)));
     }
 
     @Override
-    public Table rollup(ComboAggregateFactory comboAggregateFactory, boolean includeConstituents,
-            SelectColumn... columns) {
+    public Table rollup(Collection<? extends Aggregation> aggregations, boolean includeConstituents,
+                        Selectable... groupByColumns) {
+        return aggByInternal(aggregations, groupByColumns, (caf, gbc) -> rollup(caf, includeConstituents, gbc));
+    }
+
+    private Table rollup(AggregationFactory aggregationFactory, boolean includeConstituents,
+                         SelectColumn... columns) {
         if (isStream() && includeConstituents) {
             throw streamUnsupported("rollup with included constituents");
         }
-        return memoizeResult(MemoizedOperationKey.rollup(comboAggregateFactory, columns, includeConstituents), () -> {
-            final ComboAggregateFactory withRollup = comboAggregateFactory.forRollup(includeConstituents);
-            ComboAggregateFactory aggregationStateFactory = withRollup;
+        return memoizeResult(MemoizedOperationKey.rollup(aggregationFactory, columns, includeConstituents), () -> {
+            final AggregationFactory withRollup = aggregationFactory.forRollup(includeConstituents);
+            AggregationFactory aggregationStateFactory = withRollup;
 
             final QueryTable lowestLevel = byNoMemo(withRollup, columns);
             // now we need to reaggregate at each of the levels, combining the results
             final List<SelectColumn> reaggregateColumns = new ArrayList<>(Arrays.asList(columns));
 
-            final ComboAggregateFactory rollupFactory = withRollup.rollupFactory();
+            final AggregationFactory rollupFactory = withRollup.rollupFactory();
 
             final List<String> nullColumns = new ArrayList<>(reaggregateColumns.size());
 
@@ -461,13 +470,13 @@ public class QueryTable extends BaseTable {
             }
 
             final String[] rollupsToDrop = lastLevel.getColumnSourceMap().keySet().stream()
-                    .filter(cn -> cn.endsWith(ComboAggregateFactory.ROLLUP_COLUMN_SUFFIX)).toArray(String[]::new);
+                    .filter(cn -> cn.endsWith(AggregationFactory.ROLLUP_COLUMN_SUFFIX)).toArray(String[]::new);
             final QueryTable finalTable = (QueryTable) lastLevel.dropColumns(rollupsToDrop);
             final Object reverseLookup =
                     Require.neqNull(lastLevel.getAttribute(REVERSE_LOOKUP_ATTRIBUTE), "REVERSE_LOOKUP_ATTRIBUTE");
             finalTable.setAttribute(Table.REVERSE_LOOKUP_ATTRIBUTE, reverseLookup);
 
-            final Table result = HierarchicalTable.createFrom(finalTable, new RollupInfo(comboAggregateFactory, columns,
+            final Table result = HierarchicalTable.createFrom(finalTable, new RollupInfo(aggregationFactory, columns,
                     includeConstituents ? RollupInfo.LeafType.Constituent : RollupInfo.LeafType.Normal));
             result.setAttribute(Table.HIERARCHICAL_SOURCE_TABLE_ATTRIBUTE, QueryTable.this);
             copyAttributes(result, CopyAttributeOperation.Rollup);
@@ -483,10 +492,10 @@ public class QueryTable extends BaseTable {
             throw streamUnsupported("treeTable");
         }
         return memoizeResult(MemoizedOperationKey.treeTable(idColumn, parentColumn), () -> {
-            final LocalTableMap byExternalResult = PartitionByAggregationFactory.byExternal(this, false,
-                    (pt, st) -> pt.copyAttributes(st, CopyAttributeOperation.ByExternal),
+            final LocalTableMap partitionByResult = PartitionByAggregationFactory.partitionBy(this, false,
+                    (pt, st) -> pt.copyAttributes(st, CopyAttributeOperation.PartitionBy),
                     Collections.singletonList(null), parentColumn);
-            final QueryTable rootTable = (QueryTable) byExternalResult.get(null);
+            final QueryTable rootTable = (QueryTable) partitionByResult.get(null);
             final Table result = HierarchicalTable.createFrom((QueryTable) rootTable.copy(),
                     new TreeTableInfo(idColumn, parentColumn));
 
@@ -507,7 +516,7 @@ public class QueryTable extends BaseTable {
                 reverseLookup = ReverseLookupListener.makeReverseLookupListenerWithSnapshot(QueryTable.this, idColumn);
             }
 
-            result.setAttribute(HIERARCHICAL_CHILDREN_TABLE_MAP_ATTRIBUTE, byExternalResult);
+            result.setAttribute(HIERARCHICAL_CHILDREN_TABLE_MAP_ATTRIBUTE, partitionByResult);
             result.setAttribute(HIERARCHICAL_SOURCE_TABLE_ATTRIBUTE, QueryTable.this);
             result.setAttribute(REVERSE_LOOKUP_ATTRIBUTE, reverseLookup);
             copyAttributes(result, CopyAttributeOperation.Treetable);
@@ -571,110 +580,110 @@ public class QueryTable extends BaseTable {
     }
 
     @Override
-    public Table groupBy(SelectColumn... selectColumns) {
-        return QueryPerformanceRecorder.withNugget("groupBy(" + Arrays.toString(selectColumns) + ")",
+    public Table groupBy(Collection<? extends Selectable> groupByColumns) {
+        return QueryPerformanceRecorder.withNugget("groupBy(" + groupByColumns + ")",
                 sizeForInstrumentation(),
-                () -> by(new AggregationArraySpec(), selectColumns)
+                () -> by(new AggregationGroupSpec(), SelectColumn.from(groupByColumns))
         );
     }
 
     @Override
-    public Table aggBy(Collection<? extends Aggregation> aggregations, SelectColumn... groupByColumns) {
-        return QueryPerformanceRecorder.withNugget("lastBy(" + Arrays.toString(groupByColumns) + ")",
-                sizeForInstrumentation(),
-                () -> {
-                    List<ComboAggregateFactory.ComboBy> optimized = ComboAggregateFactory.ComboBy.optimize(aggregations);
-                    List<ColumnName> optimizedOrder = optimized.stream()
-                            .map(ComboAggregateFactory.ComboBy::getResultPairs)
-                            .flatMap(Stream::of)
-                            .map(MatchPair::left)
-                            .map(ColumnName::of)
-                            .collect(Collectors.toList());
-                    List<ColumnName> userOrder = AggregationOutputs.of(aggregations).collect(Collectors.toList());
+    public Table aggBy(Collection<? extends Aggregation> aggregations, Collection<? extends Selectable> groupByColumns) {
+        return aggByInternal(aggregations, groupByColumns.toArray(ZERO_LENGTH_SELECTABLE_ARRAY), this::by);
+    }
 
-                    Table aggregationTable = by(
-                            new ComboAggregateFactory(optimized),
-                            groupByColumns);
+    private Table aggByInternal(Collection<? extends Aggregation> aggregations, Selectable[] groupByColumns,
+                                BiFunction<AggregationFactory, SelectColumn[], Table> operation) {
+        List<AggregationFactory.AggregationElement> optimized = AggregationFactory.AggregationElement.optimize(aggregations);
+        List<ColumnName> optimizedOrder = optimized.stream()
+                .map(AggregationFactory.AggregationElement::getResultPairs)
+                .flatMap(Stream::of)
+                .map(MatchPair::left)
+                .map(ColumnName::of)
+                .collect(Collectors.toList());
+        List<ColumnName> userOrder = AggregationOutputs.of(aggregations).collect(Collectors.toList());
 
-                    if (userOrder.equals(optimizedOrder)) {
-                        return aggregationTable;
-                    }
+        Table aggregationTable = operation.apply(
+                new AggregationFactory(optimized), SelectColumn.from(groupByColumns));
 
-                    // We need to re-order the columns to match the user-provided order
-                    List<ColumnName> newOrder =
-                            Stream.concat(Stream.of(groupByColumns).map(c -> ColumnName.of(c.getName())), userOrder.stream())
-                                    .collect(Collectors.toList());
+        if (userOrder.equals(optimizedOrder)) {
+            return aggregationTable;
+        }
 
-                    return aggregationTable.view(newOrder);
-                });
+        // We need to re-order the groupByColumns to match the user-provided order
+        List<ColumnName> newOrder =
+                Stream.concat(Arrays.stream(groupByColumns).map(Selectable::newColumn), userOrder.stream())
+                        .collect(Collectors.toList());
+
+        return aggregationTable.updateView(newOrder);
     }
 
     @Override
-    public Table lastBy(SelectColumn... selectColumns) {
-        return QueryPerformanceRecorder.withNugget("lastBy(" + Arrays.toString(selectColumns) + ")",
+    public Table lastBy(Selectable... groupByColumns) {
+        return QueryPerformanceRecorder.withNugget("lastBy(" + Arrays.toString(groupByColumns) + ")",
                 sizeForInstrumentation(),
                 () -> {
                     final Table result =
                             by(TRACKED_LAST_BY ? new TrackingLastBySpecImpl() : new LastBySpecImpl(),
-                                    selectColumns);
+                                    SelectColumn.from(groupByColumns));
                     copyAttributes(result, CopyAttributeOperation.LastBy);
                     return result;
                 });
     }
 
     @Override
-    public Table firstBy(SelectColumn... selectColumns) {
-        return QueryPerformanceRecorder.withNugget("firstBy(" + Arrays.toString(selectColumns) + ")",
+    public Table firstBy(Selectable... groupByColumns) {
+        return QueryPerformanceRecorder.withNugget("firstBy(" + Arrays.toString(groupByColumns) + ")",
                 sizeForInstrumentation(),
                 () -> {
                     final Table result =
                             by(TRACKED_FIRST_BY ? new TrackingFirstBySpecImpl() : new FirstBySpecImpl(),
-                                    selectColumns);
+                                    SelectColumn.from(groupByColumns));
                     copyAttributes(result, CopyAttributeOperation.FirstBy);
                     return result;
                 });
     }
 
     @Override
-    public Table minBy(SelectColumn... selectColumns) {
-        return QueryPerformanceRecorder.withNugget("minBy(" + Arrays.toString(selectColumns) + ")",
+    public Table minBy(Selectable... groupByColumns) {
+        return QueryPerformanceRecorder.withNugget("minBy(" + Arrays.toString(groupByColumns) + ")",
                 sizeForInstrumentation(), () -> {
                     if (isRefreshing()) {
-                        return by(new MinMaxBySpecImpl(true), selectColumns);
+                        return by(new MinMaxBySpecImpl(true), SelectColumn.from(groupByColumns));
                     } else {
-                        return by(new AddOnlyMinMaxBySpecImpl(true), selectColumns);
+                        return by(new AddOnlyMinMaxBySpecImpl(true), SelectColumn.from(groupByColumns));
                     }
                 });
     }
 
     @Override
-    public Table maxBy(SelectColumn... selectColumns) {
-        return QueryPerformanceRecorder.withNugget("maxBy(" + Arrays.toString(selectColumns) + ")",
+    public Table maxBy(Selectable... groupByColumns) {
+        return QueryPerformanceRecorder.withNugget("maxBy(" + Arrays.toString(groupByColumns) + ")",
                 sizeForInstrumentation(), () -> {
                     if (isRefreshing()) {
-                        return by(new MinMaxBySpecImpl(false), selectColumns);
+                        return by(new MinMaxBySpecImpl(false), SelectColumn.from(groupByColumns));
                     } else {
-                        return by(new AddOnlyMinMaxBySpecImpl(false), selectColumns);
+                        return by(new AddOnlyMinMaxBySpecImpl(false), SelectColumn.from(groupByColumns));
                     }
                 });
     }
 
     @Override
-    public Table medianBy(SelectColumn... selectColumns) {
-        return QueryPerformanceRecorder.withNugget("medianBy(" + Arrays.toString(selectColumns) + ")",
+    public Table medianBy(Selectable... groupByColumns) {
+        return QueryPerformanceRecorder.withNugget("medianBy(" + Arrays.toString(groupByColumns) + ")",
                 sizeForInstrumentation(),
-                () -> by(new PercentileBySpecImpl(0.50, true), selectColumns));
+                () -> by(new PercentileBySpecImpl(0.50, true), SelectColumn.from(groupByColumns)));
     }
 
     @Override
-    public Table countBy(String countColumnName, SelectColumn... groupByColumns) {
+    public Table countBy(String countColumnName, Selectable... groupByColumns) {
         return QueryPerformanceRecorder.withNugget(
                 "countBy(" + countColumnName + "," + Arrays.toString(groupByColumns) + ")", sizeForInstrumentation(),
                 () -> {
                     if (!COLUMN_NAME.matcher(countColumnName).matches()) { // TODO: Test more columns this way
                         throw new RuntimeException(countColumnName + " is not a valid column name");
                     }
-                    return by(new CountBySpecImpl(countColumnName), groupByColumns);
+                    return by(new CountBySpecImpl(countColumnName), SelectColumn.from(groupByColumns));
                 });
     }
 
@@ -689,7 +698,7 @@ public class QueryTable extends BaseTable {
 
         return QueryPerformanceRecorder.withNugget(description, sizeForInstrumentation(), () -> {
 
-            final boolean isBy = inputAggregationSpec.getClass() == AggregationArraySpec.class;
+            final boolean isBy = inputAggregationSpec.getClass() == AggregationGroupSpec.class;
             final boolean isApplyToAllBy =
                     inputAggregationSpec.getClass() == AggregationFormulaSpec.class;
             final boolean isNumeric = inputAggregationSpec.getClass() == SumSpec.class ||
@@ -710,7 +719,7 @@ public class QueryTable extends BaseTable {
                     || inputAggregationSpec.getClass() == TrackingFirstBySpecImpl.class;
             final boolean isLast = inputAggregationSpec.getClass() == LastBySpecImpl.class
                     || inputAggregationSpec.getClass() == TrackingLastBySpecImpl.class;
-            final boolean isCombo = inputAggregationSpec instanceof ComboAggregateFactory;
+            final boolean isCombo = inputAggregationSpec instanceof AggregationFactory;
 
             if (isBy) {
                 if (isStream()) {
@@ -779,7 +788,7 @@ public class QueryTable extends BaseTable {
                         groupByColumns);
             } else if (isCombo) {
                 return ChunkedOperatorAggregationHelper.aggregation(
-                        ((ComboAggregateFactory) inputAggregationSpec).makeAggregationContextFactory(), this,
+                        ((AggregationFactory) inputAggregationSpec).makeAggregationContextFactory(), this,
                         groupByColumns);
             }
 
@@ -878,79 +887,84 @@ public class QueryTable extends BaseTable {
     }
 
     @Override
-    public Table applyToAllBy(String formulaColumn, String columnParamName, SelectColumn... groupByColumns) {
-        final String[] formattingColumnNames = definition.getColumnNames().stream()
-                .filter(name -> name.endsWith("__WTABLE_FORMAT")).toArray(String[]::new);
-        final QueryTable noFormattingColumnsTable = (QueryTable) dropColumns(formattingColumnNames);
+    public Table applyToAllBy(String formulaColumn, String columnParamName, Selectable... groupByColumns) {
+        final QueryTable tableToUse = (QueryTable) dropColumnFormats();
         return QueryPerformanceRecorder.withNugget(
                 "applyToAllBy(" + formulaColumn + ',' + columnParamName + ',' + Arrays.toString(groupByColumns) + ")",
                 sizeForInstrumentation(),
-                () -> noFormattingColumnsTable.by(new AggregationFormulaSpec(formulaColumn, columnParamName),
-                        groupByColumns));
+                () -> tableToUse.by(new AggregationFormulaSpec(formulaColumn, columnParamName),
+                        SelectColumn.from(groupByColumns)));
     }
 
     @Override
-    public Table sumBy(SelectColumn... groupByColumns) {
+    public Table sumBy(Selectable... groupByColumns) {
+        final QueryTable tableToUse = (QueryTable) dropColumnFormats();
         return QueryPerformanceRecorder.withNugget("sumBy(" + Arrays.toString(groupByColumns) + ")",
                 sizeForInstrumentation(),
-                () -> by(new SumSpec(), groupByColumns));
+                () -> tableToUse.by(new SumSpec(), SelectColumn.from(groupByColumns)));
     }
 
     @Override
-    public Table absSumBy(SelectColumn... groupByColumns) {
+    public Table absSumBy(Selectable... groupByColumns) {
+        final QueryTable tableToUse = (QueryTable) dropColumnFormats();
         return QueryPerformanceRecorder.withNugget("absSumBy(" + Arrays.toString(groupByColumns) + ")",
                 sizeForInstrumentation(),
-                () -> by(new AbsSumSpec(), groupByColumns));
+                () -> tableToUse.by(new AbsSumSpec(), SelectColumn.from(groupByColumns)));
     }
 
     @Override
-    public Table avgBy(SelectColumn... groupByColumns) {
+    public Table avgBy(Selectable... groupByColumns) {
+        final QueryTable tableToUse = (QueryTable) dropColumnFormats();
         return QueryPerformanceRecorder.withNugget("avgBy(" + Arrays.toString(groupByColumns) + ")",
                 sizeForInstrumentation(),
-                () -> by(new AvgSpec(), groupByColumns));
+                () -> tableToUse.by(new AvgSpec(), SelectColumn.from(groupByColumns)));
     }
 
     @Override
-    public Table wavgBy(String weightColumn, SelectColumn... groupByColumns) {
+    public Table wavgBy(String weightColumn, Selectable... groupByColumns) {
+        final QueryTable tableToUse = (QueryTable) dropColumnFormats();
         return QueryPerformanceRecorder.withNugget(
                 "wavgBy(" + weightColumn + ", " + Arrays.toString(groupByColumns) + ")", sizeForInstrumentation(),
-                () -> by(new WeightedAverageSpecImpl(weightColumn), groupByColumns));
+                () -> tableToUse.by(new WeightedAverageSpecImpl(weightColumn), SelectColumn.from(groupByColumns)));
     }
 
     @Override
-    public Table wsumBy(String weightColumn, SelectColumn... groupByColumns) {
+    public Table wsumBy(String weightColumn, Selectable... groupByColumns) {
+        final QueryTable tableToUse = (QueryTable) dropColumnFormats();
         return QueryPerformanceRecorder.withNugget(
                 "wsumBy(" + weightColumn + ", " + Arrays.toString(groupByColumns) + ")", sizeForInstrumentation(),
-                () -> by(new WeightedSumSpecImpl(weightColumn), groupByColumns));
+                () -> tableToUse.by(new WeightedSumSpecImpl(weightColumn), SelectColumn.from(groupByColumns)));
     }
 
     @Override
-    public Table stdBy(SelectColumn... groupByColumns) {
+    public Table stdBy(Selectable... groupByColumns) {
+        final QueryTable tableToUse = (QueryTable) dropColumnFormats();
         return QueryPerformanceRecorder.withNugget("stdBy(" + Arrays.toString(groupByColumns) + ")",
                 sizeForInstrumentation(),
-                () -> by(new StdSpec(), groupByColumns));
+                () -> tableToUse.by(new StdSpec(), SelectColumn.from(groupByColumns)));
     }
 
     @Override
-    public Table varBy(SelectColumn... groupByColumns) {
+    public Table varBy(Selectable... groupByColumns) {
+        final QueryTable tableToUse = (QueryTable) dropColumnFormats();
         return QueryPerformanceRecorder.withNugget("varBy(" + Arrays.toString(groupByColumns) + ")",
                 sizeForInstrumentation(),
-                () -> by(new VarSpec(), groupByColumns));
+                () -> tableToUse.by(new VarSpec(), SelectColumn.from(groupByColumns)));
     }
 
-    public static class FilteredTable extends QueryTable implements SelectFilter.RecomputeListener {
+    public static class FilteredTable extends QueryTable implements WhereFilter.RecomputeListener {
         private final QueryTable source;
-        private final SelectFilter[] filters;
+        private final WhereFilter[] filters;
         private boolean refilterMatchedRequested = false;
         private boolean refilterUnmatchedRequested = false;
         private MergedListener whereListener;
 
         public FilteredTable(final TrackingRowSet currentMapping, final QueryTable source,
-                final SelectFilter[] filters) {
+                final WhereFilter[] filters) {
             super(source.getDefinition(), currentMapping, source.columns, null);
             this.source = source;
             this.filters = filters;
-            for (final SelectFilter f : filters) {
+            for (final WhereFilter f : filters) {
                 if (f instanceof LivenessReferent) {
                     manage((LivenessReferent) f);
                 }
@@ -1027,7 +1041,7 @@ public class QueryTable extends BaseTable {
 
             final MutableRowSet newMapping;
             if (refilterMatchedRequested && refilterUnmatchedRequested) {
-                newMapping = whereInternal(source.getRowSet(), source.getRowSet(), false, filters);
+                newMapping = filterRows(source.getRowSet(), source.getRowSet(), false, filters);
                 refilterMatchedRequested = refilterUnmatchedRequested = false;
             } else if (refilterUnmatchedRequested) {
                 // things that are added or removed are already reflected in source.build
@@ -1036,7 +1050,7 @@ public class QueryTable extends BaseTable {
                     if (upstreamModified != null) {
                         unmatchedRows.insert(upstreamModified);
                     }
-                    newMapping = whereInternal(unmatchedRows, unmatchedRows, false, filters);
+                    newMapping = filterRows(unmatchedRows, unmatchedRows, false, filters);
                 }
                 // add back what we previously matched, but for modifications and removals
                 try (final MutableRowSet previouslyMatched = getRowSet().copy()) {
@@ -1060,7 +1074,7 @@ public class QueryTable extends BaseTable {
                     if (upstreamModified != null) {
                         matchedRows.insert(upstreamModified);
                     }
-                    newMapping = whereInternal(matchedRows, matchedRows, false, filters);
+                    newMapping = filterRows(matchedRows, matchedRows, false, filters);
                 }
                 refilterMatchedRequested = false;
             } else {
@@ -1098,7 +1112,11 @@ public class QueryTable extends BaseTable {
     }
 
     @Override
-    public Table where(final SelectFilter... filters) {
+    public Table where(final Collection<? extends Filter> filters) {
+        return whereInternal(WhereFilter.from(filters));
+    }
+
+    private QueryTable whereInternal(final WhereFilter... filters) {
         return QueryPerformanceRecorder.withNugget("where(" + Arrays.toString(filters) + ")", sizeForInstrumentation(),
                 () -> {
                     for (int fi = 0; fi < filters.length; ++fi) {
@@ -1113,22 +1131,22 @@ public class QueryTable extends BaseTable {
                             // sorting.
                             break;
                         }
-                        Table result = this;
+                        QueryTable result = this;
                         if (!first) {
-                            result = result.where(Arrays.copyOf(filters, fi));
+                            result = result.whereInternal(Arrays.copyOf(filters, fi));
                         }
                         if (reindexingFilter.requiresSorting()) {
-                            result = result.sort(reindexingFilter.getSortColumns());
+                            result = (QueryTable) result.sort(reindexingFilter.getSortColumns());
                             reindexingFilter.sortingDone();
                         }
-                        result = result.where(reindexingFilter);
+                        result = result.whereInternal(reindexingFilter);
                         if (!last) {
-                            result = result.where(Arrays.copyOfRange(filters, fi + 1, filters.length));
+                            result = result.whereInternal(Arrays.copyOfRange(filters, fi + 1, filters.length));
                         }
                         return result;
                     }
 
-                    for (SelectFilter filter : filters) {
+                    for (WhereFilter filter : filters) {
                         filter.init(getDefinition());
                     }
 
@@ -1143,27 +1161,29 @@ public class QueryTable extends BaseTable {
                                     final FilteredTable filteredTable;
                                     try (final RowSet prevIfNeeded = usePrev ? rowSet.getPrevRowSet() : null) {
                                         final RowSet rowSetToUpdate = usePrev ? prevIfNeeded : rowSet;
-                                        final TrackingRowSet currentMapping = whereInternal(rowSetToUpdate,
+                                        final TrackingRowSet currentMapping = filterRows(rowSetToUpdate,
                                                 rowSetToUpdate, usePrev, filters).toTracking();
                                         filteredTable = new FilteredTable(currentMapping, this, filters);
                                     }
 
-                                    for (final SelectFilter filter : filters) {
+                                    for (final WhereFilter filter : filters) {
                                         filter.setRecomputeListener(filteredTable);
                                     }
 
                                     final boolean refreshingFilters =
-                                            Arrays.stream(filters).anyMatch(SelectFilter::isRefreshing);
+                                            Arrays.stream(filters).anyMatch(WhereFilter::isRefreshing);
                                     copyAttributes(filteredTable, CopyAttributeOperation.Filter);
                                     if (!refreshingFilters && isAddOnly()) {
                                         filteredTable.setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, Boolean.TRUE);
                                     }
 
                                     final List<NotificationQueue.Dependency> dependencies = Stream.concat(
-                                            Stream.of(filters).filter(f -> f instanceof NotificationQueue.Dependency)
-                                                    .map(f -> (NotificationQueue.Dependency) f),
-                                            Stream.of(filters).filter(f -> f instanceof DependencyStreamProvider)
-                                                    .flatMap(f -> ((DependencyStreamProvider) f).getDependencyStream()))
+                                                    Stream.of(filters)
+                                                            .filter(f -> f instanceof NotificationQueue.Dependency)
+                                                            .map(f -> (NotificationQueue.Dependency) f),
+                                                    Stream.of(filters).filter(f -> f instanceof DependencyStreamProvider)
+                                                            .flatMap(f -> ((DependencyStreamProvider) f)
+                                                                    .getDependencyStream()))
                                             .collect(Collectors.toList());
                                     if (swapListener != null) {
                                         final ListenerRecorder recorder =
@@ -1194,11 +1214,11 @@ public class QueryTable extends BaseTable {
     }
 
     @SuppressWarnings("WeakerAccess")
-    protected MutableRowSet whereInternal(RowSet currentMapping, RowSet fullSet, boolean usePrev,
-            SelectFilter... filters) {
+    protected MutableRowSet filterRows(RowSet currentMapping, RowSet fullSet, boolean usePrev,
+                                       WhereFilter... filters) {
         MutableRowSet matched = currentMapping.copy();
 
-        for (SelectFilter filter : filters) {
+        for (WhereFilter filter : filters) {
             if (Thread.interrupted()) {
                 throw new QueryCancellationException("interrupted while filtering");
             }
@@ -1210,17 +1230,26 @@ public class QueryTable extends BaseTable {
     }
 
     @Override
-    public Table whereIn(final GroupStrategy groupStrategy, final Table rightTable, final boolean inclusion,
+    public Table whereIn(Table rightTable, Collection<? extends JoinMatch> columnsToMatch) {
+        return whereInInternal(rightTable, true, MatchPair.fromMatches(columnsToMatch));
+    }
+
+    @Override
+    public Table whereNotIn(Table rightTable, Collection<? extends JoinMatch> columnsToMatch) {
+        return whereInInternal(rightTable, false, MatchPair.fromMatches(columnsToMatch));
+    }
+
+    private Table whereInInternal(final Table rightTable, final boolean inclusion,
             final MatchPair... columnsToMatch) {
         return QueryPerformanceRecorder.withNugget(
-                "whereIn(" + groupStrategy + " , rightTable, " + inclusion + ", " + matchString(columnsToMatch) + ")",
+                "whereIn(rightTable, " + inclusion + ", " + matchString(columnsToMatch) + ")",
                 sizeForInstrumentation(), () -> {
                     checkInitiateOperation(rightTable);
 
                     final Table distinctValues = rightTable.selectDistinct(MatchPair.getRightColumns(columnsToMatch));
                     final DynamicWhereFilter dynamicWhereFilter =
-                            new DynamicWhereFilter(groupStrategy, distinctValues, inclusion, columnsToMatch);
-                    final Table where = where(dynamicWhereFilter);
+                            new DynamicWhereFilter(distinctValues, inclusion, columnsToMatch);
+                    final Table where = whereInternal(dynamicWhereFilter);
                     if (distinctValues.isRefreshing()) {
                         where.addParentReference(distinctValues);
                     }
@@ -1269,11 +1298,15 @@ public class QueryTable extends BaseTable {
     }
 
     @Override
-    public Table select(SelectColumn... selectColumns) {
+    public Table select(Collection<? extends Selectable> columns) {
+        return selectInternal(SelectColumn.from(columns));
+    }
+
+    private Table selectInternal(SelectColumn... selectColumns) {
         if (!isRefreshing() && !isFlat() && exceedsMaximumStaticSelectOverhead()) {
             // if we are static, we will pass the select through a flatten call, to ensure that our result is as
             // efficient in terms of memory as possible
-            return flatten().select(selectColumns);
+            return ((QueryTable) flatten()).selectInternal(selectColumns);
         }
         return selectOrUpdate(Flavor.Select, selectColumns);
     }
@@ -1309,16 +1342,17 @@ public class QueryTable extends BaseTable {
     }
 
     @Override
-    public Table update(final SelectColumn... selectColumns) {
-        return selectOrUpdate(Flavor.Update, selectColumns);
+    public Table update(final Collection<? extends Selectable> newColumns) {
+        return selectOrUpdate(Flavor.Update, SelectColumn.from(newColumns));
     }
 
     /**
      * This does a certain amount of validation and can be used to get confidence that the formulas are valid. If it is
      * not valid, you will get an exception. Positive test (should pass validation): "X = 12", "Y = X + 1") Negative
      * test (should fail validation): "X = 12", "Y = Z + 1")
+     *
+     * DO NOT USE -- this API is in flux and may change or disappear in the future.
      */
-    @Override
     public SelectValidationResult validateSelect(final SelectColumn... selectColumns) {
         final SelectColumn[] clones = Arrays.stream(selectColumns).map(SelectColumn::copy).toArray(SelectColumn[]::new);
         SelectAndViewAnalyzer analyzer = SelectAndViewAnalyzer.create(SelectAndViewAnalyzer.Mode.SELECT_STATIC, columns,
@@ -1427,19 +1461,19 @@ public class QueryTable extends BaseTable {
     }
 
     @Override
-    public Table view(final SelectColumn... viewColumns) {
-        if (viewColumns == null || viewColumns.length == 0) {
+    public Table view(final Collection<? extends Selectable> viewColumns) {
+        if (viewColumns == null || viewColumns.isEmpty()) {
             if (isRefreshing()) {
                 manageWithCurrentScope();
             }
             return this;
         }
-        return viewOrUpdateView(Flavor.View, viewColumns);
+        return viewOrUpdateView(Flavor.View, SelectColumn.from(viewColumns));
     }
 
     @Override
-    public Table updateView(final SelectColumn... viewColumns) {
-        return viewOrUpdateView(Flavor.UpdateView, viewColumns);
+    public Table updateView(final Collection<? extends Selectable> viewColumns) {
+        return viewOrUpdateView(Flavor.UpdateView, SelectColumn.from(viewColumns));
     }
 
     private Table viewOrUpdateView(Flavor flavor, final SelectColumn... viewColumns) {
@@ -1593,7 +1627,8 @@ public class QueryTable extends BaseTable {
     }
 
     @Override
-    public Table lazyUpdate(SelectColumn... selectColumns) {
+    public Table lazyUpdate(final Collection<? extends Selectable> newColumns) {
+        final SelectColumn[] selectColumns = SelectColumn.from(newColumns);
         return QueryPerformanceRecorder.withNugget("lazyUpdate(" + selectColumnString(selectColumns) + ")",
                 sizeForInstrumentation(), () -> {
                     checkInitiateOperation();
@@ -1924,12 +1959,12 @@ public class QueryTable extends BaseTable {
         final Set<String> columnsToMatchSet =
                 Arrays.stream(columnsToMatch).map(MatchPair::right).collect(Collectors.toCollection(HashSet::new));
 
-        final LinkedHashSet<SelectColumn> columnsToAddSelectColumns = new LinkedHashSet<>();
+        final Map<String, Selectable> columnsToAddSelectColumns = new LinkedHashMap<>();
         final List<String> columnsToUngroupBy = new ArrayList<>();
         final String[] rightColumnsToMatch = new String[columnsToMatch.length];
         for (int i = 0; i < rightColumnsToMatch.length; i++) {
             rightColumnsToMatch[i] = columnsToMatch[i].rightColumn;
-            columnsToAddSelectColumns.add(new SourceColumn(columnsToMatch[i].rightColumn));
+            columnsToAddSelectColumns.put(columnsToMatch[i].rightColumn, ColumnName.of(columnsToMatch[i].rightColumn));
         }
         final ArrayList<MatchPair> columnsToAddAfterRename = new ArrayList<>(realColumnsToAdd.length);
         for (MatchPair matchPair : realColumnsToAdd) {
@@ -1937,7 +1972,8 @@ public class QueryTable extends BaseTable {
             if (!columnsToMatchSet.contains(matchPair.leftColumn)) {
                 columnsToUngroupBy.add(matchPair.leftColumn);
             }
-            columnsToAddSelectColumns.add(new SourceColumn(matchPair.rightColumn, matchPair.leftColumn));
+            columnsToAddSelectColumns.put(matchPair.leftColumn,
+                    Selectable.of(ColumnName.of(matchPair.leftColumn), ColumnName.of(matchPair.rightColumn)));
         }
 
         return QueryPerformanceRecorder
@@ -1947,7 +1983,7 @@ public class QueryTable extends BaseTable {
                     if (columnsToUngroupBy.isEmpty()) {
                         rightTable = rightTableCandidate.updateView("__sentinel__=null");
                         columnsToUngroupBy.add("__sentinel__");
-                        columnsToAddSelectColumns.add(new SourceColumn("__sentinel__"));
+                        columnsToAddSelectColumns.put("__sentinel__", ColumnName.of("__sentinel__"));
                         columnsToAddAfterRename.add(new MatchPair("__sentinel__", "__sentinel__"));
                         sentinelAdded = true;
                     } else {
@@ -1955,7 +1991,7 @@ public class QueryTable extends BaseTable {
                     }
 
                     final Table rightGrouped = rightTable.groupBy(rightColumnsToMatch)
-                            .view(columnsToAddSelectColumns.toArray(SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY));
+                            .view(columnsToAddSelectColumns.values());
                     final Table naturalJoinResult = naturalJoin(rightGrouped, columnsToMatch,
                             columnsToAddAfterRename.toArray(MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY));
                     final Table ungroupedResult = naturalJoinResult
@@ -2063,7 +2099,7 @@ public class QueryTable extends BaseTable {
 
                     @Override
                     public boolean canExecute(final long step) {
-                        return ((NotificationQueue.Dependency) rightTable).satisfied(step) && super.canExecute(step);
+                        return rightTable.satisfied(step) && super.canExecute(step);
                     }
                 });
             }
@@ -2974,10 +3010,10 @@ public class QueryTable extends BaseTable {
     }
 
     @Override
-    public Table selectDistinct(SelectColumn... columns) {
-        return QueryPerformanceRecorder.withNugget("selectDistinct(" + Arrays.toString(columns) + ")",
+    public Table selectDistinct(Collection<? extends Selectable> groupByColumns) {
+        return QueryPerformanceRecorder.withNugget("selectDistinct(" + groupByColumns + ")",
                 sizeForInstrumentation(),
-                () -> by(new SelectDistinctSpecImpl(), columns));
+                () -> by(new SelectDistinctSpecImpl(), SelectColumn.from(groupByColumns)));
     }
 
     @Override
@@ -3215,7 +3251,7 @@ public class QueryTable extends BaseTable {
     private class WhereListener extends MergedListener {
         private final FilteredTable result;
         private final MutableRowSet currentMapping;
-        private final SelectFilter[] filters;
+        private final WhereFilter[] filters;
         private final ModifiedColumnSet filterColumns;
         private final ListenerRecorder recorder;
 
@@ -3230,7 +3266,7 @@ public class QueryTable extends BaseTable {
 
             boolean hasColumnArray = false;
             final Set<String> filterColumnNames = new TreeSet<>();
-            for (SelectFilter filter : filters) {
+            for (WhereFilter filter : filters) {
                 hasColumnArray |= !filter.getColumnArrays().isEmpty();
                 filterColumnNames.addAll(filter.getColumns());
             }
@@ -3262,12 +3298,12 @@ public class QueryTable extends BaseTable {
 
             // compute added against filters
             final MutableRowSet added =
-                    whereInternal(recorder.getAdded().copy().toTracking(), rowSet, false, filters);
+                    filterRows(recorder.getAdded().copy().toTracking(), rowSet, false, filters);
 
             // check which modified keys match filters (Note: filterColumns will be null if we must always check)
             final boolean runFilters = filterColumns == null || sourceModColumns.containsAny(filterColumns);
             final RowSet matchingModifies = !runFilters ? RowSetFactory.empty()
-                    : whereInternal(recorder.getModified().copy().toTracking(), rowSet, false, filters);
+                    : filterRows(recorder.getModified().copy().toTracking(), rowSet, false, filters);
 
             // which propagate as mods?
             final MutableRowSet modified =
@@ -3331,7 +3367,7 @@ public class QueryTable extends BaseTable {
     }
 
     @Override
-    public <R> R apply(Function.Unary<R, Table> function) {
+    public <R> R apply(Function<Table, R> function) {
         if (function instanceof MemoizedOperationKey.Provider) {
             return memoizeResult(((MemoizedOperationKey.Provider) function).getMemoKey(), () -> super.apply(function));
         }

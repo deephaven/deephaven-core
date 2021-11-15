@@ -9,7 +9,7 @@ import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.tables.select.SelectFilterFactory;
 import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.v2.*;
-import io.deephaven.engine.v2.select.SelectFilter;
+import io.deephaven.engine.v2.select.WhereFilter;
 import io.deephaven.engine.v2.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.v2.sources.LogicalClock;
@@ -29,7 +29,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static io.deephaven.engine.v2.TstUtils.*;
-import static io.deephaven.engine.v2.by.ComboAggregateFactory.*;
+import static io.deephaven.engine.v2.by.AggregationFactory.*;
 import static io.deephaven.treetable.TreeTableConstants.*;
 import static org.junit.Assert.assertArrayEquals;
 
@@ -118,7 +118,7 @@ public class TreeSnapshotQueryTest extends QueryTableTestBase {
             this.hierarchicalColumn = info.getHierarchicalColumnName();
         }
 
-        void applyTsq(BitSet columns, long start, long end, SelectFilter[] filters, List<SortDirective> sorts) {
+        void applyTsq(BitSet columns, long start, long end, WhereFilter[] filters, List<SortDirective> sorts) {
             if (filters.length > 0) {
                 ops.add(TreeSnapshotQuery.Operation.FilterChanged);
             }
@@ -475,7 +475,7 @@ public class TreeSnapshotQueryTest extends QueryTableTestBase {
                 new SortDirective("Town_Name", SortDirective.ASCENDING, false));
 
         testViewportAgainst(sortThenTree, state, 7, 51, allColumns, directives,
-                SelectFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY, true);
+                WhereFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY, true);
 
         final Table filterThenTree = TreeTableFilter.filterTree(makeNyMunisTreeTable(),
                 "!isNull(Website) && Website.contains(`ny`)");
@@ -527,7 +527,7 @@ public class TreeSnapshotQueryTest extends QueryTableTestBase {
                 new SortDirective("Bagel", SortDirective.ASCENDING, false));
 
         state.addExpanded(nullSmartKey, false);
-        testViewportAgainst(rollup, state, 0, 14, allColumns, directives, SelectFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY,
+        testViewportAgainst(rollup, state, 0, 14, allColumns, directives, WhereFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY,
                 ct -> {
                     final Table sortTarget =
                             ct instanceof HierarchicalTable ? ((HierarchicalTable) ct).getRawRootTable() : ct;
@@ -569,7 +569,7 @@ public class TreeSnapshotQueryTest extends QueryTableTestBase {
                 new SortDirective("Bagel", SortDirective.ASCENDING, false));
 
         state.addExpanded(nullSmartKey, false);
-        testViewportAgainst(rollup, state, 0, 14, allColumns, directives, SelectFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY,
+        testViewportAgainst(rollup, state, 0, 14, allColumns, directives, WhereFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY,
                 ct -> {
                     final Table sortTarget =
                             ct instanceof HierarchicalTable ? ((HierarchicalTable) ct).getRawRootTable() : ct;
@@ -584,7 +584,7 @@ public class TreeSnapshotQueryTest extends QueryTableTestBase {
                 }, true);
 
         state.addExpanded(true, new SmartKey(true, 0));
-        testViewportAgainst(rollup, state, 0, 17, allColumns, directives, SelectFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY,
+        testViewportAgainst(rollup, state, 0, 17, allColumns, directives, WhereFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY,
                 ct -> {
                     final Table sortTarget =
                             ct instanceof HierarchicalTable ? ((HierarchicalTable) ct).getRawRootTable() : ct;
@@ -702,16 +702,16 @@ public class TreeSnapshotQueryTest extends QueryTableTestBase {
 
     private static void testViewport(TTState state, long start, long end, BitSet columns, boolean showAfter) {
         testViewportAgainst(state.theTree, state, start, end, columns, Collections.emptyList(),
-                SelectFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY, showAfter);
+                WhereFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY, showAfter);
     }
 
     private static void testViewportAgainst(Table against, TTState state, long start, long end, BitSet columns,
-            List<SortDirective> sorts, SelectFilter[] filters, boolean showAfter) {
+                                            List<SortDirective> sorts, WhereFilter[] filters, boolean showAfter) {
         testViewportAgainst(against, state, start, end, columns, sorts, filters, Function.identity(), showAfter);
     }
 
     private static void testViewportAgainst(Table against, TTState state, long start, long end, BitSet columns,
-            List<SortDirective> sorts, SelectFilter[] filters, Function<Table, Table> childMutator, boolean showAfter) {
+                                            List<SortDirective> sorts, WhereFilter[] filters, Function<Table, Table> childMutator, boolean showAfter) {
         state.applyTsq(columns, start, end, filters, sorts);
 
         if (showAfter) {

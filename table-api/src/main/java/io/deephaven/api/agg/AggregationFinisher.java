@@ -28,8 +28,8 @@ public abstract class AggregationFinisher<AGG extends Aggregation> {
         return ImmutableAggregationFinisher.of(AbsSum::of);
     }
 
-    public static AggregationFinisher<Array> array() {
-        return ImmutableAggregationFinisher.of(Array::of);
+    public static AggregationFinisher<Group> array() {
+        return ImmutableAggregationFinisher.of(Group::of);
     }
 
     public static AggregationFinisher<Avg> avg() {

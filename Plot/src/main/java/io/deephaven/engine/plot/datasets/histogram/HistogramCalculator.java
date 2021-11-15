@@ -13,7 +13,7 @@ import io.deephaven.engine.tables.utils.TableTools;
 
 import java.util.List;
 
-import static io.deephaven.engine.v2.by.ComboAggregateFactory.*;
+import static io.deephaven.engine.v2.by.AggregationFactory.*;
 
 /**
  * Utility for calculating histogram plot information: bin locations and data frequencies within these bins.

@@ -9,7 +9,7 @@ For convenient usage in the python console, the main sub-packages of deephaven h
 
 * Calendars imported as cals
 
-* ComboAggregateFactory imported as caf
+* AggregationFactory imported as caf
 
 * DateTimeUtils imported as dtu
 

@@ -1,6 +1,7 @@
 package io.deephaven.api;
 
 import java.io.Serializable;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -47,6 +48,10 @@ public interface JoinMatch extends Serializable {
         ColumnName left = ColumnName.parse(x.substring(0, ix));
         ColumnName right = ColumnName.parse(x.substring(ix2 + 1));
         return of(left, right);
+    }
+
+    static List<JoinMatch> from(String... values) {
+        return JoinMatch.from(Arrays.asList(values));
     }
 
     static List<JoinMatch> from(Collection<String> values) {

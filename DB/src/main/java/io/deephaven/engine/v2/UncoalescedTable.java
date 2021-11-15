@@ -9,12 +9,12 @@ import io.deephaven.engine.tables.*;
 import io.deephaven.engine.tables.select.MatchPair;
 import io.deephaven.engine.tables.select.WouldMatchPair;
 import io.deephaven.engine.rowset.TrackingRowSet;
+import io.deephaven.engine.v2.by.AggregationFactory;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.util.liveness.Liveness;
 import io.deephaven.engine.v2.by.AggregationSpec;
-import io.deephaven.engine.v2.by.ComboAggregateFactory;
 import io.deephaven.engine.v2.select.SelectColumn;
-import io.deephaven.engine.v2.select.SelectFilter;
+import io.deephaven.engine.v2.select.WhereFilter;
 import io.deephaven.engine.table.ColumnSource;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -153,7 +153,7 @@ public abstract class UncoalescedTable extends BaseTable implements TableWithDef
     }
 
     @Override
-    public Table where(SelectFilter... filters) {
+    public Table where(WhereFilter... filters) {
         return coalesce().where(filters);
     }
 
@@ -367,9 +367,9 @@ public abstract class UncoalescedTable extends BaseTable implements TableWithDef
     }
 
     @Override
-    public Table rollup(ComboAggregateFactory comboAggregateFactory, boolean includeConstituents,
-            SelectColumn... columns) {
-        return coalesce().rollup(comboAggregateFactory, includeConstituents, columns);
+    public Table rollup(AggregationFactory aggregationFactory, boolean includeConstituents,
+                        SelectColumn... columns) {
+        return coalesce().rollup(aggregationFactory, includeConstituents, columns);
     }
 
     @Override

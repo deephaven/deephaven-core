@@ -16,7 +16,7 @@ import static io.deephaven.engine.v2.select.MatchFilter.CaseSensitivity;
 import static io.deephaven.engine.v2.select.MatchFilter.MatchType;
 
 /**
- * SelectFilter that implements String.contains(valueToMatch), for use in QuickFilter so that we can bypass compilation
+ * WhereFilter that implements String.contains(valueToMatch), for use in QuickFilter so that we can bypass compilation
  * on small tables.
  */
 public class StringContainsFilter extends PatternFilter {

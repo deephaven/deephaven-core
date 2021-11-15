@@ -27,7 +27,7 @@ import java.util.List;
 /**
  * Boilerplate super-class for various clock-oriented filters.
  */
-public abstract class ClockFilter extends SelectFilterLivenessArtifactImpl implements ReindexingFilter, Runnable {
+public abstract class ClockFilter extends WhereFilterLivenessArtifactImpl implements ReindexingFilter, Runnable {
 
     protected final String columnName;
     protected final Clock clock;

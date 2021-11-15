@@ -16,7 +16,7 @@ import io.deephaven.engine.tables.select.SelectColumnFactory;
 import io.deephaven.engine.v2.*;
 import io.deephaven.engine.v2.remote.ConstructSnapshot;
 import io.deephaven.engine.v2.select.SelectColumn;
-import io.deephaven.engine.v2.select.SelectFilter;
+import io.deephaven.engine.v2.select.WhereFilter;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.table.sort.SortDirective;
 import io.deephaven.util.annotations.VisibleForTesting;
@@ -42,7 +42,7 @@ public abstract class AbstractTreeSnapshotImpl<INFO_TYPE extends HierarchicalTab
     private final long lastViewportRow;
     private final BitSet columns;
 
-    private final SelectFilter[] filters;
+    private final WhereFilter[] filters;
     private final PreparedSort preparedSort;
 
     private final Map<Object, TableDetails> tablesByKey;
@@ -77,7 +77,7 @@ public abstract class AbstractTreeSnapshotImpl<INFO_TYPE extends HierarchicalTab
             Map<Object, TableDetails> tablesByKey,
             long firstRow, long lastRow,
             BitSet columns,
-            @NotNull SelectFilter[] filters,
+            @NotNull WhereFilter[] filters,
             @NotNull List<SortDirective> sorts,
             CLIENT_TYPE client,
             Set<TreeSnapshotQuery.Operation> includedOps) {
@@ -761,9 +761,9 @@ public abstract class AbstractTreeSnapshotImpl<INFO_TYPE extends HierarchicalTab
     }
 
     /**
-     * @return The set of {@link SelectFilter filters} to be applied to the table.
+     * @return The set of {@link WhereFilter filters} to be applied to the table.
      */
-    SelectFilter[] getFilters() {
+    WhereFilter[] getFilters() {
         return filters;
     }
 

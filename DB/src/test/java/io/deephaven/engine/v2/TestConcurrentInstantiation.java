@@ -45,7 +45,7 @@ import org.junit.experimental.categories.Category;
 
 import static io.deephaven.engine.tables.utils.TableTools.*;
 import static io.deephaven.engine.v2.TstUtils.*;
-import static io.deephaven.engine.v2.by.ComboAggregateFactory.*;
+import static io.deephaven.engine.v2.by.AggregationFactory.*;
 import static io.deephaven.util.QueryConstants.NULL_INT;
 
 @Category(OutOfBandTest.class)
@@ -461,7 +461,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
     }
 
 
-    public void testSortOfByExternal() throws ExecutionException, InterruptedException {
+    public void testSortOfPartitionBy() throws ExecutionException, InterruptedException {
         final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6).toTracking(),
                 c("x", 1, 2, 3), c("y", "a", "a", "a"));
         final TableMap tm = table.partitionBy("y");
@@ -1316,12 +1316,12 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         }
     }
 
-    public void testByExternalConcurrent() throws Exception {
-        testByExternalConcurrent(false);
-        testByExternalConcurrent(true);
+    public void testPartitionByConcurrent() throws Exception {
+        testPartitionByConcurrent(false);
+        testPartitionByConcurrent(true);
     }
 
-    private void testByExternalConcurrent(boolean withReset) throws Exception {
+    private void testPartitionByConcurrent(boolean withReset) throws Exception {
         setExpectError(false);
 
         final QueryTable table = makeByConcurrentBaseTable(false);

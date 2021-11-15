@@ -21,11 +21,11 @@ public interface Aggregation extends Serializable {
         return AggregationFinisher.absSum().of(pairs);
     }
 
-    static Array AggArray(String pair) {
+    static Group AggArray(String pair) {
         return AggregationFinisher.array().of(pair);
     }
 
-    static Multi<Array> AggArray(String... pairs) {
+    static Multi<Group> AggArray(String... pairs) {
         return AggregationFinisher.array().of(pairs);
     }
 
@@ -177,7 +177,7 @@ public interface Aggregation extends Serializable {
     interface Visitor {
         void visit(AbsSum absSum);
 
-        void visit(Array array);
+        void visit(Group group);
 
         void visit(Avg avg);
 

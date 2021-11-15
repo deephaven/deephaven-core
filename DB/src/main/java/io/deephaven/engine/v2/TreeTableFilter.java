@@ -1,8 +1,8 @@
 package io.deephaven.engine.v2;
 
-import io.deephaven.base.Function;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.*;
+import io.deephaven.engine.v2.select.WhereFilter;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.engine.tables.Table;
@@ -10,7 +10,6 @@ import io.deephaven.engine.tables.TableDefinition;
 import io.deephaven.engine.tables.live.WaitNotification;
 import io.deephaven.engine.tables.select.SelectFilterFactory;
 import io.deephaven.engine.v2.remote.ConstructSnapshot;
-import io.deephaven.engine.v2.select.SelectFilter;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.v2.sources.LogicalClock;
 import io.deephaven.util.SafeCloseable;
@@ -22,6 +21,7 @@ import gnu.trove.set.hash.TLongHashSet;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
+import java.util.function.Function;
 import java.util.function.LongFunction;
 
 import static io.deephaven.engine.tables.Table.HIERARCHICAL_SOURCE_INFO_ATTRIBUTE;
@@ -34,32 +34,32 @@ import static io.deephaven.engine.tables.Table.PREPARED_RLL_ATTRIBUTE;
  * matching rows are included; as well as their ancestors. The result table is then converted into a tree table using
  * the original parameters.
  */
-public class TreeTableFilter implements Function.Unary<Table, Table>, MemoizedOperationKey.Provider {
+public class TreeTableFilter implements Function<Table, Table>, MemoizedOperationKey.Provider {
     private static final boolean DEBUG = io.deephaven.configuration.Configuration.getInstance()
             .getBooleanWithDefault("TreeTableFilter.debug", false);
 
     private static final Logger log = LoggerFactory.getLogger(TreeTableFilter.class);
 
-    private final SelectFilter[] filters;
+    private final WhereFilter[] filters;
     private final TableDefinition origTableDefinition;
 
-    private TreeTableFilter(Table source, SelectFilter[] filters) {
+    private TreeTableFilter(Table source, WhereFilter[] filters) {
         this.filters = filters;
         this.origTableDefinition = source.getDefinition();
 
-        for (final SelectFilter filter : filters) {
+        for (final WhereFilter filter : filters) {
             filter.init(origTableDefinition);
         }
     }
 
     @Override
-    public Table call(Table table) {
+    public Table apply(Table table) {
         return new State(table, origTableDefinition).getRaw();
     }
 
     @Override
     public MemoizedOperationKey getMemoKey() {
-        if (Arrays.stream(filters).allMatch(SelectFilter::canMemoize)) {
+        if (Arrays.stream(filters).allMatch(WhereFilter::canMemoize)) {
             return new TreeTableFilterKey(filters);
         }
 
@@ -87,7 +87,7 @@ public class TreeTableFilter implements Function.Unary<Table, Table>, MemoizedOp
          */
         private Map<Object, TLongSet> parentReferences;
 
-        private final SelectFilter[] filters;
+        private final WhereFilter[] filters;
         private final ColumnSource parentSource;
         private final ColumnSource idSource;
         private final ReverseLookupListener reverseLookupListener;
@@ -290,7 +290,7 @@ public class TreeTableFilter implements Function.Unary<Table, Table>, MemoizedOp
 
         private MutableRowSet doValueFilter(boolean usePrev, RowSet rowsToFilter) {
             MutableRowSet matched = rowsToFilter.copy();
-            for (final SelectFilter filter : filters) {
+            for (final WhereFilter filter : filters) {
                 try (final SafeCloseable ignored = matched) { // Ensure we close old matched
                     matched = filter.filter(matched, source.getRowSet(), source, usePrev);
                 }
@@ -462,9 +462,9 @@ public class TreeTableFilter implements Function.Unary<Table, Table>, MemoizedOp
     }
 
     private static class TreeTableFilterKey extends MemoizedOperationKey {
-        final SelectFilter[] filters;
+        final WhereFilter[] filters;
 
-        TreeTableFilterKey(SelectFilter[] filters) {
+        TreeTableFilterKey(WhereFilter[] filters) {
             this.filters = filters;
         }
 
@@ -597,7 +597,7 @@ public class TreeTableFilter implements Function.Unary<Table, Table>, MemoizedOp
         return rawFilterTree(tree, SelectFilterFactory.getExpressions(filters));
     }
 
-    public static Table rawFilterTree(Table tree, SelectFilter[] filters) {
+    public static Table rawFilterTree(Table tree, WhereFilter[] filters) {
         return tree.apply(new TreeTableFilter(tree, filters));
     }
 
@@ -605,7 +605,7 @@ public class TreeTableFilter implements Function.Unary<Table, Table>, MemoizedOp
         return filterTree(tree, SelectFilterFactory.getExpressions(filters));
     }
 
-    public static Table filterTree(Table tree, SelectFilter[] filters) {
+    public static Table filterTree(Table tree, WhereFilter[] filters) {
         return toTreeTable(rawFilterTree(tree, filters), tree);
     }
 }

@@ -10,7 +10,7 @@ import junit.framework.TestCase;
 import java.util.ArrayList;
 import java.util.List;
 
-public class TestSelectFilterFactory extends TestCase {
+public class TestWhereFilterFactory extends TestCase {
 
     private static final String STRING_COLUMN = "Strings";
     private static final String INTEGER_COLUMN = "Integers";
@@ -184,9 +184,9 @@ public class TestSelectFilterFactory extends TestCase {
 
     private String runSimpleFilterExpresion(String baseExpresion, String value) {
         String expression = STRING_COLUMN + baseExpresion + wrapBackTicks(value);
-        SelectFilter selectFilter = SelectFilterFactory.getExpression(expression);
-        selectFilter.init(table.getDefinition());
-        RowSet rowSet = selectFilter.filter(table.getRowSet(), table.getRowSet(), table, false);
+        WhereFilter whereFilter = SelectFilterFactory.getExpression(expression);
+        whereFilter.init(table.getDefinition());
+        RowSet rowSet = whereFilter.filter(table.getRowSet(), table.getRowSet(), table, false);
         ColumnSource columnSource = table.getColumnSource(STRING_COLUMN);
         return columnSource.get(rowSet.firstRowKey()).toString();
     }
@@ -209,9 +209,9 @@ public class TestSelectFilterFactory extends TestCase {
 
     private List<Object> runDelimitedExpression(String columnName, String values) {
         String expression = columnName + " in " + values;
-        SelectFilter selectFilter = SelectFilterFactory.getExpression(expression);
-        selectFilter.init(table.getDefinition());
-        RowSet rowSet = selectFilter.filter(table.getRowSet(), table.getRowSet(), table, false);
+        WhereFilter whereFilter = SelectFilterFactory.getExpression(expression);
+        whereFilter.init(table.getDefinition());
+        RowSet rowSet = whereFilter.filter(table.getRowSet(), table.getRowSet(), table, false);
         ColumnSource columnSource = table.getColumnSource(columnName);
         List<Object> result = new ArrayList<>(rowSet.intSize());
         for (RowSet.Iterator it = rowSet.iterator(); it.hasNext();) {

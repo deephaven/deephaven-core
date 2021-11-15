@@ -6,7 +6,7 @@ package io.deephaven.engine.v2.by;
 
 import java.util.*;
 
-public class AggregationFormulaSpec extends AggregationArraySpec {
+public class AggregationFormulaSpec extends AggregationGroupSpec {
 
     private final String formula;
     private final String columnParamName;

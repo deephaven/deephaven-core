@@ -4,7 +4,7 @@ import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.util.ColumnFormattingValues;
 import io.deephaven.engine.v2.by.AggType;
-import io.deephaven.engine.v2.by.ComboAggregateFactory;
+import io.deephaven.engine.v2.by.AggregationFactory;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.util.annotations.ScriptApi;
 import io.deephaven.util.type.EnumValue;
@@ -295,7 +295,7 @@ public class TotalsTableBuilder implements Serializable {
     public TotalsTableBuilder setFormat(String column, String agg, String format) {
         if ("*".equals(agg)) {
             Arrays.stream(AggType.values())
-                    .filter(op -> op != AggType.Skip && op != AggType.Array)
+                    .filter(op -> op != AggType.Skip && op != AggType.Group)
                     .forEach(op -> setFormat(column, op, format));
 
             return this;
@@ -487,7 +487,7 @@ public class TotalsTableBuilder implements Serializable {
      * @return an aggregated totals table
      */
     public static Table makeTotalsTable(Table source, TotalsTableBuilder builder, String... groupByColumns) {
-        final ComboAggregateFactory aggregationFactory = makeAggregationFactory(source, builder);
+        final AggregationFactory aggregationFactory = makeAggregationFactory(source, builder);
         final String[] formatSpecs = makeColumnFormats(source, builder);
 
         Table totalsTable = source.by(aggregationFactory, groupByColumns);
@@ -547,14 +547,14 @@ public class TotalsTableBuilder implements Serializable {
 
 
     /**
-     * Produce a ComboAggregateFactory from a source table and builder.
+     * Produce a AggregationFactory from a source table and builder.
      *
      * @param source the source table
      * @param builder the TotalsTableBuilder
      *
-     * @return the {@link ComboAggregateFactory} described by source and builder.
+     * @return the {@link AggregationFactory} described by source and builder.
      */
-    public static ComboAggregateFactory makeAggregationFactory(Table source, TotalsTableBuilder builder) {
+    public static AggregationFactory makeAggregationFactory(Table source, TotalsTableBuilder builder) {
         ensureColumnsExist(source, builder.operationMap.keySet());
 
         final Set<AggType> defaultOperations = EnumSet.of(builder.defaultOperation);
@@ -585,48 +585,48 @@ public class TotalsTableBuilder implements Serializable {
             }
         }
 
-        final List<ComboAggregateFactory.ComboBy> aggregations = new ArrayList<>();
+        final List<AggregationFactory.AggregationElement> aggregations = new ArrayList<>();
         columnsByType.entrySet().stream().flatMap(e -> makeOperation(e.getKey(), e.getValue()))
                 .forEach(aggregations::add);
-        return new ComboAggregateFactory(aggregations);
+        return new AggregationFactory(aggregations);
     }
 
-    private static Stream<ComboAggregateFactory.ComboBy> makeOperation(AggType operation, List<String> values) {
+    private static Stream<AggregationFactory.AggregationElement> makeOperation(AggType operation, List<String> values) {
         switch (operation) {
-            case Array:
+            case Group:
                 throw new IllegalArgumentException("Can not use Array aggregation in totals table.");
             case Count:
-                return values.stream().map(ComboAggregateFactory::AggCount);
+                return values.stream().map(AggregationFactory::AggCount);
             case Min:
-                return Stream.of(ComboAggregateFactory.AggMin(values.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)));
+                return Stream.of(AggregationFactory.AggMin(values.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)));
             case Max:
-                return Stream.of(ComboAggregateFactory.AggMax(values.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)));
+                return Stream.of(AggregationFactory.AggMax(values.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)));
             case First:
                 return Stream
-                        .of(ComboAggregateFactory.AggFirst(values.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)));
+                        .of(AggregationFactory.AggFirst(values.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)));
             case Last:
                 return Stream
-                        .of(ComboAggregateFactory.AggLast(values.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)));
+                        .of(AggregationFactory.AggLast(values.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)));
             case Sum:
-                return Stream.of(ComboAggregateFactory.AggSum(values.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)));
+                return Stream.of(AggregationFactory.AggSum(values.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)));
             case AbsSum:
                 return Stream
-                        .of(ComboAggregateFactory.AggAbsSum(values.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)));
+                        .of(AggregationFactory.AggAbsSum(values.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)));
             case Avg:
-                return Stream.of(ComboAggregateFactory.AggAvg(values.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)));
+                return Stream.of(AggregationFactory.AggAvg(values.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)));
             case Std:
-                return Stream.of(ComboAggregateFactory.AggStd(values.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)));
+                return Stream.of(AggregationFactory.AggStd(values.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)));
             case Var:
-                return Stream.of(ComboAggregateFactory.AggVar(values.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)));
+                return Stream.of(AggregationFactory.AggVar(values.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)));
             case Unique:
                 return Stream
-                        .of(ComboAggregateFactory.AggUnique(values.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)));
+                        .of(AggregationFactory.AggUnique(values.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)));
             case CountDistinct:
-                return Stream.of(ComboAggregateFactory
+                return Stream.of(AggregationFactory
                         .AggCountDistinct(values.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)));
             case Distinct:
                 return Stream
-                        .of(ComboAggregateFactory.AggDistinct(values.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)));
+                        .of(AggregationFactory.AggDistinct(values.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)));
             default:
                 throw new IllegalStateException();
         }

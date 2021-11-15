@@ -23,7 +23,7 @@ import java.util.List;
 /**
  * This will filter a table for the most recent N nanoseconds (must be on a date time column).
  */
-public class TimeSeriesFilter extends SelectFilterLivenessArtifactImpl implements Runnable {
+public class TimeSeriesFilter extends WhereFilterLivenessArtifactImpl implements Runnable {
     protected final String columnName;
     protected final long nanos;
     private RecomputeListener listener;

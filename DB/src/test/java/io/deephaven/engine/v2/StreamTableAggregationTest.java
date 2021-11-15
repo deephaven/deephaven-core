@@ -27,7 +27,7 @@ import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 
-import static io.deephaven.engine.v2.by.ComboAggregateFactory.*;
+import static io.deephaven.engine.v2.by.AggregationFactory.*;
 
 /**
  * Unit tests that exercise special aggregation semantics for stream tables.

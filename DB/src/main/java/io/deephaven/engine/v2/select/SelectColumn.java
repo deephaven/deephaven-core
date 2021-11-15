@@ -18,10 +18,7 @@ import io.deephaven.engine.v2.sources.WritableSource;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
 /**
  * The interface for a query table to perform retrieve values from a column for select like operations.
@@ -30,6 +27,10 @@ public interface SelectColumn {
 
     static SelectColumn of(Selectable selectable) {
         return selectable.expression().walk(new ExpressionAdapter(selectable.newColumn())).getOut();
+    }
+
+    static SelectColumn[] from(Selectable... selectables) {
+        return from(Arrays.asList(selectables));
     }
 
     static SelectColumn[] from(Collection<? extends Selectable> selectables) {

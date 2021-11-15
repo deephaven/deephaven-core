@@ -537,7 +537,7 @@ and also will permit some changes not to inform the UI right away that they have
    * "ReverseAJ"
    * "ExactJoin"
    * "LeftJoin"
- * `byExternal(String[] keys, boolean= dropKeys):Promise<TableMap>` - Creates a new TableMap from the contents of the
+ * `partitionBy(String[] keys, boolean= dropKeys):Promise<TableMap>` - Creates a new TableMap from the contents of the
  current table, partitioning data based on the specified keys.
 <!--
  * `getAttributes():String[]` - returns an array listing the attributes that are set on this table, minus some of those already

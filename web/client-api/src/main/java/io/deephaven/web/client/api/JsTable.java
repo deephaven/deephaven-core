@@ -941,7 +941,7 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
     }
 
     @JsMethod
-    public Promise<TableMap> byExternal(Object keys, @JsOptional Boolean dropKeys) {
+    public Promise<TableMap> partitionBy(Object keys, @JsOptional Boolean dropKeys) {
         final String[] actualKeys;
         if (keys instanceof String) {
             actualKeys = new String[] {(String) keys};
@@ -954,9 +954,9 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
         findColumns(actualKeys);
 
         return new TableMap(workerConnection, c -> {
-            // workerConnection.getServer().byExternal(state().getHandle(), dropKeys == null ? false : dropKeys,
+            // workerConnection.getServer().partitionBy(state().getHandle(), dropKeys == null ? false : dropKeys,
             // actualKeys, c);
-            throw new UnsupportedOperationException("byExternal");
+            throw new UnsupportedOperationException("partitionBy");
         }).refetch();
     }
 

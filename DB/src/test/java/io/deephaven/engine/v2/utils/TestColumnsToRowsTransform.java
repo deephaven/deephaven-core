@@ -7,7 +7,7 @@ import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.tables.select.QueryScope;
 import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.v2.*;
-import io.deephaven.engine.v2.iterators.IntegerColumnIterator;
+import io.deephaven.engine.table.iterators.IntegerColumnIterator;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.chunk.*;
 import junit.framework.TestCase;

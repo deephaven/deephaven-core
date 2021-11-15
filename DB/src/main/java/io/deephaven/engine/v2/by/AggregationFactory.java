@@ -6,35 +6,13 @@ package io.deephaven.engine.v2.by;
 
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.SortColumn;
-import io.deephaven.api.agg.AbsSum;
-import io.deephaven.api.agg.Aggregation;
-import io.deephaven.api.agg.Array;
-import io.deephaven.api.agg.Avg;
-import io.deephaven.api.agg.Count;
-import io.deephaven.api.agg.CountDistinct;
-import io.deephaven.api.agg.Distinct;
-import io.deephaven.api.agg.First;
-import io.deephaven.api.agg.Last;
-import io.deephaven.api.agg.Max;
-import io.deephaven.api.agg.Med;
-import io.deephaven.api.agg.Min;
-import io.deephaven.api.agg.Multi;
-import io.deephaven.api.agg.Pair;
-import io.deephaven.api.agg.Pct;
-import io.deephaven.api.agg.SortedFirst;
-import io.deephaven.api.agg.SortedLast;
-import io.deephaven.api.agg.Std;
-import io.deephaven.api.agg.Sum;
-import io.deephaven.api.agg.Unique;
-import io.deephaven.api.agg.Var;
-import io.deephaven.api.agg.WAvg;
-import io.deephaven.api.agg.WSum;
+import io.deephaven.api.agg.*;
+import io.deephaven.api.agg.Group;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.datastructures.util.SmartKey;
 import io.deephaven.engine.tables.ColumnDefinition;
 import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.v2.select.SelectColumn;
 import io.deephaven.engine.vector.Vector;
 import io.deephaven.engine.tables.select.MatchPair;
 import io.deephaven.engine.tables.select.MatchPairFactory;
@@ -75,11 +53,11 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 /**
- * The ComboAggregateFactory combines one or more aggregations into an operator for use with
- * {@link QueryTable#by(AggregationSpec, SelectColumn...)}.
+ * The AggregationFactory combines one or more aggregations into an {@link AggregationSpec} for use internally by
+ * the implementation of {@link Table#aggBy}.
  *
  * <p>
- * The intended use of this class is to call the {@link #AggCombo(ComboBy...)} method with a set of aggregations defined
+ * The intended use of this class is to call the {@link #AggCombo(AggregationElement...)} method with a set of aggregations defined
  * by:
  * <ul>
  * <li>{@link #AggMin}</li>
@@ -98,12 +76,12 @@ import java.util.stream.Stream;
  * <li>{@link #AggCount}</li>
  * <li>{@link #AggCountDistinct}</li>
  * <li>{@link #AggDistinct}</li>
- * <li>{@link #AggArray}</li>
+ * <li>{@link #AggGroup}</li>
  * <li>{@link #AggSortedFirst}</li>
  * <li>{@link #AggSortedLast}</li>
  * </ul>
  */
-public class ComboAggregateFactory implements AggregationSpec {
+public class AggregationFactory implements AggregationSpec {
     static final String ROLLUP_RUNNING_SUM_COLUMN_ID = "_RS_";
     static final String ROLLUP_RUNNING_SUM2_COLUMN_ID = "_RS2_";
     static final String ROLLUP_NONNULL_COUNT_COLUMN_ID = "_NNC_";
@@ -112,22 +90,22 @@ public class ComboAggregateFactory implements AggregationSpec {
     static final String ROLLUP_NIC_COLUMN_ID = "_NIC_";
     public static final String ROLLUP_DISTINCT_SSM_COLUMN_ID = "_SSM_";
 
-    private final List<ComboBy> underlyingAggregations = new ArrayList<>();
+    private final List<AggregationElement> underlyingAggregations = new ArrayList<>();
     private final boolean isRollup;
     private final boolean secondLevel;
 
     public static final String ROLLUP_COLUMN_SUFFIX = "__ROLLUP__";
 
     /**
-     * Create a new ComboAggregateFactory suitable for passing to
+     * Create a new AggregationFactory suitable for passing to
      * {@link QueryTable#by(AggregationSpec, io.deephaven.engine.v2.select.SelectColumn...)}.
      *
      * @param aggregations the aggregations to compute
      *
      * @return a new table with the specified aggregations.
      */
-    public static ComboAggregateFactory AggCombo(ComboBy... aggregations) {
-        return new ComboAggregateFactory(aggregations);
+    public static AggregationFactory AggCombo(AggregationElement... aggregations) {
+        return new AggregationFactory(aggregations);
     }
 
     /**
@@ -137,10 +115,10 @@ public class ComboAggregateFactory implements AggregationSpec {
      * @param formulaParam the parameter name within the formula
      * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
      *        the same name, then the column name can be specified.
-     * @return a ComboBy object suitable for passing to {@link #AggCombo(ComboBy...)}
+     * @return a AggregationElement object suitable for passing to {@link #AggCombo(AggregationElement...)}
      */
-    public static ComboBy AggFormula(String formula, String formulaParam, final String... matchPairs) {
-        return new ComboByImpl(new AggregationFormulaSpec(formula, formulaParam), matchPairs);
+    public static AggregationElement AggFormula(String formula, String formulaParam, final String... matchPairs) {
+        return new AggregationElementImpl(new AggregationFormulaSpec(formula, formulaParam), matchPairs);
     }
 
     /**
@@ -148,9 +126,9 @@ public class ComboAggregateFactory implements AggregationSpec {
      *
      * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
      *        the same name, then the column name can be specified.
-     * @return a ComboBy object suitable for passing to {@link #AggCombo(ComboBy...)}
+     * @return a AggregationElement object suitable for passing to {@link #AggCombo(AggregationElement...)}
      */
-    public static ComboBy AggMin(final String... matchPairs) {
+    public static AggregationElement AggMin(final String... matchPairs) {
         return Agg(AggType.Min, matchPairs);
     }
 
@@ -159,9 +137,9 @@ public class ComboAggregateFactory implements AggregationSpec {
      *
      * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
      *        the same name, then the column name can be specified.
-     * @return a ComboBy object suitable for passing to {@link #AggCombo(ComboBy...)}
+     * @return a AggregationElement object suitable for passing to {@link #AggCombo(AggregationElement...)}
      */
-    public static ComboBy AggMax(final String... matchPairs) {
+    public static AggregationElement AggMax(final String... matchPairs) {
         return Agg(AggType.Max, matchPairs);
     }
 
@@ -170,9 +148,9 @@ public class ComboAggregateFactory implements AggregationSpec {
      *
      * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
      *        the same name, then the column name can be specified.
-     * @return a ComboBy object suitable for passing to {@link #AggCombo(ComboBy...)}
+     * @return a AggregationElement object suitable for passing to {@link #AggCombo(AggregationElement...)}
      */
-    public static ComboBy AggSum(final String... matchPairs) {
+    public static AggregationElement AggSum(final String... matchPairs) {
         return Agg(AggType.Sum, matchPairs);
     }
 
@@ -181,9 +159,9 @@ public class ComboAggregateFactory implements AggregationSpec {
      *
      * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
      *        the same name, then the column name can be specified.
-     * @return a ComboBy object suitable for passing to {@link #AggCombo(ComboBy...)}
+     * @return a AggregationElement object suitable for passing to {@link #AggCombo(AggregationElement...)}
      */
-    public static ComboBy AggAbsSum(final String... matchPairs) {
+    public static AggregationElement AggAbsSum(final String... matchPairs) {
         return Agg(AggType.AbsSum, matchPairs);
     }
 
@@ -192,9 +170,9 @@ public class ComboAggregateFactory implements AggregationSpec {
      *
      * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
      *        the same name, then the column name can be specified.
-     * @return a ComboBy object suitable for passing to {@link #AggCombo(ComboBy...)}
+     * @return a AggregationElement object suitable for passing to {@link #AggCombo(AggregationElement...)}
      */
-    public static ComboBy AggVar(final String... matchPairs) {
+    public static AggregationElement AggVar(final String... matchPairs) {
         return Agg(AggType.Var, matchPairs);
     }
 
@@ -203,9 +181,9 @@ public class ComboAggregateFactory implements AggregationSpec {
      *
      * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
      *        the same name, then the column name can be specified.
-     * @return a ComboBy object suitable for passing to {@link #AggCombo(ComboBy...)}
+     * @return a AggregationElement object suitable for passing to {@link #AggCombo(AggregationElement...)}
      */
-    public static ComboBy AggAvg(final String... matchPairs) {
+    public static AggregationElement AggAvg(final String... matchPairs) {
         return Agg(AggType.Avg, matchPairs);
     }
 
@@ -215,9 +193,9 @@ public class ComboAggregateFactory implements AggregationSpec {
      * @param weight the name of the column to use as the weight for the average
      * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
      *        the same name, then the column name can be specified.
-     * @return a ComboBy object suitable for passing to {@link #AggCombo(ComboBy...)}
+     * @return a AggregationElement object suitable for passing to {@link #AggCombo(AggregationElement...)}
      */
-    public static ComboBy AggWAvg(final String weight, final String... matchPairs) {
+    public static AggregationElement AggWAvg(final String weight, final String... matchPairs) {
         return Agg(new WeightedAverageSpecImpl(weight), matchPairs);
     }
 
@@ -227,9 +205,9 @@ public class ComboAggregateFactory implements AggregationSpec {
      * @param weight the name of the column to use as the weight for the sum
      * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
      *        the same name, then the column name can be specified.
-     * @return a ComboBy object suitable for passing to {@link #AggCombo(ComboBy...)}
+     * @return a AggregationElement object suitable for passing to {@link #AggCombo(AggregationElement...)}
      */
-    public static ComboBy AggWSum(final String weight, final String... matchPairs) {
+    public static AggregationElement AggWSum(final String weight, final String... matchPairs) {
         return Agg(new WeightedSumSpecImpl(weight), matchPairs);
     }
 
@@ -238,9 +216,9 @@ public class ComboAggregateFactory implements AggregationSpec {
      *
      * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
      *        the same name, then the column name can be specified.
-     * @return a ComboBy object suitable for passing to {@link #AggCombo(ComboBy...)}
+     * @return a AggregationElement object suitable for passing to {@link #AggCombo(AggregationElement...)}
      */
-    public static ComboBy AggMed(final String... matchPairs) {
+    public static AggregationElement AggMed(final String... matchPairs) {
         return AggPct(0.50d, true, matchPairs);
     }
 
@@ -249,9 +227,9 @@ public class ComboAggregateFactory implements AggregationSpec {
      *
      * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
      *        the same name, then the column name can be specified.
-     * @return a ComboBy object suitable for passing to {@link #AggCombo(ComboBy...)}
+     * @return a AggregationElement object suitable for passing to {@link #AggCombo(AggregationElement...)}
      */
-    public static ComboBy AggStd(final String... matchPairs) {
+    public static AggregationElement AggStd(final String... matchPairs) {
         return Agg(AggType.Std, matchPairs);
     }
 
@@ -260,9 +238,9 @@ public class ComboAggregateFactory implements AggregationSpec {
      *
      * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
      *        the same name, then the column name can be specified.
-     * @return a ComboBy object suitable for passing to {@link #AggCombo(ComboBy...)}
+     * @return a AggregationElement object suitable for passing to {@link #AggCombo(AggregationElement...)}
      */
-    public static ComboBy AggFirst(final String... matchPairs) {
+    public static AggregationElement AggFirst(final String... matchPairs) {
         return Agg(AggType.First, matchPairs);
     }
 
@@ -271,9 +249,9 @@ public class ComboAggregateFactory implements AggregationSpec {
      *
      * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
      *        the same name, then the column name can be specified.
-     * @return a ComboBy object suitable for passing to {@link #AggCombo(ComboBy...)}
+     * @return a AggregationElement object suitable for passing to {@link #AggCombo(AggregationElement...)}
      */
-    public static ComboBy AggLast(final String... matchPairs) {
+    public static AggregationElement AggLast(final String... matchPairs) {
         return Agg(AggType.Last, matchPairs);
     }
 
@@ -283,9 +261,9 @@ public class ComboAggregateFactory implements AggregationSpec {
      * @param sortColumn the column to sort by
      * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
      *        the same name, then the column name can be specified.
-     * @return a ComboBy object suitable for passing to {@link #AggCombo(ComboBy...)}
+     * @return a AggregationElement object suitable for passing to {@link #AggCombo(AggregationElement...)}
      */
-    public static ComboBy AggSortedFirst(final String sortColumn, final String... matchPairs) {
+    public static AggregationElement AggSortedFirst(final String sortColumn, final String... matchPairs) {
         return Agg(new SortedFirstBy(sortColumn), matchPairs);
     }
 
@@ -295,9 +273,9 @@ public class ComboAggregateFactory implements AggregationSpec {
      * @param sortColumn the column to sort by
      * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
      *        the same name, then the column name can be specified.
-     * @return a ComboBy object suitable for passing to {@link #AggCombo(ComboBy...)}
+     * @return a AggregationElement object suitable for passing to {@link #AggCombo(AggregationElement...)}
      */
-    public static ComboBy AggSortedLast(final String sortColumn, final String... matchPairs) {
+    public static AggregationElement AggSortedLast(final String sortColumn, final String... matchPairs) {
         return Agg(new SortedLastBy(sortColumn), matchPairs);
     }
 
@@ -307,9 +285,9 @@ public class ComboAggregateFactory implements AggregationSpec {
      * @param sortColumns the column to sort by
      * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
      *        the same name, then the column name can be specified.
-     * @return a ComboBy object suitable for passing to {@link #AggCombo(ComboBy...)}
+     * @return a AggregationElement object suitable for passing to {@link #AggCombo(AggregationElement...)}
      */
-    public static ComboBy AggSortedFirst(final String[] sortColumns, final String... matchPairs) {
+    public static AggregationElement AggSortedFirst(final String[] sortColumns, final String... matchPairs) {
         return Agg(new SortedFirstBy(sortColumns), matchPairs);
     }
 
@@ -319,21 +297,21 @@ public class ComboAggregateFactory implements AggregationSpec {
      * @param sortColumns the columns to sort by
      * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
      *        the same name, then the column name can be specified.
-     * @return a ComboBy object suitable for passing to {@link #AggCombo(ComboBy...)}
+     * @return a AggregationElement object suitable for passing to {@link #AggCombo(AggregationElement...)}
      */
-    public static ComboBy AggSortedLast(final String[] sortColumns, final String... matchPairs) {
+    public static AggregationElement AggSortedLast(final String[] sortColumns, final String... matchPairs) {
         return Agg(new SortedLastBy(sortColumns), matchPairs);
     }
 
     /**
-     * Create an array aggregation, equivalent to {@link Table#groupBy(String...)}.
+     * Create a group aggregation, equivalent to {@link Table#groupBy(String...)}.
      *
      * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
      *        the same name, then the column name can be specified.
-     * @return a ComboBy object suitable for passing to {@link #AggCombo(ComboBy...)}
+     * @return a AggregationElement object suitable for passing to {@link #AggCombo(AggregationElement...)}
      */
-    public static ComboBy AggArray(final String... matchPairs) {
-        return Agg(AggType.Array, matchPairs);
+    public static AggregationElement AggGroup(final String... matchPairs) {
+        return Agg(AggType.Group, matchPairs);
     }
 
     /**
@@ -341,10 +319,10 @@ public class ComboAggregateFactory implements AggregationSpec {
      *
      * @param resultColumn the name of the result column containing the count of each group
      *
-     * @return a ComboBy object suitable for passing to {@link #AggCombo(ComboBy...)}
+     * @return a AggregationElement object suitable for passing to {@link #AggCombo(AggregationElement...)}
      */
-    public static ComboBy AggCount(final String resultColumn) {
-        return new CountComboBy(resultColumn);
+    public static AggregationElement AggCount(final String resultColumn) {
+        return new CountAggregationElement(resultColumn);
     }
 
     /**
@@ -354,9 +332,9 @@ public class ComboAggregateFactory implements AggregationSpec {
      *
      * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
      *        the same name, then the column name can be specified.
-     * @return a ComboBy object suitable for passing to {@link #AggCombo(ComboBy...)}. Null values are not counted.
+     * @return a AggregationElement object suitable for passing to {@link #AggCombo(AggregationElement...)}. Null values are not counted.
      */
-    public static ComboBy AggCountDistinct(final String... matchPairs) {
+    public static AggregationElement AggCountDistinct(final String... matchPairs) {
         return AggCountDistinct(false, matchPairs);
     }
 
@@ -368,9 +346,9 @@ public class ComboAggregateFactory implements AggregationSpec {
      * @param countNulls if true null values are counted as a distinct value, otherwise null values are ignored
      * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
      *        the same name, then the column name can be specified.
-     * @return a ComboBy object suitable for passing to {@link #AggCombo(ComboBy...)}
+     * @return a AggregationElement object suitable for passing to {@link #AggCombo(AggregationElement...)}
      */
-    public static ComboBy AggCountDistinct(boolean countNulls, final String... matchPairs) {
+    public static AggregationElement AggCountDistinct(boolean countNulls, final String... matchPairs) {
         return Agg(new CountDistinctSpec(countNulls), matchPairs);
     }
 
@@ -381,9 +359,9 @@ public class ComboAggregateFactory implements AggregationSpec {
      *
      * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
      *        the same name, then the column name can be specified.
-     * @return a ComboBy object suitable for passing to {@link #AggCombo(ComboBy...)}. Null values are ignored.
+     * @return a AggregationElement object suitable for passing to {@link #AggCombo(AggregationElement...)}. Null values are ignored.
      */
-    public static ComboBy AggDistinct(final String... matchPairs) {
+    public static AggregationElement AggDistinct(final String... matchPairs) {
         return AggDistinct(false, matchPairs);
     }
 
@@ -396,9 +374,9 @@ public class ComboAggregateFactory implements AggregationSpec {
      * @param countNulls if true, then null values are included in the result, otherwise null values are ignored
      * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
      *        the same name, then the column name can be specified.
-     * @return a ComboBy object suitable for passing to {@link #AggCombo(ComboBy...)}
+     * @return a AggregationElement object suitable for passing to {@link #AggCombo(AggregationElement...)}
      */
-    public static ComboBy AggDistinct(boolean countNulls, final String... matchPairs) {
+    public static AggregationElement AggDistinct(boolean countNulls, final String... matchPairs) {
         return Agg(new DistinctSpec(countNulls), matchPairs);
     }
 
@@ -414,9 +392,9 @@ public class ComboAggregateFactory implements AggregationSpec {
      *
      * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
      *        the same name, then the column name can be specified.
-     * @return a ComboBy object suitable for passing to {@link #AggCombo(ComboBy...)}
+     * @return a AggregationElement object suitable for passing to {@link #AggCombo(AggregationElement...)}
      */
-    public static ComboBy AggUnique(final String... matchPairs) {
+    public static AggregationElement AggUnique(final String... matchPairs) {
         return Agg(new UniqueSpec(false), matchPairs);
     }
 
@@ -433,10 +411,10 @@ public class ComboAggregateFactory implements AggregationSpec {
      * @param countNulls if true, then null values are included in the result, otherwise null values are ignored
      * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
      *        the same name, then the column name can be specified.
-     * @return a ComboBy object suitable for passing to {@link #AggCombo(ComboBy...)}. Output columns contain null if
+     * @return a AggregationElement object suitable for passing to {@link #AggCombo(AggregationElement...)}. Output columns contain null if
      *         there are no values present or there are more than 1 distinct values present.
      */
-    public static ComboBy AggUnique(boolean countNulls, final String... matchPairs) {
+    public static AggregationElement AggUnique(boolean countNulls, final String... matchPairs) {
         return AggUnique(countNulls, null, null, matchPairs);
     }
 
@@ -455,10 +433,10 @@ public class ComboAggregateFactory implements AggregationSpec {
      * @param nonUniqueValue the value to use if there are more than 1 values present
      * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
      *        the same name, then the column name can be specified.
-     * @return a ComboBy object suitable for passing to {@link #AggCombo(ComboBy...)}
+     * @return a AggregationElement object suitable for passing to {@link #AggCombo(AggregationElement...)}
      */
-    public static ComboBy AggUnique(boolean countNulls, Object noKeyValue, Object nonUniqueValue,
-            final String... matchPairs) {
+    public static AggregationElement AggUnique(boolean countNulls, Object noKeyValue, Object nonUniqueValue,
+                                               final String... matchPairs) {
         return Agg(new UniqueSpec(countNulls, noKeyValue, nonUniqueValue), matchPairs);
     }
 
@@ -468,9 +446,9 @@ public class ComboAggregateFactory implements AggregationSpec {
      * @param percentile the percentile to calculate
      * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
      *        the same name, then the column name can be specified.
-     * @return a ComboBy object suitable for passing to {@link #AggCombo(ComboBy...)}
+     * @return a AggregationElement object suitable for passing to {@link #AggCombo(AggregationElement...)}
      */
-    public static ComboBy AggPct(double percentile, final String... matchPairs) {
+    public static AggregationElement AggPct(double percentile, final String... matchPairs) {
         return Agg(new PercentileBySpecImpl(percentile), matchPairs);
     }
 
@@ -482,9 +460,9 @@ public class ComboAggregateFactory implements AggregationSpec {
      *        lower value and lowest upper value to produce the median value for integers, longs, doubles, and floats
      * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
      *        the same name, then the column name can be specified.
-     * @return a ComboBy object suitable for passing to {@link #AggCombo(ComboBy...)}
+     * @return a AggregationElement object suitable for passing to {@link #AggCombo(AggregationElement...)}
      */
-    public static ComboBy AggPct(double percentile, boolean averageMedian, final String... matchPairs) {
+    public static AggregationElement AggPct(double percentile, boolean averageMedian, final String... matchPairs) {
         return Agg(new PercentileBySpecImpl(percentile, averageMedian), matchPairs);
     }
 
@@ -494,10 +472,10 @@ public class ComboAggregateFactory implements AggregationSpec {
      * @param factory aggregation factory.
      * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
      *        the same name, then the column name can be specified.
-     * @return a ComboBy object suitable for passing to {@link #AggCombo(ComboBy...)}
+     * @return a AggregationElement object suitable for passing to {@link #AggCombo(AggregationElement...)}
      */
-    public static ComboBy Agg(AggregationSpec factory, final String... matchPairs) {
-        return new ComboByImpl(factory, matchPairs);
+    public static AggregationElement Agg(AggregationSpec factory, final String... matchPairs) {
+        return new AggregationElementImpl(factory, matchPairs);
     }
 
     /**
@@ -505,10 +483,10 @@ public class ComboAggregateFactory implements AggregationSpec {
      *
      * @param factory aggregation factory.
      * @param matchPairs the columns to apply the aggregation to.
-     * @return a ComboBy object suitable for passing to {@link #AggCombo(ComboBy...)}
+     * @return a AggregationElement object suitable for passing to {@link #AggCombo(AggregationElement...)}
      */
-    public static ComboBy Agg(AggregationSpec factory, final MatchPair... matchPairs) {
-        return new ComboByImpl(factory, matchPairs);
+    public static AggregationElement Agg(AggregationSpec factory, final MatchPair... matchPairs) {
+        return new AggregationElementImpl(factory, matchPairs);
     }
 
     /**
@@ -517,9 +495,9 @@ public class ComboAggregateFactory implements AggregationSpec {
      * @param factoryType aggregation factory type.
      * @param matchPairs the columns to apply the aggregation to in the form Output=Input, if the Output and Input have
      *        the same name, then the column name can be specified.
-     * @return a ComboBy object suitable for passing to {@link #AggCombo(ComboBy...)}
+     * @return a AggregationElement object suitable for passing to {@link #AggCombo(AggregationElement...)}
      */
-    public static ComboBy Agg(AggType factoryType, final String... matchPairs) {
+    public static AggregationElement Agg(AggType factoryType, final String... matchPairs) {
         return Agg(factoryType, MatchPairFactory.getExpressions(matchPairs));
     }
 
@@ -528,9 +506,9 @@ public class ComboAggregateFactory implements AggregationSpec {
      *
      * @param factoryType aggregation factory type.
      * @param matchPairs the columns to apply the aggregation to.
-     * @return a ComboBy object suitable for passing to {@link #AggCombo(ComboBy...)}
+     * @return a AggregationElement object suitable for passing to {@link #AggCombo(AggregationElement...)}
      */
-    public static ComboBy Agg(AggType factoryType, final MatchPair... matchPairs) {
+    public static AggregationElement Agg(AggType factoryType, final MatchPair... matchPairs) {
         final AggregationSpec factory;
         switch (factoryType) {
             case Min:
@@ -560,8 +538,8 @@ public class ComboAggregateFactory implements AggregationSpec {
             case Last:
                 factory = new LastBySpecImpl();
                 break;
-            case Array:
-                factory = new AggregationArraySpec();
+            case Group:
+                factory = new AggregationGroupSpec();
                 break;
             case CountDistinct:
                 factory = new CountDistinctSpec();
@@ -577,17 +555,17 @@ public class ComboAggregateFactory implements AggregationSpec {
             default:
                 throw new UnsupportedOperationException("Unknown AggType: " + factoryType);
         }
-        return new ComboByImpl(factory, matchPairs);
+        return new AggregationElementImpl(factory, matchPairs);
     }
 
     /**
      * Create a factory for performing rollups.
      */
-    public ComboAggregateFactory rollupFactory() {
+    public AggregationFactory rollupFactory() {
         // we want to leave off the null value column source for children; but add a by external combo for the rollup
-        return new ComboAggregateFactory(
+        return new AggregationFactory(
                 Stream.concat(underlyingAggregations.subList(0, underlyingAggregations.size() - 1).stream().map(x -> {
-                    final AggregationSpec underlyingStateFactory = x.getUnderlyingStateFactory();
+                    final AggregationSpec underlyingStateFactory = x.getSpec();
                     Assert.assertion(underlyingStateFactory instanceof ReaggregatableStatefactory,
                             "underlyingStateFactory instanceof ReaggregatableStatefactory", underlyingStateFactory,
                             "UnderlyingStateFactory");
@@ -605,15 +583,15 @@ public class ComboAggregateFactory implements AggregationSpec {
                     Collections.addAll(leftColumns, MatchPair.getLeftColumns(x.getResultPairs()));
 
                     return Agg(factory, leftColumns.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
-                }), Stream.of(new ExternalComboBy(false))).collect(Collectors.toList()), true, true);
+                }), Stream.of(new PartitionAggregationElement(false))).collect(Collectors.toList()), true, true);
     }
 
-    public ComboAggregateFactory forRollup(boolean includeConstituents) {
-        final List<ComboBy> newUnderliers =
-                underlyingAggregations.stream().map(ComboBy::forRollup).collect(Collectors.toList());
-        newUnderliers.add(includeConstituents ? new ExternalComboBy(true)
-                : new NullComboBy(Collections.singletonMap(RollupInfo.ROLLUP_COLUMN, Object.class)));
-        return new ComboAggregateFactory(newUnderliers, true, false);
+    public AggregationFactory forRollup(boolean includeConstituents) {
+        final List<AggregationElement> newUnderliers =
+                underlyingAggregations.stream().map(AggregationElement::forRollup).collect(Collectors.toList());
+        newUnderliers.add(includeConstituents ? new PartitionAggregationElement(true)
+                : new NullAggregationElement(Collections.singletonMap(RollupInfo.ROLLUP_COLUMN, Object.class)));
+        return new AggregationFactory(newUnderliers, true, false);
     }
 
     /**
@@ -623,13 +601,13 @@ public class ComboAggregateFactory implements AggregationSpec {
      *
      * @param nullColumns a map of column names to types.
      *
-     * @return a new ComboAggregateFactory that will produce null values for the given columns.
+     * @return a new AggregationFactory that will produce null values for the given columns.
      */
-    public ComboAggregateFactory withNulls(Map<String, Class<?>> nullColumns) {
-        final List<ComboBy> newAggregations = new ArrayList<>(underlyingAggregations.size() + 1);
-        newAggregations.add(new NullComboBy(nullColumns));
+    public AggregationFactory withNulls(Map<String, Class<?>> nullColumns) {
+        final List<AggregationElement> newAggregations = new ArrayList<>(underlyingAggregations.size() + 1);
+        newAggregations.add(new NullAggregationElement(nullColumns));
         newAggregations.addAll(underlyingAggregations);
-        return new ComboAggregateFactory(newAggregations, isRollup, secondLevel);
+        return new AggregationFactory(newAggregations, isRollup, secondLevel);
     }
 
     private static final String[] ROLLUP_KEY_COLUMNS = {RollupInfo.ROLLUP_COLUMN};
@@ -638,7 +616,7 @@ public class ComboAggregateFactory implements AggregationSpec {
         return ROLLUP_KEY_COLUMNS;
     }
 
-    public interface ComboBy {
+    public interface AggregationElement {
 
         /**
          * Equivalent to {@code optimize(Collections.singleton(aggregation))}.
@@ -647,12 +625,12 @@ public class ComboAggregateFactory implements AggregationSpec {
          * @return the optimized combos
          * @see #optimize(Collection)
          */
-        static List<ComboBy> optimize(Aggregation aggregation) {
+        static List<AggregationElement> optimize(Aggregation aggregation) {
             return optimize(Collections.singleton(aggregation));
         }
 
         /**
-         * Optimizes the aggregations, collapsing relevant aggregations into single {@link ComboBy comboBys} where
+         * Optimizes the aggregations, collapsing relevant aggregations into single {@link AggregationElement comboBys} where
          * applicable.
          *
          * <p>
@@ -662,7 +640,7 @@ public class ComboAggregateFactory implements AggregationSpec {
          * @param aggregations the aggregations
          * @return the optimized combos
          */
-        static List<ComboBy> optimize(Collection<? extends Aggregation> aggregations) {
+        static List<AggregationElement> optimize(Collection<? extends Aggregation> aggregations) {
             ComboByAggregationAdapterOptimizer builder = new ComboByAggregationAdapterOptimizer();
             for (Aggregation a : aggregations) {
                 a.walk(builder);
@@ -670,34 +648,34 @@ public class ComboAggregateFactory implements AggregationSpec {
             return builder.build();
         }
 
-        AggregationSpec getUnderlyingStateFactory();
+        AggregationSpec getSpec();
 
         String[] getSourceColumns();
 
         MatchPair[] getResultPairs();
 
-        ComboBy forRollup();
+        AggregationElement forRollup();
 
         AggregationMemoKey getMemoKey();
     }
 
-    static public class ComboByImpl implements ComboBy {
+    static public class AggregationElementImpl implements AggregationElement {
         private final MatchPair[] matchPairs;
         private final String[] rightColumns;
-        private final AggregationSpec underlyingStateFactory;
+        private final AggregationSpec spec;
 
-        public ComboByImpl(final AggregationSpec underlyingStateFactory, final String... matchPairs) {
-            this(underlyingStateFactory, MatchPairFactory.getExpressions(matchPairs));
+        public AggregationElementImpl(final AggregationSpec spec, final String... matchPairs) {
+            this(spec, MatchPairFactory.getExpressions(matchPairs));
         }
 
         @SuppressWarnings("unused")
-        public ComboByImpl(final AggregationSpec underlyingStateFactory, final Collection<String> matchPairs) {
-            this(underlyingStateFactory, MatchPairFactory.getExpressions(matchPairs));
+        public AggregationElementImpl(final AggregationSpec spec, final Collection<String> matchPairs) {
+            this(spec, MatchPairFactory.getExpressions(matchPairs));
         }
 
-        ComboByImpl(final AggregationSpec underlyingStateFactory, final MatchPair... matchPairs) {
+        AggregationElementImpl(final AggregationSpec spec, final MatchPair... matchPairs) {
             this.matchPairs = matchPairs;
-            this.underlyingStateFactory = underlyingStateFactory;
+            this.spec = spec;
             this.rightColumns = new String[matchPairs.length];
             for (int ii = 0; ii < matchPairs.length; ++ii) {
                 this.rightColumns[ii] = this.matchPairs[ii].rightColumn;
@@ -705,8 +683,8 @@ public class ComboAggregateFactory implements AggregationSpec {
         }
 
         @Override
-        public AggregationSpec getUnderlyingStateFactory() {
-            return underlyingStateFactory;
+        public AggregationSpec getSpec() {
+            return spec;
         }
 
         @Override
@@ -720,43 +698,40 @@ public class ComboAggregateFactory implements AggregationSpec {
         }
 
         @Override
-        public ComboBy forRollup() {
-            if (!(underlyingStateFactory instanceof ReaggregatableStatefactory)) {
+        public AggregationElement forRollup() {
+            if (!(spec instanceof ReaggregatableStatefactory)) {
                 throw new UnsupportedOperationException(
-                        "Not a reaggregatable state factory: " + underlyingStateFactory);
+                        "Not a reaggregatable state factory: " + spec);
             }
-            if (!((ReaggregatableStatefactory) underlyingStateFactory).supportsRollup()) {
+            if (!((ReaggregatableStatefactory) spec).supportsRollup()) {
                 throw new UnsupportedOperationException(
-                        "Underlying state factory does not support rollup: " + underlyingStateFactory);
+                        "Underlying state factory does not support rollup: " + spec);
             }
-            return new ComboByImpl(((ReaggregatableStatefactory) underlyingStateFactory).forRollup(), matchPairs);
+            return new AggregationElementImpl(((ReaggregatableStatefactory) spec).forRollup(), matchPairs);
         }
 
         @Override
         public AggregationMemoKey getMemoKey() {
-            return getUnderlyingStateFactory().getMemoKey();
+            return getSpec().getMemoKey();
         }
 
         @Override
         public String toString() {
-            return "ComboByImpl{" +
-                    "matchPairs=" + Arrays.toString(matchPairs) +
-                    ", underlyingStateFactory=" + underlyingStateFactory +
-                    '}';
+            return "Agg{" + spec + ", " + Arrays.toString(matchPairs) + '}';
         }
     }
 
-    static public class CountComboBy implements ComboBy {
+    static public class CountAggregationElement implements AggregationElement {
         private final String resultColumn;
         private final CountBySpecImpl underlyingStateFactory;
 
-        public CountComboBy(String resultColumn) {
+        public CountAggregationElement(String resultColumn) {
             this.resultColumn = resultColumn;
             underlyingStateFactory = new CountBySpecImpl(resultColumn);
         }
 
         @Override
-        public AggregationSpec getUnderlyingStateFactory() {
+        public AggregationSpec getSpec() {
             return underlyingStateFactory;
         }
 
@@ -771,14 +746,14 @@ public class ComboAggregateFactory implements AggregationSpec {
         }
 
         @Override
-        public ComboBy forRollup() {
+        public AggregationElement forRollup() {
             return this;
         }
 
 
         @Override
         public AggregationMemoKey getMemoKey() {
-            return getUnderlyingStateFactory().getMemoKey();
+            return getSpec().getMemoKey();
         }
 
         @Override
@@ -787,17 +762,17 @@ public class ComboAggregateFactory implements AggregationSpec {
         }
     }
 
-    static public class NullComboBy implements ComboBy {
+    static public class NullAggregationElement implements AggregationElement {
         private final Map<String, Class<?>> resultColumns;
         private final NullAggregationSpecImpl underlyingStateFactory;
 
-        NullComboBy(Map<String, Class<?>> resultColumns) {
+        NullAggregationElement(Map<String, Class<?>> resultColumns) {
             this.resultColumns = resultColumns;
             this.underlyingStateFactory = new NullAggregationSpecImpl();
         }
 
         @Override
-        public AggregationSpec getUnderlyingStateFactory() {
+        public AggregationSpec getSpec() {
             return underlyingStateFactory;
         }
 
@@ -812,30 +787,30 @@ public class ComboAggregateFactory implements AggregationSpec {
         }
 
         @Override
-        public ComboBy forRollup() {
+        public AggregationElement forRollup() {
             throw new UnsupportedOperationException();
         }
 
         @Override
         public AggregationMemoKey getMemoKey() {
-            return getUnderlyingStateFactory().getMemoKey();
+            return getSpec().getMemoKey();
         }
 
         @Override
         public String toString() {
-            return "NullComboBy(" + resultColumns + ')';
+            return "NullAggregationElement(" + resultColumns + ')';
         }
     }
 
-    static private class ExternalComboBy implements ComboBy {
+    static private class PartitionAggregationElement implements AggregationElement {
         private final boolean leafLevel;
 
-        private ExternalComboBy(boolean leafLevel) {
+        private PartitionAggregationElement(boolean leafLevel) {
             this.leafLevel = leafLevel;
         }
 
         @Override
-        public AggregationSpec getUnderlyingStateFactory() {
+        public AggregationSpec getSpec() {
             throw new UnsupportedOperationException();
         }
 
@@ -850,7 +825,7 @@ public class ComboAggregateFactory implements AggregationSpec {
         }
 
         @Override
-        public ComboBy forRollup() {
+        public AggregationElement forRollup() {
             return this;
         }
 
@@ -862,28 +837,28 @@ public class ComboAggregateFactory implements AggregationSpec {
 
         @Override
         public String toString() {
-            return "ExternalComboBy(leafLevel=" + leafLevel + ')';
+            return "PartitionAggregationElement(leafLevel=" + leafLevel + ')';
         }
 
     }
 
-    public ComboAggregateFactory(Collection<ComboBy> aggregations) {
+    public AggregationFactory(Collection<AggregationElement> aggregations) {
         this(aggregations, false, false);
     }
 
-    public ComboAggregateFactory(Collection<ComboBy> aggregations, boolean isRollup, boolean secondLevelRollup) {
+    public AggregationFactory(Collection<AggregationElement> aggregations, boolean isRollup, boolean secondLevelRollup) {
         this.isRollup = isRollup;
         this.secondLevel = secondLevelRollup;
         underlyingAggregations.addAll(aggregations);
 
-        final Map<String, List<ComboBy>> usedColumns = new LinkedHashMap<>();
+        final Map<String, List<AggregationElement>> usedColumns = new LinkedHashMap<>();
 
-        for (final ComboBy comboBy : underlyingAggregations) {
-            Stream.of(comboBy.getResultPairs()).map(MatchPair::left)
-                    .forEach(rl -> usedColumns.computeIfAbsent(rl, x -> new ArrayList<>()).add(comboBy));
+        for (final AggregationElement aggregationElement : underlyingAggregations) {
+            Stream.of(aggregationElement.getResultPairs()).map(MatchPair::left)
+                    .forEach(rl -> usedColumns.computeIfAbsent(rl, x -> new ArrayList<>()).add(aggregationElement));
         }
 
-        final Map<String, List<ComboBy>> duplicates =
+        final Map<String, List<AggregationElement>> duplicates =
                 usedColumns.entrySet().stream().filter(kv -> kv.getValue().size() > 1)
                         .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
@@ -895,7 +870,7 @@ public class ComboAggregateFactory implements AggregationSpec {
         }
     }
 
-    public ComboAggregateFactory(ComboBy... aggregations) {
+    public AggregationFactory(AggregationElement... aggregations) {
         this(Arrays.asList(aggregations), false, false);
     }
 
@@ -903,12 +878,12 @@ public class ComboAggregateFactory implements AggregationSpec {
     public AggregationMemoKey getMemoKey() {
         final UnderlyingMemoKey[] underlyingMemoKeys = new UnderlyingMemoKey[underlyingAggregations.size()];
         for (int ii = 0; ii < underlyingMemoKeys.length; ++ii) {
-            final ComboBy comboBy = underlyingAggregations.get(ii);
-            final AggregationMemoKey key = comboBy.getMemoKey();
+            final AggregationElement aggregationElement = underlyingAggregations.get(ii);
+            final AggregationMemoKey key = aggregationElement.getMemoKey();
             if (key == null) {
                 return null;
             }
-            underlyingMemoKeys[ii] = new UnderlyingMemoKey(key, comboBy.getSourceColumns(), comboBy.getResultPairs());
+            underlyingMemoKeys[ii] = new UnderlyingMemoKey(key, aggregationElement.getSourceColumns(), aggregationElement.getResultPairs());
         }
 
         return new ComboByMemoKey(underlyingMemoKeys);
@@ -969,7 +944,7 @@ public class ComboAggregateFactory implements AggregationSpec {
 
     @Override
     public String toString() {
-        return "ComboAggregateFactory{" + underlyingAggregations + '}';
+        return "AggregationFactory{" + underlyingAggregations + '}';
     }
 
     public List<MatchPair> getMatchPairs() {
@@ -988,16 +963,16 @@ public class ComboAggregateFactory implements AggregationSpec {
             boolean externalFound = false;
 
 
-            for (final ComboBy comboBy : underlyingAggregations) {
+            for (final AggregationElement aggregationElement : underlyingAggregations) {
                 final boolean isStream = ((BaseTable) table).isStream();
                 final boolean isAddOnly = ((BaseTable) table).isAddOnly();
 
-                if (comboBy instanceof CountComboBy) {
-                    operators.add(new CountAggregationOperator(((CountComboBy) comboBy).resultColumn));
+                if (aggregationElement instanceof CountAggregationElement) {
+                    operators.add(new CountAggregationOperator(((CountAggregationElement) aggregationElement).resultColumn));
                     inputColumns.add(null);
                     inputNames.add(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
-                } else if (comboBy instanceof ComboByImpl) {
-                    final AggregationSpec inputAggregationSpec = comboBy.getUnderlyingStateFactory();
+                } else if (aggregationElement instanceof AggregationElementImpl) {
+                    final AggregationSpec inputAggregationSpec = aggregationElement.getSpec();
 
                     final boolean isNumeric = inputAggregationSpec.getClass() == SumSpec.class ||
                             inputAggregationSpec.getClass() == AbsSumSpec.class ||
@@ -1027,8 +1002,8 @@ public class ComboAggregateFactory implements AggregationSpec {
                             inputAggregationSpec.getClass() == WeightedAverageSpecImpl.class;
                     final boolean isWeightedSum =
                             inputAggregationSpec.getClass() == WeightedSumSpecImpl.class;
-                    final boolean isAggArray =
-                            inputAggregationSpec.getClass() == AggregationArraySpec.class;
+                    final boolean isAggGroup =
+                            inputAggregationSpec.getClass() == AggregationGroupSpec.class;
                     final boolean isFormula =
                             inputAggregationSpec.getClass() == AggregationFormulaSpec.class;
 
@@ -1036,7 +1011,7 @@ public class ComboAggregateFactory implements AggregationSpec {
                     if (isSelectDistinct) {
                         // Select-distinct is accomplished as a side effect of aggregating on the group-by columns.
                     } else {
-                        final MatchPair[] comboMatchPairs = ((ComboByImpl) comboBy).matchPairs;
+                        final MatchPair[] comboMatchPairs = ((AggregationElementImpl) aggregationElement).matchPairs;
                         if (isSortedFirstOrLastBy) {
                             // noinspection ConstantConditions
                             final SortedFirstOrLastByFactoryImpl sortedFirstOrLastByFactory =
@@ -1376,9 +1351,9 @@ public class ComboAggregateFactory implements AggregationSpec {
                                         exposeRedirectionAs));
                             }
                             inputNames.add(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
-                        } else if (isAggArray) {
+                        } else if (isAggGroup) {
                             if (isStream) {
-                                throw streamUnsupported("AggArray");
+                                throw streamUnsupported("AggGroup");
                             }
                             inputColumns.add(null);
                             operators.add(new GroupByChunkedOperator((QueryTable) table, true, comboMatchPairs));
@@ -1433,18 +1408,18 @@ public class ComboAggregateFactory implements AggregationSpec {
                             });
                         } else {
                             throw new UnsupportedOperationException(
-                                    "Unknown ComboByImpl: " + inputAggregationSpec.getClass());
+                                    "Unknown AggregationElementImpl: " + inputAggregationSpec.getClass());
                         }
                     }
-                } else if (comboBy instanceof NullComboBy) {
-                    transformers.add(new NullColumnAggregationTransformer(((NullComboBy) comboBy).resultColumns));
-                } else if (comboBy instanceof ExternalComboBy) {
+                } else if (aggregationElement instanceof NullAggregationElement) {
+                    transformers.add(new NullColumnAggregationTransformer(((NullAggregationElement) aggregationElement).resultColumns));
+                } else if (aggregationElement instanceof PartitionAggregationElement) {
                     if (!isRollup) {
-                        throw new IllegalStateException("ExternalComboBy must be used only with rollups.");
+                        throw new IllegalStateException("PartitionAggregationElement must be used only with rollups.");
                     }
                     inputColumns.add(null);
                     inputNames.add(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
-                    final boolean includeConstituents = ((ExternalComboBy) comboBy).leafLevel;
+                    final boolean includeConstituents = ((PartitionAggregationElement) aggregationElement).leafLevel;
                     if (includeConstituents) {
                         if (isStream) {
                             throw streamUnsupported("rollup with included constituents");
@@ -1494,7 +1469,7 @@ public class ComboAggregateFactory implements AggregationSpec {
 
                     externalFound = true;
                 } else {
-                    throw new UnsupportedOperationException("Unknown ComboBy: " + comboBy.getClass());
+                    throw new UnsupportedOperationException("Unknown AggregationElement: " + aggregationElement.getClass());
                 }
             }
 
@@ -1528,13 +1503,13 @@ public class ComboAggregateFactory implements AggregationSpec {
 
     private static class RollupTableMapAndReverseLookupAttributeSetter implements AggregationContextTransformer {
         private final PartitionByChunkedOperator tableMapOperator;
-        private final ComboAggregateFactory factory;
+        private final AggregationFactory factory;
         private final boolean secondLevel;
         private final boolean includeConstituents;
         private ReverseLookup reverseLookup;
 
         RollupTableMapAndReverseLookupAttributeSetter(PartitionByChunkedOperator tableMapOperator,
-                                                      ComboAggregateFactory factory, boolean secondLevel, boolean includeConstituents) {
+                                                      AggregationFactory factory, boolean secondLevel, boolean includeConstituents) {
             this.tableMapOperator = tableMapOperator;
             this.factory = factory;
             this.secondLevel = secondLevel;
@@ -1637,7 +1612,7 @@ public class ComboAggregateFactory implements AggregationSpec {
 
         @FunctionalInterface
         private interface BuildLogic {
-            void appendTo(List<ComboBy> outs);
+            void appendTo(List<AggregationElement> outs);
         }
 
         // Unfortunately, it doesn't look like we can add ad-hoc lambdas to buildOrder, they don't appear to be equal
@@ -1664,52 +1639,52 @@ public class ComboAggregateFactory implements AggregationSpec {
         private final BuildLogic buildWSums = this::buildWSums;
 
 
-        List<ComboBy> build() {
-            List<ComboBy> combos = new ArrayList<>();
+        List<AggregationElement> build() {
+            List<AggregationElement> combos = new ArrayList<>();
             for (BuildLogic buildLogic : buildOrder) {
                 buildLogic.appendTo(combos);
             }
             return combos;
         }
 
-        private void buildWSums(List<ComboBy> combos) {
+        private void buildWSums(List<AggregationElement> combos) {
             for (Map.Entry<ColumnName, List<Pair>> e : wSums.entrySet()) {
                 combos.add(Agg(new WeightedSumSpecImpl(e.getKey().name()), MatchPair.fromPairs(e.getValue())));
             }
         }
 
-        private void buildWAvgs(List<ComboBy> combos) {
+        private void buildWAvgs(List<AggregationElement> combos) {
             for (Map.Entry<ColumnName, List<Pair>> e : wAvgs.entrySet()) {
                 combos.add(
                         Agg(new WeightedAverageSpecImpl(e.getKey().name()), MatchPair.fromPairs(e.getValue())));
             }
         }
 
-        private void buildVars(List<ComboBy> combos) {
+        private void buildVars(List<AggregationElement> combos) {
             if (!vars.isEmpty()) {
                 combos.add(Agg(AggType.Var, MatchPair.fromPairs(vars)));
             }
         }
 
-        private void buildUniques(List<ComboBy> combos) {
+        private void buildUniques(List<AggregationElement> combos) {
             for (Map.Entry<Boolean, List<Pair>> e : uniques.entrySet()) {
                 combos.add(Agg(new UniqueSpec(e.getKey()), MatchPair.fromPairs(e.getValue())));
             }
         }
 
-        private void buildSums(List<ComboBy> combos) {
+        private void buildSums(List<AggregationElement> combos) {
             if (!sums.isEmpty()) {
                 combos.add(Agg(AggType.Sum, MatchPair.fromPairs(sums)));
             }
         }
 
-        private void buildStds(List<ComboBy> combos) {
+        private void buildStds(List<AggregationElement> combos) {
             if (!stds.isEmpty()) {
                 combos.add(Agg(AggType.Std, MatchPair.fromPairs(stds)));
             }
         }
 
-        private void buildSortedLasts(List<ComboBy> combos) {
+        private void buildSortedLasts(List<AggregationElement> combos) {
             for (Map.Entry<List<SortColumn>, List<Pair>> e : sortedLasts.entrySet()) {
                 // TODO(deephaven-core#821): SortedFirst / SortedLast aggregations with sort direction
                 String[] columns =
@@ -1718,7 +1693,7 @@ public class ComboAggregateFactory implements AggregationSpec {
             }
         }
 
-        private void buildSortedFirsts(List<ComboBy> combos) {
+        private void buildSortedFirsts(List<AggregationElement> combos) {
             for (Map.Entry<List<SortColumn>, List<Pair>> e : sortedFirsts.entrySet()) {
                 // TODO(deephaven-core#821): SortedFirst / SortedLast aggregations with sort direction
                 String[] columns =
@@ -1727,74 +1702,74 @@ public class ComboAggregateFactory implements AggregationSpec {
             }
         }
 
-        private void buildPcts(List<ComboBy> combos) {
+        private void buildPcts(List<AggregationElement> combos) {
             for (Map.Entry<ByteDoubleTuple, List<Pair>> e : pcts.entrySet()) {
                 combos.add(Agg(new PercentileBySpecImpl(e.getKey().getSecondElement(),
                         e.getKey().getFirstElement() != 0), MatchPair.fromPairs(e.getValue())));
             }
         }
 
-        private void buildMins(List<ComboBy> combos) {
+        private void buildMins(List<AggregationElement> combos) {
             if (!mins.isEmpty()) {
                 combos.add(Agg(AggType.Min, MatchPair.fromPairs(mins)));
             }
         }
 
-        private void buildMedians(List<ComboBy> combos) {
+        private void buildMedians(List<AggregationElement> combos) {
             for (Map.Entry<Boolean, List<Pair>> e : medians.entrySet()) {
                 combos.add(Agg(new PercentileBySpecImpl(0.50d, e.getKey()), MatchPair.fromPairs(e.getValue())));
             }
         }
 
-        private void buildMaxes(List<ComboBy> combos) {
+        private void buildMaxes(List<AggregationElement> combos) {
             if (!maxs.isEmpty()) {
                 combos.add(Agg(AggType.Max, MatchPair.fromPairs(maxs)));
             }
         }
 
-        private void buildLasts(List<ComboBy> combos) {
+        private void buildLasts(List<AggregationElement> combos) {
             if (!lasts.isEmpty()) {
                 combos.add(Agg(AggType.Last, MatchPair.fromPairs(lasts)));
             }
         }
 
-        private void buildFirsts(List<ComboBy> combos) {
+        private void buildFirsts(List<AggregationElement> combos) {
             if (!firsts.isEmpty()) {
                 combos.add(Agg(AggType.First, MatchPair.fromPairs(firsts)));
             }
         }
 
-        private void buildDistincts(List<ComboBy> combos) {
+        private void buildDistincts(List<AggregationElement> combos) {
             for (Map.Entry<Boolean, List<Pair>> e : distincts.entrySet()) {
                 combos.add(Agg(new DistinctSpec(e.getKey()), MatchPair.fromPairs(e.getValue())));
             }
         }
 
-        private void buildCountDistincts(List<ComboBy> combos) {
+        private void buildCountDistincts(List<AggregationElement> combos) {
             for (Map.Entry<Boolean, List<Pair>> e : countDistincts.entrySet()) {
                 combos.add(Agg(new CountDistinctSpec(e.getKey()), MatchPair.fromPairs(e.getValue())));
             }
         }
 
-        private void buildCounts(List<ComboBy> combos) {
+        private void buildCounts(List<AggregationElement> combos) {
             for (ColumnName count : counts) {
-                combos.add(new CountComboBy(count.name()));
+                combos.add(new CountAggregationElement(count.name()));
             }
         }
 
-        private void buildAvgs(List<ComboBy> combos) {
+        private void buildAvgs(List<AggregationElement> combos) {
             if (!avgs.isEmpty()) {
                 combos.add(Agg(AggType.Avg, MatchPair.fromPairs(avgs)));
             }
         }
 
-        private void buildArrays(List<ComboBy> combos) {
+        private void buildArrays(List<AggregationElement> combos) {
             if (!arrays.isEmpty()) {
-                combos.add(Agg(AggType.Array, MatchPair.fromPairs(arrays)));
+                combos.add(Agg(AggType.Group, MatchPair.fromPairs(arrays)));
             }
         }
 
-        private void buildAbsSums(List<ComboBy> combos) {
+        private void buildAbsSums(List<AggregationElement> combos) {
             if (!absSums.isEmpty()) {
                 combos.add(Agg(AggType.AbsSum, MatchPair.fromPairs(absSums)));
             }
@@ -1807,8 +1782,8 @@ public class ComboAggregateFactory implements AggregationSpec {
         }
 
         @Override
-        public void visit(Array array) {
-            arrays.add(array.pair());
+        public void visit(Group group) {
+            arrays.add(group.pair());
             buildOrder.add(buildArrays);
         }
 

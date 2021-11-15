@@ -7,7 +7,7 @@ import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.tables.live.NotificationQueue;
 import io.deephaven.engine.tables.select.WouldMatchPair;
 import io.deephaven.engine.util.liveness.LivenessArtifact;
-import io.deephaven.engine.v2.select.SelectFilter;
+import io.deephaven.engine.v2.select.WhereFilter;
 import io.deephaven.engine.v2.sources.AbstractColumnSource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.v2.sources.MutableColumnSourceGetDefaults;
@@ -50,7 +50,7 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
             return wouldMatchPair.getColumnName();
         }
 
-        SelectFilter getFilter() {
+        WhereFilter getFilter() {
             return wouldMatchPair.getFilter();
         }
     }
@@ -92,7 +92,7 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
             final List<NotificationQueue.Dependency> dependencies = new ArrayList<>();
             final Map<String, ColumnSource<?>> newColumns = new LinkedHashMap<>(parent.getColumnSourceMap());
             matchColumns.forEach(holder -> {
-                final SelectFilter filter = holder.getFilter();
+                final WhereFilter filter = holder.getFilter();
                 filter.init(parent.getDefinition());
                 final MutableRowSet result = filter.filter(fullRowSet, fullRowSet, parent, usePrev);
                 holder.column = new IndexWrapperColumnSource(
@@ -265,9 +265,9 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
     }
 
     private static class IndexWrapperColumnSource extends AbstractColumnSource<Boolean>
-            implements MutableColumnSourceGetDefaults.ForBoolean, SelectFilter.RecomputeListener {
+            implements MutableColumnSourceGetDefaults.ForBoolean, WhereFilter.RecomputeListener {
         private final TrackingMutableRowSet source;
-        private final SelectFilter filter;
+        private final WhereFilter filter;
         private boolean doRecompute = false;
         private QueryTable resultTable;
         private MergedListener mergedListener;
@@ -275,7 +275,7 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
         private final ModifiedColumnSet possibleUpstreamModified;
 
         IndexWrapperColumnSource(String name, QueryTable parent, TrackingMutableRowSet sourceRowSet,
-                SelectFilter filter) {
+                WhereFilter filter) {
             super(Boolean.class);
             this.source = sourceRowSet;
             this.filter = filter;

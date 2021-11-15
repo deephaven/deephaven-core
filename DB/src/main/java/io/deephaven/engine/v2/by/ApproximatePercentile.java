@@ -31,7 +31,7 @@ import java.util.List;
  * <p>
  * The input table must be add only, if modifications or removals take place; then an UnsupportedOperationException is
  * thrown. For tables with adds and removals you must use exact percentiles with
- * {@link ComboAggregateFactory#AggPct(double, java.lang.String...)}.
+ * {@link AggregationFactory#AggPct(double, java.lang.String...)}.
  * </p>
  *
  * <p>

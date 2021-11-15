@@ -30,7 +30,7 @@ public class LongRangeFilter extends AbstractRangeFilter {
         }
     }
 
-    static SelectFilter makeLongRangeFilter(String columnName, Condition condition, String value) {
+    static WhereFilter makeLongRangeFilter(String columnName, Condition condition, String value) {
         switch (condition) {
             case LESS_THAN:
                 return new LongRangeFilter(columnName, RangeConditionFilter.parseLongFilter(value), QueryConstants.NULL_LONG, true, false);

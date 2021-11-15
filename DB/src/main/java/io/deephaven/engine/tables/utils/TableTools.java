@@ -25,6 +25,7 @@ import io.deephaven.engine.time.TimeProvider;
 import io.deephaven.engine.time.TimeZone;
 import io.deephaven.engine.util.caching.C14nUtil;
 import io.deephaven.engine.v2.QueryTable;
+import io.deephaven.engine.v2.TableWithDefaults;
 import io.deephaven.engine.v2.TimeTable;
 import io.deephaven.engine.v2.replay.Replayer;
 import io.deephaven.engine.v2.replay.ReplayerInterface;
@@ -1309,7 +1310,7 @@ public class TableTools {
      * @return a Deephaven table object
      */
     public static Table merge(List<Table> theList) {
-        return merge(theList.toArray(Table.ZERO_LENGTH_TABLE_ARRAY));
+        return merge(theList.toArray(TableWithDefaults.ZERO_LENGTH_TABLE_ARRAY));
     }
 
     /**
@@ -1331,7 +1332,7 @@ public class TableTools {
      * @return a Deephaven table object
      */
     public static Table merge(Collection<Table> tables) {
-        return merge(tables.toArray(Table.ZERO_LENGTH_TABLE_ARRAY));
+        return merge(tables.toArray(TableWithDefaults.ZERO_LENGTH_TABLE_ARRAY));
     }
 
     /**

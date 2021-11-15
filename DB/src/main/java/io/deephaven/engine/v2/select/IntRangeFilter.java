@@ -30,7 +30,7 @@ public class IntRangeFilter extends AbstractRangeFilter {
         }
     }
 
-    static SelectFilter makeIntRangeFilter(String columnName, Condition condition, String value) {
+    static WhereFilter makeIntRangeFilter(String columnName, Condition condition, String value) {
         switch (condition) {
             case LESS_THAN:
                 return new IntRangeFilter(columnName, RangeConditionFilter.parseIntFilter(value), QueryConstants.NULL_INT, true, false);

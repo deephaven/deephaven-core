@@ -13,16 +13,16 @@ import io.deephaven.util.SafeCloseable;
 import java.util.*;
 
 public class DisjunctiveFilter extends ComposedFilter {
-    private DisjunctiveFilter(SelectFilter[] componentFilters) {
+    private DisjunctiveFilter(WhereFilter[] componentFilters) {
         super(componentFilters);
     }
 
-    public static SelectFilter makeDisjunctiveFilter(SelectFilter... componentFilters) {
+    public static WhereFilter makeDisjunctiveFilter(WhereFilter... componentFilters) {
         if (componentFilters.length == 1) {
             return componentFilters[0];
         }
 
-        final List<SelectFilter> rawComponents = new ArrayList<>();
+        final List<WhereFilter> rawComponents = new ArrayList<>();
         for (int ii = 0; ii < componentFilters.length; ++ii) {
             if (componentFilters[ii] instanceof DisjunctiveFilter) {
                 rawComponents.addAll(Arrays.asList(((DisjunctiveFilter) componentFilters[ii]).getComponentFilters()));
@@ -31,14 +31,14 @@ public class DisjunctiveFilter extends ComposedFilter {
             }
         }
 
-        return new DisjunctiveFilter(rawComponents.toArray(SelectFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY));
+        return new DisjunctiveFilter(rawComponents.toArray(WhereFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY));
     }
 
     @Override
     public MutableRowSet filter(RowSet selection, RowSet fullSet, Table table, boolean usePrev) {
         MutableRowSet matched = null;
         try (MutableRowSet remaining = selection.copy()) {
-            for (SelectFilter filter : componentFilters) {
+            for (WhereFilter filter : componentFilters) {
                 if (Thread.interrupted()) {
                     throw new QueryCancellationException("interrupted while filtering");
                 }
@@ -72,7 +72,7 @@ public class DisjunctiveFilter extends ComposedFilter {
     @Override
     public DisjunctiveFilter copy() {
         return new DisjunctiveFilter(
-                Arrays.stream(getComponentFilters()).map(SelectFilter::copy).toArray(SelectFilter[]::new));
+                Arrays.stream(getComponentFilters()).map(WhereFilter::copy).toArray(WhereFilter[]::new));
     }
 
     @Override

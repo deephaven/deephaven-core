@@ -4,9 +4,9 @@ import io.deephaven.engine.tables.SortPair;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.select.MatchPair;
 import io.deephaven.engine.tables.select.WouldMatchPair;
+import io.deephaven.engine.v2.by.AggregationFactory;
 import io.deephaven.engine.v2.by.AggregationMemoKey;
 import io.deephaven.engine.v2.by.AggregationSpec;
-import io.deephaven.engine.v2.by.ComboAggregateFactory;
 import io.deephaven.engine.v2.select.*;
 import io.deephaven.engine.v2.sources.regioned.SymbolTableSource;
 import org.jetbrains.annotations.NotNull;
@@ -85,8 +85,8 @@ public abstract class MemoizedOperationKey {
         return new DropColumns(columns);
     }
 
-    static MemoizedOperationKey filter(SelectFilter[] filters) {
-        if (Arrays.stream(filters).allMatch(SelectFilter::canMemoize)) {
+    static MemoizedOperationKey filter(WhereFilter[] filters) {
+        if (Arrays.stream(filters).allMatch(WhereFilter::canMemoize)) {
             return new Filter(filters);
         }
         return null;
@@ -112,7 +112,7 @@ public abstract class MemoizedOperationKey {
         return new GroupBy(aggregationMemoKey, groupByColumns);
     }
 
-    public static MemoizedOperationKey byExternal(boolean dropKeys, SelectColumn[] groupByColumns) {
+    public static MemoizedOperationKey partitionBy(boolean dropKeys, SelectColumn[] groupByColumns) {
         if (!isMemoizable(groupByColumns)) {
             return null;
         }
@@ -124,13 +124,13 @@ public abstract class MemoizedOperationKey {
                 .allMatch(sc -> sc instanceof SourceColumn || sc instanceof ReinterpretedColumn);
     }
 
-    public static MemoizedOperationKey rollup(ComboAggregateFactory comboAggregateFactory, SelectColumn[] columns,
-            boolean includeConstituents) {
+    public static MemoizedOperationKey rollup(AggregationFactory aggregationFactory, SelectColumn[] columns,
+                                              boolean includeConstituents) {
         if (!isMemoizable(columns)) {
             return null;
         }
 
-        final AggregationMemoKey aggregationMemoKey = comboAggregateFactory.getMemoKey();
+        final AggregationMemoKey aggregationMemoKey = aggregationFactory.getMemoKey();
         if (aggregationMemoKey == null) {
             return null;
         }
@@ -295,9 +295,9 @@ public abstract class MemoizedOperationKey {
     }
 
     private static class Filter extends AttributeAgnosticMemoizedOperationKey {
-        private final SelectFilter[] filters;
+        private final WhereFilter[] filters;
 
-        private Filter(SelectFilter[] filters) {
+        private Filter(WhereFilter[] filters) {
             this.filters = filters;
         }
 

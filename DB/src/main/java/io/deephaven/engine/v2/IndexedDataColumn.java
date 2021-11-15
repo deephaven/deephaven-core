@@ -12,7 +12,6 @@ import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.util.QueryConstants;
-import io.deephaven.engine.v2.iterators.*;
 import io.deephaven.engine.v2.sources.*;
 import io.deephaven.util.type.TypeUtils;
 import org.jetbrains.annotations.NotNull;

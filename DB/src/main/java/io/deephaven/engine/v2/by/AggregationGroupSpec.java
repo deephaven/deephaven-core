@@ -4,7 +4,7 @@
 
 package io.deephaven.engine.v2.by;
 
-public class AggregationArraySpec implements AggregationSpec {
+public class AggregationGroupSpec implements AggregationSpec {
     private static final AggregationMemoKey AGGREGATION_INDEX_INSTANCE = new AggregationMemoKey() {};
 
     @Override

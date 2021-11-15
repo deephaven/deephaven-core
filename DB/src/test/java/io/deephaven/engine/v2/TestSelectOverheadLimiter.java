@@ -98,12 +98,12 @@ public class TestSelectOverheadLimiter extends RefreshingTableTestCase {
         });
     }
 
-    public void testByExternal() {
+    public void testPartitionBy() {
         SelectOverheadLimiter.conversions.set(0);
         int seed;
         for (seed = 0; seed < 50; ++seed) {
             System.out.println("Seed = " + seed);
-            testByExternal(seed);
+            testPartitionBy(seed);
         }
         final int totalConversions = SelectOverheadLimiter.conversions.get();
         System.out.println("Total conversions: " + totalConversions);
@@ -113,7 +113,7 @@ public class TestSelectOverheadLimiter extends RefreshingTableTestCase {
         assertTrue(totalConversions < seed * 5);
     }
 
-    private void testByExternal(int seed) {
+    private void testPartitionBy(int seed) {
         final Random random = new Random(seed);
         final int size = 10;
 

@@ -22,7 +22,6 @@ import io.deephaven.engine.v2.sources.UnionRedirection;
 import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.v2.utils.RowSetShiftData;
 import io.deephaven.test.junit4.EngineCleanup;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.QueryConstants;
@@ -43,8 +42,8 @@ import org.junit.experimental.categories.Category;
 
 import static io.deephaven.engine.tables.utils.TableTools.*;
 import static io.deephaven.engine.tables.utils.WhereClause.whereClause;
-import static io.deephaven.engine.v2.LiveTableTestCase.printTableUpdates;
-import static io.deephaven.engine.v2.LiveTableTestCase.simulateShiftAwareStep;
+import static io.deephaven.engine.v2.RefreshingTableTestCase.printTableUpdates;
+import static io.deephaven.engine.v2.RefreshingTableTestCase.simulateShiftAwareStep;
 import static io.deephaven.engine.v2.TstUtils.*;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
@@ -60,7 +59,7 @@ public class QueryTableWhereTest {
     @Test
     public void testWhere() {
 
-        java.util.function.Function<String, SelectFilter> filter = ConditionFilter::createConditionFilter;
+        java.util.function.Function<String, WhereFilter> filter = ConditionFilter::createConditionFilter;
         final QueryTable table = testRefreshingTable(i(2, 4, 6).toTracking(),
                 c("x", 1, 2, 3), c("y", 'a', 'b', 'c'));
 
@@ -296,7 +295,7 @@ public class QueryTableWhereTest {
         final DynamicWhereFilter dynamicFilter2 =
                 new DynamicWhereFilter(setTable2, true, MatchPairFactory.getExpressions("B"));
 
-        final SelectFilter composedFilter = DisjunctiveFilter.makeDisjunctiveFilter(dynamicFilter1, dynamicFilter2);
+        final WhereFilter composedFilter = DisjunctiveFilter.makeDisjunctiveFilter(dynamicFilter1, dynamicFilter2);
         final Table composed = tableToFilter.where(composedFilter);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
@@ -683,25 +682,6 @@ public class QueryTableWhereTest {
             });
             validate(en);
         }
-    }
-
-    @Test
-    public void testEmptyWhere() {
-        final QueryTable source = testRefreshingTable(i(2, 4, 6, 8).toTracking(),
-                c("X", "A", "B", "C", "B"), c("I", 1, 2, 4, 8));
-        final Table filtered = source.where();
-
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            Listener.Update update = new Listener.Update();
-            update.added = i();
-            update.removed = i();
-            update.modified = source.getRowSet().copy();
-            update.modifiedColumnSet = source.newModifiedColumnSet("X");
-            update.shifted = RowSetShiftData.EMPTY;
-            source.notifyListeners(update);
-        });
-
-        TstUtils.assertTableEquals(source, filtered);
     }
 
     @Test

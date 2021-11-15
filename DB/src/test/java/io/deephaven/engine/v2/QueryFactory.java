@@ -60,7 +60,7 @@ public class QueryFactory {
     private static final String[] IMPLEMENTED_OPS = {"where", "merge", "flatten", "slice", "head", "tail", "headPct",
             "tailPct", "reverse", "sort", "byOpp", "aggCombo", "partitionBy"};
     private static final String[] CHANGING_AGG =
-            {"AggSum", "AggVar", "AggStd", "AggArray", "AggCount", "AggWAvg", "AggDistinct", "AggCountDistinct"};
+            {"AggSum", "AggVar", "AggStd", "AggGroup", "AggCount", "AggWAvg", "AggDistinct", "AggCountDistinct"};
     private static final String[] CHANGING_BY =
             {"avgBy", "sumBy", "stdBy", "varBy", "countBy", "medianBy", "percentileBy"};
     private static final String[] ROLLUP_AGG =
@@ -455,7 +455,7 @@ public class QueryFactory {
     }
 
 
-    private void addByExternalOperation(int opNum, StringBuilder opChain, Random random, String nameSeed) {
+    private void addPartitionByOperation(int opNum, StringBuilder opChain, Random random, String nameSeed) {
         final StringBuilder mapName = new StringBuilder("map").append(nameSeed).append("_").append(opNum);
         final StringBuilder previousTableName =
                 new StringBuilder("table").append(nameSeed).append("_").append(opNum - 1);
@@ -528,7 +528,7 @@ public class QueryFactory {
     private void addComboOperation(int opNum, StringBuilder opChain, Random random, String[] possiblyComboOperation,
             String nameSeed) {
         // combo style op
-        // AggSum, AggVar, AggAvg, AggStd, AggArray, AggCount
+        // AggSum, AggVar, AggAvg, AggStd, AggGroup, AggCount
         ArrayList<String> aggSet = new ArrayList<>(Arrays.asList(possiblyComboOperation));
         boolean safeOp = true;
 
@@ -588,8 +588,8 @@ public class QueryFactory {
                     safeOp = false;
                     break;
 
-                case "AggArray":
-                    opChain.append("AggArray(");
+                case "AggGroup":
+                    opChain.append("AggGroup(");
                     safeOp = false;
                     break;
 
@@ -812,7 +812,7 @@ public class QueryFactory {
                 break;
 
             case "partitionBy":
-                addByExternalOperation(opNum, opChain, random, nameSeed);
+                addPartitionByOperation(opNum, opChain, random, nameSeed);
                 break;
 
             default:

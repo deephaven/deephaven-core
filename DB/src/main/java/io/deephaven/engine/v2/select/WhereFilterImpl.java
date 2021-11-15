@@ -1,11 +1,9 @@
 package io.deephaven.engine.v2.select;
 
 
-import io.deephaven.engine.util.liveness.LivenessArtifact;
-
 import java.io.Serializable;
 
-public abstract class SelectFilterLivenessArtifactImpl extends LivenessArtifact implements SelectFilter, Serializable {
+public abstract class WhereFilterImpl implements WhereFilter, Serializable {
     private boolean isAutomatedFilter = false;
 
     @Override

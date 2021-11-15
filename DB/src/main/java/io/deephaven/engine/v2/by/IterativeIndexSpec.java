@@ -40,7 +40,7 @@ public abstract class IterativeIndexSpec extends ReaggregatableStatefactory {
 
     @NotNull
     private String getRedirectionName() {
-        return REDIRECTION_INDEX_PREFIX + rollupColumnIdentifier + ComboAggregateFactory.ROLLUP_COLUMN_SUFFIX;
+        return REDIRECTION_INDEX_PREFIX + rollupColumnIdentifier + AggregationFactory.ROLLUP_COLUMN_SUFFIX;
     }
 
     @Override

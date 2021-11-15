@@ -12,11 +12,11 @@ import java.util.List;
 /**
  * A Select filter that always returns an empty rowSet.
  */
-public class SelectNoneFilter extends SelectFilterImpl {
+public class WhereNoneFilter extends WhereFilterImpl {
 
-    public static final SelectNoneFilter INSTANCE = new SelectNoneFilter();
+    public static final WhereNoneFilter INSTANCE = new WhereNoneFilter();
 
-    private SelectNoneFilter() {}
+    private WhereNoneFilter() {}
 
     @Override
     public List<String> getColumns() {
@@ -45,7 +45,7 @@ public class SelectNoneFilter extends SelectFilterImpl {
     public void setRecomputeListener(RecomputeListener result) {}
 
     @Override
-    public SelectFilter copy() {
+    public WhereFilter copy() {
         return INSTANCE;
     }
 }

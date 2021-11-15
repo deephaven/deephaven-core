@@ -10,6 +10,7 @@ import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.v2.by.AggregationFactory;
 import io.deephaven.io.log.LogLevel;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.io.logger.StreamLoggerImpl;
@@ -19,7 +20,6 @@ import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.tables.utils.TableToolsShowControl;
 import io.deephaven.engine.util.liveness.LivenessScopeStack;
 import io.deephaven.engine.util.liveness.SingletonLivenessManager;
-import io.deephaven.engine.v2.by.ComboAggregateFactory;
 import io.deephaven.engine.v2.by.SortedFirstBy;
 import io.deephaven.engine.v2.by.SortedLastBy;
 import io.deephaven.engine.table.ColumnSource;
@@ -45,7 +45,7 @@ import org.junit.experimental.categories.Category;
 
 import static io.deephaven.engine.tables.utils.TableTools.*;
 import static io.deephaven.engine.v2.TstUtils.*;
-import static io.deephaven.engine.v2.by.ComboAggregateFactory.*;
+import static io.deephaven.engine.v2.by.AggregationFactory.*;
 import static io.deephaven.util.QueryConstants.*;
 import static org.junit.Assert.assertArrayEquals;
 
@@ -1193,7 +1193,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
     }
 
     public void testRollupReverseLookup() {
-        final ComboAggregateFactory comboAgg = AggCombo(AggSum("IntCol", "DoubleCol"));
+        final AggregationFactory comboAgg = AggCombo(AggSum("IntCol", "DoubleCol"));
         final Random random = new Random(0);
 
         final int size = 100;
@@ -1304,7 +1304,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
         testSimpleRollup(AggCombo(AggUnique(true, "IntCol", "DoubleCol", "FloatNullCol", "StringCol", "BoolCol")));
     }
 
-    private void testSimpleRollup(ComboAggregateFactory comboAgg) {
+    private void testSimpleRollup(AggregationFactory comboAgg) {
         final Random random = new Random(0);
 
         final int size = 10;
@@ -1558,7 +1558,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
         testIncrementalSimple(AggUnique(true, -1, -2, "IntCol"));
     }
 
-    private void testIncrementalSimple(ComboBy comboBy) {
+    private void testIncrementalSimple(AggregationElement aggregationElement) {
         final QueryTable table =
                 TstUtils.testRefreshingTable(RowSetFactory.flat(6).toTracking(),
                         col("G1", "A", "A", "A", "B", "B", "B"),
@@ -1566,12 +1566,12 @@ public class QueryTableTreeTest extends QueryTableTestBase {
                         col("IntCol", 1, 2, 3, 4, 5, 6));
 
         final Table rollup = UpdateGraphProcessor.DEFAULT.exclusiveLock()
-                .computeLocked(() -> table.rollup(AggCombo(comboBy), "G1", "G2"));
+                .computeLocked(() -> table.rollup(AggCombo(aggregationElement), "G1", "G2"));
 
         dumpRollup(rollup, "G1", "G2");
 
         final Table fullBy =
-                UpdateGraphProcessor.DEFAULT.exclusiveLock().computeLocked(() -> table.by(AggCombo(comboBy)));
+                UpdateGraphProcessor.DEFAULT.exclusiveLock().computeLocked(() -> table.by(AggCombo(aggregationElement)));
 
         final Table rollupClean = getDiffableTable(rollup).view("IntCol");
 
@@ -1651,7 +1651,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
                         NULL_SHORT),
                 new TstUtils.SetGenerator<>((byte) 0, (byte) 1, (byte) 2, (byte) 3, (byte) 4, (byte) 5, NULL_BYTE)));
 
-        final ComboAggregateFactory rollupDefinition = AggCombo(
+        final AggregationFactory rollupDefinition = AggCombo(
                 AggSum("IntCol", "DoubleCol"),
                 AggMin("MinInt=IntCol", "MinDT=DateTime"),
                 AggMax("MaxDouble=DoubleCol", "MaxDT=DateTime"),

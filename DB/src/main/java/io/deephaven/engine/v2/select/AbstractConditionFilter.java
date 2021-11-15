@@ -26,7 +26,7 @@ import java.util.*;
 import static io.deephaven.engine.util.PythonScopeJpyImpl.NumbaCallableWrapper;
 import static io.deephaven.engine.v2.select.DhFormulaColumn.COLUMN_SUFFIX;
 
-public abstract class AbstractConditionFilter extends SelectFilterImpl {
+public abstract class AbstractConditionFilter extends WhereFilterImpl {
     private static final Logger log = ProcessEnvironment.getDefaultLog(AbstractConditionFilter.class);
     final Map<String, String> outerToInnerNames;
     final Map<String, String> innerToOuterNames;
@@ -256,7 +256,7 @@ public abstract class AbstractConditionFilter extends SelectFilterImpl {
 
     public interface Filter {
         /**
-         * See {@link SelectFilter#filter(RowSet, RowSet, Table, boolean)} for basic documentation of {@code selection},
+         * See {@link WhereFilter#filter(RowSet, RowSet, Table, boolean)} for basic documentation of {@code selection},
          * {@code fullSet}, {@code table}, and {@code usePrev}.
          */
         MutableRowSet filter(

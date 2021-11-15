@@ -2,7 +2,7 @@ package io.deephaven.benchmark.engine;
 
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.select.SelectFilterFactory;
-import io.deephaven.engine.v2.select.SelectFilter;
+import io.deephaven.engine.v2.select.WhereFilter;
 import io.deephaven.benchmarking.BenchUtil;
 import io.deephaven.benchmarking.BenchmarkTable;
 import io.deephaven.benchmarking.BenchmarkTools;
@@ -27,7 +27,7 @@ import static io.deephaven.benchmarking.BenchmarkTools.applySparsity;
 @Timeout(time = 3)
 @Fork(1)
 public class WhereBenchmark {
-    private SelectFilter selectFilter;
+    private WhereFilter whereFilter;
     private TableBenchmarkState state;
     BenchmarkTable bmTable;
 
@@ -113,7 +113,7 @@ public class WhereBenchmark {
                 throw new IllegalStateException("Can't touch this.");
         }
 
-        selectFilter = SelectFilterFactory.getExpression(filterString);
+        whereFilter = SelectFilterFactory.getExpression(filterString);
     }
 
     @TearDown(Level.Trial)
@@ -138,7 +138,7 @@ public class WhereBenchmark {
 
     @Benchmark
     public Table where() {
-        return state.setResult(inputTable.where(selectFilter)).coalesce();
+        return state.setResult(inputTable.where(whereFilter)).coalesce();
     }
 
     public static void main(String[] args) {

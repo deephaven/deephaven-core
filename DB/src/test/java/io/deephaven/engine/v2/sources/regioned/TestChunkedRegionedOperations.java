@@ -12,6 +12,7 @@ import io.deephaven.engine.tables.select.QueryScope;
 import io.deephaven.engine.tables.utils.*;
 import io.deephaven.engine.time.DateTime;
 import io.deephaven.engine.time.DateTimeUtils;
+import io.deephaven.engine.v2.TableWithDefaults;
 import io.deephaven.util.BooleanUtils;
 import io.deephaven.engine.util.file.TrackedFileHandleFactory;
 import io.deephaven.engine.v2.QueryTable;
@@ -228,7 +229,7 @@ public class TestChunkedRegionedOperations {
 
         final TableMap partitionedInputData = inputData.partitionBy("PC");
         ParquetTools.writeParquetTables(
-                partitionedInputData.values().toArray(Table.ZERO_LENGTH_TABLE_ARRAY),
+                partitionedInputData.values().toArray(TableWithDefaults.ZERO_LENGTH_TABLE_ARRAY),
                 partitionedDataDefinition.getWritable(),
                 parquetInstructions,
                 Arrays.stream(partitionedInputData.getKeySet())
@@ -240,7 +241,7 @@ public class TestChunkedRegionedOperations {
 
         final TableMap partitionedInputMissingData = inputMissingData.view("PC", "II").partitionBy("PC");
         ParquetTools.writeParquetTables(
-                partitionedInputMissingData.values().toArray(Table.ZERO_LENGTH_TABLE_ARRAY),
+                partitionedInputMissingData.values().toArray(TableWithDefaults.ZERO_LENGTH_TABLE_ARRAY),
                 partitionedMissingDataDefinition.getWritable(),
                 parquetInstructions,
                 Arrays.stream(partitionedInputMissingData.getKeySet())

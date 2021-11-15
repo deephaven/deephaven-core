@@ -45,10 +45,10 @@ public class TableSupplier extends LivenessArtifact implements InvocationHandler
             HIJACKED_DELEGATIONS.put(Table.class.getMethod("hasColumns", String[].class), (proxy, method,
                     args) -> ((TableSupplier) Proxy.getInvocationHandler(proxy)).hasColumns((String[]) args[0]));
             HIJACKED_DELEGATIONS.put(Table.class.getMethod("partitionBy", String[].class), (proxy, method,
-                                                                                            args) -> ((TableSupplier) Proxy.getInvocationHandler(proxy)).byExternal((String[]) args[0]));
+                                                                                            args) -> ((TableSupplier) Proxy.getInvocationHandler(proxy)).partitionBy((String[]) args[0]));
             HIJACKED_DELEGATIONS.put(Table.class.getMethod("partitionBy", boolean.class, String[].class),
                     (proxy, method, args) -> ((TableSupplier) Proxy.getInvocationHandler(proxy))
-                            .byExternal((Boolean) args[0], (String[]) args[1]));
+                            .partitionBy((Boolean) args[0], (String[]) args[1]));
             HIJACKED_DELEGATIONS.put(Table.class.getMethod("apply", Function.Unary.class),
                     (proxy, method, args) -> ((TableSupplier) Proxy.getInvocationHandler(proxy))
                             .apply((Function.Unary) args[0], (Table) proxy));
@@ -285,13 +285,13 @@ public class TableSupplier extends LivenessArtifact implements InvocationHandler
         return hasColumns(Arrays.asList(columnNames));
     }
 
-    private TableMap byExternal(boolean dropKeys, String... columnNames) {
+    private TableMap partitionBy(boolean dropKeys, String... columnNames) {
         return new TableMapSupplier(sourceTable.partitionBy(dropKeys, columnNames), tableOperations,
                 Collections.emptyList());
     }
 
-    private TableMap byExternal(String... columnNames) {
-        return byExternal(false, columnNames);
+    private TableMap partitionBy(String... columnNames) {
+        return partitionBy(false, columnNames);
     }
 
     private Object apply(Function.Unary<Object, Table> function, Table table) {

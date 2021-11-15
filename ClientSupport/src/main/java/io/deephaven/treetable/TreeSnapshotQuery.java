@@ -9,7 +9,7 @@ import io.deephaven.engine.v2.HierarchicalTable;
 import io.deephaven.engine.v2.HierarchicalTableInfo;
 import io.deephaven.engine.v2.RollupInfo;
 import io.deephaven.engine.v2.TreeTableInfo;
-import io.deephaven.engine.v2.select.SelectFilter;
+import io.deephaven.engine.v2.select.WhereFilter;
 import io.deephaven.table.sort.SortDirective;
 import org.jetbrains.annotations.NotNull;
 
@@ -29,7 +29,7 @@ public class TreeSnapshotQuery<CLIENT_TYPE extends TreeTableClientTableManager.C
     private final int baseTableId;
     private final BitSet columns;
 
-    private final SelectFilter[] filters;
+    private final WhereFilter[] filters;
 
     private final List<SortDirective> directives;
     private final Map<Object, TableDetails> tablesByKey;
@@ -54,9 +54,9 @@ public class TreeSnapshotQuery<CLIENT_TYPE extends TreeTableClientTableManager.C
      * @param includedOps The set of operations the client has performed since the last TSQ.
      */
     public TreeSnapshotQuery(int baseId, Map<Object, TableDetails> tablesByKey,
-            long firstRow, long lastRow, BitSet columns,
-            @NotNull SelectFilter[] filters, @NotNull List<SortDirective> sorts,
-            CLIENT_TYPE client, EnumSet<Operation> includedOps) {
+                             long firstRow, long lastRow, BitSet columns,
+                             @NotNull WhereFilter[] filters, @NotNull List<SortDirective> sorts,
+                             CLIENT_TYPE client, EnumSet<Operation> includedOps) {
         this.client = client;
         Assert.leq(firstRow, "firstRow", lastRow, "lastRow");
         Assert.leq(lastRow - firstRow, "lastRow - firstRow", Integer.MAX_VALUE, "Integer.MAX_VALUE");

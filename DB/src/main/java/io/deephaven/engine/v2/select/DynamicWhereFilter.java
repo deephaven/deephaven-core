@@ -5,7 +5,6 @@
 package io.deephaven.engine.v2.select;
 
 import io.deephaven.base.log.LogOutput;
-import io.deephaven.base.verify.Assert;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.tables.Table;
@@ -33,7 +32,7 @@ import java.util.*;
  *
  * Each time the set table ticks, the entire where filter is recalculated.
  */
-public class DynamicWhereFilter extends SelectFilterLivenessArtifactImpl implements NotificationQueue.Dependency {
+public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implements NotificationQueue.Dependency {
     private static final int CHUNK_SIZE = 1 << 16;
 
     private final MatchPair[] matchPairs;
@@ -53,22 +52,14 @@ public class DynamicWhereFilter extends SelectFilterLivenessArtifactImpl impleme
     // this reference must be maintained for reachability
     private final InstrumentedListener setUpdateListener;
 
-    private final Table.GroupStrategy groupStrategy;
-
     private RecomputeListener listener;
     private QueryTable resultTable;
 
     public DynamicWhereFilter(final Table setTable, final boolean inclusion, final MatchPair... setColumnsNames) {
-        this(Table.GroupStrategy.DEFAULT, setTable, inclusion, setColumnsNames);
-    }
-
-    public DynamicWhereFilter(final Table.GroupStrategy groupStrategy, final Table setTable, final boolean inclusion,
-            final MatchPair... setColumnsNames) {
         if (setTable.isRefreshing()) {
             UpdateGraphProcessor.DEFAULT.checkInitiateTableOperation();
         }
 
-        this.groupStrategy = groupStrategy;
         this.matchPairs = setColumnsNames;
         this.inclusion = inclusion;
 
@@ -192,61 +183,41 @@ public class DynamicWhereFilter extends SelectFilterLivenessArtifactImpl impleme
         final TupleSource tupleSource = TupleSourceFactory.makeTupleSource(keyColumns);
         final TrackingRowSet trackingSelection = selection.isTracking() ? selection.trackingCast() : null;
 
-        switch (groupStrategy) {
-            case DEFAULT: {
-                if (matchPairs.length == 1) {
-                    // this is just a single column filter so it will actually be exactly right
-                    if (!liveValuesArrayValid) {
-                        liveValuesArray = liveValues.toArray(CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
-                        liveValuesArrayValid = true;
-                    }
-                    return table.getColumnSource(matchPairs[0].left()).match(!inclusion, false, false, selection,
-                            liveValuesArray);
-                }
-
-                // pick something sensible
-                if (trackingSelection != null) {
-                    if (trackingSelection.hasGrouping(keyColumns)) {
-                        if (selection.size() > (trackingSelection.getGrouping(tupleSource).size() * 2L)) {
-                            return filterGrouping(trackingSelection, tupleSource);
-                        } else {
-                            return filterLinear(selection, keyColumns, tupleSource);
-                        }
-                    }
-                    final boolean allGrouping = Arrays.stream(keyColumns).allMatch(trackingSelection::hasGrouping);
-                    if (allGrouping) {
-                        return filterGrouping(trackingSelection, tupleSource);
-                    }
-
-                    final ColumnSource[] sourcesWithGroupings =
-                            Arrays.stream(keyColumns).filter(trackingSelection::hasGrouping)
-                                    .toArray(ColumnSource[]::new);
-                    final OptionalInt minGroupCount =
-                            Arrays.stream(sourcesWithGroupings).mapToInt(x -> trackingSelection.getGrouping(x).size())
-                                    .min();
-                    if (minGroupCount.isPresent() && (minGroupCount.getAsInt() * 4L) < selection.size()) {
-                        return filterGrouping(trackingSelection, tupleSource);
-                    }
-                }
-                return filterLinear(selection, keyColumns, tupleSource);
+        if (matchPairs.length == 1) {
+            // this is just a single column filter so it will actually be exactly right
+            if (!liveValuesArrayValid) {
+                liveValuesArray = liveValues.toArray(CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
+                liveValuesArrayValid = true;
             }
-            case USE_EXISTING_GROUPS:
-                if (trackingSelection != null && trackingSelection.hasGrouping(keyColumns)) {
+            return table.getColumnSource(matchPairs[0].left()).match(!inclusion, false, false, selection,
+                    liveValuesArray);
+        }
+
+        // pick something sensible
+        if (trackingSelection != null) {
+            if (trackingSelection.hasGrouping(keyColumns)) {
+                if (selection.size() > (trackingSelection.getGrouping(tupleSource).size() * 2L)) {
                     return filterGrouping(trackingSelection, tupleSource);
                 } else {
                     return filterLinear(selection, keyColumns, tupleSource);
                 }
-            case CREATE_GROUPS:
-                try (final TrackingRowSet rowSetForGrouping =
-                        trackingSelection != null ? null : selection.copy().toTracking()) {
-                    return filterGrouping(
-                            trackingSelection != null ? trackingSelection : rowSetForGrouping, table);
-                }
-            case LINEAR:
-                return filterLinear(selection, keyColumns, tupleSource);
+            }
+            final boolean allGrouping = Arrays.stream(keyColumns).allMatch(trackingSelection::hasGrouping);
+            if (allGrouping) {
+                return filterGrouping(trackingSelection, tupleSource);
+            }
+
+            final ColumnSource[] sourcesWithGroupings =
+                    Arrays.stream(keyColumns).filter(trackingSelection::hasGrouping)
+                            .toArray(ColumnSource[]::new);
+            final OptionalInt minGroupCount =
+                    Arrays.stream(sourcesWithGroupings).mapToInt(x -> trackingSelection.getGrouping(x).size())
+                            .min();
+            if (minGroupCount.isPresent() && (minGroupCount.getAsInt() * 4L) < selection.size()) {
+                return filterGrouping(trackingSelection, tupleSource);
+            }
         }
-        // noinspection ConstantConditions
-        throw Assert.statementNeverExecuted();
+        return filterLinear(selection, keyColumns, tupleSource);
     }
 
     private MutableRowSet filterGrouping(TrackingRowSet selection, TupleSource tupleSource) {
@@ -344,7 +315,7 @@ public class DynamicWhereFilter extends SelectFilterLivenessArtifactImpl impleme
 
     @Override
     public DynamicWhereFilter copy() {
-        return new DynamicWhereFilter(groupStrategy, setTable, inclusion, matchPairs);
+        return new DynamicWhereFilter(setTable, inclusion, matchPairs);
     }
 
     @Override

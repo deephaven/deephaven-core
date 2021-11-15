@@ -34,7 +34,7 @@ public class DoubleRangeFilter extends AbstractRangeFilter {
         }
     }
 
-    public static SelectFilter makeRange(String columnName, String val) {
+    public static WhereFilter makeRange(String columnName, String val) {
         final int precision = findPrecision(val);
         final double parsed = Double.parseDouble(val);
         final double offset = Math.pow(10, -precision);
@@ -43,7 +43,7 @@ public class DoubleRangeFilter extends AbstractRangeFilter {
         return new DoubleRangeFilter(columnName, (double)parsed, (double)(positiveOrZero ? parsed + offset : parsed - offset), positiveOrZero, !positiveOrZero);
     }
 
-    static SelectFilter makeDoubleRangeFilter(String columnName, Condition condition, String value) {
+    static WhereFilter makeDoubleRangeFilter(String columnName, Condition condition, String value) {
         switch (condition) {
             case LESS_THAN:
                 return new DoubleRangeFilter(columnName, Double.parseDouble(value), QueryConstants.NULL_DOUBLE, true, false);

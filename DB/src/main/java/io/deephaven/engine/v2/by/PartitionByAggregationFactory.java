@@ -52,45 +52,45 @@ public class PartitionByAggregationFactory implements AggregationContextFactory 
 
     @Override
     public String toString() {
-        return "ByExternal";
+        return "PartitionBy";
     }
 
-    public static LocalTableMap byExternal(@NotNull final QueryTable inputTable,
+    public static LocalTableMap partitionBy(@NotNull final QueryTable inputTable,
             final boolean dropKeys,
             @NotNull final PartitionByChunkedOperator.AttributeCopier attributeCopier,
             @NotNull final List<Object> keysToPrepopulate,
             @NotNull final String... groupByColumnNames) {
-        return byExternal(AggregationControl.DEFAULT_FOR_OPERATOR, inputTable, dropKeys, attributeCopier,
+        return partitionBy(AggregationControl.DEFAULT_FOR_OPERATOR, inputTable, dropKeys, attributeCopier,
                 keysToPrepopulate, groupByColumnNames);
     }
 
-    public static LocalTableMap byExternal(@NotNull final QueryTable inputTable,
+    public static LocalTableMap partitionBy(@NotNull final QueryTable inputTable,
             final boolean dropKeys,
             @NotNull final PartitionByChunkedOperator.AttributeCopier attributeCopier,
             @NotNull final List<Object> keysToPrepopulate,
             @NotNull final SelectColumn[] groupByColumns) {
-        return byExternal(AggregationControl.DEFAULT_FOR_OPERATOR, inputTable, dropKeys, attributeCopier,
+        return partitionBy(AggregationControl.DEFAULT_FOR_OPERATOR, inputTable, dropKeys, attributeCopier,
                 keysToPrepopulate, groupByColumns);
     }
 
-    public static LocalTableMap byExternal(@NotNull final AggregationControl aggregationControl,
+    public static LocalTableMap partitionBy(@NotNull final AggregationControl aggregationControl,
             @NotNull final QueryTable inputTable,
             final boolean dropKeys,
             @NotNull final PartitionByChunkedOperator.AttributeCopier attributeCopier,
             @NotNull final List<Object> keysToPrepopulate,
             @NotNull final String... groupByColumnNames) {
-        return byExternal(aggregationControl, inputTable, dropKeys, attributeCopier, keysToPrepopulate,
+        return partitionBy(aggregationControl, inputTable, dropKeys, attributeCopier, keysToPrepopulate,
                 SelectColumnFactory.getExpressions(groupByColumnNames));
     }
 
-    public static LocalTableMap byExternal(@NotNull final AggregationControl aggregationControl,
+    public static LocalTableMap partitionBy(@NotNull final AggregationControl aggregationControl,
             @NotNull final QueryTable inputTable,
             final boolean dropKeys,
             @NotNull final PartitionByChunkedOperator.AttributeCopier attributeCopier,
             @NotNull final List<Object> keysToPrepopulate,
             @NotNull final SelectColumn[] groupByColumns) {
         if (groupByColumns.length == 0) {
-            return noKeyByExternal(inputTable);
+            return noKeyPartitionBy(inputTable);
         }
         final PartitionByAggregationFactory aggregationFactory =
                 new PartitionByAggregationFactory(dropKeys, attributeCopier, keysToPrepopulate);
@@ -99,7 +99,7 @@ public class PartitionByAggregationFactory implements AggregationContextFactory 
         return aggregationFactory.operator.getTableMap();
     }
 
-    public static LocalTableMap noKeyByExternal(@NotNull final QueryTable inputTable) {
+    public static LocalTableMap noKeyPartitionBy(@NotNull final QueryTable inputTable) {
         final LocalTableMap result = new LocalTableMap(null, inputTable.getDefinition());
         result.put(CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY, inputTable);
         return result;

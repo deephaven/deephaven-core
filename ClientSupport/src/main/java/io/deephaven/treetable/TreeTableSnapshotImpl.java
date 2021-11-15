@@ -4,7 +4,7 @@ import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.live.NotificationQueue;
 import io.deephaven.engine.v2.*;
-import io.deephaven.engine.v2.select.SelectFilter;
+import io.deephaven.engine.v2.select.WhereFilter;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.table.sort.SortDirective;
 import org.jetbrains.annotations.NotNull;
@@ -48,7 +48,7 @@ class TreeTableSnapshotImpl<CLIENT_TYPE extends TreeTableClientTableManager.Clie
             long firstRow,
             long lastRow,
             BitSet columns,
-            @NotNull SelectFilter[] filters,
+            @NotNull WhereFilter[] filters,
             @NotNull List<SortDirective> sorts,
             CLIENT_TYPE client,
             Set<TreeSnapshotQuery.Operation> includedOps) {
@@ -60,7 +60,7 @@ class TreeTableSnapshotImpl<CLIENT_TYPE extends TreeTableClientTableManager.Clie
         final HierarchicalTable baseTable = getBaseTable();
         Table prepared = tryGetRetainedTable(ROOT_TABLE_KEY);
         if (prepared == null) {
-            final SelectFilter[] filters = getFilters();
+            final WhereFilter[] filters = getFilters();
             final List<SortDirective> directives = getDirectives();
 
             if (filters.length == 0 && directives.isEmpty()) {

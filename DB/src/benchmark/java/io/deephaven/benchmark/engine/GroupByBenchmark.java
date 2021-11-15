@@ -166,7 +166,7 @@ public class GroupByBenchmark {
     }
 
     @Benchmark
-    public Table byExternalStatic(@NotNull final Blackhole bh) {
+    public Table partitionByStatic(@NotNull final Blackhole bh) {
         final TableMap result =
                 UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> table.partitionBy(keyName.split("[, ]+")));
         bh.consume(result);
@@ -174,7 +174,7 @@ public class GroupByBenchmark {
     }
 
     @Benchmark
-    public Table byExternalIncremental(@NotNull final Blackhole bh) {
+    public Table partitionByIncremental(@NotNull final Blackhole bh) {
         final TableMap result = IncrementalBenchmark.incrementalBenchmark(
                 (t) -> UpdateGraphProcessor.DEFAULT.sharedLock()
                         .computeLocked(() -> t.partitionBy(keyName.split("[, ]+"))),

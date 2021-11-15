@@ -21,8 +21,8 @@ import org.junit.experimental.categories.Category;
 import static io.deephaven.engine.tables.utils.TableTools.*;
 import static io.deephaven.engine.v2.TstUtils.*;
 import static io.deephaven.engine.v2.TstUtils.addToTable;
-import static io.deephaven.engine.v2.by.ComboAggregateFactory.AggCombo;
-import static io.deephaven.engine.v2.by.ComboAggregateFactory.AggSortedLast;
+import static io.deephaven.engine.v2.by.AggregationFactory.AggCombo;
+import static io.deephaven.engine.v2.by.AggregationFactory.AggSortedLast;
 
 @Category(OutOfBandTest.class)
 public class TestSortedFirstOrLastByFactory extends RefreshingTableTestCase {

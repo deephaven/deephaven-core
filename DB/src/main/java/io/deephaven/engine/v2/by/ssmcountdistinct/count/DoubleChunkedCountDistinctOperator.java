@@ -10,10 +10,10 @@ package io.deephaven.engine.v2.by.ssmcountdistinct.count;
 import io.deephaven.engine.rowset.MutableRowSet;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.v2.by.AggregationFactory;
 import io.deephaven.engine.v2.utils.*;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.v2.Listener;
-import io.deephaven.engine.v2.by.ComboAggregateFactory;
 import io.deephaven.engine.v2.by.IterativeChunkedAggregationOperator;
 import io.deephaven.engine.v2.by.ssmcountdistinct.BucketSsmDistinctContext;
 import io.deephaven.engine.v2.by.ssmcountdistinct.DoubleSsmBackedSource;
@@ -259,7 +259,7 @@ public class DoubleChunkedCountDistinctOperator implements IterativeChunkedAggre
         if(exposeInternal) {
             final Map<String, ColumnSource<?>> columns = new LinkedHashMap<>();
             columns.put(name, resultColumn);
-            columns.put(name + ComboAggregateFactory.ROLLUP_DISTINCT_SSM_COLUMN_ID + ComboAggregateFactory.ROLLUP_COLUMN_SUFFIX, ssms.getUnderlyingSource());
+            columns.put(name + AggregationFactory.ROLLUP_DISTINCT_SSM_COLUMN_ID + AggregationFactory.ROLLUP_COLUMN_SUFFIX, ssms.getUnderlyingSource());
             return columns;
         }
 

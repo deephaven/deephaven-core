@@ -21,7 +21,7 @@ import org.jpy.PyObject;
 
 import java.util.*;
 
-public class MatchFilter extends SelectFilterImpl {
+public class MatchFilter extends WhereFilterImpl {
 
     private static final long serialVersionUID = 1L;
 
@@ -403,7 +403,7 @@ public class MatchFilter extends SelectFilterImpl {
     }
 
     @Override
-    public SelectFilter copy() {
+    public WhereFilter copy() {
         if (strValues != null) {
             return new MatchFilter(caseInsensitive ? CaseSensitivity.IgnoreCase : CaseSensitivity.MatchCase,
                     getMatchType(), columnName, strValues);

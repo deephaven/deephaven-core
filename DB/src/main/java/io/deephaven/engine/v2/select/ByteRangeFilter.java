@@ -30,7 +30,7 @@ public class ByteRangeFilter extends AbstractRangeFilter {
         }
     }
 
-    static SelectFilter makeByteRangeFilter(String columnName, Condition condition, String value) {
+    static WhereFilter makeByteRangeFilter(String columnName, Condition condition, String value) {
         switch (condition) {
             case LESS_THAN:
                 return new ByteRangeFilter(columnName, RangeConditionFilter.parseByteFilter(value), QueryConstants.NULL_BYTE, true, false);

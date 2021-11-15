@@ -30,7 +30,7 @@ public class ShortRangeFilter extends AbstractRangeFilter {
         }
     }
 
-    static SelectFilter makeShortRangeFilter(String columnName, Condition condition, String value) {
+    static WhereFilter makeShortRangeFilter(String columnName, Condition condition, String value) {
         switch (condition) {
             case LESS_THAN:
                 return new ShortRangeFilter(columnName, RangeConditionFilter.parseShortFilter(value), QueryConstants.NULL_SHORT, true, false);

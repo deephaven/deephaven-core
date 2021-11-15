@@ -40,7 +40,7 @@ import io.deephaven.engine.plot.util.tables.*;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.TableDefinition;
 import io.deephaven.engine.time.DateTime;
-import io.deephaven.engine.v2.by.ComboAggregateFactory;
+import io.deephaven.engine.v2.by.AggregationFactory;
 import io.deephaven.gui.color.Color;
 import io.deephaven.gui.color.Paint;
 import io.deephaven.engine.time.calendar.BusinessCalendar;
@@ -53,7 +53,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 import static io.deephaven.engine.plot.datasets.interval.IntervalXYDataSeriesArray.*;
-import static io.deephaven.engine.v2.by.ComboAggregateFactory.AggLast;
+import static io.deephaven.engine.v2.by.AggregationFactory.AggLast;
 
 /**
  * Chart's axes.
@@ -253,13 +253,13 @@ public class AxesImpl implements Axes, PlotExceptionCause {
         dataSeries.add(type, isMultiSeries, series);
     }
 
-    private static SelectableDataSet getAggregatedSelectableDataSet(final SelectableDataSet sds, final Supplier<ComboAggregateFactory> aggSupplier, final List<String> byColumns) {
+    private static SelectableDataSet getAggregatedSelectableDataSet(final SelectableDataSet sds, final Supplier<AggregationFactory> aggSupplier, final List<String> byColumns) {
         final List<String> cols = new ArrayList<>(byColumns);
         if(sds instanceof SelectableDataSetOneClick) {
             Collections.addAll(cols, ((SelectableDataSetOneClick) sds).getByColumns());
         }
 
-        final ComboAggregateFactory caf = aggSupplier.get();
+        final AggregationFactory caf = aggSupplier.get();
         return sds.transform(caf.getMemoKey(), t -> {
             return ((Table)t).by(caf, cols.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
         });

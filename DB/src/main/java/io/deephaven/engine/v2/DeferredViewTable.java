@@ -28,23 +28,23 @@ public class DeferredViewTable extends RedefinableTable {
     private final TableReference tableReference;
     protected final String[] deferredDropColumns;
     protected final SelectColumn[] deferredViewColumns;
-    protected final SelectFilter[] deferredFilters;
+    protected final WhereFilter[] deferredFilters;
 
     public DeferredViewTable(@NotNull final TableDefinition definition,
             @NotNull final String description,
             @NotNull final TableReference tableReference,
             @Nullable final String[] deferredDropColumns,
             @Nullable final SelectColumn[] deferredViewColumns,
-            @Nullable final SelectFilter[] deferredFilters) {
+            @Nullable final WhereFilter[] deferredFilters) {
         super(definition, description);
         this.tableReference = tableReference;
         this.deferredDropColumns =
                 deferredDropColumns == null ? CollectionUtil.ZERO_LENGTH_STRING_ARRAY : deferredDropColumns;
         this.deferredViewColumns =
                 deferredViewColumns == null ? SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY : deferredViewColumns;
-        this.deferredFilters = deferredFilters == null ? SelectFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY : deferredFilters;
+        this.deferredFilters = deferredFilters == null ? WhereFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY : deferredFilters;
         if (deferredFilters != null) {
-            for (final SelectFilter sf : deferredFilters) {
+            for (final WhereFilter sf : deferredFilters) {
                 if (sf instanceof LivenessReferent) {
                     manage((LivenessReferent) sf);
                 }
@@ -67,17 +67,17 @@ public class DeferredViewTable extends RedefinableTable {
     }
 
     @Override
-    public Table where(SelectFilter... filters) {
+    public Table where(WhereFilter... filters) {
         return getResultTableWithWhere(filters);
     }
 
-    private Table getResultTableWithWhere(SelectFilter... selectFilters) {
+    private Table getResultTableWithWhere(WhereFilter... whereFilters) {
         if (getCoalesced() != null) {
-            return coalesce().where(selectFilters);
+            return coalesce().where(whereFilters);
         }
 
-        final SelectFilter[] allFilters = Stream.concat(Arrays.stream(deferredFilters), Arrays.stream(selectFilters))
-                .map(SelectFilter::copy).toArray(SelectFilter[]::new);
+        final WhereFilter[] allFilters = Stream.concat(Arrays.stream(deferredFilters), Arrays.stream(whereFilters))
+                .map(WhereFilter::copy).toArray(WhereFilter[]::new);
 
         TableReference.TableAndRemainingFilters tableAndRemainingFilters;
         if (allFilters.length == 0) {
@@ -99,14 +99,14 @@ public class DeferredViewTable extends RedefinableTable {
                     .getResultTableWithWhere(tableAndRemainingFilters.remainingFilters);
         } else {
             localResult = localResult.where(Arrays.stream(tableAndRemainingFilters.remainingFilters)
-                    .map(SelectFilter::copy).toArray(SelectFilter[]::new));
+                    .map(WhereFilter::copy).toArray(WhereFilter[]::new));
         }
 
         localResult = applyDeferredViews(localResult);
         if (preAndPostFilters.postViewFilters.length > 0) {
             localResult = localResult.where(preAndPostFilters.postViewFilters);
         }
-        if (selectFilters.length == 0) {
+        if (whereFilters.length == 0) {
             copyAttributes(localResult, CopyAttributeOperation.Coalesce);
             setCoalesced((BaseTable) localResult);
         }
@@ -129,20 +129,20 @@ public class DeferredViewTable extends RedefinableTable {
 
     private static class PreAndPostFilters {
 
-        private final SelectFilter[] preViewFilters;
-        private final SelectFilter[] postViewFilters;
+        private final WhereFilter[] preViewFilters;
+        private final WhereFilter[] postViewFilters;
 
-        private PreAndPostFilters(SelectFilter[] preViewFilters, SelectFilter[] postViewFilters) {
+        private PreAndPostFilters(WhereFilter[] preViewFilters, WhereFilter[] postViewFilters) {
             this.preViewFilters = preViewFilters;
             this.postViewFilters = postViewFilters;
         }
     }
 
-    private PreAndPostFilters applyFilterRenamings(SelectFilter[] filters) {
-        ArrayList<SelectFilter> preViewFilters = new ArrayList<>();
-        ArrayList<SelectFilter> postViewFilters = new ArrayList<>();
+    private PreAndPostFilters applyFilterRenamings(WhereFilter[] filters) {
+        ArrayList<WhereFilter> preViewFilters = new ArrayList<>();
+        ArrayList<WhereFilter> postViewFilters = new ArrayList<>();
 
-        for (SelectFilter filter : filters) {
+        for (WhereFilter filter : filters) {
             filter.init(definition);
             ArrayList<String> usedColumns = new ArrayList<>();
             usedColumns.addAll(filter.getColumns());
@@ -194,8 +194,8 @@ public class DeferredViewTable extends RedefinableTable {
             }
         }
 
-        return new PreAndPostFilters(preViewFilters.toArray(SelectFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY),
-                postViewFilters.toArray(SelectFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY));
+        return new PreAndPostFilters(preViewFilters.toArray(WhereFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY),
+                postViewFilters.toArray(WhereFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY));
     }
 
     @Override
@@ -300,13 +300,13 @@ public class DeferredViewTable extends RedefinableTable {
 
         public static class TableAndRemainingFilters {
 
-            public TableAndRemainingFilters(Table table, SelectFilter[] remainingFilters) {
+            public TableAndRemainingFilters(Table table, WhereFilter[] remainingFilters) {
                 this.table = table;
                 this.remainingFilters = remainingFilters;
             }
 
             private final Table table;
-            private final SelectFilter[] remainingFilters;
+            private final WhereFilter[] remainingFilters;
         }
 
         /**
@@ -314,11 +314,11 @@ public class DeferredViewTable extends RedefinableTable {
          * should be run before instantiating the full table should be run. Other filters are returned in the
          * remainingFilters field.
          *
-         * @param selectFilters filters to maybe apply before returning the table
+         * @param whereFilters filters to maybe apply before returning the table
          * @return the instantiated table and a set of filters that were not applied.
          */
-        public TableAndRemainingFilters getWithWhere(SelectFilter... selectFilters) {
-            return new TableAndRemainingFilters(get(), selectFilters);
+        public TableAndRemainingFilters getWithWhere(WhereFilter... whereFilters) {
+            return new TableAndRemainingFilters(get(), whereFilters);
         }
 
         /**

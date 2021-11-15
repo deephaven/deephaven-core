@@ -31,7 +31,7 @@ public class FloatRangeFilter extends AbstractRangeFilter {
         }
     }
 
-    public static SelectFilter makeRange(String columnName, String val) {
+    public static WhereFilter makeRange(String columnName, String val) {
         final int precision = findPrecision(val);
         final double parsed = Double.parseDouble(val);
         final double offset = Math.pow(10, -precision);
@@ -40,7 +40,7 @@ public class FloatRangeFilter extends AbstractRangeFilter {
         return new FloatRangeFilter(columnName, (float)parsed, (float)(positiveOrZero ? parsed + offset : parsed - offset), positiveOrZero, !positiveOrZero);
     }
 
-    static SelectFilter makeFloatRangeFilter(String columnName, Condition condition, String value) {
+    static WhereFilter makeFloatRangeFilter(String columnName, Condition condition, String value) {
         switch (condition) {
             case LESS_THAN:
                 return new FloatRangeFilter(columnName, Float.parseFloat(value), QueryConstants.NULL_FLOAT, true, false);

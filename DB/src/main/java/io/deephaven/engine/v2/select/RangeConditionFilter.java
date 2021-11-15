@@ -24,7 +24,7 @@ import java.util.List;
  * <li>GREATER_THAN_OR_EQUAL</li>
  * </ul>
  */
-public class RangeConditionFilter extends SelectFilterImpl {
+public class RangeConditionFilter extends WhereFilterImpl {
     private final String columnName;
     private final Condition condition;
     private final String value;
@@ -32,7 +32,7 @@ public class RangeConditionFilter extends SelectFilterImpl {
     // The expression prior to being parsed
     private final String expression;
 
-    private SelectFilter filter;
+    private WhereFilter filter;
     private final FormulaParserConfiguration parserConfiguration;
 
     /**
@@ -65,7 +65,7 @@ public class RangeConditionFilter extends SelectFilterImpl {
 
     // Used for copy method
     private RangeConditionFilter(String columnName, Condition condition, String value, String expression,
-            SelectFilter filter, FormulaParserConfiguration parserConfiguration) {
+                                 WhereFilter filter, FormulaParserConfiguration parserConfiguration) {
         Assert.eqTrue(conditionSupported(condition), condition + " is not supported by RangeConditionFilter");
         this.columnName = columnName;
         this.condition = condition;
@@ -244,7 +244,7 @@ public class RangeConditionFilter extends SelectFilterImpl {
     public void setRecomputeListener(RecomputeListener listener) {}
 
     @Override
-    public SelectFilter copy() {
+    public WhereFilter copy() {
         return new RangeConditionFilter(columnName, condition, value, expression, filter, parserConfiguration);
     }
 

@@ -2,8 +2,9 @@
  * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
  */
 
-package io.deephaven.engine.v2.iterators;
+package io.deephaven.engine.table.iterators;
 
+import com.google.common.collect.Table;
 import io.deephaven.base.Procedure;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.table.ColumnSource;

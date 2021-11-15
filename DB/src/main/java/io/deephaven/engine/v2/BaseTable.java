@@ -202,7 +202,7 @@ public abstract class BaseTable extends LivenessArtifact
         /**
          * The result tables that go in a PartitionBy TableMap
          */
-        ByExternal, Coalesce, WouldMatch, LastBy, FirstBy,
+        PartitionBy, Coalesce, WouldMatch, LastBy, FirstBy,
 
         // Hierarchical attributes
         Rollup, Treetable,
@@ -233,7 +233,7 @@ public abstract class BaseTable extends LivenessArtifact
         aclCopyAttributes.addAll(EnumSet.of(
                 CopyAttributeOperation.FirstBy,
                 CopyAttributeOperation.LastBy,
-                CopyAttributeOperation.ByExternal,
+                CopyAttributeOperation.PartitionBy,
                 CopyAttributeOperation.WouldMatch));
 
         // for a merged table, we'll allow operations that keep our RowSet + column sources the same to break us down
@@ -252,7 +252,7 @@ public abstract class BaseTable extends LivenessArtifact
                 CopyAttributeOperation.Filter,
                 CopyAttributeOperation.Reverse,
                 CopyAttributeOperation.Coalesce,
-                CopyAttributeOperation.ByExternal,
+                CopyAttributeOperation.PartitionBy,
                 CopyAttributeOperation.WouldMatch,
                 CopyAttributeOperation.Preview));
 
@@ -263,7 +263,7 @@ public abstract class BaseTable extends LivenessArtifact
                 CopyAttributeOperation.Filter,
                 CopyAttributeOperation.Reverse,
                 CopyAttributeOperation.Coalesce,
-                CopyAttributeOperation.ByExternal,
+                CopyAttributeOperation.PartitionBy,
                 CopyAttributeOperation.WouldMatch,
                 CopyAttributeOperation.Preview));
 
@@ -274,7 +274,7 @@ public abstract class BaseTable extends LivenessArtifact
                 CopyAttributeOperation.Sort,
                 CopyAttributeOperation.Filter,
                 CopyAttributeOperation.Reverse,
-                CopyAttributeOperation.ByExternal,
+                CopyAttributeOperation.PartitionBy,
                 CopyAttributeOperation.Coalesce));
 
         tempMap.put(SYSTEMIC_TABLE_ATTRIBUTE, EnumSet.of(CopyAttributeOperation.None));
@@ -285,7 +285,7 @@ public abstract class BaseTable extends LivenessArtifact
                 CopyAttributeOperation.Sort,
                 CopyAttributeOperation.Filter,
                 CopyAttributeOperation.Reverse,
-                CopyAttributeOperation.ByExternal,
+                CopyAttributeOperation.PartitionBy,
                 CopyAttributeOperation.Coalesce,
                 CopyAttributeOperation.LastBy,
                 CopyAttributeOperation.FirstBy,
@@ -300,7 +300,7 @@ public abstract class BaseTable extends LivenessArtifact
                 CopyAttributeOperation.Reverse,
                 CopyAttributeOperation.Coalesce,
                 CopyAttributeOperation.UpdateView,
-                CopyAttributeOperation.ByExternal,
+                CopyAttributeOperation.PartitionBy,
                 CopyAttributeOperation.Flatten,
                 CopyAttributeOperation.RollupCopy));
 
@@ -311,7 +311,7 @@ public abstract class BaseTable extends LivenessArtifact
                 CopyAttributeOperation.Reverse,
                 CopyAttributeOperation.Coalesce,
                 CopyAttributeOperation.UpdateView,
-                CopyAttributeOperation.ByExternal,
+                CopyAttributeOperation.PartitionBy,
                 CopyAttributeOperation.Flatten));
 
         tempMap.put(TREE_TABLE_FILTER_REVERSE_LOOKUP_ATTRIBUTE, EnumSet.of(
@@ -339,7 +339,7 @@ public abstract class BaseTable extends LivenessArtifact
                 CopyAttributeOperation.Sort,
                 CopyAttributeOperation.Filter,
                 CopyAttributeOperation.Reverse,
-                CopyAttributeOperation.ByExternal,
+                CopyAttributeOperation.PartitionBy,
                 CopyAttributeOperation.Coalesce,
                 CopyAttributeOperation.FirstBy,
                 CopyAttributeOperation.LastBy,
@@ -352,7 +352,7 @@ public abstract class BaseTable extends LivenessArtifact
                 CopyAttributeOperation.Sort,
                 CopyAttributeOperation.Filter,
                 CopyAttributeOperation.Reverse,
-                CopyAttributeOperation.ByExternal,
+                CopyAttributeOperation.PartitionBy,
                 CopyAttributeOperation.Coalesce,
                 CopyAttributeOperation.Treetable,
                 CopyAttributeOperation.TreetableCopy,
@@ -364,7 +364,7 @@ public abstract class BaseTable extends LivenessArtifact
                 CopyAttributeOperation.DropColumns,
                 CopyAttributeOperation.UpdateView,
                 CopyAttributeOperation.View,
-                CopyAttributeOperation.ByExternal,
+                CopyAttributeOperation.PartitionBy,
                 CopyAttributeOperation.Coalesce));
 
         tempMap.put(PREDEFINED_ROLLUP_ATTRIBUTE, EnumSet.of(
@@ -391,13 +391,13 @@ public abstract class BaseTable extends LivenessArtifact
                 CopyAttributeOperation.Flatten,
                 CopyAttributeOperation.LastBy,
                 CopyAttributeOperation.FirstBy,
-                CopyAttributeOperation.ByExternal,
+                CopyAttributeOperation.PartitionBy,
                 CopyAttributeOperation.Preview));
 
         tempMap.put(SORTED_COLUMNS_ATTRIBUTE, EnumSet.of(
                 CopyAttributeOperation.Flatten,
                 CopyAttributeOperation.Filter,
-                CopyAttributeOperation.ByExternal));
+                CopyAttributeOperation.PartitionBy));
 
         tempMap.put(STREAM_TABLE_ATTRIBUTE, EnumSet.of(
                 CopyAttributeOperation.Coalesce,
@@ -405,7 +405,7 @@ public abstract class BaseTable extends LivenessArtifact
                 CopyAttributeOperation.Sort,
                 CopyAttributeOperation.Reverse,
                 CopyAttributeOperation.Flatten,
-                CopyAttributeOperation.ByExternal,
+                CopyAttributeOperation.PartitionBy,
                 CopyAttributeOperation.Preview,
                 CopyAttributeOperation.View, // and Select, if added
                 CopyAttributeOperation.UpdateView, // and Update, if added

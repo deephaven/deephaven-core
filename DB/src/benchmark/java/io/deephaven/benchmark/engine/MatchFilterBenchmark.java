@@ -46,7 +46,7 @@ public class MatchFilterBenchmark {
     private int matchValues;
 
     private Table inputTable;
-    private SelectFilter matchFilter;
+    private WhereFilter matchFilter;
     private final ResultSizeProfiler resultSizeProfiler = new ResultSizeProfiler();
 
     @Setup(Level.Trial)

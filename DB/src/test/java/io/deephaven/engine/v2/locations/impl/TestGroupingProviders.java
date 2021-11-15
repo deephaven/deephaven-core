@@ -9,6 +9,7 @@ import io.deephaven.engine.tables.libs.QueryLibrary;
 import io.deephaven.engine.tables.utils.ParquetTools;
 import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.util.file.TrackedFileHandleFactory;
+import io.deephaven.engine.v2.TableWithDefaults;
 import io.deephaven.engine.v2.TstUtils;
 import io.deephaven.engine.v2.locations.local.DeephavenNestedPartitionLayout;
 import io.deephaven.engine.v2.parquet.ParquetInstructions;
@@ -75,7 +76,7 @@ public class TestGroupingProviders {
         final Table raw = TableTools.emptyTable(26 * 10 * 1000).update("Part=String.format(`%04d`, (long)(ii/1000))",
                 "Sym=(char)('A' + ii % 26)", "Other=ii");
         final Table[] partitions = raw.partitionBy("Part").transformTables(rp -> rp.groupBy("Sym").ungroup()).values()
-                .toArray(Table.ZERO_LENGTH_TABLE_ARRAY);
+                .toArray(TableWithDefaults.ZERO_LENGTH_TABLE_ARRAY);
 
         if (!missingGroups) {
             // Create a pair of partitions without the grouping column

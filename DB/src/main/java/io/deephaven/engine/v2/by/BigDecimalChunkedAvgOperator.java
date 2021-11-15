@@ -15,7 +15,7 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import static io.deephaven.engine.v2.by.ComboAggregateFactory.*;
+import static io.deephaven.engine.v2.by.AggregationFactory.*;
 
 class BigDecimalChunkedAvgOperator implements IterativeChunkedAggregationOperator {
     private final String name;

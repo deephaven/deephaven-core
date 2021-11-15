@@ -13,7 +13,7 @@ import io.deephaven.util.process.ProcessEnvironment;
 import io.deephaven.engine.tables.TableDefinition;
 import io.deephaven.engine.util.WorkerPythonEnvironment;
 import io.deephaven.engine.v2.select.MatchFilter;
-import io.deephaven.engine.v2.select.SelectFilter;
+import io.deephaven.engine.v2.select.WhereFilter;
 import io.deephaven.jpy.PythonTest;
 
 import java.util.Collections;
@@ -41,7 +41,7 @@ public class PythonMatchFilterTest extends PythonTest {
         Object iii = WorkerPythonEnvironment.DEFAULT.fetch("iii");
 
         QueryScope.addParam("iii", iii);
-        SelectFilter filter = SelectFilterFactory.getExpression("ival in iii");
+        WhereFilter filter = SelectFilterFactory.getExpression("ival in iii");
         assertEquals(MatchFilter.class, filter.getClass());
 
         TableDefinition tableDef =
@@ -60,7 +60,7 @@ public class PythonMatchFilterTest extends PythonTest {
         Object ss = WorkerPythonEnvironment.DEFAULT.fetch("ss");
 
         QueryScope.addParam("ss", ss);
-        SelectFilter filter = SelectFilterFactory.getExpression("sval in ss");
+        WhereFilter filter = SelectFilterFactory.getExpression("sval in ss");
         assertEquals(MatchFilter.class, filter.getClass());
 
         TableDefinition tableDef =

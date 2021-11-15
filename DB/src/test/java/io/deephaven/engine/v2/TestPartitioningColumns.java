@@ -11,7 +11,7 @@ import io.deephaven.engine.v2.locations.TableLocation;
 import io.deephaven.engine.v2.locations.TableLocationKey;
 import io.deephaven.engine.v2.locations.impl.*;
 import io.deephaven.engine.v2.select.MatchFilter;
-import io.deephaven.engine.v2.select.SelectFilter;
+import io.deephaven.engine.v2.select.WhereFilter;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.chunk.Attributes;
 import io.deephaven.engine.v2.sources.regioned.*;
@@ -80,8 +80,8 @@ public class TestPartitioningColumns {
 
         TstUtils.assertTableEquals(expected, result);
 
-        final SelectFilter[] filters = input.getDefinition().getColumnStream()
-                .map(cd -> new MatchFilter(cd.getName(), (Object) null)).toArray(SelectFilter[]::new);
+        final WhereFilter[] filters = input.getDefinition().getColumnStream()
+                .map(cd -> new MatchFilter(cd.getName(), (Object) null)).toArray(WhereFilter[]::new);
         TstUtils.assertTableEquals(expected.where(filters), result.where(filters));
 
         TstUtils.assertTableEquals(expected.selectDistinct(), result.selectDistinct());

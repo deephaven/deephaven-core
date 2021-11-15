@@ -20,40 +20,40 @@ import java.text.DecimalFormat;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class FilterFactory implements FilterVisitor<SelectFilter> {
+public class FilterFactory implements FilterVisitor<WhereFilter> {
     private final Table table;
 
     private FilterFactory(Table table) {
         this.table = table;
     }
 
-    public static SelectFilter makeFilter(Table table, Condition condition) {
+    public static WhereFilter makeFilter(Table table, Condition condition) {
         FilterFactory f = new FilterFactory(table);
         return FilterVisitor.accept(condition, f);
     }
 
     @Override
-    public SelectFilter onAnd(List<Condition> filtersList) {
-        final SelectFilter[] items = filtersList.stream()
+    public WhereFilter onAnd(List<Condition> filtersList) {
+        final WhereFilter[] items = filtersList.stream()
                 .map(cond -> FilterVisitor.accept(cond, this))
-                .toArray(SelectFilter[]::new);
+                .toArray(WhereFilter[]::new);
         return ConjunctiveFilter.makeConjunctiveFilter(items);
     }
 
     @Override
-    public SelectFilter onOr(List<Condition> filtersList) {
-        final SelectFilter[] items = filtersList.stream()
+    public WhereFilter onOr(List<Condition> filtersList) {
+        final WhereFilter[] items = filtersList.stream()
                 .map(cond -> FilterVisitor.accept(cond, this))
-                .toArray(SelectFilter[]::new);
+                .toArray(WhereFilter[]::new);
         return DisjunctiveFilter.makeDisjunctiveFilter(items);
     }
 
-    private SelectFilter generateConditionFilter(Condition filter) {
+    private WhereFilter generateConditionFilter(Condition filter) {
         return SelectFilterFactory.getExpression(FilterPrinter.print(filter));
     }
 
     @Override
-    public SelectFilter onNot(Condition filter) {
+    public WhereFilter onNot(Condition filter) {
         // already must have optimized out any nested operations that we can flatten this into
         return generateConditionFilter(Condition.newBuilder().setNot(NotCondition.newBuilder()
                 .setFilter(filter)
@@ -61,8 +61,8 @@ public class FilterFactory implements FilterVisitor<SelectFilter> {
     }
 
     @Override
-    public SelectFilter onComparison(CompareCondition.CompareOperation operation, CaseSensitivity caseSensitivity,
-            Value lhs, Value rhs) {
+    public WhereFilter onComparison(CompareCondition.CompareOperation operation, CaseSensitivity caseSensitivity,
+                                    Value lhs, Value rhs) {
         switch (operation) {
             case LESS_THAN:
             case LESS_THAN_OR_EQUAL:
@@ -85,8 +85,8 @@ public class FilterFactory implements FilterVisitor<SelectFilter> {
         }
     }
 
-    private SelectFilter generateNumericConditionFilter(CompareCondition.CompareOperation operation, Value lhs,
-            Value rhs) {
+    private WhereFilter generateNumericConditionFilter(CompareCondition.CompareOperation operation, Value lhs,
+                                                       Value rhs) {
         boolean invert;
         String columName;
         Literal value;
@@ -158,8 +158,8 @@ public class FilterFactory implements FilterVisitor<SelectFilter> {
     }
 
     @Override
-    public SelectFilter onIn(Value target, List<Value> candidatesList, CaseSensitivity caseSensitivity,
-            MatchType matchType) {
+    public WhereFilter onIn(Value target, List<Value> candidatesList, CaseSensitivity caseSensitivity,
+                            MatchType matchType) {
         assert target.getDataCase() == Value.DataCase.REFERENCE;
         Reference reference = target.getReference();
         String[] values = new String[candidatesList.size()];
@@ -203,14 +203,14 @@ public class FilterFactory implements FilterVisitor<SelectFilter> {
     }
 
     @Override
-    public SelectFilter onIsNull(Reference reference) {
+    public WhereFilter onIsNull(Reference reference) {
         return generateConditionFilter(Condition.newBuilder().setIsNull(IsNullCondition.newBuilder()
                 .setReference(reference)
                 .build()).build());
     }
 
     @Override
-    public SelectFilter onInvoke(String method, Value target, List<Value> argumentsList) {
+    public WhereFilter onInvoke(String method, Value target, List<Value> argumentsList) {
         return generateConditionFilter(Condition.newBuilder().setInvoke(InvokeCondition.newBuilder()
                 .setMethod(method)
                 .setTarget(target)
@@ -219,27 +219,27 @@ public class FilterFactory implements FilterVisitor<SelectFilter> {
     }
 
     @Override
-    public SelectFilter onContains(Reference reference, String searchString, CaseSensitivity caseSensitivity,
-            MatchType matchType) {
+    public WhereFilter onContains(Reference reference, String searchString, CaseSensitivity caseSensitivity,
+                                  MatchType matchType) {
         return new StringContainsFilter(caseSensitivity(caseSensitivity), matchType(matchType),
                 reference.getColumnName(), searchString);
     }
 
     @Override
-    public SelectFilter onMatches(Reference reference, String regex, CaseSensitivity caseSensitivity,
-            MatchType matchType) {
+    public WhereFilter onMatches(Reference reference, String regex, CaseSensitivity caseSensitivity,
+                                 MatchType matchType) {
         return new RegexFilter(caseSensitivity(caseSensitivity), matchType(matchType), reference.getColumnName(),
                 regex);
     }
 
     @Override
-    public SelectFilter onSearch(String searchString, List<Reference> optionalReferencesList) {
+    public WhereFilter onSearch(String searchString, List<Reference> optionalReferencesList) {
         final Set<String> columnNames =
                 optionalReferencesList.stream().map(Reference::getColumnName).collect(Collectors.toSet());
-        SelectFilter[] selectFilters = SelectFilterFactory.expandQuickFilter(table, searchString, columnNames);
-        if (selectFilters.length == 0) {
-            return SelectNoneFilter.INSTANCE;
+        WhereFilter[] whereFilters = SelectFilterFactory.expandQuickFilter(table, searchString, columnNames);
+        if (whereFilters.length == 0) {
+            return WhereNoneFilter.INSTANCE;
         }
-        return DisjunctiveFilter.makeDisjunctiveFilter(selectFilters);
+        return DisjunctiveFilter.makeDisjunctiveFilter(whereFilters);
     }
 }

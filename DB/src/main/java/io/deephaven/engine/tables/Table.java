@@ -7,19 +7,16 @@ package io.deephaven.engine.tables;
 import io.deephaven.api.*;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.filter.Filter;
-import io.deephaven.base.Function;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.LayoutHintBuilder;
+import io.deephaven.engine.table.iterators.*;
 import io.deephaven.engine.tables.live.NotificationQueue;
 import io.deephaven.engine.tables.remote.AsyncMethod;
 import io.deephaven.engine.tables.select.MatchPair;
 import io.deephaven.engine.tables.select.WouldMatchPair;
-import io.deephaven.engine.tables.utils.LayoutHintBuilder;
 import io.deephaven.engine.util.liveness.LivenessNode;
 import io.deephaven.engine.v2.*;
-import io.deephaven.engine.v2.iterators.*;
-import io.deephaven.engine.v2.select.SelectColumn;
-import io.deephaven.engine.v2.select.SelectFilter;
 import io.deephaven.qst.table.TableSpec;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import org.jetbrains.annotations.NotNull;
@@ -29,6 +26,7 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.function.UnaryOperator;
 
 /**
@@ -41,8 +39,6 @@ public interface Table extends
         DynamicNode,
         SystemicObject,
         TableOperations<Table, Table> {
-
-    Table[] ZERO_LENGTH_TABLE_ARRAY = new Table[0];
 
     static Table of(TableSpec table) {
         return TableCreatorImpl.create(table);
@@ -150,7 +146,7 @@ public interface Table extends
      * <li>{@link #groupBy} is unsupported
      * <li>{@link #aggBy} is unsupported if {@link Aggregation#AggArray(String...)} is used
      * <li>{@link #partitionBy} is unsupported</li>
-     * <li>{@link #rollup(Collection, boolean, SelectColumn...) rollup()} is unsupported if
+     * <li>{@link #rollup(Collection, boolean, Selectable...) rollup()} is unsupported if
      * {@code includeConstituents == true}</li>
      * <li>{@link #treeTable(String, String) treeTable()} is unsupported</li>
      * </ol>
@@ -240,18 +236,18 @@ public interface Table extends
     boolean hasAttribute(@NotNull String name);
 
     /**
-     * Get all of the attributes from the table.
+     * Get all attributes from this Table.
      *
-     * @return A map containing all of the attributes.
+     * @return A map containing all attributes from this Table
      */
     @AsyncMethod
     Map<String, Object> getAttributes();
 
     /**
-     * Get all attributes from the desired table except the items that appear in excluded.
+     * Get all attributes from this Table except the items that appear in excluded.
      *
      * @param excluded A set of attributes to exclude from the result
-     * @return All of the table's attributes except the ones present in excluded
+     * @return This Table's attributes, except the ones present in excluded
      */
     @AsyncMethod
     Map<String, Object> getAttributes(Collection<String> excluded);
@@ -325,21 +321,13 @@ public interface Table extends
     // Filter Operations
     // -----------------------------------------------------------------------------------------------------------------
 
-    @AsyncMethod
-    Table where(SelectFilter... filters);
-
-    @AsyncMethod
-    Table where(String... filters);
-
     @Override
     @AsyncMethod
     Table where(Collection<? extends Filter> filters);
 
+    @Override
     @AsyncMethod
-    Table where();
-
-    @AsyncMethod
-    Table wouldMatch(String... expressions);
+    Table where(String... filters);
 
     /**
      * A table operation that applies the supplied predicate to each row in the table and produces columns containing
@@ -351,120 +339,54 @@ public interface Table extends
     @AsyncMethod
     Table wouldMatch(WouldMatchPair... matchers);
 
-    /**
-     * Filters this table based on the set of values in the rightTable. Note that when the right table ticks, all of the
-     * rows in the left table are going to be re-evaluated, thus the intention is that the right table is fairly slow
-     * moving compared with the left table.
-     *
-     * @param rightTable the filtering table.
-     * @param inclusion whether things included in rightTable should be passed through (they are exluded if false)
-     * @param columnsToMatch the columns to match between the two tables
-     * @return a new table filtered on right table
-     */
-    Table whereIn(GroupStrategy groupStrategy, Table rightTable, boolean inclusion, MatchPair... columnsToMatch);
-
-    Table whereIn(Table rightTable, boolean inclusion, MatchPair... columnsToMatch);
-
-    Table whereIn(Table rightTable, boolean inclusion, String... columnsToMatch);
-
-    Table whereIn(Table rightTable, String... columnsToMatch);
-
-    Table whereIn(Table rightTable, MatchPair... columnsToMatch);
-
-    Table whereNotIn(Table rightTable, String... columnsToMatch);
-
-    Table whereNotIn(Table rightTable, MatchPair... columnsToMatch);
-
-    Table whereIn(GroupStrategy groupStrategy, Table rightTable, String... columnsToMatch);
-
-    Table whereIn(GroupStrategy groupStrategy, Table rightTable, MatchPair... columnsToMatch);
-
-    Table whereNotIn(GroupStrategy groupStrategy, Table rightTable, String... columnsToMatch);
-
-    Table whereNotIn(GroupStrategy groupStrategy, Table rightTable, MatchPair... columnsToMatch);
-
-    Table whereIn(GroupStrategy groupStrategy, Table rightTable, boolean inclusion, String... columnsToMatch);
+    @AsyncMethod
+    Table wouldMatch(String... expressions);
 
     @Override
     Table whereIn(Table rightTable, Collection<? extends JoinMatch> columnsToMatch);
 
+    Table whereIn(Table rightTable, String... columnsToMatch);
+
     @Override
     Table whereNotIn(Table rightTable, Collection<? extends JoinMatch> columnsToMatch);
 
-    /**
-     * Filters according to an expression in disjunctive normal form.
-     * <p>
-     * The input is an array of clauses, which in turn are a collection of filters.
-     *
-     * @param filtersToApply each inner collection is a set of filters, all of must which match for the clause to be
-     *        true. If any one of the collections in the array evaluates to true, the row is part of the output table.
-     * @return a new table, with the filters applied.
-     */
-    @SuppressWarnings("unchecked")
-    @AsyncMethod
-    Table whereOneOf(Collection<SelectFilter>... filtersToApply);
+    Table whereNotIn(Table rightTable, String... columnsToMatch);
 
     /**
      * Applies the provided filters to the table disjunctively.
      *
-     * @param filtersToApplyStrings an Array of filters to apply
+     * @param filtersToApply an Array of filters to apply
      * @return a new table, with the filters applied
      */
     @AsyncMethod
-    Table whereOneOf(String... filtersToApplyStrings);
-
-    @AsyncMethod
-    Table whereOneOf();
-
-    /**
-     * Get a {@link Table} that contains a sub-set of the rows from {@code this}.
-     *
-     * @param rowSet The {@link TrackingRowSet row set} for the result.
-     * @return A new sub-table
-     */
-    Table getSubTable(TrackingRowSet rowSet);
+    Table whereOneOf(String... filtersToApply);
 
     // -----------------------------------------------------------------------------------------------------------------
     // Column Selection Operations
     // -----------------------------------------------------------------------------------------------------------------
 
-    Table select(SelectColumn... columns);
-
-    Table select(String... columns);
-
     @Override
     Table select(Collection<? extends Selectable> columns);
+
+    @Override
+    Table select(String... columns);
 
     Table select();
 
     @AsyncMethod
-    Table selectDistinct(SelectColumn... columns);
+    Table selectDistinct(Collection<? extends Selectable> columns);
 
     @AsyncMethod
     Table selectDistinct(String... columns);
 
     @AsyncMethod
-    Table selectDistinct(Collection<String> columns);
-
-    @AsyncMethod
     Table selectDistinct();
-
-    Table update(SelectColumn... newColumns);
-
-    Table update(String... newColumns);
 
     @Override
     Table update(Collection<? extends Selectable> columns);
 
-    /**
-     * DO NOT USE -- this API is in flux and may change or disappear in the future.
-     */
-    SelectValidationResult validateSelect(String... columns);
-
-    /**
-     * DO NOT USE -- this API is in flux and may change or disappear in the future.
-     */
-    SelectValidationResult validateSelect(SelectColumn... columns);
+    @Override
+    Table update(String... newColumns);
 
     /**
      * Compute column formulas on demand.
@@ -484,31 +406,28 @@ public interface Table extends
      * @param newColumns the columns to add
      * @return a new Table with the columns added; to be computed on demand
      */
-    Table lazyUpdate(SelectColumn... newColumns);
+    Table lazyUpdate(Collection<? extends Selectable> newColumns);
 
     Table lazyUpdate(String... newColumns);
-
-    Table lazyUpdate(Collection<String> newColumns);
-
-    @AsyncMethod
-    Table view(SelectColumn... columns);
-
-    @AsyncMethod
-    Table view(String... columns);
 
     @Override
     @AsyncMethod
     Table view(Collection<? extends Selectable> columns);
 
+    @Override
     @AsyncMethod
-    Table updateView(SelectColumn... newColumns);
-
-    @AsyncMethod
-    Table updateView(String... newColumns);
+    Table view(String... columns);
 
     @Override
     @AsyncMethod
     Table updateView(Collection<? extends Selectable> columns);
+
+    @Override
+    @AsyncMethod
+    Table updateView(String... newColumns);
+
+    @AsyncMethod
+    Table dropColumns(Collection<String> columnNames);
 
     @AsyncMethod
     Table dropColumns(String... columnNames);
@@ -516,14 +435,11 @@ public interface Table extends
     @AsyncMethod
     Table dropColumnFormats();
 
-    @AsyncMethod
-    Table dropColumns(Collection<String> columnNames);
-
     Table renameColumns(MatchPair... pairs);
 
-    Table renameColumns(String... columns);
-
     Table renameColumns(Collection<String> columns);
+
+    Table renameColumns(String... columns);
 
     Table renameAllColumns(UnaryOperator<String> renameFunction);
 
@@ -639,18 +555,6 @@ public interface Table extends
     Table tailPct(double percent);
 
     // -----------------------------------------------------------------------------------------------------------------
-    // GroupingStrategy used for various join and aggregation operations
-    // -----------------------------------------------------------------------------------------------------------------
-
-    /**
-     * GroupStrategy is used for joins and aggregation operations that can choose one of several ways to make use of
-     * grouping information.
-     */
-    enum GroupStrategy {
-        DEFAULT, LINEAR, USE_EXISTING_GROUPS, CREATE_GROUPS,
-    }
-
-    // -----------------------------------------------------------------------------------------------------------------
     // Join Operations
     // -----------------------------------------------------------------------------------------------------------------
 
@@ -678,13 +582,16 @@ public interface Table extends
      */
     Table leftJoin(Table rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd);
 
+    @Override
     Table leftJoin(Table rightTable, Collection<? extends JoinMatch> columnsToMatch,
             Collection<? extends JoinAddition> columnsToAdd);
 
     Table leftJoin(Table rightTable, Collection<String> columnsToMatch);
 
+    @Override
     Table leftJoin(Table rightTable, String columnsToMatch, String columnsToAdd);
 
+    @Override
     Table leftJoin(Table rightTable, String columnsToMatch);
 
     Table leftJoin(Table rightTable);
@@ -695,8 +602,10 @@ public interface Table extends
     Table exactJoin(Table rightTable, Collection<? extends JoinMatch> columnsToMatch,
             Collection<? extends JoinAddition> columnsToAdd);
 
+    @Override
     Table exactJoin(Table rightTable, String columnsToMatch, String columnsToAdd);
 
+    @Override
     Table exactJoin(Table rightTable, String columnsToMatch);
 
     /**
@@ -756,9 +665,11 @@ public interface Table extends
      */
     Table aj(Table rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd);
 
+    @Override
     Table aj(Table rightTable, Collection<? extends JoinMatch> columnsToMatch,
             Collection<? extends JoinAddition> columnsToAdd);
 
+    @Override
     Table aj(Table rightTable, Collection<? extends JoinMatch> columnsToMatch,
             Collection<? extends JoinAddition> columnsToAdd, AsOfJoinRule asOfJoinRule);
 
@@ -774,8 +685,10 @@ public interface Table extends
      */
     Table aj(Table rightTable, Collection<String> columnsToMatch);
 
+    @Override
     Table aj(Table rightTable, String columnsToMatch, String columnsToAdd);
 
+    @Override
     Table aj(Table rightTable, String columnsToMatch);
 
     /**
@@ -814,9 +727,11 @@ public interface Table extends
      */
     Table raj(Table rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd);
 
+    @Override
     Table raj(Table rightTable, Collection<? extends JoinMatch> columnsToMatch,
             Collection<? extends JoinAddition> columnsToAdd);
 
+    @Override
     Table raj(Table rightTable, Collection<? extends JoinMatch> columnsToMatch,
             Collection<? extends JoinAddition> columnsToAdd, ReverseAsOfJoinRule reverseAsOfJoinRule);
 
@@ -851,8 +766,10 @@ public interface Table extends
      *        side as a result of the match.
      * @return a new table joined according to the specification in columnsToMatch and columnsToAdd
      */
+    @Override
     Table raj(Table rightTable, String columnsToMatch, String columnsToAdd);
 
+    @Override
     Table raj(Table rightTable, String columnsToMatch);
 
     Table naturalJoin(Table rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd);
@@ -861,8 +778,10 @@ public interface Table extends
     Table naturalJoin(Table rightTable, Collection<? extends JoinMatch> columnsToMatch,
             Collection<? extends JoinAddition> columnsToAdd);
 
+    @Override
     Table naturalJoin(Table rightTable, String columnsToMatch, String columnsToAdd);
 
+    @Override
     Table naturalJoin(Table rightTable, String columnsToMatch);
 
     /**
@@ -920,6 +839,7 @@ public interface Table extends
      */
     Table join(Table rightTable, int numRightBitsToReserve);
 
+    @Override
     Table join(Table rightTable, String columnsToMatch);
 
     /**
@@ -954,6 +874,7 @@ public interface Table extends
      */
     Table join(Table rightTable, String columnsToMatch, int numRightBitsToReserve);
 
+    @Override
     Table join(Table rightTable, String columnsToMatch, String columnsToAdd);
 
     /**
@@ -1064,25 +985,21 @@ public interface Table extends
     // Aggregation Operations
     // -----------------------------------------------------------------------------------------------------------------
 
+    @Override
     @AsyncMethod
-    Table groupBy(SelectColumn... groupByColumns);
+    Table groupBy(Collection<? extends Selectable> groupByColumns);
 
+    @Override
     @AsyncMethod
     Table groupBy(String... groupByColumns);
 
+    @Override
     @AsyncMethod
     Table groupBy();
 
     @Override
     @AsyncMethod
-    Table groupBy(Collection<? extends Selectable> groupByColumns);
-
-    @AsyncMethod
-    Table aggBy(Collection<? extends Aggregation> aggregations, SelectColumn... groupByColumns);
-
-    @Override
-    @AsyncMethod
-    Table aggBy(Collection<? extends Aggregation> aggregations);
+    Table aggBy(Collection<? extends Aggregation> aggregations, Collection<? extends Selectable> groupByColumns);
 
     @Override
     @AsyncMethod
@@ -1090,19 +1007,15 @@ public interface Table extends
 
     @Override
     @AsyncMethod
-    Table aggBy(Collection<? extends Aggregation> aggregations, Collection<? extends Selectable> groupByColumns);
+    Table aggBy(Collection<? extends Aggregation> aggregations);
 
-    Table headBy(long nRows, SelectColumn... groupByColumns);
+    Table headBy(long nRows, Collection<String> groupByColumnNames);
 
-    Table headBy(long nRows, String... groupByColumns);
+    Table headBy(long nRows, String... groupByColumnNames);
 
-    Table headBy(long nRows, Collection<String> groupByColumns);
+    Table tailBy(long nRows, Collection<String> groupByColumnNames);
 
-    Table tailBy(long nRows, SelectColumn... groupByColumns);
-
-    Table tailBy(long nRows, String... groupByColumns);
-
-    Table tailBy(long nRows, Collection<String> groupByColumns);
+    Table tailBy(long nRows, String... groupByColumnNames);
 
     /**
      * Groups data according to groupByColumns and applies formulaColumn to each of columns not altered by the grouping
@@ -1111,10 +1024,10 @@ public interface Table extends
      *
      * @param formulaColumn Formula applied to each column
      * @param columnParamName The parameter name used as a placeholder for each column
-     * @param groupByColumns The grouping columns {@link Table#groupBy(SelectColumn[])}
+     * @param groupByColumns The grouping columns as in {@link Table#groupBy(Collection)}
      */
     @AsyncMethod
-    Table applyToAllBy(String formulaColumn, String columnParamName, SelectColumn... groupByColumns);
+    Table applyToAllBy(String formulaColumn, String columnParamName, Selectable... groupByColumns);
 
     /**
      * Groups data according to groupByColumns and applies formulaColumn to each of columns not altered by the grouping
@@ -1122,10 +1035,10 @@ public interface Table extends
      *
      * @param formulaColumn Formula applied to each column, uses parameter <i>each</i> to refer to each colum it being
      *        applied to
-     * @param groupByColumns The grouping columns {@link Table#groupBy(SelectColumn...)}
+     * @param groupByColumns The grouping columns as in {@link Table#groupBy(Collection)}
      */
     @AsyncMethod
-    Table applyToAllBy(String formulaColumn, SelectColumn... groupByColumns);
+    Table applyToAllBy(String formulaColumn, Selectable... groupByColumns);
 
     /**
      * Groups data according to groupByColumns and applies formulaColumn to each of columns not altered by the grouping
@@ -1133,26 +1046,23 @@ public interface Table extends
      *
      * @param formulaColumn Formula applied to each column, uses parameter <i>each</i> to refer to each colum it being
      *        applied to
-     * @param groupByColumns The grouping columns {@link Table#groupBy(String...)}
+     * @param groupByColumns The grouping columns as in {@link Table#groupBy}
      */
     @AsyncMethod
     Table applyToAllBy(String formulaColumn, String... groupByColumns);
 
-    @AsyncMethod
-    Table applyToAllBy(String formulaColumn, String groupByColumn);
-
     /**
      * Groups the data column according to <code>groupByColumns</code> and computes the sum for the rest of the fields
      *
-     * @param groupByColumns The grouping columns {@link Table#groupBy(String...)}
+     * @param groupByColumns The grouping columns as in {@link Table#groupBy}
      */
     @AsyncMethod
-    Table sumBy(SelectColumn... groupByColumns);
+    Table sumBy(Selectable... groupByColumns);
 
     /**
      * Groups the data column according to <code>groupByColumns</code> and computes the sum for the rest of the fields
      *
-     * @param groupByColumns The grouping columns {@link Table#groupBy(String...)}
+     * @param groupByColumns The grouping columns as in {@link Table#groupBy}
      */
     @AsyncMethod
     Table sumBy(String... groupByColumns);
@@ -1160,7 +1070,7 @@ public interface Table extends
     /**
      * Groups the data column according to <code>groupByColumns</code> and computes the sum for the rest of the fields
      *
-     * @param groupByColumns The grouping columns {@link Table#groupBy(String...)}
+     * @param groupByColumns The grouping columns as in {@link Table#groupBy}
      */
     @AsyncMethod
     Table sumBy(Collection<String> groupByColumns);
@@ -1177,16 +1087,16 @@ public interface Table extends
      * Groups the data column according to <code>groupByColumns</code> and computes the sum of the absolute values for
      * the rest of the fields
      *
-     * @param groupByColumns The grouping columns {@link Table#groupBy(String...)}
+     * @param groupByColumns The grouping columns as in {@link Table#groupBy}
      */
     @AsyncMethod
-    Table absSumBy(SelectColumn... groupByColumns);
+    Table absSumBy(Selectable... groupByColumns);
 
     /**
      * Groups the data column according to <code>groupByColumns</code> and computes the sum of the absolute values for
      * the rest of the fields
      *
-     * @param groupByColumns The grouping columns {@link Table#groupBy(String...)}
+     * @param groupByColumns The grouping columns as in {@link Table#groupBy}
      */
     @AsyncMethod
     Table absSumBy(String... groupByColumns);
@@ -1195,7 +1105,7 @@ public interface Table extends
      * Groups the data column according to <code>groupByColumns</code> and computes the sum of the absolute values for
      * the rest of the fields
      *
-     * @param groupByColumns The grouping columns {@link Table#groupBy(String...)}
+     * @param groupByColumns The grouping columns as in {@link Table#groupBy}
      */
     @AsyncMethod
     Table absSumBy(Collection<String> groupByColumns);
@@ -1212,16 +1122,16 @@ public interface Table extends
      * Groups the data column according to <code>groupByColumns</code> and computes the average for the rest of the
      * fields
      *
-     * @param groupByColumns The grouping columns {@link Table#groupBy(String...)}
+     * @param groupByColumns The grouping columns as in {@link Table#groupBy}
      */
     @AsyncMethod
-    Table avgBy(SelectColumn... groupByColumns);
+    Table avgBy(Selectable... groupByColumns);
 
     /**
      * Groups the data column according to <code>groupByColumns</code> and computes the average for the rest of the
      * fields
      *
-     * @param groupByColumns The grouping columns {@link Table#groupBy(String...)}
+     * @param groupByColumns The grouping columns as in {@link Table#groupBy}
      */
     @AsyncMethod
     Table avgBy(String... groupByColumns);
@@ -1230,7 +1140,7 @@ public interface Table extends
      * Groups the data column according to <code>groupByColumns</code> and computes the average for the rest of the
      * fields
      *
-     * @param groupByColumns The grouping columns {@link Table#groupBy(String...)}
+     * @param groupByColumns The grouping columns as in {@link Table#groupBy}
      */
     @AsyncMethod
     Table avgBy(Collection<String> groupByColumns);
@@ -1248,17 +1158,17 @@ public interface Table extends
      * weightColumn for the rest of the fields
      *
      * @param weightColumn the column to use for the weight
-     * @param groupByColumns The grouping columns {@link Table#groupBy(String...)}
+     * @param groupByColumns The grouping columns as in {@link Table#groupBy}
      */
     @AsyncMethod
-    Table wavgBy(String weightColumn, SelectColumn... groupByColumns);
+    Table wavgBy(String weightColumn, Selectable... groupByColumns);
 
     /**
      * Groups the data column according to <code>groupByColumns</code> and computes the weighted average using
      * weightColumn for the rest of the fields
      *
      * @param weightColumn the column to use for the weight
-     * @param groupByColumns The grouping columns {@link Table#groupBy(String...)}
+     * @param groupByColumns The grouping columns as in {@link Table#groupBy}
      */
     @AsyncMethod
     Table wavgBy(String weightColumn, String... groupByColumns);
@@ -1268,7 +1178,7 @@ public interface Table extends
      * weightColumn for the rest of the fields
      *
      * @param weightColumn the column to use for the weight
-     * @param groupByColumns The grouping columns {@link Table#groupBy(String...)}
+     * @param groupByColumns The grouping columns as in {@link Table#groupBy}
      */
     @AsyncMethod
     Table wavgBy(String weightColumn, Collection<String> groupByColumns);
@@ -1292,10 +1202,10 @@ public interface Table extends
      * double results.
      *
      * @param weightColumn the column to use for the weight
-     * @param groupByColumns The grouping columns {@link Table#groupBy(String...)}
+     * @param groupByColumns The grouping columns as in {@link Table#groupBy}
      */
     @AsyncMethod
-    Table wsumBy(String weightColumn, SelectColumn... groupByColumns);
+    Table wsumBy(String weightColumn, Selectable... groupByColumns);
 
     /**
      * Computes the weighted sum for all rows in the table using weightColumn for the rest of the fields
@@ -1318,7 +1228,7 @@ public interface Table extends
      * double results.
      *
      * @param weightColumn the column to use for the weight
-     * @param groupByColumns The grouping columns {@link Table#groupBy(String...)}
+     * @param groupByColumns The grouping columns as in {@link Table#groupBy}
      */
     @AsyncMethod
     Table wsumBy(String weightColumn, String... groupByColumns);
@@ -1332,19 +1242,19 @@ public interface Table extends
      * double results.
      *
      * @param weightColumn the column to use for the weight
-     * @param groupByColumns The grouping columns {@link Table#groupBy(String...)}
+     * @param groupByColumns The grouping columns as in {@link Table#groupBy}
      */
     @AsyncMethod
     Table wsumBy(String weightColumn, Collection<String> groupByColumns);
 
     @AsyncMethod
-    Table stdBy(SelectColumn... groupByColumns);
+    Table stdBy(Selectable... groupByColumns);
 
     /**
      * Groups the data column according to <code>groupByColumns</code> and computes the standard deviation for the rest
      * of the fields
      *
-     * @param groupByColumns The grouping columns {@link Table#groupBy(String...)}
+     * @param groupByColumns The grouping columns as in {@link Table#groupBy}
      */
     @AsyncMethod
     Table stdBy(String... groupByColumns);
@@ -1353,7 +1263,7 @@ public interface Table extends
      * Groups the data column according to <code>groupByColumns</code> and computes the standard deviation for the rest
      * of the fields
      *
-     * @param groupByColumns The grouping columns {@link Table#groupBy(String...)}
+     * @param groupByColumns The grouping columns as in {@link Table#groupBy}
      */
     @AsyncMethod
     Table stdBy(Collection<String> groupByColumns);
@@ -1369,16 +1279,16 @@ public interface Table extends
      * Groups the data column according to <code>groupByColumns</code> and computes the variance for the rest of the
      * fields
      *
-     * @param groupByColumns The grouping columns {@link Table#groupBy(String...)}
+     * @param groupByColumns The grouping columns as in {@link Table#groupBy}
      */
     @AsyncMethod
-    Table varBy(SelectColumn... groupByColumns);
+    Table varBy(Selectable... groupByColumns);
 
     /**
      * Groups the data column according to <code>groupByColumns</code> and computes the variance for the rest of the
      * fields
      *
-     * @param groupByColumns The grouping columns {@link Table#groupBy(String...)}
+     * @param groupByColumns The grouping columns as in {@link Table#groupBy}
      */
     @AsyncMethod
     Table varBy(String... groupByColumns);
@@ -1387,7 +1297,7 @@ public interface Table extends
      * Groups the data column according to <code>groupByColumns</code> and computes the variance for the rest of the
      * fields
      *
-     * @param groupByColumns The grouping columns {@link Table#groupBy(String...)}
+     * @param groupByColumns The grouping columns as in {@link Table#groupBy}
      */
     @AsyncMethod
     Table varBy(Collection<String> groupByColumns);
@@ -1402,15 +1312,15 @@ public interface Table extends
     /**
      * Groups the data column according to <code>groupByColumns</code> and retrieves the last for the rest of the fields
      *
-     * @param groupByColumns The grouping columns {@link Table#groupBy(String...)}
+     * @param groupByColumns The grouping columns as in {@link Table#groupBy}
      */
     @AsyncMethod
-    Table lastBy(SelectColumn... groupByColumns);
+    Table lastBy(Selectable... groupByColumns);
 
     /**
      * Groups the data column according to <code>groupByColumns</code> and retrieves the last for the rest of the fields
      *
-     * @param groupByColumns The grouping columns {@link Table#groupBy(String...)}
+     * @param groupByColumns The grouping columns as in {@link Table#groupBy}
      */
     @AsyncMethod
     Table lastBy(String... groupByColumns);
@@ -1418,7 +1328,7 @@ public interface Table extends
     /**
      * Groups the data column according to <code>groupByColumns</code> and retrieves the last for the rest of the fields
      *
-     * @param groupByColumns The grouping columns {@link Table#groupBy(String...)}
+     * @param groupByColumns The grouping columns as in {@link Table#groupBy}
      */
     @AsyncMethod
     Table lastBy(Collection<String> groupByColumns);
@@ -1433,16 +1343,16 @@ public interface Table extends
      * Groups the data column according to <code>groupByColumns</code> and retrieves the first for the rest of the
      * fields
      *
-     * @param groupByColumns The grouping columns {@link Table#groupBy(String...)}
+     * @param groupByColumns The grouping columns as in {@link Table#groupBy}
      */
     @AsyncMethod
-    Table firstBy(SelectColumn... groupByColumns);
+    Table firstBy(Selectable... groupByColumns);
 
     /**
      * Groups the data column according to <code>groupByColumns</code> and retrieves the first for the rest of the
      * fields
      *
-     * @param groupByColumns The grouping columns {@link Table#groupBy(String...)}
+     * @param groupByColumns The grouping columns as in {@link Table#groupBy}
      */
     @AsyncMethod
     Table firstBy(String... groupByColumns);
@@ -1451,7 +1361,7 @@ public interface Table extends
      * Groups the data column according to <code>groupByColumns</code> and retrieves the first for the rest of the
      * fields
      *
-     * @param groupByColumns The grouping columns {@link Table#groupBy(String...)}
+     * @param groupByColumns The grouping columns as in {@link Table#groupBy}
      */
     @AsyncMethod
     Table firstBy(Collection<String> groupByColumns);
@@ -1465,15 +1375,15 @@ public interface Table extends
     /**
      * Groups the data column according to <code>groupByColumns</code> and computes the min for the rest of the fields
      *
-     * @param groupByColumns The grouping columns {@link Table#groupBy(String...)}
+     * @param groupByColumns The grouping columns as in {@link Table#groupBy}
      */
     @AsyncMethod
-    Table minBy(SelectColumn... groupByColumns);
+    Table minBy(Selectable... groupByColumns);
 
     /**
      * Groups the data column according to <code>groupByColumns</code> and computes the min for the rest of the fields
      *
-     * @param groupByColumns The grouping columns {@link Table#groupBy(String...)}
+     * @param groupByColumns The grouping columns as in {@link Table#groupBy}
      */
     @AsyncMethod
     Table minBy(String... groupByColumns);
@@ -1481,7 +1391,7 @@ public interface Table extends
     /**
      * Groups the data column according to <code>groupByColumns</code> and computes the min for the rest of the fields
      *
-     * @param groupByColumns The grouping columns {@link Table#groupBy(String...)}
+     * @param groupByColumns The grouping columns as in {@link Table#groupBy}
      */
     @AsyncMethod
     Table minBy(Collection<String> groupByColumns);
@@ -1497,15 +1407,15 @@ public interface Table extends
     /**
      * Groups the data column according to <code>groupByColumns</code> and computes the max for the rest of the fields
      *
-     * @param groupByColumns The grouping columns {@link Table#groupBy(String...)} }
+     * @param groupByColumns The grouping columns as in {@link Table#groupBy} }
      */
     @AsyncMethod
-    Table maxBy(SelectColumn... groupByColumns);
+    Table maxBy(Selectable... groupByColumns);
 
     /**
      * Groups the data column according to <code>groupByColumns</code> and computes the max for the rest of the fields
      *
-     * @param groupByColumns The grouping columns {@link Table#groupBy(String...)} }
+     * @param groupByColumns The grouping columns as in {@link Table#groupBy} }
      */
     @AsyncMethod
     Table maxBy(String... groupByColumns);
@@ -1513,7 +1423,7 @@ public interface Table extends
     /**
      * Groups the data column according to <code>groupByColumns</code> and computes the max for the rest of the fields
      *
-     * @param groupByColumns The grouping columns {@link Table#groupBy(String...)} }
+     * @param groupByColumns The grouping columns as in {@link Table#groupBy} }
      */
     @AsyncMethod
     Table maxBy(Collection<String> groupByColumns);
@@ -1530,16 +1440,16 @@ public interface Table extends
      * Groups the data column according to <code>groupByColumns</code> and computes the median for the rest of the
      * fields
      *
-     * @param groupByColumns The grouping columns {@link Table#groupBy(String...)} }
+     * @param groupByColumns The grouping columns as in {@link Table#groupBy} }
      */
     @AsyncMethod
-    Table medianBy(SelectColumn... groupByColumns);
+    Table medianBy(Selectable... groupByColumns);
 
     /**
      * Groups the data column according to <code>groupByColumns</code> and computes the median for the rest of the
      * fields
      *
-     * @param groupByColumns The grouping columns {@link Table#groupBy(String...)} }
+     * @param groupByColumns The grouping columns as in {@link Table#groupBy} }
      */
     @AsyncMethod
     Table medianBy(String... groupByColumns);
@@ -1548,7 +1458,7 @@ public interface Table extends
      * Groups the data column according to <code>groupByColumns</code> and computes the median for the rest of the
      * fields
      *
-     * @param groupByColumns The grouping columns {@link Table#groupBy(String...)} }
+     * @param groupByColumns The grouping columns as in {@link Table#groupBy} }
      */
     @AsyncMethod
     Table medianBy(Collection<String> groupByColumns);
@@ -1562,7 +1472,7 @@ public interface Table extends
     Table medianBy();
 
     @AsyncMethod
-    Table countBy(String countColumnName, SelectColumn... groupByColumns);
+    Table countBy(String countColumnName, Selectable... groupByColumns);
 
     @AsyncMethod
     Table countBy(String countColumnName, String... groupByColumns);
@@ -1605,7 +1515,7 @@ public interface Table extends
     Table ungroup(boolean nullFill);
 
     // -----------------------------------------------------------------------------------------------------------------
-    // ByExternal Operations
+    // PartitionBy Operations
     // -----------------------------------------------------------------------------------------------------------------
 
     /**
@@ -1675,7 +1585,7 @@ public interface Table extends
      * @return a hierarchical table with the rollup applied
      */
     @AsyncMethod
-    Table rollup(Collection<Aggregation> aggregations, Collection<String> columns);
+    Table rollup(Collection<? extends Aggregation> aggregations, Collection<String> columns);
 
     /**
      * Create a rollup table.
@@ -1690,7 +1600,7 @@ public interface Table extends
      * @return a hierarchical table with the rollup applied
      */
     @AsyncMethod
-    Table rollup(Collection<Aggregation> aggregations, boolean includeConstituents,
+    Table rollup(Collection<? extends Aggregation> aggregations, boolean includeConstituents,
             Collection<String> columns);
 
     /**
@@ -1705,7 +1615,7 @@ public interface Table extends
      * @return a hierarchical table with the rollup applied
      */
     @AsyncMethod
-    Table rollup(Collection<Aggregation> aggregations, String... columns);
+    Table rollup(Collection<? extends Aggregation> aggregations, String... columns);
 
     /**
      * Create a rollup table.
@@ -1720,7 +1630,7 @@ public interface Table extends
      * @return a hierarchical table with the rollup applied
      */
     @AsyncMethod
-    Table rollup(Collection<Aggregation> aggregations, boolean includeConstituents, String... columns);
+    Table rollup(Collection<? extends Aggregation> aggregations, boolean includeConstituents, String... columns);
 
     /**
      * Create a rollup table.
@@ -1734,7 +1644,7 @@ public interface Table extends
      * @return a hierarchical table with the rollup applied
      */
     @AsyncMethod
-    Table rollup(Collection<Aggregation> aggregations, SelectColumn... columns);
+    Table rollup(Collection<? extends Aggregation> aggregations, Selectable... columns);
 
     /**
      * Create a rollup table.
@@ -1745,7 +1655,7 @@ public interface Table extends
      * @return a hierarchical table with the rollup applied
      */
     @AsyncMethod
-    Table rollup(Collection<Aggregation> aggregations);
+    Table rollup(Collection<? extends Aggregation> aggregations);
 
     /**
      * Create a rollup table.
@@ -1757,10 +1667,10 @@ public interface Table extends
      * @return a hierarchical table with the rollup applied
      */
     @AsyncMethod
-    Table rollup(Collection<Aggregation> aggregations, boolean includeConstituents);
+    Table rollup(Collection<? extends Aggregation> aggregations, boolean includeConstituents);
 
     @AsyncMethod
-    Table rollup(Collection<Aggregation> aggregations, boolean includeConstituents, SelectColumn... columns);
+    Table rollup(Collection<? extends Aggregation> aggregations, boolean includeConstituents, Selectable... columns);
 
     /**
      * Create a hierarchical tree table.
@@ -1859,6 +1769,14 @@ public interface Table extends
     Table coalesce();
 
     /**
+     * Get a {@link Table} that contains a sub-set of the rows from {@code this}.
+     *
+     * @param rowSet The {@link TrackingRowSet row set} for the result.
+     * @return A new sub-table
+     */
+    Table getSubTable(TrackingRowSet rowSet);
+
+    /**
      * Applies a function to this table.
      * <p>
      * This is useful if you have a reference to a table or a proxy and want to run a series of operations against the
@@ -1867,10 +1785,10 @@ public interface Table extends
      * @param function the function to run, its single argument will be this table
      * @param <R> the return type of function
      * @return the return value of function
-     * @implNote If the UGP is not required the {@link Function.Unary#call(Object)} method should be annotated with
+     * @implNote If the UGP is not required the {@link Function#apply(Object)} method should be annotated with
      *           {@link AsyncMethod}.
      */
-    <R> R apply(Function.Unary<R, Table> function);
+    <R> R apply(Function<Table, R> function);
 
     /**
      * Creates a version of this table with a flat RowSet.

@@ -1,6 +1,6 @@
 package io.deephaven.engine.v2;
 
-import io.deephaven.engine.v2.by.ComboAggregateFactory;
+import io.deephaven.engine.v2.by.AggregationFactory;
 import io.deephaven.engine.v2.select.SelectColumn;
 
 import java.io.Serializable;
@@ -8,7 +8,7 @@ import java.io.Serializable;
 /**
  * A class that contains information required for a particular Hierarchical table type. (i.e
  * {@link io.deephaven.engine.tables.Table#treeTable(String, String) tree tables} or
- * {@link io.deephaven.engine.tables.Table#rollup(ComboAggregateFactory, SelectColumn...) rollups})
+ * {@link io.deephaven.engine.tables.Table#rollup(AggregationFactory, SelectColumn...) rollups})
  */
 public interface HierarchicalTableInfo extends Serializable {
     /**

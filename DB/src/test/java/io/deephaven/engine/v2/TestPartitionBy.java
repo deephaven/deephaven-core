@@ -37,8 +37,8 @@ import org.junit.experimental.categories.Category;
 import static io.deephaven.engine.tables.utils.TableTools.*;
 import static io.deephaven.engine.v2.TstUtils.getTable;
 import static io.deephaven.engine.v2.TstUtils.i;
-import static io.deephaven.engine.v2.by.ComboAggregateFactory.Agg;
-import static io.deephaven.engine.v2.by.ComboAggregateFactory.AggCombo;
+import static io.deephaven.engine.v2.by.AggregationFactory.Agg;
+import static io.deephaven.engine.v2.by.AggregationFactory.AggCombo;
 
 @Category(OutOfBandTest.class)
 public class TestPartitionBy extends QueryTableTestBase {
@@ -109,7 +109,7 @@ public class TestPartitionBy extends QueryTableTestBase {
         }
     }
 
-    public void testByExternal() {
+    public void testPartitionBy() {
         final Random random = new Random(0);
         final int size = 50;
 
@@ -468,14 +468,14 @@ public class TestPartitionBy extends QueryTableTestBase {
         assertTrue(((TableMapImpl) map).isRefreshing());
     }
 
-    public void testByExternalWithShifts() {
+    public void testPartitionByWithShifts() {
         for (int seed = 0; seed < 100; ++seed) {
             System.out.println("Seed = " + seed);
-            testByExternalWithShifts(seed);
+            testPartitionByWithShifts(seed);
         }
     }
 
-    private void testByExternalWithShifts(int seed) {
+    private void testPartitionByWithShifts(int seed) {
         final Random random = new Random(seed);
         final int size = 10;
 

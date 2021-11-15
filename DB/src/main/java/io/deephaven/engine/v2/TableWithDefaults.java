@@ -7,30 +7,31 @@ package io.deephaven.engine.v2;
 import io.deephaven.api.*;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.filter.Filter;
-import io.deephaven.base.Function;
+import io.deephaven.api.filter.FilterOr;
 import io.deephaven.base.Pair;
 import io.deephaven.base.StringUtils;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.tables.*;
+import io.deephaven.engine.table.LayoutHintBuilder;
+import io.deephaven.engine.table.iterators.*;
+import io.deephaven.engine.tables.ColumnDefinition;
+import io.deephaven.engine.tables.DataColumn;
+import io.deephaven.engine.tables.SortPair;
+import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.remote.AsyncMethod;
 import io.deephaven.engine.tables.select.*;
-import io.deephaven.engine.tables.utils.LayoutHintBuilder;
 import io.deephaven.engine.tables.utils.QueryPerformanceNugget;
 import io.deephaven.engine.tables.utils.QueryPerformanceRecorder;
-import io.deephaven.engine.tables.utils.WhereClause;
 import io.deephaven.engine.time.DateTime;
 import io.deephaven.engine.util.ColumnFormattingValues;
 import io.deephaven.engine.util.liveness.LivenessScopeStack;
-import io.deephaven.engine.v2.by.ComboAggregateFactory;
-import io.deephaven.engine.v2.iterators.*;
 import io.deephaven.engine.v2.select.ReinterpretedColumn;
 import io.deephaven.engine.v2.select.SelectColumn;
-import io.deephaven.engine.v2.select.SelectFilter;
 import io.deephaven.engine.vector.Vector;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
+import java.util.function.Function;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -39,6 +40,10 @@ import java.util.stream.Stream;
  * Sub-interface to capture default methods rom {@link Table}.
  */
 public interface TableWithDefaults extends Table {
+
+    Table[] ZERO_LENGTH_TABLE_ARRAY = new Table[0];
+    Filter[] ZERO_LENGTH_FILTER_ARRAY = new Filter[0];
+    Selectable[] ZERO_LENGTH_SELECTABLE_ARRAY = new Selectable[0];
 
     @Override
     default Table coalesce() {
@@ -216,19 +221,7 @@ public interface TableWithDefaults extends Table {
     @Override
     @AsyncMethod
     default Table where(String... filters) {
-        return where(SelectFilterFactory.getExpressions(filters));
-    }
-
-    @Override
-    @AsyncMethod
-    default Table where(Collection<? extends Filter> filters) {
-        return where(SelectFilter.from(filters));
-    }
-
-    @Override
-    @AsyncMethod
-    default Table where() {
-        return where(SelectFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY);
+        return where(Filter.from(filters));
     }
 
     @Override
@@ -238,91 +231,23 @@ public interface TableWithDefaults extends Table {
     }
 
     @Override
-    default Table whereIn(Table rightTable, boolean inclusion, MatchPair... columnsToMatch) {
-        return whereIn(GroupStrategy.DEFAULT, rightTable, inclusion, columnsToMatch);
-    }
-
-    @Override
-    default Table whereIn(Table rightTable, boolean inclusion, String... columnsToMatch) {
-        return whereIn(GroupStrategy.DEFAULT, rightTable, inclusion, MatchPairFactory.getExpressions(columnsToMatch));
-    }
-
-    @Override
     default Table whereIn(Table rightTable, String... columnsToMatch) {
-        return whereIn(GroupStrategy.DEFAULT, rightTable, true, MatchPairFactory.getExpressions(columnsToMatch));
-    }
-
-    @Override
-    default Table whereIn(Table rightTable, MatchPair... columnsToMatch) {
-        return whereIn(GroupStrategy.DEFAULT, rightTable, true, columnsToMatch);
+        return whereIn(rightTable, JoinMatch.from(columnsToMatch));
     }
 
     @Override
     default Table whereNotIn(Table rightTable, String... columnsToMatch) {
-        return whereIn(GroupStrategy.DEFAULT, rightTable, false, MatchPairFactory.getExpressions(columnsToMatch));
-    }
-
-    @Override
-    default Table whereNotIn(Table rightTable, MatchPair... columnsToMatch) {
-        return whereIn(GroupStrategy.DEFAULT, rightTable, false, columnsToMatch);
-    }
-
-    @Override
-    default Table whereIn(GroupStrategy groupStrategy, Table rightTable, String... columnsToMatch) {
-        return whereIn(groupStrategy, rightTable, true, columnsToMatch);
-    }
-
-    @Override
-    default Table whereIn(GroupStrategy groupStrategy, Table rightTable, MatchPair... columnsToMatch) {
-        return whereIn(groupStrategy, rightTable, true, columnsToMatch);
-    }
-
-    @Override
-    default Table whereNotIn(GroupStrategy groupStrategy, Table rightTable, String... columnsToMatch) {
-        return whereIn(groupStrategy, rightTable, false, columnsToMatch);
-    }
-
-    @Override
-    default Table whereNotIn(GroupStrategy groupStrategy, Table rightTable, MatchPair... columnsToMatch) {
-        return whereIn(groupStrategy, rightTable, false, columnsToMatch);
-    }
-
-    @Override
-    default Table whereIn(GroupStrategy groupStrategy, Table rightTable, boolean inclusion, String... columnsToMatch) {
-        return whereIn(groupStrategy, rightTable, inclusion, MatchPairFactory.getExpressions(columnsToMatch));
-    }
-
-    @Override
-    default Table whereIn(Table rightTable, Collection<? extends JoinMatch> columnsToMatch) {
-        return whereIn(rightTable, MatchPair.fromMatches(columnsToMatch));
-    }
-
-    @Override
-    default Table whereNotIn(Table rightTable, Collection<? extends JoinMatch> columnsToMatch) {
-        return whereNotIn(rightTable, MatchPair.fromMatches(columnsToMatch));
-    }
-
-    @Override
-    @SuppressWarnings("unchecked")
-    @AsyncMethod
-    default Table whereOneOf(Collection<SelectFilter>... filtersToApply) {
-        return where(WhereClause.createDisjunctiveFilter(filtersToApply));
+        return whereNotIn(rightTable, JoinMatch.from(columnsToMatch));
     }
 
     @Override
     @AsyncMethod
-    default Table whereOneOf(String... filtersToApplyStrings) {
-        // noinspection unchecked, generic array creation is not possible
-        final Collection<SelectFilter>[] filtersToApplyArrayOfCollections =
-                (Collection<SelectFilter>[]) Arrays.stream(SelectFilterFactory.getExpressions(filtersToApplyStrings))
-                        .map(Collections::singleton).toArray(Collection[]::new);
-        return whereOneOf(filtersToApplyArrayOfCollections);
-    }
-
-    @Override
-    @AsyncMethod
-    default Table whereOneOf() {
-        return where(SelectFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY);
+    default Table whereOneOf(String... filtersToApply) {
+        final FilterOr.Builder orBuilder = FilterOr.builder();
+        for (final String filterToApply : filtersToApply) {
+            orBuilder.addFilters(RawString.of(filterToApply));
+        }
+        return where(Collections.singleton(orBuilder.build()));
     }
 
     // -----------------------------------------------------------------------------------------------------------------
@@ -331,12 +256,7 @@ public interface TableWithDefaults extends Table {
 
     @Override
     default Table select(String... columns) {
-        return select(SelectColumnFactory.getExpressions(columns));
-    }
-
-    @Override
-    default Table select(Collection<? extends Selectable> columns) {
-        return select(SelectColumn.from(columns));
+        return select(Selectable.from(columns));
     }
 
     @Override
@@ -347,13 +267,7 @@ public interface TableWithDefaults extends Table {
     @Override
     @AsyncMethod
     default Table selectDistinct(String... columns) {
-        return selectDistinct(SelectColumnFactory.getExpressions(columns));
-    }
-
-    @Override
-    @AsyncMethod
-    default Table selectDistinct(Collection<String> columns) {
-        return selectDistinct(SelectColumnFactory.getExpressions(columns));
+        return selectDistinct(Selectable.from(columns));
     }
 
     @Override
@@ -364,61 +278,24 @@ public interface TableWithDefaults extends Table {
 
     @Override
     default Table update(String... newColumns) {
-        return update(SelectColumnFactory.getExpressions(newColumns));
-    }
-
-    @Override
-    default Table update(Collection<? extends Selectable> columns) {
-        return update(SelectColumn.from(columns));
-    }
-
-    @Override
-    default SelectValidationResult validateSelect(String... columns) {
-        return validateSelect(SelectColumnFactory.getExpressions(columns));
+        return update(Selectable.from((newColumns)));
     }
 
     @Override
     default Table lazyUpdate(String... newColumns) {
-        return lazyUpdate(SelectColumnFactory.getExpressions(newColumns));
-    }
-
-    @Override
-    default Table lazyUpdate(Collection<String> newColumns) {
-        return lazyUpdate(SelectColumnFactory.getExpressions(newColumns));
+        return lazyUpdate(Selectable.from((newColumns)));
     }
 
     @Override
     @AsyncMethod
     default Table view(String... columns) {
-        return view(SelectColumnFactory.getExpressions(columns));
-    }
-
-    @Override
-    @AsyncMethod
-    default Table view(Collection<? extends Selectable> columns) {
-        return view(SelectColumn.from(columns));
+        return view(Selectable.from(columns));
     }
 
     @Override
     @AsyncMethod
     default Table updateView(String... newColumns) {
-        return updateView(SelectColumnFactory.getExpressions(newColumns));
-    }
-
-    @Override
-    @AsyncMethod
-    default Table updateView(Collection<? extends Selectable> columns) {
-        return updateView(SelectColumn.from(columns));
-    }
-
-    @Override
-    @AsyncMethod
-    default Table dropColumnFormats() {
-        String[] columnAry = getDefinition().getColumnStream()
-                .map(ColumnDefinition::getName)
-                .filter(ColumnFormattingValues::isFormattingColumn)
-                .toArray(String[]::new);
-        return dropColumns(columnAry);
+        return updateView(Selectable.from((newColumns)));
     }
 
     @Override
@@ -428,12 +305,28 @@ public interface TableWithDefaults extends Table {
     }
 
     @Override
-    default Table renameColumns(String... columns) {
-        return renameColumns(MatchPairFactory.getExpressions(columns));
+    @AsyncMethod
+    default Table dropColumnFormats() {
+        String[] columnAry = getDefinition().getColumnStream()
+                .map(ColumnDefinition::getName)
+                .filter(ColumnFormattingValues::isFormattingColumn)
+                .toArray(String[]::new);
+        if (columnAry.length == 0) {
+            if (isRefreshing()) {
+                LivenessScopeStack.peek().manage(this);
+            }
+            return this;
+        }
+        return dropColumns(columnAry);
     }
 
     @Override
     default Table renameColumns(Collection<String> columns) {
+        return renameColumns(MatchPairFactory.getExpressions(columns));
+    }
+
+    @Override
+    default Table renameColumns(String... columns) {
         return renameColumns(MatchPairFactory.getExpressions(columns));
     }
 
@@ -826,26 +719,28 @@ public interface TableWithDefaults extends Table {
 
     @Override
     @AsyncMethod
-    default Table groupBy(String... groupByColumns) {
-        return groupBy(SelectColumnFactory.getExpressions(groupByColumns));
-    }
-
-    @Override
-    @AsyncMethod
-    default Table groupBy() {
-        return groupBy(SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY);
-    }
-
-    @Override
-    @AsyncMethod
     default Table groupBy(Collection<? extends Selectable> groupByColumns) {
         return groupBy(SelectColumn.from(groupByColumns));
     }
 
     @Override
     @AsyncMethod
-    default Table aggBy(Collection<? extends Aggregation> aggregations) {
-        return aggBy(aggregations, Collections.emptyList());
+    default Table groupBy(String... groupByColumns) {
+        return groupBy(Selectable.from(groupByColumns));
+    }
+
+    @Override
+    @AsyncMethod
+    default Table groupBy() {
+        return groupBy(Collections.emptyList());
+    }
+
+
+    @Override
+    @AsyncMethod
+    default Table aggBy(Collection<? extends Aggregation> aggregations,
+            Collection<? extends Selectable> groupByColumns) {
+        return aggBy(aggregations, SelectColumn.from(groupByColumns));
     }
 
     @Override
@@ -856,279 +751,268 @@ public interface TableWithDefaults extends Table {
 
     @Override
     @AsyncMethod
-    default Table aggBy(Collection<? extends Aggregation> aggregations,
-            Collection<? extends Selectable> groupByColumns) {
-        return aggBy(aggregations, SelectColumn.from(groupByColumns));
+    default Table aggBy(Collection<? extends Aggregation> aggregations) {
+        return aggBy(aggregations, Collections.emptyList());
     }
 
     @Override
-    default Table headBy(long nRows, SelectColumn... groupByColumns) {
-        throw new UnsupportedOperationException();
+    default Table headBy(long nRows, Collection<String> groupByColumnNames) {
+        return headBy(nRows, groupByColumnNames.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
     }
 
     @Override
-    default Table headBy(long nRows, Collection<String> groupByColumns) {
-        return headBy(nRows, groupByColumns.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
-    }
-
-    @Override
-    default Table tailBy(long nRows, SelectColumn... groupByColumns) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    default Table tailBy(long nRows, Collection<String> groupByColumns) {
-        return tailBy(nRows, groupByColumns.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
+    default Table tailBy(long nRows, Collection<String> groupByColumnNames) {
+        return tailBy(nRows, groupByColumnNames.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
     }
 
     @Override
     @AsyncMethod
-    default Table applyToAllBy(String formulaColumn, SelectColumn... groupByColumns) {
+    default Table applyToAllBy(String formulaColumn, Selectable... groupByColumns) {
         return applyToAllBy(formulaColumn, "each", groupByColumns);
     }
 
     @Override
     @AsyncMethod
     default Table applyToAllBy(String formulaColumn, String... groupByColumns) {
-        return applyToAllBy(formulaColumn, SelectColumnFactory.getExpressions(groupByColumns));
+        return applyToAllBy(formulaColumn, Selectable.from(groupByColumns).toArray(ZERO_LENGTH_SELECTABLE_ARRAY));
     }
 
     @Override
     @AsyncMethod
     default Table applyToAllBy(String formulaColumn, String groupByColumn) {
-        return applyToAllBy(formulaColumn, SelectColumnFactory.getExpression(groupByColumn));
+        return applyToAllBy(formulaColumn, Selectable.from(groupByColumn).toArray(ZERO_LENGTH_SELECTABLE_ARRAY));
     }
 
     @Override
     @AsyncMethod
     default Table sumBy(String... groupByColumns) {
-        return sumBy(SelectColumnFactory.getExpressions(groupByColumns));
+        return sumBy(Selectable.from(groupByColumns).toArray(ZERO_LENGTH_SELECTABLE_ARRAY));
     }
 
     @Override
     @AsyncMethod
     default Table sumBy(Collection<String> groupByColumns) {
-        return sumBy(SelectColumnFactory.getExpressions(groupByColumns));
+        return sumBy(Selectable.from(groupByColumns).toArray(ZERO_LENGTH_SELECTABLE_ARRAY));
     }
 
     @Override
     @AsyncMethod
     default Table sumBy() {
-        return sumBy(SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY);
+        return sumBy(ZERO_LENGTH_SELECTABLE_ARRAY);
     }
 
     @Override
     @AsyncMethod
     default Table absSumBy(String... groupByColumns) {
-        return absSumBy(SelectColumnFactory.getExpressions(groupByColumns));
+        return absSumBy(Selectable.from(groupByColumns).toArray(ZERO_LENGTH_SELECTABLE_ARRAY));
     }
 
     @Override
     @AsyncMethod
     default Table absSumBy(Collection<String> groupByColumns) {
-        return absSumBy(SelectColumnFactory.getExpressions(groupByColumns));
+        return absSumBy(Selectable.from(groupByColumns).toArray(ZERO_LENGTH_SELECTABLE_ARRAY));
     }
 
     @Override
     @AsyncMethod
     default Table absSumBy() {
-        return absSumBy(SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY);
+        return absSumBy(ZERO_LENGTH_SELECTABLE_ARRAY);
     }
 
     @Override
     @AsyncMethod
     default Table avgBy(String... groupByColumns) {
-        return avgBy(SelectColumnFactory.getExpressions(groupByColumns));
+        return avgBy(Selectable.from(groupByColumns).toArray(ZERO_LENGTH_SELECTABLE_ARRAY));
     }
 
     @Override
     @AsyncMethod
     default Table avgBy(Collection<String> groupByColumns) {
-        return avgBy(SelectColumnFactory.getExpressions(groupByColumns));
+        return avgBy(Selectable.from(groupByColumns).toArray(ZERO_LENGTH_SELECTABLE_ARRAY));
     }
 
     @Override
     @AsyncMethod
     default Table avgBy() {
-        return avgBy(SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY);
+        return avgBy(ZERO_LENGTH_SELECTABLE_ARRAY);
     }
 
     @Override
     @AsyncMethod
     default Table wavgBy(String weightColumn, String... groupByColumns) {
-        return wavgBy(weightColumn, SelectColumnFactory.getExpressions(groupByColumns));
+        return wavgBy(weightColumn, Selectable.from(groupByColumns).toArray(ZERO_LENGTH_SELECTABLE_ARRAY));
     }
 
     @Override
     @AsyncMethod
     default Table wavgBy(String weightColumn, Collection<String> groupByColumns) {
-        return wavgBy(weightColumn, SelectColumnFactory.getExpressions(groupByColumns));
+        return wavgBy(weightColumn, Selectable.from(groupByColumns).toArray(ZERO_LENGTH_SELECTABLE_ARRAY));
     }
 
     @Override
     @AsyncMethod
     default Table wavgBy(String weightColumn) {
-        return wavgBy(weightColumn, SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY);
+        return wavgBy(weightColumn, ZERO_LENGTH_SELECTABLE_ARRAY);
     }
 
     @Override
     @AsyncMethod
     default Table wsumBy(String weightColumn) {
-        return wsumBy(weightColumn, SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY);
+        return wsumBy(weightColumn, ZERO_LENGTH_SELECTABLE_ARRAY);
     }
 
     @Override
     @AsyncMethod
     default Table wsumBy(String weightColumn, String... groupByColumns) {
-        return wsumBy(weightColumn, SelectColumnFactory.getExpressions(groupByColumns));
+        return wsumBy(weightColumn, Selectable.from(groupByColumns).toArray(ZERO_LENGTH_SELECTABLE_ARRAY));
     }
 
     @Override
     @AsyncMethod
     default Table wsumBy(String weightColumn, Collection<String> groupByColumns) {
-        return wsumBy(weightColumn, SelectColumnFactory.getExpressions(groupByColumns));
+        return wsumBy(weightColumn, Selectable.from(groupByColumns).toArray(ZERO_LENGTH_SELECTABLE_ARRAY));
     }
 
     @Override
     @AsyncMethod
     default Table stdBy(String... groupByColumns) {
-        return stdBy(SelectColumnFactory.getExpressions(groupByColumns));
+        return stdBy(Selectable.from(groupByColumns).toArray(ZERO_LENGTH_SELECTABLE_ARRAY));
     }
 
     @Override
     @AsyncMethod
     default Table stdBy(Collection<String> groupByColumns) {
-        return stdBy(SelectColumnFactory.getExpressions(groupByColumns));
+        return stdBy(Selectable.from(groupByColumns).toArray(ZERO_LENGTH_SELECTABLE_ARRAY));
     }
 
     @Override
     default Table stdBy() {
-        return stdBy(SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY);
+        return stdBy(ZERO_LENGTH_SELECTABLE_ARRAY);
     }
 
     @Override
     @AsyncMethod
     default Table varBy(String... groupByColumns) {
-        return varBy(SelectColumnFactory.getExpressions(groupByColumns));
+        return varBy(Selectable.from(groupByColumns).toArray(ZERO_LENGTH_SELECTABLE_ARRAY));
     }
 
     @Override
     @AsyncMethod
     default Table varBy(Collection<String> groupByColumns) {
-        return varBy(SelectColumnFactory.getExpressions(groupByColumns));
+        return varBy(Selectable.from(groupByColumns).toArray(ZERO_LENGTH_SELECTABLE_ARRAY));
     }
 
     @Override
     default Table varBy() {
-        return varBy(SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY);
+        return varBy(ZERO_LENGTH_SELECTABLE_ARRAY);
     }
 
     @Override
     @AsyncMethod
     default Table lastBy(String... groupByColumns) {
-        return lastBy(SelectColumnFactory.getExpressions(groupByColumns));
+        return lastBy(Selectable.from(groupByColumns).toArray(ZERO_LENGTH_SELECTABLE_ARRAY));
     }
 
     @Override
     @AsyncMethod
     default Table lastBy(Collection<String> groupByColumns) {
-        return lastBy(SelectColumnFactory.getExpressions(groupByColumns));
+        return lastBy(Selectable.from(groupByColumns).toArray(ZERO_LENGTH_SELECTABLE_ARRAY));
     }
 
     @Override
     @AsyncMethod
     default Table lastBy() {
-        return lastBy(SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY);
+        return lastBy(ZERO_LENGTH_SELECTABLE_ARRAY);
     }
 
     @Override
     @AsyncMethod
     default Table firstBy(String... groupByColumns) {
-        return firstBy(SelectColumnFactory.getExpressions(groupByColumns));
+        return firstBy(Selectable.from(groupByColumns).toArray(ZERO_LENGTH_SELECTABLE_ARRAY));
     }
 
     @Override
     @AsyncMethod
     default Table firstBy(Collection<String> groupByColumns) {
-        return firstBy(SelectColumnFactory.getExpressions(groupByColumns));
+        return firstBy(Selectable.from(groupByColumns).toArray(ZERO_LENGTH_SELECTABLE_ARRAY));
     }
 
     @Override
     @AsyncMethod
     default Table firstBy() {
-        return firstBy(SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY);
+        return firstBy(ZERO_LENGTH_SELECTABLE_ARRAY);
     }
 
     @Override
     @AsyncMethod
     default Table minBy(String... groupByColumns) {
-        return minBy(SelectColumnFactory.getExpressions(groupByColumns));
+        return minBy(Selectable.from(groupByColumns).toArray(ZERO_LENGTH_SELECTABLE_ARRAY));
     }
 
     @Override
     @AsyncMethod
     default Table minBy(Collection<String> groupByColumns) {
-        return minBy(SelectColumnFactory.getExpressions(groupByColumns));
+        return minBy(Selectable.from(groupByColumns).toArray(ZERO_LENGTH_SELECTABLE_ARRAY));
     }
 
     @Override
     @AsyncMethod
     default Table minBy() {
-        return minBy(SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY);
+        return minBy(ZERO_LENGTH_SELECTABLE_ARRAY);
     }
 
     @Override
     @AsyncMethod
     default Table maxBy(String... groupByColumns) {
-        return maxBy(SelectColumnFactory.getExpressions(groupByColumns));
+        return maxBy(Selectable.from(groupByColumns).toArray(ZERO_LENGTH_SELECTABLE_ARRAY));
     }
 
     @Override
     @AsyncMethod
     default Table maxBy(Collection<String> groupByColumns) {
-        return maxBy(SelectColumnFactory.getExpressions(groupByColumns));
+        return maxBy(Selectable.from(groupByColumns).toArray(ZERO_LENGTH_SELECTABLE_ARRAY));
     }
 
     @Override
     @AsyncMethod
     default Table maxBy() {
-        return maxBy(SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY);
+        return maxBy(ZERO_LENGTH_SELECTABLE_ARRAY);
     }
 
     @Override
     @AsyncMethod
     default Table medianBy(String... groupByColumns) {
-        return medianBy(SelectColumnFactory.getExpressions(groupByColumns));
+        return medianBy(Selectable.from(groupByColumns).toArray(ZERO_LENGTH_SELECTABLE_ARRAY));
     }
 
     @Override
     @AsyncMethod
     default Table medianBy(Collection<String> groupByColumns) {
-        return medianBy(SelectColumnFactory.getExpressions(groupByColumns));
+        return medianBy(Selectable.from(groupByColumns).toArray(ZERO_LENGTH_SELECTABLE_ARRAY));
     }
 
     @Override
     @AsyncMethod
     default Table medianBy() {
-        return medianBy(SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY);
+        return medianBy(ZERO_LENGTH_SELECTABLE_ARRAY);
     }
 
     @Override
     @AsyncMethod
     default Table countBy(String countColumnName, String... groupByColumns) {
-        return countBy(countColumnName, SelectColumnFactory.getExpressions(groupByColumns));
+        return countBy(countColumnName, Selectable.from(groupByColumns).toArray(ZERO_LENGTH_SELECTABLE_ARRAY));
     }
 
     @Override
     @AsyncMethod
     default Table countBy(String countColumnName, Collection<String> groupByColumns) {
-        return countBy(countColumnName, SelectColumnFactory.getExpressions(groupByColumns));
+        return countBy(countColumnName, Selectable.from(groupByColumns).toArray(ZERO_LENGTH_SELECTABLE_ARRAY));
     }
 
     @Override
     @AsyncMethod
     default Table countBy(String countColumnName) {
-        return countBy(countColumnName, SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY);
+        return countBy(countColumnName, ZERO_LENGTH_SELECTABLE_ARRAY);
     }
 
     // -----------------------------------------------------------------------------------------------------------------
@@ -1180,45 +1064,47 @@ public interface TableWithDefaults extends Table {
 
     @Override
     @AsyncMethod
-    default Table rollup(ComboAggregateFactory comboAggregateFactory, Collection<String> columns) {
-        return rollup(comboAggregateFactory, SelectColumnFactory.getExpressions(columns));
+    default Table rollup(Collection<? extends Aggregation> aggregations, Collection<String> columns) {
+        return rollup(aggregations, Selectable.from(columns).toArray(ZERO_LENGTH_SELECTABLE_ARRAY));
     }
 
     @Override
     @AsyncMethod
-    default Table rollup(ComboAggregateFactory comboAggregateFactory, boolean includeConstituents,
+    default Table rollup(Collection<? extends Aggregation> aggregations, boolean includeConstituents,
             Collection<String> columns) {
-        return rollup(comboAggregateFactory, includeConstituents, SelectColumnFactory.getExpressions(columns));
+        return rollup(aggregations, includeConstituents,
+                Selectable.from(columns).toArray(ZERO_LENGTH_SELECTABLE_ARRAY));
     }
 
     @Override
     @AsyncMethod
-    default Table rollup(ComboAggregateFactory comboAggregateFactory, String... columns) {
-        return rollup(comboAggregateFactory, SelectColumnFactory.getExpressions(columns));
+    default Table rollup(Collection<? extends Aggregation> aggregations, String... columns) {
+        return rollup(aggregations, Selectable.from(columns).toArray(ZERO_LENGTH_SELECTABLE_ARRAY));
     }
 
     @Override
     @AsyncMethod
-    default Table rollup(ComboAggregateFactory comboAggregateFactory, boolean includeConstituents, String... columns) {
-        return rollup(comboAggregateFactory, includeConstituents, SelectColumnFactory.getExpressions(columns));
+    default Table rollup(Collection<? extends Aggregation> aggregations, boolean includeConstituents, String... columns) {
+        return rollup(aggregations, includeConstituents,
+                Selectable.from(columns).toArray(ZERO_LENGTH_SELECTABLE_ARRAY));
     }
 
     @Override
     @AsyncMethod
-    default Table rollup(ComboAggregateFactory comboAggregateFactory, SelectColumn... columns) {
-        return rollup(comboAggregateFactory, false, columns);
+    default Table rollup(Collection<? extends Aggregation> aggregations, Selectable... columns) {
+        return rollup(aggregations, false, columns);
     }
 
     @Override
     @AsyncMethod
-    default Table rollup(ComboAggregateFactory comboAggregateFactory) {
-        return rollup(comboAggregateFactory, false, SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY);
+    default Table rollup(Collection<? extends Aggregation> aggregations) {
+        return rollup(aggregations, false, ZERO_LENGTH_SELECTABLE_ARRAY);
     }
 
     @Override
     @AsyncMethod
-    default Table rollup(ComboAggregateFactory comboAggregateFactory, boolean includeConstituents) {
-        return rollup(comboAggregateFactory, includeConstituents, SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY);
+    default Table rollup(Collection<? extends Aggregation> aggregations, boolean includeConstituents) {
+        return rollup(aggregations, includeConstituents, ZERO_LENGTH_SELECTABLE_ARRAY);
     }
 
     // -----------------------------------------------------------------------------------------------------------------
@@ -1268,12 +1154,11 @@ public interface TableWithDefaults extends Table {
     // -----------------------------------------------------------------------------------------------------------------
 
     @Override
-    default <R> R apply(Function.Unary<R, Table> function) {
+    default <R> R apply(Function<Table, R> function) {
         final QueryPerformanceNugget nugget =
                 QueryPerformanceRecorder.getInstance().getNugget("apply(" + function + ")");
-
         try {
-            return function.call(this);
+            return function.apply(this);
         } finally {
             nugget.done();
         }

@@ -18,7 +18,7 @@ import java.util.regex.Pattern;
  * A filter that determines if a column value is between an upper and lower bound (which each may either be inclusive or
  * exclusive).
  */
-public abstract class AbstractRangeFilter extends SelectFilterImpl {
+public abstract class AbstractRangeFilter extends WhereFilterImpl {
     private static final Pattern decimalPattern = Pattern.compile("(-)?\\d+(?:\\.((\\d+)0*)?)?");
 
     protected final String columnName;
@@ -44,7 +44,7 @@ public abstract class AbstractRangeFilter extends SelectFilterImpl {
         this.lowerInclusive = lowerInclusive;
     }
 
-    public static SelectFilter makeBigDecimalRange(String columnName, String val) {
+    public static WhereFilter makeBigDecimalRange(String columnName, String val) {
         final int precision = findPrecision(val);
         final BigDecimal parsed = new BigDecimal(val);
         final BigDecimal offset = BigDecimal.valueOf(1, precision);

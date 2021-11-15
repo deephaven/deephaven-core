@@ -33,20 +33,20 @@ import java.util.stream.Stream;
 import static io.deephaven.engine.tables.select.SelectFactoryConstants.*;
 
 /**
- * Given a user's filter string produce an appropriate SelectFilter instance.
+ * Given a user's filter string produce an appropriate WhereFilter instance.
  */
 public class SelectFilterFactory {
 
     private static final Logger log = ProcessEnvironment.getDefaultLog(SelectFilterFactory.class);
 
-    private static final ExpressionParser<SelectFilter> parser = new ExpressionParser<>();
+    private static final ExpressionParser<WhereFilter> parser = new ExpressionParser<>();
 
     static {
         // <ColumnName>==<Number|Boolean|"String">
-        parser.registerFactory(new AbstractExpressionFactory<SelectFilter>(
+        parser.registerFactory(new AbstractExpressionFactory<WhereFilter>(
                 START_PTRN + "(" + ID_PTRN + ")\\s*={1,2}\\s*(" + LITERAL_PTRN + ")" + END_PTRN) {
             @Override
-            public SelectFilter getExpression(String expression, Matcher matcher, Object... args) {
+            public WhereFilter getExpression(String expression, Matcher matcher, Object... args) {
                 final String columnName = matcher.group(1);
                 final FormulaParserConfiguration parserConfiguration = (FormulaParserConfiguration) args[0];
                 if (isRowVariable(columnName)) {
@@ -60,10 +60,10 @@ public class SelectFilterFactory {
             }
         });
         // <ColumnName>==<User Param>
-        parser.registerFactory(new AbstractExpressionFactory<SelectFilter>(
+        parser.registerFactory(new AbstractExpressionFactory<WhereFilter>(
                 START_PTRN + "(" + ID_PTRN + ")\\s*={1,2}\\s*(" + ID_PTRN + ")" + END_PTRN) {
             @Override
-            public SelectFilter getExpression(String expression, Matcher matcher, Object... args) {
+            public WhereFilter getExpression(String expression, Matcher matcher, Object... args) {
                 final String columnName = matcher.group(1);
                 final FormulaParserConfiguration parserConfiguration = (FormulaParserConfiguration) args[0];
 
@@ -87,10 +87,10 @@ public class SelectFilterFactory {
         // <ColumnName> <= <Number|Boolean|"String">
         // <ColumnName> > <Number|Boolean|"String">
         // <ColumnName> >= <Number|Boolean|"String">
-        parser.registerFactory(new AbstractExpressionFactory<SelectFilter>(
+        parser.registerFactory(new AbstractExpressionFactory<WhereFilter>(
                 START_PTRN + "(" + ID_PTRN + ")\\s*([<>]=?)\\s*(" + LITERAL_PTRN + ")" + END_PTRN) {
             @Override
-            public SelectFilter getExpression(String expression, Matcher matcher, Object... args) {
+            public WhereFilter getExpression(String expression, Matcher matcher, Object... args) {
                 final FormulaParserConfiguration parserConfiguration = (FormulaParserConfiguration) args[0];
                 final String columnName = matcher.group(1);
                 final String conditionString = matcher.group(2);
@@ -115,10 +115,10 @@ public class SelectFilterFactory {
         });
 
         // <ColumnName> [icase] [not] in <value 1>, <value 2>, ... , <value n>
-        parser.registerFactory(new AbstractExpressionFactory<SelectFilter>("(?s)" + START_PTRN + "(" + ID_PTRN
+        parser.registerFactory(new AbstractExpressionFactory<WhereFilter>("(?s)" + START_PTRN + "(" + ID_PTRN
                 + ")\\s+(" + ICASE + "\\s+)?(" + NOT + "\\s+)?" + IN + "\\s+(.+?)" + END_PTRN) {
             @Override
-            public SelectFilter getExpression(String expression, Matcher matcher, Object... args) {
+            public WhereFilter getExpression(String expression, Matcher matcher, Object... args) {
                 final SplitIgnoreQuotes splitter = new SplitIgnoreQuotes();
                 log.debug().append("SelectFilterFactory creating MatchFilter for expression: ").append(expression)
                         .endl();
@@ -131,11 +131,11 @@ public class SelectFilterFactory {
         });
 
         // <ColumnName> [icase] [not] includes [any|all]<"String">
-        parser.registerFactory(new AbstractExpressionFactory<SelectFilter>(START_PTRN + "(" + ID_PTRN + ")\\s+(" + ICASE
+        parser.registerFactory(new AbstractExpressionFactory<WhereFilter>(START_PTRN + "(" + ID_PTRN + ")\\s+(" + ICASE
                 + "\\s+)?(" + NOT + "\\s+)?" + INCLUDES +
                 "(?:\\s+(" + ANY + "|" + ALL + ")\\s+)?" + "\\s*((?:(?:" + STR_PTRN + ")(?:,\\s*)?)+)" + END_PTRN) {
             @Override
-            public SelectFilter getExpression(String expression, Matcher matcher, Object... args) {
+            public WhereFilter getExpression(String expression, Matcher matcher, Object... args) {
                 final SplitIgnoreQuotes splitter = new SplitIgnoreQuotes();
                 log.debug().append("SelectFilterFactory creating StringContainsFilter for expression: ")
                         .append(expression).endl();
@@ -154,9 +154,9 @@ public class SelectFilterFactory {
 
         // Anything else is assumed to be a condition formula.
         parser.registerFactory(
-                new AbstractExpressionFactory<SelectFilter>(START_PTRN + "(" + ANYTHING + ")" + END_PTRN) {
+                new AbstractExpressionFactory<WhereFilter>(START_PTRN + "(" + ANYTHING + ")" + END_PTRN) {
                     @Override
-                    public SelectFilter getExpression(String expression, Matcher matcher, Object... args) {
+                    public WhereFilter getExpression(String expression, Matcher matcher, Object... args) {
                         final FormulaParserConfiguration parserConfiguration = (FormulaParserConfiguration) args[0];
 
                         log.debug().append("SelectFilterFactory creating ConditionFilter for expression: ")
@@ -170,30 +170,30 @@ public class SelectFilterFactory {
         return columnName.equals("i") || columnName.equals("ii") || columnName.equals("k");
     }
 
-    public static SelectFilter getExpression(String match) {
+    public static WhereFilter getExpression(String match) {
         Pair<FormulaParserConfiguration, String> parserAndExpression =
                 FormulaParserConfiguration.extractParserAndExpression(match);
         return parser.parse(parserAndExpression.second, parserAndExpression.first);
     }
 
-    public static SelectFilter[] getExpressions(String... expressions) {
-        return Arrays.stream(expressions).map(SelectFilterFactory::getExpression).toArray(SelectFilter[]::new);
+    public static WhereFilter[] getExpressions(String... expressions) {
+        return Arrays.stream(expressions).map(SelectFilterFactory::getExpression).toArray(WhereFilter[]::new);
     }
 
-    public static SelectFilter[] getExpressions(Collection<String> expressions) {
-        return expressions.stream().map(SelectFilterFactory::getExpression).toArray(SelectFilter[]::new);
+    public static WhereFilter[] getExpressions(Collection<String> expressions) {
+        return expressions.stream().map(SelectFilterFactory::getExpression).toArray(WhereFilter[]::new);
     }
 
-    public static SelectFilter[] expandQuickFilter(Table t, String quickFilter, Set<String> columnNames) {
+    public static WhereFilter[] expandQuickFilter(Table t, String quickFilter, Set<String> columnNames) {
         return expandQuickFilter(t, quickFilter, QuickFilterMode.NORMAL, columnNames);
     }
 
-    public static SelectFilter[] expandQuickFilter(Table t, String quickFilter, QuickFilterMode filterMode) {
+    public static WhereFilter[] expandQuickFilter(Table t, String quickFilter, QuickFilterMode filterMode) {
         return expandQuickFilter(t, quickFilter, filterMode, Collections.emptySet());
     }
 
-    public static SelectFilter[] expandQuickFilter(Table t, String quickFilter, QuickFilterMode filterMode,
-            @NotNull Set<String> columnNames) {
+    public static WhereFilter[] expandQuickFilter(Table t, String quickFilter, QuickFilterMode filterMode,
+                                                  @NotNull Set<String> columnNames) {
         // Do some type inference
         if (quickFilter != null && !quickFilter.isEmpty()) {
             if (filterMode == QuickFilterMode.MULTI) {
@@ -215,57 +215,57 @@ public class SelectFilterFactory {
                             return null;
                         } else if (filterMode == QuickFilterMode.AND) {
                             final String[] parts = quickFilter.split("\\s+");
-                            final List<SelectFilter> filters =
+                            final List<WhereFilter> filters =
                                     Arrays.stream(parts).map(part -> getSelectFilterForAnd(colName, part, colClass))
                                             .filter(Objects::nonNull).collect(Collectors.toList());
                             if (filters.isEmpty()) {
                                 return null;
                             }
                             return ConjunctiveFilter.makeConjunctiveFilter(
-                                    filters.toArray(SelectFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY));
+                                    filters.toArray(WhereFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY));
                         } else if (filterMode == QuickFilterMode.OR) {
                             final String[] parts = quickFilter.split("\\s+");
-                            final List<SelectFilter> filters = Arrays.stream(parts)
+                            final List<WhereFilter> filters = Arrays.stream(parts)
                                     .map(part -> getSelectFilter(colName, part, filterMode, colClass))
                                     .filter(Objects::nonNull).collect(Collectors.toList());
                             if (filters.isEmpty()) {
                                 return null;
                             }
                             return DisjunctiveFilter.makeDisjunctiveFilter(
-                                    filters.toArray(SelectFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY));
+                                    filters.toArray(WhereFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY));
                         } else {
                             return getSelectFilter(colName, quickFilter, filterMode, colClass);
                         }
 
-                    }).filter(Objects::nonNull).toArray(SelectFilter[]::new);
+                    }).filter(Objects::nonNull).toArray(WhereFilter[]::new);
         }
 
-        return SelectFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY;
+        return WhereFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY;
     }
 
-    private static SelectFilter[] expandMultiColumnQuickFilter(Table t, String quickFilter) {
+    private static WhereFilter[] expandMultiColumnQuickFilter(Table t, String quickFilter) {
         final String[] parts = quickFilter.split("\\s+");
-        final List<SelectFilter> filters = new ArrayList<>(parts.length);
+        final List<WhereFilter> filters = new ArrayList<>(parts.length);
 
         for (String part : parts) {
-            final SelectFilter[] filterArray = t.getColumnSourceMap().entrySet().stream()
+            final WhereFilter[] filterArray = t.getColumnSourceMap().entrySet().stream()
                     .filter(entry -> !ColumnFormattingValues.isFormattingColumn(entry.getKey())
                             && !RollupInfo.ROLLUP_COLUMN.equals(entry.getKey()))
                     .map(entry -> {
                         final Class<?> colClass = entry.getValue().getType();
                         final String colName = entry.getKey();
                         return getSelectFilter(colName, part, QuickFilterMode.MULTI, colClass);
-                    }).filter(Objects::nonNull).toArray(SelectFilter[]::new);
+                    }).filter(Objects::nonNull).toArray(WhereFilter[]::new);
             if (filterArray.length > 0) {
                 filters.add(DisjunctiveFilter.makeDisjunctiveFilter(filterArray));
             }
         }
 
-        return filters.toArray(SelectFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY);
+        return filters.toArray(WhereFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY);
     }
 
-    private static SelectFilter getSelectFilter(String colName, String quickFilter, QuickFilterMode filterMode,
-            Class<?> colClass) {
+    private static WhereFilter getSelectFilter(String colName, String quickFilter, QuickFilterMode filterMode,
+                                               Class<?> colClass) {
         final InferenceResult typeData = new InferenceResult(quickFilter);
         if ((colClass == Double.class || colClass == double.class) && (!Double.isNaN(typeData.doubleVal))) {
             try {
@@ -306,7 +306,7 @@ public class SelectFilterFactory {
         return null;
     }
 
-    private static SelectFilter getSelectFilterForAnd(String colName, String quickFilter, Class<?> colClass) {
+    private static WhereFilter getSelectFilterForAnd(String colName, String quickFilter, Class<?> colClass) {
         // AND mode only supports String types
         if (colClass.isAssignableFrom(String.class)) {
             return new StringContainsFilter(MatchFilter.CaseSensitivity.IgnoreCase, MatchFilter.MatchType.Regular,
@@ -315,8 +315,8 @@ public class SelectFilterFactory {
         return null;
     }
 
-    public static SelectFilter[] getExpressionsWithQuickFilter(String[] expressions, Table t, String quickFilter,
-            QuickFilterMode filterMode) {
+    public static WhereFilter[] getExpressionsWithQuickFilter(String[] expressions, Table t, String quickFilter,
+                                                              QuickFilterMode filterMode) {
         if (quickFilter != null && !quickFilter.isEmpty()) {
             return Stream.concat(
                     Arrays.stream(getExpressions(expressions)),
@@ -325,7 +325,7 @@ public class SelectFilterFactory {
                                     SelectFilterFactory.expandQuickFilter(t, quickFilter, filterMode))
                             : DisjunctiveFilter.makeDisjunctiveFilter(
                                     SelectFilterFactory.expandQuickFilter(t, quickFilter, filterMode))))
-                    .toArray(SelectFilter[]::new);
+                    .toArray(WhereFilter[]::new);
         }
         return getExpressions(expressions);
     }

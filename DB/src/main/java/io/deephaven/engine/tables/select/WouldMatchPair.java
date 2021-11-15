@@ -1,8 +1,9 @@
 package io.deephaven.engine.tables.select;
 
+import io.deephaven.api.RawString;
+import io.deephaven.api.filter.Filter;
 import io.deephaven.engine.tables.Table;
 import io.deephaven.util.NameValidator;
-import io.deephaven.engine.v2.select.SelectFilter;
 
 import java.util.Objects;
 
@@ -10,10 +11,11 @@ import java.util.Objects;
  * A Pair of (Column name, Filter) for use with {@link Table#wouldMatch(String...)}.
  */
 public class WouldMatchPair {
+
     public static final WouldMatchPair[] ZERO_LENGTH_WOULD_MATCH_PAIR_ARRAY = new WouldMatchPair[0];
 
     private final String columnName;
-    private final SelectFilter filter;
+    private final Filter filter;
 
     /**
      * Create a SelectPair from a column name and DB expression.
@@ -22,18 +24,18 @@ public class WouldMatchPair {
      * @param expression the expression to populate the column
      */
     public WouldMatchPair(String columnName, String expression) {
-        this(columnName, SelectFilterFactory.getExpression(expression));
+        this(columnName, RawString.of(expression));
     }
 
     /**
-     * Create a SelectPair from a column name and {@link SelectFilter}
+     * Create a WouldMatchPair from a column name and {@link Filter}
      *
      * @see SelectFilterFactory
      *
      * @param columnName the name of the resultant column
      * @param filter the filter to populate the column
      */
-    public WouldMatchPair(String columnName, SelectFilter filter) {
+    public WouldMatchPair(String columnName, Filter filter) {
         this.columnName = NameValidator.validateColumnName(columnName);
         this.filter = filter;
     }
@@ -42,7 +44,7 @@ public class WouldMatchPair {
         return columnName;
     }
 
-    public SelectFilter getFilter() {
+    public Filter getFilter() {
         return filter;
     }
 

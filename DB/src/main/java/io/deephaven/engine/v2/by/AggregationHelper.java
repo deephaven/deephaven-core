@@ -444,14 +444,14 @@ public class AggregationHelper {
         return resultHolder.getValue();
     }
 
-    public static LocalTableMap byExternal(@NotNull final QueryTable inputTable,
+    public static LocalTableMap partitionBy(@NotNull final QueryTable inputTable,
             final boolean dropKeyColumns,
             @NotNull final String... keyColumnNames) {
-        return byExternal(AggregationControl.DEFAULT, inputTable, dropKeyColumns, keyColumnNames);
+        return partitionBy(AggregationControl.DEFAULT, inputTable, dropKeyColumns, keyColumnNames);
     }
 
     @VisibleForTesting
-    public static LocalTableMap byExternal(@NotNull final AggregationControl aggregationControl,
+    public static LocalTableMap partitionBy(@NotNull final AggregationControl aggregationControl,
             @NotNull final QueryTable inputTable,
             final boolean dropKeyColumns,
             @NotNull final String... keyColumnNames) {
@@ -479,14 +479,14 @@ public class AggregationHelper {
         }
 
         if (inputTable.isRefreshing()) {
-            return incrementalHashedByExternal(aggregationControl, inputTable, keyColumnSources, subTableSource);
+            return incrementalHashedPartitionBy(aggregationControl, inputTable, keyColumnSources, subTableSource);
         }
 
-        return staticHashedByExternal(aggregationControl, inputTable, keyColumnSources, subTableSource);
+        return staticHashedPartitionBy(aggregationControl, inputTable, keyColumnSources, subTableSource);
     }
 
     @NotNull
-    private static LocalTableMap staticHashedByExternal(@NotNull final AggregationControl aggregationControl,
+    private static LocalTableMap staticHashedPartitionBy(@NotNull final AggregationControl aggregationControl,
             @NotNull final QueryTable inputTable,
             @NotNull final ColumnSource<?>[] keyColumnSources,
             @NotNull final QueryTable subTableSource) {
@@ -548,7 +548,7 @@ public class AggregationHelper {
     }
 
     @NotNull
-    private static LocalTableMap incrementalHashedByExternal(@NotNull final AggregationControl aggregationControl,
+    private static LocalTableMap incrementalHashedPartitionBy(@NotNull final AggregationControl aggregationControl,
             @NotNull final QueryTable inputTable,
             @NotNull final ColumnSource<?>[] keyColumnSources,
             @NotNull final QueryTable subTableSource) {

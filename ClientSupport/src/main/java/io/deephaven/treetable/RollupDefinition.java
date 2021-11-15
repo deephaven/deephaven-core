@@ -4,7 +4,7 @@ import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.select.MatchPair;
 import io.deephaven.engine.util.string.StringUtils;
 import io.deephaven.engine.v2.by.AggType;
-import io.deephaven.engine.v2.by.ComboAggregateFactory;
+import io.deephaven.engine.v2.by.AggregationFactory;
 import gnu.trove.map.hash.TObjectIntHashMap;
 import io.deephaven.UncheckedDeephavenException;
 import org.jdom2.Element;
@@ -168,7 +168,7 @@ public class RollupDefinition implements Serializable {
     }
 
     public List<MatchPair> getResultMatchPairs() {
-        final ComboAggregateFactory caf = createComboAggregateFactory(null);
+        final AggregationFactory caf = createComboAggregateFactory(null);
         return caf.getMatchPairs();
     }
 
@@ -208,14 +208,14 @@ public class RollupDefinition implements Serializable {
     }
 
     /**
-     * Create the ComboAggregateFactory for this rollup. Generate column descriptions if required.
+     * Create the AggregationFactory for this rollup. Generate column descriptions if required.
      *
      * @param descriptions if non-null this method will generate column descriptions
      * @return the ComboAggFactory
      */
-    private ComboAggregateFactory createComboAggregateFactory(final Map<String, String> descriptions) {
+    private AggregationFactory createComboAggregateFactory(final Map<String, String> descriptions) {
         final TObjectIntHashMap<String> aggsByColumn = new TObjectIntHashMap<>();
-        final List<ComboAggregateFactory.ComboBy> combos = new ArrayList<>(getAggregations().size());
+        final List<AggregationFactory.AggregationElement> combos = new ArrayList<>(getAggregations().size());
 
         // Take two passes through the list. The first pass is to decide if we need to append suffixes.
         // The second pass actually creates the aggs.
@@ -227,7 +227,7 @@ public class RollupDefinition implements Serializable {
 
         for (final Map.Entry<AggType, Set<String>> item : getAggregations().entrySet()) {
             if (item.getKey() == AggType.Count) {
-                combos.add(ComboAggregateFactory.AggCount(item.getValue().stream().findFirst().orElse("Rollup_Count")));
+                combos.add(AggregationFactory.AggCount(item.getValue().stream().findFirst().orElse("Rollup_Count")));
             } else {
                 final String[] matchPairs = item.getValue()
                         .stream()
@@ -239,11 +239,11 @@ public class RollupDefinition implements Serializable {
 
                             return aggColName + "=" + col;
                         }).toArray(String[]::new);
-                combos.add(ComboAggregateFactory.Agg(item.getKey(), matchPairs));
+                combos.add(AggregationFactory.Agg(item.getKey(), matchPairs));
             }
         }
 
-        return ComboAggregateFactory.AggCombo(combos.toArray(new ComboAggregateFactory.ComboBy[0]));
+        return AggregationFactory.AggCombo(combos.toArray(new AggregationFactory.AggregationElement[0]));
     }
 
     private String createAggColName(String col, TObjectIntHashMap<String> aggsByColumn, AggType agg) {

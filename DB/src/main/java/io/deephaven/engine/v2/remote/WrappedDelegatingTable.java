@@ -9,9 +9,9 @@ import io.deephaven.engine.tables.select.WouldMatchPair;
 import io.deephaven.engine.v2.BaseTable;
 import io.deephaven.engine.v2.TableMap;
 import io.deephaven.engine.v2.by.AggregationSpec;
-import io.deephaven.engine.v2.by.ComboAggregateFactory;
+import io.deephaven.engine.v2.by.AggregationFactory;
 import io.deephaven.engine.v2.select.SelectColumn;
-import io.deephaven.engine.v2.select.SelectFilter;
+import io.deephaven.engine.v2.select.WhereFilter;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.rowset.TrackingRowSet;
 
@@ -45,7 +45,7 @@ public abstract class WrappedDelegatingTable extends BaseTable {
     }
 
     @Override
-    public <R> R apply(io.deephaven.base.Function.Unary<R, Table> function) {
+    public <R> R apply(Function<Table, R> function) {
         final R result = parent.apply(function);
         if (result instanceof Table) {
             try {
@@ -91,7 +91,7 @@ public abstract class WrappedDelegatingTable extends BaseTable {
     }
 
     @Override
-    public Table where(SelectFilter... filters) {
+    public Table where(WhereFilter... filters) {
         return wrapTable.apply(parent.where(filters));
     }
 
@@ -305,9 +305,9 @@ public abstract class WrappedDelegatingTable extends BaseTable {
     }
 
     @Override
-    public Table rollup(ComboAggregateFactory comboAggregateFactory, boolean includeConstituents,
-            SelectColumn... columns) {
-        return wrapTable.apply(parent.rollup(comboAggregateFactory, includeConstituents, columns));
+    public Table rollup(AggregationFactory aggregationFactory, boolean includeConstituents,
+                        SelectColumn... columns) {
+        return wrapTable.apply(parent.rollup(aggregationFactory, includeConstituents, columns));
     }
 
     @Override

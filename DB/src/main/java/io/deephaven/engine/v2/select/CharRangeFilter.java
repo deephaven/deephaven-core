@@ -27,7 +27,7 @@ public class CharRangeFilter extends AbstractRangeFilter {
         }
     }
 
-    static SelectFilter makeCharRangeFilter(String columnName, Condition condition, String value) {
+    static WhereFilter makeCharRangeFilter(String columnName, Condition condition, String value) {
         switch (condition) {
             case LESS_THAN:
                 return new CharRangeFilter(columnName, RangeConditionFilter.parseCharFilter(value), QueryConstants.NULL_CHAR, true, false);

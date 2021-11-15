@@ -1,17 +1,17 @@
-package io.deephaven.engine.tables.utils;
+package io.deephaven.engine.table;
 
 import io.deephaven.base.StringUtils;
 import io.deephaven.util.NameValidator;
 import io.deephaven.util.annotations.ScriptApi;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.*;
+import java.util.*;x
 import java.util.stream.Collectors;
 
 /**
  * The builder class for use in assembling layout hints suitable for use with
- * {@link io.deephaven.engine.tables.Table#layoutHints(LayoutHintBuilder)} or
- * {@link io.deephaven.engine.tables.Table#layoutHints(String)}.
+ * {@link io.deephaven.engine.table.Table#layoutHints(LayoutHintBuilder)} or
+ * {@link io.deephaven.engine.table.Table#layoutHints(String)}.
  */
 @ScriptApi
 public class LayoutHintBuilder {

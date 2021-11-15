@@ -14,19 +14,19 @@ import java.util.*;
 
 public class ConjunctiveFilter extends ComposedFilter {
 
-    private ConjunctiveFilter(SelectFilter[] componentFilters) {
+    private ConjunctiveFilter(WhereFilter[] componentFilters) {
         super(componentFilters);
     }
 
-    public static SelectFilter of(SelectFilter... filters) {
+    public static WhereFilter of(WhereFilter... filters) {
         return makeConjunctiveFilter(filters);
     }
 
-    public static SelectFilter makeConjunctiveFilter(SelectFilter... componentFilters) {
+    public static WhereFilter makeConjunctiveFilter(WhereFilter... componentFilters) {
         if (componentFilters.length == 1)
             return componentFilters[0];
 
-        final List<SelectFilter> rawComponents = new ArrayList<>();
+        final List<WhereFilter> rawComponents = new ArrayList<>();
         for (int ii = 0; ii < componentFilters.length; ++ii) {
             if (componentFilters[ii] instanceof ConjunctiveFilter) {
                 rawComponents.addAll(Arrays.asList(((ConjunctiveFilter) componentFilters[ii]).getComponentFilters()));
@@ -35,14 +35,14 @@ public class ConjunctiveFilter extends ComposedFilter {
             }
         }
 
-        return new ConjunctiveFilter(rawComponents.toArray(SelectFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY));
+        return new ConjunctiveFilter(rawComponents.toArray(WhereFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY));
     }
 
     @Override
     public MutableRowSet filter(RowSet selection, RowSet fullSet, Table table, boolean usePrev) {
         MutableRowSet matched = selection.copy();
 
-        for (SelectFilter filter : componentFilters) {
+        for (WhereFilter filter : componentFilters) {
             if (Thread.interrupted()) {
                 throw new QueryCancellationException("interrupted while filtering");
             }
@@ -58,7 +58,7 @@ public class ConjunctiveFilter extends ComposedFilter {
     @Override
     public ConjunctiveFilter copy() {
         return new ConjunctiveFilter(
-                Arrays.stream(getComponentFilters()).map(SelectFilter::copy).toArray(SelectFilter[]::new));
+                Arrays.stream(getComponentFilters()).map(WhereFilter::copy).toArray(WhereFilter[]::new));
     }
 
     @Override

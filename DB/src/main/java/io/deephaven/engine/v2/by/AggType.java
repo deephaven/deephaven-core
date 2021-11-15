@@ -1,7 +1,7 @@
 package io.deephaven.engine.v2.by;
 
 /**
- * Enumeration representing valid aggregation types for {@link ComboAggregateFactory} or
+ * Enumeration representing valid aggregation types for {@link AggregationFactory} or
  * {@link io.deephaven.engine.v2.TotalsTableBuilder}.
  */
 public enum AggType {
@@ -26,7 +26,7 @@ public enum AggType {
     /** Return the last value of each group. */
     Last,
     /** Return the values of each group as a Vector. */
-    Array,
+    Group,
     /** Return the number of unique values in each group */
     CountDistinct,
     /** Collect the distinct items from the column */

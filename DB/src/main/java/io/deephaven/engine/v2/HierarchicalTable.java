@@ -5,10 +5,10 @@ import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.select.MatchPair;
 import io.deephaven.engine.tables.select.SelectColumnFactory;
 import io.deephaven.engine.tables.utils.QueryPerformanceRecorder;
+import io.deephaven.engine.v2.by.AggregationFactory;
 import io.deephaven.engine.v2.by.AggregationSpec;
-import io.deephaven.engine.v2.by.ComboAggregateFactory;
 import io.deephaven.engine.v2.select.SelectColumn;
-import io.deephaven.engine.v2.select.SelectFilter;
+import io.deephaven.engine.v2.select.WhereFilter;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import org.apache.commons.lang3.mutable.Mutable;
 import org.apache.commons.lang3.mutable.MutableObject;
@@ -254,7 +254,7 @@ public class HierarchicalTable extends QueryTable {
     }
 
     @Override
-    public Table where(SelectFilter... filters) {
+    public Table where(WhereFilter... filters) {
         return throwUnsupported("where()");
     }
 
@@ -311,7 +311,7 @@ public class HierarchicalTable extends QueryTable {
     }
 
     @Override
-    public Table rollup(ComboAggregateFactory comboAggregateFactory, SelectColumn... columns) {
+    public Table rollup(AggregationFactory aggregationFactory, SelectColumn... columns) {
         return throwUnsupported("rollup()");
     }
 

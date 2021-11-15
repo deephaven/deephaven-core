@@ -5,7 +5,7 @@ import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.v2.QueryTable;
-import io.deephaven.engine.v2.by.ComboAggregateFactory;
+import io.deephaven.engine.v2.by.AggregationFactory;
 import io.deephaven.benchmarking.*;
 import io.deephaven.benchmarking.generator.ColumnGenerator;
 import io.deephaven.benchmarking.generator.EnumStringColumnGenerator;
@@ -21,9 +21,9 @@ import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 
-import static io.deephaven.engine.v2.by.ComboAggregateFactory.AggCombo;
-import static io.deephaven.engine.v2.by.ComboAggregateFactory.AggMin;
-import static io.deephaven.engine.v2.by.ComboAggregateFactory.AggMax;
+import static io.deephaven.engine.v2.by.AggregationFactory.AggCombo;
+import static io.deephaven.engine.v2.by.AggregationFactory.AggMin;
+import static io.deephaven.engine.v2.by.AggregationFactory.AggMax;
 
 @SuppressWarnings("unused")
 @State(Scope.Thread)
@@ -230,9 +230,9 @@ public class SumByBenchmark {
 
     @Benchmark
     public Table minMaxByStatic(@NotNull final Blackhole bh) {
-        final ComboAggregateFactory.ComboBy minCols = AggMin(IntStream.range(1, valueCount + 1)
+        final AggregationFactory.AggregationElement minCols = AggMin(IntStream.range(1, valueCount + 1)
                 .mapToObj(ii -> "Min" + ii + "=ValueToSum" + ii).toArray(String[]::new));
-        final ComboAggregateFactory.ComboBy maxCols = AggMax(IntStream.range(1, valueCount + 1)
+        final AggregationFactory.AggregationElement maxCols = AggMax(IntStream.range(1, valueCount + 1)
                 .mapToObj(ii -> "Max" + ii + "=ValueToSum" + ii).toArray(String[]::new));
 
         final Table result = IncrementalBenchmark.rollingBenchmark(
@@ -244,9 +244,9 @@ public class SumByBenchmark {
 
     @Benchmark
     public Table minMaxByIncremental(@NotNull final Blackhole bh) {
-        final ComboAggregateFactory.ComboBy minCols = AggMin(IntStream.range(1, valueCount + 1)
+        final AggregationFactory.AggregationElement minCols = AggMin(IntStream.range(1, valueCount + 1)
                 .mapToObj(ii -> "Min" + ii + "=ValueToSum" + ii).toArray(String[]::new));
-        final ComboAggregateFactory.ComboBy maxCols = AggMax(IntStream.range(1, valueCount + 1)
+        final AggregationFactory.AggregationElement maxCols = AggMax(IntStream.range(1, valueCount + 1)
                 .mapToObj(ii -> "Max" + ii + "=ValueToSum" + ii).toArray(String[]::new));
 
         final Table result = IncrementalBenchmark.rollingBenchmark(
@@ -258,9 +258,9 @@ public class SumByBenchmark {
 
     @Benchmark
     public Table minMaxByRolling(@NotNull final Blackhole bh) {
-        final ComboAggregateFactory.ComboBy minCols = AggMin(IntStream.range(1, valueCount + 1)
+        final AggregationFactory.AggregationElement minCols = AggMin(IntStream.range(1, valueCount + 1)
                 .mapToObj(ii -> "Min" + ii + "=ValueToSum" + ii).toArray(String[]::new));
-        final ComboAggregateFactory.ComboBy maxCols = AggMax(IntStream.range(1, valueCount + 1)
+        final AggregationFactory.AggregationElement maxCols = AggMax(IntStream.range(1, valueCount + 1)
                 .mapToObj(ii -> "Max" + ii + "=ValueToSum" + ii).toArray(String[]::new));
 
         final Table result = IncrementalBenchmark.rollingBenchmark(

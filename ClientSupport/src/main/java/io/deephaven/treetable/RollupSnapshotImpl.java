@@ -10,7 +10,7 @@ import io.deephaven.engine.v2.ReverseLookup;
 import io.deephaven.engine.v2.RollupInfo;
 import io.deephaven.engine.v2.TableMap;
 import io.deephaven.engine.v2.select.SelectColumn;
-import io.deephaven.engine.v2.select.SelectFilter;
+import io.deephaven.engine.v2.select.WhereFilter;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.table.sort.SortDirective;
 import org.jetbrains.annotations.NotNull;
@@ -47,7 +47,7 @@ class RollupSnapshotImpl<CLIENT_TYPE extends TreeTableClientTableManager.Client<
             long firstRow,
             long lastRow,
             BitSet columns,
-            @NotNull SelectFilter[] filters,
+            @NotNull WhereFilter[] filters,
             @NotNull List<SortDirective> sorts,
             CLIENT_TYPE client,
             Set<TreeSnapshotQuery.Operation> includedOps) {
@@ -154,7 +154,7 @@ class RollupSnapshotImpl<CLIENT_TYPE extends TreeTableClientTableManager.Client<
     }
 
     private HierarchicalTable applyFilters(@NotNull HierarchicalTable table) {
-        final SelectFilter[] filters = getFilters();
+        final WhereFilter[] filters = getFilters();
         if (filters.length == 0) {
             return table;
         }

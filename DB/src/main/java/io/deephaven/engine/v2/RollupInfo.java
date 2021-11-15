@@ -1,7 +1,7 @@
 package io.deephaven.engine.v2;
 
 import io.deephaven.engine.tables.select.MatchPair;
-import io.deephaven.engine.v2.by.ComboAggregateFactory;
+import io.deephaven.engine.v2.by.AggregationFactory;
 import io.deephaven.engine.v2.select.SelectColumn;
 
 import java.util.*;
@@ -15,7 +15,7 @@ public class RollupInfo extends AbstractHierarchicalTableInfo {
     public final LeafType leafType;
     public final Set<String> byColumnNames;
 
-    public final transient ComboAggregateFactory factory;
+    public final transient AggregationFactory factory;
     public final transient SelectColumn[] selectColumns;
 
     /**
@@ -32,12 +32,12 @@ public class RollupInfo extends AbstractHierarchicalTableInfo {
         Constituent
     }
 
-    public RollupInfo(ComboAggregateFactory factory, SelectColumn[] selectColumns, LeafType leafType) {
+    public RollupInfo(AggregationFactory factory, SelectColumn[] selectColumns, LeafType leafType) {
         this(factory, selectColumns, leafType, null);
     }
 
-    public RollupInfo(ComboAggregateFactory factory, SelectColumn[] selectColumns, LeafType leafType,
-            String[] columnFormats) {
+    public RollupInfo(AggregationFactory factory, SelectColumn[] selectColumns, LeafType leafType,
+                      String[] columnFormats) {
         super(columnFormats);
         this.factory = factory;
         this.selectColumns = selectColumns;

@@ -11,7 +11,7 @@ import org.jetbrains.annotations.Nullable;
  * another way, subsequent filters need to see the TrackingMutableRowSet selected by this filter for purposes of
  * determining i values. ReindexingFilters may also optionally specify a re-sorting of the table to be input.
  */
-public interface ReindexingFilter extends SelectFilter {
+public interface ReindexingFilter extends WhereFilter {
 
     /**
      * @return True iff getSortColumns will return a non-null, non-empty array of column names to sort on.

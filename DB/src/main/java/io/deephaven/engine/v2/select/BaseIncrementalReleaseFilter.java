@@ -20,7 +20,7 @@ import java.util.List;
  * The use case is for benchmarks that want to replay a table in order to better understand incremental processing
  * capacity.
  */
-public abstract class BaseIncrementalReleaseFilter extends SelectFilterLivenessArtifactImpl implements Runnable {
+public abstract class BaseIncrementalReleaseFilter extends WhereFilterLivenessArtifactImpl implements Runnable {
     private final long initialSize;
     private long releasedSize;
     private long expectedSize;

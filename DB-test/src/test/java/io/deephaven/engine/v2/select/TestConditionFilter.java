@@ -429,7 +429,7 @@ public class TestConditionFilter extends PythonTest {
 
 
     private RowSet initCheck(String expression, FormulaParserConfiguration parser) {
-        final SelectFilter conditionFilter = ConditionFilter.createConditionFilter(expression, parser);
+        final WhereFilter conditionFilter = ConditionFilter.createConditionFilter(expression, parser);
         conditionFilter.init(testDataTable.getDefinition());
         return conditionFilter.filter(testDataTable.getRowSet().copy(), testDataTable.getRowSet(), testDataTable,
                 false);

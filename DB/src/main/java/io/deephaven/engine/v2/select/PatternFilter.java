@@ -23,7 +23,7 @@ import static io.deephaven.engine.v2.select.MatchFilter.MatchType;
 /**
  * Base class for filters that use a Pattern to do filtering.
  */
-public abstract class PatternFilter extends SelectFilterImpl {
+public abstract class PatternFilter extends WhereFilterImpl {
 
     private static final long serialVersionUID = 1L;
 

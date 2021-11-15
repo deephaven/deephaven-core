@@ -13,7 +13,7 @@ import io.deephaven.api.SortColumn.Order;
 import io.deephaven.api.Strings;
 import io.deephaven.api.agg.AbsSum;
 import io.deephaven.api.agg.Aggregation;
-import io.deephaven.api.agg.Array;
+import io.deephaven.api.agg.Group;
 import io.deephaven.api.agg.Avg;
 import io.deephaven.api.agg.Count;
 import io.deephaven.api.agg.CountDistinct;
@@ -604,8 +604,8 @@ class BatchTableRequestBuilder {
         }
 
         @Override
-        public void visit(Array array) {
-            out = of(AggType.ARRAY, array.pair()).build();
+        public void visit(Group group) {
+            out = of(AggType.ARRAY, group.pair()).build();
         }
 
         @Override

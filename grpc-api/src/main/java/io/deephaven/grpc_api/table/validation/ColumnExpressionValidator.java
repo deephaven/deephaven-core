@@ -16,6 +16,7 @@ import io.deephaven.engine.time.DateTime;
 import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.engine.util.ColorUtilImpl;
 import io.deephaven.engine.v2.BaseTable;
+import io.deephaven.engine.v2.QueryTable;
 import io.deephaven.engine.v2.select.*;
 import io.deephaven.engine.v2.select.analyzers.SelectAndViewAnalyzer;
 import io.deephaven.engine.v2.select.codegen.FormulaAnalyzer;
@@ -70,11 +71,11 @@ public class ColumnExpressionValidator extends GenericVisitorAdapter<Void, Void>
                 .collect(Collectors.collectingAndThen(Collectors.toSet(), Collections::unmodifiableSet));
     }
 
-    public static SelectFilter[] validateSelectFilters(final String[] conditionalExpressions, final Table table) {
-        final SelectFilter[] selectFilters = SelectFilterFactory.getExpressions(conditionalExpressions);
+    public static WhereFilter[] validateSelectFilters(final String[] conditionalExpressions, final Table table) {
+        final WhereFilter[] whereFilters = SelectFilterFactory.getExpressions(conditionalExpressions);
         final List<String> dummyAssignments = new ArrayList<>();
-        for (int ii = 0; ii < selectFilters.length; ++ii) {
-            final SelectFilter sf = selectFilters[ii];
+        for (int ii = 0; ii < whereFilters.length; ++ii) {
+            final WhereFilter sf = whereFilters[ii];
             if (sf instanceof ConditionFilter) {
                 dummyAssignments
                         .add(String.format("__boolean_placeholder_%d__ = (%s)", ii, conditionalExpressions[ii]));
@@ -85,7 +86,7 @@ public class ColumnExpressionValidator extends GenericVisitorAdapter<Void, Void>
             final SelectColumn[] selectColumns = SelectColumnFactory.getExpressions(daArray);
             validateColumnExpressions(selectColumns, daArray, table);
         }
-        return selectFilters;
+        return whereFilters;
     }
 
     public static void validateColumnExpressions(final SelectColumn[] selectColumns,
@@ -93,7 +94,7 @@ public class ColumnExpressionValidator extends GenericVisitorAdapter<Void, Void>
             final Table table) {
         assert (selectColumns.length == originalExpressions.length);
 
-        final SelectValidationResult validationResult = table.validateSelect(selectColumns);
+        final SelectValidationResult validationResult = ((QueryTable) table.coalesce()).validateSelect(selectColumns);
         SelectAndViewAnalyzer top = validationResult.getAnalyzer();
         // We need the cloned columns because the SelectAndViewAnalyzer has left state behind in them
         // (namely the "realColumn" of the SwitchColumn) that we want to look at in validateSelectColumnHelper.

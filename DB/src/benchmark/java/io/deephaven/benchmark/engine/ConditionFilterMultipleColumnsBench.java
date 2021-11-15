@@ -4,7 +4,7 @@ import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.v2.select.ConditionFilter;
 import io.deephaven.engine.v2.select.IncrementalReleaseFilter;
-import io.deephaven.engine.v2.select.SelectFilter;
+import io.deephaven.engine.v2.select.WhereFilter;
 import io.deephaven.benchmarking.*;
 import io.deephaven.benchmarking.runner.TableBenchmarkState;
 import org.openjdk.jmh.annotations.*;
@@ -108,7 +108,7 @@ public class ConditionFilterMultipleColumnsBench {
                 new IncrementalReleaseFilter(sizePerStep, sizePerStep);
         final Table inputReleased = inputTable.where(incrementalReleaseFilter);
 
-        final SelectFilter filter = ConditionFilter.createConditionFilter(filterExpression);
+        final WhereFilter filter = ConditionFilter.createConditionFilter(filterExpression);
         final Table result = inputReleased.where(filter);
         // Compute the first pass of live iterations outside of the bench measurement,
         // to avoid including the time to setup the filter itself.

@@ -8,12 +8,12 @@ import io.deephaven.api.value.Value;
 import io.deephaven.engine.v2.select.ConditionFilter;
 import io.deephaven.engine.v2.select.LongRangeFilter;
 import io.deephaven.engine.v2.select.MatchFilter;
-import io.deephaven.engine.v2.select.SelectFilter;
+import io.deephaven.engine.v2.select.WhereFilter;
 import junit.framework.TestCase;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class SelectFilterTest extends TestCase {
+public class WhereFilterTest extends TestCase {
 
     private static final ColumnName FOO = ColumnName.of("Foo");
     private static final ColumnName BAR = ColumnName.of("Bar");
@@ -73,10 +73,10 @@ public class SelectFilterTest extends TestCase {
         expect(FilterCondition.lte(FOO, BAR), ConditionFilter.class, "Foo <= Bar");
     }
 
-    private static void expect(Filter filter, Class<? extends SelectFilter> clazz, String expected) {
-        SelectFilter impl = SelectFilter.of(filter);
+    private static void expect(Filter filter, Class<? extends WhereFilter> clazz, String expected) {
+        WhereFilter impl = WhereFilter.of(filter);
         assertThat(impl).isInstanceOf(clazz);
-        // SelectFilter doesn't necessary implement equals, so we need to use the string repr
+        // WhereFilter doesn't necessary implement equals, so we need to use the string repr
         assertThat(impl.toString()).isEqualTo(expected);
     }
 }

@@ -13,11 +13,11 @@ import io.deephaven.util.annotations.TestUseOnly;
 import java.util.*;
 import java.util.stream.Stream;
 
-public abstract class ComposedFilter extends SelectFilterLivenessArtifactImpl implements DependencyStreamProvider {
-    final SelectFilter[] componentFilters;
+public abstract class ComposedFilter extends WhereFilterLivenessArtifactImpl implements DependencyStreamProvider {
+    final WhereFilter[] componentFilters;
 
-    ComposedFilter(SelectFilter[] componentFilters) {
-        for (final SelectFilter componentFilter : componentFilters) {
+    ComposedFilter(WhereFilter[] componentFilters) {
+        for (final WhereFilter componentFilter : componentFilters) {
             if (componentFilter instanceof ReindexingFilter) {
                 throw new UnsupportedOperationException(
                         "ComposedFilters do not support ReindexingFilters: " + componentFilter);
@@ -25,20 +25,20 @@ public abstract class ComposedFilter extends SelectFilterLivenessArtifactImpl im
         }
         this.componentFilters = componentFilters;
 
-        for (SelectFilter f : this.componentFilters) {
+        for (WhereFilter f : this.componentFilters) {
             if (f instanceof LivenessArtifact) {
                 manage((LivenessArtifact) f);
             }
         }
 
-        setAutomatedFilter(Arrays.stream(componentFilters).allMatch(SelectFilter::isAutomatedFilter));
+        setAutomatedFilter(Arrays.stream(componentFilters).allMatch(WhereFilter::isAutomatedFilter));
     }
 
     @Override
     public List<String> getColumns() {
         final Set<String> result = new HashSet<>();
 
-        for (SelectFilter filter : componentFilters) {
+        for (WhereFilter filter : componentFilters) {
             result.addAll(filter.getColumns());
         }
 
@@ -49,7 +49,7 @@ public abstract class ComposedFilter extends SelectFilterLivenessArtifactImpl im
     public List<String> getColumnArrays() {
         final Set<String> result = new HashSet<>();
 
-        for (SelectFilter filter : componentFilters) {
+        for (WhereFilter filter : componentFilters) {
             result.addAll(filter.getColumnArrays());
         }
 
@@ -58,14 +58,14 @@ public abstract class ComposedFilter extends SelectFilterLivenessArtifactImpl im
 
     @Override
     public void init(TableDefinition tableDefinition) {
-        for (SelectFilter filter : componentFilters) {
+        for (WhereFilter filter : componentFilters) {
             filter.init(tableDefinition);
         }
     }
 
     @Override
     public boolean isSimpleFilter() {
-        for (SelectFilter filter : componentFilters) {
+        for (WhereFilter filter : componentFilters) {
             if (!filter.isSimpleFilter()) {
                 return false;
             }
@@ -73,25 +73,25 @@ public abstract class ComposedFilter extends SelectFilterLivenessArtifactImpl im
         return true;
     }
 
-    protected SelectFilter[] getComponentFilters() {
+    protected WhereFilter[] getComponentFilters() {
         return componentFilters;
     }
 
     @TestUseOnly
-    public List<SelectFilter> getFilters() {
+    public List<WhereFilter> getFilters() {
         return Collections.unmodifiableList(Arrays.asList(componentFilters));
     }
 
     @Override
     public void setRecomputeListener(RecomputeListener listener) {
-        for (SelectFilter filter : getComponentFilters()) {
+        for (WhereFilter filter : getComponentFilters()) {
             filter.setRecomputeListener(listener);
         }
     }
 
     @Override
     public boolean isRefreshing() {
-        return Arrays.stream(componentFilters).anyMatch(SelectFilter::isRefreshing);
+        return Arrays.stream(componentFilters).anyMatch(WhereFilter::isRefreshing);
     }
 
 
@@ -106,7 +106,7 @@ public abstract class ComposedFilter extends SelectFilterLivenessArtifactImpl im
 
     @Override
     public boolean canMemoize() {
-        return Arrays.stream(componentFilters).allMatch(SelectFilter::canMemoize);
+        return Arrays.stream(componentFilters).allMatch(WhereFilter::canMemoize);
     }
 
     @Override

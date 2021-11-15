@@ -27,26 +27,26 @@ import java.util.Objects;
 /**
  * Interface for individual filters within a where clause.
  */
-public interface SelectFilter {
+public interface WhereFilter {
 
-    static SelectFilter of(Filter filter) {
+    static WhereFilter of(Filter filter) {
         return filter.walk(new Adapter(false)).getOut();
     }
 
-    static SelectFilter ofInverted(Filter filter) {
+    static WhereFilter ofInverted(Filter filter) {
         return filter.walk(new Adapter(true)).getOut();
     }
 
-    static SelectFilter[] from(Collection<? extends Filter> filters) {
-        return filters.stream().map(SelectFilter::of).toArray(SelectFilter[]::new);
+    static WhereFilter[] from(Collection<? extends Filter> filters) {
+        return filters.stream().map(WhereFilter::of).toArray(WhereFilter[]::new);
     }
 
-    static SelectFilter[] fromInverted(Collection<? extends Filter> filters) {
-        return filters.stream().map(SelectFilter::ofInverted).toArray(SelectFilter[]::new);
+    static WhereFilter[] fromInverted(Collection<? extends Filter> filters) {
+        return filters.stream().map(WhereFilter::ofInverted).toArray(WhereFilter[]::new);
     }
 
     /**
-     * Users of SelectFilter may implement this interface if they must react to the filter fundamentally changing.
+     * Users of WhereFilter may implement this interface if they must react to the filter fundamentally changing.
      *
      * @see DynamicWhereFilter
      */
@@ -82,7 +82,7 @@ public interface SelectFilter {
         void setIsRefreshing(boolean refreshing);
     }
 
-    SelectFilter[] ZERO_LENGTH_SELECT_FILTER_ARRAY = new SelectFilter[0];
+    WhereFilter[] ZERO_LENGTH_SELECT_FILTER_ARRAY = new WhereFilter[0];
 
     /**
      * Get the columns required by this select filter.
@@ -174,11 +174,11 @@ public interface SelectFilter {
     }
 
     /**
-     * Create a copy of this SelectFilter.
+     * Create a copy of this WhereFilter.
      *
-     * @return an independent copy of this SelectFilter.
+     * @return an independent copy of this WhereFilter.
      */
-    SelectFilter copy();
+    WhereFilter copy();
 
     /**
      * This exception is thrown when a where() filter is incapable of handling previous values, and thus needs to be
@@ -196,13 +196,13 @@ public interface SelectFilter {
 
     class Adapter implements Filter.Visitor {
         private final boolean inverted;
-        private SelectFilter out;
+        private WhereFilter out;
 
         private Adapter(boolean inverted) {
             this.inverted = inverted;
         }
 
-        public SelectFilter getOut() {
+        public WhereFilter getOut() {
             return Objects.requireNonNull(out);
         }
 
@@ -275,7 +275,7 @@ public interface SelectFilter {
 
         private static class FilterConditionAdapter implements Value.Visitor {
 
-            public static SelectFilter of(FilterCondition condition) {
+            public static WhereFilter of(FilterCondition condition) {
                 FilterCondition preferred = condition.maybeTranspose();
                 return preferred.lhs().walk(new FilterConditionAdapter(condition, preferred)).getOut();
             }
@@ -283,14 +283,14 @@ public interface SelectFilter {
             private final FilterCondition original;
             private final FilterCondition preferred;
 
-            private SelectFilter out;
+            private WhereFilter out;
 
             private FilterConditionAdapter(FilterCondition original, FilterCondition preferred) {
                 this.original = Objects.requireNonNull(original);
                 this.preferred = Objects.requireNonNull(preferred);
             }
 
-            public SelectFilter getOut() {
+            public WhereFilter getOut() {
                 return Objects.requireNonNull(out);
             }
 

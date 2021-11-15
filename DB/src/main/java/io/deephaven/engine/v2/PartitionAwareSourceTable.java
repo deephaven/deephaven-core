@@ -36,7 +36,7 @@ import java.util.stream.StreamSupport;
 public class PartitionAwareSourceTable extends SourceTable {
 
     private final Map<String, ColumnDefinition<?>> partitioningColumnDefinitions;
-    private final SelectFilter[] partitioningColumnFilters;
+    private final WhereFilter[] partitioningColumnFilters;
 
     /**
      * @param tableDefinition A TableDefinition
@@ -64,7 +64,7 @@ public class PartitionAwareSourceTable extends SourceTable {
             @NotNull final TableLocationProvider locationProvider,
             @Nullable final UpdateSourceRegistrar updateSourceRegistrar,
             @NotNull final Map<String, ColumnDefinition<?>> partitioningColumnDefinitions,
-            @Nullable final SelectFilter... partitioningColumnFilters) {
+            @Nullable final WhereFilter... partitioningColumnFilters) {
         super(tableDefinition, description, componentFactory, locationProvider, updateSourceRegistrar);
         this.partitioningColumnDefinitions = partitioningColumnDefinitions;
         this.partitioningColumnFilters = partitioningColumnFilters;
@@ -76,15 +76,15 @@ public class PartitionAwareSourceTable extends SourceTable {
             @NotNull final TableLocationProvider locationProvider,
             @Nullable final UpdateSourceRegistrar updateSourceRegistrar,
             @NotNull final Map<String, ColumnDefinition<?>> partitioningColumnDefinitions,
-            @Nullable final SelectFilter... partitioningColumnFilters) {
+            @Nullable final WhereFilter... partitioningColumnFilters) {
         return new PartitionAwareSourceTable(tableDefinition, description, componentFactory, locationProvider,
                 updateSourceRegistrar, partitioningColumnDefinitions, partitioningColumnFilters);
     }
 
     private PartitionAwareSourceTable getFilteredTable(
-            @NotNull final SelectFilter... additionalPartitioningColumnFilters) {
-        SelectFilter[] resultPartitioningColumnFilters =
-                new SelectFilter[partitioningColumnFilters.length + additionalPartitioningColumnFilters.length];
+            @NotNull final WhereFilter... additionalPartitioningColumnFilters) {
+        WhereFilter[] resultPartitioningColumnFilters =
+                new WhereFilter[partitioningColumnFilters.length + additionalPartitioningColumnFilters.length];
         System.arraycopy(partitioningColumnFilters, 0, resultPartitioningColumnFilters, 0,
                 partitioningColumnFilters.length);
         System.arraycopy(additionalPartitioningColumnFilters, 0, resultPartitioningColumnFilters,
@@ -110,16 +110,16 @@ public class PartitionAwareSourceTable extends SourceTable {
         }
 
         @Override
-        public TableAndRemainingFilters getWithWhere(SelectFilter... selectFilters) {
-            ArrayList<SelectFilter> partitionFilters = new ArrayList<>();
-            ArrayList<SelectFilter> groupFilters = new ArrayList<>();
-            ArrayList<SelectFilter> otherFilters = new ArrayList<>();
+        public TableAndRemainingFilters getWithWhere(WhereFilter... whereFilters) {
+            ArrayList<WhereFilter> partitionFilters = new ArrayList<>();
+            ArrayList<WhereFilter> groupFilters = new ArrayList<>();
+            ArrayList<WhereFilter> otherFilters = new ArrayList<>();
 
             List<ColumnDefinition<?>> groupingColumns = table.getDefinition().getGroupingColumns();
             Set<String> groupingColumnNames =
                     groupingColumns.stream().map(ColumnDefinition::getName).collect(Collectors.toSet());
 
-            for (SelectFilter filter : selectFilters) {
+            for (WhereFilter filter : whereFilters) {
                 filter.init(table.definition);
                 List<String> columns = filter.getColumns();
                 if (filter instanceof ReindexingFilter) {
@@ -136,7 +136,7 @@ public class PartitionAwareSourceTable extends SourceTable {
             }
 
             final Table result = partitionFilters.isEmpty() ? table.coalesce()
-                    : table.where(partitionFilters.toArray(SelectFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY));
+                    : table.where(partitionFilters.toArray(WhereFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY));
 
             // put the other filters onto the end of the grouping filters, this means that the group filters should
             // go first, which should be preferable to having them second. This is basically the first query
@@ -146,7 +146,7 @@ public class PartitionAwareSourceTable extends SourceTable {
             groupFilters.addAll(otherFilters);
 
             return new TableAndRemainingFilters(result,
-                    groupFilters.toArray(SelectFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY));
+                    groupFilters.toArray(WhereFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY));
         }
 
         @Override
@@ -260,20 +260,20 @@ public class PartitionAwareSourceTable extends SourceTable {
     }
 
     @Override
-    public final Table where(SelectFilter... filters) {
+    public final Table where(WhereFilter... filters) {
         if (filters.length == 0) {
             return QueryPerformanceRecorder.withNugget(description + ".coalesce()", this::coalesce);
         }
 
-        ArrayList<SelectFilter> partitionFilters = new ArrayList<>();
-        ArrayList<SelectFilter> groupFilters = new ArrayList<>();
-        ArrayList<SelectFilter> otherFilters = new ArrayList<>();
+        ArrayList<WhereFilter> partitionFilters = new ArrayList<>();
+        ArrayList<WhereFilter> groupFilters = new ArrayList<>();
+        ArrayList<WhereFilter> otherFilters = new ArrayList<>();
 
         List<ColumnDefinition<?>> groupingColumns = definition.getGroupingColumns();
         Set<String> groupingColumnNames =
                 groupingColumns.stream().map(ColumnDefinition::getName).collect(Collectors.toSet());
 
-        for (SelectFilter filter : filters) {
+        for (WhereFilter filter : filters) {
             filter.init(definition);
             List<String> columns = filter.getColumns();
             if (filter instanceof ReindexingFilter) {
@@ -298,7 +298,7 @@ public class PartitionAwareSourceTable extends SourceTable {
             return deferredViewTable;
         }
 
-        SelectFilter[] partitionFilterArray = partitionFilters.toArray(SelectFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY);
+        WhereFilter[] partitionFilterArray = partitionFilters.toArray(WhereFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY);
         final String filteredTableDescription = "getFilteredTable(" + Arrays.toString(partitionFilterArray) + ")";
         SourceTable filteredTable = QueryPerformanceRecorder.withNugget(filteredTableDescription,
                 () -> getFilteredTable(partitionFilterArray));
@@ -315,7 +315,7 @@ public class PartitionAwareSourceTable extends SourceTable {
 
         return QueryPerformanceRecorder.withNugget(description + ".coalesce().where(" + groupFilters + ")",
                 () -> filteredTable.coalesce()
-                        .where(groupFilters.toArray(SelectFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY)));
+                        .where(groupFilters.toArray(WhereFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY)));
     }
 
     @Override

@@ -29,7 +29,7 @@ import java.util.List;
  * </p>
  */
 
-public class DownsampledWhereFilter extends SelectFilterImpl {
+public class DownsampledWhereFilter extends WhereFilterImpl {
     private final String column;
     private final long binSize;
     private final SampleOrder order;

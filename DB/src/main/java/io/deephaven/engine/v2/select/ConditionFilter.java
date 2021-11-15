@@ -56,7 +56,7 @@ public class ConditionFilter extends AbstractConditionFilter {
         super(formula, renames, false);
     }
 
-    public static SelectFilter createConditionFilter(@NotNull String formula, FormulaParserConfiguration parser) {
+    public static WhereFilter createConditionFilter(@NotNull String formula, FormulaParserConfiguration parser) {
         switch (parser) {
             case Deephaven:
                 return new ConditionFilter(formula);
@@ -67,7 +67,7 @@ public class ConditionFilter extends AbstractConditionFilter {
         }
     }
 
-    public static SelectFilter createConditionFilter(@NotNull String formula) {
+    public static WhereFilter createConditionFilter(@NotNull String formula) {
         return createConditionFilter(formula, FormulaParserConfiguration.parser);
     }
 
