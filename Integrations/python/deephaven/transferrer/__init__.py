@@ -10,16 +10,16 @@ import jpy
 import wrapt
 
 # None until the first _defineSymbols() call
-gatherer = None
+_gatherer = None
 
 def _defineSymbols():
     if not jpy.has_jvm():
         raise SystemError("No java functionality can be used until the JVM has been initialized through the jpy module")
 
-    global gatherer
+    global _gatherer
 
-    if gatherer is None:
-        gatherer = jpy.get_type("io.deephaven.integrations.learn.Gatherer")
+    if _gatherer is None:
+        _gatherer = jpy.get_type("io.deephaven.integrations.learn.Gatherer")
 
 # Every method that depends on symbols defined via _defineSymbols() should be decorated with @_passThrough
 @wrapt.decorator
@@ -43,7 +43,7 @@ except Exception as e:
     pass
 
 @_passThrough
-def table_to_numpy_2d(idx, cols, np_dtype = None):
+def table_to_numpy_2d(idx, cols, np_dtype = None, transpose = False, squeeze = False):
     """
     Convert Deephaven table data to a 2d NumPy array of the appropriate size
 
@@ -61,21 +61,29 @@ def table_to_numpy_2d(idx, cols, np_dtype = None):
         np_dtype = np.intc
 
     if np_dtype == np.bool_:
-        buffer = gatherer.booleanTensorBuffer2D(idx, cols)
+        buffer = _gatherer.booleanTensorBuffer2D(idx, cols, transpose)
     elif np_dtype == np.byte:
-        buffer = gatherer.byteTensorBuffer2D(idx, cols)
+        buffer = _gatherer.byteTensorBuffer2D(idx, cols, transpose)
     elif np_dtype == np.double:
-        buffer = gatherer.doubleTensorBuffer2D(idx, cols)
+        buffer = _gatherer.doubleTensorBuffer2D(idx, cols, transpose)
     elif np_dtype == np.intc:
-        buffer = gatherer.intTensorBuffer2D(idx, cols)
+        buffer = _gatherer.intTensorBuffer2D(idx, cols, transpose)
     elif np_dtype == np.int_:
-        buffer = gatherer.longTensorBuffer2D(idx, cols)
+        buffer = _gatherer.longTensorBuffer2D(idx, cols, transpose)
     elif np_dtype == np.short:
-        buffer = gatherer.shortTensorBuffer2D(idx, cols)
+        buffer = _gatherer.shortTensorBuffer2D(idx, cols, transpose)
     elif np_dtype == np.single:
-        buffer = gatherer.floatTensorBuffer2D(idx, cols)
+        buffer = _gatherer.floatTensorBuffer2D(idx, cols, transpose)
+    else:
+        raise ValueError("Data type {input_type} is not supported.".format(input_type = np_dtype))
 
     tensor = np.frombuffer(buffer, dtype = np_dtype)
-    tensor.shape = (idx.getSize(), len(cols))
+    if not transpose:
+        tensor.shape = (idx.getSize(), len(cols))
+    else:
+        tensor.shape = (len(cols), idx.getSize())
 
-    return np.squeeze(tensor)
+    if squeeze:
+        return np.squeeze(tensor)
+    else:
+        return tensor

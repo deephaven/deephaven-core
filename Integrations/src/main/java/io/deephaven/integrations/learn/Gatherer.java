@@ -1,30 +1,55 @@
 package io.deephaven.integrations.learn;
 
 import io.deephaven.db.v2.sources.ColumnSource;
+// REMOVE THIS AFTER REMOVING makeIndexSet!
+import io.deephaven.db.tables.Table;
 
+/**
+ * Gatherer takes Deephaven columnar data and places it into a buffer to be used by Python.  The Python object will take
+ * data from the buffer and use it to construct a 2d array of specified size.
+ */
 public class Gatherer {
+
+    /**
+     * Generate an index set from a table.
+     * THIS IS JUST FOR EASY PYTHON TESTING.  REMOVE BEFORE PROD.
+     *
+     * @param t table
+     * @return index set
+     */
+    public static IndexSet makeIndexSet(final Table t) {
+        final IndexSet is = new IndexSet(t.intSize());
+
+        for(long idx : t.getIndex()) {
+            is.add(idx);
+        }
+
+        return is;
+    }
 
     /**
      * Copy data from a table into a 2d tensor of Booleans.
      *
      * @param indexSet indices of the rows of the table to put into the tensor
      * @param columnSources columns of data to put into the tensor
+     * @param transpose a boolean indicating the user's intent to return a transposed Python object
      * @return contiguous RAM allocated for the tensor. When a numpy tensor is passed in for this argument, jpy will
      *         handle passing the memory reference as a 1d java array here.
      */
-
-    public static Boolean[] booleanTensorBuffer2D(final IndexSet indexSet, final ColumnSource<?>[] columnSources) {
+    public static boolean[] tensorBuffer2Dboolean(final IndexSet indexSet,
+                                                  final ColumnSource<?>[] columnSources,
+                                                  final boolean transpose) {
 
         final int nRows = indexSet.getSize();
         final int nCols = columnSources.length;
-        final Boolean[] tensor = new Boolean[nRows * nCols];
+        final boolean[] tensor = new boolean[nRows * nCols];
 
         int j = 0;
-        for (ColumnSource<?> cs : columnSources) {
+        for (ColumnSource<?> cs: columnSources) {
             int i = 0;
 
             for (long idx : indexSet) {
-                final int ij = nCols * i + j;
+                final int ij = transpose ? nRows * j + i : nCols * i + j;
                 tensor[ij] = cs.getBoolean(idx);
                 i++;
             }
@@ -40,11 +65,13 @@ public class Gatherer {
      *
      * @param indexSet indices of the rows of the table to put into the tensor
      * @param columnSources columns of data to put into the tensor
+     * @param transpose a boolean indicating the user's intent to return a transposed Python object
      * @return contiguous RAM allocated for the tensor. When a numpy tensor is passed in for this argument, jpy will
      *         handle passing the memory reference as a 1d java array here.
      */
-
-    public static byte[] byteTensorBuffer2D(final IndexSet indexSet, final ColumnSource<?>[] columnSources) {
+    public static byte[] TensorBuffer2Dbyte(final IndexSet indexSet,
+                                            final ColumnSource<?>[] columnSources,
+                                            final boolean transpose) {
 
         final int nRows = indexSet.getSize();
         final int nCols = columnSources.length;
@@ -55,7 +82,7 @@ public class Gatherer {
             int i = 0;
 
             for (long idx : indexSet) {
-                final int ij = nCols * i + j;
+                final int ij = transpose ? nRows * j + i : nCols * i + j;
                 tensor[ij] = cs.getByte(idx);
                 i++;
             }
@@ -71,10 +98,13 @@ public class Gatherer {
      *
      * @param indexSet indices of the rows of the table to put into the tensor
      * @param columnSources columns of data to put into the tensor
+     * @param transpose a boolean indicating the user's intent to return a transposed Python object
      * @return contiguous RAM allocated for the tensor. When a numpy tensor is passed in for this argument, jpy will
      *         handle passing the memory reference as a 1d java array here.
      */
-    public static double[] doubleTensorBuffer2D(final IndexSet indexSet, final ColumnSource<?>[] columnSources) {
+    public static double[] TensorBuffer2Ddouble(final IndexSet indexSet,
+                                                final ColumnSource<?>[] columnSources,
+                                                final boolean transpose) {
 
         final int nRows = indexSet.getSize();
         final int nCols = columnSources.length;
@@ -85,7 +115,7 @@ public class Gatherer {
             int i = 0;
 
             for (long idx : indexSet) {
-                final int ij = nCols * i + j;
+                final int ij = transpose ? nRows * j + i : nCols * i + j;
                 tensor[ij] = cs.getDouble(idx);
                 i++;
             }
@@ -101,11 +131,14 @@ public class Gatherer {
      *
      * @param indexSet indices of the rows of the table to put into the tensor
      * @param columnSources columns of data to put into the tensor
+     * @param transpose a boolean indicating the user's intent to return a transposed Python object
      * @return contiguous RAM allocated for the tensor. When a numpy tensor is passed in for this argument, jpy will
      *         handle passing the memory reference as a 1d java array here.
      */
 
-    public static float[] floatTensorBuffer2D(final IndexSet indexSet, final ColumnSource<?>[] columnSources) {
+    public static float[] TensorBuffer2Dfloat(final IndexSet indexSet,
+                                              final ColumnSource<?>[] columnSources,
+                                              final boolean transpose) {
 
         final int nRows = indexSet.getSize();
         final int nCols = columnSources.length;
@@ -116,7 +149,7 @@ public class Gatherer {
             int i = 0;
 
             for (long idx : indexSet) {
-                final int ij = nCols * i + j;
+                final int ij = transpose ? nRows * j + i : nCols * i + j;
                 tensor[ij] = cs.getFloat(idx);
                 i++;
             }
@@ -132,11 +165,13 @@ public class Gatherer {
      *
      * @param indexSet indices of the rows of the table to put into the tensor
      * @param columnSources columns of data to put into the tensor
+     * @param transpose a boolean indicating the user's intent to return a transposed Python object
      * @return contiguous RAM allocated for the tensor. When a numpy tensor is passed in for this argument, jpy will
      *         handle passing the memory reference as a 1d java array here.
      */
-
-    public static int[] intTensorBuffer2D(final IndexSet indexSet, final ColumnSource<?>[] columnSources) {
+    public static int[] TensorBuffer2Dint(final IndexSet indexSet,
+                                          final ColumnSource<?>[] columnSources,
+                                          final boolean transpose) {
 
         final int nRows = indexSet.getSize();
         final int nCols = columnSources.length;
@@ -147,7 +182,7 @@ public class Gatherer {
             int i = 0;
 
             for (long idx : indexSet) {
-                final int ij = nCols * i + j;
+                final int ij = transpose ? nRows * j + i : nCols * i + j;
                 tensor[ij] = cs.getInt(idx);
                 i++;
             }
@@ -163,11 +198,14 @@ public class Gatherer {
      *
      * @param indexSet indices of the rows of the table to put into the tensor
      * @param columnSources columns of data to put into the tensor
+     * @param transpose a boolean indicating the user's intent to return a transposed Python object
      * @return contiguous RAM allocated for the tensor. When a numpy tensor is passed in for this argument, jpy will
      *         handle passing the memory reference as a 1d java array here.
      */
 
-    public static long[] longTensorBuffer2D(final IndexSet indexSet, final ColumnSource<?>[] columnSources) {
+    public static long[] TensorBuffer2Dlong(final IndexSet indexSet,
+                                            final ColumnSource<?>[] columnSources,
+                                            final boolean transpose) {
 
         final int nRows = indexSet.getSize();
         final int nCols = columnSources.length;
@@ -178,7 +216,7 @@ public class Gatherer {
             int i = 0;
 
             for (long idx : indexSet) {
-                final int ij = nCols * i + j;
+                final int ij = transpose ? nRows * j + i : nCols * i + j;
                 tensor[ij] = cs.getLong(idx);
                 i++;
             }
@@ -194,11 +232,14 @@ public class Gatherer {
      *
      * @param indexSet indices of the rows of the table to put into the tensor
      * @param columnSources columns of data to put into the tensor
+     * @param transpose a boolean indicating the user's intent to return a transposed Python object
      * @return contiguous RAM allocated for the tensor. When a numpy tensor is passed in for this argument, jpy will
      *         handle passing the memory reference as a 1d java array here.
      */
 
-    public static short[] shortTensorBuffer2D(final IndexSet indexSet, final ColumnSource<?>[] columnSources) {
+    public static short[] TensorBuffer2Dshort(final IndexSet indexSet,
+                                              final ColumnSource<?>[] columnSources,
+                                              final boolean transpose) {
 
         final int nRows = indexSet.getSize();
         final int nCols = columnSources.length;
@@ -209,7 +250,7 @@ public class Gatherer {
             int i = 0;
 
             for (long idx : indexSet) {
-                final int ij = nCols * i + j;
+                final int ij = transpose ? nRows * j + i : nCols * i + j;
                 tensor[ij] = cs.getShort(idx);
                 i++;
             }
