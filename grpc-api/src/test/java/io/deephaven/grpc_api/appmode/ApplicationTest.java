@@ -6,7 +6,7 @@ import io.deephaven.db.tables.Table;
 import io.deephaven.db.util.AbstractScriptSession;
 import io.deephaven.db.util.GroovyDeephavenSession;
 import io.deephaven.db.util.PythonDeephavenSession;
-import io.deephaven.db.v2.JUnit4QueryTableTestBase;
+import io.deephaven.test.junit4.JUnit4QueryTableTestBase;
 import org.junit.*;
 
 import java.io.IOException;

@@ -33,25 +33,35 @@ abstract public class LiveTableTestCase extends BaseArrayTestCase implements Upd
     static public boolean printTableUpdates = Configuration.getInstance()
             .getBooleanForClassWithDefault(LiveTableTestCase.class, "printTableUpdates", false);
 
-    private final DbTestRule rule = new DbTestRule(this);
-
+    private boolean oldMemoize;
+    private UpdateErrorReporter oldReporter;
     private boolean expectError = false;
+    private SafeCloseable scopeCloseable;
+    private QueryScope originalScope;
+
     List<Throwable> errors;
 
     @Override
     protected void setUp() throws Exception {
         super.setUp();
-
-        rule.setup();
-
+        LiveTableMonitor.DEFAULT.enableUnitTestMode();
+        LiveTableMonitor.DEFAULT.resetForUnitTests(false);
+        SystemicObjectTracker.markThreadSystemic();
+        oldMemoize = QueryTable.setMemoizeResults(false);
+        oldReporter = AsyncClientErrorNotifier.setReporter(this);
         errors = null;
+        scopeCloseable = LivenessScopeStack.open(new LivenessScope(true), true);
+        originalScope = QueryScope.getScope();
     }
 
     @Override
     protected void tearDown() throws Exception {
         super.tearDown();
-
-        rule.tearDown();
+        scopeCloseable.close();
+        LiveTableMonitor.DEFAULT.resetForUnitTests(true);
+        QueryTable.setMemoizeResults(oldMemoize);
+        AsyncClientErrorNotifier.setReporter(oldReporter);
+        QueryScope.setScope(originalScope);
     }
 
     @Override

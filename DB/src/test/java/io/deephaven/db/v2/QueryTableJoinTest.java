@@ -8,6 +8,7 @@ import io.deephaven.db.tables.dbarrays.DbIntArray;
 import io.deephaven.db.tables.live.LiveTableMonitor;
 import io.deephaven.db.tables.select.QueryScope;
 import io.deephaven.db.tables.utils.ArrayUtils;
+import io.deephaven.test.junit4.JUnit4QueryTableTestBase;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.db.tables.utils.TableTools;

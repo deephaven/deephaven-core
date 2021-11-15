@@ -21,7 +21,7 @@ import io.deephaven.db.v2.sources.LongSparseArraySource;
 import io.deephaven.db.v2.utils.Index;
 import io.deephaven.db.v2.utils.RuntimeMemory;
 import io.deephaven.db.v2.utils.UpdatePerformanceTracker;
-import io.deephaven.test.types.OutOfBandTest;
+import io.deephaven.test.junit4.JUnit4QueryTableTestBase;
 import io.deephaven.util.SafeCloseable;
 import junit.framework.TestCase;
 import org.apache.commons.lang3.mutable.MutableInt;
@@ -30,8 +30,6 @@ import org.junit.*;
 import java.io.IOException;
 import java.util.*;
 import java.util.function.Supplier;
-
-import org.junit.experimental.categories.Category;
 
 import static io.deephaven.db.tables.utils.TableTools.*;
 import static io.deephaven.db.v2.TstUtils.*;

@@ -20,10 +20,9 @@ import io.deephaven.db.v2.select.IncrementalReleaseFilter;
 
 import gnu.trove.list.TByteList;
 import gnu.trove.list.array.TByteArrayList;
+import io.deephaven.test.junit4.JUnit4QueryTableTestBase;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.commons.lang3.mutable.MutableLong;
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 

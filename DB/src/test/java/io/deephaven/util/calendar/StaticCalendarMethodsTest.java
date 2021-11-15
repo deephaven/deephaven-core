@@ -7,11 +7,10 @@ import io.deephaven.db.tables.select.QueryScope;
 import io.deephaven.db.tables.utils.DBDateTime;
 import io.deephaven.db.tables.utils.DBTimeUtils;
 
-import io.deephaven.db.v2.JUnit4QueryTableTestBase;
+import io.deephaven.test.junit4.JUnit4QueryTableTestBase;
 import io.deephaven.test.types.OutOfBandTest;
 import java.time.LocalDate;
 
-import org.junit.Rule;
 import org.junit.experimental.categories.Category;
 
 import static io.deephaven.db.tables.utils.TableTools.emptyTable;

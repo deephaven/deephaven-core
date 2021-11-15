@@ -1,5 +1,6 @@
-package io.deephaven.db.v2;
+package io.deephaven.test.junit4;
 
+import io.deephaven.db.v2.QueryTableTestBase;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;

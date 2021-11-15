@@ -11,11 +11,10 @@ import io.deephaven.db.v2.utils.IndexShiftData;
 import io.deephaven.db.v2.utils.RedirectionIndex;
 import io.deephaven.db.v2.utils.WrappedIndexRedirectionIndexImpl;
 import io.deephaven.qst.table.EmptyTable;
+import io.deephaven.test.junit4.JUnit4QueryTableTestBase;
 import junit.framework.ComparisonFailure;
 import junit.framework.TestCase;
 import org.jetbrains.annotations.NotNull;
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
