@@ -2,7 +2,7 @@
 # Copyright (c) 2016 - 2021 Deephaven Data Labs and Patent Pending
 # 
 """
-Utilities for transfer between Python objects and Deephaven Tables
+Utilities for getting Deephaven table data into Python objects
 """
 
 import numpy as np
@@ -61,27 +61,28 @@ def table_to_numpy_2d(idx, cols, np_dtype = None, transpose = False, squeeze = F
         np_dtype = np.intc
 
     if np_dtype == np.bool_:
-        buffer = _gatherer.booleanTensorBuffer2D(idx, cols, transpose)
+        buffer = _gatherer.tensorBuffer2Dboolean(transpose, idx, cols,)
     elif np_dtype == np.byte:
-        buffer = _gatherer.byteTensorBuffer2D(idx, cols, transpose)
+        buffer = _gatherer.tensorBuffer2Dbyte(transpose, idx, cols)
     elif np_dtype == np.double:
-        buffer = _gatherer.doubleTensorBuffer2D(idx, cols, transpose)
+        buffer = _gatherer.tensorBuffer2Ddouble(transpose, idx, cols)
     elif np_dtype == np.intc:
-        buffer = _gatherer.intTensorBuffer2D(idx, cols, transpose)
+        buffer = _gatherer.tensorBuffer2Dint(transpose, idx, cols)
     elif np_dtype == np.int_:
-        buffer = _gatherer.longTensorBuffer2D(idx, cols, transpose)
+        buffer = _gatherer.tensorBuffer2Dlong(transpose, idx, cols)
     elif np_dtype == np.short:
-        buffer = _gatherer.shortTensorBuffer2D(idx, cols, transpose)
+        buffer = _gatherer.tensorBuffer2Dshort(transpose, idx, cols)
     elif np_dtype == np.single:
-        buffer = _gatherer.floatTensorBuffer2D(idx, cols, transpose)
+        buffer = _gatherer.tensorBuffer2Dfloat(transpose, idx, cols)
     else:
         raise ValueError("Data type {input_type} is not supported.".format(input_type = np_dtype))
 
     tensor = np.frombuffer(buffer, dtype = np_dtype)
-    if not transpose:
-        tensor.shape = (idx.getSize(), len(cols))
-    else:
+
+    if transpose:
         tensor.shape = (len(cols), idx.getSize())
+    else:
+        tensor.shape = (idx.getSize(), len(cols))
 
     if squeeze:
         return np.squeeze(tensor)

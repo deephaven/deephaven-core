@@ -36,9 +36,9 @@ public class Gatherer {
      * @return contiguous RAM allocated for the tensor. When a numpy tensor is passed in for this argument, jpy will
      *         handle passing the memory reference as a 1d java array here.
      */
-    public static boolean[] tensorBuffer2Dboolean(final IndexSet indexSet,
-                                                  final ColumnSource<?>[] columnSources,
-                                                  final boolean transpose) {
+    public static boolean[] tensorBuffer2Dboolean(final boolean transpose,
+                                                  final IndexSet indexSet,
+                                                  final ColumnSource<?>[] columnSources) {
 
         final int nRows = indexSet.getSize();
         final int nCols = columnSources.length;
@@ -69,9 +69,9 @@ public class Gatherer {
      * @return contiguous RAM allocated for the tensor. When a numpy tensor is passed in for this argument, jpy will
      *         handle passing the memory reference as a 1d java array here.
      */
-    public static byte[] TensorBuffer2Dbyte(final IndexSet indexSet,
-                                            final ColumnSource<?>[] columnSources,
-                                            final boolean transpose) {
+    public static byte[] tensorBuffer2Dbyte(final boolean transpose,
+                                            final IndexSet indexSet,
+                                            final ColumnSource<?>[] columnSources) {
 
         final int nRows = indexSet.getSize();
         final int nCols = columnSources.length;
@@ -102,9 +102,9 @@ public class Gatherer {
      * @return contiguous RAM allocated for the tensor. When a numpy tensor is passed in for this argument, jpy will
      *         handle passing the memory reference as a 1d java array here.
      */
-    public static double[] TensorBuffer2Ddouble(final IndexSet indexSet,
-                                                final ColumnSource<?>[] columnSources,
-                                                final boolean transpose) {
+    public static double[] tensorBuffer2Ddouble(final boolean transpose,
+                                                final IndexSet indexSet,
+                                                final ColumnSource<?>[] columnSources) {
 
         final int nRows = indexSet.getSize();
         final int nCols = columnSources.length;
@@ -136,9 +136,9 @@ public class Gatherer {
      *         handle passing the memory reference as a 1d java array here.
      */
 
-    public static float[] TensorBuffer2Dfloat(final IndexSet indexSet,
-                                              final ColumnSource<?>[] columnSources,
-                                              final boolean transpose) {
+    public static float[] tensorBuffer2Dfloat(final boolean transpose,
+                                              final IndexSet indexSet,
+                                              final ColumnSource<?>[] columnSources) {
 
         final int nRows = indexSet.getSize();
         final int nCols = columnSources.length;
@@ -169,9 +169,9 @@ public class Gatherer {
      * @return contiguous RAM allocated for the tensor. When a numpy tensor is passed in for this argument, jpy will
      *         handle passing the memory reference as a 1d java array here.
      */
-    public static int[] TensorBuffer2Dint(final IndexSet indexSet,
-                                          final ColumnSource<?>[] columnSources,
-                                          final boolean transpose) {
+    public static int[] tensorBuffer2Dint(final boolean transpose,
+                                          final IndexSet indexSet,
+                                          final ColumnSource<?>[] columnSources) {
 
         final int nRows = indexSet.getSize();
         final int nCols = columnSources.length;
@@ -203,9 +203,9 @@ public class Gatherer {
      *         handle passing the memory reference as a 1d java array here.
      */
 
-    public static long[] TensorBuffer2Dlong(final IndexSet indexSet,
-                                            final ColumnSource<?>[] columnSources,
-                                            final boolean transpose) {
+    public static long[] tensorBuffer2Dlong(final boolean transpose,
+                                            final IndexSet indexSet,
+                                            final ColumnSource<?>[] columnSources) {
 
         final int nRows = indexSet.getSize();
         final int nCols = columnSources.length;
@@ -237,9 +237,9 @@ public class Gatherer {
      *         handle passing the memory reference as a 1d java array here.
      */
 
-    public static short[] TensorBuffer2Dshort(final IndexSet indexSet,
-                                              final ColumnSource<?>[] columnSources,
-                                              final boolean transpose) {
+    public static short[] tensorBuffer2Dshort(final boolean transpose,
+                                              final IndexSet indexSet,
+                                              final ColumnSource<?>[] columnSources) {
 
         final int nRows = indexSet.getSize();
         final int nCols = columnSources.length;
