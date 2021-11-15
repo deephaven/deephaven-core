@@ -5,14 +5,13 @@ import io.deephaven.db.v2.sources.ColumnSource;
 import io.deephaven.db.tables.Table;
 
 /**
- * Gatherer takes Deephaven columnar data and places it into a buffer to be used by Python.  The Python object will take
+ * Gatherer takes Deephaven columnar data and places it into a buffer to be used by Python. The Python object will take
  * data from the buffer and use it to construct a 2d array of specified size.
  */
 public class Gatherer {
 
     /**
-     * Generate an index set from a table.
-     * THIS IS JUST FOR EASY PYTHON TESTING.  REMOVE BEFORE PROD.
+     * Generate an index set from a table. THIS IS JUST FOR EASY PYTHON TESTING. REMOVE BEFORE PROD.
      *
      * @param t table
      * @return index set
@@ -20,7 +19,7 @@ public class Gatherer {
     public static IndexSet makeIndexSet(final Table t) {
         final IndexSet is = new IndexSet(t.intSize());
 
-        for(long idx : t.getIndex()) {
+        for (long idx : t.getIndex()) {
             is.add(idx);
         }
 
@@ -37,15 +36,15 @@ public class Gatherer {
      *         handle passing the memory reference as a 1d java array here.
      */
     public static boolean[] tensorBuffer2Dboolean(final boolean transpose,
-                                                  final IndexSet indexSet,
-                                                  final ColumnSource<?>[] columnSources) {
+            final IndexSet indexSet,
+            final ColumnSource<?>[] columnSources) {
 
         final int nRows = indexSet.getSize();
         final int nCols = columnSources.length;
         final boolean[] tensor = new boolean[nRows * nCols];
 
         int j = 0;
-        for (ColumnSource<?> cs: columnSources) {
+        for (ColumnSource<?> cs : columnSources) {
             int i = 0;
 
             for (long idx : indexSet) {
@@ -70,8 +69,8 @@ public class Gatherer {
      *         handle passing the memory reference as a 1d java array here.
      */
     public static byte[] tensorBuffer2Dbyte(final boolean transpose,
-                                            final IndexSet indexSet,
-                                            final ColumnSource<?>[] columnSources) {
+            final IndexSet indexSet,
+            final ColumnSource<?>[] columnSources) {
 
         final int nRows = indexSet.getSize();
         final int nCols = columnSources.length;
@@ -103,8 +102,8 @@ public class Gatherer {
      *         handle passing the memory reference as a 1d java array here.
      */
     public static double[] tensorBuffer2Ddouble(final boolean transpose,
-                                                final IndexSet indexSet,
-                                                final ColumnSource<?>[] columnSources) {
+            final IndexSet indexSet,
+            final ColumnSource<?>[] columnSources) {
 
         final int nRows = indexSet.getSize();
         final int nCols = columnSources.length;
@@ -137,8 +136,8 @@ public class Gatherer {
      */
 
     public static float[] tensorBuffer2Dfloat(final boolean transpose,
-                                              final IndexSet indexSet,
-                                              final ColumnSource<?>[] columnSources) {
+            final IndexSet indexSet,
+            final ColumnSource<?>[] columnSources) {
 
         final int nRows = indexSet.getSize();
         final int nCols = columnSources.length;
@@ -170,8 +169,8 @@ public class Gatherer {
      *         handle passing the memory reference as a 1d java array here.
      */
     public static int[] tensorBuffer2Dint(final boolean transpose,
-                                          final IndexSet indexSet,
-                                          final ColumnSource<?>[] columnSources) {
+            final IndexSet indexSet,
+            final ColumnSource<?>[] columnSources) {
 
         final int nRows = indexSet.getSize();
         final int nCols = columnSources.length;
@@ -204,8 +203,8 @@ public class Gatherer {
      */
 
     public static long[] tensorBuffer2Dlong(final boolean transpose,
-                                            final IndexSet indexSet,
-                                            final ColumnSource<?>[] columnSources) {
+            final IndexSet indexSet,
+            final ColumnSource<?>[] columnSources) {
 
         final int nRows = indexSet.getSize();
         final int nCols = columnSources.length;
@@ -238,8 +237,8 @@ public class Gatherer {
      */
 
     public static short[] tensorBuffer2Dshort(final boolean transpose,
-                                              final IndexSet indexSet,
-                                              final ColumnSource<?>[] columnSources) {
+            final IndexSet indexSet,
+            final ColumnSource<?>[] columnSources) {
 
         final int nRows = indexSet.getSize();
         final int nCols = columnSources.length;
