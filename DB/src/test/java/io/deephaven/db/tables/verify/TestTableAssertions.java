@@ -8,8 +8,7 @@ import io.deephaven.db.v2.*;
 import io.deephaven.test.junit4.JUnit4LiveTableTestCase;
 import io.deephaven.util.QueryConstants;
 import junit.framework.TestCase;
-import org.junit.After;
-import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.Optional;
@@ -19,17 +18,8 @@ import static io.deephaven.db.tables.utils.TableTools.*;
 import static io.deephaven.db.v2.TstUtils.*;
 
 public class TestTableAssertions {
-    JUnit4LiveTableTestCase testCase = new JUnit4LiveTableTestCase();
-
-    @Before
-    public void before() throws Exception {
-        testCase.setUp();
-    }
-
-    @After
-    public void after() throws Exception {
-        testCase.tearDown();
-    }
+    @Rule
+    public final JUnit4LiveTableTestCase base = new JUnit4LiveTableTestCase();
 
     @Test
     public void testStatic() {

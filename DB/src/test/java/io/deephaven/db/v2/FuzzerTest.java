@@ -21,6 +21,7 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.After;
 import org.junit.Assume;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
@@ -38,7 +39,8 @@ public class FuzzerTest {
     private static final boolean REALTIME_FUZZER_ENABLED =
             Configuration.getInstance().getBooleanWithDefault("FuzzerTest.realTime", false);
 
-    JUnit4LiveTableTestCase framework = new JUnit4LiveTableTestCase();
+    @Rule
+    public final JUnit4LiveTableTestCase framework = new JUnit4LiveTableTestCase();
 
     private static class FuzzDescriptor {
         final long querySeed;
@@ -89,15 +91,12 @@ public class FuzzerTest {
 
     @Before
     public void setUp() throws Exception {
-        framework.setUp();
         setupPersistence();
     }
 
     @After
     public void tearDown() throws Exception {
-        QueryScope.setScope(new QueryScope.StandaloneImpl());
         cleanupPersistence();
-        framework.tearDown();
     }
 
     private GroovyDeephavenSession getGroovySession() throws IOException {

@@ -11,8 +11,7 @@ import io.deephaven.db.v2.TstUtils;
 import io.deephaven.test.junit4.JUnit4LiveTableTestCase;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.tablelogger.Row;
-import org.junit.After;
-import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -21,17 +20,8 @@ import java.math.BigInteger;
 import static io.deephaven.db.tables.utils.TableTools.*;
 
 public class TestDynamicTableWriter {
-    final JUnit4LiveTableTestCase ltc = new JUnit4LiveTableTestCase();
-
-    @Before
-    public void setUp() throws Exception {
-        ltc.setUp();
-    }
-
-    @After
-    public void tearDown() throws Exception {
-        ltc.tearDown();
-    }
+    @Rule
+    public final JUnit4LiveTableTestCase ltc = new JUnit4LiveTableTestCase();
 
     @Test
     public void testTypes() throws IOException {

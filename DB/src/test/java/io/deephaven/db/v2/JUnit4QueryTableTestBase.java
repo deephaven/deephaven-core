@@ -6,9 +6,8 @@ import org.junit.runners.model.Statement;
 
 /**
  * When you want to extend QueryTableTestBase, but you need to use JUnit 4 annotations, like @Category
- * or @RunWith(Suite.class), then instead of extending QueryTableTestBase, you should instead create a
- * `JUnit4QueryTableTestBase field;`, and call setUp/tearDown in @Before/@After annotated methods.
- *
+ * or @RunWith(Suite.class), then instead of extending QueryTableTestBase, you should instead create a `@Rule public
+ * JUnit4QueryTableTestBase field;`
  */
 public class JUnit4QueryTableTestBase extends QueryTableTestBase implements TestRule {
     @Override

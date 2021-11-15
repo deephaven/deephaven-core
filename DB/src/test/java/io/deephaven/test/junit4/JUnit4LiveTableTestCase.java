@@ -1,15 +1,16 @@
 package io.deephaven.test.junit4;
 
 import io.deephaven.db.v2.LiveTableTestCase;
+import org.junit.rules.TestRule;
+import org.junit.runner.Description;
+import org.junit.runners.model.Statement;
 
 /**
  * When you want to extend LiveTableTestCase, but you need to use JUnit 4 annotations, like @Category
- * or @RunWith(Suite.class), then instead of extending LiveTableTestCase, you should instead create a
- * `JUnit4LiveTableTestCase field;`, and call setUp/tearDown in @Before/@After annotated methods.
- *
- * We could probably implement this as a TestRule instead, but this works fine as-is.
+ * or @RunWith(Suite.class), then instead of extending LiveTableTestCase, you should instead create a `@Rule public
+ * JUnit4LiveTableTestCase field;`.
  */
-public class JUnit4LiveTableTestCase extends LiveTableTestCase {
+public class JUnit4LiveTableTestCase extends LiveTableTestCase implements TestRule {
     @Override
     public void setUp() throws Exception {
         super.setUp();
@@ -26,5 +27,20 @@ public class JUnit4LiveTableTestCase extends LiveTableTestCase {
 
     public static boolean printTableUpdates() {
         return LiveTableTestCase.printTableUpdates;
+    }
+
+    @Override
+    public Statement apply(Statement statement, Description description) {
+        return new Statement() {
+            @Override
+            public void evaluate() throws Throwable {
+                setUp();
+                try {
+                    statement.evaluate();
+                } finally {
+                    tearDown();
+                }
+            }
+        };
     }
 }

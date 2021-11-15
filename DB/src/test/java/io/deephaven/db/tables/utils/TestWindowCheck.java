@@ -16,26 +16,17 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.Map;
 import java.util.Random;
-import org.junit.After;
-import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 import static io.deephaven.db.tables.utils.TableTools.intCol;
 import static io.deephaven.db.v2.TstUtils.*;
 
+@Category(OutOfBandTest.class)
 public class TestWindowCheck {
-    private final JUnit4LiveTableTestCase base = new JUnit4LiveTableTestCase();
-
-    @Before
-    public void setUp() throws Exception {
-        base.setUp();
-    }
-
-    @After
-    public void tearDown() throws Exception {
-        base.tearDown();
-    }
+    @Rule
+    public final JUnit4LiveTableTestCase base = new JUnit4LiveTableTestCase();
 
     /**
      * Run a window check over the course of a simulated day.

@@ -16,8 +16,7 @@ import io.deephaven.util.FunctionalInterfaces;
 import junit.framework.TestCase;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.junit.After;
-import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -29,17 +28,8 @@ import static io.deephaven.db.v2.TstUtils.assertTableEquals;
 
 public class TestKeyedArrayBackedMutableTable {
 
-    private final JUnit4LiveTableTestCase liveTableTestCase = new JUnit4LiveTableTestCase();
-
-    @Before
-    public void before() throws Exception {
-        liveTableTestCase.setUp();
-    }
-
-    @After
-    public void after() throws Exception {
-        liveTableTestCase.tearDown();
-    }
+    @Rule
+    public final JUnit4LiveTableTestCase liveTableTestCase = new JUnit4LiveTableTestCase();
 
     @Test
     public void testSimple() throws Exception {
