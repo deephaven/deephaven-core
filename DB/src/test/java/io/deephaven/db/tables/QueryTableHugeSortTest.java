@@ -5,8 +5,12 @@ import io.deephaven.db.tables.select.QueryScope;
 import io.deephaven.db.tables.utils.TableTools;
 import io.deephaven.db.v2.sources.AbstractColumnSource;
 import io.deephaven.db.v2.utils.Index;
+import io.deephaven.test.junit4.DbTestRule;
 import io.deephaven.test.types.OutOfBandTest;
+import io.deephaven.util.ExceptionDetails;
+import junit.framework.TestCase;
 import org.junit.After;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.Arrays;
@@ -105,8 +109,6 @@ public class QueryTableHugeSortTest {
         System.out.println("Compare Duration: " + compareDuration + "ms");
     }
 
-    @After
-    public void clearScope() {
-        QueryScope.setScope(new QueryScope.StandaloneImpl());
-    }
+    @Rule
+    public final DbTestRule rule = new DbTestRule();
 }

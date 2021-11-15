@@ -35,10 +35,7 @@ import junit.framework.ComparisonFailure;
 import junit.framework.TestCase;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.*;
 
 import java.io.IOException;
 import java.lang.reflect.Array;
@@ -58,17 +55,16 @@ import static io.deephaven.db.v2.TstUtils.*;
 
 @Category(OutOfBandTest.class)
 public class QueryTableAggregationTest {
-    private JUnit4QueryTableTestBase base = new JUnit4QueryTableTestBase();
+    @Rule
+    public final JUnit4QueryTableTestBase base = new JUnit4QueryTableTestBase();
 
     @Before
     public void setUp() throws Exception {
-        base.setUp();
         ChunkPoolReleaseTracking.enableStrict();
     }
 
     @After
     public void tearDown() throws Exception {
-        base.tearDown();
         ChunkPoolReleaseTracking.checkAndDisable();
     }
 

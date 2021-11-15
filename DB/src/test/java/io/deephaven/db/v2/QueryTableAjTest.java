@@ -32,6 +32,7 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
@@ -45,18 +46,16 @@ import static junit.framework.TestCase.assertNotNull;
 @Category(OutOfBandTest.class)
 public class QueryTableAjTest {
 
-    private JUnit4QueryTableTestBase base = new JUnit4QueryTableTestBase();
+    @Rule
+    public final JUnit4QueryTableTestBase base = new JUnit4QueryTableTestBase();
 
     @Before
     public void setUp() throws Exception {
-        base.setUp();
-        base.setExpectError(false);
         ChunkPoolReleaseTracking.enableStrict();
     }
 
     @After
     public void tearDown() throws Exception {
-        base.tearDown();
         ChunkPoolReleaseTracking.checkAndDisable();
     }
 

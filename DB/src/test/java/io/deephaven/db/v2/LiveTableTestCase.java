@@ -14,6 +14,7 @@ import io.deephaven.db.tables.utils.SystemicObjectTracker;
 import io.deephaven.db.util.liveness.LivenessScope;
 import io.deephaven.db.util.liveness.LivenessScopeStack;
 import io.deephaven.db.v2.utils.AsyncClientErrorNotifier;
+import io.deephaven.test.junit4.DbTestRule;
 import io.deephaven.util.ExceptionDetails;
 import io.deephaven.util.SafeCloseable;
 import junit.framework.TestCase;
@@ -32,35 +33,25 @@ abstract public class LiveTableTestCase extends BaseArrayTestCase implements Upd
     static public boolean printTableUpdates = Configuration.getInstance()
             .getBooleanForClassWithDefault(LiveTableTestCase.class, "printTableUpdates", false);
 
-    private boolean oldMemoize;
-    private UpdateErrorReporter oldReporter;
-    private boolean expectError = false;
-    private SafeCloseable scopeCloseable;
-    private QueryScope originalScope;
+    private final DbTestRule rule = new DbTestRule(this);
 
+    private boolean expectError = false;
     List<Throwable> errors;
 
     @Override
     protected void setUp() throws Exception {
         super.setUp();
-        LiveTableMonitor.DEFAULT.enableUnitTestMode();
-        LiveTableMonitor.DEFAULT.resetForUnitTests(false);
-        SystemicObjectTracker.markThreadSystemic();
-        oldMemoize = QueryTable.setMemoizeResults(false);
-        oldReporter = AsyncClientErrorNotifier.setReporter(this);
+
+        rule.setup();
+
         errors = null;
-        scopeCloseable = LivenessScopeStack.open(new LivenessScope(true), true);
-        originalScope = QueryScope.getScope();
     }
 
     @Override
     protected void tearDown() throws Exception {
         super.tearDown();
-        scopeCloseable.close();
-        LiveTableMonitor.DEFAULT.resetForUnitTests(true);
-        QueryTable.setMemoizeResults(oldMemoize);
-        AsyncClientErrorNotifier.setReporter(oldReporter);
-        QueryScope.setScope(originalScope);
+
+        rule.tearDown();
     }
 
     @Override
@@ -134,10 +125,6 @@ abstract public class LiveTableTestCase extends BaseArrayTestCase implements Upd
         // prune the tree after each validation. The reason not to do it, however, is that this will sometimes expose
         // bugs with shared indices getting updated.
         // System.gc();
-    }
-
-    void assertEquals(@NotNull final Table expected, @NotNull final Table actual) {
-        TstUtils.assertTableEquals(expected, actual);
     }
 
     class ErrorExpectation implements Closeable {

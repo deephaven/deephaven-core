@@ -25,14 +25,12 @@ import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.SafeCloseable;
 import junit.framework.TestCase;
 import org.apache.commons.lang3.mutable.MutableInt;
-import org.junit.After;
-import org.junit.Assert;
+import org.junit.*;
 
 import java.io.IOException;
 import java.util.*;
 import java.util.function.Supplier;
-import org.junit.Before;
-import org.junit.Test;
+
 import org.junit.experimental.categories.Category;
 
 import static io.deephaven.db.tables.utils.TableTools.*;
@@ -42,17 +40,9 @@ import static io.deephaven.db.v2.TstUtils.*;
  * Test QueryTable select and update operations.
  */
 public class QueryTableSelectUpdateTest {
-    private JUnit4QueryTableTestBase base = new JUnit4QueryTableTestBase();
 
-    @Before
-    public void setUp() throws Exception {
-        base.setUp();
-    }
-
-    @After
-    public void tearDown() throws Exception {
-        base.tearDown();
-    }
+    @Rule
+    public final JUnit4QueryTableTestBase base = new JUnit4QueryTableTestBase();
 
     @Test
     public void testSelectAndUpdate() {

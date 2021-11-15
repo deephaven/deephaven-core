@@ -7,10 +7,7 @@ import io.deephaven.db.util.AbstractScriptSession;
 import io.deephaven.db.util.GroovyDeephavenSession;
 import io.deephaven.db.util.PythonDeephavenSession;
 import io.deephaven.db.v2.JUnit4QueryTableTestBase;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.*;
 
 import java.io.IOException;
 
@@ -18,18 +15,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class ApplicationTest {
 
-    private final JUnit4QueryTableTestBase base = new JUnit4QueryTableTestBase();
+    @Rule
+    public final JUnit4QueryTableTestBase base = new JUnit4QueryTableTestBase();
 
     private AbstractScriptSession session = null;
 
-    @Before
-    public void setUp() throws Exception {
-        base.setUp();
-    }
-
     @After
-    public void tearDown() throws Exception {
-        base.tearDown();
+    public void tearDown() {
         if (session != null) {
             session.release();
             session = null;

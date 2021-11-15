@@ -9,9 +9,11 @@ import io.deephaven.db.tables.dbarrays.DbIntArrayDirect;
 import io.deephaven.db.tables.libs.QueryLibrary;
 import io.deephaven.db.tables.select.QueryScope;
 import io.deephaven.db.tables.utils.ArrayUtils;
+import io.deephaven.db.v2.JUnit4QueryTableTestBase;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.db.tables.utils.TableTools;
 import org.jetbrains.annotations.NotNull;
+import org.junit.Rule;
 
 import java.util.ArrayList;
 import java.util.Calendar;

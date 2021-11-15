@@ -26,7 +26,7 @@ public class QueryTableWouldMatchTest extends QueryTableTestBase {
 
         final QueryTable t1Matched = (QueryTable) t1.wouldMatch("HasAnE=Text.contains(`e`)", "isGt3=Number > 3",
                 "Compound=Bool || Text.length() < 5");
-        final Listener t1MatchedListener = new ListenerWithGlobals(t1Matched);
+        final Listener t1MatchedListener = newListenerWithGlobals(t1Matched);
         t1Matched.listenForUpdates(t1MatchedListener);
 
         show(t1Matched);

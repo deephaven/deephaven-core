@@ -15,12 +15,14 @@ import io.deephaven.db.tables.lang.DBLanguageParser.QueryLanguageParseException;
 import io.deephaven.db.tables.libs.QueryLibrary;
 import io.deephaven.db.tables.select.QueryScope;
 import io.deephaven.db.tables.utils.*;
+import io.deephaven.db.v2.JUnit4QueryTableTestBase;
 import io.deephaven.db.v2.utils.codegen.TypeAnalyzer;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.type.TypeUtils;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -64,6 +66,9 @@ public class TestFormulaColumn {
         testDataTable = getTestDataTable();
         availableColumns = testDataTable.getDefinition().getColumnNameMap();
     }
+
+    @Rule
+    public final JUnit4QueryTableTestBase base = new JUnit4QueryTableTestBase();
 
     @Before
     public void setUp() throws Exception {

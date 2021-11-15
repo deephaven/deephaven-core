@@ -16,6 +16,7 @@ import junit.framework.TestCase;
 import org.jetbrains.annotations.NotNull;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.LinkedHashMap;
@@ -29,8 +30,10 @@ import java.util.stream.LongStream;
 /**
  * Unit tests that exercise optimized operations for stream tables.
  */
-@SuppressWarnings("JUnit4AnnotatedMethodInJUnit3TestCase")
-public class StreamTableOperationsTest extends JUnit4QueryTableTestBase {
+public class StreamTableOperationsTest {
+
+    @Rule
+    public JUnit4QueryTableTestBase base = new JUnit4QueryTableTestBase();
 
     private static final long INPUT_SIZE = 100_000L;
     private static final long MAX_RANDOM_ITERATION_SIZE = 10_000;
@@ -39,17 +42,6 @@ public class StreamTableOperationsTest extends JUnit4QueryTableTestBase {
             .update("Sym = Long.toString(ii % 1000) + `_Sym`")
             .update("Price = ii / 100 - (ii % 100)")
             .update("Size = (long) (ii / 50 - (ii % 50))"));
-
-
-    @Before
-    public void setUp() throws Exception {
-        super.setUp();
-    }
-
-    @After
-    public void tearDown() throws Exception {
-        super.tearDown();
-    }
 
     /**
      * Execute a table operator.

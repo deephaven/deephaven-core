@@ -304,12 +304,12 @@ public abstract class QueryTableTestBase extends LiveTableTestCase {
         }
     }
 
-    protected ListenerWithGlobals newListenerWithGlobals(DynamicTable source) {
+    public ListenerWithGlobals newListenerWithGlobals(DynamicTable source) {
         return new ListenerWithGlobals(source);
     }
 
     protected class ListenerWithGlobals extends InstrumentedListenerAdapter {
-        protected ListenerWithGlobals(DynamicTable source) {
+        private ListenerWithGlobals(DynamicTable source) {
             super(source, false);
             reset();
         }

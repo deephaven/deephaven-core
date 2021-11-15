@@ -16,15 +16,21 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Random;
+
+import org.junit.Rule;
 import org.junit.experimental.categories.Category;
 
 import static io.deephaven.db.tables.utils.TableTools.*;
+import static io.deephaven.db.v2.LiveTableTestCase.printTableUpdates;
 import static io.deephaven.db.v2.TstUtils.*;
 import static java.util.Arrays.asList;
-import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.*;
 
 @Category(OutOfBandTest.class)
-public class QueryTableJoinTest extends QueryTableTestBase {
+public class QueryTableJoinTest {
+    @Rule
+    public final JUnit4QueryTableTestBase base = new JUnit4QueryTableTestBase();
+
     public void testAjIncremental() throws ParseException {
         final int maxSteps = 10;
         final int[] leftSizes = new int[] {10, 20};
@@ -32,7 +38,7 @@ public class QueryTableJoinTest extends QueryTableTestBase {
         for (long seed = 0; seed < 1; seed++) {
             for (int leftSize : leftSizes) {
                 for (int rightSize : rightSizes) {
-                    for (JoinIncrement joinIncrement : joinIncrementors) {
+                    for (QueryTableTestBase.JoinIncrement joinIncrement : base.joinIncrementors) {
                         testAjIncremental(leftSize, rightSize, joinIncrement, seed, maxSteps);
                         testAjIncrementalSimple(leftSize, rightSize, joinIncrement, seed, maxSteps);
                         testAjIncrementalSimple2(leftSize, rightSize, joinIncrement, seed, maxSteps);
@@ -42,7 +48,8 @@ public class QueryTableJoinTest extends QueryTableTestBase {
         }
     }
 
-    private void testAjIncrementalSimple(int leftSize, int rightSize, JoinIncrement joinIncrement, long seed,
+    private void testAjIncrementalSimple(int leftSize, int rightSize, QueryTableTestBase.JoinIncrement joinIncrement,
+            long seed,
             @SuppressWarnings("SameParameterValue") long maxSteps) {
         final Random random = new Random(seed);
 
@@ -71,7 +78,7 @@ public class QueryTableJoinTest extends QueryTableTestBase {
                                 "LI1 = (isNull(LI1) ? null : LI1+0.5)");
                     }
                 },
-                new TableComparator(
+                new QueryTableTestBase.TableComparator(
                         leftTable.aj(rightTable, "I1", "LI1=I1,LC1=C1,LC2=C2").update("I1=I1+0.25",
                                 "LI1 = (isNull(LI1) ? null : LI1+0.5)"),
                         leftTable.aj(rightTable, "I1<=I1", "LI1=I1,LC1=C1,LC2=C2").update("I1=I1+0.25",
@@ -152,7 +159,8 @@ public class QueryTableJoinTest extends QueryTableTestBase {
         }
     }
 
-    private void testAjIncrementalSimple2(int leftSize, int rightSize, JoinIncrement joinIncrement, long seed,
+    private void testAjIncrementalSimple2(int leftSize, int rightSize, QueryTableTestBase.JoinIncrement joinIncrement,
+            long seed,
             @SuppressWarnings("SameParameterValue") long maxSteps) {
         final Random random = new Random(seed);
         final TstUtils.ColumnInfo[] leftColumnInfo;
@@ -212,7 +220,8 @@ public class QueryTableJoinTest extends QueryTableTestBase {
         }
     }
 
-    private void testAjIncremental(int leftSize, int rightSize, JoinIncrement joinIncrement, long seed,
+    private void testAjIncremental(int leftSize, int rightSize, QueryTableTestBase.JoinIncrement joinIncrement,
+            long seed,
             @SuppressWarnings("SameParameterValue") long maxSteps) throws ParseException {
         final Random random = new Random(seed);
         QueryScope.addParam("f", new SimpleDateFormat("dd HH:mm:ss"));
@@ -220,13 +229,13 @@ public class QueryTableJoinTest extends QueryTableTestBase {
         final TstUtils.ColumnInfo[] leftColumnInfo;
         final QueryTable leftTable = getTable(leftSize, random,
                 leftColumnInfo = initColumnInfos(new String[] {"Date", "C1", "C2"},
-                        new TstUtils.DateGenerator(format.parse("2011-02-02"), format.parse("2011-02-03")),
+                        new TstUtils.DateGenerator(base.format.parse("2011-02-02"), base.format.parse("2011-02-03")),
                         new TstUtils.SetGenerator<>("a", "b"),
                         new TstUtils.SetGenerator<>(10, 20, 30)));
         final TstUtils.ColumnInfo[] rightColumnInfo;
         final QueryTable rightTable = getTable(rightSize, random,
                 rightColumnInfo = initColumnInfos(new String[] {"Date", "C1", "C2"},
-                        new TstUtils.DateGenerator(format.parse("2011-02-02"), format.parse("2011-02-03")),
+                        new TstUtils.DateGenerator(base.format.parse("2011-02-02"), base.format.parse("2011-02-03")),
                         new TstUtils.SetGenerator<>("a", "b", "c"),
                         new TstUtils.SetGenerator<>(20, 30, 40)));
 

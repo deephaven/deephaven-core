@@ -7,8 +7,11 @@ import io.deephaven.db.tables.select.QueryScope;
 import io.deephaven.db.tables.utils.DBDateTime;
 import io.deephaven.db.tables.utils.DBTimeUtils;
 
+import io.deephaven.db.v2.JUnit4QueryTableTestBase;
 import io.deephaven.test.types.OutOfBandTest;
 import java.time.LocalDate;
+
+import org.junit.Rule;
 import org.junit.experimental.categories.Category;
 
 import static io.deephaven.db.tables.utils.TableTools.emptyTable;
@@ -23,6 +26,20 @@ public class StaticCalendarMethodsTest extends BaseArrayTestCase {
     private final DBDateTime time2 = DBTimeUtils.convertDateTime("2002-01-21T01:00:00.000000000 NY");
     private final String date1 = "2017-08-01";
     private final String date2 = "2017-08-05";
+
+    private final JUnit4QueryTableTestBase base = new JUnit4QueryTableTestBase();
+
+    @Override
+    protected void setUp() throws Exception {
+        super.setUp();
+        base.setUp();
+    }
+
+    @Override
+    protected void tearDown() throws Exception {
+        super.tearDown();
+        base.tearDown();
+    }
 
     public void testCalendarMethods() {
         assertEquals(calendar.name(), StaticCalendarMethods.name());
