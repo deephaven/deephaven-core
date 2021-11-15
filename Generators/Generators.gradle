@@ -7,7 +7,7 @@ configurations {
     testCompile.extendsFrom fishBaseTest
 }
 
-evaluationDependsOn(':deephaven-jpy')
+evaluationDependsOn ':docker-java-and-python'
 
 dependencies {
 
@@ -187,7 +187,7 @@ TaskProvider<Task> generatePyDoc = Docker.registerDockerTask(project, "generateP
                       '''
     }
 
-    parentContainers = [project(':deephaven-jpy').tasks.findByName("buildDockerForRuntime")]// deephaven/java-and-python
+    parentContainers = [ project(':docker-java-and-python').tasks.findByName('buildDocker') ]
     imageName = 'deephaven/pydocs:local-build'
     copyOut {
         into("$devRoot/Integrations/python/deephaven")
