@@ -35,9 +35,9 @@ public class CharRangeFilter extends AbstractRangeFilter {
             case LESS_THAN_OR_EQUAL:
                 return new CharRangeFilter(columnName, RangeConditionFilter.parseCharFilter(value), QueryConstants.NULL_CHAR, true, true);
             case GREATER_THAN:
-                return new CharRangeFilter(columnName, RangeConditionFilter.parseCharFilter(value), (char)(Character.MAX_VALUE-1), false, true);
+                return new CharRangeFilter(columnName, RangeConditionFilter.parseCharFilter(value), QueryConstants.MAX_CHAR, false, true);
             case GREATER_THAN_OR_EQUAL:
-                return new CharRangeFilter(columnName, RangeConditionFilter.parseCharFilter(value), (char)(Character.MAX_VALUE-1), true, true);
+                return new CharRangeFilter(columnName, RangeConditionFilter.parseCharFilter(value), QueryConstants.MAX_CHAR, true, true);
             default:
                 throw new IllegalArgumentException("RangeConditionFilter does not support condition " + condition);
         }

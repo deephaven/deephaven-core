@@ -36,6 +36,16 @@ public class QueryConstants {
      */
     public static final Character NULL_CHAR_BOXED = NULL_CHAR;
 
+    /**
+     * Minimum value of type char.
+     */
+    public static final char MIN_CHAR = Character.MIN_VALUE;
+
+    /**
+     * Maximum value of type char.
+     */
+    public static final char MAX_CHAR = Character.MAX_VALUE - 1;
+
 
     /////////////////////////////////////////////////////////////////
 
