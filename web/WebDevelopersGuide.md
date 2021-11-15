@@ -1698,6 +1698,8 @@ return the same details:
   * `AEST`
   * `AEDT`
  
+ For a full list of time zones supported, see https://github.com/gwtproject/gwt/blob/release/2.9.0/user/src/com/google/gwt/i18n/client/constants/TimeZoneConstants.properties.
+
 ###### Static functions:
  * `getTimeZone(String):TimeZone` - Factory method which creates timezone instances from one of the supported keys.
 
