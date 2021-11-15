@@ -90,15 +90,24 @@ idea {
 }
 
 ext.versionSource = versionSource
-ext.globalVersion = "0.6.0"
+ext.globalVersion = "0.7.0"
 
 // To set fishlibVersion, go to project-local gradle.properties file
 // (or, use the gradle.properties in $USER_HOME/.gradle for a global override)
 // If you have fishlib open in IDE, also set includeFish=true to get the
 // intellij projects wired up across repositories.
 
-Set<Project> modsAreBin = subprojects.findAll {it.name in ['bin', 'configs', 'test-configs']}
-Set<Project> modsRegular = subprojects - modsAreBin
+Set<Project> modsAreBasic = subprojects.findAll {it.name in ['deephaven-wheel', 'deephaven2-wheel', 'envoy', 'grpc-proxy', 'web-client-ui', 'protoc', 'pyclient', 'sphinx'] }
+
+Set<Project> modsAreBin = subprojects.findAll {it.name in ['bin', 'configs', 'test-configs'] }
+
+Set<Project> modsAreExternal = subprojects.findAll {it.name in ['ParquetHadoop', 'deephaven-jpy'] }
+
+Set<Project> modsRegular = subprojects - modsAreBasic - modsAreBin
+
+Set<Project> modsJava = subprojects - modsAreBasic
+
+Set<Project> modsSpotless = subprojects - modsAreExternal - modsAreBasic
 
 allprojects {
 
@@ -153,14 +162,17 @@ allprojects*.tasks*.withType(JavaCompile)*.configureEach {
 
 subprojects {
     Project p ->
-    p.group = 'io.deephaven'
-    p.version = globalVersion
+        p.group = 'io.deephaven'
+        p.version = globalVersion
+}
+
+configure(modsJava) {
+    Project p ->
     p.plugins.apply('io.deephaven.java-conventions')
     def license = License.createFrom(p)
     license.register()
     p.ext.license = license
 }
-
 
 // setup standard sourceSets for non-bin modules
 configure modsRegular,
@@ -215,8 +227,6 @@ configure modsRegular,
         onlyIf { TestTools.shouldRunTests(project) }
 
         useJUnit()
-
-        workingDir = "$rootDir/.."
 
         new File("$rootDir/tmp/workspace".toString()).mkdirs()
         new File("$rootDir/tmp/logs".toString()).mkdirs()
@@ -280,7 +290,7 @@ configure modsRegular,
     } }
 }
 
-configure subprojects - [ ':ParquetHadoop', ':deephaven-jpy' ].collect( { project(it) }), { Project p ->
+configure(modsSpotless) { Project p ->
     p.apply plugin: 'com.diffplug.spotless'
     p.spotless {
         java {

@@ -78,6 +78,48 @@ public class RangeSetTest {
         rangeSet.addRange(new Range(0, 1));
         assertEquals(26, rangeSet.size());
         assertEquals(Collections.singletonList(new Range(0, 25)), asList(rangeSet));
+
+        rangeSet = new RangeSet();
+        rangeSet.addRange(new Range(1, 1));
+        rangeSet.addRange(new Range(20, 21));
+
+        // shared start; ranges follow
+        rangeSet.addRange(new Range(1, 10));
+        assertEquals(12, rangeSet.size());
+    }
+
+    @Test
+    public void testAddExistingRange() {
+        RangeSet rangeSet = RangeSet.ofRange(5, 10);
+        rangeSet.addRange(new Range(5, 10));
+        rangeSet.addRange(new Range(5, 6));
+        rangeSet.addRange(new Range(6, 8));
+        rangeSet.addRange(new Range(8, 10));
+        assertEquals(RangeSet.ofRange(5, 10), rangeSet);
+
+        rangeSet = RangeSet.ofItems(5, 10, 15);
+        rangeSet.addRange(new Range(5, 5));
+        rangeSet.addRange(new Range(10, 10));
+        rangeSet.addRange(new Range(15, 15));
+        assertEquals(rangeSet, RangeSet.ofItems(5, 10, 15));
+
+        rangeSet = RangeSet.ofItems(5, 6, 7, 11, 12, 13, 26, 27, 28);
+        rangeSet.addRange(new Range(5, 7));
+        rangeSet.addRange(new Range(11, 13));
+        rangeSet.addRange(new Range(26, 28));
+
+        rangeSet.addRange(new Range(5, 6));
+        rangeSet.addRange(new Range(6, 6));
+        rangeSet.addRange(new Range(6, 7));
+
+        rangeSet.addRange(new Range(11, 12));
+        rangeSet.addRange(new Range(12, 12));
+        rangeSet.addRange(new Range(12, 13));
+
+        rangeSet.addRange(new Range(26, 27));
+        rangeSet.addRange(new Range(27, 27));
+        rangeSet.addRange(new Range(27, 28));
+        assertEquals(RangeSet.ofItems(5, 6, 7, 11, 12, 13, 26, 27, 28), rangeSet);
     }
 
     @Test

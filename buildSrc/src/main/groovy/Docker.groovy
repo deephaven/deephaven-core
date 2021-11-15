@@ -150,6 +150,11 @@ class Docker {
         List<String> entrypoint;
 
         /**
+         * Optional build arguments
+         */
+        Map<String, String> buildArgs;
+
+        /**
          * Logs are always printed from the build task when it runs, but entrypoint logs are only printed
          * when it fails. Set this flag to always show logs, even when entrypoint is successful.
          */
@@ -255,6 +260,11 @@ class Docker {
                 // specify tag, if provided
                 if (cfg.imageName) {
                     images.add(cfg.imageName)
+                }
+
+                // add build arguments, if provided
+                if (cfg.buildArgs) {
+                    buildArgs.putAll(cfg.buildArgs)
                 }
             }
         }
@@ -441,5 +451,32 @@ class Docker {
         project.tasks.findByName('clean').dependsOn removeImage
 
         return makeImage;
+    }
+
+    static TaskProvider<? extends Task> buildPyWheel(Project project, String taskName, String imgName, String sourcePath) {
+        return registerDockerTask(project, taskName) { DockerTaskConfig config ->
+            config.copyIn { Sync sync ->
+                sync.from(sourcePath) { CopySpec copySpec ->
+                    copySpec.into 'src'
+                }
+            }
+            config.imageName = "${imgName}:local-build"
+            config.dockerfile { Dockerfile action ->
+                // set up the container, env vars - things that aren't likely to change
+                action.from 'docker.io/library/python:3.7.10 as sources'
+                action.arg 'DEEPHAVEN_VERSION'
+                action.environmentVariable 'DEEPHAVEN_VERSION', project.version.toString()
+                action.workingDir '/usr/src/app'
+                action.copyFile '/src', '.'
+                action.from 'sources as build'
+                action.runCommand '''set -eux; \\
+                      test -n "${DEEPHAVEN_VERSION}";\\
+                      python setup.py bdist_wheel'''
+            }
+            config.containerOutPath='/usr/src/app/dist'
+            config.copyOut { Sync sync ->
+                sync.into "build/wheel${taskName}"
+            }
+        }
     }
 }

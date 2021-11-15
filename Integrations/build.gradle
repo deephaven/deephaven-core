@@ -6,6 +6,8 @@ plugins {
 }
 
 evaluationDependsOn ':deephaven-jpy'
+evaluationDependsOn ':deephaven-wheel'
+evaluationDependsOn ':deephaven2-wheel'
 
 configurations {
     compile.extendsFrom dhIntegrations
@@ -63,69 +65,41 @@ idea {
         }
 }
 
-def buildPyWheel = { String taskName, String imgName, String sourcePath ->
-    Docker.registerDockerTask(project, taskName) {
-        copyIn {
-            from(sourcePath) {
-                into 'src'
-            }
-        }
-        imageName = imgName + ":local-build"
-        dockerfile {
-            // set up the container, env vars - things that aren't likely to change
-            from 'docker.io/library/python:3.7.10 as sources'
-            arg 'DEEPHAVEN_VERSION'
-            environmentVariable 'DEEPHAVEN_VERSION', project.version
-            workingDir '/usr/src/app'
-            copyFile '/src', '.'
-            from 'sources as build'
-            runCommand '''set -eux; \\
-                      test -n "${DEEPHAVEN_VERSION}";\\
-                      python setup.py bdist_wheel'''
-        }
-        containerOutPath='/usr/src/app/dist'
-        copyOut {
-            into 'build/wheel' + taskName
-        }
+def dockerContext = project.layout.buildDirectory.dir('context')
+
+def prepareDocker = project.tasks.register('prepareDocker', Sync) {
+    // deephaven-jpy.whl
+    def deephavenJpyWheel = project(':deephaven-jpy').tasks.getByName('buildDockerForWheel')
+
+    // deephaven.whl
+    def deephavenWheel = project(':deephaven-wheel').tasks.getByName('buildWheel')
+
+    // deephaven2.whl
+    def deephaven2Wheel = project(':deephaven2-wheel').tasks.getByName('buildWheel')
+
+    from (deephavenJpyWheel.outputs.files) {
+        into 'deephaven-jpy-wheel'
     }
+    from (deephavenWheel.outputs.files) {
+        into 'deephaven-wheel'
+    }
+    from (deephaven2Wheel.outputs.files) {
+        into 'deephaven2-wheel'
+    }
+
+    from 'src/main/docker'
+    into dockerContext
 }
 
-def buildDockerForWheel=buildPyWheel('buildDockerForWheel', 'deephaven/deephaven-wheel', 'python')
-def buildDockerForWheel2=buildPyWheel('buildDockerForWheel2', 'deephaven/deephaven2-wheel', '../pyintegration')
-
-/**
- * Produce a docker image with the prereqs to run and use deephaven python
- */
-task deephavenPythonDockerfile(type: Dockerfile) {
-    destFile.set layout.buildDirectory.file('deephaven-python-docker/Dockerfile')
-    from new Dockerfile.From('deephaven/deephaven-jpy-wheel:local-build').withStage('deephaven-jpy-wheel')
-    from new Dockerfile.From('deephaven/deephaven-wheel:local-build').withStage('deephaven-wheel')
-    from new Dockerfile.From('deephaven/deephaven2-wheel:local-build').withStage('deephaven2-wheel')
-    from new Dockerfile.From('deephaven/java-and-python:local-build')
-
-    copyFile(new Dockerfile.CopyFile('/usr/src/app/dist', '.').withStage('deephaven-jpy-wheel'))
-    copyFile(new Dockerfile.CopyFile('/usr/src/app/dist', '.').withStage('deephaven-wheel'))
-    copyFile(new Dockerfile.CopyFile('/usr/src/app/dist', '.').withStage('deephaven2-wheel'))
-
-    // liblzo2-2 below is needed for supporting LZO parquet encoding.
-    runCommand('''set -eux; \\
-                  apt update; \\
-                  apt -y install liblzo2-2; \\
-                  apt -y install curl; \\
-                  pip3 install setuptools wheel; \\
-                  pip3 install *.whl; \\
-                  rm *.whl
-                  ''')
-}
 Docker.registerDockerImage(project, 'buildDeephavenPython') {
-    def dhJpyTasks = project(':deephaven-jpy').tasks
-    inputs.files dhJpyTasks.getByName('buildDockerForRuntime').outputs.files,
-            dhJpyTasks.getByName('buildDockerForWheel').outputs.files,
-            buildDockerForWheel.get().outputs.files,
-            buildDockerForWheel2.get().outputs.files,
-            deephavenPythonDockerfile.outputs.files
+    // deephaven/java-and-python:local-build
+    def javaAndPython = project(':deephaven-jpy').tasks.getByName('buildDockerForRuntime')
 
-    inputDir.set layout.buildDirectory.dir('deephaven-python-docker')
+    dependsOn prepareDocker
+
+    inputs.files javaAndPython.outputs.files
+
+    inputDir.set dockerContext
 
     images.add('deephaven/runtime-base:local-build')
 }

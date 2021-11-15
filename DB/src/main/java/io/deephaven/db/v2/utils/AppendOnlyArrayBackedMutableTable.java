@@ -14,6 +14,7 @@ import io.deephaven.db.v2.sources.chunk.*;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
@@ -82,8 +83,6 @@ public class AppendOnlyArrayBackedMutableTable extends BaseArrayBackedMutableTab
     private AppendOnlyArrayBackedMutableTable(@NotNull TableDefinition definition,
             final Map<String, Object[]> enumValues, final ProcessPendingUpdater processPendingUpdater) {
         super(Index.FACTORY.getEmptyIndex(), makeColumnSourceMap(definition), enumValues, processPendingUpdater);
-        inputTableDefinition.setKeys(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
-        inputTableDefinition.setValues(definition.getColumnNamesArray());
     }
 
     @Override
@@ -116,7 +115,7 @@ public class AppendOnlyArrayBackedMutableTable extends BaseArrayBackedMutableTab
 
     @Override
     protected void processPendingDelete(Table table, IndexChangeRecorder indexChangeRecorder) {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException("Table doesn't support delete operation");
     }
 
     @Override
@@ -125,8 +124,8 @@ public class AppendOnlyArrayBackedMutableTable extends BaseArrayBackedMutableTab
     }
 
     @Override
-    void validateDelete(final TableDefinition keyDefinition) {
-        throw new UnsupportedOperationException();
+    protected List<String> getKeyNames() {
+        return Collections.emptyList();
     }
 
     @Override
@@ -136,14 +135,14 @@ public class AppendOnlyArrayBackedMutableTable extends BaseArrayBackedMutableTab
 
     private class AppendOnlyArrayBackedMutableInputTable extends ArrayBackedMutableInputTable {
         @Override
-        public void delete(Table table, Index index) {
+        public void setRows(@NotNull Table defaultValues, int[] rowArray, Map<String, Object>[] valueArray,
+                InputTableStatusListener listener) {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public void setRows(@NotNull Table defaultValues, int[] rowArray, Map<String, Object>[] valueArray,
-                InputTableStatusListener listener) {
-            throw new UnsupportedOperationException();
+        public void validateDelete(Table tableToDelete) {
+            throw new UnsupportedOperationException("Table doesn't support delete operation");
         }
 
         @Override

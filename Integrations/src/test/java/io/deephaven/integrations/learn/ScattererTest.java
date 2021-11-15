@@ -38,6 +38,11 @@ public class ScattererTest {
                 new Output("OutCol2", scatterFuncs[1], null)};
     }
 
+    private static Output[] createOutputsPy(Function<Object[], Object>... scatterFuncs) {
+        return new Output[] {new Output("OutCol1", true, scatterFuncs[0], "int"),
+                new Output("OutCol2", true, scatterFuncs[1], null)};
+    }
+
     private static Output[] createOutputs(Function<Object[], Object> scatterFunc) {
         return createOutputs(scatterFunc, scatterFunc);
     }
@@ -112,8 +117,25 @@ public class ScattererTest {
         Scatterer scatterer = new Scatterer(outputs);
 
         Assert.assertArrayEquals(
-                new String[] {"OutCol1 =  (__scatterer.scatter(0, __FutureOffset))",
+                new String[] {"OutCol1 = (int) (__scatterer.scatter(0, __FutureOffset))",
                         "OutCol2 =  (__scatterer.scatter(1, __FutureOffset))"},
+                scatterer.generateQueryStrings("__FutureOffset"));
+    }
+
+    @Test
+    public void generateQueryStringsPyTest() {
+
+        Function<Object[], Object> scatterFunc1 = (params) -> 3;
+
+        Function<Object[], Object> scatterFunc2 = (params) -> 4;
+
+        Output[] outputs = createOutputsPy(scatterFunc1, scatterFunc2);
+
+        Scatterer scatterer = new Scatterer(outputs);
+
+        Assert.assertArrayEquals(
+                new String[] {"OutCol1 = (int) (PyObject)  (__scatterer.scatter(0, __FutureOffset))",
+                        "OutCol2 =  (PyObject)  (__scatterer.scatter(1, __FutureOffset))"},
                 scatterer.generateQueryStrings("__FutureOffset"));
     }
 }

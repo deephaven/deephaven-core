@@ -16,12 +16,12 @@ RUN set -eux; \
     apt-get -qq update; \
     apt-get -qq -y dist-upgrade; \
     mkdir -p /usr/share/man/man1; \
-    apt-get -qq -y --no-install-recommends install zulu17-jdk-headless=17*; \
+    apt-get -qq -y --no-install-recommends install zulu11-jdk-headless; \
     apt-get -qq -y purge gnupg software-properties-common curl; \
     apt -y autoremove; \
     rm -rf /var/lib/apt/lists/* zulu-repo_${ZULU_REPO_VER}_all.deb
 ENV LANG='en_US.UTF-8' LANGUAGE='en_US:en' LC_ALL='en_US.UTF-8'
-ENV JAVA_HOME=/usr/lib/jvm/zulu17-ca-amd64
+ENV JAVA_HOME=/usr/lib/jvm/zulu11-ca-amd64
 
 FROM java_base as runtime_reqs
 RUN set -eux; \
@@ -51,14 +51,8 @@ FROM build_reqs as sources
 WORKDIR /usr/src/app
 COPY . .
 
-FROM sources as build
+FROM sources
 ARG DEEPHAVEN_VERSION
 RUN set -eux; \
     test -n "${DEEPHAVEN_VERSION}"; \
     python3.7 setup.py bdist_wheel
-
-FROM runtime_reqs
-COPY --from=build /usr/src/app/dist/ .
-RUN set -eux; \
-    pip3 install *.whl; \
-    rm *.whl

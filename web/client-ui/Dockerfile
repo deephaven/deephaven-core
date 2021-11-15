@@ -1,8 +1,8 @@
-FROM docker.io/library/node:14.16.0 AS node
+FROM docker.io/library/node:14.18.1 AS node
 WORKDIR /usr/src/app
 
 FROM node as build
-ARG WEB_VERSION=0.6.0
+ARG WEB_VERSION=0.6.2
 
 # Pull in the published package from npmjs and extract is
 RUN set -eux; \

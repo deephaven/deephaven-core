@@ -24,12 +24,13 @@ project(':deephaven-jpy') {
   // For OSS, we need to currently move fast, and will prefer to make edits directly in py/jpy.
   // These can be backported to jpy proper in the future if necessary.
 
-  task prepareDocker(type: Sync) {
+  def prepareDocker = project.tasks.register('prepareDocker', Sync) {
     from(project.projectDir) {
       exclude 'build'
     }
     into 'build/docker'
   }
+
   Docker.registerDockerImage(project, 'buildDockerForRuntime') {
     dependsOn prepareDocker
     buildArgs.put('DEEPHAVEN_VERSION', "${project.version}")
@@ -37,11 +38,17 @@ project(':deephaven-jpy') {
     target.set('runtime_reqs')
   }
 
-  Docker.registerDockerImage(project, 'buildDockerForWheel') {
-    dependsOn prepareDocker
-    buildArgs.put('DEEPHAVEN_VERSION', "${project.version}")
-    images.add('deephaven/deephaven-jpy-wheel:local-build')
-
-    target.set('build')
+  Docker.registerDockerTask(project, 'buildDockerForWheel') {
+    copyIn {
+      from(project.projectDir) {
+        exclude 'build'
+      }
+    }
+    buildArgs = [ DEEPHAVEN_VERSION: project.version.toString() ]
+    imageName = 'deephaven/deephaven-jpy-wheel:local-build'
+    containerOutPath = '/usr/src/app/dist'
+    copyOut {
+      into 'build/deephaven-jpy-wheel'
+    }
   }
 }
