@@ -41,7 +41,7 @@ public class JsTimeZone {
         }
 
         final TimeZoneConstants constants = GWT.create(TimeZoneConstants.class);
-        
+
         // Add all the constants from TimeZoneConstants
         addJsonTimeZone(constants.africaAbidjan());
         addJsonTimeZone(constants.africaAccra());
@@ -522,6 +522,7 @@ public class JsTimeZone {
 
     /**
      * Create a time zone from the JSON provided and add to the map with all IDs and known names
+     * 
      * @param json The JSON to add the time zone for
      */
     private static void addJsonTimeZone(String json) {
@@ -535,6 +536,7 @@ public class JsTimeZone {
 
     /**
      * Add a time zone to the map. Throws if there already exists an entry for that key
+     * 
      * @param key The key to map from
      * @param tz The TimeZone to map to
      */
