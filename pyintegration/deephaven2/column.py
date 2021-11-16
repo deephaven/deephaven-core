@@ -11,3 +11,5 @@ class Column:
     data_type: str
     component_type: str
     column_type: str
+    isPartitioning: bool
+    isGrouping: bool

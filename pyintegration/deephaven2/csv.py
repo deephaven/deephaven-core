@@ -5,7 +5,7 @@
 Deephaven table out as a CSV file.
 """
 from enum import Enum
-from typing import Dict, Optional, Any
+from typing import Dict, Any
 
 import jpy
 
@@ -71,7 +71,7 @@ def read(path: str,
          ignore_surrounding_spaces: bool = True,
          trim: bool = False,
          charset: str = "utf-8") -> Table:
-    """ read the CSV data specified by the path parameter as a table.
+    """ Read the CSV data specified by the path parameter as a table.
 
     Args:
         path (str): a file path or a URL string

@@ -10,7 +10,7 @@ import jpy
 
 from deephaven2 import DHError
 from deephaven2.column import Column
-from deephaven2.combo_agg import ComboAggregation
+from deephaven2.agg import Aggregation
 from deephaven2.constants import SortDirection
 
 _JTableTools = jpy.get_type("io.deephaven.db.tables.utils.TableTools")
@@ -21,7 +21,7 @@ _JSortPair = jpy.get_type("io.deephaven.db.tables.SortPair")
 # module level functions
 #
 # region factory methods
-def empty_table(size: int = 0) -> Table:
+def empty_table(size: int) -> Table:
     """ Create an empty table.
 
     Args:
@@ -78,13 +78,20 @@ class Table:
         self._definition = self._j_table.getDefinition()
         self._schema = None
 
+    def __repr__(self):
+        default_repr = super().__repr__()
+        column_dict = {col.name: col.data_type for col in self.columns[:10]}
+        repr_str = f"{default_repr[:-2]}, num_rows = {self.size}, columns = {column_dict}"
+        repr_str = repr_str[:115] + "...}>" if len(repr_str) > 120 else repr_str
+        return repr_str
+
     # to make the table visible to DH script session, internal use only
     def get_dh_table(self):
         return self._j_table
 
     @property
     def size(self) -> int:
-        """ The current size of the table. """
+        """ The current number of rows in the table. """
         return self._j_table.size()
 
     @property
@@ -97,11 +104,12 @@ class Table:
         j_col_list = self._definition.getColumnList()
         for i in range(j_col_list.size()):
             j_col = j_col_list.get(i)
-            self._schema.append(Column(j_col.getName(),
-                                       j_col.getDataType(),
-                                       j_col.getComponentType(),
-                                       j_col.getColumnType()))
-
+            self._schema.append(Column(name=j_col.getName(),
+                                       data_type=j_col.getDataType().getName(),
+                                       component_type=j_col.getComponentType(),
+                                       column_type=j_col.getColumnType(),
+                                       isPartitioning=j_col.isPartitioning(),
+                                       isGrouping=j_col.isGrouping()))
         return self._schema
 
     def to_string(self, num_rows: int = 10, cols: List[str] = []) -> str:
@@ -112,7 +120,7 @@ class Table:
             cols (List[str]): the list of column names
 
         Returns:
-            object:
+            string
 
         Raises:
             DHError
@@ -170,8 +178,8 @@ class Table:
         except Exception as e:
             raise DHError(e, "table move_columns operation failed.") from e
 
-    def move_down_columns(self, cols: List[str]) -> Table:
-        """ The move_down_columns method creates a new table with specified columns appearing last in order, to the far
+    def move_columns_down(self, cols: List[str]) -> Table:
+        """ The move_columns_down method creates a new table with specified columns appearing last in order, to the far
         right.
 
         Args:
@@ -186,10 +194,10 @@ class Table:
         try:
             return Table(j_table=self._j_table.moveDownColumns(*cols))
         except Exception as e:
-            raise DHError(e, "table move_down_columns operation failed.") from e
+            raise DHError(e, "table move_columns_down operation failed.") from e
 
-    def move_up_columns(self, cols: List[str]) -> Table:
-        """ The move_up_columns method creates a new table with specified columns appearing first in order, to the far
+    def move_columns_up(self, cols: List[str]) -> Table:
+        """ The move_columns_up method creates a new table with specified columns appearing first in order, to the far
         left.
 
         Args:
@@ -204,7 +212,7 @@ class Table:
         try:
             return Table(j_table=self._j_table.moveUpColumns(*cols))
         except Exception as e:
-            raise DHError(e, "table move_up_columns operation failed.") from e
+            raise DHError(e, "table move_columns_up operation failed.") from e
 
     def rename_columns(self, cols: List[str]) -> Table:
         """ The rename_columns method creates a new table with the specified columns renamed.
@@ -329,87 +337,6 @@ class Table:
             return Table(j_table=self._j_table.selectDistinct(*cols))
         except Exception as e:
             raise DHError(e, "table select_distinct operation failed.") from e
-
-    # endregion
-
-    #
-    # Table operation category: Sort
-    #
-    # region Sort
-    def restrict_sort_to(self, cols: List[str]):
-        """ The restrict_sort_to method only allows sorting on specified table columns. This can be useful to prevent
-        users from accidentally performing expensive sort operations as they interact with tables in the UI.
-
-        Args:
-            cols (List[str], optional): the list of column names
-
-        Raises:
-            DHError
-        """
-        try:
-            return self._j_table.restrictSortTo(*cols)
-        except Exception as e:
-            raise DHError(e, "table restrict_sort_to operation failed.") from e
-
-    def sort_descending(self, order_by: List[str] = []) -> Table:
-        """ The sort_descending method creates a new table where rows in a table are sorted in a largest to smallest
-        order based on the order_by column(s).
-
-        Args:
-            order_by (List[str], optional): the list of column names
-
-        Returns:
-            a new table
-
-        Raises:
-            DHError
-        """
-        try:
-            return self._j_table.sortDescending(*order_by)
-        except Exception as e:
-            raise DHError(e, "table sort_descending operation failed.") from e
-
-    def reverse(self) -> Table:
-        """ The reverse method creates a new table with all of the rows from this table in reverse order.
-
-        Returns:
-            a new table
-
-        Raises:
-            DHError
-        """
-        try:
-            return Table(j_table=self._j_table.reverse())
-        except Exception as e:
-            raise DHError(e, "table reverse operation failed.") from e
-
-    def sort(self, order_by: List[str], order: List[SortDirection] = []) -> Table:
-        """ The sort method creates a new table where (1) rows are sorted in a smallest to largest order based on the
-        order_by column(s) (2) where rows are sorted in the order defined by the order argument.
-
-.       Args:
-            order_by (List[str]): the names of the columns to be sorted on
-            order (List[SortDirection], optional): the corresponding sort directions for each sort column, default
-                is empty. In the absence of explicit sort directions, data will be sorted in the ascending order.
-
-        Returns:
-            a new table
-
-        Raises:
-            DHError
-        """
-
-        def sort_pair(col, dir_):
-            return _JSortPair.descending(col) if dir_ == SortDirection.DESCENDING else _JSortPair.ascending(col)
-
-        try:
-            if order:
-                sort_pairs = [sort_pair(col, dir_) for col, dir_ in zip(order_by, order)]
-                return Table(j_table=self._j_table.sort(*sort_pairs))
-            else:
-                return Table(j_table=self._j_table.sort(*order_by))
-        except Exception as e:
-            raise DHError(e, "table sort operation failed.") from e
 
     # endregion
 
@@ -564,6 +491,88 @@ class Table:
             return Table(j_table=self._j_table.tailPct(pct))
         except Exception as e:
             raise DHError(e, "table tail_pct operation failed.") from e
+
+    # endregion
+
+    #
+    # Table operation category: Sort
+    #
+    # region Sort
+    def restrict_sort_to(self, cols: List[str]):
+        """ The restrict_sort_to method only allows sorting on specified table columns. This can be useful to prevent
+        users from accidentally performing expensive sort operations as they interact with tables in the UI.
+
+        Args:
+            cols (List[str], optional): the list of column names
+
+        Raises:
+            DHError
+        """
+        try:
+            return self._j_table.restrictSortTo(*cols)
+        except Exception as e:
+            raise DHError(e, "table restrict_sort_to operation failed.") from e
+
+    def sort_descending(self, order_by: List[str] = []) -> Table:
+        """ The sort_descending method creates a new table where rows in a table are sorted in a largest to smallest
+        order based on the order_by column(s).
+
+        Args:
+            order_by (List[str], optional): the list of column names
+
+        Returns:
+            a new table
+
+        Raises:
+            DHError
+        """
+        try:
+            return Table(j_table=self._j_table.sortDescending(*order_by))
+        except Exception as e:
+            raise DHError(e, "table sort_descending operation failed.") from e
+
+    def reverse(self) -> Table:
+        """ The reverse method creates a new table with all of the rows from this table in reverse order.
+
+        Returns:
+            a new table
+
+        Raises:
+            DHError
+        """
+        try:
+            return Table(j_table=self._j_table.reverse())
+        except Exception as e:
+            raise DHError(e, "table reverse operation failed.") from e
+
+    def sort(self, order_by: List[str], order: List[SortDirection] = []) -> Table:
+        """ The sort method creates a new table where (1) rows are sorted in a smallest to largest order based on the
+        order_by column(s) (2) where rows are sorted in the order defined by the order argument.
+
+.       Args:
+            order_by (List[str]): the names of the columns to be sorted on
+            order (List[SortDirection], optional): the corresponding sort directions for each sort column, default
+                is empty. In the absence of explicit sort directions, data will be sorted in the ascending order.
+
+        Returns:
+            a new table
+
+        Raises:
+            DHError
+        """
+
+        def sort_pair(col, dir_):
+            return _JSortPair.descending(col) if dir_ == SortDirection.DESCENDING else _JSortPair.ascending(col)
+
+        try:
+            if order:
+                sort_pairs = [sort_pair(col, dir_) for col, dir_ in zip(order_by, order)]
+                return Table(j_table=self._j_table.sort(*sort_pairs))
+            else:
+                return Table(j_table=self._j_table.sort(*order_by))
+        except Exception as e:
+            raise DHError(e, "table sort operation failed.") from e
+
     # endregion
 
     #
@@ -651,7 +660,7 @@ class Table:
         except Exception as e:
             raise DHError(e, "table left_join operation failed.") from e
 
-    def join(self, table: Table, on: List[str] = [], joins: List[str] = []) -> Table:
+    def join(self, table: Table, on: List[str], joins: List[str] = []) -> Table:
         """ The join method creates a new table containing rows that have matching values in both tables. Rows that
         do not have matching criteria will not be included in the result. If there are multiple matches between a row
         from the left table and rows from the right table, all matching combinations will be included. If no columns
@@ -733,6 +742,7 @@ class Table:
                 return Table(j_table=self._j_table.raj(table._j_table, ",".join(on)))
         except Exception as e:
             raise DHError(e, "table reverse-as-of join operation failed.") from e
+
     # endregion
 
     #
@@ -774,8 +784,8 @@ class Table:
         except Exception as e:
             raise DHError(e, "table tail_by operation failed.") from e
 
-    def group(self, by: List[str] = []) -> Table:
-        """ The group method creates a new table containing grouping columns and grouped data, column content is
+    def group_by(self, by: List[str] = []) -> Table:
+        """ The group_by method creates a new table containing grouping columns and grouped data, column content is
         grouped into arrays.
 
         Args:
@@ -789,9 +799,9 @@ class Table:
         """
         try:
             if by:
-                return Table(j_table=self._j_table.by(*by))
+                return Table(j_table=self._j_table.groupBy(*by))
             else:
-                return Table(j_table=self._j_table.by())
+                return Table(j_table=self._j_table.groupBy())
         except Exception as e:
             raise DHError(e, "table group operation failed.") from e
 
@@ -1018,12 +1028,12 @@ class Table:
         except Exception as e:
             raise DHError(e, "table count_by operation failed.") from e
 
-    def combo_by(self, combo_agg: ComboAggregation, by: List[str]) -> Table:
+    def combo_by(self, aggs: List[Aggregation], by: List[str]) -> Table:
         """ The combo_by method creates a new table containing grouping columns and grouped data. The resulting
         grouped data is defined by the aggregations specified.
 
         Args:
-            combo_agg (ComboAggregation): the combined aggregation definition
+            aggs (List[Aggregation]): the list of aggregations
             by (List[str]): the group-by column names
 
         Returns:
@@ -1033,8 +1043,7 @@ class Table:
             DHError
         """
         try:
-            return Table(j_table=self._j_table.by(combo_agg.combo, *by))
+            return Table(j_table=self._j_table.aggBy([agg.j_agg for agg in aggs], *by))
         except Exception as e:
             raise DHError(e, "table combo_by operation failed.") from e
     # endregion
-
