@@ -93,6 +93,12 @@ class Table:
     def get_dh_table(self):
         return self._j_table
 
+    def write_csv(self: Table, path: str, cols: List[str] = []) -> None:
+        try:
+            _JTableTools.writeCsv(self._j_table, path, *cols)
+        except Exception as e:
+            raise DHError("write csv failed.") from e
+
     @property
     def size(self) -> int:
         """ The current number of rows in the table. """
