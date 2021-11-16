@@ -7,7 +7,7 @@ import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderRandom;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
-import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.impl.RowSetFactory;
 import io.deephaven.engine.table.TableMap;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;

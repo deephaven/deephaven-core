@@ -32,7 +32,7 @@ import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.v2.sources.regioned.*;
 import io.deephaven.engine.v2.utils.ChunkBoxer;
 import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.rowset.impl.RowSequenceUtil;
+import io.deephaven.engine.rowset.impl.RowSequenceFactory;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.parquet.ColumnChunkReader;
@@ -437,7 +437,7 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
                                 firstColumn.makeGetContext(CHUNK_SIZE);
                         final ChunkSource.GetContext lastContext =
                                 lastColumn.makeGetContext(CHUNK_SIZE);
-                        final RowSequence rows = RowSequenceUtil.forRange(0, numRows - 1);
+                        final RowSequence rows = RowSequenceFactory.forRange(0, numRows - 1);
                         final RowSequence.Iterator rowsIterator = rows.getRowSequenceIterator()) {
 
                     while (rowsIterator.hasMore()) {

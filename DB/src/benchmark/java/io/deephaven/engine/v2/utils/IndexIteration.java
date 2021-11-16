@@ -4,7 +4,7 @@ import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.chunk.*;
 import io.deephaven.benchmarking.BenchUtil;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.impl.RowSetFactory;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.infra.Blackhole;
 import org.openjdk.jmh.runner.RunnerException;

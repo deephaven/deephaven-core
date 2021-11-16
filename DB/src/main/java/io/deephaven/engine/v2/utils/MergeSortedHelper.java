@@ -6,7 +6,7 @@ package io.deephaven.engine.v2.utils;
 
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.impl.RowSetFactory;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.v2.QueryTable;
 import io.deephaven.engine.v2.BaseTable;

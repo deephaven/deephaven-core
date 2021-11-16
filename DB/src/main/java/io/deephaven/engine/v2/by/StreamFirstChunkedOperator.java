@@ -4,10 +4,9 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.impl.RowSequenceUtil;
+import io.deephaven.engine.rowset.impl.RowSequenceFactory;
 import io.deephaven.engine.rowset.impl.ShiftedRowSequence;
 import io.deephaven.engine.v2.QueryTable;
-import io.deephaven.engine.v2.Listener;
 import io.deephaven.engine.table.ChunkSink;
 import io.deephaven.engine.chunk.Attributes.*;
 import io.deephaven.engine.chunk.*;
@@ -125,16 +124,16 @@ public class StreamFirstChunkedOperator extends BaseStreamFirstOrLastChunkedOper
     }
 
     @Override
-    public void propagateUpdates(@NotNull final Listener.Update downstream,
+    public void propagateUpdates(@NotNull final TableUpdate downstream,
             @NotNull final RowSet newDestinations) {
         // NB: We cannot assert no modifies; other operators in the same aggregation might modify columns not in our
         // result set.
-        Assert.assertion(downstream.removed.isEmpty() && downstream.shifted.empty(),
+        Assert.assertion(downstream.removed().isEmpty() && downstream.shifted().empty(),
                 "downstream.removed.empty() && downstream.shifted.empty()");
-        copyStreamToResult(downstream.added);
+        copyStreamToResult(downstream.added());
         redirections = null;
-        if (downstream.added.isNonempty()) {
-            Assert.eq(downstream.added.lastRowKey() + 1, "downstream.added.lastRowKey() + 1", nextDestination,
+        if (downstream.added().isNonempty()) {
+            Assert.eq(downstream.added().lastRowKey() + 1, "downstream.added.lastRowKey() + 1", nextDestination,
                     "nextDestination");
             firstDestinationThisStep = nextDestination;
         }
@@ -181,7 +180,7 @@ public class StreamFirstChunkedOperator extends BaseStreamFirstOrLastChunkedOper
                 final LongChunk<OrderedRowKeys> sourceIndices = Chunk.<Values, OrderedRowKeys>downcast(
                         redirections.getChunk(redirectionsContext, shiftedSliceDestinations)).asLongChunk();
 
-                try (final RowSequence sliceSources = RowSequenceUtil.wrapRowKeysChunkAsRowSequence(sourceIndices)) {
+                try (final RowSequence sliceSources = RowSequenceFactory.wrapRowKeysChunkAsRowSequence(sourceIndices)) {
                     for (int ci = 0; ci < numResultColumns; ++ci) {
                         final Chunk<? extends Values> inputChunk =
                                 inputColumns[ci].getChunk(inputContexts[ci], sliceSources);

@@ -13,12 +13,12 @@ import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.impl.RowSetFactory;
+import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
 import io.deephaven.engine.updategraph.NotificationQueue;
-import io.deephaven.engine.v2.Listener;
 import io.deephaven.engine.v2.QueryTable;
 import io.deephaven.engine.v2.sources.*;
 import io.deephaven.engine.v2.sources.WritableRedirectedColumnSource;
@@ -207,7 +207,7 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
                     modifiedColumnSet.setColumnWithIndex(ci);
                 }
             }
-            final Listener.Update up = new Listener.Update(
+            final TableUpdate up = new TableUpdateImpl(
                     update.rowsAdded, update.rowsRemoved, mods, update.shifted, modifiedColumnSet);
 
             beginLog(LogLevel.INFO).append(": Processing delta updates ")
@@ -315,7 +315,7 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
                 return coalescer;
             }
 
-            final Listener.Update downstream = new Listener.Update(
+            final TableUpdate downstream = new TableUpdateImpl(
                     update.rowsAdded.copy(), update.rowsRemoved.copy(), totalMods, update.shifted, modifiedColumnSet);
             return (coalescer == null) ? new UpdateCoalescer(currRowsFromPrev, downstream)
                     : coalescer.update(downstream);

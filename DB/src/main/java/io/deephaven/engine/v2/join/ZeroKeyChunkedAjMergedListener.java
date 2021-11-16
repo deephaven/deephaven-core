@@ -1,6 +1,9 @@
 package io.deephaven.engine.v2.join;
 
 import io.deephaven.engine.rowset.*;
+import io.deephaven.engine.rowset.impl.RowSetFactory;
+import io.deephaven.engine.table.ModifiedColumnSet;
+import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.tables.SortingOrder;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.v2.*;
@@ -103,9 +106,9 @@ public class ZeroKeyChunkedAjMergedListener extends MergedListener {
 
     @Override
     public void process() {
-        final Listener.Update downstream = new Listener.Update();
+        final TableUpdateImpl downstream = new TableUpdateImpl();
         downstream.modifiedColumnSet = resultModifiedColumnSet;
-        downstream.modifiedColumnSet.clear();
+        downstream.modifiedColumnSet().clear();
 
         final boolean leftTicked = leftRecorder.recordedVariablesAreValid();
         final boolean rightTicked = rightRecorder.recordedVariablesAreValid();
@@ -345,9 +348,9 @@ public class ZeroKeyChunkedAjMergedListener extends MergedListener {
 
                     if (rightStampModified || rightRecorder.getAdded().isNonempty()
                             || rightRecorder.getRemoved().isNonempty()) {
-                        downstream.modifiedColumnSet.setAll(allRightColumns);
+                        downstream.modifiedColumnSet().setAll(allRightColumns);
                     } else {
-                        rightTransformer.transform(rightRecorder.getModifiedColumnSet(), downstream.modifiedColumnSet);
+                        rightTransformer.transform(rightRecorder.getModifiedColumnSet(), downstream.modifiedColumnSet());
                     }
                 }
             }
@@ -390,9 +393,9 @@ public class ZeroKeyChunkedAjMergedListener extends MergedListener {
                     }
                 }
 
-                leftTransformer.transform(leftRecorder.getModifiedColumnSet(), downstream.modifiedColumnSet);
+                leftTransformer.transform(leftRecorder.getModifiedColumnSet(), downstream.modifiedColumnSet());
                 if (leftStampModified) {
-                    downstream.modifiedColumnSet.setAll(allRightColumns);
+                    downstream.modifiedColumnSet().setAll(allRightColumns);
                     leftRestampAdditions.close();
                 }
                 downstream.added = leftRecorder.getAdded().copy();

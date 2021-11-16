@@ -6,7 +6,12 @@ package io.deephaven.engine.v2;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.*;
+import io.deephaven.engine.rowset.impl.RowSetFactory;
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.ModifiedColumnSet;
+import io.deephaven.engine.table.TableUpdate;
+import io.deephaven.engine.table.TableUpdateListener;
+import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.engine.v2.sources.ReversedColumnSource;
 import io.deephaven.engine.v2.sources.UnionRedirection;
@@ -86,10 +91,10 @@ public class ReverseOperation implements QueryTable.MemoizableOperation<QueryTab
             return new Result<>(resultTable);
         }
 
-        final Listener listener =
+        final TableUpdateListener listener =
                 new BaseTable.ListenerImpl(getDescription(), parent, resultTable) {
                     @Override
-                    public void onUpdate(final Update upstream) {
+                    public void onUpdate(final TableUpdate upstream) {
                         ReverseOperation.this.onUpdate(upstream);
                     }
                 };
@@ -97,38 +102,38 @@ public class ReverseOperation implements QueryTable.MemoizableOperation<QueryTab
         return new Result<>(resultTable, listener);
     }
 
-    private void onUpdate(final Listener.Update upstream) {
+    private void onUpdate(final TableUpdate upstream) {
         final WritableRowSet rowSet = resultTable.getRowSet().writableCast();
         final RowSet parentRowSet = parent.getRowSet();
         Assert.eq(resultSize, "resultSize", rowSet.size(), "rowSet.size()");
 
-        if (parentRowSet.size() != (rowSet.size() + upstream.added.size() - upstream.removed.size())) {
+        if (parentRowSet.size() != (rowSet.size() + upstream.added().size() - upstream.removed().size())) {
             QueryTable.log.error()
                     .append("Size Mismatch: Result rowSet: ")
                     .append(rowSet).append(" size=").append(rowSet.size())
                     .append(", Original rowSet: ")
                     .append(parentRowSet).append(" size=").append(parentRowSet.size())
-                    .append(", Added: ").append(upstream.added).append(" size=").append(upstream.added.size())
-                    .append(", Removed: ").append(upstream.removed).append(" size=").append(upstream.removed.size())
+                    .append(", Added: ").append(upstream.added()).append(" size=").append(upstream.added().size())
+                    .append(", Removed: ").append(upstream.removed()).append(" size=").append(upstream.removed().size())
                     .endl();
             throw new IllegalStateException();
         }
 
-        final Listener.Update downstream = new Listener.Update();
+        final TableUpdateImpl downstream = new TableUpdateImpl();
 
         // removed is in pre-shift keyspace
-        downstream.removed = transform(upstream.removed);
-        rowSet.remove(downstream.removed);
+        downstream.removed = transform(upstream.removed());
+        rowSet.remove(downstream.removed());
 
         // transform shifted and apply to our rowSet
         final long newShift =
                 (parentRowSet.lastRowKey() > pivotPoint) ? computePivot(parentRowSet.lastRowKey()) - pivotPoint : 0;
-        if (upstream.shifted.nonempty() || newShift > 0) {
+        if (upstream.shifted().nonempty() || newShift > 0) {
             long watermarkKey = 0;
             final RowSetShiftData.Builder oShiftedBuilder = new RowSetShiftData.Builder();
 
             // Bounds seem weird because we might need to shift all keys outside of shifts too.
-            for (int idx = upstream.shifted.size(); idx >= 0; --idx) {
+            for (int idx = upstream.shifted().size(); idx >= 0; --idx) {
                 final long nextShiftEnd;
                 final long nextShiftStart;
                 final long nextShiftDelta;
@@ -137,10 +142,10 @@ public class ReverseOperation implements QueryTable.MemoizableOperation<QueryTab
                     nextShiftDelta = 0;
                 } else {
                     // Note: begin/end flip responsibilities in the transformation
-                    nextShiftDelta = -upstream.shifted.getShiftDelta(idx - 1);
+                    nextShiftDelta = -upstream.shifted().getShiftDelta(idx - 1);
                     final long minStart = Math.max(-nextShiftDelta - newShift, 0);
-                    nextShiftStart = Math.max(minStart, transform(upstream.shifted.getEndRange(idx - 1)));
-                    nextShiftEnd = transform(upstream.shifted.getBeginRange(idx - 1));
+                    nextShiftStart = Math.max(minStart, transform(upstream.shifted().getEndRange(idx - 1)));
+                    nextShiftEnd = transform(upstream.shifted().getBeginRange(idx - 1));
                     if (nextShiftEnd < nextShiftStart) {
                         continue;
                     }
@@ -160,7 +165,7 @@ public class ReverseOperation implements QueryTable.MemoizableOperation<QueryTab
             }
 
             downstream.shifted = oShiftedBuilder.build();
-            RowSetShiftUtils.apply(downstream.shifted, rowSet);
+            RowSetShiftUtils.apply(downstream.shifted(), rowSet);
 
             // Update pivot logic.
             lastPivotChange = LogicalClock.DEFAULT.currentStep();
@@ -171,20 +176,20 @@ public class ReverseOperation implements QueryTable.MemoizableOperation<QueryTab
         }
 
         // added/modified are in post-shift keyspace
-        downstream.added = transform(upstream.added);
-        rowSet.insert(downstream.added);
-        downstream.modified = transform(upstream.modified);
+        downstream.added = transform(upstream.added());
+        rowSet.insert(downstream.added());
+        downstream.modified = transform(upstream.modified());
 
-        Assert.eq(downstream.added.size(), "update.added.size()", upstream.added.size(), "upstream.added.size()");
-        Assert.eq(downstream.removed.size(), "update.removed.size()", upstream.removed.size(),
+        Assert.eq(downstream.added().size(), "update.added.size()", upstream.added().size(), "upstream.added.size()");
+        Assert.eq(downstream.removed().size(), "update.removed.size()", upstream.removed().size(),
                 "upstream.removed.size()");
-        Assert.eq(downstream.modified.size(), "update.modified.size()", upstream.modified.size(),
+        Assert.eq(downstream.modified().size(), "update.modified.size()", upstream.modified().size(),
                 "upstream.modified.size()");
 
         downstream.modifiedColumnSet = resultTable.modifiedColumnSet;
-        downstream.modifiedColumnSet.clear();
-        if (downstream.modified.isNonempty()) {
-            mcsTransformer.transform(upstream.modifiedColumnSet, downstream.modifiedColumnSet);
+        downstream.modifiedColumnSet().clear();
+        if (downstream.modified().isNonempty()) {
+            mcsTransformer.transform(upstream.modifiedColumnSet(), downstream.modifiedColumnSet());
         }
 
         if (rowSet.size() != parentRowSet.size()) {

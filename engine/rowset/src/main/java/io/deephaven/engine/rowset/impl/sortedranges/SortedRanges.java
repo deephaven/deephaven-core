@@ -3,15 +3,11 @@ package io.deephaven.engine.rowset.impl.sortedranges;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.impl.ComplementRangeIterator;
-import io.deephaven.engine.rowset.impl.OrderedLongSet;
-import io.deephaven.engine.rowset.impl.OrderedLongSetBuilderSequential;
-import io.deephaven.engine.rowset.impl.RefCountedCow;
+import io.deephaven.engine.rowset.impl.*;
 import io.deephaven.util.datastructures.LongAbortableConsumer;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.chunk.Attributes;
 import io.deephaven.engine.chunk.LongChunk;
-import io.deephaven.engine.v2.utils.*;
 import io.deephaven.util.metrics.IntCounterMetric;
 import io.deephaven.engine.rowset.impl.rsp.RspBitmap;
 import io.deephaven.engine.rowset.impl.singlerange.SingleRange;
@@ -2378,7 +2374,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
     public final RowSequence getRowSequenceByPosition(final long pos, long length) {
         final long card = getCardinality();
         if (isEmpty() || pos >= card) {
-            return RowSequence.EMPTY;
+            return RowSequenceFactory.EMPTY;
         }
         if (pos + length >= card) {
             length = card - pos;
@@ -2488,15 +2484,15 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
 
     public final RowSequence getRowSequenceByKeyRange(final long start, final long end) {
         if (isEmpty()) {
-            return RowSequence.EMPTY;
+            return RowSequenceFactory.EMPTY;
         }
         final long last = last();
         if (last < start) {
-            return RowSequence.EMPTY;
+            return RowSequenceFactory.EMPTY;
         }
         final long first = first();
         if (end < first) {
-            return RowSequence.EMPTY;
+            return RowSequenceFactory.EMPTY;
         }
         final long packedStart = pack(Math.max(start, first));
         final long packedEnd = pack(Math.min(end, last));
@@ -2528,7 +2524,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
                 ++iPos;
                 if (iData >= packedStart) {
                     if (iData > packedStart && iData > packedEnd) {
-                        return RowSequence.EMPTY;
+                        return RowSequenceFactory.EMPTY;
                     }
                     if (i + 1 >= count) {
                         return new SortedRangesRowSequence(this, iPos, i, 0, i, 0, 1);
@@ -2608,7 +2604,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
 
     public final RowSequence.Iterator getRowSequenceIterator() {
         if (isEmpty()) {
-            return RowSequence.Iterator.EMPTY;
+            return RowSequenceFactory.EMPTY_ITERATOR;
         }
         return new SortedRangesRowSequence.Iterator(
                 new SortedRangesRowSequence(this));

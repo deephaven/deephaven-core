@@ -18,7 +18,9 @@ import io.deephaven.configuration.Configuration;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.exceptions.QueryCancellationException;
 import io.deephaven.engine.rowset.*;
+import io.deephaven.engine.rowset.impl.RowSetFactory;
 import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.tables.*;
 import io.deephaven.engine.tables.select.MatchPairFactory;
 import io.deephaven.engine.tables.select.SelectColumnFactory;
@@ -82,7 +84,7 @@ public class QueryTable extends BaseTable {
          */
         class Result<T extends DynamicNode & NotificationStepReceiver> {
             public final T resultNode;
-            public final Listener resultListener; // may be null if parent is non-ticking
+            public final TableUpdateListener resultListener; // may be null if parent is non-ticking
 
             public Result(final @NotNull T resultNode) {
                 this(resultNode, null);
@@ -96,7 +98,7 @@ public class QueryTable extends BaseTable {
              * @param resultListener the listener that should be attached to the parent (or null)
              */
             public Result(final @NotNull T resultNode,
-                    final @Nullable Listener resultListener) {
+                    final @Nullable TableUpdateListener resultListener) {
                 this.resultNode = resultNode;
                 this.resultListener = resultListener;
             }
@@ -1180,7 +1182,7 @@ public class QueryTable extends BaseTable {
                 modified.remove(added);
             }
 
-            notifyListeners(new Listener.Update(added, removed, modified,
+            notifyListeners(new TableUpdateImpl(added, removed, modified,
                     shiftData == null ? RowSetShiftData.EMPTY : shiftData, modifiedColumnSet));
         }
 
@@ -1461,8 +1463,8 @@ public class QueryTable extends BaseTable {
                                     publishTheseSources, selectColumns);
 
                     // Init all the rows by cooking up a fake Update
-                    final Listener.Update fakeUpdate =
-                            new Listener.Update(rowSet.copy(),
+                    final TableUpdate fakeUpdate =
+                            new TableUpdateImpl(rowSet.copy(),
                                     RowSetFactory.empty(), RowSetFactory.empty(),
                                     RowSetShiftData.EMPTY, ModifiedColumnSet.ALL);
                     try (final RowSet emptyRowSet = RowSetFactory.empty();
@@ -1583,7 +1585,7 @@ public class QueryTable extends BaseTable {
                                         new QueryTable(rowSet, analyzer.getPublishedColumnSources());
                                 if (swapListener != null) {
                                     final Map<String, String[]> effects = analyzer.calcEffects();
-                                    final Listener listener =
+                                    final TableUpdateListener listener =
                                             new ViewOrUpdateViewListener(updateDescription, this, queryTable, effects);
                                     swapListener.setListenerAndResult(listener, queryTable);
                                     queryTable.addParentReference(swapListener);
@@ -1642,10 +1644,10 @@ public class QueryTable extends BaseTable {
         }
 
         @Override
-        public void onUpdate(final Update upstream) {
-            final Update downstream = upstream.copy();
+        public void onUpdate(final TableUpdate upstream) {
+            final TableUpdateImpl downstream = TableUpdateImpl.copy(upstream);
             downstream.modifiedColumnSet = dependent.modifiedColumnSet;
-            transformer.clearAndTransform(upstream.modifiedColumnSet, downstream.modifiedColumnSet);
+            transformer.clearAndTransform(upstream.modifiedColumnSet(), downstream.modifiedColumnSet());
             dependent.notifyListeners(downstream);
         }
     }
@@ -1685,7 +1687,7 @@ public class QueryTable extends BaseTable {
         }
 
         @Override
-        public void onUpdate(final Update upstream) {
+        public void onUpdate(final TableUpdate upstream) {
             // Attempt to minimize work by sharing computation across all columns:
             // - clear only the keys that no longer exist
             // - create parallel arrays of pre-shift-keys and post-shift-keys so we can move them in chunks
@@ -1696,9 +1698,9 @@ public class QueryTable extends BaseTable {
                 toClear.remove(dependent.rowSet);
                 analyzer.applyUpdate(upstream, toClear, updateHelper);
 
-                final Update downstream = upstream.copy();
+                final TableUpdateImpl downstream = TableUpdateImpl.copy(upstream);
                 downstream.modifiedColumnSet = dependent.modifiedColumnSet;
-                transformer.clearAndTransform(upstream.modifiedColumnSet, downstream.modifiedColumnSet);
+                transformer.clearAndTransform(upstream.modifiedColumnSet(), downstream.modifiedColumnSet());
                 dependent.notifyListeners(downstream);
             }
         }
@@ -1765,14 +1767,14 @@ public class QueryTable extends BaseTable {
                             final ListenerImpl listener = new ListenerImpl(
                                     "dropColumns(" + Arrays.deepToString(columnNames) + ')', this, resultTable) {
                                 @Override
-                                public void onUpdate(final Update upstream) {
-                                    final Update downstream = upstream.copy();
-                                    mcsTransformer.clearAndTransform(upstream.modifiedColumnSet,
+                                public void onUpdate(final TableUpdate upstream) {
+                                    final TableUpdateImpl downstream = TableUpdateImpl.copy(upstream);
+                                    mcsTransformer.clearAndTransform(upstream.modifiedColumnSet(),
                                             resultTable.modifiedColumnSet);
-                                    if (upstream.modified.isEmpty() || resultTable.modifiedColumnSet.empty()) {
+                                    if (upstream.modified().isEmpty() || resultTable.modifiedColumnSet.empty()) {
                                         downstream.modifiedColumnSet = ModifiedColumnSet.EMPTY;
-                                        if (downstream.modified.isNonempty()) {
-                                            downstream.modified.close();
+                                        if (downstream.modified().isNonempty()) {
+                                            downstream.modified().close();
                                             downstream.modified = RowSetFactory.empty();
                                         }
                                     } else {
@@ -1841,14 +1843,14 @@ public class QueryTable extends BaseTable {
                         listenForUpdates(new ListenerImpl("renameColumns(" + Arrays.deepToString(pairs) + ')',
                                 this, queryTable) {
                             @Override
-                            public void onUpdate(final Update upstream) {
-                                final Update downstream = upstream.copy();
+                            public void onUpdate(final TableUpdate upstream) {
+                                final TableUpdateImpl downstream = TableUpdateImpl.copy(upstream);
                                 downstream.modifiedColumnSet = queryTable.modifiedColumnSet;
-                                if (upstream.modified.isNonempty()) {
-                                    mcsTransformer.clearAndTransform(upstream.modifiedColumnSet,
-                                            downstream.modifiedColumnSet);
+                                if (upstream.modified().isNonempty()) {
+                                    mcsTransformer.clearAndTransform(upstream.modifiedColumnSet(),
+                                            downstream.modifiedColumnSet());
                                 } else {
-                                    downstream.modifiedColumnSet.clear();
+                                    downstream.modifiedColumnSet().clear();
                                 }
                                 queryTable.notifyListeners(downstream);
                             }
@@ -2191,13 +2193,6 @@ public class QueryTable extends BaseTable {
     }
 
     @Override
-    @Deprecated
-    public void addColumnGrouping(String columnName) {
-        // NB: This used to set the group to range map on the column source, but that's not a safe thing to do.
-        getRowSet().getGrouping(getColumnSource(columnName));
-    }
-
-    @Override
     public Table snapshot(Table baseTable, boolean doInitialSnapshot, String... stampColumns) {
         return QueryPerformanceRecorder.withNugget(
                 "snapshot(baseTable, " + doInitialSnapshot + ", " + Arrays.toString(stampColumns) + ")",
@@ -2385,7 +2380,7 @@ public class QueryTable extends BaseTable {
                         listenForUpdates(
                                 new ListenerImpl("snapshotIncremental (leftTable)", this, resultTable) {
                                     @Override
-                                    public void onUpdate(Update upstream) {
+                                    public void onUpdate(TableUpdate upstream) {
                                         SnapshotIncrementalListener.copyRowsToResult(rightTable.getRowSet(),
                                                 QueryTable.this, rightTable, leftColumns, resultColumns);
                                         resultTable.getRowSet().writableCast().insert(rightTable.getRowSet());
@@ -3413,7 +3408,7 @@ public class QueryTable extends BaseTable {
 
             // note shifts are pass-through since filter will never translate keyspace
             result.notifyListeners(
-                    new Listener.Update(added, removed, modified, recorder.getShifted(), modifiedColumnSet));
+                    new TableUpdateImpl(added, removed, modified, recorder.getShifted(), modifiedColumnSet));
         }
     }
 

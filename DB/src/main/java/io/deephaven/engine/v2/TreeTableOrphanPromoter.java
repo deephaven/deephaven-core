@@ -5,12 +5,12 @@ import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
-import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.table.Table;
+import io.deephaven.engine.rowset.impl.RowSetFactory;
+import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.v2.remote.WrappedDelegatingTable;
 import io.deephaven.engine.v2.sources.AbstractColumnSource;
-import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.util.QueryConstants;
 import gnu.trove.list.TLongList;
 import gnu.trove.list.array.TLongArrayList;
@@ -239,7 +239,7 @@ public class TreeTableOrphanPromoter implements Function.Unary<Table, Table> {
                         source.newModifiedColumnSetTransformer(result, columnNames);
                 final ModifiedColumnSet mcsParentColumn = result.newModifiedColumnSet(parentColumn);
 
-                final Listener listener =
+                final TableUpdateListener listener =
                         new BaseTable.ListenerImpl("Orphan Promoter", source, result) {
                             final Map<Object, TLongSet> parentToChildMap = new HashMap<>();
 
@@ -279,16 +279,16 @@ public class TreeTableOrphanPromoter implements Function.Unary<Table, Table> {
                             }
 
                             @Override
-                            public void onUpdate(final Update upstream) {
-                                final Update downstream = upstream.copy();
+                            public void onUpdate(final TableUpdate upstream) {
+                                final TableUpdateImpl downstream = TableUpdateImpl.copy(upstream);
                                 downstream.modifiedColumnSet = result.modifiedColumnSet;
 
                                 final boolean modifiedInputColumns =
-                                        upstream.modifiedColumnSet.containsAny(inputColumns);
-                                if (upstream.added.isEmpty() && upstream.removed.isEmpty() && upstream.shifted.empty()
+                                        upstream.modifiedColumnSet().containsAny(inputColumns);
+                                if (upstream.added().isEmpty() && upstream.removed().isEmpty() && upstream.shifted().empty()
                                         && !modifiedInputColumns) {
-                                    mcsTransformer.clearAndTransform(upstream.modifiedColumnSet,
-                                            downstream.modifiedColumnSet);
+                                    mcsTransformer.clearAndTransform(upstream.modifiedColumnSet(),
+                                            downstream.modifiedColumnSet());
                                     result.notifyListeners(downstream);
                                     return;
                                 }
@@ -297,12 +297,12 @@ public class TreeTableOrphanPromoter implements Function.Unary<Table, Table> {
                                 final Set<Object> removedIds = new HashSet<>();
                                 final Set<Object> addedIds = new HashSet<>();
 
-                                upstream.removed.forAllRowKeys((final long v) -> {
+                                upstream.removed().forAllRowKeys((final long v) -> {
                                     final Object id = idSource.getPrev(v);
                                     removedIds.add(id);
                                 });
 
-                                upstream.added.forAllRowKeys((final long v) -> {
+                                upstream.added().forAllRowKeys((final long v) -> {
                                     final Object id = idSource.get(v);
                                     if (!removedIds.remove(id)) {
                                         addedIds.add(id);
@@ -325,18 +325,18 @@ public class TreeTableOrphanPromoter implements Function.Unary<Table, Table> {
                                 }
 
                                 // Process upstream changes and modify our state.
-                                removeChildren(upstream.removed);
+                                removeChildren(upstream.removed());
                                 if (modifiedInputColumns) {
                                     removeChildren(upstream.getModifiedPreShift());
                                 }
 
                                 try (final WritableRowSet prevIndex = source.getRowSet().getPrevRowSet()) {
-                                    prevIndex.remove(upstream.removed);
+                                    prevIndex.remove(upstream.removed());
                                     if (modifiedInputColumns) {
                                         prevIndex.remove(upstream.getModifiedPreShift());
                                     }
 
-                                    upstream.shifted.forAllInIndex(prevIndex, (key, shiftDelta) -> {
+                                    upstream.shifted().forAllInIndex(prevIndex, (key, shiftDelta) -> {
                                         final Object oldParent = parentSource.getPrev(key);
                                         final Object newParent = parentSource.get(key + shiftDelta);
                                         if (oldParent != null && Objects.equals(oldParent, newParent)) {
@@ -356,9 +356,9 @@ public class TreeTableOrphanPromoter implements Function.Unary<Table, Table> {
                                 }
 
                                 if (modifiedInputColumns) {
-                                    addChildren(upstream.modified);
+                                    addChildren(upstream.modified());
                                 }
-                                addChildren(upstream.added);
+                                addChildren(upstream.added());
 
                                 final TLongList modifiedKeys = new TLongArrayList();
                                 Stream.concat(removedIds.stream(), addedIds.stream()).map(parentToChildMap::get)
@@ -378,17 +378,17 @@ public class TreeTableOrphanPromoter implements Function.Unary<Table, Table> {
                                     return true;
                                 });
 
-                                downstream.modified.writableCast().insert(builder.build());
-                                downstream.modified.writableCast().remove(upstream.added);
+                                downstream.modified().writableCast().insert(builder.build());
+                                downstream.modified().writableCast().remove(upstream.added());
 
-                                if (downstream.modified.isNonempty()) {
-                                    mcsTransformer.clearAndTransform(upstream.modifiedColumnSet,
-                                            downstream.modifiedColumnSet);
+                                if (downstream.modified().isNonempty()) {
+                                    mcsTransformer.clearAndTransform(upstream.modifiedColumnSet(),
+                                            downstream.modifiedColumnSet());
                                     if (!modifiedKeys.isEmpty()) {
-                                        downstream.modifiedColumnSet.setAll(mcsParentColumn);
+                                        downstream.modifiedColumnSet().setAll(mcsParentColumn);
                                     }
                                 } else {
-                                    downstream.modifiedColumnSet.clear();
+                                    downstream.modifiedColumnSet().clear();
                                 }
 
                                 result.notifyListeners(downstream);

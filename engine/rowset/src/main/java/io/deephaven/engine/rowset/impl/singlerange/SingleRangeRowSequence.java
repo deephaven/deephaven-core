@@ -4,6 +4,7 @@ import static io.deephaven.engine.chunk.Attributes.OrderedRowKeyRanges;
 
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.impl.RowSequenceFactory;
 import io.deephaven.engine.rowset.impl.WritableRowSetImpl;
 import io.deephaven.engine.rowset.impl.RowSequenceAsChunkImpl;
 import io.deephaven.engine.chunk.Attributes;
@@ -121,15 +122,15 @@ public class SingleRangeRowSequence extends RowSequenceAsChunkImpl implements Si
         @Override
         public RowSequence getNextRowSequenceThrough(final long maxKeyInclusive) {
             if (maxKeyInclusive < 0 || sizeLeft <= 0) {
-                return RowSequence.EMPTY;
+                return RowSequenceFactory.EMPTY;
             }
             if (currEnd != -1) {
                 if (maxKeyInclusive <= currEnd) {
-                    return RowSequence.EMPTY;
+                    return RowSequenceFactory.EMPTY;
                 }
                 currStart = currEnd + 1;
             } else if (maxKeyInclusive < currStart) {
-                return RowSequence.EMPTY;
+                return RowSequenceFactory.EMPTY;
             }
             currEnd = Math.min(currStart + sizeLeft - 1, maxKeyInclusive);
             sizeLeft -= currEnd - currStart + 1;
@@ -140,7 +141,7 @@ public class SingleRangeRowSequence extends RowSequenceAsChunkImpl implements Si
         @Override
         public RowSequence getNextRowSequenceWithLength(final long numberOfKeys) {
             if (numberOfKeys <= 0 || sizeLeft <= 0) {
-                return RowSequence.EMPTY;
+                return RowSequenceFactory.EMPTY;
             }
             if (currEnd != -1) {
                 currStart = currEnd + 1;

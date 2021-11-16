@@ -2,6 +2,10 @@ package io.deephaven.clientsupport.plotdownsampling;
 
 import io.deephaven.base.Function;
 import io.deephaven.engine.rowset.*;
+import io.deephaven.engine.rowset.impl.RowSetFactory;
+import io.deephaven.engine.table.ModifiedColumnSet;
+import io.deephaven.engine.table.TableUpdate;
+import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.time.DateTime;
 import io.deephaven.hash.KeyedLongObjectHash;
 import io.deephaven.hash.KeyedLongObjectHashMap;
@@ -315,16 +319,16 @@ public class RunChartDownsample implements Function.Unary<Table, Table> {
         }
 
         @Override
-        public void onUpdate(final Update upstream) {
+        public void onUpdate(final TableUpdate upstream) {
             try (final DownsampleChunkContext context =
                     new DownsampleChunkContext(xColumnSource, valueColumnSources, CHUNK_SIZE)) {
-                handleRemoved(context, upstream.removed);
+                handleRemoved(context, upstream.removed());
 
-                handleShifts(upstream.shifted);
+                handleShifts(upstream.shifted());
 
-                handleAdded(context, upstream.added);
+                handleAdded(context, upstream.added());
 
-                handleModified(context, upstream.modified, upstream.modifiedColumnSet);
+                handleModified(context, upstream.modified(), upstream.modifiedColumnSet());
 
                 performRescans(context);
 
@@ -352,7 +356,7 @@ public class RunChartDownsample implements Function.Unary<Table, Table> {
         }
 
         @SuppressWarnings("unused")
-        protected void maybeSwitchModes(Update upstream, DownsampleChunkContext context) {
+        protected void maybeSwitchModes(TableUpdate upstream, DownsampleChunkContext context) {
             // Consider switching modes - this is deliberately hard to swap back and forth between
             if (indexMode == IndexMode.PASSTHROUGH
                     && sourceTable.size() > key.bins * 2 * (2 + key.yColumnNames.length)) {
@@ -379,8 +383,8 @@ public class RunChartDownsample implements Function.Unary<Table, Table> {
                 states.clear();
 
                 final RowSet addToResultTable = sourceTable.getRowSet().minus(rowSet);
-                final RowSet removed = rowSet.union(upstream.removed);
-                final RowSet modified = rowSet.union(upstream.modified);
+                final RowSet removed = rowSet.union(upstream.removed());
+                final RowSet modified = rowSet.union(upstream.modified());
                 rowSet.clear();
 
                 availableSlots.clear();// TODO optionally, clear out value trackers?
@@ -389,8 +393,8 @@ public class RunChartDownsample implements Function.Unary<Table, Table> {
                 // notify downstream tables that the rowSet changed, add all missing rows from the source table, since
                 // we're un-downsampling
                 // TODO
-                final Update switchToPassThrough =
-                        new Update(addToResultTable, removed, modified, upstream.shifted, upstream.modifiedColumnSet);
+                final TableUpdate switchToPassThrough =
+                        new TableUpdateImpl(addToResultTable, removed, modified, upstream.shifted(), upstream.modifiedColumnSet());
                 resultTable.notifyListeners(switchToPassThrough);
             } else if (indexMode == IndexMode.PASSTHROUGH) {
                 log.info().append("PASSTHROUGH update ").append(upstream).endl();
@@ -406,13 +410,13 @@ public class RunChartDownsample implements Function.Unary<Table, Table> {
                     // won't rebucket head or tail, for now we just have one bucket at all times
                     // TODO reconsider this. also, implement this.
 
-                    handleRemoved(context, upstream.removed);
+                    handleRemoved(context, upstream.removed());
 
-                    handleShifts(upstream.shifted);
+                    handleShifts(upstream.shifted());
 
-                    handleAdded(context, upstream.added);
+                    handleAdded(context, upstream.added());
 
-                    handleModified(context, upstream.modified, upstream.modifiedColumnSet);
+                    handleModified(context, upstream.modified(), upstream.modifiedColumnSet());
 
                     performRescans(context);
 
@@ -438,13 +442,13 @@ public class RunChartDownsample implements Function.Unary<Table, Table> {
                     //
                     // notifyResultTable(upstream);
                     // } else {
-                    handleRemoved(context, upstream.removed);
+                    handleRemoved(context, upstream.removed());
 
-                    handleShifts(upstream.shifted);
+                    handleShifts(upstream.shifted());
 
-                    handleAdded(context, upstream.added);
+                    handleAdded(context, upstream.added());
 
-                    handleModified(context, upstream.modified, upstream.modifiedColumnSet);
+                    handleModified(context, upstream.modified(), upstream.modifiedColumnSet());
 
                     performRescans(context);
 
@@ -690,12 +694,12 @@ public class RunChartDownsample implements Function.Unary<Table, Table> {
          *        this.rowSet, then update it normally, otherwise this.rowSet must be empty and this.rowSet should be
          *        populated.
          */
-        private void notifyResultTable(final Update upstream, final RowSet lastRowSet) {
+        private void notifyResultTable(final TableUpdate upstream, final RowSet lastRowSet) {
             final RowSet resultRowSet = indexFromStates();
 
             final RowSet removed = lastRowSet.minus(resultRowSet);
             final RowSet added = resultRowSet.minus(lastRowSet);
-            final RowSet modified = resultRowSet.intersect(lastRowSet).intersect(upstream.modified);
+            final RowSet modified = resultRowSet.intersect(lastRowSet).intersect(upstream.modified());
 
             if (lastRowSet == this.rowSet) {
                 this.rowSet.update(added, removed);
@@ -707,7 +711,7 @@ public class RunChartDownsample implements Function.Unary<Table, Table> {
             // log.info().append("After downsample update, rowSet.size=").append(rowSet.size()).append(",
             // rowSet=").endl();//.append(rowSet).endl();
 
-            final Update update = new Update(added, removed, modified, upstream.shifted, upstream.modifiedColumnSet);
+            final TableUpdate update = new TableUpdateImpl(added, removed, modified, upstream.shifted(), upstream.modifiedColumnSet());
             // log.info().append("resultTable.notifyListeners").append(update).endl();
             resultTable.notifyListeners(update);
         }
@@ -737,7 +741,7 @@ public class RunChartDownsample implements Function.Unary<Table, Table> {
             }).build();
         }
 
-        private void notifyResultTable(final Update upstream) {
+        private void notifyResultTable(final TableUpdate upstream) {
             notifyResultTable(upstream, rowSet);
         }
     }

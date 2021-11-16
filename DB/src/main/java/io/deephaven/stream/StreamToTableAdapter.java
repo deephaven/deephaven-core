@@ -7,17 +7,17 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
 import io.deephaven.engine.time.DateTime;
-import io.deephaven.engine.v2.Listener;
-import io.deephaven.engine.v2.ModifiedColumnSet;
+import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.v2.QueryTable;
 import io.deephaven.engine.v2.sources.*;
 import io.deephaven.engine.chunk.Attributes;
 import io.deephaven.engine.chunk.ChunkType;
 import io.deephaven.engine.chunk.WritableChunk;
 import io.deephaven.engine.chunkcolumnsource.ChunkColumnSource;
-import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.impl.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.internal.log.LoggerFactory;
@@ -328,7 +328,7 @@ public class StreamToTableAdapter implements SafeCloseable, StreamConsumer, Runn
             rowSet.removeRange(newSize, oldSize - 1);
         }
 
-        table.notifyListeners(new Listener.Update(RowSetFactory.flat(newSize),
+        table.notifyListeners(new TableUpdateImpl(RowSetFactory.flat(newSize),
                 RowSetFactory.flat(oldSize), RowSetFactory.empty(),
                 RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY));
     }

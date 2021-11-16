@@ -12,7 +12,8 @@ import dagger.assisted.AssistedInject;
 import io.deephaven.base.formatters.FormatBitSet;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.*;
-import io.deephaven.engine.rowset.impl.RowSequenceUtil;
+import io.deephaven.engine.rowset.impl.RowSequenceFactory;
+import io.deephaven.engine.rowset.impl.RowSetFactory;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.engine.updategraph.DynamicNode;
@@ -23,7 +24,6 @@ import io.deephaven.configuration.Configuration;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.liveness.LivenessReferent;
-import io.deephaven.engine.v2.Listener;
 import io.deephaven.engine.v2.remote.ConstructSnapshot;
 import io.deephaven.engine.v2.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.v2.sources.FillUnordered;
@@ -275,19 +275,19 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
     private static final class Delta implements SafeCloseable {
         private final long step;
         private final long deltaColumnOffset;
-        private final Listener.Update update;
+        private final TableUpdate update;
         private final RowSet recordedAdds;
         private final RowSet recordedMods;
         private final BitSet subscribedColumns;
         private final BitSet modifiedColumns;
 
         private Delta(final long step, final long deltaColumnOffset,
-                final Listener.Update update,
+                final TableUpdate update,
                 final RowSet recordedAdds, final RowSet recordedMods,
                 final BitSet subscribedColumns, final BitSet modifiedColumns) {
             this.step = step;
             this.deltaColumnOffset = deltaColumnOffset;
-            this.update = update.copy();
+            this.update = TableUpdateImpl.copy(update);
             this.recordedAdds = recordedAdds;
             this.recordedMods = recordedMods;
             this.subscribedColumns = subscribedColumns;
@@ -560,7 +560,7 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
         return new DeltaListener();
     }
 
-    private class DeltaListener extends InstrumentedListener {
+    private class DeltaListener extends InstrumentedTableUpdateListener {
 
         DeltaListener() {
             super("BarrageMessageProducer");
@@ -571,7 +571,7 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
         }
 
         @Override
-        public void onUpdate(final Update upstream) {
+        public void onUpdate(final TableUpdate upstream) {
             synchronized (BarrageMessageProducer.this) {
                 if (lastIndexClockStep >= LogicalClock.DEFAULT.currentStep()) {
                     throw new IllegalStateException(logPrefix + "lastIndexClockStep=" + lastIndexClockStep
@@ -642,7 +642,7 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
         }
     }
 
-    private void enqueueUpdate(final Listener.Update upstream) {
+    private void enqueueUpdate(final TableUpdate upstream) {
         Assert.holdsLock(this, "enqueueUpdate must hold lock!");
 
         final WritableRowSet addsToRecord;
@@ -650,12 +650,12 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
         final TrackingRowSet rowSet = parent.getRowSet();
 
         if (numFullSubscriptions > 0) {
-            addsToRecord = upstream.added.copy();
-            modsToRecord = upstream.modified.copy();
+            addsToRecord = upstream.added().copy();
+            modsToRecord = upstream.modified().copy();
         } else if (activeViewport != null) {
             try (final WritableRowSet deltaViewport = rowSet.subSetForPositions(activeViewport)) {
-                addsToRecord = deltaViewport.intersect(upstream.added);
-                modsToRecord = deltaViewport.intersect(upstream.modified);
+                addsToRecord = deltaViewport.intersect(upstream.added());
+                modsToRecord = deltaViewport.intersect(upstream.modified());
             }
         } else {
             // we have new viewport subscriptions and we are actively fetching snapshots so there is no data to record
@@ -667,7 +667,7 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
         // Note: viewports are in position space, inserted and removed rows may cause the keyspace for a given viewport
         // to shift. Let's compute which rows are being scoped into view. If current rowSet is empty, we have nothing to
         // store. If prev rowSet is empty, all rows are new and are already in addsToRecord.
-        if (activeViewport != null && (upstream.added.isNonempty() || upstream.removed.isNonempty())
+        if (activeViewport != null && (upstream.added().isNonempty() || upstream.removed().isNonempty())
                 && rowSet.isNonempty()
                 && rowSet.sizePrev() > 0) {
             final RowSetBuilderRandom scopedViewBuilder = RowSetFactory.builderRandom();
@@ -678,7 +678,7 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
                         continue;
                     }
 
-                    final ShiftInversionHelper inverter = new ShiftInversionHelper(upstream.shifted);
+                    final ShiftInversionHelper inverter = new ShiftInversionHelper(upstream.shifted());
 
                     sub.viewport.forAllRowKeyRanges((posStart, posEnd) -> {
                         // Note: we already know that both rowSet and prevRowSet are non-empty.
@@ -708,7 +708,7 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
             }
 
             try (final WritableRowSet scoped = scopedViewBuilder.build()) {
-                RowSetShiftUtils.apply(upstream.shifted, scoped); // we built scoped rows in prev-keyspace
+                RowSetShiftUtils.apply(upstream.shifted(), scoped); // we built scoped rows in prev-keyspace
                 scoped.retain(rowSet); // we only record valid rows
                 addsToRecord.insert(scoped);
             }
@@ -726,12 +726,12 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
 
         // Now append any data that we need to save for later.
         final BitSet modifiedColumns;
-        if (upstream.modified.isEmpty()) {
+        if (upstream.modified().isEmpty()) {
             modifiedColumns = new BitSet();
-        } else if (upstream.modifiedColumnSet == ModifiedColumnSet.ALL) {
+        } else if (upstream.modifiedColumnSet() == ModifiedColumnSet.ALL) {
             modifiedColumns = (BitSet) activeColumns.clone();
         } else {
-            modifiedColumns = upstream.modifiedColumnSet.extractAsBitSet();
+            modifiedColumns = upstream.modifiedColumnSet().extractAsBitSet();
             modifiedColumns.and(activeColumns);
         }
 
@@ -767,7 +767,7 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
                                                                                                              // than
                                                                                                              // deltaChunkSize
                             try (final RowSequence dstKeys =
-                                    RowSequenceUtil.forRange(nextFreeDeltaKey, nextFreeDeltaKey + srcKeys.size() - 1)) {
+                                    RowSequenceFactory.forRange(nextFreeDeltaKey, nextFreeDeltaKey + srcKeys.size() - 1)) {
                                 nextFreeDeltaKey += srcKeys.size();
 
                                 for (final FillDeltaContext fillDeltaContext : fillDeltaContexts) {
@@ -1227,9 +1227,9 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
             addColumnSet = firstDelta.recordedAdds.isEmpty() ? new BitSet() : firstDelta.subscribedColumns;
             modColumnSet = firstDelta.modifiedColumns;
 
-            downstream.rowsAdded = firstDelta.update.added.copy();
-            downstream.rowsRemoved = firstDelta.update.removed.copy();
-            downstream.shifted = firstDelta.update.shifted;
+            downstream.rowsAdded = firstDelta.update.added().copy();
+            downstream.rowsRemoved = firstDelta.update.removed().copy();
+            downstream.shifted = firstDelta.update.shifted();
             downstream.rowsIncluded = firstDelta.recordedAdds.copy();
             downstream.addColumnData = new BarrageMessage.AddColumnData[sourceColumns.length];
             downstream.modColumnData = new BarrageMessage.ModColumnData[sourceColumns.length];
@@ -1293,8 +1293,8 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
             final WritableRowSet localAdded = RowSetFactory.empty();
             for (int i = startDelta; i < endDelta; ++i) {
                 final Delta delta = pendingDeltas.get(i);
-                localAdded.remove(delta.update.removed);
-                RowSetShiftUtils.apply(delta.update.shifted, localAdded);
+                localAdded.remove(delta.update.removed());
+                RowSetShiftUtils.apply(delta.update.shifted(), localAdded);
 
                 // reset the add column set if we do not have any adds from previous updates
                 if (localAdded.isEmpty()) {
@@ -1347,13 +1347,13 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
                 final ColumnInfo retval = new ColumnInfo();
                 for (int i = startDelta; i < endDelta; ++i) {
                     final Delta delta = pendingDeltas.get(i);
-                    retval.modified.remove(delta.update.removed);
-                    retval.recordedMods.remove(delta.update.removed);
-                    RowSetShiftUtils.apply(delta.update.shifted, retval.modified);
-                    RowSetShiftUtils.apply(delta.update.shifted, retval.recordedMods);
+                    retval.modified.remove(delta.update.removed());
+                    retval.recordedMods.remove(delta.update.removed());
+                    RowSetShiftUtils.apply(delta.update.shifted(), retval.modified);
+                    RowSetShiftUtils.apply(delta.update.shifted(), retval.recordedMods);
 
                     if (deltasThatModifyThisColumn.get(i)) {
-                        retval.modified.insert(delta.update.modified);
+                        retval.modified.insert(delta.update.modified());
                         retval.recordedMods.insert(delta.recordedMods);
                     }
                 }
@@ -1410,8 +1410,8 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
                         applyMapping.accept(false, false); // map recorded mods
                     }
 
-                    RowSetShiftUtils.unapply(delta.update.shifted, addedRemaining);
-                    RowSetShiftUtils.unapply(delta.update.shifted, modifiedRemaining);
+                    RowSetShiftUtils.unapply(delta.update.shifted(), addedRemaining);
+                    RowSetShiftUtils.unapply(delta.update.shifted(), modifiedRemaining);
                 }
 
                 if (unfilledAdds.size() > 0) {

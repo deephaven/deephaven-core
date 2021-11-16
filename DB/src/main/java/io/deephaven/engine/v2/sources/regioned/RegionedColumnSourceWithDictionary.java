@@ -1,14 +1,14 @@
 package io.deephaven.engine.v2.sources.regioned;
 
 import io.deephaven.engine.rowset.*;
-import io.deephaven.engine.table.ColumnDefinition;
-import io.deephaven.engine.table.Table;
+import io.deephaven.engine.rowset.impl.RowSequenceFactory;
+import io.deephaven.engine.rowset.impl.RowSetFactory;
+import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.tables.utils.QueryPerformanceRecorder;
 import io.deephaven.engine.v2.*;
 import io.deephaven.engine.v2.locations.ColumnLocation;
-import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.v2.sources.ColumnSourceGetDefaults;
-import io.deephaven.engine.table.Releasable;
 import io.deephaven.engine.v2.sources.RowIdSource;
 import io.deephaven.engine.chunk.Attributes.DictionaryKeys;
 import io.deephaven.engine.chunk.Attributes.Values;
@@ -224,7 +224,7 @@ class RegionedColumnSourceWithDictionary<DATA_TYPE>
                 keysToVisit.nextLong(); // Safe, since sourceIndex must be non-empty
                 do {
                     dictionaryColumn.lookupRegion(keysToVisit.currentValue()).gatherDictionaryValuesIndex(keysToVisit,
-                            RowSequence.Iterator.EMPTY, symbolTableIndexBuilder);
+                            RowSequenceFactory.EMPTY_ITERATOR, symbolTableIndexBuilder);
                 } while (keysToVisit.hasNext());
             }
             symbolTableRowSet = symbolTableIndexBuilder.build().toTracking();
@@ -282,16 +282,16 @@ class RegionedColumnSourceWithDictionary<DATA_TYPE>
         }
 
         @Override
-        public void onUpdate(@NotNull final Update upstream) {
+        public void onUpdate(@NotNull final TableUpdate upstream) {
             // TODO-RWC: Update and use
             // io.deephaven.engine.tables.verify.TableAssertions.assertAppendOnly(java.lang.String,
             // io.deephaven.engine.table.Table) ?
-            if (upstream.removed.isNonempty() || upstream.modified.isNonempty() || upstream.shifted.nonempty()) {
+            if (upstream.removed().isNonempty() || upstream.modified().isNonempty() || upstream.shifted().nonempty()) {
                 throw new IllegalStateException("Source table for a regioned symbol table should be add-only, instead "
-                        + "removed=" + upstream.removed + ", modified=" + upstream.modified + ", shifted="
-                        + upstream.shifted);
+                        + "removed=" + upstream.removed() + ", modified=" + upstream.modified() + ", shifted="
+                        + upstream.shifted());
             }
-            if (upstream.added.isEmpty()) {
+            if (upstream.added().isEmpty()) {
                 return;
             }
 
@@ -300,8 +300,8 @@ class RegionedColumnSourceWithDictionary<DATA_TYPE>
                     (RegionedColumnSourceBase<DATA_TYPE, Values, ColumnRegionObject<DATA_TYPE, Values>>) symbolTable
                             .getColumnSource(SymbolTableSource.SYMBOL_COLUMN_NAME);
 
-            try (final RowSet.SearchIterator keysToVisit = upstream.added.searchIterator();
-                    final RowSequence.Iterator knownKeys = symbolTable.getRowSet().getRowSequenceIterator()) {
+            try (final RowSet.SearchIterator keysToVisit = upstream.added().searchIterator();
+                 final RowSequence.Iterator knownKeys = symbolTable.getRowSet().getRowSequenceIterator()) {
                 keysToVisit.nextLong(); // Safe, since sourceIndex must be non-empty
                 do {
                     dictionaryColumn.lookupRegion(keysToVisit.currentValue()).gatherDictionaryValuesIndex(keysToVisit,
@@ -312,7 +312,7 @@ class RegionedColumnSourceWithDictionary<DATA_TYPE>
             final RowSet symbolTableAdded = symbolTableAddedBuilder.build();
             if (symbolTableAdded.isNonempty()) {
                 symbolTable.getRowSet().writableCast().insert(symbolTableAdded);
-                symbolTable.notifyListeners(new Update(symbolTableAdded, RowSetFactory.empty(),
+                symbolTable.notifyListeners(new TableUpdateImpl(symbolTableAdded, RowSetFactory.empty(),
                         RowSetFactory.empty(), RowSetShiftData.EMPTY, emptyModifiedColumns));
             } else {
                 symbolTableAdded.close();

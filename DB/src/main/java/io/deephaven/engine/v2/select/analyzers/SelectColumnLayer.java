@@ -1,9 +1,9 @@
 package io.deephaven.engine.v2.select.analyzers;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.time.DateTime;
-import io.deephaven.engine.v2.ModifiedColumnSet;
-import io.deephaven.engine.v2.Listener;
+import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.v2.select.VectorChunkAdapter;
 import io.deephaven.engine.v2.select.SelectColumn;
 import io.deephaven.engine.table.ChunkSink;
@@ -49,27 +49,27 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
     }
 
     @Override
-    public void applyUpdate(final Listener.Update upstream, final RowSet toClear,
-            final UpdateHelper helper) {
+    public void applyUpdate(final TableUpdate upstream, final RowSet toClear,
+                            final UpdateHelper helper) {
         final int PAGE_SIZE = 4096;
         final LongToIntFunction contextSize = (long size) -> size > PAGE_SIZE ? PAGE_SIZE : (int) size;
 
-        if (isRedirected && upstream.removed.isNonempty()) {
-            clearObjectsAtThisLevel(upstream.removed);
+        if (isRedirected && upstream.removed().isNonempty()) {
+            clearObjectsAtThisLevel(upstream.removed());
         }
 
         // recurse so that dependent intermediate columns are already updated
         inner.applyUpdate(upstream, toClear, helper);
 
         final boolean modifiesAffectUs =
-                upstream.modified.isNonempty() && upstream.modifiedColumnSet.containsAny(myModifiedColumnSet);
+                upstream.modified().isNonempty() && upstream.modifiedColumnSet().containsAny(myModifiedColumnSet);
 
         // We include modifies in our shifted sets if we are not going to process them separately.
         final RowSet preMoveKeys = helper.getPreShifted(!modifiesAffectUs);
         final RowSet postMoveKeys = helper.getPostShifted(!modifiesAffectUs);
 
         final long lastKey = Math.max(postMoveKeys.isEmpty() ? -1 : postMoveKeys.lastRowKey(),
-                upstream.added.isEmpty() ? -1 : upstream.added.lastRowKey());
+                upstream.added().isEmpty() ? -1 : upstream.added().lastRowKey());
         if (lastKey != -1) {
             writableSource.ensureCapacity(lastKey + 1);
         }
@@ -79,10 +79,10 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
         // data begins to flow; start-of-day is likely a bad time to find formula errors for our customers.
         final ChunkSource<Attributes.Values> chunkSource = getChunkSource();
 
-        final boolean needGetContext = upstream.added.isNonempty() || modifiesAffectUs;
+        final boolean needGetContext = upstream.added().isNonempty() || modifiesAffectUs;
         final boolean needDestContext = preMoveKeys.isNonempty() || needGetContext;
         final int chunkSourceContextSize =
-                contextSize.applyAsInt(Math.max(upstream.added.size(), upstream.modified.size()));
+                contextSize.applyAsInt(Math.max(upstream.added().size(), upstream.modified().size()));
         final int destContextSize = contextSize.applyAsInt(Math.max(preMoveKeys.size(), chunkSourceContextSize));
 
         try (final ChunkSink.FillFromContext destContext =
@@ -112,10 +112,10 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
             }
 
             // apply adds!
-            if (upstream.added.isNonempty()) {
+            if (upstream.added().isNonempty()) {
                 assert destContext != null;
                 assert chunkSourceContext != null;
-                try (final RowSequence.Iterator keyIter = upstream.added.getRowSequenceIterator()) {
+                try (final RowSequence.Iterator keyIter = upstream.added().getRowSequenceIterator()) {
                     while (keyIter.hasMore()) {
                         final RowSequence keys = keyIter.getNextRowSequenceWithLength(PAGE_SIZE);
                         writableSource.fillFromChunk(destContext, chunkSource.getChunk(chunkSourceContext, keys), keys);
@@ -126,7 +126,7 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
             // apply modifies!
             if (modifiesAffectUs) {
                 assert chunkSourceContext != null;
-                try (final RowSequence.Iterator keyIter = upstream.modified.getRowSequenceIterator()) {
+                try (final RowSequence.Iterator keyIter = upstream.modified().getRowSequenceIterator()) {
                     while (keyIter.hasMore()) {
                         final RowSequence keys = keyIter.getNextRowSequenceWithLength(PAGE_SIZE);
                         writableSource.fillFromChunk(destContext, chunkSource.getChunk(chunkSourceContext, keys), keys);

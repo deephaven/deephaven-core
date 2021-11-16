@@ -1,7 +1,7 @@
 package io.deephaven.engine.v2.select.analyzers;
 
-import io.deephaven.engine.v2.ModifiedColumnSet;
-import io.deephaven.engine.v2.Listener;
+import io.deephaven.engine.table.TableUpdate;
+import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.v2.select.SelectColumn;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.rowset.RowSet;
@@ -20,7 +20,7 @@ final public class PreserveColumnLayer extends DependencyLayerBase {
     }
 
     @Override
-    public void applyUpdate(Listener.Update upstream, RowSet toClear, UpdateHelper helper) {
+    public void applyUpdate(TableUpdate upstream, RowSet toClear, UpdateHelper helper) {
         // Nothing to do at this level, but need to recurse because my inner layers might need to be called (e.g.
         // because they are SelectColumnLayers)
         inner.applyUpdate(upstream, toClear, helper);

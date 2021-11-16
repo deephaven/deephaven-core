@@ -9,7 +9,8 @@ import io.deephaven.engine.chunk.LongChunk;
 import io.deephaven.engine.chunk.WritableLongChunk;
 import io.deephaven.engine.chunk.util.pools.ChunkPoolReleaseTracking;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.impl.RowSetFactory;
+import io.deephaven.engine.rowset.impl.RowSequenceFactory;
 import io.deephaven.engine.rowset.impl.TrackingWritableRowSetImpl;
 import org.junit.Test;
 
@@ -33,7 +34,7 @@ public class RspRowSequenceTest extends RowSequenceTestBase {
 
     @Test
     public void testAverageRunLength() {
-        assertEquals(1, RowSequence.EMPTY.getAverageRunLengthEstimate());
+        assertEquals(1, RowSequenceFactory.EMPTY.getAverageRunLengthEstimate());
         final RspBitmap rb = new RspBitmap();
         final RowSequence rs = rb.getRowSequenceByKeyRange(0, 1);
         assertEquals(1, rs.getAverageRunLengthEstimate());
@@ -435,7 +436,7 @@ public class RspRowSequenceTest extends RowSequenceTestBase {
                     break;
                 case 2 * BLOCK_SIZE - 1:
                     assertEquals(m, 0, rs.size());
-                    assertEquals(m, RowSequence.EMPTY, rs);
+                    assertEquals(m, RowSequenceFactory.EMPTY, rs);
                     break;
                 default:
                     fail(m + "; Shouldn't get here.");

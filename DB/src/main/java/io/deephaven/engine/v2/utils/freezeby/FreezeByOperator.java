@@ -5,9 +5,9 @@
 package io.deephaven.engine.v2.utils.freezeby;
 
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.time.DateTime;
-import io.deephaven.engine.v2.Listener;
 import io.deephaven.engine.v2.by.IterativeChunkedAggregationOperator;
 import io.deephaven.engine.v2.sources.*;
 import io.deephaven.engine.chunk.*;
@@ -86,10 +86,10 @@ public class FreezeByOperator implements IterativeChunkedAggregationOperator {
     }
 
     @Override
-    public void propagateUpdates(@NotNull Listener.Update downstream,
+    public void propagateUpdates(@NotNull TableUpdate downstream,
             @NotNull RowSet newDestinations) {
-        if (downstream.removed.isNonempty()) {
-            helper.clearIndex(downstream.removed);
+        if (downstream.removed().isNonempty()) {
+            helper.clearIndex(downstream.removed());
         }
     }
 

@@ -1,5 +1,6 @@
 package io.deephaven.engine.rowset.impl.singlerange;
 
+import io.deephaven.engine.rowset.impl.RowSequenceFactory;
 import io.deephaven.util.datastructures.LongAbortableConsumer;
 import io.deephaven.util.datastructures.LongRangeAbortableConsumer;
 import io.deephaven.engine.rowset.RowSequence;
@@ -23,7 +24,7 @@ public interface SingleRangeMixin extends RowSequence {
 
     default RowSequence getRowSequenceByPosition(final long startPositionInclusive, final long length) {
         if (startPositionInclusive >= size() || length == 0) {
-            return RowSequence.EMPTY;
+            return RowSequenceFactory.EMPTY;
         }
         final long s = rangeStart() + startPositionInclusive;
         final long e = Math.min(s + length - 1, rangeEnd());
@@ -34,7 +35,7 @@ public interface SingleRangeMixin extends RowSequence {
         if (startRowKeyInclusive > rangeEnd() ||
                 endRowKeyInclusive < rangeStart() ||
                 endRowKeyInclusive < startRowKeyInclusive) {
-            return RowSequence.EMPTY;
+            return RowSequenceFactory.EMPTY;
         }
         return new SingleRangeRowSequence(
                 Math.max(startRowKeyInclusive, rangeStart()),

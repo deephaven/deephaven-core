@@ -1,6 +1,6 @@
 package io.deephaven.engine.v2.select.analyzers;
 
-import io.deephaven.engine.v2.ModifiedColumnSet;
+import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.v2.select.SelectColumn;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.chunk.Attributes;

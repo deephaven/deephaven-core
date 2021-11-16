@@ -15,6 +15,7 @@ import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.iterators.*;
 import io.deephaven.engine.tables.select.AjMatchPairFactory;
 import io.deephaven.engine.tables.select.MatchPairFactory;
+import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.updategraph.ConcurrentMethod;
 import io.deephaven.engine.tables.utils.QueryPerformanceNugget;
 import io.deephaven.engine.tables.utils.QueryPerformanceRecorder;
@@ -1039,6 +1040,26 @@ public interface TableWithDefaults extends Table {
     default Table snapshot(Table baseTable, boolean doInitialSnapshot, Collection<ColumnName> stampColumns) {
         return snapshot(baseTable, doInitialSnapshot,
                 stampColumns.stream().map(ColumnName::name).toArray(String[]::new));
+    }
+
+    // -----------------------------------------------------------------------------------------------------------------
+    // Merge Operations
+    // -----------------------------------------------------------------------------------------------------------------
+
+    @Override
+    default Table mergeBefore(final Table... others) {
+        final List<Table> tables = new ArrayList<>(others.length + 1);
+        tables.add(this);
+        tables.addAll(List.of(others));
+        return TableTools.merge(tables);
+    }
+
+    @Override
+    default Table mergeAfter(final Table... others) {
+        final List<Table> tables = new ArrayList<>(others.length + 1);
+        tables.addAll(List.of(others));
+        tables.add(this);
+        return TableTools.merge(tables);
     }
 
     // -----------------------------------------------------------------------------------------------------------------

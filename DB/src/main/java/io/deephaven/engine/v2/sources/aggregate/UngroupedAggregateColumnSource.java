@@ -3,7 +3,7 @@ package io.deephaven.engine.v2.sources.aggregate;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.rowset.impl.RowSequenceUtil;
+import io.deephaven.engine.rowset.impl.RowSequenceFactory;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.v2.sources.UngroupedColumnSource;
 import io.deephaven.engine.chunk.Attributes.Any;
@@ -306,7 +306,7 @@ final class UngroupedAggregateColumnSource<DATA_TYPE> extends UngroupedColumnSou
 
                 final ObjectChunk<RowSet, ? extends Values> indexes;
                 try (final RowSequence indexRowSequence =
-                        RowSequenceUtil.wrapRowKeysChunkAsRowSequence(indexKeyIndices)) {
+                        RowSequenceFactory.wrapRowKeysChunkAsRowSequence(indexKeyIndices)) {
                     if (usePrev) {
                         indexes = groupRowSetSource.getPrevChunk(indexGetContext, indexRowSequence).asObjectChunk();
                     } else {
@@ -369,7 +369,7 @@ final class UngroupedAggregateColumnSource<DATA_TYPE> extends UngroupedColumnSou
                                 componentKeyIndicesPosition, lengthFromThisIndex);
 
                 try (final RowSequence componentRowSequence =
-                        RowSequenceUtil.wrapRowKeysChunkAsRowSequence(remappedComponentKeys)) {
+                        RowSequenceFactory.wrapRowKeysChunkAsRowSequence(remappedComponentKeys)) {
                     if (usePrev) {
                         valueSource.fillPrevChunk(aggregatedFillContext, destinationSlice.resetFromChunk(destination,
                                 componentKeyIndicesPosition, lengthFromThisIndex), componentRowSequence);

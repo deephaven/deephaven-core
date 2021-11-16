@@ -9,9 +9,10 @@ import io.deephaven.configuration.Configuration;
 import io.deephaven.compilertools.CompilerTools;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.impl.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.tables.*;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.time.DateTime;
@@ -934,7 +935,7 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(table, i(ONE_MILLION - 11), c("Sentinel", 1));
             removeRows(table, i(ONE_MILLION - 1));
-            final Listener.Update update = new Listener.Update();
+            final TableUpdateImpl update = new TableUpdateImpl();
             update.modifiedColumnSet = ModifiedColumnSet.EMPTY;
             update.added = i();
             update.removed = i();
@@ -973,7 +974,7 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
                 removeRows(table, i(currKey));
                 addToTable(table, i(fii), c("Sentinel", 1));
 
-                Listener.Update update = new Listener.Update();
+                TableUpdateImpl update = new TableUpdateImpl();
                 update.added = i(fii);
                 update.removed = i(currKey);
                 update.modified = i();
@@ -1008,7 +1009,7 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
             final RowSetShiftData.Builder shiftBuilder = new RowSetShiftData.Builder();
             shiftBuilder.shiftRange(65538, 65539, +1);
 
-            Listener.Update update = new Listener.Update();
+            TableUpdateImpl update = new TableUpdateImpl();
             update.added = i();
             update.removed = i();
             update.modified = i();
@@ -1050,7 +1051,7 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
                 removeRows(table, i(currKey));
                 addToTable(table, i(fii), c("Sentinel", 1));
 
-                Listener.Update update = new Listener.Update();
+                TableUpdateImpl update = new TableUpdateImpl();
                 update.added = i();
                 update.removed = i();
                 update.modified = i();
@@ -1169,9 +1170,9 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
             }
         };
 
-        result.listenForUpdates(new InstrumentedListener("") {
+        result.listenForUpdates(new InstrumentedTableUpdateListener("") {
             @Override
-            public void onUpdate(final Update upstream) {
+            public void onUpdate(final TableUpdate upstream) {
                 Assert.assertTrue(table.getRowSet().intSize() > table.getRowSet().getPrevRowSet().intSize());
                 validate.accept(false);
                 validate.accept(true);

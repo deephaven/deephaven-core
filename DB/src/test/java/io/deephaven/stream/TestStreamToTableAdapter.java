@@ -1,7 +1,7 @@
 package io.deephaven.stream;
 
 import io.deephaven.datastructures.util.CollectionUtil;
-import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.impl.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
@@ -9,7 +9,7 @@ import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.time.DateTime;
 import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.engine.tables.utils.TableTools;
-import io.deephaven.engine.v2.ModifiedColumnSet;
+import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.v2.SimpleListener;
 import io.deephaven.engine.v2.TstUtils;
 import io.deephaven.engine.chunk.*;
@@ -86,11 +86,11 @@ public class TestStreamToTableAdapter {
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(adapter::run);
         TestCase.assertEquals(1, listener.getCount());
-        TestCase.assertEquals(RowSetFactory.flat(2), listener.getUpdate().added);
-        TestCase.assertEquals(RowSetFactory.empty(), listener.getUpdate().removed);
-        TestCase.assertEquals(RowSetFactory.empty(), listener.getUpdate().modified);
-        TestCase.assertEquals(RowSetShiftData.EMPTY, listener.getUpdate().shifted);
-        TestCase.assertEquals(ModifiedColumnSet.EMPTY, listener.getUpdate().modifiedColumnSet);
+        TestCase.assertEquals(RowSetFactory.flat(2), listener.getUpdate().added());
+        TestCase.assertEquals(RowSetFactory.empty(), listener.getUpdate().removed());
+        TestCase.assertEquals(RowSetFactory.empty(), listener.getUpdate().modified());
+        TestCase.assertEquals(RowSetShiftData.EMPTY, listener.getUpdate().shifted());
+        TestCase.assertEquals(ModifiedColumnSet.EMPTY, listener.getUpdate().modifiedColumnSet());
 
         final Table expect1 = TableTools.newTable(col("S", "Bill", "Ted"), intCol("I", 2, 3), longCol("L", 4L, 5L),
                 doubleCol("D", Math.PI, Math.E));
@@ -101,11 +101,11 @@ public class TestStreamToTableAdapter {
 
         TstUtils.assertTableEquals(empty, result);
         TestCase.assertEquals(1, listener.getCount());
-        TestCase.assertEquals(RowSetFactory.flat(2), listener.getUpdate().removed);
-        TestCase.assertEquals(RowSetFactory.empty(), listener.getUpdate().added);
-        TestCase.assertEquals(RowSetFactory.empty(), listener.getUpdate().modified);
-        TestCase.assertEquals(RowSetShiftData.EMPTY, listener.getUpdate().shifted);
-        TestCase.assertEquals(ModifiedColumnSet.EMPTY, listener.getUpdate().modifiedColumnSet);
+        TestCase.assertEquals(RowSetFactory.flat(2), listener.getUpdate().removed());
+        TestCase.assertEquals(RowSetFactory.empty(), listener.getUpdate().added());
+        TestCase.assertEquals(RowSetFactory.empty(), listener.getUpdate().modified());
+        TestCase.assertEquals(RowSetShiftData.EMPTY, listener.getUpdate().shifted());
+        TestCase.assertEquals(ModifiedColumnSet.EMPTY, listener.getUpdate().modifiedColumnSet());
 
         listener.reset();
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(adapter::run);
@@ -157,11 +157,11 @@ public class TestStreamToTableAdapter {
         listener.reset();
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(adapter::run);
         TestCase.assertEquals(1, listener.getCount());
-        TestCase.assertEquals(RowSetFactory.flat(4), listener.getUpdate().added);
-        TestCase.assertEquals(RowSetFactory.empty(), listener.getUpdate().removed);
-        TestCase.assertEquals(RowSetFactory.empty(), listener.getUpdate().modified);
-        TestCase.assertEquals(RowSetShiftData.EMPTY, listener.getUpdate().shifted);
-        TestCase.assertEquals(ModifiedColumnSet.EMPTY, listener.getUpdate().modifiedColumnSet);
+        TestCase.assertEquals(RowSetFactory.flat(4), listener.getUpdate().added());
+        TestCase.assertEquals(RowSetFactory.empty(), listener.getUpdate().removed());
+        TestCase.assertEquals(RowSetFactory.empty(), listener.getUpdate().modified());
+        TestCase.assertEquals(RowSetShiftData.EMPTY, listener.getUpdate().shifted());
+        TestCase.assertEquals(ModifiedColumnSet.EMPTY, listener.getUpdate().modifiedColumnSet());
 
         final Table expect2 = TableTools.newTable(col("S", "Ren", "Stimpy", "Jekyll", "Hyde"),
                 intCol("I", 7, 8, 13, 14), longCol("L", 9, 10, 15, 16), doubleCol("D", 11.1, 12.2, 17.7, 18.8));
@@ -188,11 +188,11 @@ public class TestStreamToTableAdapter {
         listener.reset();
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(adapter::run);
         TestCase.assertEquals(1, listener.getCount());
-        TestCase.assertEquals(RowSetFactory.flat(2), listener.getUpdate().added);
-        TestCase.assertEquals(RowSetFactory.flat(4), listener.getUpdate().removed);
-        TestCase.assertEquals(RowSetFactory.empty(), listener.getUpdate().modified);
-        TestCase.assertEquals(RowSetShiftData.EMPTY, listener.getUpdate().shifted);
-        TestCase.assertEquals(ModifiedColumnSet.EMPTY, listener.getUpdate().modifiedColumnSet);
+        TestCase.assertEquals(RowSetFactory.flat(2), listener.getUpdate().added());
+        TestCase.assertEquals(RowSetFactory.flat(4), listener.getUpdate().removed());
+        TestCase.assertEquals(RowSetFactory.empty(), listener.getUpdate().modified());
+        TestCase.assertEquals(RowSetShiftData.EMPTY, listener.getUpdate().shifted());
+        TestCase.assertEquals(ModifiedColumnSet.EMPTY, listener.getUpdate().modifiedColumnSet());
 
         final Table expect3 = TableTools.newTable(col("S", "Ben", "Jerry"), intCol("I", 19, 20), longCol("L", 21, 22),
                 doubleCol("D", 23.3, 24.4));
@@ -202,11 +202,11 @@ public class TestStreamToTableAdapter {
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(adapter::run);
         TstUtils.assertTableEquals(empty, result);
         TestCase.assertEquals(1, listener.getCount());
-        TestCase.assertEquals(RowSetFactory.empty(), listener.getUpdate().added);
-        TestCase.assertEquals(RowSetFactory.flat(2), listener.getUpdate().removed);
-        TestCase.assertEquals(RowSetFactory.empty(), listener.getUpdate().modified);
-        TestCase.assertEquals(RowSetShiftData.EMPTY, listener.getUpdate().shifted);
-        TestCase.assertEquals(ModifiedColumnSet.EMPTY, listener.getUpdate().modifiedColumnSet);
+        TestCase.assertEquals(RowSetFactory.empty(), listener.getUpdate().added());
+        TestCase.assertEquals(RowSetFactory.flat(2), listener.getUpdate().removed());
+        TestCase.assertEquals(RowSetFactory.empty(), listener.getUpdate().modified());
+        TestCase.assertEquals(RowSetShiftData.EMPTY, listener.getUpdate().shifted());
+        TestCase.assertEquals(ModifiedColumnSet.EMPTY, listener.getUpdate().modifiedColumnSet());
 
         listener.reset();
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(adapter::run);
@@ -261,11 +261,11 @@ public class TestStreamToTableAdapter {
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(adapter::run);
         TestCase.assertEquals(1, listener.getCount());
-        TestCase.assertEquals(RowSetFactory.flat(3), listener.getUpdate().added);
-        TestCase.assertEquals(RowSetFactory.empty(), listener.getUpdate().removed);
-        TestCase.assertEquals(RowSetFactory.empty(), listener.getUpdate().modified);
-        TestCase.assertEquals(RowSetShiftData.EMPTY, listener.getUpdate().shifted);
-        TestCase.assertEquals(ModifiedColumnSet.EMPTY, listener.getUpdate().modifiedColumnSet);
+        TestCase.assertEquals(RowSetFactory.flat(3), listener.getUpdate().added());
+        TestCase.assertEquals(RowSetFactory.empty(), listener.getUpdate().removed());
+        TestCase.assertEquals(RowSetFactory.empty(), listener.getUpdate().modified());
+        TestCase.assertEquals(RowSetShiftData.EMPTY, listener.getUpdate().shifted());
+        TestCase.assertEquals(ModifiedColumnSet.EMPTY, listener.getUpdate().modifiedColumnSet());
 
         final Table expect1 = TableTools.newTable(col("S", "Collins", "Armstrong", "Aldrin"),
                 col("B", true, false, null), col("D", dt1, dt2, dt3));
@@ -276,11 +276,11 @@ public class TestStreamToTableAdapter {
 
         TstUtils.assertTableEquals(empty, result);
         TestCase.assertEquals(1, listener.getCount());
-        TestCase.assertEquals(RowSetFactory.flat(3), listener.getUpdate().removed);
-        TestCase.assertEquals(RowSetFactory.empty(), listener.getUpdate().added);
-        TestCase.assertEquals(RowSetFactory.empty(), listener.getUpdate().modified);
-        TestCase.assertEquals(RowSetShiftData.EMPTY, listener.getUpdate().shifted);
-        TestCase.assertEquals(ModifiedColumnSet.EMPTY, listener.getUpdate().modifiedColumnSet);
+        TestCase.assertEquals(RowSetFactory.flat(3), listener.getUpdate().removed());
+        TestCase.assertEquals(RowSetFactory.empty(), listener.getUpdate().added());
+        TestCase.assertEquals(RowSetFactory.empty(), listener.getUpdate().modified());
+        TestCase.assertEquals(RowSetShiftData.EMPTY, listener.getUpdate().shifted());
+        TestCase.assertEquals(ModifiedColumnSet.EMPTY, listener.getUpdate().modifiedColumnSet());
     }
 
     @Test
@@ -320,11 +320,11 @@ public class TestStreamToTableAdapter {
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(adapter::run);
         TestCase.assertEquals(1, listener.getCount());
-        TestCase.assertEquals(RowSetFactory.flat(2), listener.getUpdate().added);
-        TestCase.assertEquals(RowSetFactory.empty(), listener.getUpdate().removed);
-        TestCase.assertEquals(RowSetFactory.empty(), listener.getUpdate().modified);
-        TestCase.assertEquals(RowSetShiftData.EMPTY, listener.getUpdate().shifted);
-        TestCase.assertEquals(ModifiedColumnSet.EMPTY, listener.getUpdate().modifiedColumnSet);
+        TestCase.assertEquals(RowSetFactory.flat(2), listener.getUpdate().added());
+        TestCase.assertEquals(RowSetFactory.empty(), listener.getUpdate().removed());
+        TestCase.assertEquals(RowSetFactory.empty(), listener.getUpdate().modified());
+        TestCase.assertEquals(RowSetShiftData.EMPTY, listener.getUpdate().shifted());
+        TestCase.assertEquals(ModifiedColumnSet.EMPTY, listener.getUpdate().modifiedColumnSet());
 
         final Table expect1 = TableTools.newTable(
                 col("SA", new String[] {"Gagarin", "Tereshkova"}, CollectionUtil.ZERO_LENGTH_STRING_ARRAY),
@@ -336,11 +336,11 @@ public class TestStreamToTableAdapter {
 
         TstUtils.assertTableEquals(empty, result);
         TestCase.assertEquals(1, listener.getCount());
-        TestCase.assertEquals(RowSetFactory.flat(2), listener.getUpdate().removed);
-        TestCase.assertEquals(RowSetFactory.empty(), listener.getUpdate().added);
-        TestCase.assertEquals(RowSetFactory.empty(), listener.getUpdate().modified);
-        TestCase.assertEquals(RowSetShiftData.EMPTY, listener.getUpdate().shifted);
-        TestCase.assertEquals(ModifiedColumnSet.EMPTY, listener.getUpdate().modifiedColumnSet);
+        TestCase.assertEquals(RowSetFactory.flat(2), listener.getUpdate().removed());
+        TestCase.assertEquals(RowSetFactory.empty(), listener.getUpdate().added());
+        TestCase.assertEquals(RowSetFactory.empty(), listener.getUpdate().modified());
+        TestCase.assertEquals(RowSetShiftData.EMPTY, listener.getUpdate().shifted());
+        TestCase.assertEquals(ModifiedColumnSet.EMPTY, listener.getUpdate().modifiedColumnSet());
     }
 
     @Test
@@ -389,11 +389,11 @@ public class TestStreamToTableAdapter {
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(adapter::run);
         TestCase.assertEquals(1, listener.getCount());
-        TestCase.assertEquals(RowSetFactory.flat(4048), listener.getUpdate().added);
-        TestCase.assertEquals(RowSetFactory.empty(), listener.getUpdate().removed);
-        TestCase.assertEquals(RowSetFactory.empty(), listener.getUpdate().modified);
-        TestCase.assertEquals(RowSetShiftData.EMPTY, listener.getUpdate().shifted);
-        TestCase.assertEquals(ModifiedColumnSet.EMPTY, listener.getUpdate().modifiedColumnSet);
+        TestCase.assertEquals(RowSetFactory.flat(4048), listener.getUpdate().added());
+        TestCase.assertEquals(RowSetFactory.empty(), listener.getUpdate().removed());
+        TestCase.assertEquals(RowSetFactory.empty(), listener.getUpdate().modified());
+        TestCase.assertEquals(RowSetShiftData.EMPTY, listener.getUpdate().shifted());
+        TestCase.assertEquals(ModifiedColumnSet.EMPTY, listener.getUpdate().modifiedColumnSet());
 
         final Table expect1 = TableTools.newTable(longCol("L", exVals));
         TstUtils.assertTableEquals(expect1, result);
@@ -403,11 +403,11 @@ public class TestStreamToTableAdapter {
 
         TstUtils.assertTableEquals(empty, result);
         TestCase.assertEquals(1, listener.getCount());
-        TestCase.assertEquals(RowSetFactory.flat(4048), listener.getUpdate().removed);
-        TestCase.assertEquals(RowSetFactory.empty(), listener.getUpdate().added);
-        TestCase.assertEquals(RowSetFactory.empty(), listener.getUpdate().modified);
-        TestCase.assertEquals(RowSetShiftData.EMPTY, listener.getUpdate().shifted);
-        TestCase.assertEquals(ModifiedColumnSet.EMPTY, listener.getUpdate().modifiedColumnSet);
+        TestCase.assertEquals(RowSetFactory.flat(4048), listener.getUpdate().removed());
+        TestCase.assertEquals(RowSetFactory.empty(), listener.getUpdate().added());
+        TestCase.assertEquals(RowSetFactory.empty(), listener.getUpdate().modified());
+        TestCase.assertEquals(RowSetShiftData.EMPTY, listener.getUpdate().shifted());
+        TestCase.assertEquals(ModifiedColumnSet.EMPTY, listener.getUpdate().modifiedColumnSet());
 
         listener.reset();
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(adapter::run);

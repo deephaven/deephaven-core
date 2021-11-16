@@ -6,12 +6,10 @@ package io.deephaven.engine.v2;
 import io.deephaven.base.verify.Require;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.exceptions.OutOfKeySpaceException;
-import io.deephaven.engine.table.ChunkSource;
-import io.deephaven.engine.table.Context;
-import io.deephaven.engine.table.SharedContext;
+import io.deephaven.engine.rowset.impl.RowSetFactory;
+import io.deephaven.engine.table.*;
 import io.deephaven.engine.rowset.*;
-import io.deephaven.engine.rowset.impl.RowSequenceUtil;
-import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.rowset.impl.RowSequenceFactory;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.chunk.util.hashing.*;
 // this is ugly to have twice, but we do need it twice for replication
@@ -395,24 +393,24 @@ class RightIncrementalChunkedCrossJoinStateManager
         }
     }
 
-    void rightModified(final Listener.Update upstream, final boolean keyColumnsChanged, final CrossJoinModifiedSlotTracker tracker) {
-        if (upstream.modified.isEmpty()) {
+    void rightModified(final TableUpdate upstream, final boolean keyColumnsChanged, final CrossJoinModifiedSlotTracker tracker) {
+        if (upstream.modified().isEmpty()) {
             return;
         }
 
         if (!keyColumnsChanged) {
-            try (final ProbeContext pc = makeProbeContext(rightKeySources, upstream.modified.size())) {
+            try (final ProbeContext pc = makeProbeContext(rightKeySources, upstream.modified().size())) {
                 final boolean usePrev = false;
-                decorationProbe(pc, upstream.modified, rightKeySources, usePrev, null,
+                decorationProbe(pc, upstream.modified(), rightKeySources, usePrev, null,
                         (cookie, slot, index, prevIndex) -> tracker.appendChunkModify(cookie, slot, index));
             }
             return;
         }
 
-        try (final ProbeContext pc = isLeftTicking ? null : makeProbeContext(rightKeySources, upstream.modified.size());
-             final BuildContext bc = isLeftTicking ? makeBuildContext(rightKeySources, upstream.modified.size()) : null;
+        try (final ProbeContext pc = isLeftTicking ? null : makeProbeContext(rightKeySources, upstream.modified().size());
+             final BuildContext bc = isLeftTicking ? makeBuildContext(rightKeySources, upstream.modified().size()) : null;
              final RowSequence.Iterator preShiftModified = upstream.getModifiedPreShift().getRowSequenceIterator();
-             final RowSequence.Iterator postShiftModified = upstream.modified.getRowSequenceIterator()) {
+             final RowSequence.Iterator postShiftModified = upstream.modified().getRowSequenceIterator()) {
 
             while (preShiftModified.hasMore()) {
                 final RowSequence postChunk = postShiftModified.getNextRowSequenceWithLength(CHUNK_SIZE);
@@ -493,16 +491,16 @@ class RightIncrementalChunkedCrossJoinStateManager
         tracker.flushLeftAdds();
     }
 
-    void leftModified(final Listener.Update upstream, final boolean keyColumnsChanged, final CrossJoinModifiedSlotTracker tracker) {
-        if (upstream.modified.isEmpty()) {
+    void leftModified(final TableUpdate upstream, final boolean keyColumnsChanged, final CrossJoinModifiedSlotTracker tracker) {
+        if (upstream.modified().isEmpty()) {
             tracker.flushLeftModifies();
             return;
         }
 
         if (!keyColumnsChanged) {
-            try (final ProbeContext pc = makeProbeContext(leftKeySources, upstream.modified.size())) {
+            try (final ProbeContext pc = makeProbeContext(leftKeySources, upstream.modified().size())) {
                 final boolean usePrev = false;
-                decorationProbe(pc, upstream.modified, leftKeySources, usePrev, null,
+                decorationProbe(pc, upstream.modified(), leftKeySources, usePrev, null,
                         (cookie, slot, index, prevIndex) -> tracker.appendChunkModify(cookie, slot, index));
             }
             tracker.flushLeftModifies();
@@ -510,9 +508,9 @@ class RightIncrementalChunkedCrossJoinStateManager
         }
 
         // note: at this point left shifts have not yet been applied to our internal data structures
-        try (final BuildContext bc = makeBuildContext(leftKeySources, upstream.modified.size());
+        try (final BuildContext bc = makeBuildContext(leftKeySources, upstream.modified().size());
              final RowSequence.Iterator preShiftModified = upstream.getModifiedPreShift().getRowSequenceIterator();
-             final RowSequence.Iterator postShiftModified = upstream.modified.getRowSequenceIterator()) {
+             final RowSequence.Iterator postShiftModified = upstream.modified().getRowSequenceIterator()) {
 
             while (preShiftModified.hasMore()) {
                 final RowSequence preChunk = preShiftModified.getNextRowSequenceWithLength(CHUNK_SIZE);
@@ -1269,7 +1267,7 @@ class RightIncrementalChunkedCrossJoinStateManager
             initializeRehashLocations(bc.rehashLocations, bucketsToAdd);
 
             // fill the overflow bucket locations
-            overflowLocationSource.fillChunk(bc.overflowFillContext, bc.overflowLocations, RowSequenceUtil.wrapRowKeysChunkAsRowSequence(LongChunk.downcast(bc.rehashLocations)));
+            overflowLocationSource.fillChunk(bc.overflowFillContext, bc.overflowLocations, RowSequenceFactory.wrapRowKeysChunkAsRowSequence(LongChunk.downcast(bc.rehashLocations)));
             // null out the overflow locations in the table
             setOverflowLocationsToNull(tableHashPivot - (tableSize >> 1), bucketsToAdd);
 
@@ -1371,7 +1369,7 @@ class RightIncrementalChunkedCrossJoinStateManager
                     bc.overflowLocationForPromotionLoop.resetFromTypedChunk(bc.overflowLocationsToFetch, moves, totalPromotionsToProcess - moves);
                 }
 
-                overflowLocationSource.fillChunk(bc.overflowFillContext, bc.overflowLocations, RowSequenceUtil.wrapRowKeysChunkAsRowSequence(bc.overflowLocationForPromotionLoop));
+                overflowLocationSource.fillChunk(bc.overflowFillContext, bc.overflowLocations, RowSequenceFactory.wrapRowKeysChunkAsRowSequence(bc.overflowLocationForPromotionLoop));
                 IntChunkEquals.notEqual(bc.overflowLocations, QueryConstants.NULL_INT, bc.shouldMoveBucket);
 
                 // crunch the chunk down to relevant locations

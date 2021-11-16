@@ -2,13 +2,15 @@ package io.deephaven.engine.v2;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.impl.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.rowset.TrackingWritableRowSet;
+import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.TableCreatorImpl;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.SortedBy;
-import io.deephaven.engine.v2.Listener.Update;
+import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.v2.sources.RedirectedColumnSource;
 import io.deephaven.engine.v2.utils.*;
@@ -41,7 +43,7 @@ public class StreamTableAggregationTest {
     @Rule
     public final EngineCleanup base = new EngineCleanup();
 
-    private final Table source = Table.of(EmptyTable.of(INPUT_SIZE)
+    private final Table source = TableCreatorImpl.create(EmptyTable.of(INPUT_SIZE)
             .update("Sym = Long.toString(ii % 1000) + `_Sym`")
             .update("Price = ii / 100 - (ii % 100)")
             .update("Size = (long) (ii / 50 - (ii % 50))"));
@@ -113,7 +115,7 @@ public class StreamTableAggregationTest {
                     if (normalStepInserted.isNonempty()) {
                         normal.getRowSet().writableCast().insert(normalStepInserted);
                         normal.notifyListeners(
-                                new Update(normalStepInserted, RowSetFactory.empty(),
+                                new TableUpdateImpl(normalStepInserted, RowSetFactory.empty(),
                                         RowSetFactory.empty(), RowSetShiftData.EMPTY,
                                         ModifiedColumnSet.EMPTY));
                     }
@@ -127,7 +129,7 @@ public class StreamTableAggregationTest {
                         }
                         stream.getRowSet().writableCast().clear();
                         stream.getRowSet().writableCast().insert(streamStepInserted);
-                        stream.notifyListeners(new Update(streamStepInserted.copy(), finalStreamLastInserted,
+                        stream.notifyListeners(new TableUpdateImpl(streamStepInserted.copy(), finalStreamLastInserted,
                                 RowSetFactory.empty(), RowSetShiftData.EMPTY,
                                 ModifiedColumnSet.EMPTY));
                     }

@@ -6,6 +6,7 @@ package io.deephaven.engine.v2.select;
 
 import io.deephaven.base.Pair;
 import io.deephaven.compilertools.CompilerTools;
+import io.deephaven.engine.rowset.impl.RowSetFactory;
 import io.deephaven.engine.table.Context;
 import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.rowset.*;

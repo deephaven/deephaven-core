@@ -6,9 +6,9 @@ package io.deephaven.engine.v2.by;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.MatchPair;
+import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.util.compare.LongComparisons;
 import io.deephaven.engine.v2.QueryTable;
-import io.deephaven.engine.v2.Listener;
 import io.deephaven.engine.v2.sources.LongArraySource;
 import io.deephaven.engine.chunk.Attributes.ChunkLengths;
 import io.deephaven.engine.chunk.Attributes.ChunkPositions;
@@ -16,7 +16,7 @@ import io.deephaven.engine.chunk.Attributes.RowKeys;
 import io.deephaven.engine.chunk.Attributes.Values;
 import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.rowset.RowSetBuilderRandom;
-import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.impl.RowSetFactory;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import org.jetbrains.annotations.NotNull;
@@ -57,7 +57,7 @@ public class LongStreamSortedFirstOrLastChunkedOperator extends CopyingPermutedS
     }
 
     @Override
-    public void resetForStep(@NotNull final Listener.Update upstream) {
+    public void resetForStep(@NotNull final TableUpdate upstream) {
         super.resetForStep(upstream);
         if (isCombo) {
             changedDestinationsBuilder = RowSetFactory.builderRandom();
@@ -144,12 +144,12 @@ public class LongStreamSortedFirstOrLastChunkedOperator extends CopyingPermutedS
     }
 
     @Override
-    public void propagateUpdates(@NotNull Listener.Update downstream, @NotNull RowSet newDestinations) {
-        Assert.assertion(downstream.removed.isEmpty() && downstream.shifted.empty(),
+    public void propagateUpdates(@NotNull TableUpdate downstream, @NotNull RowSet newDestinations) {
+        Assert.assertion(downstream.removed().isEmpty() && downstream.shifted().empty(),
                 "downstream.removed.empty() && downstream.shifted.empty()");
         // In a combo-agg, we may get modifications from other other operators that we didn't record as modifications in
         // our redirections, so we separately track updated destinations.
-        try (final RowSequence changedDestinations = isCombo ? changedDestinationsBuilder.build() : downstream.modified.union(downstream.added)) {
+        try (final RowSequence changedDestinations = isCombo ? changedDestinationsBuilder.build() : downstream.modified().union(downstream.added())) {
             copyStreamToResult(changedDestinations);
         }
         redirections = null;

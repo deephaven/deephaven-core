@@ -1,11 +1,12 @@
 package io.deephaven.engine.v2;
 
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.tables.utils.TableTools;
 
 import static io.deephaven.engine.v2.TstUtils.prevTable;
 
-public class FuzzerPrintListener extends InstrumentedListener {
+public class FuzzerPrintListener extends InstrumentedTableUpdateListener {
     private final String description;
     private final Table table;
     private final int rowCount;
@@ -22,7 +23,7 @@ public class FuzzerPrintListener extends InstrumentedListener {
     }
 
     @Override
-    public void onUpdate(final Update upstream) {
+    public void onUpdate(final TableUpdate upstream) {
         System.out.println("Description: " + description + ": " + table.size());
         System.out.println(upstream);
         if (rowCount > 0) {

@@ -2,13 +2,13 @@
  * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
  */
 
-package io.deephaven.engine.v2;
+package io.deephaven.engine.table;
 
 import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.engine.rowset.RowSet;
 
 /**
- * ShiftObliviousListener for table changes.
+ * Shift-oblivious listener for table changes.
  */
 public interface ShiftObliviousListener extends TableListener {
 

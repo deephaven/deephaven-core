@@ -11,8 +11,7 @@ import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.ChunkSource.GetContext;
 import io.deephaven.engine.tables.select.Utils;
 import io.deephaven.engine.liveness.LivenessReferent;
-import io.deephaven.engine.v2.Listener;
-import io.deephaven.engine.v2.ModifiedColumnSet;
+import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.v2.QueryTable;
 import io.deephaven.engine.v2.select.DhFormulaColumn;
 import io.deephaven.engine.v2.select.FormulaColumn;
@@ -297,16 +296,16 @@ class FormulaChunkedOperator implements IterativeChunkedAggregationOperator {
     }
 
     @Override
-    public void resetForStep(@NotNull final Listener.Update upstream) {
+    public void resetForStep(@NotNull final TableUpdate upstream) {
         if (delegateToBy) {
             groupBy.resetForStep(upstream);
         }
         updateUpstreamModifiedColumnSet =
-                upstream.modified.isEmpty() ? ModifiedColumnSet.EMPTY : upstream.modifiedColumnSet;
+                upstream.modified().isEmpty() ? ModifiedColumnSet.EMPTY : upstream.modifiedColumnSet();
     }
 
     @Override
-    public void propagateUpdates(@NotNull final Listener.Update downstream,
+    public void propagateUpdates(@NotNull final TableUpdate downstream,
             @NotNull final RowSet newDestinations) {
         if (delegateToBy) {
             groupBy.propagateUpdates(downstream, newDestinations);
@@ -315,9 +314,9 @@ class FormulaChunkedOperator implements IterativeChunkedAggregationOperator {
                 inputToResultModifiedColumnSetFactory.apply(updateUpstreamModifiedColumnSet);
         updateUpstreamModifiedColumnSet = null;
 
-        final boolean addsToProcess = downstream.added.isNonempty();
-        final boolean modifiesToProcess = downstream.modified.isNonempty() && resultModifiedColumnSet.nonempty();
-        final boolean removesToProcess = downstream.removed.isNonempty();
+        final boolean addsToProcess = downstream.added().isNonempty();
+        final boolean modifiesToProcess = downstream.modified().isNonempty() && resultModifiedColumnSet.nonempty();
+        final boolean removesToProcess = downstream.removed().isNonempty();
 
         if (!addsToProcess && !modifiesToProcess && !removesToProcess) {
             return;
@@ -326,7 +325,7 @@ class FormulaChunkedOperator implements IterativeChunkedAggregationOperator {
         // Now we know we have some removes.
         if (!addsToProcess && !modifiesToProcess) {
             try (final DataFillerContext dataFillerContext = new DataFillerContext(makeObjectColumnsMask())) {
-                dataFillerContext.clearObjectColumnData(downstream.removed);
+                dataFillerContext.clearObjectColumnData(downstream.removed());
             }
             return;
         }
@@ -343,13 +342,13 @@ class FormulaChunkedOperator implements IterativeChunkedAggregationOperator {
 
         try (final DataCopyContext dataCopyContext = new DataCopyContext(columnsToFillMask, columnsToGetMask)) {
             if (removesToProcess) {
-                dataCopyContext.clearObjectColumnData(downstream.removed);
+                dataCopyContext.clearObjectColumnData(downstream.removed());
             }
             if (modifiesToProcess) {
-                dataCopyContext.copyData(downstream.modified, modifiedColumnsMask);
+                dataCopyContext.copyData(downstream.modified(), modifiedColumnsMask);
             }
             if (addsToProcess) {
-                dataCopyContext.copyData(downstream.added);
+                dataCopyContext.copyData(downstream.added());
             }
         }
 

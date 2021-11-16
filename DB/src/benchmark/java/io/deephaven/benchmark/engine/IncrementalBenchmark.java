@@ -1,9 +1,10 @@
 package io.deephaven.benchmark.engine;
 
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.updategraph.DynamicNode;
-import io.deephaven.engine.v2.InstrumentedListenerAdapter;
+import io.deephaven.engine.v2.InstrumentedTableUpdateListenerAdapter;
 import io.deephaven.engine.v2.select.IncrementalReleaseFilter;
 import io.deephaven.engine.v2.select.RollingReleaseFilter;
 import io.deephaven.engine.v2.utils.UpdatePerformanceTracker;
@@ -75,12 +76,12 @@ class IncrementalBenchmark {
 
         final R result = function.apply(filtered1, filtered2);
 
-        final InstrumentedListenerAdapter failureListener;
+        final InstrumentedTableUpdateListenerAdapter failureListener;
         if (DynamicNode.isDynamicAndIsRefreshing(result)) {
             failureListener =
-                    new InstrumentedListenerAdapter("Failure ShiftObliviousListener", (Table) result, false) {
+                    new InstrumentedTableUpdateListenerAdapter("Failure ShiftObliviousListener", (Table) result, false) {
                         @Override
-                        public void onUpdate(Update upstream) {}
+                        public void onUpdate(TableUpdate upstream) {}
 
                         @Override
                         public void onFailureInternal(Throwable originalException,

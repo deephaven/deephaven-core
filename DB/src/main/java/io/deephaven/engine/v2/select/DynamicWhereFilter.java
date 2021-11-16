@@ -7,20 +7,17 @@ package io.deephaven.engine.v2.select;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.rowset.*;
-import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.rowset.impl.RowSetFactory;
+import io.deephaven.engine.table.*;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.updategraph.NotificationQueue;
-import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.updategraph.DynamicNode;
 import io.deephaven.engine.v2.*;
 import io.deephaven.engine.v2.select.setinclusion.SetInclusionKernel;
-import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.chunk.Attributes;
 import io.deephaven.engine.chunk.Chunk;
 import io.deephaven.engine.chunk.WritableBooleanChunk;
 import io.deephaven.engine.chunk.WritableLongChunk;
-import io.deephaven.engine.table.TupleSource;
 import io.deephaven.engine.tuplesource.TupleSourceFactory;
 import io.deephaven.engine.v2.utils.*;
 import io.deephaven.io.log.impl.LogOutputStringImpl;
@@ -51,7 +48,7 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
     private final Table setTable;
     @SuppressWarnings("FieldCanBeLocal")
     // this reference must be maintained for reachability
-    private final InstrumentedListener setUpdateListener;
+    private final InstrumentedTableUpdateListener setUpdateListener;
 
     private RecomputeListener listener;
     private QueryTable resultTable;
@@ -74,20 +71,20 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
         if (DynamicNode.isDynamicAndIsRefreshing(setTable)) {
             final String[] columnNames = Arrays.stream(matchPairs).map(MatchPair::right).toArray(String[]::new);
             final ModifiedColumnSet modTokenSet = setTable.newModifiedColumnSet(columnNames);
-            setUpdateListener = new InstrumentedListenerAdapter(
+            setUpdateListener = new InstrumentedTableUpdateListenerAdapter(
                     "DynamicWhereFilter(" + Arrays.toString(setColumnsNames) + ")", setTable, false) {
 
                 @Override
-                public void onUpdate(final Update upstream) {
-                    if (upstream.added.isEmpty() && upstream.removed.isEmpty()
-                            && !upstream.modifiedColumnSet.containsAny(modTokenSet)) {
+                public void onUpdate(final TableUpdate upstream) {
+                    if (upstream.added().isEmpty() && upstream.removed().isEmpty()
+                            && !upstream.modifiedColumnSet().containsAny(modTokenSet)) {
                         return;
                     }
 
                     final MutableBoolean trueModification = new MutableBoolean(false);
 
-                    upstream.added.forAllRowKeys((final long v) -> addKey(makeKey(v)));
-                    upstream.removed.forAllRowKeys((final long v) -> removeKey(makePrevKey(v)));
+                    upstream.added().forAllRowKeys((final long v) -> addKey(makeKey(v)));
+                    upstream.removed().forAllRowKeys((final long v) -> removeKey(makePrevKey(v)));
 
                     upstream.forAllModified((preIndex, postIndex) -> {
                         final Object oldKey = makePrevKey(preIndex);
@@ -102,14 +99,14 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
                     // Pretend every row of the original table was modified, this is essential so that the where clause
                     // can be re-evaluated based on the updated live set.
                     if (listener != null) {
-                        if (upstream.added.isNonempty() || trueModification.booleanValue()) {
+                        if (upstream.added().isNonempty() || trueModification.booleanValue()) {
                             if (inclusion) {
                                 listener.requestRecomputeUnmatched();
                             } else {
                                 listener.requestRecomputeMatched();
                             }
                         }
-                        if (upstream.removed.isNonempty() || trueModification.booleanValue()) {
+                        if (upstream.removed().isNonempty() || trueModification.booleanValue()) {
                             if (inclusion) {
                                 listener.requestRecomputeMatched();
                             } else {

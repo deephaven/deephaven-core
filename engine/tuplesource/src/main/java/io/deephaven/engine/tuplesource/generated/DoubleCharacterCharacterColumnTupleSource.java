@@ -3,14 +3,15 @@ package io.deephaven.engine.tuplesource.generated;
 import io.deephaven.datastructures.util.SmartKey;
 import io.deephaven.engine.chunk.Attributes;
 import io.deephaven.engine.chunk.Chunk;
+import io.deephaven.engine.chunk.ObjectChunk;
 import io.deephaven.engine.chunk.WritableChunk;
 import io.deephaven.engine.chunk.WritableObjectChunk;
+import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.tuple.generated.DoubleCharCharTuple;
 import io.deephaven.engine.tuplesource.AbstractTupleSource;
 import io.deephaven.engine.tuplesource.ThreeColumnTupleSourceFactory;
-import io.deephaven.engine.table.TupleSource;
-import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.sources.WritableSource;
+import io.deephaven.engine.tuplesource.TupleSource;
 import io.deephaven.util.type.TypeUtils;
 import org.jetbrains.annotations.NotNull;
 
@@ -78,7 +79,7 @@ public class DoubleCharacterCharacterColumnTupleSource extends AbstractTupleSour
 
     @SuppressWarnings("unchecked")
     @Override
-    public final <ELEMENT_TYPE> void exportElement(@NotNull final DoubleCharCharTuple tuple, final int elementIndex, @NotNull final WritableSource<ELEMENT_TYPE> writableSource, final long destinationIndexKey) {
+    public final <ELEMENT_TYPE> void exportElement(@NotNull final DoubleCharCharTuple tuple, final int elementIndex, @NotNull final WritableColumnSource<ELEMENT_TYPE> writableSource, final long destinationIndexKey) {
         if (elementIndex == 0) {
             writableSource.set(destinationIndexKey, tuple.getFirstElement());
             return;

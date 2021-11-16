@@ -11,12 +11,13 @@ import io.deephaven.base.reference.SimpleReference;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.configuration.Configuration;
+import io.deephaven.engine.chunk.util.pools.MultiChunkPool;
 import io.deephaven.engine.liveness.LivenessManager;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
+import io.deephaven.engine.table.TableListener;
 import io.deephaven.engine.util.reference.CleanupReferenceProcessorInstance;
-import io.deephaven.engine.v2.ShiftObliviousInstrumentedListener;
-import io.deephaven.engine.chunk.util.pools.MultiChunkPool;
+import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.log.LogEntry;
 import io.deephaven.io.log.impl.LogOutputStringImpl;
@@ -260,10 +261,7 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
             public void submit(@NotNull Notification notification) {
                 if (notification instanceof UpdateSourceRefreshNotification) {
                     super.submit(notification);
-                } else if (notification instanceof ShiftObliviousInstrumentedListener.ErrorNotification) { // TODO-RWC
-                                                                                                           // refactor
-                                                                                                           // this
-                                                                                                           // nonsense
+                } else if (notification instanceof TableListener.ErrorNotification) {
                     // NB: The previous implementation of this concept was more rigorous about ensuring that errors
                     // would be next, but this is likely good enough.
                     submitAt(notification, 0);

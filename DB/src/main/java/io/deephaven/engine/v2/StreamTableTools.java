@@ -2,15 +2,14 @@ package io.deephaven.engine.v2;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.impl.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.rowset.TrackingWritableRowSet;
-import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.WritableColumnSource;
+import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.tables.utils.QueryPerformanceRecorder;
 import io.deephaven.engine.v2.remote.ConstructSnapshot;
 import io.deephaven.engine.v2.sources.ArrayBackedColumnSource;
-import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.v2.sources.ReinterpretUtilities;
 import io.deephaven.engine.v2.utils.*;
 import org.apache.commons.lang3.mutable.Mutable;
@@ -93,11 +92,11 @@ public class StreamTableTools {
                         swapListener.setListenerAndResult(new BaseTable.ListenerImpl("streamToAppendOnly",
                                 streamTable, result) {
                             @Override
-                            public void onUpdate(Update upstream) {
-                                if (upstream.modified.isNonempty() || upstream.shifted.nonempty()) {
+                            public void onUpdate(TableUpdate upstream) {
+                                if (upstream.modified().isNonempty() || upstream.shifted().nonempty()) {
                                     throw new IllegalArgumentException("Stream tables should not modify or shift!");
                                 }
-                                final long newRows = upstream.added.size();
+                                final long newRows = upstream.added().size();
                                 if (newRows == 0) {
                                     return;
                                 }
@@ -108,10 +107,10 @@ public class StreamTableTools {
                                         RowSetFactory.fromRange(currentSize,
                                                 currentSize + newRows - 1);
 
-                                ChunkUtils.copyData(sourceColumns, upstream.added, destColumns, newRange, false);
+                                ChunkUtils.copyData(sourceColumns, upstream.added(), destColumns, newRange, false);
                                 rowSet.insertRange(currentSize, currentSize + newRows - 1);
 
-                                final Update downstream = new Update();
+                                final TableUpdateImpl downstream = new TableUpdateImpl();
                                 downstream.added = newRange;
                                 downstream.modified = RowSetFactory.empty();
                                 downstream.removed = RowSetFactory.empty();

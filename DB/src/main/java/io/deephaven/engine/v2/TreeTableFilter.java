@@ -2,15 +2,15 @@ package io.deephaven.engine.v2;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.*;
+import io.deephaven.engine.rowset.impl.RowSetFactory;
+import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.v2.select.WhereFilter;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
-import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.updategraph.WaitNotification;
 import io.deephaven.engine.tables.select.SelectFilterFactory;
 import io.deephaven.engine.v2.remote.ConstructSnapshot;
-import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.ReferentialIntegrity;
@@ -369,10 +369,10 @@ public class TreeTableFilter implements Function<Table, Table>, MemoizedOperatio
             }
 
             @Override
-            public void onUpdate(final Update upstream) {
+            public void onUpdate(final TableUpdate upstream) {
                 // TODO: make chunk happy
 
-                final Update downstream = new Update();
+                final TableUpdateImpl downstream = new TableUpdateImpl();
 
                 final long rllLastStep = reverseLookupListener.getLastNotificationStep();
                 final long sourceLastStep = source.getLastNotificationStep();
@@ -383,17 +383,17 @@ public class TreeTableFilter implements Function<Table, Table>, MemoizedOperatio
                 }
 
                 // We can ignore modified while updating if columns we care about were not touched.
-                final boolean useModified = upstream.modifiedColumnSet.containsAny(inputColumns);
+                final boolean useModified = upstream.modifiedColumnSet().containsAny(inputColumns);
 
                 // Must take care of removed here, because these rows are not valid in post shift space.
-                downstream.removed = resultRowSet.extract(upstream.removed);
+                downstream.removed = resultRowSet.extract(upstream.removed());
 
                 try (final RowSet allRemoved =
-                        useModified ? upstream.removed.union(upstream.getModifiedPreShift()) : null;
-                        final RowSet valuesToRemove =
-                                (useModified ? allRemoved : upstream.removed).intersect(valuesRowSet);
-                        final RowSet removedParents =
-                                (useModified ? allRemoved : upstream.removed).intersect(parentRowSet)) {
+                        useModified ? upstream.removed().union(upstream.getModifiedPreShift()) : null;
+                     final RowSet valuesToRemove =
+                                (useModified ? allRemoved : upstream.removed()).intersect(valuesRowSet);
+                     final RowSet removedParents =
+                                (useModified ? allRemoved : upstream.removed()).intersect(parentRowSet)) {
 
                     removeValues(valuesToRemove);
                     parentRowSet.remove(removedParents);
@@ -401,7 +401,7 @@ public class TreeTableFilter implements Function<Table, Table>, MemoizedOperatio
                 }
 
                 // Now we must shift all maintained state.
-                upstream.shifted.forAllInIndex(resultRowSet, (key, delta) -> {
+                upstream.shifted().forAllInIndex(resultRowSet, (key, delta) -> {
                     final Object parentId = parentSource.getPrev(key);
                     if (parentId == null) {
                         return;
@@ -414,12 +414,12 @@ public class TreeTableFilter implements Function<Table, Table>, MemoizedOperatio
                         parentSet.add(key + delta);
                     }
                 });
-                RowSetShiftUtils.apply(upstream.shifted, valuesRowSet);
-                RowSetShiftUtils.apply(upstream.shifted, parentRowSet);
-                RowSetShiftUtils.apply(upstream.shifted, resultRowSet);
+                RowSetShiftUtils.apply(upstream.shifted(), valuesRowSet);
+                RowSetShiftUtils.apply(upstream.shifted(), parentRowSet);
+                RowSetShiftUtils.apply(upstream.shifted(), resultRowSet);
 
                 // Finally, handle added sets.
-                try (final WritableRowSet addedAndModified = upstream.added.union(upstream.modified);
+                try (final WritableRowSet addedAndModified = upstream.added().union(upstream.modified());
                      final RowSet newFiltered = doValueFilter(false, addedAndModified);
                      final RowSet resurrectedParents = checkForResurrectedParent(addedAndModified);
                      final RowSet newParents = computeParents(false, newFiltered);
@@ -436,18 +436,18 @@ public class TreeTableFilter implements Function<Table, Table>, MemoizedOperatio
                 try (final RowSet result = valuesRowSet.union(parentRowSet);
                         final WritableRowSet resultRemovals = resultRowSet.minus(result)) {
                     downstream.added = result.minus(resultRowSet);
-                    resultRowSet.update(downstream.added, resultRemovals);
+                    resultRowSet.update(downstream.added(), resultRemovals);
 
-                    downstream.modified = upstream.modified.intersect(resultRowSet);
-                    downstream.modified.writableCast().remove(downstream.added);
+                    downstream.modified = upstream.modified().intersect(resultRowSet);
+                    downstream.modified().writableCast().remove(downstream.added());
 
                     // convert post filter removals into pre-shift space -- note these rows must have previously existed
-                    RowSetShiftUtils.unapply(upstream.shifted, resultRemovals);
-                    downstream.removed.writableCast().insert(resultRemovals);
+                    RowSetShiftUtils.unapply(upstream.shifted(), resultRemovals);
+                    downstream.removed().writableCast().insert(resultRemovals);
                 }
 
-                downstream.shifted = upstream.shifted;
-                downstream.modifiedColumnSet = upstream.modifiedColumnSet; // note that dependent is a subTable
+                downstream.shifted = upstream.shifted();
+                downstream.modifiedColumnSet = upstream.modifiedColumnSet(); // note that dependent is a subTable
 
                 filteredRaw.notifyListeners(downstream);
 
@@ -574,7 +574,7 @@ public class TreeTableFilter implements Function<Table, Table>, MemoizedOperatio
         }
 
         @Override
-        public synchronized void setListenerAndResult(@NotNull final Listener listener,
+        public synchronized void setListenerAndResult(@NotNull final TableUpdateListener listener,
                 @NotNull final NotificationStepReceiver resultTable) {
             super.setListenerAndResult(listener, resultTable);
             if (ShiftObliviousSwapListener.DEBUG) {

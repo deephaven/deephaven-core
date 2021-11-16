@@ -4,6 +4,7 @@ import io.deephaven.configuration.Configuration;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.exceptions.QueryCancellationException;
 import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.tables.utils.QueryPerformanceRecorder;
 import io.deephaven.engine.v2.sources.*;
@@ -186,11 +187,11 @@ public class SparseSelect {
                                             resultTable.getDefinition().getColumnNamesArray());
 
                             @Override
-                            public void onUpdate(Update upstream) {
-                                final Update downstream = upstream.copy();
+                            public void onUpdate(TableUpdate upstream) {
+                                final TableUpdateImpl downstream = TableUpdateImpl.copy(upstream);
                                 downstream.modifiedColumnSet = modifiedColumnSetForUpdates;
                                 if (sparseObjectSources.length > 0) {
-                                    try (final RowSet removedOnly = upstream.removed.minus(upstream.added)) {
+                                    try (final RowSet removedOnly = upstream.removed().minus(upstream.added())) {
                                         for (final ObjectSparseArraySource<?> objectSparseArraySource : sparseObjectSources) {
                                             objectSparseArraySource.remove(removedOnly);
                                         }
@@ -204,20 +205,20 @@ public class SparseSelect {
 
                                 for (int cc = 0; cc < inputSources.length; ++cc) {
                                     final boolean columnModified =
-                                            upstream.modifiedColumnSet.containsAny(modifiedColumnSets.get(cc));
+                                            upstream.modifiedColumnSet().containsAny(modifiedColumnSets.get(cc));
                                     modifiedColumns[cc] = columnModified;
                                     anyModified |= columnModified;
                                     allModified &= columnModified;
                                 }
 
                                 if (anyModified) {
-                                    try (final RowSet addedAndModified = upstream.added.union(upstream.modified)) {
-                                        if (upstream.shifted.nonempty()) {
+                                    try (final RowSet addedAndModified = upstream.added().union(upstream.modified())) {
+                                        if (upstream.shifted().nonempty()) {
                                             try (final RowSet currentWithoutAddsOrModifies =
                                                     source.getRowSet().minus(addedAndModified);
                                                     final SafeCloseablePair<RowSet, RowSet> shifts = RowSetShiftUtils
                                                             .extractParallelShiftedRowsFromPostShiftIndex(
-                                                                    upstream.shifted, currentWithoutAddsOrModifies)) {
+                                                                    upstream.shifted(), currentWithoutAddsOrModifies)) {
                                                 doShift(shifts, outputSources, modifiedColumns);
                                             }
                                         }
@@ -229,19 +230,19 @@ public class SparseSelect {
                                 if (!allModified) {
                                     invert(modifiedColumns);
 
-                                    if (upstream.shifted.nonempty()) {
-                                        try (final RowSet currentWithoutAdds = source.getRowSet().minus(upstream.added);
-                                                final SafeCloseablePair<RowSet, RowSet> shifts =
+                                    if (upstream.shifted().nonempty()) {
+                                        try (final RowSet currentWithoutAdds = source.getRowSet().minus(upstream.added());
+                                             final SafeCloseablePair<RowSet, RowSet> shifts =
                                                         RowSetShiftUtils.extractParallelShiftedRowsFromPostShiftIndex(
-                                                                upstream.shifted, currentWithoutAdds)) {
+                                                                upstream.shifted(), currentWithoutAdds)) {
                                             doShift(shifts, outputSources, modifiedColumns);
                                         }
                                     }
 
-                                    doCopy(upstream.added, inputSources, outputSources, modifiedColumns);
+                                    doCopy(upstream.added(), inputSources, outputSources, modifiedColumns);
                                 }
 
-                                transformer.transform(upstream.modifiedColumnSet, downstream.modifiedColumnSet);
+                                transformer.transform(upstream.modifiedColumnSet(), downstream.modifiedColumnSet());
 
                                 resultTable.notifyListeners(downstream);
                             }

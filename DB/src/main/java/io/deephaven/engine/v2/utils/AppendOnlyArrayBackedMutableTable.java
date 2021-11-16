@@ -3,8 +3,8 @@ package io.deephaven.engine.v2.utils;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.rowset.impl.RowSequenceUtil;
+import io.deephaven.engine.rowset.impl.RowSetFactory;
+import io.deephaven.engine.rowset.impl.RowSequenceFactory;
 import io.deephaven.engine.util.config.InputTableStatusListener;
 import io.deephaven.engine.v2.QueryTable;
 import io.deephaven.engine.v2.sources.ArrayBackedColumnSource;
@@ -89,10 +89,10 @@ public class AppendOnlyArrayBackedMutableTable extends BaseArrayBackedMutableTab
     @Override
     protected void processPendingTable(Table table, boolean allowEdits, IndexChangeRecorder indexChangeRecorder,
             Consumer<String> errorNotifier) {
-        try (final RowSet addRowSet = table.getRowSet().clone()) {
+        try (final RowSet addRowSet = table.getRowSet().copy()) {
             final long firstRow = nextRow;
             final long lastRow = firstRow + addRowSet.intSize() - 1;
-            try (final RowSequence destinations = RowSequenceUtil.forRange(firstRow, lastRow)) {
+            try (final RowSequence destinations = RowSequenceFactory.forRange(firstRow, lastRow)) {
                 destinations.forAllRowKeys(indexChangeRecorder::addIndex);
                 nextRow = lastRow + 1;
 

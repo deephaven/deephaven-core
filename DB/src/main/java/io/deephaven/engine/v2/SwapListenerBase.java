@@ -2,6 +2,8 @@ package io.deephaven.engine.v2;
 
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.configuration.Configuration;
+import io.deephaven.engine.table.ShiftObliviousListener;
+import io.deephaven.engine.table.TableListener;
 import io.deephaven.engine.v2.utils.AbstractNotification;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;

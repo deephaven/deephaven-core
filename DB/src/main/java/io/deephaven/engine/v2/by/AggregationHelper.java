@@ -3,11 +3,11 @@ package io.deephaven.engine.v2.by;
 import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.datastructures.util.SmartKey;
-import io.deephaven.engine.table.ChunkSource;
+import io.deephaven.engine.rowset.impl.RowSetFactory;
+import io.deephaven.engine.table.*;
 import io.deephaven.engine.rowset.*;
-import io.deephaven.engine.rowset.impl.RowSequenceUtil;
-import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.Table;
+import io.deephaven.engine.rowset.impl.RowSequenceFactory;
+import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.v2.*;
 import io.deephaven.engine.v2.select.SelectColumn;
 import io.deephaven.engine.v2.sources.*;
@@ -16,7 +16,6 @@ import io.deephaven.engine.chunk.Attributes.OrderedRowKeys;
 import io.deephaven.engine.chunk.Attributes.Values;
 import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.tuplesource.SmartKeySource;
-import io.deephaven.engine.table.TupleSource;
 import io.deephaven.engine.v2.utils.*;
 import io.deephaven.util.annotations.VisibleForTesting;
 import org.apache.commons.lang3.mutable.Mutable;
@@ -130,10 +129,10 @@ public class AggregationHelper {
                                 inputTable.getDefinition().getColumnNamesArray(),
                                 resultTable.getDefinition().getColumnNames().stream()
                                         .map(resultTable::newModifiedColumnSet).toArray(ModifiedColumnSet[]::new));
-                        final Listener aggregationUpdateListener =
+                        final TableUpdateListener aggregationUpdateListener =
                                 new BaseTable.ListenerImpl("groupBy()", inputTable, resultTable) {
                                     @Override
-                                    public void onUpdate(@NotNull final Update upstream) {
+                                    public void onUpdate(@NotNull final TableUpdate upstream) {
                                         final boolean wasEmpty =
                                                 inputTable.getRowSet().firstRowKeyPrev() == RowSequence.NULL_ROW_KEY;
                                         final boolean isEmpty = inputTable.getRowSet().isEmpty();
@@ -158,22 +157,22 @@ public class AggregationHelper {
                                             removed = RowSetFactory.flat(1);
                                             modified = RowSetFactory.empty();
                                             modifiedColumnSet = ModifiedColumnSet.EMPTY;
-                                        } else if (upstream.added.isNonempty() || upstream.removed.isNonempty()) {
+                                        } else if (upstream.added().isNonempty() || upstream.removed().isNonempty()) {
                                             added = RowSetFactory.empty();
                                             removed = RowSetFactory.empty();
                                             modified = RowSetFactory.flat(1);
                                             modifiedColumnSet = ModifiedColumnSet.ALL;
-                                        } else if (upstream.modified.isNonempty()) {
+                                        } else if (upstream.modified().isNonempty()) {
                                             added = RowSetFactory.empty();
                                             removed = RowSetFactory.empty();
                                             modified = RowSetFactory.flat(1);
-                                            transformer.clearAndTransform(upstream.modifiedColumnSet,
+                                            transformer.clearAndTransform(upstream.modifiedColumnSet(),
                                                     modifiedColumnSet = resultTable.getModifiedColumnSetForUpdates());
                                         } else {
                                             // Only shifts: Nothing to report downstream, our data has not changed
                                             return;
                                         }
-                                        final Update downstream = new Update(added, removed, modified,
+                                        final TableUpdate downstream = new TableUpdateImpl(added, removed, modified,
                                                 RowSetShiftData.EMPTY, modifiedColumnSet);
                                         resultTable.notifyListeners(downstream);
                                     }
@@ -350,31 +349,31 @@ public class AggregationHelper {
                                             .toArray(ModifiedColumnSet[]::new));
 
                     // Handle updates
-                    final Listener aggregationUpdateListener = new BaseTable.ListenerImpl(
+                    final TableUpdateListener aggregationUpdateListener = new BaseTable.ListenerImpl(
                             "groupBy(" + String.join(",", keyColumnNames) + ')', inputTable, resultTable) {
                         @Override
-                        public void onUpdate(@NotNull final Update upstream) {
+                        public void onUpdate(@NotNull final TableUpdate upstream) {
                             if (updateTracker.clear()) {
                                 stateManager.clearCookies();
                             }
 
                             final boolean keyColumnsModified =
-                                    upstream.modifiedColumnSet.containsAny(upstreamKeyColumnInputs);
+                                    upstream.modifiedColumnSet().containsAny(upstreamKeyColumnInputs);
 
                             if (keyColumnsModified) {
-                                try (final RowSet toRemove = upstream.removed.union(upstream.getModifiedPreShift())) {
+                                try (final RowSet toRemove = upstream.removed().union(upstream.getModifiedPreShift())) {
                                     stateManager.processRemoves(maybeReinterpretedKeyColumnSources, toRemove,
                                             updateTracker);
                                 }
                             } else {
-                                stateManager.processRemoves(maybeReinterpretedKeyColumnSources, upstream.removed,
+                                stateManager.processRemoves(maybeReinterpretedKeyColumnSources, upstream.removed(),
                                         updateTracker);
                             }
                             updateTracker.applyRemovesToStates(stateManager.getRowSetSource(),
                                     stateManager.getOverflowRowSetSource());
 
-                            if (upstream.shifted.nonempty()) {
-                                upstream.shifted
+                            if (upstream.shifted().nonempty()) {
+                                upstream.shifted()
                                         .apply((final long beginRange, final long endRange, final long shiftDelta) -> {
                                             final RowSet shiftedPreviousRowSet;
                                             try (final RowSet previousIndex = inputTable.getRowSet().getPrevRowSet()) {
@@ -404,19 +403,19 @@ public class AggregationHelper {
                             }
 
                             if (keyColumnsModified) {
-                                try (final RowSet toAdd = upstream.added.union(upstream.modified)) {
+                                try (final RowSet toAdd = upstream.added().union(upstream.modified())) {
                                     stateManager.processAdds(maybeReinterpretedKeyColumnSources, toAdd, updateTracker);
                                 }
                             } else {
-                                stateManager.processModifies(maybeReinterpretedKeyColumnSources, upstream.modified,
+                                stateManager.processModifies(maybeReinterpretedKeyColumnSources, upstream.modified(),
                                         updateTracker);
-                                stateManager.processAdds(maybeReinterpretedKeyColumnSources, upstream.added,
+                                stateManager.processAdds(maybeReinterpretedKeyColumnSources, upstream.added(),
                                         updateTracker);
                             }
                             updateTracker.applyAddsToStates(stateManager.getRowSetSource(),
                                     stateManager.getOverflowRowSetSource());
 
-                            final Update downstream = updateTracker.makeUpdateFromStates(
+                            final TableUpdate downstream = updateTracker.makeUpdateFromStates(
                                     stateManager.getRowSetSource(), stateManager.getOverflowRowSetSource(),
                                     resultRowSet,
                                     resultIndexToHashSlot,
@@ -425,7 +424,7 @@ public class AggregationHelper {
                                             return downstreamAllAggregatedColumns;
                                         }
                                         if (someKeyHasModifies) {
-                                            aggregatedColumnsTransformer.clearAndTransform(upstream.modifiedColumnSet,
+                                            aggregatedColumnsTransformer.clearAndTransform(upstream.modifiedColumnSet(),
                                                     resultTable.getModifiedColumnSetForUpdates());
                                             return resultTable.getModifiedColumnSetForUpdates();
                                         }
@@ -536,7 +535,7 @@ public class AggregationHelper {
                 mapKeySourceIndices.setSize(groupsInThisChunk);
                 final ObjectChunk<?, ? extends Values> mapKeys;
                 try (final RowSequence inputKeyIndices =
-                        RowSequenceUtil.wrapRowKeysChunkAsRowSequence(mapKeySourceIndices)) {
+                        RowSequenceFactory.wrapRowKeysChunkAsRowSequence(mapKeySourceIndices)) {
                     mapKeys = inputKeyIndexToMapKeySource.getChunk(mapKeyGetContext, inputKeyIndices).asObjectChunk();
                 }
                 for (int gi = 0; gi < groupsInThisChunk; ++gi) {

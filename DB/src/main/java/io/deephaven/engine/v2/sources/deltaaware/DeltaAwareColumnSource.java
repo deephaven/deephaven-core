@@ -8,8 +8,8 @@ import io.deephaven.engine.table.*;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.rowset.impl.RowSequenceUtil;
+import io.deephaven.engine.rowset.impl.RowSetFactory;
+import io.deephaven.engine.rowset.impl.RowSequenceFactory;
 import io.deephaven.engine.updategraph.UpdateCommitter;
 import io.deephaven.engine.v2.sources.*;
 import io.deephaven.engine.chunk.*;
@@ -562,7 +562,7 @@ public final class DeltaAwareColumnSource<T> extends AbstractColumnSource<T>
                 orderedKeyRanges.set(1, startKey + baselineOkSize - 1);
                 orderedKeyRanges.setSize(2);
                 startKey += baselineOkSize;
-                final RowSequence deltaOk = RowSequenceUtil.wrapKeyRangesChunkAsRowSequence(orderedKeyRanges);
+                final RowSequence deltaOk = RowSequenceFactory.wrapKeyRangesChunkAsRowSequence(orderedKeyRanges);
                 final Chunk<? extends Values> data = delta.getChunk(deltaCtx, deltaOk);
                 baseline.fillFromChunk(baselineCtx, data, baselineOk);
             }

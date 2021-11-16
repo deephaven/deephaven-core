@@ -5,6 +5,7 @@
 package io.deephaven.engine.v2;
 
 import io.deephaven.engine.exceptions.QueryCancellationException;
+import io.deephaven.engine.table.ShiftObliviousListener;
 import io.deephaven.engine.tables.SortingOrder;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;

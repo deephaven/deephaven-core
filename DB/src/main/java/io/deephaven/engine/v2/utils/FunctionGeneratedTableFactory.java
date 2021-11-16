@@ -6,11 +6,12 @@ package io.deephaven.engine.v2.utils;
 
 import io.deephaven.base.Function;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.impl.RowSetFactory;
 import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.v2.QueryTable;
@@ -72,7 +73,7 @@ public class FunctionGeneratedTableFactory {
         for (Table source : sourceTables) {
             source.listenForUpdates(new BaseTable.ListenerImpl("FunctionGeneratedTable", source, result) {
                 @Override
-                public void onUpdate(final Update upstream) {
+                public void onUpdate(final TableUpdate upstream) {
                     result.doRefresh();
                 }
             });

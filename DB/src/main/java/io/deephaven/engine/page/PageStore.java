@@ -5,7 +5,7 @@ import io.deephaven.engine.table.DefaultChunkSource;
 import io.deephaven.engine.table.DefaultGetContext;
 import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.rowset.impl.RowSequenceUtil;
+import io.deephaven.engine.rowset.impl.RowSequenceFactory;
 import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
 
@@ -52,7 +52,7 @@ public interface PageStore<ATTR extends Attributes.Any, INNER_ATTR extends ATTR,
         if (lastKey <= pageMaxRow) {
             return page.getChunk(context, firstKey, lastKey);
         } else {
-            try (final RowSequence rowSequence = RowSequenceUtil.forRange(firstKey, lastKey)) {
+            try (final RowSequence rowSequence = RowSequenceFactory.forRange(firstKey, lastKey)) {
                 final WritableChunk<ATTR> destination = DefaultGetContext.getWritableChunk(context);
                 doFillChunkAppend(fillContext, destination, rowSequence, page);
                 return destination;

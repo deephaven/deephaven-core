@@ -11,6 +11,6 @@ public class RowSequenceRowKeysChunkImplTest extends RowSequenceTestBase {
 
     @Override
     protected RowSequence create(long... values) {
-        return RowSequenceUtil.wrapRowKeysChunkAsRowSequence(LongChunk.chunkWrap(values));
+        return RowSequenceFactory.wrapRowKeysChunkAsRowSequence(LongChunk.chunkWrap(values));
     }
 }

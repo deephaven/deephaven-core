@@ -1,15 +1,15 @@
 package io.deephaven.grpc_api.table;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
 import io.deephaven.engine.liveness.LivenessScopeStack;
-import io.deephaven.engine.v2.Listener;
-import io.deephaven.engine.v2.ModifiedColumnSet;
+import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.v2.QueryTable;
 import io.deephaven.engine.v2.TstUtils;
-import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.impl.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.util.SafeCloseable;
@@ -275,13 +275,13 @@ public class ExportTableUpdateListenerTest {
 
         // export mid-tick
         updateGraphProcessor.runWithinUnitTestCycle(() -> {
-            final Listener.Update update = new Listener.Update();
+            final TableUpdateImpl update = new TableUpdateImpl();
             update.added = RowSetFactory.fromRange(src.getRowSet().lastRowKey() + 1, src.getRowSet().lastRowKey() + 42);
             update.removed = i();
             update.modified = i();
             update.modifiedColumnSet = ModifiedColumnSet.EMPTY;
             update.shifted = RowSetShiftData.EMPTY;
-            addToTable(src, update.added);
+            addToTable(src, update.added());
 
             // Must be off-thread to use concurrent instantiation
             final Thread thread = new Thread(() -> {
@@ -305,14 +305,14 @@ public class ExportTableUpdateListenerTest {
 
     private void addRowsToSource(final QueryTable src, final long nRows) {
         updateGraphProcessor.runWithinUnitTestCycle(() -> {
-            final Listener.Update update = new Listener.Update();
+            final TableUpdateImpl update = new TableUpdateImpl();
             update.added =
                     RowSetFactory.fromRange(src.getRowSet().lastRowKey() + 1, src.getRowSet().lastRowKey() + nRows);
             update.removed = i();
             update.modified = i();
             update.modifiedColumnSet = ModifiedColumnSet.EMPTY;
             update.shifted = RowSetShiftData.EMPTY;
-            addToTable(src, update.added);
+            addToTable(src, update.added());
             src.notifyListeners(update);
         });
     }

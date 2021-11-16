@@ -93,7 +93,6 @@ public abstract class ShiftObliviousInstrumentedListenerAdapter extends ShiftObl
     @Override
     protected void destroy() {
         source.removeUpdateListener(this);
-        source.removeDirectUpdateListener(this);
         if (retain) {
             RETENTION_CACHE.forget(this);
         }

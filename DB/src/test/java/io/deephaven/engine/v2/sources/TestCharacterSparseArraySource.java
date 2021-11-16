@@ -12,7 +12,7 @@ import io.deephaven.engine.chunk.CharChunk;
 import io.deephaven.engine.chunk.WritableCharChunk;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
-import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.impl.RowSetFactory;
 import io.deephaven.engine.rowset.RowSequence;
 import org.junit.After;
 import org.junit.Before;

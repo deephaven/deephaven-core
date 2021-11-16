@@ -4,16 +4,14 @@
 
 package io.deephaven.engine.util;
 
-import io.deephaven.engine.table.ChunkSource;
-import io.deephaven.engine.table.SharedContext;
-import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.v2.*;
 import io.deephaven.engine.chunk.util.hashing.ChunkEquals;
-import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
-import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.impl.RowSetFactory;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.util.SafeCloseableArray;
 import org.apache.commons.lang3.mutable.MutableInt;
@@ -57,10 +55,10 @@ public class TickSuppressor {
         final BaseTable.ListenerImpl listener = new BaseTable.ListenerImpl(
                 "convertModificationsToAddsAndRemoves", input, resultTable) {
             @Override
-            public void onUpdate(Update upstream) {
-                final Update downstream = upstream.copy();
-                downstream.added = upstream.added.union(upstream.modified);
-                downstream.removed = upstream.removed.union(upstream.getModifiedPreShift());
+            public void onUpdate(TableUpdate upstream) {
+                final TableUpdateImpl downstream = TableUpdateImpl.copy(upstream);
+                downstream.added = upstream.added().union(upstream.modified());
+                downstream.removed = upstream.removed().union(upstream.getModifiedPreShift());
                 downstream.modified = RowSetFactory.empty();
                 downstream.modifiedColumnSet = ModifiedColumnSet.EMPTY;
                 resultTable.notifyListeners(downstream);
@@ -121,19 +119,19 @@ public class TickSuppressor {
                             input.newModifiedColumnSetIdentityTransformer(resultTable);
 
                     @Override
-                    public void onUpdate(Update upstream) {
-                        final Update downstream = upstream.copy();
+                    public void onUpdate(TableUpdate upstream) {
+                        final TableUpdateImpl downstream = TableUpdateImpl.copy(upstream);
                         downstream.modifiedColumnSet = resultTable.getModifiedColumnSetForUpdates();
 
-                        if (downstream.modified.isEmpty()) {
-                            identityTransformer.clearAndTransform(upstream.modifiedColumnSet,
-                                    downstream.modifiedColumnSet);
+                        if (downstream.modified().isEmpty()) {
+                            identityTransformer.clearAndTransform(upstream.modifiedColumnSet(),
+                                    downstream.modifiedColumnSet());
                             resultTable.notifyListeners(downstream);
                             return;
                         }
 
                         final int columnCount = resultTable.getColumnSourceMap().size();
-                        final int chunkSize = (int) Math.min(1 << 16, downstream.modified.size());
+                        final int chunkSize = (int) Math.min(1 << 16, downstream.modified().size());
 
                         final ChunkSource.GetContext[] getContextArray = new ChunkSource.GetContext[columnCount];
                         final ChunkSource.GetContext[] prevContextArray = new ChunkSource.GetContext[columnCount];
@@ -152,10 +150,10 @@ public class TickSuppressor {
                              final SharedContext prevSharedContext = SharedContext.makeSharedContext();
                              final RowSequence.Iterator preRsIt =
                                         upstream.getModifiedPreShift().getRowSequenceIterator();
-                             final RowSequence.Iterator postRsIt = upstream.modified.getRowSequenceIterator()) {
+                             final RowSequence.Iterator postRsIt = upstream.modified().getRowSequenceIterator()) {
                             int changedColumnCount = 0;
                             for (int cc = 0; cc < columnCount; cc++) {
-                                if (upstream.modifiedColumnSet.containsAny(inputModifiedColumnSets[cc])) {
+                                if (upstream.modifiedColumnSet().containsAny(inputModifiedColumnSets[cc])) {
                                     getContextArray[cc] =
                                             inputSources[cc].makeGetContext(chunkSize, currentSharedContext);
                                     prevContextArray[cc] =
@@ -167,7 +165,7 @@ public class TickSuppressor {
                             final int[] changedColumnIndices = new int[changedColumnCount];
                             int cp = 0;
                             for (int cc = 0; cc < columnCount; cc++) {
-                                if (upstream.modifiedColumnSet.containsAny(inputModifiedColumnSets[cc])) {
+                                if (upstream.modifiedColumnSet().containsAny(inputModifiedColumnSets[cc])) {
                                     changedColumnIndices[cp++] = cc;
                                 }
                             }
@@ -210,11 +208,11 @@ public class TickSuppressor {
 
                         downstream.modified = builder.build();
 
-                        downstream.modifiedColumnSet.clear();
-                        if (downstream.modified.isNonempty()) {
+                        downstream.modifiedColumnSet().clear();
+                        if (downstream.modified().isNonempty()) {
                             for (int cc = 0; cc < changedColumns.length; ++cc) {
                                 if (changedColumns[cc]) {
-                                    downstream.modifiedColumnSet.setAll(outputModifiedColumnSets[cc]);
+                                    downstream.modifiedColumnSet().setAll(outputModifiedColumnSets[cc]);
                                 }
                             }
                         }

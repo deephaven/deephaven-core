@@ -4,6 +4,7 @@ import static io.deephaven.engine.chunk.Attributes.OrderedRowKeyRanges;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.impl.RowSequenceFactory;
 import io.deephaven.engine.rowset.impl.TrackingWritableRowSetImpl;
 import io.deephaven.util.datastructures.LongAbortableConsumer;
 import io.deephaven.engine.rowset.RowSequence;
@@ -143,7 +144,7 @@ public class RspRowSequence extends RowSequenceAsChunkImpl {
     public RowSequence getRowSequenceByPosition(long startPositionInclusive, long length) {
         final long absoluteStart = startPositionInclusive + absoluteStartPos();
         if (absoluteStart > absoluteEndPos()) {
-            return RowSequence.EMPTY;
+            return RowSequenceFactory.EMPTY;
         }
         final long sizeLeftFromStart = size() - startPositionInclusive;
         return arr.getRowSequenceByPosition(absoluteStart, Math.min(sizeLeftFromStart, length));
@@ -353,11 +354,11 @@ public class RspRowSequence extends RowSequenceAsChunkImpl {
         @Override
         public RowSequence getNextRowSequenceThrough(final long maxKey) {
             if (maxKey < 0) {
-                return RowSequence.EMPTY;
+                return RowSequenceFactory.EMPTY;
             }
             final long firstKey = nextKey;
             if (!updateCurrThrough(maxKey)) {
-                return RowSequence.EMPTY;
+                return RowSequenceFactory.EMPTY;
             }
             currBuf.reset(
                     currStartIdx, currStartOffset, currCardBeforeStartIdx,
@@ -404,7 +405,7 @@ public class RspRowSequence extends RowSequenceAsChunkImpl {
             final long firstKey = nextKey;
             final long actualNumberOfKeys = nextRowSequenceWithLength(desiredNumberOfKeys);
             if (actualNumberOfKeys == 0) {
-                return RowSequence.EMPTY;
+                return RowSequenceFactory.EMPTY;
             }
             sizeLeft -= actualNumberOfKeys;
             currBuf.reset(

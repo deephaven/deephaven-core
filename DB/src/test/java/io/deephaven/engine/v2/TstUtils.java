@@ -10,6 +10,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.datastructures.util.SmartKey;
 import io.deephaven.engine.rowset.*;
+import io.deephaven.engine.rowset.impl.RowSetFactory;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.tables.StringSetWrapper;
 import io.deephaven.engine.table.Table;

@@ -2,7 +2,9 @@ package io.deephaven.kafka.publish;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
+import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.liveness.LivenessScope;
@@ -212,7 +214,7 @@ public class PublishToKafka<K, V> extends LivenessArtifact {
         }
     }
 
-    private class PublishListener extends InstrumentedListenerAdapter {
+    private class PublishListener extends InstrumentedTableUpdateListenerAdapter {
 
         private final ModifiedColumnSet keysModified;
         private final ModifiedColumnSet valuesModified;
@@ -230,28 +232,28 @@ public class PublishToKafka<K, V> extends LivenessArtifact {
         }
 
         @Override
-        public void onUpdate(Update upstream) {
+        public void onUpdate(TableUpdate upstream) {
             if (keySerializer != null || isStream) {
-                Assert.assertion(upstream.shifted.empty(), "upstream.shifted.empty()");
+                Assert.assertion(upstream.shifted().empty(), "upstream.shifted.empty()");
             }
 
             try (final SafeCloseable ignored = guard) {
                 if (isStream) {
-                    Assert.assertion(upstream.modified.isEmpty(), "upstream.modified.empty()");
+                    Assert.assertion(upstream.modified().isEmpty(), "upstream.modified.empty()");
                     // We always ignore removes on streams, and expect no modifies or shifts
-                    publishMessages(upstream.added, false, true, guard);
+                    publishMessages(upstream.added(), false, true, guard);
                     return;
                 }
 
                 // Regular table, either keyless, add-only, or aggregated
-                publishMessages(upstream.removed, true, false, guard);
-                if (keysModified.containsAny(upstream.modifiedColumnSet)
-                        || valuesModified.containsAny(upstream.modifiedColumnSet)) {
-                    try (final RowSet addedAndModified = upstream.added.union(upstream.modified)) {
+                publishMessages(upstream.removed(), true, false, guard);
+                if (keysModified.containsAny(upstream.modifiedColumnSet())
+                        || valuesModified.containsAny(upstream.modifiedColumnSet())) {
+                    try (final RowSet addedAndModified = upstream.added().union(upstream.modified())) {
                         publishMessages(addedAndModified, false, true, guard);
                     }
                 } else {
-                    publishMessages(upstream.added, false, true, guard);
+                    publishMessages(upstream.added(), false, true, guard);
                 }
             }
         }

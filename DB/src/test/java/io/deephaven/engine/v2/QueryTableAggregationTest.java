@@ -3,10 +3,10 @@ package io.deephaven.engine.v2;
 import io.deephaven.api.Selectable;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.impl.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
-import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.TableMap;
+import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
 import io.deephaven.engine.vector.IntVector;
@@ -23,7 +23,6 @@ import io.deephaven.engine.v2.by.*;
 import io.deephaven.engine.v2.select.IncrementalReleaseFilter;
 import io.deephaven.engine.v2.select.SelectColumn;
 import io.deephaven.engine.v2.select.SourceColumn;
-import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.v2.sources.TreeMapSource;
 import io.deephaven.engine.v2.sources.UnionRedirection;
 import io.deephaven.engine.chunk.util.pools.ChunkPoolReleaseTracking;
@@ -339,7 +338,7 @@ public class QueryTableAggregationTest {
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             inputs[4].modifiedColumnSet.clear();
             inputs[4].modifiedColumnSet.setAll("StrCol");
-            inputs[4].notifyListeners(new Listener.Update(i(), i(), ir(0, mergeChunkMultiple / 2),
+            inputs[4].notifyListeners(new TableUpdateImpl(i(), i(), ir(0, mergeChunkMultiple / 2),
                     RowSetShiftData.EMPTY, inputs[4].modifiedColumnSet));
         });
         TstUtils.validate(ens);
@@ -347,7 +346,7 @@ public class QueryTableAggregationTest {
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             inputs[4].modifiedColumnSet.clear();
             inputs[4].modifiedColumnSet.setAll("IntCol");
-            inputs[4].notifyListeners(new Listener.Update(i(), i(), ir(0, mergeChunkMultiple / 2),
+            inputs[4].notifyListeners(new TableUpdateImpl(i(), i(), ir(0, mergeChunkMultiple / 2),
                     RowSetShiftData.EMPTY, inputs[4].modifiedColumnSet));
         });
         TstUtils.validate(ens);
@@ -355,7 +354,7 @@ public class QueryTableAggregationTest {
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             inputs[4].modifiedColumnSet.clear();
             inputs[4].modifiedColumnSet.setAll("TimeCol");
-            inputs[4].notifyListeners(new Listener.Update(i(), i(), ir(0, mergeChunkMultiple / 2),
+            inputs[4].notifyListeners(new TableUpdateImpl(i(), i(), ir(0, mergeChunkMultiple / 2),
                     RowSetShiftData.EMPTY, inputs[4].modifiedColumnSet));
         });
         TstUtils.validate(ens);
@@ -407,20 +406,20 @@ public class QueryTableAggregationTest {
         TstUtils.validate(ens);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            input2.notifyListeners(new Listener.Update(i(0, 1), i(0, 1), i(), RowSetShiftData.EMPTY,
+            input2.notifyListeners(new TableUpdateImpl(i(0, 1), i(0, 1), i(), RowSetShiftData.EMPTY,
                     ModifiedColumnSet.EMPTY));
         });
         TstUtils.validate(ens);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             input2.notifyListeners(
-                    new Listener.Update(i(), i(), i(2, 3), RowSetShiftData.EMPTY, ModifiedColumnSet.ALL));
+                    new TableUpdateImpl(i(), i(), i(2, 3), RowSetShiftData.EMPTY, ModifiedColumnSet.ALL));
         });
         TstUtils.validate(ens);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             input2.notifyListeners(
-                    new Listener.Update(i(), i(), i(), RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY));
+                    new TableUpdateImpl(i(), i(), i(), RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY));
         });
         TstUtils.validate(ens);
     }
@@ -2930,9 +2929,9 @@ public class QueryTableAggregationTest {
             this.columns = columns;
             this.originalValue = e();
 
-            ((QueryTable) originalValue).listenForUpdates(new InstrumentedListener("Failure ShiftObliviousListener") {
+            ((QueryTable) originalValue).listenForUpdates(new InstrumentedTableUpdateListener("Failure ShiftObliviousListener") {
                 @Override
-                public void onUpdate(final Update update) {}
+                public void onUpdate(final TableUpdate update) {}
 
                 @Override
                 public void onFailureInternal(Throwable originalException, UpdatePerformanceTracker.Entry sourceEntry) {
@@ -3158,10 +3157,10 @@ public class QueryTableAggregationTest {
         final Table reversedFlat = table.reverse().flatten().where("Sentinel != 2");
         final Table last = reversedFlat.lastBy();
 
-        final InstrumentedListenerAdapter adapter =
-                new InstrumentedListenerAdapter(reversedFlat, false) {
+        final InstrumentedTableUpdateListenerAdapter adapter =
+                new InstrumentedTableUpdateListenerAdapter(reversedFlat, false) {
                     @Override
-                    public void onUpdate(Update upstream) {
+                    public void onUpdate(TableUpdate upstream) {
                         System.out.println(upstream);
                     }
                 };
@@ -3246,7 +3245,7 @@ public class QueryTableAggregationTest {
             ((TreeMapSource) table.getColumnSourceMap().get("Bucket")).shift(0, 4097, 4096);
             table.getRowSet().writableCast().removeRange(0, 4095);
             table.getRowSet().writableCast().insertRange(4098, 8193);
-            final Listener.Update update = new Listener.Update();
+            final TableUpdateImpl update = new TableUpdateImpl();
             update.removed = i();
             update.added = i();
             update.modified = i();
@@ -3473,7 +3472,7 @@ public class QueryTableAggregationTest {
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(source, i(20), col("Key", "A"), col("Sentinel", 10));
             removeRows(source, i(10));
-            final Listener.Update update = new Listener.Update();
+            final TableUpdateImpl update = new TableUpdateImpl();
             update.added = i();
             update.removed = i();
             update.modified = i();
@@ -3540,7 +3539,7 @@ public class QueryTableAggregationTest {
 
                 UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
                     source.getRowSet().writableCast().insertRange(50, 100);
-                    source.notifyListeners(new Listener.Update(ir(50, 100), i(), i(), RowSetShiftData.EMPTY,
+                    source.notifyListeners(new TableUpdateImpl(ir(50, 100), i(), i(), RowSetShiftData.EMPTY,
                             ModifiedColumnSet.EMPTY));
                 });
             }

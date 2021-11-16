@@ -7,8 +7,10 @@ package io.deephaven.engine.v2;
 import io.deephaven.base.Base64;
 import io.deephaven.base.StringUtils;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.impl.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
+import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.updategraph.*;
 import io.deephaven.hash.KeyedObjectHashSet;
 import io.deephaven.base.log.LogOutput;
@@ -20,11 +22,7 @@ import io.deephaven.io.log.impl.LogOutputStringImpl;
 import io.deephaven.io.logger.Logger;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
-import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.NotSortableException;
-import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.tables.utils.QueryPerformanceRecorder;
 import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
 import io.deephaven.engine.liveness.LivenessArtifact;
@@ -33,7 +31,6 @@ import io.deephaven.engine.v2.remote.ConstructSnapshot;
 import io.deephaven.engine.v2.select.SelectColumn;
 import io.deephaven.engine.v2.select.SourceColumn;
 import io.deephaven.engine.v2.select.SwitchColumn;
-import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.v2.utils.*;
 import io.deephaven.util.annotations.ReferentialIntegrity;
 import io.deephaven.internal.log.LoggerFactory;
@@ -91,7 +88,7 @@ public abstract class BaseTable extends LivenessArtifact
     private transient Collection<Object> parents;
     private transient SimpleReferenceManager<ShiftObliviousListener, WeakSimpleReference<ShiftObliviousListener>> childListenerReferences;
     private transient SimpleReferenceManager<ShiftObliviousListener, WeakSimpleReference<ShiftObliviousListener>> directChildListenerReferences;
-    private transient SimpleReferenceManager<Listener, WeakSimpleReference<Listener>> childShiftAwareListenerReferences;
+    private transient SimpleReferenceManager<TableUpdateListener, WeakSimpleReference<TableUpdateListener>> childShiftAwareListenerReferences;
     private transient volatile long lastNotificationStep;
     private transient volatile long lastSatisfiedStep;
     private transient boolean isFailed;
@@ -580,7 +577,7 @@ public abstract class BaseTable extends LivenessArtifact
     }
 
     @Override
-    public void listenForUpdates(final Listener listener) {
+    public void listenForUpdates(final TableUpdateListener listener) {
         if (isFailed) {
             throw new IllegalStateException("Can not listen to failed table " + description);
         }
@@ -595,7 +592,7 @@ public abstract class BaseTable extends LivenessArtifact
     }
 
     @Override
-    public void removeUpdateListener(final Listener listenerToRemove) {
+    public void removeUpdateListener(final TableUpdateListener listenerToRemove) {
         childShiftAwareListenerReferences.remove(listenerToRemove);
     }
 
@@ -632,7 +629,7 @@ public abstract class BaseTable extends LivenessArtifact
      * @param modified rowSet Row keys modified in the table.
      */
     public final void notifyListeners(RowSet added, RowSet removed, RowSet modified) {
-        notifyListeners(new Listener.Update(added, removed, modified, RowSetShiftData.EMPTY,
+        notifyListeners(new TableUpdateImpl(added, removed, modified, RowSetShiftData.EMPTY,
                 modified.isEmpty() ? ModifiedColumnSet.EMPTY : ModifiedColumnSet.ALL));
     }
 
@@ -644,7 +641,7 @@ public abstract class BaseTable extends LivenessArtifact
      *        {@code notifyListeners} takes ownership, and will call {@code release} on it once it is not used anymore;
      *        callers should pass a {@code copy} for updates they intend to further use.
      */
-    public final void notifyListeners(final Listener.Update update) {
+    public final void notifyListeners(final TableUpdate update) {
         Assert.eqTrue(update.valid(), "update.valid()");
         if (update.empty()) {
             update.release();
@@ -662,27 +659,27 @@ public abstract class BaseTable extends LivenessArtifact
             return;
         }
 
-        Assert.neqNull(update.added, "added");
-        Assert.neqNull(update.removed, "removed");
-        Assert.neqNull(update.modified, "modified");
-        Assert.neqNull(update.shifted, "shifted");
+        Assert.neqNull(update.added(), "added");
+        Assert.neqNull(update.removed(), "removed");
+        Assert.neqNull(update.modified(), "modified");
+        Assert.neqNull(update.shifted(), "shifted");
 
         if (isFlat()) {
             Assert.assertion(getRowSet().isFlat(), "build().isFlat()", getRowSet(), "build()");
         }
         if (isAddOnly()) {
-            Assert.assertion(update.removed.isEmpty(), "update.removed.empty()");
-            Assert.assertion(update.modified.isEmpty(), "update.modified.empty()");
-            Assert.assertion(update.shifted.empty(), "update.shifted.empty()");
+            Assert.assertion(update.removed().isEmpty(), "update.removed.empty()");
+            Assert.assertion(update.modified().isEmpty(), "update.modified.empty()");
+            Assert.assertion(update.shifted().empty(), "update.shifted.empty()");
         }
 
         // First validate that each rowSet is in a sane state.
         if (VALIDATE_UPDATE_INDICES) {
-            update.added.validate();
-            update.removed.validate();
-            update.modified.validate();
-            update.shifted.validate();
-            Assert.eq(update.modified.isEmpty(), "update.modified.empty()", update.modifiedColumnSet.empty(),
+            update.added().validate();
+            update.removed().validate();
+            update.modified().validate();
+            update.shifted().validate();
+            Assert.eq(update.modified().isEmpty(), "update.modified.empty()", update.modifiedColumnSet().empty(),
                     "update.modifiedColumnSet.empty()");
         }
 
@@ -738,20 +735,20 @@ public abstract class BaseTable extends LivenessArtifact
         update.release();
     }
 
-    private void validateUpdateOverlaps(final Listener.Update update) {
-        final boolean currentMissingAdds = !update.added.subsetOf(getRowSet());
-        final boolean currentMissingModifications = !update.modified.subsetOf(getRowSet());
+    private void validateUpdateOverlaps(final TableUpdate update) {
+        final boolean currentMissingAdds = !update.added().subsetOf(getRowSet());
+        final boolean currentMissingModifications = !update.modified().subsetOf(getRowSet());
         final boolean previousMissingRemovals;
         try (final RowSet prevIndex = getRowSet().getPrevRowSet()) {
-            previousMissingRemovals = !update.removed.subsetOf(prevIndex);
+            previousMissingRemovals = !update.removed().subsetOf(prevIndex);
         }
         final boolean currentContainsRemovals;
-        try (final RowSet removedMinusAdded = update.removed.minus(update.added)) {
+        try (final RowSet removedMinusAdded = update.removed().minus(update.added())) {
             currentContainsRemovals = removedMinusAdded.overlaps(getRowSet());
         }
 
         if (!previousMissingRemovals && !currentMissingAdds && !currentMissingModifications &&
-                (!currentContainsRemovals || !update.shifted.empty())) {
+                (!currentContainsRemovals || !update.shifted().empty())) {
             return;
         }
 
@@ -781,10 +778,10 @@ public abstract class BaseTable extends LivenessArtifact
 
                 append.accept("build().getPrevRowSet=", getRowSet().getPrevRowSet());
                 append.accept("build()=", getRowSet().getPrevRowSet());
-                append.accept("added=", update.added);
-                append.accept("removed=", update.removed);
-                append.accept("modified=", update.modified);
-                append.accept("shifted=", update.shifted);
+                append.accept("added=", update.added());
+                append.accept("removed=", update.removed());
+                append.accept("modified=", update.modified());
+                append.accept("shifted=", update.shifted());
 
                 serializedIndices = outputBuffer.toString();
             } catch (final Exception ignored) {
@@ -792,25 +789,25 @@ public abstract class BaseTable extends LivenessArtifact
         }
 
         // If we're still here, we know that things are off the rails, and we want to fire the assertion
-        final RowSet removalsMinusPrevious = update.removed.minus(getRowSet().getPrevRowSet());
-        final RowSet addedMinusCurrent = update.added.minus(getRowSet());
-        final RowSet removedIntersectCurrent = update.removed.intersect(getRowSet());
-        final RowSet modifiedMinusCurrent = update.modified.minus(getRowSet());
+        final RowSet removalsMinusPrevious = update.removed().minus(getRowSet().getPrevRowSet());
+        final RowSet addedMinusCurrent = update.added().minus(getRowSet());
+        final RowSet removedIntersectCurrent = update.removed().intersect(getRowSet());
+        final RowSet modifiedMinusCurrent = update.modified().minus(getRowSet());
 
         // Everything is messed up for this table, print out the indices in an easy to understand way
         final LogOutput logOutput = new LogOutputStringImpl()
                 .append("RowSet update error detected: ")
                 .append(LogOutput::nl).append("\t          previousIndex=").append(getRowSet().getPrevRowSet())
                 .append(LogOutput::nl).append("\t           currentIndex=").append(getRowSet())
-                .append(LogOutput::nl).append("\t                  added=").append(update.added)
-                .append(LogOutput::nl).append("\t                removed=").append(update.removed)
-                .append(LogOutput::nl).append("\t               modified=").append(update.modified)
-                .append(LogOutput::nl).append("\t                shifted=").append(update.shifted.toString())
+                .append(LogOutput::nl).append("\t                  added=").append(update.added())
+                .append(LogOutput::nl).append("\t                removed=").append(update.removed())
+                .append(LogOutput::nl).append("\t               modified=").append(update.modified())
+                .append(LogOutput::nl).append("\t                shifted=").append(update.shifted().toString())
                 .append(LogOutput::nl).append("\t  removalsMinusPrevious=").append(removalsMinusPrevious)
                 .append(LogOutput::nl).append("\t      addedMinusCurrent=").append(addedMinusCurrent)
                 .append(LogOutput::nl).append("\t   modifiedMinusCurrent=").append(modifiedMinusCurrent);
 
-        if (update.shifted.empty()) {
+        if (update.shifted().empty()) {
             logOutput.append(LogOutput::nl).append("\tremovedIntersectCurrent=").append(removedIntersectCurrent);
         }
 
@@ -917,7 +914,7 @@ public abstract class BaseTable extends LivenessArtifact
 
         @Override
         public void onUpdate(RowSet added, RowSet removed, RowSet modified) {
-            ((BaseTable) dependent).notifyListeners(new Listener.Update(added.copy(), removed.copy(), modified.copy(),
+            ((BaseTable) dependent).notifyListeners(new TableUpdateImpl(added.copy(), removed.copy(), modified.copy(),
                     RowSetShiftData.EMPTY, ModifiedColumnSet.ALL));
         }
 
@@ -943,7 +940,7 @@ public abstract class BaseTable extends LivenessArtifact
      * that most use-cases will require overriding onUpdate() - the default implementation simply passes rowSet updates
      * through to the dependent's listeners.
      */
-    public static class ListenerImpl extends InstrumentedListener {
+    public static class ListenerImpl extends InstrumentedTableUpdateListener {
 
         @ReferentialIntegrity
         private final Table parent;
@@ -970,11 +967,12 @@ public abstract class BaseTable extends LivenessArtifact
         }
 
         @Override
-        public void onUpdate(final Update upstream) {
-            final Update downstream;
+        public void onUpdate(final TableUpdate upstream) {
+            final TableUpdate downstream;
             if (!canReuseModifiedColumnSet) {
-                downstream = upstream.copy();
-                downstream.modifiedColumnSet = ModifiedColumnSet.ALL;
+                final TableUpdateImpl upstreamCopy = TableUpdateImpl.copy(upstream);
+                upstreamCopy.modifiedColumnSet = ModifiedColumnSet.ALL;
+                downstream = upstreamCopy;
             } else {
                 downstream = upstream.acquire();
             }

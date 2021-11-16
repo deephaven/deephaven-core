@@ -2,9 +2,11 @@ package io.deephaven.engine.v2.by;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.*;
+import io.deephaven.engine.rowset.impl.RowSetFactory;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.v2.Listener;
-import io.deephaven.engine.v2.ModifiedColumnSet;
+import io.deephaven.engine.table.TableUpdate;
+import io.deephaven.engine.table.impl.TableUpdateImpl;
+import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.v2.sort.timsort.LongLongTimsortKernel;
 import io.deephaven.engine.v2.sources.IntegerArraySource;
 import io.deephaven.engine.v2.sources.LongArraySource;
@@ -474,7 +476,7 @@ class IncrementalByAggregationUpdateTracker {
     }
 
     /**
-     * Build an {@link Listener.Update} for this tracker's updated states, and update the result
+     * Build an {@link TableUpdateImpl} for this tracker's updated states, and update the result
      * {@link TrackingWritableRowSet} and {@link WritableRowRedirection}.
      *
      * @param rowSetSource The {@link TrackingWritableRowSet} column source for the main table
@@ -483,13 +485,13 @@ class IncrementalByAggregationUpdateTracker {
      * @param rowRedirection The result {@link WritableRowRedirection} (from state first keys to state slots) to update
      * @param modifiedColumnSetProducer The {@link ModifiedColumnSetProducer} to use for computing the downstream
      *        {@link ModifiedColumnSet}
-     * @return The result {@link Listener.Update}
+     * @return The result {@link TableUpdateImpl}
      */
-    final Listener.Update makeUpdateFromStates(@NotNull final ObjectArraySource<TrackingWritableRowSet> rowSetSource,
-            @NotNull final ObjectArraySource<TrackingWritableRowSet> overflowRowSetSource,
-            @NotNull final WritableRowSet rowSet,
-            @NotNull final WritableRowRedirection rowRedirection,
-            @NotNull final ModifiedColumnSetProducer modifiedColumnSetProducer) {
+    final TableUpdate makeUpdateFromStates(@NotNull final ObjectArraySource<TrackingWritableRowSet> rowSetSource,
+                                           @NotNull final ObjectArraySource<TrackingWritableRowSet> overflowRowSetSource,
+                                           @NotNull final WritableRowSet rowSet,
+                                           @NotNull final WritableRowRedirection rowRedirection,
+                                           @NotNull final ModifiedColumnSetProducer modifiedColumnSetProducer) {
         // First pass: Removes are handled on their own, because if the key moved to a new state we may reinsert it
         final RowSetBuilderRandom removedBuilder = RowSetFactory.builderRandom();
         int numStatesWithShifts = 0;
@@ -602,7 +604,7 @@ class IncrementalByAggregationUpdateTracker {
         rowSet.insert(added);
 
         // Build and return the update
-        return new Listener.Update(added, removed, modified, shiftData,
+        return new TableUpdateImpl(added, removed, modified, shiftData,
                 modifiedColumnSetProducer.produce(someKeyHasAddsOrRemoves, someKeyHasModifies));
     }
 

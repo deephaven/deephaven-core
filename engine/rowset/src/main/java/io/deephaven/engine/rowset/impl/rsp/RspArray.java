@@ -5,6 +5,7 @@ import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.impl.OrderedLongSet;
 import io.deephaven.engine.rowset.impl.RefCountedCow;
+import io.deephaven.engine.rowset.impl.RowSequenceFactory;
 import io.deephaven.util.datastructures.LongAbortableConsumer;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.impl.singlerange.SingleRange;
@@ -4505,7 +4506,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
         if (isCardinalityCached()) {
             final long cardinality = getCardinality();
             if (startPositionInclusive >= cardinality) {
-                return RowSequence.EMPTY;
+                return RowSequenceFactory.EMPTY;
             }
             endPositionInclusive = Math.min(startPositionInclusive + length, cardinality) - 1;
         } else {
@@ -4522,7 +4523,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             prevCardMu = new MutableLong(0);
             startIdx = getIndexForRankNoAcc(0, startPositionInclusive, prevCardMu);
             if (startIdx == size) {
-                return RowSequence.EMPTY;
+                return RowSequenceFactory.EMPTY;
             }
             cardBeforeStart = prevCardMu.longValue();
         }
@@ -4550,7 +4551,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
 
     public RowSequence getRowSequenceByKeyRange(final long startValueInclusive, final long endValueInclusive) {
         if (isEmpty() || endValueInclusive < startValueInclusive) {
-            return RowSequence.EMPTY;
+            return RowSequenceFactory.EMPTY;
         }
         final long lastSpanCardinality = getSpanCardinalityAtIndexMaybeAcc(size - 1);
         return getRowSequenceByKeyRangeConstrainedToIndexAndOffsetRange(startValueInclusive, endValueInclusive,
@@ -4577,7 +4578,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
         if (startKeyIdx < 0) {
             startKeyIdx = -startKeyIdx - 1;
             if (startKeyIdx >= size) {
-                return RowSequence.EMPTY;
+                return RowSequenceFactory.EMPTY;
             }
         }
         final long endKey = highBits(endValue);
@@ -4596,7 +4597,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             // the following result can't be outside of valid pos space or we would have returned above.
             absoluteStartPos = -absoluteStartPos - 1;
             if (absoluteStartPos == getCardinality()) {
-                return RowSequence.EMPTY;
+                return RowSequenceFactory.EMPTY;
             }
         }
         final long cardBeforeEndKeyIdx = cardinalityBeforeMaybeAcc(endKeyIdx, beforeCardCtx);
@@ -4608,7 +4609,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             if (absoluteEndPos < 0) {
                 absoluteEndPos = -absoluteEndPos - 2;
                 if (absoluteEndPos < 0) {
-                    return RowSequence.EMPTY;
+                    return RowSequenceFactory.EMPTY;
                 }
                 final long totalCardAtEndKeyIdx = cardBeforeEndKeyIdx + getSpanCardinalityAtIndexMaybeAcc(endKeyIdx);
                 final long lastValidPos = totalCardAtEndKeyIdx - 1;
@@ -4646,7 +4647,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
 
     public RowSequence.Iterator getRowSequenceIterator() {
         if (isEmpty()) {
-            return RowSequence.Iterator.EMPTY;
+            return RowSequenceFactory.EMPTY_ITERATOR;
         }
         return new RspRowSequence.Iterator(asRowSequence());
     }

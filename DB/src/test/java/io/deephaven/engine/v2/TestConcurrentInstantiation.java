@@ -4,10 +4,10 @@ import io.deephaven.base.Pair;
 import io.deephaven.base.SleepUtil;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.impl.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
-import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.TableMap;
+import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.tables.libs.QueryLibrary;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.tables.select.MatchPairFactory;
@@ -21,7 +21,6 @@ import io.deephaven.engine.v2.remote.ConstructSnapshot;
 import io.deephaven.engine.v2.select.ConditionFilter;
 import io.deephaven.engine.v2.select.DisjunctiveFilter;
 import io.deephaven.engine.v2.select.DynamicWhereFilter;
-import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.engine.v2.utils.*;
 import io.deephaven.gui.table.QuickFilterMode;
@@ -702,7 +701,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
 
         final List<Table> results = new ArrayList<>();
         // noinspection MismatchedQueryAndUpdateOfCollection
-        final List<Listener> listeners = new ArrayList<>();
+        final List<TableUpdateListener> listeners = new ArrayList<>();
         int lastResultSize = 0;
 
         try {
@@ -853,10 +852,10 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
 
                 for (int newResult = lastResultSize; newResult < results.size(); ++newResult) {
                     final Table dynamicTable = results.get(newResult);
-                    final InstrumentedListenerAdapter listener =
-                            new InstrumentedListenerAdapter("errorListener", dynamicTable, false) {
+                    final InstrumentedTableUpdateListenerAdapter listener =
+                            new InstrumentedTableUpdateListenerAdapter("errorListener", dynamicTable, false) {
                                 @Override
-                                public void onUpdate(final Update upstream) {}
+                                public void onUpdate(final TableUpdate upstream) {}
 
                                 @Override
                                 public void onFailureInternal(Throwable originalException,
@@ -1601,17 +1600,17 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         TstUtils.assertTableEquals(snap, right);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            final Listener.Update downstream = new Listener.Update(i(1), i(), i(),
+            final TableUpdate downstream = new TableUpdateImpl(i(1), i(), i(),
                     RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY);
-            TstUtils.addToTable(right, downstream.added, c("x", 2));
+            TstUtils.addToTable(right, downstream.added(), c("x", 2));
             right.notifyListeners(downstream);
         });
         TstUtils.assertTableEquals(snap, prevTable(right));
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            final Listener.Update downstream = new Listener.Update(i(1), i(), i(),
+            final TableUpdate downstream = new TableUpdateImpl(i(1), i(), i(),
                     RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY);
-            TstUtils.addToTable(left, downstream.added);
+            TstUtils.addToTable(left, downstream.added());
             left.notifyListeners(downstream);
         });
         TstUtils.assertTableEquals(snap, right);

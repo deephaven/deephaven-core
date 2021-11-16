@@ -10,7 +10,7 @@ import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.chunk.Attributes.Values;
 import io.deephaven.engine.v2.utils.ChunkUtils;
 import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.rowset.impl.RowSequenceUtil;
+import io.deephaven.engine.rowset.impl.RowSequenceFactory;
 import junit.framework.TestCase;
 import org.junit.Test;
 
@@ -69,7 +69,7 @@ public class TestLongLongMegaMerge {
 
                 try (final ChunkSource.GetContext valueContext = valuesSource.makeGetContext(sizeAfterAddition);
                      final ChunkSource.GetContext keyContext = keySource.makeGetContext(sizeAfterAddition)) {
-                    final RowSequence rowSequence = RowSequenceUtil.forRange(0, sizeAfterAddition - 1);
+                    final RowSequence rowSequence = RowSequenceFactory.forRange(0, sizeAfterAddition - 1);
 
 
                     final LongChunk<Values> checkValues = valuesSource.getChunk(valueContext, rowSequence).asLongChunk();

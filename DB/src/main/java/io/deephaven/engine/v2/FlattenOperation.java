@@ -5,7 +5,12 @@
 package io.deephaven.engine.v2;
 
 import io.deephaven.engine.rowset.*;
+import io.deephaven.engine.rowset.impl.RowSetFactory;
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.ModifiedColumnSet;
+import io.deephaven.engine.table.TableUpdate;
+import io.deephaven.engine.table.TableUpdateListener;
+import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.v2.sources.RedirectedColumnSource;
 import io.deephaven.engine.v2.utils.*;
 import org.apache.commons.lang3.mutable.MutableObject;
@@ -47,11 +52,11 @@ public class FlattenOperation implements QueryTable.MemoizableOperation<QueryTab
         resultTable.setFlat();
         parent.copyAttributes(resultTable, BaseTable.CopyAttributeOperation.Flatten);
 
-        Listener resultListener = null;
+        TableUpdateListener resultListener = null;
         if (parent.isRefreshing()) {
             resultListener = new BaseTable.ListenerImpl(getDescription(), parent, resultTable) {
                 @Override
-                public void onUpdate(Update upstream) {
+                public void onUpdate(TableUpdate upstream) {
                     FlattenOperation.this.onUpdate(upstream);
                 }
             };
@@ -72,18 +77,18 @@ public class FlattenOperation implements QueryTable.MemoizableOperation<QueryTab
         this.parent = parent;
     }
 
-    private void onUpdate(final Listener.Update upstream) {
+    private void onUpdate(final TableUpdate upstream) {
         // Note: we can safely ignore shifted since shifts do not change data AND shifts are not allowed to reorder.
         final TrackingRowSet rowSet = parent.getRowSet();
         final long newSize = rowSet.size();
 
-        final Listener.Update downstream = new Listener.Update();
+        final TableUpdateImpl downstream = new TableUpdateImpl();
         downstream.modifiedColumnSet = resultTable.modifiedColumnSet;
-        mcsTransformer.clearAndTransform(upstream.modifiedColumnSet, downstream.modifiedColumnSet);
+        mcsTransformer.clearAndTransform(upstream.modifiedColumnSet(), downstream.modifiedColumnSet());
 
         // Check to see if we can simply invert and pass-down.
-        downstream.modified = rowSet.invert(upstream.modified);
-        if (upstream.added.isEmpty() && upstream.removed.isEmpty()) {
+        downstream.modified = rowSet.invert(upstream.modified());
+        if (upstream.added().isEmpty() && upstream.removed().isEmpty()) {
             downstream.added = RowSetFactory.empty();
             downstream.removed = RowSetFactory.empty();
             downstream.shifted = RowSetShiftData.EMPTY;
@@ -91,9 +96,9 @@ public class FlattenOperation implements QueryTable.MemoizableOperation<QueryTab
             return;
         }
 
-        downstream.added = rowSet.invert(upstream.added);
+        downstream.added = rowSet.invert(upstream.added());
         try (final RowSet prevRowSet = rowSet.getPrevRowSet()) {
-            downstream.removed = prevRowSet.invert(upstream.removed);
+            downstream.removed = prevRowSet.invert(upstream.removed());
         }
         final RowSetShiftData.Builder outShifted = new RowSetShiftData.Builder();
 
@@ -107,8 +112,8 @@ public class FlattenOperation implements QueryTable.MemoizableOperation<QueryTab
         };
 
         // Create our range iterators and prime them.
-        final MutableObject<RowSet.RangeIterator> rmIt = new MutableObject<>(downstream.removed.rangeIterator());
-        final MutableObject<RowSet.RangeIterator> addIt = new MutableObject<>(downstream.added.rangeIterator());
+        final MutableObject<RowSet.RangeIterator> rmIt = new MutableObject<>(downstream.removed().rangeIterator());
+        final MutableObject<RowSet.RangeIterator> addIt = new MutableObject<>(downstream.added().rangeIterator());
         updateIt.accept(rmIt);
         updateIt.accept(addIt);
 

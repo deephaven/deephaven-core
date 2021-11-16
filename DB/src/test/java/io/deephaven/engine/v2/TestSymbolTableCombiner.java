@@ -1,5 +1,7 @@
 package io.deephaven.engine.v2;
 
+import io.deephaven.engine.table.TableUpdate;
+import io.deephaven.engine.table.TableUpdateListener;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.v2.sources.IntegerSparseArraySource;
@@ -60,14 +62,14 @@ public class TestSymbolTableCombiner extends RefreshingTableTestCase {
             assertEquals(expected, uniqueId);
         }
 
-        final Listener symbolTableListener =
-                new InstrumentedListenerAdapter("SymbolTableCombiner Adapter", symbolTable, false) {
+        final TableUpdateListener symbolTableListener =
+                new InstrumentedTableUpdateListenerAdapter("SymbolTableCombiner Adapter", symbolTable, false) {
                     @Override
-                    public void onUpdate(final Update upstream) {
-                        assertIndexEquals(i(), upstream.removed);
-                        assertIndexEquals(i(), upstream.modified);
-                        assertTrue(upstream.shifted.empty());
-                        combiner.addSymbols(symbolTable, upstream.added, symbolMapper);
+                    public void onUpdate(final TableUpdate upstream) {
+                        assertIndexEquals(i(), upstream.removed());
+                        assertIndexEquals(i(), upstream.modified());
+                        assertTrue(upstream.shifted().empty());
+                        combiner.addSymbols(symbolTable, upstream.added(), symbolMapper);
                         checkAdditions(symbolTable, symbolSource, idSource, symbolMapper, uniqueIdMap);
                     }
 

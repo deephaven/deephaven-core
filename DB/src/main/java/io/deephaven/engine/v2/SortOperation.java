@@ -7,12 +7,13 @@ package io.deephaven.engine.v2;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.rowset.*;
-import io.deephaven.engine.table.ChunkSink;
+import io.deephaven.engine.rowset.impl.RowSetFactory;
+import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.tables.SortPair;
 import io.deephaven.engine.tables.SortingOrder;
 import io.deephaven.util.datastructures.hash.HashMapK4V4;
 import io.deephaven.util.datastructures.hash.HashMapLockFreeK4V4;
-import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.v2.sources.RedirectedColumnSource;
 import io.deephaven.engine.v2.sources.SwitchColumnSource;
 import io.deephaven.engine.chunk.LongChunk;
@@ -156,20 +157,20 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
         resultTable.setFlat();
         setSorted(resultTable);
 
-        final Listener resultListener =
+        final TableUpdateListener resultListener =
                 new BaseTable.ListenerImpl("Stream sort listener", parent, resultTable) {
                     @Override
-                    public void onUpdate(@NotNull final Update upstream) {
-                        Assert.assertion(upstream.modified.isEmpty() && upstream.shifted.empty(),
+                    public void onUpdate(@NotNull final TableUpdate upstream) {
+                        Assert.assertion(upstream.modified().isEmpty() && upstream.shifted().empty(),
                                 "upstream.modified.empty() && upstream.shifted.empty()");
-                        Assert.eq(resultRowSet.size(), "resultRowSet.size()", upstream.removed.size(),
+                        Assert.eq(resultRowSet.size(), "resultRowSet.size()", upstream.removed().size(),
                                 "upstream.removed.size()");
                         if (upstream.empty()) {
                             return;
                         }
 
                         final SortHelpers.SortMapping updateSortedKeys =
-                                SortHelpers.getSortedKeys(sortOrder, sortColumns, upstream.added, false);
+                                SortHelpers.getSortedKeys(sortOrder, sortColumns, upstream.added(), false);
                         final LongChunkColumnSource recycled = recycledInnerRedirectionSource.getValue();
                         recycledInnerRedirectionSource.setValue(null);
                         final LongChunkColumnSource updateInnerRedirectSource =
@@ -180,14 +181,14 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
                         }
                         redirectionSource.setNewCurrent(updateInnerRedirectSource);
 
-                        final RowSet added = RowSetFactory.flat(upstream.added.size());
-                        final RowSet removed = RowSetFactory.flat(upstream.removed.size());
+                        final RowSet added = RowSetFactory.flat(upstream.added().size());
+                        final RowSet removed = RowSetFactory.flat(upstream.removed().size());
                         if (added.size() > removed.size()) {
                             resultRowSet.insertRange(removed.size(), added.size() - 1);
                         } else if (removed.size() > added.size()) {
                             resultRowSet.removeRange(added.size(), removed.size() - 1);
                         }
-                        resultTable.notifyListeners(new Update(added, removed, RowSetFactory.empty(),
+                        resultTable.notifyListeners(new TableUpdateImpl(added, removed, RowSetFactory.empty(),
                                 RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY));
                     }
                 };

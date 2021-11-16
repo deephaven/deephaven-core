@@ -6,7 +6,7 @@ package io.deephaven.engine.v2.by;
 
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.rowset.impl.RowSequenceUtil;
+import io.deephaven.engine.rowset.impl.RowSequenceFactory;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.v2.sources.DoubleArraySource;
@@ -53,7 +53,7 @@ class IntegralChunkedReAvgOperator implements IterativeChunkedAggregationOperato
             final int startPosition = startPositions.get(ii);
             context.keyIndices.set(ii, destinations.get(startPosition));
         }
-        try (final RowSequence destinationOk = RowSequenceUtil.wrapRowKeysChunkAsRowSequence(context.keyIndices)) {
+        try (final RowSequence destinationOk = RowSequenceFactory.wrapRowKeysChunkAsRowSequence(context.keyIndices)) {
             updateResult(context, destinationOk, stateModified);
         }
     }

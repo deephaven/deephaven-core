@@ -9,17 +9,13 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetShiftData;
+import io.deephaven.engine.table.*;
 import io.deephaven.engine.tablelogger.UpdatePerformanceLogLogger;
-import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.engine.tables.utils.QueryPerformanceLogThreshold;
 import io.deephaven.engine.tables.utils.QueryPerformanceRecorder;
-import io.deephaven.engine.v2.TableListener;
-import io.deephaven.engine.v2.QueryTable;
-import io.deephaven.engine.v2.ShiftObliviousInstrumentedListener;
-import io.deephaven.engine.v2.ShiftObliviousListener;
+import io.deephaven.engine.v2.*;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.log.impl.LogOutputStringImpl;
 import io.deephaven.io.logger.Logger;
@@ -45,8 +41,8 @@ import static io.deephaven.engine.tables.lang.LanguageFunctionUtil.plus;
  * <ol>
  * <li>Update source {@code run()} invocations</li>
  * <li>{@link Table} {@link ShiftObliviousListener} notifications (see {@link ShiftObliviousInstrumentedListener})</li>
- * <li>{@link Table} {@link io.deephaven.engine.v2.Listener} notifications (see
- * {@link io.deephaven.engine.v2.InstrumentedListener})</li>
+ * <li>{@link Table} {@link TableUpdateListener} notifications (see
+ * {@link InstrumentedTableUpdateListener})</li>
  * </ol>
  * (1)
  *

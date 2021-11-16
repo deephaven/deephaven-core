@@ -5,10 +5,10 @@
 package io.deephaven.engine.v2.by;
 
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.time.DateTime;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.v2.QueryTable;
-import io.deephaven.engine.v2.Listener;
 import io.deephaven.engine.v2.sources.*;
 import io.deephaven.engine.chunk.Attributes.ChunkLengths;
 import io.deephaven.engine.chunk.Attributes.ChunkPositions;
@@ -145,10 +145,10 @@ public class TDigestPercentileOperator implements IterativeChunkedAggregationOpe
     }
 
     @Override
-    public void propagateUpdates(@NotNull Listener.Update downstream,
+    public void propagateUpdates(@NotNull TableUpdate downstream,
             @NotNull RowSet newDestinations) {
-        downstream.added.forAllRowKeys(this::updateDestination);
-        downstream.modified.forAllRowKeys(this::updateDestination);
+        downstream.added().forAllRowKeys(this::updateDestination);
+        downstream.modified().forAllRowKeys(this::updateDestination);
     }
 
     @Override

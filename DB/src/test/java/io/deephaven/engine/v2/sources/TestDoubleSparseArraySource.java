@@ -15,7 +15,7 @@ import io.deephaven.engine.chunk.DoubleChunk;
 import io.deephaven.engine.chunk.WritableDoubleChunk;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
-import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.impl.RowSetFactory;
 import io.deephaven.engine.rowset.RowSequence;
 import org.junit.After;
 import org.junit.Before;

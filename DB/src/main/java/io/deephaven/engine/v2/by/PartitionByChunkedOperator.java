@@ -1,13 +1,13 @@
 package io.deephaven.engine.v2.by;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.rowset.impl.RowSetFactory;
 import io.deephaven.engine.rowset.impl.WritableRowSetImpl;
-import io.deephaven.engine.table.ChunkSource;
+import io.deephaven.engine.table.*;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.impl.OrderedLongSet;
 import io.deephaven.engine.rowset.impl.OrderedLongSetBuilderSequential;
-import io.deephaven.engine.table.ColumnDefinition;
-import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.engine.tables.utils.QueryPerformanceRecorder;
@@ -15,7 +15,6 @@ import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.updategraph.DynamicNode;
 import io.deephaven.engine.v2.*;
 import io.deephaven.engine.v2.sources.ArrayBackedColumnSource;
-import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.v2.sources.ObjectArraySource;
 import io.deephaven.engine.chunk.Attributes.*;
 import io.deephaven.engine.chunk.*;
@@ -72,8 +71,8 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
      * <p>
      * TrackingWritableRowSet to keep track of destinations with shifts.
      * <p>
-     * This exists in each cycle between {@link IterativeChunkedAggregationOperator#resetForStep(Listener.Update)} and
-     * {@link IterativeChunkedAggregationOperator#propagateUpdates(Listener.Update, RowSet)}
+     * This exists in each cycle between {@link IterativeChunkedAggregationOperator#resetForStep(TableUpdate)} and
+     * {@link IterativeChunkedAggregationOperator#propagateUpdates(TableUpdate, RowSet)}
      * <p>
      * If this ever becomes necessary in other operators, it could be moved out to the helper the way modified
      * destination tracking already is.
@@ -483,12 +482,12 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
     }
 
     @Override
-    public void resetForStep(@NotNull final Listener.Update upstream) {
+    public void resetForStep(@NotNull final TableUpdate upstream) {
         stepShiftedDestinations = RowSetFactory.empty();
-        final boolean upstreamModified = upstream.modified.isNonempty() && upstream.modifiedColumnSet.nonempty();
+        final boolean upstreamModified = upstream.modified().isNonempty() && upstream.modifiedColumnSet().nonempty();
         if (upstreamModified) {
             // We re-use this for all sub-tables that have modifies.
-            upstreamToResultTransformer.clearAndTransform(upstream.modifiedColumnSet, resultModifiedColumnSet);
+            upstreamToResultTransformer.clearAndTransform(upstream.modifiedColumnSet(), resultModifiedColumnSet);
             stepValuesModified = resultModifiedColumnSet.nonempty();
         } else {
             stepValuesModified = false;
@@ -496,21 +495,21 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
     }
 
     @Override
-    public void propagateUpdates(@NotNull final Listener.Update downstream,
+    public void propagateUpdates(@NotNull final TableUpdate downstream,
             @NotNull final RowSet newDestinations) {
-        if (downstream.added.isEmpty() && downstream.removed.isEmpty() && downstream.modified.isEmpty()
+        if (downstream.added().isEmpty() && downstream.removed().isEmpty() && downstream.modified().isEmpty()
                 && stepShiftedDestinations.isEmpty()) {
             stepShiftedDestinations = null;
             return;
         }
-        if (downstream.added.isNonempty()) {
-            try (final RowSequence resurrectedDestinations = downstream.added.minus(newDestinations)) {
+        if (downstream.added().isNonempty()) {
+            try (final RowSequence resurrectedDestinations = downstream.added().minus(newDestinations)) {
                 propagateResurrectedDestinations(resurrectedDestinations);
                 propagateNewDestinations(newDestinations);
             }
         }
-        propagateUpdatesToRemovedDestinations(downstream.removed);
-        try (final RowSequence modifiedOrShiftedDestinations = downstream.modified.union(stepShiftedDestinations)) {
+        propagateUpdatesToRemovedDestinations(downstream.removed());
+        try (final RowSequence modifiedOrShiftedDestinations = downstream.modified().union(stepShiftedDestinations)) {
             stepShiftedDestinations = null;
             propagateUpdatesToModifiedDestinations(modifiedOrShiftedDestinations);
         }
@@ -559,7 +558,7 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
                     // This table existed already, and has been "resurrected" after becoming empty previously. We must
                     // notify.
 
-                    final Listener.Update downstream = new Listener.Update();
+                    final TableUpdateImpl downstream = new TableUpdateImpl();
 
                     downstream.added = nullToEmpty(extractAndClearIndex(addedRowSetsBackingChunk, backingChunkOffset));
                     downstream.removed = RowSetFactory.empty();
@@ -570,7 +569,7 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
                     resurrectedTable.getRowSet().writableCast().compact();
 
                     Assert.assertion(resurrectedTable.getRowSet().isEmpty(), "resurrectedTable.build().isEmpty()");
-                    resurrectedTable.getRowSet().writableCast().insert(downstream.added);
+                    resurrectedTable.getRowSet().writableCast().insert(downstream.added());
                     resurrectedTable.notifyListeners(downstream);
                 });
             }
@@ -674,7 +673,7 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
                         // We can ignore allowCreation; the table exists already, and must already retain appropriate
                         // referents.
                         // Additionally, we must notify of added rows.
-                        final Listener.Update downstream = new Listener.Update();
+                        final TableUpdateImpl downstream = new TableUpdateImpl();
 
                         downstream.added =
                                 nullToEmpty(extractAndClearIndex(addedRowSetsBackingChunk, backingChunkOffset));
@@ -683,7 +682,7 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
                         downstream.shifted = RowSetShiftData.EMPTY;
                         downstream.modifiedColumnSet = ModifiedColumnSet.EMPTY;
 
-                        prepopulatedTable.getRowSet().writableCast().insert(downstream.added);
+                        prepopulatedTable.getRowSet().writableCast().insert(downstream.added());
                         prepopulatedTable.notifyListeners(downstream);
                     } else if (!allowCreation) {
                         // We will never try to create this table again, or accumulate further state for it.
@@ -786,7 +785,7 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
                                 + " for table map key " + tableMapKeysSource.get(removedDestination));
                     }
 
-                    final Listener.Update downstream = new Listener.Update();
+                    final TableUpdateImpl downstream = new TableUpdateImpl();
 
                     downstream.added = RowSetFactory.empty();
                     downstream.removed =
@@ -795,7 +794,7 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
                     downstream.shifted = RowSetShiftData.EMPTY;
                     downstream.modifiedColumnSet = ModifiedColumnSet.EMPTY;
 
-                    removedTable.getRowSet().writableCast().remove(downstream.removed);
+                    removedTable.getRowSet().writableCast().remove(downstream.removed());
                     removedTable.getRowSet().writableCast().compact();
                     Assert.assertion(removedTable.getRowSet().isEmpty(), "removedTable.build().isEmpty()");
                     removedTable.notifyListeners(downstream);
@@ -862,7 +861,7 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
                                 + " for table map key " + tableMapKeysSource.get(modifiedDestination));
                     }
 
-                    final Listener.Update downstream = new Listener.Update();
+                    final TableUpdateImpl downstream = new TableUpdateImpl();
 
                     downstream.added = nullToEmpty(extractAndClearIndex(addedRowSetsBackingChunk, backingChunkOffset));
                     downstream.removed =
@@ -873,16 +872,16 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
                     downstream.shifted =
                             extractAndClearShiftDataBuilder(shiftDataBuildersBackingChunk, backingChunkOffset);
                     downstream.modifiedColumnSet =
-                            downstream.modified.isEmpty() ? ModifiedColumnSet.EMPTY : resultModifiedColumnSet;
+                            downstream.modified().isEmpty() ? ModifiedColumnSet.EMPTY : resultModifiedColumnSet;
 
-                    if (downstream.removed.isNonempty()) {
-                        modifiedTable.getRowSet().writableCast().remove(downstream.removed);
+                    if (downstream.removed().isNonempty()) {
+                        modifiedTable.getRowSet().writableCast().remove(downstream.removed());
                     }
-                    if (downstream.shifted.nonempty()) {
-                        RowSetShiftUtils.apply(downstream.shifted, ((WritableRowSet) modifiedTable.getRowSet()));
+                    if (downstream.shifted().nonempty()) {
+                        RowSetShiftUtils.apply(downstream.shifted(), ((WritableRowSet) modifiedTable.getRowSet()));
                     }
-                    if (downstream.added.isNonempty()) {
-                        modifiedTable.getRowSet().writableCast().insert(downstream.added);
+                    if (downstream.added().isNonempty()) {
+                        modifiedTable.getRowSet().writableCast().insert(downstream.added());
                     }
 
                     modifiedTable.getRowSet().writableCast().compact();

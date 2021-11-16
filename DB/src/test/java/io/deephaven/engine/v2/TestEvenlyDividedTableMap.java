@@ -6,7 +6,7 @@ import io.deephaven.engine.table.TransformableTableMap;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.impl.RowSetFactory;
 
 import static io.deephaven.engine.v2.TstUtils.i;
 

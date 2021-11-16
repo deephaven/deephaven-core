@@ -1,11 +1,12 @@
 package io.deephaven.engine.v2;
 
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableUpdate;
 
 /**
  * A listener for use in unit tests that writes down the update it receives and counts how many it received.
  */
-public class SimpleListener extends InstrumentedListenerAdapter {
+public class SimpleListener extends InstrumentedTableUpdateListenerAdapter {
     public SimpleListener(Table source) {
         super(source, false);
         reset();
@@ -15,12 +16,12 @@ public class SimpleListener extends InstrumentedListenerAdapter {
         return count;
     }
 
-    public Update getUpdate() {
+    public TableUpdate getUpdate() {
         return update;
     }
 
     int count;
-    Update update;
+    TableUpdate update;
 
     public void reset() {
         close();
@@ -29,7 +30,7 @@ public class SimpleListener extends InstrumentedListenerAdapter {
     }
 
     @Override
-    public void onUpdate(final Update upstream) {
+    public void onUpdate(final TableUpdate upstream) {
         close();
         this.update = upstream.acquire();
         ++count;
@@ -40,11 +41,11 @@ public class SimpleListener extends InstrumentedListenerAdapter {
         return "SimpleListener{" +
                 "count=" + count +
                 (update == null ? ""
-                        : (", added=" + update.added +
-                                ", removed=" + update.removed +
-                                ", modified=" + update.modified +
-                                ", shifted=" + update.shifted +
-                                ", modifiedColumnSet=" + update.modifiedColumnSet))
+                        : (", added=" + update.added() +
+                                ", removed=" + update.removed() +
+                                ", modified=" + update.modified() +
+                                ", shifted=" + update.shifted() +
+                                ", modifiedColumnSet=" + update.modifiedColumnSet()))
                 +
                 '}';
     }

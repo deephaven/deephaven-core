@@ -9,13 +9,13 @@ package io.deephaven.engine.v2.by.ssmcountdistinct.distinct;
 
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.impl.RowSetFactory;
+import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.time.DateTime;
 import io.deephaven.engine.updategraph.UpdateCommitter;
 import io.deephaven.engine.v2.by.AggregationFactory;
 import io.deephaven.engine.v2.by.ssmcountdistinct.DateTimeSsmSourceWrapper;
 
-import io.deephaven.engine.v2.Listener;
 import io.deephaven.engine.v2.by.IterativeChunkedAggregationOperator;
 import io.deephaven.engine.v2.by.ssmcountdistinct.BucketSsmDistinctRollupContext;
 import io.deephaven.engine.v2.by.ssmcountdistinct.LongSsmBackedSource;
@@ -479,12 +479,12 @@ public class LongRollupDistinctOperator implements IterativeChunkedAggregationOp
 
     //region IterativeOperator / DistinctAggregationOperator
     @Override
-    public void propagateUpdates(@NotNull Listener.Update downstream, @NotNull RowSet newDestinations) {
+    public void propagateUpdates(@NotNull TableUpdate downstream, @NotNull RowSet newDestinations) {
         if (touchedStates != null) {
             prevFlusher.maybeActivate();
             touchedStates.clear();
-            touchedStates.insert(downstream.added);
-            touchedStates.insert(downstream.modified);
+            touchedStates.insert(downstream.added());
+            touchedStates.insert(downstream.modified());
         }
     }
 

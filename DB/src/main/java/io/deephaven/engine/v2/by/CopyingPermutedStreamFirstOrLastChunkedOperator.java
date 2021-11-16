@@ -7,7 +7,7 @@ import io.deephaven.engine.table.ChunkSink;
 import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.v2.utils.ChunkUtils;
 import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.rowset.impl.RowSequenceUtil;
+import io.deephaven.engine.rowset.impl.RowSequenceFactory;
 import io.deephaven.util.SafeCloseableList;
 import org.jetbrains.annotations.NotNull;
 
@@ -96,7 +96,7 @@ public abstract class CopyingPermutedStreamFirstOrLastChunkedOperator extends Ba
                 LongIntTimsortKernel.sort(sortKernelContext, sourceIndicesOrder, sourceIndices);
 
                 try (final RowSequence sliceSources =
-                        RowSequenceUtil.wrapRowKeysChunkAsRowSequence(WritableLongChunk.downcast(sourceIndices))) {
+                        RowSequenceFactory.wrapRowKeysChunkAsRowSequence(WritableLongChunk.downcast(sourceIndices))) {
                     for (int ci = 0; ci < numResultColumns; ++ci) {
                         final Chunk<? extends Attributes.Values> inputChunk =
                                 inputColumns[ci].getChunk(inputContexts[ci], sliceSources);

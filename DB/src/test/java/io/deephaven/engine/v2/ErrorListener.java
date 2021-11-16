@@ -1,10 +1,11 @@
 package io.deephaven.engine.v2;
 
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.v2.utils.UpdatePerformanceTracker;
 import junit.framework.TestCase;
 
-public class ErrorListener extends InstrumentedListenerAdapter {
+public class ErrorListener extends InstrumentedTableUpdateListenerAdapter {
     Throwable originalException;
 
     ErrorListener(Table table) {
@@ -12,7 +13,7 @@ public class ErrorListener extends InstrumentedListenerAdapter {
     }
 
     @Override
-    public void onUpdate(final Update upstream) {
+    public void onUpdate(final TableUpdate upstream) {
         TestCase.fail("Should not have gotten an update!");
     }
 

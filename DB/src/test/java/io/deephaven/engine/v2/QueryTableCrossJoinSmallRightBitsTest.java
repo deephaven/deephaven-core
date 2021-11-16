@@ -1,8 +1,10 @@
 package io.deephaven.engine.v2;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.table.ModifiedColumnSet;
+import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.impl.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.exceptions.OutOfKeySpaceException;
 import io.deephaven.test.types.OutOfBandTest;
@@ -118,7 +120,7 @@ public class QueryTableCrossJoinSmallRightBitsTest extends QueryTableCrossJoinTe
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(lTable, i(1, 2, 3), c("A", 1, 3, 4));
 
-            final Listener.Update lUpdate = new Listener.Update();
+            final TableUpdateImpl lUpdate = new TableUpdateImpl();
             lUpdate.modified = i(1, 2, 3);
             lUpdate.added = i();
             lUpdate.removed = i();
@@ -129,7 +131,7 @@ public class QueryTableCrossJoinSmallRightBitsTest extends QueryTableCrossJoinTe
             TstUtils.removeRows(rTable, i(1));
             TstUtils.addToTable(rTable, i(54), c("A", 5));
 
-            final Listener.Update rUpdate = new Listener.Update();
+            final TableUpdateImpl rUpdate = new TableUpdateImpl();
             rUpdate.added = i(54);
             rUpdate.removed = i(1);
             rUpdate.modified = i();
@@ -174,7 +176,7 @@ public class QueryTableCrossJoinSmallRightBitsTest extends QueryTableCrossJoinTe
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(lTable, i(1, 2, 3), c("A", 1, 3, 4));
 
-            final Listener.Update lUpdate = new Listener.Update();
+            final TableUpdateImpl lUpdate = new TableUpdateImpl();
             lUpdate.modified = i(1, 2, 3);
             lUpdate.added = i();
             lUpdate.removed = i();
@@ -185,7 +187,7 @@ public class QueryTableCrossJoinSmallRightBitsTest extends QueryTableCrossJoinTe
             TstUtils.removeRows(rTable, i(1, 10));
             TstUtils.addToTable(rTable, i(21, 31, 41, 51, 54, 55), c("A", 1, 2, 3, 4, 5, 5));
 
-            final Listener.Update rUpdate = new Listener.Update();
+            final TableUpdateImpl rUpdate = new TableUpdateImpl();
             rUpdate.added = i(54, 55);
             rUpdate.removed = i(1, 10);
             rUpdate.modified = i(21, 31, 41, 51);
@@ -228,7 +230,7 @@ public class QueryTableCrossJoinSmallRightBitsTest extends QueryTableCrossJoinTe
             TstUtils.removeRows(lTable, i(0));
             TstUtils.addToTable(lTable, i(1, 2, 3, 4, 5), c("A", 0, 1, 3, 4, 5));
 
-            final Listener.Update lUpdate = new Listener.Update();
+            final TableUpdateImpl lUpdate = new TableUpdateImpl();
             lUpdate.modified = i(2, 3, 4);
             lUpdate.added = i();
             lUpdate.removed = i();
@@ -241,7 +243,7 @@ public class QueryTableCrossJoinSmallRightBitsTest extends QueryTableCrossJoinTe
             TstUtils.removeRows(rTable, i(1));
             TstUtils.addToTable(rTable, i(54), c("A", 5));
 
-            final Listener.Update rUpdate = new Listener.Update();
+            final TableUpdateImpl rUpdate = new TableUpdateImpl();
             rUpdate.added = i(54);
             rUpdate.removed = i(1);
             rUpdate.modified = i();
@@ -287,7 +289,7 @@ public class QueryTableCrossJoinSmallRightBitsTest extends QueryTableCrossJoinTe
             TstUtils.removeRows(lTable, i(0));
             TstUtils.addToTable(lTable, i(1, 2, 3, 4, 5), c("A", 0, 1, 3, 4, 5));
 
-            final Listener.Update lUpdate = new Listener.Update();
+            final TableUpdateImpl lUpdate = new TableUpdateImpl();
             lUpdate.modified = i(2, 3, 4);
             lUpdate.added = i();
             lUpdate.removed = i();
@@ -300,7 +302,7 @@ public class QueryTableCrossJoinSmallRightBitsTest extends QueryTableCrossJoinTe
             TstUtils.removeRows(rTable, i(1, 10));
             TstUtils.addToTable(rTable, i(21, 31, 41, 51, 54, 55), c("A", 1, 2, 3, 4, 5, 5));
 
-            final Listener.Update rUpdate = new Listener.Update();
+            final TableUpdateImpl rUpdate = new TableUpdateImpl();
             rUpdate.added = i(54, 55);
             rUpdate.removed = i(1, 10);
             rUpdate.modified = i(21, 31, 41, 51);

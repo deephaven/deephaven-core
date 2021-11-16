@@ -1,21 +1,23 @@
 package io.deephaven.engine.v2;
 
+import io.deephaven.engine.table.TableUpdate;
+import io.deephaven.engine.table.TableUpdateListener;
 import io.deephaven.engine.updategraph.NotificationQueue;
 
-public class SwapListener extends SwapListenerBase<Listener> implements Listener {
+public class SwapListener extends SwapListenerBase<TableUpdateListener> implements TableUpdateListener {
 
     public SwapListener(final BaseTable sourceTable) {
         super(sourceTable);
     }
 
     @Override
-    public synchronized void onUpdate(final Update upstream) {
+    public synchronized void onUpdate(final TableUpdate upstream) {
         // not a direct listener
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public synchronized NotificationQueue.Notification getNotification(final Update update) {
+    public synchronized NotificationQueue.Notification getNotification(final TableUpdate update) {
         return doGetNotification(() -> eventualListener.getNotification(update));
     }
 

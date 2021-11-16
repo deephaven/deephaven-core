@@ -1,9 +1,10 @@
 package io.deephaven.engine.util;
 
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.tables.utils.QueryPerformanceRecorder;
-import io.deephaven.engine.v2.InstrumentedListenerAdapter;
+import io.deephaven.engine.v2.InstrumentedTableUpdateListenerAdapter;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.engine.rowset.RowSet;
@@ -26,7 +27,7 @@ import java.util.function.LongFunction;
  * @param <K> the key type
  * @param <V> the value type
  */
-public class ToMapListener<K, V> extends InstrumentedListenerAdapter implements Map<K, V> {
+public class ToMapListener<K, V> extends InstrumentedTableUpdateListenerAdapter implements Map<K, V> {
     private static final long NO_ENTRY_VALUE = -2;
     private static final long DELETED_ENTRY_VALUE = -1;
 
@@ -86,21 +87,21 @@ public class ToMapListener<K, V> extends InstrumentedListenerAdapter implements 
     }
 
     @Override
-    public void onUpdate(final Update upstream) {
-        final int cap = upstream.added.intSize() + upstream.removed.intSize() + upstream.modified.intSize();
+    public void onUpdate(final TableUpdate upstream) {
+        final int cap = upstream.added().intSize() + upstream.removed().intSize() + upstream.modified().intSize();
         final TObjectLongHashMap<Object> newMap = new TObjectLongHashMap<>(cap, 0.5f, NO_ENTRY_VALUE);
 
         final LongConsumer remover = (final long key) -> {
             newMap.put(prevKeyProducer.apply(key), DELETED_ENTRY_VALUE);
         };
-        upstream.removed.forAllRowKeys(remover);
+        upstream.removed().forAllRowKeys(remover);
         upstream.getModifiedPreShift().forAllRowKeys(remover);
 
         final LongConsumer adder = (final long key) -> {
             newMap.put(keyProducer.apply(key), key);
         };
-        upstream.added.forAllRowKeys(adder);
-        upstream.modified.forAllRowKeys(adder);
+        upstream.added().forAllRowKeys(adder);
+        upstream.modified().forAllRowKeys(adder);
 
         currentMap = newMap;
         UpdateGraphProcessor.DEFAULT.addNotification(new Flusher());

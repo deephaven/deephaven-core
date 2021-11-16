@@ -3,8 +3,8 @@ package io.deephaven.engine.v2.utils;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderRandom;
-import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.rowset.impl.RowSequenceUtil;
+import io.deephaven.engine.rowset.impl.RowSetFactory;
+import io.deephaven.engine.rowset.impl.RowSequenceFactory;
 import io.deephaven.engine.chunk.Attributes;
 import io.deephaven.engine.chunk.Attributes.OrderedRowKeys;
 import io.deephaven.engine.chunk.Attributes.OrderedRowKeyRanges;
@@ -58,7 +58,7 @@ public class RowSequenceBench {
             last += r.nextInt(1009);
             fixedCostChunk.set(i, last);
         }
-        fixedCostOk = RowSequenceUtil.takeRowKeysChunkAndMakeRowSequence(fixedCostChunk);
+        fixedCostOk = RowSequenceFactory.takeRowKeysChunkAndMakeRowSequence(fixedCostChunk);
     }
 
     static void updateCrc32(final CRC32 crc32, final long v) {

@@ -6,7 +6,7 @@ package io.deephaven.extensions.barrage.chunk;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.rowset.impl.RowSequenceUtil;
+import io.deephaven.engine.rowset.impl.RowSequenceFactory;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
@@ -64,7 +64,7 @@ public abstract class BaseChunkInputStreamGenerator<T extends Chunk<Attributes.V
 
         BaseChunkInputStream(final T chunk, final BarrageSubscriptionOptions options, final RowSet subset) {
             this.options = options;
-            this.subset = chunk.size() == 0 ? RowSequence.EMPTY : subset != null ? subset.copy() : RowSequenceUtil.forRange(0, chunk.size() - 1);
+            this.subset = chunk.size() == 0 ? RowSequenceFactory.EMPTY : subset != null ? subset.copy() : RowSequenceFactory.forRange(0, chunk.size() - 1);
             REFERENCE_COUNT_UPDATER.incrementAndGet(BaseChunkInputStreamGenerator.this);
             Assert.leq(this.subset.lastRowKey(), "this.subset.lastRowKey()", Integer.MAX_VALUE, "Integer.MAX_VALUE");
         }

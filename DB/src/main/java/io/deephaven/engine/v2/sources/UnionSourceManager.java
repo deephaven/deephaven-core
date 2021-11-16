@@ -7,15 +7,13 @@ package io.deephaven.engine.v2.sources;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.rowset.*;
-import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.ColumnDefinition;
-import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.rowset.impl.RowSetFactory;
+import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.engine.updategraph.UpdateCommitter;
 import io.deephaven.engine.v2.*;
-import io.deephaven.engine.v2.Listener;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -148,7 +146,7 @@ public class UnionSourceManager {
             dynTable.listenForUpdates(listener);
             if (onNewTableMapKey) {
                 // synthetically invoke onUpdate lest our MergedUnionListener#process never fires.
-                final Listener.Update update = new Listener.Update(
+                final TableUpdate update = new TableUpdateImpl(
                         table.getRowSet().copy(), RowSetFactory.empty(), RowSetFactory.empty(),
                         RowSetShiftData.EMPTY, ModifiedColumnSet.ALL);
                 listener.onUpdate(update);
@@ -211,7 +209,7 @@ public class UnionSourceManager {
         @Override
         protected void process() {
             modifiedColumnSet.clear();
-            final Listener.Update update = new Listener.Update();
+            final TableUpdateImpl update = new TableUpdateImpl();
             final RowSetShiftData.Builder shiftedBuilder = new RowSetShiftData.Builder();
 
             final long currentStep = LogicalClock.DEFAULT.currentStep();
@@ -354,7 +352,7 @@ public class UnionSourceManager {
                 rowSet.remove(shiftRemoveRowSet);
                 rowSet.insert(shiftAddedRowSet);
             }
-            rowSet.insert(update.added);
+            rowSet.insert(update.added());
 
             result.notifyListeners(update);
         }

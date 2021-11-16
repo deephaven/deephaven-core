@@ -8,7 +8,6 @@ import io.deephaven.engine.chunk.WritableLongChunk;
 import io.deephaven.engine.chunk.util.LongChunkAppender;
 import io.deephaven.engine.chunk.util.LongChunkIterator;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.impl.rsp.RspBitmap;
 import io.deephaven.engine.rowset.impl.singlerange.SingleRangeRowSequence;
 import io.deephaven.engine.rowset.impl.singlerange.SingleRange;
@@ -322,9 +321,9 @@ public class SingleRangeTest {
         final long end = 30;
         final RowSet ix = new TrackingWritableRowSetImpl(SingleRange.make(start, end));
         RowSequence rs = ix.getRowSequenceByKeyRange(8, 9);
-        assertEquals(RowSequence.EMPTY, rs);
+        assertEquals(RowSequenceFactory.EMPTY, rs);
         rs = ix.getRowSequenceByKeyRange(31, 32);
-        assertEquals(RowSequence.EMPTY, rs);
+        assertEquals(RowSequenceFactory.EMPTY, rs);
         rs = ix.getRowSequenceByKeyRange(9, 10);
         assertTrue(rs instanceof SingleRangeRowSequence);
         assertEquals(10, rs.firstRowKey());
@@ -355,7 +354,7 @@ public class SingleRangeTest {
         assertEquals(29, rs.lastRowKey());
 
         rs = ix.getRowSequenceByPosition(0, 0);
-        assertEquals(RowSequence.EMPTY, rs);
+        assertEquals(RowSequenceFactory.EMPTY, rs);
         rs = ix.getRowSequenceByPosition(0, 1);
         assertTrue(rs instanceof SingleRangeRowSequence);
         assertEquals(10, rs.firstRowKey());
@@ -369,7 +368,7 @@ public class SingleRangeTest {
         assertEquals(30, rs.firstRowKey());
         assertEquals(30, rs.lastRowKey());
         rs = ix.getRowSequenceByPosition(21, 1);
-        assertEquals(RowSequence.EMPTY, rs);
+        assertEquals(RowSequenceFactory.EMPTY, rs);
     }
 
     @Test

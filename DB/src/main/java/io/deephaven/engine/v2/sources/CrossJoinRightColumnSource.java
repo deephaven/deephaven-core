@@ -19,7 +19,7 @@ import io.deephaven.engine.chunk.WritableChunk;
 import io.deephaven.engine.chunk.WritableIntChunk;
 import io.deephaven.engine.chunk.WritableLongChunk;
 import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.rowset.impl.RowSequenceUtil;
+import io.deephaven.engine.rowset.impl.RowSequenceFactory;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import org.apache.commons.lang3.mutable.MutableInt;
@@ -591,7 +591,7 @@ public class CrossJoinRightColumnSource<T> extends AbstractColumnSource<T> imple
 
                 hasNulls = compactedMappedKeys.get(0) == RowSequence.NULL_ROW_KEY;
                 final int keysToSkip = hasNulls ? 1 : 0;
-                innerRowSequence = RowSequenceUtil.wrapRowKeysChunkAsRowSequence(
+                innerRowSequence = RowSequenceFactory.wrapRowKeysChunkAsRowSequence(
                         LongChunk.downcast(nonNullCompactedMappedKeys.resetFromTypedChunk(compactedMappedKeys,
                                 keysToSkip, uniqueKeyCount - keysToSkip)));
 

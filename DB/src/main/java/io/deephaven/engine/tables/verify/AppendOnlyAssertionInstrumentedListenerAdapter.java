@@ -1,6 +1,7 @@
 package io.deephaven.engine.tables.verify;
 
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.v2.BaseTable;
 
 public class AppendOnlyAssertionInstrumentedListenerAdapter extends BaseTable.ListenerImpl {
@@ -16,8 +17,8 @@ public class AppendOnlyAssertionInstrumentedListenerAdapter extends BaseTable.Li
     }
 
     @Override
-    public void onUpdate(final Update upstream) {
-        if (upstream.removed.isNonempty() || upstream.modified.isNonempty() || upstream.shifted.nonempty()) {
+    public void onUpdate(final TableUpdate upstream) {
+        if (upstream.removed().isNonempty() || upstream.modified().isNonempty() || upstream.shifted().nonempty()) {
             if (description == null) {
                 throw new AppendOnlyAssertionFailure();
             } else {

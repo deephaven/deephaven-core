@@ -6,9 +6,9 @@ package io.deephaven.engine.v2;
 
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.impl.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
-import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.*;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.v2.utils.*;
 import junit.framework.TestCase;
@@ -237,17 +237,17 @@ public class QueryTableFlattenTest extends QueryTableTestBase {
             if (listener instanceof ShiftObliviousListener) {
                 this.sourceTable.listenForUpdates((ShiftObliviousListener) listener);
             } else if (listener instanceof SimpleListener) {
-                this.sourceTable.listenForUpdates((Listener) listener);
+                this.sourceTable.listenForUpdates((TableUpdateListener) listener);
             } else {
                 throw new IllegalArgumentException("Listener type unsupported: " + listener.getClass().getName());
             }
 
             validator = TableUpdateValidator.make(this.sourceTable);
             final QueryTable validatorTable = validator.getResultTable();
-            final Listener validatorTableListener =
-                    new InstrumentedListenerAdapter(validatorTable, false) {
+            final TableUpdateListener validatorTableListener =
+                    new InstrumentedTableUpdateListenerAdapter(validatorTable, false) {
                         @Override
-                        public void onUpdate(Update upstream) {}
+                        public void onUpdate(TableUpdate upstream) {}
 
                         @Override
                         public void onFailureInternal(Throwable originalException,
@@ -306,10 +306,10 @@ public class QueryTableFlattenTest extends QueryTableTestBase {
     private static void validate(final SimpleListener listener, final long count, final RowSet added,
             final RowSet removed, final RowSet modified, final RowSetShiftData shifted) {
         Assert.assertEquals("simpleListener.getCount()", count, listener.getCount());
-        Assert.assertEquals("simpleListener.added", added, listener.update.added);
-        Assert.assertEquals("simpleListener.removed", removed, listener.update.removed);
-        Assert.assertEquals("simpleListener.modified", modified, listener.update.modified);
-        Assert.assertEquals("simpleListener.shifted", shifted, listener.update.shifted);
+        Assert.assertEquals("simpleListener.added", added, listener.update.added());
+        Assert.assertEquals("simpleListener.removed", removed, listener.update.removed());
+        Assert.assertEquals("simpleListener.modified", modified, listener.update.modified());
+        Assert.assertEquals("simpleListener.shifted", shifted, listener.update.shifted());
     }
 
     /**

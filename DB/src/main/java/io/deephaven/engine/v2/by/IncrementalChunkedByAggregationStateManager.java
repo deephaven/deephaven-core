@@ -5,11 +5,12 @@ package io.deephaven.engine.v2.by;
 
 import io.deephaven.base.verify.Require;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.rowset.impl.RowSetFactory;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.Context;
 import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.rowset.*;
-import io.deephaven.engine.rowset.impl.RowSequenceUtil;
+import io.deephaven.engine.rowset.impl.RowSequenceFactory;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.chunk.util.hashing.*;
@@ -856,7 +857,7 @@ class IncrementalChunkedByAggregationStateManager
             initializeRehashLocations(bc.rehashLocations, bucketsToAdd);
 
             // fill the overflow bucket locations
-            overflowLocationSource.fillChunk(bc.overflowFillContext, bc.overflowLocations, RowSequenceUtil.wrapRowKeysChunkAsRowSequence(LongChunk.downcast(bc.rehashLocations)));
+            overflowLocationSource.fillChunk(bc.overflowFillContext, bc.overflowLocations, RowSequenceFactory.wrapRowKeysChunkAsRowSequence(LongChunk.downcast(bc.rehashLocations)));
             // null out the overflow locations in the table
             setOverflowLocationsToNull(tableHashPivot - (tableSize >> 1), bucketsToAdd);
 
@@ -947,7 +948,7 @@ class IncrementalChunkedByAggregationStateManager
                     bc.overflowLocationForPromotionLoop.resetFromTypedChunk(bc.overflowLocationsToFetch, moves, totalPromotionsToProcess - moves);
                 }
 
-                overflowLocationSource.fillChunk(bc.overflowFillContext, bc.overflowLocations, RowSequenceUtil.wrapRowKeysChunkAsRowSequence(bc.overflowLocationForPromotionLoop));
+                overflowLocationSource.fillChunk(bc.overflowFillContext, bc.overflowLocations, RowSequenceFactory.wrapRowKeysChunkAsRowSequence(bc.overflowLocationForPromotionLoop));
                 IntChunkEquals.notEqual(bc.overflowLocations, QueryConstants.NULL_INT, bc.shouldMoveBucket);
 
                 // crunch the chunk down to relevant locations

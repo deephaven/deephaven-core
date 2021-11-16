@@ -1,9 +1,10 @@
 package io.deephaven.engine.v2.select.analyzers;
 
 import io.deephaven.engine.rowset.*;
+import io.deephaven.engine.rowset.impl.RowSetFactory;
 import io.deephaven.engine.table.ColumnDefinition;
-import io.deephaven.engine.v2.Listener;
-import io.deephaven.engine.v2.ModifiedColumnSet;
+import io.deephaven.engine.table.TableUpdate;
+import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.v2.utils.*;
 import org.apache.commons.lang3.mutable.MutableLong;
@@ -41,23 +42,23 @@ final public class RedirectionLayer extends SelectAndViewAnalyzer {
     }
 
     @Override
-    public void applyUpdate(Listener.Update upstream, RowSet toClear, UpdateHelper helper) {
+    public void applyUpdate(TableUpdate upstream, RowSet toClear, UpdateHelper helper) {
         inner.applyUpdate(upstream, toClear, helper);
 
         // we need to remove the removed values from our redirection rowSet, and add them to our free rowSet; so that
         // updating tables will not consume more space over the course of a day for abandoned rows
         final RowSetBuilderRandom innerToFreeBuilder = RowSetFactory.builderRandom();
-        upstream.removed.forAllRowKeys(key -> innerToFreeBuilder.addKey(rowRedirection.remove(key)));
+        upstream.removed().forAllRowKeys(key -> innerToFreeBuilder.addKey(rowRedirection.remove(key)));
         freeValues.insert(innerToFreeBuilder.build());
 
         // we have to shift things that have not been removed, this handles the unmodified rows; but also the
         // modified rows need to have their redirections updated for subsequent modified columns
-        if (upstream.shifted.nonempty()) {
+        if (upstream.shifted().nonempty()) {
             try (final RowSet prevRowSet = resultRowSet.getPrevRowSet();
-                    final RowSet prevNoRemovals = prevRowSet.minus(upstream.removed)) {
+                    final RowSet prevNoRemovals = prevRowSet.minus(upstream.removed())) {
                 final MutableObject<RowSet.SearchIterator> forwardIt = new MutableObject<>();
 
-                upstream.shifted.intersect(prevNoRemovals).apply((begin, end, delta) -> {
+                upstream.shifted().intersect(prevNoRemovals).apply((begin, end, delta) -> {
                     if (delta < 0) {
                         if (forwardIt.getValue() == null) {
                             forwardIt.setValue(prevNoRemovals.searchIterator());
@@ -99,14 +100,14 @@ final public class RedirectionLayer extends SelectAndViewAnalyzer {
             }
         }
 
-        if (upstream.added.isNonempty()) {
+        if (upstream.added().isNonempty()) {
             // added is non-empty, so can always remove at least one value from the rowSet (which must be >= 0);
             // if there is no freeValue, this is safe because we'll just remove something from an empty rowSet
             // if there is a freeValue, we'll remove up to that
             // if there are not enough free values, we'll remove all the free values then beyond
             final MutableLong lastAllocated = new MutableLong(0);
             final RowSet.Iterator freeIt = freeValues.iterator();
-            upstream.added.forAllRowKeys(outerKey -> {
+            upstream.added().forAllRowKeys(outerKey -> {
                 final long innerKey = freeIt.hasNext() ? freeIt.nextLong() : ++maxInnerIndex;
                 lastAllocated.setValue(innerKey);
                 rowRedirection.put(outerKey, innerKey);

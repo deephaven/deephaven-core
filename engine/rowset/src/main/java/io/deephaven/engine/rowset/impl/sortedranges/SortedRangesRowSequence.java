@@ -2,7 +2,8 @@ package io.deephaven.engine.rowset.impl.sortedranges;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.impl.RowSetFactory;
+import io.deephaven.engine.rowset.impl.RowSequenceFactory;
 import io.deephaven.engine.rowset.impl.TrackingWritableRowSetImpl;
 import io.deephaven.util.datastructures.LongAbortableConsumer;
 import io.deephaven.engine.rowset.RowSequence;
@@ -88,7 +89,7 @@ public class SortedRangesRowSequence extends RowSequenceAsChunkImpl {
     @Override
     public RowSequence getRowSequenceByPosition(final long pos, long length) {
         if (length <= 0 || pos >= size) {
-            return RowSequence.EMPTY;
+            return RowSequenceFactory.EMPTY;
         }
         final int i;
         final long iPos;
@@ -111,14 +112,14 @@ public class SortedRangesRowSequence extends RowSequenceAsChunkImpl {
     @Override
     public RowSequence getRowSequenceByKeyRange(long startRowKeyInclusive, long endRowKeyInclusive) {
         if (size == 0) {
-            return RowSequence.EMPTY;
+            return RowSequenceFactory.EMPTY;
         }
         final long lastKey = lastRowKey();
         final long firstKey = firstRowKey();
         startRowKeyInclusive = Math.max(startRowKeyInclusive, firstKey);
         endRowKeyInclusive = Math.min(endRowKeyInclusive, lastKey);
         if (endRowKeyInclusive < startRowKeyInclusive) {
-            return RowSequence.EMPTY;
+            return RowSequenceFactory.EMPTY;
         }
         final int i;
         final long iPos;
@@ -588,11 +589,11 @@ public class SortedRangesRowSequence extends RowSequenceAsChunkImpl {
         @Override
         public RowSequence getNextRowSequenceThrough(final long maxKey) {
             if (maxKey < 0) {
-                return RowSequence.EMPTY;
+                return RowSequenceFactory.EMPTY;
             }
             final long sz = updateCurrThrough(maxKey);
             if (sz == 0) {
-                return RowSequence.EMPTY;
+                return RowSequenceFactory.EMPTY;
             }
             nextKey = -1;
             currBuf.reset(currBuf.startPos + currBuf.size + pendingAdvanceSize, currStartIdx, currStartOffset,
@@ -724,7 +725,7 @@ public class SortedRangesRowSequence extends RowSequenceAsChunkImpl {
         public RowSequence getNextRowSequenceWithLength(final long desiredLen) {
             final long actualLen = Math.min(desiredLen, sizeLeft);
             if (actualLen == 0) {
-                return RowSequence.EMPTY;
+                return RowSequenceFactory.EMPTY;
             }
             nextRowSequenceWithLength(actualLen);
             nextKey = -1;

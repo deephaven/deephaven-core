@@ -8,7 +8,7 @@ import io.deephaven.engine.chunk.WritableChunk;
 import io.deephaven.engine.chunk.WritableIntChunk;
 import io.deephaven.engine.chunk.WritableLongChunk;
 import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.rowset.impl.RowSequenceUtil;
+import io.deephaven.engine.rowset.impl.RowSequenceFactory;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.jetbrains.annotations.NotNull;
@@ -477,7 +477,7 @@ public class BitShiftingColumnSource<T> extends AbstractColumnSource<T> implemen
         effectiveContext.shareable.ensureKeysAndLengthsInitialized(shiftState, usePrev, rowSequence);
 
         try (final RowSequence innerOK =
-                RowSequenceUtil.wrapRowKeysChunkAsRowSequence(effectiveContext.shareable.uniqueIndices)) {
+                RowSequenceFactory.wrapRowKeysChunkAsRowSequence(effectiveContext.shareable.uniqueIndices)) {
             if (usePrev) {
                 innerSource.fillPrevChunk(effectiveContext.innerFillContext, destination, innerOK);
             } else {

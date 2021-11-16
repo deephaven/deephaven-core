@@ -3,11 +3,11 @@ package io.deephaven.engine.v2.select.analyzers;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.ColumnDefinition;
+import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.v2.utils.WritableRowRedirection;
 import io.deephaven.engine.vector.Vector;
-import io.deephaven.engine.v2.ModifiedColumnSet;
-import io.deephaven.engine.v2.Listener;
+import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.v2.select.SelectColumn;
 import io.deephaven.engine.v2.select.SourceColumn;
 import io.deephaven.engine.v2.select.SwitchColumn;
@@ -153,16 +153,16 @@ public abstract class SelectAndViewAnalyzer {
         private SafeCloseablePair<RowSet, RowSet> shiftedWithoutModifies;
 
         private final RowSet parentRowSet;
-        private final Listener.Update upstream;
+        private final TableUpdate upstream;
 
-        public UpdateHelper(RowSet parentRowSet, Listener.Update upstream) {
+        public UpdateHelper(RowSet parentRowSet, TableUpdate upstream) {
             this.parentRowSet = parentRowSet;
             this.upstream = upstream;
         }
 
         private RowSet getExisting() {
             if (existingRows == null) {
-                existingRows = parentRowSet.minus(upstream.added);
+                existingRows = parentRowSet.minus(upstream.added());
             }
             return existingRows;
         }
@@ -170,17 +170,17 @@ public abstract class SelectAndViewAnalyzer {
         private void ensure(boolean withModifies) {
             if (withModifies && shiftedWithModifies == null) {
                 shiftedWithModifies = SafeCloseablePair
-                        .downcast(RowSetShiftUtils.extractParallelShiftedRowsFromPostShiftIndex(upstream.shifted, getExisting()));
+                        .downcast(RowSetShiftUtils.extractParallelShiftedRowsFromPostShiftIndex(upstream.shifted(), getExisting()));
             } else if (!withModifies && shiftedWithoutModifies == null) {
-                try (final RowSet candidates = getExisting().minus(upstream.modified)) {
+                try (final RowSet candidates = getExisting().minus(upstream.modified())) {
                     shiftedWithoutModifies = SafeCloseablePair
-                            .downcast(RowSetShiftUtils.extractParallelShiftedRowsFromPostShiftIndex(upstream.shifted, candidates));
+                            .downcast(RowSetShiftUtils.extractParallelShiftedRowsFromPostShiftIndex(upstream.shifted(), candidates));
                 }
             }
         }
 
         RowSet getPreShifted(boolean withModifies) {
-            if (!withModifies && upstream.modified.isEmpty()) {
+            if (!withModifies && upstream.modified().isEmpty()) {
                 return getPreShifted(true);
             }
             ensure(withModifies);
@@ -188,7 +188,7 @@ public abstract class SelectAndViewAnalyzer {
         }
 
         RowSet getPostShifted(boolean withModifies) {
-            if (!withModifies && upstream.modified.isEmpty()) {
+            if (!withModifies && upstream.modified().isEmpty()) {
                 return getPostShifted(true);
             }
             ensure(withModifies);
@@ -219,7 +219,7 @@ public abstract class SelectAndViewAnalyzer {
      * @param toClear rows that used to exist and no longer exist
      * @param helper convenience class that memoizes reusable calculations for this update
      */
-    public abstract void applyUpdate(Listener.Update upstream, RowSet toClear, UpdateHelper helper);
+    public abstract void applyUpdate(TableUpdate upstream, RowSet toClear, UpdateHelper helper);
 
     /**
      * Our job here is to calculate the effects: a map from incoming column to a list of columns that it effects. We do

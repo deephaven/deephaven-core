@@ -8,6 +8,9 @@ import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.TrackingRowSet;
+import io.deephaven.engine.table.TableUpdate;
+import io.deephaven.engine.table.TableUpdateListener;
+import io.deephaven.engine.table.impl.TableUpdateImpl;
 
 public class SliceLikeOperation implements QueryTable.Operation<QueryTable> {
 
@@ -99,11 +102,11 @@ public class SliceLikeOperation implements QueryTable.Operation<QueryTable> {
             resultTable.setFlat();
         }
 
-        Listener resultListener = null;
+        TableUpdateListener resultListener = null;
         if (parent.isRefreshing()) {
             resultListener = new BaseTable.ListenerImpl(getDescription(), parent, resultTable) {
                 @Override
-                public void onUpdate(Update upstream) {
+                public void onUpdate(TableUpdate upstream) {
                     SliceLikeOperation.this.onUpdate(upstream);
                 }
             };
@@ -112,34 +115,34 @@ public class SliceLikeOperation implements QueryTable.Operation<QueryTable> {
         return new Result(resultTable, resultListener);
     }
 
-    private void onUpdate(final Listener.Update upstream) {
+    private void onUpdate(final TableUpdate upstream) {
         final TrackingWritableRowSet rowSet = resultTable.getRowSet().writableCast();
         final RowSet sliceRowSet = computeSliceIndex(parent.getRowSet());
 
-        final Listener.Update downstream = new Listener.Update();
-        downstream.removed = upstream.removed.intersect(rowSet);
-        rowSet.remove(downstream.removed);
+        final TableUpdateImpl downstream = new TableUpdateImpl();
+        downstream.removed = upstream.removed().intersect(rowSet);
+        rowSet.remove(downstream.removed());
 
-        downstream.shifted = upstream.shifted.intersect(rowSet);
-        RowSetShiftUtils.apply(downstream.shifted, rowSet);
+        downstream.shifted = upstream.shifted().intersect(rowSet);
+        RowSetShiftUtils.apply(downstream.shifted(), rowSet);
 
         // Must calculate in post-shift space what indices were removed by the slice operation.
         final WritableRowSet opRemoved = rowSet.minus(sliceRowSet);
         rowSet.remove(opRemoved);
-        RowSetShiftUtils.unapply(downstream.shifted, opRemoved);
-        downstream.removed.writableCast().insert(opRemoved);
+        RowSetShiftUtils.unapply(downstream.shifted(), opRemoved);
+        downstream.removed().writableCast().insert(opRemoved);
 
         // Must intersect against modified set before adding the new rows to result rowSet.
-        downstream.modified = upstream.modified.intersect(rowSet);
+        downstream.modified = upstream.modified().intersect(rowSet);
 
         downstream.added = sliceRowSet.minus(rowSet);
-        rowSet.insert(downstream.added);
+        rowSet.insert(downstream.added());
 
         // propagate an empty MCS if modified is empty
-        downstream.modifiedColumnSet = upstream.modifiedColumnSet;
-        if (downstream.modified.isEmpty()) {
+        downstream.modifiedColumnSet = upstream.modifiedColumnSet();
+        if (downstream.modified().isEmpty()) {
             downstream.modifiedColumnSet = resultTable.modifiedColumnSet;
-            downstream.modifiedColumnSet.clear();
+            downstream.modifiedColumnSet().clear();
         }
 
         resultTable.notifyListeners(downstream);

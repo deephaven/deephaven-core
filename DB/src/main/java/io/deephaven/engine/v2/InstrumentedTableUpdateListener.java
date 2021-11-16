@@ -4,20 +4,22 @@
 
 package io.deephaven.engine.v2;
 
+import io.deephaven.engine.table.TableUpdate;
+import io.deephaven.engine.table.TableUpdateListener;
 import org.jetbrains.annotations.Nullable;
 
-public abstract class InstrumentedListener extends InstrumentedListenerBase implements Listener {
+public abstract class InstrumentedTableUpdateListener extends InstrumentedTableListenerBase implements TableUpdateListener {
 
-    public InstrumentedListener(@Nullable final String description) {
+    public InstrumentedTableUpdateListener(@Nullable final String description) {
         super(description, false);
     }
 
-    public InstrumentedListener(@Nullable final String description, final boolean terminalListener) {
+    public InstrumentedTableUpdateListener(@Nullable final String description, final boolean terminalListener) {
         super(description, terminalListener);
     }
 
     @Override
-    public Notification getNotification(final Update update) {
+    public Notification getNotification(final TableUpdate update) {
         return new Notification(update);
     }
 
@@ -26,7 +28,7 @@ public abstract class InstrumentedListener extends InstrumentedListenerBase impl
      */
     public class Notification extends NotificationBase {
 
-        Notification(final Update update) {
+        Notification(final TableUpdate update) {
             super(update);
         }
 

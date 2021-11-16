@@ -3,10 +3,13 @@ package io.deephaven.engine.v2;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.impl.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.rowset.TrackingWritableRowSet;
+import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableUpdate;
+import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.engine.v2.sources.SwitchColumnSource;
@@ -133,29 +136,29 @@ public class SelectOverheadLimiter {
             @Override
             protected void process() {
                 if (flatResult != null) {
-                    final Listener.Update upstream = flatRecorder.getUpdate();
-                    rowSet.remove(upstream.removed);
-                    RowSetShiftUtils.apply(upstream.shifted, rowSet);
-                    rowSet.insert(upstream.added);
-                    final Listener.Update copy = upstream.copy();
+                    final TableUpdate upstream = flatRecorder.getUpdate();
+                    rowSet.remove(upstream.removed());
+                    RowSetShiftUtils.apply(upstream.shifted(), rowSet);
+                    rowSet.insert(upstream.added());
+                    final TableUpdateImpl copy = TableUpdateImpl.copy(upstream);
                     copy.modifiedColumnSet = result.getModifiedColumnSetForUpdates();
-                    flatTransformer.clearAndTransform(upstream.modifiedColumnSet, copy.modifiedColumnSet);
+                    flatTransformer.clearAndTransform(upstream.modifiedColumnSet(), copy.modifiedColumnSet());
                     result.notifyListeners(copy);
                     return;
                 }
 
-                final Listener.Update upstream = inputRecorder.getValue().getUpdate();
-                overheadTracker.removeIndex(upstream.removed);
-                rowSet.remove(upstream.removed);
-                upstream.shifted.forAllInIndex(rowSet, overheadTracker);
-                RowSetShiftUtils.apply(upstream.shifted, rowSet);
-                overheadTracker.addIndex(upstream.added);
-                rowSet.insert(upstream.added);
+                final TableUpdate upstream = inputRecorder.getValue().getUpdate();
+                overheadTracker.removeIndex(upstream.removed());
+                rowSet.remove(upstream.removed());
+                upstream.shifted().forAllInIndex(rowSet, overheadTracker);
+                RowSetShiftUtils.apply(upstream.shifted(), rowSet);
+                overheadTracker.addIndex(upstream.added());
+                rowSet.insert(upstream.added());
 
                 if (overheadTracker.overhead() <= permittedOverhead) {
-                    final Listener.Update copy = upstream.copy();
+                    final TableUpdateImpl copy = TableUpdateImpl.copy(upstream);
                     copy.modifiedColumnSet = result.getModifiedColumnSetForUpdates();
-                    inputTransformer.clearAndTransform(upstream.modifiedColumnSet, copy.modifiedColumnSet);
+                    inputTransformer.clearAndTransform(upstream.modifiedColumnSet(), copy.modifiedColumnSet());
                     result.notifyListeners(copy);
                     return;
                 }
@@ -185,7 +188,7 @@ public class SelectOverheadLimiter {
                 rowSet.clear();
                 rowSet.insert(flatResult.getRowSet());
 
-                final Listener.Update downstream = new Listener.Update();
+                final TableUpdateImpl downstream = new TableUpdateImpl();
                 downstream.removed = rowSet.getPrevRowSet();
                 downstream.added = rowSet.copy();
                 downstream.modified = RowSetFactory.empty();

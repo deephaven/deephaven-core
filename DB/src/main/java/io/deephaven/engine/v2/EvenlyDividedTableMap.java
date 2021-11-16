@@ -1,8 +1,6 @@
 package io.deephaven.engine.v2;
 
-import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.TableMap;
-import io.deephaven.engine.table.TransformableTableMap;
+import io.deephaven.engine.table.*;
 
 import java.util.Objects;
 
@@ -81,12 +79,12 @@ public class EvenlyDividedTableMap {
         if (queryTable.isRefreshing()) {
             localTableMap.setRefreshing(true);
             final long fStart = start;
-            final Listener listener =
-                    new InstrumentedListenerAdapter("tablemap division", queryTable, false) {
+            final TableUpdateListener listener =
+                    new InstrumentedTableUpdateListenerAdapter("tablemap division", queryTable, false) {
                         long currentEnd = fStart;
 
                         @Override
-                        public void onUpdate(Update upstream) {
+                        public void onUpdate(TableUpdate upstream) {
                             if (queryTable.getRowSet().size() > currentEnd) {
                                 // we should slice the table again and make a new segment for our tablemap
                                 while (currentEnd < queryTable.getRowSet().size()) {

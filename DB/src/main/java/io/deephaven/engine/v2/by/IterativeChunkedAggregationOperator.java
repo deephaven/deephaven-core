@@ -6,6 +6,8 @@ package io.deephaven.engine.v2.by;
 
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.liveness.LivenessReferent;
+import io.deephaven.engine.table.ModifiedColumnSet;
+import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.v2.*;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.chunk.*;
@@ -283,7 +285,7 @@ public interface IterativeChunkedAggregationOperator {
      * @return A factory that produces a result modified column set from the upstream modified column set
      */
     default UnaryOperator<ModifiedColumnSet> initializeRefreshing(@NotNull final QueryTable resultTable,
-            @NotNull final LivenessReferent aggregationUpdateListener) {
+                                                                  @NotNull final LivenessReferent aggregationUpdateListener) {
         final ModifiedColumnSet resultModifiedColumnSet = resultTable
                 .newModifiedColumnSet(getResultColumns().keySet().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
         return upstreamModifiedColumnSet -> resultModifiedColumnSet;
@@ -294,7 +296,7 @@ public interface IterativeChunkedAggregationOperator {
      *
      * @param upstream The upstream ShiftAwareListener.Update
      */
-    default void resetForStep(@NotNull final Listener.Update upstream) {}
+    default void resetForStep(@NotNull final TableUpdate upstream) {}
 
     /**
      * Perform any internal state keeping needed for destinations that were added (went from 0 keys to &gt 0), removed
@@ -305,7 +307,7 @@ public interface IterativeChunkedAggregationOperator {
      *        {@link ModifiedColumnSet} finalized yet)
      * @param newDestinations New destinations added on this update
      */
-    default void propagateUpdates(@NotNull final Listener.Update downstream,
+    default void propagateUpdates(@NotNull final TableUpdate downstream,
             @NotNull final RowSet newDestinations) {}
 
     /**

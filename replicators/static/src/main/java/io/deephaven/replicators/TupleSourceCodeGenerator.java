@@ -29,10 +29,10 @@ public class TupleSourceCodeGenerator {
     private static final String[] DEFAULT_IMPORTS = new String[] {
             "org.jetbrains.annotations.NotNull",
             "io.deephaven.datastructures.util.SmartKey",
-            "io.deephaven.engine.tuplesource.TupleSource",
+            "io.deephaven.engine.table.TupleSource",
             "io.deephaven.engine.tuplesource.AbstractTupleSource",
-            "io.deephaven.engine.v2.sources.ColumnSource",
-            "io.deephaven.engine.v2.sources.WritableSource",
+            "io.deephaven.engine.table.ColumnSource",
+            "io.deephaven.engine.table.WritableColumnSource",
             "io.deephaven.engine.chunk.Attributes",
             "io.deephaven.engine.chunk.Chunk",
             "io.deephaven.engine.chunk.WritableChunk",
@@ -360,7 +360,7 @@ public class TupleSourceCodeGenerator {
         code.append(indenter).append("@Override").append(NEW_LINE);
         code.append(indenter).append("public final <ELEMENT_TYPE> void exportElement(@NotNull final ")
                 .append(tupleClassName)
-                .append(" tuple, final int elementIndex, @NotNull final WritableSource<ELEMENT_TYPE> writableSource, final long destinationIndexKey) {")
+                .append(" tuple, final int elementIndex, @NotNull final WritableColumnSource<ELEMENT_TYPE> writableSource, final long destinationIndexKey) {")
                 .append(NEW_LINE);
         indenter.increaseLevel();
         code.append(indenter).append("if (elementIndex == 0) {").append(NEW_LINE);
@@ -653,7 +653,7 @@ public class TupleSourceCodeGenerator {
         code.append(indenter).append("@Override").append(NEW_LINE);
         code.append(indenter).append("public final <ELEMENT_TYPE> void exportElement(@NotNull final ")
                 .append(tupleClassName)
-                .append(" tuple, final int elementIndex, @NotNull final WritableSource<ELEMENT_TYPE> writableSource, final long destinationIndexKey) {")
+                .append(" tuple, final int elementIndex, @NotNull final WritableColumnSource<ELEMENT_TYPE> writableSource, final long destinationIndexKey) {")
                 .append(NEW_LINE);
         indenter.increaseLevel();
         code.append(indenter).append("if (elementIndex == 0) {").append(NEW_LINE);

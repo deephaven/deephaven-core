@@ -4,13 +4,11 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.rowset.*;
-import io.deephaven.engine.table.SharedContext;
-import io.deephaven.engine.table.Table;
+import io.deephaven.engine.rowset.impl.RowSetFactory;
+import io.deephaven.engine.table.*;
 import io.deephaven.engine.vector.*;
 import io.deephaven.engine.chunk.util.hashing.ChunkEquals;
-import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.v2.sources.SparseArrayColumnSource;
-import io.deephaven.engine.table.ChunkSink;
 import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.v2.utils.*;
 import io.deephaven.util.SafeCloseable;
@@ -101,14 +99,14 @@ public class TableUpdateValidator implements QueryTable.Operation {
                 Collections.emptyMap());
         resultTable.setFlat();
 
-        final Listener listener;
+        final TableUpdateListener listener;
         try (final SafeCloseable ignored1 = maybeOpenSharedContext();
                 final SafeCloseable ignored2 = new SafeCloseableList(columnInfos)) {
             updateValues(ModifiedColumnSet.ALL, rowSet, usePrev);
 
             listener = new BaseTable.ListenerImpl(getDescription(), tableToValidate, resultTable) {
                 @Override
-                public void onUpdate(final Update upstream) {
+                public void onUpdate(final TableUpdate upstream) {
                     TableUpdateValidator.this.onUpdate(upstream);
                 }
             };
@@ -143,54 +141,54 @@ public class TableUpdateValidator implements QueryTable.Operation {
         }
     }
 
-    private void onUpdate(final Listener.Update upstream) {
+    private void onUpdate(final TableUpdate upstream) {
         if (resultTable.size() >= MAX_ISSUES) {
             return;
         }
 
         try (final SafeCloseable ignored1 = maybeOpenSharedContext();
                 final SafeCloseable ignored2 = new SafeCloseableList(columnInfos)) {
-            if (!upstream.modifiedColumnSet.isCompatibleWith(validationMCS)) {
+            if (!upstream.modifiedColumnSet().isCompatibleWith(validationMCS)) {
                 noteIssue(
                         () -> "upstream.modifiedColumnSet is not compatible with table.newModifiedColumnSet(...): upstream="
-                                + upstream.modifiedColumnSet + " initialized=" + validationMCS);
+                                + upstream.modifiedColumnSet() + " initialized=" + validationMCS);
             }
 
             // remove
             if (aggressiveUpdateValidation) {
                 validateValues("pre-update", ModifiedColumnSet.ALL, rowSet, true, false);
             } else {
-                validateValues("pre-update removed", ModifiedColumnSet.ALL, upstream.removed, true, false);
-                validateValues("pre-update modified", upstream.modifiedColumnSet, upstream.getModifiedPreShift(), true,
+                validateValues("pre-update removed", ModifiedColumnSet.ALL, upstream.removed(), true, false);
+                validateValues("pre-update modified", upstream.modifiedColumnSet(), upstream.getModifiedPreShift(), true,
                         false);
             }
 
             validateIndexesEqual("pre-update rowSet", rowSet, tableToValidate.getRowSet().getPrevRowSet());
-            rowSet.remove(upstream.removed);
-            Arrays.stream(columnInfos).forEach((ci) -> ci.remove(upstream.removed));
+            rowSet.remove(upstream.removed());
+            Arrays.stream(columnInfos).forEach((ci) -> ci.remove(upstream.removed()));
 
             // shift columns first because they use tracking rowSet
-            Arrays.stream(columnInfos).forEach((ci) -> upstream.shifted.apply(ci));
-            RowSetShiftUtils.apply(upstream.shifted, rowSet);
+            Arrays.stream(columnInfos).forEach((ci) -> upstream.shifted().apply(ci));
+            RowSetShiftUtils.apply(upstream.shifted(), rowSet);
 
             if (aggressiveUpdateValidation) {
-                final RowSet unmodified = rowSet.minus(upstream.modified);
+                final RowSet unmodified = rowSet.minus(upstream.modified());
                 validateValues("post-shift unmodified", ModifiedColumnSet.ALL, unmodified, false, false);
-                validateValues("post-shift unmodified columns", upstream.modifiedColumnSet, upstream.modified, false,
+                validateValues("post-shift unmodified columns", upstream.modifiedColumnSet(), upstream.modified(), false,
                         true);
             }
 
             // added
-            if (rowSet.overlaps(upstream.added)) {
+            if (rowSet.overlaps(upstream.added())) {
                 noteIssue(() -> "post-shift rowSet contains rows that are added: "
-                        + rowSet.intersect(upstream.added));
+                        + rowSet.intersect(upstream.added()));
             }
-            rowSet.insert(upstream.added);
+            rowSet.insert(upstream.added());
             validateIndexesEqual("post-update rowSet", rowSet, tableToValidate.getRowSet());
-            updateValues(ModifiedColumnSet.ALL, upstream.added, false);
+            updateValues(ModifiedColumnSet.ALL, upstream.added(), false);
 
             // modified
-            updateValues(upstream.modifiedColumnSet, upstream.modified, false);
+            updateValues(upstream.modifiedColumnSet(), upstream.modified(), false);
 
             if (!issues.isEmpty()) {
                 StringBuilder result =

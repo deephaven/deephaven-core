@@ -7,6 +7,7 @@ package io.deephaven.engine.v2.sources;
 import io.deephaven.base.Pair;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.impl.GroupingRowSetHelper;
+import io.deephaven.engine.rowset.impl.RowSetFactory;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.vector.*;

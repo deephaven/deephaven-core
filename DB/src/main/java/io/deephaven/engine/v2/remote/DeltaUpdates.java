@@ -4,8 +4,9 @@
 
 package io.deephaven.engine.v2.remote;
 
-import io.deephaven.engine.v2.Listener;
-import io.deephaven.engine.v2.ModifiedColumnSet;
+import io.deephaven.engine.table.TableUpdate;
+import io.deephaven.engine.table.impl.TableUpdateImpl;
+import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetShiftData;
 
@@ -42,8 +43,8 @@ public class DeltaUpdates implements Serializable, Cloneable {
         }
     }
 
-    public Listener.Update asUpdate(RowSet modified, ModifiedColumnSet mcs) {
-        return new Listener.Update(added, removed, modified, shifted, mcs);
+    public TableUpdate asUpdate(RowSet modified, ModifiedColumnSet mcs) {
+        return new TableUpdateImpl(added, removed, modified, shifted, mcs);
     }
 
     @Override

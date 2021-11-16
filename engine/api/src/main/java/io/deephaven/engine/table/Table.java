@@ -14,9 +14,6 @@ import io.deephaven.engine.updategraph.ConcurrentMethod;
 import io.deephaven.engine.updategraph.DynamicNode;
 import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.engine.util.systemicmarking.SystemicObject;
-import io.deephaven.engine.v2.Listener;
-import io.deephaven.engine.v2.ShiftObliviousListener;
-import io.deephaven.engine.v2.TableMap;
 import io.deephaven.qst.table.TableSpec;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import org.jetbrains.annotations.NotNull;
@@ -39,10 +36,6 @@ public interface Table extends
         DynamicNode,
         SystemicObject,
         TableOperations<Table, Table> {
-
-    static Table of(TableSpec table) {
-        return TableCreatorImpl.create(table);
-    }
 
     // -----------------------------------------------------------------------------------------------------------------
     // Metadata
@@ -1759,6 +1752,36 @@ public interface Table extends
     Table snapshot(Table baseTable, boolean doInitialSnapshot, Collection<ColumnName> stampColumns);
 
     // -----------------------------------------------------------------------------------------------------------------
+    // Merge Operations
+    // -----------------------------------------------------------------------------------------------------------------
+
+    /**
+     * Merge this Table with {@code others}. All rows in this Table will appear before all rows in {@code others}. If
+     * Tables in {@code others} are the result of a prior merge operation, they <em>may</em> be expanded in an attempt
+     * to avoid deeply nested structures.
+     *
+     * @apiNote It's best to avoid many chained calls to {@link #mergeBefore(Table...)} and
+     *          {@link #mergeAfter(Table...)}, as this may result in deeply-nested data structures
+     * @apiNote See TableTools.merge(Table...)
+     * @param others The Tables to merge with
+     * @return The merged Table
+     */
+    Table mergeBefore(Table... others);
+
+    /**
+     * Merge this Table with {@code others}. All rows in this Table will appear after all rows in {@code others}. If
+     * Tables in {@code others} are the result of a prior merge operation, they <em>may</em> be expanded in an attempt
+     * to avoid deeply nested structures.
+     *
+     * @apiNote It's best to avoid many chained calls to {@link #mergeBefore(Table...)} and
+     *          {@link #mergeAfter(Table...)}, as this may result in deeply-nested data structures
+     * @apiNote See TableTools.merge(Table...)
+     * @param others The Tables to merge with
+     * @return The merged Table
+     */
+    Table mergeAfter(Table... others);
+
+    // -----------------------------------------------------------------------------------------------------------------
     // Miscellaneous Operations
     // -----------------------------------------------------------------------------------------------------------------
 
@@ -1935,7 +1958,7 @@ public interface Table extends
      *
      * @param listener listener for updates
      */
-    void listenForUpdates(Listener listener);
+    void listenForUpdates(TableUpdateListener listener);
 
     /**
      * Unsubscribe the supplied listener.
@@ -1949,7 +1972,7 @@ public interface Table extends
      *
      * @param listener listener for updates
      */
-    void removeUpdateListener(Listener listener);
+    void removeUpdateListener(TableUpdateListener listener);
 
     /**
      * @return true if this table is in a failure state.

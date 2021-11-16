@@ -5,10 +5,12 @@
 package io.deephaven.integrations.python;
 
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.v2.InstrumentedListenerAdapter;
-import io.deephaven.engine.v2.ModifiedColumnSet;
+import io.deephaven.engine.table.TableUpdate;
+import io.deephaven.engine.table.impl.TableUpdateImpl;
+import io.deephaven.engine.v2.InstrumentedTableUpdateListenerAdapter;
+import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.impl.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.util.annotations.ScriptApi;
 import org.jpy.PyObject;
@@ -22,7 +24,7 @@ import org.jpy.PyObject;
  * either case, the method must take two arguments (isReplay, updates).
  */
 @ScriptApi
-public class PythonReplayListenerAdapter extends InstrumentedListenerAdapter
+public class PythonReplayListenerAdapter extends InstrumentedTableUpdateListenerAdapter
         implements TableSnapshotReplayer {
     private static final long serialVersionUID = -8882402061960621245L;
     private final PyObject pyCallable;
@@ -75,13 +77,13 @@ public class PythonReplayListenerAdapter extends InstrumentedListenerAdapter
         final RowSet emptyRowSet = RowSetFactory.empty();
         final RowSetShiftData emptyShift = RowSetShiftData.EMPTY;
         final ModifiedColumnSet emptyColumnSet = ModifiedColumnSet.EMPTY;
-        final Update update = new Update(source.getRowSet(), emptyRowSet, emptyRowSet, emptyShift, emptyColumnSet);
+        final TableUpdate update = new TableUpdateImpl(source.getRowSet(), emptyRowSet, emptyRowSet, emptyShift, emptyColumnSet);
         final boolean isReplay = true;
         pyCallable.call("__call__", isReplay, update);
     }
 
     @Override
-    public void onUpdate(final Update update) {
+    public void onUpdate(final TableUpdate update) {
         final boolean isReplay = false;
         pyCallable.call("__call__", isReplay, update);
     }

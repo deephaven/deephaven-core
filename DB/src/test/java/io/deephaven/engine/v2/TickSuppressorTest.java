@@ -138,12 +138,12 @@ public class TickSuppressorTest extends QueryTableTestBase {
         });
 
         assertEquals(1, listener.getCount());
-        assertEquals(i(2), listener.update.added);
-        assertEquals(i(5), listener.update.modified);
-        assertEquals(i(), listener.update.removed);
-        assertEquals(RowSetShiftData.EMPTY, listener.update.shifted);
-        assertFalse(listener.update.modifiedColumnSet.containsAny(suppressed.newModifiedColumnSet("SentinelA")));
-        assertTrue(listener.update.modifiedColumnSet.containsAny(suppressed.newModifiedColumnSet("SentinelB")));
+        assertEquals(i(2), listener.update.added());
+        assertEquals(i(5), listener.update.modified());
+        assertEquals(i(), listener.update.removed());
+        assertEquals(RowSetShiftData.EMPTY, listener.update.shifted());
+        assertFalse(listener.update.modifiedColumnSet().containsAny(suppressed.newModifiedColumnSet("SentinelA")));
+        assertTrue(listener.update.modifiedColumnSet().containsAny(suppressed.newModifiedColumnSet("SentinelB")));
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(input, i(10, 15), intCol("SentinelA", 12, 15), intCol("SentinelB", 30, 40));
@@ -152,12 +152,12 @@ public class TickSuppressorTest extends QueryTableTestBase {
         });
 
         assertEquals(2, listener.getCount());
-        assertEquals(i(), listener.update.added);
-        assertEquals(i(10), listener.update.modified);
-        assertEquals(i(5), listener.update.removed);
-        assertEquals(RowSetShiftData.EMPTY, listener.update.shifted);
-        assertTrue(listener.update.modifiedColumnSet.containsAny(suppressed.newModifiedColumnSet("SentinelA")));
-        assertFalse(listener.update.modifiedColumnSet.containsAny(suppressed.newModifiedColumnSet("SentinelB")));
+        assertEquals(i(), listener.update.added());
+        assertEquals(i(10), listener.update.modified());
+        assertEquals(i(5), listener.update.removed());
+        assertEquals(RowSetShiftData.EMPTY, listener.update.shifted());
+        assertTrue(listener.update.modifiedColumnSet().containsAny(suppressed.newModifiedColumnSet("SentinelA")));
+        assertFalse(listener.update.modifiedColumnSet().containsAny(suppressed.newModifiedColumnSet("SentinelB")));
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(input, i(20), intCol("SentinelA", 20), intCol("SentinelB", 50));
@@ -165,11 +165,11 @@ public class TickSuppressorTest extends QueryTableTestBase {
         });
 
         assertEquals(3, listener.getCount());
-        assertEquals(i(20), listener.update.added);
-        assertEquals(i(), listener.update.modified);
-        assertEquals(i(), listener.update.removed);
-        assertEquals(RowSetShiftData.EMPTY, listener.update.shifted);
-        assertFalse(listener.update.modifiedColumnSet.containsAny(suppressed.newModifiedColumnSet("SentinelA")));
-        assertFalse(listener.update.modifiedColumnSet.containsAny(suppressed.newModifiedColumnSet("SentinelB")));
+        assertEquals(i(20), listener.update.added());
+        assertEquals(i(), listener.update.modified());
+        assertEquals(i(), listener.update.removed());
+        assertEquals(RowSetShiftData.EMPTY, listener.update.shifted());
+        assertFalse(listener.update.modifiedColumnSet().containsAny(suppressed.newModifiedColumnSet("SentinelA")));
+        assertFalse(listener.update.modifiedColumnSet().containsAny(suppressed.newModifiedColumnSet("SentinelB")));
     }
 }

@@ -1,7 +1,7 @@
 package io.deephaven.engine.v2.utils;
 
 import io.deephaven.engine.rowset.RowSetShiftData;
-import io.deephaven.engine.v2.Listener;
+import io.deephaven.engine.table.TableUpdate;
 
 /**
  * Calculate the size of the chunks needed to process an update.
@@ -20,10 +20,10 @@ public class UpdateSizeCalculator {
      *
      * @return an appropriate maximum chunk size for this update
      */
-    public static int chunkSize(Listener.Update upstream, int chunkSize) {
+    public static int chunkSize(TableUpdate upstream, int chunkSize) {
         final long updateSize =
-                Math.max(Math.max(upstream.added.size(), upstream.removed.size()), upstream.modified.size());
-        return chunkSize(updateSize, upstream.shifted, chunkSize);
+                Math.max(Math.max(upstream.added().size(), upstream.removed().size()), upstream.modified().size());
+        return chunkSize(updateSize, upstream.shifted(), chunkSize);
     }
 
     /**

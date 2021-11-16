@@ -2,15 +2,12 @@ package io.deephaven.engine.v2.by;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.datastructures.util.CollectionUtil;
-import io.deephaven.engine.table.ChunkSource;
+import io.deephaven.engine.rowset.impl.RowSetFactory;
+import io.deephaven.engine.table.*;
 import io.deephaven.engine.rowset.*;
-import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.liveness.LivenessReferent;
-import io.deephaven.engine.table.Table;
-import io.deephaven.engine.v2.ModifiedColumnSet;
+import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.v2.QueryTable;
-import io.deephaven.engine.v2.Listener;
-import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.v2.sources.ObjectArraySource;
 import io.deephaven.engine.v2.sources.aggregate.AggregateColumnSource;
 import io.deephaven.engine.chunk.Attributes.*;
@@ -311,15 +308,15 @@ public final class GroupByChunkedOperator implements IterativeChunkedAggregation
     }
 
     @Override
-    public void resetForStep(@NotNull final Listener.Update upstream) {
-        stepValuesModified = upstream.modified.isNonempty() && upstream.modifiedColumnSet.nonempty()
-                && upstream.modifiedColumnSet.containsAny(resultInputsModifiedColumnSet);
+    public void resetForStep(@NotNull final TableUpdate upstream) {
+        stepValuesModified = upstream.modified().isNonempty() && upstream.modifiedColumnSet().nonempty()
+                && upstream.modifiedColumnSet().containsAny(resultInputsModifiedColumnSet);
         someKeyHasAddsOrRemoves = false;
         someKeyHasModifies = false;
     }
 
     @Override
-    public void propagateUpdates(@NotNull final Listener.Update downstream,
+    public void propagateUpdates(@NotNull final TableUpdate downstream,
             @NotNull final RowSet newDestinations) {
         initializeNewIndexPreviousValues(newDestinations);
     }

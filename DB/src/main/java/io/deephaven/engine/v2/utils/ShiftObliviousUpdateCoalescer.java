@@ -5,8 +5,8 @@ import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.v2.ShiftObliviousListener;
+import io.deephaven.engine.rowset.impl.RowSetFactory;
+import io.deephaven.engine.table.ShiftObliviousListener;
 
 /**
  * Helper utility for coalescing multiple {@link ShiftObliviousListener updates}.

@@ -4,9 +4,12 @@ import io.deephaven.base.Base64;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.*;
+import io.deephaven.engine.rowset.impl.RowSetFactory;
+import io.deephaven.engine.table.TableUpdate;
+import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.v2.BaseTable;
-import io.deephaven.engine.v2.Listener;
-import io.deephaven.engine.v2.ModifiedColumnSet;
+import io.deephaven.engine.table.TableUpdateListener;
+import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.io.log.impl.LogOutputStringImpl;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.SafeCloseable;
@@ -17,7 +20,7 @@ import java.io.ObjectOutputStream;
 import java.util.function.BiConsumer;
 
 /**
- * Expands {@link Listener#onUpdate(Listener.Update)}'s Update into a backward compatible ARM (added, removed, modified)
+ * Expands {@link TableUpdateListener#onUpdate(TableUpdate)}'s Update into a backward compatible ARM (added, removed, modified)
  * by expanding keyspace shifts.
  *
  * Using this is almost always less efficient than using the Update directly.
@@ -33,12 +36,12 @@ public class RowSetShiftDataExpander implements SafeCloseable {
      * 
      * @param update The usptream update.
      */
-    public RowSetShiftDataExpander(final Listener.Update update, final TrackingRowSet sourceRowSet) {
+    public RowSetShiftDataExpander(final TableUpdate update, final TrackingRowSet sourceRowSet) {
         // do we even need changes?
-        if (update.shifted.empty() && !update.added.overlaps(update.removed)) {
-            added = update.added.copy();
-            removed = update.removed.copy();
-            modified = update.modified.copy();
+        if (update.shifted().empty() && !update.added().overlaps(update.removed())) {
+            added = update.added().copy();
+            removed = update.removed().copy();
+            modified = update.modified().copy();
             return;
         }
 
@@ -56,16 +59,16 @@ public class RowSetShiftDataExpander implements SafeCloseable {
             // If it did not exist last cycle then it is accounted for in `this.update.added`. The is one more group of
             // modified rows. These are rows that existed in both previous and current indexes but were shifted.
             // Thus we need to add mods for shifted rows and remove any rows that are added (by old definition).
-            modified = update.modified.copy();
+            modified = update.modified().copy();
 
             // Expand shift destinations to paint rows that might need to be considered modified.
             final RowSetBuilderSequential addedByShiftB = RowSetFactory.builderSequential();
             final RowSetBuilderSequential removedByShiftB = RowSetFactory.builderSequential();
 
-            for (int idx = 0; idx < update.shifted.size(); ++idx) {
-                final long start = update.shifted.getBeginRange(idx);
-                final long end = update.shifted.getEndRange(idx);
-                final long delta = update.shifted.getShiftDelta(idx);
+            for (int idx = 0; idx < update.shifted().size(); ++idx) {
+                final long start = update.shifted().getBeginRange(idx);
+                final long end = update.shifted().getEndRange(idx);
+                final long delta = update.shifted().getShiftDelta(idx);
                 addedByShiftB.appendRange(start + delta, end + delta);
                 removedByShiftB.appendRange(start, end);
             }
@@ -79,7 +82,7 @@ public class RowSetShiftDataExpander implements SafeCloseable {
             }
 
             // remove all rows we define as added (i.e. modified rows that were actually shifted into a new rowSet)
-            try (final RowSet absoluteModified = update.removed.intersect(update.added)) {
+            try (final RowSet absoluteModified = update.removed().intersect(update.added())) {
                 modified.insert(absoluteModified);
             }
             modified.remove(added);
@@ -128,7 +131,7 @@ public class RowSetShiftDataExpander implements SafeCloseable {
      * Immutable, re-usable {@link RowSetShiftDataExpander} for an empty set of changes.
      */
     public static final RowSetShiftDataExpander EMPTY = new RowSetShiftDataExpander(
-            new Listener.Update(
+            new TableUpdateImpl(
                     RowSetFactory.empty(),
                     RowSetFactory.empty(),
                     RowSetFactory.empty(),
@@ -142,7 +145,7 @@ public class RowSetShiftDataExpander implements SafeCloseable {
      * @param update The update originally passed at construction time, used only for logging debug info on error
      * @param sourceRowSet The underlying rowSet that apply to added/removed/modified
      */
-    public void validate(final Listener.Update update, final TrackingRowSet sourceRowSet) {
+    public void validate(final TableUpdate update, final TrackingRowSet sourceRowSet) {
         final boolean previousContainsAdds;
         final boolean previousMissingRemovals;
         final boolean previousMissingModifications;
@@ -210,7 +213,7 @@ public class RowSetShiftDataExpander implements SafeCloseable {
                 .append(LogOutput::nl).append("\t          previousIndex=").append(sourceRowSet.getPrevRowSet())
                 .append(LogOutput::nl).append("\t           currentIndex=").append(sourceRowSet)
                 .append(LogOutput::nl).append("\t         updateToExpand=").append(update)
-                .append(LogOutput::nl).append("\t         shifted.size()=").append(update.shifted.size())
+                .append(LogOutput::nl).append("\t         shifted.size()=").append(update.shifted().size())
                 .append(LogOutput::nl).append("\t                  added=").append(added)
                 .append(LogOutput::nl).append("\t                removed=").append(removed)
                 .append(LogOutput::nl).append("\t                modified=").append(modified)

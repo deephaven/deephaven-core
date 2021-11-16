@@ -1,7 +1,7 @@
 package io.deephaven.engine.v2.snapshot;
 
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.impl.RowSetFactory;
 import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.engine.v2.ListenerRecorder;
 import io.deephaven.engine.v2.MergedListener;

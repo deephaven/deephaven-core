@@ -9,6 +9,8 @@ import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableListener;
+import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.updategraph.AbstractNotification;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.time.DateTimeUtils;
@@ -30,7 +32,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 
-public abstract class InstrumentedListenerBase extends LivenessArtifact
+public abstract class InstrumentedTableListenerBase extends LivenessArtifact
         implements TableListener, NotificationQueue.Dependency {
 
     private static final Logger log = LoggerFactory.getLogger(ShiftObliviousInstrumentedListener.class);
@@ -46,7 +48,7 @@ public abstract class InstrumentedListenerBase extends LivenessArtifact
     private volatile long lastCompletedStep = NotificationStepReceiver.NULL_NOTIFICATION_STEP;
     private volatile long lastEnqueuedStep = NotificationStepReceiver.NULL_NOTIFICATION_STEP;
 
-    InstrumentedListenerBase(@Nullable String description, boolean terminalListener) {
+    InstrumentedTableListenerBase(@Nullable String description, boolean terminalListener) {
         this.entry = UpdatePerformanceTracker.getInstance().getEntry(description);
         this.terminalListener = terminalListener;
     }
@@ -57,8 +59,8 @@ public abstract class InstrumentedListenerBase extends LivenessArtifact
     }
 
     public static boolean setVerboseLogging(boolean enableVerboseLogging) {
-        boolean original = InstrumentedListenerBase.verboseLogging;
-        InstrumentedListenerBase.verboseLogging = enableVerboseLogging;
+        boolean original = InstrumentedTableListenerBase.verboseLogging;
+        InstrumentedTableListenerBase.verboseLogging = enableVerboseLogging;
         return original;
     }
 
@@ -131,7 +133,7 @@ public abstract class InstrumentedListenerBase extends LivenessArtifact
         }
     }
 
-    public class ErrorNotification extends AbstractNotification {
+    public class ErrorNotification extends AbstractNotification implements TableListener.ErrorNotification {
 
         private final Throwable originalException;
         private final UpdatePerformanceTracker.Entry sourceEntry;
@@ -162,7 +164,7 @@ public abstract class InstrumentedListenerBase extends LivenessArtifact
 
         @Override
         public boolean canExecute(final long step) {
-            return InstrumentedListenerBase.this.canExecute(step);
+            return InstrumentedTableListenerBase.this.canExecute(step);
         }
 
         @Override
@@ -174,9 +176,9 @@ public abstract class InstrumentedListenerBase extends LivenessArtifact
 
     protected abstract class NotificationBase extends AbstractNotification implements LogOutputAppendable {
 
-        final Listener.Update update;
+        final TableUpdate update;
 
-        NotificationBase(final Listener.Update update) {
+        NotificationBase(final TableUpdate update) {
             super(terminalListener);
             this.update = update.acquire();
             if (lastCompletedStep == LogicalClock.DEFAULT.currentStep()) {
@@ -199,14 +201,14 @@ public abstract class InstrumentedListenerBase extends LivenessArtifact
             return logOutput.append("Notification:(step=")
                     .append(LogicalClock.DEFAULT.currentStep())
                     .append(", listener=")
-                    .append(System.identityHashCode(InstrumentedListenerBase.this))
+                    .append(System.identityHashCode(InstrumentedTableListenerBase.this))
                     .append(")")
                     .append(entry);
         }
 
         @Override
         public final boolean canExecute(final long step) {
-            return InstrumentedListenerBase.this.canExecute(step);
+            return InstrumentedTableListenerBase.this.canExecute(step);
         }
 
         void doRun(final Runnable invokeOnUpdate) {
@@ -222,7 +224,7 @@ public abstract class InstrumentedListenerBase extends LivenessArtifact
                 return;
             }
 
-            entry.onUpdateStart(update.added, update.removed, update.modified, update.shifted);
+            entry.onUpdateStart(update.added(), update.removed(), update.modified(), update.shifted());
 
             try {
                 if (lastCompletedStep == LogicalClock.DEFAULT.currentStep()) {
@@ -241,21 +243,21 @@ public abstract class InstrumentedListenerBase extends LivenessArtifact
                     en.append(entry.getDescription());
                 }
 
-                en.append(", added.size()=").append(update.added.size())
-                        .append(", modified.size()=").append(update.modified.size())
-                        .append(", removed.size()=").append(update.removed.size())
-                        .append(", shifted.size()=").append(update.shifted.size())
-                        .append(", modifiedColumnSet=").append(update.modifiedColumnSet.toString())
+                en.append(", added.size()=").append(update.added().size())
+                        .append(", modified.size()=").append(update.modified().size())
+                        .append(", removed.size()=").append(update.removed().size())
+                        .append(", shifted.size()=").append(update.shifted().size())
+                        .append(", modifiedColumnSet=").append(update.modifiedColumnSet().toString())
                         .append(":\n").append(e).endl();
 
                 if (useVerboseLogging) {
                     // This is a failure and shouldn't happen, so it is OK to be verbose here. Particularly as it is not
                     // clear what is actually going on in some cases of assertion failure related to the indices.
                     log.error().append("ShiftObliviousListener is: ").append(this.toString()).endl();
-                    log.error().append("Added: ").append(update.added.toString()).endl();
-                    log.error().append("Modified: ").append(update.modified.toString()).endl();
-                    log.error().append("Removed: ").append(update.removed.toString()).endl();
-                    log.error().append("Shifted: ").append(update.shifted.toString()).endl();
+                    log.error().append("Added: ").append(update.added().toString()).endl();
+                    log.error().append("Modified: ").append(update.modified().toString()).endl();
+                    log.error().append("Removed: ").append(update.removed().toString()).endl();
+                    log.error().append("Shifted: ").append(update.shifted().toString()).endl();
                 }
 
                 // If the table has an error, we should cease processing further updates.

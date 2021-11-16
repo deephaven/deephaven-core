@@ -6,7 +6,7 @@ import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ChunkSink;
 import io.deephaven.engine.chunk.Attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.rowset.impl.RowSequenceUtil;
+import io.deephaven.engine.rowset.impl.RowSequenceFactory;
 import junit.framework.TestCase;
 
 import java.util.Random;
@@ -32,8 +32,8 @@ public class TestSourceSink {
         randomResetter.resetWithRandomValues(rng, chunkB, chunkSize);
 
         final RowSequence keysA =
-                RowSequenceUtil.wrapKeyRangesChunkAsRowSequence(LongChunk.chunkWrap(new long[] {0, chunkSize - 1}));
-        final RowSequence keysB = RowSequenceUtil
+                RowSequenceFactory.wrapKeyRangesChunkAsRowSequence(LongChunk.chunkWrap(new long[] {0, chunkSize - 1}));
+        final RowSequence keysB = RowSequenceFactory
                 .wrapKeyRangesChunkAsRowSequence(LongChunk.chunkWrap(new long[] {2 * chunkSize, 3 * chunkSize - 1}));
 
         final ChunkSink.FillFromContext fromContext = sink.makeFillFromContext(chunkSize);
@@ -42,7 +42,7 @@ public class TestSourceSink {
 
         // Get the whole thing back as one big chunk
         final RowSequence keysAll =
-                RowSequenceUtil.wrapKeyRangesChunkAsRowSequence(LongChunk.chunkWrap(new long[] {0, 4 * chunkSize - 1}));
+                RowSequenceFactory.wrapKeyRangesChunkAsRowSequence(LongChunk.chunkWrap(new long[] {0, 4 * chunkSize - 1}));
         final ChunkSource.GetContext getContext = sink.makeGetContext(totalSize);
 
         final Chunk<Values> valuesAll = sink.getChunk(getContext, keysAll);

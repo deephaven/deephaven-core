@@ -13,7 +13,7 @@ import io.deephaven.engine.chunk.Attributes.ChunkPositions;
 import io.deephaven.engine.chunk.Attributes.RowKeys;
 import io.deephaven.engine.chunk.Attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.rowset.impl.RowSequenceUtil;
+import io.deephaven.engine.rowset.impl.RowSequenceFactory;
 
 import java.util.Collections;
 import java.util.Map;
@@ -74,7 +74,7 @@ class IntegralChunkedReVarOperator implements IterativeChunkedAggregationOperato
             final int startPosition = startPositions.get(ii);
             context.keyIndices.set(ii, destinations.get(startPosition));
         }
-        try (final RowSequence destinationOk = RowSequenceUtil.wrapRowKeysChunkAsRowSequence(context.keyIndices)) {
+        try (final RowSequence destinationOk = RowSequenceFactory.wrapRowKeysChunkAsRowSequence(context.keyIndices)) {
             updateResult(context, destinationOk, stateModified);
         }
     }

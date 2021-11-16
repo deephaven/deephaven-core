@@ -5,8 +5,9 @@
 package io.deephaven.grpc_api.table;
 
 import com.google.rpc.Code;
+import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.v2.BaseTable;
-import io.deephaven.engine.v2.InstrumentedListener;
+import io.deephaven.engine.v2.InstrumentedTableUpdateListener;
 import io.deephaven.engine.v2.NotificationStepReceiver;
 import io.deephaven.engine.v2.SwapListener;
 import io.deephaven.engine.rowset.TrackingRowSet;
@@ -179,7 +180,7 @@ public class ExportedTableUpdateListener implements StreamObserver<ExportNotific
     /**
      * The table listener implementation that propagates updates to our internal queue.
      */
-    private class ListenerImpl extends InstrumentedListener {
+    private class ListenerImpl extends InstrumentedTableUpdateListener {
         final private BaseTable table;
         final private int exportId;
 
@@ -195,7 +196,7 @@ public class ExportedTableUpdateListener implements StreamObserver<ExportNotific
         }
 
         @Override
-        public void onUpdate(final Update upstream) {
+        public void onUpdate(final TableUpdate upstream) {
             sendUpdateMessage(ExportTicketHelper.wrapExportIdInTicket(exportId), table.size(), null);
         }
 

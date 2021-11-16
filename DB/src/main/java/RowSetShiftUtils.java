@@ -1,6 +1,7 @@
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.RowSetShiftData;
+import io.deephaven.engine.rowset.impl.RowSetFactory;
 import io.deephaven.util.SafeCloseablePair;
 
 /**

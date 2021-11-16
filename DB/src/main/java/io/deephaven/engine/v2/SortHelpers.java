@@ -7,7 +7,7 @@ import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.TrackingRowSet;
-import io.deephaven.engine.rowset.impl.RowSequenceUtil;
+import io.deephaven.engine.rowset.impl.RowSequenceFactory;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.tables.SortingOrder;
 import io.deephaven.engine.table.Table;
@@ -676,7 +676,7 @@ public class SortHelpers {
         sortIndexContext.sort(originalPositions, indicesToFetch);
 
         try (final WritableChunk<Values> secondaryValues = makeAndFillValues(usePrev,
-                RowSequenceUtil.wrapRowKeysChunkAsRowSequence(WritableLongChunk.downcast(indicesToFetch)),
+                RowSequenceFactory.wrapRowKeysChunkAsRowSequence(WritableLongChunk.downcast(indicesToFetch)),
                 columnSource)) {
 
             final ChunkType chunkType = columnSource.getChunkType();

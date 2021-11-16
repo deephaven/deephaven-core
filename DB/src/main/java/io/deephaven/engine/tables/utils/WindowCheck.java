@@ -5,7 +5,11 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.rowset.*;
+import io.deephaven.engine.rowset.impl.RowSetFactory;
+import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableUpdate;
+import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.time.DateTime;
 import io.deephaven.engine.time.DateTimeUtils;
@@ -179,14 +183,14 @@ public class WindowCheck {
         @Override
         protected void process() {
             if (recorder.recordedVariablesAreValid()) {
-                final Listener.Update upstream = recorder.getUpdate();
+                final TableUpdate upstream = recorder.getUpdate();
 
                 // remove the removed indices from the priority queue
-                removeIndex(upstream.removed);
+                removeIndex(upstream.removed());
 
                 // anything that was shifted needs to be placed in the proper slots
                 try (final RowSet preShiftRowSet = source.getRowSet().getPrevRowSet()) {
-                    upstream.shifted.apply((start, end, delta) -> {
+                    upstream.shifted().apply((start, end, delta) -> {
                         final RowSet subRowSet = preShiftRowSet.subSetByKeyRange(start, end);
 
                         final RowSet.SearchIterator it =
@@ -215,9 +219,9 @@ public class WindowCheck {
                 });
 
                 // now add the new timestamps
-                upstream.added.forAllRowKeys(this::addIndex);
+                upstream.added().forAllRowKeys(this::addIndex);
 
-                final WritableRowSet downstreamModified = upstream.modified.copy();
+                final WritableRowSet downstreamModified = upstream.modified().copy();
                 try (final RowSet modifiedByTime = recomputeModified()) {
                     if (modifiedByTime.isNonempty()) {
                         downstreamModified.insert(modifiedByTime);
@@ -226,24 +230,24 @@ public class WindowCheck {
 
                 // everything that was added, removed, or modified stays added removed or modified
                 if (downstreamModified.isNonempty()) {
-                    mcsTransformer.clearAndTransform(upstream.modifiedColumnSet, reusableModifiedColumnSet);
+                    mcsTransformer.clearAndTransform(upstream.modifiedColumnSet(), reusableModifiedColumnSet);
                     reusableModifiedColumnSet.setAll(mcsNewColumns);
                 } else {
                     reusableModifiedColumnSet.clear();
                 }
-                result.notifyListeners(new Listener.Update(upstream.added.copy(), upstream.removed.copy(),
-                        downstreamModified, upstream.shifted, reusableModifiedColumnSet));
+                result.notifyListeners(new TableUpdateImpl(upstream.added().copy(), upstream.removed().copy(),
+                        downstreamModified, upstream.shifted(), reusableModifiedColumnSet));
             } else {
                 final RowSet modifiedByTime = recomputeModified();
                 if (modifiedByTime.isNonempty()) {
-                    final Listener.Update downstream = new Listener.Update();
+                    final TableUpdateImpl downstream = new TableUpdateImpl();
                     downstream.modified = modifiedByTime;
                     downstream.added = RowSetFactory.empty();
                     downstream.removed = RowSetFactory.empty();
                     downstream.shifted = RowSetShiftData.EMPTY;
                     downstream.modifiedColumnSet = reusableModifiedColumnSet;
-                    downstream.modifiedColumnSet.clear();
-                    downstream.modifiedColumnSet.setAll(mcsNewColumns);
+                    downstream.modifiedColumnSet().clear();
+                    downstream.modifiedColumnSet().setAll(mcsNewColumns);
                     result.notifyListeners(downstream);
                 } else {
                     modifiedByTime.close();

@@ -1,7 +1,8 @@
 package io.deephaven.engine.v2.sources.deltaaware;
 
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.impl.RowSetFactory;
+import io.deephaven.engine.rowset.impl.RowSequenceFactory;
 import io.deephaven.util.datastructures.LongAbortableConsumer;
 import io.deephaven.engine.chunk.Attributes;
 import io.deephaven.engine.chunk.LongChunk;
@@ -37,7 +38,7 @@ class SoleKey implements RowSequence {
         if (startPositionInclusive == 0 && length > 0) {
             return this;
         }
-        return RowSet.EMPTY;
+        return RowSequenceFactory.EMPTY;
     }
 
     @Override
@@ -45,7 +46,7 @@ class SoleKey implements RowSequence {
         if (startRowKeyInclusive <= key && endRowKeyInclusive >= key) {
             return this;
         }
-        return RowSet.EMPTY;
+        return RowSequenceFactory.EMPTY;
     }
 
     @Override
@@ -135,7 +136,7 @@ class SoleKey implements RowSequence {
         @Override
         public RowSequence getNextRowSequenceThrough(long maxKeyInclusive) {
             if (!hasMore || maxKeyInclusive < key) {
-                return RowSequence.EMPTY;
+                return RowSequenceFactory.EMPTY;
             }
             hasMore = false;
             return internalFixedSoloKey;
@@ -144,7 +145,7 @@ class SoleKey implements RowSequence {
         @Override
         public RowSequence getNextRowSequenceWithLength(long numberOfKeys) {
             if (!hasMore || numberOfKeys == 0) {
-                return RowSequence.EMPTY;
+                return RowSequenceFactory.EMPTY;
             }
             hasMore = false;
             return internalFixedSoloKey;

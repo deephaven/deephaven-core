@@ -12,7 +12,11 @@ import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.client.impl.BarrageSubscriptionImpl;
 import io.deephaven.engine.rowset.*;
+import io.deephaven.engine.rowset.impl.RowSetFactory;
+import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableUpdate;
+import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.updategraph.UpdateSourceCombiner;
 import io.deephaven.engine.time.DateTimeUtils;
@@ -99,7 +103,7 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
     }
 
     // We should listen for failures on the table, and if we get any, the test case is no good.
-    class FailureListener extends InstrumentedListener {
+    class FailureListener extends InstrumentedTableUpdateListener {
         final String tableName;
 
         FailureListener(String tableName) {
@@ -108,7 +112,7 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
         }
 
         @Override
-        public void onUpdate(final Update upstream) {
+        public void onUpdate(final TableUpdate upstream) {
             if (RefreshingTableTestCase.printTableUpdates) {
                 System.out.println("Incremental Table Update: (" + tableName + ")");
                 System.out.println(upstream);
@@ -492,7 +496,7 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
                 final long lastKey = (Math.abs(helper.random.nextLong()) % 16)
                         + (helper.sourceTable.getRowSet().isNonempty() ? helper.sourceTable.getRowSet().lastRowKey()
                                 : -1);
-                final Listener.Update update = new Listener.Update();
+                final TableUpdateImpl update = new TableUpdateImpl();
                 update.added = RowSetFactory.fromRange(lastKey + 1,
                         lastKey + Math.max(1, helper.size / maxSteps));
                 update.removed = i();
@@ -523,7 +527,7 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
             helper.runTest(() -> {
                 final long lastKey =
                         helper.sourceTable.getRowSet().isNonempty() ? helper.sourceTable.getRowSet().lastRowKey() : -1;
-                final Listener.Update update = new Listener.Update();
+                final TableUpdateImpl update = new TableUpdateImpl();
                 final int stepSize = Math.max(1, helper.size / maxSteps);
                 update.added = RowSetFactory.fromRange(0, stepSize - 1);
                 update.removed = i();
@@ -577,7 +581,7 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
                 final long lastKey = (Math.abs(helper.random.nextLong()) % 16)
                         + (helper.sourceTable.getRowSet().isNonempty() ? helper.sourceTable.getRowSet().lastRowKey()
                                 : -1);
-                final Listener.Update update = new Listener.Update();
+                final TableUpdateImpl update = new TableUpdateImpl();
                 update.added = RowSetFactory.fromRange(lastKey + 1,
                         lastKey + Math.max(1, helper.size / maxSteps));
                 update.removed = i();
@@ -608,7 +612,7 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
             helper.runTest(() -> {
                 final long lastKey =
                         helper.sourceTable.getRowSet().isNonempty() ? helper.sourceTable.getRowSet().lastRowKey() : -1;
-                final Listener.Update update = new Listener.Update();
+                final TableUpdateImpl update = new TableUpdateImpl();
                 final int stepSize = Math.max(1, helper.size / maxSteps);
                 update.added = RowSetFactory.fromRange(0, stepSize - 1);
                 update.removed = i();
@@ -972,7 +976,7 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
             final RowSetShiftData.Builder shiftBuilder = new RowSetShiftData.Builder();
             shiftBuilder.shiftRange(0, 12, -5);
 
-            queryTable.notifyListeners(new Listener.Update(
+            queryTable.notifyListeners(new TableUpdateImpl(
                     RowSetFactory.empty(),
                     RowSetFactory.empty(),
                     RowSetFactory.empty(),
@@ -1032,7 +1036,7 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(queryTable, i(12), c("intCol", 13));
 
-            queryTable.notifyListeners(new Listener.Update(
+            queryTable.notifyListeners(new TableUpdateImpl(
                     RowSetFactory.empty(),
                     RowSetFactory.empty(),
                     RowSetFactory.fromKeys(12),
@@ -1047,7 +1051,7 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             TstUtils.removeRows(queryTable, i(5));
 
-            queryTable.notifyListeners(new Listener.Update(
+            queryTable.notifyListeners(new TableUpdateImpl(
                     RowSetFactory.empty(),
                     RowSetFactory.fromKeys(5),
                     RowSetFactory.empty(),
@@ -1105,7 +1109,7 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
             helper.runTest(() -> {
                 final long lastKey = (Math.abs(helper.random.nextLong()) % 16)
                         + (helper.sourceTable.isEmpty() ? -1 : helper.sourceTable.getRowSet().lastRowKey());
-                final Listener.Update update = new Listener.Update();
+                final TableUpdateImpl update = new TableUpdateImpl();
                 final int stepSize = Math.max(1, helper.size / maxSteps);
                 update.added = RowSetFactory.fromRange(lastKey + 1, lastKey + stepSize);
                 update.removed = i();
@@ -1114,7 +1118,7 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
                 } else {
                     update.modified =
                             RowSetFactory.fromRange(Math.max(0, lastKey - stepSize), lastKey);
-                    update.modified.writableCast().retain(helper.sourceTable.getRowSet());
+                    update.modified().writableCast().retain(helper.sourceTable.getRowSet());
                 }
                 update.shifted = RowSetShiftData.EMPTY;
                 update.modifiedColumnSet = ModifiedColumnSet.EMPTY;
@@ -1169,7 +1173,7 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
             helper.runTest(() -> {
                 final long lastKey = (Math.abs(helper.random.nextLong()) % 16)
                         + (helper.sourceTable.isEmpty() ? -1 : helper.sourceTable.getRowSet().lastRowKey());
-                final Listener.Update update = new Listener.Update();
+                final TableUpdateImpl update = new TableUpdateImpl();
                 final int stepSize = Math.max(1, helper.size / maxSteps);
                 update.added = RowSetFactory.fromRange(lastKey + 1, lastKey + stepSize);
                 update.removed = i();
@@ -1178,7 +1182,7 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
                 } else {
                     update.modified =
                             RowSetFactory.fromRange(Math.max(0, lastKey - stepSize), lastKey);
-                    update.modified.writableCast().retain(helper.sourceTable.getRowSet());
+                    update.modified().writableCast().retain(helper.sourceTable.getRowSet());
                 }
                 update.shifted = RowSetShiftData.EMPTY;
                 update.modifiedColumnSet = ModifiedColumnSet.EMPTY;

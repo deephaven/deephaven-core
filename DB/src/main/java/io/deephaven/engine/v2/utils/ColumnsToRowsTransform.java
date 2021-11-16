@@ -5,15 +5,15 @@
 package io.deephaven.engine.v2.utils;
 
 import io.deephaven.datastructures.util.CollectionUtil;
-import io.deephaven.engine.table.SharedContext;
+import io.deephaven.engine.rowset.impl.RowSetFactory;
+import io.deephaven.engine.table.*;
 import io.deephaven.engine.rowset.*;
-import io.deephaven.engine.rowset.impl.RowSequenceUtil;
-import io.deephaven.engine.table.Table;
+import io.deephaven.engine.rowset.impl.RowSequenceFactory;
+import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.v2.*;
 import io.deephaven.engine.v2.sort.permute.PermuteKernel;
 import io.deephaven.engine.v2.sources.AbstractColumnSource;
 import io.deephaven.engine.v2.sources.BitShiftingColumnSource;
-import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.chunk.*;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
@@ -240,24 +240,24 @@ public class ColumnsToRowsTransform {
                     + Arrays.toString(valueColumns) + ", " + Arrays.deepToString(transposeColumns) + ")", dynamicSource,
                     result) {
                 @Override
-                public void onUpdate(final Update upstream) {
-                    final Update downstream = new Update();
+                public void onUpdate(final TableUpdate upstream) {
+                    final TableUpdateImpl downstream = new TableUpdateImpl();
                     downstream.modifiedColumnSet = result.getModifiedColumnSetForUpdates();
-                    downstream.added = transformIndex(upstream.added, fanout, fanoutPow2);
-                    downstream.removed = transformIndex(upstream.removed, fanout, fanoutPow2);
+                    downstream.added = transformIndex(upstream.added(), fanout, fanoutPow2);
+                    downstream.removed = transformIndex(upstream.removed(), fanout, fanoutPow2);
 
-                    if (upstream.modified.isNonempty()) {
-                        final boolean expandModified = upstream.modifiedColumnSet.containsAny(modifyAll);
+                    if (upstream.modified().isNonempty()) {
+                        final boolean expandModified = upstream.modifiedColumnSet().containsAny(modifyAll);
                         if (expandModified) {
                             // all rows are modified, because there is an expanded column modified
-                            downstream.modified = transformIndex(upstream.modified, fanout, fanoutPow2);
+                            downstream.modified = transformIndex(upstream.modified(), fanout, fanoutPow2);
                         } else {
                             // we should determine modifications based on the value changes
                             final boolean[] rowModified = new boolean[modifyOneRow.length];
                             boolean allTrue = true;
                             int maxModified = 0;
                             for (int ii = 0; ii < rowModified.length; ++ii) {
-                                final boolean modified = upstream.modifiedColumnSet.containsAny(modifyOneRow[ii]);
+                                final boolean modified = upstream.modifiedColumnSet().containsAny(modifyOneRow[ii]);
                                 rowModified[ii] = modified;
                                 if (modified) {
                                     maxModified = ii;
@@ -266,39 +266,39 @@ public class ColumnsToRowsTransform {
                                 }
                             }
                             if (allTrue) {
-                                downstream.modified = transformIndex(upstream.modified, fanout, fanoutPow2);
+                                downstream.modified = transformIndex(upstream.modified(), fanout, fanoutPow2);
                             } else {
                                 downstream.modified =
-                                        transformIndex(upstream.modified, fanoutPow2, rowModified, maxModified);
+                                        transformIndex(upstream.modified(), fanoutPow2, rowModified, maxModified);
                             }
                         }
                     } else {
                         downstream.modified = RowSetFactory.empty();
                     }
 
-                    resultRowSet.remove(downstream.removed);
+                    resultRowSet.remove(downstream.removed());
 
-                    if (upstream.shifted.empty()) {
+                    if (upstream.shifted().empty()) {
                         downstream.shifted = RowSetShiftData.EMPTY;
                     } else {
                         final RowSetShiftData.Builder shiftBuilder = new RowSetShiftData.Builder();
-                        final int shiftCount = upstream.shifted.size();
+                        final int shiftCount = upstream.shifted().size();
                         for (int ii = 0; ii < shiftCount; ++ii) {
-                            final long beginRange = upstream.shifted.getBeginRange(ii) * fanoutPow2;
-                            final long endRange = upstream.shifted.getEndRange(ii) * fanoutPow2 + fanoutPow2 - 1;
-                            final long delta = upstream.shifted.getShiftDelta(ii) * fanoutPow2;
+                            final long beginRange = upstream.shifted().getBeginRange(ii) * fanoutPow2;
+                            final long endRange = upstream.shifted().getEndRange(ii) * fanoutPow2 + fanoutPow2 - 1;
+                            final long delta = upstream.shifted().getShiftDelta(ii) * fanoutPow2;
 
                             shiftBuilder.shiftRange(beginRange, endRange, delta);
                         }
 
                         downstream.shifted = shiftBuilder.build();
-                        RowSetShiftUtils.apply(downstream.shifted, resultRowSet);
+                        RowSetShiftUtils.apply(downstream.shifted(), resultRowSet);
                     }
 
 
-                    resultRowSet.insert(downstream.added);
+                    resultRowSet.insert(downstream.added());
 
-                    transformer.clearAndTransform(upstream.modifiedColumnSet, downstream.modifiedColumnSet);
+                    transformer.clearAndTransform(upstream.modifiedColumnSet(), downstream.modifiedColumnSet());
                     result.notifyListeners(downstream);
                 }
             });
@@ -601,7 +601,7 @@ public class ColumnsToRowsTransform {
                 final WritableChunk<? super Attributes.Values> tempDest =
                         isComplete ? destination : transposeFillContext.tempValues;
                 try (final RowSequence innerOk =
-                        RowSequenceUtil.wrapRowKeysChunkAsRowSequence(transposeFillContext.innerKeys[ii])) {
+                        RowSequenceFactory.wrapRowKeysChunkAsRowSequence(transposeFillContext.innerKeys[ii])) {
                     if (usePrev) {
                         transposeColumns[ii].fillPrevChunk(transposeFillContext.innerContexts[ii], tempDest, innerOk);
                     } else {

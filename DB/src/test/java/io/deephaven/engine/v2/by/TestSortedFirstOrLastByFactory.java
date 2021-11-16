@@ -5,11 +5,12 @@
 package io.deephaven.engine.v2.by;
 
 import io.deephaven.configuration.Configuration;
+import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.util.SortedBy;
 import io.deephaven.engine.v2.*;
-import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.impl.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.test.types.OutOfBandTest;
 import junit.framework.TestCase;
@@ -118,13 +119,13 @@ public class TestSortedFirstOrLastByFactory extends RefreshingTableTestCase {
         // this part is the original bug, if we didn't change the actual value of the redirection rowSet; because the
         // shift modify combination left it at the same rowSet; we would not notice the mdoification
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            final Listener.Update update = new Listener.Update();
+            final TableUpdateImpl update = new TableUpdateImpl();
             update.added = RowSetFactory.fromKeys(0);
             update.removed = RowSetFactory.empty();
             update.modified = RowSetFactory.fromKeys(2, 4);
             update.modifiedColumnSet = source.getModifiedColumnSetForUpdates();
-            update.modifiedColumnSet.clear();
-            update.modifiedColumnSet.setAll("SFB");
+            update.modifiedColumnSet().clear();
+            update.modifiedColumnSet().setAll("SFB");
 
             addToTable(source, RowSetFactory.flat(6), intCol("SFB", 3, 2, 3, 2, 3, 2),
                     intCol("Sentinel", 6, 1, 2, 3, 4, 5), col("DummyBucket", "A", "A", "A", "A", "A", "A"));
@@ -143,13 +144,13 @@ public class TestSortedFirstOrLastByFactory extends RefreshingTableTestCase {
         // i'm concerned that if we really modify a row, but we don't detect it in the shift, so here we are just
         // shifting without modifications
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            final Listener.Update update = new Listener.Update();
+            final TableUpdateImpl update = new TableUpdateImpl();
             update.added = RowSetFactory.fromKeys(0);
             update.removed = RowSetFactory.empty();
             update.modified = RowSetFactory.fromKeys();
             update.modifiedColumnSet = source.getModifiedColumnSetForUpdates();
-            update.modifiedColumnSet.clear();
-            update.modifiedColumnSet.setAll("SFB");
+            update.modifiedColumnSet().clear();
+            update.modifiedColumnSet().setAll("SFB");
 
             addToTable(source, RowSetFactory.flat(7), intCol("SFB", 4, 3, 2, 3, 2, 3, 2),
                     intCol("Sentinel", 7, 6, 1, 2, 3, 4, 5), col("DummyBucket", "A", "A", "A", "A", "A", "A", "A"));
@@ -169,13 +170,13 @@ public class TestSortedFirstOrLastByFactory extends RefreshingTableTestCase {
 
         // here we are shifting, but not modifying the SFB column (but are modifying sentinel)
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            final Listener.Update update = new Listener.Update();
+            final TableUpdateImpl update = new TableUpdateImpl();
             update.added = RowSetFactory.fromKeys(0);
             update.removed = RowSetFactory.empty();
             update.modified = RowSetFactory.fromKeys(3);
             update.modifiedColumnSet = source.getModifiedColumnSetForUpdates();
-            update.modifiedColumnSet.clear();
-            update.modifiedColumnSet.setAll("Sentinel");
+            update.modifiedColumnSet().clear();
+            update.modifiedColumnSet().setAll("Sentinel");
 
             addToTable(source, RowSetFactory.flat(8), intCol("SFB", 4, 4, 3, 2, 3, 2, 3, 2),
                     intCol("Sentinel", 8, 7, 6, 9, 2, 3, 4, 5),
@@ -196,13 +197,13 @@ public class TestSortedFirstOrLastByFactory extends RefreshingTableTestCase {
 
         // we are shifting, and claiming to modify SFB but not actually doing it
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            final Listener.Update update = new Listener.Update();
+            final TableUpdateImpl update = new TableUpdateImpl();
             update.added = RowSetFactory.fromKeys(0);
             update.removed = RowSetFactory.empty();
             update.modified = RowSetFactory.fromKeys(4);
             update.modifiedColumnSet = source.getModifiedColumnSetForUpdates();
-            update.modifiedColumnSet.clear();
-            update.modifiedColumnSet.setAll("SFB");
+            update.modifiedColumnSet().clear();
+            update.modifiedColumnSet().setAll("SFB");
 
             addToTable(source, RowSetFactory.flat(9), intCol("SFB", 4, 4, 4, 3, 2, 3, 2, 3, 2),
                     intCol("Sentinel", 10, 8, 7, 6, 9, 2, 3, 4, 5),
@@ -223,13 +224,13 @@ public class TestSortedFirstOrLastByFactory extends RefreshingTableTestCase {
 
         // here we are shifting, and modifying SFB but not actually doing it
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            final Listener.Update update = new Listener.Update();
+            final TableUpdateImpl update = new TableUpdateImpl();
             update.added = RowSetFactory.fromKeys(0);
             update.removed = RowSetFactory.empty();
             update.modified = RowSetFactory.fromKeys(4);
             update.modifiedColumnSet = source.getModifiedColumnSetForUpdates();
-            update.modifiedColumnSet.clear();
-            update.modifiedColumnSet.setAll("SFB");
+            update.modifiedColumnSet().clear();
+            update.modifiedColumnSet().setAll("SFB");
 
             addToTable(source, RowSetFactory.flat(10), intCol("SFB", 4, 4, 4, 4, 1, 2, 3, 2, 3, 2),
                     intCol("Sentinel", 11, 10, 8, 7, 6, 9, 2, 3, 4, 5),
@@ -250,13 +251,13 @@ public class TestSortedFirstOrLastByFactory extends RefreshingTableTestCase {
 
         // claim to modify sfb, but don't really. Actually modify sentinel.
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            final Listener.Update update = new Listener.Update();
+            final TableUpdateImpl update = new TableUpdateImpl();
             update.added = RowSetFactory.fromKeys(0);
             update.removed = RowSetFactory.empty();
             update.modified = RowSetFactory.fromKeys(5);
             update.modifiedColumnSet = source.getModifiedColumnSetForUpdates();
-            update.modifiedColumnSet.clear();
-            update.modifiedColumnSet.setAll("SFB", "Sentinel");
+            update.modifiedColumnSet().clear();
+            update.modifiedColumnSet().setAll("SFB", "Sentinel");
 
             addToTable(source, RowSetFactory.flat(11), intCol("SFB", 4, 4, 4, 4, 4, 1, 2, 3, 2, 3, 2),
                     intCol("Sentinel", 12, 11, 10, 8, 7, 13, 9, 2, 3, 4, 5),

@@ -88,11 +88,11 @@ public abstract class UncoalescedTable extends BaseTable implements TableWithDef
     }
 
     @Override
-    public void listenForUpdates(Listener listener) {
+    public void listenForUpdates(TableUpdateListener listener) {
         coalesce().listenForUpdates(listener);
     }
 
-    protected final void listenForUpdatesUncoalesced(@NotNull final Listener listener) {
+    protected final void listenForUpdatesUncoalesced(@NotNull final TableUpdateListener listener) {
         super.listenForUpdates(listener);
     }
 
@@ -102,11 +102,11 @@ public abstract class UncoalescedTable extends BaseTable implements TableWithDef
     }
 
     @Override
-    public void removeUpdateListener(Listener listener) {
+    public void removeUpdateListener(TableUpdateListener listener) {
         coalesce().removeUpdateListener(listener);
     }
 
-    protected final void removeUpdateListenerUncoalesced(@NotNull final Listener listener) {
+    protected final void removeUpdateListenerUncoalesced(@NotNull final TableUpdateListener listener) {
         super.removeUpdateListener(listener);
     }
 

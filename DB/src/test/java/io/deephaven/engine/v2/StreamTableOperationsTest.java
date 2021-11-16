@@ -2,12 +2,14 @@ package io.deephaven.engine.v2;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.impl.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.rowset.TrackingWritableRowSet;
+import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.TableCreatorImpl;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.engine.v2.Listener.Update;
+import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.v2.sources.RedirectedColumnSource;
 import io.deephaven.engine.v2.utils.*;
@@ -38,7 +40,7 @@ public class StreamTableOperationsTest {
     private static final long INPUT_SIZE = 100_000L;
     private static final long MAX_RANDOM_ITERATION_SIZE = 10_000;
 
-    private final Table source = Table.of(EmptyTable.of(INPUT_SIZE)
+    private final Table source = TableCreatorImpl.create(EmptyTable.of(INPUT_SIZE)
             .update("Sym = Long.toString(ii % 1000) + `_Sym`")
             .update("Price = ii / 100 - (ii % 100)")
             .update("Size = (long) (ii / 50 - (ii % 50))"));
@@ -108,7 +110,7 @@ public class StreamTableOperationsTest {
                 UpdateGraphProcessor.DEFAULT.refreshUpdateSourceForUnitTests(() -> {
                     if (normalStepInserted.isNonempty() || finalNormalLastInserted.isNonempty()) {
                         normal.getRowSet().writableCast().update(normalStepInserted, finalNormalLastInserted);
-                        normal.notifyListeners(new Update(normalStepInserted.copy(), finalNormalLastInserted,
+                        normal.notifyListeners(new TableUpdateImpl(normalStepInserted.copy(), finalNormalLastInserted,
                                 RowSetFactory.empty(), RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY));
                     }
                 });
@@ -121,7 +123,7 @@ public class StreamTableOperationsTest {
                         }
                         stream.getRowSet().writableCast().clear();
                         stream.getRowSet().writableCast().insert(streamStepInserted);
-                        stream.notifyListeners(new Update(streamStepInserted.copy(), finalStreamLastInserted,
+                        stream.notifyListeners(new TableUpdateImpl(streamStepInserted.copy(), finalStreamLastInserted,
                                 RowSetFactory.empty(), RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY));
                     }
                 });

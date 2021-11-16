@@ -1,9 +1,8 @@
-package io.deephaven.engine.v2;
+package io.deephaven.engine.table;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.datastructures.util.CollectionUtil;
 import com.google.common.collect.Iterators;
-import io.deephaven.engine.table.ColumnSource;
 import gnu.trove.impl.Constants;
 import gnu.trove.map.hash.TObjectIntHashMap;
 
@@ -11,7 +10,7 @@ import java.util.BitSet;
 import java.util.Map;
 
 /**
- * Data structure to represent a subset of columns, used for propagating modifications via {@link Listener.Update}
+ * Data structure to represent a subset of columns, used for propagating modifications via {@link TableUpdate}
  * instances.
  */
 public class ModifiedColumnSet {

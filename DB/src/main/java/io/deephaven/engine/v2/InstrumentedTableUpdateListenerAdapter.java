@@ -7,6 +7,7 @@ package io.deephaven.engine.v2;
 import io.deephaven.base.cache.RetentionCache;
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.engine.liveness.Liveness;
 import io.deephaven.engine.v2.utils.AsyncErrorLogger;
@@ -26,9 +27,9 @@ import java.io.IOException;
  *
  * For creating internally ticking table nodes, instead use {@link BaseTable.ListenerImpl}
  */
-public abstract class InstrumentedListenerAdapter extends InstrumentedListener {
+public abstract class InstrumentedTableUpdateListenerAdapter extends InstrumentedTableUpdateListener {
 
-    private static final RetentionCache<InstrumentedListenerAdapter> RETENTION_CACHE = new RetentionCache<>();
+    private static final RetentionCache<InstrumentedTableUpdateListenerAdapter> RETENTION_CACHE = new RetentionCache<>();
 
     private final boolean retain;
 
@@ -42,7 +43,7 @@ public abstract class InstrumentedListenerAdapter extends InstrumentedListener {
      * @param retain Whether a hard reference to this listener should be maintained to prevent it from being collected.
      *        In most scenarios, it's better to specify {@code false} and keep a reference in the calling code.
      */
-    public InstrumentedListenerAdapter(@NotNull final Table source, final boolean retain) {
+    public InstrumentedTableUpdateListenerAdapter(@NotNull final Table source, final boolean retain) {
         this(null, source, retain);
     }
 
@@ -52,8 +53,8 @@ public abstract class InstrumentedListenerAdapter extends InstrumentedListener {
      * @param retain Whether a hard reference to this listener should be maintained to prevent it from being collected.
      *        In most scenarios, it's better to specify {@code false} and keep a reference in the calling code.
      */
-    public InstrumentedListenerAdapter(@Nullable final String description, @NotNull final Table source,
-            final boolean retain) {
+    public InstrumentedTableUpdateListenerAdapter(@Nullable final String description, @NotNull final Table source,
+                                                  final boolean retain) {
         super(description);
         this.source = Require.neqNull(source, "source");
         if (this.retain = retain) {
@@ -68,7 +69,7 @@ public abstract class InstrumentedListenerAdapter extends InstrumentedListener {
     }
 
     @Override
-    public abstract void onUpdate(Update upstream);
+    public abstract void onUpdate(TableUpdate upstream);
 
     /**
      * Called when the source table produces an error

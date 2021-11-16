@@ -6,7 +6,6 @@ package io.deephaven.engine.rowset.impl;
 
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
-import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.util.datastructures.LongAbortableConsumer;
 import io.deephaven.util.datastructures.SizeException;
 import io.deephaven.engine.rowset.RowSequence;
@@ -180,7 +179,7 @@ public class RowSequenceKeyRangesChunkImpl implements RowSequence {
             final int newLen = newEndOffset - newStartOffset;
 
             if (newLen == 0) {
-                return RowSequence.EMPTY;
+                return RowSequenceFactory.EMPTY;
             }
 
             pendingClose = new RowSequenceKeyRangesChunkImpl(
@@ -192,7 +191,7 @@ public class RowSequenceKeyRangesChunkImpl implements RowSequence {
         public RowSequence getNextRowSequenceWithLength(long numberOfKeys) {
             tryClosePendingClose();
             if (numberOfKeys <= 0) {
-                return RowSequence.EMPTY;
+                return RowSequenceFactory.EMPTY;
             }
 
             final int newStartOffset = helper.offset;
@@ -203,7 +202,7 @@ public class RowSequenceKeyRangesChunkImpl implements RowSequence {
             helper.advanceInPositionSpace(1);
 
             if (newLen == 0) {
-                return RowSequence.EMPTY;
+                return RowSequenceFactory.EMPTY;
             }
 
             pendingClose = new RowSequenceKeyRangesChunkImpl(
@@ -267,12 +266,12 @@ public class RowSequenceKeyRangesChunkImpl implements RowSequence {
     @Override
     public RowSequence getRowSequenceByPosition(final long startPositionInclusive, final long length) {
         if (length <= 0) {
-            return RowSequence.EMPTY;
+            return RowSequenceFactory.EMPTY;
         }
 
         OffsetHelper helper = new OffsetHelper();
         if (!helper.advanceInPositionSpace(startPositionInclusive)) {
-            return RowSequence.EMPTY;
+            return RowSequenceFactory.EMPTY;
         }
 
         final int newStartOffset = helper.offset;
@@ -283,7 +282,7 @@ public class RowSequenceKeyRangesChunkImpl implements RowSequence {
         final long newMaxKeyValue = helper.currKeyValue;
 
         if (newLen == 0) {
-            return RowSequence.EMPTY;
+            return RowSequenceFactory.EMPTY;
         }
 
         return new RowSequenceKeyRangesChunkImpl(backingChunk.slice(newStartOffset, newLen), newMinKeyValue,
@@ -307,7 +306,7 @@ public class RowSequenceKeyRangesChunkImpl implements RowSequence {
 
         final int newLen = newEndOffset - newStartOffset;
         if (newLen == 0) {
-            return RowSequence.EMPTY;
+            return RowSequenceFactory.EMPTY;
         }
 
         return new RowSequenceKeyRangesChunkImpl(backingChunk.slice(newStartOffset, newLen), startRowKeyInclusive,

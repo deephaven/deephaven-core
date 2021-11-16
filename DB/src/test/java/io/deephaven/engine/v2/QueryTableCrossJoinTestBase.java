@@ -3,14 +3,16 @@ package io.deephaven.engine.v2;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.datastructures.util.CollectionUtil;
 import com.google.common.collect.Maps;
+import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.tables.select.MatchPairFactory;
 import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.chunk.*;
-import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.impl.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.test.types.OutOfBandTest;
 import org.apache.commons.lang3.mutable.MutableInt;
@@ -59,7 +61,7 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(rTable, i(1 << 16), longCol("Y", 3));
-            final Listener.Update update = new Listener.Update();
+            final TableUpdateImpl update = new TableUpdateImpl();
             update.added = i(1 << 16);
             update.removed = i();
             update.modified = i();
@@ -70,7 +72,7 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
         TstUtils.validate(en);
 
         // One shift: the entire left row's sub-table
-        Assert.eq(listener.update.shifted.size(), "listener.update.shifted.size()", lTable.size(), "lTable.size()");
+        Assert.eq(listener.update.shifted().size(), "listener.update.shifted.size()", lTable.size(), "lTable.size()");
     }
 
     public void testZeroKeyJoinBitExpansionOnBoundaryShift() {
@@ -95,7 +97,7 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             removeRows(rTable, i(origIndex));
             addToTable(rTable, i(newIndex), longCol("Y", 2));
-            final Listener.Update update = new Listener.Update();
+            final TableUpdateImpl update = new TableUpdateImpl();
             update.added = i();
             update.removed = i();
             update.modified = i();
@@ -109,7 +111,7 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
 
         // Two shifts: before upstream shift, upstream shift (note: post upstream shift not possible because it exceeds
         // known keyspace range)
-        Assert.eq(listener.update.shifted.size(), "listener.update.shifted.size()", 2 * lTable.size(),
+        Assert.eq(listener.update.shifted().size(), "listener.update.shifted.size()", 2 * lTable.size(),
                 "2 * lTable.size()");
     }
 
@@ -133,7 +135,7 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             removeRows(rTable, i(128));
             addToTable(rTable, i(129, 1 << 16), longCol("Y", 2, 4));
-            final Listener.Update update = new Listener.Update();
+            final TableUpdateImpl update = new TableUpdateImpl();
             update.added = i(1 << 16);
             update.removed = i();
             update.modified = i();
@@ -146,7 +148,7 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
         TstUtils.validate(en);
 
         // Three shifts: before upstream shift, upstream shift, post upstream shift
-        Assert.eq(listener.update.shifted.size(), "listener.update.shifted.size()", 3 * lTable.size(),
+        Assert.eq(listener.update.shifted().size(), "listener.update.shifted.size()", 3 * lTable.size(),
                 "3 * lTable.size()");
     }
 
@@ -166,7 +168,7 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
             // left table
             removeRows(lTable, i(0, 1, 2, 3));
             addToTable(lTable, i(2, 4, 5, 7), c("X", "a", "b", "c", "d"));
-            final Listener.Update lUpdate = new Listener.Update();
+            final TableUpdateImpl lUpdate = new TableUpdateImpl();
             lUpdate.added = i();
             lUpdate.removed = i();
             lUpdate.modified = i();
@@ -181,7 +183,7 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
             // right table
             removeRows(rTable, i(128));
             addToTable(rTable, i(129, 1 << 16), longCol("Y", 2, 4));
-            final Listener.Update rUpdate = new Listener.Update();
+            final TableUpdateImpl rUpdate = new TableUpdateImpl();
             rUpdate.added = i(1 << 16);
             rUpdate.removed = i();
             rUpdate.modified = i();
@@ -639,7 +641,7 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
 
             UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
                 addToTable(leftTicking, i(numSteps.getValue()), longCol("intCol", numSteps.getValue()));
-                Listener.Update up = new Listener.Update();
+                TableUpdateImpl up = new TableUpdateImpl();
                 up.shifted = RowSetShiftData.EMPTY;
                 up.added = i(numSteps.getValue());
                 up.removed = i();
@@ -655,7 +657,7 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
                         longCol("intCol", data));
                 TstUtils.removeRows(rightTicking, i(rightOffset - 1));
 
-                up = new Listener.Update();
+                up = new TableUpdateImpl();
                 final RowSetShiftData.Builder shifted = new RowSetShiftData.Builder();
                 shifted.shiftRange(0, numSteps.getValue() + rightOffset, 1);
                 up.shifted = shifted.build();

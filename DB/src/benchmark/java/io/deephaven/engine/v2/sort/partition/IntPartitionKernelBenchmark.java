@@ -8,7 +8,7 @@ import io.deephaven.engine.v2.sort.timsort.BaseTestIntTimSortKernel;
 import io.deephaven.engine.v2.sort.timsort.TestTimSortKernel;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
-import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.impl.RowSetFactory;
 import org.openjdk.jmh.annotations.*;
 
 import java.util.List;

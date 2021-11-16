@@ -2,6 +2,7 @@ package io.deephaven.engine.tables.libs;
 
 import io.deephaven.engine.function.*;
 import io.deephaven.engine.rowset.*;
+import io.deephaven.engine.rowset.impl.RowSetFactory;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.DataColumn;
 import io.deephaven.engine.table.Table;

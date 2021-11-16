@@ -14,7 +14,7 @@ public class ShiftedRowSequenceTest extends RowSequenceTestBase {
         for (int i = 0; i < values.length; ++i) {
             shifted[i] = values[i] + SHIFT;
         }
-        final RowSequence other = RowSequenceUtil.wrapRowKeysChunkAsRowSequence(LongChunk.chunkWrap(shifted));
+        final RowSequence other = RowSequenceFactory.wrapRowKeysChunkAsRowSequence(LongChunk.chunkWrap(shifted));
         return ShiftedRowSequence.wrap(closeOnTearDownCase(other), -SHIFT);
     }
 

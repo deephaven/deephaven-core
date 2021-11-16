@@ -13,7 +13,7 @@ import io.deephaven.engine.chunk.Attributes.ChunkLengths;
 import io.deephaven.engine.chunk.Attributes.ChunkPositions;
 import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.rowset.impl.RowSequenceUtil;
+import io.deephaven.engine.rowset.impl.RowSequenceFactory;
 import io.deephaven.util.type.TypeUtils;
 import org.jetbrains.annotations.NotNull;
 
@@ -571,7 +571,7 @@ public class RedirectedColumnSource<T> extends AbstractColumnSource<T> implement
 
                 hasNulls = compactedMappedKeys.get(0) == RowSequence.NULL_ROW_KEY;
                 final int keysToSkip = hasNulls ? 1 : 0;
-                innerRowSequence = RowSequenceUtil.wrapRowKeysChunkAsRowSequence(
+                innerRowSequence = RowSequenceFactory.wrapRowKeysChunkAsRowSequence(
                         LongChunk.downcast(nonNullCompactedMappedKeys.resetFromTypedChunk(compactedMappedKeys,
                                 keysToSkip, uniqueKeyCount - keysToSkip)));
 

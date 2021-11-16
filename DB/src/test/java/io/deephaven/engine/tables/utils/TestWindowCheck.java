@@ -2,6 +2,8 @@ package io.deephaven.engine.tables.utils;
 
 import io.deephaven.base.Pair;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableUpdate;
+import io.deephaven.engine.table.TableUpdateListener;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.time.DateTime;
 import io.deephaven.engine.time.DateTimeUtils;
@@ -149,13 +151,13 @@ public class TestWindowCheck {
         private final long windowNanos;
         private Throwable exception;
 
-        class FailureListener extends InstrumentedListener {
+        class FailureListener extends InstrumentedTableUpdateListener {
             FailureListener() {
                 super("Failure ShiftObliviousListener");
             }
 
             @Override
-            public void onUpdate(Update upstream) {}
+            public void onUpdate(TableUpdate upstream) {}
 
             @Override
             public void onFailureInternal(Throwable originalException, UpdatePerformanceTracker.Entry sourceEntry) {
@@ -166,8 +168,8 @@ public class TestWindowCheck {
             }
         }
 
-        Listener windowedFailureListener = new FailureListener();
-        Listener updateFailureListener = new FailureListener();
+        TableUpdateListener windowedFailureListener = new FailureListener();
+        TableUpdateListener updateFailureListener = new FailureListener();
 
         WindowEvalNugget(TestTimeProvider timeProvider, QueryTable table) {
             this.table = table;

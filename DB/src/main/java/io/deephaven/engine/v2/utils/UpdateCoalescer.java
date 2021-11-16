@@ -3,8 +3,9 @@ package io.deephaven.engine.v2.utils;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetShiftData;
-import io.deephaven.engine.v2.Listener;
-import io.deephaven.engine.v2.ModifiedColumnSet;
+import io.deephaven.engine.table.TableUpdate;
+import io.deephaven.engine.table.impl.TableUpdateImpl;
+import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.util.SafeCloseableList;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.commons.lang3.mutable.MutableLong;
@@ -12,7 +13,7 @@ import org.apache.commons.lang3.mutable.MutableLong;
 import java.util.function.BiConsumer;
 
 /**
- * Helper utility for coalescing multiple {@link Listener.Update updates}.
+ * Helper utility for coalescing multiple {@link TableUpdateImpl updates}.
  */
 public class UpdateCoalescer {
 
@@ -27,58 +28,58 @@ public class UpdateCoalescer {
     // keep to ensure we make the correct selections when shift destinations overlap.
     private final WritableRowSet rowSet;
 
-    public UpdateCoalescer(final RowSet rowSet, final Listener.Update update) {
+    public UpdateCoalescer(final RowSet rowSet, final TableUpdate update) {
         this.rowSet = rowSet.copy();
-        this.rowSet.remove(update.removed);
+        this.rowSet.remove(update.removed());
 
-        this.added = update.added.copy();
-        this.removed = update.removed.copy();
-        this.modified = update.modified.copy();
-        this.shifted = update.shifted;
+        this.added = update.added().copy();
+        this.removed = update.removed().copy();
+        this.modified = update.modified().copy();
+        this.shifted = update.shifted();
 
         if (modified.isEmpty()) {
             // just to be certain
             this.modifiedColumnSet = ModifiedColumnSet.EMPTY;
         } else {
-            this.modifiedColumnSet = update.modifiedColumnSet.copy();
+            this.modifiedColumnSet = update.modifiedColumnSet().copy();
         }
     }
 
-    public Listener.Update coalesce() {
-        return new Listener.Update(added, removed, modified, shifted, modifiedColumnSet);
+    public TableUpdate coalesce() {
+        return new TableUpdateImpl(added, removed, modified, shifted, modifiedColumnSet);
     }
 
-    public UpdateCoalescer update(final Listener.Update update) {
+    public UpdateCoalescer update(final TableUpdate update) {
         // Remove update.remove from our coalesced post-shift added/modified.
         try (final SafeCloseableList closer = new SafeCloseableList()) {
-            final RowSet addedAndRemoved = closer.add(added.extract(update.removed));
+            final RowSet addedAndRemoved = closer.add(added.extract(update.removed()));
 
-            if (update.removed.isNonempty()) {
-                modified.remove(update.removed);
+            if (update.removed().isNonempty()) {
+                modified.remove(update.removed());
             }
 
             // Aggregate update.remove in coalesced pre-shift removed.
-            try (final WritableRowSet myRemoved = update.removed.minus(addedAndRemoved)) {
+            try (final WritableRowSet myRemoved = update.removed().minus(addedAndRemoved)) {
                 RowSetShiftUtils.unapply(shifted, myRemoved);
                 removed.insert(myRemoved);
                 rowSet.remove(myRemoved);
             }
 
             // Apply new shifts to our post-shift added/modified.
-            if (update.shifted.nonempty()) {
-                RowSetShiftUtils.apply(update.shifted, added);
-                RowSetShiftUtils.apply(update.shifted, modified);
+            if (update.shifted().nonempty()) {
+                RowSetShiftUtils.apply(update.shifted(), added);
+                RowSetShiftUtils.apply(update.shifted(), modified);
 
-                updateShifts(update.shifted);
+                updateShifts(update.shifted());
             }
 
             // We can't modify rows that did not exist previously.
-            try (final RowSet myModified = update.modified.minus(added)) {
-                updateModified(update.modifiedColumnSet, myModified);
+            try (final RowSet myModified = update.modified().minus(added)) {
+                updateModified(update.modifiedColumnSet(), myModified);
             }
 
             // Note: adding removed identical indices is allowed.
-            added.insert(update.added);
+            added.insert(update.added());
         }
 
         return this;

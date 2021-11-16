@@ -1,6 +1,5 @@
 package io.deephaven.engine.rowset.impl;
 
-import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.tables.live.UpdateGraphProcessor;

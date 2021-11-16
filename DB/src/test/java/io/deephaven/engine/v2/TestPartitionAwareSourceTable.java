@@ -9,16 +9,13 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.table.ColumnDefinition;
-import io.deephaven.engine.table.DataColumn;
-import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.rowset.impl.RowSetFactory;
+import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.v2.locations.*;
 import io.deephaven.engine.v2.locations.impl.SimpleTableLocationKey;
 import io.deephaven.engine.v2.locations.impl.TableLocationSubscriptionBuffer;
-import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.v2.sources.DeferredGroupingColumnSource;
 import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.engine.chunk.Attributes.Values;
@@ -80,7 +77,7 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
     private TableLocationSubscriptionBuffer subscriptionBuffer;
 
     private Table coalesced;
-    private Listener listener;
+    private TableUpdateListener listener;
     private final TstUtils.TstNotification notification = new TstUtils.TstNotification();
 
     private WritableRowSet expectedRowSet;
@@ -135,7 +132,7 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
                 }
             }
         });
-        listener = mock(Listener.class);
+        listener = mock(TableUpdateListener.class);
 
         checking(new Expectations() {
             {
@@ -314,16 +311,16 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
                 will(returnValue(toAdd.copy()));
                 checking(new Expectations() {
                     {
-                        oneOf(listener).getNotification(with(any(Listener.Update.class)));
+                        oneOf(listener).getNotification(with(any(TableUpdateImpl.class)));
                         will(new CustomAction("check added") {
                             @Override
                             public Object invoke(Invocation invocation) {
-                                final Listener.Update update =
-                                        (Listener.Update) invocation.getParameter(0);
-                                assertIndexEquals(toAdd, update.added);
-                                assertIndexEquals(RowSetFactory.empty(), update.removed);
-                                assertIndexEquals(RowSetFactory.empty(), update.modified);
-                                assertTrue(update.shifted.empty());
+                                final TableUpdate update =
+                                        (TableUpdate) invocation.getParameter(0);
+                                assertIndexEquals(toAdd, update.added());
+                                assertIndexEquals(RowSetFactory.empty(), update.removed());
+                                assertIndexEquals(RowSetFactory.empty(), update.modified());
+                                assertTrue(update.shifted().empty());
                                 return notification;
                             }
                         });

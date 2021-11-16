@@ -4,6 +4,7 @@
 package io.deephaven.engine.v2.ssms;
 
 import io.deephaven.base.verify.AssertionFailure;
+import io.deephaven.engine.table.ShiftObliviousListener;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.tables.utils.TableTools;

@@ -3,11 +3,12 @@ package io.deephaven.engine.tables.verify;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
-import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.impl.RowSetFactory;
+import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.tables.SortingOrder;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.v2.BaseTable;
-import io.deephaven.engine.v2.ModifiedColumnSet;
+import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.v2.sortcheck.SortCheck;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.chunk.Attributes;
@@ -44,11 +45,11 @@ public class SortedAssertionInstrumentedListenerAdapter extends BaseTable.Listen
     }
 
     @Override
-    public void onUpdate(final Update upstream) {
+    public void onUpdate(final TableUpdate upstream) {
         final boolean modifiedRows =
-                upstream.modified.isNonempty() && upstream.modifiedColumnSet.containsAny(parentColumnSet);
-        if (upstream.added.isNonempty() || modifiedRows) {
-            final RowSet rowsOfInterest = modifiedRows ? upstream.added.union(upstream.modified) : upstream.added;
+                upstream.modified().isNonempty() && upstream.modifiedColumnSet().containsAny(parentColumnSet);
+        if (upstream.added().isNonempty() || modifiedRows) {
+            final RowSet rowsOfInterest = modifiedRows ? upstream.added().union(upstream.modified()) : upstream.added();
             try (final RowSet ignored = modifiedRows ? rowsOfInterest : null;
                     final RowSet toProcess = makeAdjacentIndex(rowsOfInterest)) {
                 Assert.assertion(toProcess.subsetOf(parentRowSet), "toProcess.subsetOf(parentRowSet)",

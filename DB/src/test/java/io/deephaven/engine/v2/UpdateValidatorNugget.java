@@ -5,6 +5,8 @@
 package io.deephaven.engine.v2;
 
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableUpdate;
+import io.deephaven.engine.table.TableUpdateListener;
 import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.v2.utils.UpdatePerformanceTracker;
 import junit.framework.TestCase;
@@ -33,9 +35,9 @@ public class UpdateValidatorNugget implements EvalNuggetInterface {
     private Throwable exception = null;
 
     // We should listen for failures on the table, and if we get any, the test case is no good.
-    private final Listener failureListener = new InstrumentedListener("Failure ShiftObliviousListener") {
+    private final TableUpdateListener failureListener = new InstrumentedTableUpdateListener("Failure ShiftObliviousListener") {
         @Override
-        public void onUpdate(Update update) {}
+        public void onUpdate(TableUpdate update) {}
 
         @Override
         public void onFailureInternal(Throwable originalException, UpdatePerformanceTracker.Entry sourceEntry) {

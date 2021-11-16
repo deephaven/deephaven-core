@@ -2,10 +2,9 @@
  * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
  */
 
-package io.deephaven.engine.v2;
+package io.deephaven.engine.table;
 
 import io.deephaven.base.log.LogOutputAppendable;
-import io.deephaven.engine.table.Table;
 import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.engine.liveness.LivenessNode;
 
@@ -29,11 +28,17 @@ public interface TableListener extends LivenessNode {
      * @param sourceEntry performance tracking
      * @return exception notification
      */
-    NotificationQueue.Notification getErrorNotification(Throwable originalException, Entry sourceEntry);
+    ErrorNotification getErrorNotification(Throwable originalException, Entry sourceEntry);
 
     /**
      * Interface for instrumentation entries used by update graph nodes.
      */
     interface Entry extends LogOutputAppendable {
+    }
+
+    /**
+     * Marker interface for error notifications, only relevant to unit testing framework.
+     */
+    interface ErrorNotification extends NotificationQueue.Notification {
     }
 }

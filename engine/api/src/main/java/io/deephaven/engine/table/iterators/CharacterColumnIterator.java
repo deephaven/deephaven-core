@@ -22,7 +22,6 @@ public class CharacterColumnIterator extends ColumnIterator<Character> implement
     }
 
     public CharacterColumnIterator(@NotNull final Table table, @NotNull final String columnName) {
-        //noinspection unchecked
         this(table.getRowSet(), table.getColumnSource(columnName));
     }
 

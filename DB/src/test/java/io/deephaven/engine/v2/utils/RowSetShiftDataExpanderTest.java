@@ -3,8 +3,10 @@ package io.deephaven.engine.v2.utils;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.engine.rowset.WritableRowSet;
-import io.deephaven.engine.v2.Listener;
-import io.deephaven.engine.v2.ModifiedColumnSet;
+import io.deephaven.engine.rowset.impl.RowSetFactory;
+import io.deephaven.engine.table.TableUpdate;
+import io.deephaven.engine.table.impl.TableUpdateImpl;
+import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.updategraph.LogicalClock;
 import org.junit.After;
 import org.junit.Before;
@@ -518,8 +520,8 @@ public class RowSetShiftDataExpanderTest {
 
             final RowSetShiftData shiftData = shifted.build();
             shiftData.validate();
-            final Listener.Update update =
-                    new Listener.Update(added, removed, modified, shiftData, ModifiedColumnSet.ALL);
+            final TableUpdate update =
+                    new TableUpdateImpl(added, removed, modified, shiftData, ModifiedColumnSet.ALL);
             final RowSetShiftDataExpander expander = new RowSetShiftDataExpander(update, sourceRowSet);
             expander.validate(update, sourceRowSet);
 

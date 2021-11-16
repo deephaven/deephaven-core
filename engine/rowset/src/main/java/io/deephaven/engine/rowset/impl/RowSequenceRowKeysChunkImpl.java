@@ -13,7 +13,6 @@ import io.deephaven.engine.chunk.Attributes.OrderedRowKeys;
 import io.deephaven.engine.chunk.LongChunk;
 import io.deephaven.engine.chunk.OrderedChunkUtils;
 import io.deephaven.engine.chunk.WritableLongChunk;
-import io.deephaven.engine.v2.utils.*;
 import io.deephaven.util.datastructures.LongRangeAbortableConsumer;
 
 public class RowSequenceRowKeysChunkImpl implements RowSequence {
@@ -72,7 +71,7 @@ public class RowSequenceRowKeysChunkImpl implements RowSequence {
             final int newEndOffset = findFirstIndexAfterKey(maxKey, iteratorOffset);
             int newLen = newEndOffset - iteratorOffset;
             if (newLen == 0) {
-                return RowSequence.EMPTY;
+                return RowSequenceFactory.EMPTY;
             }
             pendingClose =
                     new RowSequenceRowKeysChunkImpl(backingChunk.slice(iteratorOffset, newLen));
@@ -85,7 +84,7 @@ public class RowSequenceRowKeysChunkImpl implements RowSequence {
             tryClosePendingClose();
             final int newLen = Math.toIntExact(Math.min(numberOfKeys, backingChunk.size() - iteratorOffset));
             if (newLen == 0) {
-                return RowSequence.EMPTY;
+                return RowSequenceFactory.EMPTY;
             }
             pendingClose =
                     new RowSequenceRowKeysChunkImpl(backingChunk.slice(iteratorOffset, newLen));
@@ -115,7 +114,7 @@ public class RowSequenceRowKeysChunkImpl implements RowSequence {
         final int newStartOffset = Math.toIntExact(Math.min(backingChunk.size(), startPositionInclusive));
         final int newLen = Math.toIntExact(Math.min(backingChunk.size() - newStartOffset, length));
         if (newLen == 0) {
-            return RowSequence.EMPTY;
+            return RowSequenceFactory.EMPTY;
         }
         return new RowSequenceRowKeysChunkImpl(backingChunk.slice(newStartOffset, newLen));
     }
@@ -125,7 +124,7 @@ public class RowSequenceRowKeysChunkImpl implements RowSequence {
         final int newStartOffset = findLowerBoundOfKey(startRowKeyInclusive, 0);
         final int newLen = findFirstIndexAfterKey(endRowKeyInclusive, newStartOffset) - newStartOffset;
         if (newLen == 0) {
-            return RowSequence.EMPTY;
+            return RowSequenceFactory.EMPTY;
         }
         return new RowSequenceRowKeysChunkImpl(backingChunk.slice(newStartOffset, newLen));
     }

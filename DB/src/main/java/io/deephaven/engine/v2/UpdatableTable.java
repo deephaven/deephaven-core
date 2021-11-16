@@ -1,6 +1,10 @@
 package io.deephaven.engine.v2;
 
 import io.deephaven.engine.rowset.*;
+import io.deephaven.engine.rowset.impl.RowSetFactory;
+import io.deephaven.engine.table.ModifiedColumnSet;
+import io.deephaven.engine.table.TableUpdate;
+import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.table.ColumnSource;
 import gnu.trove.impl.Constants;
@@ -121,7 +125,7 @@ public class UpdatableTable extends QueryTable implements Runnable {
         final RowSet modified = setToIndex(modifiedSet);
         getRowSet().writableCast().update(added, removed);
         if (added.isNonempty() || removed.isNonempty() || modified.isNonempty()) {
-            final Listener.Update update = new Listener.Update();
+            final TableUpdateImpl update = new TableUpdateImpl();
             update.added = added;
             update.removed = removed;
             update.modified = modified;
@@ -135,7 +139,7 @@ public class UpdatableTable extends QueryTable implements Runnable {
         }
     }
 
-    protected void doNotifyListeners(Listener.Update update) {
+    protected void doNotifyListeners(TableUpdate update) {
         notifyListeners(update);
     }
 

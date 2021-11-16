@@ -1,14 +1,15 @@
 package io.deephaven.engine.v2;
 
+import io.deephaven.engine.table.TableUpdate;
 import junit.framework.TestCase;
 
-public class FailureListener extends InstrumentedListener {
+public class FailureListener extends InstrumentedTableUpdateListener {
     public FailureListener() {
         super("Fuzzer Failure ShiftObliviousListener");
     }
 
     @Override
-    public void onUpdate(final Listener.Update upstream) {}
+    public void onUpdate(final TableUpdate upstream) {}
 
     @Override
     public void onFailureInternal(Throwable originalException,

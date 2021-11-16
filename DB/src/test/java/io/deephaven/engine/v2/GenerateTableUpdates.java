@@ -7,6 +7,10 @@ package io.deephaven.engine.v2;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.rowset.*;
+import io.deephaven.engine.rowset.impl.RowSetFactory;
+import io.deephaven.engine.table.ModifiedColumnSet;
+import io.deephaven.engine.table.TableUpdate;
+import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.v2.sources.DateTimeTreeMapSource;
@@ -152,14 +156,14 @@ public class GenerateTableUpdates {
                     Arrays.stream(columnInfo).filter(ci -> !ci.immutable).toArray(TstUtils.ColumnInfo[]::new);
             final boolean hasImmutableColumns = columnInfo.length > mutableColumns.length;
 
-            final Listener.Update update = new Listener.Update();
+            final TableUpdateImpl update = new TableUpdateImpl();
 
             // Removes in pre-shift keyspace.
             if (rowSet.size() > 0) {
                 update.removed =
                         TstUtils.selectSubIndexSet(Math.min(rowSet.intSize(), random.nextInt(targetUpdateSize)),
                                 rowSet, random);
-                rowSet.remove(update.removed); // remove blatted and explicit removals
+                rowSet.remove(update.removed()); // remove blatted and explicit removals
             } else {
                 update.removed = TstUtils.i();
             }
@@ -229,18 +233,18 @@ public class GenerateTableUpdates {
             // Compute what data needs to be removed otherwise the shift generated would be invalid. We must also update
             // our cloned rowSet so we can pick appropriate added and modified sets.
             final int preShiftIndexSize = rowSet.intSize();
-            update.shifted.apply((start, end, delta) -> {
+            update.shifted().apply((start, end, delta) -> {
                 // Remove any keys that are going to be splatted all over thanks to a shift.
                 final long blatStart = delta < 0 ? start + delta : end;
                 final long blatEnd = delta < 0 ? start - 1 : end + delta;
                 try (final RowSet blattedRows =
                         rowSet.extract(RowSetFactory.fromRange(blatStart, blatEnd))) {
-                    update.removed.writableCast().insert(blattedRows);
+                    update.removed().writableCast().insert(blattedRows);
                 }
             });
             final int numRowsBlattedByShift = preShiftIndexSize - rowSet.intSize();
 
-            RowSetShiftUtils.apply(update.shifted, rowSet);
+            RowSetShiftUtils.apply(update.shifted(), rowSet);
 
             // Modifies and Adds in post-shift keyspace.
             if (rowSet.isNonempty()) {
@@ -250,12 +254,12 @@ public class GenerateTableUpdates {
                 update.modified = TstUtils.i();
             }
 
-            if (update.modified.isEmpty()) {
+            if (update.modified().isEmpty()) {
                 update.modifiedColumnSet = ModifiedColumnSet.EMPTY;
             } else {
                 final ArrayList<String> modifiedColumns = new ArrayList<>();
                 update.modifiedColumnSet = table.modifiedColumnSet;
-                update.modifiedColumnSet.clear();
+                update.modifiedColumnSet().clear();
 
                 final String mustModifyColumn = (mutableColumns.length == 0) ? null
                         : mutableColumns[random.nextInt(mutableColumns.length)].name;
@@ -265,7 +269,7 @@ public class GenerateTableUpdates {
                         modifiedColumns.add(ci.name);
                     }
                 }
-                update.modifiedColumnSet.setAll(modifiedColumns.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
+                update.modifiedColumnSet().setAll(modifiedColumns.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
             }
 
             update.added = TstUtils.newIndex(numRowsBlattedByShift + random.nextInt(targetUpdateSize), rowSet, random);
@@ -274,7 +278,7 @@ public class GenerateTableUpdates {
         }
     }
 
-    static public void generateTableUpdates(final Listener.Update update,
+    static public void generateTableUpdates(final TableUpdate update,
             final Random random, final QueryTable table,
             final TstUtils.ColumnInfo<?, ?>[] columnInfo) {
         final WritableRowSet rowSet = table.getRowSet().writableCast();
@@ -285,17 +289,17 @@ public class GenerateTableUpdates {
         }
 
         // Remove data:
-        TstUtils.removeRows(table, update.removed);
-        for (final RowSet.Iterator iterator = update.removed.iterator(); iterator.hasNext();) {
+        TstUtils.removeRows(table, update.removed());
+        for (final RowSet.Iterator iterator = update.removed().iterator(); iterator.hasNext();) {
             final long next = iterator.nextLong();
             for (final TstUtils.ColumnInfo<?, ?> info : columnInfo) {
                 info.remove(next);
             }
         }
-        rowSet.remove(update.removed);
+        rowSet.remove(update.removed());
 
         // Shift data:
-        update.shifted.apply((start, end, delta) -> {
+        update.shifted().apply((start, end, delta) -> {
             // Move data!
             final RowSet.SearchIterator iter = (delta < 0) ? rowSet.searchIterator() : rowSet.reverseIterator();
             if (iter.advance((delta < 0) ? start : end)) {
@@ -320,29 +324,29 @@ public class GenerateTableUpdates {
                 }
             }
         });
-        RowSetShiftUtils.apply(update.shifted, rowSet);
+        RowSetShiftUtils.apply(update.shifted(), rowSet);
 
         // Modifies and Adds in post-shift keyspace.
         final ColumnHolder[] cModsOnly = new ColumnHolder[columnInfo.length];
         final ColumnHolder[] cAddsOnly = new ColumnHolder[columnInfo.length];
 
-        final BitSet dirtyColumns = update.modifiedColumnSet.extractAsBitSet();
+        final BitSet dirtyColumns = update.modifiedColumnSet().extractAsBitSet();
         for (int i = 0; i < columnInfo.length; i++) {
             final TstUtils.ColumnInfo<?, ?> ci = columnInfo[i];
-            final RowSet keys = dirtyColumns.get(i) ? update.modified : TstUtils.i();
+            final RowSet keys = dirtyColumns.get(i) ? update.modified() : TstUtils.i();
             cModsOnly[i] = ci.populateMapAndC(keys, random);
-            cAddsOnly[i] = ci.populateMapAndC(update.added, random);
+            cAddsOnly[i] = ci.populateMapAndC(update.added(), random);
         }
-        TstUtils.addToTable(table, update.added, cAddsOnly);
-        TstUtils.addToTable(table, update.modified, cModsOnly);
-        rowSet.insert(update.added);
+        TstUtils.addToTable(table, update.added(), cAddsOnly);
+        TstUtils.addToTable(table, update.modified(), cModsOnly);
+        rowSet.insert(update.added());
 
         if (RefreshingTableTestCase.printTableUpdates) {
-            System.out.println("Add: " + update.added);
-            System.out.println("Remove: " + update.removed);
-            System.out.println("Modify: " + update.modified);
-            System.out.println("Shift: " + update.shifted);
-            System.out.println("ModifiedColumnSet: " + update.modifiedColumnSet);
+            System.out.println("Add: " + update.added());
+            System.out.println("Remove: " + update.removed());
+            System.out.println("Modify: " + update.modified());
+            System.out.println("Shift: " + update.shifted());
+            System.out.println("ModifiedColumnSet: " + update.modifiedColumnSet());
             try {
                 System.out.println("Updated Table: " + table.size());
                 TableTools.showWithIndex(table, 100);

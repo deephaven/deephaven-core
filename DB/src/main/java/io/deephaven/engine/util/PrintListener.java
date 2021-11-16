@@ -1,8 +1,9 @@
 package io.deephaven.engine.util;
 
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.tables.utils.TableTools;
-import io.deephaven.engine.v2.InstrumentedListener;
+import io.deephaven.engine.v2.InstrumentedTableUpdateListener;
 import io.deephaven.util.annotations.ScriptApi;
 
 /**
@@ -22,7 +23,7 @@ import io.deephaven.util.annotations.ScriptApi;
  * </p>
  */
 @ScriptApi
-public class PrintListener extends InstrumentedListener {
+public class PrintListener extends InstrumentedTableUpdateListener {
     private final String description;
     private final Table table;
     private final int rowCount;
@@ -55,10 +56,10 @@ public class PrintListener extends InstrumentedListener {
     }
 
     @Override
-    public void onUpdate(final Update upstream) {
-        System.out.println("Update: " + description + ": " + table.size() + "\nAdded rows: " + upstream.added.size()
-                + ", Removed rows: " + upstream.removed.size() + ", Modified Rows: " + upstream.modified.size()
-                + ", Shifted Rows: " + upstream.shifted.getEffectiveSize() + "\nUpdate:" + upstream);
+    public void onUpdate(final TableUpdate upstream) {
+        System.out.println("Update: " + description + ": " + table.size() + "\nAdded rows: " + upstream.added().size()
+                + ", Removed rows: " + upstream.removed().size() + ", Modified Rows: " + upstream.modified().size()
+                + ", Shifted Rows: " + upstream.shifted().getEffectiveSize() + "\nUpdate:" + upstream);
         if (rowCount > 0) {
             TableTools.showWithIndex(table, rowCount);
         }

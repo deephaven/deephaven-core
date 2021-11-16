@@ -7,7 +7,7 @@ import io.deephaven.engine.chunk.WritableByteChunk;
 import io.deephaven.engine.chunk.WritableChunk;
 import io.deephaven.engine.page.ChunkPage;
 import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.rowset.impl.RowSequenceUtil;
+import io.deephaven.engine.rowset.impl.RowSequenceFactory;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -28,7 +28,7 @@ public final class ParquetColumnRegionByte<ATTR extends Any> extends ParquetColu
             final int length
     ) {
         final WritableChunk<ATTR> byteChunk = WritableByteChunk.writableChunkWrap(destination, destinationOffset, length);
-        try (RowSequence rowSequence = RowSequenceUtil.forRange(firstElementIndex, firstElementIndex + length - 1)) {
+        try (RowSequence rowSequence = RowSequenceFactory.forRange(firstElementIndex, firstElementIndex + length - 1)) {
             fillChunk(DEFAULT_FILL_INSTANCE, byteChunk, rowSequence);
         }
         return destination;

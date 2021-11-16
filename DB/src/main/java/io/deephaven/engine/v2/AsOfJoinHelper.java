@@ -2,12 +2,11 @@ package io.deephaven.engine.v2;
 
 import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.table.ChunkSource;
+import io.deephaven.engine.rowset.impl.RowSetFactory;
+import io.deephaven.engine.table.*;
 import io.deephaven.engine.rowset.*;
-import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.tables.SortingOrder;
-import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.chunk.util.hashing.ChunkEquals;
 import io.deephaven.engine.v2.join.BucketedChunkedAjMergedListener;
 import io.deephaven.engine.v2.join.JoinListenerRecorder;
@@ -283,23 +282,23 @@ public class AsOfJoinHelper {
         leftTable.listenForUpdates(new BaseTable.ListenerImpl(makeListenerDescription(columnsToMatch,
                 stampPair, columnsToAdd, order == SortingOrder.Descending, disallowExactMatch), leftTable, result) {
             @Override
-            public void onUpdate(Update upstream) {
-                final Update downstream = upstream.copy();
+            public void onUpdate(TableUpdate upstream) {
+                final TableUpdateImpl downstream = TableUpdateImpl.copy(upstream);
 
-                upstream.removed.forAllRowKeys(rowRedirection::removeVoid);
+                upstream.removed().forAllRowKeys(rowRedirection::removeVoid);
 
-                final boolean keysModified = upstream.modifiedColumnSet.containsAny(leftKeysOrStamps);
+                final boolean keysModified = upstream.modifiedColumnSet().containsAny(leftKeysOrStamps);
 
                 final RowSet restampKeys;
                 if (keysModified) {
                     upstream.getModifiedPreShift().forAllRowKeys(rowRedirection::removeVoid);
-                    restampKeys = upstream.modified.union(upstream.added);
+                    restampKeys = upstream.modified().union(upstream.added());
                 } else {
-                    restampKeys = upstream.added;
+                    restampKeys = upstream.added();
                 }
 
                 try (final RowSet prevLeftRowSet = leftTable.getRowSet().getPrevRowSet()) {
-                    rowRedirection.applyShift(prevLeftRowSet, upstream.shifted);
+                    rowRedirection.applyShift(prevLeftRowSet, upstream.shifted());
                 }
 
                 if (restampKeys.isNonempty()) {
@@ -332,9 +331,9 @@ public class AsOfJoinHelper {
                 }
 
                 downstream.modifiedColumnSet = result.modifiedColumnSet;
-                leftTransformer.clearAndTransform(upstream.modifiedColumnSet, downstream.modifiedColumnSet);
+                leftTransformer.clearAndTransform(upstream.modifiedColumnSet(), downstream.modifiedColumnSet());
                 if (keysModified) {
-                    downstream.modifiedColumnSet.setAll(allRightColumns);
+                    downstream.modifiedColumnSet().setAll(allRightColumns);
                 }
 
                 result.notifyListeners(downstream);
@@ -623,26 +622,26 @@ public class AsOfJoinHelper {
                 makeListenerDescription(columnsToMatch, stampPair, columnsToAdd, reverse, disallowExactMatch),
                 rightTable, result) {
             @Override
-            public void onUpdate(Update upstream) {
-                final Update downstream = new Update();
+            public void onUpdate(TableUpdate upstream) {
+                final TableUpdateImpl downstream = new TableUpdateImpl();
                 downstream.added = RowSetFactory.empty();
                 downstream.removed = RowSetFactory.empty();
                 downstream.shifted = RowSetShiftData.EMPTY;
                 downstream.modifiedColumnSet = result.modifiedColumnSet;
 
-                final boolean keysModified = upstream.modifiedColumnSet.containsAny(rightMatchColumns);
-                final boolean stampModified = upstream.modifiedColumnSet.containsAny(rightStampColumn);
+                final boolean keysModified = upstream.modifiedColumnSet().containsAny(rightMatchColumns);
+                final boolean stampModified = upstream.modifiedColumnSet().containsAny(rightStampColumn);
 
                 final RowSetBuilderRandom modifiedBuilder = RowSetFactory.builderRandom();
 
                 final RowSet restampRemovals;
                 final RowSet restampAdditions;
                 if (keysModified || stampModified) {
-                    restampAdditions = upstream.added.union(upstream.modified);
-                    restampRemovals = upstream.removed.union(upstream.getModifiedPreShift());
+                    restampAdditions = upstream.added().union(upstream.modified());
+                    restampRemovals = upstream.removed().union(upstream.getModifiedPreShift());
                 } else {
-                    restampAdditions = upstream.added;
-                    restampRemovals = upstream.removed;
+                    restampAdditions = upstream.added();
+                    restampRemovals = upstream.removed();
                 }
 
                 sequentialBuilders.ensureCapacity(Math.max(restampRemovals.size(), restampAdditions.size()));
@@ -695,7 +694,7 @@ public class AsOfJoinHelper {
                 }
 
                 // After all the removals are done, we do the shifts
-                if (upstream.shifted.nonempty()) {
+                if (upstream.shifted().nonempty()) {
                     try (final RowSet fullPrevRowSet = rightTable.getRowSet().getPrevRowSet();
                             final RowSet previousToShift = fullPrevRowSet.minus(restampRemovals)) {
                         if (previousToShift.isNonempty()) {
@@ -703,7 +702,7 @@ public class AsOfJoinHelper {
                                     ResettableWritableLongChunk.makeResettableChunk();
                                     final ResettableWritableChunk<Values> leftValuesChunk =
                                             rightStampSource.getChunkType().makeResettableWritableChunk()) {
-                                final RowSetShiftData.Iterator sit = upstream.shifted.applyIterator();
+                                final RowSetShiftData.Iterator sit = upstream.shifted().applyIterator();
                                 while (sit.hasNext()) {
                                     sit.next();
                                     final RowSet rowSetToShift =
@@ -838,9 +837,9 @@ public class AsOfJoinHelper {
                     // and then finally we handle the case where the keys and stamps were not modified, but we must
                     // identify
                     // the responsive modifications.
-                    if (!keysModified && !stampModified && upstream.modified.isNonempty()) {
+                    if (!keysModified && !stampModified && upstream.modified().isNonempty()) {
                         // next we do the additions
-                        final int modifiedSlotCount = asOfJoinStateManager.gatherModifications(upstream.modified,
+                        final int modifiedSlotCount = asOfJoinStateManager.gatherModifications(upstream.modified(),
                                 rightSources, slots, sequentialBuilders);
 
                         for (int slotIndex = 0; slotIndex < modifiedSlotCount; ++slotIndex) {
@@ -865,7 +864,7 @@ public class AsOfJoinHelper {
                             }
                         }
 
-                        rightTransformer.transform(upstream.modifiedColumnSet, downstream.modifiedColumnSet);
+                        rightTransformer.transform(upstream.modifiedColumnSet(), downstream.modifiedColumnSet());
                     }
                 }
 
@@ -876,7 +875,7 @@ public class AsOfJoinHelper {
 
                 final boolean processedAdditionsOrRemovals = removedSlotCount > 0 || addedSlotCount > 0;
                 if (keysModified || stampModified || processedAdditionsOrRemovals) {
-                    downstream.modifiedColumnSet.setAll(rightAddedColumns);
+                    downstream.modifiedColumnSet().setAll(rightAddedColumns);
                 }
 
                 result.notifyListeners(downstream);
@@ -1167,14 +1166,14 @@ public class AsOfJoinHelper {
                 new BaseTable.ListenerImpl(makeListenerDescription(MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY,
                         stampPair, columnsToAdd, reverse, disallowExactMatch), rightTable, result) {
                     @Override
-                    public void onUpdate(Update upstream) {
-                        final Update downstream = new Update();
+                    public void onUpdate(TableUpdate upstream) {
+                        final TableUpdateImpl downstream = new TableUpdateImpl();
                         downstream.added = RowSetFactory.empty();
                         downstream.removed = RowSetFactory.empty();
                         downstream.shifted = RowSetShiftData.EMPTY;
                         downstream.modifiedColumnSet = result.modifiedColumnSet;
 
-                        final boolean stampModified = upstream.modifiedColumnSet.containsAny(rightStampColumn);
+                        final boolean stampModified = upstream.modifiedColumnSet().containsAny(rightStampColumn);
 
                         final RowSetBuilderRandom modifiedBuilder = RowSetFactory.builderRandom();
 
@@ -1186,11 +1185,11 @@ public class AsOfJoinHelper {
                             final RowSet restampRemovals;
                             final RowSet restampAdditions;
                             if (stampModified) {
-                                restampAdditions = upstream.added.union(upstream.modified);
-                                restampRemovals = upstream.removed.union(upstream.getModifiedPreShift());
+                                restampAdditions = upstream.added().union(upstream.modified());
+                                restampRemovals = upstream.removed().union(upstream.getModifiedPreShift());
                             } else {
-                                restampAdditions = upstream.added;
-                                restampRemovals = upstream.removed;
+                                restampAdditions = upstream.added();
+                                restampRemovals = upstream.removed();
                             }
 
                             // When removing a row, record the stamp, redirection key, and prior redirection key. Binary
@@ -1219,8 +1218,8 @@ public class AsOfJoinHelper {
                                 }
                             }
 
-                            if (upstream.shifted.nonempty()) {
-                                rightIncrementalApplySsaShift(upstream.shifted, ssa, sortKernel, fillContext,
+                            if (upstream.shifted().nonempty()) {
+                                rightIncrementalApplySsaShift(upstream.shifted(), ssa, sortKernel, fillContext,
                                         restampRemovals, rightTable, rightChunkSize, rightStampSource, chunkSsaStamp,
                                         leftStampValues, leftStampKeys, rowRedirection, disallowExactMatch);
                             }
@@ -1284,11 +1283,11 @@ public class AsOfJoinHelper {
 
                             // if the stamp was not modified, then we need to figure out the responsive rows to mark as
                             // modified
-                            if (!stampModified && upstream.modified.isNonempty()) {
-                                try (final RowSequence.Iterator modit = upstream.modified.getRowSequenceIterator();
-                                        final WritableLongChunk<RowKeys> rightStampIndices =
+                            if (!stampModified && upstream.modified().isNonempty()) {
+                                try (final RowSequence.Iterator modit = upstream.modified().getRowSequenceIterator();
+                                     final WritableLongChunk<RowKeys> rightStampIndices =
                                                 WritableLongChunk.makeWritableChunk(rightChunkSize);
-                                        final WritableChunk<Values> rightStampChunk =
+                                     final WritableChunk<Values> rightStampChunk =
                                                 stampChunkType.makeWritableChunk(rightChunkSize)) {
                                     while (modit.hasMore()) {
                                         final RowSequence chunkOk = modit.getNextRowSequenceWithLength(rightChunkSize);
@@ -1310,14 +1309,14 @@ public class AsOfJoinHelper {
                             }
                         }
 
-                        if (stampModified || upstream.added.isNonempty() || upstream.removed.isNonempty()) {
+                        if (stampModified || upstream.added().isNonempty() || upstream.removed().isNonempty()) {
                             // If we kept track of whether or not something actually changed, then we could skip
                             // painting all
                             // the right columns as modified. It is not clear whether it is worth the additional
                             // complexity.
-                            downstream.modifiedColumnSet.setAll(allRightColumns);
+                            downstream.modifiedColumnSet().setAll(allRightColumns);
                         } else {
-                            rightTransformer.transform(upstream.modifiedColumnSet, downstream.modifiedColumnSet);
+                            rightTransformer.transform(upstream.modifiedColumnSet(), downstream.modifiedColumnSet());
                         }
 
                         downstream.modified = modifiedBuilder.build();
@@ -1464,24 +1463,24 @@ public class AsOfJoinHelper {
                                             columnsToAdd, order == SortingOrder.Descending, disallowExactMatch),
                                     leftTable, result) {
                                 @Override
-                                public void onUpdate(Update upstream) {
-                                    final Update downstream = upstream.copy();
+                                public void onUpdate(TableUpdate upstream) {
+                                    final TableUpdateImpl downstream = TableUpdateImpl.copy(upstream);
 
-                                    upstream.removed.forAllRowKeys(rowRedirection::removeVoid);
+                                    upstream.removed().forAllRowKeys(rowRedirection::removeVoid);
 
-                                    final boolean stampModified = upstream.modified.isNonempty()
-                                            && upstream.modifiedColumnSet.containsAny(leftStampColumn);
+                                    final boolean stampModified = upstream.modified().isNonempty()
+                                            && upstream.modifiedColumnSet().containsAny(leftStampColumn);
 
                                     final RowSet restampKeys;
                                     if (stampModified) {
                                         upstream.getModifiedPreShift().forAllRowKeys(rowRedirection::removeVoid);
-                                        restampKeys = upstream.modified.union(upstream.added);
+                                        restampKeys = upstream.modified().union(upstream.added());
                                     } else {
-                                        restampKeys = upstream.added;
+                                        restampKeys = upstream.added();
                                     }
 
                                     try (final RowSet prevLeftRowSet = leftTable.getRowSet().getPrevRowSet()) {
-                                        rowRedirection.applyShift(prevLeftRowSet, upstream.shifted);
+                                        rowRedirection.applyShift(prevLeftRowSet, upstream.shifted());
                                     }
 
                                     try (final AsOfStampContext stampContext =
@@ -1492,10 +1491,10 @@ public class AsOfJoinHelper {
                                     }
 
                                     downstream.modifiedColumnSet = result.modifiedColumnSet;
-                                    leftTransformer.clearAndTransform(upstream.modifiedColumnSet,
-                                            downstream.modifiedColumnSet);
+                                    leftTransformer.clearAndTransform(upstream.modifiedColumnSet(),
+                                            downstream.modifiedColumnSet());
                                     if (stampModified) {
-                                        downstream.modifiedColumnSet.setAll(allRightColumns);
+                                        downstream.modifiedColumnSet().setAll(allRightColumns);
                                     }
 
                                     result.notifyListeners(downstream);

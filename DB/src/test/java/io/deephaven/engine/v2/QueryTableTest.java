@@ -11,10 +11,9 @@ import io.deephaven.base.Pair;
 import io.deephaven.base.verify.AssertionFailure;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.rowset.*;
-import io.deephaven.engine.table.ColumnDefinition;
-import io.deephaven.engine.table.DataColumn;
-import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.rowset.impl.RowSetFactory;
+import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.vector.*;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.tables.select.MatchPairFactory;
@@ -31,7 +30,6 @@ import io.deephaven.engine.v2.remote.ConstructSnapshot;
 import io.deephaven.engine.v2.remote.InitialSnapshotTable;
 import io.deephaven.engine.v2.select.*;
 import io.deephaven.engine.v2.sources.AbstractColumnSource;
-import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.engine.v2.utils.*;
 import io.deephaven.test.types.OutOfBandTest;
@@ -1099,7 +1097,7 @@ public class QueryTableTest extends QueryTableTestBase {
         reverseTable.listenForUpdates(listener);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            Listener.Update downstream = new Listener.Update();
+            TableUpdateImpl downstream = new TableUpdateImpl();
             downstream.added = i();
             downstream.removed = i();
             downstream.modified = i(1);
@@ -1112,8 +1110,8 @@ public class QueryTableTest extends QueryTableTestBase {
         });
 
         assertNotNull(listener.update);
-        assertNotNull(listener.update.shifted);
-        assertEquals(0, listener.update.shifted.size());
+        assertNotNull(listener.update.shifted());
+        assertEquals(0, listener.update.shifted().size());
     }
 
     public void testReverseClippingDuringShift() {
@@ -1124,7 +1122,7 @@ public class QueryTableTest extends QueryTableTestBase {
         reversedTable.listenForUpdates(listener);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            Listener.Update downstream = new Listener.Update();
+            TableUpdateImpl downstream = new TableUpdateImpl();
             downstream.added = i();
             downstream.removed = i();
             downstream.modified = i();
@@ -1136,7 +1134,7 @@ public class QueryTableTest extends QueryTableTestBase {
             downstream.shifted = builder.build();
 
             try (final WritableRowSet rowSetCopy = table.getRowSet().copy()) {
-                RowSetShiftUtils.apply(downstream.shifted, rowSetCopy);
+                RowSetShiftUtils.apply(downstream.shifted(), rowSetCopy);
                 TstUtils.removeRows(table, table.getRowSet());
                 TstUtils.addToTable(table, rowSetCopy, c("Sentinel", 1));
             }
@@ -1145,8 +1143,8 @@ public class QueryTableTest extends QueryTableTestBase {
         });
 
         assertNotNull(listener.update);
-        assertNotNull(listener.update.shifted);
-        assertEquals(1, listener.update.shifted.size());
+        assertNotNull(listener.update.shifted());
+        assertEquals(1, listener.update.shifted().size());
         assertEquals(table.reverse().getRowSet(), reversedTable.getRowSet());
     }
 
@@ -1811,10 +1809,10 @@ public class QueryTableTest extends QueryTableTestBase {
         final QueryTable snapshot = (QueryTable) left.snapshotIncremental(right, true);
         final TableUpdateValidator validator = TableUpdateValidator.make(snapshot);
         final QueryTable validatorTable = validator.getResultTable();
-        final Listener validatorTableListener =
-                new InstrumentedListenerAdapter(validatorTable, false) {
+        final TableUpdateListener validatorTableListener =
+                new InstrumentedTableUpdateListenerAdapter(validatorTable, false) {
                     @Override
-                    public void onUpdate(Update upstream) {}
+                    public void onUpdate(TableUpdate upstream) {}
 
                     @Override
                     public void onFailureInternal(Throwable originalException,
@@ -1860,10 +1858,10 @@ public class QueryTableTest extends QueryTableTestBase {
                 testRefreshingTable(c("A", 3, 30, 1, 2, 50), c("B", "c", "aa", "a", "b", "bc"), c("T", 2, 5, 2, 2, 5));
         assertEquals("", diff(snapshot, secondResult, 10));
         assertEquals(listener.getCount(), 1);
-        assertEquals(i(20, 40), listener.update.added);
-        assertEquals(i(), listener.update.modified);
-        assertEquals(i(), listener.update.removed);
-        assertTrue(listener.update.shifted.empty());
+        assertEquals(i(20, 40), listener.update.added());
+        assertEquals(i(), listener.update.modified());
+        assertEquals(i(), listener.update.removed());
+        assertTrue(listener.update.shifted().empty());
         listener.reset();
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
@@ -1883,10 +1881,10 @@ public class QueryTableTest extends QueryTableTestBase {
         final QueryTable thirdResult = testRefreshingTable(c("A", 11, 50, 34), c("B", "A", "bc", "Q"), c("T", 8, 5, 8));
         assertEquals("", diff(snapshot, thirdResult, 10));
         assertEquals(listener.getCount(), 1);
-        assertEquals(i(75), listener.update.added);
-        assertEquals(i(25), listener.update.modified);
-        assertEquals(i(10, 20, 30), listener.update.removed);
-        assertTrue(listener.update.shifted.empty());
+        assertEquals(i(75), listener.update.added());
+        assertEquals(i(25), listener.update.modified());
+        assertEquals(i(10, 20, 30), listener.update.removed());
+        assertTrue(listener.update.shifted().empty());
         listener.reset();
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
@@ -1903,10 +1901,10 @@ public class QueryTableTest extends QueryTableTestBase {
                 testRefreshingTable(c("A", 12, 50, 34), c("B", "R", "bc", "Q"), c("T", 9, 5, 8));
         assertEquals("", diff(snapshot, fourthResult, 10));
         assertEquals(listener.getCount(), 1);
-        assertEquals(i(), listener.update.added);
-        assertEquals(i(25), listener.update.modified);
-        assertEquals(i(), listener.update.removed);
-        assertTrue(listener.update.shifted.empty());
+        assertEquals(i(), listener.update.added());
+        assertEquals(i(25), listener.update.modified());
+        assertEquals(i(), listener.update.removed());
+        assertTrue(listener.update.shifted().empty());
         listener.reset();
 
         TableTools.showWithIndex(snapshot);
@@ -2061,44 +2059,44 @@ public class QueryTableTest extends QueryTableTestBase {
                 new io.deephaven.engine.v2.SimpleListener(selected);
         selected.listenForUpdates(simpleListener);
 
-        final Supplier<Listener.Update> newUpdate =
-                () -> new Listener.Update(i(), i(), i(), RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY);
+        final Supplier<TableUpdate> newUpdate =
+                () -> new TableUpdateImpl(i(), i(), i(), RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(queryTable, i(3), c("intCol", 30));
             TstUtils.removeRows(queryTable, i(2));
-            final Listener.Update update = newUpdate.get();
+            final TableUpdateImpl update = newUpdate.get();
             update.added = i(3);
             update.removed = i(2);
             queryTable.notifyListeners(update);
         });
 
         Assert.assertEquals("simpleListener.getCount() == 1", 1, simpleListener.getCount());
-        Assert.assertEquals("simpleListener.update.shifted.size() = 0", 0, simpleListener.update.shifted.size());
-        Assert.assertEquals("simpleListener.update.added.size() = 1", 1, simpleListener.update.added.size());
-        Assert.assertEquals("simpleListener.update.removed.size() = 1", 1, simpleListener.update.removed.size());
-        Assert.assertEquals("simpleListener.update.modified.size() = 0", 0, simpleListener.update.modified.size());
-        Assert.assertEquals("simpleListener.update.added = {1}", i(1), simpleListener.update.added);
-        Assert.assertEquals("simpleListener.update.removed = {1}", i(1), simpleListener.update.removed);
+        Assert.assertEquals("simpleListener.update.shifted.size() = 0", 0, simpleListener.update.shifted().size());
+        Assert.assertEquals("simpleListener.update.added.size() = 1", 1, simpleListener.update.added().size());
+        Assert.assertEquals("simpleListener.update.removed.size() = 1", 1, simpleListener.update.removed().size());
+        Assert.assertEquals("simpleListener.update.modified.size() = 0", 0, simpleListener.update.modified().size());
+        Assert.assertEquals("simpleListener.update.added = {1}", i(1), simpleListener.update.added());
+        Assert.assertEquals("simpleListener.update.removed = {1}", i(1), simpleListener.update.removed());
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(queryTable, i(3), c("intCol", 30));
-            final Listener.Update update = newUpdate.get();
+            final TableUpdateImpl update = newUpdate.get();
             update.modified = i(3);
             update.modifiedColumnSet = queryTable.newModifiedColumnSet("intCol");
             queryTable.notifyListeners(update);
         });
 
         Assert.assertEquals("simpleListener.getCount() == 2", 2, simpleListener.getCount());
-        Assert.assertEquals("simpleListener.update.added.size() = 0", 0, simpleListener.update.added.size());
-        Assert.assertEquals("simpleListener.update.removed.size() = 0", 0, simpleListener.update.removed.size());
-        Assert.assertEquals("simpleListener.update.modified.size() = 1", 1, simpleListener.update.modified.size());
-        Assert.assertEquals("simpleListener.update.modified = {1}", i(1), simpleListener.update.modified);
-        Assert.assertEquals("simpleListener.update.shifted.size() = 0", 0, simpleListener.update.shifted.size());
+        Assert.assertEquals("simpleListener.update.added.size() = 0", 0, simpleListener.update.added().size());
+        Assert.assertEquals("simpleListener.update.removed.size() = 0", 0, simpleListener.update.removed().size());
+        Assert.assertEquals("simpleListener.update.modified.size() = 1", 1, simpleListener.update.modified().size());
+        Assert.assertEquals("simpleListener.update.modified = {1}", i(1), simpleListener.update.modified());
+        Assert.assertEquals("simpleListener.update.shifted.size() = 0", 0, simpleListener.update.shifted().size());
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(queryTable, i(3, 5), c("intCol", 30, 50));
-            final Listener.Update update = newUpdate.get();
+            final TableUpdateImpl update = newUpdate.get();
             update.added = i(5);
             update.modified = i(3);
             update.modifiedColumnSet = queryTable.newModifiedColumnSet("intCol");
@@ -2106,38 +2104,38 @@ public class QueryTableTest extends QueryTableTestBase {
         });
 
         Assert.assertEquals("simpleListener.getCount() == 3", 3, simpleListener.getCount());
-        Assert.assertEquals("simpleListener.update.removed.size() = 0", 0, simpleListener.update.removed.size());
-        Assert.assertEquals("simpleListener.update.added.size() = 1", 1, simpleListener.update.added.size());
-        Assert.assertEquals("simpleListener.update.added = {3}", i(3), simpleListener.update.added);
-        Assert.assertEquals("simpleListener.update.modified.size() = 1", 1, simpleListener.update.modified.size());
-        Assert.assertEquals("simpleListener.update.modified = {1}", i(1), simpleListener.update.modified);
-        Assert.assertEquals("simpleListener.update.shifted.size() = 1", 1, simpleListener.update.shifted.size());
+        Assert.assertEquals("simpleListener.update.removed.size() = 0", 0, simpleListener.update.removed().size());
+        Assert.assertEquals("simpleListener.update.added.size() = 1", 1, simpleListener.update.added().size());
+        Assert.assertEquals("simpleListener.update.added = {3}", i(3), simpleListener.update.added());
+        Assert.assertEquals("simpleListener.update.modified.size() = 1", 1, simpleListener.update.modified().size());
+        Assert.assertEquals("simpleListener.update.modified = {1}", i(1), simpleListener.update.modified());
+        Assert.assertEquals("simpleListener.update.shifted.size() = 1", 1, simpleListener.update.shifted().size());
         Assert.assertEquals("simpleListener.update.shifted.getBeginRange(0) = 3", 3,
-                simpleListener.update.shifted.getBeginRange(0));
+                simpleListener.update.shifted().getBeginRange(0));
         Assert.assertEquals("simpleListener.update.shifted.getEndRange(0) = 3", 3,
-                simpleListener.update.shifted.getEndRange(0));
+                simpleListener.update.shifted().getEndRange(0));
         Assert.assertEquals("simpleListener.update.shifted.getShiftDelta(0) = 1", 1,
-                simpleListener.update.shifted.getShiftDelta(0));
+                simpleListener.update.shifted().getShiftDelta(0));
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             removeRows(queryTable, i(4));
-            final Listener.Update update = newUpdate.get();
+            final TableUpdateImpl update = newUpdate.get();
             update.removed = i(4);
             queryTable.notifyListeners(update);
         });
 
         Assert.assertEquals("simpleListener.getCount() == 4", 4, simpleListener.getCount());
-        Assert.assertEquals("simpleListener.update.added.size() = 0", 0, simpleListener.update.added.size());
-        Assert.assertEquals("simpleListener.update.removed.size() = 1", 1, simpleListener.update.removed.size());
-        Assert.assertEquals("simpleListener.update.removed = {2}", i(2), simpleListener.update.removed);
-        Assert.assertEquals("simpleListener.update.modified.size() = 0", 0, simpleListener.update.modified.size());
-        Assert.assertEquals("simpleListener.update.shifted.size() = 1", 1, simpleListener.update.shifted.size());
+        Assert.assertEquals("simpleListener.update.added.size() = 0", 0, simpleListener.update.added().size());
+        Assert.assertEquals("simpleListener.update.removed.size() = 1", 1, simpleListener.update.removed().size());
+        Assert.assertEquals("simpleListener.update.removed = {2}", i(2), simpleListener.update.removed());
+        Assert.assertEquals("simpleListener.update.modified.size() = 0", 0, simpleListener.update.modified().size());
+        Assert.assertEquals("simpleListener.update.shifted.size() = 1", 1, simpleListener.update.shifted().size());
         Assert.assertEquals("simpleListener.update.shifted.getBeginRange(0) = 3", 3,
-                simpleListener.update.shifted.getBeginRange(0));
+                simpleListener.update.shifted().getBeginRange(0));
         Assert.assertEquals("simpleListener.update.shifted.getEndRange(0) = 4", 4,
-                simpleListener.update.shifted.getEndRange(0));
+                simpleListener.update.shifted().getEndRange(0));
         Assert.assertEquals("simpleListener.update.shifted.getShiftDelta(0) = -1", -1,
-                simpleListener.update.shifted.getShiftDelta(0));
+                simpleListener.update.shifted().getShiftDelta(0));
 
         simpleListener.close();
     }
@@ -2151,44 +2149,44 @@ public class QueryTableTest extends QueryTableTestBase {
                 new io.deephaven.engine.v2.SimpleListener(selected);
         selected.listenForUpdates(simpleListener);
 
-        final Supplier<Listener.Update> newUpdate =
-                () -> new Listener.Update(i(), i(), i(), RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY);
+        final Supplier<TableUpdate> newUpdate =
+                () -> new TableUpdateImpl(i(), i(), i(), RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(queryTable, i(3), c("intCol", 30));
             TstUtils.removeRows(queryTable, i(2));
-            final Listener.Update update = newUpdate.get();
+            final TableUpdateImpl update = newUpdate.get();
             update.added = i(3);
             update.removed = i(2);
             queryTable.notifyListeners(update);
         });
 
         Assert.assertEquals("simpleListener.getCount() == 1", 1, simpleListener.getCount());
-        Assert.assertEquals("simpleListener.update.shifted.size() = 0", 0, simpleListener.update.shifted.size());
-        Assert.assertEquals("simpleListener.update.added.size() = 1", 1, simpleListener.update.added.size());
-        Assert.assertEquals("simpleListener.update.removed.size() = 1", 1, simpleListener.update.removed.size());
-        Assert.assertEquals("simpleListener.update.modified.size() = 0", 0, simpleListener.update.modified.size());
-        Assert.assertEquals("simpleListener.update.added = {3}", i(3), simpleListener.update.added);
-        Assert.assertEquals("simpleListener.update.removed = {2}", i(2), simpleListener.update.removed);
+        Assert.assertEquals("simpleListener.update.shifted.size() = 0", 0, simpleListener.update.shifted().size());
+        Assert.assertEquals("simpleListener.update.added.size() = 1", 1, simpleListener.update.added().size());
+        Assert.assertEquals("simpleListener.update.removed.size() = 1", 1, simpleListener.update.removed().size());
+        Assert.assertEquals("simpleListener.update.modified.size() = 0", 0, simpleListener.update.modified().size());
+        Assert.assertEquals("simpleListener.update.added = {3}", i(3), simpleListener.update.added());
+        Assert.assertEquals("simpleListener.update.removed = {2}", i(2), simpleListener.update.removed());
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(queryTable, i(3), c("intCol", 30));
-            final Listener.Update update = newUpdate.get();
+            final TableUpdateImpl update = newUpdate.get();
             update.modified = i(3);
             update.modifiedColumnSet = queryTable.newModifiedColumnSet("intCol");
             queryTable.notifyListeners(update);
         });
 
         Assert.assertEquals("simpleListener.getCount() == 2", 2, simpleListener.getCount());
-        Assert.assertEquals("simpleListener.update.added.size() = 0", 0, simpleListener.update.added.size());
-        Assert.assertEquals("simpleListener.update.removed.size() = 0", 0, simpleListener.update.removed.size());
-        Assert.assertEquals("simpleListener.update.modified.size() = 1", 1, simpleListener.update.modified.size());
-        Assert.assertEquals("simpleListener.update.modified = {3}", i(3), simpleListener.update.modified);
-        Assert.assertEquals("simpleListener.update.shifted.size() = 0", 0, simpleListener.update.shifted.size());
+        Assert.assertEquals("simpleListener.update.added.size() = 0", 0, simpleListener.update.added().size());
+        Assert.assertEquals("simpleListener.update.removed.size() = 0", 0, simpleListener.update.removed().size());
+        Assert.assertEquals("simpleListener.update.modified.size() = 1", 1, simpleListener.update.modified().size());
+        Assert.assertEquals("simpleListener.update.modified = {3}", i(3), simpleListener.update.modified());
+        Assert.assertEquals("simpleListener.update.shifted.size() = 0", 0, simpleListener.update.shifted().size());
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(queryTable, i(3, 5), c("intCol", 30, 50));
-            final Listener.Update update = newUpdate.get();
+            final TableUpdateImpl update = newUpdate.get();
             update.added = i(5);
             update.modified = i(3);
             update.modifiedColumnSet = queryTable.newModifiedColumnSet("intCol");
@@ -2196,12 +2194,12 @@ public class QueryTableTest extends QueryTableTestBase {
         });
 
         Assert.assertEquals("simpleListener.getCount() == 3", 3, simpleListener.getCount());
-        Assert.assertEquals("simpleListener.update.removed.size() = 0", 0, simpleListener.update.removed.size());
-        Assert.assertEquals("simpleListener.update.added.size() = 1", 1, simpleListener.update.added.size());
-        Assert.assertEquals("simpleListener.update.added = {5}", i(5), simpleListener.update.added);
-        Assert.assertEquals("simpleListener.update.modified.size() = 1", 1, simpleListener.update.modified.size());
-        Assert.assertEquals("simpleListener.update.modified = {1}", i(3), simpleListener.update.modified);
-        Assert.assertEquals("simpleListener.update.shifted.size() = 0", 0, simpleListener.update.shifted.size());
+        Assert.assertEquals("simpleListener.update.removed.size() = 0", 0, simpleListener.update.removed().size());
+        Assert.assertEquals("simpleListener.update.added.size() = 1", 1, simpleListener.update.added().size());
+        Assert.assertEquals("simpleListener.update.added = {5}", i(5), simpleListener.update.added());
+        Assert.assertEquals("simpleListener.update.modified.size() = 1", 1, simpleListener.update.modified().size());
+        Assert.assertEquals("simpleListener.update.modified = {1}", i(3), simpleListener.update.modified());
+        Assert.assertEquals("simpleListener.update.shifted.size() = 0", 0, simpleListener.update.shifted().size());
         // Assert.assertEquals("simpleListener.update.shifted.getBeginRange(0) = 3", 3,
         // simpleListener.update.shifted.getBeginRange(0));
         // Assert.assertEquals("simpleListener.update.shifted.getEndRange(0) = 3", 3,
@@ -2211,17 +2209,17 @@ public class QueryTableTest extends QueryTableTestBase {
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             removeRows(queryTable, i(4));
-            final Listener.Update update = newUpdate.get();
+            final TableUpdateImpl update = newUpdate.get();
             update.removed = i(4);
             queryTable.notifyListeners(update);
         });
 
         Assert.assertEquals("simpleListener.getCount() == 4", 4, simpleListener.getCount());
-        Assert.assertEquals("simpleListener.update.added.size() = 0", 0, simpleListener.update.added.size());
-        Assert.assertEquals("simpleListener.update.removed.size() = 1", 1, simpleListener.update.removed.size());
-        Assert.assertEquals("simpleListener.update.removed = {4}", i(4), simpleListener.update.removed);
-        Assert.assertEquals("simpleListener.update.modified.size() = 0", 0, simpleListener.update.modified.size());
-        Assert.assertEquals("simpleListener.update.shifted.size() = 0", 0, simpleListener.update.shifted.size());
+        Assert.assertEquals("simpleListener.update.added.size() = 0", 0, simpleListener.update.added().size());
+        Assert.assertEquals("simpleListener.update.removed.size() = 1", 1, simpleListener.update.removed().size());
+        Assert.assertEquals("simpleListener.update.removed = {4}", i(4), simpleListener.update.removed());
+        Assert.assertEquals("simpleListener.update.modified.size() = 0", 0, simpleListener.update.modified().size());
+        Assert.assertEquals("simpleListener.update.shifted.size() = 0", 0, simpleListener.update.shifted().size());
         // Assert.assertEquals("simpleListener.update.shifted.getBeginRange(0) = 3", 3,
         // simpleListener.update.shifted.getBeginRange(0));
         // Assert.assertEquals("simpleListener.update.shifted.getEndRange(0) = 4", 4,
@@ -2443,10 +2441,10 @@ public class QueryTableTest extends QueryTableTestBase {
 
             final TableUpdateValidator validator = TableUpdateValidator.make(t1);
             final QueryTable validatorTable = validator.getResultTable();
-            final Listener validatorTableListener =
-                    new InstrumentedListenerAdapter(validatorTable, false) {
+            final TableUpdateListener validatorTableListener =
+                    new InstrumentedTableUpdateListenerAdapter(validatorTable, false) {
                         @Override
-                        public void onUpdate(Update upstream) {}
+                        public void onUpdate(TableUpdate upstream) {}
 
                         @Override
                         public void onFailureInternal(Throwable originalException,
@@ -2952,7 +2950,7 @@ public class QueryTableTest extends QueryTableTestBase {
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             final RowSet newRows = i(2, 4, 18, 20);
             addToTable(lTable, newRows, c("X", "e", "f", "g", "h"));
-            final Listener.Update update = new Listener.Update();
+            final TableUpdateImpl update = new TableUpdateImpl();
             update.added = newRows;
             update.removed = i();
             update.modified = i();
@@ -3018,7 +3016,7 @@ public class QueryTableTest extends QueryTableTestBase {
         table.setRefreshing(true);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            final Listener.Update update = new Listener.Update();
+            final TableUpdateImpl update = new TableUpdateImpl();
 
             update.added = RowSetFactory.fromKeys(parentRowSet.size());
             update.removed = RowSetFactory.empty();
@@ -3026,7 +3024,7 @@ public class QueryTableTest extends QueryTableTestBase {
             update.modifiedColumnSet = ModifiedColumnSet.EMPTY;
             update.shifted = RowSetShiftData.EMPTY;
 
-            parentRowSet.insert(update.added);
+            parentRowSet.insert(update.added());
             table.notifyListeners(update);
             Assert.assertEquals(LogicalClock.DEFAULT.currentStep(), table.getLastNotificationStep());
         });
@@ -3034,7 +3032,7 @@ public class QueryTableTest extends QueryTableTestBase {
 
     public void testNotifyListenersReleasesUpdateEmptyUpdate() {
         final QueryTable src = TstUtils.testRefreshingTable(RowSetFactory.flat(100).toTracking());
-        final Listener.Update update = new Listener.Update();
+        final TableUpdateImpl update = new TableUpdateImpl();
         update.added = i();
         update.removed = i();
         update.modified = i();
@@ -3042,19 +3040,19 @@ public class QueryTableTest extends QueryTableTestBase {
         update.modifiedColumnSet = ModifiedColumnSet.EMPTY;
 
         // any listener will do for this empty update test
-        final Listener listener = new io.deephaven.engine.v2.SimpleListener(src);
+        final TableUpdateListener listener = new io.deephaven.engine.v2.SimpleListener(src);
         src.listenForUpdates(listener);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            TstUtils.addToTable(src, update.added);
+            TstUtils.addToTable(src, update.added());
             src.notifyListeners(update);
         });
-        Assert.assertNull(update.added);
+        Assert.assertNull(update.added());
     }
 
     public void testNotifyListenersReleasesUpdateNoListeners() {
         final QueryTable src = TstUtils.testRefreshingTable(RowSetFactory.flat(100).toTracking());
-        final Listener.Update update = new Listener.Update();
+        final TableUpdateImpl update = new TableUpdateImpl();
         update.added = RowSetFactory.fromRange(200, 220); // must be a non-empty update
         update.removed = i();
         update.modified = i();
@@ -3062,15 +3060,15 @@ public class QueryTableTest extends QueryTableTestBase {
         update.modifiedColumnSet = ModifiedColumnSet.EMPTY;
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            TstUtils.addToTable(src, update.added);
+            TstUtils.addToTable(src, update.added());
             src.notifyListeners(update);
         });
-        Assert.assertNull(update.added);
+        Assert.assertNull(update.added());
     }
 
     public void testNotifyListenersReleasesUpdateChildListener() {
         final QueryTable src = TstUtils.testRefreshingTable(RowSetFactory.flat(100).toTracking());
-        final Listener.Update update = new Listener.Update();
+        final TableUpdateImpl update = new TableUpdateImpl();
         update.added = RowSetFactory.fromRange(200, 220); // must be a non-empty update
         update.removed = i();
         update.modified = i();
@@ -3082,15 +3080,15 @@ public class QueryTableTest extends QueryTableTestBase {
         src.listenForUpdates(listener);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            TstUtils.addToTable(src, update.added);
+            TstUtils.addToTable(src, update.added());
             src.notifyListeners(update);
         });
-        Assert.assertNull(update.added);
+        Assert.assertNull(update.added());
     }
 
     public void testNotifyListenersReleasesUpdateShiftAwareChildListener() {
         final QueryTable src = TstUtils.testRefreshingTable(RowSetFactory.flat(100).toTracking());
-        final Listener.Update update = new Listener.Update();
+        final TableUpdateImpl update = new TableUpdateImpl();
         update.added = RowSetFactory.fromRange(200, 220); // must be a non-empty update
         update.removed = i();
         update.modified = i();
@@ -3102,12 +3100,12 @@ public class QueryTableTest extends QueryTableTestBase {
         src.listenForUpdates(listener);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            TstUtils.addToTable(src, update.added);
+            TstUtils.addToTable(src, update.added());
             src.notifyListeners(update);
         });
         listener.close(); // we typically grab and ref-count this for testing
 
-        Assert.assertNull(update.added);
+        Assert.assertNull(update.added());
     }
 
     public void testRegressionIssue544() {

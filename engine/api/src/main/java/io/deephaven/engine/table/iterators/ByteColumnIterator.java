@@ -4,7 +4,6 @@
 
 package io.deephaven.engine.table.iterators;
 
-import com.google.common.collect.Table;
 import io.deephaven.base.Procedure;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.ColumnSource;

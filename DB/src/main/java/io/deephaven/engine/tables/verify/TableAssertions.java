@@ -1,5 +1,6 @@
 package io.deephaven.engine.tables.verify;
 
+import io.deephaven.engine.table.TableUpdateListener;
 import io.deephaven.engine.tables.SortingOrder;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.tables.utils.QueryPerformanceRecorder;
@@ -59,7 +60,7 @@ public class TableAssertions {
 
                     final Table result = new QueryTable(table.getDefinition(), table.getRowSet(),
                             table.getColumnSourceMap());
-                    final Listener listener =
+                    final TableUpdateListener listener =
                             new AppendOnlyAssertionInstrumentedListenerAdapter(description, table, result);
                     table.listenForUpdates(listener);
 
@@ -116,7 +117,7 @@ public class TableAssertions {
                 () -> {
                     final Table result =
                             new QueryTable(table.getRowSet(), table.getColumnSourceMap());
-                    final Listener listener = new SortedAssertionInstrumentedListenerAdapter(description,
+                    final TableUpdateListener listener = new SortedAssertionInstrumentedListenerAdapter(description,
                             table, result, column, order);
                     table.listenForUpdates(listener);
                     ((BaseTable) table).copyAttributes(result, s -> true);

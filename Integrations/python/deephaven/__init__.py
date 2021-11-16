@@ -194,11 +194,11 @@ def PythonListenerAdapter(table, implementation, description=None, retain=True, 
 
 def PythonShiftAwareListenerAdapter(table, implementation, description=None, retain=True):
     """
-    Constructs the InstrumentedListenerAdapter, implemented in Python, and plugs it into the table's
+    Constructs the InstrumentedTableUpdateListenerAdapter, implemented in Python, and plugs it into the table's
     listenForUpdates method.
 
     :param table: table to which to listen
-    :param implementation: the body of the implementation for the InstrumentedListenerAdapter.onUpdate method, and
+    :param implementation: the body of the implementation for the InstrumentedTableUpdateListenerAdapter.onUpdate method, and
       must either be a class with onUpdate method or a callable.
     :param description: A description for the UpdatePerformanceTracker to append to its entry description.
     :param retain: Whether a hard reference to this listener should be maintained to prevent it from being collected.

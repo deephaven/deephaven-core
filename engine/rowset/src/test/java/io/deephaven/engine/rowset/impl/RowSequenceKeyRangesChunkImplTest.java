@@ -16,7 +16,7 @@ public class RowSequenceKeyRangesChunkImplTest extends RowSequenceTestBase {
 
     @Override
     protected RowSequence create(long... values) {
-        return RowSequenceUtil.takeKeyRangesChunkAndMakeRowSequence(
+        return RowSequenceFactory.takeKeyRangesChunkAndMakeRowSequence(
                 ChunkUtils.convertToOrderedKeyRanges(LongChunk.chunkWrap(values)));
     }
 
@@ -30,7 +30,7 @@ public class RowSequenceKeyRangesChunkImplTest extends RowSequenceTestBase {
             chunk.add(13);
             chunk.add(20);
             chunk.add(23);
-            final RowSequence rs = RowSequenceUtil.wrapKeyRangesChunkAsRowSequence(chunk);
+            final RowSequence rs = RowSequenceFactory.wrapKeyRangesChunkAsRowSequence(chunk);
             final RowSequence subOk = rs.getRowSequenceByKeyRange(2, 22);
             final RowSequence.Iterator it = subOk.getRowSequenceIterator();
             while (it.hasMore()) {

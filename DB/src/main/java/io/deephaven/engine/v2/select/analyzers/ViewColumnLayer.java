@@ -1,7 +1,7 @@
 package io.deephaven.engine.v2.select.analyzers;
 
-import io.deephaven.engine.v2.Listener;
-import io.deephaven.engine.v2.ModifiedColumnSet;
+import io.deephaven.engine.table.TableUpdate;
+import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.v2.select.SelectColumn;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.rowset.RowSet;
@@ -13,7 +13,7 @@ final public class ViewColumnLayer extends SelectOrViewColumnLayer {
     }
 
     @Override
-    public void applyUpdate(Listener.Update upstream, RowSet toClear, UpdateHelper helper) {
+    public void applyUpdate(TableUpdate upstream, RowSet toClear, UpdateHelper helper) {
         // To be parallel with SelectColumnLayer, we would recurse here, but since this is ViewColumnLayer
         // (and all my inner layers are ViewColumnLayer), there's nothing to do.
     }

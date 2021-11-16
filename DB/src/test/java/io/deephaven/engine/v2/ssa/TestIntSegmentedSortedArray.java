@@ -4,12 +4,11 @@
 package io.deephaven.engine.v2.ssa;
 
 import io.deephaven.base.verify.AssertionFailure;
-import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.*;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.v2.*;
-import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.chunk.Attributes;
 import io.deephaven.engine.chunk.Attributes.RowKeys;
 import io.deephaven.engine.chunk.Attributes.Values;
@@ -90,19 +89,19 @@ public class TestIntSegmentedSortedArray extends RefreshingTableTestCase {
         checkSsaInitial(asInteger, ssa, valueSource, desc);
 
         try (final SafeCloseable ignored = LivenessScopeStack.open(new LivenessScope(true), true)) {
-            final Listener asIntegerListener = new InstrumentedListenerAdapter(asInteger, false) {
+            final TableUpdateListener asIntegerListener = new InstrumentedTableUpdateListenerAdapter(asInteger, false) {
                 @Override
-                public void onUpdate(Update upstream) {
+                public void onUpdate(TableUpdate upstream) {
                     try (final ColumnSource.GetContext checkContext = valueSource.makeGetContext(asInteger.getRowSet().getPrevRowSet().intSize())) {
                         final RowSet relevantIndices = asInteger.getRowSet().getPrevRowSet();
                         checkSsa(ssa, valueSource.getPrevChunk(checkContext, relevantIndices).asIntChunk(), relevantIndices.asRowKeyChunk(), desc);
                     }
 
-                    final int size = Math.max(upstream.modified.intSize() + Math.max(upstream.added.intSize(), upstream.removed.intSize()), (int) upstream.shifted.getEffectiveSize());
+                    final int size = Math.max(upstream.modified().intSize() + Math.max(upstream.added().intSize(), upstream.removed().intSize()), (int) upstream.shifted().getEffectiveSize());
                     try (final ColumnSource.GetContext getContext = valueSource.makeGetContext(size)) {
                         ssa.validate();
 
-                        final RowSet takeout = upstream.removed.union(upstream.getModifiedPreShift());
+                        final RowSet takeout = upstream.removed().union(upstream.getModifiedPreShift());
                         if (takeout.isNonempty()) {
                             final IntChunk<? extends Values> valuesToRemove = valueSource.getPrevChunk(getContext, takeout).asIntChunk();
                             ssa.remove(valuesToRemove, takeout.asRowKeyChunk());
@@ -115,11 +114,11 @@ public class TestIntSegmentedSortedArray extends RefreshingTableTestCase {
                             checkSsa(ssa, valueSource.getPrevChunk(checkContext, relevantIndices).asIntChunk(), relevantIndices.asRowKeyChunk(), desc);
                         }
 
-                        if (upstream.shifted.nonempty()) {
-                            final RowSetShiftData.Iterator sit = upstream.shifted.applyIterator();
+                        if (upstream.shifted().nonempty()) {
+                            final RowSetShiftData.Iterator sit = upstream.shifted().applyIterator();
                             while (sit.hasNext()) {
                                 sit.next();
-                                final RowSet rowSetToShift = table.getRowSet().getPrevRowSet().subSetByKeyRange(sit.beginRange(), sit.endRange()).minus(upstream.getModifiedPreShift()).minus(upstream.removed);
+                                final RowSet rowSetToShift = table.getRowSet().getPrevRowSet().subSetByKeyRange(sit.beginRange(), sit.endRange()).minus(upstream.getModifiedPreShift()).minus(upstream.removed());
                                 if (rowSetToShift.isEmpty()) {
                                     continue;
                                 }
@@ -136,7 +135,7 @@ public class TestIntSegmentedSortedArray extends RefreshingTableTestCase {
 
                         ssa.validate();
 
-                        final RowSet putin = upstream.added.union(upstream.modified);
+                        final RowSet putin = upstream.added().union(upstream.modified());
 
                         try (final ColumnSource.GetContext checkContext = valueSource.makeGetContext(asInteger.intSize())) {
                             final RowSet relevantIndices = asInteger.getRowSet().minus(putin);

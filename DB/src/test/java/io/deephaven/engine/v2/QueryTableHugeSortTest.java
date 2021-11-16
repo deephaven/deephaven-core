@@ -1,4 +1,4 @@
-package io.deephaven.engine.v2;
+package io.deephaven.engine.tables;
 
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.tables.select.QueryScope;

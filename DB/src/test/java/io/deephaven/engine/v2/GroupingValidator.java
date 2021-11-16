@@ -7,6 +7,7 @@ package io.deephaven.engine.v2;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.TupleSource;
 import io.deephaven.engine.tuplesource.TupleSourceFactory;
 import io.deephaven.engine.rowset.RowSet;
@@ -21,7 +22,7 @@ import java.util.*;
  * of columns are still valid. It is meant to be used as part of a unit test for incremental updates, to ensure that
  * stale groupings are not left between table updates.
  */
-public class GroupingValidator extends InstrumentedListenerAdapter {
+public class GroupingValidator extends InstrumentedTableUpdateListenerAdapter {
     private Table source;
     private Collection<String[]> groupingColumns;
     private String context;
@@ -172,12 +173,12 @@ public class GroupingValidator extends InstrumentedListenerAdapter {
     }
 
     @Override
-    public void onUpdate(final Update upstream) {
+    public void onUpdate(final TableUpdate upstream) {
         validateGroupings(groupingColumns, source.getRowSet());
         // NB: This would normally be inappropriate: we don't expect grouping support on the non-tracking row sets we
         // use for updates. Forcing support by cloning and making the result tracking.
-        validateGroupings(groupingColumns, upstream.added.copy().toTracking());
-        validateGroupings(groupingColumns, upstream.modified.copy().toTracking());
+        validateGroupings(groupingColumns, upstream.added().copy().toTracking());
+        validateGroupings(groupingColumns, upstream.modified().copy().toTracking());
         validationCount++;
         System.out.println("Validation Count for " + context + ": " + validationCount);
     }

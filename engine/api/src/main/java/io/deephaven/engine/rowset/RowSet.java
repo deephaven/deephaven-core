@@ -5,7 +5,6 @@ import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.util.datastructures.LongAbortableConsumer;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.util.SafeCloseable;
-import org.apache.commons.lang3.mutable.MutableLong;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.PrimitiveIterator;
@@ -432,28 +431,7 @@ public interface RowSet extends RowSequence, LongSizedDataStructure, SafeCloseab
      * @param posRowSet The RowSet of position-based ranges to extract.
      * @return A new RowSet, containing values at the locations in the provided RowSet.
      */
-    default WritableRowSet subSetForPositions(RowSet posRowSet) {
-        final MutableLong currentOffset = new MutableLong();
-        final RowSequence.Iterator iter = getRowSequenceIterator();
-        final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
-        posRowSet.forEachRowKeyRange((start, end) -> {
-            if (currentOffset.longValue() < start) {
-                // skip items until the beginning of this range
-                iter.getNextRowSequenceWithLength(start - currentOffset.longValue());
-                currentOffset.setValue(start);
-            }
-
-            if (!iter.hasMore()) {
-                return false;
-            }
-
-            iter.getNextRowSequenceWithLength(end + 1 - currentOffset.longValue())
-                    .forAllRowKeyRanges(builder::appendRange);
-            currentOffset.setValue(end + 1);
-            return iter.hasMore();
-        });
-        return builder.build();
-    }
+    WritableRowSet subSetForPositions(RowSet posRowSet);
 
     /**
      * Returns the key at the given rank position.

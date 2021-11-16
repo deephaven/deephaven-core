@@ -5,7 +5,8 @@
 package io.deephaven.integrations.python;
 
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.v2.InstrumentedListenerAdapter;
+import io.deephaven.engine.table.TableUpdate;
+import io.deephaven.engine.v2.InstrumentedTableUpdateListenerAdapter;
 import io.deephaven.util.annotations.ScriptApi;
 import org.jpy.PyObject;
 
@@ -17,7 +18,7 @@ import org.jpy.PyObject;
  * either case, the method must take one argument (updates).
  */
 @ScriptApi
-public class PythonListenerAdapter extends InstrumentedListenerAdapter {
+public class PythonListenerAdapter extends InstrumentedTableUpdateListenerAdapter {
     private static final long serialVersionUID = -1811392916918850289L;
     private final PyObject pyCallable;
 
@@ -65,7 +66,7 @@ public class PythonListenerAdapter extends InstrumentedListenerAdapter {
     }
 
     @Override
-    public void onUpdate(final Update update) {
+    public void onUpdate(final TableUpdate update) {
         pyCallable.call("__call__", update);
     }
 }

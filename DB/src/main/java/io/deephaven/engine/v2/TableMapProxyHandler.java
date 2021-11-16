@@ -2,6 +2,7 @@ package io.deephaven.engine.v2;
 
 import io.deephaven.base.StringUtils;
 import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.tables.select.MatchPairFactory;
 import io.deephaven.engine.tables.utils.QueryPerformanceRecorder;
 import io.deephaven.engine.tables.utils.TableTools;
@@ -104,7 +105,7 @@ public class TableMapProxyHandler extends LivenessArtifact implements Invocation
          * @param modified rowSet values modified in the table.
          */
         default void notifyListeners(RowSet added, RowSet removed, RowSet modified) {
-            notifyListeners(new Listener.Update(added, removed, modified, RowSetShiftData.EMPTY,
+            notifyListeners(new TableUpdateImpl(added, removed, modified, RowSetShiftData.EMPTY,
                     modified.isEmpty() ? ModifiedColumnSet.EMPTY : ModifiedColumnSet.ALL));
         }
 
@@ -116,7 +117,7 @@ public class TableMapProxyHandler extends LivenessArtifact implements Invocation
          *        {@code notifyListeners} takes ownership, and will call {@code release} on it once it is not used anymore;
          *        callers should pass a {@code copy} for updates they intend to further use.
          */
-        void notifyListeners(Listener.Update update);
+        void notifyListeners(TableUpdate update);
 
         /**
          * Initiate failure delivery to this table's listeners. Will notify direct listeners before completing, and enqueue
@@ -549,7 +550,7 @@ public class TableMapProxyHandler extends LivenessArtifact implements Invocation
         return expected;
     }
 
-    private static class JoinSanityListener extends InstrumentedListenerAdapter {
+    private static class JoinSanityListener extends InstrumentedTableUpdateListenerAdapter {
         private final ColumnSource[] keyColumns;
         private final Object tableKey;
         private final String description;
@@ -565,9 +566,9 @@ public class TableMapProxyHandler extends LivenessArtifact implements Invocation
         }
 
         @Override
-        public void onUpdate(final Update upstream) {
-            checkSanity(upstream.added);
-            checkSanity(upstream.modified);
+        public void onUpdate(final TableUpdate upstream) {
+            checkSanity(upstream.added());
+            checkSanity(upstream.modified());
         }
 
         private void checkSanity(RowSet rowSet) {

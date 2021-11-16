@@ -6,9 +6,12 @@ package io.deephaven.engine.v2;
 
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetShiftData;
+import io.deephaven.engine.table.ModifiedColumnSet;
+import io.deephaven.engine.table.ShiftObliviousListener;
+import io.deephaven.engine.table.impl.TableUpdateImpl;
 import org.jetbrains.annotations.Nullable;
 
-public abstract class ShiftObliviousInstrumentedListener extends InstrumentedListenerBase
+public abstract class ShiftObliviousInstrumentedListener extends InstrumentedTableListenerBase
         implements ShiftObliviousListener {
 
     private RowSet initialImage;
@@ -34,7 +37,7 @@ public abstract class ShiftObliviousInstrumentedListener extends InstrumentedLis
     public class Notification extends NotificationBase {
 
         Notification(final RowSet added, final RowSet removed, final RowSet modified) {
-            super(new Listener.Update(added.copy(), removed.copy(), modified.copy(),
+            super(new TableUpdateImpl(added.copy(), removed.copy(), modified.copy(),
                     RowSetShiftData.EMPTY, ModifiedColumnSet.ALL));
             update.release(); // NotificationBase assumes it does not own the provided update.
         }
@@ -42,11 +45,11 @@ public abstract class ShiftObliviousInstrumentedListener extends InstrumentedLis
         @Override
         public void run() {
             doRun(() -> {
-                if (initialImage != null && (initialImage != update.added || update.removed.isNonempty()
-                        || update.modified.isNonempty())) {
-                    onUpdate(update.added.minus(initialImageClone), update.removed, update.modified);
+                if (initialImage != null && (initialImage != update.added() || update.removed().isNonempty()
+                        || update.modified().isNonempty())) {
+                    onUpdate(update.added().minus(initialImageClone), update.removed(), update.modified());
                 } else {
-                    onUpdate(update.added, update.removed, update.modified);
+                    onUpdate(update.added(), update.removed(), update.modified());
                 }
                 initialImage = initialImageClone = null;
             });

@@ -4,11 +4,11 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.impl.OrderedLongSet;
 import io.deephaven.engine.rowset.impl.OrderedLongSetBuilderSequential;
+import io.deephaven.engine.rowset.impl.RowSequenceFactory;
 import io.deephaven.util.datastructures.LongAbortableConsumer;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.chunk.Attributes;
 import io.deephaven.engine.chunk.LongChunk;
-import io.deephaven.engine.v2.utils.*;
 import io.deephaven.engine.rowset.impl.rsp.RspArray;
 import io.deephaven.engine.rowset.impl.rsp.RspBitmap;
 import io.deephaven.engine.rowset.impl.sortedranges.SortedRanges;
@@ -695,7 +695,7 @@ public abstract class SingleRange implements OrderedLongSet {
     @Override
     public final RowSequence ixGetRowSequenceByPosition(final long startPositionInclusive, final long length) {
         if (startPositionInclusive >= ixCardinality() || length == 0) {
-            return RowSequence.EMPTY;
+            return RowSequenceFactory.EMPTY;
         }
         final long s = rangeStart() + startPositionInclusive;
         final long e = Math.min(s + length - 1, rangeEnd());
@@ -707,7 +707,7 @@ public abstract class SingleRange implements OrderedLongSet {
         if (startKeyInclusive > rangeEnd() ||
                 endKeyInclusive < rangeStart() ||
                 endKeyInclusive < startKeyInclusive) {
-            return RowSequence.EMPTY;
+            return RowSequenceFactory.EMPTY;
         }
         return new SingleRangeRowSequence(
                 Math.max(startKeyInclusive, rangeStart()),

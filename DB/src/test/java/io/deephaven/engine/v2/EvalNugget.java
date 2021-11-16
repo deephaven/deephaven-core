@@ -6,6 +6,8 @@ package io.deephaven.engine.v2;
 
 import io.deephaven.base.Pair;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableUpdate;
+import io.deephaven.engine.table.TableUpdateListener;
 import io.deephaven.engine.tables.utils.TableDiff;
 import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.v2.utils.UpdatePerformanceTracker;
@@ -46,13 +48,13 @@ public abstract class EvalNugget implements EvalNuggetInterface {
     private Throwable exception = null;
 
     // We should listen for failures on the table, and if we get any, the test case is no good.
-    class FailureListener extends InstrumentedListener {
+    class FailureListener extends InstrumentedTableUpdateListener {
         FailureListener() {
             super("Failure ShiftObliviousListener");
         }
 
         @Override
-        public void onUpdate(final Update upstream) {
+        public void onUpdate(final TableUpdate upstream) {
             if (RefreshingTableTestCase.printTableUpdates) {
                 System.out.println("Incremental Table Update:");
                 System.out.println(upstream);
@@ -73,7 +75,7 @@ public abstract class EvalNugget implements EvalNuggetInterface {
         }
     }
 
-    private final Listener failureListener = new FailureListener();
+    private final TableUpdateListener failureListener = new FailureListener();
     {
         // subscribe before the validator in case we are printing table updates
         if (originalValue instanceof QueryTable) {

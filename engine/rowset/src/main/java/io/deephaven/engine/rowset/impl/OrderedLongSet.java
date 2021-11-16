@@ -421,17 +421,17 @@ public interface OrderedLongSet {
 
         @Override
         public RowSequence ixGetRowSequenceByPosition(long startPositionInclusive, long length) {
-            return RowSequence.EMPTY;
+            return RowSequenceFactory.EMPTY;
         }
 
         @Override
         public RowSequence ixGetRowSequenceByKeyRange(long startKeyInclusive, long endKeyInclusive) {
-            return RowSequence.EMPTY;
+            return RowSequenceFactory.EMPTY;
         }
 
         @Override
         public RowSequence.Iterator ixGetRowSequenceIterator() {
-            return RowSequence.Iterator.EMPTY;
+            return RowSequenceFactory.EMPTY_ITERATOR;
         }
 
         @Override

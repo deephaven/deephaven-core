@@ -5,10 +5,9 @@
 package io.deephaven.engine.v2;
 
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.MatchPair;
-import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.*;
 import io.deephaven.engine.rowset.RowSetShiftData;
+import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.v2.utils.UpdatePerformanceTracker;
 import org.jetbrains.annotations.Nullable;
 
@@ -30,7 +29,7 @@ public interface LazySnapshotTable extends Table {
      * @param modified rowSet values modified in the table.
      */
     default void notifyListeners(RowSet added, RowSet removed, RowSet modified) {
-        notifyListeners(new Listener.Update(added, removed, modified, RowSetShiftData.EMPTY,
+        notifyListeners(new TableUpdateImpl(added, removed, modified, RowSetShiftData.EMPTY,
                 modified.isEmpty() ? ModifiedColumnSet.EMPTY : ModifiedColumnSet.ALL));
     }
 
@@ -42,7 +41,7 @@ public interface LazySnapshotTable extends Table {
      *        {@code notifyListeners} takes ownership, and will call {@code release} on it once it is not used anymore;
      *        callers should pass a {@code copy} for updates they intend to further use.
      */
-    void notifyListeners(Listener.Update update);
+    void notifyListeners(TableUpdate update);
 
     /**
      * Initiate failure delivery to this table's listeners. Will notify direct listeners before completing, and enqueue

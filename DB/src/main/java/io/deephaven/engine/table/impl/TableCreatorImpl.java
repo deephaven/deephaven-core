@@ -1,8 +1,8 @@
-package io.deephaven.engine.table;
+package io.deephaven.engine.table.impl;
 
+import io.deephaven.engine.table.Table;
 import io.deephaven.engine.time.DateTime;
 import io.deephaven.engine.time.DateTimeUtils;
-import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.v2.InMemoryTable;
 import io.deephaven.engine.v2.UpdatableTable;
 import io.deephaven.engine.v2.utils.AppendOnlyArrayBackedMutableTable;
@@ -25,7 +25,7 @@ import java.util.Objects;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
-enum TableCreatorImpl implements TableCreator<Table> {
+public enum TableCreatorImpl implements TableCreator<Table> {
     INSTANCE;
 
     public static Table create(TableSpec table) {

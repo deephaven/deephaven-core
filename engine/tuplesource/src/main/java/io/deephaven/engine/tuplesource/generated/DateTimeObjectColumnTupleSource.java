@@ -6,14 +6,14 @@ import io.deephaven.engine.chunk.Chunk;
 import io.deephaven.engine.chunk.ObjectChunk;
 import io.deephaven.engine.chunk.WritableChunk;
 import io.deephaven.engine.chunk.WritableObjectChunk;
+import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.time.DateTime;
 import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.engine.tuple.generated.LongObjectTuple;
 import io.deephaven.engine.tuplesource.AbstractTupleSource;
-import io.deephaven.engine.table.TupleSource;
+import io.deephaven.engine.tuplesource.TupleSource;
 import io.deephaven.engine.tuplesource.TwoColumnTupleSourceFactory;
-import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.sources.WritableSource;
 import org.jetbrains.annotations.NotNull;
 
 
@@ -73,7 +73,7 @@ public class DateTimeObjectColumnTupleSource extends AbstractTupleSource<LongObj
 
     @SuppressWarnings("unchecked")
     @Override
-    public final <ELEMENT_TYPE> void exportElement(@NotNull final LongObjectTuple tuple, final int elementIndex, @NotNull final WritableSource<ELEMENT_TYPE> writableSource, final long destinationIndexKey) {
+    public final <ELEMENT_TYPE> void exportElement(@NotNull final LongObjectTuple tuple, final int elementIndex, @NotNull final WritableColumnSource<ELEMENT_TYPE> writableSource, final long destinationIndexKey) {
         if (elementIndex == 0) {
             writableSource.set(destinationIndexKey, (ELEMENT_TYPE) DateTimeUtils.nanosToTime(tuple.getFirstElement()));
             return;

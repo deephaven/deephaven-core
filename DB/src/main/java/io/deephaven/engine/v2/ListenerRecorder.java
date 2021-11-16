@@ -1,9 +1,11 @@
 package io.deephaven.engine.v2;
 
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.impl.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
+import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.engine.v2.utils.*;
 
@@ -20,7 +22,7 @@ public class ListenerRecorder extends BaseTable.ListenerImpl {
     private MergedListener mergedListener;
 
     private long notificationStep = -1;
-    private Update update;
+    private TableUpdate update;
 
     public ListenerRecorder(String description, Table parent, Table dependent) {
         super(description, parent, dependent);
@@ -40,7 +42,7 @@ public class ListenerRecorder extends BaseTable.ListenerImpl {
     }
 
     @Override
-    public void onUpdate(final Update upstream) {
+    public void onUpdate(final TableUpdate upstream) {
         this.update = upstream.acquire();
         this.notificationStep = LogicalClock.DEFAULT.currentStep();
 
@@ -65,15 +67,15 @@ public class ListenerRecorder extends BaseTable.ListenerImpl {
     }
 
     public RowSet getAdded() {
-        return recordedVariablesAreValid() ? update.added : RowSetFactory.empty();
+        return recordedVariablesAreValid() ? update.added() : RowSetFactory.empty();
     }
 
     public RowSet getRemoved() {
-        return recordedVariablesAreValid() ? update.removed : RowSetFactory.empty();
+        return recordedVariablesAreValid() ? update.removed() : RowSetFactory.empty();
     }
 
     public RowSet getModified() {
-        return recordedVariablesAreValid() ? update.modified : RowSetFactory.empty();
+        return recordedVariablesAreValid() ? update.modified() : RowSetFactory.empty();
     }
 
     public RowSet getModifiedPreShift() {
@@ -81,14 +83,14 @@ public class ListenerRecorder extends BaseTable.ListenerImpl {
     }
 
     public RowSetShiftData getShifted() {
-        return recordedVariablesAreValid() ? update.shifted : RowSetShiftData.EMPTY;
+        return recordedVariablesAreValid() ? update.shifted() : RowSetShiftData.EMPTY;
     }
 
     public ModifiedColumnSet getModifiedColumnSet() {
-        return recordedVariablesAreValid() ? update.modifiedColumnSet : null;
+        return recordedVariablesAreValid() ? update.modifiedColumnSet() : null;
     }
 
-    public Update getUpdate() {
+    public TableUpdate getUpdate() {
         return recordedVariablesAreValid() ? update : null;
     }
 

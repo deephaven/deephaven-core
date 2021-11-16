@@ -1,5 +1,6 @@
 package io.deephaven.engine.v2;
 
+import io.deephaven.engine.table.ShiftObliviousListener;
 import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.engine.rowset.RowSet;
 

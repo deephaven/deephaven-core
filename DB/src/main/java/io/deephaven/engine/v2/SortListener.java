@@ -9,11 +9,11 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.rowset.*;
-import io.deephaven.engine.rowset.impl.RowSequenceUtil;
-import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.Table;
+import io.deephaven.engine.rowset.impl.RowSequenceFactory;
+import io.deephaven.engine.rowset.impl.RowSetFactory;
+import io.deephaven.engine.table.*;
 import io.deephaven.engine.chunk.Attributes;
-import io.deephaven.engine.table.ChunkSink;
+import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.engine.tables.SortingOrder;
 import io.deephaven.util.datastructures.hash.HashMapK4V4;
@@ -172,18 +172,18 @@ public class SortListener extends BaseTable.ListenerImpl {
     // not we will have a large run, and if so, we start spreading as soon as we start placing elements. Additionally,
     // we always spread when we append to either end of the table.
     @Override
-    public void onUpdate(final Update upstream) {
+    public void onUpdate(final TableUpdate upstream) {
         try (final SafeCloseableList closer = new SafeCloseableList()) {
-            final Update downstream = new Update();
+            final TableUpdateImpl downstream = new TableUpdateImpl();
             final boolean modifiedNeedsSorting =
-                    upstream.modifiedColumnSet.containsAny(sortColumnSet) && upstream.modified.isNonempty();
+                    upstream.modifiedColumnSet().containsAny(sortColumnSet) && upstream.modified().isNonempty();
             final long REVERSE_LOOKUP_NO_ENTRY_VALUE = reverseLookup.getNoEntryValue();
 
             // We use these in enough places that we might as well just grab them (and check their sizes) here.
-            upstream.added.intSize("validating added elements");
-            final int removedSize = upstream.removed.intSize("allocating removed elements");
+            upstream.added().intSize("validating added elements");
+            final int removedSize = upstream.removed().intSize("allocating removed elements");
             final int modifiedSize =
-                    modifiedNeedsSorting ? upstream.modified.intSize("allocating modified elements") : 0;
+                    modifiedNeedsSorting ? upstream.modified().intSize("allocating modified elements") : 0;
 
             Assert.assertion((long) removedSize + (long) modifiedSize <= Integer.MAX_VALUE,
                     "(long)removedSize + (long)modifiedSize <= Integer.MAX_VALUE");
@@ -192,11 +192,11 @@ public class SortListener extends BaseTable.ListenerImpl {
 
             // handle upstream removes immediately (lest state gets trashed by upstream shifts)
             if (numRemovedKeys > 0) {
-                fillArray(removedOutputKeys, upstream.removed, 0, reverseLookup::remove);
+                fillArray(removedOutputKeys, upstream.removed(), 0, reverseLookup::remove);
                 Arrays.sort(removedOutputKeys, 0, numRemovedKeys);
                 final LongChunk<Attributes.OrderedRowKeys> keyChunk =
                         LongChunk.chunkWrap(removedOutputKeys, 0, numRemovedKeys);
-                try (final RowSequence wrappedKeyChunk = RowSequenceUtil.wrapRowKeysChunkAsRowSequence(keyChunk)) {
+                try (final RowSequence wrappedKeyChunk = RowSequenceFactory.wrapRowKeysChunkAsRowSequence(keyChunk)) {
                     sortMapping.removeAll(wrappedKeyChunk);
                 }
                 try (final RowSet rmKeyRowSet = sortedArrayToIndex(removedOutputKeys, 0, numRemovedKeys)) {
@@ -207,7 +207,7 @@ public class SortListener extends BaseTable.ListenerImpl {
             // handle upstream shifts; note these never effect the sorted output keyspace
             final SortMappingAggregator mappingChanges = closer.add(new SortMappingAggregator());
             try (final RowSet prevRowSet = parent.getRowSet().getPrevRowSet()) {
-                upstream.shifted.forAllInIndex(prevRowSet, (key, delta) -> {
+                upstream.shifted().forAllInIndex(prevRowSet, (key, delta) -> {
                     final long dst = reverseLookup.remove(key);
                     if (dst != REVERSE_LOOKUP_NO_ENTRY_VALUE) {
                         mappingChanges.append(dst, key + delta);
@@ -227,11 +227,11 @@ public class SortListener extends BaseTable.ListenerImpl {
             int numAddedKeys = 0;
             int numPropagatedModdedKeys = 0;
             final RowSet addedAndModified =
-                    modifiedNeedsSorting ? closer.add(upstream.added.union(upstream.modified)) : upstream.added;
+                    modifiedNeedsSorting ? closer.add(upstream.added().union(upstream.modified())) : upstream.added();
             final long[] addedInputKeys =
                     SortHelpers.getSortedKeys(order, columnsToSortBy, addedAndModified, false, false).getArrayMapping();
             final long[] addedOutputKeys = new long[addedInputKeys.length];
-            final long[] propagatedModOutputKeys = modifiedNeedsSorting ? new long[upstream.modified.intSize()]
+            final long[] propagatedModOutputKeys = modifiedNeedsSorting ? new long[upstream.modified().intSize()]
                     : CollectionUtil.ZERO_LENGTH_LONG_ARRAY;
 
             final RowSet.SearchIterator ait = resultRowSet.searchIterator();
@@ -266,7 +266,7 @@ public class SortListener extends BaseTable.ListenerImpl {
                 Arrays.sort(removedOutputKeys, removedSize, numRemovedKeys);
                 final LongChunk<Attributes.OrderedRowKeys> keyChunk =
                         LongChunk.chunkWrap(removedOutputKeys, removedSize, numRemovedKeys - removedSize);
-                try (final RowSequence wrappedKeyChunk = RowSequenceUtil.wrapRowKeysChunkAsRowSequence(keyChunk)) {
+                try (final RowSequence wrappedKeyChunk = RowSequenceFactory.wrapRowKeysChunkAsRowSequence(keyChunk)) {
                     sortMapping.removeAll(wrappedKeyChunk);
                 }
                 try (final RowSet rmKeyRowSet =
@@ -304,18 +304,18 @@ public class SortListener extends BaseTable.ListenerImpl {
             mappingChanges.flush();
 
             // Compute modified set in post-shift space.
-            if (modifiedNeedsSorting && numPropagatedModdedKeys == 0 || upstream.modified.isEmpty()
-                    || upstream.modifiedColumnSet.empty()) {
+            if (modifiedNeedsSorting && numPropagatedModdedKeys == 0 || upstream.modified().isEmpty()
+                    || upstream.modifiedColumnSet().empty()) {
                 downstream.modified = RowSetFactory.empty();
             } else if (modifiedNeedsSorting) {
                 Arrays.sort(propagatedModOutputKeys, 0, numPropagatedModdedKeys);
 
                 int ii, si;
                 final RowSetBuilderSequential modifiedBuilder = RowSetFactory.builderSequential();
-                for (ii = 0, si = 0; ii < numPropagatedModdedKeys && si < downstream.shifted.size(); ++si) {
-                    final long beginRange = downstream.shifted.getBeginRange(si);
-                    final long endRange = downstream.shifted.getEndRange(si);
-                    final long shiftDelta = downstream.shifted.getShiftDelta(si);
+                for (ii = 0, si = 0; ii < numPropagatedModdedKeys && si < downstream.shifted().size(); ++si) {
+                    final long beginRange = downstream.shifted().getBeginRange(si);
+                    final long endRange = downstream.shifted().getEndRange(si);
+                    final long shiftDelta = downstream.shifted().getShiftDelta(si);
 
                     // before the shifted range
                     for (; ii < numPropagatedModdedKeys && propagatedModOutputKeys[ii] < beginRange; ++ii) {
@@ -334,22 +334,22 @@ public class SortListener extends BaseTable.ListenerImpl {
 
                 downstream.modified = modifiedBuilder.build();
             } else {
-                final long[] modifiedOutputKeys = new long[upstream.modified.intSize()];
-                fillArray(modifiedOutputKeys, upstream.modified, 0, reverseLookup::get);
+                final long[] modifiedOutputKeys = new long[upstream.modified().intSize()];
+                fillArray(modifiedOutputKeys, upstream.modified(), 0, reverseLookup::get);
                 Arrays.sort(modifiedOutputKeys);
                 downstream.modified = sortedArrayToIndex(modifiedOutputKeys, 0, modifiedOutputKeys.length);
             }
 
             // Calculate downstream MCS.
-            if (downstream.modified.isEmpty()) {
+            if (downstream.modified().isEmpty()) {
                 downstream.modifiedColumnSet = ModifiedColumnSet.EMPTY;
             } else {
                 downstream.modifiedColumnSet = result.modifiedColumnSet;
-                mcsTransformer.clearAndTransform(upstream.modifiedColumnSet, downstream.modifiedColumnSet);
+                mcsTransformer.clearAndTransform(upstream.modifiedColumnSet(), downstream.modifiedColumnSet());
             }
 
             // Update the final result rowSet.
-            resultRowSet.insert(downstream.added);
+            resultRowSet.insert(downstream.added());
 
             result.notifyListeners(downstream);
         }
@@ -648,7 +648,7 @@ public class SortListener extends BaseTable.ListenerImpl {
                 // noinspection unchecked
                 sortKernel.sort(valuesChunk, keysChunk);
 
-                try (final RowSequence rowSequence = RowSequenceUtil.wrapRowKeysChunkAsRowSequence(keysChunk)) {
+                try (final RowSequence rowSequence = RowSequenceFactory.wrapRowKeysChunkAsRowSequence(keysChunk)) {
                     // noinspection unchecked
                     sortMapping.fillFromChunk(fillFromContext, valuesChunk, rowSequence);
                 }

@@ -7,7 +7,7 @@ import io.deephaven.engine.rowset.RowSequence;
 import gnu.trove.set.TIntSet;
 import gnu.trove.set.hash.TIntHashSet;
 import io.deephaven.benchmarking.CsvResultWriter;
-import io.deephaven.engine.rowset.impl.RowSequenceUtil;
+import io.deephaven.engine.rowset.impl.RowSequenceFactory;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.infra.Blackhole;
 import org.openjdk.jmh.results.RunResult;
@@ -90,7 +90,7 @@ public class ColumnSourceFillBenchmark {
         Arrays.sort(keyArray);
 
         keys = WritableLongChunk.writableChunkWrap(keyArray, 0, keyArray.length);
-        rowSequence = RowSequenceUtil.wrapRowKeysChunkAsRowSequence(keys);
+        rowSequence = RowSequenceFactory.wrapRowKeysChunkAsRowSequence(keys);
     }
 
     @TearDown(Level.Trial)
