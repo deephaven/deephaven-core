@@ -11,6 +11,8 @@ namespace highlevel {
 class DeephavenConstants {
 public:
   static constexpr const char16_t NULL_CHAR = std::numeric_limits<char16_t>::max();
+  static constexpr const char16_t MIN_CHAR = std::numeric_limits<char16_t>::min();
+  static constexpr const char16_t MAX_CHAR = std::numeric_limits<char16_t>::max() - 1;
 
   static constexpr const float NULL_FLOAT = -std::numeric_limits<float>::max();
   static constexpr const float NAN_FLOAT = std::numeric_limits<float>::quiet_NaN();
